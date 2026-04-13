@@ -22,7 +22,7 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 // -- PDB/PDBQT → Molblock converter -----------------------------------------
 
-interface PdbAtom {
+export interface PdbAtom {
   serial: number;
   element: string;
   x: number; y: number; z: number;
@@ -38,7 +38,7 @@ const COVALENT_RADII: {[el: string]: number} = {
 const BOND_TOLERANCE = 0.45;
 
 /** Parses ATOM/HETATM lines from PDB or PDBQT text. */
-function parsePdbAtoms(pdbText: string): PdbAtom[] {
+export function parsePdbAtoms(pdbText: string): PdbAtom[] {
   const atoms: PdbAtom[] = [];
   for (const line of pdbText.split('\n')) {
     const rec = line.substring(0, 6).trim();
@@ -51,16 +51,17 @@ function parsePdbAtoms(pdbText: string): PdbAtom[] {
     const z = parseFloat(line.substring(46, 54));
     // Element symbol: columns 77-78 in standard PDB. For PDBQT, might
     // be in columns 77-78 or can be derived from atom name (cols 13-16).
+    // PDBQT atom type normalization map.
+    const pdbqtMap: {[k: string]: string} = {
+      A: 'C', OA: 'O', NA: 'N', SA: 'S', HD: 'H', HS: 'H',
+    };
     let element = line.length >= 78 ? line.substring(76, 78).trim() : '';
+    // Normalize PDBQT types that appear in columns 77-78.
+    if (element && pdbqtMap[element]) element = pdbqtMap[element];
     if (!element || /\d/.test(element)) {
       // Derive from atom name (cols 13-16): strip digits, take letters.
       const atomName = line.substring(12, 16).trim();
       element = atomName.replace(/[0-9]/g, '').trim();
-      // PDBQT may have types like "A" (aromatic C), "OA", "NA", "HD" etc.
-      // Normalize known PDBQT types.
-      const pdbqtMap: {[k: string]: string} = {
-        A: 'C', OA: 'O', NA: 'N', SA: 'S', HD: 'H', HS: 'H',
-      };
       if (pdbqtMap[element]) element = pdbqtMap[element];
       if (element.length >= 2)
         element = element[0].toUpperCase() + element[1].toLowerCase();
@@ -77,7 +78,7 @@ function parsePdbAtoms(pdbText: string): PdbAtom[] {
 
 /** Infers bonds from interatomic distances using covalent radii.
  *  Returns [i, j] pairs (0-based). */
-function inferBonds(atoms: PdbAtom[]): [number, number][] {
+export function inferBonds(atoms: PdbAtom[]): [number, number][] {
   const bonds: [number, number][] = [];
   const defaultR = 0.77; // default covalent radius for unknown elements
   for (let i = 0; i < atoms.length; i++) {
@@ -98,7 +99,7 @@ function inferBonds(atoms: PdbAtom[]): [number, number][] {
 
 /** Builds a V2000 molblock from parsed PDB atoms.
  *  Atom order is preserved so that molblock index i = PDB atom index i. */
-function pdbAtomsToMolblock(atoms: PdbAtom[]): string | null {
+export function pdbAtomsToMolblock(atoms: PdbAtom[]): string | null {
   if (atoms.length === 0) return null;
 
   const bonds = inferBonds(atoms);
@@ -400,7 +401,7 @@ function trySubstructMatch(mol2D: RDMol, mol3D: RDMol): number[] | null {
 /** Replaces all bond types in a V2000 molblock with single bonds (type 1).
  *  This makes the molecule "bond-order-agnostic" for substructure matching
  *  against a 3D structure that has no bond-order information (e.g. PDB). */
-function flattenBondOrders(molblock: string): string {
+export function flattenBondOrders(molblock: string): string {
   const lines = molblock.split('\n');
   // The counts line is at index 3. Parse atom count to know where bonds start.
   if (lines.length < 5) return molblock;

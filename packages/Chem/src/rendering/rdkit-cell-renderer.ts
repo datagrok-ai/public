@@ -191,7 +191,7 @@ M  END
    *  it from firing. */
   /** Tracks the last atom processed by hover so we don't re-fire on
    *  every mousemove pixel within the same atom's radius. */
-  private _lastHoveredAtom: {col: string, rowIdx: number, atomIdx: number} | null = null;
+  private _lastHoveredAtom: {col: string, rowIdx: number, atomIdx: number, erase?: boolean} | null = null;
   /** The currently previewed atom (hover without Alt). Shown alongside
    *  the persistent selection but removed when the cursor moves away. */
   private _previewAtomIdx: number | null = null;
@@ -846,9 +846,10 @@ M  END
 
     const hit = this._hitTestAtom(e);
 
-    if (e.altKey) {
-      // ---- Alt+hover: PAINT mode (accumulative) --------------------------
-      // Clear any active preview atom first — paint mode takes over.
+    if (e.altKey || e.shiftKey) {
+      // ---- Alt/Shift+hover: PAINT / ERASE mode ------------------------------
+      // Alt+hover: adds atoms to persistent selection.
+      // Shift+hover: removes atoms from persistent selection.
       this._previewAtomIdx = null;
 
       if (!hit) return;
@@ -856,15 +857,24 @@ M  END
       const colName = col.name;
       const rowIdx = hit.gridCell.tableRowIndex!;
 
-      // Skip if same atom as last paint (avoid re-firing per pixel).
+      // Skip if same atom AND same mode as last action (avoid re-firing per pixel).
+      const eraseMode = e.shiftKey && !e.altKey;
       if (this._lastHoveredAtom &&
           this._lastHoveredAtom.col === colName &&
           this._lastHoveredAtom.rowIdx === rowIdx &&
-          this._lastHoveredAtom.atomIdx === hit.nearest) return;
-      this._lastHoveredAtom = {col: colName, rowIdx, atomIdx: hit.nearest};
+          this._lastHoveredAtom.atomIdx === hit.nearest &&
+          this._lastHoveredAtom.erase === eraseMode) return;
+      this._lastHoveredAtom = {col: colName, rowIdx, atomIdx: hit.nearest, erase: eraseMode};
 
-      // Add atom to persistent selection (only adds, never removes).
-      this._addAtomToRow(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
+      if (eraseMode) {
+        // Shift: remove atom from persistent selection.
+        this._removeAtomFromRow(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
+      } else {
+        // Alt: add atom to persistent selection.
+        this._addAtomToRow(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
+      }
+      // Clear render cache so the 2D cell fully redraws.
+      this.rendersCache = new DG.LruCache<String, ImageData>();
       hit.grid.invalidate();
     } else {
       // ---- No Alt: PREVIEW mode (persistent + one hovered atom) ----------
@@ -911,11 +921,14 @@ M  END
     molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = providers.filter((p) => !p.__atomPicker);
     this._lastHoveredAtom = null;
     this._previewAtomIdx = null;
+    // Clear render cache so the 2D cell redraws without highlights.
+    this.rendersCache = new DG.LruCache<String, ImageData>();
     grid.invalidate();
 
-    // Fire an empty selection event so 3D viewers clear their highlights.
+    // Fire persistent clear-all event so 3D cache clears completely
+    // — including comparison molecules on other rows.
     grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
-      column: molCol, rowIdx: df.currentRowIdx, atoms: [],
+      column: molCol, rowIdx: -1, atoms: [], persistent: true, clearAll: true,
     });
   }
 
@@ -964,6 +977,66 @@ M  END
     if (current.has(atomIdx)) return; // already selected
     current.add(atomIdx);
     this._updateRowSelection(col, rowIdx, [...current], {add: true}, bondAtoms);
+  }
+
+  /** Removes a single atom from the persistent selection (Shift+hover).
+   *  Works the same way as Escape (direct provider manipulation) but
+   *  for a single atom instead of clearing all. */
+  private _removeAtomFromRow(col: DG.Column, rowIdx: number, atomIdx: number,
+    bondAtoms: Map<number, [number, number]>): void {
+    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
+    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const prov = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
+    if (!prov?.__atoms?.has(atomIdx)) return; // not in selection
+
+    prov.__atoms.delete(atomIdx);
+
+    if (prov.__atoms.size === 0) {
+      // Last atom — remove the provider entirely (same as Escape).
+      col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = existing.filter(
+        (p) => !p.__atomPicker || p.__rowIdx !== rowIdx);
+    } else {
+      // Rebuild the provider with the reduced atom set.
+      const pickColor: number[] = [1.0, 1.0, 0.0, 1.0];
+      const atomsArr = [...prov.__atoms];
+      const highlightAtomColors: {[k: number]: number[]} = {};
+      for (const a of atomsArr) highlightAtomColors[a] = pickColor;
+      const {bondsArr, highlightBondColors} =
+        RDKitCellRenderer._computeSelectedBonds(prov.__atoms, bondAtoms, pickColor);
+
+      // Replace the getSubstruct callback with updated atoms.
+      prov.getSubstruct = (ridx) => {
+        if (!this._isPickerActive(col)) return undefined;
+        if (ridx !== rowIdx) return undefined;
+        return {atoms: atomsArr, bonds: bondsArr, highlightAtomColors, highlightBondColors};
+      };
+    }
+
+    // Clear render cache + invalidate (same pattern as Escape).
+    this.rendersCache = new DG.LruCache<String, ImageData>();
+
+    // Fire persistent event so 3D cache + Molstar update.
+    const atoms = prov.__atoms.size > 0 ? [...prov.__atoms] : [];
+    const eventArgs: any = {column: col, rowIdx, atoms, persistent: true};
+    try {
+      const df = col.dataFrame;
+      if (df) {
+        const mol3DCol = df.columns.toList().find(
+          (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
+        if (mol3DCol && rowIdx >= 0) {
+          const smiles2D = col.get(rowIdx);
+          const pose3D = mol3DCol.get(rowIdx);
+          if (smiles2D && pose3D) {
+            const mapping = mapAtomIndices2Dto3D(this.rdKitModule, smiles2D, pose3D);
+            if (mapping) {
+              eventArgs.mapping3D = mapping;
+              eventArgs.mol3DColumnName = mol3DCol.name;
+            }
+          }
+        }
+      }
+    } catch {/* mapping failed */}
+    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, eventArgs);
   }
 
   /** Sets the preview to show persistent atoms PLUS one hovered atom.
