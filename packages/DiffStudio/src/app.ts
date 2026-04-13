@@ -59,7 +59,7 @@ const COLORS = DG.Color.categoricalPalette;
 const COLORS_COUNT = COLORS.length;
 
 /** State of IVP code editor */
-enum EDITOR_STATE {
+export enum EDITOR_STATE {
   EMPTY = 'empty',
   BASIC_TEMPLATE = 'basic',
   ADVANCED_TEMPLATE = 'advanced',
@@ -112,7 +112,7 @@ const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
 ]);
 
 /** Model title-to-editor state map */
-const STATE_BY_TITLE = new Map<TITLE, EDITOR_STATE>([
+export const STATE_BY_TITLE = new Map<TITLE, EDITOR_STATE>([
   [TITLE.BASIC, EDITOR_STATE.BASIC_TEMPLATE],
   [TITLE.ADV, EDITOR_STATE.ADVANCED_TEMPLATE],
   [TITLE.EXT, EDITOR_STATE.EXTENDED_TEMPLATE],

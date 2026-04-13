@@ -94,7 +94,37 @@
     width: 24px;
 }
 
-.diff-studio-ribbon-save-to-model-catalog-icon { 
+.diff-studio-ribbon-save-to-model-catalog-icon {
     margin-left: 4px;
     margin-right: 8px;
+}
+
+/* Diff Studio Hub */
+
+.diff-studio-hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.diff-studio-hub-card {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.diff-studio-hub-card:hover {
+    background-color: var(--grey-1);
+}
+
+.diff-studio-hub-card-description {
+    color: var(--grey-4);
+    font-size: 12px;
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }

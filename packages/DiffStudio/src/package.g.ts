@@ -33,6 +33,15 @@ export async function runDiffStudio() : Promise<any> {
   return await PackageFunctions.runDiffStudio();
 }
 
+//name: Diff Studio Hub
+//description: Browse and manage Diff Studio models
+//output: view result
+//meta.role: app
+//meta.browsePath: Compute
+export async function diffStudioHub() : Promise<any> {
+  return await PackageFunctions.diffStudioHub();
+}
+
 //name: Diff Studio Demo
 //description: Interactive solver of ordinary differential equations (ODE)
 //meta.demoPath: Compute | Diff Studio

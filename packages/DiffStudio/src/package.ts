@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
+import {DiffStudioHub} from './hub';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 import {getBallFlightSim} from './demo/ball-flight';
@@ -97,6 +98,17 @@ export class PackageFunctions {
     }, UI_TIME.APP_RUN_SOLVING);
 
     return proxiView;
+  }
+
+  @grok.decorators.app({
+    name: 'Diff Studio Hub',
+    description: 'Browse and manage Diff Studio models',
+    browsePath: 'Compute',
+  })
+  static async diffStudioHub(): Promise<DG.ViewBase> {
+    const hub = new DiffStudioHub();
+    await hub.render();
+    return hub.view;
   }
 
   @grok.decorators.demo({
