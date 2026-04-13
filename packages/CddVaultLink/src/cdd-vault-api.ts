@@ -67,6 +67,8 @@ export interface Batch {
   molecule_batch_identifier?: string;
   owner: string;
   projects: Project[];
+  /** Parent molecule. Present when a batch is fetched via /batches; absent when it arrives nested inside Molecule.batches (to avoid circularity). */
+  molecule?: Molecule;
   salt_name?: string;
   solvent_of_crystallization_name?: string;
   formula_weight?: number;
@@ -84,6 +86,8 @@ export interface Molecule {
   name: string;
   synonyms: string[];
   cdd_registry_number?: number;
+  registration_type?: string;
+  registration_form?: { id: number };
   projects: Project[];
   collections?: Collection[];
   owner: string;
@@ -99,6 +103,7 @@ export interface Molecule {
   log_p?: number;
   log_d?: number;
   log_s?: number;
+  num_aromatic_rings?: number;
   num_h_bond_donors?: number;
   num_h_bond_acceptors?: number;
   num_rule_of_5_violations?: number;
@@ -107,6 +112,8 @@ export interface Molecule {
   dot_disconnected_formula?: string;
   p_k_a?: number;
   p_k_a_type?: string;
+  p_k_a_basic?: number;
+  bbb2_score?: number;
   exact_mass?: number;
   heavy_atom_count?: number;
   composition?: string;
@@ -115,7 +122,8 @@ export interface Molecule {
   num_rotatable_bonds?: number;
   cns_mpo_score?: number;
   fsp3?: number;
-  batches: Batch[];
+  /** Absent when this Molecule is itself nested inside a Batch (to avoid circularity). */
+  batches?: Batch[];
   udfs?: Record<string, any>;
   molecule_fields?: Record<string, any>;
   source_files: SourceFile[];
@@ -133,6 +141,20 @@ export interface ProtocolQueryResult {
   offset?: number;
   page_size?: number;
   objects?: Protocol[];
+}
+
+export interface CollectionsQueryResult {
+  count?: number;
+  offset?: number;
+  page_size?: number;
+  objects?: VaultCollection[];
+}
+
+export interface BatchesQueryResult {
+  count?: number;
+  offset?: number;
+  page_size?: number;
+  objects?: Batch[];
 }
 
 interface ReadoutRowsQueryResult {
@@ -454,11 +476,23 @@ export async function queryProtocolsAsync(vaultId: number, params: ProtocolQuery
   return request('GET', `/api/v1/vaults/${vaultId}/protocols${paramsStr}`);
 }
 
+/** Get list of available collections with various params (sync, for small page_size previews) */
+export async function queryCollections(vaultId: number, params: CollectionQueryParams): Promise<ApiResponse<CollectionsQueryResult>> {
+  const paramsStr = paramsStringFromObj(params);
+  return request('GET', `/api/v1/vaults/${vaultId}/collections${paramsStr}`);
+}
+
 /** Get list of available collections with various params asynchronously*/
 export async function queryCollectionsAsync(vaultId: number, params: CollectionQueryParams): Promise<ApiResponse<ExportStatus>> {
   params.async = true;
   const paramsStr = paramsStringFromObj(params);
   return request('GET', `/api/v1/vaults/${vaultId}/collections${paramsStr}`);
+}
+
+/** Get list of available batches with various params (sync, for small page_size previews) */
+export async function queryBatches(vaultId: number, params: BatchQueryParams): Promise<ApiResponse<BatchesQueryResult>> {
+  const paramsStr = paramsStringFromObj(params);
+  return request('GET', `/api/v1/vaults/${vaultId}/batches${paramsStr}`);
 }
 
 /** Get list of available batches with various params asynchronously*/

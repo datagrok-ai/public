@@ -1,5 +1,12 @@
 # CDD Vault Link changelog
 
+## v.next
+
+* Tab loading: Unified all tabs on a preview-then-"Load all" pattern. Initial open always shows the first 100 rows via the sync endpoint; if more exist, a ribbon appears with a "Load all" button that runs the async endpoint in the background and swaps the dataframe on completion. Removed the old `createCDDTableViewWithPreview` helper.
+* API: Added sync `queryCollections` and `queryBatches` wrappers to pair with their async counterparts.
+* Types: Added `molecule` (parent `Molecule`) to `Batch`; added `registration_type`, `registration_form`, `num_aromatic_rings`, `p_k_a_basic`, `bbb2_score` to `Molecule`; made `Molecule.batches` optional (absent when a Molecule is nested inside a Batch).
+* Renamed search functions: `cDDVaultSearch2` → `cDDVaultSearch` (now the canonical sync counterpart to `cDDVaultSearchAsync`, with a `page_size` parameter); the old 25-parameter `cDDVaultSearch` moved to `cDDVaultSearch2`.
+
 ## 1.1.0 (2026-03-16)
 
 ### Bug fixes
