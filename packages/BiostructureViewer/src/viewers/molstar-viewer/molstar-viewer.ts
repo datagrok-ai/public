@@ -57,6 +57,10 @@ import {
   setStructureOverpaint, clearStructureOverpaint,
 } from 'molstar/lib/mol-plugin-state/helpers/structure-overpaint';
 
+/** Event name for cross-package atom selection synchronization.
+ *  Mirrors CHEM_INTERACTIVE_SELECTION_EVENT from Chem's constants.ts. */
+export const CHEM_SELECTION_EVENT = 'chem-interactive-selection-changed';
+
 /** Atom-index mapping produced by Chem's mapAtomIndices2Dto3D.
  *  Mirrors the AtomIndexMapping interface from atom-index-mapper.ts
  *  (defined here to avoid a cross-package import). */
@@ -106,7 +110,7 @@ function getSelectionCache(): DG.LruCache<string, SelectionCacheEntry> {
 }
 
 // Register at module load — no lazy guard needed.
-grok.events.onCustomEvent('chem-interactive-selection-changed')
+grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
   .subscribe((_args: unknown) => {
     const args = _args as ChemSelectionEventArgs;
     const rowIdx = args?.rowIdx ?? -1;
@@ -960,7 +964,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           }
         } catch (err: any) {
           this.logger.error(
-            `chem-interactive-selection-changed handler failed: ${err?.message ?? err}`);
+            `${CHEM_SELECTION_EVENT} handler failed: ${err?.message ?? err}`);
         }
       }));
 

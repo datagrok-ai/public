@@ -5,7 +5,9 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {awaitGrid} from './utils';
-import {DebounceIntervals, MolstarViewer, PROPS as msvPROPS} from '../viewers/molstar-viewer/molstar-viewer';
+import {
+  CHEM_SELECTION_EVENT, DebounceIntervals, MolstarViewer, PROPS as msvPROPS,
+} from '../viewers/molstar-viewer/molstar-viewer';
 
 import {_package} from '../package-test';
 
@@ -32,17 +34,17 @@ category('atom-highlight', () => {
   });
 
   test('global cache stores persistent events only', async () => {
-    grok.events.fireCustomEvent('chem-interactive-selection-changed', {
+    grok.events.fireCustomEvent(CHEM_SELECTION_EVENT, {
       rowIdx: 999, atoms: [0, 1, 2], persistent: true,
     });
     await delay(50);
 
-    grok.events.fireCustomEvent('chem-interactive-selection-changed', {
+    grok.events.fireCustomEvent(CHEM_SELECTION_EVENT, {
       rowIdx: 999, atoms: [0, 1, 2, 3, 4, 5], persistent: false,
     });
     await delay(50);
 
-    grok.events.fireCustomEvent('chem-interactive-selection-changed', {
+    grok.events.fireCustomEvent(CHEM_SELECTION_EVENT, {
       rowIdx: 999, atoms: [], persistent: true,
     });
     await delay(50);
@@ -60,7 +62,7 @@ category('atom-highlight', () => {
     await delay(DebounceIntervals.ligands * 2.5);
     await viewer.awaitRendered();
 
-    grok.events.fireCustomEvent('chem-interactive-selection-changed', {
+    grok.events.fireCustomEvent(CHEM_SELECTION_EVENT, {
       rowIdx: 0, atoms: [0, 1, 2], persistent: true,
     });
     await delay(500);
