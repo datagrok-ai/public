@@ -18,7 +18,7 @@ The datagrok.ai website consists of two independently deployed parts on a single
 
 Nginx routes decide which directory serves each URL path. The two deploys never overwrite each other.
 
-For the full architecture, nginx routing rules, search (Typesense), CI/CD pipelines, and deployment details, see `landing/LANDING.md`.
+For the full architecture, nginx routing rules, search (Typesense), CI/CD pipelines, and deployment details, see `../landing/CLAUDE.md`.
 
 ## Key Files
 
