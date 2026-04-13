@@ -330,12 +330,23 @@ export class DataFrame {
 
   /** Converts a column with the specified name to [newType],
    * removes the original column from its dataframe and adds the new column to it.
+   * @deprecated Use {@link changeColumnsType} instead.
    * @param {string|Column} column
    * @param {string} newType - @see {@link COLUMN_TYPE}
    * @param {string=} format - number format
    * @returns {Column} */
   changeColumnType(column: string | Column, newType: ColumnType, format: string | null = null): Column {
-    return toJs(api.grok_DataFrame_ChangeColumnType(this.dart, toDart(column), newType, format));
+    return this.changeColumnsType([column], newType, format)[0];
+  }
+
+  /** Converts columns with the specified names to [newType],
+   * removes the original columns from the dataframe and adds the new columns to it.
+   * @param {(string | Column)[]} columns
+   * @param {string} newType - @see {@link COLUMN_TYPE}
+   * @param {string=} format - number format
+   * @returns {Column[]} */
+  changeColumnsType(columns: (string | Column)[], newType: ColumnType, format: string | null = null): Column[] {
+    return toJs(api.grok_DataFrame_ChangeColumnsType(this.dart, columns.map(toDart), newType, format));
   }
 
   /**
