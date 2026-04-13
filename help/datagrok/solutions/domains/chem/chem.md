@@ -1045,6 +1045,9 @@ Launch an interactive Pareto Front [application](../../../../visualize/viewers/p
 
 </details>
 
+For details on MPO profiles, desirability curves, scoring, and visualization, see the
+[MPO page](mpo.md).
+
 ## Generative chemistry
 
 Generate novel compounds optimized for specific properties using [Reinvent4](https://github.com/MolecularAI/REINVENT4). 
