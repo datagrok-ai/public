@@ -93,9 +93,7 @@ grok.events.onCustomEvent('chem-interactive-selection-changed')
     const rowIdx = args?.rowIdx ?? -1;
     const atoms = args?.atoms ?? [];
     const isPersistent = args?.persistent !== false; // default true for backward compat
-    // eslint-disable-next-line no-console
-    console.log('[molstar-picker-global] caching selection event',
-      {atomsLen: atoms.length, rowIdx, persistent: isPersistent});
+    _package.logger.debug(`[molstar-picker-global] caching selection event atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${isPersistent}`);
     // Only update the cache for persistent (Alt+hover) events.
     // Preview (normal hover) events are processed live but don't
     // overwrite the cache — so replays always use the stable Alt set.
@@ -913,10 +911,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         const args = _args as ChemSelectionEventArgs;
         try {
           if (args?.atoms?.length >= 0) {
-            // eslint-disable-next-line no-console
-            console.log('[molstar-picker] live highlight',
-              {atomsLen: args.atoms.length, rowIdx: args?.rowIdx,
-                persistent: args?.persistent});
+            this.logger.debug(`[molstar-picker] live highlight atomsLen=${args.atoms.length} rowIdx=${args?.rowIdx} persistent=${args?.persistent}`);
             // Pass the event's atoms + mapping directly so transient
             // (preview) highlights work even though they're not cached.
             this.highlightAllLigandAtoms({
@@ -1307,15 +1302,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
    *  appear automatically whenever Molstar rebuilds, without needing a
    *  fresh selection event. */
   private _replayHighlightIfCached(): void {
-    // eslint-disable-next-line no-console
-    console.log('[molstar-picker] scheduling replay after buildViewLigands');
+    this.logger.debug('[molstar-picker] scheduling replay after buildViewLigands');
     // Queue the replay through the viewSyncer so it runs AFTER all
     // pending structure rebuilds (rebuildViewCurrentRow, buildViewLigands)
     // have completed. This prevents the common issue where our overpaint
     // is applied to structures that are then immediately replaced.
     this.viewSyncer.sync('replayHighlight', async () => {
-      // eslint-disable-next-line no-console
-      console.log('[molstar-picker] replay firing now (synced)');
+      this.logger.debug('[molstar-picker] replay firing now (synced)');
       try {
         const plugin = this.viewer?.plugin;
         if (plugin) {
@@ -1432,8 +1425,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     // single entry point for applying highlights and must always run,
     // even if a previous overpaint is mid-flight.
 
-    // eslint-disable-next-line no-console
-    console.log('[molstar-picker] highlightAllLigandAtoms called');
+    this.logger.debug('[molstar-picker] highlightAllLigandAtoms called');
 
     // Collect all loaded ligands with their rows and structure refs.
     // Deduplicate by rowIdx — if current and hovered point to the same
@@ -1462,9 +1454,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       }
     }
 
-    // eslint-disable-next-line no-console
-    console.log('[molstar-picker] loaded ligands:',
-      loadedLigands.map((l) => ({row: l.rowIdx, hasRefs: !!l.structureRefs})));
+    this.logger.debug('[molstar-picker] loaded ligands: ' +
+      JSON.stringify(loadedLigands.map((l) => ({row: l.rowIdx, hasRefs: !!l.structureRefs}))));
 
     // Collect serials per ligand row.
     const currentRowIdx = this.dataFrame?.currentRowIdx ?? -1;
@@ -1585,11 +1576,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
             return pdbSerials[idx];
           return idx + 1;
         });
-      // eslint-disable-next-line no-console
-      console.log('[molstar-picker] _computeSerials: using mapping3D (method:',
-        mapping3D.method, ') atoms:', atomIndices, '→ mapped3D:',
-        atomIndices.map((i) => mapping3D.mapping[i]),
-        '→ serials:', serials, 'hasPdbSerials:', !!pdbSerials);
+      _package.logger.debug(`[molstar-picker] _computeSerials: method=${mapping3D.method} atoms=[${atomIndices}] serials=[${serials}] hasPdbSerials=${!!pdbSerials}`);
       return serials;
     }
     if (structure) {
@@ -1672,7 +1659,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       if (mol3DSerials.length === 0) return;
 
       // eslint-disable-next-line no-console
-      console.log('[molstar-picker] overpaint serials', mol3DSerials.slice(0, 10));
+      _package.logger.debug(`[molstar-picker] overpaint serials [${mol3DSerials.slice(0, 10)}]`);
 
       const serialSet = mol3DSerials;
 
@@ -1694,8 +1681,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           return StructureSelection.toLociWithSourceUnits(sel);
         },
       );
-      // eslint-disable-next-line no-console
-      console.log('[molstar-picker] overpaint applied');
+      this.logger.debug('[molstar-picker] overpaint applied');
     } catch (err: any) {
       this.logger.error(
         `highlightLigandAtoms failed: ${err?.message ?? err}`);
