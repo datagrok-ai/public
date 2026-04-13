@@ -16,7 +16,7 @@ import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-rendere
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
 
-import {_package, } from '../package';
+import {_package,} from '../package';
 import {LruCache} from 'datagrok-api/dg';
 
 export const enum Temps {
@@ -124,6 +124,9 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
 }
 
 export class PdbGridCellRenderer extends DG.GridCellRenderer {
+  /** Tracks DataFrames where the atom-picker tag has already been set. */
+  private _taggedDfIds = new Set<string>();
+
   get name(): string { return 'Molecule3D'; }
 
   get cellType(): string { return 'Molecule3D'; }
@@ -159,6 +162,21 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
   ): void {
     if (!gridCell.cell.column)
       return;
+
+    // Set the atom-picker link tag on the first Molecule column in
+    // this DataFrame, once per DataFrame. This links the SMILES column
+    // to this Molecule3D column so the Chem cell renderer's atom picker
+    // knows which column activates the picker.
+    const df = gridCell.cell.column.dataFrame;
+    if (df && !this._taggedDfIds.has(df.id)) {
+      this._taggedDfIds.add(df.id);
+      const mol3DColName = gridCell.cell.column.name;
+      const smilesCol = df.columns.toList().find(
+        (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && c.name !== mol3DColName);
+      if (smilesCol)
+        smilesCol.temp['%chem-atom-picker-linked-col'] = mol3DColName;
+    }
+
     const back = PdbGridCellRendererBack.getOrCreate(gridCell);
     back.render(g, x, y, w, h, gridCell, cellStyle);
   }
@@ -203,7 +221,7 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
       if (img) {
         const fit = new DG.Rect(x, y + this.pdbIdHeight, w, h - this.pdbIdHeight).fit(img.width, img.height);
         g.drawImage(img, fit.x, fit.y, fit.width, fit.height);
-        
+
         // Render text in header
         DG.GridCellRenderer.byName('string')?.render(g, x, y, w, this.pdbIdHeight, gridCell, cellStyle);
       }

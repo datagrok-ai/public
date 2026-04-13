@@ -413,7 +413,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         const smilesCol = this.dataFrame.columns.toList().find(
           (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && c.name !== this.ligandColumnName);
         if (smilesCol)
-          smilesCol.temp['.chem-atom-picker-linked-col'] = this.ligandColumnName;
+          smilesCol.temp['%chem-atom-picker-linked-col'] = this.ligandColumnName;
       }
     }
   }
@@ -1279,7 +1279,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // Because of the async nature of loading structures to .viewer, the .dataFrame property can be changed (to null).
     // So collect data from the .dataFrame synchronously and then add ligands to the .viewer with postponed sync.
-    await Promise.all(ligandTaskList.map(async (task) => { try { await task(); } catch (e) { _package.logger.error(e); } })).then(() => {
+    await Promise.all(ligandTaskList.map(async (task) => {
+      try {
+        await task();
+      } catch (e) {
+        _package.logger.error(e);
+      }
+    })).then(() => {
       this.ligands = newLigands;
     });
 
@@ -1595,14 +1601,20 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
                 if (cell.obj?.data === structureData) {
                   let cur: any = cell;
                   for (let d = 0; cur && d < 6; d++) {
-                    if (cur.transform?.ref === h.dataRef) { found = true; break; }
+                    if (cur.transform?.ref === h.dataRef) {
+                      found = true;
+                      break;
+                    }
                     const pRef = cur.transform?.parent;
                     cur = pRef ? plugin.state.data.cells.get(pRef) : null;
                   }
                   break;
                 }
               }
-            } catch { /* skip check, allow fallback */ found = true; }
+            } catch {
+              // skip check, allow fallback
+              found = true;
+            }
             if (!found) return StructureElement.Loci.none(structureData);
           }
 
@@ -1721,7 +1733,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       }
       if (mol3DSerials.length === 0) return;
 
-      // eslint-disable-next-line no-console
       _package.logger.debug(`[molstar-picker] overpaint serials [${mol3DSerials.slice(0, 10)}]`);
 
       const serialSet = mol3DSerials;

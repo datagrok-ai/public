@@ -750,6 +750,13 @@ export class PackageFunctions {
     const widget = new DG.Widget(ui.div([]));
     widget.root.append(ui.loader());
     const {dataFrame, column, rowIndex} = molecule.cell;
+    // Set the atom-picker link tag on the SMILES column so the Chem
+    // cell renderer knows which Molecule3D column activates the picker.
+    const smilesCol = dataFrame.columns.toList().find(
+      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && c.name !== column.name);
+    if (smilesCol)
+      smilesCol.temp['%chem-atom-picker-linked-col'] = column.name;
+
     const tableView = grok.shell.getTableView(dataFrame.name);
     const {grid} = tableView;
     const gridCell = grid.cell(column.name, rowIndex);
