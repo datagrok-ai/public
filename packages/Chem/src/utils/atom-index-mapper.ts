@@ -195,25 +195,16 @@ export function mapAtomIndices2Dto3D(
       pdbAtomsParsed = parsePdbAtoms(mol3DStr);
       if (pdbAtomsParsed.length > 0) {
         const molblock = pdbAtomsToMolblock(pdbAtomsParsed);
-        // eslint-disable-next-line no-console
-        console.log('[atom-mapper] PDB atoms:', pdbAtomsParsed.length,
-          'elements:', pdbAtomsParsed.map((a) => a.element).join(','));
-        // eslint-disable-next-line no-console
-        console.log('[atom-mapper] generated molblock:\n' + molblock);
         if (molblock) {
           // Try without sanitization first — bond orders are all 1 which
           // may trip sanitization for aromatic systems.
           mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: false, removeHs: false}));
           if (mol3D && !mol3D.is_valid()) {mol3D.delete(); mol3D = null;}
-          // eslint-disable-next-line no-console
-          console.log('[atom-mapper] mol3D from PDB (no sanitize):', mol3D ? 'valid' : 'null');
 
           // If no-sanitize fails, try with sanitization.
           if (!mol3D) {
             mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: true, removeHs: false}));
             if (mol3D && !mol3D.is_valid()) {mol3D.delete(); mol3D = null;}
-            // eslint-disable-next-line no-console
-            console.log('[atom-mapper] mol3D from PDB (sanitize):', mol3D ? 'valid' : 'null');
           }
 
           // If sanitization fails with H, retry without H but keep a
@@ -233,11 +224,6 @@ export function mapAtomIndices2Dto3D(
     }
     if (!mol3D) return null;
 
-    // eslint-disable-next-line no-console
-    console.log('[atom-mapper] mol2D atoms:', mol2D.get_num_atoms(),
-      'mol3D atoms:', mol3D.get_num_atoms(),
-      'fromPdb:', mol3DFromPdb, 'heavyMap:', !!heavyToPdbIdx);
-
     // Helper: remap match indices back to PDB-serial-compatible indices.
     // If we removed H, map back; otherwise indices are already correct.
     const remapMatch = (match: number[]): number[] => {
@@ -255,11 +241,6 @@ export function mapAtomIndices2Dto3D(
     // where bond orders are preserved).
     const strictMatch = trySubstructMatch(mol2D, mol3D);
     if (strictMatch) {
-      // eslint-disable-next-line no-console
-      console.log('[atom-mapper] Tier 1 (strict) succeeded:', strictMatch);
-      // eslint-disable-next-line no-console
-      console.log('[atom-mapper] Tier 1 (strict) succeeded:', strictMatch,
-        'pdbSerials:', pdbSerials);
       return {
         mapping: remapMatch(strictMatch),
         method: 'substruct',
@@ -285,9 +266,6 @@ export function mapAtomIndices2Dto3D(
         if (qmol?.is_valid()) {
           const smartsMatch = trySubstructMatch(qmol, mol3D);
           if (smartsMatch) {
-            // eslint-disable-next-line no-console
-            console.log('[atom-mapper] Tier 2a (SMARTS) succeeded:', smartsMatch,
-              'pdbSerials:', pdbSerials);
             return {
               mapping: remapMatch(smartsMatch),
               method: 'substruct',
@@ -296,10 +274,7 @@ export function mapAtomIndices2Dto3D(
             };
           }
         }
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.log('[atom-mapper] Tier 2a (SMARTS) failed:', e);
-      } finally {qmol?.delete();}
+      } catch {/* SMARTS matching not supported — fall through */} finally {qmol?.delete();}
     }
 
     // Tier 2b: Flattened molblock fallback.
@@ -314,9 +289,6 @@ export function mapAtomIndices2Dto3D(
         if (mol2DFlat?.is_valid()) {
           const flatMatch = trySubstructMatch(mol2DFlat, mol3D);
           if (flatMatch) {
-            // eslint-disable-next-line no-console
-            console.log('[atom-mapper] Tier 2b (flat molblock) succeeded:', flatMatch,
-              'pdbSerials:', pdbSerials);
             return {
               mapping: remapMatch(flatMatch),
               method: 'substruct',
@@ -350,8 +322,6 @@ export function mapAtomIndices2Dto3D(
       fallback.push(i < n ? i : -1);
     return {mapping: fallback, method: 'heavy-atom-order', mappedCount: n};
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('[atom-mapper] mapAtomIndices2Dto3D error:', err);
     return null;
   } finally {
     mol2D?.delete();
@@ -366,8 +336,6 @@ export function mapAtomIndices2Dto3D(
 function trySubstructMatch(mol2D: RDMol, mol3D: RDMol): number[] | null {
   try {
     const matchJson = mol3D.get_substruct_match(mol2D);
-    // eslint-disable-next-line no-console
-    console.log('[atom-mapper] substruct match raw:', matchJson);
     if (!matchJson) return null;
     const match = JSON.parse(matchJson);
 
