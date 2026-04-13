@@ -1149,6 +1149,7 @@ export class PackageFunctions {
 
       checkCurrentView(table);
       const view = grok.shell.tv;
+      if (!view) return;
 
       const description = `Molecules: ${molecules.name}, activities: ${activities.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}, similarity cutoff: ${similarity}`;
       view.addViewer(DG.VIEWER.SCATTER_PLOT, {
