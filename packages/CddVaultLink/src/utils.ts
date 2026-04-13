@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse, Batch, Project, Vault, Molecule} from "./cdd-vault-api";
-import { ALL_TABS, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
+import { ALL_TABS, BATCHES_TAB, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import { SeachEditor } from './search-function-editor';
 
@@ -50,6 +50,12 @@ export function prepareDataForDf(objects: any[]) {
     if (objects[i]['batches']) {
       objects[i]['molecule_batch_identifiers'] = (objects[i]['batches'] as Batch[]).map((it) => it.molecule_batch_identifier).filter((it) => it !== undefined);
       delete objects[i]['batches'];
+    }
+    if (objects[i]['molecule'] && typeof objects[i]['molecule'] === 'object') {
+      const mol = objects[i]['molecule'] as Molecule;
+      objects[i]['molecule_id'] = mol.id;
+      objects[i]['molecule_smiles'] = mol.smiles;
+      delete objects[i]['molecule'];
     }
     if (objects[i]['projects'])
       objects[i]['projects'] = (objects[i]['projects'] as Project[]).map((it) => it.name);
@@ -105,6 +111,30 @@ export async function createMoleculesDfFromObjects(vaultId: number, objects?: an
   if (!df)
     return DG.DataFrame.create();
   createLinksFromIds(vaultId, df);
+  reorderColummns(df);
+  await grok.data.detectSemanticTypes(df);
+  return df;
+}
+
+export async function createMoleculeIdLinks(vaultId: number, df: DG.DataFrame) {
+  const idCol = df.col('molecule_id');
+  if (idCol) {
+    const linkCol = DG.Column.string('molecule_id', df.rowCount).init((i) => {
+      const id = idCol.get(i);
+      return id != null ? `[${id}](${`${CDD_HOST}vaults/${vaultId}/molecules/${id}/`})` : '';
+    });
+    df.columns.replace(idCol, linkCol);
+  }
+}
+
+export async function createBatchesDfFromObjects(vaultId: number, objects?: any[]) {
+  if (!objects)
+    return DG.DataFrame.create();
+  prepareDataForDf(objects as any[]);
+  const df = DG.DataFrame.fromObjects(objects)!;
+  if (!df)
+    return DG.DataFrame.create();
+  createMoleculeIdLinks(vaultId, df);
   reorderColummns(df);
   await grok.data.detectSemanticTypes(df);
   return df;
@@ -666,7 +696,7 @@ export function createVaultNode(vault: Vault, treeNode: DG.TreeViewGroup) {
   openedView?.close();
   openedView = DG.View.create();
   openedView.name = vault.name;
-  const tabs = createLinks(vault.name, [PROTOCOLS_TAB, SAVED_SEARCHES_TAB, COLLECTIONS_TAB, MOLECULES_TAB, SEARCH_TAB], treeNode, openedView);
+  const tabs = createLinks(vault.name, [PROTOCOLS_TAB, SAVED_SEARCHES_TAB, COLLECTIONS_TAB, MOLECULES_TAB, BATCHES_TAB, SEARCH_TAB], treeNode, openedView);
   openedView.append(tabs);
   grok.shell.addPreview(openedView);
   setBreadcrumbsInViewName([vault.name], treeNode, openedView);

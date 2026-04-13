@@ -72,6 +72,25 @@ export async function getMoleculesAsync(vaultId: number, moleculesIds: string, t
   return await PackageFunctions.getMoleculesAsync(vaultId, moleculesIds, timeoutMinutes);
 }
 
+//name: Get Batches
+//input: int vaultId { nullable: true }
+//output: dataframe result
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+export async function getBatches(vaultId: number) : Promise<any> {
+  return await PackageFunctions.getBatches(vaultId);
+}
+
+//name: Get Batches Async
+//input: int vaultId { nullable: true }
+//input: int timeoutMinutes 
+//output: dataframe result
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+export async function getBatchesAsync(vaultId: number, timeoutMinutes: number) : Promise<any> {
+  return await PackageFunctions.getBatchesAsync(vaultId, timeoutMinutes);
+}
+
 //name: Get Protocols Async
 //input: int vaultId { nullable: true }
 //input: int timeoutMinutes 

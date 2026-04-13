@@ -6,14 +6,15 @@ import {u2} from "@datagrok-libraries/utils/src/u2";
 import {MoleculeFieldSearch, queryVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, querySavedSearches, SavedSearch, querySavedSearchById,
   queryMoleculesAsync, queryReadoutRowsAsync, ApiResponse, MoleculesQueryResult, Protocol, queryProtocolsAsync, Collection,
   queryCollectionsAsync,
+  queryBatches,
   queryBatchesAsync,
   queryProjects,
   Vault} from "./cdd-vault-api";
-import { CDDVaultSearchType, COLLECTIONS_TAB, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
+import { BATCHES_TAB, CDDVaultSearchType, COLLECTIONS_TAB, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
-import { addNodeWithEmptyResults, CDDVaultStats, createCDDContextPanel, createCDDTableView, createInitialSatistics, createLinks,
-  createLinksFromIds, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, createSearchNode, createVaultNode, getAsyncResults, getAsyncResultsAsDf,
+import { addNodeWithEmptyResults, CDDVaultStats, createBatchesDfFromObjects, createCDDContextPanel, createCDDTableView, createInitialSatistics, createLinks,
+  createLinksFromIds, createMoleculeIdLinks, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, createSearchNode, createVaultNode, getAsyncResults, getAsyncResultsAsDf,
   getExportId, handleInitialURL, prepareDataForDf, PREVIEW_ROW_NUM, reorderColummns, setBreadcrumbsInViewName } from './utils';
 
 export * from './package.g';
@@ -121,6 +122,15 @@ export class PackageFunctions{
             'CDDVaultLink:getMolecules', { vaultId: vault.id, moleculesIds: '' },
             'CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, moleculesIds: '', timeoutMinutes: 5 },
             vault, treeNode, true);
+        });
+
+        //batches node
+        const batchesNode = vaultNode.item(BATCHES_TAB);
+        batchesNode.onSelected.subscribe(async (_) => {
+          createCDDTableView([BATCHES_TAB], 'Waiting for batches',
+            'CDDVaultLink:getBatches', { vaultId: vault.id },
+            'CDDVaultLink:getBatchesAsync', { vaultId: vault.id, timeoutMinutes: 5 },
+            vault, treeNode);
         });
 
         // //search node - serach is not implemented as docked panel in molecules tab
@@ -270,6 +280,42 @@ export class PackageFunctions{
     const exportId = getExportId(exportResponse);
     const df = await getAsyncResultsAsDf(vaultId, exportId, timeoutMinutes, false);
     createLinksFromIds(vaultId, df);
+    reorderColummns(df);
+    return df;
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 * * *'
+    },
+    'name': 'Get Batches'
+  })
+  static async getBatches(
+    @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number): Promise<DG.DataFrame> {
+    const batches = await queryBatches(vaultId, {page_size: PREVIEW_ROW_NUM});
+    if (batches.error)
+      throw batches.error;
+    const df = await createBatchesDfFromObjects(vaultId, batches.data?.objects as any[]);
+    return df;
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 * * *'
+    },
+    'name': 'Get Batches Async'
+  })
+  static async getBatchesAsync(
+    @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number,
+    @grok.decorators.param({'type':'int'})   timeoutMinutes: number): Promise<DG.DataFrame> {
+    const exportResponse = await queryBatchesAsync(vaultId, {});
+    const exportId = getExportId(exportResponse);
+    const df = await getAsyncResultsAsDf(vaultId, exportId, timeoutMinutes, false);
+    createMoleculeIdLinks(vaultId, df);
     reorderColummns(df);
     return df;
   }
