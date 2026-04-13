@@ -1424,19 +1424,33 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   /** Reads the highlighted atom indices for a given row from the SMILES
    *  column's temp substruct providers. Returns empty array if none. */
-  private _getHighlightedAtomsFromColumn(rowIdx: number): number[] {
+  /** Reads highlighted atom indices for a given row from a specific
+   *  molecule column's temp substruct providers. The column is identified
+   *  by name (not searched by semType) to avoid ambiguity when a DataFrame
+   *  has multiple molecule columns. */
+  private _getHighlightedAtomsFromColumn(rowIdx: number, molColName?: string): number[] {
     const df = this.dataFrame;
     if (!df) return [];
-    // Find the molecule column (SMILES).
-    const molCol = df.columns.toList().find(
-      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE);
+    // Use the explicitly provided column name, or fall back to finding
+    // the molecule column linked to this viewer's ligand column.
+    let molCol: DG.Column | null = null;
+    if (molColName)
+      molCol = df.col(molColName);
+    if (!molCol) {
+      // Fall back: find the molecule column that has atom-picker providers.
+      molCol = df.columns.toList().find(
+        (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE &&
+          ((c.temp as Record<string, unknown>)?.['chem-substruct-providers'] as unknown[] ?? [])
+            .some((p: any) => p.__atomPicker)) ?? null;
+    }
     if (!molCol) return [];
     // Read the atom-picker provider for this row from col.temp.
-    const providers = ((molCol.temp as any)?.['chem-substruct-providers'] ?? []) as any[];
+    const providers = ((molCol.temp as Record<string, unknown>)?.['chem-substruct-providers'] ?? []) as
+      Array<{__atomPicker?: boolean; __rowIdx?: number; __atoms?: Set<number>}>;
     const picker = providers.find(
-      (p: any) => p.__atomPicker && p.__rowIdx === rowIdx);
+      (p) => p.__atomPicker && p.__rowIdx === rowIdx);
     if (!picker?.__atoms || picker.__atoms.size === 0) return [];
-    return [...picker.__atoms] as number[];
+    return [...picker.__atoms];
   }
 
   /** Applies overpaint for ALL loaded ligands. Reads atom highlights
@@ -1516,7 +1530,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         }
       }
       if (atoms.length === 0) {
-        atoms = this._getHighlightedAtomsFromColumn(ligand.rowIdx);
+        atoms = this._getHighlightedAtomsFromColumn(ligand.rowIdx, colName);
         const key = selectionCacheKey(dfId, dfName, colName, ligand.rowIdx);
         const cached = cache.get(key);
         mapping3D = cached?.mapping3D ?? null;
