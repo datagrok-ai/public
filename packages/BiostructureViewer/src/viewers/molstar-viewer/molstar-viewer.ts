@@ -78,10 +78,14 @@ grok.events.onCustomEvent('chem-interactive-selection-changed')
     // Preview (normal hover) events are processed live but don't
     // overwrite the cache — so replays always use the stable Alt set.
     if (isPersistent) {
-      if (atoms.length > 0)
+      if (args?.clearAll) {
+        // Escape key: clear ALL cached rows.
+        _globalSelectionCache.clear();
+      } else if (atoms.length > 0) {
         _globalSelectionCache.set(rowIdx, {atoms, mapping3D: args?.mapping3D ?? null});
-      else
+      } else {
         _globalSelectionCache.delete(rowIdx);
+      }
     }
   });
 

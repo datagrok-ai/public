@@ -16,6 +16,7 @@ import './tests/pdbqt-tests';
 import './tests/data-provider-tests';
 import './tests/context-menu-tests';
 import './tests/pdb-info-tests';
+import './tests/atom-highlight-tests';
 
 
 // This _package object is for tests only.
