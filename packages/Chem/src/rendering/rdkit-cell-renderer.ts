@@ -149,7 +149,6 @@ M  END
    *  The document listener catches ALL mousedowns, finds the active grid
    *  via `grok.shell.tv.grid`, and hit-tests to determine if a molecule
    *  cell was clicked. */
-  private _documentListenerAttached = false;
   /** Drag state shared across the global mousemove/mouseup listeners.
    *  Null when no drag is active.
    *
@@ -182,16 +181,30 @@ M  END
 
   /** Returns true when the interactive atom picker should be active
    *  for the given molecule column. Checks for an explicit tag
-   *  (CHEM_ATOM_PICKER_LINKED_COL) that links this column to a
-   *  Molecule3D column — set by BiostructureViewer when a Molstar
-   *  viewer binds to the dataframe. */
+   *  (CHEM_ATOM_PICKER_LINKED_COL) first; falls back to scanning
+   *  for a Molecule3D column in the same DataFrame (for cases where
+   *  BiostructureViewer hasn't attached yet). */
   private _isPickerActive(col: DG.Column): boolean {
-    return !!col.temp[CHEM_ATOM_PICKER_LINKED_COL];
+    // Explicit tag (set by BiostructureViewer).
+    if (col.temp[CHEM_ATOM_PICKER_LINKED_COL]) return true;
+    // Fallback: check if the DataFrame has a Molecule3D column.
+    const df = col.dataFrame;
+    if (!df) return false;
+    return df.columns.toList().some(
+      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
   }
 
   /** Returns the name of the linked Molecule3D column, or null. */
   private _getLinkedMol3DColName(col: DG.Column): string | null {
-    return (col.temp[CHEM_ATOM_PICKER_LINKED_COL] as string) ?? null;
+    // Explicit tag first.
+    const tagged = col.temp[CHEM_ATOM_PICKER_LINKED_COL] as string;
+    if (tagged) return tagged;
+    // Fallback: find first Molecule3D column.
+    const df = col.dataFrame;
+    if (!df) return null;
+    const mol3D = df.columns.toList().find(
+      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
+    return mol3D?.name ?? null;
   }
 
   ensureCanvasSize(w: number, h: number): OffscreenCanvas {
@@ -524,20 +537,16 @@ M  END
     return [];
   }
 
+  private _documentListenerAttached = false;
+
   render(g: any, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
     // Register document-level listeners for the hover-paint atom picker.
-    // Alt+hover: "paint" atoms by moving the cursor over them while
-    // holding Alt. No click needed, so the grid never changes the
-    // current cell and the context panel (e.g. AutoDock) stays open.
     if (!this._documentListenerAttached) {
       this._documentListenerAttached = true;
       document.addEventListener('mousemove', (e: MouseEvent) => {
         this._onDocumentMouseMove(e);
       });
-      document.addEventListener('mousedown', (e: MouseEvent) => {
-        this._onDocumentMouseDown(e);
-      }, true);
       document.addEventListener('keydown', (e: KeyboardEvent) => {
         this._onDocumentKeyDown(e);
       });
@@ -742,8 +751,7 @@ M  END
   // current cell and the context panel (e.g. AutoDock Molstar viewer) stays
   // open. Alt+click on an already-selected atom removes it (toggle).
 
-  /** Resolves the molecule cell and atom under the cursor. Returns null
-   *  if the cursor isn't over a valid picker-active molecule cell atom. */
+  /** Resolves the molecule cell and atom under the cursor. */
   private _hitTestAtom(e: MouseEvent): {
     grid: DG.Grid; gridCell: DG.GridCell; cellInfo: CellInteractiveInfo;
     nearest: number; pointerCellX: number; pointerCellY: number;
@@ -751,7 +759,7 @@ M  END
     const grid = grok.shell.tv?.grid;
     if (!grid) return null;
     let gridRoot: HTMLElement | null = null;
-    try {gridRoot = grid.root;} catch {return null;}
+    try { gridRoot = grid.root; } catch { return null; }
     if (!gridRoot) return null;
 
     const gridRect = gridRoot.getBoundingClientRect();
@@ -761,7 +769,7 @@ M  END
         localX > gridRect.width || localY > gridRect.height) return null;
 
     let gridCell: DG.GridCell | null = null;
-    try {gridCell = grid.hitTest(localX, localY);} catch {return null;}
+    try { gridCell = grid.hitTest(localX, localY); } catch { return null; }
     if (!gridCell?.tableColumn || gridCell.tableRowIndex == null ||
         gridCell.tableRowIndex < 0) return null;
     if (gridCell.tableColumn.semType !== DG.SEMTYPE.MOLECULE) return null;
@@ -797,15 +805,16 @@ M  END
    * with Escape.
    */
   private _onDocumentMouseMove(e: MouseEvent): void {
-    // Only activate the picker when the current cell is a column
-    // explicitly linked to a molecule column via the picker tag.
+    // Only activate the picker when the current cell is a Molecule3D
+    // column (or explicitly linked via tag).
     const df = grok.shell.tv?.grid?.dataFrame;
     if (df) {
       const curCol = df.currentCol;
-      // Check if any molecule column is linked to the current column.
-      const hasLinked = curCol && df.columns.toList().some(
+      if (!curCol) return;
+      const hasTagLink = df.columns.toList().some(
         (c: DG.Column) => c.temp[CHEM_ATOM_PICKER_LINKED_COL] === curCol.name);
-      if (!hasLinked) return;
+      const is3D = curCol.semType === DG.SEMTYPE.MOLECULE3D;
+      if (!hasTagLink && !is3D) return;
     }
 
     const hit = this._hitTestAtom(e);
@@ -887,6 +896,7 @@ M  END
     this._lastHoveredAtom = null;
     this._previewAtomIdx = null;
     // Clear render cache so the 2D cell redraws without highlights.
+    this.rendersCache.onItemEvicted = null; // help GC
     this.rendersCache = new DG.LruCache<String, ImageData>();
     grid.invalidate();
 
@@ -895,11 +905,6 @@ M  END
     grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
       column: molCol, rowIdx: -1, atoms: [], persistent: true, clearAll: true,
     });
-  }
-
-  /** Mousedown: kept minimal — only clears stale overlays. */
-  private _onDocumentMouseDown(e: MouseEvent): void {
-    this._sweepOverlays();
   }
 
   /** Returns the index of the atom whose center is nearest to the click
@@ -978,6 +983,7 @@ M  END
     }
 
     // Clear render cache + invalidate (same pattern as Escape).
+    this.rendersCache.onItemEvicted = null; // help GC
     this.rendersCache = new DG.LruCache<String, ImageData>();
 
     // Fire persistent event so 3D cache + Molstar update.
