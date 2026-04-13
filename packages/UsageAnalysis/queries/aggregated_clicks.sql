@@ -10,7 +10,7 @@ SELECT
 FROM events e
 JOIN event_types et ON e.event_type_id = et.id
 WHERE et.source = 'usage'
-  AND et.friendly_name IN ('click', 'menu click', 'dialog show', 'dialog close', 'dialog ok', 'input', 'command', 'navigate')
+  AND et.friendly_name IN ('click', 'menu click', 'dialog show', 'dialog close', 'dialog ok', 'input', 'command', 'navigate', 'dragstart', 'drop', 'dock', 'undock')
   AND @date(e.event_time)
 GROUP BY et.friendly_name, e.description
 ORDER BY count DESC

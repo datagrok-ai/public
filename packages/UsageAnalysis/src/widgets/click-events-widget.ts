@@ -48,7 +48,7 @@ export class ClickEventsWidget extends DG.Widget {
     newUsersTagsInput.root.style.display = 'none';
     const newUsersOnlyInput = ui.input.bool('New users only', {value: false, tooltipText: 'Filter to users who joined in the last 4 days'});
     const eventTypeInput = ui.input.choice('Event type', {
-      items: ['Clicks', 'Menu clicks', 'Dialogs', 'Inputs', 'Commands', 'All'],
+      items: ['Clicks', 'Menu clicks', 'Dialogs', 'Inputs', 'Commands', 'Drag & drop', 'All'],
       value: 'Clicks',
       tooltipText: 'Type of platform interactions to analyze',
     });
@@ -66,7 +66,8 @@ export class ClickEventsWidget extends DG.Widget {
       'Dialogs': 'eventType.name in ("dialog show","dialog ok","dialog close")',
       'Inputs': 'eventType.name="input"',
       'Commands': 'eventType.name="command"',
-      'All': 'eventType.name in ("click","menu click","dialog show","dialog ok","dialog close","input","command","navigate")',
+      'Drag & drop': 'eventType.name in ("dragstart","drop","dock","undock")',
+      'All': 'eventType.name in ("click","menu click","dialog show","dialog ok","dialog close","input","command","navigate","dragstart","drop","dock","undock")',
     };
     const eventTypeAuditTypes: Record<string, string[]> = {
       'Clicks': ['click'],
@@ -74,7 +75,8 @@ export class ClickEventsWidget extends DG.Widget {
       'Dialogs': ['dialog show', 'dialog ok', 'dialog close'],
       'Inputs': ['input'],
       'Commands': ['command'],
-      'All': ['click', 'menu click', 'dialog show', 'dialog ok', 'dialog close', 'input', 'command', 'navigate'],
+      'Drag & drop': ['dragstart', 'drop', 'dock', 'undock'],
+      'All': ['click', 'menu click', 'dialog show', 'dialog ok', 'dialog close', 'input', 'command', 'navigate', 'dragstart', 'drop', 'dock', 'undock'],
     };
 
     const grid = DG.Viewer.grid(table);
