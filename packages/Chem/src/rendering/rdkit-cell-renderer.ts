@@ -746,7 +746,11 @@ M  END
     const grid = grok.shell.tv?.grid;
     if (!grid) return null;
     let gridRoot: HTMLElement | null = null;
-    try {gridRoot = grid.root;} catch {return null;}
+    try {
+      gridRoot = grid.root;
+    } catch {
+      return null;
+    }
     if (!gridRoot) return null;
 
     const gridRect = gridRoot.getBoundingClientRect();
@@ -756,7 +760,11 @@ M  END
         localX > gridRect.width || localY > gridRect.height) return null;
 
     let gridCell: DG.GridCell | null = null;
-    try {gridCell = grid.hitTest(localX, localY);} catch {return null;}
+    try {
+      gridCell = grid.hitTest(localX, localY);
+    } catch {
+      return null;
+    }
     if (!gridCell?.tableColumn || gridCell.tableRowIndex == null ||
         gridCell.tableRowIndex < 0) return null;
     if (gridCell.tableColumn.semType !== DG.SEMTYPE.MOLECULE) return null;
@@ -792,25 +800,16 @@ M  END
    * with Escape.
    */
   private _onDocumentMouseMove(e: MouseEvent): void {
-    // Only activate the picker when the current cell is a Molecule3D
-    // column linked to a molecule column. Checks explicit tag first;
-    // falls back to semType for context-panel viewers that may not
-    // set the tag via onTableAttached.
+    // Only activate the picker when the current cell's column is
+    // linked to a molecule column via the explicit picker tag
+    // (set by BiostructureViewer's Molecule3D cell renderer on first render).
     const df = grok.shell.tv?.grid?.dataFrame;
     if (df) {
       const curCol = df.currentCol;
       if (!curCol) return;
       const hasTagLink = df.columns.toList().some(
         (c: DG.Column) => c.temp[CHEM_ATOM_PICKER_LINKED_COL] === curCol.name);
-      if (!hasTagLink) {
-        // Fallback: current column is Molecule3D — set the tag now
-        // so subsequent checks are tag-based.
-        if (curCol.semType !== DG.SEMTYPE.MOLECULE3D) return;
-        const smilesCol = df.columns.toList().find(
-          (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && c.name !== curCol.name);
-        if (smilesCol)
-          smilesCol.temp[CHEM_ATOM_PICKER_LINKED_COL] = curCol.name;
-      }
+      if (!hasTagLink) return;
     }
 
     const hit = this._hitTestAtom(e);
