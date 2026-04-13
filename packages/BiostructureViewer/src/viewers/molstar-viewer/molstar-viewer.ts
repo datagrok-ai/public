@@ -57,17 +57,39 @@ import {
   setStructureOverpaint, clearStructureOverpaint,
 } from 'molstar/lib/mol-plugin-state/helpers/structure-overpaint';
 
+/** Atom-index mapping produced by Chem's mapAtomIndices2Dto3D.
+ *  Mirrors the AtomIndexMapping interface from atom-index-mapper.ts
+ *  (defined here to avoid a cross-package import). */
+interface AtomMapping3D {
+  mapping: number[];
+  method: string;
+  mappedCount: number;
+  pdbSerials?: number[];
+}
+
+/** Shape of the cross-package `chem-interactive-selection-changed` event. */
+interface ChemSelectionEventArgs {
+  column?: unknown;
+  rowIdx: number;
+  atoms: number[];
+  mapping3D?: AtomMapping3D | null;
+  persistent?: boolean;
+  clearAll?: boolean;
+  mol3DColumnName?: string;
+}
+
 /**
  * Per-row cache of atom selection events. Keyed by rowIdx so that
  * highlights for different rows (current + hovered ligands) coexist.
  * Registered at module load so events are captured even before any
  * Molstar viewer is opened.
  */
-const _globalSelectionCache = new Map<number, { atoms: number[], mapping3D?: any }>();
+const _globalSelectionCache = new Map<number, { atoms: number[], mapping3D?: AtomMapping3D | null }>();
 
 // Register at module load — no lazy guard needed.
 grok.events.onCustomEvent('chem-interactive-selection-changed')
-  .subscribe((args: any) => {
+  .subscribe((_args: unknown) => {
+    const args = _args as ChemSelectionEventArgs;
     const rowIdx = args?.rowIdx ?? -1;
     const atoms = args?.atoms ?? [];
     const isPersistent = args?.persistent !== false; // default true for backward compat
@@ -81,11 +103,10 @@ grok.events.onCustomEvent('chem-interactive-selection-changed')
       if (args?.clearAll) {
         // Escape key: clear ALL cached rows.
         _globalSelectionCache.clear();
-      } else if (atoms.length > 0) {
+      } else if (atoms.length > 0)
         _globalSelectionCache.set(rowIdx, {atoms, mapping3D: args?.mapping3D ?? null});
-      } else {
+      else
         _globalSelectionCache.delete(rowIdx);
-      }
     }
   });
 
@@ -888,7 +909,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       // and the 3D Structure Molstar panel. The module-level listener
       // (registered at module load) handles caching for replay.
       this.viewSubs.push(grok.events.onCustomEvent(
-        'chem-interactive-selection-changed').subscribe((args: any) => {
+        'chem-interactive-selection-changed').subscribe((_args: unknown) => {
+        const args = _args as ChemSelectionEventArgs;
         try {
           if (args?.atoms?.length >= 0) {
             // eslint-disable-next-line no-console
@@ -1402,7 +1424,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
    *  directly from the SMILES column's providers (source of truth),
    *  falling back to the event cache. */
   public async highlightAllLigandAtoms(
-    liveEvent?: { rowIdx: number, atoms: number[], mapping3D: any } | null,
+    liveEvent?: { rowIdx: number, atoms: number[], mapping3D: AtomMapping3D | null } | null,
   ): Promise<void> {
     const plugin = this.viewer?.plugin;
     if (!plugin) return;
@@ -1453,7 +1475,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     for (const ligand of loadedLigands) {
       let atoms: number[] = [];
-      let mapping3D: any = null;
+      let mapping3D: AtomMapping3D | null = null;
 
       if (liveEvent && liveEvent.rowIdx === ligand.rowIdx && liveEvent.atoms.length > 0) {
         atoms = liveEvent.atoms;
@@ -1463,7 +1485,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         const cached = _globalSelectionCache.get(ligand.rowIdx);
         if (cached && cached.atoms.length > 0) {
           atoms = cached.atoms;
-          mapping3D = cached.mapping3D;
+          mapping3D = cached.mapping3D ?? null;
         }
       }
       if (atoms.length === 0) {
@@ -1548,11 +1570,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
    *  heavy-atom mapping strategy. Used by highlightAllLigandAtoms. */
   private _computeSerials(
     atomIndices: number[],
-    mapping3D?: { mapping: number[], method: string, pdbSerials?: number[] } | null,
+    mapping3D?: AtomMapping3D | null,
     structure?: Structure,
   ): number[] {
     if (mapping3D?.mapping) {
-      const pdbSerials = (mapping3D as any).pdbSerials as number[] | undefined;
+      const pdbSerials = mapping3D.pdbSerials;
       const serials = atomIndices
         .map((i) => mapping3D.mapping[i])
         .filter((idx) => idx >= 0)
@@ -1604,7 +1626,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
    */
   public async highlightLigandAtoms(
     atomIndices: number[],
-    mapping3D?: { mapping: number[], method: string } | null,
+    mapping3D?: AtomMapping3D | null,
     precomputedSerials?: boolean,
   ): Promise<void> {
     const plugin = this.viewer?.plugin;
