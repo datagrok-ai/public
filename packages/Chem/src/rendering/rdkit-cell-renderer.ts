@@ -85,36 +85,6 @@ export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string
         mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
       }
     }
-    // Forward per-atom/per-bond labels and annotation notes from a temp
-    // substructure into the main one so providers can layer annotations
-    // (e.g. pKa values, R-group labels, contribution scores) on top of the
-    // existing highlight pipeline.
-    //
-    // Cast through `any` because the `atomLabels` / `atomNotes` /
-    // `bondNotes` fields were added to `ISubstruct` in this branch's
-    // chem-meta change but the published `@datagrok-libraries/chem-meta`
-    // package on npm is still the older 1.x without them. CI fetches the
-    // npm version, so the type check fails on a fresh `npm install`.
-    // Casts erase the type check; runtime is unaffected because the
-    // properties are optional and the runtime JS doesn't care about
-    // TypeScript types. Once chem-meta is republished with the new
-    // fields, these casts can be removed.
-    if (tempSubstr) {
-      const t = tempSubstr as any;
-      const m = mainSubstr as any;
-      if (t.atomLabels) {
-        m.atomLabels ??= {};
-        Object.assign(m.atomLabels, t.atomLabels);
-      }
-      if (t.atomNotes) {
-        m.atomNotes ??= {};
-        Object.assign(m.atomNotes, t.atomNotes);
-      }
-      if (t.bondNotes) {
-        m.bondNotes ??= {};
-        Object.assign(m.bondNotes, t.bondNotes);
-      }
-    }
   }
 }
 
