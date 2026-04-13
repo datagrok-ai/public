@@ -15,8 +15,8 @@ export namespace scripts {
   /**
   Converts molecules to HELM notation based on monomer library
   */
-  export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryJSON: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryJSON });
+  export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryFile: DG.FileInfo ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryFile });
   }
 
   /**

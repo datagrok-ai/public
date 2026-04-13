@@ -810,7 +810,8 @@ export class PackageFunctions {
     // collect current monomer library
     const monomerLib = _package.monomerLib;
     const libJSON = JSON.stringify(monomerLib.toJSON());
-    await api.scripts.molToHelmConverterPy(table, molecules, libJSON);
+    const fileInfo = DG.FileInfo.fromString('monomerLib.json', libJSON);
+    await api.scripts.molToHelmConverterPy(table, molecules, fileInfo);
 
     // semtype is not automatically set, so we set it manually
     const newCol = table.columns.toList().find((c) => c.name.toLowerCase().includes('regenerated sequence') && c.semType !== DG.SEMTYPE.MACROMOLECULE);
