@@ -1,8 +1,6 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ALIGN_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG,
-  SCAFFOLD_COL,
+import {ALIGN_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SCAFFOLD_COL,
   SCAFFOLD_COL_SYNC, HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC, REGENERATE_COORDS,
   REGENERATE_COORDS_SYNC, getSyncTag, setSyncTag} from '../constants';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
@@ -81,13 +79,6 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     {value: col.tags[DG.TAGS.CELL_RENDERER] == DG.SEMTYPE.MOLECULE,
       onValueChanged: (value) => col.tags[DG.TAGS.CELL_RENDERER] = value ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING});
 
-  // In-grid atom picker — drag / Alt+drag / Alt+click on molecule cells to
-  // highlight parts of the structure. DISABLED by default on every
-  // molecule column; checking writes `chem-atom-picker = 'true'` which
-  // the cell renderer checks at mousedown to enable picker handling AND
-  // which the ISubstructProvider checks at render time to show the picks.
-  // Unchecking writes 'false' (or any other value); only the explicit
-  // string 'true' enables the picker.
   const rdKitInputs = ui.form([
     showStructures,
     scaffoldColumnChoice,
