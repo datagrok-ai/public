@@ -6,7 +6,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 
 import {_package} from './package';
 import {getMyModelFiles, getRecentModelsTable, getEquationsFromFile} from './utils';
-import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES} from './ui-constants';
+import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON} from './ui-constants';
 import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE} from './app';
 
 import '../css/app-styles.css';
@@ -32,10 +32,10 @@ export class DiffStudioHub {
         this.buildButtons(),
       );
 
-      await this.buildMyModels();
-      await this.buildRecent();
       this.buildTemplates();
       this.buildLibrary();
+      await this.buildRecent();
+      await this.buildMyModels();
     } finally {
       ui.setUpdateIndicator(this.root, false);
     }
@@ -51,15 +51,17 @@ export class DiffStudioHub {
         '- Run computations and explore your model interactively\n' +
         '- Use sensitivity analysis and parameter fitting\n',
     });
-    header.style.marginBottom = '20px';
+    header.classList.add('diff-studio-hub-header');
     return header;
   }
 
   private buildButtons(): HTMLElement {
     const refreshBtn = ui.iconFA('sync', () => this.render(), 'Refresh view');
-    const createBtn = ui.button('Create model', () => {}, 'Create new model');
+    const createBtn = ui.button('Create', () => {}, 'Create new model');
     const uploadBtn = ui.button('Upload', () => {}, 'Upload model from local files');
-    return ui.divH([refreshBtn, createBtn, uploadBtn], {style: {alignItems: 'center', gap: '8px'}});
+    const buttons = ui.divH([refreshBtn, createBtn, uploadBtn]);
+    buttons.classList.add('diff-studio-hub-buttons');
+    return buttons;
   }
 
   private async buildMyModels(): Promise<void> {
@@ -115,10 +117,11 @@ export class DiffStudioHub {
         } else {
           const title = info as TITLE;
           const description = MODEL_HINT.get(title) ?? '';
+          const iconPath = this.getIconUrl(title);
           cards.push(this.buildModelCard(info, description, async () => {
             const solver = new DiffStudio();
             await solver.runSolverApp(undefined, STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE);
-          }));
+          }, iconPath));
         }
       }
 
@@ -131,10 +134,11 @@ export class DiffStudioHub {
   private buildTemplates(): void {
     const cards = TEMPLATE_TITLES.map((title) => {
       const description = MODEL_HINT.get(title) ?? '';
+      const iconPath = this.getIconUrl(title);
       return this.buildModelCard(title, description, async () => {
         const solver = new DiffStudio();
         await solver.runSolverApp(undefined, STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE);
-      });
+      }, iconPath);
     });
 
     this.root.append(ui.h1('Templates'), this.buildCardsContainer(cards));
@@ -143,25 +147,43 @@ export class DiffStudioHub {
   private buildLibrary(): void {
     const cards = EXAMPLE_TITLES.map((title) => {
       const description = MODEL_HINT.get(title) ?? '';
+      const iconPath = this.getIconUrl(title);
       return this.buildModelCard(title, description, async () => {
         const solver = new DiffStudio();
         await solver.runSolverApp(undefined, STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE);
-      });
+      }, iconPath);
     });
 
     this.root.append(ui.h1('Library'), this.buildCardsContainer(cards));
   }
 
-  private buildModelCard(name: string, description: string, onClick: () => void): HTMLElement {
-    const icon = ui.iconImage('diff-studio', `${_package.webRoot}/package.png`);
-    icon.style.width = '32px';
-    icon.style.height = '32px';
+  private getIconUrl(title: TITLE): string {
+    const iconFile = MODEL_ICON.get(title);
+    return iconFile ? `${_package.webRoot}files/${iconFile}` : `${_package.webRoot}/package.png`;
+  }
+
+  private buildModelCard(name: string, description: string, onClick: () => void, iconUrl?: string): HTMLElement {
+    const imgUrl = iconUrl ?? `${_package.webRoot}/files/icons/default.png`;
+    const icon = ui.iconImage('diff-studio', imgUrl);
+    icon.classList.add('diff-studio-hub-card-icon');
     const label = ui.label(name);
-    label.classList.add('d4-link-label');
-    const desc = ui.divText(description, 'diff-studio-hub-card-description');
-    const card = ui.divV([ui.divH([icon, label], {style: {alignItems: 'center', gap: '6px'}}), desc]);
+    const header = ui.divH([icon, label]);
+    header.classList.add('diff-studio-hub-card-header');
+    const card = ui.divV([header]);
     card.classList.add('diff-studio-hub-card');
     card.addEventListener('dblclick', onClick);
+
+    ui.tooltip.bind(card, () => {
+      const tooltipIcon = ui.iconImage('diff-studio', imgUrl);
+      tooltipIcon.classList.add('diff-studio-hub-tooltip-icon');
+      const tooltipName = ui.label(name);
+      tooltipName.classList.add('diff-studio-hub-tooltip-name');
+      const tooltipHeader = ui.divH([tooltipIcon, tooltipName]);
+      tooltipHeader.classList.add('diff-studio-hub-tooltip-header');
+      const tooltipDesc = ui.divText(description);
+      return ui.divV([tooltipHeader, tooltipDesc]);
+    });
+
     return card;
   }
 

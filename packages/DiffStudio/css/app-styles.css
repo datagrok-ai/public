@@ -128,3 +128,38 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
+
+.diff-studio-hub-card-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.diff-studio-hub-card-header {
+    align-items: center;
+    gap: 8px;
+}
+
+.diff-studio-hub-header {
+    margin-bottom: 24px;
+}
+
+.diff-studio-hub-buttons {
+    align-items: center;
+    gap: 12px;
+}
+
+.diff-studio-hub-tooltip-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.diff-studio-hub-tooltip-name {
+    color: var(--blue-1);
+    font-weight: bold;
+}
+
+.diff-studio-hub-tooltip-header {
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}

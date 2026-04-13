@@ -345,6 +345,22 @@ export const modelImageLink = new Map([
   [TITLE.POLL, 'images/pollution.png'],
 ]);
 
+/** Model icon path (files/icons/) */
+export const MODEL_ICON = new Map([
+  [TITLE.BASIC, 'icons/template.png'],
+  [TITLE.ADV, 'icons/advanced.png'],
+  [TITLE.EXT, 'icons/extended.png'],
+  [TITLE.CHEM, 'icons/chem-react.png'],
+  [TITLE.ROB, 'icons/robertson.png'],
+  [TITLE.FERM, 'icons/fermentation.png'],
+  [TITLE.PK, 'icons/pk.png'],
+  [TITLE.PKPD, 'icons/pkpd.png'],
+  [TITLE.ACID, 'icons/ga-production.png'],
+  [TITLE.NIM, 'icons/nimotuzumab.png'],
+  [TITLE.BIO, 'icons/_bioreactor.png'],
+  [TITLE.POLL, 'icons/pollution.png'],
+]);
+
 /** Inputs table constants */
 export enum INPUTS_DF {
   MIN_ROWS_COUNT = 1,
