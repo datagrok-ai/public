@@ -17,7 +17,7 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {
   ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG,
   ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG,
-  CHEM_INTERACTIVE_SELECTION_EVENT,
+  CHEM_INTERACTIVE_SELECTION_EVENT, CHEM_ATOM_PICKER_LINKED_COL,
   FIXED_SCALE_TAG,
   HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC,
   HIGHLIGHT_BY_SCAFFOLD_TAG, MIN_MOL_IMAGE_SIZE, PARENT_MOL_COL,
@@ -180,23 +180,18 @@ M  END
 
   // -- Interactive atom picker auto-detection --------------------------------
 
-  /** Cache for _isPickerActive to avoid scanning columns on every event. */
-  private _pickerActiveCache: {dfId: string, active: boolean} | null = null;
-
-  /** Returns true when the interactive atom picker should be active.
-   *  Auto-detects based on whether the DataFrame has associated
-   *  Molecule3D (docking poses) or HELM columns — no manual toggle needed. */
+  /** Returns true when the interactive atom picker should be active
+   *  for the given molecule column. Checks for an explicit tag
+   *  (CHEM_ATOM_PICKER_LINKED_COL) that links this column to a
+   *  Molecule3D column — set by BiostructureViewer when a Molstar
+   *  viewer binds to the dataframe. */
   private _isPickerActive(col: DG.Column): boolean {
-    const df = col.dataFrame;
-    if (!df) return false;
-    if (this._pickerActiveCache?.dfId === df.id)
-      return this._pickerActiveCache.active;
-    const cols = df.columns.toList();
-    const active =
-      cols.some((c) => c.semType === DG.SEMTYPE.MOLECULE3D) ||
-      cols.some((c) => c.semType === (DG.SEMTYPE as any).MACROMOLECULE && (c.meta as any)?.units === 'helm');
-    this._pickerActiveCache = {dfId: df.id, active};
-    return active;
+    return !!col.temp[CHEM_ATOM_PICKER_LINKED_COL];
+  }
+
+  /** Returns the name of the linked Molecule3D column, or null. */
+  private _getLinkedMol3DColName(col: DG.Column): string | null {
+    return (col.temp[CHEM_ATOM_PICKER_LINKED_COL] as string) ?? null;
   }
 
   ensureCanvasSize(w: number, h: number): OffscreenCanvas {
@@ -802,16 +797,15 @@ M  END
    * with Escape.
    */
   private _onDocumentMouseMove(e: MouseEvent): void {
-    // Only activate the picker when the current cell is a Molecule3D
-    // (docking pose) or HELM column. If the user clicked on SMILES,
-    // binding energy, or any other column, hovering does nothing.
+    // Only activate the picker when the current cell is a column
+    // explicitly linked to a molecule column via the picker tag.
     const df = grok.shell.tv?.grid?.dataFrame;
     if (df) {
       const curCol = df.currentCol;
-      const is3D = curCol?.semType === DG.SEMTYPE.MOLECULE3D;
-      const isHelm = curCol?.semType === (DG.SEMTYPE as any).MACROMOLECULE &&
-        (curCol?.meta as any)?.units === 'helm';
-      if (!is3D && !isHelm) return;
+      // Check if any molecule column is linked to the current column.
+      const hasLinked = curCol && df.columns.toList().some(
+        (c: DG.Column) => c.temp[CHEM_ATOM_PICKER_LINKED_COL] === curCol.name);
+      if (!hasLinked) return;
     }
 
     const hit = this._hitTestAtom(e);
@@ -844,6 +838,7 @@ M  END
         this._addAtomToRow(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
       }
       // Clear render cache so the 2D cell fully redraws.
+      this.rendersCache.onItemEvicted = null; // help GC
       this.rendersCache = new DG.LruCache<String, ImageData>();
       hit.grid.invalidate();
     } else {
@@ -991,8 +986,8 @@ M  END
     try {
       const df = col.dataFrame;
       if (df) {
-        const mol3DCol = df.columns.toList().find(
-          (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
+        const linkedColName = this._getLinkedMol3DColName(col);
+        const mol3DCol = linkedColName ? df.col(linkedColName) : null;
         if (mol3DCol && rowIdx >= 0) {
           const smiles2D = col.get(rowIdx);
           const pose3D = mol3DCol.get(rowIdx);
@@ -1116,8 +1111,8 @@ M  END
     try {
       const df = col.dataFrame;
       if (df) {
-        const mol3DCol = df.columns.toList().find(
-          (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
+        const linkedColName = this._getLinkedMol3DColName(col);
+        const mol3DCol = linkedColName ? df.col(linkedColName) : null;
         if (mol3DCol && rowIdx >= 0) {
           const smiles2D = col.get(rowIdx);
           const pose3D = mol3DCol.get(rowIdx);

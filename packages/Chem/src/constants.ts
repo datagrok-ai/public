@@ -51,6 +51,11 @@ export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
  *
  *  Event args: `{column: DG.Column, rowIdx: number, atoms: number[]}` */
 export const CHEM_INTERACTIVE_SELECTION_EVENT = 'chem-interactive-selection-changed';
+
+/** Tag set on a Molecule column to link it to a specific Molecule3D column
+ *  for interactive atom picking. Value = the Molecule3D column name.
+ *  Set by BiostructureViewer when a Molstar viewer binds to a dataframe. */
+export const CHEM_ATOM_PICKER_LINKED_COL = '.chem-atom-picker-linked-col';
 export const SCAFFOLD_COL = 'scaffold-col';
 export const SCAFFOLD_COL_SYNC = '%scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';
