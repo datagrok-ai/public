@@ -78,13 +78,32 @@ interface ChemSelectionEventArgs {
   mol3DColumnName?: string;
 }
 
+/** Cached entry for atom selection events. */
+interface SelectionCacheEntry {
+  atoms: number[];
+  mapping3D: AtomMapping3D | null;
+}
+
+/** Builds a composite cache key: dfId-dfName-columnName-rowIdx. */
+function selectionCacheKey(
+  dfId: string, dfName: string, colName: string, rowIdx: number,
+): string {
+  return `${dfId}-${dfName}-${colName}-${rowIdx}`;
+}
+
 /**
- * Per-row cache of atom selection events. Keyed by rowIdx so that
- * highlights for different rows (current + hovered ligands) coexist.
- * Registered at module load so events are captured even before any
- * Molstar viewer is opened.
+ * Per-row cache of atom selection events. Uses composite keys
+ * (dfId-dfName-colName-rowIdx) to avoid collisions across different
+ * dataframes, columns, or tabs. Stored as a static LruCache on the
+ * MolstarViewer class (initialized lazily at first event).
  */
-const _globalSelectionCache = new Map<number, { atoms: number[], mapping3D?: AtomMapping3D | null }>();
+let _selectionCache: DG.LruCache<string, SelectionCacheEntry> | null = null;
+
+function getSelectionCache(): DG.LruCache<string, SelectionCacheEntry> {
+  if (!_selectionCache)
+    _selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
+  return _selectionCache;
+}
 
 // Register at module load — no lazy guard needed.
 grok.events.onCustomEvent('chem-interactive-selection-changed')
@@ -92,19 +111,26 @@ grok.events.onCustomEvent('chem-interactive-selection-changed')
     const args = _args as ChemSelectionEventArgs;
     const rowIdx = args?.rowIdx ?? -1;
     const atoms = args?.atoms ?? [];
-    const isPersistent = args?.persistent !== false; // default true for backward compat
+    const isPersistent = args?.persistent !== false;
+    const col = args?.column as DG.Column | undefined;
+    const dfId = col?.dataFrame?.id ?? '';
+    const dfName = col?.dataFrame?.name ?? '';
+    const colName = col?.name ?? '';
+
     _package.logger.debug(`[molstar-picker-global] caching selection event atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${isPersistent}`);
-    // Only update the cache for persistent (Alt+hover) events.
-    // Preview (normal hover) events are processed live but don't
-    // overwrite the cache — so replays always use the stable Alt set.
+
     if (isPersistent) {
+      const cache = getSelectionCache();
       if (args?.clearAll) {
-        // Escape key: clear ALL cached rows.
-        _globalSelectionCache.clear();
-      } else if (atoms.length > 0)
-        _globalSelectionCache.set(rowIdx, {atoms, mapping3D: args?.mapping3D ?? null});
-      else
-        _globalSelectionCache.delete(rowIdx);
+        // Escape key: clear ALL cached entries.
+        _selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
+      } else {
+        const key = selectionCacheKey(dfId, dfName, colName, rowIdx);
+        if (atoms.length > 0)
+          cache.set(key, {atoms, mapping3D: args?.mapping3D ?? null});
+        else
+          cache.set(key, {atoms: [], mapping3D: null});
+      }
     }
   });
 
@@ -938,7 +964,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           if (this._stateChangeTimer) clearTimeout(this._stateChangeTimer);
           this._stateChangeTimer = setTimeout(() => {
             this._stateChangeTimer = null;
-            if (_globalSelectionCache.size > 0)
+            if (_selectionCache)
               this._replayHighlightIfCached();
           }, 500) as any;
         };
@@ -1464,6 +1490,15 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     };
     const highlights: LigandHighlight[] = [];
 
+    // Build cache key prefix from the current dataframe + molecule column.
+    const df = this.dataFrame;
+    const molCol = df?.columns.toList().find(
+      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE);
+    const dfId = df?.id ?? '';
+    const dfName = df?.name ?? '';
+    const colName = molCol?.name ?? '';
+    const cache = getSelectionCache();
+
     for (const ligand of loadedLigands) {
       let atoms: number[] = [];
       let mapping3D: AtomMapping3D | null = null;
@@ -1473,7 +1508,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         mapping3D = liveEvent.mapping3D;
       }
       if (atoms.length === 0) {
-        const cached = _globalSelectionCache.get(ligand.rowIdx);
+        const key = selectionCacheKey(dfId, dfName, colName, ligand.rowIdx);
+        const cached = cache.get(key);
         if (cached && cached.atoms.length > 0) {
           atoms = cached.atoms;
           mapping3D = cached.mapping3D ?? null;
@@ -1481,7 +1517,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       }
       if (atoms.length === 0) {
         atoms = this._getHighlightedAtomsFromColumn(ligand.rowIdx);
-        const cached = _globalSelectionCache.get(ligand.rowIdx);
+        const key = selectionCacheKey(dfId, dfName, colName, ligand.rowIdx);
+        const cached = cache.get(key);
         mapping3D = cached?.mapping3D ?? null;
       }
       if (atoms.length === 0) continue;
