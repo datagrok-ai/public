@@ -1385,13 +1385,15 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const seenRows = new Set<number>();
     const lig = this.ligands;
     if (lig) {
-      if (lig.current?.rowIdx != null && lig.current.rowIdx >= 0 && !seenRows.has(lig.current.rowIdx)) {
-        loadedLigands.push(lig.current);
-        seenRows.add(lig.current.rowIdx);
+      const currentRow = lig.current?.rowIdx;
+      if (currentRow != null && currentRow >= 0 && !seenRows.has(currentRow)) {
+        loadedLigands.push(lig.current!);
+        seenRows.add(currentRow);
       }
-      if (lig.hovered?.rowIdx != null && lig.hovered.rowIdx >= 0 && !seenRows.has(lig.hovered.rowIdx)) {
-        loadedLigands.push(lig.hovered);
-        seenRows.add(lig.hovered.rowIdx);
+      const hoveredRow = lig.hovered?.rowIdx;
+      if (hoveredRow != null && hoveredRow >= 0 && !seenRows.has(hoveredRow)) {
+        loadedLigands.push(lig.hovered!);
+        seenRows.add(hoveredRow);
       }
       if (lig.selected) {
         for (const sel of lig.selected) {
