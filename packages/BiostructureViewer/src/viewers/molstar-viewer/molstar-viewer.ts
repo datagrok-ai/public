@@ -404,6 +404,18 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       if (molCol)
         this.ligandColumnName = molCol.name;
     }
+
+    // Set the two-way link tag on the SMILES column so the Chem cell
+    // renderer knows which Molecule3D column activates the atom picker.
+    if (this.ligandColumnName) {
+      const ligandCol = this.dataFrame.col(this.ligandColumnName);
+      if (ligandCol) {
+        const smilesCol = this.dataFrame.columns.toList().find(
+          (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && c.name !== this.ligandColumnName);
+        if (smilesCol)
+          smilesCol.temp['.chem-atom-picker-linked-col'] = this.ligandColumnName;
+      }
+    }
   }
 
   private viewerToLog(): string { return `MolstarViewer<${this.viewerId}>`; }
