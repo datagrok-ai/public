@@ -180,31 +180,18 @@ M  END
   // -- Interactive atom picker auto-detection --------------------------------
 
   /** Returns true when the interactive atom picker should be active
-   *  for the given molecule column. Checks for an explicit tag
-   *  (CHEM_ATOM_PICKER_LINKED_COL) first; falls back to scanning
-   *  for a Molecule3D column in the same DataFrame (for cases where
-   *  BiostructureViewer hasn't attached yet). */
+   *  for the given molecule column. Checks for the explicit tag
+   *  (CHEM_ATOM_PICKER_LINKED_COL) set by BiostructureViewer when
+   *  a Molstar viewer binds to the dataframe. The tag is guaranteed
+   *  to exist by the time the user clicks on a Molecule3D cell
+   *  (which is required to activate the picker). */
   private _isPickerActive(col: DG.Column): boolean {
-    // Explicit tag (set by BiostructureViewer).
-    if (col.temp[CHEM_ATOM_PICKER_LINKED_COL]) return true;
-    // Fallback: check if the DataFrame has a Molecule3D column.
-    const df = col.dataFrame;
-    if (!df) return false;
-    return df.columns.toList().some(
-      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
+    return !!col.temp[CHEM_ATOM_PICKER_LINKED_COL];
   }
 
   /** Returns the name of the linked Molecule3D column, or null. */
   private _getLinkedMol3DColName(col: DG.Column): string | null {
-    // Explicit tag first.
-    const tagged = col.temp[CHEM_ATOM_PICKER_LINKED_COL] as string;
-    if (tagged) return tagged;
-    // Fallback: find first Molecule3D column.
-    const df = col.dataFrame;
-    if (!df) return null;
-    const mol3D = df.columns.toList().find(
-      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
-    return mol3D?.name ?? null;
+    return (col.temp[CHEM_ATOM_PICKER_LINKED_COL] as string) ?? null;
   }
 
   ensureCanvasSize(w: number, h: number): OffscreenCanvas {
@@ -759,7 +746,7 @@ M  END
     const grid = grok.shell.tv?.grid;
     if (!grid) return null;
     let gridRoot: HTMLElement | null = null;
-    try { gridRoot = grid.root; } catch { return null; }
+    try {gridRoot = grid.root;} catch {return null;}
     if (!gridRoot) return null;
 
     const gridRect = gridRoot.getBoundingClientRect();
@@ -769,7 +756,7 @@ M  END
         localX > gridRect.width || localY > gridRect.height) return null;
 
     let gridCell: DG.GridCell | null = null;
-    try { gridCell = grid.hitTest(localX, localY); } catch { return null; }
+    try {gridCell = grid.hitTest(localX, localY);} catch {return null;}
     if (!gridCell?.tableColumn || gridCell.tableRowIndex == null ||
         gridCell.tableRowIndex < 0) return null;
     if (gridCell.tableColumn.semType !== DG.SEMTYPE.MOLECULE) return null;
@@ -806,15 +793,24 @@ M  END
    */
   private _onDocumentMouseMove(e: MouseEvent): void {
     // Only activate the picker when the current cell is a Molecule3D
-    // column (or explicitly linked via tag).
+    // column linked to a molecule column. Checks explicit tag first;
+    // falls back to semType for context-panel viewers that may not
+    // set the tag via onTableAttached.
     const df = grok.shell.tv?.grid?.dataFrame;
     if (df) {
       const curCol = df.currentCol;
       if (!curCol) return;
       const hasTagLink = df.columns.toList().some(
         (c: DG.Column) => c.temp[CHEM_ATOM_PICKER_LINKED_COL] === curCol.name);
-      const is3D = curCol.semType === DG.SEMTYPE.MOLECULE3D;
-      if (!hasTagLink && !is3D) return;
+      if (!hasTagLink) {
+        // Fallback: current column is Molecule3D — set the tag now
+        // so subsequent checks are tag-based.
+        if (curCol.semType !== DG.SEMTYPE.MOLECULE3D) return;
+        const smilesCol = df.columns.toList().find(
+          (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && c.name !== curCol.name);
+        if (smilesCol)
+          smilesCol.temp[CHEM_ATOM_PICKER_LINKED_COL] = curCol.name;
+      }
     }
 
     const hit = this._hitTestAtom(e);
