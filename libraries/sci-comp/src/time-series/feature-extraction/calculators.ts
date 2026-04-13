@@ -144,6 +144,7 @@ export function pass2(
   valueCounts.set(first, 1);
   if (first > mean) curAbove = 1;
   if (first < mean) curBelow = 1;
+  let prevPositive = first > mValue;
 
   for (let i = 1; i < n; i++) {
     const v = data[i];
@@ -153,7 +154,9 @@ export function pass2(
     sumAbsDiff += Math.abs(d);
     sumSqDiff += d * d;
 
-    if ((prev - mValue) * (v - mValue) < 0) crossingCount++;
+    const curPositive = v > mValue;
+    if (curPositive !== prevPositive) crossingCount++;
+    prevPositive = curPositive;
 
     valueCounts.set(v, (valueCounts.get(v) ?? 0) + 1);
 

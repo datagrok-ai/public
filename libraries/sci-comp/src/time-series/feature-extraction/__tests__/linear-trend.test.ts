@@ -8,8 +8,8 @@ describe('linearTrend', () => {
     expect(r.intercept).toBeCloseTo(0.0, 10);
     expect(r.rvalue).toBeCloseTo(1.0, 10);
     expect(r.stderr).toBeCloseTo(0, 10);
-    // Perfect fit: pvalue should be 1.0 (stderr=0 branch)
-    expect(r.pvalue).toBe(1.0);
+    // Perfect fit: slope is significant, pvalue should be 0 (stderr=0 with non-zero slope)
+    expect(r.pvalue).toBe(0.0);
   });
 
   it('constant', () => {
@@ -36,7 +36,8 @@ describe('linearTrend', () => {
     expect(r.intercept).toBeCloseTo(1.0, 10);
     expect(r.rvalue).toBeCloseTo(1.0, 10);
     expect(r.stderr).toBe(0);
-    expect(r.pvalue).toBe(1.0);
+    // Perfect fit with non-zero slope: pvalue should be 0
+    expect(r.pvalue).toBe(0.0);
   });
 
   it('n=3 — first non-trivial pvalue', () => {

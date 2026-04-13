@@ -138,8 +138,8 @@ function computeSampleFeatures(
   values.push(p1.variance > 1 ? 1.0 : 0.0);
   values.push(p1.firstMinIdx / n);
   values.push(p1.firstMaxIdx / n);
-  values.push(p1.lastMinIdx / n);
-  values.push(p1.lastMaxIdx / n);
+  values.push((p1.lastMinIdx + 1) / n);
+  values.push((p1.lastMaxIdx + 1) / n);
   values.push(p1.maxCount >= 2 ? 1.0 : 0.0);
   values.push(p1.minCount >= 2 ? 1.0 : 0.0);
 

@@ -58,11 +58,11 @@ describe('pass2', () => {
     expect(p.sumAbsDiff).toBe(18);
   });
 
-  it('ramp — unique values, no crossings of 0', () => {
+  it('ramp — unique values, one crossing of 0', () => {
     const p = pass2(rampData, 10, 4.5, 0);
     expect(p.uniqueCount).toBe(10);
     expect(p.hasDuplicate).toBe(false);
-    expect(p.crossingCount).toBe(0);
+    expect(p.crossingCount).toBe(1);
     expect(p.longestStrikeAbove).toBe(5);
     expect(p.longestStrikeBelow).toBe(5);
   });

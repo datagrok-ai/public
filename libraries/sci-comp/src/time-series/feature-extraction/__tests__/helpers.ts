@@ -19,7 +19,7 @@ export const constantExpected: Record<string, number> = {
   'standard_deviation': 0, 'variance': 0,
   'variance_larger_than_standard_deviation': 0,
   'first_location_of_minimum': 0, 'first_location_of_maximum': 0,
-  'last_location_of_minimum': 0.9, 'last_location_of_maximum': 0.9,
+  'last_location_of_minimum': 1.0, 'last_location_of_maximum': 1.0,
   'has_duplicate_max': 1, 'has_duplicate_min': 1,
   'mean_change': 0, 'mean_abs_change': 0, 'absolute_sum_of_changes': 0,
   'mean_second_derivative_central': 0,
@@ -45,7 +45,7 @@ export const rampExpected: Record<string, number> = {
   'standard_deviation': 2.8722813232690143, 'variance': 8.25,
   'variance_larger_than_standard_deviation': 1,
   'first_location_of_minimum': 0, 'first_location_of_maximum': 0.9,
-  'last_location_of_minimum': 0, 'last_location_of_maximum': 0.9,
+  'last_location_of_minimum': 0.1, 'last_location_of_maximum': 1.0,
   'has_duplicate_max': 0, 'has_duplicate_min': 0,
   'mean_change': 1, 'mean_abs_change': 1, 'absolute_sum_of_changes': 9,
   'mean_second_derivative_central': 0,
@@ -59,11 +59,11 @@ export const rampExpected: Record<string, number> = {
   'large_standard_deviation__r_0.05': 1, 'large_standard_deviation__r_0.25': 1,
   'large_standard_deviation__r_0.45': 0,
   'linear_trend__attr_slope': 1, 'linear_trend__attr_intercept': 0,
-  'linear_trend__attr_rvalue': 1, 'linear_trend__attr_pvalue': 1,
+  'linear_trend__attr_rvalue': 1, 'linear_trend__attr_pvalue': 0,
   'linear_trend__attr_stderr': 0,
   'ratio_beyond_r_sigma__r_1': 0.4, 'ratio_beyond_r_sigma__r_1.5': 0.2,
   'ratio_beyond_r_sigma__r_2': 0,
-  'number_crossing_m__m_0': 0,
+  'number_crossing_m__m_0': 1,
 };
 
 export const alternatingExpected: Record<string, number> = {
@@ -72,7 +72,7 @@ export const alternatingExpected: Record<string, number> = {
   'standard_deviation': 1, 'variance': 1,
   'variance_larger_than_standard_deviation': 0,
   'first_location_of_minimum': 0.1, 'first_location_of_maximum': 0,
-  'last_location_of_minimum': 0.9, 'last_location_of_maximum': 0.8,
+  'last_location_of_minimum': 1.0, 'last_location_of_maximum': 0.9,
   'has_duplicate_max': 1, 'has_duplicate_min': 1,
   'mean_change': -0.2222222222222222, 'mean_abs_change': 2,
   'absolute_sum_of_changes': 18, 'mean_second_derivative_central': 0,
@@ -101,7 +101,7 @@ export const stepExpected: Record<string, number> = {
   'standard_deviation': 2.5, 'variance': 6.25,
   'variance_larger_than_standard_deviation': 1,
   'first_location_of_minimum': 0, 'first_location_of_maximum': 0.5,
-  'last_location_of_minimum': 0.4, 'last_location_of_maximum': 0.9,
+  'last_location_of_minimum': 0.5, 'last_location_of_maximum': 1.0,
   'has_duplicate_max': 1, 'has_duplicate_min': 1,
   'mean_change': 0.5555555555555556, 'mean_abs_change': 0.5555555555555556,
   'absolute_sum_of_changes': 5, 'mean_second_derivative_central': 0,
@@ -121,7 +121,7 @@ export const stepExpected: Record<string, number> = {
   'linear_trend__attr_stderr': 0.1515151515151515,
   'ratio_beyond_r_sigma__r_1': 0, 'ratio_beyond_r_sigma__r_1.5': 0,
   'ratio_beyond_r_sigma__r_2': 0,
-  'number_crossing_m__m_0': 0,
+  'number_crossing_m__m_0': 1,
 };
 
 export const spikeExpected: Record<string, number> = {
@@ -130,7 +130,7 @@ export const spikeExpected: Record<string, number> = {
   'standard_deviation': 3, 'variance': 9,
   'variance_larger_than_standard_deviation': 1,
   'first_location_of_minimum': 0, 'first_location_of_maximum': 0.4,
-  'last_location_of_minimum': 0.9, 'last_location_of_maximum': 0.4,
+  'last_location_of_minimum': 1.0, 'last_location_of_maximum': 0.5,
   'has_duplicate_max': 0, 'has_duplicate_min': 1,
   'mean_change': 0, 'mean_abs_change': 2.2222222222222223,
   'absolute_sum_of_changes': 20, 'mean_second_derivative_central': 0,
@@ -151,7 +151,7 @@ export const spikeExpected: Record<string, number> = {
   'linear_trend__attr_stderr': 0.3686522745635285,
   'ratio_beyond_r_sigma__r_1': 0.1, 'ratio_beyond_r_sigma__r_1.5': 0.1,
   'ratio_beyond_r_sigma__r_2': 0.1,
-  'number_crossing_m__m_0': 0,
+  'number_crossing_m__m_0': 2,
 };
 
 export const negativeExpected: Record<string, number> = {
@@ -161,7 +161,7 @@ export const negativeExpected: Record<string, number> = {
   'standard_deviation': 2.271233145231902, 'variance': 5.158499999999999,
   'variance_larger_than_standard_deviation': 1,
   'first_location_of_minimum': 0.4, 'first_location_of_maximum': 0.7,
-  'last_location_of_minimum': 0.4, 'last_location_of_maximum': 0.7,
+  'last_location_of_minimum': 0.5, 'last_location_of_maximum': 0.8,
   'has_duplicate_max': 0, 'has_duplicate_min': 0,
   'mean_change': 0.47777777777777775, 'mean_abs_change': 3.4555555555555557,
   'absolute_sum_of_changes': 31.1, 'mean_second_derivative_central': 0.04375000000000001,
@@ -182,7 +182,7 @@ export const negativeExpected: Record<string, number> = {
   'linear_trend__attr_stderr': 0.26121141812462506,
   'ratio_beyond_r_sigma__r_1': 0.4, 'ratio_beyond_r_sigma__r_1.5': 0.2,
   'ratio_beyond_r_sigma__r_2': 0,
-  'number_crossing_m__m_0': 6,
+  'number_crossing_m__m_0': 7,
 };
 
 export const nearConstantOutlierExpected: Record<string, number> = {
@@ -191,7 +191,7 @@ export const nearConstantOutlierExpected: Record<string, number> = {
   'standard_deviation': 2.1, 'variance': 4.41,
   'variance_larger_than_standard_deviation': 1,
   'first_location_of_minimum': 0, 'first_location_of_maximum': 0.9,
-  'last_location_of_minimum': 0.8, 'last_location_of_maximum': 0.9,
+  'last_location_of_minimum': 0.9, 'last_location_of_maximum': 1.0,
   'has_duplicate_max': 0, 'has_duplicate_min': 1,
   'mean_change': 0.7777777777777778, 'mean_abs_change': 0.7777777777777778,
   'absolute_sum_of_changes': 7, 'mean_second_derivative_central': 0.4375,

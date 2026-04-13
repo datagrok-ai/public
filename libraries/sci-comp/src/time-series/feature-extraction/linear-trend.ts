@@ -78,7 +78,9 @@ export function linearTrend(x: NumericArray, n: number): LinearTrendResult {
   if (stderr > 0) {
     const tStat = slope / stderr;
     pvalue = twoTailPvalue(tStat, n - 2);
-  } else
+  } else if (ssXX > 0 && slope !== 0)
+    pvalue = 0.0;
+  else
     pvalue = 1.0;
 
   return {slope, intercept, rvalue, pvalue, stderr};
