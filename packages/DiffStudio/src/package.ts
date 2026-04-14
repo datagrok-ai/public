@@ -139,13 +139,12 @@ export class PackageFunctions {
 
   @grok.decorators.fileViewer({fileViewer: 'ivp'})
   static async previewIvp(file: DG.FileInfo): Promise<DG.View> {
-    let path: string;
+    const wasProcessed = DiffStudio.isStartingUriProcessed;
+    DiffStudio.isStartingUriProcessed = true;
 
-    if (!DiffStudio.isStartingUriProcessed) {
-      DiffStudio.isStartingUriProcessed = true;
-      path = grok.shell.startUri;
-    } else
-      path = window.location.href;
+    // Only honor URL params on the initial deep-link load. On subsequent file clicks,
+    // window.location.href still holds the previous file's params and would be misapplied.
+    const path = wasProcessed ? file.fullPath : grok.shell.startUri;
 
     const proxiView = DG.View.create();
 
