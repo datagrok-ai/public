@@ -1262,6 +1262,16 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   /** Guard against concurrent async highlight updates. */
   private _highlightInProgress = false;
   private _stateChangeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Returns all Molstar structure components, or null if unavailable. */
+  private _getAllComponents(): any[] | null {
+    const plugin = this.viewer?.plugin;
+    if (!plugin) return null;
+    const structures = plugin.managers.structure.hierarchy.current.structures;
+    if (!structures || structures.length === 0) return null;
+    const comps = structures.flatMap((s: any) => s.components ?? []);
+    return comps.length > 0 ? comps : null;
+  }
   /** Last received atom selection event args. Replayed after the viewer
    *  rebuilds its ligands so the highlight persists across cell switches
    *  (switching away destroys the viewer; switching back rebuilds it). */
@@ -1281,16 +1291,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.viewSyncer.sync('replayHighlight', async () => {
       this.logger.debug('[molstar-picker] replay firing now (synced)');
       try {
-        const plugin = this.viewer?.plugin;
-        if (plugin) {
-          const structures = plugin.managers.structure.hierarchy.current.structures;
-          if (structures?.length) {
-            const allComponents = structures.flatMap((s: any) => s.components ?? []);
-            if (allComponents.length > 0)
-              await clearStructureOverpaint(plugin, allComponents);
-          }
-        }
-      } catch { /* best-effort */ }
+        const comps = this._getAllComponents();
+        if (comps && this.viewer?.plugin)
+          await clearStructureOverpaint(this.viewer.plugin, comps);
+      } catch {
+        /* best-effort */
+      }
       await this._applyBaseColors();
       await this.highlightAllLigandAtoms();
     });
@@ -1329,10 +1335,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     }
     if (loadedLigands.length < 2) return;
 
-    const structures = plugin.managers.structure.hierarchy.current.structures;
-    if (!structures || structures.length === 0) return;
-    const allComponents = structures.flatMap((s: any) => s.components ?? []);
-    if (allComponents.length === 0) return;
+    const allComponents = this._getAllComponents();
+    if (!allComponents) return;
 
     // Determine current (selected) row — leave its pose in default colors.
     // Only color the OTHER (comparison) pose in teal.
@@ -1441,8 +1445,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       }
     }
 
-    this.logger.debug('[molstar-picker] loaded ligands: ' +
-      JSON.stringify(loadedLigands.map((l) => ({row: l.rowIdx, hasRefs: !!l.structureRefs}))));
+    this.logger.debug('[molstar-picker] loaded ligands:', () =>
+      loadedLigands.map((l) => ({row: l.rowIdx, hasRefs: !!l.structureRefs})));
 
     // Collect serials per ligand row.
     const currentRowIdx = this.dataFrame?.currentRowIdx ?? -1;
@@ -1503,10 +1507,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       });
     }
 
-    const structures = plugin.managers.structure.hierarchy.current.structures;
-    if (!structures || structures.length === 0) return;
-    const allComponents = structures.flatMap((s: any) => s.components ?? []);
-    if (allComponents.length === 0) return;
+    const allComponents = this._getAllComponents();
+    if (!allComponents) return;
 
     await clearStructureOverpaint(plugin, allComponents);
     await this._applyBaseColors();
