@@ -122,9 +122,12 @@
   flex-grow: 1;
 }
 
-.scaffold-tree-viewer .chem-mol-box.chem-drop-target {
-  border-color: var(--blue-1) !important;
-  border-style: solid !important;
+.scaffold-tree-viewer .chem-mol-box.chem-drop-target-top {
+  border-top: 3px solid var(--blue-1) !important;
+}
+
+.scaffold-tree-viewer .chem-mol-box.chem-drop-target-bottom {
+  border-bottom: 3px solid var(--blue-1) !important;
 }
 
 .chem-scaffold-tree-generate-hint {

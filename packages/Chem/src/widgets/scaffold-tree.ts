@@ -2037,18 +2037,24 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         return;
       e.preventDefault();
       e.dataTransfer!.dropEffect = 'move';
-      molHost.classList.add('chem-drop-target');
+      const rect = molHost.getBoundingClientRect();
+      const isTopHalf = e.clientY < rect.top + rect.height / 2;
+      molHost.classList.toggle('chem-drop-target-top', isTopHalf);
+      molHost.classList.toggle('chem-drop-target-bottom', !isTopHalf);
     });
-    molHost.addEventListener('dragleave', () => { molHost.classList.remove('chem-drop-target'); });
+    molHost.addEventListener('dragleave', () => {
+      molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
+    });
     molHost.addEventListener('drop', (e) => {
       e.preventDefault();
-      molHost.classList.remove('chem-drop-target');
+      const isTopHalf = molHost.classList.contains('chem-drop-target-top');
+      molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
       if (!draggedNode || draggedNode.dart === group.dart)
         return;
       const dropParent = (group.parent ?? thisViewer.tree) as TreeViewGroup;
       const targetIdx = dropParent.children.findIndex((c) => c.dart === group.dart);
       if (targetIdx >= 0)
-        thisViewer.moveNodeTo(draggedNode, targetIdx);
+        thisViewer.moveNodeTo(draggedNode, isTopHalf ? targetIdx : targetIdx + 1);
     });
 
     molHost.onclick = () => this.makeNodeActiveAndFilter(group);
