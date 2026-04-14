@@ -14,7 +14,7 @@ import { BATCHES_TAB, CDDVaultSearchType, COLLECTIONS_TAB, MOLECULES_TAB, PROTOC
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
 import { addNodeWithEmptyResults, CDDVaultStats, createBatchesDfFromObjects, createCDDContextPanel, createCDDTableView, createInitialSatistics, createLinks,
-  createLinksFromIds, createMoleculeIdLinks, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, createSearchNode, createVaultNode, getAsyncResults, getAsyncResultsAsDf,
+  createLinksFromIds, createMoleculeIdLinks, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, createVaultNode, getAsyncResults, getAsyncResultsAsDf,
   getExportId, handleInitialURL, prepareDataForDf, PREVIEW_ROW_NUM, reorderColummns, setBreadcrumbsInViewName } from './utils';
 
 export * from './package.g';
@@ -133,11 +133,6 @@ export class PackageFunctions{
             vault, treeNode);
         });
 
-        // //search node - serach is not implemented as docked panel in molecules tab
-        // const searchNode = vaultNode.item(SEARCH_TAB);
-        // searchNode.onSelected.subscribe(() => {
-        //   createSearchNode(vault, treeNode);
-        // });
       //TODO! unlock other tabs
       // vaultNode.group('Plates');
       // vaultNode.group('Assays');

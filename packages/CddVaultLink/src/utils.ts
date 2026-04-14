@@ -544,30 +544,44 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
   const funcEditor = new SeachEditor(vault.id);
   const acc = funcEditor.getEditor();
 
-  const runSearchButton = ui.button('Search', async () => {
+  const runSearch = async () => {
     ui.setUpdateIndicator(tv.grid.root, true);
+    funcEditor.saveLastSearch();
     const params = funcEditor.getParams();
-    const df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
-      {
-        vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
-        structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run
-      });
-    if (df) {
-      const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
-      const run = params.run ? `, run: ${params.run}` : '';
-      const search = params.structure ? `, ${params.structure_search_type}${params.structure_search_type === CDDVaultSearchType.SIMILARITY ?
-        `:${params.structure_similarity_threshold}` : ''} search for ${params.structure}` : '';
+    try {
+      const df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
+        {
+          vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
+          structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run
+        });
+      if (df) {
+        const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
+        const run = params.run ? `, run: ${params.run}` : '';
+        const search = params.structure ? `, ${params.structure_search_type}${params.structure_search_type === CDDVaultSearchType.SIMILARITY ?
+          `:${params.structure_similarity_threshold}` : ''} search for ${params.structure}` : '';
 
-      df!.name = `Vault: ${vault.id}${protocol}${run}${search}`;
-      tv.dataFrame = df;
-      adjustIdColumnWidth(tv);
+        df!.name = `Vault: ${vault.id}${protocol}${run}${search}`;
+        tv.dataFrame = df;
+        adjustIdColumnWidth(tv);
+
+        // Search returns the full result — drop the preview's "Load all" row and show the final row count.
+        const info = ui.divText(`Showing ${df.rowCount} rows`,
+          {style: {alignSelf: 'center', marginRight: '8px', pointerEvents: 'none', cursor: 'default'}});
+        tv.setRibbonPanels([[filtersButton], [info]]);
+      }
+    } finally {
+      ui.setUpdateIndicator(tv.grid.root, false);
     }
-    ui.setUpdateIndicator(tv.grid.root, false);
-  });
+  };
+  const runSearchButton = ui.button('Search', runSearch);
 
   filtersDiv.append(acc);
   filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
 
+  funcEditor.initComplete.then(() => {
+    if (funcEditor.hasRestoredSearch)
+      runSearch();
+  });
 }
 
 export function createLinks(header: string, nodeNames: string[], tree: DG.TreeViewGroup, view: DG.ViewBase): HTMLDivElement {
@@ -701,53 +715,6 @@ export function createVaultNode(vault: Vault, treeNode: DG.TreeViewGroup) {
   grok.shell.addPreview(openedView);
   setBreadcrumbsInViewName([vault.name], treeNode, openedView);
   openedView.path = createPath(vault.name);
-}
-
-export function createSearchNode(vault: Vault, treeNode: DG.TreeViewGroup) {
-  openedView?.close();
-  openedView = DG.View.create();
-  const funcEditor = new SeachEditor(vault.id);
-  const acc = funcEditor.getEditor();
-  let df: DG.DataFrame | null = null;
-  const runButton = ui.bigButton('SEARCH', async () => {
-    ui.setUpdateIndicator(gridDiv, true);
-    const params = funcEditor.getParams();
-    df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
-      {
-        vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
-        structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run
-      });
-    ui.empty(gridDiv);
-    if (df) {
-      const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
-      const run = params.run ? `, run: ${params.run}` : '';
-      const search = params.structure ? `, ${params.structure_search_type}${params.structure_search_type === CDDVaultSearchType.SIMILARITY ?
-        `:${params.structure_similarity_threshold}` : ''} search for ${params.structure}` : '';
-
-      df!.name = `Vault: ${vault.id}${protocol}${run}${search}`;
-      gridDiv.append(df.plot.grid().root);
-    }
-    ui.setUpdateIndicator(gridDiv, false);
-  });
-  const gridDiv = ui.div('', 'cdd-vault-search-res-div');
-  runButton.classList.add('cdd-vault-run-search-button');
-
-  const addToWorkspaceButton = ui.icons.add(() => {
-    if (df) {
-      const tv = grok.shell.addTablePreview(df);
-      adjustIdColumnWidth(tv);
-    }
-  }, 'Add results to workspace');
-  openedView.setRibbonPanels([[addToWorkspaceButton]]);
-  openedView.name = 'Search CDD Vault'
-  openedView.root.append(ui.divV([
-    acc,
-    runButton,
-    gridDiv
-  ], { style: { height: '100%' } }));
-  grok.shell.addPreview(openedView);
-  setBreadcrumbsInViewName([vault.name, SEARCH_TAB], treeNode, openedView);
-  openedView.path = createPath(vault.name, [SEARCH_TAB]);
 }
 
 export function addNodeWithEmptyResults(name: string, warningMessage?: string) {

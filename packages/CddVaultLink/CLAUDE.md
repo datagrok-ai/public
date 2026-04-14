@@ -8,28 +8,14 @@ Datagrok plugin that integrates the platform with the **CDD Vault** registration
 
 Auth: the CDD Vault API key is read from the package credentials manager under the `apiKey` key (see `cdd-vault-credentials.ts`).
 
-## Build / Test
-
-Standard Datagrok package commands — run from this directory:
-
-```bash
-npm install
-npm run build         # grok api && grok check --soft && webpack
-npm run test          # grok test (needs a running Datagrok instance)
-grok publish          # debug publish; --release for public
-grok link             # link local datagrok-api / @datagrok-libraries/*
-```
-
-Run a single test: `grok test --test "TestName"` or `grok test --category "CategoryName"`.
-
 ## Architecture
 
 Small plugin, flat `src/` layout — no deep hierarchy to navigate:
 
 - **`package.ts`** — entry point. `PackageFunctions` class registers the `cddVaultApp` (via `@grok.decorators.app`), the app tree browser, context panel, and search function. Wires up the tabbed UI (Protocols / Collections / Saved Searches / Molecules / Search) against a `Vault` tree node.
 - **`cdd-vault-api.ts`** — thin wrapper over the CDD Vault REST API. Defines all response types (`Vault`, `Protocol`, `Collection`, `SavedSearch`, `MoleculesQueryResult`, `ApiResponse<T>`, etc.) and query functions (`queryVaults`, `queryMolecules`, `queryMoleculesAsync`, `queryReadoutRowsAsync`, `queryProtocolsAsync`, `queryCollectionsAsync`, `queryBatchesAsync`, `querySavedSearches`, `querySavedSearchById`, `queryProjects`). The `*Async` variants use CDD's async job endpoints and are polled via `getAsyncResults` / `getAsyncResultsAsDf` in `utils.ts`. All HTTP goes through `grok.dapi.fetchProxy` (never raw `fetch`).
-- **`utils.ts`** — the bulk of the UI glue. Builds tree nodes (`createVaultNode`, `createNestedCDDNode`, `createSearchNode`), the single tab-loading entry point `createCDDTableView` (see *Tab data loading* below), molecule dataframe construction (`createMoleculesDfFromObjects`, `prepareDataForDf`, `reorderColummns`), context panel (`createCDDContextPanel`), ID→link rendering (`createLinks`, `createLinksFromIds`), URL routing (`handleInitialURL`, `createPath`, `getExportId`), and vault stats.
-- **`search-function-editor.ts`** — custom function editor (`SeachEditor`) for the Search tab (similarity / substructure / exact / identity).
+- **`utils.ts`** — the bulk of the UI glue. Builds tree nodes (`createVaultNode`, `createNestedCDDNode`), the single tab-loading entry point `createCDDTableView` (see *Tab data loading* below), molecule dataframe construction (`createMoleculesDfFromObjects`, `prepareDataForDf`, `reorderColummns`), context panel (`createCDDContextPanel`), ID→link rendering (`createLinks`, `createLinksFromIds`), URL routing (`handleInitialURL`, `createPath`, `getExportId`), and vault stats.
+- **`search-function-editor.ts`** — custom function editor (`SeachEditor`) for similarity / substructure / exact / identity search. Exposed as a docked filters side-panel inside the Molecules tab, wired up by `initializeFilters` in `utils.ts` (not a standalone tab). Two API quirks worth knowing: `getParams()` returns resolved values for the search endpoint (e.g. protocol *id*, not name) and is **not** symmetric — to persist, pre-fill, or share form state, work with the input objects directly. `init()` is async and builds the protocol/run choice lists at the end, so any code that targets those inputs must run after init resolves.
 - **`cdd-vault-credentials.ts`** — reads `apiKey` from package credentials.
 - **`constants.ts`** — tab names (`PROTOCOLS_TAB`, `COLLECTIONS_TAB`, `MOLECULES_TAB`, `SAVED_SEARCHES_TAB`, `SEARCH_TAB`) and `CDDVaultSearchType`.
 - **`detectors.js`** — semantic type detectors (loaded separately by platform; do not bundle).
@@ -119,3 +105,4 @@ Vault ─┬─ Project (access grouping)
 - Functions are registered via `@grok.decorators.*` on static methods of `PackageFunctions` (this package uses the decorator form, not `//name:` comment metadata).
 - Never call CDD endpoints with raw `fetch` — always go through `grok.dapi.fetchProxy` (handled centrally in `cdd-vault-api.ts`).
 - Plugin changelog: add a `## v.next` bullet to `CHANGELOG.md` for any sizable change (see repo-level rule).
+- **Per-user persistence** — use `grok.userSettings.add(key, subKey, value)` / `grok.userSettings.getValue(key, subKey)` for state that should survive reloads (e.g. remembered form inputs). Values are strings — `JSON.stringify` / `JSON.parse` for objects. Convention in this package: top-level key `CDDVaultLink.<purpose>`, subkey scoped to whatever makes the stored state unambiguous (typically `vaultId`). Do not use `localStorage` or files for this.

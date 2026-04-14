@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Molecules search: Remember the last search per vault and restore it when reopening the tab.
 * Tab loading: Unified all tabs on a preview-then-"Load all" pattern. Initial open always shows the first 100 rows via the sync endpoint; if more exist, a ribbon appears with a "Load all" button that runs the async endpoint in the background and swaps the dataframe on completion. Removed the old `createCDDTableViewWithPreview` helper.
 * API: Added sync `queryCollections` and `queryBatches` wrappers to pair with their async counterparts.
 * Types: Added `molecule` (parent `Molecule`) to `Batch`; added `registration_type`, `registration_form`, `num_aromatic_rings`, `p_k_a_basic`, `bbb2_score` to `Molecule`; made `Molecule.batches` optional (absent when a Molecule is nested inside a Batch).

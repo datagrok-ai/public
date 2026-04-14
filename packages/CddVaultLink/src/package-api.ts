@@ -40,6 +40,14 @@ export namespace funcs {
     return await grok.functions.call('CDDVaultLink:GetMoleculesAsync', { vaultId, moleculesIds, timeoutMinutes });
   }
 
+  export async function getBatches(vaultId: number | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('CDDVaultLink:GetBatches', { vaultId });
+  }
+
+  export async function getBatchesAsync(vaultId: number | null, timeoutMinutes: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('CDDVaultLink:GetBatchesAsync', { vaultId, timeoutMinutes });
+  }
+
   export async function getProtocolsAsync(vaultId: number | null, timeoutMinutes: number ): Promise<string> {
     return await grok.functions.call('CDDVaultLink:GetProtocolsAsync', { vaultId, timeoutMinutes });
   }
