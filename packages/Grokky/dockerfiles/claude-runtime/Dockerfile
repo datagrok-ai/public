@@ -9,7 +9,8 @@ ARG HOME_DIR=/home/grok
 RUN groupadd -g 2001 grok && \
     useradd -m -d ${HOME_DIR} -g grok -u 1001 grok && \
     git clone --depth 1 https://github.com/datagrok-ai/public.git /workspace && \
-    chown -R grok:grok ${HOME_DIR} /workspace
+    mkdir -p /users && \
+    chown -R grok:grok ${HOME_DIR} /workspace /users
 
 COPY --chown=grok:grok package.json package-lock.json* tsconfig.json ./
 COPY --chown=grok:grok src ./src

@@ -7,6 +7,7 @@ import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './ai/search
 import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI} from './ai/ui';
 import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
+import {ClaudeRuntimeClient} from './claude/runtime-client';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
 import {biologicsIndex} from './db/indexes/biologics-index';
 import {chemblIndex} from './db/indexes/chembl-index';
@@ -26,7 +27,6 @@ export class PackageFunctions {
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
   }
-
 
   @grok.decorators.autostart({tags: ['autostart']})
   static autostart() {

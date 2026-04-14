@@ -47,7 +47,15 @@ export interface InputResponseMessage {
   value: any;
 }
 
-export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage;
+export interface SyncMessage {
+  type: 'sync_user_files';
+  apiKey: string;
+  mcpServerUrl: string;
+  scope?: string;
+  packageName?: string;
+}
+
+export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage;
 
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
@@ -56,4 +64,5 @@ export type OutgoingMessage =
   | {type: 'final'; sessionId: string; content: string; structured_output?: any}
   | {type: 'error'; sessionId: string; message: string}
   | {type: 'aborted'; sessionId: string}
-  | {type: 'input_request'; sessionId: string; toolName: string; input: any};
+  | {type: 'input_request'; sessionId: string; toolName: string; input: any}
+  | {type: 'sync_status'; status: 'done' | 'error'; message?: string};
