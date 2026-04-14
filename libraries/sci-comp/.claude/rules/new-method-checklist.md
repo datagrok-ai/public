@@ -1,4 +1,4 @@
-## Adding New Methods Checklist
+# Adding New Methods Checklist
 
 When adding any new numerical method to this library, ALL of the following are required. Do NOT report the task as complete until every item is done.
 
