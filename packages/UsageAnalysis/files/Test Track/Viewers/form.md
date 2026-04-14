@@ -1,12 +1,12 @@
-1. Should work properly when there are multiple dataframes opened:
+1. Switching the bound table when multiple dataframes are open:
     1. Open SPGI, SPGI-linked1, SPGI-linked2.
-    2. Go to **Tables > SPGI** and add a viewer.
-    3. Go to the **Property Pane** > **Data** info panel and check tables switching (SPGI-linked2, SPGI-linked1, SPGI).
-2. Building from the list of columns:
-    1. On the top of the Form viewer, click **List** icon. A dialog opens.
-    2. In the dialog, toggle some checkboxes. Check the columns in the form viewer
-    3. Save to Layout. Check
-3. Check the ability to drag column labels (in the in-form design mode)
+    2. Open SPGI, add a **Form** viewer.
+    3. Open viewer properties (**F4**) → **Data → Table**. Switch to SPGI-linked2, then SPGI-linked1, then back to SPGI. Verify fields rebind to the chosen table each time.
+2. Building the form from a column list:
+    1. On the Form viewer's ribbon, click the **list** icon — a column-picker dialog opens.
+    2. Toggle several checkboxes; verify the form adds/removes the corresponding fields.
+    3. Save a layout (**Ctrl+S** → Layout), reopen it, and verify the same fields are restored.
+3. In design mode (ribbon **object-ungroup** icon on), drag a field's label to a new position and verify it stays there.
 ---
 {
   "order": 9,

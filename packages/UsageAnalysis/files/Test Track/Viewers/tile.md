@@ -1,35 +1,38 @@
 #### Tile viewer
 
-1. Multiple DataFrames Handling
-- Open **SPGI, SPGI-linked1, and SPGI-linked2** datasets.
-- Go to Tables > SPGI and add a **Tile viewer**.
-- Open the **Context Panel > Data > Table**.
-- Switch between the tables (SPGI-linked2, SPGI-linked1, SPGI) and verify the viewer updates correctly.
-2. Building from List of Columns:
-- Right-click the viewer and select **Edit form** from the list.
-- Edit the viewer configuration and **apply the changes**.
-- Save the **layout** and verify it is saved correctly.
-3. **Edit form with Table Change**:
-- Open the **demog** dataset.
-- Switch back to SPGI and open the **Edit form** dialog.
-- Change the data source to demog, press **Reset**, and select some columns.
-- Click **Close and apply** button.
-- In Tile viewer properties, manually switch the table to demog.
-- **Expected Result**: Tile viewer should now display demog data without errors or red highlights.
-4. Main menu (Hamburger Menu) testing
-- Open the Hamburger menu and check all options.
-- Pay attention: navigate to Properties > Data > Lanes. Hovering over all options should work smoothly without page freezing.
-5. Adding and Editing a **Calculated Column**
-- Open the SPGI dataset.
-- **Create a calculated column**, for example: ${Average Mass} + 5, and name it 'cc'.
-- Go to the Hamburger menu > **Edit form...** > press Reset.
-- Ensure SPGI is selected. Add the new calculated column 'cc' to the viewer.
-- Click **Close and apply** button.
-- Click the 'cc' column header. In the Context Pane, find the **Formula editing input**, change the formula, and press **Apply**.
-- **Expected Result**: After applying the new formula, both the column values and the Tile viewer should update immediately.
-6. Added **Calculated Column with Filters**:
-- Apply filters for the 'cc' column, Stereo category, and other columns.
-- Expected Result: Viewer updates correctly after formula changes, even when filters are applied.
+1. **Multiple DataFrames Handling**
+   - Open **SPGI**, **SPGI-linked1**, and **SPGI-linked2** datasets.
+   - On the **SPGI** view, add a **Tile viewer**.
+   - In the Context Panel, open **Data > Table** and switch between SPGI-linked2, SPGI-linked1, SPGI.
+   - **Expected**: viewer rebinds to the chosen table and re-renders without errors.
+
+2. **Building from List of Columns**
+   - Right-click the viewer → **Edit form...**.
+   - Drag a few columns onto the card, click **Close and apply**.
+   - Save the layout (Ctrl+S) and reopen the project.
+   - **Expected**: the saved card layout is restored exactly.
+
+3. **Edit form with Table Change**
+   - Open **demog** in addition to SPGI.
+   - On SPGI, open **Edit form...**, change the source table to **demog**, press **Reset**, add a few demog columns, click **Close and apply**.
+   - In the Tile viewer settings, switch **Data > Table** to **demog**.
+   - **Expected**: viewer displays demog data; no errors and no red "broken-binding" placeholders inside tiles.
+
+4. **Hamburger menu**
+   - Open the Hamburger menu and walk through every item — each opens its dialog/submenu without errors.
+   - Slowly hover **Properties > Data > Lanes**.
+   - **Expected**: submenu opens smoothly; the page does not freeze even when the lanes column has many categories.
+
+5. **Calculated column**
+   - On SPGI, create a calculated column `${Average Mass} + 5` named `cc`.
+   - Hamburger → **Edit form...** → **Reset**, add `cc` to the card, **Close and apply**.
+   - Click the `cc` column header; in the Context Pane, change the formula and **Apply**.
+   - **Expected**: column values and tiles update immediately.
+
+6. **Calculated column with filters**
+   - Apply filters on `cc`, **Stereo category**, and one more column.
+   - Change the `cc` formula again.
+   - **Expected**: tiles update correctly while filters stay applied.
 
 
 ---
