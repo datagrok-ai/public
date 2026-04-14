@@ -14,8 +14,8 @@ import { BATCHES_TAB, CDDVaultSearchType, COLLECTIONS_TAB, MOLECULES_TAB, PROTOC
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
 import { addNodeWithEmptyResults, CDDVaultStats, createBatchesDfFromObjects, createCDDContextPanel, createCDDTableView, createInitialSatistics, createLinks,
-  createLinksFromIds, createMoleculeIdLinks, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, createVaultNode, getAsyncResults, getAsyncResultsAsDf,
-  getExportId, handleInitialURL, prepareDataForDf, PREVIEW_ROW_NUM, reorderColummns, setBreadcrumbsInViewName } from './utils';
+  createLinksFromIds, createMoleculeIdLinks, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, createVaultNode,
+  handleInitialURL, prepareDataForDf, PREVIEW_ROW_NUM, reorderColummns, runAsyncExport, runAsyncExportAsDf, setBreadcrumbsInViewName } from './utils';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -198,17 +198,16 @@ export class PackageFunctions{
   static async getVaultStats(
     @grok.decorators.param({'type':'int'})  vaultId: number,
     vaultName: string): Promise<string> {
-    const promises: Promise<any>[] = [];
-    promises.push(queryProjects(vaultId));
-    promises.push(getAsyncResults(vaultId, getExportId(await queryMoleculesAsync(vaultId, {only_ids: true})), 1, false));
-    promises.push(getAsyncResults(vaultId, getExportId(await queryProtocolsAsync(vaultId, {only_ids: true})), 1, false));
-    promises.push(getAsyncResults(vaultId, getExportId(await queryCollectionsAsync(vaultId, {only_ids: true})), 1, false));
-    promises.push(getAsyncResults(vaultId, getExportId(await queryBatchesAsync(vaultId, {only_ids: true})), 1, false));
-
-    const res = await Promise.all(promises);
+    const res = await Promise.all([
+      queryProjects(vaultId),
+      runAsyncExport(vaultId, () => queryMoleculesAsync(vaultId, {only_ids: true}), 1),
+      runAsyncExport(vaultId, () => queryProtocolsAsync(vaultId, {only_ids: true}), 1),
+      runAsyncExport(vaultId, () => queryCollectionsAsync(vaultId, {only_ids: true}), 1),
+      runAsyncExport(vaultId, () => queryBatchesAsync(vaultId, {only_ids: true}), 1),
+    ]);
     const stats: CDDVaultStats = {
       name: vaultName,
-      projects: res[0].data?.length ? res[0].data?.map((it: DG.Project) => it.name).join(', ') : '',
+      projects: res[0].data?.length ? res[0].data.map((it) => it.name).join(', ') : '',
       molecules: res[1].data?.count ?? undefined,
       protocols: res[2].data?.count ?? undefined,
       batches: res[3].data?.count ?? undefined,
@@ -271,9 +270,7 @@ export class PackageFunctions{
     const params: {[key: string]: any} = {};
     if (moleculesIds)
       params.molecules = moleculesIds;
-    const exportResponse = await queryMoleculesAsync(vaultId, params);
-    const exportId = getExportId(exportResponse);
-    const df = await getAsyncResultsAsDf(vaultId, exportId, timeoutMinutes, false);
+    const df = await runAsyncExportAsDf(vaultId, () => queryMoleculesAsync(vaultId, params), timeoutMinutes);
     createLinksFromIds(vaultId, df);
     reorderColummns(df);
     return df;
@@ -307,9 +304,7 @@ export class PackageFunctions{
   static async getBatchesAsync(
     @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number,
     @grok.decorators.param({'type':'int'})   timeoutMinutes: number): Promise<DG.DataFrame> {
-    const exportResponse = await queryBatchesAsync(vaultId, {});
-    const exportId = getExportId(exportResponse);
-    const df = await getAsyncResultsAsDf(vaultId, exportId, timeoutMinutes, false);
+    const df = await runAsyncExportAsDf(vaultId, () => queryBatchesAsync(vaultId, {}), timeoutMinutes);
     createMoleculeIdLinks(vaultId, df);
     reorderColummns(df);
     return df;
@@ -326,9 +321,7 @@ export class PackageFunctions{
   static async getProtocolsAsync(
     @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number,
     @grok.decorators.param({'type':'int'})   timeoutMinutes: number): Promise<string> {
-    const exportResponse = await queryProtocolsAsync(vaultId, {});
-    const exportId = getExportId(exportResponse);
-    const protocols = await getAsyncResults(vaultId, exportId, timeoutMinutes, false);
+    const protocols = await runAsyncExport(vaultId, () => queryProtocolsAsync(vaultId, {}), timeoutMinutes);
     return protocols?.data?.objects ? JSON.stringify(protocols.data.objects) : '';
   }
 
@@ -343,9 +336,7 @@ export class PackageFunctions{
   static async getCollectionsAsync(
     @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number,
     @grok.decorators.param({'type':'int'})   timeoutMinutes: number): Promise<string> {
-    const exportResponse = await queryCollectionsAsync(vaultId, {include_molecule_ids: true});
-    const exportId = getExportId(exportResponse);
-    const collections = await getAsyncResults(vaultId, exportId, timeoutMinutes, false);
+    const collections = await runAsyncExport(vaultId, () => queryCollectionsAsync(vaultId, {include_molecule_ids: true}), timeoutMinutes);
     return collections?.data?.objects ? JSON.stringify(collections.data.objects) : '';
   }
 
@@ -377,9 +368,7 @@ export class PackageFunctions{
     @grok.decorators.param({'type':'int'})  vaultId: number,
     @grok.decorators.param({'type':'int'})   searchId: number,
     @grok.decorators.param({'type':'int'})   timeoutMinutes: number): Promise<DG.DataFrame> {
-    const exportResponse = await querySavedSearchById(vaultId, searchId);
-    const exportId = getExportId(exportResponse);
-    const res = await getAsyncResultsAsDf(vaultId, exportId, timeoutMinutes, true);
+    const res = await runAsyncExportAsDf(vaultId, () => querySavedSearchById(vaultId, searchId), timeoutMinutes, true);
     reorderColummns(res);
     return res;
   }
@@ -402,9 +391,8 @@ export class PackageFunctions{
     //collecting molecule ids according to protocol query params
     let molIds: number[] = [];
     if (protocol) {
-      const exportResponse = await queryReadoutRowsAsync(vaultId, {protocols: protocol.toString(), runs: run?.toString()});
-      const exportId = getExportId(exportResponse);
-      const readoutRowsRes = await getAsyncResults(vaultId, exportId, 5, false);
+      const readoutRowsRes = await runAsyncExport(vaultId,
+        () => queryReadoutRowsAsync(vaultId, {protocols: protocol.toString(), runs: run?.toString()}), 5);
       if (!readoutRowsRes)
         return DG.DataFrame.create();
       const readoutRows = readoutRowsRes.data?.objects;
@@ -418,9 +406,8 @@ export class PackageFunctions{
     const molQueryParams: MoleculeQueryParams = !structure ? {molecules: molIds.join(',')} :
       {structure: structure, structure_search_type: structure_search_type, structure_similarity_threshold: structure_similarity_threshold};
 
-    const moleculesExportResponse = await queryMoleculesAsync(vaultId, molQueryParams);
-    const moleculesExportId = getExportId(moleculesExportResponse);
-    const cddMols = await getAsyncResults(vaultId, moleculesExportId, 5, false) as ApiResponse<MoleculesQueryResult>;
+    const cddMols = await runAsyncExport(vaultId,
+      () => queryMoleculesAsync(vaultId, molQueryParams), 5) as ApiResponse<MoleculesQueryResult>;
     if (!cddMols)
       return DG.DataFrame.create();
 

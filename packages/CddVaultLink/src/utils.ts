@@ -92,6 +92,25 @@ export async function getAsyncResults(vaultId: number, exportId: number, timeout
   throw `Export timed out after ${timeoutMinutes} minutes`;
 }
 
+/** Run a CDD async-export query end-to-end: start it, poll until done, return the raw ApiResponse.
+ *  Throws on any error from `startQuery` or during polling (same as calling the parts manually). */
+export async function runAsyncExport(vaultId: number,
+  startQuery: () => Promise<ApiResponse<ExportStatus>>,
+  timeoutMinutes: number, text: boolean = false): Promise<ApiResponse<any>> {
+  const exportResponse = await startQuery();
+  const exportId = getExportId(exportResponse);
+  return await getAsyncResults(vaultId, exportId, timeoutMinutes, text);
+}
+
+/** Same as runAsyncExport, but converts the result into a DataFrame (SDF or JSON objects). */
+export async function runAsyncExportAsDf(vaultId: number,
+  startQuery: () => Promise<ApiResponse<ExportStatus>>,
+  timeoutMinutes: number, sdf: boolean = false): Promise<DG.DataFrame> {
+  const exportResponse = await startQuery();
+  const exportId = getExportId(exportResponse);
+  return await getAsyncResultsAsDf(vaultId, exportId, timeoutMinutes, sdf);
+}
+
 export function getExportId(exportResponse: ApiResponse<ExportStatus>): number {
   if (exportResponse.error)
     throw exportResponse.error;
@@ -103,17 +122,24 @@ export function getExportId(exportResponse: ApiResponse<ExportStatus>): number {
   return exportId;
 }
 
-export async function createMoleculesDfFromObjects(vaultId: number, objects?: any[]) {
+/** Shared df-from-CDD-objects pipeline: flatten via prepareDataForDf, build a DF,
+ *  apply an optional per-endpoint transform, reorder canonical columns, detect sem types. */
+export async function createCddDfFromObjects(objects: any[] | undefined,
+  postProcess?: (df: DG.DataFrame) => void): Promise<DG.DataFrame> {
   if (!objects)
     return DG.DataFrame.create();
-  prepareDataForDf(objects as any[]);
+  prepareDataForDf(objects);
   const df = DG.DataFrame.fromObjects(objects)!;
   if (!df)
     return DG.DataFrame.create();
-  createLinksFromIds(vaultId, df);
+  postProcess?.(df);
   reorderColummns(df);
   await grok.data.detectSemanticTypes(df);
   return df;
+}
+
+export async function createMoleculesDfFromObjects(vaultId: number, objects?: any[]) {
+  return createCddDfFromObjects(objects, (df) => createLinksFromIds(vaultId, df));
 }
 
 export async function createMoleculeIdLinks(vaultId: number, df: DG.DataFrame) {
@@ -128,16 +154,7 @@ export async function createMoleculeIdLinks(vaultId: number, df: DG.DataFrame) {
 }
 
 export async function createBatchesDfFromObjects(vaultId: number, objects?: any[]) {
-  if (!objects)
-    return DG.DataFrame.create();
-  prepareDataForDf(objects as any[]);
-  const df = DG.DataFrame.fromObjects(objects)!;
-  if (!df)
-    return DG.DataFrame.create();
-  createMoleculeIdLinks(vaultId, df);
-  reorderColummns(df);
-  await grok.data.detectSemanticTypes(df);
-  return df;
+  return createCddDfFromObjects(objects, (df) => createMoleculeIdLinks(vaultId, df));
 }
 
 export async function createLinksFromIds(vaultId: number, df: DG.DataFrame) {
@@ -166,15 +183,13 @@ export async function reorderColummns(df: DG.DataFrame) {
 }
 
 export function paramsStringFromObj(params: any): string {
-    let paramsStr = '';
-    const paramNames = Object.keys(params);
-    for (let i = 0; i < paramNames.length; i++) {
-        const paramVal = params[paramNames[i]];
-        if (paramVal) {
-            paramsStr += paramsStr === '' ? `?${paramNames[i]}=${paramVal}` : `&${paramNames[i]}=${paramVal}`;
-        }
-    }
-    return paramsStr;
+  const usp = new URLSearchParams();
+  for (const [key, val] of Object.entries(params)) {
+    if (val)
+      usp.append(key, String(val));
+  }
+  const str = usp.toString();
+  return str ? `?${str}` : '';
 }
 
 export function createObjectViewer(obj: any, title: string = 'Object Viewer', additionalHeaderEl?: HTMLElement): HTMLElement {

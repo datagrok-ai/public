@@ -23,7 +23,12 @@ Small plugin, flat `src/` layout — no deep hierarchy to navigate:
 
 ### Async query pattern
 
-Large CDD endpoints return an `id` for an async job. The flow is: call `query*Async` → get job id → poll via `getAsyncResults(id)` until the job's `status` is terminal → convert rows to a `DG.DataFrame` with `getAsyncResultsAsDf` / `prepareDataForDf`. When adding new bulk queries, follow this same two-step pattern rather than blocking on the sync endpoint.
+Large CDD endpoints return an `id` for an async job. Always go through the helpers in `utils.ts`:
+
+- `runAsyncExport(vaultId, () => queryXxxAsync(...), timeoutMinutes, text?)` — returns the raw `ApiResponse`.
+- `runAsyncExportAsDf(vaultId, () => queryXxxAsync(...), timeoutMinutes, sdf?)` — returns a `DG.DataFrame`.
+
+Both wrap the three-step *start query → `getExportId` → poll via `getAsyncResults` / `getAsyncResultsAsDf`* sequence. Do not call those three primitives directly from new code unless you need fine-grained control.
 
 ### Tab data loading (preview + Load all)
 
