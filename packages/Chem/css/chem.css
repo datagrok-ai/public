@@ -122,6 +122,11 @@
   flex-grow: 1;
 }
 
+.scaffold-tree-viewer .chem-mol-box.chem-drop-target {
+  border-color: var(--blue-1) !important;
+  border-style: solid !important;
+}
+
 .chem-scaffold-tree-generate-hint {
   text-align: center;
   position: absolute;
