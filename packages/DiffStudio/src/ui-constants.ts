@@ -38,6 +38,7 @@ export enum HINT {
   ABORT = 'Abort computations',
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
   CLICK_RUN = `Click to run`,
+  DBL_CLICK_RUN = `Double-click to run`,
   SOLVE = `Solve equations (${HOT_KEY.RUN})`,
   NO_MY_MODELS = 'No models in My files',
   FAILED_TO_LOAD_MY_MODELS = 'Failed to load models from My files: file system error',

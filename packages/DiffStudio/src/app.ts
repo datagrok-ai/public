@@ -483,19 +483,9 @@ export class DiffStudio {
   private startingInputs: Map<string, number> | null = null;
   private solverView: DG.TableView;
 
-  /** Tracks DiffStudio preview views so a new preview can close the previous ones. */
-  private static openPreviews = new Set<DG.ViewBase>();
-
   /** Close all tracked DiffStudio previews. */
   private static closeOpenPreviews(): void {
-    for (const v of DiffStudio.openPreviews) {
-      try {
-        v.close();
-      } catch (e) {
-        //view already disposed
-      }
-    }
-    DiffStudio.openPreviews.clear();
+    grok.shell.preview = null;
   }
 
   private entityPath: string = PATH.CUSTOM;
@@ -1809,7 +1799,6 @@ export class DiffStudio {
         DiffStudio.closeOpenPreviews();
         const solver = new DiffStudio(false, true, true);
         const preview = await solver.getStatePreview(state);
-        DiffStudio.openPreviews.add(preview);
         grok.shell.addPreview(preview);
 
         setTimeout(() => {
@@ -1861,7 +1850,6 @@ export class DiffStudio {
           DiffStudio.closeOpenPreviews();
           const solver = new DiffStudio(false, true, true);
           const preview = await solver.getFilePreview(file, path);
-          DiffStudio.openPreviews.add(preview);
           grok.shell.addPreview(preview);
           await this.saveModelToRecent(path, true);
         } else
@@ -2058,7 +2046,7 @@ export class DiffStudio {
   private getCardWithBuiltInModel(name: TITLE): HTMLDivElement {
     const card = this.getCard(name, MODEL_HINT.get(name) ?? '', modelImageLink.get(name));
 
-    card.onclick = async () => {
+    card.ondblclick = async () => {
       setTimeout(async () => {
         const solver = new DiffStudio();
         const v = await solver.runSolverApp(
@@ -2069,7 +2057,7 @@ export class DiffStudio {
       }, UI_TIME.BROWSING);
     };
 
-    ui.tooltip.bind(card, HINT.CLICK_RUN);
+    ui.tooltip.bind(card, HINT.DBL_CLICK_RUN);
 
     return card;
   } // getCardWithBuiltInModel
@@ -2084,7 +2072,7 @@ export class DiffStudio {
       const card = this.getCard(name, 'Custom model', CUSTOM_MODEL_IMAGE_LINK);
       ui.tooltip.bind(card, () => ui.divV([
         ui.divText(path),
-        ui.divText(HINT.CLICK_RUN),
+        ui.divText(HINT.DBL_CLICK_RUN),
       ]));
 
       const folderPath = path.slice(0, idx + 1);
@@ -2095,7 +2083,7 @@ export class DiffStudio {
         file = fileList.find((file) => file.nqName === path);
       }
 
-      card.onclick = async () => {
+      card.ondblclick = async () => {
         if (exist) {
           const solver = new DiffStudio(false, true, true);
           grok.shell.addView(await solver.getFilePreview(file, path));
