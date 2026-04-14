@@ -1,0 +1,51 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Purpose
+
+<!-- 2-3 sentences. What does the package do? What problem does it solve?
+     Who uses it? Where does it appear in the Datagrok UI? -->
+
+Auth / credentials: <!-- if applicable: what credentials are needed, which key, where set -->
+
+## Architecture
+
+<!-- One bullet per file in src/ that an agent would need to reason about (typically 3-6).
+     Each bullet: what lives there + the key exported names + anything subtle.
+     Do NOT catalog everything — the agent can ls. Only call out files with non-obvious responsibilities. -->
+
+- **`package.ts`** — entry point. <!-- What's registered here, via what mechanism. -->
+- **`<something>-api.ts`** — <!-- API wrapper layer, if applicable. -->
+- **`utils.ts`** — <!-- Load-bearing helpers. Call out the critical entry points by name. -->
+- **`<domain>.ts`** — <!-- Any domain-heavy file. -->
+
+### <Pattern name>
+
+<!-- If the package has 1-2 load-bearing patterns that show up repeatedly (e.g. async polling,
+     data loading, a specific UI flow), document each in its own small subsection. Keep it
+     contract-shaped: "the flow is X → Y → Z; use helper H; opt out by passing null".
+     Delete the section if the package has no such cross-cutting patterns. -->
+
+## Glossary — domain concepts → code
+
+<!-- Critical for scientific / domain-heavy packages. Skip if the domain is self-evident from
+     type names. Usually a table: concept | code type(s) | one-line meaning | relationships.
+     Add a small ASCII sketch if there are non-trivial cross-entity relationships. -->
+
+| Concept | Code type(s) | One-line meaning | Key relationships |
+|---|---|---|---|
+| ... | ... | ... | ... |
+
+## Conventions specific to this package
+
+<!-- Only package-specific rules. Do NOT duplicate repo-level rules (code style, ESLint,
+     package.g.ts auto-generation, fetchProxy usage, etc.) — those live in the parent CLAUDE.md.
+
+     Only add a bullet here when:
+     - A real harness-test run revealed the agent needed it.
+     - It overrides or tightens a repo-wide default for this package.
+     - It's a load-bearing invariant that isn't derivable from reading the code. -->
+
+- <!-- Example: "Never call CDD endpoints with raw fetch — always route through grok.dapi.fetchProxy." -->
+- <!-- Example: "Per-user persistence: use grok.userSettings.add(...); convention for keys is <PackageName>.<purpose>." -->
