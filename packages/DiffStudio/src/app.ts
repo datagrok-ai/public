@@ -586,6 +586,13 @@ export class DiffStudio {
     ];
   } // getRibbonPanels
 
+  /** Switch the app to the equations editor pane */
+  public showEditor(): void {
+    if (this.isEditState)
+      return;
+    this.appStateInputWgt.click();
+  }
+
   /** Update ribbon panel widgets */
   private updateRibbonWgts() {
     this.sensAnWgt.hidden = this.isEditState;

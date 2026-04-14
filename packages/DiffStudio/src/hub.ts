@@ -6,7 +6,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 
 import {_package} from './package';
 import {getMyModelFiles, getRecentModelsTable, getEquationsFromFile} from './utils';
-import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON} from './ui-constants';
+import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC} from './ui-constants';
 import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE} from './app';
 
 import '../css/app-styles.css';
@@ -57,11 +57,35 @@ export class DiffStudioHub {
 
   private buildButtons(): HTMLElement {
     const refreshBtn = ui.iconFA('sync', () => this.render(), 'Refresh view');
-    const createBtn = ui.button('Create', () => {}, 'Create new model');
-    const uploadBtn = ui.button('Upload', () => {}, 'Upload model from local files');
+    const createBtn = ui.button('Create', async () => {
+      const solver = new DiffStudio();
+      await solver.runSolverApp(undefined, EDITOR_STATE.BASIC_TEMPLATE);
+      solver.showEditor();
+    }, 'Create new model');
+    const uploadBtn = ui.button('Upload', () => this.uploadFromLocalFile(), 'Upload model from local files');
     const buttons = ui.divH([refreshBtn, createBtn, uploadBtn]);
     buttons.classList.add('diff-studio-hub-buttons');
     return buttons;
+  }
+
+  private uploadFromLocalFile(): void {
+    const fileInp = document.createElement('input');
+    fileInp.type = 'file';
+    fileInp.accept = `.${MISC.MODEL_FILE_EXT}`;
+    fileInp.onchange = () => {
+      const file = fileInp.files?.[0];
+      if (!file)
+        return;
+      const reader = new FileReader();
+      reader.addEventListener('load', async () => {
+        const equations = reader.result as string;
+        const solver = new DiffStudio();
+        await solver.runSolverApp(equations, EDITOR_STATE.FROM_FILE);
+        solver.showEditor();
+      }, false);
+      reader.readAsText(file);
+    };
+    fileInp.click();
   }
 
   private async buildMyModels(): Promise<void> {
