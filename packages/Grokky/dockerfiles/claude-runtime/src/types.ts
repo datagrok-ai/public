@@ -65,4 +65,4 @@ export type OutgoingMessage =
   | {type: 'error'; sessionId: string; message: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; toolName: string; input: any}
-  | {type: 'sync_status'; status: 'done' | 'error'; message?: string};
+  | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]};

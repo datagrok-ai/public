@@ -23,8 +23,9 @@ export class ClaudeRuntimeClient {
   public onError = new rxjs.Subject<ErrorEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
   public onInputRequest = new rxjs.Subject<InputRequestEvent>();
-  public onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();
+  public onSyncStatus = new rxjs.Subject<{status: string; message?: string; files?: string[]}>();
   public onClose = new rxjs.Subject<void>();
+  private _skillNames: string[] | null = null;
 
   private constructor() {}
 
@@ -102,7 +103,9 @@ export class ClaudeRuntimeClient {
         break;
       case 'sync_status':
         console.log('ClaudeRuntimeClient: sync status:', data.status, data.message ?? '');
-        this.onSyncStatus.next({status: data.status, message: data.message});
+        if (data.status === 'done' && Array.isArray(data.files))
+          this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
+        this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});
         break;
       }
     };
@@ -142,6 +145,10 @@ export class ClaudeRuntimeClient {
       scope,
       ...(packageName ? {packageName} : {}),
     }));
+  }
+
+  getSkillNames(): string[] {
+    return this._skillNames ?? [];
   }
 
   abort(sessionId: string): void {

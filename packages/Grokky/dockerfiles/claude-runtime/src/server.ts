@@ -427,7 +427,7 @@ app.get('/ws', upgradeWebSocket(() => {
             try {
               const result = await syncUserFiles(apiUrl, data.apiKey, scope, packageName);
               console.log(`sync_user_files: synced ${result.files.length} file(s) (scope=${scope})`);
-              emit(sender, {type: 'sync_status', status: 'done'});
+              emit(sender, {type: 'sync_status', status: 'done', files: result.files});
             } catch (e: any) {
               console.warn('sync_user_files failed:', e.message);
               emit(sender, {type: 'sync_status', status: 'error', message: e.message});
