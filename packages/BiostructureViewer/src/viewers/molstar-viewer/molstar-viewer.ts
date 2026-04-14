@@ -39,6 +39,10 @@ import {getDataProviderList} from '@datagrok-libraries/bio/src/utils/data-provid
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData} from './molstar-viewer-open';
+import {
+  AtomMapping3D, CHEM_SELECTION_EVENT, ChemSelectionEventArgs,
+  computeSerials, getSelectionCache, selectionCacheKey,
+} from './molstar-highlight-utils';
 import {defaults, molecule3dFileExtensions} from './consts';
 import {createRcsbViewer, disposeRcsbViewer} from './utils';
 
@@ -56,87 +60,6 @@ import {Color} from 'molstar/lib/mol-util/color';
 import {
   setStructureOverpaint, clearStructureOverpaint,
 } from 'molstar/lib/mol-plugin-state/helpers/structure-overpaint';
-
-/** Event name for cross-package atom selection synchronization.
- *  Mirrors CHEM_INTERACTIVE_SELECTION_EVENT from Chem's constants.ts. */
-export const CHEM_SELECTION_EVENT = 'chem-interactive-selection-changed';
-
-/** Atom-index mapping produced by Chem's mapAtomIndices2Dto3D.
- *  Mirrors the AtomIndexMapping interface from atom-index-mapper.ts
- *  (defined here to avoid a cross-package import). */
-interface AtomMapping3D {
-  mapping: number[];
-  method: string;
-  mappedCount: number;
-  pdbSerials?: number[];
-}
-
-/** Shape of the cross-package `chem-interactive-selection-changed` event. */
-interface ChemSelectionEventArgs {
-  column?: unknown;
-  rowIdx: number;
-  atoms: number[];
-  mapping3D?: AtomMapping3D | null;
-  persistent?: boolean;
-  clearAll?: boolean;
-  mol3DColumnName?: string;
-}
-
-/** Cached entry for atom selection events. */
-interface SelectionCacheEntry {
-  atoms: number[];
-  mapping3D: AtomMapping3D | null;
-}
-
-/** Builds a composite cache key: dfId-dfName-columnName-rowIdx. */
-function selectionCacheKey(
-  dfId: string, dfName: string, colName: string, rowIdx: number,
-): string {
-  return `${dfId}-${dfName}-${colName}-${rowIdx}`;
-}
-
-/**
- * Per-row cache of atom selection events. Uses composite keys
- * (dfId-dfName-colName-rowIdx) to avoid collisions across different
- * dataframes, columns, or tabs. Stored as a static LruCache on the
- * MolstarViewer class (initialized lazily at first event).
- */
-let _selectionCache: DG.LruCache<string, SelectionCacheEntry> | null = null;
-
-function getSelectionCache(): DG.LruCache<string, SelectionCacheEntry> {
-  if (!_selectionCache)
-    _selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
-  return _selectionCache;
-}
-
-// Register at module load — no lazy guard needed.
-grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
-  .subscribe((_args: unknown) => {
-    const args = _args as ChemSelectionEventArgs;
-    const rowIdx = args?.rowIdx ?? -1;
-    const atoms = args?.atoms ?? [];
-    const isPersistent = args?.persistent !== false;
-    const col = args?.column as DG.Column | undefined;
-    const dfId = col?.dataFrame?.id ?? '';
-    const dfName = col?.dataFrame?.name ?? '';
-    const colName = col?.name ?? '';
-
-    _package.logger.debug(`[molstar-picker-global] caching selection event atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${isPersistent}`);
-
-    if (isPersistent) {
-      const cache = getSelectionCache();
-      if (args?.clearAll) {
-        // Escape key: clear ALL cached entries.
-        _selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
-      } else {
-        const key = selectionCacheKey(dfId, dfName, colName, rowIdx);
-        if (atoms.length > 0)
-          cache.set(key, {atoms, mapping3D: args?.mapping3D ?? null});
-        else
-          cache.set(key, {atoms: [], mapping3D: null});
-      }
-    }
-  });
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -980,7 +903,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           if (this._stateChangeTimer) clearTimeout(this._stateChangeTimer);
           this._stateChangeTimer = setTimeout(() => {
             this._stateChangeTimer = null;
-            if (_selectionCache)
+            if (getSelectionCache())
               this._replayHighlightIfCached();
           }, 500) as any;
         };
@@ -1567,7 +1490,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         if (cell?.obj?.data) structure = cell.obj.data;
       }
 
-      const serials = this._computeSerials(atoms, mapping3D, structure);
+      const serials = computeSerials(atoms, mapping3D, structure);
       if (serials.length === 0) continue;
 
       // Store the data ref (first ref from addLigandOnStage) to scope
@@ -1638,52 +1561,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     }
   }
 
-  /** Computes 3D atom serial numbers from 2D atom indices using the
-   *  heavy-atom mapping strategy. Used by highlightAllLigandAtoms. */
-  private _computeSerials(
-    atomIndices: number[],
-    mapping3D?: AtomMapping3D | null,
-    structure?: Structure,
-  ): number[] {
-    if (mapping3D?.mapping) {
-      const pdbSerials = mapping3D.pdbSerials;
-      const serials = atomIndices
-        .map((i) => mapping3D.mapping[i])
-        .filter((idx) => idx >= 0)
-        .map((idx) => {
-          // If we have actual PDB serial numbers, use them.
-          // Otherwise fall back to 0-based index + 1.
-          if (pdbSerials && idx >= 0 && idx < pdbSerials.length)
-            return pdbSerials[idx];
-          return idx + 1;
-        });
-      _package.logger.debug(`[molstar-picker] _computeSerials: method=${mapping3D.method} atoms=[${atomIndices}] serials=[${serials}] hasPdbSerials=${!!pdbSerials}`);
-      return serials;
-    }
-    if (structure) {
-      const heavySerials: number[] = [];
-      try {
-        for (const unit of structure.units) {
-          const {elements} = unit;
-          const atomicNumber = unit.model.atomicHierarchy.atoms.type_symbol;
-          for (let j = 0; j < elements.length; j++) {
-            const eI = elements[j];
-            const sym = atomicNumber.value(eI);
-            if (sym !== 'H' && sym !== 'D')
-              heavySerials.push(eI + 1);
-          }
-        }
-      } catch { /* fall through */ }
-      if (heavySerials.length > 0) {
-        return atomIndices
-          .filter((i) => i >= 0 && i < heavySerials.length)
-          .map((i) => heavySerials[i]);
-      }
-    }
-    // Fallback: naive index+1
-    return atomIndices.map((i) => i + 1);
-  }
-
   /**
    * Highlights specific atoms in the 3D Molstar view using overpaint.
    *
@@ -1735,7 +1612,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         if (!structure && structures.length > 0)
           structure = structures[0]?.cell?.obj?.data;
 
-        mol3DSerials = this._computeSerials(atomIndices, mapping3D, structure);
+        mol3DSerials = computeSerials(atomIndices, mapping3D, structure);
       }
       if (mol3DSerials.length === 0) return;
 

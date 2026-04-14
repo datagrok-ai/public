@@ -5,9 +5,8 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {awaitGrid} from './utils';
-import {
-  CHEM_SELECTION_EVENT, DebounceIntervals, MolstarViewer, PROPS as msvPROPS,
-} from '../viewers/molstar-viewer/molstar-viewer';
+import {DebounceIntervals, MolstarViewer, PROPS as msvPROPS} from '../viewers/molstar-viewer/molstar-viewer';
+import {CHEM_SELECTION_EVENT} from '../viewers/molstar-viewer/molstar-highlight-utils';
 
 import {_package} from '../package-test';
 
