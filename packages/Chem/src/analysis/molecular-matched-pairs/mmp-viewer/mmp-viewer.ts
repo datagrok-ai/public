@@ -84,6 +84,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   mmpa: MMPA | null = null;
 
   parentTable: DG.DataFrame | null = null;
+  parentTableView: DG.TableView | null = null;
 
   //mmpRules: MmpRules | null = null;
   colorPalette: PaletteCodes | null = null;
@@ -132,6 +133,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   constructor() {
     super();
+    this.parentTableView = grok.shell.tv;
     DG.debounce(this.onPropertyChangedObs, 1000).subscribe(this.onPropertyChangedDebounced.bind(this));
     //properties
     this.moleculesColumnName = this.addProperty('moleculesColumnName', DG.TYPE.COLUMN, '',
@@ -355,6 +357,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       showError ? fpGrid.classList.add('chem-mmp-no-fragments') : fpGrid.classList.remove('chem-mmp-no-fragments');
     }));
 
+    const gridRoot = this.parentTableView?.grid?.root;
     const hints: MMPHint[] = [
       {
         element: fpGrid,
@@ -368,12 +371,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         position: ui.hints.POSITION.LEFT,
         class: 'chem-mmp-active-hint-element-horz',
       },
-      {
-        element: grok.shell.tv.grid.root,
+      ...(!gridRoot ? [] : [{
+        element: gridRoot,
         text: `Observe two molecules from the selected pair pinned on top of the grid.`,
         position: ui.hints.POSITION.RIGHT,
         class: 'chem-mmp-active-hint-element-horz',
-      },
+      }]),
       {
         element: this.showFragmentsChoice.root,
         // eslint-disable-next-line max-len
@@ -381,12 +384,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         position: ui.hints.POSITION.LEFT,
         parentClass: 'chem-mmp-active-hint-adjust-vert-2px',
       },
-      {
-        element: grok.shell.tv.grid.root,
+      ...(!gridRoot ? [] : [{
+        element: gridRoot,
         text: `Change current row to see the changes in Fragments grid`,
         position: ui.hints.POSITION.RIGHT,
         class: 'chem-mmp-active-hint-element-horz',
-      },
+      }]),
       {
         element: this.followCurrentRowInFragGrid.root,
         // eslint-disable-next-line max-len
