@@ -6,7 +6,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 
 import {_package} from './package';
 import {getMyModelFiles, getRecentModelsTable, getEquationsFromFile} from './utils';
-import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC} from './ui-constants';
+import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC, PATH, LINK} from './ui-constants';
 import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE} from './app';
 
 import '../css/app-styles.css';
@@ -19,6 +19,7 @@ export class DiffStudioHub {
   constructor() {
     this.view = DG.View.fromRoot(this.root);
     this.view.name = this.name;
+    this.view.helpUrl = LINK.DIF_STUDIO_REL;
     grok.shell.windows.showHelp = false;
     grok.shell.windows.showProperties = false;
   }
@@ -159,10 +160,14 @@ export class DiffStudioHub {
     const cards = TEMPLATE_TITLES.map((title) => {
       const description = MODEL_HINT.get(title) ?? '';
       const iconPath = this.getIconUrl(title);
-      return this.buildModelCard(title, description, async () => {
+      const state = STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE;
+      const run = async () => {
         const solver = new DiffStudio();
-        await solver.runSolverApp(undefined, STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE);
-      }, iconPath);
+        await solver.runSolverApp(undefined, state);
+      };
+      const card = this.buildModelCard(title, description, run, iconPath);
+      this.addModelContextMenu(card, TITLE.TEMPL, state, run);
+      return card;
     });
 
     this.root.append(ui.h1('Templates'), this.buildCardsContainer(cards));
@@ -172,13 +177,34 @@ export class DiffStudioHub {
     const cards = EXAMPLE_TITLES.map((title) => {
       const description = MODEL_HINT.get(title) ?? '';
       const iconPath = this.getIconUrl(title);
-      return this.buildModelCard(title, description, async () => {
+      const state = STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE;
+      const run = async () => {
         const solver = new DiffStudio();
-        await solver.runSolverApp(undefined, STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE);
-      }, iconPath);
+        await solver.runSolverApp(undefined, state);
+      };
+      const card = this.buildModelCard(title, description, run, iconPath);
+      this.addModelContextMenu(card, TITLE.LIBRARY, state, run);
+      return card;
     });
 
     this.root.append(ui.h1('Library'), this.buildCardsContainer(cards));
+  }
+
+  private addModelContextMenu(card: HTMLElement, section: TITLE, state: EDITOR_STATE, run: () => void): void {
+    card.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      DG.Menu.popup()
+        .item('Run', run, null, {description: 'Run model'})
+        .item('Copy link', async () => {
+          const url = `${window.location.origin}${PATH.APPS_DS}/${section}/${state}`;
+          await navigator.clipboard.writeText(url);
+          grok.shell.info('Model link copied to clipboard');
+        }, null, {description: 'Copy the model link to clipboard'})
+        .item('Help', () => window.open(LINK.DIF_STUDIO, '_blank'), null,
+          {description: 'Open help in a new tab'})
+        .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+    });
   }
 
   private getIconUrl(title: TITLE): string {
