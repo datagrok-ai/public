@@ -26,68 +26,6 @@ export class PackageFunctions {
     setupSearchUI();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
-
-    // Ensure the agents/ folder exists in My files and the Home connection
-    // is tagged with "ai-skills" so other users can discover shared skills.
-    try {
-      const conn = await grok.dapi.connections.filter('name = "My files"').first();
-      if (conn) {
-        const agentsPath = `${conn.nqName}/agents`;
-        const exists = await grok.dapi.files.exists(agentsPath);
-        if (!exists) {
-          await grok.dapi.files.writeAsText(`${agentsPath}/README.md`,
-            'Place your personal knowledge files here. Claude will use them as context.');
-          console.log('Grokky: created agents/ folder');
-        }
-        if (!conn.hasTag('ai-skills')) {
-          conn.tag('ai-skills');
-          await grok.dapi.connections.save(conn);
-          console.log('Grokky: tagged Home connection with ai-skills');
-        }
-      }
-    }
-    catch (e) {
-      console.warn('Grokky: failed to set up agents/ folder:', e);
-    }
-
-    // Trigger a sync on any file operation (create, upload, delete, rename,
-    // move) in the agents folder. The generic 'd4-file-event' fires for all
-    // operations; the typed onFileEdited only covers in-place edits/saves.
-    // eventData is EventData wrapping Dart FileEventArgs — the Dart-specific
-    // properties (operation, files) live on eventData.dart since there is no
-    // JS wrapper for FileEventArgs.
-    grok.events.onEvent('d4-file-event').subscribe((eventData: any) => {
-      const dart = eventData?.dart ?? eventData;
-      const op: string = dart?.operation ?? '';
-      const dartFiles = dart?.files;
-      // Convert Dart List<FileInfo> to JS array of FileInfo
-      const files: DG.FileInfo[] = dartFiles
-        ? Array.from({length: dartFiles.length}, (_: any, i: number) => DG.toJs(dartFiles[i]))
-        : [];
-      const match = files.some((f: DG.FileInfo) => {
-        const p = f?.fullPath ?? f?.path ?? f?.name ?? '';
-        return p.includes('agents');
-      });
-      if (match) {
-        console.log(`Grokky: agents file event (op=${op}), triggering sync`);
-        ClaudeRuntimeClient.getInstance().syncUserFiles('user-files');
-      }
-    });
-
-    // Also catch in-place file edits (save) — fires a separate event.
-    grok.events.onFileEdited.subscribe((fi: DG.FileInfo) => {
-      const filePath = fi.fullPath ?? fi.path ?? '';
-      if (filePath.includes('agents')) {
-        console.log(`Grokky: agents file edited (${filePath}), triggering sync`);
-        ClaudeRuntimeClient.getInstance().syncUserFiles('user-files');
-      }
-    });
-
-    // Trigger a package-level sync when any package is loaded (covers
-    // publishes and updates that arrive at this client).
-    grok.events.onEvent(DG.EVENT_TYPE.PACKAGE_LOADED).subscribe((args) => {
-      ClaudeRuntimeClient.getInstance().syncUserFiles('packages', args.name);
-    });
   }
 
   @grok.decorators.autostart({tags: ['autostart']})
