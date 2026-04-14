@@ -37,6 +37,25 @@ import {
 } from '../utils/chem-atom-picker-utils';
 
 import {_package} from '../package';
+import {AtomIndexMapping} from '../utils/atom-index-mapper';
+
+/** Shape of the cross-package atom selection event. */
+interface ChemSelectionEvent {
+  column: DG.Column;
+  rowIdx: number;
+  atoms: number[];
+  persistent?: boolean;
+  clearAll?: boolean;
+  mapping3D?: AtomIndexMapping | null;
+  mol3DColumnName?: string;
+}
+
+/** Substruct provider with atom-picker metadata fields. */
+interface AtomPickerProvider extends ISubstructProvider {
+  __atomPicker?: boolean;
+  __rowIdx?: number;
+  __atoms?: Set<number>;
+}
 
 interface IMolRenderingInfo {
   //mol: RDMol | null; // null when molString is invalid?
@@ -888,8 +907,7 @@ M  END
     if (!molCol) return;
 
     // Remove all atom-picker providers from the column.
-    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean};
-    const providers = (molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const providers = (molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as AtomPickerProvider[];
     molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = providers.filter((p) => !p.__atomPicker);
     this._lastHoveredAtom = null;
     this._previewAtomIdx = null;
@@ -912,8 +930,7 @@ M  END
   /** Returns the persistent (Alt+painted) atoms for a given row. These
    *  are the atoms stored in the provider's `__atoms` set. */
   private _getPersistentAtoms(col: DG.Column, rowIdx: number): Set<number> {
-    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
-    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as AtomPickerProvider[];
     const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
     return new Set<number>(prior?.__atoms ?? []);
   }
@@ -933,8 +950,7 @@ M  END
    *  for a single atom instead of clearing all. */
   private _removeAtomFromRow(col: DG.Column, rowIdx: number, atomIdx: number,
     bondAtoms: Map<number, [number, number]>): void {
-    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
-    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as AtomPickerProvider[];
     const prov = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
     if (!prov?.__atoms?.has(atomIdx)) return; // not in selection
 
@@ -967,7 +983,7 @@ M  END
 
     // Fire persistent event so 3D cache + Molstar update.
     const atoms = prov.__atoms.size > 0 ? [...prov.__atoms] : [];
-    const eventArgs: any = {column: col, rowIdx, atoms, persistent: true};
+    const eventArgs: ChemSelectionEvent = {column: col, rowIdx, atoms, persistent: true};
     try {
       const df = col.dataFrame;
       if (df) {
@@ -1007,8 +1023,7 @@ M  END
     // Mark as non-persistent so the 3D cache isn't overwritten.
     this._updateRowSelection(col, rowIdx, [...combined], {add: true}, bondAtoms, true, false);
     // Restore __atoms to persistent-only so _getPersistentAtoms stays correct.
-    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
-    const providers = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const providers = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as AtomPickerProvider[];
     const prov = providers.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
     if (prov) prov.__atoms = persistent;
   }
@@ -1041,10 +1056,9 @@ M  END
       this._updateRowSelection(molCol, prevRow, [...persistent], {add: true}, bondAtoms, true, false);
     } else {
       // No persistent atoms — clear everything.
-      type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean};
-      const providers = (molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+      const providers = (molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as AtomPickerProvider[];
       molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = providers.filter(
-        (p) => !p.__atomPicker || (p as any).__rowIdx !== prevRow);
+        (p) => !p.__atomPicker || p.__rowIdx !== prevRow);
       // Fire event to clear 3D highlights too (non-persistent).
       grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
         column: molCol, rowIdx: prevRow, atoms: [], persistent: false,
@@ -1059,8 +1073,7 @@ M  END
    *  highlighted bonds from the new atom set using `bondAtoms`. */
   private _toggleAtomInRow(col: DG.Column, rowIdx: number, atomIdx: number,
     bondAtoms: Map<number, [number, number]>): void {
-    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
-    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as AtomPickerProvider[];
     const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
     const current = new Set<number>(prior?.__atoms ?? []);
     if (current.has(atomIdx)) current.delete(atomIdx);
@@ -1072,7 +1085,7 @@ M  END
     for (const a of atomsArr) highlightAtomColors[a] = pickColor;
     const {bondsArr, highlightBondColors} =
       computeSelectedBonds(current, bondAtoms, pickColor);
-    const provider: TaggedProvider = {
+    const provider: AtomPickerProvider = {
       getSubstruct: (ridx) => {
         if (!this._isPickerActive(col)) return undefined;
         if (ridx !== rowIdx) return undefined;
@@ -1092,7 +1105,7 @@ M  END
     // same dataframe (e.g. AutoDock poses). The mapping is computed via
     // RDKit substructure match between the 2D SMILES and the 3D pose, so
     // BiostructureViewer doesn't need to import RDKit or the mapper.
-    const eventArgs: any = {column: col, rowIdx, atoms: atomsArr};
+    const eventArgs: ChemSelectionEvent = {column: col, rowIdx, atoms: atomsArr};
     try {
       const df = col.dataFrame;
       if (df) {
@@ -1133,8 +1146,7 @@ M  END
   private _updateRowSelection(col: DG.Column, rowIdx: number, boxed: number[],
     modifiers: {add: boolean}, bondAtoms: Map<number, [number, number]>,
     fire3DEvent: boolean = true, persistent: boolean = true): void {
-    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
-    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as AtomPickerProvider[];
     const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
     const current = new Set<number>(prior?.__atoms ?? []);
 
@@ -1160,7 +1172,7 @@ M  END
     const {bondsArr, highlightBondColors} =
       computeSelectedBonds(current, bondAtoms, pickColor);
 
-    const provider: TaggedProvider = {
+    const provider: AtomPickerProvider = {
       getSubstruct: (ridx) => {
         if (!this._isPickerActive(col)) return undefined;
         if (ridx !== rowIdx) return undefined;
@@ -1179,7 +1191,7 @@ M  END
     // Only fire the 3D event for persistent (Alt+hover) selections,
     // not for preview-only highlights which are 2D-only and transient.
     if (fire3DEvent) {
-      const eventArgs2: any = {column: col, rowIdx, atoms: atomsArr, persistent};
+      const eventArgs2: ChemSelectionEvent = {column: col, rowIdx, atoms: atomsArr, persistent};
       try {
         const df = col.dataFrame;
         if (df) {
