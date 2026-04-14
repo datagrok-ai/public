@@ -1954,12 +1954,34 @@ export class DiffStudio {
   /** Return folder with built-in models (examples/templates) */
   private getFolderWithBultInModels(models: TITLE[], title: string): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(title, null, false);
-    folder.onSelected.subscribe(() => {
+    let previewTimer: number | null = null;
+
+    const buildView = (): DG.View => {
       const view = this.getBuiltInModelsCardsView(models);
       view.name = title;
-      grok.shell.addView(view, undefined, undefined, null);
       view.basePath = 'apps/DiffStudio/';
       view.path = `${title}`;
+      return view;
+    };
+
+    folder.onSelected.subscribe(() => {
+      if (previewTimer !== null)
+        return;
+      previewTimer = window.setTimeout(() => {
+        previewTimer = null;
+        DiffStudio.closeOpenPreviews();
+        grok.shell.addPreview(buildView());
+      }, UI_TIME.DBL_CLICK_DELAY);
+    });
+
+    folder.root.addEventListener('dblclick', (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      if (previewTimer !== null) {
+        clearTimeout(previewTimer);
+        previewTimer = null;
+      }
+      grok.shell.addView(buildView(), undefined, undefined, null);
     });
 
     return folder;
@@ -1968,19 +1990,20 @@ export class DiffStudio {
   /** Return folder with recent models */
   private getFolderWithRecentModels(): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
+    let previewTimer: number | null = null;
 
-    folder.onSelected.subscribe(async () => {
+    const buildView = async (): Promise<DG.View> => {
       const view = DG.View.create();
 
       try {
-        const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
-        const files = await grok.dapi.files.list(folder);
+        const folderPath = `${grok.shell.user.project.name}:${PATH.HOME}/`;
+        const files = await grok.dapi.files.list(folderPath);
         const names = files.map((file) => file.name);
 
         if (names.includes(PATH.RECENT)) {
           const root = ui.div([]);
 
-          const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+          const dfs = await grok.dapi.files.readBinaryDataFrames(`${folderPath}${PATH.RECENT}`);
           const recentDf = dfs[0];
           const size = recentDf.rowCount;
           const infoCol = recentDf.col(TITLE.INFO);
@@ -2002,12 +2025,33 @@ export class DiffStudio {
           view.append(ui.h2('No recent models'));
 
         view.name = TITLE.RECENT;
-        grok.shell.addView(view, undefined, undefined, null);
         view.basePath = 'apps/DiffStudio/';
         view.path = TITLE.RECENT;
       } catch (err) {
         grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
-      };
+      }
+
+      return view;
+    };
+
+    folder.onSelected.subscribe(() => {
+      if (previewTimer !== null)
+        return;
+      previewTimer = window.setTimeout(async () => {
+        previewTimer = null;
+        DiffStudio.closeOpenPreviews();
+        grok.shell.addPreview(await buildView());
+      }, UI_TIME.DBL_CLICK_DELAY);
+    });
+
+    folder.root.addEventListener('dblclick', async (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      if (previewTimer !== null) {
+        clearTimeout(previewTimer);
+        previewTimer = null;
+      }
+      grok.shell.addView(await buildView(), undefined, undefined, null);
     });
 
     return folder;
