@@ -4,6 +4,7 @@
 
 * Fixed crash in checkCurrentView when table is opened in Files preview without a registered TableView
 * Substructure filter: Fixed similarity cutoff and fingerprint not syncing to the slider/UI on view clone
+* GROK-19994: MMP: Fixed crash when navigating away from MMP view while tab content is lazily rendered
 
 ## 1.17.4 (2026-03-30)
 
