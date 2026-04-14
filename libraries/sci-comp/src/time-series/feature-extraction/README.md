@@ -5,20 +5,107 @@ for [time series](https://en.wikipedia.org/wiki/Time_series). Part of `@datagrok
 
 Extracts **45 features** per value column:
 
-| # | Category | Features | Count |
-|---|----------|----------|-------|
-| 1 | Basic statistics | mean, median, minimum, maximum, length, sum_values, abs_energy, root_mean_square, standard_deviation, variance | 10 |
-| 2 | Boolean flags | variance_larger_than_standard_deviation, has_duplicate, has_duplicate_max, has_duplicate_min | 4 |
-| 3 | Location | first_location_of_minimum, first_location_of_maximum, last_location_of_minimum, last_location_of_maximum | 4 |
-| 4 | Change metrics | mean_change, mean_abs_change, absolute_sum_of_changes, mean_second_derivative_central | 4 |
-| 5 | Uniqueness | percentage_of_reoccurring_datapoints_to_all_datapoints, ratio_value_number_to_time_series_length | 2 |
-| 6 | Counting | count_above_mean, count_below_mean, longest_strike_above_mean, longest_strike_below_mean | 4 |
-| 7 | Complexity | cid_ce (normalize=false), cid_ce (normalize=true) | 2 |
-| 8 | Symmetry & spread | symmetry_looking (r=0.05, 0.25, 0.45), large_standard_deviation (r=0.05, 0.25, 0.45) | 6 |
-| 9 | Linear trend | slope, intercept, rvalue, pvalue, stderr | 5 |
-| 10 | Threshold | ratio_beyond_r_sigma (r=1, 1.5, 2) | 3 |
-| 11 | Crossings | number_crossing_m (m=0) | 1 |
-| | | **Total** | **45** |
+### Basic statistics
+
+| # | Feature | Description |
+|---|--------|------------|
+| 1 | mean | Average value of the time series |
+| 2 | median | Median value |
+| 3 | minimum | Minimum value |
+| 4 | maximum | Maximum value |
+| 5 | length | Length of the time series |
+| 6 | sum_values | Sum of all values |
+| 7 | abs_energy | Sum of squared values |
+| 8 | root_mean_square | Square root of mean squared values |
+| 9 | standard_deviation | Standard deviation |
+| 10 | variance | Variance |
+
+### Boolean flags
+
+| # | Feature | Description |
+|---|--------|------------|
+| 11 | variance_larger_than_standard_deviation | Whether variance > standard deviation |
+| 12 | has_duplicate | Whether there are duplicate values |
+| 13 | has_duplicate_max | Whether maximum value appears more than once |
+| 14 | has_duplicate_min | Whether minimum value appears more than once |
+
+### Location
+
+| # | Feature | Description |
+|---|--------|------------|
+| 15 | first_location_of_minimum | Index of first occurrence of minimum |
+| 16 | first_location_of_maximum | Index of first occurrence of maximum |
+| 17 | last_location_of_minimum | Index of last occurrence of minimum |
+| 18 | last_location_of_maximum | Index of last occurrence of maximum |
+
+### Change metrics
+
+| # | Feature | Description |
+|---|--------|------------|
+| 19 | mean_change | Mean of consecutive differences |
+| 20 | mean_abs_change | Mean of absolute consecutive differences |
+| 21 | absolute_sum_of_changes | Sum of absolute differences |
+| 22 | mean_second_derivative_central | Mean second derivative (central difference) |
+
+### Uniqueness
+
+| # | Feature | Description |
+|---|--------|------------|
+| 23 | percentage_of_reoccurring_datapoints_to_all_datapoints | Fraction of repeating values |
+| 24 | ratio_value_number_to_time_series_length | Number of unique values divided by length |
+
+### Counting
+
+| # | Feature | Description |
+|---|--------|------------|
+| 25 | count_above_mean | Number of values above mean |
+| 26 | count_below_mean | Number of values below mean |
+| 27 | longest_strike_above_mean | Longest consecutive sequence above mean |
+| 28 | longest_strike_below_mean | Longest consecutive sequence below mean |
+
+### Complexity
+
+| # | Feature | Description |
+|---|--------|------------|
+| 29 | cid_ce (normalize=false) | Complexity estimate (raw) |
+| 30 | cid_ce (normalize=true) | Complexity estimate (normalized) |
+
+### Symmetry & spread
+
+| # | Feature | Description |
+|---|--------|------------|
+| 31 | symmetry_looking (r=0.05) | Symmetry check with tolerance r=0.05 |
+| 32 | symmetry_looking (r=0.25) | Symmetry check with tolerance r=0.25 |
+| 33 | symmetry_looking (r=0.45) | Symmetry check with tolerance r=0.45 |
+| 34 | large_standard_deviation (r=0.05) | Std deviation larger than r * range |
+| 35 | large_standard_deviation (r=0.25) | Same with r=0.25 |
+| 36 | large_standard_deviation (r=0.45) | Same with r=0.45 |
+
+### Linear trend
+
+| # | Feature | Description |
+|---|--------|------------|
+| 37 | slope | Slope of linear regression |
+| 38 | intercept | Intercept of regression line |
+| 39 | rvalue | Correlation coefficient |
+| 40 | pvalue | p-value of slope |
+| 41 | stderr | Standard error of slope |
+
+### Threshold
+
+| # | Feature | Description |
+|---|--------|------------|
+| 42 | ratio_beyond_r_sigma (r=1) | Fraction beyond 1σ |
+| 43 | ratio_beyond_r_sigma (r=1.5) | Fraction beyond 1.5σ |
+| 44 | ratio_beyond_r_sigma (r=2) | Fraction beyond 2σ |
+
+### Crossings
+
+| # | Feature | Description |
+|---|--------|------------|
+| 45 | number_crossing_m (m=0) | Number of crossings of level m=0 |
+
+**Total number of features: 45**
 
 ## Installation
 
@@ -182,3 +269,8 @@ npx tsx src/time-series/feature-extraction/examples/multiple-samples.ts
 # Multiple columns — cross-channel comparison
 npx tsx src/time-series/feature-extraction/examples/multiple-columns.ts
 ```
+## References
+
+1. Christ, M., Braun, N., Neuffer, J. and Kempa-Liehr A.W. (2018). Time Series FeatuRe Extraction on basis of Scalable Hypothesis tests (tsfresh – A Python package). Neurocomputing 307 (2018) 72-77, https://doi.org/10.1016/j.neucom.2018.03.067.
+  
+2. Herff, C., Krusienski, D.J. (2019). Extracting Features from Time Series. In: Kubben, P., Dumontier, M., Dekker, A. (eds) Fundamentals of Clinical Data Science. Springer, Cham. https://doi.org/10.1007/978-3-319-99713-1_7
