@@ -331,8 +331,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
       userDir = result.dir;
       agentFiles = result.files;
       console.log(`handleMessage: user dir=${userDir}, ${agentFiles?.length ?? 0} agent file(s)`);
-    }
-    catch (e: any) {
+    } catch (e: any) {
       console.warn('handleMessage: failed to sync user files:', e.message);
     }
   }
@@ -429,8 +428,7 @@ app.get('/ws', upgradeWebSocket(() => {
               const result = await syncUserFiles(apiUrl, data.apiKey, scope, packageName);
               console.log(`sync_user_files: synced ${result.files.length} file(s) (scope=${scope})`);
               emit(sender, {type: 'sync_status', status: 'done'});
-            }
-            catch (e: any) {
+            } catch (e: any) {
               console.warn('sync_user_files failed:', e.message);
               emit(sender, {type: 'sync_status', status: 'error', message: e.message});
             }
