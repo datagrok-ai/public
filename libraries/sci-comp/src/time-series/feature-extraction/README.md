@@ -1,7 +1,7 @@
 # Time Series Feature Extraction
 
 Pure TypeScript implementation of feature calculators
-for [time series](https://en.wikipedia.org/wiki/Time_series). Part of `@datagrok-libraries/sci-comp`.
+for [time series](https://en.wikipedia.org/wiki/Time_series). Part of `@datagrok-libraries/sci-comp`. Feature names follow naming conventions compatible with the [tsfresh](https://tsfresh.readthedocs.io/en/latest/index.html) library, enabling seamless interoperability.
 
 Extracts **45 features** per value column:
 
