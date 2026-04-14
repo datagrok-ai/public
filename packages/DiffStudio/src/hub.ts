@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 
 import {_package} from './package';
-import {getMyModelFiles, getRecentModelsTable, getEquationsFromFile} from './utils';
+import {getRecentModelsTable, getEquationsFromFile} from './utils';
 import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC, PATH, LINK} from './ui-constants';
 import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE} from './app';
 
@@ -36,7 +36,6 @@ export class DiffStudioHub {
       this.buildTemplates();
       this.buildLibrary();
       await this.buildRecent();
-      await this.buildMyModels();
     } finally {
       ui.setUpdateIndicator(this.root, false);
     }
@@ -87,30 +86,6 @@ export class DiffStudioHub {
       reader.readAsText(file);
     };
     fileInp.click();
-  }
-
-  private async buildMyModels(): Promise<void> {
-    try {
-      const myModelFiles = await getMyModelFiles();
-      if (myModelFiles.length === 0)
-        return;
-
-      const cards = myModelFiles.map((file) => {
-        const name = file.name;
-        const description = file.fullPath;
-        return this.buildModelCard(name, description, async () => {
-          const equations = await getEquationsFromFile(file.fullPath);
-          if (equations) {
-            const solver = new DiffStudio();
-            await solver.runSolverApp(equations, EDITOR_STATE.FROM_FILE);
-          }
-        });
-      });
-
-      this.root.append(ui.h1('My Models'), this.buildCardsContainer(cards));
-    } catch (e) {
-      // silently skip if loading fails
-    }
   }
 
   private async buildRecent(): Promise<void> {
