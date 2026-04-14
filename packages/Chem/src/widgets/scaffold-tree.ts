@@ -2455,6 +2455,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.attachGenerateIconTooltip();
 
     this.root.appendChild(ui.splitV([iconHost, this.tree.root]));
+    // Disable inner scroll on tree root to avoid double scrollbar.
+    // Inline !important is needed to override the high-specificity platform selector on ui-box children.
+    this.tree.root.style.setProperty('overflow', 'visible', 'important');
     enableToolbar(thisViewer);
 
     this._message = ui.divText('', 'chem-scaffold-tree-generate-message-hint');
