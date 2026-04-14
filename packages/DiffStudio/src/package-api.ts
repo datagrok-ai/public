@@ -36,13 +36,6 @@ export namespace funcs {
   }
 
   /**
-  Browse and manage Diff Studio models
-  */
-  export async function diffStudioHub(): Promise<DG.View> {
-    return await grok.functions.call('DiffStudio:DiffStudioHub', {});
-  }
-
-  /**
   Interactive solver of ordinary differential equations (ODE)
   */
   export async function runDiffStudioDemo(): Promise<void> {

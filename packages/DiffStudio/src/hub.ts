@@ -25,14 +25,19 @@ export class DiffStudioHub {
   }
 
   async render(): Promise<void> {
+    this.renderHeader();
+    await this.renderRest();
+  }
+
+  renderHeader(): void {
+    ui.empty(this.root);
+    this.root.append(this.buildHeader());
+  }
+
+  async renderRest(): Promise<void> {
     ui.setUpdateIndicator(this.root, true);
     try {
-      ui.empty(this.root);
-      this.root.append(
-        this.buildHeader(),
-        this.buildButtons(),
-      );
-
+      this.root.append(this.buildButtons());
       this.buildTemplates();
       this.buildLibrary();
       await this.buildRecent();

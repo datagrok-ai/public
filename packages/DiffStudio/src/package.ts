@@ -18,7 +18,7 @@ import {ACID_PRODUCTION_MODEL_INFO} from './demo/acid-production';
 import {POLLUTION_MODEL_INFO} from './demo/pollution';
 
 import {DF_NAME} from './constants';
-import {UI_TIME} from './ui-constants';
+import {PATH, TITLE, UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from 'diff-grok';
 import {Model, ModelInfo} from './model';
@@ -79,8 +79,24 @@ export class PackageFunctions {
   })
   static async runDiffStudio(): Promise<DG.ViewBase> {
     const path = grok.shell.startUri;
-    const toSetStartingPath = (path === window.location.href);
 
+    const wasProcessed = DiffStudio.isStartingUriProcessed;
+    DiffStudio.isStartingUriProcessed = true;
+
+    const isDeepLink = path.includes(PATH.MODEL) ||
+      path.includes(PATH.PARAM) ||
+      path.includes(`/${TITLE.TEMPL}`) ||
+      path.includes(`/${TITLE.LIBRARY}`) ||
+      path.includes(`/${TITLE.RECENT}`);
+
+    if (wasProcessed || !isDeepLink) {
+      const hub = new DiffStudioHub();
+      hub.renderHeader();
+      setTimeout(() => hub.renderRest(), 0);
+      return hub.view;
+    }
+
+    const toSetStartingPath = (path === window.location.href);
     const proxiView = DG.View.create();
 
     setTimeout(async () => {
@@ -98,17 +114,6 @@ export class PackageFunctions {
     }, UI_TIME.APP_RUN_SOLVING);
 
     return proxiView;
-  }
-
-  @grok.decorators.app({
-    name: 'Diff Studio Hub',
-    description: 'Browse and manage Diff Studio models',
-    browsePath: 'Compute',
-  })
-  static async diffStudioHub(): Promise<DG.ViewBase> {
-    const hub = new DiffStudioHub();
-    await hub.render();
-    return hub.view;
   }
 
   @grok.decorators.demo({
