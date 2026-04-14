@@ -9,16 +9,14 @@
  * structures add explicit hydrogens. A naive index+1 offset doesn't
  * work — we need a topology-based substructure match.
  *
- * Three-tier fallback chain:
- *   1. Strict substructure match (handles BRANCH reorder + H addition)
- *   2. Relaxed match (sanitize, ignore chirality — handles protonation)
- *   3. Heavy-atom serial order (H-skip — last resort when topology
- *      matching fails entirely)
+ * Four-tier fallback chain:
+ *   1.  Strict substructure match (works for SDF/molblock with bond orders)
+ *   2a. SMARTS bond-agnostic match (any-bond query, preserves atom types)
+ *   2b. Flattened molblock match (all single bonds, less precise)
+ *   3.  Heavy-atom serial order (last resort when topology matching fails)
  */
 
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-
-// -- PDB/PDBQT → Molblock converter -----------------------------------------
 
 // -- PDB/PDBQT → Molblock converter -----------------------------------------
 
@@ -144,7 +142,7 @@ export interface AtomIndexMapping {
    *  mapping[i] = 3D index for 2D atom i, or -1 if unmapped. */
   mapping: number[];
   /** Which tier of the fallback chain produced this mapping. */
-  method: 'substruct' | 'relaxed' | 'heavy-atom-order';
+  method: 'substruct' | 'heavy-atom-order';
   /** Number of successfully mapped atoms. */
   mappedCount: number;
   /** Optional: actual PDB serial numbers from the file (1-based).
@@ -196,27 +194,26 @@ export function mapAtomIndices2Dto3D(
       if (pdbAtomsParsed.length > 0) {
         const molblock = pdbAtomsToMolblock(pdbAtomsParsed);
         if (molblock) {
-          // Try without sanitization first — bond orders are all 1 which
-          // may trip sanitization for aromatic systems.
-          mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: false, removeHs: false}));
-          if (mol3D && !mol3D.is_valid()) {mol3D.delete(); mol3D = null;}
+          // Try parsing with progressively looser options.
+          const tryParse = (opts: object): RDMol | null => {
+            const m = rdkit.get_mol(molblock, JSON.stringify(opts));
+            if (m && !m.is_valid()) {
+              m.delete();
+              return null;
+            }
+            return m;
+          };
+          mol3D = tryParse({sanitize: false, removeHs: false}) ??
+            tryParse({sanitize: true, removeHs: false});
 
-          // If no-sanitize fails, try with sanitization.
-          if (!mol3D) {
-            mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: true, removeHs: false}));
-            if (mol3D && !mol3D.is_valid()) {mol3D.delete(); mol3D = null;}
-          }
-
-          // If sanitization fails with H, retry without H but keep a
-          // mapping from heavy-atom index back to the original PDB index.
+          // Last resort: strip H but track the index mapping.
           if (!mol3D) {
             heavyToPdbIdx = [];
             for (let i = 0; i < pdbAtomsParsed.length; i++) {
               if (pdbAtomsParsed[i].element !== 'H' && pdbAtomsParsed[i].element !== 'D')
                 heavyToPdbIdx.push(i);
             }
-            mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: true, removeHs: true}));
-            if (mol3D && !mol3D.is_valid()) {mol3D.delete(); mol3D = null;}
+            mol3D = tryParse({sanitize: true, removeHs: true});
           }
           if (mol3D) mol3DFromPdb = true;
         }

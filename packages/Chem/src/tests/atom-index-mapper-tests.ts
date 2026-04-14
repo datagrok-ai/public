@@ -139,7 +139,7 @@ category('atom-index-mapper', () => {
     const mapping = mapAtomIndices2Dto3D(rdkitModule, SMILES_ETHANOL, PDB_ETHANOL_REORDERED);
     expect(mapping !== null, true);
     // Should succeed via PDB conversion (tier 2), not tier 3 fallback
-    expect(mapping!.method === 'substruct' || mapping!.method === 'relaxed', true);
+    expect(mapping!.method, 'substruct');
     expect(mapping!.mappedCount > 0, true);
     // pdbSerials should be populated for PDB input
     expect(Array.isArray(mapping!.pdbSerials), true);
