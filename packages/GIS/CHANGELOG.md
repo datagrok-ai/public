@@ -1,5 +1,9 @@
 # GIS changelog
 
+## v.next
+
+* Fixed crash on closing Map viewer caused by pointer events firing after disposal
+
 ## 1.3.1 (2025-03-30)
 
 * Fixed build issues
