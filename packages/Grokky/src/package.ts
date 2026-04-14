@@ -85,17 +85,10 @@ export class PackageFunctions {
 
     // Trigger a package-level sync when any package is loaded (covers
     // publishes and updates that arrive at this client).
-    grok.events.onEvent(DG.EVENT_TYPE.PACKAGE_LOADED).subscribe(() => {
-      console.log('Grokky: package loaded event, triggering sync');
-      ClaudeRuntimeClient.getInstance().syncUserFiles('packages');
+    grok.events.onEvent(DG.EVENT_TYPE.PACKAGE_LOADED).subscribe((args) => {
+      ClaudeRuntimeClient.getInstance().syncUserFiles('packages', args.name);
     });
-
-    // Poll for shared skill connections every 10 seconds.
-    setInterval(() => {
-      ClaudeRuntimeClient.getInstance().syncUserFiles('shared');
-    }, 10000);
   }
-
 
   @grok.decorators.autostart({tags: ['autostart']})
   static autostart() {

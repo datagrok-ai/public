@@ -4,9 +4,7 @@ import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
-import {syncUserFiles} from './user-files';
-
-const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
+import {syncUserFiles, WORKSPACE} from './sync-utils';
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
@@ -424,9 +422,11 @@ app.get('/ws', upgradeWebSocket(() => {
         const apiUrl = apiUrlFromMcpUrl(mcpUrl);
         if (apiUrl && data.apiKey) {
           const scope = data.scope || 'all';
+          const packageName = data.packageName;
+          console.log(`sync_user_files: scope=${scope}, packageName=${packageName ?? '<none>'}`);
           (async () => {
             try {
-              const result = await syncUserFiles(apiUrl, data.apiKey, scope);
+              const result = await syncUserFiles(apiUrl, data.apiKey, scope, packageName);
               console.log(`sync_user_files: synced ${result.files.length} file(s) (scope=${scope})`);
               emit(sender, {type: 'sync_status', status: 'done'});
             }

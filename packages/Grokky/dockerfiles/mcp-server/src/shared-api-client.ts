@@ -1,3 +1,5 @@
+// Duplicated in claude-runtime/src/shared-api-client.ts — keep in sync.
+// Can't be shared because each Docker container builds with its own context.
 import {AsyncLocalStorage} from 'node:async_hooks';
 
 interface RequestContext {

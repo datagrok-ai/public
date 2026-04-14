@@ -51,6 +51,8 @@ export interface SyncMessage {
   type: 'sync_user_files';
   apiKey: string;
   mcpServerUrl: string;
+  scope?: string;
+  packageName?: string;
 }
 
 export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage;
