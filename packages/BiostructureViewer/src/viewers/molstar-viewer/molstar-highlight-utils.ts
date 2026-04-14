@@ -74,11 +74,11 @@ export function getSelectionCache(): DG.LruCache<string, SelectionCacheEntry> {
 // Register at module load — no lazy guard needed.
 grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
   .subscribe((_args: unknown) => {
-    const args = _args as ChemSelectionEventArgs;
-    const rowIdx = args?.rowIdx ?? -1;
-    const atoms = args?.atoms ?? [];
-    const isPersistent = args?.persistent !== false;
-    const col = args?.column as DG.Column | undefined;
+    const {
+      rowIdx = -1, atoms = [], persistent, clearAll, mapping3D, column,
+    } = (_args as ChemSelectionEventArgs) ?? {};
+    const isPersistent = persistent !== false;
+    const col = column as DG.Column | undefined;
     const dfId = col?.dataFrame?.id ?? '';
     const dfName = col?.dataFrame?.name ?? '';
     const colName = col?.name ?? '';
@@ -88,12 +88,12 @@ grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
 
     if (isPersistent) {
       const cache = getSelectionCache();
-      if (args?.clearAll)
+      if (clearAll)
         _selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
       else {
         const key = selectionCacheKey(dfId, dfName, colName, rowIdx);
         if (atoms.length > 0)
-          cache.set(key, {atoms, mapping3D: args?.mapping3D ?? null});
+          cache.set(key, {atoms, mapping3D: mapping3D ?? null});
         else
           cache.set(key, {atoms: [], mapping3D: null});
       }
@@ -112,14 +112,13 @@ export function computeSerials(
 ): number[] {
   if (mapping3D?.mapping) {
     const pdbSerials = mapping3D.pdbSerials;
-    const serials = atomIndices
-      .map((i) => mapping3D.mapping[i])
-      .filter((idx) => idx >= 0)
-      .map((idx) => {
-        if (pdbSerials && idx >= 0 && idx < pdbSerials.length)
-          return pdbSerials[idx];
-        return idx + 1;
-      });
+    const serials: number[] = [];
+    for (const i of atomIndices) {
+      const mapped = mapping3D.mapping[i];
+      if (mapped < 0) continue;
+      serials.push(
+        pdbSerials && mapped < pdbSerials.length ? pdbSerials[mapped] : mapped + 1);
+    }
     _package.logger.debug(
       `[molstar-picker] _computeSerials: method=${mapping3D.method} atoms=[${atomIndices}] serials=[${serials}] hasPdbSerials=${!!pdbSerials}`);
     return serials;
