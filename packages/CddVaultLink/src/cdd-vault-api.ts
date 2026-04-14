@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { _package } from './package';
-import { paramsStringFromObj } from './utils';
+import {_package} from './package';
+import {paramsStringFromObj} from './utils';
 
 const API_KEY_PARAM_NAME = 'apiKey';
 let apiKey = '';
@@ -67,7 +67,8 @@ export interface Batch {
   molecule_batch_identifier?: string;
   owner: string;
   projects: Project[];
-  /** Parent molecule. Present when a batch is fetched via /batches; absent when it arrives nested inside Molecule.batches (to avoid circularity). */
+  /** Parent molecule. Present when a batch is fetched via /batches;
+   * absent when it arrives nested inside Molecule.batches (to avoid circularity). */
   molecule?: Molecule;
   salt_name?: string;
   solvent_of_crystallization_name?: string;
@@ -164,7 +165,7 @@ interface ReadoutRowsQueryResult {
   objects?: ReadoutRow[];
 }
 
-export type  MoleculeQueryParams = {
+export type MoleculeQueryParams = {
   molecules?: string; // Comma separated list of ids
   names?: string; // Comma separated list of names/synonyms
   async?: boolean;
@@ -202,21 +203,6 @@ export type MoleculeFieldSearch = {
   date_value?: string;
 }
 
-interface MoleculeCreateParams {
-  class?: 'molecule';
-  smiles?: string;
-  cxsmiles?: string;
-  molfile?: string;
-  structure?: string;
-  name: string;
-  description?: string;
-  synonyms?: string[];
-  udfs?: Record<string, any>;
-  projects: (number | string)[];
-  collections?: (number | string)[];
-  duplicate_resolution?: 'new' | 'prompt';
-}
-
 interface ReadoutRowsQueryParameters {
   async?: boolean; // If true, do an asynchronous export
   only_ids?: boolean; // If true, only the Readout Row IDs are returned
@@ -233,7 +219,8 @@ interface ReadoutRowsQueryParameters {
   runs?: string; // Comma-separated list of run IDs
   offset?: number; // Index of the first object to return (default: 0)
   page_size?: number; // Maximum number of objects to return (default: 50, max: 1000)
-  type?: "detail_row" | "batch_run_aggregate_row" | "batch_protocol_aggregate_row" | "molecule_protocol_aggregate_row"; // Type of readout rows to return
+  type?: 'detail_row' | 'batch_run_aggregate_row' | 'batch_protocol_aggregate_row' |
+  'molecule_protocol_aggregate_row'; // Type of readout rows to return
   include_control_state?: boolean; // If true, control wells are identified as positive or negative control wells
   data_sets?: string; // Comma-separated list of public dataset IDs
 }
@@ -431,20 +418,20 @@ async function request<T>(
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
-      redirect: 'follow'
+      redirect: 'follow',
     });
 
     const data = text ? await response.bytes() : await response.json();
 
-    if (!response.ok) {
+    if (!response.ok)
       throw new Error(data.error ?? `HTTP error!: ${response.status}`, {cause: response.status});
-    }
 
-    return { data };
+
+    return {data};
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'An unknown error occurred',
-      errorCode: error instanceof Error ? error.cause as number : undefined
+      errorCode: error instanceof Error ? error.cause as number : undefined,
     };
   }
 }
@@ -470,27 +457,31 @@ export async function queryProtocols(vaultId: number): Promise<ApiResponse<Proto
 }
 
 /** Get list of available protocols with various params asynchronously*/
-export async function queryProtocolsAsync(vaultId: number, params: ProtocolQueryParams): Promise<ApiResponse<ExportStatus>> {
+export async function queryProtocolsAsync(vaultId: number,
+  params: ProtocolQueryParams): Promise<ApiResponse<ExportStatus>> {
   params.async = true;
-  const paramsStr = paramsStringFromObj({async: true});
+  const paramsStr = paramsStringFromObj(params);
   return request('GET', `/api/v1/vaults/${vaultId}/protocols${paramsStr}`);
 }
 
 /** Get list of available collections with various params (sync, for small page_size previews) */
-export async function queryCollections(vaultId: number, params: CollectionQueryParams): Promise<ApiResponse<CollectionsQueryResult>> {
+export async function queryCollections(vaultId: number, params: CollectionQueryParams):
+  Promise<ApiResponse<CollectionsQueryResult>> {
   const paramsStr = paramsStringFromObj(params);
   return request('GET', `/api/v1/vaults/${vaultId}/collections${paramsStr}`);
 }
 
 /** Get list of available collections with various params asynchronously*/
-export async function queryCollectionsAsync(vaultId: number, params: CollectionQueryParams): Promise<ApiResponse<ExportStatus>> {
+export async function queryCollectionsAsync(vaultId: number, params: CollectionQueryParams):
+  Promise<ApiResponse<ExportStatus>> {
   params.async = true;
   const paramsStr = paramsStringFromObj(params);
   return request('GET', `/api/v1/vaults/${vaultId}/collections${paramsStr}`);
 }
 
 /** Get list of available batches with various params (sync, for small page_size previews) */
-export async function queryBatches(vaultId: number, params: BatchQueryParams): Promise<ApiResponse<BatchesQueryResult>> {
+export async function queryBatches(vaultId: number, params: BatchQueryParams):
+ Promise<ApiResponse<BatchesQueryResult>> {
   const paramsStr = paramsStringFromObj(params);
   return request('GET', `/api/v1/vaults/${vaultId}/batches${paramsStr}`);
 }
@@ -505,7 +496,8 @@ export async function queryBatchesAsync(vaultId: number, params: BatchQueryParam
 /**
  * Query molecules with various parameters
  */
-export async function queryMolecules(vaultId: number, params: MoleculeQueryParams): Promise<ApiResponse<MoleculesQueryResult>> {
+export async function queryMolecules(vaultId: number, params: MoleculeQueryParams):
+ Promise<ApiResponse<MoleculesQueryResult>> {
   // For environments that don't support JSON in GET requests, use POST with /query endpoint
   return request<MoleculesQueryResult>('POST', `/api/v1/vaults/${vaultId}/molecules/query`, params);
 }
@@ -513,7 +505,8 @@ export async function queryMolecules(vaultId: number, params: MoleculeQueryParam
 /**
  * Query molecules with various parameters asynchronously
  */
-export async function queryMoleculesAsync(vaultId: number, params: MoleculeQueryParams): Promise<ApiResponse<ExportStatus>> {
+export async function queryMoleculesAsync(vaultId: number, params: MoleculeQueryParams):
+ Promise<ApiResponse<ExportStatus>> {
   params.async = true;
   // For environments that don't support JSON in GET requests, use POST with /query endpoint
   return request<ExportStatus>('POST', `/api/v1/vaults/${vaultId}/molecules/query`, params);
@@ -522,7 +515,8 @@ export async function queryMoleculesAsync(vaultId: number, params: MoleculeQuery
 /**
  * ReadoutRows without or with various parameters
  */
-export async function queryReadoutRows(vaultId: number, params: ReadoutRowsQueryParameters): Promise<ApiResponse<ReadoutRowsQueryResult>> {
+export async function queryReadoutRows(vaultId: number, params: ReadoutRowsQueryParameters):
+ Promise<ApiResponse<ReadoutRowsQueryResult>> {
   const paramsStr = paramsStringFromObj(params);
   return request<ReadoutRowsQueryResult>('GET', `/api/v1/vaults/${vaultId}/readout_rows${paramsStr}`);
 }
@@ -530,7 +524,8 @@ export async function queryReadoutRows(vaultId: number, params: ReadoutRowsQuery
 /**
  * ReadoutRows without or with various parameters asynchronously
  */
-export async function queryReadoutRowsAsync(vaultId: number, params: ReadoutRowsQueryParameters): Promise<ApiResponse<ExportStatus>> {
+export async function queryReadoutRowsAsync(vaultId: number, params: ReadoutRowsQueryParameters):
+ Promise<ApiResponse<ExportStatus>> {
   params.async = true;
   const paramsStr = paramsStringFromObj(params);
   return request<ExportStatus>('GET', `/api/v1/vaults/${vaultId}/readout_rows${paramsStr}`);
@@ -552,6 +547,7 @@ export async function queryExportStatus(vaultId: number, exportId: number): Prom
 }
 
 /** Get export result*/
-export async function queryExportResult(vaultId: number, exportId: number, isTextResponse: boolean): Promise<ApiResponse<any>> {
+export async function queryExportResult(vaultId: number, exportId: number, isTextResponse: boolean):
+ Promise<ApiResponse<any>> {
   return request<any>('GET', `/api/v1/vaults/${vaultId}/exports/${exportId}`, undefined, isTextResponse);
 }

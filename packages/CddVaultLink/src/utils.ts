@@ -1,11 +1,14 @@
+/* eslint-disable max-len */
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse, Batch, Project, Vault, Molecule} from "./cdd-vault-api";
-import { ALL_TABS, BATCHES_TAB, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
+import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse,
+  Batch, Project, Vault, Molecule} from './cdd-vault-api';
+import {ALL_TABS, BATCHES_TAB, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS,
+  MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB} from './constants';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
-import { SeachEditor } from './search-function-editor';
+import {SearchEditor} from './search-function-editor';
 
 export const CDD_HOST = 'https://app.collaborativedrug.com/';
 export const PREVIEW_ROW_NUM = 100;
@@ -22,33 +25,31 @@ export type CDDVaultStats = {
   collections?: number,
 }
 
-export async function getAsyncResultsAsDf(vaultId: number, exportId: number, timeoutMinutes: number, sdf: boolean): Promise<DG.DataFrame> {
-  try {
-    const resultResponse = await getAsyncResults(vaultId, exportId, timeoutMinutes, sdf);
-    let df = DG.DataFrame.create();
-    if (sdf) {
-      const dfs = await grok.functions.call('Chem:importSdf', { bytes: resultResponse.data });
-      if (dfs.length)
-        df = dfs[0];
-    } else {
-      if (resultResponse.data?.objects) {
-        prepareDataForDf(resultResponse.data.objects as any[]);
-        df = DG.DataFrame.fromObjects(resultResponse.data.objects)!;
-      }
+export async function getAsyncResultsAsDf(vaultId: number, exportId: number,
+  timeoutMinutes: number, sdf: boolean): Promise<DG.DataFrame> {
+  const resultResponse = await getAsyncResults(vaultId, exportId, timeoutMinutes, sdf);
+  let df = DG.DataFrame.create();
+  if (sdf) {
+    const dfs = await grok.functions.call('Chem:importSdf', {bytes: resultResponse.data});
+    if (dfs.length)
+      df = dfs[0];
+  } else {
+    if (resultResponse.data?.objects) {
+      prepareDataForDf(resultResponse.data.objects as any[]);
+      df = DG.DataFrame.fromObjects(resultResponse.data.objects)!;
     }
-    return df;
-  } catch (e: any) {
-    throw e;
   }
+  return df;
 }
 
-const EXCLUDE_FIELDS = ['udfs', 'source_files']; 
+const EXCLUDE_FIELDS = ['udfs', 'source_files'];
 
 export function prepareDataForDf(objects: any[]) {
   for (let i = 0; i < objects.length; i++) {
     EXCLUDE_FIELDS.forEach((key) => delete objects[i][key]);
     if (objects[i]['batches']) {
-      objects[i]['molecule_batch_identifiers'] = (objects[i]['batches'] as Batch[]).map((it) => it.molecule_batch_identifier).filter((it) => it !== undefined);
+      objects[i]['molecule_batch_identifiers'] = (objects[i]['batches'] as Batch[])
+        .map((it) => it.molecule_batch_identifier).filter((it) => it !== undefined);
       delete objects[i]['batches'];
     }
     if (objects[i]['molecule'] && typeof objects[i]['molecule'] === 'object') {
@@ -60,14 +61,15 @@ export function prepareDataForDf(objects: any[]) {
     if (objects[i]['projects'])
       objects[i]['projects'] = (objects[i]['projects'] as Project[]).map((it) => it.name);
     if (objects[i]['molecule_fields']) {
-      Object.keys(objects[i]['molecule_fields']).forEach((key: string) => objects[i][key] = objects[i]['molecule_fields'][key]);
+      Object.keys(objects[i]['molecule_fields'])
+        .forEach((key: string) => objects[i][key] = objects[i]['molecule_fields'][key]);
       delete objects[i]['molecule_fields'];
     }
   }
 }
 
-export async function getAsyncResults(vaultId: number, exportId: number, timeoutMinutes: number, text: boolean): Promise<ApiResponse<any>> {
-
+export async function getAsyncResults(vaultId: number, exportId: number,
+  timeoutMinutes: number, text: boolean): Promise<ApiResponse<any>> {
   const timeoutMs = timeoutMinutes * 60 * 1000;
   const startTime = Date.now();
 
@@ -78,18 +80,18 @@ export async function getAsyncResults(vaultId: number, exportId: number, timeout
       throw statusResponse.error;
 
     const status = statusResponse.data?.status;
-    if (status === "finished") {
+    if (status === 'finished') {
       const resultResponse = await queryExportResult(vaultId, exportId, text);
       if (resultResponse.error)
-        throw resultResponse.error
+        throw resultResponse.error;
       return resultResponse;
     }
 
     // Wait for 2 seconds before next check
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
-  throw `Export timed out after ${timeoutMinutes} minutes`;
+  throw new Error(`Export timed out after ${timeoutMinutes} minutes`);
 }
 
 /** Run a CDD async-export query end-to-end: start it, poll until done, return the raw ApiResponse.
@@ -117,7 +119,7 @@ export function getExportId(exportResponse: ApiResponse<ExportStatus>): number {
 
   const exportId = exportResponse.data?.id;
   if (!exportId)
-    throw 'No export ID received';
+    throw new Error('No export ID received');
 
   return exportId;
 }
@@ -133,7 +135,7 @@ export async function createCddDfFromObjects(objects: any[] | undefined,
   if (!df)
     return DG.DataFrame.create();
   postProcess?.(df);
-  reorderColummns(df);
+  reorderColumns(df);
   await grok.data.detectSemanticTypes(df);
   return df;
 }
@@ -158,17 +160,17 @@ export async function createBatchesDfFromObjects(vaultId: number, objects?: any[
 }
 
 export async function createLinksFromIds(vaultId: number, df: DG.DataFrame) {
-    const idCol = df.col('id');
-    if (idCol) {
-        const linkIdsCol = DG.Column.string('id', df.rowCount).init((i) => {
-            const id = idCol.get(i);
-            return `[${id}](${`${CDD_HOST}vaults/${vaultId}/molecules/${id}/`})`;
-        });
-        df.columns.replace(idCol, linkIdsCol);
-      }
+  const idCol = df.col('id');
+  if (idCol) {
+    const linkIdsCol = DG.Column.string('id', df.rowCount).init((i) => {
+      const id = idCol.get(i);
+      return `[${id}](${`${CDD_HOST}vaults/${vaultId}/molecules/${id}/`})`;
+    });
+    df.columns.replace(idCol, linkIdsCol);
+  }
 }
 
-export async function reorderColummns(df: DG.DataFrame) {
+export async function reorderColumns(df: DG.DataFrame) {
   const colNames = df.columns.names();
   const firstColumns = ['id', 'name', 'smiles'];
   const newColOrder = [];
@@ -192,22 +194,23 @@ export function paramsStringFromObj(params: any): string {
   return str ? `?${str}` : '';
 }
 
-export function createObjectViewer(obj: any, title: string = 'Object Viewer', additionalHeaderEl?: HTMLElement): HTMLElement {
+export function createObjectViewer(obj: any, title: string = 'Object Viewer',
+  additionalHeaderEl?: HTMLElement): HTMLElement {
   // Helper function to determine if a value is a dictionary/object
   function isDictionary(value: any): boolean {
-    return value !== null && 
-           typeof value === 'object' && 
-           !Array.isArray(value) && 
+    return value !== null &&
+           typeof value === 'object' &&
+           !Array.isArray(value) &&
            !(value instanceof Date);
   }
 
   // Helper function to determine if a value is a simple array
   function isSimpleArray(value: any): boolean {
-    return Array.isArray(value) && 
-           value.every(item => 
-             typeof item === 'string' || 
-             typeof item === 'number' || 
-             typeof item === 'boolean'
+    return Array.isArray(value) &&
+           value.every((item) =>
+             typeof item === 'string' ||
+             typeof item === 'number' ||
+             typeof item === 'boolean',
            );
   }
 
@@ -222,22 +225,21 @@ export function createObjectViewer(obj: any, title: string = 'Object Viewer', ad
 
   // Helper function to create a view for a specific value
   function createValueView(value: any, parentName: string): HTMLElement {
-    if (value === null || value === undefined) {
+    if (value === null || value === undefined)
       return ui.divText('null');
-    }
 
-    if (isSimpleArray(value)) {
+
+    if (isSimpleArray(value))
       return ui.divText(value.join(', '));
-    }
+
 
     if (Array.isArray(value)) {
       const accordion = ui.accordion();
       value.forEach((item, index) => {
-        if (isDictionary(item) || Array.isArray(item)) {
+        if (isDictionary(item) || Array.isArray(item))
           accordion.addPane(getPaneName(item, index, parentName), () => createValueView(item, parentName));
-        } else {
+        else
           accordion.addPane(`Item ${index}`, () => ui.divText(String(item)));
-        }
       });
       return accordion.root;
     }
@@ -248,36 +250,35 @@ export function createObjectViewer(obj: any, title: string = 'Object Viewer', ad
 
       // Separate simple and complex properties
       for (const [key, val] of Object.entries(value)) {
-        if (isDictionary(val) || Array.isArray(val)) {
+        if (isDictionary(val) || Array.isArray(val))
           complexProperties[key] = val;
-        } else {
+        else
           simpleProperties[key] = val;
-        }
       }
 
       // Create container for both simple properties table and complex properties accordion
       const container = ui.divV([]);
 
       // Add simple properties table if any exist
-      if (Object.keys(simpleProperties).length > 0) {
+      if (Object.keys(simpleProperties).length > 0)
         container.appendChild(ui.tableFromMap(simpleProperties));
-      }
+
 
       // Add complex properties as nested accordions if any exist
       if (Object.keys(complexProperties).length > 0) {
         const accordion = ui.accordion();
-        for (const [key, val] of Object.entries(complexProperties)) {
+        for (const [key, val] of Object.entries(complexProperties))
           accordion.addPane(key, () => createValueView(val, parentName));
-        }
+
         container.appendChild(accordion.root);
       }
 
       return container;
     }
 
-    if (value instanceof Date) {
+    if (value instanceof Date)
       return ui.divText(value.toISOString());
-    }
+
 
     return ui.divText(String(value));
   }
@@ -288,11 +289,10 @@ export function createObjectViewer(obj: any, title: string = 'Object Viewer', ad
 
   // Separate simple and complex properties
   for (const [key, value] of Object.entries(obj)) {
-    if (isDictionary(value) || Array.isArray(value)) {
+    if (isDictionary(value) || Array.isArray(value))
       complexProperties[key] = value;
-    } else {
+    else
       simpleProperties[key] = value;
-    }
   }
 
   const header = ui.divH([ui.h2(title)]);
@@ -302,16 +302,16 @@ export function createObjectViewer(obj: any, title: string = 'Object Viewer', ad
   const container = ui.divV([header]);
 
   // Add simple properties table if any exist
-  if (Object.keys(simpleProperties).length > 0) {
+  if (Object.keys(simpleProperties).length > 0)
     container.appendChild(ui.tableFromMap(simpleProperties));
-  }
+
 
   // Add complex properties as accordion if any exist
   if (Object.keys(complexProperties).length > 0) {
     const accordion = ui.accordion();
-    for (const [key, value] of Object.entries(complexProperties)) {
+    for (const [key, value] of Object.entries(complexProperties))
       accordion.addPane(key, () => createValueView(value, key));
-    }
+
     container.appendChild(accordion.root);
   }
 
@@ -319,19 +319,21 @@ export function createObjectViewer(obj: any, title: string = 'Object Viewer', ad
 }
 
 export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: URL) {
-
   const currentTabs = url.pathname.includes(`${CDD_VAULT_APP_PATH}`) ?
-    url.pathname.replace(`${CDD_VAULT_APP_PATH}`, ``).replace(/^\/+/, '').split('/').map((it) => decodeURIComponent(it)) : [];
+    url.pathname.replace(`${CDD_VAULT_APP_PATH}`, ``).replace(/^\/+/, '')
+      .split('/').map((it) => decodeURIComponent(it)) : [];
   const currentVault = currentTabs.length > 0 ? currentTabs[0] : undefined;
   const currentView = currentTabs.length > 1 ? currentTabs[1] : undefined;
   const currentSubView = currentTabs.length > 2 ? currentTabs[2] : undefined;
   openCddNode(treeNode, currentVault, currentView, currentSubView);
 }
 
-export async function openCddNode(treeNode: DG.TreeViewGroup, currentVault?: string, currentView?: string, currentSubView?: string) {
+export async function openCddNode(treeNode: DG.TreeViewGroup, currentVault?: string,
+  currentView?: string, currentSubView?: string) {
   if (currentVault) {
     //need to wait for tree to become available
-    await awaitCheck(() => treeNode.items.find((node) => node.text === currentVault) !== undefined, `CDD tabs haven't been loaded in 10 seconds`, 10000);
+    await awaitCheck(() => treeNode.items.find((node) => node.text === currentVault) !== undefined,
+      `CDD tabs haven't been loaded in 10 seconds`, 10000);
     const vault = treeNode.items.find((node) => node.text === currentVault) as DG.TreeViewGroup;
     //look for current vault from URL and open it
     if (vault) {
@@ -344,7 +346,8 @@ export async function openCddNode(treeNode: DG.TreeViewGroup, currentVault?: str
           return;
         }
         try {
-          await awaitCheck(() => treeNode.items.find((node) => node.text === currentView) !== undefined, `CDD tabs haven't been loaded in 5 seconds`, 5000);
+          await awaitCheck(() => treeNode.items.find((node) => node.text === currentView) !== undefined,
+            `CDD tabs haven't been loaded in 5 seconds`, 5000);
           if (EXPANDABLE_TABS.includes(currentView)) {
             const tab = treeNode.items.find((node) => node.text === currentView) as DG.TreeViewGroup;
             currentSubView ? tab.expanded = true : tab.root.click();
@@ -359,15 +362,13 @@ export async function openCddNode(treeNode: DG.TreeViewGroup, currentVault?: str
               }
               innerView!.root.click();
             }
-
           } else
             treeNode.items.find((node) => node.text === currentView)!.root.click();
-        } catch(e) {
+        } catch (e) {
           console.log(e);
         }
       }
-    }
-    else
+    } else
       grok.shell.warning(`Vault ${currentVault} doesn't exist`);
   }
 }
@@ -376,7 +377,6 @@ export function createNestedCDDNode(items: any[] | null, nodeName: string, vault
   getItemsFunsName: string, getItemsFuncParams: any, treeNode: DG.TreeViewGroup, vault: Vault,
   onItemSelected: (item: any) => Promise<void>) {
   const nestedNode = vaultNode.group(nodeName, null, false);
-  const fullNodeName = `${vault.id}|${nodeName}`;
   const loadData = async () => {
     if (!items) {
       try {
@@ -391,7 +391,7 @@ export function createNestedCDDNode(items: any[] | null, nodeName: string, vault
         }
       }
     }
-  }
+  };
   nestedNode.onSelected.subscribe(async () => {
     openedView?.close();
     openedView = DG.View.create();
@@ -430,7 +430,8 @@ export function createPath(vaultName: string, viewName?: string[]) {
   return path;
 }
 
-function updateView(viewName: string[], vaultName: string, treeNode: DG.TreeViewGroup, progressMessage: string, res?: DG.DataFrame) {
+function updateView(viewName: string[], vaultName: string, treeNode: DG.TreeViewGroup,
+  progressMessage: string, res?: DG.DataFrame) {
   openedView?.close();
   openedView = res ? grok.shell.addTablePreview(res) : grok.shell.addPreview(DG.View.create());
   if (res)
@@ -552,11 +553,11 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
   tv.setRibbonPanels([[filtersButton]]);
   //create filters panel
   tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.3);
-  tv.dockManager.onClosed.subscribe((el: any) => {
+  tv.dockManager.onClosed.subscribe((_el: any) => {
     externalFilterIcon.classList.add('cdd-filters-button-icon-show');
-  })
+  });
 
-  const funcEditor = new SeachEditor(vault.id);
+  const funcEditor = new SearchEditor(vault.id);
   const acc = funcEditor.getEditor();
 
   const runSearch = async () => {
@@ -567,7 +568,7 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
       const df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
         {
           vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
-          structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run
+          structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run,
         });
       if (df) {
         const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
@@ -595,7 +596,7 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
     ui.setUpdateIndicator(tv.grid.root, true);
     try {
       const df: DG.DataFrame = await grok.functions.call('CDDVaultLink:getMolecules',
-        { vaultId: vault.id, moleculesIds: '' });
+        {vaultId: vault.id, moleculesIds: ''});
       if (df) {
         df.name = `Vault: ${vault.id}`;
         tv.dataFrame = df;
@@ -608,7 +609,7 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
         } else {
           tv.setRibbonPanels([[filtersButton]]);
           attachLoadAllRibbon(tv, [MOLECULES_TAB], 'CDDVaultLink:getMoleculesAsync',
-            { vaultId: vault.id, moleculesIds: '', timeoutMinutes: 5 });
+            {vaultId: vault.id, moleculesIds: '', timeoutMinutes: 5});
         }
       }
     } catch (e: any) {
@@ -620,7 +621,7 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
 
   filtersDiv.append(acc);
   filtersDiv.append(ui.divH([runSearchButton, resetIcon],
-    { style: { paddingLeft: '4px', alignItems: 'center', gap: '8px' } }));
+    {style: {paddingLeft: '4px', alignItems: 'center', gap: '8px'}}));
 
   funcEditor.initComplete.then(() => {
     if (funcEditor.hasRestoredSearch)
@@ -630,10 +631,10 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
 
 export function createLinks(header: string, nodeNames: string[], tree: DG.TreeViewGroup, view: DG.ViewBase): HTMLDivElement {
   const table = ui.table(nodeNames, (item) =>
-  ([ui.link(item, () => {
-    view.close();
-    tree.currentItem = tree.items.find((it) => it.text === item)!
-  }, 'Click to open')]), [header]);
+    ([ui.link(item, () => {
+      view.close();
+      tree.currentItem = tree.items.find((it) => it.text === item)!;
+    }, 'Click to open')]), [header]);
   return table;
 }
 
@@ -670,15 +671,15 @@ export function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): 
   const resDiv = ui.divV([], 'cdd-context-panel');
   const accordions = ui.divV([]);
   const dictForTableView: {[key: string]: any} = {};
-  for(const key of keys) {
+  for (const key of keys) {
     if (key === 'batches') {
       const batchesAcc = ui.accordion(key);
       const batches = (obj as Molecule)[key] as Batch[];
       batchesAcc.addPane(key, () => {
         const innerbatchesAcc = ui.accordion();
-        for (const batch of batches) {
+        for (const batch of batches)
           innerbatchesAcc.addPane(batch.id.toString(), () => createCDDContextPanel(batch));
-        }
+
         return innerbatchesAcc.root;
       });
       accordions.append(batchesAcc.root);
@@ -711,8 +712,7 @@ export function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): 
 }
 
 
-export function createInitialSatistics(statsDiv: HTMLDivElement) {
-  
+export function createInitialStatistics(statsDiv: HTMLDivElement) {
   grok.functions.call('CDDVaultLink:getVaults').then(async (res: string) => {
     const stats: CDDVaultStats[] = [];
     if (!res)
@@ -722,10 +722,8 @@ export function createInitialSatistics(statsDiv: HTMLDivElement) {
       try {
         const resStr = await grok.functions.call('CDDVaultLink:getVaultStats', {vaultId: vault.id, vaultName: vault.name});
         stats.push(JSON.parse(resStr));
-
       } catch (e: any) {
         grok.shell.error(`Cannot get statistics for vault ${vault.name}: ${e?.message ?? e}`);
-        continue;
       }
     }
 
@@ -735,19 +733,18 @@ export function createInitialSatistics(statsDiv: HTMLDivElement) {
         cddNode.expanded = true;
         openCddNode(cddNode, info.name);
       }),
-        info.projects ?? '',
-        info.molecules ?? '',
-        info.protocols ?? '',
-        info.batches ?? '',
-        info.collections ?? '',
+      info.projects ?? '',
+      info.molecules ?? '',
+      info.protocols ?? '',
+      info.batches ?? '',
+      info.collections ?? '',
       ]),
     ['Vault', 'Projects', 'Molecules', 'Protocols', 'Batches', 'Collections']);
     statsDiv.append(table);
     ui.setUpdateIndicator(statsDiv, false);
-
   }).catch((e: any) => {
     grok.shell.error(e?.message ?? e);
-  })
+  });
 }
 
 export function createVaultNode(vault: Vault, treeNode: DG.TreeViewGroup) {
@@ -771,9 +768,9 @@ export function addNodeWithEmptyResults(name: string, warningMessage?: string) {
 }
 
 async function adjustIdColumnWidth(tv: DG.TableView) {
-   await DG.delay(100);
-   const idCol = tv.grid.col('id');
-   if (idCol)
+  await DG.delay(100);
+  const idCol = tv.grid.col('id');
+  if (idCol)
     idCol.width = 100;
 }
 

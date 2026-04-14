@@ -3,13 +3,13 @@ import * as DG from 'datagrok-api/dg';
 
 //name: CDD Vault
 //input: string path { meta.url: true; optional: true }
-//input: string filter { optional: true }
+//input: string _filter { optional: true }
 //output: view result
 //meta.role: app
 //meta.icon: images/cdd-icon-small.png
 //meta.browsePath: Chem
-export async function cddVaultApp(path: string, filter: string) : Promise<any> {
-  return await PackageFunctions.cddVaultApp(path, filter);
+export async function cddVaultApp(path: string, _filter: string) : Promise<any> {
+  return await PackageFunctions.cddVaultApp(path, _filter);
 }
 
 //input: dynamic treeNode 
@@ -27,10 +27,10 @@ export function molColumnPropertyPanel(molecule: string) : any {
   return PackageFunctions.molColumnPropertyPanel(molecule);
 }
 
-//input: funccall call 
+//input: funccall _call 
 //meta.role: editor
-export async function CDDVaultSearchEditor(call: DG.FuncCall) : Promise<void> {
-  await PackageFunctions.CDDVaultSearchEditor(call);
+export async function CDDVaultSearchEditor(_call: DG.FuncCall) : Promise<void> {
+  await PackageFunctions.CDDVaultSearchEditor(_call);
 }
 
 //name: Get Vault Stats
@@ -169,8 +169,8 @@ export async function cDDVaultSearchAsync(vaultId: number, structure?: string, s
 //input: string structure_search_type { category: Structure; nullable: true; choices: ["exact","similarity","substructure"]; description: SMILES,cxsmiles or mol string }
 //input: double structure_similarity_threshold { category: Structure; nullable: true; description: A number between 0 and 1 }
 //input: string inchikey { category: Structure; nullable: true; description: Use this parameter instead of the 'structure' and 'structure_search_type' parameters }
-//input: list<string> molecule_fields { category: Filelds; nullable: true; description: Use this parameter to limit the number of Molecule UDF Fields to return }
-//input: list<string> batch_fields { category: Filelds; nullable: true; description: Use this parameter to limit the number of Batch UDF Fields to return }
+//input: list<string> molecule_fields { category: Fields; nullable: true; description: Use this parameter to limit the number of Molecule UDF Fields to return }
+//input: list<string> batch_fields { category: Fields; nullable: true; description: Use this parameter to limit the number of Batch UDF Fields to return }
 //input: list<string> fields_search { category: Molecules filelds search; nullable: true; description: This parameter is used for searching across the custom user-defined Molecule fields created by your Vault Administrator }
 //output: dataframe result
 //meta.cache: all

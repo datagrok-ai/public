@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { ANY_READOUT_CHOICE, ANY_RUN_CHOICE, CDD_SEARCH_TYPES, CDDVaultSearchType, IN_NOT_IN_COND_CHOICES, PROTOCOL_COND_CHOICES, PROTOCOL_RUN_COND_CHOICES, ProtocolCond, ProtocolRunCond } from './constants';
+import { ANY_RUN_CHOICE, CDD_SEARCH_TYPES, CDDVaultSearchType, IN_NOT_IN_COND_CHOICES, PROTOCOL_RUN_COND_CHOICES, ProtocolRunCond } from './constants';
 
 const LAST_SEARCH_KEY = 'CDDVaultLink.lastSearch';
 
@@ -14,9 +14,9 @@ type StoredSearch = {
     searchType?: string;
     similarityThreshold?: number;
 };
-import { MoleculeFieldSearch, Protocol, queryProtocols } from './cdd-vault-api';
+import { MoleculeFieldSearch, Protocol } from './cdd-vault-api';
 
-type CDDSerachParams = {
+type CDDSearchParams = {
     structure?: string;
     structure_search_type?: CDDVaultSearchType;
     structure_similarity_threshold?: number;
@@ -24,7 +24,7 @@ type CDDSerachParams = {
     run?: number;
 }
 
-export class SeachEditor {
+export class SearchEditor {
 
     vaultId;
     protocols: { [key: string]: Protocol } = {};
@@ -223,7 +223,7 @@ export class SeachEditor {
         return this.accordion.root;
     }
 
-    public getParams(): CDDSerachParams {
+    public getParams(): CDDSearchParams {
         return {
             structure: this.structureInput.value,
             structure_search_type: this.structureSearchTypeChoice.value ?? undefined,

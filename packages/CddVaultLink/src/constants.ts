@@ -19,7 +19,8 @@ export enum ProtocolRunCond {
     SPECIFIC = 'specific run',
 }
 
-export const CDD_SEARCH_TYPES = [CDDVaultSearchType.SUBSTRUCTURE, CDDVaultSearchType.SIMILARITY, CDDVaultSearchType.EXACT_MATCH];
+export const CDD_SEARCH_TYPES = [CDDVaultSearchType.SUBSTRUCTURE, CDDVaultSearchType.SIMILARITY,
+  CDDVaultSearchType.EXACT_MATCH];
 
 export const IN_NOT_IN_COND_CHOICES = [CDDVaultInNotInCond.IN, CDDVaultInNotInCond.NOT_IN];
 
