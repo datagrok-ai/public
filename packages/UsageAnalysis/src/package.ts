@@ -6,6 +6,7 @@ import {UsageWidget} from './widgets/usage-widget';
 import {PackageUsageWidget} from './widgets/package-usage-widget';
 import '../css/usage_analysis.css';
 import '../css/test_track.css';
+import '../css/click_events_widget.css';
 import {ViewHandler} from './view-handler';
 import {TestTrack} from './test-track/app';
 import {ReportsWidget} from './widgets/reports-widget';

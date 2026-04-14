@@ -416,7 +416,7 @@ export const injectLockIcons = (
   $(resetIcon).addClass('rfv-icon-undo');
   $(resetIcon).css({color: `var(--blue-2)`});
 
-  const warningIcon = ui.iconFA('exclamation-circle', null);
+  const warningIcon = ui.iconFA('exclamation-circle', null, 'Validation');
   ui.tooltip.bind(warningIcon, () => onWarningClick());
   $(warningIcon).addClass('rfv-icon-warning');
   $(warningIcon).css({color: `var(--orange-2)`});

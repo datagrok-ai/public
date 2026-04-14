@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## 1.11.2 (2026-04-10)
+
+* Added demo image for Retrosynthesis
+
 ## 1.11.1 (2026-03-23)
 
 ### Bug Fixes

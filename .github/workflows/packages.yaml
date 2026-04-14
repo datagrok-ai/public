@@ -359,14 +359,16 @@ jobs:
 
           # docker system prune -af --volumes
 
-          if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
-            DATAGROK_VERSION='latest'
-          else
-            DATAGROK_VERSION='bleeding-edge'
-            export GROK_SPAWNER_VERSION='bleeding-edge'
-            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
-          fi
+          # TODO: revert to 'latest' after next release (bleeding-edge needed for docker 'changed' status fix)
+          DATAGROK_VERSION='bleeding-edge'
+          # if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
+          #   DATAGROK_VERSION='latest'
+          # else
+          #   DATAGROK_VERSION='bleeding-edge'
+          # fi
           export DATAGROK_VERSION
+          export GROK_SPAWNER_VERSION="$DATAGROK_VERSION"
+          export GROK_JUPYTER_KERNEL_GATEWAY_VERSION="$DATAGROK_VERSION"
 
           # Skip initial setup in CI
           sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.docker-compose.yaml
@@ -449,7 +451,7 @@ jobs:
               count=0
               retries=5
               echo "Publishing $dep to ${{ steps.datagrok-image.outputs.alias }}..."
-              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
+              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release --skip-docker-rebuild; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))

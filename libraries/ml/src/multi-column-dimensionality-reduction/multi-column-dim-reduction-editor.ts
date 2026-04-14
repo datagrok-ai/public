@@ -585,7 +585,7 @@ class PostProcessingFuncEditor {
         this._argsElement.style.display = 'block';
       else
         this._argsElement.style.display = 'none';
-    });
+    }, 'Settings');
     this._argsElement.style.display = 'none';
 
     const tags = DG.Func.find({tags: [DIM_RED_POSTPROCESSING_FUNCTION_TAG]});

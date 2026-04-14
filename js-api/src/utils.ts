@@ -331,9 +331,8 @@ export class Utils {
         const skipped = row.get("skipped");
         row["flaking"] = success && DG.Test.isReproducing;
 
-        df.changeColumnType('result', COLUMN_TYPE.STRING);
-        df.changeColumnType('logs', COLUMN_TYPE.STRING);
-        df.changeColumnType('memoryDelta', COLUMN_TYPE.BIG_INT);
+        df.changeColumnsType(['result', 'logs'], COLUMN_TYPE.STRING);
+        df.changeColumnsType(['memoryDelta'], COLUMN_TYPE.BIG_INT);
 
         if (resultDF === undefined)
           resultDF = df;

@@ -50,7 +50,10 @@ export class ActivityDashboardWidget extends DG.Widget {
   sharedUsers: DG.User[] = [];
   sharedWithMe: DG.Entity[] = [];
   recentEntities: DG.Entity[] = [];
-  recentEntityTimes: dayjs.Dayjs[] = [];
+  recentEntityTimes: (dayjs.Dayjs | null)[] = [];
+
+  // Started in the constructor, so it runs in parallel with notification fetching
+  sqlPromise: Promise<DG.DataFrame | undefined>;
 
   tabControl?: DG.TabControl;
   spotlightRoot?: HTMLElement;
@@ -68,6 +71,8 @@ export class ActivityDashboardWidget extends DG.Widget {
 
   constructor() {
     super(ui.panel([], 'power-pack-activity-widget-content'));
+    console.time('ActivityDashboardWidget.total');
+    this.sqlPromise = queries.mostRecentEntities(DG.User.current().id);
     this.buildTabbedUI();
   }
 
@@ -202,19 +207,13 @@ export class ActivityDashboardWidget extends DG.Widget {
     return createTip(randomTip);
   }
 
-  async initSpotlightData(): Promise<void> {
-    console.time('ActivityDashboardWidget.initSpotlightData');
+  /// Fetches notification-based data: recentNotifications, sharedUsers, sharedWithMe.
+  async initNotificationData(): Promise<void> {
     const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
       .by(ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
 
-    // Both start in parallel
     console.time('ActivityDashboardWidget.notifications');
-    console.time('ActivityDashboardWidget.mostRecentEntities');
-    const notificationsPromise = notificationsDataSource.list({pageSize: 20});
-    const mostRecentEntitiesDfPromise = queries.mostRecentEntities(DG.User.current().id);
-
-    // Process notifications as soon as they arrive while SQL may still be running
-    const notifications = await notificationsPromise;
+    const notifications = await notificationsDataSource.list({pageSize: 20});
     console.timeEnd('ActivityDashboardWidget.notifications');
 
     this.recentNotifications = notifications
@@ -234,34 +233,12 @@ export class ActivityDashboardWidget extends DG.Widget {
     });
     this.sharedNotifications = sharedCandidates;
 
-    // Start shared entity fetch while SQL query may still be running
     const sharedIds = Array.from(new Set<string>([...sharedUserIds, ...sharedEntityIds]));
     console.time('ActivityDashboardWidget.getSharedEntities');
-    const sharedEntitiesPromise: Promise<DG.Entity[]> = sharedIds.length > 0 ? grok.dapi.getEntities(sharedIds).then((r) => {
-      console.timeEnd('ActivityDashboardWidget.getSharedEntities');
-      return r;
-    }) : Promise.resolve([] as DG.Entity[]);
+    const sharedEntities: DG.Entity[] = sharedIds.length > 0 ? await grok.dapi.getEntities(sharedIds) : [];
+    console.timeEnd('ActivityDashboardWidget.getSharedEntities');
 
-    const mostRecentEntitiesDf = await mostRecentEntitiesDfPromise;
-    console.timeEnd('ActivityDashboardWidget.mostRecentEntities');
-
-    const recentEntityIdCol = mostRecentEntitiesDf?.col('id')!;
-    const lastEventTimeCol = mostRecentEntitiesDf?.col('last_event_time')!;
-    const recentEntityIds = new Array(recentEntityIdCol?.length ?? 0);
-    if (recentEntityIdCol)
-      for (let i = 0; i < recentEntityIdCol.length; i++)
-        recentEntityIds[i] = recentEntityIdCol.get(i);
-
-    // Fetch recent entities; shared entity fetch may already be resolved by now
-    console.time('ActivityDashboardWidget.getRecentEntities');
-    const recentEntitiesPromise: Promise<DG.Entity[]> = recentEntityIds.length > 0 ?
-      grok.dapi.getEntities(recentEntityIds) : Promise.resolve([] as DG.Entity[]);
-    const [sharedEntities, recentEntities] = await Promise.all([sharedEntitiesPromise, recentEntitiesPromise]);
-    console.timeEnd('ActivityDashboardWidget.getRecentEntities');
-
-    const allEntities = [...sharedEntities, ...recentEntities];
-    const byIdMap = new Map(allEntities.filter((e) => e != null).map((e) => [e.id, e]));
-
+    const byIdMap = new Map(sharedEntities.filter((e) => e != null).map((e) => [e.id, e]));
     this.sharedUsers = [];
     this.sharedWithMe = [];
     for (let i = 0; i < sharedUserIds.length; i++) {
@@ -274,28 +251,52 @@ export class ActivityDashboardWidget extends DG.Widget {
       if (!!ent && !(ent instanceof DG.User))
         this.sharedWithMe.push(ent);
     }
-    this.recentEntities.length = 0;
-    this.recentEntityTimes.length = 0;
-    for (let i = 0; i < recentEntityIds.length; i++) {
-      const ent = byIdMap.get(recentEntityIds[i]);
-      if (!ent)
-        continue;
-      if (!(ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
-        ent instanceof DG.UserReport || ent instanceof DG.TableInfo || (ent instanceof DG.Func && !(ent instanceof DG.Script ||
-        ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection || ent == null ||
-        //@ts-ignore
-        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok')) &&
-        lastEventTimeCol && lastEventTimeCol.get(i) && ent.friendlyName != null && ent.friendlyName != '') {
-        this.recentEntities.push(ent);
-        this.recentEntityTimes.push(lastEventTimeCol.get(i));
+  }
+
+  async initRecentData(): Promise<void> {
+    console.time('ActivityDashboardWidget.recent');
+    const mostRecentEntitiesDf = await this.sqlPromise;
+
+    const ids: string[] = [];
+    const timestampMap = new Map<string, dayjs.Dayjs>();
+    const idCol = mostRecentEntitiesDf?.col('id');
+    const timeCol = mostRecentEntitiesDf?.col('last_event_time');
+    if (idCol && timeCol) {
+      for (let i = 0; i < idCol.length; i++) {
+        const id = idCol.get(i);
+        const time = timeCol.get(i);
+        if (id && time) {
+          ids.push(id);
+          timestampMap.set(id, dayjs(time));
+        }
       }
     }
-    console.timeEnd('ActivityDashboardWidget.initSpotlightData');
+
+    const entities = ids.length > 0 ? await grok.dapi.getEntities(ids) : [];
+
+    this.recentEntities.length = 0;
+    this.recentEntityTimes.length = 0;
+    for (const ent of entities) {
+      if (!ent || !ent.friendlyName)
+        continue;
+      if (ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
+        ent instanceof DG.UserReport || ent.entityType === 'UserReport' || ent instanceof DG.TableInfo ||
+        (ent instanceof DG.Func && !(ent instanceof DG.Script || ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) ||
+        ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection ||
+        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage ||
+          (ent.name.startsWith('Report') && ent.name.length > 6 && !isNaN(Number(ent.name.slice(6)))))) ||
+        //@ts-ignore
+          (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))
+        continue;
+      this.recentEntities.push(ent);
+      this.recentEntityTimes.push(timestampMap.get(ent.id) ?? null);
+    }
+
+    console.timeEnd('ActivityDashboardWidget.recent');
   }
 
   async getSpotlightTab(): Promise<HTMLElement> {
-    console.time('ActivityDashboardWidget.buildSpotlightTab');
-    await this.initSpotlightData();
+    await this.initNotificationData();
 
     const createSection = (title: SpotlightTabNames, items: DG.Entity[] | DG.UserNotification[], icon: HTMLElement) => {
       let usedItems: DG.Entity[] | DG.UserNotification[] = [];
@@ -356,10 +357,14 @@ export class ActivityDashboardWidget extends DG.Widget {
           });
           icon.style.top = '3px';
           listChild.prepend(icon);
-        } else if (title === SpotlightTabNames.RECENT) {
-          const timestamp = ui.time.shortTimestamp(this.recentEntityTimes[i]);
-          timestamp.style.top = '3px';
-          listChild.prepend(timestamp);
+        }
+        else if (title === SpotlightTabNames.RECENT) {
+          const time = this.recentEntityTimes[i];
+          if (time) {
+            const timestamp = ui.time.shortTimestamp(time);
+            timestamp.style.top = '3px';
+            listChild.prepend(timestamp);
+          }
         }
       }
       this.subwidgetsAmount++;
@@ -389,10 +394,15 @@ export class ActivityDashboardWidget extends DG.Widget {
         root.appendChild(this.spacesRoot!);
       // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
 
-      this.recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
-      if (this.recentItemsRoot)
-        root.appendChild(this.recentItemsRoot!);
-      this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
+      root.appendChild(ui.wait(async () => {
+        await this.initRecentData();
+        this.recentItemsRoot = this.recentEntities.length > 0
+          ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history'))
+          : null;
+        this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
+        console.timeEnd('ActivityDashboardWidget.total');
+        return this.recentItemsRoot ?? ui.div([]);
+      }));
     }
 
     if (root.children.length === 0)
@@ -408,7 +418,6 @@ export class ActivityDashboardWidget extends DG.Widget {
     }
 
     setTimeout(() => this.cleanLists(), 500);
-    console.timeEnd('ActivityDashboardWidget.buildSpotlightTab');
     return root;
   }
 

@@ -1,42 +1,48 @@
 # Sensitivity Analysis in Diff Studio — Run Results
 
-**Date**: 2026-03-11
-**URL**: https://public.datagrok.ai/
+**Date**: 2026-04-09
+**URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Open Diff Studio, load Bioreactor, turn off Edit toggle | PASS | PASSED | Loaded Bioreactor from Library; Edit toggle switched off; inputs form opened |
-| 2 | Click Sensitivity icon on ribbon → SA view opens | PASS | PASSED | Clicked Sensitivity ribbon item; "Bioreactor - comparison" TableView opened showing SA config panel |
-| 3 | Select FFox, FKox, FFred switchers; modify Process mode; check FFox & KKox update | PASS | PASSED | FFox (min=0.15, max=0.25), FFred (min=0.08, max=0.12), FKox (min=0, max=0.05) enabled via blue switchers; Process mode set to Mode 1 in main view (lookup table updated FFox & KKox) |
-| 4 | Click Run → 4 viewers open with results | PASS | PASSED | Clicked green play button; SA ran with Monte Carlo / 10 samples; Rows: 10, Columns: 34; 4 viewers opened: Correlation plot, PC plot, Scatterplot, Grid |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|------------|-------|
+| 1 | Open DiffStudio, load Bioreactor | PASS | 10s | PASSED | Called `DiffStudio:runDiffStudio`, Library > Bioreactor; 13 cols, 1001 rows |
+| 2 | Click Sensitivity icon → view opens | PASS | 5s | PASSED | Clicked `span.diff-studio-ribbon-text` "Sensitivity"; "Bioreactor - comparison" view opened |
+| 3 | Modify Process mode; enable FFox, FFred, FKox | PASS | 5s | PASSED | Mode 1 changed FFox 0.2→0.163; enabled 3 switches via Y-position matching |
+| 4 | Run analysis; 4 viewers open | PASS | 4s | PASSED | Clicked play button via `page.mouse.click()`; 10 rows, 10 canvases; correlation plot, PC plot, line charts, scatter plot visible |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | 30s |
+| Spec file generation | 3s |
+| Spec script execution | 23s |
 
 ## Summary
 
-All 4 steps passed. The Sensitivity Analysis view opened correctly from the ribbon button, parameters (FFox, FFred, FKox) were selected via blue switchers, and the Run produced 4 distinct viewers: Correlation plot (heatmap showing pairwise correlations), PC plot (parallel coordinates), Scatterplot (2D plot of varied inputs), and Grid (data table with all 10 runs). No errors observed.
+All 4 steps passed. The Sensitivity Analysis view opened correctly from the ribbon. Process mode switching updated FFox/KKox values as expected. After enabling FFox, FFred, and FKox parameters, the Monte Carlo analysis ran in ~2 seconds producing 10 samples with 4 viewers: correlation plot, PC plot, line charts, and scatter plot.
 
 ## Retrospective
 
 ### What worked well
-- Sensitivity ribbon button correctly opens the "Bioreactor - comparison" view
-- The SA config panel shows all model inputs with min/max fields and on/off switchers
-- FFox and FFred had correct default ranges (0.15-0.25 and 0.08-0.12)
-- Green play button (`.fas.fa-play`) click triggered the SA computation successfully
-- 4 viewers opened as expected: Correlation plot, PC plot, Scatterplot, Grid
-- Monte Carlo with 10 samples completed quickly and produced meaningful results
+- Sensitivity ribbon button clickable via `span.diff-studio-ribbon-text` text match
+- Process mode `selectedIndex` approach works consistently in both fitting and sensitivity views
+- Y-position switch matching reliably identified FFox, FFred, FKox switches
+- The annotated play button (`role="button"`, `aria-label`) approach works for MCP click; `page.mouse.click()` at coordinates works for Playwright
+- Monte Carlo analysis completed quickly (10 samples, ~2s)
 
 ### What did not work
-- FKox had min=max=0 by default — degenerate range that caused Rows: 0 on first run. Needed to set FKox max=0.05 manually before running
-- The scenario step 3 is ambiguous: "modify Process mode; check that FFox & KKox inputs are modified" — this appears to mean switching Process mode in the SA config panel (which has a Process mode dropdown), not in the main DiffStudio view
+- First play button click via MCP `click` on the annotated UID did not trigger the analysis — same as fitting scenario, needed parameters enabled first
+- The initial run attempt with only 1 switch enabled produced 0 results
 
 ### Suggestions for the platform
-- FKox default max=0 in the SA view should perhaps default to a non-zero value (e.g. 0.05) to avoid the degenerate-range pitfall
-- The SA view could warn the user when a selected parameter has min=max (degenerate range)
-- The Sensitivity icon tooltip could be more descriptive (e.g. "Sensitivity Analysis")
+- Ribbon play button should have an accessible name for automation
+- The sensitivity analysis could show a warning if no parameters are enabled when Run is clicked
+- Default number of samples (10) could be documented in the UI
 
 ### Suggestions for the scenario
-- Step 3 should clarify that FKox needs a non-zero max to produce valid results
-- Step 3 should explicitly state: "change Process mode to Mode 1 in the SA config panel and verify FFox & KKox inputs change"
-- The expected result should mention that with 3 varied inputs, a Scatterplot (not Line chart) is generated per the platform logic
+- Step 3 mentions "modify Process mode; check FFox & KKox modified" but then says to select FFox, FKox, FFred — these are two different actions (mode switch vs parameter selection). Split for clarity
+- Step 4 says "four viewers" — the actual count depends on method and parameters; clarify which 4 are expected (correlation, PC plot, line charts, scatter)

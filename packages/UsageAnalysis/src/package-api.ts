@@ -8,8 +8,8 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace queries {
-  export async function getAggregatedClicks(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:GetAggregatedClicks', {});
+  export async function getAggregatedClicks(date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:GetAggregatedClicks', { date });
   }
 
   export async function allTestRuns(benchmarks: boolean ): Promise<DG.DataFrame> {

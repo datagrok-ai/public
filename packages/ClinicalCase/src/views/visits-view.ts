@@ -154,9 +154,9 @@ export class VisitsView extends ClinicalCaseViewBase {
         }
       });
 
-      const addButton = ui.button(ui.icons.add(() => { }), () => {
+      const addButton = ui.button(ui.icons.add(() => { }, 'Add'), () => {
         visitsDf.rows.addNew();
-      });
+      }, 'Add');
       div.append(ui.div(grid.root));
       div.append(addButton);
       ui.dialog({title: 'Visits'})
@@ -168,7 +168,7 @@ export class VisitsView extends ClinicalCaseViewBase {
           this.updateGridAndHeatMap();
         })
         .show();
-    });
+    }, 'Settings');
     return visitsConfig;
   }
 

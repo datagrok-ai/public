@@ -23,6 +23,17 @@ grok test     # run package test
 grok testall  # run tests in all packages (invoked from the folder containing all plugins)
 ```
 
+Use `grok s` (alias for `grok server`) to inspect and debug the running server:
+
+```bash
+grok s packages list --filter "MyPlugin"       # verify plugin is published
+grok s functions list --filter "Pkg:"          # check registered functions
+grok s functions run 'Pkg:myFunc("arg")'       # call a function directly
+grok s connections list                        # list data connections
+grok s files list "System:AppData/MyPlugin" -r # browse plugin's appdata files
+grok s raw GET /api/users/current              # hit any API endpoint
+```
+
 ## Build Commands
 
 Every package follows the same build pattern. Run from within a package directory:

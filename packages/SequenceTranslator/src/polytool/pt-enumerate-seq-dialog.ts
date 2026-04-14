@@ -26,7 +26,7 @@ import {PolyToolPlaceholdersInput} from './pt-placeholders-input';
 import {showMonomerSelectionDialog} from '@datagrok-libraries/bio/src/utils/monomer-selection-dialog';
 import {defaultErrorHandler} from '../utils/err-info';
 import {PolyToolPlaceholdersBreadthInput} from './pt-placeholders-breadth-input';
-import {PT_ENUM_TYPE_TOOLTIPS, PT_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY} from './const';
+import {PT_ENUM_TYPE_TOOLTIPS, PT_HELM_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY} from './const';
 import {PolyToolDataRole, PolyToolTags} from '../consts';
 import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
 import {Chain} from './conversion/pt-chain';
@@ -668,7 +668,7 @@ async function getPolyToolEnumerateDialog(
           if (Object.keys(inputs.placeholders.placeholdersValue).length === 0 &&
             Object.keys(inputs.placeholdersBreadth.placeholdersBreadthValue).length === 0
           ) {
-            grok.shell.warning(`${PT_UI_DIALOG_ENUMERATION}: placeholders are empty`);
+            grok.shell.warning(`${PT_HELM_UI_DIALOG_ENUMERATION}: placeholders are empty`);
             return;
           }
           await getHelmHelper(); // initializes JSDraw and org
@@ -727,7 +727,7 @@ async function getPolyToolEnumerateDialog(
 
     // === DIALOG CONSTRUCTION AND LAYOUT ===
     // Layout: macromolecule editor on top, two-column (placeholders | breadth), two-column (options | rules)
-    const dialog = ui.dialog({title: PT_UI_DIALOG_ENUMERATION, showFooter: true})
+    const dialog = ui.dialog({title: PT_HELM_UI_DIALOG_ENUMERATION, showFooter: true})
       .add(inputs.macromolecule.root)
       .add(ui.divH([
         ui.divV([

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse, Batch, Project, Vault, Molecule} from "./cdd-vault-api";
-import { ALL_TABS, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
+import { ALL_TABS, BATCHES_TAB, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import { SeachEditor } from './search-function-editor';
 
@@ -50,6 +50,12 @@ export function prepareDataForDf(objects: any[]) {
     if (objects[i]['batches']) {
       objects[i]['molecule_batch_identifiers'] = (objects[i]['batches'] as Batch[]).map((it) => it.molecule_batch_identifier).filter((it) => it !== undefined);
       delete objects[i]['batches'];
+    }
+    if (objects[i]['molecule'] && typeof objects[i]['molecule'] === 'object') {
+      const mol = objects[i]['molecule'] as Molecule;
+      objects[i]['molecule_id'] = mol.id;
+      objects[i]['molecule_smiles'] = mol.smiles;
+      delete objects[i]['molecule'];
     }
     if (objects[i]['projects'])
       objects[i]['projects'] = (objects[i]['projects'] as Project[]).map((it) => it.name);
@@ -110,6 +116,30 @@ export async function createMoleculesDfFromObjects(vaultId: number, objects?: an
   return df;
 }
 
+export async function createMoleculeIdLinks(vaultId: number, df: DG.DataFrame) {
+  const idCol = df.col('molecule_id');
+  if (idCol) {
+    const linkCol = DG.Column.string('molecule_id', df.rowCount).init((i) => {
+      const id = idCol.get(i);
+      return id != null ? `[${id}](${`${CDD_HOST}vaults/${vaultId}/molecules/${id}/`})` : '';
+    });
+    df.columns.replace(idCol, linkCol);
+  }
+}
+
+export async function createBatchesDfFromObjects(vaultId: number, objects?: any[]) {
+  if (!objects)
+    return DG.DataFrame.create();
+  prepareDataForDf(objects as any[]);
+  const df = DG.DataFrame.fromObjects(objects)!;
+  if (!df)
+    return DG.DataFrame.create();
+  createMoleculeIdLinks(vaultId, df);
+  reorderColummns(df);
+  await grok.data.detectSemanticTypes(df);
+  return df;
+}
+
 export async function createLinksFromIds(vaultId: number, df: DG.DataFrame) {
     const idCol = df.col('id');
     if (idCol) {
@@ -118,7 +148,7 @@ export async function createLinksFromIds(vaultId: number, df: DG.DataFrame) {
             return `[${id}](${`${CDD_HOST}vaults/${vaultId}/molecules/${id}/`})`;
         });
         df.columns.replace(idCol, linkIdsCol);
-    }
+      }
 }
 
 export async function reorderColummns(df: DG.DataFrame) {
@@ -397,19 +427,85 @@ function updateView(viewName: string[], vaultName: string, treeNode: DG.TreeView
     ui.setUpdateIndicator(openedView.root, true, progressMessage);
 }
 
-export async function createCDDTableView(viewName: string[], progressMessage: string, funcName: string,
-  funcParams: {[key: string]: any}, vault: Vault, treeNode: DG.TreeViewGroup, addFilters?: boolean) {
+/**
+ * Opens a tab and loads data using a preview-then-load-all pattern.
+ *
+ * Flow:
+ *   1. Call `syncFuncName` with `page_size: PREVIEW_ROW_NUM` — show the preview df immediately.
+ *   2. If the preview returned fewer than PREVIEW_ROW_NUM rows, the full dataset is already loaded — done.
+ *   3. Otherwise attach a ribbon: "Showing first N rows" + [Load all] button.
+ *   4. On [Load all] click: run `asyncFuncName` in background with a DG.TaskBarProgressIndicator.
+ *      When it resolves, swap the view's DataFrame and update the ribbon to "Showing all N rows".
+ *   5. If the user navigates to another tab before the async completes, the result is discarded
+ *      (we guard with the module-level `openedView` — the swap only happens if the view is still live).
+ *
+ * Pass `asyncFuncName: null` for tabs without a sync/async pair (e.g. Saved Search results):
+ * the function will just run syncFuncName as a single call with no ribbon.
+ */
+export async function createCDDTableView(viewName: string[], progressMessage: string, syncFuncName: string,
+  syncFuncParams: {[key: string]: any}, asyncFuncName: string | null, asyncFuncParams: {[key: string]: any} | null,
+  vault: Vault, treeNode: DG.TreeViewGroup, addFilters?: boolean) {
   try {
     updateView(viewName, vault.name, treeNode, progressMessage);
-    const df: DG.DataFrame = await grok.functions.call(funcName, funcParams);
+    const viewToken = openedView; // captured to detect tab switches
+
+    const df: DG.DataFrame = await grok.functions.call(syncFuncName, syncFuncParams);
+
+    // User navigated away while sync was loading — drop result silently.
+    if (openedView !== viewToken)
+      return;
+
     updateView(viewName, vault.name, treeNode, progressMessage, df);
     if (addFilters && openedView)
       initializeFilters(openedView as DG.TableView, vault);
 
+    // No async pairing, or preview already contains everything — done.
+    if (!asyncFuncName || df.rowCount < PREVIEW_ROW_NUM)
+      return;
+
+    attachLoadAllRibbon(openedView as DG.TableView, viewName, asyncFuncName, asyncFuncParams ?? {});
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
     updateView(viewName, vault.name, treeNode, progressMessage, DG.DataFrame.create());
   }
+}
+
+/** Adds a "Showing first N rows / Load all" ribbon row to a TableView. Triggers the async full-fetch on click. */
+function attachLoadAllRibbon(tv: DG.TableView, viewName: string[], asyncFuncName: string,
+  asyncFuncParams: {[key: string]: any}) {
+  const ribbonViewToken = tv; // used to check the view is still the live one at resolve time
+
+  const info = ui.divText(`Showing first ${PREVIEW_ROW_NUM} rows`,
+    {style: {alignSelf: 'center', marginRight: '8px', pointerEvents: 'none', cursor: 'default'}});
+  const loadAllButton = ui.button('Load all', async () => {
+    loadAllButton.disabled = true;
+    info.textContent = 'Loading all rows...';
+    const progressBar = DG.TaskBarProgressIndicator.create(`Loading all ${viewName[viewName.length - 1]}...`);
+    try {
+      const fullDf: DG.DataFrame = await grok.functions.call(asyncFuncName, asyncFuncParams);
+
+      // User navigated away — discard, matches the "cancel on tab switch" contract.
+      if (openedView !== ribbonViewToken) {
+        progressBar.close();
+        return;
+      }
+
+      tv.dataFrame = fullDf;
+      adjustIdColumnWidth(tv);
+      info.textContent = `Showing all ${fullDf.rowCount} rows`;
+      loadAllButton.style.display = 'none';
+    } catch (e: any) {
+      grok.shell.error(e?.message ?? e);
+      info.textContent = `Showing first ${PREVIEW_ROW_NUM} rows`;
+      loadAllButton.disabled = false;
+    } finally {
+      progressBar.close();
+    }
+  });
+
+  // Compose with any ribbon already set (e.g. the Filters button). Append as an extra row.
+  const existing = tv.getRibbonPanels();
+  tv.setRibbonPanels([...existing, [info, loadAllButton]]);
 }
 
 export async function initializeFilters(tv: DG.TableView, vault: Vault) {
@@ -448,81 +544,44 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
   const funcEditor = new SeachEditor(vault.id);
   const acc = funcEditor.getEditor();
 
-  const runSearchButton = ui.button('Search', async () => {
+  const runSearch = async () => {
     ui.setUpdateIndicator(tv.grid.root, true);
+    funcEditor.saveLastSearch();
     const params = funcEditor.getParams();
-    const df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
-      {
-        vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
-        structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run
-      });
-    if (df) {
-      const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
-      const run = params.run ? `, run: ${params.run}` : '';
-      const search = params.structure ? `, ${params.structure_search_type}${params.structure_search_type === CDDVaultSearchType.SIMILARITY ?
-        `:${params.structure_similarity_threshold}` : ''} search for ${params.structure}` : '';
+    try {
+      const df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
+        {
+          vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
+          structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run
+        });
+      if (df) {
+        const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
+        const run = params.run ? `, run: ${params.run}` : '';
+        const search = params.structure ? `, ${params.structure_search_type}${params.structure_search_type === CDDVaultSearchType.SIMILARITY ?
+          `:${params.structure_similarity_threshold}` : ''} search for ${params.structure}` : '';
 
-      df!.name = `Vault: ${vault.id}${protocol}${run}${search}`;
-      tv.dataFrame = df;
-      adjustIdColumnWidth(tv);
+        df!.name = `Vault: ${vault.id}${protocol}${run}${search}`;
+        tv.dataFrame = df;
+        adjustIdColumnWidth(tv);
+
+        // Search returns the full result — drop the preview's "Load all" row and show the final row count.
+        const info = ui.divText(`Showing ${df.rowCount} rows`,
+          {style: {alignSelf: 'center', marginRight: '8px', pointerEvents: 'none', cursor: 'default'}});
+        tv.setRibbonPanels([[filtersButton], [info]]);
+      }
+    } finally {
+      ui.setUpdateIndicator(tv.grid.root, false);
     }
-    ui.setUpdateIndicator(tv.grid.root, false);
-  });
+  };
+  const runSearchButton = ui.button('Search', runSearch);
 
   filtersDiv.append(acc);
   filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
 
-}
-
-export async function createCDDTableViewWithPreview(viewName: string[], progressMessage: string, syncfuncName: string,
-  syncfuncParams: {[key: string]: any}, asyncfuncName: string, asyncfuncParams: {[key: string]: any},
-  vaultName: string, treeNode: DG.TreeViewGroup) {
-
-  const handleError = (e: any) => {
-    errors++;
-    grok.shell.error(e?.message ?? e);
-    if (errors === 2) {
-      progressBar.close();
-      //if both sync and async requests are failed - showing empty dataframe
-      updateView(viewName, vaultName, treeNode, progressMessage, DG.DataFrame.create());
-    }
-  }
-  let asyncRequestCompleted = false;
-  let errors = 0;
-  updateView(viewName, vaultName, treeNode, progressMessage);
-
-  //run sync function with offset and create a preview
-  grok.functions.call(syncfuncName, syncfuncParams).then(async (df: DG.DataFrame) => {
-    //in case asyn request is completed before sync - returning from function
-    if (asyncRequestCompleted)
-      return;
-    if (df.rowCount < PREVIEW_ROW_NUM) {
-      asyncRequestCompleted = true; //we will not need async request results
-      progressBar.close();
-    } else {
-      grok.shell.info(`Loaded first ${PREVIEW_ROW_NUM} rows. Loading the rest...`)
-    }
-    updateView(viewName, vaultName, treeNode, progressMessage, df);
-  }).catch((e) => {
-    handleError(e);
-    if (!asyncRequestCompleted)
-      grok.shell.warning(`Request for first ${PREVIEW_ROW_NUM} rows failed. Waiting for full results`);
+  funcEditor.initComplete.then(() => {
+    if (funcEditor.hasRestoredSearch)
+      runSearch();
   });
-
-  //reset tableView with asynchronously received results
-  grok.functions.call(asyncfuncName, asyncfuncParams).then(async (df: DG.DataFrame) => {
-    if (asyncRequestCompleted)
-      return;
-    updateView(viewName, vaultName, treeNode, progressMessage, df);
-    progressBar.close();
-  }).catch((e) => {
-    handleError(e);
-    if (asyncRequestCompleted)
-      grok.shell.warning(`Loaded results only for first ${PREVIEW_ROW_NUM} rows. LOading full results failed`);
-  }).finally(() => {
-    asyncRequestCompleted = true;
-  });
-  const progressBar = DG.TaskBarProgressIndicator.create(`Loading ${viewName[viewName.length - 1]}...`);
 }
 
 export function createLinks(header: string, nodeNames: string[], tree: DG.TreeViewGroup, view: DG.ViewBase): HTMLDivElement {
@@ -551,7 +610,7 @@ export function setBreadcrumbsInViewName(viewPath: string[], tree: DG.TreeViewGr
       const homeIcon = ui.iconFA('home', () => {
         grok.shell.v.close();
         grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME);
-      });
+      }, 'Home');
       breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
     }
     const viewNameRoot = usedView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
@@ -651,58 +710,11 @@ export function createVaultNode(vault: Vault, treeNode: DG.TreeViewGroup) {
   openedView?.close();
   openedView = DG.View.create();
   openedView.name = vault.name;
-  const tabs = createLinks(vault.name, [PROTOCOLS_TAB, SAVED_SEARCHES_TAB, COLLECTIONS_TAB, MOLECULES_TAB, SEARCH_TAB], treeNode, openedView);
+  const tabs = createLinks(vault.name, [PROTOCOLS_TAB, SAVED_SEARCHES_TAB, COLLECTIONS_TAB, MOLECULES_TAB, BATCHES_TAB, SEARCH_TAB], treeNode, openedView);
   openedView.append(tabs);
   grok.shell.addPreview(openedView);
   setBreadcrumbsInViewName([vault.name], treeNode, openedView);
   openedView.path = createPath(vault.name);
-}
-
-export function createSearchNode(vault: Vault, treeNode: DG.TreeViewGroup) {
-  openedView?.close();
-  openedView = DG.View.create();
-  const funcEditor = new SeachEditor(vault.id);
-  const acc = funcEditor.getEditor();
-  let df: DG.DataFrame | null = null;
-  const runButton = ui.bigButton('SEARCH', async () => {
-    ui.setUpdateIndicator(gridDiv, true);
-    const params = funcEditor.getParams();
-    df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
-      {
-        vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
-        structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run
-      });
-    ui.empty(gridDiv);
-    if (df) {
-      const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
-      const run = params.run ? `, run: ${params.run}` : '';
-      const search = params.structure ? `, ${params.structure_search_type}${params.structure_search_type === CDDVaultSearchType.SIMILARITY ?
-        `:${params.structure_similarity_threshold}` : ''} search for ${params.structure}` : '';
-
-      df!.name = `Vault: ${vault.id}${protocol}${run}${search}`;
-      gridDiv.append(df.plot.grid().root);
-    }
-    ui.setUpdateIndicator(gridDiv, false);
-  });
-  const gridDiv = ui.div('', 'cdd-vault-search-res-div');
-  runButton.classList.add('cdd-vault-run-search-button');
-
-  const addToWorkspaceButton = ui.icons.add(() => {
-    if (df) {
-      const tv = grok.shell.addTablePreview(df);
-      adjustIdColumnWidth(tv);
-    }
-  }, 'Add results to workspace');
-  openedView.setRibbonPanels([[addToWorkspaceButton]]);
-  openedView.name = 'Search CDD Vault'
-  openedView.root.append(ui.divV([
-    acc,
-    runButton,
-    gridDiv
-  ], { style: { height: '100%' } }));
-  grok.shell.addPreview(openedView);
-  setBreadcrumbsInViewName([vault.name, SEARCH_TAB], treeNode, openedView);
-  openedView.path = createPath(vault.name, [SEARCH_TAB]);
 }
 
 export function addNodeWithEmptyResults(name: string, warningMessage?: string) {

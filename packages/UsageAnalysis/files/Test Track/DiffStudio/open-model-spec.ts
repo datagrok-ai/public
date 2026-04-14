@@ -1,134 +1,165 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect, chromium} from '@playwright/test';
 
-const BASE_URL = 'https://public.datagrok.ai';
+const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 
-test.describe('DiffStudio / Open model', () => {
-  let page: Page;
+const stepErrors: {step: string; error: string}[] = [];
 
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-    // Close all views
-    await page.evaluate(() => (window as any).grok.shell.closeAll());
+async function softStep(name: string, fn: () => Promise<void>) {
+  try {
+    await test.step(name, fn);
+  } catch (e: any) {
+    stepErrors.push({step: name, error: e.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+  }
+}
+
+test('DiffStudio Open Model: Bioreactor, Multiaxis, Facet, slider, Process mode', async () => {
+  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  const context = browser.contexts()[0];
+  let page = context.pages().find(p => p.url().includes('datagrok'));
+  if (!page) {
+    page = await context.newPage();
+    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
+    await page.waitForFunction(() => {
+      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
+      catch { return false; }
+    }, {timeout: 45000});
+  }
+
+  // Setup
+  await page.evaluate(async () => {
+    document.querySelectorAll('.d4-dialog').forEach(d => {
+      const cancel = d.querySelector('[name="button-CANCEL"]');
+      if (cancel) (cancel as HTMLElement).click();
+    });
+    grok.shell.closeAll();
+    document.body.classList.add('selenium');
+    grok.shell.windows.simpleMode = false;
   });
 
-  test.afterAll(async () => {
-    await page.close();
+  // Step 1: Open DiffStudio
+  await softStep('Step 1: Open Diff Studio from Apps', async () => {
+    await page!.evaluate(async () => {
+      await grok.functions.call('DiffStudio:runDiffStudio');
+      await new Promise(r => setTimeout(r, 3000));
+    });
+    const viewName = await page!.evaluate(() => grok.shell.v?.name);
+    expect(viewName).toBeTruthy();
   });
 
-  test('Step 1: Open Diff Studio from Apps', async () => {
-    await page.goto(`${BASE_URL}/apps`, { waitUntil: 'networkidle' });
-    // Search for Diff Studio
-    const searchInput = page.locator('input[placeholder*="Search apps"]');
-    await searchInput.fill('Diff Studio');
-    await page.waitForTimeout(1000);
-    // Double-click the app card
-    const appCard = page.locator('.d4-item-card, [class*="app-card"]').filter({ hasText: 'Diff Studio' }).first();
-    await appCard.dblclick();
-    await page.waitForTimeout(3000);
-    // Verify Diff Studio opened
-    await expect(page.locator('.d4-ribbon-item').filter({ hasText: 'New' })).toBeVisible();
+  // Step 2: Load Bioreactor from Library
+  await softStep('Step 2: Load Bioreactor from Library', async () => {
+    await page!.evaluate(async () => {
+      const combo = document.querySelector('.diff-studio-ribbon-widget') as HTMLElement;
+      if (combo) combo.click();
+      await new Promise(r => setTimeout(r, 800));
+
+      const items = document.querySelectorAll('[role="menuitem"]');
+      const lib = Array.from(items).find(i => i.textContent?.trim().startsWith('Library'));
+      if (lib) (lib as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 800));
+
+      const items2 = document.querySelectorAll('[role="menuitem"]');
+      const bio = Array.from(items2).find(i => i.textContent?.trim() === 'Bioreactor');
+      if (bio) (bio as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 5000));
+    });
+
+    const info = await page!.evaluate(() => {
+      const tv = grok.shell.tv;
+      const df = tv?.dataFrame;
+      return {rows: df?.rowCount, cols: df?.columns?.length};
+    });
+    expect(info.cols).toBe(13);
+    expect(info.rows).toBe(1001);
   });
 
-  test('Step 2: Load Bioreactor example via Library menu', async () => {
-    // Click the folder-open combo popup
-    const comboPopup = page.locator('.d4-combo-popup.diff-studio-ribbon-widget');
-    const rect = await comboPopup.boundingBox();
-    if (rect) {
-      await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
-    }
-    await page.waitForTimeout(500);
-    // Click Bioreactor menu item
-    const bioreactorItem = page.locator('.d4-menu-item, .d4-menu-item-vert').filter({ hasText: 'Bioreactor' }).first();
-    await bioreactorItem.click();
-    await page.waitForTimeout(2000);
-    // Verify Bioreactor loaded
-    await expect(page.locator('.d4-ribbon-item').filter({ hasText: 'Bioreactor' }).first()).toBeVisible();
-    const statusBar = page.locator('text=Columns: 13');
-    await expect(statusBar).toBeVisible();
+  // Step 3: Check Multiaxis and Facet tabs
+  await softStep('Step 3: Check Multiaxis and Facet tabs', async () => {
+    const tabs = await page!.evaluate(() => {
+      const allEls = document.querySelectorAll('*');
+      const multiaxis = Array.from(allEls).find(el =>
+        el.textContent?.trim() === 'Multiaxis' && el.children.length === 0
+      );
+      const facet = Array.from(allEls).find(el =>
+        el.textContent?.trim() === 'Facet' && el.children.length === 0
+      );
+      return {multiaxis: !!multiaxis, facet: !!facet};
+    });
+    expect(tabs.multiaxis).toBe(true);
+    expect(tabs.facet).toBe(true);
   });
 
-  test('Step 3: Check Multiaxis and Facet tabs are present', async () => {
-    const multiaxisTab = page.locator('.tab-handle').filter({ hasText: 'Multiaxis' });
-    const facetTab = page.locator('.tab-handle').filter({ hasText: 'Facet' });
-    await expect(multiaxisTab).toBeVisible();
-    await expect(facetTab).toBeVisible();
-  });
-
-  test('Step 4: Facet plot shows different colors per curve', async () => {
+  // Step 4: Check Facet curves have different colors
+  await softStep('Step 4: Facet curves have different colors', async () => {
     // Click Facet tab
-    await page.locator('.tab-handle').filter({ hasText: 'Facet' }).click();
-    await page.waitForTimeout(1000);
-    // Take screenshot for visual verification — each facet panel should have distinct color
-    const screenshot = await page.screenshot();
-    expect(screenshot).toBeTruthy();
-    // Switch back to Multiaxis
-    await page.locator('.tab-handle').filter({ hasText: 'Multiaxis' }).click();
+    await page!.evaluate(() => {
+      const allEls = document.querySelectorAll('*');
+      const facet = Array.from(allEls).find(el =>
+        el.textContent?.trim() === 'Facet' && el.children.length === 0
+      );
+      if (facet) (facet as HTMLElement).click();
+    });
+    await page!.waitForTimeout(1000);
+
+    // Verify multiple canvases present (each facet panel has its own canvas)
+    const canvases = await page!.evaluate(() => document.querySelectorAll('canvas').length);
+    expect(canvases).toBeGreaterThanOrEqual(6);
   });
 
-  test('Step 5: Adjust Switch at slider updates chart in real time', async () => {
-    // Get initial FFox value from table
-    const initialFFox = await page.evaluate(() => {
-      const ranges = Array.from(document.querySelectorAll('input[type="range"]'));
-      return (ranges[2] as HTMLInputElement)?.value;
-    });
+  // Step 5: Adjust Switch at value, verify chart updates
+  await softStep('Step 5: Adjust Switch at; table and chart update', async () => {
+    const result = await page!.evaluate(async () => {
+      const switchAtInput = document.querySelector('input[name="input-switch-at"]') as HTMLInputElement;
+      if (!switchAtInput) return {error: 'not found'};
 
-    // Change switch at slider (index 2: min=70, max=180)
-    await page.evaluate(() => {
-      const ranges = Array.from(document.querySelectorAll('input[type="range"]'));
-      const input = ranges[2] as HTMLInputElement;
-      input.value = '150';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await page.waitForTimeout(1000);
+      const valueBefore = switchAtInput.value;
+      const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      nativeSetter.call(switchAtInput, '200');
+      switchAtInput.dispatchEvent(new Event('input', {bubbles: true}));
+      switchAtInput.dispatchEvent(new Event('change', {bubbles: true}));
+      switchAtInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', bubbles: true}));
+      await new Promise(r => setTimeout(r, 2000));
 
-    // Verify value changed
-    const newVal = await page.evaluate(() => {
-      const ranges = Array.from(document.querySelectorAll('input[type="range"]'));
-      return (ranges[2] as HTMLInputElement)?.value;
+      return {valueBefore, valueAfter: switchAtInput.value};
     });
-    expect(newVal).toBe('150');
+    expect(result.valueAfter).toBe('200');
   });
 
-  test('Step 6: Change Process mode updates FFox, KKox and charts', async () => {
-    // Record values before
-    const before = await page.evaluate(() => {
-      const sel = document.querySelector('select') as HTMLSelectElement;
-      const textboxes = Array.from(document.querySelectorAll('.ui-input-editor input[type="range"]'));
-      return {
-        mode: sel?.value,
-        switchAt: (textboxes[2] as HTMLInputElement)?.value,
-        ffox: (textboxes[3] as HTMLInputElement)?.value,
-        kkox: (textboxes[4] as HTMLInputElement)?.value,
-      };
-    });
+  // Step 6: Modify Process mode; FFox & KKox change, charts update
+  await softStep('Step 6: Modify Process mode; inputs and charts update', async () => {
+    const result = await page!.evaluate(async () => {
+      const getVal = (name: string) =>
+        (document.querySelector(`input[name="input-${name}"]`) as HTMLInputElement)?.value;
 
-    // Change Process mode to Mode 1
-    await page.evaluate(() => {
-      const sel = document.querySelector('select') as HTMLSelectElement;
-      sel.focus();
-      const nativeSet = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!;
-      nativeSet.call(sel, 'Mode 1');
-      sel.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await page.waitForTimeout(2000);
+      const ffoxBefore = getVal('FFox');
+      const kkoxBefore = getVal('KKox');
 
-    // Verify inputs updated
-    const after = await page.evaluate(() => {
-      const sel = document.querySelector('select') as HTMLSelectElement;
-      const textboxes = Array.from(document.querySelectorAll('.ui-input-editor input[type="range"]'));
-      return {
-        mode: sel?.value,
-        switchAt: (textboxes[2] as HTMLInputElement)?.value,
-        ffox: (textboxes[3] as HTMLInputElement)?.value,
-        kkox: (textboxes[4] as HTMLInputElement)?.value,
-      };
-    });
+      // Switch to Mode 1 using selectedIndex
+      const selects = Array.from(document.querySelectorAll('select'));
+      const modeSelect = selects.find(s => Array.from(s.options).some(o => o.text === 'Mode 1'));
+      if (!modeSelect) return {found: false, changed: false};
 
-    expect(after.mode).toBe('Mode 1');
-    // At least one of these should differ after mode change
-    const changed = after.switchAt !== before.switchAt || after.ffox !== before.ffox || after.kkox !== before.kkox;
-    expect(changed).toBe(true);
+      modeSelect.selectedIndex = 1;
+      modeSelect.dispatchEvent(new Event('input', {bubbles: true}));
+      modeSelect.dispatchEvent(new Event('change', {bubbles: true}));
+      await new Promise(r => setTimeout(r, 3000));
+
+      const ffoxAfter = getVal('FFox');
+      const kkoxAfter = getVal('KKox');
+
+      return {found: true, ffoxBefore, ffoxAfter, kkoxBefore, kkoxAfter,
+        changed: ffoxBefore !== ffoxAfter || kkoxBefore !== kkoxAfter};
+    });
+    expect(result.found).toBe(true);
+    expect(result.changed).toBe(true);
   });
+
+  // Cleanup
+  await page.evaluate(() => grok.shell.closeAll());
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });

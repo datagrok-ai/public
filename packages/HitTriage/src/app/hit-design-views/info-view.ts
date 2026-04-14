@@ -109,7 +109,7 @@ export class HitDesignInfoView
         });
 
         menu.show({element: sortingHeader, x: 120, y: sortingHeader.offsetTop + 30});
-      });
+      }, 'Group by');
       groupIcon.style.marginBottom = '9px';
       groupIcon.style.marginLeft = '8px';
       groupIcon.style.fontSize = '15px';
@@ -152,7 +152,7 @@ export class HitDesignInfoView
 
         // then add the custom fields
         menu.show({element: sortingHeader, x: 100, y: sortingHeader.offsetTop + 30});
-      });
+      }, 'View');
       ui.tooltip.bind(editColumnsIcon, 'Edit visible columns in campaigns table');
       editColumnsIcon.style.marginBottom = '9px';
       editColumnsIcon.style.marginLeft = '8px';
@@ -161,7 +161,7 @@ export class HitDesignInfoView
 
       const refreshIcon = ui.iconFA('sync', async () => {
         await this.refreshCampaignsTable();
-      });
+      }, 'Refresh');
       refreshIcon.style.marginBottom = '9px';
       refreshIcon.style.marginLeft = '8px';
       refreshIcon.style.color = 'var(--blue-1)';

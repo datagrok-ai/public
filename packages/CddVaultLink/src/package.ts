@@ -6,14 +6,15 @@ import {u2} from "@datagrok-libraries/utils/src/u2";
 import {MoleculeFieldSearch, queryVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, querySavedSearches, SavedSearch, querySavedSearchById,
   queryMoleculesAsync, queryReadoutRowsAsync, ApiResponse, MoleculesQueryResult, Protocol, queryProtocolsAsync, Collection,
   queryCollectionsAsync,
+  queryBatches,
   queryBatchesAsync,
   queryProjects,
   Vault} from "./cdd-vault-api";
-import { CDDVaultSearchType, COLLECTIONS_TAB, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
+import { BATCHES_TAB, CDDVaultSearchType, COLLECTIONS_TAB, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
 import '../css/cdd-vault.css';
 import { SeachEditor } from './search-function-editor';
-import { addNodeWithEmptyResults, CDDVaultStats, createCDDContextPanel, createCDDTableView, createCDDTableViewWithPreview, createInitialSatistics, createLinks,
-  createLinksFromIds, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, createSearchNode, createVaultNode, getAsyncResults, getAsyncResultsAsDf,
+import { addNodeWithEmptyResults, CDDVaultStats, createBatchesDfFromObjects, createCDDContextPanel, createCDDTableView, createInitialSatistics, createLinks,
+  createLinksFromIds, createMoleculeIdLinks, createMoleculesDfFromObjects, createNestedCDDNode, createObjectViewer, createPath, createVaultNode, getAsyncResults, getAsyncResultsAsDf,
   getExportId, handleInitialURL, prepareDataForDf, PREVIEW_ROW_NUM, reorderColummns, setBreadcrumbsInViewName } from './utils';
 
 export * from './package.g';
@@ -74,22 +75,27 @@ export class PackageFunctions{
         let protocols: Protocol[] | null = null;
         createNestedCDDNode(protocols, PROTOCOLS_TAB, vaultNode, 'CDDVaultLink:getProtocolsAsync', { vaultId: vault.id, timeoutMinutes: 5 }, treeNode, vault,
           async (item: any) => {
-            createCDDTableView([PROTOCOLS_TAB, item.name], 'Waiting for molecules', 'CDDVaultLink:cDDVaultSearchAsync',
-              {
-                vaultId: vault.id, structure: '', structure_search_type: CDDVaultSearchType.SUBSTRUCTURE,
-                structure_similarity_threshold: 0, protocol: item.id, run: undefined
-              }, vault, treeNode);
+            const protocolSearchParams = {
+              vaultId: vault.id, structure: '', structure_search_type: CDDVaultSearchType.SUBSTRUCTURE,
+              structure_similarity_threshold: 0, protocol: item.id, run: undefined,
+            };
+            createCDDTableView([PROTOCOLS_TAB, item.name], 'Waiting for molecules',
+              'CDDVaultLink:cDDVaultSearch', {...protocolSearchParams, page_size: PREVIEW_ROW_NUM},
+              'CDDVaultLink:cDDVaultSearchAsync', protocolSearchParams,
+              vault, treeNode);
             grok.shell.windows.context.visible = true;
             grok.shell.o = createObjectViewer(item, item.name);
           }
         );
 
-        //saved searches node - only async method is available (so createCDDTableViewWithPreview function is not applicable)
+        //saved searches node - export-based, no sync/async pairing (pass null for the async side)
         let savedSearches: SavedSearch[] | null = null;
         createNestedCDDNode(savedSearches, SAVED_SEARCHES_TAB, vaultNode, 'CDDVaultLink:getSavedSearches', { vaultId: vault.id }, treeNode, vault,
           async (item: any) => {
-            createCDDTableView([SAVED_SEARCHES_TAB, item.name], `Waiting for ${item.name} results`, 'CDDVaultLink:getSavedSearchResults',
-              { vaultId: vault.id, searchId: item.id, timeoutMinutes: 5}, vault, treeNode);
+            createCDDTableView([SAVED_SEARCHES_TAB, item.name], `Waiting for ${item.name} results`,
+              'CDDVaultLink:getSavedSearchResults', { vaultId: vault.id, searchId: item.id, timeoutMinutes: 5},
+              null, null,
+              vault, treeNode);
           }
         );
 
@@ -101,29 +107,32 @@ export class PackageFunctions{
             if (!item.molecules || !item.molecules.length) {
               addNodeWithEmptyResults(item.name, `No molecules found for ${item.name} collection`);
             }
-            //use sync function with limit of returned entities, need to implement running of async function on the background (by clicking some icon or so)
+            const moleculesIds = item.molecules.join(',');
             createCDDTableView([COLLECTIONS_TAB, item.name], `Waiting for ${item.name} results`,
-              'CDDVaultLink:getMolecules',
-              {
-                vaultId: vault.id,
-                moleculesIds: item.molecules.join(',')
-              }, vault, treeNode);
+              'CDDVaultLink:getMolecules', { vaultId: vault.id, moleculesIds },
+              'CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, moleculesIds, timeoutMinutes: 5 },
+              vault, treeNode);
           }
         );
 
         //molecules node
         const moleculesNode = vaultNode.item(MOLECULES_TAB);
         moleculesNode.onSelected.subscribe(async (_) => {
-          //use sync function with limit of returned entities, need to implement running of async function on the background (by clicking some icon or so)
-          createCDDTableView([MOLECULES_TAB], 'Waiting for molecules', 'CDDVaultLink:getMolecules',
-            {vaultId: vault.id, moleculesIds: ''}, vault, treeNode, true);
+          createCDDTableView([MOLECULES_TAB], 'Waiting for molecules',
+            'CDDVaultLink:getMolecules', { vaultId: vault.id, moleculesIds: '' },
+            'CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, moleculesIds: '', timeoutMinutes: 5 },
+            vault, treeNode, true);
         });
 
-        // //search node - serach is not implemented as docked panel in molecules tab
-        // const searchNode = vaultNode.item(SEARCH_TAB);
-        // searchNode.onSelected.subscribe(() => {
-        //   createSearchNode(vault, treeNode);
-        // });
+        //batches node
+        const batchesNode = vaultNode.item(BATCHES_TAB);
+        batchesNode.onSelected.subscribe(async (_) => {
+          createCDDTableView([BATCHES_TAB], 'Waiting for batches',
+            'CDDVaultLink:getBatches', { vaultId: vault.id },
+            'CDDVaultLink:getBatchesAsync', { vaultId: vault.id, timeoutMinutes: 5 },
+            vault, treeNode);
+        });
+
       //TODO! unlock other tabs
       // vaultNode.group('Plates');
       // vaultNode.group('Assays');
@@ -276,6 +285,42 @@ export class PackageFunctions{
       'cache': 'all',
       'cache.invalidateOn': '0 0 * * *'
     },
+    'name': 'Get Batches'
+  })
+  static async getBatches(
+    @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number): Promise<DG.DataFrame> {
+    const batches = await queryBatches(vaultId, {page_size: PREVIEW_ROW_NUM});
+    if (batches.error)
+      throw batches.error;
+    const df = await createBatchesDfFromObjects(vaultId, batches.data?.objects as any[]);
+    return df;
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 * * *'
+    },
+    'name': 'Get Batches Async'
+  })
+  static async getBatchesAsync(
+    @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number,
+    @grok.decorators.param({'type':'int'})   timeoutMinutes: number): Promise<DG.DataFrame> {
+    const exportResponse = await queryBatchesAsync(vaultId, {});
+    const exportId = getExportId(exportResponse);
+    const df = await getAsyncResultsAsDf(vaultId, exportId, timeoutMinutes, false);
+    createMoleculeIdLinks(vaultId, df);
+    reorderColummns(df);
+    return df;
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 * * *'
+    },
     'name': 'Get Protocols Async'
   })
   static async getProtocolsAsync(
@@ -401,9 +446,9 @@ export class PackageFunctions{
       'cache': 'all',
       'cache.invalidateOn': '0 0 * * *'
     },
-    'name': 'CDD Vault search'
+    'name': 'CDD Vault search 2'
   })
-  static async cDDVaultSearch(
+  static async cDDVaultSearch2(
     @grok.decorators.param({'type':'int','options':{'nullable':true}})
     vaultId: number,
     @grok.decorators.param({'options':{'category':'General','nullable':true, 'description': 'Comma separated list of ids'}})
@@ -536,10 +581,10 @@ export class PackageFunctions{
       'cache': 'all',
       'cache.invalidateOn': '0 0 * * *'
     },
-    'name': 'CDD Vault search 2',
+    'name': 'CDD Vault search',
     'editor': 'Cddvaultlink:CDDVaultSearchEditor'
   })
-  static async cDDVaultSearch2(
+  static async cDDVaultSearch(
     @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number,
     @grok.decorators.param({'options':{'category':'Structure','nullable':true,'semType':'Molecule', 'description': 'SMILES,cxsmiles or mol string'}})
     structure?: string,
@@ -550,12 +595,14 @@ export class PackageFunctions{
     @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true, 'description': 'Protocol id'}})
     protocol?: number,
     @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true, 'description': 'Specific run id'}})
-    run?: number): Promise<DG.DataFrame> {
+    run?: number,
+    @grok.decorators.param({'type':'int','options':{'nullable':true, 'description': 'Page size for preview (defaults to PREVIEW_ROW_NUM if omitted)'}})
+    page_size?: number): Promise<DG.DataFrame> {
+    const effectivePageSize = page_size ?? PREVIEW_ROW_NUM;
     //collecting molecule ids according to protocol query params
     const molIds: number[] = [];
     if (protocol) {
-      //TODO! Make async request and remove page size
-      const readoutRowsRes = await queryReadoutRows(vaultId, {protocols: protocol.toString(), runs: run?.toString(), page_size: 1000});
+      const readoutRowsRes = await queryReadoutRows(vaultId, {protocols: protocol.toString(), runs: run?.toString(), page_size: effectivePageSize});
       if (readoutRowsRes.error) {
         grok.shell.error(readoutRowsRes.error);
         return DG.DataFrame.create();
@@ -570,8 +617,7 @@ export class PackageFunctions{
     const molQueryParams: MoleculeQueryParams = !structure ? {molecules: molIds.join(',')} :
       {structure: structure, structure_search_type: structure_search_type, structure_similarity_threshold: structure_similarity_threshold};
 
-    //TODO! Make async request and remove page size
-    molQueryParams.page_size = 1000;
+    molQueryParams.page_size = effectivePageSize;
     const cddMols = await queryMolecules(vaultId, molQueryParams);
     if (cddMols.error) {
       grok.shell.error(cddMols.error);

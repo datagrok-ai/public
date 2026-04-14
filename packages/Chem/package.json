@@ -43,7 +43,7 @@
     "@datagrok-libraries/ml": "^6.10.11",
     "@datagrok-libraries/statistics": "^1.12.4",
     "@datagrok-libraries/tutorials": "^1.7.6",
-    "@datagrok-libraries/utils": "^4.6.14",
+    "@datagrok-libraries/utils": "^4.7.2",
     "@datagrok-libraries/gridext": "^1.5.4",
     "@types/pako": "^2.0.3",
     "@webgpu/types": "^0.1.40",
@@ -65,7 +65,7 @@
     "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
-    "@datagrok/charts": "^1.4.0",
+    "@datagrok/charts": "^1.7.0",
     "@datagrok/power-grid": "^1.6.2",
     "@types/offscreencanvas": "^2019.7.3",
     "@types/wu": "^2.1.44",

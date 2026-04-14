@@ -1,40 +1,49 @@
 # Peptide Space — Run Results
 
-**Date**: 2026-03-11
-**URL**: https://public.datagrok.ai/
-**Status**: PASS
+**Date**: 2026-04-09
+**URL**: https://dev.datagrok.ai
+**Status**: PARTIAL
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Launch SAR from Bio->Analyze->SAR | PASS | PASSED | Opened Bio ribbon → Analyze submenu → SAR...; "Analyze Peptides" dialog appeared with Sequence=AlignedSequence, Activity=IC50, Scaling=none |
-| 2 | Wait for calculation results | PASS | PASSED | Clicked OK; SAR view loaded with MCL network graph (orange nodes, 1 cluster of 646), Logo Summary Table, Sequence Variability Map, Most Potent Residues; Columns: 26 |
-| 3 | Open settings using wrench button | PASS | PASSED | Clicked `.fa-wrench` icon; "Peptides settings" dialog opened showing General (Activity scaling), MCL (Similarity Threshold=70, Min Cluster Size=5), Viewers section |
-| 4 | Adjust arbitrary parameters and click "ok" | PASS | PASSED | Changed Activity scaling: none→lg, Similarity Threshold: 70→55, Min Cluster Size: 5→3 via native setters; clicked OK |
-| 5 | MCL Viewer should output different results | PASS | PASSED | MCL graph recalculated: nodes changed from orange to blue, different oval/disc layout; new Cluster size (MCL) and Connectivity (MCL) columns visible in selection panel |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|-------|-------|
+| 1 | Launch SAR from Bio > Analyze > SAR | PASS | 3s | PASSED | Dialog "Analyze Peptides" appeared with AlignedSequence and IC50 pre-selected |
+| 2 | Wait for calculation results | PASS | 15s | PASSED | MCL, Most Potent Residues, Sequence Variability Map viewers all created. Cluster (MCL) column added. |
+| 3 | Open settings using wrench button | AMBIGUOUS | - | SKIP | No wrench button found in MCL viewer. Tried gear icon (opens standard properties), icon-edit and icon-plus (both open "Add New Column" dialog). |
+| 4 | Adjust arbitrary parameters and click OK | SKIP | - | SKIP | Cannot adjust MCL parameters — no settings dialog accessible |
+| 5 | MCL Viewer should output different results | SKIP | - | SKIP | Prerequisite (step 3-4) not completed. MCL viewer shows 2 clusters with initial parameters. |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | 25s |
+| Spec file generation | 3s |
+| Spec script execution | 1.3m |
 
 ## Summary
 
-All 5 steps passed. SAR was successfully launched via Bio→Analyze→SAR (alternative to the "Launch SAR" button in the context panel). The MCL viewer correctly reflected the new parameters after clicking OK — node color and layout both changed, confirming recalculation.
+SAR analysis launches correctly via Bio > Analyze > SAR and produces MCL, Most Potent Residues, and Sequence Variability Map viewers. MCL clustering generates 2 clusters with EmbedX/Y, Cluster, Cluster size, and Connectivity columns. However, the "wrench button" for adjusting MCL parameters is not present in the current UI — no dialog for changing MCL clustering parameters could be found.
 
 ## Retrospective
 
 ### What worked well
-- Bio→Analyze→SAR is a reliable alternative path to launch SAR analysis
-- The "Analyze Peptides" dialog auto-populated Sequence and Activity fields from the open dataset
-- Wrench button (`.fa-wrench`) opened Peptides settings reliably after SAR was launched
-- Native setter pattern for inputs (Similarity Threshold, Min Cluster Size) worked correctly
-- MCL visual output clearly changed color (orange→blue) confirming parameter effect
+- SAR analysis launches correctly from Bio > Analyze > SAR menu
+- "Analyze Peptides" dialog pre-selects AlignedSequence and IC50 columns
+- MCL viewer, Most Potent Residues, and Sequence Variability Map all render correctly
+- MCL clustering produces expected columns (Cluster, EmbedX/Y, Connectivity, Cluster size)
+- Playwright spec passes with waitForFunction for async MCL column creation
 
 ### What did not work
-- MCL computation took ~20–25 seconds total; no progress indicator visible during recalculation
+- **No wrench button** in the MCL viewer — the scenario mentions "Open settings using wrench button" but no such UI element exists. The MCL viewer contains only standard scatter plot icons (icon-plus, icon-edit for "Add New Column")
+- MCL clustering takes significant time (~60-80s in Playwright) — spec needs long timeout
 
 ### Suggestions for the platform
-- Add a visible progress bar or spinner during MCL recalculation (currently the graph area is blank until complete)
-- Expose `data-testid` attributes on the MCL graph nodes for automated cluster count verification
+- Add a settings/wrench button to the MCL viewer for adjusting clustering parameters (inflation, expansion, etc.)
+- Or add MCL parameter controls to the viewer's properties panel
 
 ### Suggestions for the scenario
-- Step 1 should clarify that the dataset (peptides.csv) must be open with AlignedSequence column selected before using Bio→Analyze→SAR
-- Step 4 should specify which parameters to change for repeatable testing (e.g. "change Similarity Threshold to 55")
-- Step 5 should clarify what "different results" means — e.g., node count, cluster count, or node color
+- Clarify which button opens MCL settings — "wrench button" does not exist in current UI
+- Consider adding expected cluster count or parameter values to verify
+- Note that MCL clustering is async and may take 60+ seconds

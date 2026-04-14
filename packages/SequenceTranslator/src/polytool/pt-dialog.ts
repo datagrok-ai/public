@@ -22,9 +22,10 @@ import {getLibrariesList} from './utils';
 import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
 
 import {
-  PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION, PT_UI_DIALOG_ENUMERATION,
+  PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION,
   PT_UI_GET_HELM, PT_UI_LINEARIZE, PT_UI_LINEARIZE_TT,
-  PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY
+  PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY,
+  PT_CHEM_UI_DIALOG_ENUMERATION
 } from './const';
 
 import {_package} from '../package';
@@ -208,7 +209,14 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
     molInput.setMolFile(molfileValue);
 
     //const helmInput = helmHelper.createHelmInput('Macromolecule', {value: helmValue});
-    const screenLibraryInput = ui.input.choice('Library to use', {value: null, items: libList});
+    const screenLibraryInput = ui.input.choice('Library to use', {
+      value: libList.length ? libList[0] : null,
+      items: libList,
+      nullable: false,
+      onValueChanged: () => {
+        dialog.getButton('OK').disabled = screenLibraryInput.value === null;
+      }
+    });
 
     molInput.root.setAttribute('style', `min-width:250px!important;`);
     molInput.root.setAttribute('style', `max-width:250px!important;`);
@@ -246,7 +254,7 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
     };
 
     // Displays the molecule from a current cell (monitors changes)
-    const dialog = ui.dialog(PT_UI_DIALOG_ENUMERATION)
+    const dialog = ui.dialog(PT_CHEM_UI_DIALOG_ENUMERATION)
       .add(div)
       .onOK(() => {
         exec().finally(() => { destroy(); });
@@ -268,6 +276,7 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
         molInput.setMolFile(x.mol);
         screenLibraryInput.value = x.screenLibrary;
       });
+    dialog.getButton('OK').disabled = screenLibraryInput.value === null;
     return dialog;
   } catch (err: any) {
     destroy();

@@ -598,6 +598,8 @@ export interface IDartApi {
   grok_InputBase_Set_ReadOnly(input: any, v: Bool): any;
   grok_InputBase_Get_Enabled(input: any): any;
   grok_InputBase_Set_Enabled(input: any, v: Bool): any;
+  grok_InputBase_Get_Visible(input: any): any;
+  grok_InputBase_Set_Visible(input: any, visible: Bool): any;
   grok_InputBase_OnChanged(input: any): any;
   grok_InputBase_OnInput(input: any): any;
   grok_InputBase_Save(input: any): any;
@@ -632,8 +634,6 @@ export interface IDartApi {
   grok_InputForm_Set_Source(form: any, x: any): any;
   grok_InputForm_OnInputChanged(form: any): any;
   grok_InputForm_OnValidationCompleted(form: any): any;
-  grok_InputForm_ShowInput(form: any, propertyName: String): any;
-  grok_InputForm_HideInput(form: any, propertyName: String): any;
   grok_DateInput_Get_Value(input: any): any;
   grok_DateInput_Set_Value(input: any, x: any): any;
   grok_FontInput_Get_Value(input: any): any;
@@ -1160,7 +1160,7 @@ export interface IDartApi {
   grok_DataFrame_OnDataChanged(t: any, f: any): any;
   grok_DataFrame_OnEvent(t: any, event: String, f: any): any;
   grok_DataFrame_FireValuesChanged(t: any): any;
-  grok_DataFrame_ChangeColumnType(t: any, column: any, newType: String, format: String): any;
+  grok_DataFrame_ChangeColumnsType(t: any, columns: any, newType: String, format: String): any;
   grok_DataFrame_Append(t1: any, t2: any, inPlace: Bool, columnsToAppend: any): any;
   grok_DataFrame_Append_Merge(parent: any, t: any): any;
   grok_DataFrame_Get_Temp(t: any): any;

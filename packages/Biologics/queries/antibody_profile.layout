@@ -3,278 +3,956 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1434,
+      "width": 1453,
       "height": 958
     },
     "children": [
       {
-        "containerType": "panel",
+        "containerType": "horizontal",
         "state": {
-          "width": 297,
-          "height": 958,
-          "element": {
-            "id": "16de2ac0-fa90-11f0-acf8-d544cc323a58",
-            "type": "Filters",
-            "look": {
-              "#type": "FiltersLook",
-              "filters": [
-                {
-                  "type": "Bio:bioSubstructureFilter",
-                  "column": "sequence",
-                  "active": true,
-                  "columnName": "sequence",
-                  "props": {
-                    "substructure": "",
-                    "readOnly": true
-                  },
-                  "boolInput": null
-                },
-                {
-                  "type": "Bio:bioSubstructureFilter",
-                  "column": "heavy_chain",
-                  "active": true,
-                  "columnName": "heavy_chain",
-                  "props": {
-                    "substructure": "",
-                    "readOnly": true
-                  },
-                  "boolInput": null
-                },
-                {
-                  "type": "Bio:bioSubstructureFilter",
-                  "column": "light_chain",
-                  "active": true,
-                  "columnName": "light_chain",
-                  "props": {
-                    "substructure": "",
-                    "readOnly": true
-                  },
-                  "boolInput": null
-                },
-                {
-                  "type": "Chem:substructureFilter",
-                  "column": "drug_smiles",
-                  "active": true,
-                  "columnName": "drug_smiles",
-                  "molBlock": "",
-                  "searchType": "Contains",
-                  "simCutOff": 0.8,
-                  "fp": "Morgan",
-                  "boolInput": null
-                },
-                {
-                  "type": "categorical",
-                  "column": "linker_type",
-                  "active": true,
-                  "boolInput": null
-                },
-                {
-                  "type": "categorical",
-                  "column": "assay_category",
-                  "active": true,
-                  "boolInput": null
-                },
-                {
-                  "type": "categorical",
-                  "column": "fit_model",
-                  "active": true,
-                  "boolInput": null
-                },
-                {
-                  "type": "categorical",
-                  "column": "units",
-                  "active": true,
-                  "boolInput": null
-                },
-                {
-                  "type": "histogram",
-                  "column": "result_value",
-                  "active": true,
-                  "filterOutMissingValues": false,
-                  "showMissingValuesOnly": false,
-                  "showHistogram": true,
-                  "showSlider": true,
-                  "showMinMax": false,
-                  "boolInput": null
-                },
-                {
-                  "type": "histogram",
-                  "column": "Sequence_Length",
-                  "active": true,
-                  "filterOutMissingValues": false,
-                  "showMissingValuesOnly": false,
-                  "showHistogram": true,
-                  "showSlider": true,
-                  "showMinMax": false,
-                  "boolInput": null
-                },
-                {
-                  "type": "histogram",
-                  "column": "HC_Length",
-                  "active": true,
-                  "filterOutMissingValues": false,
-                  "showMissingValuesOnly": false,
-                  "showHistogram": true,
-                  "showSlider": true,
-                  "showMinMax": false,
-                  "boolInput": null
-                },
-                {
-                  "type": "histogram",
-                  "column": "LC_Length",
-                  "active": true,
-                  "filterOutMissingValues": false,
-                  "showMissingValuesOnly": false,
-                  "showHistogram": true,
-                  "showSlider": true,
-                  "showMinMax": false,
-                  "boolInput": null
-                },
-                {
-                  "type": "histogram",
-                  "column": "GAC Index",
-                  "active": true,
-                  "filterOutMissingValues": false,
-                  "showMissingValuesOnly": false,
-                  "showHistogram": true,
-                  "showSlider": true,
-                  "showMinMax": false,
-                  "boolInput": null
-                },
-                {
-                  "type": "histogram",
-                  "column": "Ratio(HC/LC)",
-                  "active": true,
-                  "filterOutMissingValues": false,
-                  "showMissingValuesOnly": false,
-                  "showHistogram": true,
-                  "showSlider": true,
-                  "showMinMax": false,
-                  "boolInput": null
-                }
-              ]
-            },
-            "title": "Filters"
-          }
-        },
-        "children": []
-      },
-      {
-        "containerType": "fill",
-        "state": {
-          "width": 1136,
-          "height": 958,
-          "documentManager": true
+          "width": 853,
+          "height": 958
         },
         "children": [
           {
             "containerType": "panel",
             "state": {
-              "width": 1136,
-              "height": 912,
+              "width": 218,
+              "height": 958,
               "element": {
-                "id": "16de51d0-fa90-11f0-e709-d1f2f7bfa229",
-                "type": "Pivot table",
+                "id": "f0a92d70-21a0-11f1-95d9-b7287642505a",
+                "type": "Filters",
                 "look": {
-                  "#type": "PivotViewerLook",
-                  "showHeader": false,
-                  "showCommandBar": false,
-                  "groupByColumnNames": [
-                    "adc_identifier",
-                    "assay_type",
-                    "units"
-                  ],
-                  "aggregateColumnNames": [
-                    "result_value"
-                  ],
-                  "aggregateAggTypes": [
-                    "avg"
-                  ],
-                  "gridLook": {
-                    "isGrid": true,
-                    "columns": [
+                  "#type": "FiltersLook",
+                  "filters": [
+                    {
+                      "type": "bio:bioSubstructureFilter",
+                      "column": "sequence",
+                      "active": true,
+                      "columnName": "sequence",
+                      "props": {
+                        "substructure": "",
+                        "readOnly": true
+                      },
+                      "boolInput": null
+                    },
+                    {
+                      "type": "bio:bioSubstructureFilter",
+                      "column": "heavy_chain",
+                      "active": true,
+                      "columnName": "heavy_chain",
+                      "props": {
+                        "substructure": "",
+                        "readOnly": true
+                      },
+                      "boolInput": null
+                    },
+                    {
+                      "type": "bio:bioSubstructureFilter",
+                      "column": "light_chain",
+                      "active": true,
+                      "columnName": "light_chain",
+                      "props": {
+                        "substructure": "",
+                        "readOnly": true
+                      },
+                      "boolInput": null
+                    },
+                    {
+                      "type": "Chem:substructureFilter",
+                      "column": "drug_smiles",
+                      "active": true,
+                      "columnName": "drug_smiles",
+                      "molBlock": "",
+                      "searchType": "Contains",
+                      "simCutOff": 0.8,
+                      "fp": "Morgan",
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "linker_type",
+                      "active": true,
+                      "radioCheckboxMode": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "assay_category",
+                      "active": true,
+                      "radioCheckboxMode": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "fit_model",
+                      "active": true,
+                      "radioCheckboxMode": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "units",
+                      "active": true,
+                      "radioCheckboxMode": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "result_value",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "Sequence_Length",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "HC_Length",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "LC_Length",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "GAC Index",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "Ratio(HC/LC)",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    }
+                  ]
+                },
+                "title": "Filters"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "fill",
+            "state": {
+              "width": 633,
+              "height": 958,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 1169,
+                  "height": 912,
+                  "element": {
+                    "id": "f0a95480-21a0-11f1-a991-2f0ed9e49f21",
+                    "type": "Pivot table",
+                    "look": {
+                      "#type": "PivotViewerLook",
+                      "showHeader": false,
+                      "showCommandBar": false,
+                      "groupByColumnNames": [
+                        "adc_identifier",
+                        "assay_type",
+                        "units"
+                      ],
+                      "aggregateColumnNames": [
+                        "result_value"
+                      ],
+                      "aggregateAggTypes": [
+                        "avg"
+                      ],
+                      "gridLook": {
+                        "isGrid": true,
+                        "columns": [
+                          {
+                            "visible": true,
+                            "editable": true,
+                            "isColorCoded": false,
+                            "isTextColorCoded": false,
+                            "isTextBackgroundColorCoded": false,
+                            "showValue": true,
+                            "width": 40,
+                            "backgroundColor": 4294440951,
+                            "decimalPlaces": 2,
+                            "customName": "",
+                            "cellType": "row header",
+                            "colorCodingType": "Off",
+                            "headerCellStyle": {
+                              "textWrap": "words"
+                            }
+                          },
+                          {
+                            "visible": true,
+                            "editable": true,
+                            "isColorCoded": false,
+                            "isTextColorCoded": false,
+                            "isTextBackgroundColorCoded": false,
+                            "showValue": true,
+                            "width": 127,
+                            "decimalPlaces": 2,
+                            "columnName": "adc_identifier",
+                            "cellType": "string",
+                            "colorCodingType": "Off",
+                            "headerCellStyle": {
+                              "textWrap": "words"
+                            }
+                          },
+                          {
+                            "visible": true,
+                            "editable": true,
+                            "isColorCoded": false,
+                            "isTextColorCoded": false,
+                            "isTextBackgroundColorCoded": false,
+                            "showValue": true,
+                            "width": 161,
+                            "decimalPlaces": 2,
+                            "columnName": "assay_type",
+                            "cellType": "string",
+                            "colorCodingType": "Off",
+                            "headerCellStyle": {
+                              "textWrap": "words"
+                            }
+                          },
+                          {
+                            "visible": true,
+                            "editable": true,
+                            "isColorCoded": false,
+                            "isTextColorCoded": false,
+                            "isTextBackgroundColorCoded": false,
+                            "showValue": true,
+                            "width": 71,
+                            "decimalPlaces": 2,
+                            "columnName": "units",
+                            "cellType": "string",
+                            "colorCodingType": "Off",
+                            "headerCellStyle": {
+                              "textWrap": "words"
+                            }
+                          },
+                          {
+                            "visible": true,
+                            "editable": true,
+                            "isColorCoded": false,
+                            "isTextColorCoded": false,
+                            "isTextBackgroundColorCoded": false,
+                            "showValue": true,
+                            "width": 125,
+                            "decimalPlaces": 2,
+                            "columnName": "avg(result_value)",
+                            "cellType": "number",
+                            "colorCodingType": "Off",
+                            "headerCellStyle": {
+                              "textWrap": "words"
+                            }
+                          }
+                        ],
+                        "isHeatmap": false,
+                        "maxHeatmapColumns": 100
+                      }
+                    },
+                    "title": "Pivot table"
+                  }
+                },
+                "children": []
+              },
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 633,
+                  "height": 936,
+                  "element": {
+                    "id": "f0a97b90-21a0-11f1-dac3-41a6c972fc01",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "colHeaderHeight": 156,
+                      "rowHeight": 105,
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 36,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 104.14035087719299,
+                          "columnName": "glyph",
+                          "cellType": "rawPng",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 48,
+                          "columnName": "adc_name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 127,
+                          "columnName": "adc_identifier",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 127,
+                          "columnName": "sequence_identifier",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 400,
+                          "columnName": "sequence",
+                          "cellType": "sequence",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 400,
+                          "columnName": "heavy_chain",
+                          "cellType": "sequence",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 400,
+                          "columnName": "light_chain",
+                          "cellType": "sequence",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 265,
+                          "columnName": "assay_type",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 158,
+                          "columnName": "assay_category",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 141,
+                          "columnName": "fit_model",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 95,
+                          "columnName": "result_value",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 71,
+                          "columnName": "units",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 98,
+                          "columnName": "target_name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 118,
+                          "columnName": "organism_name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 90,
+                          "columnName": "drug_name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "drug_smiles",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 89,
+                          "columnName": "linker_type",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 129,
+                          "columnName": "Sequence_Length",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 89,
+                          "columnName": "HC_Length",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 86,
+                          "columnName": "LC_Length",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 86,
+                          "columnName": "GAC Index",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 102,
+                          "columnName": "Ratio(HC/LC)",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 0,
+                          "columnName": "~drug_smiles.Pattern",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 200,
+                          "columnName": "~drug_smiles.canonicalSmiles",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        }
+                      ]
+                    },
+                    "title": "Grid",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 598,
+          "height": 958
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 598,
+              "height": 592,
+              "element": {
+                "id": "f0a9f0c0-21a0-11f1-b06b-c72adece71f1",
+                "type": "Form",
+                "look": {
+                  "#type": "FormLook",
+                  "sketchState": {
+                    "#type": "SketchState",
+                    "elementStates": [
                       {
-                        "visible": true,
-                        "editable": true,
-                        "isColorCoded": false,
-                        "isTextColorCoded": false,
-                        "showValue": true,
-                        "width": 40,
-                        "backgroundColor": 4294440951,
-                        "decimalPlaces": 2,
-                        "customName": "",
-                        "cellType": "row header",
-                        "colorCodingType": "Off",
-                        "headerCellStyle": {
-                          "textWrap": "words"
+                        "left": 142,
+                        "top": 20,
+                        "width": 335,
+                        "height": 100,
+                        "type": "sparkline-cell",
+                        "viewerSettings": {
+                          "column": "drug_smiles"
                         }
                       },
                       {
-                        "visible": true,
-                        "editable": true,
-                        "isColorCoded": false,
-                        "isTextColorCoded": false,
-                        "showValue": true,
-                        "width": 127,
-                        "decimalPlaces": 2,
-                        "columnName": "adc_identifier",
-                        "cellType": "string",
-                        "colorCodingType": "Off",
-                        "headerCellStyle": {
-                          "textWrap": "words"
+                        "left": 142,
+                        "top": 124,
+                        "width": 336,
+                        "height": 200,
+                        "type": "sparkline-cell",
+                        "viewerSettings": {
+                          "column": "glyph"
                         }
                       },
                       {
-                        "visible": true,
-                        "editable": true,
-                        "isColorCoded": false,
-                        "isTextColorCoded": false,
-                        "showValue": true,
-                        "width": 161,
-                        "decimalPlaces": 2,
-                        "columnName": "assay_type",
-                        "cellType": "string",
-                        "colorCodingType": "Off",
-                        "headerCellStyle": {
-                          "textWrap": "words"
+                        "left": 380,
+                        "top": 500,
+                        "width": 100,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "Ratio(HC/LC)",
+                          "format": null,
+                          "inputType": "Float"
                         }
                       },
                       {
-                        "visible": true,
-                        "editable": true,
-                        "isColorCoded": false,
-                        "isTextColorCoded": false,
-                        "showValue": true,
-                        "width": 71,
-                        "decimalPlaces": 2,
-                        "columnName": "units",
-                        "cellType": "string",
-                        "colorCodingType": "Off",
-                        "headerCellStyle": {
-                          "textWrap": "words"
+                        "left": 130,
+                        "top": 380,
+                        "width": 112,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "adc_identifier",
+                          "format": null,
+                          "inputType": "Text"
                         }
                       },
                       {
-                        "visible": true,
-                        "editable": true,
-                        "isColorCoded": false,
-                        "isTextColorCoded": false,
-                        "showValue": true,
-                        "width": 125,
-                        "decimalPlaces": 2,
-                        "columnName": "avg(result_value)",
-                        "cellType": "number",
-                        "colorCodingType": "Off",
-                        "headerCellStyle": {
-                          "textWrap": "words"
+                        "left": 380,
+                        "top": 380,
+                        "width": 100,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "linker_type",
+                          "format": null,
+                          "inputType": "Text"
+                        }
+                      },
+                      {
+                        "left": 10,
+                        "top": 20,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "drug_smiles",
+                          "input-value": "drug_smiles",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 140,
+                        "top": 329,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "assay_type",
+                          "input-value": "assay_type",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 248,
+                        "top": 452,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "LC_Length",
+                          "input-value": "LC_Length",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 248,
+                        "top": 500,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "Ratio(HC/LC)",
+                          "input-value": "Ratio(HC/LC)",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 10,
+                        "top": 124,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "glyph",
+                          "input-value": "glyph",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 248,
+                        "top": 476,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "GAC Index",
+                          "input-value": "GAC Index",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 10,
+                        "top": 500,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "drug_name",
+                          "input-value": "drug_name",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 380,
+                        "top": 428,
+                        "width": 100,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "HC_Length",
+                          "format": null,
+                          "inputType": "Int"
+                        }
+                      },
+                      {
+                        "left": 10,
+                        "top": 476,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "units",
+                          "input-value": "units",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 130,
+                        "top": 452,
+                        "width": 100,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "result_value",
+                          "format": null,
+                          "inputType": "Float"
+                        }
+                      },
+                      {
+                        "left": 130,
+                        "top": 476,
+                        "width": 100,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "units",
+                          "format": null,
+                          "inputType": "Text"
+                        }
+                      },
+                      {
+                        "left": 380,
+                        "top": 452,
+                        "width": 100,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "LC_Length",
+                          "format": null,
+                          "inputType": "Int"
+                        }
+                      },
+                      {
+                        "left": 380,
+                        "top": 404,
+                        "width": 100,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "Sequence_Length",
+                          "format": null,
+                          "inputType": "Int"
+                        }
+                      },
+                      {
+                        "left": 130,
+                        "top": 428,
+                        "width": 100,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "fit_model",
+                          "format": null,
+                          "inputType": "Text"
+                        }
+                      },
+                      {
+                        "left": 248,
+                        "top": 428,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "HC_Length",
+                          "input-value": "HC_Length",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 248,
+                        "top": 405,
+                        "width": 111,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "Sequence_Length",
+                          "input-value": "Sequence_Length",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 130,
+                        "top": 500,
+                        "width": 100,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "drug_name",
+                          "format": null,
+                          "inputType": "Text"
+                        }
+                      },
+                      {
+                        "left": 249,
+                        "top": 380,
+                        "width": 110,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "linker_type",
+                          "input-value": "linker_type",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 271,
+                        "top": 329,
+                        "width": 152,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "assay_type",
+                          "format": null,
+                          "inputType": "Text"
+                        }
+                      },
+                      {
+                        "left": 130,
+                        "top": 404,
+                        "width": 113,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "sequence_identifier",
+                          "format": null,
+                          "inputType": "Text"
+                        }
+                      },
+                      {
+                        "left": 380,
+                        "top": 476,
+                        "width": 100,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "GAC Index",
+                          "format": null,
+                          "inputType": "Int"
+                        }
+                      },
+                      {
+                        "left": 10,
+                        "top": 428,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "fit_model",
+                          "input-value": "fit_model",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 10,
+                        "top": 452,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "result_value",
+                          "input-value": "result_value",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 271,
+                        "top": 353,
+                        "width": 152,
+                        "height": 20,
+                        "type": "field",
+                        "viewerSettings": {
+                          "column": "assay_category",
+                          "format": null,
+                          "inputType": "Text"
+                        }
+                      },
+                      {
+                        "left": 10,
+                        "top": 380,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "adc_identifier",
+                          "input-value": "adc_identifier",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 140,
+                        "top": 353,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "assay_category",
+                          "input-value": "assay_category",
+                          "backgroundColor": 4291035124
+                        }
+                      },
+                      {
+                        "left": 10,
+                        "top": 404,
+                        "width": 112,
+                        "height": 20,
+                        "type": "html",
+                        "viewerSettings": {
+                          "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                          "column": "sequence_identifier",
+                          "input-value": "sequence_identifier",
+                          "backgroundColor": 4291035124
                         }
                       }
                     ],
-                    "isHeatmap": false,
-                    "maxHeatmapColumns": 100
-                  }
+                    "table": "antibodyProfileByOrganismAndTarget",
+                    "formDesigned": true
+                  },
+                  "columnNames": [
+                    "Ratio(HC/LC)",
+                    "adc_identifier",
+                    "linker_type",
+                    "HC_Length",
+                    "result_value",
+                    "units",
+                    "LC_Length",
+                    "Sequence_Length",
+                    "fit_model",
+                    "drug_name",
+                    "assay_type",
+                    "sequence_identifier",
+                    "GAC Index",
+                    "assay_category"
+                  ]
                 },
-                "title": "Pivot table"
+                "title": "Form"
               }
             },
             "children": []
@@ -282,212 +960,18 @@
           {
             "containerType": "panel",
             "state": {
-              "width": 1136,
-              "height": 936,
+              "width": 598,
+              "height": 365,
               "element": {
-                "id": "16de78e0-fa90-11f0-e747-fbe3dba2b6b5",
-                "type": "Grid",
+                "id": "f0a9f0c0-21a0-11f1-916b-730ade218279",
+                "type": "Pie chart",
                 "look": {
-                  "#type": "GridLook",
-                  "showAddNewRowIcon": true,
-                  "addNewRowOnLastRowEdit": true,
-                  "colHeaderHeight": 145,
-                  "rowHeight": 123,
-                  "topLevelDefaultMenu": true,
-                  "allowColumnMenu": true,
-                  "columns": [
-                    {
-                      "width": 36,
-                      "backgroundColor": 4294440951,
-                      "customName": "",
-                      "cellType": "row header",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 112,
-                      "columnName": "glyph",
-                      "cellType": "rawPng",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 48,
-                      "columnName": "adc_name",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 70,
-                      "columnName": "adc_identifier",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 84,
-                      "columnName": "sequence_identifier",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 400,
-                      "columnName": "sequence",
-                      "cellType": "sequence",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 400,
-                      "columnName": "heavy_chain",
-                      "cellType": "sequence",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 400,
-                      "columnName": "light_chain",
-                      "cellType": "sequence",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 265,
-                      "columnName": "assay_type",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 158,
-                      "columnName": "assay_category",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 141,
-                      "columnName": "fit_model",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 95,
-                      "columnName": "result_value",
-                      "cellType": "number",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 71,
-                      "columnName": "units",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 98,
-                      "columnName": "target_name",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 118,
-                      "columnName": "organism_name",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 90,
-                      "columnName": "drug_name",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 200,
-                      "columnName": "drug_smiles",
-                      "cellType": "Molecule",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 89,
-                      "columnName": "linker_type",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 129,
-                      "columnName": "Sequence_Length",
-                      "cellType": "number",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 89,
-                      "columnName": "HC_Length",
-                      "cellType": "number",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 86,
-                      "columnName": "LC_Length",
-                      "cellType": "number",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 102,
-                      "columnName": "Ratio(HC/LC)",
-                      "cellType": "number",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 86,
-                      "columnName": "GAC Index",
-                      "cellType": "number",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "visible": false,
-                      "columnName": "~drug_smiles.Pattern",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "visible": false,
-                      "columnName": "~drug_smiles.canonicalSmiles",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    }
-                  ]
+                  "#type": "PieChartLook",
+                  "categoryColumnName": "assay_category",
+                  "segmentAngleColumnName": "result_value",
+                  "legendPosition": "Auto"
                 },
-                "title": "antibodyProfileByOrganismAndTarget",
-                "default": true
+                "title": "Pie chart"
               }
             },
             "children": []
@@ -496,7 +980,7 @@
       }
     ],
     "floating": [],
-    "tableId": "d288afe0-fa90-11f0-ab97-536ec3978e45",
+    "tableId": "72862e80-21a0-11f1-e14f-c3d6b6fc93e5",
     "tableName": "antibodyProfileByOrganismAndTarget"
   },
   "userData": {
@@ -550,7 +1034,10 @@
         ".includeInCsvExport": "false"
       },
       "~drug_smiles.canonicalSmiles": {
-        ".includeInCsvExport": "false"
+        ".includeInCsvExport": "false",
+        "units": "smiles",
+        "quality": "Molecule",
+        "cell.renderer": "Molecule"
       }
     }
   },
@@ -558,57 +1045,52 @@
     {
       "name": "LC_Length",
       "type": "int",
-      "id": "e7438a90-fa90-11f0-caa9-738ec89ae2b3",
+      "id": "f0aa3ee0-21a0-11f1-d59b-edb339d29c87",
       "friendlyName": "L C_ Length",
       "entityTags": [
         {
           "tag": "formula",
-          "id": "16dec700-fa90-11f0-8f68-b39f70923dc9"
+          "id": "f0aa17d0-21a0-11f1-8f08-bd14c11bbfff"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16dec700-fa90-11f0-db8b-5746002c7626"
-        },
-        {
-          "tag": ".id",
-          "id": "16dec700-fa90-11f0-a72a-5baf7f2d10d1"
+          "id": "f0aa3ee0-21a0-11f1-c934-65caf006d121"
         }
       ],
       "metaParams": {
         "formula": "Length(${light_chain})",
-        ".semantic-detection-duration": "0",
-        ".id": "e7438a90-fa90-11f0-caa9-738ec89ae2b3"
+        ".semantic-detection-duration": "0"
       }
     },
     {
       "name": "fit_model",
       "type": "string",
-      "id": "d288fe00-fa90-11f0-a114-0b78ac6124fa",
+      "id": "72ae28e0-21a0-11f1-f58b-37640a2ce50b",
       "friendlyName": "Fit_model",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16dec700-fa90-11f0-b15c-293c23351d28"
+          "id": "f0aa3ee0-21a0-11f1-b95b-5397b11cb2c8"
         },
         {
           "tag": "DbColumn",
-          "id": "16dec700-fa90-11f0-d502-4b99273b673b"
+          "id": "f0aa3ee0-21a0-11f1-e5d2-a737c4d75b62"
         },
         {
           "tag": "DbPath",
-          "id": "16dec700-fa90-11f0-bbf1-c1d549b94ad6"
+          "id": "f0aa3ee0-21a0-11f1-fa55-c768d721ffd4"
         },
         {
           "tag": "DbSchema",
-          "id": "16dec700-fa90-11f0-c2d7-950450446d1c"
+          "id": "f0aa3ee0-21a0-11f1-c343-2fbee85c9f02"
         },
         {
           "tag": ".id",
-          "id": "16dec700-fa90-11f0-e673-a14f26710774"
+          "id": "f0aa3ee0-21a0-11f1-fa56-d9fcf560199d"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16dec700-fa90-11f0-d83e-6f8de5335858"
+          "id": "f0aa3ee0-21a0-11f1-8243-4d0d01fca4b9"
         }
       ],
       "metaParams": {
@@ -616,39 +1098,39 @@
         "DbColumn": "fit_model",
         "DbPath": "datagrok.biologics.null.fit_model",
         "DbSchema": "biologics",
-        ".id": "d288fe00-fa90-11f0-a114-0b78ac6124fa",
-        ".semantic-detection-duration": "7"
+        ".id": "72ae28e0-21a0-11f1-f58b-37640a2ce50b",
+        ".semantic-detection-duration": "3"
       }
     },
     {
       "name": "linker_type",
       "type": "string",
-      "id": "d2892510-fa90-11f0-81d1-7beb33779968",
+      "id": "72aec520-21a0-11f1-800b-799bdd6b3a83",
       "friendlyName": "Linker_type",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16dec700-fa90-11f0-a270-39b084fdfac0"
+          "id": "f0aa65f0-21a0-11f1-ad8b-1939b5cdd712"
         },
         {
           "tag": "DbColumn",
-          "id": "16deee10-fa90-11f0-b6fb-598d655d982b"
+          "id": "f0aa65f0-21a0-11f1-8609-f9ccd3d53e75"
         },
         {
           "tag": "DbPath",
-          "id": "16deee10-fa90-11f0-b4af-357c8fc83cd5"
+          "id": "f0aa65f0-21a0-11f1-ed46-7b5c66ab3bc1"
         },
         {
           "tag": "DbSchema",
-          "id": "16deee10-fa90-11f0-c3f9-51eb0602fba3"
+          "id": "f0aa65f0-21a0-11f1-9b13-c39b18db03fd"
         },
         {
           "tag": ".id",
-          "id": "16deee10-fa90-11f0-efc4-9d78ceb0b91a"
+          "id": "f0aa65f0-21a0-11f1-a433-2db722ca9c12"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16deee10-fa90-11f0-9e4d-af66eb0f46d4"
+          "id": "f0aa65f0-21a0-11f1-d5b2-0f9b59035de5"
         }
       ],
       "metaParams": {
@@ -656,60 +1138,56 @@
         "DbColumn": "linker_type",
         "DbPath": "datagrok.biologics.null.linker_type",
         "DbSchema": "biologics",
-        ".id": "d2892510-fa90-11f0-81d1-7beb33779968",
-        ".semantic-detection-duration": "26"
+        ".id": "72aec520-21a0-11f1-800b-799bdd6b3a83",
+        ".semantic-detection-duration": "22"
       }
     },
     {
       "name": "sequence",
       "type": "string",
       "semType": "Macromolecule",
-      "id": "d288fe00-fa90-11f0-80d9-d50d2392fdf9",
+      "id": "72addac0-21a0-11f1-ab44-f9bf1f6e1a6c",
       "friendlyName": "Sequence",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16deee10-fa90-11f0-c3be-bf1c656cdf4e"
+          "id": "f0aa65f0-21a0-11f1-a710-eb3de2716c65"
         },
         {
           "tag": "DbColumn",
-          "id": "16deee10-fa90-11f0-eb83-8d5da40be5d6"
+          "id": "f0aa65f0-21a0-11f1-c9b5-0b076d1d469a"
         },
         {
           "tag": "DbPath",
-          "id": "16df1520-fa90-11f0-c855-99cda9b5e357"
+          "id": "f0aa65f0-21a0-11f1-b365-2511caf55584"
         },
         {
           "tag": "DbSchema",
-          "id": "16df1520-fa90-11f0-e840-d98950a4b601"
-        },
-        {
-          "tag": ".id",
-          "id": "16df1520-fa90-11f0-a006-5f3ba8909677"
+          "id": "f0aa65f0-21a0-11f1-9145-03aeac7f8f53"
         },
         {
           "tag": "units",
-          "id": "16df1520-fa90-11f0-c212-27543ed7308d"
+          "id": "f0aa65f0-21a0-11f1-d2ac-873a718ab43a"
         },
         {
           "tag": "cell.renderer",
-          "id": "16df1520-fa90-11f0-8e92-818975b0bfaa"
+          "id": "f0aa65f0-21a0-11f1-b009-057d4d7eca16"
         },
         {
           "tag": "quality",
-          "id": "16df1520-fa90-11f0-c5d6-a79407f3cdd1"
+          "id": "f0aa65f0-21a0-11f1-cccc-0d4fc3b6c34c"
+        },
+        {
+          "tag": ".id",
+          "id": "f0aa65f0-21a0-11f1-bb7e-e91d5f22243c"
         },
         {
           "tag": "aligned",
-          "id": "16df1520-fa90-11f0-e85c-a54cd87f7567"
+          "id": "f0aa65f0-21a0-11f1-cba0-c50ca6690ffc"
         },
         {
           "tag": "alphabet",
-          "id": "16df1520-fa90-11f0-a11c-f7c5dc75b192"
-        },
-        {
-          "tag": ".positionShift",
-          "id": "16df1520-fa90-11f0-bf8a-99fa4381162d"
+          "id": "f0aa65f0-21a0-11f1-e4c8-93c8d79a01b4"
         }
       ],
       "metaParams": {
@@ -717,90 +1195,80 @@
         "DbColumn": "sequence",
         "DbPath": "datagrok.biologics.null.sequence",
         "DbSchema": "biologics",
-        ".id": "d288fe00-fa90-11f0-80d9-d50d2392fdf9",
         "units": "fasta",
         "cell.renderer": "sequence",
         "quality": "Macromolecule",
-        "aligned": "SEQ",
-        "alphabet": "PT",
-        ".positionShift": "0"
+        ".id": "72addac0-21a0-11f1-ab44-f9bf1f6e1a6c",
+        "aligned": "SEQ.MSA",
+        "alphabet": "PT"
       }
     },
     {
       "name": "Ratio(HC/LC)",
       "type": "double",
-      "id": "e743d8b0-fa90-11f0-ffc3-87ff107885a8",
+      "id": "f0aa8d00-21a0-11f1-952e-375a19f4df8c",
       "friendlyName": "Ratio( H C/ L C)",
       "entityTags": [
         {
           "tag": "formula",
-          "id": "16df1520-fa90-11f0-fcd2-7dbb3f2b848e"
+          "id": "f0aa8d00-21a0-11f1-f7f4-c3e817a96a46"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16df1520-fa90-11f0-bb75-0b70514c749b"
-        },
-        {
-          "tag": ".id",
-          "id": "16df3c30-fa90-11f0-f968-e999176d84f6"
+          "id": "f0aa8d00-21a0-11f1-976c-abf5b31d2303"
         }
       ],
       "metaParams": {
         "formula": "${HC_Length} / ${LC_Length}",
-        ".semantic-detection-duration": "0",
-        ".id": "e743d8b0-fa90-11f0-ffc3-87ff107885a8"
+        ".semantic-detection-duration": "0"
       }
     },
     {
       "name": "heavy_chain",
       "type": "string",
       "semType": "Macromolecule",
-      "id": "d288fe00-fa90-11f0-cc8d-77ea57418326",
+      "id": "72addac0-21a0-11f1-cdc4-35388983fcb7",
       "friendlyName": "Heavy_chain",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16df3c30-fa90-11f0-d71e-ff90082786b8"
+          "id": "f0aa8d00-21a0-11f1-8df8-1f0a8a8e62f3"
         },
         {
           "tag": "DbColumn",
-          "id": "16df3c30-fa90-11f0-945f-c7a62904cf78"
+          "id": "f0aa8d00-21a0-11f1-db6d-d16724faefa3"
         },
         {
           "tag": "DbPath",
-          "id": "16df3c30-fa90-11f0-9a84-2bf59cfb5225"
+          "id": "f0aa8d00-21a0-11f1-fbe9-6fb81cdbde68"
         },
         {
           "tag": "DbSchema",
-          "id": "16df3c30-fa90-11f0-d14b-9fc594a7ab9e"
-        },
-        {
-          "tag": ".id",
-          "id": "16df3c30-fa90-11f0-bb7a-0f2896b8e2d2"
+          "id": "f0aa8d00-21a0-11f1-c34c-3f9e72b43bdf"
         },
         {
           "tag": "units",
-          "id": "16df3c30-fa90-11f0-cdd3-49f27cdffe5b"
+          "id": "f0aa8d00-21a0-11f1-e8ff-d745dd70d744"
         },
         {
           "tag": "cell.renderer",
-          "id": "16df3c30-fa90-11f0-e829-07c3fa2110e2"
+          "id": "f0aa8d00-21a0-11f1-a90d-0fce39bd7f57"
         },
         {
           "tag": "quality",
-          "id": "16df3c30-fa90-11f0-9bd9-638c31da7b6b"
+          "id": "f0aa8d00-21a0-11f1-d7ed-4dbfce1c43e7"
+        },
+        {
+          "tag": ".id",
+          "id": "f0aa8d00-21a0-11f1-eb39-71758bb5b7d7"
         },
         {
           "tag": "aligned",
-          "id": "16df3c30-fa90-11f0-85a4-093ce0c0d665"
+          "id": "f0aa8d00-21a0-11f1-9270-c994674ee16b"
         },
         {
           "tag": "alphabet",
-          "id": "16df3c30-fa90-11f0-c0be-7bf56b0f3241"
-        },
-        {
-          "tag": ".positionShift",
-          "id": "16df3c30-fa90-11f0-bdad-496257bde163"
+          "id": "f0aab410-21a0-11f1-d5be-838ea1563307"
         }
       ],
       "metaParams": {
@@ -808,61 +1276,60 @@
         "DbColumn": "heavy_chain",
         "DbPath": "datagrok.biologics.null.heavy_chain",
         "DbSchema": "biologics",
-        ".id": "d288fe00-fa90-11f0-cc8d-77ea57418326",
         "units": "fasta",
         "cell.renderer": "sequence",
         "quality": "Macromolecule",
-        "aligned": "SEQ",
-        "alphabet": "PT",
-        ".positionShift": "0"
+        ".id": "72addac0-21a0-11f1-cdc4-35388983fcb7",
+        "aligned": "SEQ.MSA",
+        "alphabet": "PT"
       }
     },
     {
       "name": "light_chain",
       "type": "string",
       "semType": "Macromolecule",
-      "id": "d288fe00-fa90-11f0-cd96-79251ee9af1e",
+      "id": "72ae01d0-21a0-11f1-96d3-15b5f8de9afa",
       "friendlyName": "Light_chain",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16df6340-fa90-11f0-a511-9b601e6d2ab0"
+          "id": "f0aab410-21a0-11f1-d7f7-e1baefd39742"
         },
         {
           "tag": "DbColumn",
-          "id": "16df6340-fa90-11f0-a976-dfe64f0a0851"
+          "id": "f0aab410-21a0-11f1-af85-bd3f4ba627a7"
         },
         {
           "tag": "DbPath",
-          "id": "16df6340-fa90-11f0-e406-bbce02b48f73"
+          "id": "f0aab410-21a0-11f1-f362-bd6a75732494"
         },
         {
           "tag": "DbSchema",
-          "id": "16df6340-fa90-11f0-a6e0-b3e79934bf1b"
-        },
-        {
-          "tag": ".id",
-          "id": "16df6340-fa90-11f0-b746-dd5d38ed9372"
+          "id": "f0aab410-21a0-11f1-df0c-d55d543e163b"
         },
         {
           "tag": "units",
-          "id": "16df6340-fa90-11f0-dd1b-1df8b345e2ac"
+          "id": "f0aab410-21a0-11f1-8a6b-1f30799a2216"
         },
         {
           "tag": "cell.renderer",
-          "id": "16df6340-fa90-11f0-921f-198b37133d81"
+          "id": "f0aab410-21a0-11f1-ec56-d74e19ce3aa9"
         },
         {
           "tag": "quality",
-          "id": "16df6340-fa90-11f0-edee-ad0456933a13"
+          "id": "f0aab410-21a0-11f1-bc7a-c3c0d879a4e7"
+        },
+        {
+          "tag": ".id",
+          "id": "f0aab410-21a0-11f1-fb48-dd47cc30796b"
         },
         {
           "tag": "aligned",
-          "id": "16df6340-fa90-11f0-9a41-17a07c50ec69"
+          "id": "f0aab410-21a0-11f1-b058-eb943936dd44"
         },
         {
           "tag": "alphabet",
-          "id": "16df6340-fa90-11f0-82dc-77fe7acd483e"
+          "id": "f0aab410-21a0-11f1-a67a-6dd24c4ee6a2"
         }
       ],
       "metaParams": {
@@ -870,43 +1337,43 @@
         "DbColumn": "light_chain",
         "DbPath": "datagrok.biologics.null.light_chain",
         "DbSchema": "biologics",
-        ".id": "d288fe00-fa90-11f0-cd96-79251ee9af1e",
         "units": "fasta",
         "cell.renderer": "sequence",
         "quality": "Macromolecule",
-        "aligned": "SEQ",
+        ".id": "72ae01d0-21a0-11f1-96d3-15b5f8de9afa",
+        "aligned": "SEQ.MSA",
         "alphabet": "PT"
       }
     },
     {
       "name": "result_value",
       "type": "double",
-      "id": "d288fe00-fa90-11f0-c3cb-810e6c668739",
+      "id": "72ae28e0-21a0-11f1-8e20-07a5f28819a0",
       "friendlyName": "Result_value",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16df6340-fa90-11f0-eebd-a70ecc789c8d"
+          "id": "f0aab410-21a0-11f1-89ee-676739f03e91"
         },
         {
           "tag": "DbColumn",
-          "id": "16df8a50-fa90-11f0-c284-99b1acfdfa4c"
+          "id": "f0aab410-21a0-11f1-cb51-bdd21b674caf"
         },
         {
           "tag": "DbPath",
-          "id": "16df8a50-fa90-11f0-8789-2beeab58469c"
+          "id": "f0aab410-21a0-11f1-bed5-93567167e549"
         },
         {
           "tag": "DbSchema",
-          "id": "16df8a50-fa90-11f0-9181-638cccdf8a81"
+          "id": "f0aab410-21a0-11f1-e675-033308fbae98"
         },
         {
           "tag": ".id",
-          "id": "16df8a50-fa90-11f0-ed7c-a1496e4969c2"
+          "id": "f0aadb20-21a0-11f1-97c7-83fb4b41ccdf"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16df8a50-fa90-11f0-8468-bdad6e98d5be"
+          "id": "f0aadb20-21a0-11f1-8bfd-53b2fe265699"
         }
       ],
       "metaParams": {
@@ -914,39 +1381,39 @@
         "DbColumn": "result_value",
         "DbPath": "datagrok.biologics.null.result_value",
         "DbSchema": "biologics",
-        ".id": "d288fe00-fa90-11f0-c3cb-810e6c668739",
-        ".semantic-detection-duration": "5"
+        ".id": "72ae28e0-21a0-11f1-8e20-07a5f28819a0",
+        ".semantic-detection-duration": "1"
       }
     },
     {
       "name": "assay_category",
       "type": "string",
-      "id": "d288fe00-fa90-11f0-d59b-15b67f06fb36",
+      "id": "72ae28e0-21a0-11f1-b159-774ea16c04b8",
       "friendlyName": "Assay_category",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16df8a50-fa90-11f0-d954-bd7f00dd6dff"
+          "id": "f0aadb20-21a0-11f1-97f8-afa73cbda929"
         },
         {
           "tag": "DbColumn",
-          "id": "16df8a50-fa90-11f0-84f7-0b44d5b52c97"
+          "id": "f0aadb20-21a0-11f1-cf0b-63a589d72ff8"
         },
         {
           "tag": "DbPath",
-          "id": "16df8a50-fa90-11f0-c46e-2fd1398df7a4"
+          "id": "f0aadb20-21a0-11f1-ee80-3184c3c6c792"
         },
         {
           "tag": "DbSchema",
-          "id": "16df8a50-fa90-11f0-95de-135d92290f6b"
+          "id": "f0aadb20-21a0-11f1-c4bf-81805a1f9177"
         },
         {
           "tag": ".id",
-          "id": "16df8a50-fa90-11f0-db68-dbc76cd51c49"
+          "id": "f0aadb20-21a0-11f1-feda-559f1de71b9a"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16df8a50-fa90-11f0-c3db-bd8d41ce2e9b"
+          "id": "f0aadb20-21a0-11f1-8c80-0b1d05537e99"
         }
       ],
       "metaParams": {
@@ -954,114 +1421,99 @@
         "DbColumn": "assay_category",
         "DbPath": "datagrok.biologics.null.assay_category",
         "DbSchema": "biologics",
-        ".id": "d288fe00-fa90-11f0-d59b-15b67f06fb36",
-        ".semantic-detection-duration": "8"
+        ".id": "72ae28e0-21a0-11f1-b159-774ea16c04b8",
+        ".semantic-detection-duration": "4"
       }
     },
     {
       "name": "HC_Length",
       "type": "int",
-      "id": "e7436380-fa90-11f0-a436-2b45ceedc88a",
+      "id": "f0aadb20-21a0-11f1-ca02-9de1ad7719f9",
       "friendlyName": "H C_ Length",
       "entityTags": [
         {
           "tag": "formula",
-          "id": "16df8a50-fa90-11f0-a447-93526db03f3a"
+          "id": "f0aadb20-21a0-11f1-e753-3f0e7a211602"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16dfb160-fa90-11f0-d67b-9f907c4a4593"
-        },
-        {
-          "tag": ".id",
-          "id": "16dfb160-fa90-11f0-a6a8-8d9a7ce9ddf5"
+          "id": "f0aadb20-21a0-11f1-a395-2f854454981d"
         }
       ],
       "metaParams": {
         "formula": "Length(${heavy_chain})",
-        ".semantic-detection-duration": "0",
-        ".id": "e7436380-fa90-11f0-a436-2b45ceedc88a"
+        ".semantic-detection-duration": "0"
       }
     },
     {
       "name": "GAC Index",
       "type": "int",
-      "id": "e743b1a0-fa90-11f0-a106-9187b563736a",
+      "id": "f0ab0230-21a0-11f1-f82f-ede7df6f65a4",
       "friendlyName": "GAC Index",
       "entityTags": [
         {
           "tag": "formula",
-          "id": "16dfb160-fa90-11f0-c384-4192fba65616"
+          "id": "f0ab0230-21a0-11f1-85c6-eb4c1c5caba6"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16dfb160-fa90-11f0-80e4-170a2e5a76a0"
-        },
-        {
-          "tag": ".id",
-          "id": "16dfb160-fa90-11f0-f987-cfdffc7e0cca"
+          "id": "f0ab0230-21a0-11f1-cfbf-5de79ec7f52f"
         }
       ],
       "metaParams": {
         "formula": "StrFind(${sequence}, 'GAC')",
-        ".semantic-detection-duration": "0",
-        ".id": "e743b1a0-fa90-11f0-a106-9187b563736a"
+        ".semantic-detection-duration": "0"
       }
     },
     {
       "name": "Sequence_Length",
       "type": "int",
-      "id": "e7433c70-fa90-11f0-ef69-f19955e36e65",
+      "id": "f0ab0230-21a0-11f1-a393-e9df30b66fe8",
       "friendlyName": "Sequence_ Length",
       "entityTags": [
         {
           "tag": "formula",
-          "id": "16dfb160-fa90-11f0-ecf6-57f82afa7041"
+          "id": "f0ab0230-21a0-11f1-f96f-710c1dfebe3d"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16dfb160-fa90-11f0-bb2f-63d20b4dd415"
-        },
-        {
-          "tag": ".id",
-          "id": "16dfb160-fa90-11f0-d2d0-2b397d09c49f"
+          "id": "f0ab0230-21a0-11f1-a25c-73f9b386fb18"
         }
       ],
       "metaParams": {
         "formula": "Length(${sequence})",
-        ".semantic-detection-duration": "0",
-        ".id": "e7433c70-fa90-11f0-ef69-f19955e36e65"
+        ".semantic-detection-duration": "0"
       }
     },
     {
       "name": "units",
       "type": "string",
-      "id": "d288fe00-fa90-11f0-c175-71932f1e679e",
+      "id": "72ae4ff0-21a0-11f1-e090-0558dd7f6de7",
       "friendlyName": "Units",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16dfb160-fa90-11f0-c0f8-a77b43057afb"
+          "id": "f0ab0230-21a0-11f1-e235-3d44fadf11f8"
         },
         {
           "tag": "DbColumn",
-          "id": "16dfb160-fa90-11f0-c842-8f4b3dc61aba"
+          "id": "f0ab0230-21a0-11f1-8065-a35ed45f2c89"
         },
         {
           "tag": "DbPath",
-          "id": "16dfd870-fa90-11f0-91a9-bd0594f2d1e9"
+          "id": "f0ab0230-21a0-11f1-eb39-93915486ee6f"
         },
         {
           "tag": "DbSchema",
-          "id": "16dfd870-fa90-11f0-b531-3b0f79185193"
+          "id": "f0ab0230-21a0-11f1-f8da-d9ec8fdaaa21"
         },
         {
           "tag": ".id",
-          "id": "16dfd870-fa90-11f0-8989-633767cf6eb1"
+          "id": "f0ab0230-21a0-11f1-c80d-071bd735d65b"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16dfd870-fa90-11f0-bfe3-136be3b5df50"
+          "id": "f0ab2940-21a0-11f1-8c39-3b1931d0a035"
         }
       ],
       "metaParams": {
@@ -1069,48 +1521,48 @@
         "DbColumn": "units",
         "DbPath": "datagrok.biologics.null.units",
         "DbSchema": "biologics",
-        ".id": "d288fe00-fa90-11f0-c175-71932f1e679e",
-        ".semantic-detection-duration": "5"
+        ".id": "72ae4ff0-21a0-11f1-e090-0558dd7f6de7",
+        ".semantic-detection-duration": "3"
       }
     },
     {
       "name": "drug_smiles",
       "type": "string",
       "semType": "Molecule",
-      "id": "d288fe00-fa90-11f0-e379-3566826c41d5",
+      "id": "72aec520-21a0-11f1-fab2-d73565be629f",
       "friendlyName": "Drug_smiles",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16dfd870-fa90-11f0-c443-ad66e0108d54"
+          "id": "f0ab2940-21a0-11f1-b2b5-dd2fbe2f3a6f"
         },
         {
           "tag": "DbColumn",
-          "id": "16dfd870-fa90-11f0-a7a6-459ba35e07e3"
+          "id": "f0ab2940-21a0-11f1-8762-f9a4805d8be1"
         },
         {
           "tag": "DbPath",
-          "id": "16dfd870-fa90-11f0-a286-7b29115a709b"
+          "id": "f0ab2940-21a0-11f1-a141-fff799e39f1b"
         },
         {
           "tag": "DbSchema",
-          "id": "16dfd870-fa90-11f0-cdce-f59cbfaff31e"
-        },
-        {
-          "tag": ".id",
-          "id": "16dfd870-fa90-11f0-d685-9fbc77af7b76"
+          "id": "f0ab2940-21a0-11f1-b437-0bdfd54ff54f"
         },
         {
           "tag": "units",
-          "id": "16dfff80-fa90-11f0-f5ae-33b86d04634a"
+          "id": "f0ab2940-21a0-11f1-f8f7-a71be42634e9"
         },
         {
           "tag": "quality",
-          "id": "16dfff80-fa90-11f0-81be-9942f61c4ca9"
+          "id": "f0ab2940-21a0-11f1-bd3f-57e670033a34"
         },
         {
           "tag": "cell.renderer",
-          "id": "16dfff80-fa90-11f0-8c40-4ddde6cb1291"
+          "id": "f0ab2940-21a0-11f1-ef9e-551e77eb695e"
+        },
+        {
+          "tag": ".id",
+          "id": "f0ab2940-21a0-11f1-beda-df467b12e72f"
         }
       ],
       "metaParams": {
@@ -1118,42 +1570,42 @@
         "DbColumn": "drug_smiles",
         "DbPath": "datagrok.biologics.null.drug_smiles",
         "DbSchema": "biologics",
-        ".id": "d288fe00-fa90-11f0-e379-3566826c41d5",
         "units": "smiles",
         "quality": "Molecule",
-        "cell.renderer": "Molecule"
+        "cell.renderer": "Molecule",
+        ".id": "72aec520-21a0-11f1-fab2-d73565be629f"
       }
     },
     {
       "name": "adc_identifier",
       "type": "string",
       "semType": "DG_BIOLOGICS_ADC_ID",
-      "id": "d288fe00-fa90-11f0-a9d1-059f74967027",
+      "id": "72ad8ca0-21a0-11f1-fe54-a711f49b82d9",
       "friendlyName": "Adc_identifier",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16dfff80-fa90-11f0-d3cd-21a03490ef15"
+          "id": "f0ab2940-21a0-11f1-f996-4bcd7f33adca"
         },
         {
           "tag": "DbColumn",
-          "id": "16dfff80-fa90-11f0-c5f6-dde0cdf39b5e"
+          "id": "f0ab2940-21a0-11f1-cb6a-53073ac70052"
         },
         {
           "tag": "DbPath",
-          "id": "16dfff80-fa90-11f0-e7aa-978859229fe8"
+          "id": "f0ab2940-21a0-11f1-b235-1d9990094e6c"
         },
         {
           "tag": "DbSchema",
-          "id": "16dfff80-fa90-11f0-c0d9-67652241a171"
-        },
-        {
-          "tag": ".id",
-          "id": "16dfff80-fa90-11f0-dacd-af1a57652776"
+          "id": "f0ab2940-21a0-11f1-aa7e-df82a6de9df5"
         },
         {
           "tag": "quality",
-          "id": "16dfff80-fa90-11f0-905e-8f67988e0b73"
+          "id": "f0ab2940-21a0-11f1-96f3-27a2305620ef"
+        },
+        {
+          "tag": ".id",
+          "id": "f0ab5050-21a0-11f1-c663-2f6b2d8d7604"
         }
       ],
       "metaParams": {
@@ -1161,39 +1613,39 @@
         "DbColumn": "identifier",
         "DbPath": "datagrok.biologics.adc.identifier",
         "DbSchema": "biologics",
-        ".id": "d288fe00-fa90-11f0-a9d1-059f74967027",
-        "quality": "DG_BIOLOGICS_ADC_ID"
+        "quality": "DG_BIOLOGICS_ADC_ID",
+        ".id": "72ad8ca0-21a0-11f1-fe54-a711f49b82d9"
       }
     },
     {
       "name": "assay_type",
       "type": "string",
-      "id": "d288fe00-fa90-11f0-d50e-3763d05d154a",
+      "id": "72ae01d0-21a0-11f1-ec0f-3145968f3bb5",
       "friendlyName": "Assay_type",
       "entityTags": [
         {
           "tag": "DbTable",
-          "id": "16dfff80-fa90-11f0-fb6a-69711527c4cb"
+          "id": "f0ab5050-21a0-11f1-d05c-5f07d3f4eec4"
         },
         {
           "tag": "DbColumn",
-          "id": "16e02690-fa90-11f0-99aa-fff6c045467e"
+          "id": "f0ab5050-21a0-11f1-8acc-5fbe33dd50af"
         },
         {
           "tag": "DbPath",
-          "id": "16e02690-fa90-11f0-ab99-859f3f1e0245"
+          "id": "f0ab5050-21a0-11f1-8a4c-838474dc236e"
         },
         {
           "tag": "DbSchema",
-          "id": "16e02690-fa90-11f0-f06d-e742d12dc867"
+          "id": "f0ab5050-21a0-11f1-b968-7b610d564772"
         },
         {
           "tag": ".id",
-          "id": "16e02690-fa90-11f0-b445-67856cf5ee76"
+          "id": "f0ab5050-21a0-11f1-9105-d36a7b7314af"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "16e02690-fa90-11f0-82ac-b7eb092a6229"
+          "id": "f0ab5050-21a0-11f1-d145-aba3e2f84a73"
         }
       ],
       "metaParams": {
@@ -1201,8 +1653,89 @@
         "DbColumn": "assay_type",
         "DbPath": "datagrok.biologics.null.assay_type",
         "DbSchema": "biologics",
-        ".id": "d288fe00-fa90-11f0-d50e-3763d05d154a",
-        ".semantic-detection-duration": "9"
+        ".id": "72ae01d0-21a0-11f1-ec0f-3145968f3bb5",
+        ".semantic-detection-duration": "3"
+      }
+    },
+    {
+      "name": "drug_name",
+      "type": "string",
+      "id": "72ae9e10-21a0-11f1-892c-7946994dbf12",
+      "friendlyName": "Drug_name",
+      "entityTags": [
+        {
+          "tag": "DbTable",
+          "id": "f0ab5050-21a0-11f1-b382-91751e2ef52c"
+        },
+        {
+          "tag": "DbColumn",
+          "id": "f0ab5050-21a0-11f1-c985-ff10a47dda8a"
+        },
+        {
+          "tag": "DbPath",
+          "id": "f0ab5050-21a0-11f1-da5a-9d6550e95ae0"
+        },
+        {
+          "tag": "DbSchema",
+          "id": "f0ab5050-21a0-11f1-d38b-337537e0e444"
+        },
+        {
+          "tag": ".id",
+          "id": "f0ab5050-21a0-11f1-8ccd-23142e467324"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "f0ab5050-21a0-11f1-d041-890289caa698"
+        }
+      ],
+      "metaParams": {
+        "DbTable": null,
+        "DbColumn": "drug_name",
+        "DbPath": "datagrok.biologics.null.drug_name",
+        "DbSchema": "biologics",
+        ".id": "72ae9e10-21a0-11f1-892c-7946994dbf12",
+        ".semantic-detection-duration": "4"
+      }
+    },
+    {
+      "name": "sequence_identifier",
+      "type": "string",
+      "semType": "DG_BIOLOGICS_SEQUENCE_ID",
+      "id": "72adb3b0-21a0-11f1-acb7-b373ebe49e8a",
+      "friendlyName": "Sequence_identifier",
+      "entityTags": [
+        {
+          "tag": "DbTable",
+          "id": "f0ab7760-21a0-11f1-9adf-c97902d91696"
+        },
+        {
+          "tag": "DbColumn",
+          "id": "f0ab7760-21a0-11f1-ff56-a1ca71b44a01"
+        },
+        {
+          "tag": "DbPath",
+          "id": "f0ab7760-21a0-11f1-c923-730cdf19f059"
+        },
+        {
+          "tag": "DbSchema",
+          "id": "f0ab7760-21a0-11f1-a4e8-4769fa5c97f1"
+        },
+        {
+          "tag": "quality",
+          "id": "f0ab7760-21a0-11f1-8034-9dae18af4fa1"
+        },
+        {
+          "tag": ".id",
+          "id": "f0ab7760-21a0-11f1-ec4b-bdd3eb7c436f"
+        }
+      ],
+      "metaParams": {
+        "DbTable": "sequences",
+        "DbColumn": "identifier",
+        "DbPath": "datagrok.biologics.sequences.identifier",
+        "DbSchema": "biologics",
+        "quality": "DG_BIOLOGICS_SEQUENCE_ID",
+        ".id": "72adb3b0-21a0-11f1-acb7-b373ebe49e8a"
       }
     }
   ],
@@ -1211,5 +1744,5 @@
   "author": {
     "id": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"
   },
-  "createdOn": "2026-02-25T12:47:05.576Z"
+  "createdOn": "2026-04-09T08:56:04.295Z"
 }

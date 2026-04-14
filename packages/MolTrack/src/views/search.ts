@@ -236,7 +236,7 @@ function openSavedSearch(entityLevel: Scope, queryBuilder: QueryBuilder, outputs
           if (savedSearches[searchName])
             delete savedSearches[searchName];
           deleteSearchChunked(entityLevel, searchName);
-        }), 'moltrack-saved-search-delete');
+        }, 'Delete'), 'moltrack-saved-search-delete');
         gc.style.element = removeIcon;
       }
     });
@@ -387,7 +387,7 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
           const aggregationRow = createAggregationRow(aggregationsContainer, menuFieldsForAggr, aggregations,
             validationErrorSubj);
           aggregationsContainer.append(aggregationRow);
-        }),
+        }, 'Add'),
       ], 'moltrack-search-aggr-header-div');
 
       const aggregationsContainer = ui.divV([]);
@@ -840,7 +840,7 @@ function createAggregationRow(container: HTMLElement, menuFieldsForAggr: DG.Prop
     container.removeChild(row);
     const containInvalidRows = aggregations.filter((it) => it.field === '').length > 0 ? 'Invalid aggregations' : '';
     validationErrorSubj.next(containInvalidRows);
-  });
+  }, 'Delete');
 
   if (menuFieldsForAggr.length > 0) {
     const menu = DG.Menu.popup();

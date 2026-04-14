@@ -2,6 +2,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { ANY_READOUT_CHOICE, ANY_RUN_CHOICE, CDD_SEARCH_TYPES, CDDVaultSearchType, IN_NOT_IN_COND_CHOICES, PROTOCOL_COND_CHOICES, PROTOCOL_RUN_COND_CHOICES, ProtocolCond, ProtocolRunCond } from './constants';
+
+const LAST_SEARCH_KEY = 'CDDVaultLink.lastSearch';
+
+type StoredSearch = {
+    protocolInNotIn?: string;
+    protocolName?: string;
+    runChoice?: string;
+    runName?: string;
+    structure?: string;
+    searchType?: string;
+    similarityThreshold?: number;
+};
 import { MoleculeFieldSearch, Protocol, queryProtocols } from './cdd-vault-api';
 
 type CDDSerachParams = {
@@ -51,10 +63,12 @@ export class SeachEditor {
     similarityThreshold = ui.input.float('', { value: 0.7, min: 0, max: 1, step: 0.05, showSlider: true });
     moleculeFieldsDiv = ui.divH([]);
     moleculesFields: MoleculeFieldSearch[] = [];
-    plusIcon = ui.icons.add(() => { });
+    plusIcon = ui.icons.add(() => { }, 'Add');
 
     accordion: DG.Accordion;
 
+    initComplete: Promise<void>;
+    hasRestoredSearch = false;
 
     constructor(vaultId: number) {
         this.vaultId = vaultId;
@@ -91,7 +105,7 @@ export class SeachEditor {
             this.structureInput,
         ]));
 
-        this.init();
+        this.initComplete = this.init();
     }
 
     async init() {
@@ -115,9 +129,57 @@ export class SeachEditor {
                 });
                 this.protocolListChoiceDiv.append(this.protocolListChoice.root);
             }
+            this.restoreLastSearch();
         } catch(e: any) {
             grok.shell.error(e?.message ?? e);
         }
+    }
+
+    private restoreLastSearch(): void {
+        const raw = grok.userSettings.getValue(LAST_SEARCH_KEY, String(this.vaultId));
+        if (!raw) return;
+        let s: StoredSearch;
+        try {
+            s = JSON.parse(raw);
+        } catch { return; }
+        this.hasRestoredSearch = !!(s.protocolName || s.structure);
+
+        if (s.protocolInNotIn && IN_NOT_IN_COND_CHOICES.includes(s.protocolInNotIn as any))
+            this.protocolInNotIn.value = s.protocolInNotIn;
+
+        if (s.protocolName && this.protocolNames.includes(s.protocolName)) {
+            this.protocolListChoice.value = s.protocolName;
+            this.runAndReadoutDiv.style.display = 'flex';
+            this.updateRuns(s.protocolName);
+            if (s.runChoice && PROTOCOL_RUN_COND_CHOICES.includes(s.runChoice as any)) {
+                this.runChoice.value = s.runChoice;
+                this.runListChoiceDiv.style.display = s.runChoice === ProtocolRunCond.SPECIFIC ? 'flex' : 'none';
+                if (s.runName && s.runName in this.currentProtocolRuns)
+                    this.runsListChoice.value = s.runName;
+            }
+        }
+
+        if (s.searchType && CDD_SEARCH_TYPES.includes(s.searchType as CDDVaultSearchType)) {
+            this.structureSearchTypeChoice.value = s.searchType as CDDVaultSearchType;
+            this.similarityThreshold.root.style.display = s.searchType === CDDVaultSearchType.SIMILARITY ? 'flex' : 'none';
+        }
+        if (typeof s.similarityThreshold === 'number')
+            this.similarityThreshold.value = s.similarityThreshold;
+        if (s.structure)
+            this.structureInput.value = s.structure;
+    }
+
+    public saveLastSearch(): void {
+        const payload: StoredSearch = {
+            protocolInNotIn: this.protocolInNotIn.value ?? undefined,
+            protocolName: this.protocolListChoice.value || undefined,
+            runChoice: this.runChoice.value ?? undefined,
+            runName: this.runChoice.value === ProtocolRunCond.SPECIFIC ? this.runsListChoice.value : undefined,
+            structure: this.structureInput.value || undefined,
+            searchType: this.structureSearchTypeChoice.value ?? undefined,
+            similarityThreshold: this.similarityThreshold.value ?? undefined,
+        };
+        grok.userSettings.add(LAST_SEARCH_KEY, String(this.vaultId), JSON.stringify(payload));
     }
 
     // updateReadoutDefinition(protocolName: string) {

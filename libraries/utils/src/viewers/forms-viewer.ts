@@ -224,7 +224,7 @@ export class FormsViewer extends DG.JsViewer {
         const closeIcon = ui.iconFA('times', () => {
           this.fieldsColumnNames = this.fieldsColumnNames.filter((value) => value !== name);
           this.render();
-        });
+        }, 'Remove');
         const columnLabelContainer = ui.div([columnLabel, closeIcon], 'd4-multi-form-column-name d4-flex-row');
         const idx = this.getSortByColumns().indexOf(name);
         if (idx > -1)

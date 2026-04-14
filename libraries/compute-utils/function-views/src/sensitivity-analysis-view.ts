@@ -439,7 +439,7 @@ export class SensitivityAnalysisView {
       this.isRunning = false;
       this.updateApplicabilityState();
     }
-  });
+  }, 'Run');
   private helpIcon = getHelpIcon();
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;

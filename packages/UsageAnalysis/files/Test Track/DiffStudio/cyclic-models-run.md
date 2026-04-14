@@ -1,40 +1,46 @@
-# Cyclic Models in Diff Studio — Run Results
+# Cyclic Models (DiffStudio) — Run Results
 
-**Date**: 2026-03-11
-**URL**: https://public.datagrok.ai/
+**Date**: 2026-04-09
+**URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Open Diff Studio, load PK-PD from Library | PASS | PASSED | Called `diffstudio.demoSimPKPD()` JS API; PK-PD model loaded (7 cols, 610 rows); Dosing params: interval=12h, dose=10000, count=10 |
-| 2 | Check both Multiaxis and Facet tabs are present and updated | PASS | PASSED | Both Multiaxis and Facet tab labels visible; 6 charts showing cyclic patterns for Depot, Central, Peripheral, Effect, Central conc., Peripheral conc. |
-| 3 | Modify Count input via clickers; observe real-time update | PASS | PASSED | Changed count from 10 to 15; all charts x-axis extended from ~120h to ~165h; rows increased from 610 to 915 in real-time |
-| 4 | Check tooltips for Begin, End, Step inputs | PASS | PASSED | `d4-tooltip` element found with text "Begin of dosing interval" confirming tooltips work; PK-PD model has begin/step in Misc section (no standalone End input — End is implicit from count×interval) |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|------------|-------|
+| 1 | Open DiffStudio; load PK-PD from Library | PASS | 10s | PASSED | Called `DiffStudio:runDiffStudio`; clicked `.diff-studio-ribbon-widget` combo > Library > PK-PD; model loaded (5 cols, 1210 rows) |
+| 2 | Check Multiaxis and Facet plots are updated | PASS | 1s | PASSED | Both tabs present; 4 line charts with 11 canvases; 1210 rows confirmed |
+| 3 | Modify Count input using clickers | PASS | 6s | PASSED | Plus clicker: count 10 to 11, rows 1210 to 1331; Minus clicker: 11 to 10, rows 1331 to 1210; real-time update confirmed |
+| 4 | Check tooltips on Begin, End, Step inputs | PASS | 5s | PASSED | begin: "Begin of dosing interval"; end: "End of dosing interval"; step: "Time step of simulation" |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | 30s |
+| Spec file generation | 3s |
+| Spec script execution | 22.7s |
 
 ## Summary
 
-All 4 steps passed. The PK-PD cyclic model loaded correctly via the `demoSimPKPD()` API function. Both Multiaxis and Facet tabs showed 6 charts with the characteristic cyclic patterns of the PK-PD simulation. Modifying the Count input (10→15) dynamically updated all charts and the data table in real-time without delay. Tooltips were confirmed present via the `d4-tooltip` DOM element showing descriptive text.
+All 4 steps passed in both MCP and Playwright runs. The PK-PD cyclic model loads correctly, Multiaxis/Facet plot tabs are present, Count clickers update the solution in real-time (verified by row count changes), and tooltips display appropriate descriptions for Begin, End, and Step inputs.
 
 ## Retrospective
 
 ### What worked well
-- `diffstudio.demoSimPKPD()` is a reliable JS API entry point for loading the PK-PD demo
-- Count input change immediately updated charts and data (no Run button needed)
-- Tooltip DOM elements (`d4-tooltip`) are populated and accessible
-- Both Multiaxis and Facet tabs function correctly with the cyclic model
+- PK-PD model loaded reliably from Library via `.diff-studio-ribbon-widget` combo
+- Count clickers (`.ui-input-plus`, `.ui-input-minus`) work correctly and trigger immediate recalculation
+- Row count changes (1210 to 1331 to 1210) provide reliable verification of cyclic model recalculation
+- Tooltips appear via `mouseenter`/`mouseover` events on input elements, readable from `.d4-tooltip`
+- Playwright spec runs reliably in ~23s
 
 ### What did not work
-- Direct URL navigation to `/apps/DiffStudio/Library/pk-pd` did not load PK-PD (page stayed on Bioreactor from session state)
-- The Library submenu did not stay open long enough to click PK-PD via DOM event dispatch
-- `mcp__chrome-devtools__hover` timed out — tooltips had to be verified via DOM inspection instead of visual hover
+- Nothing failed in this scenario
 
 ### Suggestions for the platform
-- The `d4-tooltip` should have a consistent `data-label` attribute to help automated testing identify which input the tooltip belongs to
-- Direct URL navigation to library models could be more reliable if DiffStudio re-reads the URL path after app reload
+- Add `name=` attributes to DiffStudio ribbon icons for easier test automation
+- Consider adding `aria-label` to DiffStudio input elements for accessibility
 
 ### Suggestions for the scenario
-- Step 4 mentions "Begin, End, Step inputs" but the PK-PD model's Misc section only has `begin` and `step` (no separate `end` field — the end time is implicit from count×interval). The scenario should clarify this or update the field names
-- Step 3 says "use clickers" — these appear to be the up/down spinners on numeric inputs; the test used direct textbox fill which is equivalent
-- Add a note that PK-PD is a cyclic (multi-dose) model, so charts show repeated pulses rather than a single curve
+- Step 3 could specify exact expected count change (e.g., "increase from 10 to 11") and expected row count
+- Step 4 mentions "Begin, End, Step" but the scenario text says "various input fields" — could be more specific about which tooltips to verify

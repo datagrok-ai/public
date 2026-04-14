@@ -39,9 +39,9 @@ category('DataFrame: Methods', () => {
     expect(df1.cell(1, 'countries').toString(), 'countries : 1');
   });
 
-  test('changeColumnType', async () => {
+  test('changeColumnsType', async () => {
     const df1 = createDf();
-    df1.changeColumnType('countries', 'int');
+    df1.changeColumnsType(['countries'], 'int');
     expect(typeof(df1.get('countries', 1)), 'number');
   });
 

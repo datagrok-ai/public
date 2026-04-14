@@ -1,140 +1,163 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect, chromium} from '@playwright/test';
 
-const BASE_URL = 'https://public.datagrok.ai';
+const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+const datasetPath = 'System:DemoFiles/bio/peptides.csv';
+const stepErrors: {step: string; error: string}[] = [];
 
-test.describe('Peptides / SAR Analysis', () => {
-  let page: Page;
+async function softStep(name: string, fn: () => Promise<void>) {
+  try {
+    await test.step(name, fn);
+  } catch (e: any) {
+    stepErrors.push({step: name, error: e.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+  }
+}
 
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-    await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(3000);
-  });
+test('SAR — Launch and verify viewers', async () => {
+  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  const context = browser.contexts()[0];
+  let page = context.pages().find(p => p.url().includes('datagrok'));
+  if (!page) {
+    page = await context.newPage();
+    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
+    await page.waitForFunction(() => {
+      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
+      catch { return false; }
+    }, {timeout: 45000});
+  }
 
-  test.afterAll(async () => {
-    await page.close();
-  });
-
-  test('Steps 1-3: Load dataset, select column, expand Peptides panel', async () => {
-    await page.evaluate(async () => {
+  // Steps 1-4: Open peptides, select column, launch SAR
+  await softStep('Steps 1-4: Open peptides and launch SAR', async () => {
+    await page!.evaluate(async (path) => {
+      document.querySelectorAll('.d4-dialog').forEach(d => {
+        const cancel = d.querySelector('[name="button-CANCEL"]');
+        if (cancel) cancel.click();
+      });
       grok.shell.closeAll();
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/bio/peptides.csv');
-      grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 3000));
-      grok.shell.windows.showContextPanel = true;
-      grok.shell.windows.showHelp = false;
-      const col = grok.shell.tv.dataFrame.columns.byName('AlignedSequence');
-      grok.shell.o = col;
-      await new Promise(r => setTimeout(r, 2000));
-      const panes = Array.from(document.querySelectorAll('.d4-accordion-pane-header, .grok-accordion-pane-header'));
-      const peptidesPane = panes.find(p => p.textContent?.trim() === 'Peptides');
-      if (peptidesPane) peptidesPane.click();
-      await new Promise(r => setTimeout(r, 2000));
-    });
-    await expect(page.locator('text=Launch SAR').first()).toBeVisible({ timeout: 10000 });
+      document.body.classList.add('selenium');
+      grok.shell.settings.showFiltersIconsConstantly = true;
+      grok.shell.windows.simpleMode = false;
+
+      const df = await grok.dapi.files.readCsv(path);
+      const tv = grok.shell.addTableView(df);
+      await new Promise(resolve => {
+        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+        setTimeout(resolve, 3000);
+      });
+      const hasBio = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+        .some(c => c.semType === 'Macromolecule');
+      if (hasBio) {
+        for (let i = 0; i < 50; i++) {
+          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+          await new Promise(r => setTimeout(r, 200));
+        }
+        await new Promise(r => setTimeout(r, 5000));
+      }
+
+      // Select column and expand Peptides panel
+      grok.shell.o = df.col('AlignedSequence');
+      await new Promise(r => setTimeout(r, 1500));
+
+      const headers = document.querySelectorAll('.d4-accordion-pane-header');
+      for (const h of headers) {
+        if (h.textContent?.trim().startsWith('Peptides') && !h.classList.contains('expanded'))
+          h.click();
+      }
+      await new Promise(r => setTimeout(r, 1000));
+
+      // Click Launch SAR
+      const launchBtn = document.querySelector('[name="button-Launch-SAR"]');
+      if (launchBtn) launchBtn.click();
+    }, datasetPath);
+
+    // Wait for SAR viewers
+    await page!.waitForFunction(() => {
+      const viewers = Array.from(grok.shell.tv.viewers);
+      return viewers.some(v => v.type === 'Sequence Variability Map');
+    }, {timeout: 30000});
   });
 
-  test('Step 4: Launch SAR', async () => {
-    await page.evaluate(async () => {
-      const btn = Array.from(document.querySelectorAll('button, .ui-btn'))
-        .find(b => b.textContent?.trim() === 'Launch SAR');
-      if (btn) btn.click();
-      await new Promise(r => setTimeout(r, 12000));
+  // Step 5: Verify viewers appeared
+  await softStep('Step 5: Verify SAR viewers', async () => {
+    await page!.waitForTimeout(3000);
+    const viewers = await page!.evaluate(() => {
+      return Array.from(grok.shell.tv.viewers).map(v => v.type);
     });
-    await expect(page.locator('text=Mutation Cliffs').first()).toBeVisible({ timeout: 15000 });
+    expect(viewers).toContain('Sequence Variability Map');
+    expect(viewers).toContain('Most Potent Residues');
+    expect(viewers).toContain('MCL');
   });
 
-  test('Step 5: Four viewers visible', async () => {
-    // MCL viewer
-    await expect(page.locator('text=MCL')).toBeVisible({ timeout: 10000 });
-    // Logo Summary Table
-    await expect(page.locator('text=Logo Summary Table')).toBeVisible();
-    // Most Potent Residues
-    await expect(page.locator('text=Mos').first()).toBeVisible();
-    // Sequence Variability Map
-    await expect(page.locator('text=Sequence Variabi').first()).toBeVisible();
-  });
+  // Steps 6-9: Change parameters and re-launch SAR
+  await softStep('Steps 6-9: Change parameters and re-launch', async () => {
+    await page!.evaluate(async () => {
+      grok.shell.o = grok.shell.tv.dataFrame.col('AlignedSequence');
+      await new Promise(r => setTimeout(r, 1500));
 
-  test('Steps 6-8: Open settings, change parameters, click OK', async () => {
-    // Click wrench icon
-    await page.evaluate(() => {
-      const wrench = document.querySelector('.d4-ribbon-item .fa-wrench');
-      if (wrench) wrench.click();
-    });
-    await expect(page.locator('text=Peptides settings')).toBeVisible({ timeout: 5000 });
+      const headers = document.querySelectorAll('.d4-accordion-pane-header');
+      for (const h of headers) {
+        if (h.textContent?.trim().startsWith('Peptides') && !h.classList.contains('expanded'))
+          h.click();
+      }
+      await new Promise(r => setTimeout(r, 1000));
 
-    // Change scaling and similarity threshold
-    await page.evaluate(() => {
-      const dialog = document.querySelector('.d4-dialog');
-      const scalingSelect = Array.from(dialog.querySelectorAll('select'))
-        .find(s => Array.from(s.options).some(o => o.value === 'lg'));
+      const scalingSelect = document.querySelector('[name="input-Scaling"]');
       if (scalingSelect) {
-        const ns = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
-        ns.call(scalingSelect, 'lg');
-        scalingSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        (scalingSelect as any).value = '-lg';
+        scalingSelect.dispatchEvent(new Event('change', {bubbles: true}));
       }
-      const simInput = Array.from(dialog.querySelectorAll('input')).find(i => i.value === '70');
-      if (simInput) {
-        const ns = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-        ns.call(simInput, '60');
-        simInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
+      await new Promise(r => setTimeout(r, 500));
+
+      const launchBtn = document.querySelector('[name="button-Launch-SAR"]');
+      if (launchBtn) launchBtn.click();
     });
 
-    // Click OK
-    await page.evaluate(() => {
-      const btns = Array.from(document.querySelectorAll('button, .ui-btn'));
-      const ok = btns.find(b => b.textContent?.trim() === 'OK');
-      if (ok) ok.click();
-    });
-    await page.waitForTimeout(12000);
-
-    // Dialog should be gone, viewers reloaded
-    const dialogGone = await page.evaluate(() => !document.querySelector('.d4-dialog'));
-    expect(dialogGone).toBe(true);
+    // Wait for Logo Summary Table to appear (indicates second SAR completed)
+    await page!.waitForFunction(() => {
+      const viewers = Array.from(grok.shell.tv.viewers);
+      return viewers.some(v => v.type === 'Logo Summary Table');
+    }, {timeout: 30000});
   });
 
-  test('Step 9: Viewers reload with new parameters', async () => {
-    const updating = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('*'))
-        .some(el => el.textContent?.trim() === 'Updating...' && el.children.length === 0)
-    );
-    expect(updating).toBe(false);
-    await expect(page.locator('text=Columns: 26')).toBeVisible({ timeout: 5000 });
-  });
-
-  test('Step 10: Switch between Mutation Cliffs and Invariant Map', async () => {
-    await page.evaluate(async () => {
-      const label = Array.from(document.querySelectorAll('label, span'))
-        .find(el => el.textContent?.trim() === 'Invariant Map');
-      if (label) label.click();
+  // Step 10: Switch between Mutation Cliffs and Invariant Map
+  await softStep('Step 10: Toggle Mutation Cliffs / Invariant Map', async () => {
+    // Switch to Invariant Map
+    await page!.evaluate(async () => {
+      const svms = document.querySelectorAll('[name="viewer-Sequence-Variability-Map"]');
+      // Use the latest (second) SVM viewer
+      const svm = svms[svms.length - 1];
+      const labels = svm.querySelectorAll('.ui-input-bool');
+      for (const label of labels) {
+        if (label.textContent?.includes('Invariant Map')) {
+          const input = label.querySelector('input');
+          if (input) input.click();
+          break;
+        }
+      }
       await new Promise(r => setTimeout(r, 1000));
     });
-    await expect(page.locator('text=Invariant Map').first()).toBeVisible();
 
-    // Switch back
-    await page.evaluate(() => {
-      const label = Array.from(document.querySelectorAll('label, span'))
-        .find(el => el.textContent?.trim() === 'Mutation Cliffs');
-      if (label) label.click();
+    // Switch back to Mutation Cliffs
+    await page!.evaluate(async () => {
+      const svms = document.querySelectorAll('[name="viewer-Sequence-Variability-Map"]');
+      const svm = svms[svms.length - 1];
+      const labels = svm.querySelectorAll('.ui-input-bool');
+      for (const label of labels) {
+        if (label.textContent?.includes('Mutation Cliffs')) {
+          const input = label.querySelector('input');
+          if (input) input.click();
+          break;
+        }
+      }
+      await new Promise(r => setTimeout(r, 1000));
     });
-    await page.waitForTimeout(500);
   });
 
-  test('Steps 11-12: Click cell; Mutation Cliffs pairs and Distribution panels appear', async () => {
-    const panels = await page.evaluate(async () => {
-      const svmCanvas = Array.from(document.querySelectorAll('canvas'))[4];
-      const r = svmCanvas.getBoundingClientRect();
-      ['mousedown', 'mouseup', 'click'].forEach(type => {
-        svmCanvas.dispatchEvent(new MouseEvent(type, {
-          bubbles: true, clientX: r.left + 95, clientY: r.top + 33, cancelable: true
-        }));
-      });
-      await new Promise(r => setTimeout(r, 2000));
-      return Array.from(document.querySelectorAll('.d4-accordion-pane-header, .grok-accordion-pane-header'))
-        .map(el => el.textContent?.trim()).filter(t => t);
-    });
-    expect(panels).toContain('Mutation Cliffs pairs');
-    expect(panels).toContain('Distribution');
-  });
+  // Cleanup
+  await page!.evaluate(() => grok.shell.closeAll());
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });

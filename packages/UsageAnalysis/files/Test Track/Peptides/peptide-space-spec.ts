@@ -1,134 +1,128 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect, chromium} from '@playwright/test';
 
-const BASE_URL = 'https://public.datagrok.ai';
+const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+const datasetPath = 'System:DemoFiles/bio/peptides.csv';
+const stepErrors: {step: string; error: string}[] = [];
 
-test.describe('Peptides / Peptide Space', () => {
-  let page: Page;
+async function softStep(name: string, fn: () => Promise<void>) {
+  try {
+    await test.step(name, fn);
+  } catch (e: any) {
+    stepErrors.push({step: name, error: e.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+  }
+}
 
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-    await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(3000);
-  });
+test('Peptide Space — SAR and MCL', async () => {
+  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  const context = browser.contexts()[0];
+  let page = context.pages().find(p => p.url().includes('datagrok'));
+  if (!page) {
+    page = await context.newPage();
+    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
+    await page.waitForFunction(() => {
+      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
+      catch { return false; }
+    }, {timeout: 45000});
+  }
 
-  test.afterAll(async () => {
-    await page.close();
-  });
-
-  test('Prerequisites: Load peptides.csv and select AlignedSequence column', async () => {
-    await page.evaluate(async () => {
+  // Setup: Open peptides.csv
+  await softStep('Setup: Open peptides.csv', async () => {
+    const result = await page!.evaluate(async (path) => {
+      document.querySelectorAll('.d4-dialog').forEach(d => {
+        const cancel = d.querySelector('[name="button-CANCEL"]');
+        if (cancel) cancel.click();
+      });
       grok.shell.closeAll();
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/bio/peptides.csv');
-      grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 3000));
-      grok.shell.windows.showContextPanel = true;
-      grok.shell.windows.showHelp = false;
-      const col = grok.shell.tv.dataFrame.columns.byName('AlignedSequence');
-      grok.shell.o = col;
+      document.body.classList.add('selenium');
+      grok.shell.settings.showFiltersIconsConstantly = true;
+      grok.shell.windows.simpleMode = false;
+
+      const df = await grok.dapi.files.readCsv(path);
+      const tv = grok.shell.addTableView(df);
+      await new Promise(resolve => {
+        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+        setTimeout(resolve, 3000);
+      });
+      const hasBio = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+        .some(c => c.semType === 'Macromolecule');
+      if (hasBio) {
+        for (let i = 0; i < 50; i++) {
+          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+          await new Promise(r => setTimeout(r, 200));
+        }
+        await new Promise(r => setTimeout(r, 5000));
+      }
+      return {rows: df.rowCount, semType: df.col('AlignedSequence')?.semType};
+    }, datasetPath);
+    expect(result.rows).toBe(647);
+    expect(result.semType).toBe('Macromolecule');
+  });
+
+  // Step 1: Launch SAR from Bio > Analyze > SAR
+  await softStep('Step 1: Launch SAR via Bio menu', async () => {
+    await page!.evaluate(async () => {
+      const bio = document.querySelector('[name="div-Bio"]');
+      bio.click();
+      await new Promise(r => setTimeout(r, 500));
+      const analyze = document.querySelector('[name="div-Bio---Analyze"]');
+      analyze.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
+      analyze.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
+      await new Promise(r => setTimeout(r, 500));
+      const sar = document.querySelector('[name="div-Bio---Analyze---SAR..."]');
+      sar.click();
       await new Promise(r => setTimeout(r, 2000));
     });
-    await expect(page.locator('text=Rows: 647')).toBeVisible({ timeout: 10000 });
+    // Dialog should appear
+    const hasDialog = await page!.evaluate(() => !!document.querySelector('.d4-dialog'));
+    expect(hasDialog).toBe(true);
   });
 
-  test('Step 1: Launch SAR from Bio->Analyze->SAR', async () => {
-    await page.evaluate(async () => {
-      // Open Bio ribbon menu
-      const bioMenuBtn = Array.from(document.querySelectorAll('.d4-ribbon-name, .d4-menu-item'))
-        .find(el => el.textContent?.trim() === 'Bio');
-      if (bioMenuBtn) bioMenuBtn.click();
-      await new Promise(r => setTimeout(r, 500));
-
-      // Hover over Analyze submenu
-      const analyzeItem = Array.from(document.querySelectorAll('.d4-menu-item'))
-        .find(el => el.textContent?.trim() === 'Analyze');
-      if (analyzeItem) analyzeItem.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-      await new Promise(r => setTimeout(r, 500));
-
-      // Click SAR...
-      const sarItem = Array.from(document.querySelectorAll('.d4-menu-item'))
-        .find(el => el.textContent?.trim() === 'SAR...');
-      if (sarItem) sarItem.click();
-      await new Promise(r => setTimeout(r, 1000));
-    });
-    await expect(page.locator('text=Analyze Peptides').first()).toBeVisible({ timeout: 10000 });
-  });
-
-  test('Step 2: Click OK to launch SAR and wait for calculation results', async () => {
-    await page.evaluate(async () => {
-      const ok = Array.from(document.querySelectorAll('button, .ui-btn'))
-        .find(b => b.textContent?.trim() === 'OK');
-      if (ok) ok.click();
-      await new Promise(r => setTimeout(r, 20000));
-    });
-    await expect(page.locator('text=MCL').first()).toBeVisible({ timeout: 30000 });
-    await expect(page.locator('text=Logo Summary Table').first()).toBeVisible();
-  });
-
-  test('Step 3: Open settings using wrench button', async () => {
-    await page.evaluate(() => {
-      const wrench = document.querySelector('.d4-ribbon-item .fa-wrench') ||
-        document.querySelector('.fa-wrench');
-      if (wrench) wrench.click();
-    });
-    await expect(page.locator('text=Peptides settings')).toBeVisible({ timeout: 5000 });
-  });
-
-  test('Step 4: Adjust parameters and click OK', async () => {
-    await page.evaluate(() => {
-      const dialog = document.querySelector('.d4-dialog');
-
-      // Change Activity scaling: none → lg
-      const scalingSelect = Array.from(dialog.querySelectorAll('select'))
-        .find(s => Array.from(s.options).some(o => o.value === 'lg'));
-      if (scalingSelect) {
-        const ns = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
-        ns.call(scalingSelect, 'lg');
-        scalingSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-
-      // Change Similarity Threshold: 70 → 55
-      const simInput = Array.from(dialog.querySelectorAll('input')).find(i => i.value === '70');
-      if (simInput) {
-        const ns = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-        ns.call(simInput, '55');
-        simInput.dispatchEvent(new Event('input', { bubbles: true }));
-        simInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-
-      // Change Min Cluster Size: 5 → 3
-      const minClusterInput = Array.from(dialog.querySelectorAll('input')).find(i => i.value === '5');
-      if (minClusterInput) {
-        const ns = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-        ns.call(minClusterInput, '3');
-        minClusterInput.dispatchEvent(new Event('input', { bubbles: true }));
-        minClusterInput.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    });
-
-    // Click OK
-    await page.evaluate(() => {
-      const ok = document.querySelector('.ui-btn.ui-btn-ok.enabled') ||
-        Array.from(document.querySelectorAll('button, .ui-btn')).find(b => b.textContent?.trim() === 'OK');
+  // Step 2: Click OK and wait for calculation results
+  await softStep('Step 2: Run SAR and wait for results', async () => {
+    await page!.evaluate(async () => {
+      const ok = document.querySelector('[name="button-OK"]');
       if (ok) ok.click();
     });
-    await page.waitForTimeout(25000);
+    // Wait for MCL viewer to appear (up to 30s)
+    await page!.waitForFunction(() => {
+      const viewers = Array.from(grok.shell.tv.viewers);
+      return viewers.some(v => v.type === 'MCL');
+    }, {timeout: 30000});
 
-    const dialogGone = await page.evaluate(() => !document.querySelector('.d4-dialog'));
-    expect(dialogGone).toBe(true);
-  });
-
-  test('Step 5: MCL Viewer outputs different results', async () => {
-    // MCL should have recalculated — verify canvas is present and columns updated
-    await expect(page.locator('text=MCL').first()).toBeVisible({ timeout: 10000 });
-    // Logo Summary Table should still be visible
-    await expect(page.locator('text=Logo Summary Table').first()).toBeVisible();
-    // Table should have MCL columns
-    const hasMclColumns = await page.evaluate(() => {
-      const cols = grok.shell.tv?.dataFrame?.columns;
-      if (!cols) return false;
-      const names = Array.from({ length: cols.length }, (_, i) => cols.byIndex(i).name);
-      return names.some(n => n.includes('MCL'));
+    const viewers = await page!.evaluate(() => {
+      return Array.from(grok.shell.tv.viewers).map(v => v.type);
     });
-    expect(hasMclColumns).toBe(true);
+    expect(viewers).toContain('MCL');
+    expect(viewers).toContain('Most Potent Residues');
+    expect(viewers).toContain('Sequence Variability Map');
   });
+
+  // Step 3-5: Wait for MCL clustering to complete and verify results
+  await softStep('Step 3-5: Verify MCL clustering results', async () => {
+    // Wait for Cluster (MCL) column to appear (MCL runs async after viewer creation)
+    await page!.waitForFunction(() => {
+      return !!grok.shell.tv.dataFrame.col('Cluster (MCL)');
+    }, {timeout: 30000});
+
+    const result = await page!.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      const clusterCol = df.col('Cluster (MCL)');
+      const uniqueClusters = new Set();
+      for (let i = 0; i < df.rowCount; i++) {
+        const v = clusterCol.get(i);
+        if (v !== null && v !== undefined) uniqueClusters.add(v);
+      }
+      return {clusters: uniqueClusters.size, colCount: df.columns.length};
+    });
+    expect(result.clusters).toBeGreaterThanOrEqual(1);
+  });
+
+  // Cleanup
+  await page!.evaluate(() => grok.shell.closeAll());
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });

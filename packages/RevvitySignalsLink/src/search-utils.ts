@@ -371,7 +371,7 @@ async function loadSearchQuery(treeNode: DG.TreeViewGroup, libName: string, comp
           if (savedSearches[searchName])
             delete savedSearches[searchName];
           grok.userSettings.add(SAVED_SEARCH_STORAGE, storageKey, JSON.stringify(savedSearches));
-        }), 'revvity-saved-search-delete');
+        }, 'Delete'), 'revvity-saved-search-delete');
         gc.style.element = removeIcon;
       }
     });

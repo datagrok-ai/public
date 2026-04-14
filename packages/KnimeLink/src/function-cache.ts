@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {IKnimeClient} from './knime-client';
 import {CachedDeploymentEntry} from './types';
-import {registerFuncFromSpec, buildParamMeta, buildSignature, sanitizeFuncName} from './function-registry';
+import {registerFuncFromSpec, buildParamMeta, buildOutputMeta, buildSignature, sanitizeFuncName} from './function-registry';
 
 const STORAGE_NAME = 'KnimeLinkFuncCache';
 const META_KEY = '_meta';
@@ -69,7 +69,8 @@ export async function refreshAndUpdateCache(client: IKnimeClient): Promise<void>
       const spec = await client.getWorkflowInputs(dep.id);
       const funcName = sanitizeFuncName(dep.name, dep.id);
       const paramMeta = buildParamMeta(spec.inputs);
-      const signature = buildSignature(funcName, paramMeta, spec.outputs);
+      const outputMeta = buildOutputMeta(spec.outputs);
+      const signature = buildSignature(funcName, paramMeta, outputMeta);
 
       const old = oldEntries.get(dep.id);
       if (!old || old.signature !== signature)

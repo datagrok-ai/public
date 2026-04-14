@@ -170,7 +170,7 @@ export class ValidationIcon extends HTMLElement {
       this.currentIcon = icon;
       this.currentPopover = undefined;
     } else {
-      const icon = ui.iconFA(iconOptions.name, () => this.displayValidation());
+      const icon = ui.iconFA(iconOptions.name, () => this.displayValidation(), 'Show validation');
       $(icon).css({'pointer-events': 'all'});
       if (iconOptions.color) $(icon).css('color', `${iconOptions.color}!important`);
 

@@ -1,42 +1,48 @@
 # Matched Molecular Pairs — Run Results
 
-**Date**: 2026-03-11
-**URL**: https://public.datagrok.ai
-**Status**: PASS
+**Date**: 2026-04-09
+**URL**: https://dev.datagrok.ai
+**Status**: FAIL
 
 ## Steps
 
-| # | Step | Result | Notes |
-|---|------|--------|-------|
-| 1 | Open mmp_demo dataset | PASS | Opened via grok.data.files.openTable('System:DemoFiles/chem/mmp_demo.csv'). 20,267 rows, 4 cols: SMILES, CMPD_CHEMBLID, CYP3A4, hERG_pIC50 |
-| 2 | Run Chem > Analyze > Matched Molecular Pairs | PASS | MMP dialog opened. Selected SMILES column and both activities (CYP3A4, hERG_pIC50) via "All" button. Cutoff 0.4. Analysis completed successfully. |
-| 3 | Select activities, observe Transformation/Substitutions tab | PASS | Substitutions tab shows fragment substitutions with Canvas-based grid. "View all fragment substitutions found in the dataset" visible. |
-| 4 | Go to Fragments tab, check activities shown | PASS | Fragments tab shows "All"/"Current molecule" filter, "Follow current row" checkbox, Fragments grid and Molecule Pairs grid with Canvas elements. |
-| 5 | Go to Cliffs tab, check activity filters | PASS | Cliffs tab shows Chemical space with "Show pairs", Color by CYP3A4/hERG_pIC50. Activity values displayed (CYP3A4: 3.007, hERG_pIC50: 2.988). Warning: '~Embed_X_1' contains only None values — scatter plot embedding partially failed but tab functional. |
-| 6 | Go to Generation tab, check results | PASS | Generation tab shows "Generations in progress..." — molecule generation based on obtained rules is computing. Tab is functional and active. |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|------------|-------|
+| 1 | Open mmp_demo.csv | PASS | 12s | N/A | 20,267 rows, 4 cols (SMILES, CMPD_CHEMBLID, CYP3A4, hERG_pIC50) |
+| 2 | Chem > Analyze > Matched Molecular Pairs | PASS | 3s | N/A | Dialog opened via `[name="div-Chem---Analyze---Matched-Molecular-Pairs..."]` |
+| 3 | Select two activities, press OK | FAIL | 90s | N/A | Activities selected (CYP3A4, hERG_pIC50), OK clicked; `TypeError: Cannot read properties of undefined (reading 'name')` at chem/src/package.ts:2301 in mmpAnalysis |
+| 4 | Go to Fragments tab | SKIP | 0s | N/A | MMP analysis crashed |
+| 5 | Go to Cliffs tab | SKIP | 0s | N/A | MMP analysis crashed |
+| 6 | Go to Generation tab | SKIP | 0s | N/A | MMP analysis crashed |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | 110s |
+| Spec file generation | 3s |
+| Spec script execution | N/A |
 
 ## Summary
 
-All 6 steps passed. MMP analysis ran successfully on 20,267-row dataset with 2 activity columns. All 4 tabs (Substitutions, Fragments, Cliffs, Generation) are present and functional. Cliffs tab had a minor embedding warning but displayed activity data correctly. Generation tab was still computing at time of check.
+Steps 1-2 passed (dataset opened, MMP dialog opened). Step 3 failed: the MMP analysis function crashed with a `TypeError: Cannot read properties of undefined (reading 'name')` in `chem/src/package.ts:2301` (function `mmpAnalysis`). Steps 4-6 were skipped as the analysis didn't produce any results. This appears to be a bug in the Chem package's MMP implementation.
 
 ## Retrospective
 
 ### What worked well
-- MMP analysis completed on a large dataset (20K+ rows)
-- All 4 result tabs rendered correctly
-- Activity column selection via "All" button worked smoothly
-- Fragment and molecule pair grids displayed correctly
+- Dataset opened correctly with molecule semType detection
+- MMP dialog opened successfully via menu navigation
+- Activities column selection dialog worked (selected 2 activities via "All" button)
 
 ### What did not work
-- Cliffs scatter plot embedding had '~Embed_X_1' contains only None values warning — dimensionality reduction may have failed for this dataset
-- Generation was still in progress at end of test — large dataset takes significant time
+- MMP analysis crashed with TypeError at chem/src/package.ts:2301 — likely a null reference when accessing a property name
+- The error was only visible in the browser console, not shown to the user in the UI
+- No progress indicator or error notification was shown
 
 ### Suggestions for the platform
-- Show progress indicator for MMP analysis duration
-- Pre-compute embeddings or cache them for Cliffs tab
+- The MMP function should catch and display errors to the user instead of failing silently
+- The bug at chem/src/package.ts:2301 (null `.name` access) needs to be fixed
 
 ### Suggestions for the scenario
-- Scenario mentions "all three activities" but dataset only has 2 (CYP3A4, hERG_pIC50) — update scenario text
-- Step 3 mentions "Transformation" tab but actual tab is "Substitutions" — update scenario
-- Specify expected pair counts for verification
-- Add timeout guidance for large datasets
+- Add a note that this test depends on the Chem package's MMP feature being functional
+- Specify the expected number of results for the Transformation, Fragments, Cliffs, and Generation tabs

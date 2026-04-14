@@ -581,7 +581,7 @@ export namespace chem {
               radioGroup: 'sketcher type'
             })
           .show({element: menuHost, x: this.host.parentElement ? calculatePopupPosition(this.host.parentElement) : 10, y: 10});
-      });
+      }, 'Options');
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));
       this.calculating = false;

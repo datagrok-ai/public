@@ -9,6 +9,7 @@ import {GasteigerPngRenderer} from './pngRenderers';
 import {loadCampaigns, timeoutOneTimeEventListener} from './app/utils';
 import {AppName, CampaignsType} from './app';
 import {PeptiHitApp} from './app/pepti-hit-app';
+import {PepTriageApp} from './app/pep-triage-app';
 import {CampaignJsonName, PeptiHitHelmColName} from './app/consts';
 import {htPackageSettingsEditorWidget} from './packageSettingsEditor';
 import {deobfuscateSmiles, registerAllCampaignMols} from './app/utils/molreg';
@@ -185,6 +186,25 @@ export class PackageFunctions {
   }
 
 
+  @grok.decorators.treeBrowser({meta: {app: 'PepTriage'}})
+  static async pepTriageAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+    await hitAppTB(treeNode, 'PepTriage');
+  }
+
+
+  @grok.decorators.app({
+    icon: 'images/icons/hit-triage-icon.png',
+    browsePath: 'Peptides',
+    name: 'PepTriage',
+    tags: ['app'],
+  })
+  static async pepTriageApp(): Promise<DG.ViewBase> {
+    const c = grok.functions.getCurrentCall();
+    await grok.functions.call('Bio:initBio', {});
+    return new PepTriageApp(c).multiView;
+  }
+
+
   @grok.decorators.func({
     name: 'Demo Molecules 100',
     meta: {role: 'hitTriageDataSource'},
@@ -216,6 +236,48 @@ export class PackageFunctions {
   ): Promise<DG.DataFrame> {
     const df = grok.data.demo.molecules(numberOfMolecules);
     df.name = 'Variable Molecules number';
+    return df;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Demo Peptide Sequences',
+    meta: {role: 'pepTriageDataSource'},
+  })
+  static async demoPeptideSequences(peptideCount: number): Promise<DG.DataFrame> {
+    const sequences = [
+      'PEPTIDE1{A.G.L.V.K}$$$$V2.0',
+      'PEPTIDE1{G.A.V.L.I.P}$$$$V2.0',
+      'PEPTIDE1{F.W.Y.H.K.R}$$$$V2.0',
+      'PEPTIDE1{D.E.N.Q.S.T}$$$$V2.0',
+      'PEPTIDE1{A.R.N.D.C.E}$$$$V2.0',
+      'PEPTIDE1{G.H.I.L.K.M}$$$$V2.0',
+      'PEPTIDE1{F.P.S.T.W.Y}$$$$V2.0',
+      'PEPTIDE1{V.A.G.L.I}$$$$V2.0',
+      'PEPTIDE1{K.R.H.D.E}$$$$V2.0',
+      'PEPTIDE1{N.Q.S.T.C.M}$$$$V2.0',
+      'PEPTIDE1{A.V.L.I.P.F}$$$$V2.0',
+      'PEPTIDE1{W.Y.G.A.R}$$$$V2.0',
+      'PEPTIDE1{K.H.D.E.N.Q}$$$$V2.0',
+      'PEPTIDE1{S.T.C.M.F.W}$$$$V2.0',
+      'PEPTIDE1{Y.A.G.V.L.I}$$$$V2.0',
+      'PEPTIDE1{P.K.R.H.D}$$$$V2.0',
+      'PEPTIDE1{E.N.Q.S.T.C}$$$$V2.0',
+      'PEPTIDE1{M.F.W.Y.A.G}$$$$V2.0',
+      'PEPTIDE1{V.L.I.P.K.R}$$$$V2.0',
+      'PEPTIDE1{H.D.E.N.Q.S}$$$$V2.0',
+    ];
+    const extendedSequences = [];
+    for (let i = 0; i < peptideCount; i++)
+      extendedSequences.push(sequences[i % sequences.length]);
+
+
+    const col = DG.Column.fromStrings('Helm', extendedSequences);
+    col.semType = DG.SEMTYPE.MACROMOLECULE;
+    col.setTag('units', 'helm');
+    col.setTag('.alphabetIsMultichar', 'true');
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'Demo Peptide Sequences';
     return df;
   }
 

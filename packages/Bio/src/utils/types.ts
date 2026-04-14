@@ -1,5 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import {pepseaMethods} from './pepsea';
 
 export type DataFrameDict = { [key: string]: DG.DataFrame };
 
@@ -14,7 +13,11 @@ export type SubstitutionsInfo = Map<string, Map<string, Map<number, number[] | U
 export type SelectionObject = { [position: string]: string[] };
 
 export type MultipleSequenceAlignmentUIOptions = {
-  col?: DG.Column<string> | null, clustersCol?: DG.Column | null,
-  pepsea?: { method?: typeof pepseaMethods[number], gapOpen?: number, gapExtend?: number },
-  kalign?: { gapOpen?: number, gapExtend?: number, terminalGap?: number }
+  col?: DG.Column<string> | null;
+  clustersCol?: DG.Column | null;
+  kalign?: { gapOpen?: number; gapExtend?: number; terminalGap?: number };
+  /** Name of the MSA engine function to use for non-canonical sequences */
+  engine?: string;
+  /** Engine-specific parameters (e.g. method, gapOpen, gapExtend) */
+  engineParams?: Record<string, any>;
 };

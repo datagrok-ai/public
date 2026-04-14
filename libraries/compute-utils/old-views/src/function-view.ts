@@ -487,7 +487,7 @@ export abstract class FunctionView extends DG.ViewBase {
         this.historyRoot.parentElement!.classList.add('ui-box');
         this.historyRoot.classList.add('ui-box');
       }
-    });
+    }, 'History');
 
     const saveBtn = ui.iconFA('save', async () => {
       await this.onSaveClick();

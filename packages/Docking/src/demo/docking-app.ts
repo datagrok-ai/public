@@ -25,7 +25,7 @@ export class DockingViewApp extends BaseViewApp {
     const helpIcon = ui.icons.help(() => {
       grok.shell.windows.showHelp = true;
       grok.shell.windows.help.showHelp('/help/develop/domains/chem/docking');
-    });
+    }, 'Help');
     this.target = ui.input.choice('Target', {value: 'kras', items: items, onValueChanged: async () => {
       await this.onChanged(this.sketcherInstance!.getSmiles());
     }});

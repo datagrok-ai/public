@@ -15,8 +15,8 @@ export namespace scripts {
   /**
   Converts molecules to HELM notation based on monomer library
   */
-  export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryJSON: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryJSON });
+  export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryFile: DG.FileInfo ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryFile });
   }
 
   /**
@@ -275,6 +275,13 @@ export namespace funcs {
   */
   export async function alignSequences(sequenceCol: DG.Column , clustersCol: DG.Column , options?: any ): Promise<DG.Column> {
     return await grok.functions.call('Bio:AlignSequences', { sequenceCol, clustersCol, options });
+  }
+
+  /**
+  Aligns non-canonical peptide sequences using PepSeA Docker container (MAFFT)
+  */
+  export async function pepseaMsa(sequenceCol: DG.Column , method: string , gapOpen: number , gapExtend: number ): Promise<DG.Column> {
+    return await grok.functions.call('Bio:PepseaMsa', { sequenceCol, method, gapOpen, gapExtend });
   }
 
   /**

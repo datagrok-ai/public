@@ -43,14 +43,14 @@ export class AboutWidget extends DG.Widget {
           currentPane--;
           tabControl.currentPane = tabControl.panes[currentPane];
         }
-      })]);
+      }, 'Previous')]);
       let tabControlButtonRight = ui.div([
       ui.button(ui.iconFA('chevron-right'), ()=>{
         if (currentPane<6){
           currentPane++;
           tabControl.currentPane = tabControl.panes[currentPane];
         }
-      })
+      }, 'Next')
     ]);
     tabControlButtonRight.style.float = 'Right';
     tabControlButtonRight.style.margin = '0px 10px 0px 0px';

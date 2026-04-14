@@ -686,7 +686,7 @@ export class DiffStudio {
     const icon = ui.icons.help(() => {
       grok.shell.windows.showHelp = true;
       this.tabControl.currentPane.content.click();
-    });
+    }, 'Help');
     icon.classList.add('diff-studio-help-icon');
 
     return icon;

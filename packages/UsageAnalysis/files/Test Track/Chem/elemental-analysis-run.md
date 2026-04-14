@@ -1,35 +1,43 @@
 # Elemental Analysis — Run Results
 
-**Date**: 2026-03-11
-**URL**: https://public.datagrok.ai
+**Date**: 2026-04-09
+**URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Notes |
-|---|------|--------|-------|
-| 1 | Open smiles.csv | PASS | Opened via JS API, 1000 rows, 20 cols |
-| 2 | Open Chem > Analyze > Elemental Analysis | PASS | Dialog opened with Table (smiles), Molecules (canonical_smiles), Radar Viewer and Radar Grid checkboxes |
-| 3 | Turn all checkboxes on | PASS | Both Radar Viewer and Radar Grid checked |
-| 4 | Click OK | PASS | Analysis completed. Grid shows 30 columns (10 new: element counts H, C, N, O, etc.). Radar viewer added showing elemental composition spider chart with axes H, Molecule Charge, I, Br, Cl, S, F, O, N, C |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|------------|-------|
+| 1 | Open smiles.csv | PASS | 12s | PASSED | `grok.dapi.files.readCsv('System:DemoFiles/chem/smiles.csv')`; 1000 rows, 20 cols; canonical_smiles semType=Molecule |
+| 2 | Chem > Analyze > Elemental Analysis dialog | PASS | 3s | PASSED | Menu nav via `[name="div-Chem---Analyze---Elemental-Analysis..."]`; dialog opened |
+| 3 | Turn all checkboxes on | PASS | 1s | PASSED | 2 checkboxes (Radar Viewer, Radar Grid) enabled via `cb.click()` |
+| 4 | Click OK | PASS | 10s | PASSED | 10 new columns added: H, C, N, O, F, S, Cl, Br, I, Molecule Charge; Radar viewer displayed |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | 30s |
+| Spec file generation | 3s |
+| Spec script execution | 21s |
 
 ## Summary
 
-All steps passed. Elemental Analysis successfully computed element counts and added a radar viewer visualization. The grid expanded from 20 to 30 columns with elemental composition data.
+All 4 steps passed. Elemental Analysis computed element counts (H, C, N, O, F, S, Cl, Br, I) and Molecule Charge for 1000 molecules. Both Radar Viewer and Radar Grid were enabled and displayed. The function completed in ~10 seconds.
 
 ## Retrospective
 
 ### What worked well
-- Dialog opened cleanly via Chem menu
-- Computation completed within ~20 seconds
-- Radar viewer rendered correctly with all element axes
+- Chem menu navigation via `[name="div-Chem---Analyze---Elemental-Analysis..."]` worked with proper mouseover/mouseenter events for submenu expansion
+- Dialog checkboxes are standard `input[type="checkbox"]` — clickable via `cb.click()`
+- OK button found via `[name="button-OK"]`
+- All 10 elemental columns added correctly
 
 ### What did not work
-- Nothing — all steps completed successfully
+- Nothing significant — this is a straightforward dialog-based workflow
 
 ### Suggestions for the platform
-- None
+- The Radar Viewer could show element symbols on axes for easier interpretation
 
 ### Suggestions for the scenario
-- Specify expected element columns to verify (H, C, N, O, F, Cl, Br, I, S, Molecule Charge)
-- Add expected values for a specific row to enable automated verification
+- Step 1 mentions "check on smiles, molV2000 and molV3000 formats" but only provides smiles.csv dataset — should add molV2000/V3000 test files or clarify that only smiles format is tested

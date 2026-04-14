@@ -149,7 +149,7 @@ Also provides `genDBConnectionMeta()` for generating and persisting LLM-friendly
 
 ### Docker Containers (`dockerfiles/`)
 
-- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `tool_result`, `final`, `error`, `aborted`, `input_request`.
+- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `tool_result`, `final`, `error`, `aborted`, `input_request`. Includes the skills & knowledge sync system (`src/user-files.ts`) — see [docs/VISION.md](docs/VISION.md) for the full spec.
 - `mcp-server/` — MCP server (`@modelcontextprotocol/sdk`, HTTP transport) exposing Datagrok operations as tools: functions (list/get/call/create), files (list/download/upload), projects, spaces, and user info. Auth via per-request `x-user-api-key` / `x-datagrok-api-url` headers.
 
 ### Deprecated Code (`src/depr/`)

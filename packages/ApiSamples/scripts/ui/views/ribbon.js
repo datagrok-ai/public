@@ -7,8 +7,8 @@ v.root.appendChild(ui.divText('Custom body'));
 // ribbons
 v.setRibbonPanels([
   [
-    ui.iconFA('search', () => grok.shell.info('clicked')),
-    ui.iconFA('plus', () => grok.shell.info('plus'))
+    ui.iconFA('search', () => grok.shell.info('clicked'), 'Search'),
+    ui.iconFA('plus', () => grok.shell.info('plus'), 'Add')
   ],
   [ui.divText('Custom panel')]
 ]);

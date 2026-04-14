@@ -3,6 +3,7 @@
 ## v.next
 
 * Fixed crash in checkCurrentView when table is opened in Files preview without a registered TableView
+* Substructure filter: Fixed similarity cutoff and fingerprint not syncing to the slider/UI on view clone
 
 ## 1.17.4 (2026-03-30)
 

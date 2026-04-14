@@ -67,7 +67,11 @@ export async function performChemicalPropertyPredictions(
   try {
     const existingColumns = viewTable.columns.names();
     progressIndicator.update(10, 'Predicting...');
-    await grok.functions.call('Admetica:getAdmeProperties', {table: viewTable, molecules: molColumn, props: models});
+    await DG.Func.find({package: 'Admetica', name: 'getAdmeProperties'})[0].prepare({
+      table: viewTable,
+      molecules: molColumn,
+      props: models,
+    }).call(undefined, undefined, {processed: false});
     progressIndicator.update(80, 'Results are ready');
 
     const newColumnNames = viewTable.columns.names().filter((name: string) => !existingColumns.includes(name));

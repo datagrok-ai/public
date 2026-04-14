@@ -18,6 +18,7 @@ LEFT JOIN biologics.sequences seq ON adc.antibody_id = seq.id
 LEFT JOIN biologics.drugs d ON adc.drug_id = d.id
 LEFT JOIN biologics.linkers l ON adc.linker_id = l.id
 WHERE org.name ilike @organism
+AND seq.sequence IS NOT NULL
 
 -- end
 
@@ -38,7 +39,7 @@ LEFT JOIN biologics.adc adc ON ar.adc_id = adc.id
 LEFT JOIN biologics.sequences seq ON adc.antibody_id = seq.id
 LEFT JOIN biologics.drugs d ON adc.drug_id = d.id
 LEFT JOIN biologics.linkers l ON adc.linker_id = l.id
-WHERE at.name ILIKE 'caspase activity' AND ar.result_value > @minActivity;
+WHERE at.name ILIKE 'caspase activity' AND ar.result_value > @minActivity AND seq.sequence IS NOT NULL;
 
 -- end
 
@@ -63,7 +64,7 @@ LEFT JOIN biologics.linkers l ON adc.linker_id = l.id
 WHERE at.name ILIKE 'IC50' AND (
     ((@valueTarget ILIKE 'lower' or @valueTarget ILIKE 'less') AND ar.result_value < @value) OR
     ((@valueTarget ILIKE 'higher' or @valueTarget ILIKE 'more') AND ar.result_value > @value)
-);
+) AND seq.sequence IS NOT NULL;
 
 -- end
 
@@ -81,7 +82,7 @@ FROM biologics.adc adc
 JOIN biologics.sequences seq ON adc.antibody_id = seq.id
 JOIN biologics.drugs d ON adc.drug_id = d.id
 JOIN biologics.linkers l ON adc.linker_id = l.id
-WHERE d.identifier = @drugID;
+WHERE d.identifier = @drugID AND seq.sequence IS NOT NULL;
 
 -- end
 

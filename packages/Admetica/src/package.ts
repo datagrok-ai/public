@@ -127,14 +127,8 @@ export class PackageFunctions {
 
     // If no properties specified, use all available models
     const models = (props ?? await this.getModels()).join(',');
-    const call = await DG.Func.find({package: 'Admetica', name: 'run_admetica'})[0].prepare({
-      csv: csv,
-      models: models,
-      raiseException: false,
-    }).call(undefined, undefined, {processed: false});
-
-    const callResult = call.getOutputParamValue() as DG.DataFrame;
-    return await convertLD50(callResult, molecules);
+    const result = await grok.functions.call('Admetica:run_admetica', {csv, models, raiseException: false}) as DG.DataFrame;
+    return await convertLD50(result, molecules);
   }
 
   @grok.decorators.func({

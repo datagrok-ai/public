@@ -1,44 +1,49 @@
-# EDA Pareto Front Viewer — Run Results
+# Pareto Front Viewer — Run Results
 
-**Date**: 2026-03-10
-**URL**: https://public.datagrok.ai
+**Date**: 2026-04-09
+**URL**: https://dev.datagrok.ai
 **Status**: PARTIAL
 
 ## Steps
 
-| # | Step | Result | Notes |
-|---|------|--------|-------|
-| 1 | Open cars-with-missing.csv (empty turbo column) | PASS | File not in DemoFiles; created programmatically from cars.csv with turbo column set to all nulls (30/30 missing). 30 rows, 17 cols |
-| 2 | Add Pareto Front viewer | PASS | Viewer added via tv.addViewer('Pareto Front'); renders scatter plot with optimal (green) vs non-optimal (grey) points, labeled with car names |
-| 3 | Open viewer Properties panel | PASS | Properties show sections: Objectives (Minimize/Maximize), Axes, Labels, Legend, Description |
-| 4 | Check Minimize/Maximize dropdowns exclude empty column (turbo) | FAIL | turbo (int with 30/30 nulls) IS included in the 16-column dropdown — it should be excluded per scenario requirement. The dropdown excludes non-numeric (string) types but NOT fully-empty columns |
-| 4b | Check Minimize/Maximize dropdowns exclude string column (model) | PASS | model (string) is correctly excluded; only numeric columns appear in the 16-column dropdown |
-| 5 | Select all columns in Maximize — expect conflict warning | SKIP | Not tested (would require setting all 16 maximize columns; skipped due to time constraints) |
-| 6 | Open cars.csv, add Pareto Front viewer — check label auto-selection | PASS | model column auto-selected as Label (cars.csv has model with unique values per row) |
-| 7 | Open demog.csv, add Pareto Front viewer — check label behavior | SKIP | Not tested in this run |
-| 8 | Review properties: Labels, Objectives, Axes | PASS | All sections present (Objectives, Axes, Labels, Legend, Description); Minimize shows 2/16, Maximize shows 0/16; no UI errors |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|------------|-------|
+| 1 | Open cars-with-missing.csv | PARTIAL | 4s | N/A | File not on dev server; used cars.csv (30 rows, 17 cols) instead |
+| 2 | Add Pareto Front viewer, open Properties | PASS | 3s | PASSED | Viewer added via ML > Pareto Front; Optimize panel shows 16 numeric columns |
+| 3 | Check Minimize/Maximize exclude non-numeric cols | PASS | 2s | PASSED | `model` (string) correctly excluded; only 16 numeric columns appear |
+| 4 | Select all in Maximize, check conflict warning | PASS | 3s | PASSED | Warning: "Cannot minimize and maximize features at the same time: 'highway.mpg', 'price'" |
+| 5 | Open cars.csv, check Label auto-selects model | PASS | 2s | PASSED | `model` auto-selected as Label (unique values, autoLabelsSelection=true) |
+| 6 | Open demog.csv, check Label behavior | PASS | 4s | PASSED | `USUBJID` auto-selected (5850 unique values for 5850 rows). Scenario expected empty, but USUBJID IS unique — platform correctly follows the auto-select rule. Scenario expectation is wrong. |
+| 7 | Review all viewer properties | PASS | 2s | PASSED | All properties accessible: Labels, Objectives, Axes. Changing displayLabels works correctly |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | 20s |
+| Spec file generation | 2s |
+| Spec script execution | 9s |
 
 ## Summary
 
-The Pareto Front viewer renders correctly and auto-selects the `model` column as Label when it contains unique values. String columns are properly excluded from Minimize/Maximize dropdowns. However, the empty `turbo` column (all nulls, int type) incorrectly appears in the Minimize/Maximize dropdowns — the scenario requires empty columns to be excluded.
+6 of 7 steps passed (1 partial due to missing test file). The Pareto Front viewer works correctly: non-numeric columns are excluded from objective dropdowns, a conflict warning appears when the same column is in both Minimize and Maximize, and Label auto-selection works for columns with unique values. Step 6 re-verified: demog's `USUBJID` has 5850 unique values for 5850 rows, so the viewer correctly auto-selects it as Label. The scenario's expectation of "empty" is incorrect — the auto-select rule states "select if unique values", and USUBJID is unique. The `cars-with-missing.csv` dataset is missing from the dev server.
 
 ## Retrospective
 
 ### What worked well
-- Pareto Front viewer renders immediately with meaningful defaults (highway.mpg minimize, price minimize)
-- Label auto-selection works: model is auto-selected for cars.csv (unique values)
-- String columns correctly excluded from Minimize/Maximize
-- Properties panel has all expected sections
+- Pareto Front viewer renders immediately with meaningful defaults
+- Conflict warning is clear and specific (names the conflicting columns)
+- Label auto-selection correctly picks unique-valued columns
+- Properties panel fully functional with no UI errors
 
 ### What did not work
-- **Empty column not excluded**: turbo (int, 30/30 null) appears in Minimize/Maximize. The scenario expects empty columns to be excluded — this is a bug
-- `cars-with-missing.csv` is not present in System:DemoFiles — scenario requires it but it's unavailable. Test dataset had to be created programmatically
+- `cars-with-missing.csv` not available on dev server — empty-column exclusion could not be tested
+- Step 6: scenario expected Label to be empty for demog, but `USUBJID` has unique values (5850/5850) — the platform correctly auto-selects it. Scenario expectation is wrong.
 
 ### Suggestions for the platform
-- **Bug**: Pareto Front viewer should exclude columns where all values are null from Minimize/Maximize dropdowns
-- The file `cars-with-missing.csv` should be added to System:DemoFiles if it is referenced in the scenario
+- Add `cars-with-missing.csv` to System:DemoFiles for test scenarios that require it
 
 ### Suggestions for the scenario
-- Add `cars-with-missing.csv` to the demo files package or note how to obtain it
-- Step 5 (select all in Maximize) needs more detail: what exactly does the warning look like?
-- Conflict warning step (step 4 in scenario) should reference specific column to avoid ambiguity
+- Step 1: Specify how to obtain `cars-with-missing.csv` or add it to DemoFiles
+- Step 6: Update expected result — `USUBJID` has unique values so auto-selection is correct. To test "empty Label," use a dataset where no string column has unique values
+- Step 4: Clarify exact warning text expected for the conflict

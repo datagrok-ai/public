@@ -24,6 +24,7 @@ import $ from 'cash-dom';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
+const FILTER_ENABLED_SYNC_EVENT = 'chem-filter-enabled-sync';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
 const PRE_CALCULATED_FP = 'chem-precalculated-fp';
 const ALIGN_SYNC_EVENT = 'chem-align-sync';
@@ -105,9 +106,19 @@ export class SubstructureFilter extends DG.Filter {
   showOptions = false;
   searchNotCompleted = false;
   recalculateFilter = false;
+  _peerFilterDisabled = false;
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
+
+  onActiveChanged(active: boolean): void {
+    grok.events.fireCustomEvent(FILTER_ENABLED_SYNC_EVENT, {
+      colName: this.columnName,
+      tableName: this.tableName,
+      filterId: this.filterId,
+      active: active,
+    });
+  }
 
   get filterSummary(): string {
     return this.getFilterSummary(this.currentMolfile);
@@ -174,7 +185,7 @@ export class SubstructureFilter extends DG.Filter {
     this.optionsIcon = ui.icons.settings(() => {
       this.showOptions = !this.showOptions;
       this.renderShowOptionsDiv();
-    });
+    }, 'Settings');
     $(this.optionsIcon).addClass('chem-search-options-icon');
 
     this.sketcher.isSubstructureFilter = true;
@@ -252,6 +263,10 @@ export class SubstructureFilter extends DG.Filter {
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
       this.searchTypeInput.value = SubstructureSearchType.CONTAINS;
+    }));
+    this.subs.push(grok.events.onCustomEvent(FILTER_ENABLED_SYNC_EVENT).subscribe((state: any) => {
+      if (state.colName === this.columnName && state.tableName === this.tableName && state.filterId !== this.filterId)
+        this._peerFilterDisabled = !state.active;
     }));
     this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
@@ -344,13 +359,13 @@ export class SubstructureFilter extends DG.Filter {
   refresh() {
     if (!this.sketcher.sketcherTypeChanged)
       this.sketcher.sketcher?.refresh();
-    else {
-      //to update molfile in hamburger menu filter in case sketcher type was changed via filter panel while hamburger menu was closed
-      ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
-        if (this.sketcher.getMolFile() !== this.currentMolfile)
-          this.sketcher.setMolFile(this.currentMolfile);
-      });
-    }
+    //restore molfile in hamburger menu filter after DOM reattach or sketcher type change
+    ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
+      if (this.currentMolfile && this.sketcher.getMolFile() !== this.currentMolfile) {
+        this.syncEvent = true;
+        this.sketcher.setMolFile(this.currentMolfile);
+      }
+    });
   }
 
   detach() {
@@ -393,6 +408,8 @@ export class SubstructureFilter extends DG.Filter {
 
   applyFilter(): void {
     _package.logger.debug(`*************entered apply filter, filter id${this.filterId}`);
+    if (this._peerFilterDisabled)
+      return;
     this.active = true;
     //we apply filter bitset only from one active filtering fiter, other filters are just synchronizing
     const activeFilterId = this.column!.temp[CHEM_APPLY_FILTER_SYNC] ? this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId : -1;
@@ -458,15 +475,22 @@ export class SubstructureFilter extends DG.Filter {
     if (state.searchType && state.searchType !== this.searchType) {
       //for correct synchronization of similarity filters when cloning views, need to firts set cutoff and fp
       if (state.searchType === SubstructureSearchType.IS_SIMILAR) {
-        this.similarityCutOff = state.simCutOff;
-        this.fp = state.fp;
+        this.similarityCutOffSync = true;
+        this.similarityCutOffInput.value = state.simCutOff;
+        this.fpSync = true;
+        this.fpInput.value = state.fp;
       }
+      this.searchTypeSync = true;
       this.searchTypeInput.value = state.searchType;
     }
-    if (state.simCutOff && state.simCutOff !== this.similarityCutOff)
+    if (state.simCutOff && state.simCutOff !== this.similarityCutOffInput.value) {
+      this.similarityCutOffSync = true;
       this.similarityCutOffInput.value = state.simCutOff;
-    if (state.fp && state.fp !== this.fp)
+    }
+    if (state.fp && state.fp !== this.fpInput.value) {
+      this.fpSync = true;
       this.fpInput.value = state.fp;
+    }
 
     const that = this;
     /* columnIsFilteringByStructure variable is required to handle the following:

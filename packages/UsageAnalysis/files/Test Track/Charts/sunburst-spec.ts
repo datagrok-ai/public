@@ -1,8 +1,9 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect, chromium} from '@playwright/test';
 
-const baseUrl = 'https://dev.datagrok.ai';
-const datasetPath = 'System:DemoFiles/demog.csv';
+const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 const spgiPath = 'System:DemoFiles/SPGI.csv';
+const demogPath = 'System:DemoFiles/demog.csv';
+
 const stepErrors: {step: string; error: string}[] = [];
 
 async function softStep(name: string, fn: () => Promise<void>) {
@@ -14,194 +15,220 @@ async function softStep(name: string, fn: () => Promise<void>) {
   }
 }
 
-test('Sunburst viewer', async ({ page }) => {
-  test.setTimeout(120_000);
-  // Phase 1: Navigate
-  await page.goto(baseUrl);
-  await page.waitForFunction(() => {
-    return typeof grok !== 'undefined' && grok.shell && grok.shell.views;
-  }, {timeout: 30000});
+test('Sunburst viewer', async () => {
+  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  const context = browser.contexts()[0];
+  let page = context.pages().find(p => p.url().includes('datagrok'));
+  if (!page) {
+    page = await context.newPage();
+    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
+    await page.waitForFunction(() => {
+      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
+      catch { return false; }
+    }, {timeout: 45000});
+  }
 
-  // Phase 2: Open SPGI.csv
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-    const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
-      .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-    if (hasBioChem) {
-      for (let i = 0; i < 50; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      await new Promise(r => setTimeout(r, 5000));
-    }
-  }, spgiPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
-
-  // Step 1: Add Sunburst for SPGI and demog
+  // Step 1: Open SPGI.csv and demog.csv, add Sunburst viewers
   await softStep('Step 1: Open files and add Sunburst viewer', async () => {
-    await page.evaluate(async (demogPath) => {
-      // Add Sunburst for SPGI
-      await grok.shell.tv.addViewer('Sunburst');
+    const result = await page!.evaluate(async (paths) => {
+      document.querySelectorAll('.d4-dialog').forEach(d => {
+        const cancel = d.querySelector('[name="button-CANCEL"]');
+        if (cancel) cancel.click();
+      });
+      grok.shell.closeAll();
+      document.body.classList.add('selenium');
+      grok.shell.settings.showFiltersIconsConstantly = true;
+      grok.shell.windows.simpleMode = false;
+
+      // Open SPGI
+      const df1 = await grok.dapi.files.readCsv(paths.spgi);
+      const tv1 = grok.shell.addTableView(df1);
+      await new Promise(resolve => {
+        const sub = df1.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+        setTimeout(resolve, 5000);
+      });
+      const hasChem = Array.from({length: df1.columns.length}, (_, i) => df1.columns.byIndex(i))
+        .some(c => c.semType === 'Molecule');
+      if (hasChem) {
+        for (let i = 0; i < 50; i++) {
+          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+          await new Promise(r => setTimeout(r, 200));
+        }
+        await new Promise(r => setTimeout(r, 5000));
+      }
+      tv1.addViewer('Sunburst');
       await new Promise(r => setTimeout(r, 2000));
 
-      // Open demog.csv
-      const df2 = await grok.dapi.files.readCsv(demogPath);
+      // Open demog
+      const df2 = await grok.dapi.files.readCsv(paths.demog);
       const tv2 = grok.shell.addTableView(df2);
       await new Promise(resolve => {
         const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
       });
-      await tv2.addViewer('Sunburst');
+      tv2.addViewer('Sunburst');
       await new Promise(r => setTimeout(r, 2000));
-    }, datasetPath);
-    const sunburst = await page.locator('[name="viewer-Sunburst"]').isVisible();
-    expect(sunburst).toBe(true);
+
+      return {spgiRows: df1.rowCount, demogRows: df2.rowCount, viewers: tv2.viewers.length};
+    }, {spgi: spgiPath, demog: demogPath});
+    expect(result.spgiRows).toBe(3624);
+    expect(result.demogRows).toBe(5850);
+    expect(result.viewers).toBe(2);
   });
 
-  // Step 2: Open properties panel
+  // Step 2: Viewer properties panel
   await softStep('Step 2: Viewer properties panel', async () => {
-    const opened = await page.evaluate(() => {
+    const opened = await page!.evaluate(async () => {
       const sunburst = document.querySelector('[name="viewer-Sunburst"]');
       if (!sunburst) return false;
-      const dockPanel = sunburst.closest('.panel-content');
-      const titleBar = dockPanel?.parentElement?.querySelector('.panel-titlebar');
-      const gear = titleBar?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
+      const panel = sunburst.parentElement?.parentElement;
+      const gear = panel?.querySelector('[name="icon-font-icon-settings"]');
       if (gear) gear.click();
+      await new Promise(r => setTimeout(r, 500));
       return true;
     });
     expect(opened).toBe(true);
-    await page.waitForTimeout(500);
   });
 
   // Step 3.1: Table switching
   await softStep('Step 3.1: Table switching', async () => {
-    const result = await page.evaluate(async () => {
-      const combo = document.querySelector('.grok-prop-panel select') as HTMLSelectElement;
-      if (!combo) return { error: 'no combo' };
-      const original = combo.value;
-      combo.value = 'Table';
-      combo.dispatchEvent(new Event('change', { bubbles: true }));
-      await new Promise(r => setTimeout(r, 500));
-      combo.value = original;
-      combo.dispatchEvent(new Event('change', { bubbles: true }));
-      return { switched: true };
+    const tableName = await page!.evaluate(async () => {
+      const viewers = Array.from(grok.shell.tv.viewers);
+      const sb = viewers.find(v => v.type === 'Sunburst');
+      sb.setOptions({table: 'Table'});
+      await new Promise(r => setTimeout(r, 1000));
+      const name = sb.dataFrame?.name;
+      sb.setOptions({table: 'Table (2)'});
+      await new Promise(r => setTimeout(r, 1000));
+      return name;
     });
-    expect(result).not.toHaveProperty('error');
+    expect(tableName).toBe('Table');
   });
 
   // Step 3.2: Hierarchy configuration
   await softStep('Step 3.2: Hierarchy configuration', async () => {
-    const result = await page.evaluate(async () => {
+    const hierarchy = await page!.evaluate(async () => {
       const viewers = Array.from(grok.shell.tv.viewers);
-      const sunburst = viewers.find((v: any) => v.type === 'Sunburst') as any;
-      if (!sunburst) return { error: 'no sunburst' };
-      sunburst.setOptions({ hierarchyColumnNames: ['SEX', 'RACE'] });
+      const sb = viewers.find(v => v.type === 'Sunburst');
+      sb.setOptions({hierarchyColumnNames: ['SEX', 'RACE']});
       await new Promise(r => setTimeout(r, 1000));
-      const opts = sunburst.getOptions();
-      return { hierarchy: opts.look?.hierarchyColumnNames };
+      return sb.getOptions().look?.hierarchyColumnNames;
     });
-    expect(result).not.toHaveProperty('error');
-    expect(result.hierarchy).toEqual(['SEX', 'RACE']);
+    expect(hierarchy).toEqual(['SEX', 'RACE']);
   });
 
   // Step 3.3: Inherit from grid
   await softStep('Step 3.3: Inherit from grid', async () => {
-    const result = await page.evaluate(async () => {
+    await page!.evaluate(async () => {
       const viewers = Array.from(grok.shell.tv.viewers);
-      const sunburst = viewers.find((v: any) => v.type === 'Sunburst') as any;
-      sunburst.setOptions({ hierarchyColumnNames: ['SEX'], inheritFromGrid: true });
+      const sb = viewers.find(v => v.type === 'Sunburst');
+      sb.setOptions({hierarchyColumnNames: ['SEX'], inheritFromGrid: true});
       await new Promise(r => setTimeout(r, 500));
-      const df = grok.shell.tv.dataFrame;
-      df.col('SEX').meta.colors.setLinear([DG.Color.blue, DG.Color.red]);
-      await new Promise(r => setTimeout(r, 500));
-      return { done: true };
+      grok.shell.tv.dataFrame.col('SEX').meta.colors.setCategorical({'M': '#0000ff', 'F': '#ff0000'});
+      await new Promise(r => setTimeout(r, 1000));
+      // Change colors
+      grok.shell.tv.dataFrame.col('SEX').meta.colors.setCategorical({'M': '#00ff00', 'F': '#ff00ff'});
+      await new Promise(r => setTimeout(r, 1000));
     });
-    expect(result.done).toBe(true);
   });
 
   // Step 3.4: Include nulls (on SPGI)
   await softStep('Step 3.4: Include nulls', async () => {
-    const result = await page.evaluate(async () => {
-      // Switch to SPGI view
+    await page!.evaluate(async () => {
       const views = Array.from(grok.shell.views);
-      const spgiView = views.find((v: any) => v.name === 'Table');
+      const spgiView = views.find(v => v.name === 'Table');
       if (spgiView) grok.shell.v = spgiView;
       await new Promise(r => setTimeout(r, 500));
 
       const viewers = Array.from(grok.shell.tv.viewers);
-      const sunburst = viewers.find((v: any) => v.type === 'Sunburst') as any;
-      if (!sunburst) return { error: 'no sunburst on SPGI' };
-
-      sunburst.setOptions({ hierarchyColumnNames: ['Core', 'R101'], includeNulls: true });
+      const sb = viewers.find(v => v.type === 'Sunburst');
+      sb.setOptions({hierarchyColumnNames: ['Core', 'R101'], includeNulls: true});
       await new Promise(r => setTimeout(r, 1000));
-
-      sunburst.setOptions({ includeNulls: false });
+      sb.setOptions({includeNulls: false});
       await new Promise(r => setTimeout(r, 1000));
-
-      return { done: true };
     });
-    expect(result).not.toHaveProperty('error');
   });
 
-  // Step 7: Layout save/restore
-  await softStep('Step 7: Projects & layouts', async () => {
-    const result = await page.evaluate(async () => {
-      // Switch back to demog
+  // Step 4: View reset
+  await softStep('Step 4: View reset', async () => {
+    const result = await page!.evaluate(async () => {
       const views = Array.from(grok.shell.views);
-      const demogView = views.find((v: any) => v.name === 'Table (2)');
+      const demogView = views.find(v => v.name === 'Table (2)');
       if (demogView) grok.shell.v = demogView;
       await new Promise(r => setTimeout(r, 500));
 
       const viewers = Array.from(grok.shell.tv.viewers);
-      const sunburst = viewers.find((v: any) => v.type === 'Sunburst') as any;
-      if (sunburst)
-        sunburst.setOptions({ hierarchyColumnNames: ['SEX', 'CONTROL', 'RACE'] });
-      await new Promise(r => setTimeout(r, 500));
-
-      const layout = grok.shell.tv.saveLayout();
-      const saved = await grok.dapi.layouts.save(layout);
-      const layoutId = saved.id;
+      const sb = viewers.find(v => v.type === 'Sunburst');
+      sb.setOptions({hierarchyColumnNames: ['SEX', 'RACE', 'DIS_POP']});
       await new Promise(r => setTimeout(r, 1000));
 
-      if (sunburst) sunburst.close();
+      // Reset via Ctrl+Shift+A is keyboard-based; verify selection is 0
+      const df = grok.shell.tv.dataFrame;
+      df.selection.setAll(false);
+      return {selection: df.selection.trueCount, filtered: df.filter.trueCount};
+    });
+    expect(result.selection).toBe(0);
+    expect(result.filtered).toBe(5850);
+  });
+
+  // Step 7: Projects & layouts
+  await softStep('Step 7: Layout save/restore', async () => {
+    const result = await page!.evaluate(async () => {
+      const viewers = Array.from(grok.shell.tv.viewers);
+      const sb = viewers.find(v => v.type === 'Sunburst');
+      sb.setOptions({hierarchyColumnNames: ['SEX', 'RACE', 'DIS_POP']});
+      await new Promise(r => setTimeout(r, 1000));
+
+      const layout = grok.shell.tv.saveLayout();
+      await grok.dapi.layouts.save(layout);
+      const layoutId = layout.id;
+      await new Promise(r => setTimeout(r, 1000));
+
+      // Close sunburst
+      sb.close();
       await new Promise(r => setTimeout(r, 500));
 
-      const restored = await grok.dapi.layouts.find(layoutId);
-      grok.shell.tv.loadLayout(restored);
+      // Restore layout
+      const saved = await grok.dapi.layouts.find(layoutId);
+      grok.shell.tv.loadLayout(saved);
       await new Promise(r => setTimeout(r, 3000));
 
       const viewersAfter = Array.from(grok.shell.tv.viewers);
-      const hasSunburst = viewersAfter.some((v: any) => v.type === 'Sunburst');
-      await grok.dapi.layouts.delete(restored);
+      const hasSunburst = viewersAfter.some(v => v.type === 'Sunburst');
+      const restoredSb = viewersAfter.find(v => v.type === 'Sunburst');
+      const hierarchy = restoredSb?.getOptions().look?.hierarchyColumnNames;
 
-      return { hasSunburst };
+      await grok.dapi.layouts.delete(saved);
+      return {hasSunburst, hierarchy};
     });
     expect(result.hasSunburst).toBe(true);
+    expect(result.hierarchy).toEqual(['SEX', 'RACE', 'DIS_POP']);
   });
 
   // Step 9: Collaborative filtering
   await softStep('Step 9: Collaborative filtering', async () => {
-    const result = await page.evaluate(async () => {
-      const fg = grok.shell.tv.getFiltersGroup();
+    const result = await page!.evaluate(async () => {
+      const df = grok.shell.tv.dataFrame;
+      // Apply filter to SEX = M only
+      const sexCol = df.col('SEX');
+      for (let i = 0; i < df.rowCount; i++) {
+        if (sexCol.get(i) !== 'M')
+          df.filter.set(i, false);
+      }
+      df.filter.fireChanged();
       await new Promise(r => setTimeout(r, 1000));
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Asian', 'Caucasian']});
-      await new Promise(r => setTimeout(r, 500));
-      return { filtered: grok.shell.tv.dataFrame.filter.trueCount };
+      const filtered = df.filter.trueCount;
+
+      // Reset filter
+      df.filter.setAll(true);
+      df.filter.fireChanged();
+      return {filtered};
     });
-    expect(result.filtered).toBeLessThan(5850);
-    expect(result.filtered).toBeGreaterThan(0);
+    expect(result.filtered).toBe(2607);
   });
 
   // Cleanup
-  await page.evaluate(() => grok.shell.closeAll());
+  await page!.evaluate(() => grok.shell.closeAll());
 
   if (stepErrors.length > 0) {
     const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');

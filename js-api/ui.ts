@@ -253,8 +253,10 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   i.classList.add(`fa-${name}`);
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return i;
 }
 
@@ -276,8 +278,10 @@ export function iconImage(name: string, path: string,
   i.style.backgroundImage = `url(${path})`;
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return _options(i, options);
 }
 
@@ -300,8 +304,10 @@ export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEve
 
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return i;
 }
 
@@ -407,12 +413,12 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
     if (divActual) divActual.style.display = 'block';
     close.style.display = 'block';
     show.style.display = 'none';
-  });
+  }, 'Show info');
   let close = iconFA('times', () => {
     if (divActual) divActual.style.display = 'none';
     close.style.display = 'none';
     show.style.display = reopenable ? 'block' : 'none';
-  });
+  }, 'Close');
   if (header !== null && header !== undefined) {
     divContent.push(h1(header));
   }
@@ -2183,6 +2189,8 @@ export function star(id: string): HTMLElement {
 function _icon(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon grok-font-icon-${type}"></i>`)[0] as HTMLElement;
   e?.addEventListener('click', (e) => handler(e));
+  if (tooltipMsg !== null)
+    e.setAttribute('aria-label', tooltipMsg);
   tooltip.bind(e, tooltipMsg);
   return e;
 }
@@ -2191,6 +2199,8 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
   let e = $(`<i class="grok-icon fal fa-${type}"></i>`)[0] as HTMLElement;
   if (handler != null)
     e?.addEventListener('click', (e) => handler(e));
+  if (tooltipMsg !== null)
+    e.setAttribute('aria-label', tooltipMsg);
   tooltip.bind(e, tooltipMsg);
   return e;
 }
@@ -2400,7 +2410,7 @@ export namespace hints {
     const root = document.createElement('div');
     root.className = 'ui-hint-popup';
 
-    const closeBtn = iconFA('times', () => root.remove());
+    const closeBtn = iconFA('times', () => root.remove(), 'Close');
     closeBtn.style.cssText = `
       position: absolute;
       right: 10px;

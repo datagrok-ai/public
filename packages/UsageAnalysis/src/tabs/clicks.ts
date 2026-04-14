@@ -4,6 +4,7 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {queries} from '../package-api';
+import {UaFilter} from '../filter';
 
 
 export class ClicksView extends UaView {
@@ -18,20 +19,30 @@ export class ClicksView extends UaView {
   async initViewers(path?: string): Promise<void> {
     this.root.className = 'grok-view ui-box';
     const tabs: {[key: string]: (() => HTMLElement)} = {
-      'Click Analysis': () => this.createWaitElement(this.getClickAnalysisTab, this),
+      'Click Analysis': () => {
+        let current = this.createWaitElement(this.uaToolbox.getFilter());
+        this.uaToolbox.filterStream.subscribe((filter) => {
+          if (!current.parentElement)
+            return;
+          const next = this.createWaitElement(filter);
+          current.replaceWith(next);
+          current = next;
+        });
+        return current;
+      },
     };
     this.tabControl = ui.tabControl(tabs);
     this.root.appendChild(this.tabControl.root);
   }
 
-  createWaitElement(getElemFunc: (thisObj: ClicksView) => Promise<HTMLElement>, thisObj: ClicksView): HTMLElement {
-    const elem: HTMLElement = ui.wait(async () => await getElemFunc(thisObj));
+  createWaitElement(filter: UaFilter): HTMLElement {
+    const elem: HTMLElement = ui.wait(async () => this.getClickAnalysisTab(filter));
     elem.style.height = '100%';
     return elem;
   }
 
-  async getClickAnalysisTab(thisObj: ClicksView): Promise<HTMLDivElement> {
-    const table = await queries.getAggregatedClicks();
+  async getClickAnalysisTab(filter: UaFilter): Promise<HTMLDivElement> {
+    const table = await queries.getAggregatedClicks(filter.date!);
     table.name = 'Click Analysis';
     const descriptionCol = table.col('description');
     if (!descriptionCol)
@@ -56,9 +67,9 @@ export class ClicksView extends UaView {
       return lastPackage;
     };
 
-    const isPackageCol = table.columns.addNewBool('~Is Package');
-    const packageNameCol = table.columns.addNewString('~Package Name');
-    isPackageCol.init((i) => getPackageName(descriptionCol.get(i)) != null);
+    const sourceCol = table.columns.addNewString('Source');
+    const packageNameCol = table.columns.addNewString('Package');
+    sourceCol.init((i) => getPackageName(descriptionCol.get(i)) != null ? 'Package' : 'Platform');
     packageNameCol.init((i) => getPackageName(descriptionCol.get(i)));
 
     const fillLevels = (idx: number, path: string | null) => {
@@ -107,9 +118,16 @@ export class ClicksView extends UaView {
     setGridColWidth('Level 3', 120);
     grid.sort(['count'], [false]);
 
+    const sourceGridCol = grid.col('Source');
+    if (sourceGridCol)
+      sourceGridCol.visible = false;
+    const packageGridCol = grid.col('Package');
+    if (packageGridCol)
+      packageGridCol.visible = false;
+
     const filters = ui.box();
     filters.style.maxWidth = '230px';
-    const filtersStyle = {columnNames: ['event_type', '~Is Package', '~Package Name', 'Level 1', 'Level 2', 'Level 3', 'count']};
+    const filtersStyle = {columnNames: ['event_type', 'Source', 'count', 'Package', 'Level 1', 'Level 2', 'Level 3']};
     const filtersRootToAdd = DG.Viewer.filters(table, filtersStyle).root;
     const filtersRootToAddChildren = Array.from(filtersRootToAdd.children);
     for (let i = 0; i < filtersRootToAddChildren.length - 1; i++)

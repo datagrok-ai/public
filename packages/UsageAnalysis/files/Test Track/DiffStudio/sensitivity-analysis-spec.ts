@@ -1,131 +1,197 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect, chromium} from '@playwright/test';
 
-const BASE_URL = 'https://public.datagrok.ai';
+const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 
-test.describe('DiffStudio / Sensitivity Analysis', () => {
-  let page: Page;
+const stepErrors: {step: string; error: string}[] = [];
 
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-    await page.goto(`${BASE_URL}/apps/DiffStudio`, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(2000);
-  });
+async function softStep(name: string, fn: () => Promise<void>) {
+  try {
+    await test.step(name, fn);
+  } catch (e: any) {
+    stepErrors.push({step: name, error: e.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+  }
+}
 
-  test.afterAll(async () => {
-    await page.close();
-  });
+test('DiffStudio Sensitivity Analysis: Bioreactor, select params, run Monte Carlo', async () => {
+  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  const context = browser.contexts()[0];
+  let page = context.pages().find(p => p.url().includes('datagrok'));
+  if (!page) {
+    page = await context.newPage();
+    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
+    await page.waitForFunction(() => {
+      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
+      catch { return false; }
+    }, {timeout: 45000});
+  }
 
-  test('Step 1: Load Bioreactor and turn off Edit toggle', async () => {
-    // Open Library > Bioreactor via combo popup
-    await page.evaluate(() => {
-      const btn = Array.from(document.querySelectorAll('.d4-combo-popup'))
-        .find((el: any) => el.classList.contains('diff-studio-ribbon-widget'));
-      if (btn) {
-        const r = btn.getBoundingClientRect();
-        btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
-      }
+  // Setup
+  await page.evaluate(async () => {
+    document.querySelectorAll('.d4-dialog').forEach(d => {
+      const cancel = d.querySelector('[name="button-CANCEL"]');
+      if (cancel) (cancel as HTMLElement).click();
     });
-    await page.waitForTimeout(500);
-
-    const bioreactorItem = page.locator('.d4-menu-item, .d4-menu-item-vert').filter({ hasText: 'Bioreactor' }).first();
-    await bioreactorItem.click();
-    await page.waitForTimeout(2000);
-
-    // Turn off Edit toggle (if it's on)
-    const editSwitch = page.locator('.ui-input-switch');
-    const isChecked = await editSwitch.evaluate((el: any) => el.classList.contains('ui-input-switch-on'));
-    if (isChecked) {
-      await editSwitch.click();
-      await page.waitForTimeout(500);
-    }
+    grok.shell.closeAll();
+    document.body.classList.add('selenium');
+    grok.shell.windows.simpleMode = false;
   });
 
-  test('Step 2: Click Sensitivity icon → SA view opens', async () => {
-    // Click Sensitivity ribbon item
-    const sensitivityBtn = page.locator('.d4-ribbon-item').filter({ hasText: 'Sensitivity' });
-    await sensitivityBtn.click();
-    await page.waitForTimeout(3000);
+  // Step 1: Open DiffStudio, load Bioreactor
+  await softStep('Step 1: Open DiffStudio and load Bioreactor', async () => {
+    await page!.evaluate(async () => {
+      await grok.functions.call('DiffStudio:runDiffStudio');
+      await new Promise(r => setTimeout(r, 3000));
 
-    // SA view opens as "Bioreactor - comparison"
-    await expect(page.locator('text=Bioreactor - comparison')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('text=Sensitivity Analysis')).toBeVisible();
+      const combo = document.querySelector('.diff-studio-ribbon-widget') as HTMLElement;
+      if (combo) combo.click();
+      await new Promise(r => setTimeout(r, 800));
+      let items = document.querySelectorAll('[role="menuitem"]');
+      const lib = Array.from(items).find(i => i.textContent?.trim().startsWith('Library'));
+      if (lib) (lib as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 800));
+      items = document.querySelectorAll('[role="menuitem"]');
+      const bio = Array.from(items).find(i => i.textContent?.trim() === 'Bioreactor');
+      if (bio) (bio as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 5000));
+    });
+
+    const info = await page!.evaluate(() => ({
+      rows: grok.shell.tv?.dataFrame?.rowCount,
+      cols: grok.shell.tv?.dataFrame?.columns?.length,
+    }));
+    expect(info.cols).toBe(13);
+    expect(info.rows).toBe(1001);
   });
 
-  test('Step 3: Select FFox, FFred, FKox parameters and modify Process mode', async () => {
-    // Change Process mode to Mode 1
-    await page.evaluate(() => {
+  // Step 2: Click Sensitivity icon
+  await softStep('Step 2: Open Sensitivity Analysis view', async () => {
+    await page!.evaluate(async () => {
+      const spans = document.querySelectorAll('span.diff-studio-ribbon-text');
+      const sensSpan = Array.from(spans).find(s => s.textContent?.trim() === 'Sensitivity');
+      if (sensSpan) (sensSpan as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 5000));
+    });
+
+    const viewName = await page!.evaluate(() => grok.shell.v?.name);
+    expect(viewName).toContain('comparison');
+  });
+
+  // Step 3: Modify Process mode, check FFox & KKox change; enable params
+  await softStep('Step 3: Modify Process mode and select parameters', async () => {
+    // Verify Process mode changes FFox
+    const modeResult = await page!.evaluate(async () => {
+      const getVal = (label: string) => {
+        const spans = document.querySelectorAll('label.ui-input-label span');
+        for (const span of spans) {
+          if (span.textContent?.trim() === label) {
+            const input = span.closest('label')?.nextElementSibling as HTMLInputElement;
+            if (input?.tagName === 'INPUT') return input.value;
+          }
+        }
+        return null;
+      };
+
+      const ffoxBefore = getVal('FFox');
       const selects = Array.from(document.querySelectorAll('select'));
-      const modeSelect = selects.find((s: any) => s.value === 'Default');
+      const modeSelect = selects.find(s => Array.from(s.options).some(o => o.text === 'Mode 1'));
       if (modeSelect) {
-        const nativeSet = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!;
-        nativeSet.call(modeSelect, 'Mode 1');
-        modeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        modeSelect.selectedIndex = 1;
+        modeSelect.dispatchEvent(new Event('input', {bubbles: true}));
+        modeSelect.dispatchEvent(new Event('change', {bubbles: true}));
+        await new Promise(r => setTimeout(r, 2000));
       }
-    });
-    await page.waitForTimeout(1000);
+      const ffoxAfter = getVal('FFox');
 
-    // Ensure FFox, FFred, FKox are enabled (blue switchers)
-    // FFox min/max should have non-zero range by default
-    const ffoxMin = await page.evaluate(() => {
-      const inputs = Array.from(document.querySelectorAll('input[type="text"], input:not([type])'));
-      return (inputs.find((i: any) => i.value === '0.15') as HTMLInputElement)?.value;
+      // Reset
+      if (modeSelect) {
+        modeSelect.selectedIndex = 0;
+        modeSelect.dispatchEvent(new Event('input', {bubbles: true}));
+        modeSelect.dispatchEvent(new Event('change', {bubbles: true}));
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      return {ffoxBefore, ffoxAfter, changed: ffoxBefore !== ffoxAfter};
     });
-    expect(ffoxMin).toBe('0.15');
+    expect(modeResult.changed).toBe(true);
 
-    // Set FKox max to a valid non-zero value (default is 0)
-    await page.evaluate(() => {
-      const labels = Array.from(document.querySelectorAll('*'));
-      // Find the FKox max textbox
-      const fkoxMaxInputs = Array.from(document.querySelectorAll('input')).filter((i: any) => {
-        const prev = i.previousSibling || i.closest('.d4-flex-row')?.querySelector('span');
-        return false; // Will use positional approach
-      });
-      // Use positional approach: FKox max is near FKox min
-      const allInputs = Array.from(document.querySelectorAll('input'));
-      // Find FKox min (value=0) followed by FKox max (also value=0)
-      for (let i = 0; i < allInputs.length - 1; i++) {
-        if ((allInputs[i] as HTMLInputElement).value === '0' &&
-            (allInputs[i + 1] as HTMLInputElement).value === '0') {
-          (allInputs[i + 1] as HTMLInputElement).value = '0.05';
-          allInputs[i + 1].dispatchEvent(new Event('change', { bubbles: true }));
-          allInputs[i + 1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-          break;
+    // Enable switches for FFox, FFred, FKox
+    const switchResult = await page!.evaluate(async () => {
+      const inputMap: {label: string; top: number}[] = [];
+      const spans = document.querySelectorAll('label.ui-input-label span');
+      for (const span of spans) {
+        const label = span.closest('label');
+        const input = label?.nextElementSibling as HTMLInputElement;
+        if (input?.tagName === 'INPUT') {
+          const rect = input.getBoundingClientRect();
+          if (rect.width > 0)
+            inputMap.push({label: span.textContent?.trim() ?? '', top: rect.top});
         }
       }
+
+      const switches = Array.from(document.querySelectorAll('div.ui-input-switch'));
+      const sortedSwitches = switches
+        .map(s => ({el: s, top: s.getBoundingClientRect().top, on: s.classList.contains('ui-input-switch-on')}))
+        .filter(s => s.top > 0)
+        .sort((a, b) => a.top - b.top);
+
+      const targetParams = ['FFox', 'FKox', 'FFred'];
+      const clicked: string[] = [];
+      for (const sw of sortedSwitches) {
+        const nearest = inputMap.reduce((best, inp) =>
+          Math.abs(inp.top - sw.top) < Math.abs(best.top - sw.top) ? inp : best
+        , inputMap[0]);
+        if (nearest && Math.abs(nearest.top - sw.top) < 30) {
+          if (targetParams.includes(nearest.label) && !sw.on) {
+            (sw.el as HTMLElement).click();
+            clicked.push(nearest.label);
+          }
+        }
+      }
+      await new Promise(r => setTimeout(r, 1000));
+      return {clicked};
     });
-    await page.waitForTimeout(500);
+    expect(switchResult.clicked.length).toBeGreaterThanOrEqual(1);
   });
 
-  test('Step 4: Run SA and verify 4 viewers open', async () => {
-    // Click the green play button
-    await page.evaluate(() => {
-      const playBtn = document.querySelector('.fas.fa-play') as HTMLElement;
-      if (playBtn) playBtn.click();
+  // Step 4: Run sensitivity analysis, verify 4 viewers
+  await softStep('Step 4: Run analysis and verify viewers', async () => {
+    // Make play button accessible and click via real mouse
+    await page!.evaluate(() => {
+      const playIcon = document.querySelector('.d4-ribbon-item i.fa-play');
+      if (playIcon) {
+        const parent = playIcon.closest('.d4-ribbon-item')!;
+        parent.setAttribute('role', 'button');
+        parent.setAttribute('aria-label', 'Run analysis');
+      }
     });
-    await page.waitForTimeout(5000);
 
-    // Verify rows > 0 (SA produced data)
-    const rowsText = await page.evaluate(() => {
-      const status = Array.from(document.querySelectorAll('*')).find((el: any) =>
-        el.textContent?.match(/Rows: \d+/) && el.children.length === 0
-      );
-      return status?.textContent;
+    const playPos = await page!.evaluate(() => {
+      const playIcon = document.querySelector('.d4-ribbon-item i.fa-play');
+      if (!playIcon) return null;
+      const rect = playIcon.getBoundingClientRect();
+      return {x: rect.left + rect.width / 2, y: rect.top + rect.height / 2};
     });
-    expect(rowsText).toMatch(/Rows: [1-9]/);
+    expect(playPos).not.toBeNull();
+    await page!.mouse.click(playPos!.x, playPos!.y);
 
-    // Verify 4 viewer types are present
-    // Correlation plot
-    const corrPlot = page.locator('.d4-correlation-plot, [class*="correlation"], canvas').first();
-    await expect(corrPlot).toBeVisible({ timeout: 10000 });
-
-    // PC plot
-    const pcPlot = page.locator('.d4-pc-plot, [class*="pc-plot"], canvas').first();
-    await expect(pcPlot).toBeVisible();
-
-    // The view should have multiple canvas-based viewers
-    const canvasCount = await page.evaluate(() =>
-      document.querySelectorAll('canvas').length
-    );
-    expect(canvasCount).toBeGreaterThanOrEqual(3);
+    // Wait for results
+    let canvases = 0;
+    let rows = 0;
+    for (let i = 0; i < 25; i++) {
+      await page!.waitForTimeout(2000);
+      canvases = await page!.evaluate(() => document.querySelectorAll('canvas').length);
+      rows = await page!.evaluate(() => grok.shell.tv?.dataFrame?.rowCount ?? 0);
+      if (canvases >= 4 && rows > 0) break;
+    }
+    expect(rows).toBeGreaterThan(0);
+    expect(canvases).toBeGreaterThanOrEqual(4);
   });
+
+  // Cleanup
+  await page.evaluate(() => grok.shell.closeAll());
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });

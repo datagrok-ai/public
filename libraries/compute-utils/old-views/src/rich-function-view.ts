@@ -709,7 +709,7 @@ export class RichFunctionView extends FunctionView {
         await new Promise((resolve) => setTimeout(resolve, 100));
         grok.shell.windows.help.showHelp(ui.markdown((await this.getContextHelp())!));
       }
-    });
+    }, 'Info');
 
     const newRibbonPanels = [[
       ...super.buildRibbonPanels().flat(),
@@ -1427,7 +1427,7 @@ export class RichFunctionView extends FunctionView {
     $(resetIcon).addClass('rfv-icon-undo');
     $(resetIcon).css({color: `var(--blue-2)`});
 
-    const warningIcon = ui.iconFA('exclamation-circle', null);
+    const warningIcon = ui.iconFA('exclamation-circle', null, 'Validation');
     ui.tooltip.bind(warningIcon, () => `Current value is incosistent. Computed value was ${DG.TYPES_SCALAR.has(param.property.propertyType) ? this.getRestrictedValue(paramName): 'different'}`);
     $(warningIcon).addClass('rfv-icon-warning');
     $(warningIcon).css({color: `var(--orange-2)`});

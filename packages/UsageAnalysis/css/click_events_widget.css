@@ -1,0 +1,100 @@
+.clicks-widget {
+  width: 100%;
+  padding-left: 12px;
+  height: 100%;
+}
+
+.clicks-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--grey-4);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 6px 0 0 0;
+  flex: 0 0 auto;
+}
+
+.clicks-filters-form {
+  flex: 0 0 auto;
+}
+
+.clicks-view-row {
+  gap: 16px;
+  align-items: center;
+  padding: 3px 0 3px 4px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.clicks-picker-row {
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 4px 0;
+  cursor: pointer;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.clicks-picker-row i {
+  cursor: pointer;
+}
+
+.clicks-event-count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--grey-4);
+  padding: 0 4px 2px;
+  text-align: right;
+}
+
+.clicks-grid-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.clicks-activity-stream {
+  min-height: 70px;
+  flex: 0 0 auto;
+}
+
+.clicks-activity-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--grey-4);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 6px 0 2px 0;
+}
+
+.clicks-activity-empty {
+  font-size: 11px;
+  color: var(--grey-3);
+  padding: 2px 0;
+  font-style: italic;
+}
+
+.clicks-activity-entry {
+  font-size: 12px;
+  color: var(--grey-6);
+  padding: 1px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clicks-zone-overlay {
+  position: fixed;
+  z-index: 2147483640;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.clicks-pick-highlight {
+  position: fixed;
+  z-index: 2147483647;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 2px solid rgba(50, 150, 255, 1);
+  background-color: rgba(50, 150, 255, 0.3);
+}

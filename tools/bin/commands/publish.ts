@@ -69,6 +69,19 @@ function discoverDockerfiles(packageName: string, version: string, debug: boolea
       fullLocalName: `${imageName}:${imageTag}`,
     });
   }
+
+  // Handle Dockerfile directly in dockerfiles/ (single-container layout)
+  const rootDockerfile = path.join(dockerfilesDir, 'Dockerfile');
+  if (fs.existsSync(rootDockerfile)) {
+    const cleanName = utils.removeScope(packageName).toLowerCase();
+    results.push({
+      imageName: cleanName,
+      imageTag: version,
+      dirName: '.',
+      fullLocalName: `${cleanName}:${version}`,
+    });
+  }
+
   return results;
 }
 
@@ -289,6 +302,8 @@ async function processDockerImages(
           const remoteTag = `${registry}/datagrok/${remoteFullName}`;
           dockerTag(img.fullLocalName, remoteTag);
         }
+        else
+          dockerTag(img.fullLocalName, `datagrok/${remoteFullName}`);
         color.success(`Built and tagged ${img.fullLocalName}`);
         return pushImage(img.imageName, registryTag, registry);
       }
@@ -320,6 +335,11 @@ async function processDockerImages(
           if (foundLocalName !== remoteTag)
             dockerTag(foundLocalName, remoteTag);
         }
+        else {
+          const canonicalTag = `datagrok/${remoteFullName}`;
+          dockerTag(foundLocalName, canonicalTag);
+          color.log(`  Tagged as ${canonicalTag}`);
+        }
         result = pushImage(img.imageName, registryTag, registry);
       }
       else {
@@ -339,6 +359,10 @@ async function processDockerImages(
           result = buildAndPush() ?? {image: fallback.image, fallback: true, requestedVersion: registryTag};
           if (!result || result.fallback)
             color.warn(`Build failed. Falling back to ${fallback.image} (hash mismatch)`);
+        }
+        else if (skipDockerRebuild) {
+          color.warn(`No fallback available. Skipping docker build (--skip-docker-rebuild).`);
+          result = {image: null, fallback: true, requestedVersion: registryTag};
         }
         else {
           // No fallback and no local image — must build
@@ -371,7 +395,7 @@ function pushImage(imageName: string, tag: string, registry: string | undefined)
     color.warn(`Push failed, image tagged locally only: ${remoteTag}`);
     return {image: canonicalImage, fallback: false};
   }
-  color.warn('No registry configured. Image tagged locally only.');
+  color.warn(`No registry configured. Image tagged locally only. Run \`grok config --registry\` to configure.`);
   return {image: canonicalImage, fallback: false};
 }
 

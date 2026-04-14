@@ -1,5 +1,9 @@
 # Usage Analysis changelog
 
+## 2.5.1 ()
+
+* Click Events widget: Added date range filter, section labels, highlight zones tooltip
+
 ## 2.5.0 (2026-03-20)
 
 ### Features

@@ -420,9 +420,25 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
   margin-top: 10px !important;
 }
 
+.dlg-add-new-column .ui-widget-addnewcolumn-columns {
+    height: 100%!important;
+}
+
+.dlg-add-new-column .ui-widget-addnewcolumn-functions .grok-actions-browser {
+    overflow-x: hidden !important;
+}
+
 .ui-widget-addnewcolumn-columns, .ui-widget-addnewcolumn-functions {
   display: flex;
   flex-grow: 1;
+}
+
+.ui-widget-addnewcolumn-columns .add-new-column-columns-grid {
+    min-width: unset!important;
+}
+
+.ui-widget-addnewcolumn-columns .add-new-column-columns-grid .d4-layout-center {
+    height: 100%!important;
 }
 
 .ui-widget-addnewcolumn-functions #categories-div {

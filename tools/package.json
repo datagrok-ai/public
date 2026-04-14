@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "6.1.6",
+  "version": "6.1.9",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
@@ -32,7 +32,11 @@
     "prepublishOnly": "babel bin --extensions .ts -d bin",
     "babel": "babel bin --extensions .ts -d bin",
     "build": "babel bin --extensions .ts -d bin",
-    "debug-source-map": "babel bin --extensions .ts -d bin --source-maps true"
+    "debug-source-map": "babel bin --extensions .ts -d bin --source-maps true",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:all": "vitest run"
   },
   "bin": {
     "datagrok-upload": "./bin/_deprecated/upload.js",
@@ -76,6 +80,7 @@
     "eslint": "^8.56.0",
     "eslint-config-google": "^0.14.0",
     "typescript": "^5.3.3",
+    "vitest": "^3.2.4",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   }

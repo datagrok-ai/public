@@ -139,6 +139,7 @@ For all parameters:
 | postfix    | string | Field postfix                                                             |
 | units      | string | Value unit name                                                           |
 | nullable   | bool   | Makes it an [optional parameter](#initial-values-and-optional-parameters) |
+| category   | string | Groups the parameter under a named section in the function dialog. See [parameter groups](#parameter-groups). |
 
 For `dataframe` type:
 
@@ -207,6 +208,69 @@ WHERE lastName in (SELECT unnest(@employee))
 
 </div>
 </details>
+
+### Parameter groups
+
+Use `category` to group related parameters under a shared section header in the function dialog:
+
+```js
+//input: double learningRate {category: Hyperparameters}
+//input: double momentum {category: Hyperparameters}
+//input: int epochs {category: Training}
+```
+
+For functions with many parameter groups, use `meta.categoryGroups` to organize categories into a
+hierarchy of collapsible sections. The value is a JSON object where keys are section headers and
+values are lists of category names:
+
+```js
+//meta.categoryGroups: {"Model": ["Input Data", "Architecture"], "Training": ["Hyperparameters", "Optimizer"]}
+//input: dataframe data {category: Input Data}
+//input: int layers {category: Architecture}
+//input: double learningRate {category: Hyperparameters}
+//input: string optimizer {category: Optimizer}
+```
+
+This renders as:
+
+```
+▸ Model
+  ▸ Input Data
+    data
+  ▸ Architecture
+    layers
+▸ Training
+  ▸ Hyperparameters
+    learningRate
+  ▸ Optimizer
+    optimizer
+```
+
+A group header category can also contain direct inputs alongside sub-groups. Assign an input the
+same category name as the group header, and it appears directly under that header before any
+sub-groups:
+
+```js
+//meta.categoryGroups: {"All Params": ["Group A", "Group B"]}
+//input: double a {category: Group A}
+//input: double b {category: Group A}
+//input: double c {category: Group B}
+//input: double d {category: Group B}
+//input: double e {category: All Params}
+```
+
+```
+▸ All Params
+  e
+  ▸ Group A
+    a, b
+  ▸ Group B
+    c, d
+```
+
+When all parameters in a category are hidden programmatically (via `input.visible = false`),
+the category header hides automatically. If all sub-categories under a section header are also
+hidden, that header hides too.
 
 ### Initial values and optional parameters
 

@@ -108,7 +108,7 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
 
   async function _testMSAOnColumn(
     srcCsv: string, tgtCsv: string,
-    srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string,
+    srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, engineMethod?: string,
   ): Promise<void> {
     const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
     await grok.data.detectSemanticTypes(srcDf);
@@ -121,7 +121,11 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
     if (alphabet)
       expect(srcCol.getTag(bioTAGS.alphabet), alphabet);
 
-    const msaSeqCol = await multipleSequenceAlignmentUI({col: srcCol, pepsea: {method: pepseaMethod}}, seqHelper);
+    const msaSeqCol = await multipleSequenceAlignmentUI({
+      col: srcCol,
+      engine: engineMethod ? 'PepSeA' : undefined,
+      engineParams: engineMethod ? {method: engineMethod} : undefined,
+    }, seqHelper);
     expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
     expect(msaSeqCol.meta.units, tgtNotation);
     expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);

@@ -162,7 +162,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         return;
       }
       this.handleRun();
-    });
+    }, 'Send');
     this.textArea.addEventListener('keydown', (event: KeyboardEvent) => {
       if (event.key === 'Escape' && this._skillMenu) {
         this._skillMenu.hide();
@@ -265,12 +265,17 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     });
   }
 
-  show() {
+  show(focus: boolean = false) {
+    // Opening the AI panel steals focus from the active element (e.g., query editor)
+    const previouslyFocused = document.activeElement as HTMLElement | null;
     const aiContainer = grok.shell.windows.ai;
     if (!aiContainer.contains(this.root))
       aiContainer.appendChild(this.root);
     grok.shell.windows.showAI = true;
-    this.textArea.focus();
+    if (focus)
+      this.textArea.focus();
+    else
+      previouslyFocused?.focus();
   }
 
   hide() {
@@ -303,7 +308,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   toggle() {
-    this.isShown ? this.hide() : this.show();
+    this.isShown ? this.hide() : this.show(true);
   }
 
   dispose() {
