@@ -1134,6 +1134,10 @@ export class AddNewColumnDialog {
     control.append(this.widgetFunctions!.root);
     control.classList.add('ui-widget-addnewcolumn-functions');
     control.style.height = 'inherit';
+    // Opt out of ui.css's broad `div.ui-box > *` overflow:auto rule so our own
+    // overflow-x: hidden wins (see power-pack.css). `.ui-div` is in that rule's
+    // :not() exclusion list and has minimal styling side effects.
+    this.widgetFunctions!.root.classList.add('ui-div');
     return control;
   }
 
