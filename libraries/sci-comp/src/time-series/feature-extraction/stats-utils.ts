@@ -2,7 +2,8 @@
  * Statistical utility functions (wrappers around jStat).
  */
 
-import {jStat} from 'jstat';
+//@ts-ignore: no types
+import * as jStat from 'jstat';
 
 /** Cumulative distribution function of Student's t-distribution. */
 export function tdistCdf(t: number, df: number): number {
