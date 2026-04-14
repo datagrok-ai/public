@@ -303,6 +303,7 @@ export enum UI_TIME {
   WGT_CLICK = 10,
   FACET_DOCKING = 100,
   TITLE_REMOVING = 500,
+  DBL_CLICK_DELAY = 250,
 };
 
 /** Numerical methods names */

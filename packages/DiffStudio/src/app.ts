@@ -400,7 +400,13 @@ export class DiffStudio {
     this.editorView!.dom.addEventListener('keydown', async (e) => saveBtn.hidden = false);
 
     this.toRunWhenFormCreated = true;
+    this.schedulePreviewDock();
 
+    return this.solverView;
+  } // getFilePreview
+
+  /** Dock the inputs tab on the left and kick off solving — shared by previews */
+  private schedulePreviewDock(): void {
     setTimeout(() => {
       const node = this.solverView.dockManager.dock(
         this.tabControl.root,
@@ -414,9 +420,28 @@ export class DiffStudio {
 
       this.runSolving();
     }, UI_TIME.PREVIEW_RUN_SOLVING);
+  }
+
+  /** Return preview view for a built-in template/example */
+  public async getStatePreview(state: EDITOR_STATE): Promise<DG.View> {
+    closeWindows();
+    const equations = MODEL_BY_STATE.get(state) as string;
+
+    await this.createEditorView(equations);
+
+    this.editorState = state;
+    this.solverView.helpUrl = getLink(state);
+    this.entityPath = stateToPath(state);
+    this.toChangePath = true;
+
+    this.solverView.setRibbonPanels(this.getRibbonPanels());
+    this.updateRibbonWgts();
+
+    this.toRunWhenFormCreated = true;
+    this.schedulePreviewDock();
 
     return this.solverView;
-  } // getFilePreview
+  } // getStatePreview
 
   /** Run Diff Studio with the specified content */
   public async handleContent(content: string): Promise<void> {
@@ -457,6 +482,21 @@ export class DiffStudio {
   private startingPath = '';
   private startingInputs: Map<string, number> | null = null;
   private solverView: DG.TableView;
+
+  /** Tracks DiffStudio preview views so a new preview can close the previous ones. */
+  private static openPreviews = new Set<DG.ViewBase>();
+
+  /** Close all tracked DiffStudio previews. */
+  private static closeOpenPreviews(): void {
+    for (const v of DiffStudio.openPreviews) {
+      try {
+        v.close();
+      } catch (e) {
+        //view already disposed
+      }
+    }
+    DiffStudio.openPreviews.clear();
+  }
 
   private entityPath: string = PATH.CUSTOM;
   private mainPath: string = PATH.APPS_DS;
@@ -1753,21 +1793,46 @@ export class DiffStudio {
   private putBuiltInModelToFolder(name: TITLE, folder: DG.TreeViewGroup): void {
     const item = folder.item(name);
     ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
+    const state = STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE;
 
-    item.onSelected.subscribe(async () => {
-      const panelRoot = this.appTree.rootNode.root.parentElement!;
-      const treeNodeY = panelRoot.scrollTop!;
+    // Debounce single-click so a following dblclick can cancel the preview open.
+    let previewTimer: number | null = null;
+
+    item.onSelected.subscribe(() => {
+      if (previewTimer !== null)
+        return;
+      previewTimer = window.setTimeout(async () => {
+        previewTimer = null;
+        const panelRoot = this.appTree.rootNode.root.parentElement!;
+        const treeNodeY = panelRoot.scrollTop!;
+
+        DiffStudio.closeOpenPreviews();
+        const solver = new DiffStudio(false, true, true);
+        const preview = await solver.getStatePreview(state);
+        DiffStudio.openPreviews.add(preview);
+        grok.shell.addPreview(preview);
+
+        setTimeout(() => {
+          panelRoot.scrollTo(0, treeNodeY);
+          item.root.focus();
+        }, UI_TIME.BROWSING);
+      }, UI_TIME.DBL_CLICK_DELAY);
+    });
+
+    item.root.addEventListener('dblclick', async (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+
+      if (previewTimer !== null) {
+        clearTimeout(previewTimer);
+        previewTimer = null;
+      }
 
       const solver = new DiffStudio(false);
-      grok.shell.addView( await solver.runSolverApp(
-        undefined,
-        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-      ) as DG.View, undefined, null, null);
-
-      setTimeout(() => {
-        panelRoot.scrollTo(0, treeNodeY);
-        item.root.focus();
-      }, UI_TIME.BROWSING);
+      grok.shell.addView(
+        await solver.runSolverApp(undefined, state) as DG.View,
+        undefined, null, null,
+      );
     });
   }
 
@@ -1793,8 +1858,11 @@ export class DiffStudio {
         const treeNodeY = panelRoot.scrollTop!;
 
         if (exist) {
+          DiffStudio.closeOpenPreviews();
           const solver = new DiffStudio(false, true, true);
-          grok.shell.addView(await solver.getFilePreview(file, path));
+          const preview = await solver.getFilePreview(file, path);
+          DiffStudio.openPreviews.add(preview);
+          grok.shell.addPreview(preview);
           await this.saveModelToRecent(path, true);
         } else
           grok.shell.warning(`File not found: ${path}`);
