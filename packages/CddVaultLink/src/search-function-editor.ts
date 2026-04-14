@@ -205,6 +205,20 @@ export class SeachEditor {
     }
 
 
+    public reset(): void {
+        this.protocolInNotIn.value = IN_NOT_IN_COND_CHOICES[0];
+        this.protocolListChoice.value = '';
+        this.runAndReadoutDiv.style.display = 'none';
+        this.runChoice.value = PROTOCOL_RUN_COND_CHOICES[0];
+        this.runListChoiceDiv.style.display = 'none';
+        this.structureInput.value = '';
+        this.structureSearchTypeChoice.value = CDD_SEARCH_TYPES[0];
+        this.similarityThreshold.value = 0.7;
+        this.similarityThreshold.root.style.display = 'none';
+        this.hasRestoredSearch = false;
+        grok.userSettings.delete(LAST_SEARCH_KEY, String(this.vaultId));
+    }
+
     public getEditor(): HTMLElement {
         return this.accordion.root;
     }

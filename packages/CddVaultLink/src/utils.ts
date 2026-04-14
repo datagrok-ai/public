@@ -575,8 +575,37 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
   };
   const runSearchButton = ui.button('Search', runSearch);
 
+  const resetIcon = ui.iconFA('redo', async () => {
+    funcEditor.reset();
+    ui.setUpdateIndicator(tv.grid.root, true);
+    try {
+      const df: DG.DataFrame = await grok.functions.call('CDDVaultLink:getMolecules',
+        { vaultId: vault.id, moleculesIds: '' });
+      if (df) {
+        df.name = `Vault: ${vault.id}`;
+        tv.dataFrame = df;
+        adjustIdColumnWidth(tv);
+
+        if (df.rowCount < PREVIEW_ROW_NUM) {
+          const info = ui.divText(`Showing all ${df.rowCount} rows`,
+            {style: {alignSelf: 'center', marginRight: '8px', pointerEvents: 'none', cursor: 'default'}});
+          tv.setRibbonPanels([[filtersButton], [info]]);
+        } else {
+          tv.setRibbonPanels([[filtersButton]]);
+          attachLoadAllRibbon(tv, [MOLECULES_TAB], 'CDDVaultLink:getMoleculesAsync',
+            { vaultId: vault.id, moleculesIds: '', timeoutMinutes: 5 });
+        }
+      }
+    } catch (e: any) {
+      grok.shell.error(e?.message ?? e);
+    } finally {
+      ui.setUpdateIndicator(tv.grid.root, false);
+    }
+  }, 'Reset search');
+
   filtersDiv.append(acc);
-  filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
+  filtersDiv.append(ui.divH([runSearchButton, resetIcon],
+    { style: { paddingLeft: '4px', alignItems: 'center', gap: '8px' } }));
 
   funcEditor.initComplete.then(() => {
     if (funcEditor.hasRestoredSearch)
