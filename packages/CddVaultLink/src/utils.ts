@@ -4,13 +4,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse,
-  Batch, Project, Vault, Molecule} from './cdd-vault-api';
+  Batch, Project, Vault, Molecule, CDD_HOST} from './cdd-vault-api';
 import {ALL_TABS, BATCHES_TAB, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS,
   MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB} from './constants';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {SearchEditor} from './search-function-editor';
 
-export const CDD_HOST = 'https://app.collaborativedrug.com/';
 export const PREVIEW_ROW_NUM = 100;
 const CDD_VAULT_APP_PATH: string = 'apps/Cddvaultlink';
 
@@ -69,7 +68,7 @@ export function prepareDataForDf(objects: any[]) {
 }
 
 export async function getAsyncResults(vaultId: number, exportId: number,
-  timeoutMinutes: number, text: boolean): Promise<ApiResponse<any>> {
+  timeoutMinutes: number, binary: boolean): Promise<ApiResponse<any>> {
   const timeoutMs = timeoutMinutes * 60 * 1000;
   const startTime = Date.now();
 
@@ -81,7 +80,7 @@ export async function getAsyncResults(vaultId: number, exportId: number,
 
     const status = statusResponse.data?.status;
     if (status === 'finished') {
-      const resultResponse = await queryExportResult(vaultId, exportId, text);
+      const resultResponse = await queryExportResult(vaultId, exportId, binary);
       if (resultResponse.error)
         throw resultResponse.error;
       return resultResponse;
@@ -98,10 +97,10 @@ export async function getAsyncResults(vaultId: number, exportId: number,
  *  Throws on any error from `startQuery` or during polling (same as calling the parts manually). */
 export async function runAsyncExport(vaultId: number,
   startQuery: () => Promise<ApiResponse<ExportStatus>>,
-  timeoutMinutes: number, text: boolean = false): Promise<ApiResponse<any>> {
+  timeoutMinutes: number, binary: boolean = false): Promise<ApiResponse<any>> {
   const exportResponse = await startQuery();
   const exportId = getExportId(exportResponse);
-  return await getAsyncResults(vaultId, exportId, timeoutMinutes, text);
+  return await getAsyncResults(vaultId, exportId, timeoutMinutes, binary);
 }
 
 /** Same as runAsyncExport, but converts the result into a DataFrame (SDF or JSON objects). */
@@ -131,46 +130,44 @@ export async function createCddDfFromObjects(objects: any[] | undefined,
   if (!objects)
     return DG.DataFrame.create();
   prepareDataForDf(objects);
-  const df = DG.DataFrame.fromObjects(objects)!;
-  if (!df)
-    return DG.DataFrame.create();
+  const df = DG.DataFrame.fromObjects(objects) ?? DG.DataFrame.create();
   postProcess?.(df);
   reorderColumns(df);
   await grok.data.detectSemanticTypes(df);
   return df;
 }
 
-export async function createMoleculesDfFromObjects(vaultId: number, objects?: any[]) {
+export async function createMoleculesDfFromObjects(vaultId: number, objects?: any[]): Promise<DG.DataFrame> {
   return createCddDfFromObjects(objects, (df) => createLinksFromIds(vaultId, df));
 }
 
-export async function createMoleculeIdLinks(vaultId: number, df: DG.DataFrame) {
+export function createMoleculeIdLinks(vaultId: number, df: DG.DataFrame): void {
   const idCol = df.col('molecule_id');
   if (idCol) {
     const linkCol = DG.Column.string('molecule_id', df.rowCount).init((i) => {
       const id = idCol.get(i);
-      return id != null ? `[${id}](${`${CDD_HOST}vaults/${vaultId}/molecules/${id}/`})` : '';
+      return id != null ? `[${id}](${`${CDD_HOST}/vaults/${vaultId}/molecules/${id}/`})` : '';
     });
     df.columns.replace(idCol, linkCol);
   }
 }
 
-export async function createBatchesDfFromObjects(vaultId: number, objects?: any[]) {
+export async function createBatchesDfFromObjects(vaultId: number, objects?: any[]): Promise<DG.DataFrame> {
   return createCddDfFromObjects(objects, (df) => createMoleculeIdLinks(vaultId, df));
 }
 
-export async function createLinksFromIds(vaultId: number, df: DG.DataFrame) {
+export function createLinksFromIds(vaultId: number, df: DG.DataFrame): void {
   const idCol = df.col('id');
   if (idCol) {
     const linkIdsCol = DG.Column.string('id', df.rowCount).init((i) => {
       const id = idCol.get(i);
-      return `[${id}](${`${CDD_HOST}vaults/${vaultId}/molecules/${id}/`})`;
+      return id != null ? `[${id}](${`${CDD_HOST}/vaults/${vaultId}/molecules/${id}/`})` : '';
     });
     df.columns.replace(idCol, linkIdsCol);
   }
 }
 
-export async function reorderColumns(df: DG.DataFrame) {
+export function reorderColumns(df: DG.DataFrame): void {
   const colNames = df.columns.names();
   const firstColumns = ['id', 'name', 'smiles'];
   const newColOrder = [];
@@ -184,10 +181,10 @@ export async function reorderColumns(df: DG.DataFrame) {
   df.columns.setOrder(newColOrder.concat(colNames));
 }
 
-export function paramsStringFromObj(params: any): string {
+export function paramsStringFromObj(params: Record<string, any>): string {
   const usp = new URLSearchParams();
   for (const [key, val] of Object.entries(params)) {
-    if (val)
+    if (val !== undefined && val !== null)
       usp.append(key, String(val));
   }
   const str = usp.toString();
@@ -354,7 +351,7 @@ export async function openCddNode(treeNode: DG.TreeViewGroup, currentVault?: str
             //look for inner category from URL and open it
             if (currentSubView) {
               await awaitCheck(() => tab.items.length > 0, `CDD tabs haven't been loaded in 10 seconds`, 10000);
-              const innerView = treeNode.items.find((node) => node.text === currentSubView);
+              const innerView = tab.items.find((node) => node.text === currentSubView);
               if (!innerView) {
                 tab.root.click();
                 grok.shell.warning(`${currentSubView} id doesn't exist in ${currentView}`);
@@ -373,24 +370,38 @@ export async function openCddNode(treeNode: DG.TreeViewGroup, currentVault?: str
   }
 }
 
-export function createNestedCDDNode(items: any[] | null, nodeName: string, vaultNode: DG.TreeViewGroup,
-  getItemsFunsName: string, getItemsFuncParams: any, treeNode: DG.TreeViewGroup, vault: Vault,
+export function createNestedCDDNode(_initialItems: any[] | null, nodeName: string, vaultNode: DG.TreeViewGroup,
+  getItemsFuncName: string, getItemsFuncParams: any, treeNode: DG.TreeViewGroup, vault: Vault,
   onItemSelected: (item: any) => Promise<void>) {
   const nestedNode = vaultNode.group(nodeName, null, false);
-  const loadData = async () => {
-    if (!items) {
-      try {
-        const itemsStr = await grok.functions.call(getItemsFunsName, getItemsFuncParams);
-        items = itemsStr !== '' ? JSON.parse(itemsStr) as any[] : [];
-      } catch (e: any) {
-        grok.shell.error(e?.message ?? e);
-        if (openedView) {
-          ui.setUpdateIndicator(openedView.root, false);
-          ui.empty(openedView.root);
-          openedView.root.append(ui.divText(`Error`));
-        }
+  let items: any[] | null = _initialItems;
+  let childItemsBuilt = false;
+  const loadData = async (): Promise<boolean> => {
+    if (items) return true;
+    try {
+      const itemsStr = await grok.functions.call(getItemsFuncName, getItemsFuncParams);
+      items = itemsStr !== '' ? JSON.parse(itemsStr) as any[] : [];
+      return true;
+    } catch (e: any) {
+      grok.shell.error(e?.message ?? e);
+      if (openedView) {
+        ui.setUpdateIndicator(openedView.root, false);
+        ui.empty(openedView.root);
+        openedView.root.append(ui.divText(`Error`));
       }
+      return false;
     }
+  };
+  const buildChildItems = () => {
+    if (childItemsBuilt || !items) return;
+    for (const item of items) {
+      const itemNode = nestedNode.item(item.name);
+      itemNode.onSelected.subscribe(async () => {
+        await onItemSelected(item);
+        setBreadcrumbsInViewName([nodeName, item.name], treeNode);
+      });
+    }
+    childItemsBuilt = true;
   };
   nestedNode.onSelected.subscribe(async () => {
     openedView?.close();
@@ -400,7 +411,8 @@ export function createNestedCDDNode(items: any[] | null, nodeName: string, vault
     ui.setUpdateIndicator(openedView.root, true, `Loading ${nodeName}...`);
     openedView.name = nodeName;
     setBreadcrumbsInViewName([vault.name, nodeName], treeNode);
-    await loadData();
+    const ok = await loadData();
+    if (!ok) return;
     const links = items!.length ? createLinks(nodeName, items!.map((it) => it.name), treeNode, openedView) :
       ui.divText(`No ${nodeName} found in the vault`);
     ui.empty(openedView.root);
@@ -411,14 +423,9 @@ export function createNestedCDDNode(items: any[] | null, nodeName: string, vault
   });
 
   nestedNode.onNodeExpanding.subscribe(async () => {
-    await loadData();
-    for (const item of items!) {
-      const itemNode = nestedNode.item(item.name);
-      itemNode.onSelected.subscribe(async () => {
-        await onItemSelected(item);
-        setBreadcrumbsInViewName([nodeName, item.name], treeNode);
-      });
-    }
+    const ok = await loadData();
+    if (!ok) return;
+    buildChildItems();
   });
 }
 
@@ -592,7 +599,7 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
   const runSearchButton = ui.button('Search', runSearch);
 
   const resetIcon = ui.iconFA('redo', async () => {
-    funcEditor.reset();
+    await funcEditor.reset();
     ui.setUpdateIndicator(tv.grid.root, true);
     try {
       const df: DG.DataFrame = await grok.functions.call('CDDVaultLink:getMolecules',
@@ -676,14 +683,14 @@ export function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): 
       const batchesAcc = ui.accordion(key);
       const batches = (obj as Molecule)[key] as Batch[];
       batchesAcc.addPane(key, () => {
-        const innerbatchesAcc = ui.accordion();
+        const innerBatchesAcc = ui.accordion();
         for (const batch of batches)
-          innerbatchesAcc.addPane(batch.id.toString(), () => createCDDContextPanel(batch));
+          innerBatchesAcc.addPane(batch.id.toString(), () => createCDDContextPanel(batch));
 
-        return innerbatchesAcc.root;
+        return innerBatchesAcc.root;
       });
       accordions.append(batchesAcc.root);
-    } else if (key === 'collections' || key === 'projects' || key === 'source_files' || key === 'batch_fields') {
+    } else if (key === 'collections' || key === 'projects' || key === 'source_files') {
       const acc = ui.accordion(key);
       acc.addPane(key, () => {
         const div = ui.divV([]);
@@ -691,7 +698,7 @@ export function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): 
         return div;
       });
       accordions.append(acc.root);
-    } else if (key === 'molecule_fields' || key === 'udfs' || key === 'stoichiometry') {
+    } else if (key === 'molecule_fields' || key === 'udfs' || key === 'stoichiometry' || key === 'batch_fields') {
       const acc = ui.accordion(key);
       acc.addPane(key, () => ui.tableFromMap((obj as any)[key] as any, true));
       accordions.append(acc.root);
@@ -699,7 +706,7 @@ export function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): 
       const initialValue = (obj as any)[key];
       let value: any | null = null;
       if (key === 'id' && vaultId)
-        value = ui.link(initialValue, () => window.open(`${CDD_HOST}vaults/${vaultId}/molecules/${initialValue}/`));
+        value = ui.link(initialValue, () => window.open(`${CDD_HOST}/vaults/${vaultId}/molecules/${initialValue}/`));
       else
         value = initialValue instanceof Array ? initialValue.join(', ') : initialValue;
       dictForTableView[key] = value;
@@ -762,7 +769,7 @@ export function addNodeWithEmptyResults(name: string, warningMessage?: string) {
   openedView?.close();
   const df = DG.DataFrame.create();
   df.name = name;
-  openedView = grok.shell.addTablePreview(DG.DataFrame.create());
+  openedView = grok.shell.addTablePreview(df);
   if (warningMessage)
     grok.shell.warning(warningMessage);
 }
