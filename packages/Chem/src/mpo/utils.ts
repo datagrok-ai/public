@@ -16,6 +16,8 @@ import {
 
 export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 
+export const UNTITLED_PROFILE = 'Untitled Profile';
+
 export function isEdaPackageInstalled(): boolean {
   if (!checkPackage('EDA', 'getPmpoAppItems')) {
     grok.shell.warning('EDA package is not installed');
@@ -163,7 +165,7 @@ export function updateMpoPath(
 export function createDefaultProfile(): DesirabilityProfile {
   return {
     type: DESIRABILITY_PROFILE_TYPE,
-    name: '',
+    name: UNTITLED_PROFILE,
     description: '',
     properties: {},
   };
@@ -178,7 +180,7 @@ export function createProfileForDf(df: DG.DataFrame): DesirabilityProfile {
     props[col.name] = createDefaultNumerical(1, col.min, col.max);
     count++;
   }
-  return {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
+  return {type: DESIRABILITY_PROFILE_TYPE, name: UNTITLED_PROFILE, description: '', properties: props};
 }
 
 export function mergeProfileWithDf(existing: DesirabilityProfile, df: DG.DataFrame): DesirabilityProfile {

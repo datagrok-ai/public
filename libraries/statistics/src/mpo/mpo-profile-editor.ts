@@ -300,13 +300,14 @@ export class MpoProfileEditor {
       table: this.dataFrame,
       nullable: true,
       value: matchedCol ?? undefined,
-      onValueChanged: (v: DG.Column | null) => {
-        this.columnMapping[name] = v?.name ?? null;
-        if (v && this.switchPropertyType(name, rowId, v))
-          return;
-        editor.setColumn?.(v);
-        this.emitChange();
-      },
+      filter: (c: DG.Column) => !c.isCategorical || c.categories.length <= MAX_CATEGORICAL_CATEGORIES,
+    });
+    input.onChanged.subscribe((v: DG.Column | null) => {
+      this.columnMapping[name] = v?.name ?? null;
+      if (v && this.switchPropertyType(name, rowId, v))
+        return;
+      editor.setColumn?.(v);
+      this.emitChange();
     });
     return input.root;
   }

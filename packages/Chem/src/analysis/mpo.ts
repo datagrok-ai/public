@@ -15,12 +15,10 @@ import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/ut
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {MpoProfileManager} from '../mpo/mpo-profile-manager';
 import {PackageFunctions} from '../package';
-import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles, isEdaPackageInstalled} from '../mpo/utils';
+import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles, isEdaPackageInstalled, UNTITLED_PROFILE} from '../mpo/utils';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 
 const CREATE_NEW_PROFILE_ITEM = '+ Create New...';
-const UNTITLED_PROFILE = 'Untitled Profile';
-
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
   mpoProfileEditor: MpoProfileEditor;
@@ -105,12 +103,10 @@ export class MpoProfileDialog {
   }
 
   async init(): Promise<void> {
+    // refreshProfilesDropdown sets profileInput.value, which triggers onValueChanged → loadProfile
     await this.refreshProfilesDropdown(
       () => this.suitableProfileNames[0] ?? this.mpoProfiles[0]?.name ?? '',
     );
-
-    if (this.profileInput.value && this.profileInput.value !== CREATE_NEW_PROFILE_ITEM)
-      await this.loadProfile(this.profileInput.value);
 
     this.listenForProfileChanges();
     this.mpoContextPanel = new MpoContextPanel(this.dataFrame);
