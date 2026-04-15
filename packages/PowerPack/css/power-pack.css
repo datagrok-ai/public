@@ -1021,3 +1021,22 @@ body.dartium .power-pack-widgets-host.ui-div {
 .pp-cron-raw-row:has(.pp-cron-invalid) {
     background: rgba(235, 103, 103, 0.08);
 }
+
+.pp-notification-badge {
+    position: absolute;
+    top: 1px;
+    right: -6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 12px;
+    height: 12px;
+    padding: 0 2px;
+    background-color: #eb6767;
+    color: #fff;
+    font-size: 8px;
+    font-weight: bold;
+    border-radius: 6px;
+    line-height: 1;
+    box-sizing: border-box;
+}

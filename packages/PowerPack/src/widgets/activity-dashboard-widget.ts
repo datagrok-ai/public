@@ -103,6 +103,19 @@ export class ActivityDashboardWidget extends DG.Widget {
       tabPane.name === 'Learn' ? tabPane.content.parentElement?.classList.add('power-pack-overflow-hidden') :
         tabPane.content.parentElement?.classList.remove('power-pack-overflow-hidden');
     }));
+    const notifPane = this.tabControl.panes.find((p) => p.name === 'Notifications');
+    if (notifPane) {
+      this.notificationsPromise.then((notifications) => {
+        const unreadCount = notifications.filter((n) => !n.isRead).length;
+        if (unreadCount > 0) {
+          const badge = ui.span([unreadCount.toString()]);
+          badge.classList.add('pp-notification-badge');
+          notifPane.header.style.position = 'relative';
+          notifPane.header.appendChild(badge);
+        }
+      });
+    }
+
     this.tabControl.root.style.height = '90%';
     this.tabControl.root.style.width = '100%';
 
