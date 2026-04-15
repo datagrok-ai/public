@@ -7,26 +7,28 @@ import { BiostructureData } from '@datagrok-libraries/bio/src/pdb/types';
 
 import { BINDING_ENERGY_COL, POSE_COL, setAffinity, setPose, TARGET_PATH } from './constants';
 
+export function getFromPdb(pdbString: string): { [name: string]: number } {
+  const result: { [name: string]: number } = {};
+  const remarkRegex = /REMARK\s+\d+\s+([\w\s\(\)-]+)\.\s+([-\d.]+)/g;
+  let match;
+  while ((match = remarkRegex.exec(pdbString)) !== null)
+    result[match[1].trim()] = parseFloat(match[2].trim());
+  return result;
+}
+
 export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
-  const col = pdb.cell.column;    
+  const col = pdb.cell.column;
   const resultDf = DG.DataFrame.create(col.length);
-  
+
   for (let idx = 0; idx < col.length; idx++) {
-    const pdbValue = col.get(idx);
-    const remarkRegex = /REMARK\s+\d+\s+([\w\s\(\)-]+)\.\s+([-\d.]+)/g;
-    let match;
-  
-    while ((match = remarkRegex.exec(pdbValue)) !== null) {
-      const colName = match[1].trim();
-      const value = parseFloat(match[2].trim());
-        
+    const values = getFromPdb(col.get(idx));
+    for (const [colName, value] of Object.entries(values)) {
       let resultCol = resultDf.columns.byName(colName);
       if (!resultCol) resultCol = resultDf.columns.addNewFloat(colName);
-        
       resultDf.set(colName, idx, value);
     }
   }
-  
+
   return resultDf;
 }
   
@@ -86,7 +88,43 @@ export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: H
     .css('margin-right', '5px');
   
   const idx = molecule.cell.rowIndex;
-  return ui.divH([addColumnIcon, propertyCol.get(idx)], {style: {'position': 'relative'}});
+  const val: number = propertyCol.get(idx);
+  const numStyle = {style: {width: '42px', textAlign: 'right', flexShrink: '0', flexGrow: '0'}};
+  return ui.divH([addColumnIcon, ui.divText(val.toFixed(2), numStyle)],
+    {style: {position: 'relative'}});
+}
+
+export function buildComparisonTable(
+  currentValues: { [name: string]: number },
+  hoveredValues: { [name: string]: number },
+): HTMLElement {
+  const map: { [_: string]: any } = {};
+  for (const name of Object.keys(currentValues)) {
+    const cur = currentValues[name];
+    const hov = hoveredValues[name];
+    if (hov === undefined) {
+      map[name] = ui.divText(cur.toFixed(2));
+      continue;
+    }
+    const delta = hov - cur;
+    const sign = delta > 0 ? '+' : '';
+    const color = delta < 0 ? 'var(--green-2)' : delta > 0 ? 'var(--red-2)' : '';
+    const row = ui.div([
+      ui.divText(cur.toFixed(2)),
+      ui.divText('vs'),
+      ui.divText(hov.toFixed(2)),
+      ui.divText(`${sign}${delta.toFixed(2)}`),
+    ]);
+    row.style.cssText =
+      'display:grid;grid-template-columns:42px 16px 42px 42px;align-items:baseline;column-gap:12px;';
+    const cells = row.children as HTMLCollectionOf<HTMLElement>;
+    cells[0].style.cssText = 'text-align:right';
+    cells[1].style.cssText = 'text-align:center;color:var(--grey-4)';
+    cells[2].style.cssText = 'text-align:right';
+    cells[3].style.cssText = `text-align:right;font-size:11px;${color ? 'color:' + color : ''}`;
+    map[name] = row;
+  }
+  return ui.tableFromMap(map);
 }
 
 export function formatColumns(autodockResults: DG.DataFrame) {
