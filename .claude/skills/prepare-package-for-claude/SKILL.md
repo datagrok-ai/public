@@ -37,145 +37,102 @@ See [`templates/CLAUDE.md.template`](templates/CLAUDE.md.template) for a ready-t
 - Add a "common tasks" section unless you have real tasks to describe.
 - Write a glossary entry for anything whose meaning is obvious from its type name.
 
-### Phase 2 — Iterative harness loop
+### Phase 2 — Iterative harness loop (user-driven)
 
-The core of the process. Run **2–4 real tasks** against the package. After each task, close the loop: verify, record, update the harness, repeat.
+The core of the process. Phase 2 is **interactive**: the user runs tasks in fresh sessions manually and returns feedback. Do **not** simulate naive-dev runs inside this session — context contamination defeats the test.
 
 **Per-task loop:**
 
-1. **Pick the next task.** Cover a mix of categories (feature, refactor, bug, docs) — see [`templates/phase-2-tasks.md`](templates/phase-2-tasks.md) for what makes a task informative and examples from each category.
-2. **Write a naive-dev prompt.** A developer who just joined and doesn't know the package internals. No jargon, no file paths, no "use helper X." See [`templates/naive-dev-prompt.md`](templates/naive-dev-prompt.md) for the principles and anti-patterns.
-3. **Run the task in a fresh Claude Code session.** No carry-over context. Do not course-correct during the run — the point is to see what the harness alone supports.
-4. **Assess the result.** Use the scorecard in `templates/phase-2-tasks.md`. What was right? What did the agent report it had to guess or infer?
-5. **Triage each guess.** For each item the agent flagged:
-   - **Harness gap** — something the agent should have been able to find but couldn't. → Update `CLAUDE.md` with the minimum pointer that would have prevented the guess.
-   - **Genuine product decision** — a judgment call that has no "right" answer. → Do *not* document. The agent made a reasonable call; noting it in `CLAUDE.md` would over-fit.
-   - **Platform-wide quirk** — a Datagrok / TypeScript / Node thing, not package-specific. → Flag for repo-level documentation or a UI skill; do not put in this package's `CLAUDE.md`.
-6. **Apply the update.** Edit `CLAUDE.md` with the minimum pointer. Commit.
-7. **If the run produced new code**, decide: keep, revert, or modify. The task was a harness test — the code artifact is secondary. If the agent did a good job and harness gaps are acceptable, keep the work. If not, revert and repeat with the updated CLAUDE.md.
+1. **Propose 2–4 candidate task prompts.** Cover a mix of categories (feature, refactor, bug, docs) — see [`templates/phase-2-tasks.md`](templates/phase-2-tasks.md) for what makes a task informative and [`templates/naive-dev-prompt.md`](templates/naive-dev-prompt.md) for prompt discipline (no jargon, no file paths, no "use helper X"). Present them as a numbered list and stop.
 
-**When to stop:** after 2–5 tasks, or when two consecutive tasks produce **zero** harness gaps (only product decisions remain). That's the convergence signal.
+   Every proposed prompt must end with an explicit feedback request so the fresh agent self-reports what it had to guess. Append this block verbatim to each task:
+
+   ```
+   When done, report:
+   - Files changed, helpers reused.
+   - Anything you had to guess or infer that the codebase / CLAUDE.md did not spell out.
+   ```
+2. **User selects one** and runs it manually in a **fresh Claude Code session** (no carry-over context). The user collects the agent's feedback — especially anything the agent reports it had to guess, infer, or search around for.
+3. **User returns the collected feedback.** Review it and **triage each item**:
+   - **Harness gap** — something the agent should have been able to find but couldn't. → Propose a minimum pointer to add to `CLAUDE.md`.
+   - **Genuine product decision** — a judgment call with no "right" answer. → Do *not* document.
+   - **Platform-wide quirk** — Datagrok / TS / Node, not package-specific. → Flag for repo-level docs or a UI skill; not this package's `CLAUDE.md`.
+   Present the proposed `CLAUDE.md` edits to the user and **stop for approval**.
+4. **User approves (or edits) the proposed changes.** Apply them to `CLAUDE.md`. Then **roll back the code changes** the fresh agent produced (the task was a harness test — the code artifact is secondary) so the next run starts from the same baseline plus the new harness.
+5. **User re-runs the same task** in another fresh session with the updated `CLAUDE.md`. Return to step 3.
+6. **Repeat the loop** until the task finishes with minimal or acceptable guesses. At that point, decide with the user whether to keep, revert, or modify the final code artifact.
+7. **Continue with the next task** from the list in step 1 (or propose a new batch).
+
+**When to stop:** the **user** decides when Phase 2 is done and Phase 3 can begin. Do not auto-advance. Good convergence signals to surface for the user: two consecutive tasks end with zero harness gaps, or the remaining guesses are all genuine product decisions.
 
 Signals a task was well-designed:
 - The agent self-reports 2–5 guesses. Zero guesses = task was too easy; >8 guesses = harness is still thin, or the task was too ambitious for this round.
 - Each run surfaces *new* guesses, not re-runs of the same gap.
 
+**Do not** in Phase 2:
+- Spawn sub-agents to role-play the naive dev. Fresh sessions must be launched by the user.
+- Edit `CLAUDE.md` before the user approves the proposed changes.
+- Advance to the next task, or to Phase 3, without the user's explicit go-ahead.
+
 ### Phase 3 — Simplify (carefully)
 
-With the harness proven, do a targeted simplification pass. Focus on:
-
-- **Duplicated patterns** → extract a helper with a discoverable name (future Claude will find it).
-- **Unsafe primitives** → replace with safer built-ins (e.g. hand-rolled URL building → `URLSearchParams`).
-- **Dead code** → remove and note the removal in CLAUDE.md if the function was named anywhere non-obvious.
-- **Latent bugs surfaced by static analysis** (see below).
+With the harness proven, review the package as a whole and clean up what a reviewer would call out.
 
 **Do NOT:**
-- Refactor for style.
+- Refactor for style (indent, quotes, semicolons, brace placement).
 - Change public/registered function signatures without explicit authorization.
-- Touch code that works just because it looks ugly.
-- Run `/simplify` over everything without a specific target.
+- Touch code that works just because it looks ugly — have a concrete reason (bug, duplication, naming lie, dead code, measurable complexity reduction).
 
-Every change should be one of:
-- A move the Phase 2 tasks revealed as useful,
-- A fix for a latent bug (typo, dead branch, wrong variable passed, missing `await`, unreachable code, etc.),
-- A named helper that replaces a ≥3-site duplicated pattern.
-
-If none of those apply, skip it.
-
-#### Static analysis — run each step separately, report, then ask
-
-Run each step below as a **distinct, interactive loop**: run the check → report results to the user → let the user pick which findings to fix → apply only those → move on. Do **not** batch all steps together, and do **not** auto-fix without the user's selection.
-
-**General reporting rules (all steps):**
+**General reporting rules (both steps):**
 - Report findings **grouped by file**, with `file:line` and a one-line description per finding.
 - Skip pure style noise (indent, quotes, semicolons, spacing, max-len, trailing whitespace) — call out semantic issues only.
 - Filter out `package.g.ts` / `package-api.ts` — regenerated by `grok api`.
-- After reporting, present a numbered list of fixable findings and ask the user which to apply (e.g. "all", "none", "1, 3, 5", or "skip"). Never fix before the user selects.
-- After applying fixes, re-run the same check to confirm it's clean (or that only user-skipped findings remain), then move to the next step.
+- Present a numbered list and ask which to apply (e.g. "all", "none", "1, 3, 5", or "skip"). Never fix before the user selects.
 
 ---
 
-**Step 1 — TypeScript type-check**
+**Step 1 — Reviewer read**
 
-```bash
-npx tsc --noEmit -p tsconfig.json
-```
+Run the prompt below in **two independent sub-agent sessions** (same prompt, separate runs), then union the reports. Empirically, two Opus-4.6 runs of the same prompt overlap only ~50% of findings — running once loses half the achievable coverage for no real saving.
 
-- Report errors grouped by file.
-- If zero errors: say so in one line and move on.
-- If errors exist: list them, ask the user which to fix, apply selected fixes, re-run to confirm.
+Prompt to run in each sub-agent:
+
+> Analyze the source code in `public/packages/<PackageName>/src`. Find bugs, typos, code smells, and dead code. Suggest improvements and refactorings to make the code shorter, simpler, and easier to maintain. Group findings by file and include `file:line` for each. Skip generated files (`*.g.ts`, `*-api.ts`).
+
+After both runs return:
+- Merge reports. Dedupe by `file:line` (same line, same finding = one entry).
+- For typos in **exported names** (class / function / type), flag separately — they're breaking changes; list call sites and ask before renaming. Typos in local names, decorator strings, and user-visible literals are safe to fix.
+- Present the merged, numbered list to the user. Ask which to apply. Apply only selected ones.
 
 ---
 
-**Step 2 — ESLint (semantic findings only)**
+**Step 2 — ESLint (optional, ask first)**
 
-If `package.json` defines a `lint` script, run it first:
+After Step 1 is applied, ask the user: *"Run eslint for anything Step 1 missed?"* If no, skip.
+
+If yes, and `package.json` has a `lint` script, run:
 
 ```bash
 npm run lint
 ```
 
-If there is no `lint` script, skip this step entirely. Do not install eslint or hunt for a bundled binary.
-
-When lint output is dominated by style noise, re-run eslint with style rules disabled so only semantic findings remain:
+If lint output is dominated by style noise, re-run with style rules disabled so only semantic findings remain:
 
 ```bash
 npx eslint "src/**/*.ts" --rule '{"indent":"off","quotes":"off","semi":"off","max-len":"off","no-trailing-spaces":"off","object-curly-spacing":"off","curly":"off","comma-dangle":"off","eol-last":"off","padded-blocks":"off","space-before-function-paren":"off","keyword-spacing":"off","space-infix-ops":"off","no-multi-spaces":"off","no-multiple-empty-lines":"off","brace-style":"off"}'
 ```
 
-Focus on rules like `no-unused-vars`, `no-throw-literal`, `no-unreachable`, `@typescript-eslint/require-await`, `no-useless-catch`, `no-constant-condition`, etc.
+Report findings grouped by file; present a numbered list; ask the user which to fix; apply selected; re-run to confirm.
 
-Report semantic findings grouped by file (`file:line: rule — message`). Then:
-1. Identify which are safely fixable (e.g. `no-throw-literal` → wrap in `new Error(...)`; unused local imports → remove).
-2. Flag ones that need judgment (an unused *exported* symbol may be called externally; ask before removing).
-3. Present a numbered list, ask the user which to fix, apply only the selected ones.
-4. Re-run the semantic-only eslint command to confirm.
-
----
-
-**Step 3 — Manual semantic checks**
-
-Run these **every time**, even when eslint passes — rules are often disabled and eslint misses intent-level bugs. Grep + read; do not guess.
-
-Checks:
-- `async` functions with no `await` inside (drop `async` or actually await something).
-- Empty `try { ... } catch (e) { throw e; }` — pure ceremony, delete.
-- `continue` / `break` / `return` as the *last* statement of a loop or function — dead.
-- Unreachable code after `return` / `throw`.
-- `if (x)` immediately followed by code that would run for falsy `x` anyway (missing `return` / `else`).
-- Wrong variable in params — e.g. `paramsStringFromObj({async: true})` where it should have been `paramsStringFromObj(params)`. Audit every call site where a function takes `params` and also has a literal object in the body.
-- Mutations on `arr` but reads from `arr.filter(...)` (or vice versa) in the same block.
-
-Collect findings across all checks, then **report a single summary** grouped by file with `file:line` + one-line description + severity guess (bug / dead code / stylistic). Present a numbered list, ask the user which to fix, apply only the selected ones, and validate with `npx tsc --noEmit`.
-
----
-
-**Step 4 — Typo pass**
-
-CDD Vault taught us these matter because they reach users. Grep for obvious misspellings in:
-- **Exported names** (class / function / type names).
-- **Decorator strings** (`category`, `description`, `name`).
-- **User-visible literals** (`grok.shell.error/warning/info`, button labels, tooltips).
-- **Comments** only when they name a symbol.
-
-Patterns: doubled letters (`reorderColummns`, `Filelds`), flipped pairs (`Seach`/`Search`, `Serach`/`Search`, `Stastics`/`Statistics`).
-
-Report findings grouped by file, each annotated as:
-- **Local** (param / private method / decorator string) — safe to rename.
-- **Exported** — breaking change; list call sites, flag for the user to decide, do not auto-rename.
-
-Present a numbered list, ask the user which to fix, apply only the selected ones.
+If there is no `lint` script, skip. Do not install eslint or hunt for a bundled binary.
 
 ---
 
 #### Applying findings
 
-Each step above is self-contained: report → user selects → fix → validate → next step. At the end of all four steps, give a brief roll-up:
-- **Bugs** fixed (wrong behavior today).
-- **Dead code** removed (unused, unreachable). Note: registered `@grok.decorators.func` may be called externally — always flag, never auto-remove.
-- **Typos** fixed (local) vs flagged (exported).
+Each step above is self-contained: report → user selects → fix → next step.
 
-Final validation: `npx tsc --noEmit -p tsconfig.json` (filter out `package.g.ts` / `package-api.ts`).
+Final validation: `npm run build` (catches type errors via ts-loader and regenerates `.g.ts`).
 
 ### Phase 4 — Cross-check
 
