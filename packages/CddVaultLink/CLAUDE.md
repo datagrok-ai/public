@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Purpose
 
-Datagrok plugin that integrates the platform with the **CDD Vault** registration system (https://www.collaborativedrug.com). Exposes a `CDD Vault` app under `Browse | Apps | Chem` with tabs for Protocols, Collections, Saved Searches, Molecules, and Search, plus a context panel for sketched/selected molecules.
+Datagrok plugin that integrates the platform with the **CDD Vault** registration system (https://www.collaborativedrug.com). Exposes a `CDD Vault` app under `Browse | Apps | Chem` with tabs for Protocols, Saved Searches, Collections, Molecules, Batches, and Search, plus a context panel for sketched/selected molecules.
 
 Auth: the CDD Vault API key is read from the package credentials manager under the `apiKey` key (lazy-loaded in `cdd-vault-api.ts` on the first request).
 
@@ -12,11 +12,11 @@ Auth: the CDD Vault API key is read from the package credentials manager under t
 
 Small plugin, flat `src/` layout — no deep hierarchy to navigate:
 
-- **`package.ts`** — entry point. `PackageFunctions` class registers the `cddVaultApp` (via `@grok.decorators.app`), the app tree browser, context panel, and search function. Wires up the tabbed UI (Protocols / Collections / Saved Searches / Molecules / Search) against a `Vault` tree node.
-- **`cdd-vault-api.ts`** — thin wrapper over the CDD Vault REST API. Defines all response types (`Vault`, `Protocol`, `Collection`, `SavedSearch`, `MoleculesQueryResult`, `ApiResponse<T>`, etc.) and query functions (`queryVaults`, `queryMolecules`, `queryMoleculesAsync`, `queryReadoutRowsAsync`, `queryProtocolsAsync`, `queryCollectionsAsync`, `queryBatchesAsync`, `querySavedSearches`, `querySavedSearchById`, `queryProjects`). The `*Async` variants use CDD's async job endpoints and are polled via `getAsyncResults` / `getAsyncResultsAsDf` in `utils.ts`. All HTTP goes through `grok.dapi.fetchProxy` (never raw `fetch`).
-- **`utils.ts`** — the bulk of the UI glue. Builds tree nodes (`createVaultNode`, `createNestedCDDNode`), the single tab-loading entry point `createCDDTableView` (see *Tab data loading* below), molecule dataframe construction (`createMoleculesDfFromObjects`, `prepareDataForDf`, `reorderColumns`), context panel (`createCDDContextPanel`), ID→link rendering (`createLinks`, `createLinksFromIds`), URL routing (`handleInitialURL`, `createPath`, `getExportId`), and vault stats.
-- **`search-function-editor.ts`** — custom function editor (`SeachEditor`) for similarity / substructure / exact / identity search. Exposed as a docked filters side-panel inside the Molecules tab, wired up by `initializeFilters` in `utils.ts` (not a standalone tab). Two API quirks worth knowing: `getParams()` returns resolved values for the search endpoint (e.g. protocol *id*, not name) and is **not** symmetric — to persist, pre-fill, or share form state, work with the input objects directly. `init()` is async and builds the protocol/run choice lists at the end, so any code that targets those inputs must run after init resolves.
-- **`constants.ts`** — tab names (`PROTOCOLS_TAB`, `COLLECTIONS_TAB`, `MOLECULES_TAB`, `SAVED_SEARCHES_TAB`, `SEARCH_TAB`) and `CDDVaultSearchType`.
+- **`package.ts`** — entry point. `PackageFunctions` class registers the `cddVaultApp` (via `@grok.decorators.app`), the app tree browser, context panel, and search functions. Wires up the tabbed UI (Protocols / Saved Searches / Collections / Molecules / Batches / Search) against a `Vault` tree node. The `cDDVaultSearch` (sync preview) and `cDDVaultSearchAsync` (full fetch) both delegate to a shared file-local `runSearch(vaultId, opts)` helper at the top of the file.
+- **`cdd-vault-api.ts`** — thin wrapper over the CDD Vault REST API. Exports `CDD_HOST` (single source of truth for the base URL), all response types (`Vault`, `Protocol`, `Collection`, `VaultCollection`, `Batch`, `Molecule`, `SavedSearch`, `MoleculesQueryResult`, `ApiResponse<T>`, `ExportStatus`, etc.), and query functions. Every paged endpoint has a **sync + async pair**: `queryMolecules`/`queryMoleculesAsync`, `queryBatches`/`queryBatchesAsync`, `queryReadoutRows`/`queryReadoutRowsAsync`, `queryProtocols`/`queryProtocolsAsync`, `queryCollections`/`queryCollectionsAsync`. Singletons/lookups: `queryVaults`, `queryProjects`, `querySavedSearches`, `querySavedSearchById`, `queryExportStatus`, `queryExportResult`. The `*Async` variants use CDD's async job endpoints and are polled via `getAsyncResults` / `getAsyncResultsAsDf` in `utils.ts`. All HTTP goes through `grok.dapi.fetchProxy` (never raw `fetch`). The internal `request` function centralizes auth (lazy `apiKey`, auto-invalidated and surfaced on HTTP 401), `Record<string, string>` headers, and the `{data} | {error}` response shape.
+- **`utils.ts`** — the bulk of the UI glue. Builds tree nodes (`createVaultNode`, `createNestedCDDNode`), the single tab-loading entry point `createCDDTableView` (see *Tab data loading* below), molecule dataframe construction (`createCddDfFromObjects`, `createMoleculesDfFromObjects`, `createBatchesDfFromObjects`, `prepareDataForDf`, `reorderColumns`), context panel (`createCDDContextPanel`, `createObjectViewer`), ID→link rendering (`createLinks`, `createLinksFromIds`, `createMoleculeIdLinks`), URL routing (`handleInitialURL`, `openCddNode`, `createPath`, `getExportId`), filters side-panel (`initializeFilters`), and vault stats (`createInitialStatistics`). Uses `CDD_HOST` imported from `cdd-vault-api.ts`. Module-level `openedView` token guards against stale-view updates.
+- **`search-function-editor.ts`** — custom `SearchEditor` class for similarity / substructure / exact-match search. Exposed as a docked filters side-panel inside the Molecules tab, wired up by `initializeFilters` in `utils.ts` (not a standalone tab). Two API quirks worth knowing: `getParams()` returns resolved values for the search endpoint (e.g. protocol *id*, not name) and is **not** symmetric — to persist, pre-fill, or share form state, work with the input objects directly. `init()` is async and builds the protocol/run choice lists at the end, so any code that targets those inputs must run after init resolves. `reset()` is `async` and awaits `initComplete` to avoid setting values on a discarded input.
+- **`constants.ts`** — tab names (`PROTOCOLS_TAB`, `COLLECTIONS_TAB`, `SAVED_SEARCHES_TAB`, `MOLECULES_TAB`, `BATCHES_TAB`, `SEARCH_TAB`) plus `ALL_TABS`, `EXPANDABLE_TABS`, `CDDVaultSearchType`, `CDD_SEARCH_TYPES`, `ProtocolRunCond`, `PROTOCOL_RUN_COND_CHOICES`, `ANY_RUN_CHOICE`.
 - **`detectors.js`** — semantic type detectors (loaded separately by platform; do not bundle).
 - **`tests/`** + `package-test.ts` — grok-test suite.
 
@@ -24,10 +24,12 @@ Small plugin, flat `src/` layout — no deep hierarchy to navigate:
 
 Large CDD endpoints return an `id` for an async job. Always go through the helpers in `utils.ts`:
 
-- `runAsyncExport(vaultId, () => queryXxxAsync(...), timeoutMinutes, text?)` — returns the raw `ApiResponse`.
+- `runAsyncExport(vaultId, () => queryXxxAsync(...), timeoutMinutes, binary?)` — returns the raw `ApiResponse`.
 - `runAsyncExportAsDf(vaultId, () => queryXxxAsync(...), timeoutMinutes, sdf?)` — returns a `DG.DataFrame`.
 
-Both wrap the three-step *start query → `getExportId` → poll via `getAsyncResults` / `getAsyncResultsAsDf`* sequence. Do not call those three primitives directly from new code unless you need fine-grained control.
+Both wrap the three-step *start query → `getExportId` → poll via `getAsyncResults` / `getAsyncResultsAsDf`* sequence and **throw** on any underlying error; callers do not need to check `.error` on the result. Do not call those three primitives directly from new code unless you need fine-grained control.
+
+The `binary` flag controls how `getAsyncResults` parses the final payload: `true` → `Uint8Array` (SDF export); `false` → parsed JSON. Callers that want a DataFrame should prefer `runAsyncExportAsDf` with `sdf: true/false`.
 
 ### Tab data loading (preview + Load all)
 
@@ -55,6 +57,16 @@ Behavior:
 **Opt-out** (single-call, no preview): pass `null` for `asyncFuncName` and `asyncFuncParams`. Used by Saved Searches, whose flow is an SDF export rather than a paged query.
 
 **When adding a new tab**: add sync+async wrappers in `cdd-vault-api.ts`, add corresponding package-level functions (e.g. `getFoos` / `getFoosAsync`), and call `createCDDTableView` with both names. Do not invent a different loading flow.
+
+### Error handling
+
+Sync `query*` functions return `ApiResponse<T> = {data?, error?, errorCode?}` — **not** throwing. Every new call site must check `.error` before reading `.data`. Conventions in this package:
+
+- Registered `@grok.decorators.func` entry points (e.g. `getMolecules`, `getVaults`) → `if (res.error) throw res.error;` so the platform surfaces the message.
+- Internal helpers called from UI (e.g. `runSearch` in `package.ts`) → `grok.shell.error(res.error)` and return an empty DataFrame/fallback.
+- Async helpers (`runAsyncExport`, `runAsyncExportAsDf`, `getAsyncResults`) already **throw** on error — do not double-check `.error` on their return value.
+
+HTTP 401 is handled centrally in `cdd-vault-api.ts#request`: the cached `apiKey` is cleared, a user-facing toast is shown, and the error propagates. No per-call 401 handling needed.
 
 ### URL / deep-linking
 

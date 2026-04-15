@@ -98,7 +98,6 @@ export class PackageFunctions {
     });
 
     const statsDiv = ui.div('', {style: {position: 'relative'}});
-    ui.setUpdateIndicator(statsDiv, true, 'Loading vaults statistics...');
     const view = DG.View.fromRoot(ui.divV([appHeader, statsDiv]));
     view.name = 'CDD Vault';
 
@@ -107,8 +106,10 @@ export class PackageFunctions {
         .getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('CDD Vault');
       cddNode.expanded = true;
       handleInitialURL(cddNode, initialUrl);
-    } else
+    } else {
+      ui.setUpdateIndicator(statsDiv, true, 'Loading vaults statistics...');
       createInitialStatistics(statsDiv);
+    }
 
 
     return view;
@@ -163,9 +164,11 @@ export class PackageFunctions {
         createNestedCDDNode(collections, COLLECTIONS_TAB, vaultNode,
           'CDDVaultLink:getCollectionsAsync', {vaultId: vault.id, timeoutMinutes: 5}, treeNode, vault,
           async (item: any) => {
-            //in case collection doesn't contain molecules - add empty tableView
-            if (!item.molecules || !item.molecules.length)
+            //in case collection doesn't contain molecules - show empty view and stop
+            if (!item.molecules || !item.molecules.length) {
               addNodeWithEmptyResults(item.name, `No molecules found for ${item.name} collection`);
+              return;
+            }
 
             const moleculesIds = item.molecules.join(',');
             createCDDTableView([COLLECTIONS_TAB, item.name], `Waiting for ${item.name} results`,
@@ -193,9 +196,6 @@ export class PackageFunctions {
             vault, treeNode);
         });
 
-      //TODO! unlock other tabs
-      // vaultNode.group('Plates');
-      // vaultNode.group('Assays');
       }
     // handleInitialURL(treeNode);
     } catch (e: any) {
@@ -212,10 +212,13 @@ export class PackageFunctions {
     return DG.Widget.fromRoot(ui.wait(async () => {
       try {
         const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+        if (!vaults.length)
+          return ui.divText('No CDD vaults available');
         //looking for molecule in the first vault
         const vaultId = vaults[0].id;
         const cddMols = await queryMolecules(vaultId, {structure: molecule, structure_search_type: 'exact'});
-
+        if (cddMols.error)
+          throw new Error(cddMols.error);
         if (!cddMols.data?.objects?.length)
           return ui.divText('Not found');
 
@@ -257,7 +260,7 @@ export class PackageFunctions {
   })
   static async getVaultStats(
     @grok.decorators.param({'type': 'int'}) vaultId: number,
-      vaultName: string): Promise<string> {
+    @grok.decorators.param({'type': 'string'}) vaultName: string): Promise<string> {
     const res = await Promise.all([
       queryProjects(vaultId),
       runAsyncExport(vaultId, () => queryMoleculesAsync(vaultId, {only_ids: true}), 1),
@@ -265,6 +268,8 @@ export class PackageFunctions {
       runAsyncExport(vaultId, () => queryCollectionsAsync(vaultId, {only_ids: true}), 1),
       runAsyncExport(vaultId, () => queryBatchesAsync(vaultId, {only_ids: true}), 1),
     ]);
+    if (res[0].error)
+      grok.shell.error(`Failed to load projects for vault ${vaultName}: ${res[0].error}`);
     const stats: CDDVaultStats = {
       name: vaultName,
       projects: res[0].data?.length ? res[0].data.map((it) => it.name).join(', ') : '',
@@ -303,7 +308,7 @@ export class PackageFunctions {
   })
   static async getMolecules(
     @grok.decorators.param({'type': 'int'}) vaultId: number,
-      moleculesIds: string): Promise<DG.DataFrame> {
+    @grok.decorators.param({'type': 'string', 'options': {'nullable': true}}) moleculesIds: string): Promise<DG.DataFrame> {
     const params: {[key: string]: any} = {page_size: PREVIEW_ROW_NUM};
     if (moleculesIds)
       params.molecules = moleculesIds;
@@ -325,7 +330,7 @@ export class PackageFunctions {
   })
   static async getMoleculesAsync(
     @grok.decorators.param({'type': 'int'}) vaultId: number,
-      moleculesIds: string,
+    @grok.decorators.param({'type': 'string', 'options': {'nullable': true}}) moleculesIds: string,
     @grok.decorators.param({'type': 'int'}) timeoutMinutes: number): Promise<DG.DataFrame> {
     const params: {[key: string]: any} = {};
     if (moleculesIds)
@@ -572,19 +577,14 @@ export class PackageFunctions {
 
 
     const cddMols = await queryMolecules(vaultId, params);
+    if (cddMols.error) {
+      grok.shell.error(cddMols.error);
+      return DG.DataFrame.create();
+    }
     if (!cddMols.data?.objects)
       return DG.DataFrame.create();
     prepareDataForDf(cddMols.data.objects as any[]);
     const df = DG.DataFrame.fromObjects(cddMols.data.objects) ?? DG.DataFrame.create();
-    if (params.fields_search) {
-      for (const moleculeUDF of params.fields_search) {
-        const colType = moleculeUDF.text_value ? DG.TYPE.STRING : moleculeUDF.float_value ? DG.TYPE.FLOAT : moleculeUDF.date_value ? DG.TYPE.DATE_TIME : null;
-        if (colType) {
-          const col = DG.Column.fromType(colType, moleculeUDF.name, df.rowCount).init((i) => cddMols.data!.objects![i].molecule_fields![moleculeUDF.name]);
-          df.columns.add(col);
-        }
-      }
-    }
     await grok.data.detectSemanticTypes(df);
     return df;
   }

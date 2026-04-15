@@ -53,9 +53,10 @@ export class ActivityDashboardWidget extends DG.Widget {
   recentEntities: DG.Entity[] = [];
   recentEntityTimes: (dayjs.Dayjs | null)[] = [];
 
-  // Started in the constructor, so they run in parallel with notification fetching
+  // Started in the constructor, so they run in parallel with UI setup
   sqlPromise: Promise<DG.DataFrame | undefined>;
   sharedSqlPromise: Promise<DG.DataFrame | undefined>;
+  notificationsPromise: Promise<DG.UserNotification[]>;
 
   tabControl?: DG.TabControl;
   spotlightRoot?: HTMLElement;
@@ -77,6 +78,9 @@ export class ActivityDashboardWidget extends DG.Widget {
     const userId = DG.User.current().id;
     this.sqlPromise = queries.mostRecentEntities(userId);
     this.sharedSqlPromise = queries.recentlySharedWithMe(userId);
+    const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
+      .by(ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
+    this.notificationsPromise = notificationsDataSource.list({pageSize: 20});
     this.buildTabbedUI();
   }
 
@@ -213,11 +217,8 @@ export class ActivityDashboardWidget extends DG.Widget {
 
   /// Populates sharedWithMe from notifications and SQL share events (aligned parallel arrays).
   async initNotificationData(): Promise<void> {
-    const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
-      .by(ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
-
     console.time('ActivityDashboardWidget.notifications');
-    const notifications = await notificationsDataSource.list({pageSize: 20});
+    const notifications = await this.notificationsPromise;
     console.timeEnd('ActivityDashboardWidget.notifications');
 
     this.recentNotifications = notifications
@@ -233,12 +234,39 @@ export class ActivityDashboardWidget extends DG.Widget {
         parsedCandidates.push({notification: n, userId: matches[0][1], entityId: matches[1][1]});
     }
 
-    const sharedIds = Array.from(new Set<string>(parsedCandidates.flatMap((c) => [c.userId, c.entityId])));
+    const notifIds = new Set<string>(parsedCandidates.flatMap((c) => [c.userId, c.entityId]));
+
+    // Collect SQL-only IDs (covers silent shares / no-notification shares)
+    let timeByIdMap = new Map<string, number>();
+    let sqlOnlyIds: string[] = [];
+    try {
+      const sharedDf = await this.sharedSqlPromise;
+      const sIdCol = sharedDf?.col('id');
+      const sTimeCol = sharedDf?.col('shared_time');
+      if (sIdCol && sTimeCol) {
+        for (let i = 0; i < sIdCol.length; i++) {
+          const id = sIdCol.get(i);
+          const time = sTimeCol.get(i);
+          if (id && time)
+            timeByIdMap.set(id, time);
+        }
+        const remaining = ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH - parsedCandidates.length;
+        sqlOnlyIds = [...timeByIdMap.keys()].filter((id) => !notifIds.has(id)).slice(0, Math.max(0, remaining));
+      }
+    }
+    catch (e) {
+      console.warn('ActivityDashboardWidget: failed to fetch shared entities via SQL', e);
+    }
+
+    // Single batched getEntities call for both notification + SQL IDs
+    const allIds = Array.from(new Set<string>([...notifIds, ...sqlOnlyIds]));
     console.time('ActivityDashboardWidget.getSharedEntities');
-    const sharedEntities: DG.Entity[] = sharedIds.length > 0 ? await grok.dapi.getEntities(sharedIds) : [];
+    const allEntities: DG.Entity[] = allIds.length > 0 ? await grok.dapi.getEntities(allIds) : [];
     console.timeEnd('ActivityDashboardWidget.getSharedEntities');
 
-    const byIdMap = new Map(sharedEntities.filter((e) => e != null).map((e) => [e.id, e]));
+    const byIdMap = new Map(allEntities.filter((e) => e != null).map((e) => [e.id, e]));
+
+    // Build notification-based shared items
     this.sharedNotifications = [];
     this.sharedUsers = [];
     this.sharedWithMe = [];
@@ -254,53 +282,27 @@ export class ActivityDashboardWidget extends DG.Widget {
       this.sharedEntityTimes.push(c.notification.createdAt ?? null);
     }
 
-    // Merge entities found via SQL (covers silent shares / no-notification shares)
-    try {
-      const sharedDf = await this.sharedSqlPromise;
-      const sIdCol = sharedDf?.col('id');
-      const sTimeCol = sharedDf?.col('shared_time');
-      if (sIdCol && sTimeCol) {
-        const timeByIdMap = new Map<string, number>();
-        for (let i = 0; i < sIdCol.length; i++) {
-          const id = sIdCol.get(i);
-          const time = sTimeCol.get(i);
-          if (id && time)
-            timeByIdMap.set(id, time);
-        }
-
-        // Update timestamps for existing items if SQL has a more recent time
-        for (let j = 0; j < this.sharedWithMe.length; j++) {
-          const sqlTime = timeByIdMap.get(this.sharedWithMe[j].id);
-          if (sqlTime) {
-            const sqlDayjs = dayjs(sqlTime);
-            if (!this.sharedEntityTimes[j] || sqlDayjs.isAfter(this.sharedEntityTimes[j]!))
-              this.sharedEntityTimes[j] = sqlDayjs;
-          }
-        }
-
-        // Add new entities not already found via notifications
-        const existingIds = new Set(this.sharedWithMe.map((e) => e.id));
-        const newIds = [...timeByIdMap.keys()].filter((id) => !existingIds.has(id));
-        if (newIds.length > 0) {
-          const remaining = ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH - this.sharedWithMe.length;
-          const idsToFetch = newIds.slice(0, Math.max(0, remaining));
-          if (idsToFetch.length > 0) {
-            const newEntities = await grok.dapi.getEntities(idsToFetch);
-            for (const ent of newEntities) {
-              if (!ActivityDashboardWidget.isSpotlightEntity(ent))
-                continue;
-              this.sharedWithMe.push(ent);
-              this.sharedNotifications.push(null as any);
-              this.sharedUsers.push(null as any);
-              const t = timeByIdMap.get(ent.id);
-              this.sharedEntityTimes.push(t ? dayjs(t) : null);
-            }
-          }
-        }
+    // Update timestamps for existing items if SQL has a more recent time
+    for (let j = 0; j < this.sharedWithMe.length; j++) {
+      const sqlTime = timeByIdMap.get(this.sharedWithMe[j].id);
+      if (sqlTime) {
+        const sqlDayjs = dayjs(sqlTime);
+        if (!this.sharedEntityTimes[j] || sqlDayjs.isAfter(this.sharedEntityTimes[j]!))
+          this.sharedEntityTimes[j] = sqlDayjs;
       }
     }
-    catch (e) {
-      console.warn('ActivityDashboardWidget: failed to fetch shared entities via SQL', e);
+
+    // Add SQL-only entities not already found via notifications
+    const existingIds = new Set(this.sharedWithMe.map((e) => e.id));
+    for (const id of sqlOnlyIds) {
+      const ent = byIdMap.get(id);
+      if (!ent || existingIds.has(id) || !ActivityDashboardWidget.isSpotlightEntity(ent))
+        continue;
+      this.sharedWithMe.push(ent);
+      this.sharedNotifications.push(null as any);
+      this.sharedUsers.push(null as any);
+      const t = timeByIdMap.get(ent.id);
+      this.sharedEntityTimes.push(t ? dayjs(t) : null);
     }
   }
 
@@ -323,7 +325,8 @@ export class ActivityDashboardWidget extends DG.Widget {
       }
     }
 
-    const entities = ids.length > 0 ? await grok.dapi.getEntities(ids) : [];
+    const cappedIds = ids.slice(0, 3 * ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH);
+    const entities = cappedIds.length > 0 ? await grok.dapi.getEntities(cappedIds) : [];
 
     this.recentEntities.length = 0;
     this.recentEntityTimes.length = 0;
@@ -332,12 +335,16 @@ export class ActivityDashboardWidget extends DG.Widget {
         continue;
       this.recentEntities.push(ent);
       this.recentEntityTimes.push(timestampMap.get(ent.id) ?? null);
+      if (this.recentEntities.length >= ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH)
+        break;
     }
 
     console.timeEnd('ActivityDashboardWidget.recent');
   }
 
   async getSpotlightTab(): Promise<HTMLElement> {
+    // Start recent data loading in parallel with notification data
+    const recentDataPromise = this.initRecentData();
     await this.initNotificationData();
 
     const createSection = (title: SpotlightTabNames, items: DG.Entity[] | DG.UserNotification[], icon: HTMLElement) => {
@@ -451,7 +458,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
 
       root.appendChild(ui.wait(async () => {
-        await this.initRecentData();
+        await recentDataPromise;
         this.recentItemsRoot = this.recentEntities.length > 0
           ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history'))
           : null;
