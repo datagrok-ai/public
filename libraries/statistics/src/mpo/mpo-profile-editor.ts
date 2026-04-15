@@ -537,6 +537,9 @@ export class MpoProfileEditor {
         () => {},
         template,
         true,
+        undefined,
+        undefined,
+        true,
       );
     }, 'Configure compute function');
   }

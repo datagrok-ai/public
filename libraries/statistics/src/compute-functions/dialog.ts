@@ -15,6 +15,7 @@ export async function chemFunctionsDialog(
   dialog?: boolean,
   descriptorsProvider?: () => Promise<IDescriptorTree>,
   orderingStorageKey?: string,
+  singleSelect?: boolean,
 ): Promise<IChemFunctionsDialogResult> {
   const storageKey = orderingStorageKey ?? 'HTFunctionOrderingLS';
 
@@ -135,19 +136,34 @@ export async function chemFunctionsDialog(
   tc.root.style.width = '100%';
   tc.root.style.minWidth = '350px';
   host.appendChild(tc.root);
-  // add checkboxes to each hader
+  // add checkboxes/radios to each header
+  let toggleInputs: DG.InputBase[] = [];
   function addCheckboxesToPaneHeaders() {
-    tc.panes.forEach((pane)=> {
-      const functionCheck =
-        ui.input.bool('', {value: calculatedFunctions[funcNamesMap[pane.name]], onValueChanged: (value) => {
-          calculatedFunctions[funcNamesMap[pane.name]] = !!value;
-          if (!value)
-            $(pane.content).find('input')?.attr('disabled', 'true');
-          else
-            $(pane.content).find('input')?.removeAttr('disabled');
-        }});
-      functionCheck.setTooltip('Toggle calculation of this function');
-      pane.header.appendChild(functionCheck.root);
+    toggleInputs = [];
+    tc.panes.forEach((pane) => {
+      const key = funcNamesMap[pane.name];
+      const checked = !!calculatedFunctions[key];
+      const onToggle = (value: boolean) => {
+        // deselect other radios: clear both UI (.value) and state (calculatedFunctions)
+        if (singleSelect && value) {
+          for (let i = 0; i < toggleInputs.length; i++) {
+            if (funcNamesMap[tc.panes[i].name] !== key)
+              toggleInputs[i].value = null;
+            calculatedFunctions[funcNamesMap[tc.panes[i].name]] = false;
+          }
+        }
+        calculatedFunctions[key] = value;
+        if (!value)
+          $(pane.content).find('input')?.attr('disabled', 'true');
+        else
+          $(pane.content).find('input')?.removeAttr('disabled');
+      };
+      const toggle = singleSelect ?
+        ui.input.radio('', {items: [''], value: checked ? '' : undefined, onValueChanged: (v) => onToggle(v === '')}) :
+        ui.input.bool('', {value: checked, onValueChanged: (v) => onToggle(!!v)});
+      toggle.setTooltip('Toggle calculation of this function');
+      toggleInputs.push(toggle);
+      pane.header.appendChild(toggle.root);
       pane.header.classList.add('statistics-compute-dialog-pane-header');
     });
   }
