@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Datagrok plugin that integrates the platform with the **CDD Vault** registration system (https://www.collaborativedrug.com). Exposes a `CDD Vault` app under `Browse | Apps | Chem` with tabs for Protocols, Collections, Saved Searches, Molecules, and Search, plus a context panel for sketched/selected molecules.
 
-Auth: the CDD Vault API key is read from the package credentials manager under the `apiKey` key (see `cdd-vault-credentials.ts`).
+Auth: the CDD Vault API key is read from the package credentials manager under the `apiKey` key (lazy-loaded in `cdd-vault-api.ts` on the first request).
 
 ## Architecture
 
@@ -14,9 +14,8 @@ Small plugin, flat `src/` layout — no deep hierarchy to navigate:
 
 - **`package.ts`** — entry point. `PackageFunctions` class registers the `cddVaultApp` (via `@grok.decorators.app`), the app tree browser, context panel, and search function. Wires up the tabbed UI (Protocols / Collections / Saved Searches / Molecules / Search) against a `Vault` tree node.
 - **`cdd-vault-api.ts`** — thin wrapper over the CDD Vault REST API. Defines all response types (`Vault`, `Protocol`, `Collection`, `SavedSearch`, `MoleculesQueryResult`, `ApiResponse<T>`, etc.) and query functions (`queryVaults`, `queryMolecules`, `queryMoleculesAsync`, `queryReadoutRowsAsync`, `queryProtocolsAsync`, `queryCollectionsAsync`, `queryBatchesAsync`, `querySavedSearches`, `querySavedSearchById`, `queryProjects`). The `*Async` variants use CDD's async job endpoints and are polled via `getAsyncResults` / `getAsyncResultsAsDf` in `utils.ts`. All HTTP goes through `grok.dapi.fetchProxy` (never raw `fetch`).
-- **`utils.ts`** — the bulk of the UI glue. Builds tree nodes (`createVaultNode`, `createNestedCDDNode`), the single tab-loading entry point `createCDDTableView` (see *Tab data loading* below), molecule dataframe construction (`createMoleculesDfFromObjects`, `prepareDataForDf`, `reorderColummns`), context panel (`createCDDContextPanel`), ID→link rendering (`createLinks`, `createLinksFromIds`), URL routing (`handleInitialURL`, `createPath`, `getExportId`), and vault stats.
+- **`utils.ts`** — the bulk of the UI glue. Builds tree nodes (`createVaultNode`, `createNestedCDDNode`), the single tab-loading entry point `createCDDTableView` (see *Tab data loading* below), molecule dataframe construction (`createMoleculesDfFromObjects`, `prepareDataForDf`, `reorderColumns`), context panel (`createCDDContextPanel`), ID→link rendering (`createLinks`, `createLinksFromIds`), URL routing (`handleInitialURL`, `createPath`, `getExportId`), and vault stats.
 - **`search-function-editor.ts`** — custom function editor (`SeachEditor`) for similarity / substructure / exact / identity search. Exposed as a docked filters side-panel inside the Molecules tab, wired up by `initializeFilters` in `utils.ts` (not a standalone tab). Two API quirks worth knowing: `getParams()` returns resolved values for the search endpoint (e.g. protocol *id*, not name) and is **not** symmetric — to persist, pre-fill, or share form state, work with the input objects directly. `init()` is async and builds the protocol/run choice lists at the end, so any code that targets those inputs must run after init resolves.
-- **`cdd-vault-credentials.ts`** — reads `apiKey` from package credentials.
 - **`constants.ts`** — tab names (`PROTOCOLS_TAB`, `COLLECTIONS_TAB`, `MOLECULES_TAB`, `SAVED_SEARCHES_TAB`, `SEARCH_TAB`) and `CDDVaultSearchType`.
 - **`detectors.js`** — semantic type detectors (loaded separately by platform; do not bundle).
 - **`tests/`** + `package-test.ts` — grok-test suite.

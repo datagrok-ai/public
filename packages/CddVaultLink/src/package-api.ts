@@ -8,8 +8,8 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function cddVaultApp(path?: string , filter?: string ): Promise<DG.View> {
-    return await grok.functions.call('CDDVaultLink:CddVaultApp', { path, filter });
+  export async function cddVaultApp(path?: string , _filter?: string ): Promise<DG.View> {
+    return await grok.functions.call('CDDVaultLink:CddVaultApp', { path, _filter });
   }
 
   export async function cddVaultAppTreeBrowser(treeNode: any ): Promise<void> {
@@ -20,8 +20,8 @@ export namespace funcs {
     return await grok.functions.call('CDDVaultLink:MolColumnPropertyPanel', { mol });
   }
 
-  export async function cddvaultSearchEditor(call: any ): Promise<void> {
-    return await grok.functions.call('CDDVaultLink:CDDVaultSearchEditor', { call });
+  export async function cddvaultSearchEditor(_call: any ): Promise<void> {
+    return await grok.functions.call('CDDVaultLink:CDDVaultSearchEditor', { _call });
   }
 
   export async function getVaultStats(vaultId: number , vaultName: string ): Promise<string> {

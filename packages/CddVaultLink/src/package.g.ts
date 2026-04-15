@@ -52,7 +52,7 @@ export async function getVaults() : Promise<string> {
 }
 
 //name: Get Molecules
-//input: int vaultId { nullable: true }
+//input: int vaultId 
 //input: string moleculesIds 
 //output: dataframe result
 //meta.cache: all
@@ -62,7 +62,7 @@ export async function getMolecules(vaultId: number, moleculesIds: string) : Prom
 }
 
 //name: Get Molecules Async
-//input: int vaultId { nullable: true }
+//input: int vaultId 
 //input: string moleculesIds 
 //input: int timeoutMinutes 
 //output: dataframe result

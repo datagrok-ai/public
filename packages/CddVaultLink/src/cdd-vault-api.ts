@@ -5,6 +5,7 @@ import {_package} from './package';
 import {paramsStringFromObj} from './utils';
 
 const API_KEY_PARAM_NAME = 'apiKey';
+export const CDD_HOST = 'https://app.collaborativedrug.com';
 let apiKey = '';
 
 export interface ApiResponse<T> {
@@ -395,43 +396,50 @@ export interface ExportStatus {
 async function request<T>(
   method: string,
   path: string,
-  body?: any,
-  text?: boolean,
+  body?: Record<string, any>,
+  binary?: boolean,
 ): Promise<ApiResponse<T>> {
   try {
     if (apiKey === '') {
       const credentials = await _package.getCredentials();
-      if (!credentials)
-        throw new Error('API key is not set in package credentials');
-      if (!credentials.parameters[API_KEY_PARAM_NAME])
+      if (!credentials || !credentials.parameters[API_KEY_PARAM_NAME])
         throw new Error('API key is not set in package credentials');
       apiKey = credentials.parameters[API_KEY_PARAM_NAME];
     }
-    const headers: any = {
+    const headers: Record<string, string> = {
       'X-CDD-Token': apiKey,
       'Accept': 'application/json',
     };
     if (method === 'POST')
       headers['Content-Type'] = 'application/json';
 
-    const response = await grok.dapi.fetchProxy(`https://app.collaborativedrug.com${path}`, {
+    const response = await grok.dapi.fetchProxy(`${CDD_HOST}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
       redirect: 'follow',
     });
 
-    const data = text ? await response.bytes() : await response.json();
+    if (response.status === 401) {
+      apiKey = '';
+      const msg = 'CDD Vault authentication failed. Please check the API key in the package credentials.';
+      grok.shell.error(msg);
+      throw new Error(msg, {cause: 401});
+    }
 
-    if (!response.ok)
-      throw new Error(data.error ?? `HTTP error!: ${response.status}`, {cause: response.status});
+    if (!response.ok) {
+      const errorBody = binary ? undefined : await response.json().catch(() => undefined);
+      throw new Error(errorBody?.error ?? `HTTP error ${response.status}: ${response.statusText}`,
+        {cause: response.status});
+    }
 
-
+    const data = binary ? await response.bytes() : await response.json();
     return {data};
   } catch (error) {
+    const cause = error instanceof Error ? error.cause : undefined;
     return {
       error: error instanceof Error ? error.message : 'An unknown error occurred',
-      errorCode: error instanceof Error ? error.cause as number : undefined,
+      errorCode: typeof cause === 'number' ? cause : undefined,
     };
   }
 }
@@ -508,7 +516,6 @@ export async function queryMolecules(vaultId: number, params: MoleculeQueryParam
 export async function queryMoleculesAsync(vaultId: number, params: MoleculeQueryParams):
  Promise<ApiResponse<ExportStatus>> {
   params.async = true;
-  // For environments that don't support JSON in GET requests, use POST with /query endpoint
   return request<ExportStatus>('POST', `/api/v1/vaults/${vaultId}/molecules/query`, params);
 }
 
@@ -546,8 +553,8 @@ export async function queryExportStatus(vaultId: number, exportId: number): Prom
   return request<ExportStatus>('GET', `/api/v1/vaults/${vaultId}/export_progress/${exportId}`);
 }
 
-/** Get export result*/
-export async function queryExportResult(vaultId: number, exportId: number, isTextResponse: boolean):
+/** Get export result. `binary=true` returns Uint8Array (SDF); otherwise parsed JSON. */
+export async function queryExportResult(vaultId: number, exportId: number, binary: boolean):
  Promise<ApiResponse<any>> {
-  return request<any>('GET', `/api/v1/vaults/${vaultId}/exports/${exportId}`, undefined, isTextResponse);
+  return request<any>('GET', `/api/v1/vaults/${vaultId}/exports/${exportId}`, undefined, binary);
 }

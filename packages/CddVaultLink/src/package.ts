@@ -28,6 +28,55 @@ import {addNodeWithEmptyResults, CDDVaultStats, createBatchesDfFromObjects,
 export * from './package.g';
 export const _package = new DG.Package();
 
+/** Shared body for cDDVaultSearch (sync) and cDDVaultSearchAsync. */
+async function runSearch(vaultId: number, opts: {
+  structure?: string;
+  structure_search_type?: CDDVaultSearchType;
+  structure_similarity_threshold?: number;
+  protocol?: number;
+  run?: number;
+  async: boolean;
+  pageSize?: number;
+}): Promise<DG.DataFrame> {
+  const molIds: number[] = [];
+  if (opts.protocol) {
+    const rowsRes = opts.async ?
+      await runAsyncExport(vaultId, () => queryReadoutRowsAsync(vaultId,
+        {protocols: String(opts.protocol), runs: opts.run?.toString()}), 5) :
+      await queryReadoutRows(vaultId,
+        {protocols: String(opts.protocol), runs: opts.run?.toString(), page_size: opts.pageSize});
+    if (rowsRes?.error) {
+      grok.shell.error(rowsRes.error);
+      return DG.DataFrame.create();
+    }
+    for (const row of rowsRes?.data?.objects ?? []) {
+      if (!molIds.includes(row.molecule))
+        molIds.push(row.molecule);
+    }
+  }
+
+  const params: MoleculeQueryParams = opts.structure ?
+    {structure: opts.structure, structure_search_type: opts.structure_search_type,
+      structure_similarity_threshold: opts.structure_similarity_threshold} :
+    {molecules: molIds.join(',')};
+  if (!opts.async && opts.pageSize !== undefined)
+    params.page_size = opts.pageSize;
+
+  const cddMols = opts.async ?
+    await runAsyncExport(vaultId, () => queryMoleculesAsync(vaultId, params), 5) as ApiResponse<MoleculesQueryResult> :
+    await queryMolecules(vaultId, params);
+  if (cddMols?.error) {
+    grok.shell.error(cddMols.error);
+    return DG.DataFrame.create();
+  }
+
+  const objects = cddMols?.data?.objects;
+  if (!objects?.length) return DG.DataFrame.create();
+  const molsRes = opts.protocol && opts.structure ?
+    objects.filter((it) => molIds.includes(it.id)) : objects;
+  return createMoleculesDfFromObjects(vaultId, molsRes);
+}
+
 export class PackageFunctions {
   @grok.decorators.app({
     'icon': 'images/cdd-icon-small.png',
@@ -253,7 +302,7 @@ export class PackageFunctions {
     'name': 'Get Molecules',
   })
   static async getMolecules(
-    @grok.decorators.param({'type': 'int', 'options': {'nullable': true}}) vaultId: number,
+    @grok.decorators.param({'type': 'int'}) vaultId: number,
       moleculesIds: string): Promise<DG.DataFrame> {
     const params: {[key: string]: any} = {page_size: PREVIEW_ROW_NUM};
     if (moleculesIds)
@@ -275,7 +324,7 @@ export class PackageFunctions {
     'name': 'Get Molecules Async',
   })
   static async getMoleculesAsync(
-    @grok.decorators.param({'type': 'int', 'options': {'nullable': true}}) vaultId: number,
+    @grok.decorators.param({'type': 'int'}) vaultId: number,
       moleculesIds: string,
     @grok.decorators.param({'type': 'int'}) timeoutMinutes: number): Promise<DG.DataFrame> {
     const params: {[key: string]: any} = {};
@@ -405,44 +454,8 @@ export class PackageFunctions {
       'description': 'Protocol id'}}) protocol?: number,
     @grok.decorators.param({'type': 'int', 'options': {'category': 'Protocol', 'nullable': true,
       'description': 'Specific run id'}}) run?: number): Promise<DG.DataFrame> {
-    //collecting molecule ids according to protocol query params
-    const molIds: number[] = [];
-    if (protocol) {
-      const readoutRowsRes = await runAsyncExport(vaultId,
-        () => queryReadoutRowsAsync(vaultId, {protocols: protocol.toString(), runs: run?.toString()}), 5);
-      if (!readoutRowsRes)
-        return DG.DataFrame.create();
-      const readoutRows = readoutRowsRes.data?.objects;
-      if (readoutRows) {
-        for (const readoutRow of readoutRows) {
-          if (!molIds.includes(readoutRow.molecule))
-            molIds.push(readoutRow.molecule);
-        }
-      }
-    }
-    const molQueryParams: MoleculeQueryParams = !structure ? {molecules: molIds.join(',')} :
-      {structure: structure, structure_search_type: structure_search_type,
-        structure_similarity_threshold: structure_similarity_threshold};
-
-    const cddMols = await runAsyncExport(vaultId,
-      () => queryMoleculesAsync(vaultId, molQueryParams), 5) as ApiResponse<MoleculesQueryResult>;
-    if (!cddMols)
-      return DG.DataFrame.create();
-
-    if (cddMols.data?.objects && cddMols.data?.objects.length) {
-      //in case we had both protocol and structure conditions - combine results together
-      const molsRes = protocol && structure ?
-        cddMols.data!.objects!.filter((it) => molIds.includes(it.id)) : cddMols.data?.objects;
-      prepareDataForDf(cddMols.data?.objects);
-      const df = DG.DataFrame.fromObjects(molsRes)!;
-      if (!df)
-        return DG.DataFrame.create();
-      createLinksFromIds(vaultId, df);
-      reorderColumns(df);
-      await grok.data.detectSemanticTypes(df);
-      return df;
-    }
-    return DG.DataFrame.create();
+    return runSearch(vaultId, {structure, structure_search_type, structure_similarity_threshold,
+      protocol, run, async: true});
   }
 
 
@@ -559,13 +572,10 @@ export class PackageFunctions {
 
 
     const cddMols = await queryMolecules(vaultId, params);
-    let df: DG.DataFrame | null = null;
-    if (cddMols.data?.objects) {
-      prepareDataForDf(cddMols.data?.objects as any[]);
-      df = DG.DataFrame.fromObjects(cddMols.data.objects)!;
-    }
-    if (!df)
+    if (!cddMols.data?.objects)
       return DG.DataFrame.create();
+    prepareDataForDf(cddMols.data.objects as any[]);
+    const df = DG.DataFrame.fromObjects(cddMols.data.objects) ?? DG.DataFrame.create();
     if (params.fields_search) {
       for (const moleculeUDF of params.fields_search) {
         const colType = moleculeUDF.text_value ? DG.TYPE.STRING : moleculeUDF.float_value ? DG.TYPE.FLOAT : moleculeUDF.date_value ? DG.TYPE.DATE_TIME : null;
@@ -602,44 +612,7 @@ export class PackageFunctions {
       run?: number,
     @grok.decorators.param({'type': 'int', 'options': {'nullable': true, 'description': 'Page size for preview (defaults to PREVIEW_ROW_NUM if omitted)'}})
       page_size?: number): Promise<DG.DataFrame> {
-    const effectivePageSize = page_size ?? PREVIEW_ROW_NUM;
-    //collecting molecule ids according to protocol query params
-    const molIds: number[] = [];
-    if (protocol) {
-      const readoutRowsRes = await queryReadoutRows(vaultId, {protocols: protocol.toString(), runs: run?.toString(), page_size: effectivePageSize});
-      if (readoutRowsRes.error) {
-        grok.shell.error(readoutRowsRes.error);
-        return DG.DataFrame.create();
-      }
-      const readoutRows= readoutRowsRes.data?.objects;
-      if (readoutRows) {
-        for (const readoutRow of readoutRows) {
-          if (!molIds.includes(readoutRow.molecule))
-            molIds.push(readoutRow.molecule);
-        }
-      }
-    }
-    const molQueryParams: MoleculeQueryParams = !structure ? {molecules: molIds.join(',')} :
-      {structure: structure, structure_search_type: structure_search_type, structure_similarity_threshold: structure_similarity_threshold};
-
-    molQueryParams.page_size = effectivePageSize;
-    const cddMols = await queryMolecules(vaultId, molQueryParams);
-    if (cddMols.error) {
-      grok.shell.error(cddMols.error);
-      return DG.DataFrame.create();
-    }
-    if (cddMols.data?.objects && cddMols.data?.objects.length) {
-      //in case we had both protocol and structure conditions - combine results together
-      const molsRes = protocol && structure ? cddMols.data!.objects!.filter((it) => molIds.includes(it.id)) : cddMols.data?.objects;
-      prepareDataForDf(cddMols.data?.objects);
-      const df = DG.DataFrame.fromObjects(molsRes)!;
-      if (!df)
-        return DG.DataFrame.create();
-      createLinksFromIds(vaultId, df);
-      reorderColumns(df);
-      await grok.data.detectSemanticTypes(df);
-      return df;
-    }
-    return DG.DataFrame.create();
+    return runSearch(vaultId, {structure, structure_search_type, structure_similarity_threshold,
+      protocol, run, async: false, pageSize: page_size ?? PREVIEW_ROW_NUM});
   }
 }
