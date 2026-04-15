@@ -19,6 +19,7 @@ import {
   createDefaultProfile,
   createProfileForDf,
   mergeProfileWithDf,
+  isEdaPackageInstalled,
 } from './utils';
 import {MpoProfileManager} from './mpo-profile-manager';
 
@@ -434,6 +435,11 @@ export class MpoProfileCreateView {
       return;
 
     this.setLoading(this.view.root, true, 'Running data-driven MPO...');
+
+    if (!isEdaPackageInstalled()) {
+      this.setLoading(this.view.root, false);
+      return;
+    }
 
     try {
       this.closePMpoPanels();

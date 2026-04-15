@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import {checkPackage} from '../utils/elemental-analysis-utils';
+
 import {
   DEFAULT_AGGREGATION,
   DESIRABILITY_PROFILE_TYPE,
@@ -13,6 +15,14 @@ import {
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
+
+export function isEdaPackageInstalled(): boolean {
+  if (!checkPackage('EDA', 'getPmpoAppItems')) {
+    grok.shell.warning('EDA package is not installed');
+    return false;
+  }
+  return true;
+}
 
 export type MpoProfileInfo = DesirabilityProfile & {
   fileName: string;
