@@ -44,6 +44,7 @@ import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 import {invalidateMols, MONOMERIC_COL_TAGS, SubstructureSearchDialog} from './substructure-search/substructure-search';
 import {convert} from './utils/convert';
+import {compareSequencesUI} from './utils/compare-sequences';
 import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
 import {getMonomerInfoWidget} from './widgets/monomer-info-widget';
 import {saveAsFastaUI} from './utils/save-as-fasta';
@@ -990,6 +991,15 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'double', options: {initialValue: '0'}}) gapExtend: number = 0,
   ): Promise<DG.Column<string>> {
     return alignWithPepsea(sequenceCol, method, gapOpen, gapExtend);
+  }
+
+  @grok.decorators.func({
+    name: 'Compare Sequences',
+    description: 'Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)',
+    'top-menu': 'Bio | Analyze | Compare sequences...',
+  })
+  static compareSequences(): void {
+    compareSequencesUI();
   }
 
   @grok.decorators.func({
