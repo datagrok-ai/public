@@ -1,6 +1,6 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {getFromPdb, buildComparisonTable} from '../utils/utils';
+import {getRemarksFromPdb, buildComparisonTable} from '../utils/utils';
 
 const SAMPLE_PDB = `REMARK  1  receptor. 1bdq J.
 REMARK  2  binding energy.  -12.70
@@ -21,14 +21,14 @@ const EXPECTED_VALUES: { [name: string]: number } = {
 };
 
 category('Utils', () => {
-  test('getFromPdb: parses energy values', async () => {
-    const values = getFromPdb(SAMPLE_PDB);
+  test('getRemarksFromPdb: parses energy values', async () => {
+    const values = getRemarksFromPdb(SAMPLE_PDB);
     for (const [name, expected] of Object.entries(EXPECTED_VALUES))
       expect(values[name], expected);
   });
 
-  test('getFromPdb: returns empty for no remarks', async () => {
-    expect(Object.keys(getFromPdb('ATOM 1 C1 LIG 1 0 0 0')).length, 0);
+  test('getRemarksFromPdb: returns empty for no remarks', async () => {
+    expect(Object.keys(getRemarksFromPdb('ATOM 1 C1 LIG 1 0 0 0')).length, 0);
   });
 
   test('buildComparisonTable: creates grid rows', async () => {

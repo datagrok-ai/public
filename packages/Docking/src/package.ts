@@ -12,7 +12,7 @@ import {_runAutodock, AutoDockService, _runAutodock2, ensureNoDockingError} from
 import {TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
 import { _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
-import { addColorCoding, buildComparisonTable, formatColumns, getFromPdb, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
+import { addColorCoding, buildComparisonTable, formatColumns, getRemarksFromPdb, getRemarksFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -188,7 +188,7 @@ export class PackageFunctions{
     if (!addedToPdb)
       return new DG.Widget(ui.divText('Docking has not been run'));
 
-    const autodockResults: DG.DataFrame = getFromPdbs(molecule);
+    const autodockResults: DG.DataFrame = getRemarksFromPdbs(molecule);
     const widget = new DG.Widget(ui.div([]));
 
     if (table)
@@ -219,7 +219,7 @@ export class PackageFunctions{
 
     const currentRowIdx = molecule.cell.rowIndex;
     const ligandCol = molecule.cell.column;
-    const currentValues = getFromPdb(ligandCol.get(currentRowIdx));
+    const currentValues = getRemarksFromPdb(ligandCol.get(currentRowIdx));
 
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const sub = currentTable.onMouseOverRowChanged.subscribe(() => {
@@ -230,7 +230,7 @@ export class PackageFunctions{
         if (hovIdx >= 0 && hovIdx !== currentRowIdx) {
           const hovPdb = ligandCol.get(hovIdx);
           if (hovPdb && hovPdb.includes(BINDING_ENERGY_COL)) {
-            result.appendChild(buildComparisonTable(currentValues, getFromPdb(hovPdb)));
+            result.appendChild(buildComparisonTable(currentValues, getRemarksFromPdb(hovPdb)));
             return;
           }
         }

@@ -7,7 +7,7 @@ import { BiostructureData } from '@datagrok-libraries/bio/src/pdb/types';
 
 import { BINDING_ENERGY_COL, POSE_COL, setAffinity, setPose, TARGET_PATH } from './constants';
 
-export function getFromPdb(pdbString: string): { [name: string]: number } {
+export function getRemarksFromPdb(pdbString: string): { [name: string]: number } {
   const result: { [name: string]: number } = {};
   const remarkRegex = /REMARK\s+\d+\s+([\w\s\(\)-]+)\.\s+([-\d.]+)/g;
   let match;
@@ -16,12 +16,12 @@ export function getFromPdb(pdbString: string): { [name: string]: number } {
   return result;
 }
 
-export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
+export function getRemarksFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
   const col = pdb.cell.column;
   const resultDf = DG.DataFrame.create(col.length);
 
   for (let idx = 0; idx < col.length; idx++) {
-    const values = getFromPdb(col.get(idx));
+    const values = getRemarksFromPdb(col.get(idx));
     for (const [colName, value] of Object.entries(values)) {
       let resultCol = resultDf.columns.byName(colName);
       if (!resultCol) resultCol = resultDf.columns.addNewFloat(colName);
