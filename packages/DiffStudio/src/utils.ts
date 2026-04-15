@@ -291,6 +291,24 @@ export async function getEquationsFromFile(path: string): Promise<string | null>
   }
 }
 
+/** Extract `#name:` and `#description:` from an .ivp file content */
+export function extractIvpNameAndDescription(content: string): {name: string, description: string} {
+  const namePrefix = `${CONTROL_EXPR.NAME}:`;
+  const descPrefix = `${CONTROL_EXPR.DESCR}:`;
+  let name = '';
+  let description = '';
+  for (const rawLine of content.split('\n')) {
+    const line = rawLine.trim();
+    if (!name && line.startsWith(namePrefix))
+      name = line.slice(namePrefix.length).trim();
+    else if (!description && line.startsWith(descPrefix))
+      description = line.slice(descPrefix.length).trim();
+    if (name && description)
+      break;
+  }
+  return {name, description};
+}
+
 /** Return category control widget */
 export function getCategoryWidget(category: string, inputs: DG.InputBase[]) {
   const updateWgts = (isExpanded: boolean) => {

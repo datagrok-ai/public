@@ -5,29 +5,12 @@ import * as ui from 'datagrok-api/ui';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 
 import {_package} from './package';
-import {getRecentModelsTable, getEquationsFromFile} from './utils';
-import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC, PATH, LINK} from './ui-constants';
+import {getRecentModelsTable, getEquationsFromFile, extractIvpNameAndDescription} from './utils';
+import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC, PATH, LINK,
+  LIBRARY_CHANGED_EVENT} from './ui-constants';
 import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE, getLink} from './app';
-import {CONTROL_EXPR} from './constants';
 
 import '../css/app-styles.css';
-
-function extractIvpNameAndDescription(content: string): {name: string, description: string} {
-  const namePrefix = `${CONTROL_EXPR.NAME}:`;
-  const descPrefix = `${CONTROL_EXPR.DESCR}:`;
-  let name = '';
-  let description = '';
-  for (const rawLine of content.split('\n')) {
-    const line = rawLine.trim();
-    if (!name && line.startsWith(namePrefix))
-      name = line.slice(namePrefix.length).trim();
-    else if (!description && line.startsWith(descPrefix))
-      description = line.slice(descPrefix.length).trim();
-    if (name && description)
-      break;
-  }
-  return {name, description};
-}
 
 export class DiffStudioHub {
   name = 'Diff Studio Hub';
@@ -295,6 +278,7 @@ export class DiffStudioHub {
           entry.help = value;
           await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(parsed, null, 2));
           dlg.close();
+          grok.events.fireCustomEvent(LIBRARY_CHANGED_EVENT, null);
           await this.render();
         } catch (e) {
           grok.shell.error(`Failed to save settings: ${e instanceof Error ? e.message : 'platform issue'}`);
@@ -327,51 +311,10 @@ export class DiffStudioHub {
           else
             grok.shell.warning('Help link is not defined. To set help, right click the model and select "Settings..."');
         }, null, {description: 'Open help in a new tab'})
-        .separator()
         .item('Settings...', () => this.openCustomModelSettings(modelPath, helpUrl), null,
           {description: 'Configure model properties'})
-        .item('Remove...', () => this.confirmRemoveCustomModel(modelPath), null,
-          {description: 'Remove model'})
         .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
     });
-  }
-
-  private confirmRemoveCustomModel(modelPath: string): void {
-    const deleteFileInput = ui.input.bool('Delete file', {
-      value: false,
-      tooltipText: 'Also delete the model file from disk. If off, only the entry is removed from the manifest.',
-    });
-
-    const dlg = ui.dialog({title: 'Remove model'})
-      .add(ui.divText('Are you sure you want to remove this model?'))
-      .add(deleteFileInput)
-      .addButton('Remove', async () => {
-        dlg.close();
-        try {
-          const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
-          const text = await grok.dapi.files.readAsText(manifestPath);
-          const parsed = JSON.parse(text);
-          if (!Array.isArray(parsed?.models)) {
-            grok.shell.error('Invalid manifest format');
-            return;
-          }
-          const idx = parsed.models.findIndex((m: {path?: string}) => m?.path === modelPath);
-          if (idx < 0) {
-            grok.shell.error('Model entry not found in external-models.json');
-            return;
-          }
-          parsed.models.splice(idx, 1);
-          await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(parsed, null, 2));
-
-          if (deleteFileInput.value && await grok.dapi.files.exists(modelPath))
-            await grok.dapi.files.delete(modelPath);
-
-          await this.render();
-        } catch (e) {
-          grok.shell.error(`Failed to remove model: ${e instanceof Error ? e.message : 'platform issue'}`);
-        }
-      }, undefined, 'Remove model')
-      .show();
   }
 
   private addModelContextMenu(card: HTMLElement, section: TITLE, state: EDITOR_STATE, run: () => void): void {

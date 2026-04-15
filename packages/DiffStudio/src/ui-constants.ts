@@ -335,6 +335,9 @@ export const MAX_RECENT_COUNT = 10;
 
 export const CUSTOM_MODEL_IMAGE_LINK = 'images/custom.png';
 
+/** Custom event name — fired whenever external-models.json is modified */
+export const LIBRARY_CHANGED_EVENT = 'diff-studio:library-changed';
+
 /** Model image link */
 export const modelImageLink = new Map([
   [TITLE.BASIC, 'images/basic.png'],

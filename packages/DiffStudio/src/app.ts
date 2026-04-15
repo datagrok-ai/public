@@ -16,8 +16,9 @@ import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
-  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT,
-  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF, MAX_FACET_GRAPHS_COUNT} from './ui-constants';
+  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT, MODEL_ICON,
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF, MAX_FACET_GRAPHS_COUNT,
+  LIBRARY_CHANGED_EVENT} from './ui-constants';
 
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
@@ -27,7 +28,8 @@ import {CallbackAction} from './solver-tools';
 
 import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
   getCategoryWidget, getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
-  getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions} from './utils';
+  getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions,
+  extractIvpNameAndDescription} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
@@ -75,6 +77,24 @@ export enum EDITOR_STATE {
   BIOREACTOR = 'bioreactor',
   POLLUTION = 'pollution',
 };
+
+/** Build rich tooltip for a model (icon + name + description) matching hub cards */
+function buildModelTooltip(name: string, description: string, iconUrl: string): HTMLElement {
+  const tooltipIcon = ui.iconImage('diff-studio', iconUrl);
+  tooltipIcon.classList.add('diff-studio-hub-tooltip-icon');
+  const tooltipName = ui.label(name);
+  tooltipName.classList.add('diff-studio-hub-tooltip-name');
+  const tooltipHeader = ui.divH([tooltipIcon, tooltipName]);
+  tooltipHeader.classList.add('diff-studio-hub-tooltip-header');
+  const tooltipDesc = ui.divText(description);
+  return ui.divV([tooltipHeader, tooltipDesc]);
+}
+
+/** Icon URL for a built-in model */
+function getModelIconUrl(title: TITLE): string {
+  const iconFile = MODEL_ICON.get(title);
+  return iconFile ? `${_package.webRoot}files/${iconFile}` : `${_package.webRoot}/package.png`;
+}
 
 /** Return path corresponding to state */
 function stateToPath(state: EDITOR_STATE): string {
@@ -517,6 +537,8 @@ export class DiffStudio {
   private fromFileHandler = false;
   private appTree: DG.TreeViewGroup | null = null;
   private recentFolder: DG.TreeViewGroup | null = null;
+  private libraryFolder: DG.TreeViewGroup | null = null;
+  private librarySub: {unsubscribe: () => void} | null = null;
   private browsePanel: DG.BrowsePanel | null = null;
   private isRecentRun = false;
 
@@ -1101,6 +1123,8 @@ export class DiffStudio {
         grok.shell.info('Registered in Library');
       else
         grok.shell.info('Already in Library');
+
+      grok.events.fireCustomEvent(LIBRARY_CHANGED_EVENT, null);
     } catch (err) {
       this.processError(err);
     }
@@ -1774,13 +1798,24 @@ export class DiffStudio {
     else {
       const templatesFolder = this.getFolderWithBultInModels(TEMPLATE_TITLES, TITLE.TEMPL);
       const examplesFolder = this.getFolderWithBultInModels(EXAMPLE_TITLES, TITLE.LIBRARY);
+      this.libraryFolder = examplesFolder;
+      this.librarySub?.unsubscribe();
+      this.librarySub = grok.events.onCustomEvent(LIBRARY_CHANGED_EVENT).subscribe(() => {
+        if (!this.libraryFolder || !this.libraryFolder.root.isConnected) {
+          this.librarySub?.unsubscribe();
+          this.librarySub = null;
+          return;
+        }
+        void this.refreshLibraryFolder();
+      });
 
-      const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup) => {
-        models.forEach((name) => this.putBuiltInModelToFolder(name, folder));
+      const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup, section: TITLE) => {
+        models.forEach((name) => this.putBuiltInModelToFolder(name, folder, section));
       };
 
-      putModelsToFolder(TEMPLATE_TITLES, templatesFolder);
-      putModelsToFolder(EXAMPLE_TITLES, examplesFolder);
+      putModelsToFolder(TEMPLATE_TITLES, templatesFolder, TITLE.TEMPL);
+      putModelsToFolder(EXAMPLE_TITLES, examplesFolder, TITLE.LIBRARY);
+      await this.addExternalModelsToFolder(examplesFolder);
 
       this.recentFolder = this.getFolderWithRecentModels();
 
@@ -1804,7 +1839,7 @@ export class DiffStudio {
             if (isCustomCol.get(i))
               await this.putCustomModelToRecents(infoCol.get(i));
             else
-              this.putBuiltInModelToFolder(infoCol.get(i), this.recentFolder);
+              this.putBuiltInModelToFolder(infoCol.get(i), this.recentFolder, TITLE.RECENT);
           }
         }
       } catch (err) {
@@ -1814,10 +1849,47 @@ export class DiffStudio {
   } // createTree
 
   /** Add template/example model to browse tree folder */
-  private putBuiltInModelToFolder(name: TITLE, folder: DG.TreeViewGroup): void {
+  private putBuiltInModelToFolder(name: TITLE, folder: DG.TreeViewGroup, section: TITLE): void {
     const item = folder.item(name);
-    ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
+    const description = MODEL_HINT.get(name) ?? '';
+    const iconUrl = getModelIconUrl(name);
+    ui.tooltip.bind(item.root, () => buildModelTooltip(name, description, iconUrl));
     const state = STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE;
+
+    const run = async () => {
+      const solver = new DiffStudio(false);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(
+        await solver.runSolverApp(undefined, state) as DG.View,
+        undefined, null, null,
+      );
+    };
+
+    item.root.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const menu = DG.Menu.popup()
+        .item('Run', run, null, {description: 'Run model'});
+
+      const linkSection = (section === TITLE.RECENT) ?
+        (TEMPLATE_TITLES.includes(name) ? TITLE.TEMPL : TITLE.LIBRARY) :
+        section;
+      menu.item('Copy link', async () => {
+        const url = `${window.location.origin}${PATH.APPS_DS}/${linkSection}/${state}${PATH.PARAM}`;
+        await navigator.clipboard.writeText(url);
+        grok.shell.info('Model link copied to clipboard');
+      }, null, {description: 'Copy the model link to clipboard'});
+
+      if (section !== TITLE.RECENT) {
+        menu.item('Help', () => {
+          grok.shell.windows.help.visible = true;
+          grok.shell.windows.help.showHelp(getLink(state));
+        }, null, {description: 'Open help for this model'});
+      }
+
+      menu.show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+    });
 
     // Debounce single-click so a following dblclick can cancel the preview open.
     let previewTimer: number | null = null;
@@ -1870,7 +1942,8 @@ export class DiffStudio {
       const idx = path.lastIndexOf('/');
       const name = path.slice(idx + 1, path.length);
       const item = this.recentFolder.item(name);
-      ui.tooltip.bind(item.root, path);
+      const iconUrl = `${_package.webRoot}/files/icons/default.png`;
+      ui.tooltip.bind(item.root, () => buildModelTooltip(name, path, iconUrl));
 
       const folderPath = path.slice(0, idx + 1);
       let file: DG.FileInfo;
@@ -1879,6 +1952,30 @@ export class DiffStudio {
         const fileList = await grok.dapi.files.list(folderPath);
         file = fileList.find((file) => file.nqName === path);
       }
+
+      item.root.addEventListener('contextmenu', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        DG.Menu.popup()
+          .item('Run', async () => {
+            if (!exist) {
+              grok.shell.warning(`File not found: ${path}`);
+              return;
+            }
+            DiffStudio.closeOpenPreviews();
+            const solver = new DiffStudio(false, true, true);
+            const preview = await solver.getFilePreview(file, path);
+            grok.shell.windows.showToolbox = false;
+            grok.shell.windows.showBrowse = true;
+            grok.shell.addView(preview);
+          }, null, {description: 'Run model'})
+          .item('Copy link', async () => {
+            const url = `${window.location.origin}/${PATH.FILE}/${path.replace(':', '.')}`;
+            await navigator.clipboard.writeText(url);
+            grok.shell.info('Model link copied to clipboard');
+          }, null, {description: 'Copy the model link to clipboard'})
+          .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+      });
 
       item.onSelected.subscribe(async () => {
         const panelRoot = this.appTree.rootNode.root.parentElement!;
@@ -1916,6 +2013,169 @@ export class DiffStudio {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
   } // putCustomModelToRecents
+
+  /** Read external-models.json and add each registered model to the Library tree folder */
+  private async addExternalModelsToFolder(folder: DG.TreeViewGroup): Promise<void> {
+    try {
+      const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+      if (!(await grok.dapi.files.exists(manifestPath)))
+        return;
+
+      const text = await grok.dapi.files.readAsText(manifestPath);
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed?.models))
+        return;
+
+      for (const entry of parsed.models) {
+        const modelPath: string | undefined = entry?.path;
+        const iconFile: string | undefined = entry?.icon;
+        const helpUrl: string | undefined = entry?.help;
+        if (!modelPath)
+          continue;
+        if (!(await grok.dapi.files.exists(modelPath)))
+          continue;
+
+        const content = await getEquationsFromFile(modelPath);
+        if (content === null)
+          continue;
+
+        const {name, description} = extractIvpNameAndDescription(content);
+        const fallbackName = modelPath.slice(modelPath.lastIndexOf('/') + 1);
+        const displayName = name || fallbackName;
+        const iconUrl = `${_package.webRoot}files/icons/${iconFile || 'default.png'}`;
+
+        this.addExternalModelToFolder(folder, modelPath, displayName, description, iconUrl, helpUrl);
+      }
+    } catch {
+      // silently skip if the manifest is missing or malformed
+    }
+  }
+
+  /** Add a single external (custom) model entry to the Library tree folder */
+  private addExternalModelToFolder(folder: DG.TreeViewGroup, modelPath: string, displayName: string,
+    description: string, iconUrl: string, helpUrl: string | undefined): void {
+    const item = folder.item(displayName);
+    ui.tooltip.bind(item.root, () => buildModelTooltip(displayName, description, iconUrl));
+
+    const openFile = async (asPreview: boolean) => {
+      if (!(await grok.dapi.files.exists(modelPath))) {
+        grok.shell.warning(`File not found: ${modelPath}`);
+        return;
+      }
+      const folderPath = modelPath.slice(0, modelPath.lastIndexOf('/') + 1);
+      const fileList = await grok.dapi.files.list(folderPath);
+      const file = fileList.find((f) => f.nqName === modelPath);
+      if (!file) {
+        grok.shell.warning(`File not found: ${modelPath}`);
+        return;
+      }
+      const solver = new DiffStudio(false, true, true);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      if (asPreview) {
+        DiffStudio.closeOpenPreviews();
+        grok.shell.addPreview(await solver.getFilePreview(file, modelPath));
+      } else
+        grok.shell.addView(await solver.getFilePreview(file, modelPath));
+    };
+
+    let previewTimer: number | null = null;
+
+    item.onSelected.subscribe(() => {
+      if (previewTimer !== null)
+        return;
+      previewTimer = window.setTimeout(async () => {
+        previewTimer = null;
+        const panelRoot = this.appTree.rootNode.root.parentElement!;
+        const treeNodeY = panelRoot.scrollTop;
+        await openFile(true);
+        setTimeout(() => {
+          panelRoot.scrollTo(0, treeNodeY);
+          item.root.focus();
+        }, UI_TIME.BROWSING);
+      }, UI_TIME.DBL_CLICK_DELAY);
+    });
+
+    item.root.addEventListener('dblclick', async (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      if (previewTimer !== null) {
+        clearTimeout(previewTimer);
+        previewTimer = null;
+      }
+      await openFile(false);
+    });
+
+    item.root.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      DG.Menu.popup()
+        .item('Run', () => openFile(false), null, {description: 'Run model'})
+        .item('Copy link', async () => {
+          const url = `${window.location.origin}/${PATH.FILE}/${modelPath.replace(':', '.')}`;
+          await navigator.clipboard.writeText(url);
+          grok.shell.info('Model link copied to clipboard');
+        }, null, {description: 'Copy the model link to clipboard'})
+        .item('Help', () => {
+          if (helpUrl)
+            window.open(helpUrl, '_blank');
+          else
+            grok.shell.warning('Help link is not defined. To set help, right click the model and select "Settings..."');
+        }, null, {description: 'Open help in a new tab'})
+        .item('Settings...', () => this.openExternalModelSettings(modelPath, helpUrl), null,
+          {description: 'Configure model properties'})
+        .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+    });
+  }
+
+  /** Rebuild Library tree folder: remove all items, then re-populate with built-in + external models */
+  private async refreshLibraryFolder(): Promise<void> {
+    if (!this.libraryFolder)
+      return;
+    this.libraryFolder.removeChildrenWhere(() => true);
+    EXAMPLE_TITLES.forEach((name) => this.putBuiltInModelToFolder(name, this.libraryFolder!, TITLE.LIBRARY));
+    await this.addExternalModelsToFolder(this.libraryFolder);
+  }
+
+  /** Show settings dialog for an external model entry */
+  private openExternalModelSettings(modelPath: string, currentHelpUrl: string | undefined): void {
+    const linkInput = ui.input.string('Help link', {
+      value: currentHelpUrl ?? '',
+      nullable: false,
+      tooltipText: 'Set the link to the help page',
+    });
+
+    const dlg = ui.dialog({title: 'Model settings'})
+      .add(linkInput)
+      .addButton('Save', async () => {
+        const value = linkInput.value?.trim();
+        if (!value)
+          return;
+        try {
+          const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+          const text = await grok.dapi.files.readAsText(manifestPath);
+          const parsed = JSON.parse(text);
+          const entry = parsed?.models?.find?.((m: {path?: string}) => m?.path === modelPath);
+          if (!entry) {
+            grok.shell.error('Model entry not found in external-models.json');
+            return;
+          }
+          entry.help = value;
+          await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(parsed, null, 2));
+          dlg.close();
+          grok.events.fireCustomEvent(LIBRARY_CHANGED_EVENT, null);
+        } catch (e) {
+          grok.shell.error(`Failed to save settings: ${e instanceof Error ? e.message : 'platform issue'}`);
+        }
+      }, undefined, 'Save settings')
+      .show();
+
+    const saveBtn = dlg.getButton('Save');
+    saveBtn.disabled = !linkInput.value?.trim();
+    linkInput.onChanged.subscribe(() => {
+      saveBtn.disabled = !linkInput.value?.trim();
+    });
+  }
 
   /** Save model to recent models file */
   private async saveModelToRecent(modelSpecification: string, isCustom: boolean) {
@@ -1963,7 +2223,7 @@ export class DiffStudio {
         if (isCustom)
           this.putCustomModelToRecents(info);
         else
-          this.putBuiltInModelToFolder(info, this.recentFolder);
+          this.putBuiltInModelToFolder(info, this.recentFolder, TITLE.RECENT);
       } else { // a file with reccent models doesn't exist
         await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
           DG.DataFrame.fromColumns([
