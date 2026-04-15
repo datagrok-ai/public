@@ -25,8 +25,8 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
 
 import {CallbackAction} from './solver-tools';
 
-import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
-  getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
+import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
+  getCategoryWidget, getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
   getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
@@ -751,12 +751,12 @@ export class DiffStudio {
     return wgt;
   }
 
-  /** Return the export to JavaScript widget */
+  /** Return the save-to-Library widget */
   private getAddToModelHubWgt(): HTMLElement {
     const icon = ui.iconFA(
       'layer-plus',
-      async () => await this.saveToModelHub(),
-      'Save to Model Hub',
+      async () => await this.saveModelToLibrary(),
+      HINT.SAVE_TO_LIB,
     );
 
     icon.classList.add('diff-studio-ribbon-save-to-model-catalog-icon');
@@ -1037,40 +1037,69 @@ export class DiffStudio {
     }
   }; // exportToJS
 
-  /** Get JS-script for solving the current IVP */
-  private async saveToModelHub(): Promise<void> {
+  /** Save the current model to the Library folder and register it in external-models.json */
+  private async saveModelToLibrary(): Promise<void> {
     try {
       const model = this.editorView!.state.doc.toString();
       const ivp = getIVP(model);
       await this.tryToSolve(ivp);
 
-      let lines = [
-        `//name: ${ivp.name}`,
-        '//language: javascript',
-      ];
+      const lowerMain = this.mainPath.toLowerCase();
+      const fromFile = this.mainPath.includes(PATH.FILE) && lowerMain.includes(PATH.APP_DATA_MATCH);
 
-      if (ivp.descr)
-        lines.push(`//description: ${ivp.descr}`);
+      let targetPath: string;
+      let createdFileName: string | null = null;
 
-      lines = lines.concat([
-        '//tags: model',
-        '',
-        `const model = \`${model}\`;`,
-        '',
-        `await grok.functions.call('DiffStudio:runModel', {`,
-        `  'model': model,`,
-        `  'inputsTabDockRatio': ${this.uiOpts.inputsTabDockRatio},`,
-        `  'graphsDockRatio': ${this.uiOpts.graphsDockRatio},`,
-        '});',
-      ]);
+      if (fromFile) {
+        const rel = this.mainPath.slice(PATH.FILE.length + 1);
+        const firstDot = rel.indexOf('.');
+        targetPath = (firstDot > 0) ? `${rel.slice(0, firstDot)}:${rel.slice(firstDot + 1)}` : rel;
+      } else {
+        const folder = PATH.LIBRARY_FOLDER;
+        const baseName = sanitizeModelFileName(ivp.name ?? '');
+        let existingNames: string[] = [];
+        try {
+          const list = await grok.dapi.files.list(folder, false, MISC.MODEL_FILE_EXT);
+          existingNames = list.map((f) => f.fileName);
+        } catch {
+          existingNames = [];
+        }
+        const freeName = unusedFileName(baseName, existingNames);
+        createdFileName = `${freeName}.${MISC.MODEL_FILE_EXT}`;
+        targetPath = `${folder}/${createdFileName}`;
+        await grok.dapi.files.writeAsText(targetPath, model);
+      }
 
-      const script = DG.Script.create(lines.join('\n'));
-      grok.dapi.scripts.save(script);
-      grok.shell.info('Saved to Model Hub');
+      const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+      const manifest: {models: {path: string, icon: string}[]} = {models: []};
+
+      if (await grok.dapi.files.exists(manifestPath)) {
+        try {
+          const text = await grok.dapi.files.readAsText(manifestPath);
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed?.models))
+            manifest.models = parsed.models;
+        } catch {
+          // keep default empty
+        }
+      }
+
+      const alreadyListed = manifest.models.some((m) => m?.path === targetPath);
+      if (!alreadyListed)
+        manifest.models.push({path: targetPath, icon: 'default.png'});
+
+      await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(manifest, null, 2));
+
+      if (createdFileName !== null)
+        grok.shell.info(`Saved to Library as ${createdFileName}`);
+      else if (!alreadyListed)
+        grok.shell.info('Registered in Library');
+      else
+        grok.shell.info('Already in Library');
     } catch (err) {
       this.processError(err);
     }
-  }; // saveToModelCatalog
+  } // saveModelToLibrary
 
   /** Set multi-axis line chart with the solution */
   private setSolutionViewer(): void {

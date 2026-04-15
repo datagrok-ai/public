@@ -47,6 +47,7 @@ export enum HINT {
   CORRUPTED_DATA_FILE = 'Failed to load recent models: corrupted data file',
   EDIT = 'Edit',
   UPDATE = 'Apply all changes to the current file',
+  SAVE_TO_LIB = 'Save model to Library',
 }; // HINT
 
 /** UI titles */
@@ -260,8 +261,8 @@ Turn off the **${TITLE.EDIT}** toggle, and perform analysis:
 * Click the **Fit** icon on the top panel to [optimize inputs](${LINK.FITTING}).
 * Click the **Sensitivity** icon to run [sensitivity analysis](${LINK.SENS_AN}).
 
-# Catalog
-Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Hub**.
+# Library
+Click <i class="fas fa-layer-plus"></i> icon to save model to **Library**.
 
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
@@ -290,6 +291,9 @@ export enum PATH {
   SYSTEM = 'System',
   FILE = 'file',
   SLASH = '/',
+  LIBRARY_FOLDER = 'System:AppData/DiffStudio/library',
+  EXTERNAL_MODELS_JSON = 'external-models.json',
+  APP_DATA_MATCH = 'system.appdata/diffstudio',
 };
 
 /** UI time constants */
