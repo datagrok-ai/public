@@ -130,13 +130,7 @@ export class DiffStudioHub {
         if (isCustom) {
           const idx = info.lastIndexOf('/');
           const name = info.slice(idx + 1);
-          cards.push(this.buildModelCard(name, info, async () => {
-            const equations = await getEquationsFromFile(info);
-            if (equations) {
-              const solver = new DiffStudio();
-              await solver.runSolverApp(equations, EDITOR_STATE.FROM_FILE);
-            }
-          }));
+          cards.push(this.buildModelCard(name, info, () => this.openFileAsPreview(info)));
         } else {
           const title = info as TITLE;
           const description = MODEL_HINT.get(title) ?? '';
@@ -221,13 +215,7 @@ export class DiffStudioHub {
         const displayName = name || fallbackName;
         const iconUrl = `${_package.webRoot}files/icons/${iconFile || 'default.png'}`;
 
-        const run = async () => {
-          const equations = await getEquationsFromFile(modelPath);
-          if (equations) {
-            const solver = new DiffStudio();
-            await solver.runSolverApp(equations, EDITOR_STATE.FROM_FILE);
-          }
-        };
+        const run = () => this.openFileAsPreview(modelPath);
 
         cards.push(this.buildModelCard(displayName, description, run, iconUrl));
       }
@@ -235,6 +223,24 @@ export class DiffStudioHub {
       // silently skip if the manifest is missing or malformed
     }
     return cards;
+  }
+
+  private async openFileAsPreview(path: string): Promise<void> {
+    if (!(await grok.dapi.files.exists(path))) {
+      grok.shell.warning(`File not found: ${path}`);
+      return;
+    }
+    const folderPath = path.slice(0, path.lastIndexOf('/') + 1);
+    const fileList = await grok.dapi.files.list(folderPath);
+    const file = fileList.find((f) => f.nqName === path);
+    if (!file) {
+      grok.shell.warning(`File not found: ${path}`);
+      return;
+    }
+    const solver = new DiffStudio(false, true, true);
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showBrowse = true;
+    grok.shell.addView(await solver.getFilePreview(file, path));
   }
 
   private addModelContextMenu(card: HTMLElement, section: TITLE, state: EDITOR_STATE, run: () => void): void {
