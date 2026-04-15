@@ -198,6 +198,10 @@ const df = await grok.data.loadTable(`${_package.webRoot}tables/demo.csv`);
 
 Files are browseable in the platform under `Files | App Data | <PackageName>`.
 
+## WASM Modules
+
+For plugins with compiled WASM (C++/Emscripten, Rust/wasm-pack), see `../.claude/rules/wasm.md`.
+
 ## Function Registration
 
 Functions are declared via JSDoc-style metadata comments (not TypeScript decorators), then processed by `grok api` to
