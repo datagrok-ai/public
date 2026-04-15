@@ -3,25 +3,25 @@
 #### 1. Viewer basics 
 
 1. Open SPGI
-1. Double-click any column's header to sort it (check molecular, numeric, bool and string columns)
-1. Resize some columns
-1. Resize rows - **columns width should be adjusted automatically**
-1. Select a row, then hold Shift or Ctrl to select multiple rows
+1. Double-click any column's header to sort it (check molecular, numeric, bool and string columns) - **sort cycles asc/desc/unsort**
+1. Resize some columns by dragging the border between column headers
+1. Resize rows by dragging the bottom border of a row number - **row height changes for all rows**
+1. Click a row, then Shift+Click another row to select a range; Ctrl+Click to toggle individual rows
 1. Double-click a cell, change its value, and press Enter (check molecular, numeric, and string columns) - **the value is updated in the grid immediately**
 
 
 #### 2. Columns
 
-1. Open the hamburger menu
-1. **Filter**: 
-  * Use the filter 
-  * Click Add filter - **the filter should be added to the Filter Panel**
-1. **Color**: 
-  * Turn on the color coding
-  * Change the color coding type (where aplicable) 
-  * Apply coloring to the text/background
-1. Check the other menu items.
-1. Repeate for molecular, numeric, bool and string columns
+1. Hover a column header and click the hamburger (three-lines) icon to open the column menu
+1. **Filter**:
+  * Adjust the inline filter - **rows should be filtered immediately**
+  * Click **Add filter** - **the filter is added to the Filter Panel**
+1. **Color**:
+  * Turn on color coding
+  * Switch the color coding type (Linear / Categorical / Conditional, where applicable)
+  * Toggle coloring between text and background
+1. Check the other menu items
+1. Repeat for molecular, numeric, bool and string columns
 
 #### 3. Column's context menu 
 
@@ -56,18 +56,17 @@
 #### 5. Context menu
 
 1. Right-click the grid
-1. Use **Add** item and add 
-  * Column
-  * Summary column (all of them)
-  * Top
-  * Column Stats
-1. Go to the **Chemical Space X** and rename it - check previously added columns
-1. Use **Context menu > Add > Summary column > Smartform**
-1. Edit the smartform and check its properties on the Context Panel
-1. Open SPGI-linked1. Use Data > Link tables and link SPGI and SPGI-linked1.
-1. Go to SPGI
-1. Use **Context menu > Add > Linked Tables > SPGI-linked1** - check the result
-1. Open the **Order Or Hide Columns..** dialog and check its functionality
+1. Use **Add** submenu and add:
+  * **Column...**
+  * **Summary Columns** (try each renderer)
+  * **Top > Histogram** (and other Top options)
+1. Rename the **Chemical Space X** column - **previously added summary columns still reference it correctly**
+1. Use **Context menu > Add > Summary Columns > Smart Form**
+1. Edit the Smart Form and check its properties on the Context Panel
+1. Open SPGI-linked1, then use **Data > Link Tables...** to link SPGI and SPGI-linked1
+1. Go back to SPGI
+1. Use **Context menu > Add > Linked Tables > SPGI-linked1** - **linked columns appear in the grid**
+1. Open **Order or Hide Columns...** dialog - toggle visibility, reorder, and apply
 
 #### 6. Pick Up / Apply   ([#1887](https://github.com/datagrok-ai/public/issues/1887))
 
@@ -82,9 +81,10 @@
 
 #### 7. Column groups
 
-1. Select some columns 
-1. Remove them
-1. Change their properties
+1. Right-click a column header and choose **Group Columns...** (or select several columns and group them)
+1. Expand/collapse the group in the header
+1. Remove the group via right-click > **Ungroup**
+1. Change group properties (name, color) via the Context Panel
 
 #### 8. Filtering
 
