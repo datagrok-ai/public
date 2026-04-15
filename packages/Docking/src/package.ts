@@ -12,7 +12,7 @@ import {_runAutodock, AutoDockService, _runAutodock2, ensureNoDockingError} from
 import {TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
 import { _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
-import { addColorCoding, formatColumns, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
+import { addColorCoding, buildComparisonTable, formatColumns, getFromPdb, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -116,7 +116,7 @@ export class PackageFunctions{
   })
   static async runAutodock(
     @grok.decorators.param({options: {description: '\'Input data table\''}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule', description: '\'Small molecules to dock\''}}) ligands: DG.Column,
+    @grok.decorators.param({options: {semType: 'Molecule', description: '\'Small molecules to dock\''}}) ligands: DG.Column,
     @grok.decorators.param({options: {choices: 'Docking:getConfigFiles', description: '\'Folder with config and macromolecule\''}}) target: string,
     @grok.decorators.param({type: 'int', options: {initialValue: '10', description: '\'Number of output conformations for each small molecule\''}}) poses: number): Promise<void> {
 
@@ -205,14 +205,39 @@ export class PackageFunctions{
     if (!showProperties) return widget;
 
     const result = ui.div();
-    const map: { [_: string]: any } = {};
-    for (let i = 0; i < autodockResults!.columns.length; ++i) {
-      const columnName = autodockResults!.columns.names()[i];
-      const propertyCol = autodockResults!.col(columnName);
-      map[columnName] = prop(molecule, propertyCol!, result, AUTODOCK_PROPERTY_DESCRIPTIONS);
-    }
-    result.appendChild(ui.tableFromMap(map));
+    const buildPropertyMap = () => {
+      const map: { [_: string]: any } = {};
+      for (let i = 0; i < autodockResults!.columns.length; ++i) {
+        const columnName = autodockResults!.columns.names()[i];
+        const propertyCol = autodockResults!.col(columnName);
+        map[columnName] = prop(molecule, propertyCol!, result, AUTODOCK_PROPERTY_DESCRIPTIONS);
+      }
+      return ui.tableFromMap(map);
+    };
+    result.appendChild(buildPropertyMap());
     widget.root.append(result);
+
+    const currentRowIdx = molecule.cell.rowIndex;
+    const ligandCol = molecule.cell.column;
+    const currentValues = getFromPdb(ligandCol.get(currentRowIdx));
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const sub = currentTable.onMouseOverRowChanged.subscribe(() => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const hovIdx = currentTable.mouseOverRowIdx;
+        result.innerHTML = '';
+        if (hovIdx >= 0 && hovIdx !== currentRowIdx) {
+          const hovPdb = ligandCol.get(hovIdx);
+          if (hovPdb && hovPdb.includes(BINDING_ENERGY_COL)) {
+            result.appendChild(buildComparisonTable(currentValues, getFromPdb(hovPdb)));
+            return;
+          }
+        }
+        result.appendChild(buildPropertyMap());
+      }, 50);
+    });
+    widget.subs.push(sub);
 
     return widget;
   }
