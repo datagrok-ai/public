@@ -122,7 +122,7 @@ export class SearchEditor {
       this.protocolListChoice.value = s.protocolName;
       this.runAndReadoutDiv.style.display = 'flex';
       this.updateRuns(s.protocolName);
-      if (s.runChoice && PROTOCOL_RUN_COND_CHOICES.includes(s.runChoice as any)) {
+      if (s.runChoice && (PROTOCOL_RUN_COND_CHOICES as readonly string[]).includes(s.runChoice)) {
         this.runChoice.value = s.runChoice;
         this.runListChoiceDiv.style.display = s.runChoice === ProtocolRunCond.SPECIFIC ? 'flex' : 'none';
         if (s.runName && s.runName in this.currentProtocolRuns)
@@ -181,10 +181,11 @@ export class SearchEditor {
   }
 
   public getParams(): CDDSearchParams {
+    const isSimilarity = this.structureSearchTypeChoice.value === CDDVaultSearchType.SIMILARITY;
     return {
       structure: this.structureInput.value,
       structure_search_type: this.structureSearchTypeChoice.value ?? undefined,
-      structure_similarity_threshold: this.similarityThreshold.value ?? undefined,
+      structure_similarity_threshold: isSimilarity ? (this.similarityThreshold.value ?? undefined) : undefined,
       protocol: this.protocolListChoice.value ? this.protocols[this.protocolListChoice.value].id : undefined,
       run: this.runChoice.value === ProtocolRunCond.SPECIFIC ? this.currentProtocolRuns[this.runsListChoice.value] : undefined,
     };
