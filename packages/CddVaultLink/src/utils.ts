@@ -12,6 +12,7 @@ import {SearchEditor} from './search-function-editor';
 
 export const PREVIEW_ROW_NUM = 100;
 const CDD_VAULT_APP_PATH: string = 'apps/Cddvaultlink';
+const PROTOCOL_STATISTICS_KEY = 'protocol_statistics';
 
 let openedView: DG.ViewBase | null = null;
 
@@ -27,18 +28,15 @@ export type CDDVaultStats = {
 export async function getAsyncResultsAsDf(vaultId: number, exportId: number,
   timeoutMinutes: number, sdf: boolean): Promise<DG.DataFrame> {
   const resultResponse = await getAsyncResults(vaultId, exportId, timeoutMinutes, sdf);
-  let df = DG.DataFrame.create();
   if (sdf) {
     const dfs = await grok.functions.call('Chem:importSdf', {bytes: resultResponse.data});
-    if (dfs.length)
-      df = dfs[0];
-  } else {
-    if (resultResponse.data?.objects) {
-      prepareDataForDf(resultResponse.data.objects as any[]);
-      df = DG.DataFrame.fromObjects(resultResponse.data.objects)!;
-    }
+    return dfs.length ? dfs[0] : DG.DataFrame.create();
   }
-  return df;
+  if (resultResponse.data?.objects) {
+    prepareDataForDf(resultResponse.data.objects as any[]);
+    return DG.DataFrame.fromObjects(resultResponse.data.objects) ?? DG.DataFrame.create();
+  }
+  return DG.DataFrame.create();
 }
 
 const EXCLUDE_FIELDS = ['udfs', 'source_files'];
@@ -215,7 +213,7 @@ export function createObjectViewer(obj: any, title: string = 'Object Viewer',
   function getPaneName(item: any, index: number, parentName: string): string {
     if (item.name) return item.name;
     if (item.id) return item.id.toString();
-    if (parentName === 'protocol_statistics' && item.readout_definition?.name)
+    if (parentName === PROTOCOL_STATISTICS_KEY && item.readout_definition?.name)
       return item.readout_definition.name;
     return `Item ${index}`;
   }
@@ -361,8 +359,8 @@ export async function openCddNode(treeNode: DG.TreeViewGroup, currentVault?: str
             }
           } else
             treeNode.items.find((node) => node.text === currentView)!.root.click();
-        } catch (e) {
-          console.log(e);
+        } catch (e: any) {
+          grok.shell.error(`Failed to open CDD view: ${e?.message ?? e}`);
         }
       }
     } else
@@ -630,7 +628,10 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
   filtersDiv.append(ui.divH([runSearchButton, resetIcon],
     {style: {paddingLeft: '4px', alignItems: 'center', gap: '8px'}}));
 
+  const viewToken = tv;
   funcEditor.initComplete.then(() => {
+    // Guard against view being closed before init resolves.
+    if (openedView !== viewToken) return;
     if (funcEditor.hasRestoredSearch)
       runSearch();
   });
@@ -640,7 +641,8 @@ export function createLinks(header: string, nodeNames: string[], tree: DG.TreeVi
   const table = ui.table(nodeNames, (item) =>
     ([ui.link(item, () => {
       view.close();
-      tree.currentItem = tree.items.find((it) => it.text === item)!;
+      const target = tree.items.find((it) => it.text === item);
+      if (target) tree.currentItem = target;
     }, 'Click to open')]), [header]);
   return table;
 }
@@ -654,7 +656,12 @@ export function setBreadcrumbsInViewName(viewPath: string[], tree: DG.TreeViewGr
     const actualItem = value[value.length - 1];
     if (actualItem === breadcrumbs.path[breadcrumbs.path.length - 1])
       return;
-    tree.currentItem = actualItem === 'CDD Vault' ? tree : tree.items.find((item) => item.text === actualItem)!;
+    if (actualItem === 'CDD Vault')
+      tree.currentItem = tree;
+    else {
+      const target = tree.items.find((item) => item.text === actualItem);
+      if (target) tree.currentItem = target;
+    }
   });
 
   if (usedView) {

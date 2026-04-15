@@ -1,6 +1,4 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import {_package} from './package';
 import {paramsStringFromObj} from './utils';
 
@@ -47,17 +45,6 @@ export interface Collection {
   name: string;
   id: number;
 }
-
-interface SourceFile {
-  name: string;
-  id: number;
-}
-
-interface DataSet {
-  name: string;
-  id: number;
-}
-
 
 export interface Batch {
   id: number;
