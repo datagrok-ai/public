@@ -32,11 +32,11 @@ export namespace funcs {
     return await grok.functions.call('CDDVaultLink:GetVaults', {});
   }
 
-  export async function getMolecules(vaultId: number | null, moleculesIds: string ): Promise<DG.DataFrame> {
+  export async function getMolecules(vaultId: number , moleculesIds: string | null): Promise<DG.DataFrame> {
     return await grok.functions.call('CDDVaultLink:GetMolecules', { vaultId, moleculesIds });
   }
 
-  export async function getMoleculesAsync(vaultId: number | null, moleculesIds: string , timeoutMinutes: number ): Promise<DG.DataFrame> {
+  export async function getMoleculesAsync(vaultId: number , moleculesIds: string | null, timeoutMinutes: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('CDDVaultLink:GetMoleculesAsync', { vaultId, moleculesIds, timeoutMinutes });
   }
 
