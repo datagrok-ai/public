@@ -107,21 +107,21 @@ export function buildComparisonTable(
       continue;
     }
     const delta = hov - cur;
-    const sign = delta > 0 ? '+' : '';
+    const sign = delta >= 0 ? '+' : '';
     const color = delta < 0 ? 'var(--green-2)' : delta > 0 ? 'var(--red-2)' : '';
     const row = ui.div([
       ui.divText(cur.toFixed(2)),
       ui.divText('vs'),
       ui.divText(hov.toFixed(2)),
-      ui.divText(`${sign}${delta.toFixed(2)}`),
+      ui.divText(`\u0394${sign}${delta.toFixed(2)}`),
     ]);
     row.style.cssText =
-      'display:grid;grid-template-columns:42px 16px 42px 42px;align-items:baseline;column-gap:12px;';
+      'display:grid;grid-template-columns:42px 16px 42px auto;align-items:baseline;column-gap:12px;';
     const cells = row.children as HTMLCollectionOf<HTMLElement>;
     cells[0].style.cssText = 'text-align:right';
     cells[1].style.cssText = 'text-align:center;color:var(--grey-4)';
     cells[2].style.cssText = 'text-align:right';
-    cells[3].style.cssText = `text-align:right;font-size:11px;${color ? 'color:' + color : ''}`;
+    cells[3].style.cssText = `text-align:left;font-size:11px;${color ? 'color:' + color : ''}`;
     map[name] = row;
   }
   return ui.tableFromMap(map);
