@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.17.4",
+  "version": "1.17.5",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
@@ -41,7 +41,7 @@
     "@datagrok-libraries/chem-meta": "^1.2.11",
     "@datagrok-libraries/math": "^1.2.7",
     "@datagrok-libraries/ml": "^6.10.11",
-    "@datagrok-libraries/statistics": "^1.12.4",
+    "@datagrok-libraries/statistics": "^1.12.5",
     "@datagrok-libraries/tutorials": "^1.7.6",
     "@datagrok-libraries/utils": "^4.7.2",
     "@datagrok-libraries/gridext": "^1.5.4",
