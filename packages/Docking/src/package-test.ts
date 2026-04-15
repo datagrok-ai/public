@@ -5,6 +5,7 @@ import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL
 import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 
 import './tests/autodock-tests';
+import './tests/utils-tests';
 
 export let _package = new DG.Package();
 export {tests};
