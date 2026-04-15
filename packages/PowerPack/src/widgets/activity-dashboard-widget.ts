@@ -369,17 +369,15 @@ export class ActivityDashboardWidget extends DG.Widget {
         this.reportAmount = (items as DG.UserNotification[])
           .filter((item) => item.text.toLowerCase().includes('you were assigned')).length;
         let reportPresent = false;
-        if (this.reportAmount > 0) {
-          for (let i = 0; i < items.length; i++) {
-            const item = items[i] as DG.UserNotification;
-            if (item.text.toLowerCase().includes('you were assigned')) {
-              if (!reportPresent) {
-                usedItems.push(item as (DG.UserNotification & DG.Entity));
-                reportPresent = true;
-              }
-            } else
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i] as DG.UserNotification;
+          if (item.text.toLowerCase().includes('you were assigned')) {
+            if (!reportPresent) {
               usedItems.push(item as (DG.UserNotification & DG.Entity));
-          }
+              reportPresent = true;
+            }
+          } else
+            usedItems.push(item as (DG.UserNotification & DG.Entity));
         }
       } else
         usedItems = items;
@@ -657,6 +655,8 @@ export class ActivityDashboardWidget extends DG.Widget {
     for (let i = 0; i < this.notificationsListRoot.children.length; i++) {
       const child = this.notificationsListRoot.children[i];
       const item = this.recentNotifications[i];
+      if (!item.isRead)
+        child.classList.add('grok-notification-unread');
       if (item.createdAt) {
         const timestamp = ui.time.shortTimestamp(item.createdAt);
         timestamp.style.top = '5px';
@@ -666,7 +666,20 @@ export class ActivityDashboardWidget extends DG.Widget {
           timeChild.remove();
       }
     }
+    const hasUnread = this.recentNotifications.some((n) => !n.isRead);
+    if (hasUnread) {
+      const markAllBtn = ui.button('Mark all as read', async () => {
+        await grok.dapi.users.notifications.markAllAsRead();
+        markAllBtn.remove();
+        this.root.querySelector('.pp-notification-badge')?.remove();
+        this.root.querySelectorAll('.grok-notification-unread').forEach((el) =>
+          el.classList.remove('grok-notification-unread'));
+      });
+      markAllBtn.classList.add('pp-mark-all-read');
+      root.appendChild(markAllBtn);
+    }
     root.appendChild(this.notificationsListRoot);
+
     this.cleanLists();
     console.timeEnd('ActivityDashboardWidget.buildNotificationsTab');
     return root;

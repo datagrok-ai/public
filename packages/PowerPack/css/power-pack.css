@@ -1022,6 +1022,32 @@ body.dartium .power-pack-widgets-host.ui-div {
     background: rgba(235, 103, 103, 0.08);
 }
 
+.pp-mark-all-read.ui-btn {
+    margin: 0;
+    padding: 4px 10px;
+    font-size: 10px;
+    text-transform: uppercase;
+    box-shadow: none;
+    background-color: var(--steel-3);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: white !important;
+    float: right;
+    visibility: hidden;
+}
+
+.power-pack-activity-widget-notifications-tab:hover .pp-mark-all-read.ui-btn {
+    visibility: visible;
+}
+
+.pp-mark-all-read.ui-btn:hover {
+    -webkit-filter: contrast(90%) brightness(110%);
+}
+
+.power-pack-activity-widget-notifications-tab .grok-notification-unread {
+    font-weight: bolder;
+}
+
 .pp-notification-badge {
     position: absolute;
     top: 1px;
