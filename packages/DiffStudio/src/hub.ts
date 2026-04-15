@@ -7,7 +7,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {_package} from './package';
 import {getRecentModelsTable, getEquationsFromFile} from './utils';
 import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC, PATH, LINK} from './ui-constants';
-import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE} from './app';
+import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE, getLink} from './app';
 import {CONTROL_EXPR} from './constants';
 
 import '../css/app-styles.css';
@@ -130,15 +130,25 @@ export class DiffStudioHub {
         if (isCustom) {
           const idx = info.lastIndexOf('/');
           const name = info.slice(idx + 1);
-          cards.push(this.buildModelCard(name, info, () => this.openFileAsPreview(info)));
+          const run = () => this.openFileAsPreview(info);
+          const card = this.buildModelCard(name, info, run);
+          const linkUrl = `${window.location.origin}/${PATH.FILE}/${info.replace(':', '.')}`;
+          this.addRecentContextMenu(card, run, linkUrl);
+          cards.push(card);
         } else {
           const title = info as TITLE;
           const description = MODEL_HINT.get(title) ?? '';
           const iconPath = this.getIconUrl(title);
-          cards.push(this.buildModelCard(info, description, async () => {
+          const state = STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE;
+          const run = async () => {
             const solver = new DiffStudio();
-            await solver.runSolverApp(undefined, STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE);
-          }, iconPath));
+            await solver.runSolverApp(undefined, state);
+          };
+          const card = this.buildModelCard(info, description, run, iconPath);
+          const section = TEMPLATE_TITLES.includes(title) ? TITLE.TEMPL : TITLE.LIBRARY;
+          const linkUrl = `${window.location.origin}${PATH.APPS_DS}/${section}/${state}${PATH.PARAM}`;
+          this.addRecentContextMenu(card, run, linkUrl);
+          cards.push(card);
         }
       }
 
@@ -200,6 +210,7 @@ export class DiffStudioHub {
       for (const entry of parsed.models) {
         const modelPath: string | undefined = entry?.path;
         const iconFile: string | undefined = entry?.icon;
+        const helpUrl: string | undefined = entry?.help;
         if (!modelPath)
           continue;
 
@@ -217,7 +228,9 @@ export class DiffStudioHub {
 
         const run = () => this.openFileAsPreview(modelPath);
 
-        cards.push(this.buildModelCard(displayName, description, run, iconUrl));
+        const card = this.buildModelCard(displayName, description, run, iconUrl);
+        this.addCustomModelContextMenu(card, modelPath, helpUrl, run);
+        cards.push(card);
       }
     } catch {
       // silently skip if the manifest is missing or malformed
@@ -243,6 +256,124 @@ export class DiffStudioHub {
     grok.shell.addView(await solver.getFilePreview(file, path));
   }
 
+  private addRecentContextMenu(card: HTMLElement, run: () => void, linkUrl: string): void {
+    card.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      DG.Menu.popup()
+        .item('Run', run, null, {description: 'Run model'})
+        .item('Copy link', async () => {
+          await navigator.clipboard.writeText(linkUrl);
+          grok.shell.info('Model link copied to clipboard');
+        }, null, {description: 'Copy the model link to clipboard'})
+        .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+    });
+  }
+
+  private openCustomModelSettings(modelPath: string, currentHelpUrl: string | undefined): void {
+    const linkInput = ui.input.string('Help link', {
+      value: currentHelpUrl ?? '',
+      nullable: false,
+      tooltipText: 'Set the link to the help page',
+    });
+
+    const dlg = ui.dialog({title: 'Model settings'})
+      .add(linkInput)
+      .addButton('Save', async () => {
+        const value = linkInput.value?.trim();
+        if (!value)
+          return;
+        try {
+          const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+          const text = await grok.dapi.files.readAsText(manifestPath);
+          const parsed = JSON.parse(text);
+          const entry = parsed?.models?.find?.((m: {path?: string}) => m?.path === modelPath);
+          if (!entry) {
+            grok.shell.error('Model entry not found in external-models.json');
+            return;
+          }
+          entry.help = value;
+          await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(parsed, null, 2));
+          dlg.close();
+          await this.render();
+        } catch (e) {
+          grok.shell.error(`Failed to save settings: ${e instanceof Error ? e.message : 'platform issue'}`);
+        }
+      }, undefined, 'Save settings')
+      .show();
+
+    const saveBtn = dlg.getButton('Save');
+    saveBtn.disabled = !linkInput.value?.trim();
+    linkInput.onChanged.subscribe(() => {
+      saveBtn.disabled = !linkInput.value?.trim();
+    });
+  }
+
+  private addCustomModelContextMenu(card: HTMLElement, modelPath: string, helpUrl: string | undefined,
+    run: () => void): void {
+    card.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      DG.Menu.popup()
+        .item('Run', run, null, {description: 'Run model'})
+        .item('Copy link', async () => {
+          const url = `${window.location.origin}/${PATH.FILE}/${modelPath.replace(':', '.')}`;
+          await navigator.clipboard.writeText(url);
+          grok.shell.info('Model link copied to clipboard');
+        }, null, {description: 'Copy the model link to clipboard'})
+        .item('Help', () => {
+          if (helpUrl)
+            window.open(helpUrl, '_blank');
+          else
+            grok.shell.warning('Help link is not defined. To set help, right click the model and select "Settings..."');
+        }, null, {description: 'Open help in a new tab'})
+        .separator()
+        .item('Settings...', () => this.openCustomModelSettings(modelPath, helpUrl), null,
+          {description: 'Configure model properties'})
+        .item('Remove...', () => this.confirmRemoveCustomModel(modelPath), null,
+          {description: 'Remove model'})
+        .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+    });
+  }
+
+  private confirmRemoveCustomModel(modelPath: string): void {
+    const deleteFileInput = ui.input.bool('Delete file', {
+      value: false,
+      tooltipText: 'Also delete the model file from disk. If off, only the entry is removed from the manifest.',
+    });
+
+    const dlg = ui.dialog({title: 'Remove model'})
+      .add(ui.divText('Are you sure you want to remove this model?'))
+      .add(deleteFileInput)
+      .addButton('Remove', async () => {
+        dlg.close();
+        try {
+          const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+          const text = await grok.dapi.files.readAsText(manifestPath);
+          const parsed = JSON.parse(text);
+          if (!Array.isArray(parsed?.models)) {
+            grok.shell.error('Invalid manifest format');
+            return;
+          }
+          const idx = parsed.models.findIndex((m: {path?: string}) => m?.path === modelPath);
+          if (idx < 0) {
+            grok.shell.error('Model entry not found in external-models.json');
+            return;
+          }
+          parsed.models.splice(idx, 1);
+          await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(parsed, null, 2));
+
+          if (deleteFileInput.value && await grok.dapi.files.exists(modelPath))
+            await grok.dapi.files.delete(modelPath);
+
+          await this.render();
+        } catch (e) {
+          grok.shell.error(`Failed to remove model: ${e instanceof Error ? e.message : 'platform issue'}`);
+        }
+      }, undefined, 'Remove model')
+      .show();
+  }
+
   private addModelContextMenu(card: HTMLElement, section: TITLE, state: EDITOR_STATE, run: () => void): void {
     card.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
@@ -250,12 +381,14 @@ export class DiffStudioHub {
       DG.Menu.popup()
         .item('Run', run, null, {description: 'Run model'})
         .item('Copy link', async () => {
-          const url = `${window.location.origin}${PATH.APPS_DS}/${section}/${state}`;
+          const url = `${window.location.origin}${PATH.APPS_DS}/${section}/${state}${PATH.PARAM}`;
           await navigator.clipboard.writeText(url);
           grok.shell.info('Model link copied to clipboard');
         }, null, {description: 'Copy the model link to clipboard'})
-        .item('Help', () => window.open(LINK.DIF_STUDIO, '_blank'), null,
-          {description: 'Open help in a new tab'})
+        .item('Help', () => {
+          grok.shell.windows.help.visible = true;
+          grok.shell.windows.help.showHelp(getLink(state));
+        }, null, {description: 'Open help for this model'})
         .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
     });
   }

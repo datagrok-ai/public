@@ -148,7 +148,7 @@ const MODELS: string[] = [
 ];
 
 /** Return help link with respect to IVP editor state */
-function getLink(state: EDITOR_STATE): string {
+export function getLink(state: EDITOR_STATE): string {
   switch (state) {
   case EDITOR_STATE.CHEM_REACT:
     return LINK.CHEM_REACT;
