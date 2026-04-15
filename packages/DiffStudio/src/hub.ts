@@ -8,8 +8,26 @@ import {_package} from './package';
 import {getRecentModelsTable, getEquationsFromFile} from './utils';
 import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC, PATH, LINK} from './ui-constants';
 import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE} from './app';
+import {CONTROL_EXPR} from './constants';
 
 import '../css/app-styles.css';
+
+function extractIvpNameAndDescription(content: string): {name: string, description: string} {
+  const namePrefix = `${CONTROL_EXPR.NAME}:`;
+  const descPrefix = `${CONTROL_EXPR.DESCR}:`;
+  let name = '';
+  let description = '';
+  for (const rawLine of content.split('\n')) {
+    const line = rawLine.trim();
+    if (!name && line.startsWith(namePrefix))
+      name = line.slice(namePrefix.length).trim();
+    else if (!description && line.startsWith(descPrefix))
+      description = line.slice(descPrefix.length).trim();
+    if (name && description)
+      break;
+  }
+  return {name, description};
+}
 
 export class DiffStudioHub {
   name = 'Diff Studio Hub';
@@ -39,7 +57,7 @@ export class DiffStudioHub {
     try {
       this.root.append(this.buildButtons());
       this.buildTemplates();
-      this.buildLibrary();
+      await this.buildLibrary();
       await this.buildRecent();
     } finally {
       ui.setUpdateIndicator(this.root, false);
@@ -153,7 +171,7 @@ export class DiffStudioHub {
     this.root.append(ui.h1('Templates'), this.buildCardsContainer(cards));
   }
 
-  private buildLibrary(): void {
+  private async buildLibrary(): Promise<void> {
     const cards = EXAMPLE_TITLES.map((title) => {
       const description = MODEL_HINT.get(title) ?? '';
       const iconPath = this.getIconUrl(title);
@@ -167,7 +185,56 @@ export class DiffStudioHub {
       return card;
     });
 
+    const externalCards = await this.buildExternalModelCards();
+    cards.push(...externalCards);
+
     this.root.append(ui.h1('Library'), this.buildCardsContainer(cards));
+  }
+
+  private async buildExternalModelCards(): Promise<HTMLElement[]> {
+    const cards: HTMLElement[] = [];
+    try {
+      const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+      if (!(await grok.dapi.files.exists(manifestPath)))
+        return cards;
+
+      const text = await grok.dapi.files.readAsText(manifestPath);
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed?.models))
+        return cards;
+
+      for (const entry of parsed.models) {
+        const modelPath: string | undefined = entry?.path;
+        const iconFile: string | undefined = entry?.icon;
+        if (!modelPath)
+          continue;
+
+        if (!(await grok.dapi.files.exists(modelPath)))
+          continue;
+
+        const content = await getEquationsFromFile(modelPath);
+        if (content === null)
+          continue;
+
+        const {name, description} = extractIvpNameAndDescription(content);
+        const fallbackName = modelPath.slice(modelPath.lastIndexOf('/') + 1);
+        const displayName = name || fallbackName;
+        const iconUrl = `${_package.webRoot}files/icons/${iconFile || 'default.png'}`;
+
+        const run = async () => {
+          const equations = await getEquationsFromFile(modelPath);
+          if (equations) {
+            const solver = new DiffStudio();
+            await solver.runSolverApp(equations, EDITOR_STATE.FROM_FILE);
+          }
+        };
+
+        cards.push(this.buildModelCard(displayName, description, run, iconUrl));
+      }
+    } catch {
+      // silently skip if the manifest is missing or malformed
+    }
+    return cards;
   }
 
   private addModelContextMenu(card: HTMLElement, section: TITLE, state: EDITOR_STATE, run: () => void): void {
