@@ -69,7 +69,7 @@
     "@datagrok-libraries/helm-web-editor": "^1.1.16",
     "@datagrok-libraries/js-draw-lite": "^0.0.10",
     "@datagrok/chem": "^1.17.1",
-    "@datagrok/dendrogram": "^1.2.33",
+    "@datagrok/dendrogram": "^1.4.11",
     "@datagrok/eda": "^1.4.13",
     "@datagrok/helm": "^2.13.1",
     "@datagrok/peptides": "^1.27.4",
