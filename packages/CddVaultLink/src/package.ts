@@ -230,6 +230,27 @@ export class PackageFunctions {
   }
 
 
+  @grok.decorators.editor()
+  static async CDDVaultSearchEditor(
+    _call: DG.FuncCall): Promise<void> { //is not used at the moment
+    try {
+      const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+      const vaultId = vaults[0].id;
+      const funcEditor = new SearchEditor(vaultId);
+      const dialog = ui.dialog({title: 'CDD search'})
+        .add(funcEditor.getEditor())
+        .onOK(async () => {
+          funcEditor.getParams();
+        });
+      //dialog.history(() => ({editorSettings: funcEditor.getStringInput()}),
+      // (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+      dialog.show();
+    } catch (e: any) {
+      grok.shell.error(e?.message ?? e);
+    }
+  }
+
+
   @grok.decorators.func({
     'meta': {
       'cache': 'all',

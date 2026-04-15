@@ -27,6 +27,17 @@ export interface Project {
   id: number;
 }
 
+
+interface SourceFile {
+  name: string;
+  id: number;
+}
+
+interface DataSet {
+  name: string;
+  id: number;
+}
+
 export interface VaultCollection {
   id: number;
   class: string;
