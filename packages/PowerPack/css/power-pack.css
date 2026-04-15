@@ -235,6 +235,20 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     margin-top: 4px;
 }
 
+.power-pack-activity-widget-activity-list {
+    display: block !important;
+    width: 100%;
+}
+
+.power-pack-activity-widget-activity-list > .grok-ellipsis {
+    display: none;
+}
+
+.power-pack-activity-widget-see-more {
+    display: inline-block;
+    margin: 8px 0 4px 12px;
+}
+
 .power-pack-widget-header {
     height: 20px;
     font-size: 16px;
