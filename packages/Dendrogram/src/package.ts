@@ -266,7 +266,8 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {initialValue: 'euclidean', choices:['euclidean', 'manhattan']}}) distance: DistanceMetric = DistanceMetric.Euclidean,
     @grok.decorators.param({options: {initialValue: 'ward', choices:['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']}})linkage: string,
   ): Promise<void> {
-    await hierarchicalClusteringUI(df, colNameList.names(), distance, linkage);
+    const names = Array.isArray(colNameList) ? (colNameList as unknown as DG.Column[]).map((a) => a.name) : colNameList.names();
+    await hierarchicalClusteringUI(df, names, distance, linkage);
   }
 
 
