@@ -35,7 +35,7 @@ export namespace funcs {
   /**
   Autodock plugin UI
   */
-  export async function runAutodock(table: DG.DataFrame , ligands: any , target: string , poses: number ): Promise<void> {
+  export async function runAutodock(table: DG.DataFrame , ligands: DG.Column , target: string , poses: number ): Promise<void> {
     return await grok.functions.call('Docking:RunAutodock', { table, ligands, target, poses });
   }
 

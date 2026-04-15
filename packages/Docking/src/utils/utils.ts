@@ -1,8 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
-
 import { BiostructureData } from '@datagrok-libraries/bio/src/pdb/types';
 
 import { BINDING_ENERGY_COL, POSE_COL, setAffinity, setPose, TARGET_PATH } from './constants';
@@ -37,13 +35,12 @@ export async function getReceptorData(pdb: string): Promise<BiostructureData> {
   const receptorName = match ? match[1] : '';
   const receptor = await getReceptorFile(receptorName);
   
-  const receptorData: BiostructureData = {
+  return {
     binary: false,
     data: receptor ? (await grok.dapi.files.readAsText(receptor)) : (await fetchPdbContent(receptorName.toUpperCase())),
     ext: receptor ? receptor.extension : 'pdb',
     options: {name: receptorName,},
-  };
-  return receptorData;
+  } as BiostructureData;
 }
   
 export async function getReceptorFile(receptorName: string): Promise<DG.FileInfo | undefined> {
@@ -62,8 +59,7 @@ async function fetchPdbContent(pdbId: string, format: string = 'pdb'): Promise<s
   try {
     const response = await grok.dapi.fetchProxy(url);
     if (response.ok) {
-      const pdbContent = await response.text();
-      return pdbContent;
+      return  await response.text();
     }
   } catch (error) {
 
@@ -80,18 +76,13 @@ export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: H
   }, `Calculate ${propertyCol.name} for the whole table`);
 
   ui.tools.setHoverVisibility(host, [addColumnIcon]);
-  $(addColumnIcon)
-    .css('color', '#2083d5')
-    .css('position', 'absolute')
-    .css('top', '2px')
-    .css('left', '-12px')
-    .css('margin-right', '5px');
-  
+  addColumnIcon.classList.add('docking-add-property-icon');
+
   const idx = molecule.cell.rowIndex;
   const val: number = propertyCol.get(idx);
-  const numStyle = {style: {width: '42px', textAlign: 'right', flexShrink: '0', flexGrow: '0'}};
-  return ui.divH([addColumnIcon, ui.divText(val.toFixed(2), numStyle)],
-    {style: {position: 'relative'}});
+  const numEl = ui.divText(val.toFixed(2), 'docking-property-value');
+  const wrapper = ui.divH([addColumnIcon, numEl], 'docking-property-cell');
+  return wrapper;
 }
 
 export function buildComparisonTable(
@@ -109,19 +100,14 @@ export function buildComparisonTable(
     const delta = hov - cur;
     const sign = delta >= 0 ? '+' : '';
     const color = delta < 0 ? 'var(--green-2)' : delta > 0 ? 'var(--red-2)' : '';
+    const deltaEl = ui.divText(`\u0394${sign}${delta.toFixed(2)}`, 'docking-score-delta');
+    if (color) deltaEl.style.color = color;
     const row = ui.div([
-      ui.divText(cur.toFixed(2)),
-      ui.divText('vs'),
-      ui.divText(hov.toFixed(2)),
-      ui.divText(`\u0394${sign}${delta.toFixed(2)}`),
-    ]);
-    row.style.cssText =
-      'display:grid;grid-template-columns:42px 16px 42px auto;align-items:baseline;column-gap:12px;';
-    const cells = row.children as HTMLCollectionOf<HTMLElement>;
-    cells[0].style.cssText = 'text-align:right';
-    cells[1].style.cssText = 'text-align:center;color:var(--grey-4)';
-    cells[2].style.cssText = 'text-align:right';
-    cells[3].style.cssText = `text-align:left;font-size:11px;${color ? 'color:' + color : ''}`;
+      ui.divText(cur.toFixed(2), 'docking-score-current'),
+      ui.divText('vs', 'docking-score-separator'),
+      ui.divText(hov.toFixed(2), 'docking-score-hovered'),
+      deltaEl,
+    ], 'docking-comparison-row');
     map[name] = row;
   }
   return ui.tableFromMap(map);

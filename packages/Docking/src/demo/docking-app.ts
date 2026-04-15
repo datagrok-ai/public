@@ -30,8 +30,7 @@ export class DockingViewApp extends BaseViewApp {
       await this.onChanged(this.sketcherInstance!.getSmiles());
     }});
     this.target.root.classList.add('demo-target-root');
-    const container = ui.divH([this.target.root, helpIcon]);
-    container.style.cssText = 'overflow: visible !important; gap: 10px; align-items: baseline;';
+    const container = ui.divH([this.target.root, helpIcon], 'docking-target-row');
     this.formContainer.insertBefore(container, this.formContainer.firstChild);
   }
 
@@ -79,7 +78,6 @@ export class DockingViewApp extends BaseViewApp {
   private applyFullSizeStyles(element: HTMLElement | null): void {
     if (!element) return;
 
-    element.style.width = '100%';
-    element.style.height = '100%';
+    element.classList.add('docking-structure-viewer');
   }
 }
