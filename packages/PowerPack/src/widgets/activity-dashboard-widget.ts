@@ -338,6 +338,8 @@ export class ActivityDashboardWidget extends DG.Widget {
   }
 
   async getSpotlightTab(): Promise<HTMLElement> {
+    // Start recent data loading in parallel with notification data
+    const recentDataPromise = this.initRecentData();
     await this.initNotificationData();
 
     const createSection = (title: SpotlightTabNames, items: DG.Entity[] | DG.UserNotification[], icon: HTMLElement) => {
@@ -451,7 +453,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
 
       root.appendChild(ui.wait(async () => {
-        await this.initRecentData();
+        await recentDataPromise;
         this.recentItemsRoot = this.recentEntities.length > 0
           ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history'))
           : null;
