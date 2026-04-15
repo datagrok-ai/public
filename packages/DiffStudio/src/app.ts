@@ -552,8 +552,11 @@ export class DiffStudio {
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing, dockOptions?: UiOptions) {
     this.solverView = DG.TableView.create(this.solutionTable, false);
-    if (toAddTableView)
+    if (toAddTableView) {
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
       grok.shell.addView(this.solverView);
+    }
 
     this.uiOpts = dockOptions ?? {
       inputsTabDockRatio: DOCK_RATIO.INPUTS_TAB,
@@ -1031,6 +1034,8 @@ export class DiffStudio {
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
       const sView = DG.ScriptView.create(script);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
       grok.shell.addView(sView);
     } catch (err) {
       this.processError(err);
@@ -1828,6 +1833,8 @@ export class DiffStudio {
         DiffStudio.closeOpenPreviews();
         const solver = new DiffStudio(false, true, true);
         const preview = await solver.getStatePreview(state);
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
         grok.shell.addPreview(preview);
 
         setTimeout(() => {
@@ -1847,6 +1854,8 @@ export class DiffStudio {
       }
 
       const solver = new DiffStudio(false);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
       grok.shell.addView(
         await solver.runSolverApp(undefined, state) as DG.View,
         undefined, null, null,
@@ -1879,6 +1888,8 @@ export class DiffStudio {
           DiffStudio.closeOpenPreviews();
           const solver = new DiffStudio(false, true, true);
           const preview = await solver.getFilePreview(file, path);
+          grok.shell.windows.showToolbox = false;
+          grok.shell.windows.showBrowse = true;
           grok.shell.addPreview(preview);
           await this.saveModelToRecent(path, true);
         } else
@@ -1999,6 +2010,8 @@ export class DiffStudio {
       previewTimer = window.setTimeout(() => {
         previewTimer = null;
         DiffStudio.closeOpenPreviews();
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
         grok.shell.addPreview(buildView());
       }, UI_TIME.DBL_CLICK_DELAY);
     });
@@ -2010,6 +2023,8 @@ export class DiffStudio {
         clearTimeout(previewTimer);
         previewTimer = null;
       }
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
       grok.shell.addView(buildView(), undefined, undefined, null);
     });
 
@@ -2069,6 +2084,8 @@ export class DiffStudio {
       previewTimer = window.setTimeout(async () => {
         previewTimer = null;
         DiffStudio.closeOpenPreviews();
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
         grok.shell.addPreview(await buildView());
       }, UI_TIME.DBL_CLICK_DELAY);
     });
@@ -2080,6 +2097,8 @@ export class DiffStudio {
         clearTimeout(previewTimer);
         previewTimer = null;
       }
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
       grok.shell.addView(await buildView(), undefined, undefined, null);
     });
 
@@ -2126,6 +2145,8 @@ export class DiffStudio {
           undefined,
           STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
         ) as DG.TableView;
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
         grok.shell.v = v;
       }, UI_TIME.BROWSING);
     };
@@ -2159,6 +2180,8 @@ export class DiffStudio {
       card.ondblclick = async () => {
         if (exist) {
           const solver = new DiffStudio(false, true, true);
+          grok.shell.windows.showToolbox = false;
+          grok.shell.windows.showBrowse = true;
           grok.shell.addView(await solver.getFilePreview(file, path));
 
           await this.saveModelToRecent(path, true);

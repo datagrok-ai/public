@@ -42,6 +42,8 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static dock(): void {
     const df = grok.data.demo.demog(100);
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showBrowse = true;
     const view = grok.shell.addTableView(df);
 
     setTimeout(() => {
@@ -109,8 +111,11 @@ export class PackageFunctions {
 
       const view = await solver.runSolverApp();
 
-      if (view !== null)
+      if (view !== null) {
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
         grok.shell.addView(view);
+      }
     }, UI_TIME.APP_RUN_SOLVING);
 
     return proxiView;
@@ -151,6 +156,8 @@ export class PackageFunctions {
     setTimeout(async () => {
       proxiView.close();
       const solver = new DiffStudio(false, true, true);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
       grok.shell.addView(await solver.getFilePreview(file, path));
     }, UI_TIME.PREVIEW_RUN_SOLVING);
 

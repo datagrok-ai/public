@@ -225,6 +225,8 @@ export class DiffStudioHub {
 
   async show(): Promise<void> {
     await this.render();
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showBrowse = true;
     grok.shell.addPreview(this.view);
   }
 }
