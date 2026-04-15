@@ -221,21 +221,17 @@ export class PackageFunctions{
     const ligandCol = molecule.cell.column;
     const currentValues = getRemarksFromPdb(ligandCol.get(currentRowIdx));
 
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    const sub = currentTable.onMouseOverRowChanged.subscribe(() => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        const hovIdx = currentTable.mouseOverRowIdx;
-        result.innerHTML = '';
-        if (hovIdx >= 0 && hovIdx !== currentRowIdx) {
-          const hovPdb = ligandCol.get(hovIdx);
-          if (hovPdb && hovPdb.includes(BINDING_ENERGY_COL)) {
-            result.appendChild(buildComparisonTable(currentValues, getRemarksFromPdb(hovPdb)));
-            return;
-          }
+    const sub = DG.debounce(currentTable.onMouseOverRowChanged, 50).subscribe(() => {
+      const hovIdx = currentTable.mouseOverRowIdx;
+      ui.empty(result);
+      if (hovIdx >= 0 && hovIdx !== currentRowIdx) {
+        const hovPdb = ligandCol.get(hovIdx);
+        if (hovPdb && hovPdb.includes(BINDING_ENERGY_COL)) {
+          result.appendChild(buildComparisonTable(currentValues, getRemarksFromPdb(hovPdb)));
+          return;
         }
-        result.appendChild(buildPropertyMap());
-      }, 50);
+      }
+      result.appendChild(buildPropertyMap());
     });
     widget.subs.push(sub);
 
