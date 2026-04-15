@@ -20,6 +20,7 @@ import {
   createProfileForDf,
   mergeProfileWithDf,
   isEdaPackageInstalled,
+  UNTITLED_PROFILE,
 } from './utils';
 import {MpoProfileManager} from './mpo-profile-manager';
 
@@ -62,6 +63,7 @@ export class MpoProfileCreateView {
   private originalProfile: DesirabilityProfile;
   private profileModified = false;
   private updatingLayout = false;
+  private suppressInputHandlers = false;
   private stashedManualProfile: { profile: DesirabilityProfile; modified: boolean } | null = null;
 
   private pMpoDockedItems: {
@@ -111,7 +113,7 @@ export class MpoProfileCreateView {
   }
 
   private get displayName(): string {
-    return this.profile.name || 'Untitled Profile';
+    return this.profile.name || UNTITLED_PROFILE;
   }
 
   setupBreadcrumbs(): void {
@@ -203,6 +205,8 @@ export class MpoProfileCreateView {
   // --- Event handlers ---
 
   private async onMethodChanged(): Promise<void> {
+    if (this.suppressInputHandlers)
+      return;
     this.aggregationField.classList.toggle('chem-mpo-d-none', !this.isManualMode);
 
     if (this.methodInput!.value === METHOD_PROBABILISTIC) {
@@ -233,16 +237,30 @@ export class MpoProfileCreateView {
     }
 
     const keepChanges = this.profileModified ? await this.showKeepChangesDialog() : false;
+    if (keepChanges === null) {
+      this.suppressInputHandlers = true;
+      this.methodInput!.value = METHOD_PROBABILISTIC;
+      this.suppressInputHandlers = false;
+      return;
+    }
     this.profile = this.resolveProfileForTransition(keepChanges);
     this.prepareManualLayout();
     await this.attachLayout();
   }
 
   private async onDatasetChanged(df: DG.DataFrame | null): Promise<void> {
-    this.df = df;
+    if (this.suppressInputHandlers)
+      return;
     const keepChanges = this.showMethod && this.isManualMode && this.profileModified ?
       await this.showKeepChangesDialog() : false;
+    if (keepChanges === null) {
+      this.suppressInputHandlers = true;
+      this.datasetInput!.value = this.df;
+      this.suppressInputHandlers = false;
+      return;
+    }
 
+    this.df = df;
     this.closePMpoPanels();
     const indicatorRoot = this.tableViewVisible ? this.tableView.root : this.view.root;
     this.setLoading(indicatorRoot, true, 'Switching dataset...');
@@ -274,7 +292,8 @@ export class MpoProfileCreateView {
         return;
       }
 
-      if (this.showMethod) this.profile = this.resolveProfileForTransition(keepChanges);
+      if (this.showMethod)
+        this.profile = this.resolveProfileForTransition(keepChanges);
       this.setTableViewVisible(false);
       await this.attachLayout();
     } finally {
@@ -531,10 +550,10 @@ export class MpoProfileCreateView {
     return this.profile;
   }
 
-  private showKeepChangesDialog(): Promise<boolean> {
+  private showKeepChangesDialog(): Promise<boolean | null> {
     return new Promise((resolve) => {
       let resolved = false;
-      const safeResolve = (value: boolean) => {
+      const safeResolve = (value: boolean | null) => {
         if (resolved)
           return;
         resolved = true;
@@ -545,7 +564,7 @@ export class MpoProfileCreateView {
       const dlg = ui.dialog('Keep profile changes?')
         .addButton('Keep', () => safeResolve(true))
         .addButton('Discard', () => safeResolve(false))
-        .onCancel(() => safeResolve(false))
+        .onCancel(() => safeResolve(null))
         .show({center: true});
     });
   }
