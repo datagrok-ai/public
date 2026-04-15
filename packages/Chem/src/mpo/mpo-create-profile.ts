@@ -519,6 +519,8 @@ export class MpoProfileCreateView {
       this.profileModified = false;
       this.stashedManualProfile = null;
       const profile = this.df ? createProfileForDf(this.df) : createDefaultProfile();
+      profile.name = this.profile.name;
+      profile.description = this.profile.description;
       this.originalProfile = structuredClone(profile);
       return profile;
     }
