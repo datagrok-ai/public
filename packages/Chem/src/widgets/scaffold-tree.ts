@@ -19,7 +19,6 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 let attached = false;
 let scaffoldTreeId = 0;
-let draggedNode: TreeViewGroup | null = null;
 const SCAFFOLD_TREE_SKETCHER_ACTION = 'scaffold-tree-sketcher-action';
 const EXCLUDE_FROM_FILTER_COLUMN_SELECT = '.exclude-from-filter-column-select';
 
@@ -679,6 +678,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   progressBar: DG.TaskBarProgressIndicator | null = null;
   moleculeColumnName: string;
   molColPropObserver: MutationObserver | null = null;
+  draggedNode: TreeViewGroup | null = null;
   Table: string;
   treeEncode: string;
   sizesMap: SizesMap = {
@@ -1243,11 +1243,17 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   moveNodeTo(node: TreeViewGroup, targetIdx: number): void {
     const parent = (node.parent ?? this.tree) as TreeViewGroup;
+    const sourceIdx = parent.children.findIndex((c) => c.dart === node.dart);
     node.remove();
+    if (sourceIdx >= 0 && sourceIdx < targetIdx)
+      targetIdx--;
     parent.addNode(node, targetIdx);
     this.tree.currentItem = node;
-    node.root.scrollIntoView({block: 'nearest'});
+    requestAnimationFrame(() => node.root.scrollIntoView({block: 'nearest'}));
+    this.saveTreeEncode();
+  }
 
+  private saveTreeEncode(): void {
     this.treeEncodeUpdateInProgress = true;
     this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     this.treeEncodeUpdateInProgress = false;
@@ -2022,16 +2028,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         value(group).parentColor = parentColor;
     }
 
-    molHost.draggable = true;
-    molHost.addEventListener('dragstart', (e) => {
-      draggedNode = group;
-      e.dataTransfer!.effectAllowed = 'move';
-    });
-    molHost.addEventListener('dragend', () => { draggedNode = null; });
+    if (!isOrphans(group)) {
+      molHost.draggable = true;
+      molHost.addEventListener('dragstart', (e) => {
+        thisViewer.draggedNode = group;
+        e.dataTransfer!.effectAllowed = 'move';
+      });
+      molHost.addEventListener('dragend', () => { thisViewer.draggedNode = null; });
+    }
     molHost.addEventListener('dragover', (e) => {
-      if (!draggedNode || draggedNode.dart === group.dart)
+      if (!thisViewer.draggedNode || thisViewer.draggedNode.dart === group.dart)
         return;
-      const dragParent = draggedNode.parent?.dart ?? thisViewer.tree.dart;
+      const dragParent = thisViewer.draggedNode.parent?.dart ?? thisViewer.tree.dart;
       const dropParent = group.parent?.dart ?? thisViewer.tree.dart;
       if (dragParent !== dropParent)
         return;
@@ -2042,19 +2050,20 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       molHost.classList.toggle('chem-drop-target-top', isTopHalf);
       molHost.classList.toggle('chem-drop-target-bottom', !isTopHalf);
     });
-    molHost.addEventListener('dragleave', () => {
-      molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
+    molHost.addEventListener('dragleave', (e) => {
+      if (!molHost.contains(e.relatedTarget as Node))
+        molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
     });
     molHost.addEventListener('drop', (e) => {
       e.preventDefault();
       const isTopHalf = molHost.classList.contains('chem-drop-target-top');
       molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
-      if (!draggedNode || draggedNode.dart === group.dart)
+      if (!thisViewer.draggedNode || thisViewer.draggedNode.dart === group.dart)
         return;
       const dropParent = (group.parent ?? thisViewer.tree) as TreeViewGroup;
       const targetIdx = dropParent.children.findIndex((c) => c.dart === group.dart);
       if (targetIdx >= 0)
-        thisViewer.moveNodeTo(draggedNode, isTopHalf ? targetIdx : targetIdx + 1);
+        thisViewer.moveNodeTo(thisViewer.draggedNode, isTopHalf ? targetIdx : targetIdx + 1);
     });
 
     molHost.onclick = () => this.makeNodeActiveAndFilter(group);

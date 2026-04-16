@@ -123,11 +123,11 @@
 }
 
 .scaffold-tree-viewer .chem-mol-box.chem-drop-target-top {
-  border-top: 3px solid var(--blue-1) !important;
+  box-shadow: inset 0 3px 0 0 var(--blue-1);
 }
 
 .scaffold-tree-viewer .chem-mol-box.chem-drop-target-bottom {
-  border-bottom: 3px solid var(--blue-1) !important;
+  box-shadow: inset 0 -3px 0 0 var(--blue-1);
 }
 
 .chem-scaffold-tree-generate-hint {
