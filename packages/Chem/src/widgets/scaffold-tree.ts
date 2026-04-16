@@ -1243,7 +1243,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   moveNodeTo(node: TreeViewGroup, targetIdx: number): void {
     const parent = (node.parent ?? this.tree) as TreeViewGroup;
-    const sourceIdx = parent.children.findIndex((c) => c.dart === node.dart);
+    const sourceIdx = parent.children.indexOf(node);
     node.remove();
     if (sourceIdx >= 0 && sourceIdx < targetIdx)
       targetIdx--;
@@ -1259,24 +1259,70 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.treeEncodeUpdateInProgress = false;
   }
 
+  private setupDragAndDrop(molHost: HTMLElement, group: TreeViewGroup): void {
+    if (!isOrphans(group)) {
+      molHost.draggable = true;
+      molHost.addEventListener('dragstart', (e) => {
+        this.draggedNode = group;
+        e.dataTransfer!.effectAllowed = 'move';
+      });
+      molHost.addEventListener('dragend', () => this.draggedNode = null);
+    }
+
+    molHost.addEventListener('dragover', (e) => {
+      if (!this.draggedNode || this.draggedNode === group)
+        return;
+
+      const dragParent = this.draggedNode.parent ?? this.tree;
+      const dropParent = group.parent ?? this.tree;
+      if (dragParent !== dropParent)
+        return;
+
+      e.preventDefault();
+      e.dataTransfer!.dropEffect = 'move';
+      const rect = molHost.getBoundingClientRect();
+      const isTopHalf = e.clientY < rect.top + rect.height / 2;
+      molHost.classList.toggle('chem-drop-target-top', isTopHalf);
+      molHost.classList.toggle('chem-drop-target-bottom', !isTopHalf);
+    });
+
+    molHost.addEventListener('dragleave', (e) => {
+      if (!molHost.contains(e.relatedTarget as Node))
+        molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
+    });
+
+    molHost.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const isTopHalf = molHost.classList.contains('chem-drop-target-top');
+      molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
+      if (!this.draggedNode || this.draggedNode === group)
+        return;
+
+      const dropParent = (group.parent ?? this.tree) as TreeViewGroup;
+      const targetIdx = dropParent.children.indexOf(group);
+      if (targetIdx >= 0)
+        this.moveNodeTo(this.draggedNode, isTopHalf ? targetIdx : targetIdx + 1);
+    });
+  }
+
   moveNode(node: TreeViewGroup, direction: 'up' | 'down'): void {
     if (node.value === null || value(node).orphans)
       return;
 
     const parent = (node.parent ?? this.tree) as TreeViewGroup;
     const allChildren = parent.children;
-    const nodeIdx = allChildren.findIndex((c) => c.dart === node.dart);
+    const nodeIdx = allChildren.indexOf(node);
     if (nodeIdx < 0)
       return;
 
     const step = direction === 'up' ? -1 : 1;
-    let targetIdx = nodeIdx + step;
-    while (targetIdx >= 0 && targetIdx < allChildren.length && isOrphans(allChildren[targetIdx]))
-      targetIdx += step;
-    if (targetIdx < 0 || targetIdx >= allChildren.length)
+    let siblingIdx = nodeIdx + step;
+    while (siblingIdx >= 0 && siblingIdx < allChildren.length && isOrphans(allChildren[siblingIdx]))
+      siblingIdx += step;
+    if (siblingIdx < 0 || siblingIdx >= allChildren.length)
       return;
 
-    this.moveNodeTo(node, targetIdx);
+    this.moveNodeTo(node, direction === 'down' ? siblingIdx + 1 : siblingIdx);
   }
 
   clear() {
@@ -2028,43 +2074,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         value(group).parentColor = parentColor;
     }
 
-    if (!isOrphans(group)) {
-      molHost.draggable = true;
-      molHost.addEventListener('dragstart', (e) => {
-        thisViewer.draggedNode = group;
-        e.dataTransfer!.effectAllowed = 'move';
-      });
-      molHost.addEventListener('dragend', () => { thisViewer.draggedNode = null; });
-    }
-    molHost.addEventListener('dragover', (e) => {
-      if (!thisViewer.draggedNode || thisViewer.draggedNode.dart === group.dart)
-        return;
-      const dragParent = thisViewer.draggedNode.parent?.dart ?? thisViewer.tree.dart;
-      const dropParent = group.parent?.dart ?? thisViewer.tree.dart;
-      if (dragParent !== dropParent)
-        return;
-      e.preventDefault();
-      e.dataTransfer!.dropEffect = 'move';
-      const rect = molHost.getBoundingClientRect();
-      const isTopHalf = e.clientY < rect.top + rect.height / 2;
-      molHost.classList.toggle('chem-drop-target-top', isTopHalf);
-      molHost.classList.toggle('chem-drop-target-bottom', !isTopHalf);
-    });
-    molHost.addEventListener('dragleave', (e) => {
-      if (!molHost.contains(e.relatedTarget as Node))
-        molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
-    });
-    molHost.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const isTopHalf = molHost.classList.contains('chem-drop-target-top');
-      molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
-      if (!thisViewer.draggedNode || thisViewer.draggedNode.dart === group.dart)
-        return;
-      const dropParent = (group.parent ?? thisViewer.tree) as TreeViewGroup;
-      const targetIdx = dropParent.children.findIndex((c) => c.dart === group.dart);
-      if (targetIdx >= 0)
-        thisViewer.moveNodeTo(thisViewer.draggedNode, isTopHalf ? targetIdx : targetIdx + 1);
-    });
+    this.setupDragAndDrop(molHost, group);
 
     molHost.onclick = () => this.makeNodeActiveAndFilter(group);
     return group;
