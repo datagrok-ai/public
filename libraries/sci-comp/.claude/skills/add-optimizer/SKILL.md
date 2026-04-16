@@ -44,16 +44,18 @@ Create `src/optimization/single-objective/optimizers/<name>.ts` following the pa
 Edit `src/optimization/single-objective/index.ts`:
 
 1. Add export for the class and settings type (in the "Built-in optimizers" section):
-```typescript
-export {<Name>} from './optimizers/<name>';
-export type {<Name>Settings} from './optimizers/<name>';
-```
+
+   ```typescript
+   export {<Name>} from './optimizers/<name>';
+   export type {<Name>Settings} from './optimizers/<name>';
+   ```
 
 2. Add auto-registration (in the "Auto-register" section at the bottom):
-```typescript
-import {<Name>} from './optimizers/<name>';
-registerOptimizer('<kebab-name>', () => new <Name>());
-```
+
+   ```typescript
+   import {<Name>} from './optimizers/<name>';
+   registerOptimizer('<kebab-name>', () => new <Name>());
+   ```
 
 ## Step 5: Write tests
 
@@ -99,13 +101,15 @@ In each file:
 
 1. Import the new optimizer class
 2. Add an entry to the `optimizers` array:
-```typescript
-{
-  name: '<Name>',
-  optimizer: new <Name>(),
-  settings: {maxIterations: 10_000, /* algorithm-specific defaults */},
-},
-```
+
+   ```typescript
+   {
+     name: '<Name>',
+     optimizer: new <Name>(),
+     settings: {maxIterations: 10_000, /* algorithm-specific defaults */},
+   },
+   ```
+
 3. Run both benchmarks:
    - `npx tsx src/optimization/single-objective/benchmarks/unconstrained-benchmarks.ts`
    - `npx tsx src/optimization/single-objective/benchmarks/multistart-benchmarks.ts`
