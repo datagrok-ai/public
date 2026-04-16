@@ -88,7 +88,7 @@ export class SpotlightWidget extends DG.Widget {
 
   async buildTabbedUI(): Promise<void> {
     const tabs: {[key: string]: (() => HTMLElement)} = {
-      'Workspace': () => ui.wait(async () => await new WorkspaceTab(this).build()),
+      'Workspace': () => new WorkspaceTab(this).build(),
       'Spotlight': () => ui.wait(async () => await this.getSpotlightTab()),
       'Favorites': () => ui.wait(async () => await this.getFavoritesTab()),
       'Notifications': () => ui.wait(async () => await this.getNotificationsTab()),
