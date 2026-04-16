@@ -280,6 +280,15 @@ export type UiOptions = {
   graphsDockRatio: number,
 };
 
+/** External (custom) Library model entry resolved from external-models.json */
+type ExternalLibraryEntry = {
+  modelPath: string,
+  displayName: string,
+  description: string,
+  iconUrl: string,
+  helpUrl: string | undefined,
+};
+
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
@@ -1797,7 +1806,7 @@ export class DiffStudio {
       this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
     else {
       const templatesFolder = this.getFolderWithBultInModels(TEMPLATE_TITLES, TITLE.TEMPL);
-      const examplesFolder = this.getFolderWithBultInModels(EXAMPLE_TITLES, TITLE.LIBRARY);
+      const examplesFolder = this.getLibraryFolder();
       this.libraryFolder = examplesFolder;
       this.librarySub?.unsubscribe();
       this.librarySub = grok.events.onCustomEvent(LIBRARY_CHANGED_EVENT).subscribe(() => {
@@ -2014,17 +2023,18 @@ export class DiffStudio {
     }
   } // putCustomModelToRecents
 
-  /** Read external-models.json and add each registered model to the Library tree folder */
-  private async addExternalModelsToFolder(folder: DG.TreeViewGroup): Promise<void> {
+  /** Load & resolve all external (custom) models registered in external-models.json */
+  private async getExternalLibraryEntries(): Promise<ExternalLibraryEntry[]> {
+    const entries: ExternalLibraryEntry[] = [];
     try {
       const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
       if (!(await grok.dapi.files.exists(manifestPath)))
-        return;
+        return entries;
 
       const text = await grok.dapi.files.readAsText(manifestPath);
       const parsed = JSON.parse(text);
       if (!Array.isArray(parsed?.models))
-        return;
+        return entries;
 
       for (const entry of parsed.models) {
         const modelPath: string | undefined = entry?.path;
@@ -2044,11 +2054,19 @@ export class DiffStudio {
         const displayName = name || fallbackName;
         const iconUrl = `${_package.webRoot}files/icons/${iconFile || 'default.png'}`;
 
-        this.addExternalModelToFolder(folder, modelPath, displayName, description, iconUrl, helpUrl);
+        entries.push({modelPath, displayName, description, iconUrl, helpUrl});
       }
     } catch {
       // silently skip if the manifest is missing or malformed
     }
+    return entries;
+  }
+
+  /** Read external-models.json and add each registered model to the Library tree folder */
+  private async addExternalModelsToFolder(folder: DG.TreeViewGroup): Promise<void> {
+    const entries = await this.getExternalLibraryEntries();
+    for (const e of entries)
+      this.addExternalModelToFolder(folder, e.modelPath, e.displayName, e.description, e.iconUrl, e.helpUrl);
   }
 
   /** Add a single external (custom) model entry to the Library tree folder */
@@ -2106,11 +2124,17 @@ export class DiffStudio {
       await openFile(false);
     });
 
-    item.root.addEventListener('contextmenu', (ev) => {
+    this.attachExternalContextMenu(item.root, modelPath, helpUrl, () => openFile(false));
+  }
+
+  /** Attach Run/Copy link/Help/Settings context menu to an external (custom) model element */
+  private attachExternalContextMenu(target: HTMLElement, modelPath: string, helpUrl: string | undefined,
+    run: () => void | Promise<void>): void {
+    target.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
       DG.Menu.popup()
-        .item('Run', () => openFile(false), null, {description: 'Run model'})
+        .item('Run', run, null, {description: 'Run model'})
         .item('Copy link', async () => {
           const url = `${window.location.origin}/${PATH.FILE}/${modelPath.replace(':', '.')}`;
           await navigator.clipboard.writeText(url);
@@ -2291,6 +2315,57 @@ export class DiffStudio {
     return folder;
   }
 
+  /** Return Library folder: built-in examples + external (custom) models from external-models.json */
+  private getLibraryFolder(): DG.TreeViewGroup {
+    const folder = this.appTree.getOrCreateGroup(TITLE.LIBRARY, null, false);
+    let previewTimer: number | null = null;
+
+    const buildView = async (): Promise<DG.View> => {
+      const view = DG.View.create();
+      const root = ui.div([]);
+
+      for (const name of EXAMPLE_TITLES)
+        root.append(this.getCardWithBuiltInModel(name));
+
+      const entries = await this.getExternalLibraryEntries();
+      for (const entry of entries)
+        root.append(this.getCardWithExternalModel(entry));
+
+      root.classList.add('grok-gallery-grid');
+      view.root.append(root);
+      view.name = TITLE.LIBRARY;
+      view.basePath = 'apps/DiffStudio/';
+      view.path = TITLE.LIBRARY;
+      return view;
+    };
+
+    folder.onSelected.subscribe(() => {
+      if (previewTimer !== null)
+        return;
+      previewTimer = window.setTimeout(async () => {
+        previewTimer = null;
+        DiffStudio.closeOpenPreviews();
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
+        grok.shell.addPreview(await buildView());
+      }, UI_TIME.DBL_CLICK_DELAY);
+    });
+
+    folder.root.addEventListener('dblclick', async (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      if (previewTimer !== null) {
+        clearTimeout(previewTimer);
+        previewTimer = null;
+      }
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(await buildView(), undefined, undefined, null);
+    });
+
+    return folder;
+  }
+
   /** Return folder with recent models */
   private getFolderWithRecentModels(): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
@@ -2454,6 +2529,36 @@ export class DiffStudio {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
   } // getCardWithBuiltInModel
+
+  /** Return card with external (custom Library) model — matches the hub's Library cards */
+  private getCardWithExternalModel(entry: ExternalLibraryEntry): HTMLDivElement {
+    const {modelPath, displayName, description, iconUrl, helpUrl} = entry;
+    const card = this.getCard(displayName, description, CUSTOM_MODEL_IMAGE_LINK);
+    ui.tooltip.bind(card, () => buildModelTooltip(displayName, description, iconUrl));
+
+    const run = async () => {
+      if (!(await grok.dapi.files.exists(modelPath))) {
+        grok.shell.warning(`File not found: ${modelPath}`);
+        return;
+      }
+      const folderPath = modelPath.slice(0, modelPath.lastIndexOf('/') + 1);
+      const fileList = await grok.dapi.files.list(folderPath);
+      const file = fileList.find((f) => f.nqName === modelPath);
+      if (!file) {
+        grok.shell.warning(`File not found: ${modelPath}`);
+        return;
+      }
+      const solver = new DiffStudio(false, true, true);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(await solver.getFilePreview(file, modelPath));
+    };
+
+    card.ondblclick = run;
+    this.attachExternalContextMenu(card, modelPath, helpUrl, run);
+
+    return card;
+  } // getCardWithExternalModel
 
   /** Return last called model */
   private async getLastCalledModel(): Promise<LastModel> {
