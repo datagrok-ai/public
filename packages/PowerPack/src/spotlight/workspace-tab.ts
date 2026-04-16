@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
-import {getMyGroupFavorites, unpin} from './group-favorites';
+import {getMyGroupFavorites} from './group-favorites';
 import type {SpotlightWidget} from './spotlight-widget';
 
 
@@ -34,7 +34,7 @@ function createCard(entity: DG.Entity, root: HTMLElement, group?: DG.Group): HTM
 
   if (group) {
     const removeBtn = ui.icons.close(async () => {
-      await unpin(entity, group);
+      await DG.Favorites.remove(entity, group);
       const section = card.closest('.pp-workspace-section')!;
       card.remove();
       if (section.querySelectorAll('.pp-workspace-card').length === 0) {

@@ -24,7 +24,7 @@ import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {SpotlightWidget} from './spotlight/spotlight-widget';
-import {pin, unpin, getAdminGroups, getMyGroupFavorites} from './spotlight/group-favorites';
+import {getAdminGroups, getMyGroupFavorites} from './spotlight/group-favorites';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
 export * from './package.g';
@@ -448,11 +448,11 @@ grok.events.onContextMenu.subscribe((args) => {
     allAdminGroups.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
     menu.group('Group favorites').items(allAdminGroups, async (group) => {
       if (pinnedGroupIds.has(group.id)) {
-        await unpin(entity, group);
+        await DG.Favorites.remove(entity, group);
         grok.shell.info(`Unpinned "${entity.friendlyName}" from ${group.friendlyName}`);
       }
       else {
-        await pin(entity, group);
+        await DG.Favorites.add(entity, group);
         grok.shell.info(`Pinned "${entity.friendlyName}" to ${group.friendlyName}`);
       }
     }, {
