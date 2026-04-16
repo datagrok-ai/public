@@ -691,6 +691,7 @@ export interface IDartApi {
   grok_TreeViewNode_Item(node: any, text: any, value: any): any;
   grok_TreeViewNode_Items(node: any): any;
   grok_TreeViewNode_Children(node: any): any;
+  grok_TreeViewGroup_AddNode(node: any, child: any, index: Num): any;
   grok_TreeViewNode_EnableCheckBox(node: any, checked: Bool): any;
   grok_TreeViewNode_GetAutoCheckChildren(node: any): any;
   grok_TreeViewNode_SetAutoCheckChildren(node: any, auto: Bool): any;
