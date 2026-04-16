@@ -6,27 +6,9 @@ import {getMyGroupFavorites} from './group-favorites';
 import type {SpotlightWidget} from './spotlight-widget';
 
 
-/** Returns an appropriate icon element for a given entity type. */
+/** Returns the platform icon for an entity via its registered EntityMeta handler. */
 function entityIcon(entity: DG.Entity): HTMLElement {
-  if (entity instanceof DG.Project)
-    return ui.iconSvg('project');
-  if (entity instanceof DG.DataQuery)
-    return ui.iconSvg('query');
-  if (entity instanceof DG.DataJob)
-    return ui.iconSvg('job');
-  if (entity instanceof DG.Script)
-    return ui.iconSvg('script');
-  if (entity instanceof DG.Notebook)
-    return ui.iconImage('notebook', '/images/entities/jupyter.png');
-  if (entity instanceof DG.Model)
-    return ui.iconSvg('model');
-  if (entity instanceof DG.ViewLayout)
-    return ui.iconSvg('view-layout');
-  if (entity instanceof DG.DataConnection)
-    return ui.iconSvg('connection');
-  if (entity instanceof DG.Func)
-    return ui.iconSvg('function');
-  return ui.iconSvg('file');
+  return DG.ObjectHandler.forEntity(entity)?.renderIcon(entity.dart) ?? ui.iconFA('file');
 }
 
 /** Opens an entity in the appropriate way. */
