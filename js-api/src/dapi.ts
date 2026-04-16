@@ -1229,6 +1229,10 @@ export class NotificationsDataSource extends HttpDataSource<UserNotification> {
   async markAllAsRead(): Promise<void> {
     return api.grok_Dapi_Notifications_MarkAllAsRead();
   }
+
+  async markAsRead(notificationId: string): Promise<void> {
+    return api.grok_Dapi_Notifications_MarkAsRead(notificationId);
+  }
 }
 
 export class LogDataSource extends HttpDataSource<LogEvent> {
