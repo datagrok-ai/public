@@ -99,7 +99,7 @@ export function widgetHostFromFunc(f: DG.Func) {
       host.remove();
       console.error(`Error creating widget ${f.name}`, e);
     })
-    .finally(() => ui.setUpdateIndicator(contentDiv, false, ''));
+    .then(() => ui.setUpdateIndicator(contentDiv, false, ''));
 
   setTimeout(() => {
     if (contentDiv!.children.length == 0)

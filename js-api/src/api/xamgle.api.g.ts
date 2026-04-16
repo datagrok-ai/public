@@ -24,8 +24,6 @@ export interface SettingsInterface {
   /// Show notification when a file is imported
   notifyOnFileImport: boolean;
 
-  allowAsyncFileImport: boolean;
-
   /// Controls whether tables pane automatically shows when more
   /// than one table is open
   autoShowTablesPane: boolean;

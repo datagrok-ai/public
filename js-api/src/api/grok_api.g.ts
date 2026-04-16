@@ -892,6 +892,7 @@ export interface IDartApi {
   grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
   grok_Shell_GetClientBuildInfo(): any;
   grok_Shell_OpenFileDialog(): any;
+  grok_Shell_OpenLocalFile(file: any): Promise<any>;
   grok_Shell_AI_Prompt(s: any): Promise<any>;
   grok_Shell_AI_CorePrompt(s: any): Promise<any>;
   grok_BrowsePanel_Get_LocalTree(view: any): any;
