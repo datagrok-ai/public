@@ -1032,6 +1032,7 @@ export interface IDartApi {
   grok_Dapi_Notifications_ForCurrentUser(): any;
   grok_Dapi_Notifications_CountUnread(): Promise<any>;
   grok_Dapi_Notifications_MarkAllAsRead(): Promise<any>;
+  grok_Dapi_Notifications_MarkAsRead(notificationId: string): Promise<any>;
   grok_Dapi_Activity(): any;
   grok_Dapi_Activity_Where(activityClient: any, userId: String, start: any, end: any): any;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
@@ -1793,6 +1794,7 @@ export interface IDartApi {
   grok_UserNotification_CreatedAt(notification: any): any;
   grok_UserNotification_ReadAt(notification: any): any;
   grok_UserNotification_IsRead(notification: any): any;
+  grok_UserNotification_Id(notification: any): string;
   grok_Get_StackTrace_Hash(stackTrace: String): any;
   grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
   grok_GetLogger(params: any): any;
