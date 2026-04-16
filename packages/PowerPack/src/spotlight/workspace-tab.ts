@@ -90,26 +90,33 @@ export class WorkspaceTab {
     this.spotlight = spotlight;
   }
 
-  async build(): Promise<HTMLElement> {
-    const [groupFavorites] = await Promise.all([
-      getMyGroupFavorites(),
-      //this.spotlight.initRecentData(),
-    ]);
-
+  build(): HTMLElement {
     const root = ui.divV([], 'pp-workspace-root');
 
-    // Greeting
+    // Greeting — shown immediately
     const user = DG.User.current();
     const firstName = user.firstName || user.friendlyName;
     const greeting = ui.div([`Welcome back, ${firstName}.`], 'pp-workspace-greeting');
     root.appendChild(greeting);
 
+    // Loading indicator — centered in remaining space
+    const loaderHost = ui.div([ui.loader()], 'pp-workspace-loader');
+    root.appendChild(loaderHost);
+    this.populate(root, user).finally(() => loaderHost.remove());
+    return root;
+  }
+
+  private async populate(root: HTMLElement, user: DG.User): Promise<void> {
+    const [groupFavorites] = await Promise.all([
+      getMyGroupFavorites(),
+      //this.spotlight.initRecentData(),
+    ]);
+
     // Group favorites sections
     if (groupFavorites.length > 0) {
-      for (const {group, entities} of groupFavorites) {
+      for (const {group, entities} of groupFavorites)
         if (entities.length > 0)
           root.appendChild(createSection(group.friendlyName, 'star', entities));
-      }
     }
 
     // New user fallback — show onboarding content instead of empty state
@@ -133,7 +140,5 @@ export class WorkspaceTab {
         this.spotlight.recentEntityTimes.slice(0, maxRecent),
       ));
     }
-
-    return root;
   }
 }

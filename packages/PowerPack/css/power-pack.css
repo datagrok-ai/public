@@ -1076,6 +1076,13 @@ body.dartium .power-pack-widgets-host.ui-div {
     overflow-y: auto;
 }
 
+.pp-workspace-loader {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .pp-workspace-greeting {
     font-size: 17px;
     font-weight: 500;
