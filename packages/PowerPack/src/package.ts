@@ -431,10 +431,6 @@ function getEntity(x: any) {
 }
 
 grok.events.onContextMenu.subscribe((args) => {
-  grok.shell.info(`context menu`);
-  console.log(args);
-  debugger;
-
   const entity = DG.toJs(args?.args?.item?.value);
   if (!(entity instanceof DG.Entity) || entity instanceof DG.User ||entity instanceof DG.Group)
     return;
