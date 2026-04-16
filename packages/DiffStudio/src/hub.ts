@@ -1,3 +1,5 @@
+// Centralized hub for Diff Studio: templates, library, recent & custom models
+
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -12,6 +14,7 @@ import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE, getLink} from './app';
 
 import '../css/app-styles.css';
 
+/** Diff Studio hub view with templates, library, and recent models */
 export class DiffStudioHub {
   name = 'Diff Studio Hub';
   root = ui.divV([]);
@@ -25,16 +28,19 @@ export class DiffStudioHub {
     grok.shell.windows.showProperties = false;
   }
 
+  /** Render the full hub view */
   async render(): Promise<void> {
     this.renderHeader();
     await this.renderRest();
   }
 
+  /** Render the hub header */
   renderHeader(): void {
     ui.empty(this.root);
     this.root.append(this.buildHeader());
   }
 
+  /** Render buttons and all model sections */
   async renderRest(): Promise<void> {
     ui.setUpdateIndicator(this.root, true);
     try {
@@ -47,6 +53,7 @@ export class DiffStudioHub {
     }
   }
 
+  /** Return the hub header element */
   private buildHeader(): HTMLElement {
     const header = u2.appHeader({
       iconPath: `${_package.webRoot}/package.png`,
@@ -61,6 +68,7 @@ export class DiffStudioHub {
     return header;
   }
 
+  /** Return the hub action buttons (refresh, create, upload) */
   private buildButtons(): HTMLElement {
     const refreshBtn = ui.iconFA('sync', () => this.render(), 'Refresh view');
     const createBtn = ui.button('Create', async () => {
@@ -74,6 +82,7 @@ export class DiffStudioHub {
     return buttons;
   }
 
+  /** Upload a model from a local `.ivp` file and run it */
   private uploadFromLocalFile(): void {
     const fileInp = document.createElement('input');
     fileInp.type = 'file';
@@ -94,6 +103,7 @@ export class DiffStudioHub {
     fileInp.click();
   }
 
+  /** Build the "Recent" section from the recent models table */
   private async buildRecent(): Promise<void> {
     try {
       const recentDf = await getRecentModelsTable();
@@ -139,8 +149,9 @@ export class DiffStudioHub {
     } catch (e) {
       // silently skip if loading fails
     }
-  }
+  } // buildRecent
 
+  /** Build the "Templates" section */
   private buildTemplates(): void {
     const cards = TEMPLATE_TITLES.map((title) => {
       const description = MODEL_HINT.get(title) ?? '';
@@ -158,6 +169,7 @@ export class DiffStudioHub {
     this.root.append(ui.h1('Templates'), this.buildCardsContainer(cards));
   }
 
+  /** Build the "Library" section (built-in use cases + custom entries) */
   private async buildLibrary(): Promise<void> {
     const cards = EXAMPLE_TITLES.map((title) => {
       const description = MODEL_HINT.get(title) ?? '';
@@ -178,6 +190,7 @@ export class DiffStudioHub {
     this.root.append(ui.h1('Library'), this.buildCardsContainer(cards));
   }
 
+  /** Build cards for custom Library models listed in `external-models.json` */
   private async buildExternalModelCards(): Promise<HTMLElement[]> {
     const cards: HTMLElement[] = [];
     try {
@@ -219,8 +232,9 @@ export class DiffStudioHub {
       // silently skip if the manifest is missing or malformed
     }
     return cards;
-  }
+  } // buildExternalModelCards
 
+  /** Open an IVP file as a Diff Studio preview */
   private async openFileAsPreview(path: string): Promise<void> {
     if (!(await grok.dapi.files.exists(path))) {
       grok.shell.warning(`File not found: ${path}`);
@@ -239,6 +253,7 @@ export class DiffStudioHub {
     grok.shell.addView(await solver.getFilePreview(file, path));
   }
 
+  /** Attach a context menu to a recent-model card */
   private addRecentContextMenu(card: HTMLElement, run: () => void, linkUrl: string): void {
     card.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
@@ -253,6 +268,7 @@ export class DiffStudioHub {
     });
   }
 
+  /** Open the settings dialog for a custom Library model */
   private openCustomModelSettings(modelPath: string, currentHelpUrl: string | undefined): void {
     const linkInput = ui.input.string('Help link', {
       value: currentHelpUrl ?? '',
@@ -291,8 +307,9 @@ export class DiffStudioHub {
     linkInput.onChanged.subscribe(() => {
       saveBtn.disabled = !linkInput.value?.trim();
     });
-  }
+  } // openCustomModelSettings
 
+  /** Attach a context menu to a custom Library model card */
   private addCustomModelContextMenu(card: HTMLElement, modelPath: string, helpUrl: string | undefined,
     run: () => void): void {
     card.addEventListener('contextmenu', (ev) => {
@@ -317,6 +334,7 @@ export class DiffStudioHub {
     });
   }
 
+  /** Attach a context menu to a built-in template or library model card */
   private addModelContextMenu(card: HTMLElement, section: TITLE, state: EDITOR_STATE, run: () => void): void {
     card.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
@@ -336,11 +354,13 @@ export class DiffStudioHub {
     });
   }
 
+  /** Return the icon URL for a built-in model */
   private getIconUrl(title: TITLE): string {
     const iconFile = MODEL_ICON.get(title);
     return iconFile ? `${_package.webRoot}files/${iconFile}` : `${_package.webRoot}/package.png`;
   }
 
+  /** Build a model card (icon + name + tooltip, double-click to run) */
   private buildModelCard(name: string, description: string, onClick: () => void, iconUrl?: string): HTMLElement {
     const imgUrl = iconUrl ?? `${_package.webRoot}/files/icons/default.png`;
     const icon = ui.iconImage('diff-studio', imgUrl);
@@ -364,14 +384,16 @@ export class DiffStudioHub {
     });
 
     return card;
-  }
+  } // buildModelCard
 
+  /** Wrap a list of cards into a grid container */
   private buildCardsContainer(cards: HTMLElement[]): HTMLElement {
     const container = ui.div(cards);
     container.classList.add('diff-studio-hub-grid');
     return container;
   }
 
+  /** Render the hub and show it as a preview */
   async show(): Promise<void> {
     await this.render();
     grok.shell.windows.showToolbox = false;

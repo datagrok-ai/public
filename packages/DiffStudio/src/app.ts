@@ -498,7 +498,7 @@ export class DiffStudio {
     setTimeout(async () => {
       await this.runSolving();
     }, UI_TIME.APP_RUN_SOLVING);
-  } // handleContent
+  } // runModel
 
   /** Set starting pass */
   public setStartingPath(path: string): void {
@@ -2472,19 +2472,37 @@ export class DiffStudio {
   /** Return card with built-in model*/
   private getCardWithBuiltInModel(name: TITLE): HTMLDivElement {
     const card = this.getCard(name, MODEL_HINT.get(name) ?? '', modelImageLink.get(name));
+    const state = STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE;
+    const linkSection = TEMPLATE_TITLES.includes(name) ? TITLE.TEMPL : TITLE.LIBRARY;
 
-    card.ondblclick = async () => {
+    const run = async () => {
       setTimeout(async () => {
         const solver = new DiffStudio();
-        const v = await solver.runSolverApp(
-          undefined,
-          STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-        ) as DG.TableView;
+        const v = await solver.runSolverApp(undefined, state) as DG.TableView;
         grok.shell.windows.showToolbox = false;
         grok.shell.windows.showBrowse = true;
         grok.shell.v = v;
       }, UI_TIME.BROWSING);
     };
+
+    card.ondblclick = run;
+
+    card.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      DG.Menu.popup()
+        .item('Run', run, null, {description: 'Run model'})
+        .item('Copy link', async () => {
+          const url = `${window.location.origin}${PATH.APPS_DS}/${linkSection}/${state}${PATH.PARAM}`;
+          await navigator.clipboard.writeText(url);
+          grok.shell.info('Model link copied to clipboard');
+        }, null, {description: 'Copy the model link to clipboard'})
+        .item('Help', () => {
+          grok.shell.windows.help.visible = true;
+          grok.shell.windows.help.showHelp(getLink(state));
+        }, null, {description: 'Open help for this model'})
+        .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+    });
 
     ui.tooltip.bind(card, HINT.DBL_CLICK_RUN);
 
@@ -2512,7 +2530,7 @@ export class DiffStudio {
         file = fileList.find((file) => file.nqName === path);
       }
 
-      card.ondblclick = async () => {
+      const run = async () => {
         if (exist) {
           const solver = new DiffStudio(false, true, true);
           grok.shell.windows.showToolbox = false;
@@ -2524,11 +2542,26 @@ export class DiffStudio {
           grok.shell.warning(`File not found: ${path}`);
       };
 
+      card.ondblclick = run;
+
+      card.addEventListener('contextmenu', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        DG.Menu.popup()
+          .item('Run', run, null, {description: 'Run model'})
+          .item('Copy link', async () => {
+            const url = `${window.location.origin}/${PATH.FILE}/${path.replace(':', '.')}`;
+            await navigator.clipboard.writeText(url);
+            grok.shell.info('Model link copied to clipboard');
+          }, null, {description: 'Copy the model link to clipboard'})
+          .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+      });
+
       return card;
     } catch (e) {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
-  } // getCardWithBuiltInModel
+  } // getCardWithCustomModel
 
   /** Return card with external (custom Library) model — matches the hub's Library cards */
   private getCardWithExternalModel(entry: ExternalLibraryEntry): HTMLDivElement {
