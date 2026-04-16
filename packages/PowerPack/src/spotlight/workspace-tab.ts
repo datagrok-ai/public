@@ -24,10 +24,10 @@ function openEntity(entity: DG.Entity): void {
 /** Creates a single card tile for an entity. */
 function createCard(entity: DG.Entity, root: HTMLElement, group?: DG.Group): HTMLElement {
   const icon = entityIcon(entity);
-  icon.classList.add('pp-workspace-card-icon');
+  const iconWrap = ui.div([icon], 'pp-workspace-card-icon');
 
   const label = ui.div([entity.friendlyName], 'pp-workspace-card-label');
-  const card = ui.divV([icon, label], 'pp-workspace-card');
+  const card = ui.divV([iconWrap, label], 'pp-workspace-card');
   card.addEventListener('click', () => openEntity(entity));
   ui.tooltip.bind(card, entity.friendlyName);
   ui.bind(entity, card, {contextMenu: true});
