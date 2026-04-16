@@ -431,7 +431,8 @@ function getEntity(x: any) {
 }
 
 grok.events.onContextMenu.subscribe((args) => {
-  const entity = DG.toJs(args?.args?.item?.value);
+  const item = args?.args?.item;
+  const entity = DG.toJs(item?.value ?? item);
   if (!(entity instanceof DG.Entity) || entity instanceof DG.User ||entity instanceof DG.Group)
     return;
 
