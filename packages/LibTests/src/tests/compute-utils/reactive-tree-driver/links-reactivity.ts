@@ -11,7 +11,7 @@ import {of, Subject} from 'rxjs';
 import {delay, filter, mapTo, skip, switchMap, take} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {snapshotCompare} from '../../../test-utils';
+import {snapshotCompare, createTestScheduler} from '../../../test-utils';
 
 
 category('ComputeUtils: Driver links reactivity', async () => {
@@ -63,10 +63,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
   };
 
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   test('Run default handler on trigger', async () => {

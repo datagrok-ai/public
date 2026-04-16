@@ -4,6 +4,7 @@ import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {FuncCallAdapter, FuncCallMockAdapter} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallAdapters';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {TestScheduler} from 'rxjs/testing';
+import {createTestScheduler} from '../../../test-utils';
 import {map, take, takeUntil, toArray} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 
@@ -11,10 +12,7 @@ category('ComputeUtils: Driver mock wrapper', async () => {
   let testScheduler: TestScheduler;
 
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   test('Set and get state', async () => {

@@ -4,6 +4,7 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {TestScheduler} from 'rxjs/testing';
+import {createTestScheduler} from '../../../test-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {switchMap} from 'rxjs/operators';
 
@@ -11,10 +12,7 @@ category('ComputeUtils: Driver links additional states propagation', async () =>
   let testScheduler: TestScheduler;
 
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   test('Propagate validatations to the state', async () => {
