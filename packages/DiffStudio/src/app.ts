@@ -33,6 +33,7 @@ import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTa
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
+//@ts-ignore
 import '../css/app-styles.css';
 
 import {_package} from './package';

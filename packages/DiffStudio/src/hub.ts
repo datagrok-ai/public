@@ -12,6 +12,7 @@ import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC, PA
   LIBRARY_CHANGED_EVENT} from './ui-constants';
 import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE, getLink} from './app';
 
+//@ts-ignore
 import '../css/app-styles.css';
 
 /** Diff Studio hub view with templates, library, and recent models */
