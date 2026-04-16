@@ -1117,6 +1117,7 @@ body.dartium .power-pack-widgets-host.ui-div {
 }
 
 .pp-workspace-card {
+    position: relative;
     width: 130px;
     padding: 16px 12px 12px;
     border: 1px solid var(--grey-2);
@@ -1134,7 +1135,28 @@ body.dartium .power-pack-widgets-host.ui-div {
 .pp-workspace-card:hover {
     border-color: var(--blue-1);
     box-shadow: 0 2px 8px rgba(32, 131, 213, 0.12);
-    transform: translateY(-1px);
+}
+
+.pp-workspace-root .pp-workspace-card-remove.grok-icon.grok-font-icon-close {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    font-size: 14px;
+    color: var(--grey-3);
+    cursor: pointer;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.pp-workspace-root .pp-workspace-card:hover > .pp-workspace-card-remove.grok-icon.grok-font-icon-close {
+    visibility: visible;
+    opacity: 1;
+}
+
+.pp-workspace-root .pp-workspace-card-remove.grok-icon.grok-font-icon-close:hover {
+    color: var(--red-1);
+    filter: none;
 }
 
 .pp-workspace-card-icon {

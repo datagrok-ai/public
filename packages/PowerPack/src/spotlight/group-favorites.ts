@@ -37,9 +37,16 @@ export async function unpin(entity: DG.Entity, group: DG.Group): Promise<void> {
   await grok.dapi.projects.save(project);
 }
 
+export interface GroupFavorites {
+  group: DG.Group;
+  entities: DG.Entity[];
+  isAdmin: boolean;
+}
+
 /** Returns all pinned objects across the current user's groups. */
-export async function getMyGroupFavorites(): Promise<{group: DG.Group; entities: DG.Entity[]}[]> {
+export async function getMyGroupFavorites(): Promise<GroupFavorites[]> {
   const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
+  const adminIds = new Set(userGroup.adminMemberships.map((g) => g.id));
   const groups = [...userGroup.memberships, ...userGroup.adminMemberships]
     .filter((g) => !g.personal);
   const seen = new Set<string>();
@@ -50,7 +57,7 @@ export async function getMyGroupFavorites(): Promise<{group: DG.Group; entities:
     return true;
   });
 
-  const results: {group: DG.Group; entities: DG.Entity[]}[] = [];
+  const results: GroupFavorites[] = [];
   await Promise.all(uniqueGroups.map(async (g) => {
     const name = getProjectName(g);
     try {
@@ -58,7 +65,7 @@ export async function getMyGroupFavorites(): Promise<{group: DG.Group; entities:
       if (project && project.links.length > 0) {
         const ids = project.links.map((l) => l.id);
         const resolved = await grok.dapi.getEntities(ids);
-        results.push({group: g, entities: resolved.filter((e) => e != null)});
+        results.push({group: g, entities: resolved.filter((e) => e != null), isAdmin: adminIds.has(g.id)});
       }
     }
     catch (e) {
@@ -71,5 +78,5 @@ export async function getMyGroupFavorites(): Promise<{group: DG.Group; entities:
 /** Returns groups the current user is an admin of (excluding personal groups). */
 export async function getAdminGroups(): Promise<DG.Group[]> {
   const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
-  return userGroup.adminMemberships.filter((g) => !g.personal);
+  return userGroup.adminMemberships.filter((g) => !g.personal && g.friendlyName);
 }

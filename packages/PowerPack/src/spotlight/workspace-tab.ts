@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
-import {getMyGroupFavorites} from './group-favorites';
+import {getMyGroupFavorites, unpin} from './group-favorites';
 import type {SpotlightWidget} from './spotlight-widget';
 
 
@@ -22,7 +22,7 @@ function openEntity(entity: DG.Entity): void {
 }
 
 /** Creates a single card tile for an entity. */
-function createCard(entity: DG.Entity): HTMLElement {
+function createCard(entity: DG.Entity, root: HTMLElement, group?: DG.Group): HTMLElement {
   const icon = entityIcon(entity);
   icon.classList.add('pp-workspace-card-icon');
 
@@ -31,17 +31,38 @@ function createCard(entity: DG.Entity): HTMLElement {
   card.addEventListener('click', () => openEntity(entity));
   ui.tooltip.bind(card, entity.friendlyName);
   ui.bind(entity, card, {contextMenu: true});
+
+  if (group) {
+    const removeBtn = ui.icons.close(async () => {
+      await unpin(entity, group);
+      const section = card.closest('.pp-workspace-section')!;
+      card.remove();
+      if (section.querySelectorAll('.pp-workspace-card').length === 0) {
+        section.remove();
+        if (root.querySelectorAll('.pp-workspace-section').length === 0) {
+          root.appendChild(ui.divText(
+            'Your workspace is empty. Ask your admin to pin items for your group, or explore on your own.',
+            'pp-workspace-empty-hint',
+          ));
+        }
+      }
+    }, `Unpin from ${group.friendlyName}`);
+    removeBtn.classList.add('pp-workspace-card-remove');
+    removeBtn.addEventListener('click', (e: MouseEvent) => e.stopPropagation());
+    card.appendChild(removeBtn);
+  }
+
   return card;
 }
 
 /** Creates a section with header and a row of cards. */
-function createSection(title: string, iconName: string, entities: DG.Entity[]): HTMLElement {
+function createSection(title: string, iconName: string, entities: DG.Entity[], root: HTMLElement, group?: DG.Group): HTMLElement {
   const headerIcon = ui.iconFA(iconName);
   const header = ui.h3(
     ui.span([headerIcon, ui.span([` ${title}`])]),
     'pp-workspace-section-header',
   );
-  const cards = entities.map((e) => createCard(e));
+  const cards = entities.map((e) => createCard(e, root, group));
   const row = ui.divH(cards, 'pp-workspace-cards-row');
   return ui.divV([header, row], 'pp-workspace-section');
 }
@@ -114,9 +135,10 @@ export class WorkspaceTab {
 
     // Group favorites sections
     if (groupFavorites.length > 0) {
-      for (const {group, entities} of groupFavorites)
+      groupFavorites.sort((a, b) => a.group.friendlyName.localeCompare(b.group.friendlyName));
+      for (const {group, entities, isAdmin} of groupFavorites)
         if (entities.length > 0)
-          root.appendChild(createSection(group.friendlyName, 'star', entities));
+          root.appendChild(createSection(group.friendlyName, 'star', entities, root, isAdmin ? group : undefined));
     }
 
     // New user fallback — show onboarding content instead of empty state

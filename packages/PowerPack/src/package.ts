@@ -24,7 +24,7 @@ import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {SpotlightWidget} from './spotlight/spotlight-widget';
-import {pin, getAdminGroups} from './spotlight/group-favorites';
+import {pin, unpin, getAdminGroups, getMyGroupFavorites} from './spotlight/group-favorites';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
 export * from './package.g';
@@ -436,16 +436,28 @@ grok.events.onContextMenu.subscribe((args) => {
     return;
 
   const menu: DG.Menu = args.args.menu;
-  getAdminGroups().then((adminGroups) => {
-    if (adminGroups.length === 0)
+  Promise.all([getAdminGroups(), getMyGroupFavorites()]).then(([allAdminGroups, groupFavorites]) => {
+    if (allAdminGroups.length === 0)
       return;
-    const subMenu = menu.group('Add to group favorites');
-    for (const group of adminGroups) {
-      subMenu.item(group.friendlyName, async () => {
+    const pinnedGroupIds = new Set<string>();
+    for (const gf of groupFavorites)
+      if (gf.entities.some((e) => e.id === entity.id))
+        pinnedGroupIds.add(gf.group.id);
+
+    allAdminGroups.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
+    menu.group('Group favorites').items(allAdminGroups, async (group) => {
+      if (pinnedGroupIds.has(group.id)) {
+        await unpin(entity, group);
+        grok.shell.info(`Unpinned "${entity.friendlyName}" from ${group.friendlyName}`);
+      }
+      else {
         await pin(entity, group);
         grok.shell.info(`Pinned "${entity.friendlyName}" to ${group.friendlyName}`);
-      });
-    }
+      }
+    }, {
+      isChecked: (group) => pinnedGroupIds.has(group.id),
+      toString: (group) => group.friendlyName,
+    }).endGroup();
   });
 });
 
