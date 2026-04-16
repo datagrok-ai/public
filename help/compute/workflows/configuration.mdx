@@ -402,3 +402,20 @@ fields:
 This allows to reuse most of the tree export logic, however individual
 exceljs workbooks could be customized or replaced/augmented with a
 different file.
+
+## Edge cases
+
+Keep the following constraints in mind when designing workflows:
+
+* **No cycles in data links.** Data links can only reference the same node or nodes that come
+  later in the depth-first traversal order of the tree. Backward references are not supported
+  and will cause undefined behavior.
+* **Transitive I/O dependencies require `nodePriority`.** By default, dependencies between
+  inputs/outputs of the same node are not tracked automatically. If you need a chain of links
+  within one node (e.g., `a` → `b` → `c` on the same step), assign `nodePriority` values to
+  ensure correct execution order — higher priority links run first. Without explicit priorities,
+  the execution order of same-node links is not guaranteed.
+* **Link handler execution order.** When multiple links target the same node, they are sorted
+  by `nodePriority` (higher values run first, default is 0). Links with the same priority
+  execute in traversal order. This applies regardless of which `links` array the links are
+  defined in.
