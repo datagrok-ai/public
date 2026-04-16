@@ -388,16 +388,16 @@ export logic:
 The callback in `reportStateExcel` receives an object with the following
 fields:
 
-*  fc: `DG.FuncCall`
-*  wb: `ExcelJS.Workbook`
-*  archive: `Zippable`
-*  path: `string[]`
-*  fileName: `string`
-*  isOutputOutdated?: `boolean`
-*  runError?:` string`
-*  validation?: `Record<string, ValidationResult>`
-*  consistency?: `Record<string, ConsistencyInfo>`
-*  description?: `Record<string, string | string[]>`
+* fc: `DG.FuncCall`
+* wb: `ExcelJS.Workbook`
+* archive: `Zippable`
+* path: `string[]`
+* fileName: `string`
+* isOutputOutdated?: `boolean`
+* runError?: `string`
+* validation?: `Record<string, ValidationResult>`
+* consistency?: `Record<string, ConsistencyInfo>`
+* description?: `Record<string, string | string[]>`
 
 This allows to reuse most of the tree export logic, however individual
 exceljs workbooks could be customized or replaced/augmented with a
