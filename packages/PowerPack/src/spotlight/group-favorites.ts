@@ -51,7 +51,7 @@ export async function getMyGroupFavorites(): Promise<{group: DG.Group; entities:
   });
 
   const results: {group: DG.Group; entities: DG.Entity[]}[] = [];
-  for (const g of uniqueGroups) {
+  await Promise.all(uniqueGroups.map(async (g) => {
     const name = getProjectName(g);
     try {
       const project = await grok.dapi.projects.filter(`name = "${name}"`).first();
@@ -64,7 +64,7 @@ export async function getMyGroupFavorites(): Promise<{group: DG.Group; entities:
     catch (e) {
       console.warn(`Failed to load group favorites for "${g.friendlyName}"`, e);
     }
-  }
+  }));
   return results;
 }
 
