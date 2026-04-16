@@ -8,10 +8,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function chemblSearchWidget(mol: string , searchType: string ): Promise<any> {
-    return await grok.functions.call('ChEMBLAPI:ChemblSearchWidget', { mol, searchType });
-  }
-
   export async function chemblSubstructureSearchPanel(mol: string ): Promise<any> {
     return await grok.functions.call('ChEMBLAPI:ChemblSubstructureSearchPanel', { mol });
   }
