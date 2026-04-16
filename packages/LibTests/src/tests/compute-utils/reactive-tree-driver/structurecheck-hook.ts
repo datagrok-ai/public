@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {createTestScheduler} from '../../../test-utils';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
@@ -9,10 +10,7 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 category('ComputeUtils: Driver structure check hook running', async () => {
   let testScheduler: TestScheduler;
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   const config1: PipelineConfiguration = {
