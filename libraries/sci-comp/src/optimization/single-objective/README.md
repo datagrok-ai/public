@@ -211,6 +211,23 @@ iteration count, function evaluations, and wall-clock time.
 
 Find the results in [this summary](./benchmarks/unconstrained-benchmarks.md).
 
+A complementary [**multi-start benchmark**](./benchmarks/multistart-benchmarks.md) runs every
+optimizer from three carefully-chosen starting points per problem (baseline + adversarial
+perturbation + near-optimum) to expose x₀-sensitivity and local-trap failure modes:
+
+```bash
+npx tsx src/optimization/single-objective/benchmarks/multistart-benchmarks.ts
+```
+
+> **Why multi-start matters.** A single-start comparison can make a local optimizer
+> look better than it really is. For example, L-BFGS reaches the Rastrigin / Lévi N.13
+> global minimum in one iteration in the single-start benchmark — but only because the
+> chosen x₀ happens to be integer-aligned (so the `sin(kπxᵢ)` gradient contributions
+> zero out and the landscape reduces to a quadratic bowl). A 0.1 perturbation of x₀
+> destroys that effect and L-BFGS traps in a nearby local well. When picking a method
+> for a **multimodal** objective, consult the multi-start tables or wrap a local
+> optimizer in a multi-start strategy.
+
 ## Running examples
 
 Runnable examples are located in `examples/`:

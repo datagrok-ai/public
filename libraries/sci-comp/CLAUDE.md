@@ -33,7 +33,9 @@ src/optimization/
       lbfgs.ts                    # L-BFGS specific example
       registry.ts                 # Registry lookup example
     benchmarks/
-      unconstrained-benchmarks.ts # 15 standard test functions (Sphere, Rosenbrock, Ackley, etc.) with comparison runner
+      test-functions.ts           # Shared suite of classical test functions (sphere, rosenbrock, ackley, rastrigin, ...) + HIMMELBLAU_MINIMA
+      unconstrained-benchmarks.ts # 15 standard test functions, single x₀ per problem, comparison runner
+      multistart-benchmarks.ts    # Same 15 problems × 3 x₀ per problem (baseline + adversarial + near-optimum) — exposes x₀-sensitivity
   multi-objectives/
     moead/                        # MOEA/D multi-objective optimizer (defs.ts, moead.ts, utils.ts)
 src/time-series/
@@ -68,6 +70,27 @@ src/time-series/
 - **Columnar I/O**: Input is a `TimeSeriesDataFrame` with `ids` (sample grouping), `time`, and value `columns`. Output is a `FeatureMatrix` with one row per sample and one `FeatureColumn` per feature.
 - **NumericArray**: Accepts `Int32Array`, `Uint32Array`, `Float32Array`, or `Float64Array` as input data types.
 - **Contiguous id grouping**: All rows for the same sample id must be contiguous in the input (sorted by id).
+
+### Benchmarks
+
+The single-objective benchmark suite is split into two complementary runners that
+share objective functions through `benchmarks/test-functions.ts`:
+
+- `unconstrained-benchmarks.ts` — one x₀ per problem, direct head-to-head table.
+- `multistart-benchmarks.ts` — three x₀ per problem (baseline + adversarial
+  perturbation + near-optimum) and a success-rate summary across all 45 runs.
+
+When adding a new optimizer, register it in **both** runners and regenerate
+**both** `.md` reports. When adding a new test function, export it from
+`test-functions.ts` (do not duplicate the body in the runner files).
+
+**x₀-sensitivity caveat — important when interpreting results.** The single-start
+tables can make local optimizers look stronger than they are on multimodal
+problems. Example: L-BFGS solves Rastrigin / Lévi N.13 in one iteration because
+the baseline x₀ is integer-aligned and zeroes out the `sin(kπxᵢ)` gradient terms;
+a 0.1 perturbation of x₀ destroys that effect (visible in the multi-start tables).
+Treat impressive single-start results on multimodal objectives as hypotheses to
+verify against `multistart-benchmarks.md`.
 
 ### Test structure
 

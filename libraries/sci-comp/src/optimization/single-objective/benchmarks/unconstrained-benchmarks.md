@@ -10,6 +10,15 @@ Legend:
 
 Problems specification: [link](unconstrained-benchmark-functions.md)
 
+> **Single-start caveat.** This page measures each optimizer from one x₀ per problem,
+> which can mask x₀-sensitivity — e.g. L-BFGS reaches the Rastrigin / Lévi N.13
+> global minimum in one iteration here, but only because the chosen x₀ happens to be
+> integer-aligned (zeroing out the `sin(kπxᵢ)` gradient contributions). Under a 0.1
+> perturbation that advantage disappears. See
+> [multistart-benchmarks.md](./multistart-benchmarks.md) for the same 15 problems run
+> from three starting points each (baseline + adversarial perturbation + near-optimum),
+> which exposes such failure modes.
+
 ---
 
 ## Sphere

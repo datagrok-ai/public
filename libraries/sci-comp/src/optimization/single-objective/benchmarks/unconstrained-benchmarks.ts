@@ -5,6 +5,11 @@ import {Adam} from '../optimizers/adam';
 import {LBFGS} from '../optimizers/lbfgs';
 import type {ObjectiveFunction, OptimizationResult} from '../types';
 import type {Optimizer} from '../optimizer';
+import {
+  sphere, rosenbrock, beale, booth, matyas, himmelblau, threeHumpCamel,
+  rastrigin, ackley, levi13, griewank, styblinskiTang, easom, goldsteinPrice,
+  mccormick, HIMMELBLAU_MINIMA,
+} from './test-functions';
 
 /* ================================================================== */
 /*  Function evaluation counter                                        */
@@ -38,150 +43,6 @@ interface BenchmarkProblem {
   knownMin: number;
   knownPoint: Float64Array;
 }
-
-/* ================================================================== */
-/*  Test functions                                                     */
-/* ================================================================== */
-
-// Sphere: f(x) = Σ xᵢ²
-// Dimension: n (tested: 2) | Type: unimodal, convex
-// Search domain: −∞ ≤ xᵢ ≤ ∞
-// Global minimum: f(0, …, 0) = 0
-const sphere: ObjectiveFunction = (x) => {
-  let s = 0;
-  for (let i = 0; i < x.length; i++) s += x[i] * x[i];
-  return s;
-};
-
-// Rosenbrock: f(x) = Σᵢ₌₁ⁿ⁻¹ [100·(xᵢ₊₁ − xᵢ²)² + (1 − xᵢ)²]
-// Dimension: n (tested: 2) | Type: unimodal, non-convex
-// Search domain: −∞ ≤ xᵢ ≤ ∞
-// Global minimum: f(1, …, 1) = 0
-const rosenbrock: ObjectiveFunction = (x) => {
-  let s = 0;
-  for (let i = 0; i < x.length - 1; i++)
-    s += 100 * (x[i + 1] - x[i] * x[i]) ** 2 + (1 - x[i]) ** 2;
-  return s;
-};
-
-// Beale: f(x,y) = (1.5 − x + xy)² + (2.25 − x + xy²)² + (2.625 − x + xy³)²
-// Dimension: 2 | Type: unimodal, non-convex
-// Search domain: −4.5 ≤ x, y ≤ 4.5
-// Global minimum: f(3, 0.5) = 0
-const beale: ObjectiveFunction = (x) =>
-  (1.5 - x[0] + x[0] * x[1]) ** 2 +
-  (2.25 - x[0] + x[0] * x[1] * x[1]) ** 2 +
-  (2.625 - x[0] + x[0] * x[1] * x[1] * x[1]) ** 2;
-
-// Booth: f(x,y) = (x + 2y − 7)² + (2x + y − 5)²
-// Dimension: 2 | Type: unimodal, convex
-// Search domain: −10 ≤ x, y ≤ 10
-// Global minimum: f(1, 3) = 0
-const booth: ObjectiveFunction = (x) =>
-  (x[0] + 2 * x[1] - 7) ** 2 + (2 * x[0] + x[1] - 5) ** 2;
-
-// Matyas: f(x,y) = 0.26·(x² + y²) − 0.48·x·y
-// Dimension: 2 | Type: unimodal, convex
-// Search domain: −10 ≤ x, y ≤ 10
-// Global minimum: f(0, 0) = 0
-const matyas: ObjectiveFunction = (x) =>
-  0.26 * (x[0] * x[0] + x[1] * x[1]) - 0.48 * x[0] * x[1];
-
-// Himmelblau: f(x,y) = (x² + y − 11)² + (x + y² − 7)²
-// Dimension: 2 | Type: multimodal (4 identical minima)
-// Search domain: −5 ≤ x, y ≤ 5
-// Global minima: f(3,2) = f(−2.805118,3.131312) = f(−3.779310,−3.283186) = f(3.584428,−1.848126) = 0
-const himmelblau: ObjectiveFunction = (x) =>
-  (x[0] * x[0] + x[1] - 11) ** 2 + (x[0] + x[1] * x[1] - 7) ** 2;
-
-// Three-Hump Camel: f(x,y) = 2x² − 1.05x⁴ + x⁶/6 + xy + y²
-// Dimension: 2 | Type: multimodal (3 local minima)
-// Search domain: −5 ≤ x, y ≤ 5
-// Global minimum: f(0, 0) = 0
-const threeHumpCamel: ObjectiveFunction = (x) =>
-  2 * x[0] ** 2 - 1.05 * x[0] ** 4 + x[0] ** 6 / 6 + x[0] * x[1] + x[1] ** 2;
-
-// Rastrigin: f(x) = 10n + Σ [xᵢ² − 10·cos(2πxᵢ)]
-// Dimension: n (tested: 2) | Type: multimodal (highly)
-// Search domain: −5.12 ≤ xᵢ ≤ 5.12
-// Global minimum: f(0, …, 0) = 0
-const rastrigin: ObjectiveFunction = (x) => {
-  const A = 10;
-  let s = A * x.length;
-  for (let i = 0; i < x.length; i++)
-    s += x[i] * x[i] - A * Math.cos(2 * Math.PI * x[i]);
-  return s;
-};
-
-// Ackley: f(x,y) = −20·exp[−0.2·√(0.5·(x²+y²))] − exp[0.5·(cos(2πx)+cos(2πy))] + e + 20
-// Dimension: 2 | Type: multimodal
-// Search domain: −5 ≤ x, y ≤ 5
-// Global minimum: f(0, 0) = 0
-const ackley: ObjectiveFunction = (x) =>
-  -20 * Math.exp(-0.2 * Math.sqrt(0.5 * (x[0] ** 2 + x[1] ** 2))) -
-  Math.exp(0.5 * (Math.cos(2 * Math.PI * x[0]) + Math.cos(2 * Math.PI * x[1]))) +
-  Math.E + 20;
-
-// Lévi N.13: f(x,y) = sin²(3πx) + (x−1)²·(1+sin²(3πy)) + (y−1)²·(1+sin²(2πy))
-// Dimension: 2 | Type: multimodal
-// Search domain: −10 ≤ x, y ≤ 10
-// Global minimum: f(1, 1) = 0
-const levi13: ObjectiveFunction = (x) =>
-  Math.sin(3 * Math.PI * x[0]) ** 2 +
-  (x[0] - 1) ** 2 * (1 + Math.sin(3 * Math.PI * x[1]) ** 2) +
-  (x[1] - 1) ** 2 * (1 + Math.sin(2 * Math.PI * x[1]) ** 2);
-
-// Griewank: f(x) = 1 + (1/4000)·Σ xᵢ² − Π cos(xᵢ/√i)
-// Dimension: n (tested: 2) | Type: multimodal
-// Search domain: −600 ≤ xᵢ ≤ 600
-// Global minimum: f(0, …, 0) = 0
-const griewank: ObjectiveFunction = (x) => {
-  let sum = 0;
-  let prod = 1;
-  for (let i = 0; i < x.length; i++) {
-    sum += x[i] * x[i];
-    prod *= Math.cos(x[i] / Math.sqrt(i + 1));
-  }
-  return 1 + sum / 4000 - prod;
-};
-
-// Styblinski-Tang: f(x) = (1/2)·Σ (xᵢ⁴ − 16xᵢ² + 5xᵢ)
-// Dimension: n (tested: 2) | Type: multimodal
-// Search domain: −5 ≤ xᵢ ≤ 5
-// Global minimum: f(−2.903534, …, −2.903534) ≈ −39.16617·n
-const styblinskiTang: ObjectiveFunction = (x) => {
-  let s = 0;
-  for (let i = 0; i < x.length; i++)
-    s += x[i] ** 4 - 16 * x[i] ** 2 + 5 * x[i];
-  return s / 2;
-};
-
-// Easom: f(x,y) = −cos(x)·cos(y)·exp(−((x−π)²+(y−π)²))
-// Dimension: 2 | Type: unimodal (nearly flat everywhere except near (π,π))
-// Search domain: −100 ≤ x, y ≤ 100
-// Global minimum: f(π, π) = −1
-const easom: ObjectiveFunction = (x) =>
-  -Math.cos(x[0]) * Math.cos(x[1]) *
-  Math.exp(-((x[0] - Math.PI) ** 2 + (x[1] - Math.PI) ** 2));
-
-// Goldstein-Price: f(x,y) = [1+(x+y+1)²·(19−14x+3x²−14y+6xy+3y²)]·[30+(2x−3y)²·(18−32x+12x²+48y−36xy+27y²)]
-// Dimension: 2 | Type: multimodal
-// Search domain: −2 ≤ x, y ≤ 2
-// Global minimum: f(0, −1) = 3
-const goldsteinPrice: ObjectiveFunction = (x) => {
-  const a = 1 + (x[0] + x[1] + 1) ** 2 *
-    (19 - 14 * x[0] + 3 * x[0] ** 2 - 14 * x[1] + 6 * x[0] * x[1] + 3 * x[1] ** 2);
-  const b = 30 + (2 * x[0] - 3 * x[1]) ** 2 *
-    (18 - 32 * x[0] + 12 * x[0] ** 2 + 48 * x[1] - 36 * x[0] * x[1] + 27 * x[1] ** 2);
-  return a * b;
-};
-
-// McCormick: f(x,y) = sin(x+y) + (x−y)² − 1.5x + 2.5y + 1
-// Dimension: 2 | Type: multimodal
-// Search domain: −1.5 ≤ x ≤ 4, −3 ≤ y ≤ 4
-// Global minimum: f(−0.54719, −1.54719) ≈ −1.9133
-const mccormick: ObjectiveFunction = (x) =>
-  Math.sin(x[0] + x[1]) + (x[0] - x[1]) ** 2 - 1.5 * x[0] + 2.5 * x[1] + 1;
 
 /* ================================================================== */
 /*  Problem suite                                                      */
@@ -400,13 +261,6 @@ function distance(a: Float64Array, b: Float64Array): number {
 /* ================================================================== */
 /*  Himmelblau: distance to nearest of 4 known minima                  */
 /* ================================================================== */
-
-const HIMMELBLAU_MINIMA = [
-  new Float64Array([3, 2]),
-  new Float64Array([-2.805118, 3.131312]),
-  new Float64Array([-3.779310, -3.283186]),
-  new Float64Array([3.584428, -1.848126]),
-];
 
 function distToOptimum(problem: BenchmarkProblem, point: Float64Array): number {
   if (problem.name === 'Himmelblau')

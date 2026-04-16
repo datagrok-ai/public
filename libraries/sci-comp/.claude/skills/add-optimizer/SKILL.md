@@ -89,7 +89,13 @@ This rule applies to every test run, including re-runs after fixes.
 
 ## Step 8: Add to benchmarks
 
-Add the new optimizer to `src/optimization/single-objective/benchmarks/unconstrained-benchmarks.ts`:
+The benchmark suite is split into two runners that share objective functions via
+`benchmarks/test-functions.ts`. Register the new optimizer in **both** runners:
+
+- `src/optimization/single-objective/benchmarks/unconstrained-benchmarks.ts` — single x₀ per problem
+- `src/optimization/single-objective/benchmarks/multistart-benchmarks.ts` — three x₀ per problem
+
+In each file:
 
 1. Import the new optimizer class
 2. Add an entry to the `optimizers` array:
@@ -100,9 +106,13 @@ Add the new optimizer to `src/optimization/single-objective/benchmarks/unconstra
   settings: {maxIterations: 10_000, /* algorithm-specific defaults */},
 },
 ```
-3. Run: `npx tsx src/optimization/single-objective/benchmarks/unconstrained-benchmarks.ts`
-4. Save results to `src/optimization/single-objective/benchmarks/unconstrained-benchmarks.md` (reformat as markdown tables, see existing file)
-5. Update the problem count in the banner if it changed
+3. Run both benchmarks:
+   - `npx tsx src/optimization/single-objective/benchmarks/unconstrained-benchmarks.ts`
+   - `npx tsx src/optimization/single-objective/benchmarks/multistart-benchmarks.ts`
+4. Regenerate **both** markdown reports (`unconstrained-benchmarks.md` and `multistart-benchmarks.md`) with the new optimizer's rows/columns.
+5. Update the problem count / optimizer count in the banner if changed.
+
+Do NOT add new objective functions inline — export them from `test-functions.ts` so both runners pick them up.
 
 ## Step 9: Update CLAUDE.md
 
