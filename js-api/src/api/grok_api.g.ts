@@ -1053,6 +1053,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_Get_Db_Info(s: any, c: any, catalog: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_GetRecent(s: any): Promise<any>;
+  grok_EntitiesDataSource_GetFavorites(s: any, group: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
   grok_EntitiesDataSource_GetProperties(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_SetProperties(s: any, e: any, props: any): Promise<any>;

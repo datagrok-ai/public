@@ -530,6 +530,11 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
     return toJs(api.grok_EntitiesDataSource_GetRecent(this.dart));
   }
 
+  /** Returns entities favorited by the specified group (or the current user's group if not specified) */
+  getFavorites(group?: Group): Promise<Entity[]> {
+    return toJs(api.grok_EntitiesDataSource_GetFavorites(this.dart, toDart(group)));
+  }
+
   /** Allows to set properties for entities */
   saveProperties(props: Map<Property, any>): Promise<void> {
     return api.grok_EntitiesDataSource_SaveProperties(this.dart, props);
