@@ -16,7 +16,7 @@ import '../css/app-styles.css';
 
 /** Diff Studio hub view with templates, library, and recent models */
 export class DiffStudioHub {
-  name = 'Diff Studio Hub';
+  name = 'Diff Studio';
   root = ui.divV([]);
   view: DG.View;
 
@@ -121,6 +121,8 @@ export class DiffStudioHub {
         const isCustom: boolean = isCustomCol.get(i);
 
         if (isCustom) {
+          if (!(await grok.dapi.files.exists(info)))
+            continue;
           const idx = info.lastIndexOf('/');
           const name = info.slice(idx + 1);
           const run = () => this.openFileAsPreview(info);

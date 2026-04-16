@@ -1947,7 +1947,9 @@ export class DiffStudio {
   /** Add model from ivp-file to browse tree folder */
   private async putCustomModelToRecents(path: string) {
     try {
-      const exist = await grok.dapi.files.exists(path);
+      if (!(await grok.dapi.files.exists(path)))
+        return;
+
       const idx = path.lastIndexOf('/');
       const name = path.slice(idx + 1, path.length);
       const item = this.recentFolder.item(name);
@@ -1955,22 +1957,14 @@ export class DiffStudio {
       ui.tooltip.bind(item.root, () => buildModelTooltip(name, path, iconUrl));
 
       const folderPath = path.slice(0, idx + 1);
-      let file: DG.FileInfo;
-
-      if (exist) {
-        const fileList = await grok.dapi.files.list(folderPath);
-        file = fileList.find((file) => file.nqName === path);
-      }
+      const fileList = await grok.dapi.files.list(folderPath);
+      const file = fileList.find((file) => file.nqName === path);
 
       item.root.addEventListener('contextmenu', (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
         DG.Menu.popup()
           .item('Run', async () => {
-            if (!exist) {
-              grok.shell.warning(`File not found: ${path}`);
-              return;
-            }
             DiffStudio.closeOpenPreviews();
             const solver = new DiffStudio(false, true, true);
             const preview = await solver.getFilePreview(file, path);
@@ -1990,16 +1984,13 @@ export class DiffStudio {
         const panelRoot = this.appTree.rootNode.root.parentElement!;
         const treeNodeY = panelRoot.scrollTop!;
 
-        if (exist) {
-          DiffStudio.closeOpenPreviews();
-          const solver = new DiffStudio(false, true, true);
-          const preview = await solver.getFilePreview(file, path);
-          grok.shell.windows.showToolbox = false;
-          grok.shell.windows.showBrowse = true;
-          grok.shell.addPreview(preview);
-          await this.saveModelToRecent(path, true);
-        } else
-          grok.shell.warning(`File not found: ${path}`);
+        DiffStudio.closeOpenPreviews();
+        const solver = new DiffStudio(false, true, true);
+        const preview = await solver.getFilePreview(file, path);
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
+        grok.shell.addPreview(preview);
+        await this.saveModelToRecent(path, true);
 
         setTimeout(async () => {
           panelRoot.scrollTo(0, treeNodeY);
@@ -2011,12 +2002,9 @@ export class DiffStudio {
         e.stopImmediatePropagation();
         e.preventDefault();
 
-        if (exist) {
-          const equations = await file.readAsString();
-          const solver = new DiffStudio();
-          await solver.runSolverApp(equations);
-        } else
-          grok.shell.warning(`File not found: ${path}`);
+        const equations = await file.readAsString();
+        const solver = new DiffStudio();
+        await solver.runSolverApp(equations);
       });
     } catch (e) {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
@@ -2392,9 +2380,12 @@ export class DiffStudio {
             throw new Error('corrupted data file');
 
           for (let i = 0; i < size; ++i) {
-            if (isCustomCol.get(i))
-              root.append(await this.getCardWithCustomModel(infoCol.get(i)));
-            else
+            if (isCustomCol.get(i)) {
+              const path: string = infoCol.get(i);
+              if (!(await grok.dapi.files.exists(path)))
+                continue;
+              root.append(await this.getCardWithCustomModel(path));
+            } else
               root.append(this.getCardWithBuiltInModel(infoCol.get(i)));
           }
 
@@ -2512,7 +2503,6 @@ export class DiffStudio {
   /** Return card with custom model*/
   private async getCardWithCustomModel(path: string): Promise<HTMLDivElement> {
     try {
-      const exist = await grok.dapi.files.exists(path);
       const idx = path.lastIndexOf('/');
       const name = path.slice(idx + 1, path.length);
 
@@ -2523,23 +2513,16 @@ export class DiffStudio {
       ]));
 
       const folderPath = path.slice(0, idx + 1);
-      let file: DG.FileInfo;
-
-      if (exist) {
-        const fileList = await grok.dapi.files.list(folderPath);
-        file = fileList.find((file) => file.nqName === path);
-      }
+      const fileList = await grok.dapi.files.list(folderPath);
+      const file = fileList.find((file) => file.nqName === path);
 
       const run = async () => {
-        if (exist) {
-          const solver = new DiffStudio(false, true, true);
-          grok.shell.windows.showToolbox = false;
-          grok.shell.windows.showBrowse = true;
-          grok.shell.addView(await solver.getFilePreview(file, path));
+        const solver = new DiffStudio(false, true, true);
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
+        grok.shell.addView(await solver.getFilePreview(file, path));
 
-          await this.saveModelToRecent(path, true);
-        } else
-          grok.shell.warning(`File not found: ${path}`);
+        await this.saveModelToRecent(path, true);
       };
 
       card.ondblclick = run;
