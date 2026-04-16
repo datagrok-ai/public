@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineParallelItem, PipelineSequentialItem} from './PipelineConfiguration';
+import {AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
@@ -23,9 +23,12 @@ type PipelineStepConfigurationInitial = PipelineStepConfiguration<LinkSpecString
 type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial;
 
 export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
-export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
-export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
-export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed;
+export type PipelineConfigurationDynamicProcessed = AbstractPipelineDynamicConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
+/** @deprecated Use PipelineConfigurationDynamicProcessed */
+export type PipelineConfigurationParallelProcessed = PipelineConfigurationDynamicProcessed;
+/** @deprecated Use PipelineConfigurationDynamicProcessed */
+export type PipelineConfigurationSequentialProcessed = PipelineConfigurationDynamicProcessed;
+export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationDynamicProcessed;
 
 export type IOType = 'input' | 'output' | 'base' | 'actions' | 'not';
 
@@ -33,13 +36,15 @@ function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineCon
   return !!((c as PipelineConfigurationStaticInitial).type === 'static');
 }
 
-function isPipelineParallelInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationParallelInitial {
-  return !!((c as PipelineConfigurationParallelInitial).type === 'parallel');
+function isPipelineDynamicInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationDynamicInitial {
+  const type = (c as PipelineConfigurationDynamicInitial).type;
+  return type === 'dynamic' || type === 'parallel' || type === 'sequential';
 }
 
-function isPipelineSequentialInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationSequentialInitial {
-  return !!((c as PipelineConfigurationSequentialInitial).type === 'sequential');
-}
+/** @deprecated Use isPipelineDynamicInitial */
+const isPipelineParallelInitial = isPipelineDynamicInitial;
+/** @deprecated Use isPipelineDynamicInitial */
+const isPipelineSequentialInitial = isPipelineDynamicInitial;
 
 function isPipelineRefInitial(c: ConfigInitialTraverseItem): c is PipelineRefInitial {
   return !!((c as PipelineRefInitial).type === 'ref');
@@ -97,17 +102,8 @@ async function configProcessing(
     }));
     checkUniqId(steps);
     return {...pconf, steps};
-  } else if (isPipelineParallelInitial(conf)) {
-    const pconf = processParallelConfig(conf);
-    const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
-      processUIFlags(item);
-      const nconf = await configProcessing(item, loadedPipelines);
-      return nconf;
-    }));
-    checkUniqId(stepTypes);
-    return {...pconf, stepTypes};
-  } else if (isPipelineSequentialInitial(conf)) {
-    const pconf = processSequentialConfig(conf);
+  } else if (isPipelineDynamicInitial(conf)) {
+    const pconf = processDynamicConfig(conf);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
       processUIFlags(item);
       const nconf = await configProcessing(item, loadedPipelines);
@@ -125,7 +121,7 @@ async function configProcessing(
   throw new Error(`Pipeline configuration node type matching failed: ${conf}`);
 }
 
-function processUIFlags(item: PipelineParallelItem<LinkSpecString, never, PipelineRefInitial> | PipelineSequentialItem<LinkSpecString, never, PipelineRefInitial>) {
+function processUIFlags(item: PipelineDynamicItem<LinkSpecString, never, PipelineRefInitial>) {
   if (item.disableUIControlls) {
     item.disableUIAdding = true;
     item.disableUIDragging = true;
@@ -141,20 +137,12 @@ function processStaticConfig(conf: PipelineConfigurationStaticInitial) {
   return {...conf, links, actions, onInit, onReturn};
 }
 
-function processParallelConfig(conf: PipelineConfigurationParallelInitial) {
+function processDynamicConfig(conf: PipelineConfigurationDynamicInitial) {
   const links = conf.links?.map((link) => processLinkData(link));
   const actions = processPipelineActions(conf.actions ?? []);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
   return {...conf, actions, links, onInit, onReturn};
-}
-
-function processSequentialConfig(conf: PipelineConfigurationSequentialInitial) {
-  const links = conf.links?.map((link) => processLinkData(link));
-  const actions = processPipelineActions(conf.actions ?? []);
-  const onInit = processInitHook(conf.onInit);
-  const onReturn = processReturnHook(conf.onReturn);
-  return {...conf, links, actions, onInit, onReturn};
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>) {

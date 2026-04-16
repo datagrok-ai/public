@@ -7,10 +7,10 @@ import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {getPipelineRef, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {buildTraverseD} from '../data/graph-traverse-utils';
-import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineRefMap, PipelineStepConfigurationProcessed} from '../config/config-utils';
+import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineDynamicConfig, isPipelineSelfRef, isPipelineStaticConfig, isPipelineStepConfig, PipelineRefMap, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {FuncCallAdapter, FuncCallMockAdapter} from './FuncCallAdapters';
 import {loadFuncCall, loadInstanceState, makeFuncCall, saveFuncCall, saveInstanceState} from './funccall-utils';
-import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, ParallelPipelineNode, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
+import {ConsistencyInfo, DynamicPipelineNode, FuncCallNode, FuncCallStateInfo, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
 import {LinksState} from './LinksState';
 import {ValidationResult} from '../data/common-types';
@@ -516,7 +516,7 @@ export class StateTree {
 
     // TODO: initial infinite cycles detection
     const traverse = buildTraverseD(startPath, (data: ConfigTraverseItem, path) => {
-      if (isPipelineParallelConfig(data) || isPipelineSequentialConfig(data)) {
+      if (isPipelineDynamicConfig(data)) {
         const items = (data?.initialSteps ?? []).map((step, idx) => {
           const item = data.stepTypes.find((t) => {
             if (isPipelineSelfRef(t)) {
@@ -651,10 +651,8 @@ export class StateTree {
       return new FuncCallNode(nodeConf, isReadonly);
     else if (isPipelineStaticConfig(nodeConf))
       return new StaticPipelineNode(nodeConf, isReadonly);
-    else if (isPipelineParallelConfig(nodeConf))
-      return new ParallelPipelineNode(nodeConf, isReadonly);
-    else if (isPipelineSequentialConfig(nodeConf))
-      return new SequentialPipelineNode(nodeConf, isReadonly);
+    else if (isPipelineDynamicConfig(nodeConf))
+      return new DynamicPipelineNode(nodeConf, isReadonly);
 
     throw new Error(`Wrong node type ${nodeConf}`);
   }

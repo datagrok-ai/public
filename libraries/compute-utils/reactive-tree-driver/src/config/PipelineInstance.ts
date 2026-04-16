@@ -6,17 +6,16 @@ import {ActionInfo, CustomExport, NestedItemContext, ViewersHook} from './Pipeli
 // initial steps config for dynamic pipelines
 //
 
-export type StepParallelInitialConfig = {
+export type StepDynamicInitialConfig = {
   id: ItemId;
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
 }
 
-export type StepSequentialInitialConfig = {
-  id: ItemId;
-  initialValues?: Record<string, any>;
-  inputRestrictions?: Record<string, RestrictionType>;
-}
+/** @deprecated Use StepDynamicInitialConfig */
+export type StepParallelInitialConfig = StepDynamicInitialConfig;
+/** @deprecated Use StepDynamicInitialConfig */
+export type StepSequentialInitialConfig = StepDynamicInitialConfig;
 
 export type StepFunCallInitialConfig = {
   id: ItemId;
@@ -28,7 +27,7 @@ export type InstanceConfRec<C> = {
   steps?: InstanceConfRec<C>[];
 } & C;
 
-export type PipelineInstanceConfig = InstanceConfRec<StepParallelInitialConfig | StepSequentialInitialConfig | StepFunCallInitialConfig>;
+export type PipelineInstanceConfig = InstanceConfRec<StepDynamicInitialConfig | StepFunCallInitialConfig>;
 
 
 //
@@ -59,27 +58,29 @@ export function isStaticPipelineState(state: PipelineState): state is PipelineSt
   return state.type === 'static';
 }
 
-export function isParallelPipelineState(state: PipelineState): state is PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData> {
-  return state.type === 'parallel';
+export function isDynamicPipelineState(state: PipelineState): state is PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
+  return state.type === 'dynamic' || state.type === 'parallel' || state.type === 'sequential';
 }
 
-export function isSequentialPipelineState(state: PipelineState): state is PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> {
-  return state.type === 'sequential';
-}
+/** @deprecated Use isDynamicPipelineState */
+export const isParallelPipelineState = isDynamicPipelineState;
+/** @deprecated Use isDynamicPipelineState */
+export const isSequentialPipelineState = isDynamicPipelineState;
 
 export function isStaticSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateStatic<StepFunCallSerializedState, {}> {
   return state.type === 'static';
 }
 
-export function isParallelSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateParallel<StepFunCallSerializedState, {}> {
-  return state.type === 'parallel';
+export function isDynamicSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateDynamic<StepFunCallSerializedState, {}> {
+  return state.type === 'dynamic' || state.type === 'parallel' || state.type === 'sequential';
 }
 
-export function isSequentialSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateSequential<StepFunCallSerializedState, {}> {
-  return state.type === 'sequential';
-}
+/** @deprecated Use isDynamicSerializedPipelineState */
+export const isParallelSerializedPipelineState = isDynamicSerializedPipelineState;
+/** @deprecated Use isDynamicSerializedPipelineState */
+export const isSequentialSerializedPipelineState = isDynamicSerializedPipelineState;
 
-export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateSequential<S, T> | PipelineStateParallel<S, T> | S;
+export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateDynamic<S, T> | S;
 
 // funccall
 
@@ -135,34 +136,31 @@ export type PipelineStateStatic<S, T> = PipelineInstanceBase<{
   steps: PipelineStateRec<S, T>[];
 }, T>;
 
-// sequential
+// dynamic (unified type for both parallel and sequential)
 
-export type StepSequentialDescription = {
+export type StepDynamicDescription = {
   configId: string;
   nqName?: string;
   friendlyName?: string;
 } & NestedItemContext;
 
-export type StepSequentialState<S, T> = PipelineStateRec<S, T> & StepSequentialDescription;
+export type StepDynamicState<S, T> = PipelineStateRec<S, T> & StepDynamicDescription;
 
-export type PipelineStateSequential<S, T> = PipelineInstanceBase<{
-  type: 'sequential';
-  steps: StepSequentialState<S, T>[];
-  stepTypes: StepSequentialDescription[];
+export type PipelineStateDynamic<S, T> = PipelineInstanceBase<{
+  type: 'dynamic' | 'parallel' | 'sequential';
+  steps: StepDynamicState<S, T>[];
+  stepTypes: StepDynamicDescription[];
 }, T>;
 
-// parallel
-
-export type StepParallelDescription = {
-  configId: string;
-  nqName?: string;
-  friendlyName?: string;
-} & NestedItemContext;
-
-export type StepParallelState<S, T> = PipelineStateRec<S, T> & StepParallelDescription;
-
-export type PipelineStateParallel<S, T> = PipelineInstanceBase<{
-  type: 'parallel';
-  steps: StepParallelState<S, T>[];
-  stepTypes: StepParallelDescription[];
-}, T>;
+/** @deprecated Use StepDynamicDescription */
+export type StepSequentialDescription = StepDynamicDescription;
+/** @deprecated Use StepDynamicDescription */
+export type StepParallelDescription = StepDynamicDescription;
+/** @deprecated Use StepDynamicState */
+export type StepSequentialState<S, T> = StepDynamicState<S, T>;
+/** @deprecated Use StepDynamicState */
+export type StepParallelState<S, T> = StepDynamicState<S, T>;
+/** @deprecated Use PipelineStateDynamic */
+export type PipelineStateSequential<S, T> = PipelineStateDynamic<S, T>;
+/** @deprecated Use PipelineStateDynamic */
+export type PipelineStateParallel<S, T> = PipelineStateDynamic<S, T>;

@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, combineLatest, merge, Observable, Subject, of} from 'rxjs';
 import dayjs from 'dayjs';
 import {v4 as uuidv4} from 'uuid';
-import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction, PipelineInstanceRuntimeData, PipelineOutline} from '../config/PipelineInstance';
-import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
+import {PipelineStateDynamic, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction, PipelineInstanceRuntimeData, PipelineOutline} from '../config/PipelineInstance';
+import {PipelineConfigurationDynamicProcessed, PipelineConfigurationProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
@@ -425,19 +425,19 @@ export class StaticPipelineNode extends PipelineNodeBase {
   }
 }
 
-export class ParallelPipelineNode extends PipelineNodeBase {
-  public readonly nodeType = 'parallel';
+export class DynamicPipelineNode extends PipelineNodeBase {
+  public readonly nodeType = 'dynamic';
 
   constructor(
-    public readonly config: PipelineConfigurationParallelProcessed,
+    public readonly config: PipelineConfigurationDynamicProcessed,
     public readonly isReadonly: boolean,
   ) {
     super(config, isReadonly);
   }
 
-  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData> {
+  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
     const state = super.toState(options);
-    const res: PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData> = {
+    const res: PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> = {
       ...state,
       type: this.nodeType,
       steps: [],
@@ -447,9 +447,9 @@ export class ParallelPipelineNode extends PipelineNodeBase {
     return res;
   }
 
-  toSerializedState(options: StateTreeSerializationOptions): PipelineStateParallel<StepFunCallSerializedState, {}> {
+  toSerializedState(options: StateTreeSerializationOptions): PipelineStateDynamic<StepFunCallSerializedState, {}> {
     const base = super.toSerializedState(options);
-    const res: PipelineStateParallel<StepFunCallSerializedState, {}> = {
+    const res: PipelineStateDynamic<StepFunCallSerializedState, {}> = {
       ...base,
       type: this.nodeType,
       steps: [],
@@ -459,41 +459,16 @@ export class ParallelPipelineNode extends PipelineNodeBase {
   }
 }
 
-export class SequentialPipelineNode extends PipelineNodeBase {
-  public readonly nodeType = 'sequential';
+/** @deprecated Use DynamicPipelineNode */
+export type ParallelPipelineNode = DynamicPipelineNode;
+/** @deprecated Use DynamicPipelineNode */
+export type SequentialPipelineNode = DynamicPipelineNode;
+/** @deprecated Use DynamicPipelineNode */
+export const ParallelPipelineNode = DynamicPipelineNode;
+/** @deprecated Use DynamicPipelineNode */
+export const SequentialPipelineNode = DynamicPipelineNode;
 
-  constructor(
-    public readonly config: PipelineConfigurationSequentialProcessed,
-    public readonly isReadonly: boolean,
-  ) {
-    super(config, isReadonly);
-  }
-
-  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> {
-    const state = super.toState(options);
-    const res: PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> = {
-      ...state,
-      type: this.nodeType,
-      steps: [],
-      stepTypes: getStepTypes(this.config),
-      actions,
-    };
-    return res;
-  }
-
-  toSerializedState(options: StateTreeSerializationOptions): PipelineStateSequential<StepFunCallSerializedState, {}> {
-    const base = super.toSerializedState(options);
-    const res: PipelineStateSequential<StepFunCallSerializedState, {}> = {
-      ...base,
-      type: this.nodeType,
-      steps: [],
-      stepTypes: getStepTypes(this.config),
-    };
-    return res;
-  }
-}
-
-export type StateTreeNode = FuncCallNode | StaticPipelineNode | ParallelPipelineNode | SequentialPipelineNode;
+export type StateTreeNode = FuncCallNode | StaticPipelineNode | DynamicPipelineNode;
 
 export function isFuncCallNode(node: StateTreeNode): node is FuncCallNode {
   return node.nodeType === 'funccall';
@@ -503,15 +478,16 @@ export function isStaticPipelineNode(node: StateTreeNode): node is StaticPipelin
   return node.nodeType === 'static';
 }
 
-export function isParallelPipelineNode(node: StateTreeNode): node is ParallelPipelineNode {
-  return node.nodeType === 'parallel';
+export function isDynamicPipelineNode(node: StateTreeNode): node is DynamicPipelineNode {
+  return node.nodeType === 'dynamic';
 }
 
-export function isSequentialPipelineNode(node: StateTreeNode): node is SequentialPipelineNode {
-  return node.nodeType === 'sequential';
-}
+/** @deprecated Use isDynamicPipelineNode */
+export const isParallelPipelineNode = isDynamicPipelineNode;
+/** @deprecated Use isDynamicPipelineNode */
+export const isSequentialPipelineNode = isDynamicPipelineNode;
 
-function getStepTypes(conf: PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed) {
+function getStepTypes(conf: PipelineConfigurationDynamicProcessed) {
   return conf.stepTypes.map((s) => {
     if (isPipelineConfig(s) || isPipelineStepConfig(s)) {
       const {id: configId, disableUIAdding, disableUIDragging, disableUIRemoving, nqName, friendlyName} = s;
