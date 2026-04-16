@@ -630,6 +630,13 @@ dataset column and the scaffold tree.
 ![scaffold-tree-coloring](scaffold-tree-coloring.gif)
 
 </TabItem>
+<TabItem value="reorder" label="Reorder">
+
+To rearrange nodes within the same level:
+* **Drag and drop**: Drag a scaffold card above or below a sibling
+* **Keyboard**: Select a node and press **Alt+Shift+Up/Down**
+
+</TabItem>
 </Tabs>
 </details>
 
