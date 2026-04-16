@@ -1066,3 +1066,123 @@ body.dartium .power-pack-widgets-host.ui-div {
     line-height: 1;
     box-sizing: border-box;
 }
+
+
+/* ── Workspace tab ──────────────────────────────────────── */
+
+.pp-workspace-root {
+    padding: 4px 18px 12px;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+.pp-workspace-greeting {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--grey-6);
+    margin-bottom: 2px;
+}
+
+.pp-workspace-section {
+    gap: 6px;
+}
+
+.pp-workspace-section-header {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grey-5);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pp-workspace-section-header i {
+    color: var(--blue-1);
+    font-size: 13px;
+}
+
+.pp-workspace-cards-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.pp-workspace-card {
+    width: 130px;
+    padding: 16px 12px 12px;
+    border: 1px solid var(--grey-2);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.pp-workspace-card:hover {
+    border-color: var(--blue-1);
+    box-shadow: 0 2px 8px rgba(32, 131, 213, 0.12);
+    transform: translateY(-1px);
+}
+
+.pp-workspace-card-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--blue-1);
+    opacity: 0.85;
+}
+
+.pp-workspace-card-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.pp-workspace-card-icon i {
+    font-size: 26px;
+}
+
+.pp-workspace-card-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--grey-6);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 110px;
+}
+
+.pp-workspace-empty-hint {
+    color: var(--text-color-light);
+    font-style: italic;
+    font-size: 13px;
+    margin: 8px 0;
+}
+
+.pp-workspace-recent-list {
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.pp-workspace-recent-item {
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    cursor: pointer;
+}
+
+.pp-workspace-recent-item:hover {
+    background-color: var(--grey-1);
+    border-radius: 4px;
+}
+
+.pp-workspace-recent-time {
+    margin-left: auto;
+    color: var(--text-color-light);
+    font-size: 11px;
+    flex-shrink: 0;
+}

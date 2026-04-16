@@ -23,7 +23,8 @@ import {initSearch, createFuncTableViewWidget} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
-import {ActivityDashboardWidget} from './widgets/activity-dashboard-widget';
+import {SpotlightWidget} from './spotlight/spotlight-widget';
+import {pin, getAdminGroups} from './spotlight/group-favorites';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
 export * from './package.g';
@@ -139,10 +140,10 @@ export class PackageFunctions {
       'showName': 'false',
     },
     order: '-1',
-    name: 'Activity dashboard',
+    name: 'Spotlight',
   })
   static activityDashboardWidget(): DG.Widget {
-    return new ActivityDashboardWidget();
+    return new SpotlightWidget();
   }
 
   @grok.decorators.dashboard({
@@ -421,6 +422,35 @@ grok.events.onContextMenu.subscribe((args) => {
   }
 
   menu?.item('Formula Lines...', () => PackageFunctions.formulaLinesDialog(src));
+});
+
+function getEntity(x: any) {
+  if (x instanceof DG.TreeViewGroup)
+    return x.value;
+  return null;
+}
+
+grok.events.onContextMenu.subscribe((args) => {
+  grok.shell.info(`context menu`);
+  console.log(args);
+  debugger;
+
+  const entity = DG.toJs(args?.args?.item?.value);
+  if (!(entity instanceof DG.Entity) || entity instanceof DG.User ||entity instanceof DG.Group)
+    return;
+
+  const menu: DG.Menu = args.args.menu;
+  getAdminGroups().then((adminGroups) => {
+    if (adminGroups.length === 0)
+      return;
+    const subMenu = menu.group('Add to group favorites');
+    for (const group of adminGroups) {
+      subMenu.item(group.friendlyName, async () => {
+        await pin(entity, group);
+        grok.shell.info(`Pinned "${entity.friendlyName}" to ${group.friendlyName}`);
+      });
+    }
+  });
 });
 
 function _viewerGallery(view: DG.ViewBase): void {
