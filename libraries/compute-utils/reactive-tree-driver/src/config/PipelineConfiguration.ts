@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
-import {PipelineOutline, PipelineState, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
+import {PipelineOutline, PipelineState, StepDynamicInitialConfig, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 import type ExcelJS from 'exceljs';
 import {ConsistencyInfo} from '../runtime/StateTreeNodes';
 import {Zippable} from 'fflate';
@@ -32,7 +32,7 @@ export type PipelineSelfRef = {
 
 // handlers
 
-export type LoadedPipeline = (PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial) & LoadedPipelineToplevelNode;
+export type LoadedPipeline = (PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial) & LoadedPipelineToplevelNode;
 
 export type IRuntimeController = IRuntimeLinkController | IRuntimeValidatorController;
 export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R> | R) | NqName;
@@ -215,33 +215,30 @@ export type AbstractPipelineStaticConfiguration<P, S, R> = {
   type: 'static';
 } & PipelineConfigurationBase<P>;
 
-// parallel pipeline
+// dynamic pipeline (unified type for parallel and sequential)
 
-export type PipelineParallelItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & NestedItemContext);
+export type PipelineDynamicItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & NestedItemContext);
 
-export type AbstractPipelineParallelConfiguration<P, S, R> = {
-  initialSteps?: StepParallelInitialConfig[];
-  stepTypes: PipelineParallelItem<P, S, R>[];
-  type: 'parallel';
+export type AbstractPipelineDynamicConfiguration<P, S, R> = {
+  initialSteps?: StepDynamicInitialConfig[];
+  stepTypes: PipelineDynamicItem<P, S, R>[];
+  type: 'dynamic' | 'parallel' | 'sequential';
 } & PipelineConfigurationBase<P>;
 
-// sequential pipeline
-
-
-export type PipelineSequentialItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & NestedItemContext);
-
-export type AbstractPipelineSequentialConfiguration<P, S, R> = {
-  initialSteps?: StepSequentialInitialConfig[];
-  stepTypes: PipelineSequentialItem<P, S, R>[];
-  type: 'sequential';
-} & PipelineConfigurationBase<P>;
+/** @deprecated Use PipelineDynamicItem */
+export type PipelineParallelItem<P, S, R> = PipelineDynamicItem<P, S, R>;
+/** @deprecated Use PipelineDynamicItem */
+export type PipelineSequentialItem<P, S, R> = PipelineDynamicItem<P, S, R>;
+/** @deprecated Use AbstractPipelineDynamicConfiguration */
+export type AbstractPipelineParallelConfiguration<P, S, R> = AbstractPipelineDynamicConfiguration<P, S, R>;
+/** @deprecated Use AbstractPipelineDynamicConfiguration */
+export type AbstractPipelineSequentialConfiguration<P, S, R> = AbstractPipelineDynamicConfiguration<P, S, R>;
 
 // pipeline config
 
 export type AbstractPipelineConfiguration<P, S, R> =
 AbstractPipelineStaticConfiguration<P, S, R> |
-AbstractPipelineParallelConfiguration<P, S, R> |
-AbstractPipelineSequentialConfiguration<P, S, R>;
+AbstractPipelineDynamicConfiguration<P, S, R>;
 
 export type PipelineRefInitial = {
   id?: string;
@@ -251,9 +248,12 @@ export type PipelineRefInitial = {
 }
 
 export type PipelineConfigurationStaticInitial = AbstractPipelineStaticConfiguration<LinkSpecString, never, PipelineRefInitial>;
-export type PipelineConfigurationParallelInitial = AbstractPipelineParallelConfiguration<LinkSpecString, never, PipelineRefInitial>;
-export type PipelineConfigurationSequentialInitial = AbstractPipelineSequentialConfiguration<LinkSpecString, never, PipelineRefInitial>;
+export type PipelineConfigurationDynamicInitial = AbstractPipelineDynamicConfiguration<LinkSpecString, never, PipelineRefInitial>;
+/** @deprecated Use PipelineConfigurationDynamicInitial */
+export type PipelineConfigurationParallelInitial = PipelineConfigurationDynamicInitial;
+/** @deprecated Use PipelineConfigurationDynamicInitial */
+export type PipelineConfigurationSequentialInitial = PipelineConfigurationDynamicInitial;
 
-export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial | PipelineRefInitial;
+export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial | PipelineRefInitial;
 
 export type PipelineConfiguration = PipelineConfigurationInitial;
