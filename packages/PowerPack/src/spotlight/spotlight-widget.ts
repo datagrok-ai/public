@@ -17,6 +17,7 @@ export class SpotlightWidget extends DG.Widget {
   get type(): string { return 'SpotlightWidget'; }
 
   static RECENT_TIME_DAYS = 2;
+  static ACTIVITY_INITIAL_DAYS = 7;
   static SPOTLIGHT_ITEMS_LENGTH = 8;
 
   static sharedEntityRegex: RegExp = /<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g;
@@ -62,6 +63,7 @@ export class SpotlightWidget extends DG.Widget {
   favoritesListRoot?: HTMLElement;
   notificationsListRoot?: HTMLElement;
   activityListRoot?: HTMLElement;
+  markedReadIds = new Set<string>();
 
   actionRequiredRoot?: HTMLDivElement | null = null;
   sharedWithMeRoot?: HTMLDivElement | null = null;
@@ -99,7 +101,26 @@ export class SpotlightWidget extends DG.Widget {
       this.cleanLists();
       tabPane.name === 'Learn' ? tabPane.content.parentElement?.classList.add('power-pack-overflow-hidden') :
         tabPane.content.parentElement?.classList.remove('power-pack-overflow-hidden');
+      for (const id of Array.from(this.markedReadIds)) {
+        for (const el of Array.from(tabPane.content.querySelectorAll(`[data-notification-id="${id}"]`))) {
+          el.classList.remove('grok-notification-unread');
+          el.querySelector('.grok-notification-mark-read')?.remove();
+        }
+      }
     }));
+    const notifPane = this.tabControl.panes.find((p) => p.name === 'Notifications');
+    if (notifPane) {
+      this.notificationsPromise.then((notifications) => {
+        const unreadCount = notifications.filter((n) => !n.isRead && !this.markedReadIds.has(n.id)).length;
+        if (unreadCount > 0) {
+          const badge = ui.span([unreadCount.toString()]);
+          badge.classList.add('pp-notification-badge');
+          notifPane.header.style.position = 'relative';
+          notifPane.header.appendChild(badge);
+        }
+      });
+    }
+
     this.tabControl.root.style.height = '90%';
     this.tabControl.root.style.width = '100%';
 
@@ -350,8 +371,9 @@ export class SpotlightWidget extends DG.Widget {
     const createSection = (title: SpotlightTabNames, items: DG.Entity[] | DG.UserNotification[], icon: HTMLElement) => {
       let usedItems: DG.Entity[] | DG.UserNotification[] = [];
       if (title === SpotlightTabNames.ACTION_REQUIRED) {
-        this.reportAmount = (items as DG.UserNotification[])
-          .filter((item) => item.text.toLowerCase().includes('you were assigned')).length;
+        const reportNotifications = (items as DG.UserNotification[])
+          .filter((item) => item.text.toLowerCase().includes('you were assigned'));
+        this.reportAmount = reportNotifications.length;
         let reportPresent = false;
         if (this.reportAmount > 0) {
           for (let i = 0; i < items.length; i++) {
@@ -381,6 +403,25 @@ export class SpotlightWidget extends DG.Widget {
           if (parentElem && parentElem.firstChild)
             parentElem.insertBefore(iconToPaste, parentElem.firstChild);
         } else if (item instanceof DG.UserNotification) {
+          (listChild as HTMLElement).dataset.notificationId = item.id;
+          if (!item.isRead && !this.markedReadIds.has(item.id)) {
+            listChild.classList.add('grok-notification-unread');
+            const dartIcon = listChild.querySelector('.grok-notification-mark-read');
+            if (dartIcon) {
+              dartIcon.addEventListener('click', () => {
+                this.markedReadIds.add(item.id);
+                listChild.classList.remove('grok-notification-unread');
+                const badge = this.root.querySelector('.pp-notification-badge');
+                if (badge) {
+                  const count = parseInt(badge.textContent ?? '0') - 1;
+                  if (count <= 0)
+                    badge.remove();
+                  else
+                    badge.textContent = count.toString();
+                }
+              });
+            }
+          }
           if (item.createdAt) {
             const timestamp = ui.time.shortTimestamp(item.createdAt);
             timestamp.style.top = '3px';
@@ -439,6 +480,8 @@ export class SpotlightWidget extends DG.Widget {
 
     if (!(DG.User.current().joined > dayjs().subtract(5, 'day'))) {
       const actionRequired = this.recentNotifications.filter((n) => {
+        if (n.isRead || this.markedReadIds.has(n.id))
+          return false;
         const text = n.text.toLowerCase();
         return text.includes('you were assigned') || text.includes('requested a membership');
       });
@@ -631,6 +674,8 @@ export class SpotlightWidget extends DG.Widget {
 
   async getNotificationsTab(): Promise<HTMLElement> {
     console.time('ActivityDashboardWidget.buildNotificationsTab');
+    if (this.recentNotifications.length === 0)
+      await this.initNotificationData();
     const root = ui.div([], 'power-pack-activity-widget-notifications-tab');
     if (this.recentNotifications.length === 0) {
       root.appendChild(ui.divText('No recent notifications.'));
@@ -641,6 +686,25 @@ export class SpotlightWidget extends DG.Widget {
     for (let i = 0; i < this.notificationsListRoot.children.length; i++) {
       const child = this.notificationsListRoot.children[i];
       const item = this.recentNotifications[i];
+      (child as HTMLElement).dataset.notificationId = item.id;
+      if (!item.isRead && !this.markedReadIds.has(item.id)) {
+        child.classList.add('grok-notification-unread');
+        const dartIcon = child.querySelector('.grok-notification-mark-read');
+        if (dartIcon) {
+          dartIcon.addEventListener('click', () => {
+            this.markedReadIds.add(item.id);
+            child.classList.remove('grok-notification-unread');
+            const badge = this.root.querySelector('.pp-notification-badge');
+            if (badge) {
+              const count = parseInt(badge.textContent ?? '0') - 1;
+              if (count <= 0)
+                badge.remove();
+              else
+                badge.textContent = count.toString();
+            }
+          });
+        }
+      }
       if (item.createdAt) {
         const timestamp = ui.time.shortTimestamp(item.createdAt);
         timestamp.style.top = '5px';
@@ -649,6 +713,18 @@ export class SpotlightWidget extends DG.Widget {
         if (timeChild)
           timeChild.remove();
       }
+    }
+    const hasUnread = this.recentNotifications.some((n) => !n.isRead && !this.markedReadIds.has(n.id));
+    if (hasUnread) {
+      const markAllBtn = ui.button('Mark all as read', async () => {
+        await grok.dapi.users.notifications.markAllAsRead();
+        markAllBtn.remove();
+        this.root.querySelector('.pp-notification-badge')?.remove();
+        this.root.querySelectorAll('.grok-notification-unread').forEach((el) =>
+          el.classList.remove('grok-notification-unread'));
+      });
+      markAllBtn.classList.add('pp-mark-all-read');
+      root.appendChild(markAllBtn);
     }
     root.appendChild(this.notificationsListRoot);
     this.cleanLists();
@@ -689,15 +765,16 @@ export class SpotlightWidget extends DG.Widget {
       for (let i = 0; i < list.children.length; i++) {
         const listChild = list.children[i];
         const text = listChild.textContent?.toLowerCase();
-        if ((text?.includes('you were assigned report #') || text?.includes('you were assigned  report #')) && listChild.querySelector('.d4-markup label')) {
-          listChild.querySelector('.d4-markup label')!.textContent = `${this.reportAmount} ${this.reportAmount && this.reportAmount > 1 ? 'reports' : 'report'}`;
-          const reportsApp = DG.Func.find({package: 'UsageAnalysis', name: 'reportsApp'})[0];
-          if (reportsApp) {
-            const handler = DG.ObjectHandler.forEntity(reportsApp);
-            const reportsAppLabelSpan = handler?.renderTooltip(DG.toDart(reportsApp)).firstChild;
-            if (reportsAppLabelSpan && listChild.lastElementChild)
-              listChild.lastElementChild.appendChild(ui.span(['. Open ', reportsAppLabelSpan, ' to see more.']));
-          }
+        if (text && /you were assigned\s+report\s?#/.test(text) && listChild.querySelector('.d4-markup label')) {
+          const label = listChild.querySelector('.d4-markup label')!;
+          const reportsText = `${this.reportAmount} ${this.reportAmount && this.reportAmount > 1 ? 'reports' : 'report'}`;
+          label.textContent = '';
+          const link = ui.link(reportsText, async () => {
+            const view = await grok.functions.eval('UsageAnalysis:reportsApp()');
+            grok.shell.addView(view);
+            setTimeout(() => grok.shell.v = view, 100);
+          }, 'Open in Reports');
+          label.appendChild(link);
         }
       }
     }
