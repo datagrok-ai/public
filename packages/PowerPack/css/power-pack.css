@@ -1160,19 +1160,33 @@ body.dartium .power-pack-widgets-host.ui-div {
 }
 
 .pp-workspace-card-icon {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--blue-1);
     opacity: 0.85;
 }
 
-.pp-workspace-card-icon svg {
-    width: 28px;
-    height: 28px;
+.pp-workspace-card-icon > .grok-icon {
+    max-width: 32px;
+    max-height: 32px;
 }
 
-.pp-workspace-card-icon i {
-    font-size: 26px;
+.pp-workspace-card-icon > .grok-icon.image-icon,
+.pp-workspace-card-icon > .grok-icon.svg-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.pp-workspace-card-icon > svg {
+    width: 32px;
+    height: 32px;
+}
+
+.pp-workspace-card-icon > i.grok-icon:not(.grok-ds) {
+    font-size: 30px;
 }
 
 .pp-workspace-card-label {
