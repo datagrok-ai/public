@@ -21,6 +21,7 @@ src/optimization/
       pso.ts                      # PSO extends Optimizer<PSOSettings>
       gradient-descent.ts         # GradientDescent extends Optimizer<GradientDescentSettings>
       adam.ts                     # Adam extends Optimizer<AdamSettings>
+      lbfgs.ts                    # LBFGS extends Optimizer<LBFGSSettings> (quasi-Newton with two-loop recursion + Armijo line search)
     __tests__/                    # Jest tests per optimizer + registry (sync & async)
       helpers.ts                  # Test utilities: rosenbrock, sphere, gaussian, quadratic3d, etc.
     examples/                     # Runnable examples (npx tsx src/optimization/single-objective/examples/*.ts)
@@ -29,6 +30,7 @@ src/optimization/
       async-and-callbacks.ts      # Async objective functions + iteration callbacks
       gradient-descent.ts         # Gradient descent specific example
       adam.ts                     # Adam specific example
+      lbfgs.ts                    # L-BFGS specific example
       registry.ts                 # Registry lookup example
     benchmarks/
       unconstrained-benchmarks.ts # 15 standard test functions (Sphere, Rosenbrock, Ackley, etc.) with comparison runner

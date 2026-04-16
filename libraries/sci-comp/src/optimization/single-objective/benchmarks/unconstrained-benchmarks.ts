@@ -2,6 +2,7 @@ import {NelderMead} from '../optimizers/nelder-mead';
 import {PSO} from '../optimizers/pso';
 import {GradientDescent} from '../optimizers/gradient-descent';
 import {Adam} from '../optimizers/adam';
+import {LBFGS} from '../optimizers/lbfgs';
 import type {ObjectiveFunction, OptimizationResult} from '../types';
 import type {Optimizer} from '../optimizer';
 
@@ -355,6 +356,11 @@ const optimizers: OptimizerConfig[] = [
     optimizer: new Adam(),
     settings: {maxIterations: 10_000, learningRate: 0.1},
   },
+  {
+    name: 'L-BFGS',
+    optimizer: new LBFGS(),
+    settings: {maxIterations: 1_000, historySize: 10},
+  },
 ];
 
 /* ================================================================== */
@@ -479,7 +485,7 @@ function runBenchmarks(): void {
   console.log('');
   console.log('╔══════════════════════════════════════════════════════════════════╗');
   console.log('║          UNCONSTRAINED OPTIMIZATION BENCHMARKS                   ║');
-  console.log('║          Default hyperparameters · 4 optimizers · 15 problems    ║');
+  console.log('║          Default hyperparameters · 5 optimizers · 15 problems    ║');
   console.log('╚══════════════════════════════════════════════════════════════════╝');
   console.log('');
 

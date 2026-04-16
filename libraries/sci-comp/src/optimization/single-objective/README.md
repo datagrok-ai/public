@@ -1,11 +1,12 @@
 # Single-Objective Optimization
 
-Four built-in solvers, each supporting synchronous and asynchronous objective functions:
+Five built-in solvers, each supporting synchronous and asynchronous objective functions:
 
 - [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) - derivative-free simplex method
 - [PSO (Particle Swarm Optimization)](https://en.wikipedia.org/wiki/Particle_swarm_optimization) - stochastic population-based method
 - [Gradient Descent](https://en.wikipedia.org/wiki/Gradient_descent) - first-order method with numerical gradients, momentum, and learning rate decay
 - [Adam](https://arxiv.org/abs/1412.6980) - adaptive moment estimation with per-parameter learning rates
+- [L-BFGS](https://en.wikipedia.org/wiki/Limited-memory_BFGS) - limited-memory quasi-Newton method with two-loop recursion and Armijo line search
 
 ```typescript
 import {singleObjective} from '@datagrok-libraries/sci-comp';
@@ -199,7 +200,7 @@ const result = optimizer.minimize(sphere, new Float64Array([5, -3, 7]), {
 
 Run 15 [standard test functions](./benchmarks/unconstrained-benchmark-functions.md) (Sphere, Rosenbrock, Beale, Booth, Matyas, Himmelblau, Three-Hump Camel,
 Rastrigin, Ackley, Lévi N.13, Griewank, Styblinski-Tang, Easom, Goldstein-Price, McCormick) across all
-4 optimizers with default hyperparameters:
+5 optimizers with default hyperparameters:
 
 ```bash
 npx tsx src/optimization/single-objective/benchmarks/unconstrained-benchmarks.ts
@@ -226,4 +227,7 @@ npx tsx src/optimization/single-objective/examples/registry.ts
 
 # Async objective functions and onIteration callbacks
 npx tsx src/optimization/single-objective/examples/async-and-callbacks.ts
+
+# L-BFGS specific example (historySize tuning, comparison vs GD/Adam)
+npx tsx src/optimization/single-objective/examples/lbfgs.ts
 ```
