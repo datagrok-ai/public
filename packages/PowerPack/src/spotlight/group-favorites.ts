@@ -55,8 +55,11 @@ export async function getMyGroupFavorites(): Promise<{group: DG.Group; entities:
     const name = getProjectName(g);
     try {
       const project = await grok.dapi.projects.filter(`name = "${name}"`).first();
-      if (project && project.links.length > 0)
-        results.push({group: g, entities: project.links});
+      if (project && project.links.length > 0) {
+        const ids = project.links.map((l) => l.id);
+        const resolved = await grok.dapi.getEntities(ids);
+        results.push({group: g, entities: resolved.filter((e) => e != null)});
+      }
     }
     catch (e) {
       console.warn(`Failed to load group favorites for "${g.friendlyName}"`, e);
