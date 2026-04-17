@@ -119,11 +119,18 @@ export class LinksState {
     const [mergedActions] = this.mergeLinks(oldActions, newActions, 'action');
     const nodeActions = new Map<string, Action[]>;
     for (const action of mergedActions) {
-      const node = state.getNode(action.prefix);
-      const {uuid} = node.getItem();
-      const acts = nodeActions.get(uuid) ?? [];
+      const visibleOn = action.spec.visibleOn;
+      let targetUuid: string;
+      if (visibleOn) {
+        // Route action to the descendant node matching visibleOn configId
+        const found = state.getNode(action.prefix).find((item) => item.config.id === visibleOn);
+        targetUuid = found ? found[0].getItem().uuid : state.getNode(action.prefix).getItem().uuid;
+      } else {
+        targetUuid = state.getNode(action.prefix).getItem().uuid;
+      }
+      const acts = nodeActions.get(targetUuid) ?? [];
       acts.push(action);
-      nodeActions.set(uuid, acts);
+      nodeActions.set(targetUuid, acts);
     }
     return [mergedActions, nodeActions] as const;
   }

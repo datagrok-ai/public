@@ -204,6 +204,16 @@ _Optional_
 
 Font awesome icon to be shown as a part of the UI action button.
 
+#### `visibleOn`
+
+_Optional_
+
+Shows the action on a specific child step instead of the node where it is
+defined. The value is the `id` of the target step. The action's `from`/`to`
+still resolve at the definition scope, so the action can read from and write
+to any node the parent workflow can reach. This is useful when an action
+logically belongs to a child step's UI but needs access to sibling steps'
+data. Works with all action types (data, funccall, pipeline).
 
 ### Data links
 
