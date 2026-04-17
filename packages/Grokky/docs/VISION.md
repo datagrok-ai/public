@@ -17,7 +17,7 @@ that makes it more effective. Three scopes are supported:
 |-------|--------|---------|
 | **Personal** | User's `My Files/agents/` folder | "Always use project X defaults when running ADME" |
 | **Package** | `agents/` folder inside a published package | "For chemical space, call the ChemicalSpace function" |
-| **Shared** | Sub-connections tagged `ai-skills` | Company SOPs, team-specific procedures |
+| **Shared** | Shared `agents/` folders from other users' My Files | Company SOPs, team-specific procedures |
 
 **Package skills** are the primary mechanism for plugins to describe their capabilities.
 Standard platform packages (like Chem) ship with an `agents/` folder — these live in the
@@ -45,19 +45,16 @@ and a mechanism for efficient working.
 
 ---
 
-## Folder creation & tagging
+## Folder creation & sharing
 
-On init, Grokky creates `agents/` as a **sub-connection** of My Files (rather than just a
-directory). This keeps My Files independent and allows the sub-connection to carry its own
-metadata. The `agents/` sub-connection is tagged with `ai-skills`.
+On init, Grokky creates `agents/` as a directory inside My Files (with a `README.md` placeholder).
+Users place their personal knowledge files here.
 
-The `ai-skills` tag enables efficient discovery — the sync queries for all connections with
-this tag rather than scanning every connection. When a user shares a subfolder inside `agents/`,
-a sub-connection is created for it. Because the parent `agents/` connection carries `ai-skills`,
-the sub-connection inherits the tag, making it automatically discoverable by other users' syncs.
-
-> **Design note:** the sub-connection + tag inheritance approach is proposed and open for
-> discussion.
+To share skills with others, a user shares the `agents/` folder through the platform UI (right-click
+→ Share). This creates a sub-connection that other users can access. The sync
+layer discovers these shared connections by querying `/public/v1/connections?text=agents` and
+filtering for connections named `MyFilesAgents`. No tags or special setup required — sharing the
+folder is the only step.
 
 ---
 
@@ -69,8 +66,8 @@ The Claude runtime maintains a per-user directory on the container filesystem:
 /users/{userId}/
 ├── agents/                          ← all knowledge files land here
 │   ├── my-notes.md                  ← personal (from My Files/agents/)
-│   ├── <UserPackageNaem>-skills.md  ← package (from <UserPackageName> package's agents/)
-│   └── shared-TeamSOPs-onboard.md   ← shared (from "TeamSOPs" connection)
+│   ├── <UserPackageName>-skills.md  ← package (from <UserPackageName> package's agents/)
+│   └── shared-abc123-onboard.md     ← shared (from another user's agents/)
 └── workspace → /workspace           ← symlink to the cloned Datagrok public repo
 ```
 
@@ -93,35 +90,25 @@ conventions prevent collisions across sources:
 
 | Scope | Local naming | Trigger |
 |-------|-------------|---------|
-| Personal | `agents/{filename}` | File events in `agents/` (`d4-file-event`, `onFileEdited`) |
-| Package | `agents/{PackageName}-{filename}` | `PACKAGE_LOADED` event |
-| Shared | `agents/shared-{ConnName}-{filename}` | Polled every 10 seconds |
+| Personal | `agents/{filename}` | File events (`d4-file-event`, `onFileEdited`) |
+| Package | `agents/{PackageName}-{filename}` | `onPackageLoaded` event + 15-min poll |
+| Shared | `agents/shared-{connId}-{filename}` | 15-minute polling interval |
+
+Package sync uses timestamp caching (`updatedOn`) to skip unchanged packages — ZIP downloads
+only happen when a package has actually been updated.
 
 On the first user message, all three scopes sync (`scope=all`). After that, event-driven syncs
 use a narrow scope so only the relevant category is re-checked. A concurrency guard prevents
 duplicate syncs for the same user.
 
-> **Open question:** polling for shared skills works but is not ideal at scale. A server-push
-> event for connection sharing changes would be more efficient.
-
-> **Status:** the sync system is currently being refined in the `oserhiienko/grokky` branch.
-
 ---
 
 ## Open design questions
 
-1. **Sub-connection inheritance** — the proposed model assumes sub-connections inherit the
-   `ai-skills` tag from their parent. This needs validation against the platform's actual
-   tag inheritance behavior.
-
-2. **Polling vs. server-push for shared skills** — the 10-second poll works but is not ideal
-   at scale. A server-push mechanism (WebSocket event when a connection is shared/unshared)
-   would eliminate unnecessary traffic.
-
-3. **File count scaling** — the system prompt currently lists up to 50 agent files. As the
+1. **File count scaling** — the system prompt currently lists up to 50 agent files. As the
    number of packages and shared connections grows, a smarter selection or indexing strategy
    may be needed (e.g., relevance-based filtering, embedding search).
 
-4. **Conflict resolution** — if a personal file and a package file have the same effective name,
+2. **Conflict resolution** — if a personal file and a package file have the same effective name,
    the current naming convention prevents filesystem collisions, but Claude sees both. A priority
    model (personal > shared > package) could help resolve contradictions in instructions.
