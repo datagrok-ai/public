@@ -146,12 +146,23 @@ grok s functions run Pkg:fn --json params.json                 # big input from 
 
 ## Files
 
+Remote paths are `<connector>/<file-path>`, where `<connector>` is the connection's
+full name — including any namespace — e.g. `System:DemoFiles/smiles.csv`. The
+separator between connector and path is the first `/`; the connector part may
+contain colons (the namespace separator).
+
 ```bash
 grok s files list "System:AppData" -r                          # recursive
 grok s files list "System:AppData/MyPlugin"
 grok s files get  "System:AppData/MyPlugin/config.json"
+grok s files put  ./smiles.csv "System:DemoFiles/smiles.csv"   # upload local file
 grok s files delete "System:AppData/MyPlugin/old.csv"
 ```
+
+`files put` streams the file as raw bytes (no base64), so it handles GB-scale uploads
+without blowing up memory. Use `batch files.put` only when you want to bundle an
+upload with other operations in a single round-trip (the batch path base64-encodes
+the `source` before sending).
 
 ## Raw API access
 
