@@ -10,6 +10,7 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
     - [PSO (Particle Swarm Optimization)](https://en.wikipedia.org/wiki/Particle_swarm_optimization) - stochastic population-based method
     - [Gradient Descent](https://en.wikipedia.org/wiki/Gradient_descent) - first-order method with numerical gradients, momentum, and learning rate decay
     - [Adam](https://arxiv.org/abs/1412.6980) - adaptive moment estimation with per-parameter learning rates
+    - [L-BFGS](https://en.wikipedia.org/wiki/Limited-memory_BFGS) - limited-memory quasi-Newton method with two-loop recursion and Armijo line search
   * multi-objective:
     - [MOEA/D](https://ieeexplore.ieee.org/document/4358754)
 
