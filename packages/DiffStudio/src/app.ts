@@ -2632,8 +2632,9 @@ export class DiffStudio {
       )
       .item(TITLE.EXT, async () =>
         await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
-      .endGroup()
-      .group(TITLE.LIBRARY)
+      .endGroup();
+
+    const libraryGroup = menu.group(TITLE.LIBRARY)
       .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
       .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
       .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
@@ -2642,11 +2643,43 @@ export class DiffStudio {
       .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
       .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
       .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
-      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL})
-      .endGroup();
+      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL});
+
+    await this.appendMenuWithExternalLibraryModels(libraryGroup);
+    libraryGroup.endGroup();
 
     return menu;
   } // getOpenMenu
+
+  /** Append external (manifest-registered) library models to the Library menu group */
+  private async appendMenuWithExternalLibraryModels(menu: DG.Menu): Promise<void> {
+    try {
+      const entries = await this.getExternalLibraryEntries();
+      for (const entry of entries) {
+        menu.item(entry.displayName, async () => {
+          try {
+            if (!(await grok.dapi.files.exists(entry.modelPath))) {
+              grok.shell.warning(`File not found: ${entry.modelPath}`);
+              return;
+            }
+            const equations = await getEquationsFromFile(entry.modelPath);
+            if (equations === null) {
+              grok.shell.warning(`Failed to read model: ${entry.modelPath}`);
+              return;
+            }
+            this.mainPath = `${PATH.FILE}/${entry.modelPath}`;
+            this.entityPath = '';
+            await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
+            await this.saveModelToRecent(entry.modelPath, true);
+          } catch (err) {
+            grok.shell.warning(`Failed to open model: ${entry.modelPath}`);
+          }
+        }, null, {description: entry.description || entry.modelPath});
+      }
+    } catch {
+      // silently skip if manifest is missing or malformed
+    }
+  }
 
   /** Append menu with my and recent models */
   private async appendMenuWithRecentModels(menu: DG.Menu) {
@@ -2727,7 +2760,8 @@ export class DiffStudio {
         menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.NO_MY_MODELS});
       else {
         const submenu = menu.group(TITLE.MY_MODELS);
-        myModelFiles.forEach(async (file) => await this.appendMenuWithCustomModel(submenu, file.fullPath as TITLE));
+        for (const file of myModelFiles)
+          await this.appendMenuWithCustomModel(submenu, file.fullPath as TITLE);
         submenu.endGroup();
       }
     } catch (err) {
