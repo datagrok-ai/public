@@ -10,7 +10,12 @@ platform that provides search capabilities in [DrugBank](https://go.drugbank.com
 
 - Similarity Search finds similar DrugBank structures for the specified structure
 
-![DrugBank demo](./images/demo.gif)
+- Drug name lookup: enter `db:<drug name>` in any Molecule input to resolve a drug
+  name (or synonym) to its structure
+
+![DrugBank demo](./images/drugbank_panels.png)
+
+![Drug name lookup](./images/drug-name-lookup.gif)
 
 See also:
 
