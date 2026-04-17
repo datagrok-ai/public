@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import {runWithContext, request} from './shared-api-client';
 import {resolveHomeConnection, syncHomeFiles} from './sync-home-files';
 import {syncPackages} from './sync-packages';
+import {syncSharedConnections} from './sync-shared-connections';
 
 
 const USERS_DIR = '/users';
@@ -143,7 +144,7 @@ async function listAgentFiles(userDir: string): Promise<string[]> {
 const syncInFlight = new Map<string, Promise<{dir: string; files: string[]}>>();
 const initialSyncDone = new Set<string>();
 
-export type SyncScope = 'all' | 'user-files' | 'packages';
+export type SyncScope = 'all' | 'user-files' | 'packages' | 'shared';
 
 export async function syncUserFiles(
   apiUrl: string, apiKey: string, scope: SyncScope = 'all', packageName?: string,
@@ -201,6 +202,16 @@ async function doSync(
     });
   }
 
+  if (scope === 'all' || scope === 'shared') {
+    await runWithContext({apiKey, apiUrl}, async () => {
+      try {
+        await syncSharedConnections(dir, homeConnId);
+      } catch (e: any) {
+        console.warn('shared-connections: sync failed:', e.message);
+      }
+    });
+  }
+
   if (scope === 'all' || scope === 'packages') {
     await runWithContext({apiKey, apiUrl}, async () => {
       try {
@@ -211,7 +222,8 @@ async function doSync(
     });
   }
 
-  initialSyncDone.add(apiKey);
+  if (scope === 'all')
+    initialSyncDone.add(apiKey);
 
   const files = await listAgentFiles(dir);
   console.log(`user-files: sync complete — ${files.length} total agent file(s)`);

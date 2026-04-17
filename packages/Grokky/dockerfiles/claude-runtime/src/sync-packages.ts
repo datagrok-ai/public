@@ -10,6 +10,9 @@ interface PackageInfo {
   updatedOn?: string;
 }
 
+// Per-user package cache: packageName → updatedOn timestamp.
+const packageCache = new Map<string, Map<string, string>>();
+
 let workspacePackages: Set<string> | null = null;
 
 async function getWorkspacePackages(): Promise<Set<string>> {
@@ -25,7 +28,11 @@ async function getWorkspacePackages(): Promise<Set<string>> {
   return workspacePackages;
 }
 
-async function syncSinglePackage(userDir: string, pkg: PackageInfo): Promise<void> {
+async function syncSinglePackage(userDir: string, pkg: PackageInfo, cached: Map<string, string>): Promise<void> {
+  if (pkg.updatedOn && cached.get(pkg.name) === pkg.updatedOn) {
+    console.log(`package-agents: ${pkg.name} up-to-date, skipping`);
+    return;
+  }
   console.log(`package-agents: syncing ${pkg.name}`);
   const buf = await requestBinary('GET', `/packages/published/${pkg.id}/zip`);
   if (!buf || buf.length === 0) {
@@ -61,6 +68,8 @@ async function syncSinglePackage(userDir: string, pkg: PackageInfo): Promise<voi
     await fs.writeFile(dest, entry.getData());
   }
   console.log(`package-agents: extracted ${agentEntries.length} file(s) from ${pkg.name}`);
+  if (pkg.updatedOn)
+    cached.set(pkg.name, pkg.updatedOn);
 }
 
 export async function syncPackages(userDir: string, packageName?: string): Promise<void> {
@@ -69,6 +78,11 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
     console.log('package-agents: no published packages found');
     return;
   }
+
+  const userId = path.basename(userDir);
+  if (!packageCache.has(userId))
+    packageCache.set(userId, new Map());
+  const cached = packageCache.get(userId)!;
 
   const wsPackages = await getWorkspacePackages();
 
@@ -82,7 +96,7 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
       console.log(`package-agents: package "${packageName}" not found among published`);
       return;
     }
-    await syncSinglePackage(userDir, pkg);
+    await syncSinglePackage(userDir, pkg, cached);
     return;
   }
 
@@ -94,7 +108,7 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
       continue;
     }
     try {
-      await syncSinglePackage(userDir, pkg);
+      await syncSinglePackage(userDir, pkg, cached);
     } catch (e: any) {
       console.warn(`package-agents: failed to sync ${pkg.name}:`, e.message);
     }

@@ -133,7 +133,7 @@ export class ClaudeRuntimeClient {
   }
 
   async syncUserFiles(
-    scope: 'all' | 'user-files' | 'packages' = 'all',
+    scope: 'all' | 'user-files' | 'packages' | 'shared' = 'all',
     packageName?: string,
   ): Promise<void> {
     await this.ensureConnected();
