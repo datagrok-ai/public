@@ -9,6 +9,7 @@ export * from './package.g';
 
 const host = 'https://api.chem-space.com';
 let token: string | null = null;
+let tokenPromise: Promise<string> | null = null;
 export const _package = new DG.Package();
 const API_KEY_PARAM_NAME = 'apiKey';
 
@@ -30,7 +31,9 @@ enum CATEGORY {
   CSSS = 'CSSS',
 }
 
-const modeToParam = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: 'sub',
+const ALL_CATEGORIES = Object.values(CATEGORY).join(',');
+
+const modeToParam: Record<SEARCH_MODE, string> = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: 'sub',
   [SEARCH_MODE.TEXT]: 'text', [SEARCH_MODE.EXACT]: 'exact'};
 
 export class PackageFunctions {
@@ -57,7 +60,7 @@ export class PackageFunctions {
       onValueChanged: () => update(),
     }) as DG.InputBase<CATEGORY>;
     const filterForm = ui.form([mode, shipToCountry, category]);
-    const filtersHost = ui.div([molecule, filterForm], 'chemspace-controls,ui-form');
+    const filtersHost = ui.div([molecule, filterForm], 'chemspace-controls ui-form');
 
     const emptyTable = DG.DataFrame.create();
     const view = grok.shell.addTableView(emptyTable);
@@ -66,10 +69,13 @@ export class PackageFunctions {
     view.description = 'Chemspace search viewer';
     view.root.className = 'grok-view grok-table-view chemspace';
 
+    let requestId = 0;
     function update(): void {
       ui.setUpdateIndicator(view.root, true);
+      const currentRequest = ++requestId;
 
       function setDataFrame(t: DG.DataFrame): void {
+        if (currentRequest !== requestId) return;
         if (t.rowCount === 0)
           grok.shell.error('No matches');
         view.dataFrame = t;
@@ -81,15 +87,16 @@ export class PackageFunctions {
         paramsStr: JSON.stringify({category: category.value,
           shipToCountry: COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]}),
       }).then((res) => setDataFrame(DG.DataFrame.fromJson(res)))
-        .catch((_) => setDataFrame(emptyTable));
+        .catch((e) => {
+          if (currentRequest !== requestId) return;
+          grok.shell.error(e?.message ?? String(e));
+          setDataFrame(emptyTable);
+        });
     }
 
     update();
 
     molecule.onChanged.subscribe(() => update());
-    mode.onChanged.subscribe(() => {
-      update();
-    });
 
     const acc = view.toolboxPage.accordion;
     acc.addPane('Chemspace', () => filtersHost, true, acc.panes[0]);
@@ -106,7 +113,7 @@ export class PackageFunctions {
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) smiles: string): Promise<DG.Widget> {
     const updateSearchResults = (acc: DG.Accordion,
       categoryToData: {[key: string]: {[searchMode in SEARCH_MODE]?: HTMLDivElement}},
-      cat: CATEGORY, shipToCountry: COUNTRY_CODES): void => {
+      cat: CATEGORY, shipToCountry: string): void => {
       const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
       const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);
       const similarExpanded = similarPanel?.expanded ?? false;
@@ -165,26 +172,26 @@ export class PackageFunctions {
     let prices: HTMLDivElement | null = null;
     const resData = ui.div([ui.loader()]);
     const updatePrices = (categoryToData: { [key: string]: HTMLDivElement },
-      cat: string, shipToCountry: COUNTRY_CODES): void => {
+      cat: string, shipToCountry: string): void => {
       ui.empty(resData);
       const cacheKey = getCategoryCacheKey(cat, shipToCountry);
-      if (!categoryToData[cacheKey]) {
-        resData.append(ui.loader());
-        grok.functions.call(`${_package.name}:queryMultipart`, {
-          path: `search/${modeToParam[SEARCH_MODE.TEXT]}`,
-          formParamsStr: JSON.stringify({'query': id}),
-          paramsStr: JSON.stringify({'shipToCountry': shipToCountry, 'categories': cat}),
-        }).then(async (resStr: string) => {
-          const res: ChemspaceResult[] = JSON.parse(resStr);
-          ui.empty(resData);
-          if (res.length === 0) {
-            resData.appendChild(ui.divText('No matches'));
-            return;
-          };
-          if (res.length > 1) {
-            resData.appendChild(ui.divText(`Ambigous results for id ${id}`));
-            return;
-          };
+      if (categoryToData[cacheKey]) {
+        resData.append(categoryToData[cacheKey]);
+        return;
+      }
+      resData.append(ui.loader());
+      grok.functions.call(`${_package.name}:queryMultipart`, {
+        path: `search/${modeToParam[SEARCH_MODE.TEXT]}`,
+        formParamsStr: JSON.stringify({'query': id}),
+        paramsStr: JSON.stringify({'shipToCountry': shipToCountry, 'categories': cat}),
+      }).then(async (resStr: string) => {
+        const res: ChemspaceResult[] = JSON.parse(resStr);
+        const fragment = ui.div();
+        if (res.length === 0)
+          fragment.appendChild(ui.divText('No matches'));
+        else if (res.length > 1)
+          fragment.appendChild(ui.divText(`Ambiguous results for id ${id}`));
+        else {
           const offers = res[0].offers;
           const chemspacePricesArray: ChemspacePricesTableItem[] = [];
           offers.forEach((offer) => {
@@ -201,24 +208,25 @@ export class PackageFunctions {
             }
           });
           const table = DG.DataFrame.fromJson(JSON.stringify(chemspacePricesArray));
-          ['priceUsd', 'priceEur'].forEach((name: string) => {
-              table.col(name)!.semType = 'Money';
-              if (name === 'priceUsd')
-                table.col(name)!.meta.format = 'money($)';
-          });
+          table.col('priceUsd')!.semType = 'Money';
+          table.col('priceUsd')!.meta.format = 'money($)';
+          table.col('priceEur')!.semType = 'Money';
+          table.col('priceEur')!.meta.format = 'money(€)';
           const grid = DG.Grid.create(table);
           grid.root.classList.add('chemspace-prices-grid');
           const button = ui.bigButton('ORDER', () => window.open(res[0].link, '_blank'));
           button.classList.add('chemspace-order-button');
-          resData.append(grid.root);
-          resData.append(button);
-        })
-          .catch((err: any) => {
-            ui.empty(resData);
-            resData.append(ui.divText(err.message ?? err));
-          });
-      } else
-        resData.append(categoryToData[cacheKey]);
+          fragment.append(grid.root);
+          fragment.append(button);
+        }
+        categoryToData[cacheKey] = fragment;
+        ui.empty(resData);
+        resData.append(fragment);
+      })
+        .catch((err: any) => {
+          ui.empty(resData);
+          resData.append(ui.divText(err.message ?? err));
+        });
     };
     try {
       await getApiToken();
@@ -227,7 +235,7 @@ export class PackageFunctions {
         value: 'United States',
         items: Object.keys(COUNTRY_CODES),
         onValueChanged: (value) => updatePrices(categoryToData,
-          Object.keys(CATEGORY).join(','), COUNTRY_CODES[value as keyof typeof COUNTRY_CODES]),
+          ALL_CATEGORIES, COUNTRY_CODES[value as keyof typeof COUNTRY_CODES]),
       }) as DG.InputBase<string>;
       shipToCountry.fireChanged();
       prices = ui.divV([ui.form([shipToCountry]), resData]);
@@ -255,7 +263,7 @@ export class PackageFunctions {
           smiles = DG.chem.convert(smiles, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
         const queryParams: {[key: string]: any} = {
           'shipToCountry': shipToCountry,
-          'categories': 'CSMS, CSMB, CSCS, CSSB, CSSS',
+          'categories': ALL_CATEGORIES,
         };
         try {
           const resStr = await grok.functions.call(`${_package.name}:queryMultipart`, {
@@ -270,7 +278,6 @@ export class PackageFunctions {
         }
         pi.update(i/molColumn.length*100, `Got ${i} Chemspace ids from ${molColumn.length}`);
       };
-      pi.close();
       return DG.Column.fromStrings('csIds', ids);
     } catch (e: any) {
       grok.shell.error(e.message ?? e);
@@ -293,7 +300,7 @@ export class PackageFunctions {
       const ids = idsColumn.toList().join(',');
       const queryParams: {[key: string]: any} = {
         'shipToCountry': shipToCountry,
-        'categories': 'CSMS, CSMB, CSCS, CSSB, CSSS',
+        'categories': ALL_CATEGORIES,
         'count': idsColumn.length,
       };
       const resStr = await grok.functions.call(`${_package.name}:queryMultipart`, {
@@ -304,13 +311,13 @@ export class PackageFunctions {
       const res: ChemspaceResult[] = JSON.parse(resStr);
       const resDict: {[key: string]: ChemspacePriceColumns | null} = {};
 
-      const select100MgOffer = (offers: ChemspaceOffer[]): ChemspacePriceColumns | null => {
+      const selectFirstAvailableOffer = (offers: ChemspaceOffer[]): ChemspacePriceColumns | null => {
         for (const offer of offers) {
-          if (offer.prices.length) {
+          if (offer.prices.length && offer.prices[0].priceUsd != null) {
             return {
               vendorName: offer.vendorName,
-              leadTimeDays: offer.leadTimeDays ?? 0,
-              priceUsd: offer.prices[0].priceUsd!,
+              leadTimeDays: offer.leadTimeDays ?? null,
+              priceUsd: offer.prices[0].priceUsd,
               packMg: offer.prices[0].packMg,
             };
           }
@@ -319,7 +326,7 @@ export class PackageFunctions {
       };
 
       for (let i = 0; i < res.length; i++)
-        resDict[res[i].csId] = select100MgOffer(res[i].offers);
+        resDict[res[i].csId] = selectFirstAvailableOffer(res[i].offers);
 
       const vendorCol = DG.Column.string('Vendor', idsColumn.length);
       const leadTime = DG.Column.int('Lead time, days', idsColumn.length);
@@ -332,7 +339,7 @@ export class PackageFunctions {
         if (offer) {
           vendorCol.set(i, offer.vendorName, false);
           priceCol.set(i, offer.priceUsd, false);
-          leadTime.set(i, offer.leadTimeDays ?? null, false);
+          leadTime.set(i, offer.leadTimeDays, false);
           mgCol.set(i, offer.packMg, false);
         }
       }
@@ -359,92 +366,83 @@ export class PackageFunctions {
 
     const formData = new FormData();
     Object.keys(formParams).forEach((key) => formData.append(key, formParams[key]));
-    const queryUrlParams = params ? `?${Object.keys(params).map((key) => `${key}=${params[key]}`).join('&')}` : '';
-    const url = `${host}/v4/${path}${queryUrlParams}`;
+    const search = params ?
+      new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString() :
+      '';
+    const url = `${host}/v4/${path}${search ? `?${search}` : ''}`;
 
-    const queryParams = {
+    const buildRequest = (): RequestInit => ({
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json; version=2.6',
       },
       body: formData,
-    };
+    });
 
-    try {
-      let response = await grok.dapi.fetchProxy(url, queryParams);
-      let totalAttempts = 10;
-      let attemptsCount = 0;
-      const delayMs = 1000;
-      const rerunRequest = async (): Promise<void> => {
-        response = await grok.dapi.fetchProxy(url, queryParams);
-        if (!response.ok && response.status !== 429)
-          throw new Error(`${response.status}, ${response.statusText}`);
-      };
-      if (!response.ok) {
-      //attempt to update token
-        if (response.status === 401) {
-          token = null;
-          await getApiToken();
-          await rerunRequest();
-        }
+    let response = await grok.dapi.fetchProxy(url, buildRequest());
 
-        if (response.status === 429) {
-          while (response.status === 429 && totalAttempts > 0) {
-            totalAttempts--;
-            attemptsCount++;
-            await DG.delay(delayMs * attemptsCount);
-            await rerunRequest();
-          }
-        } else
-          throw new Error(`${response.status}, ${response.statusText}`);
-      }
-      const list: ChemspaceResult[] = (await response.json()).items;
-      return JSON.stringify(list && list.length > 0 ? list : []);
-    } catch (e) {
-      throw e;
+    if (response.status === 401) {
+      token = null;
+      await getApiToken();
+      response = await grok.dapi.fetchProxy(url, buildRequest());
     }
+
+    const maxRetries = 10;
+    for (let attempt = 1; attempt <= maxRetries && response.status === 429; attempt++) {
+      await DG.delay(1000 * attempt);
+      response = await grok.dapi.fetchProxy(url, buildRequest());
+    }
+
+    if (!response.ok)
+      throw new Error(`${response.status}, ${response.statusText}`);
+
+    const list: ChemspaceResult[] = (await response.json()).items;
+    return JSON.stringify(list && list.length > 0 ? list : []);
   }
 }
 
 async function getApiToken(): Promise<void> {
-  if (!token) {
-    const credentials = await _package.getCredentials();
-    if (!credentials || !credentials.parameters[API_KEY_PARAM_NAME])
-      throw new Error('API key is not set in package credentials');
-    token = await requestAuthToken(credentials.parameters[API_KEY_PARAM_NAME]);
+  if (token) return;
+  if (!tokenPromise) {
+    tokenPromise = (async (): Promise<string> => {
+      const credentials = await _package.getCredentials();
+      if (!credentials || !credentials.parameters[API_KEY_PARAM_NAME])
+        throw new Error('API key is not set in package credentials');
+      return requestAuthToken(credentials.parameters[API_KEY_PARAM_NAME]);
+    })();
+  }
+  try {
+    token = await tokenPromise;
+  } finally {
+    tokenPromise = null;
   }
 }
 
 async function requestAuthToken(apiKey: string): Promise<string> {
-  try {
-    const response = await grok.dapi.fetchProxy(`${host}/auth/token`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json; version=2.6',
-      },
-    });
-    if (!response.ok)
-      throw new Error(`${response.status}, ${response.statusText}`);
-    const token = await response.json();
-
-    if (!token['access_token'])
-      throw new Error(`auth/token endpoint didn't return access token`);
-    return token['access_token'] as string;
-  } catch (error: any) {
-    throw error;
-  }
+  const response = await grok.dapi.fetchProxy(`${host}/auth/token`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Accept': 'application/json; version=2.6',
+    },
+  });
+  if (!response.ok)
+    throw new Error(`${response.status}, ${response.statusText}`);
+  const json = await response.json();
+  if (!json['access_token'])
+    throw new Error(`auth/token endpoint didn't return access token`);
+  return json['access_token'] as string;
 }
 
-function getCategoryCacheKey(cat: string, shipToCountry: COUNTRY_CODES): string {
+function getCategoryCacheKey(cat: string, shipToCountry: string): string {
   return `${cat}|${shipToCountry}`;
 }
 
 
 function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, category: CATEGORY = CATEGORY.CSCS,
-  shipToCountry: COUNTRY_CODES = COUNTRY_CODES['United States']): HTMLDivElement {
-  const headerHost = ui.divH([/*ui.h2(panelName)*/], 'chemspace-panel-header');
+  shipToCountry: string = COUNTRY_CODES['United States']): HTMLDivElement {
+  const headerHost = ui.divH([], 'chemspace-panel-header');
   const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost], 'chemspace-panel');
 
@@ -479,13 +477,14 @@ function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, category: CA
     if (searchMode === SEARCH_MODE.SIMILAR)
       similarityResult = await grok.chem.findSimilar(smilesCol, smiles, {limit: 20, cutoff: 0.1});
 
-    for (let i = 0; i < Math.min((similarityResult ? similarityResult.rowCount : res.length), 20); i++) {
+    const count = Math.min(similarityResult?.rowCount ?? res.length, 20);
+    for (let i = 0; i < count; i++) {
       const idx = searchMode === SEARCH_MODE.SIMILAR ? similarityResult!.get('index', i) : i;
-      const smiles = smilesCol.get(idx);
+      const hitSmiles = smilesCol.get(idx);
       const molHost = ui.div();
-      if (smiles) {
-        const res = grok.chem.drawMolecule(smiles, WIDTH, HEIGHT, true);
-        molHost.append(res);
+      if (hitSmiles) {
+        const molImg = grok.chem.drawMolecule(hitSmiles, WIDTH, HEIGHT, true);
+        molHost.append(molImg);
         if (searchMode === SEARCH_MODE.SIMILAR)
           molHost.appendChild(ui.divText(`Score: ${similarityResult?.get('score', i).toFixed(2)}`));
       }
