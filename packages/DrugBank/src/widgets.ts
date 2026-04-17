@@ -38,10 +38,9 @@ export async function searchWidget(molString: string, searchType: SEARCH_TYPE, d
       throw new Error(`DrugBankSearch: No such search type ${searchType}`);
     }
   } catch (e) {
-    return new DG.Widget(ui.divText('Error occurred during search. Molecule is possible malformed'));
+    return new DG.Widget(ui.divText('Error occurred during search. Molecule is possibly malformed'));
   }
 
-  compsHost.firstChild?.remove();
   if (table === null || table.filter.trueCount === 0) {
     compsHost.appendChild(ui.divText('No matches'));
     return new DG.Widget(panel);
@@ -63,10 +62,11 @@ export async function searchWidget(molString: string, searchType: SEARCH_TYPE, d
     const res = grok.chem.drawMolecule(molfile, WIDTH, HEIGHT, true);
     molHost.append(res);
     if (searchType === SEARCH_TYPE.SIMILARITY)
-      molHost.append(ui.divText(`Score: ${similarityCol?.get(n)?.toFixed(2)}`));
+      molHost.append(ui.divText(`Score: ${similarityCol?.get(piv)?.toFixed(2)}`));
 
     ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
-    molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));
+    molHost.addEventListener('click',
+      () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank', 'noopener'));
     compsHost.appendChild(molHost);
   }
   headerHost.appendChild(
@@ -76,12 +76,12 @@ export async function searchWidget(molString: string, searchType: SEARCH_TYPE, d
   return new DG.Widget(panel);
 }
 
-export function drugNameMoleculeConvert(id: string, dbdfRowCount: number, synonymsCol: DG.Column<string>,
+export function drugNameMoleculeConvert(id: string, synonymsCol: DG.Column<string>,
   smilesCol: DG.Column<string>): string {
   const drugName = id.slice(3).toLowerCase();
   //TODO: consider using raw data instead of .get or column iterator (see ApiSamples)
   //TODO: benchmark it
-  for (let i = 0; i < dbdfRowCount; i++) {
+  for (let i = 0; i < synonymsCol.length; i++) {
     const currentSynonym = synonymsCol.get(i)!.toLowerCase();
     //TODO: check why .includes & consider using hash-map
     if (currentSynonym.includes(drugName))
