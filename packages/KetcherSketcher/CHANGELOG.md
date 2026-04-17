@@ -1,5 +1,10 @@
 # Ketcher Sketcher changelog
 
+## v.next
+
+* Parallelized Ketcher read-back on every edit (getSmiles / getMolfile v2000 / v3000 now run concurrently)
+* Flattened nested-ternary notation getters and collapsed four near-identical setters into a single helper
+
 ## 2.4.1 (2026-03-18)
 
 * Updated ketcher libraries up to 3.12.0
