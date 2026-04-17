@@ -193,7 +193,10 @@ export class NodeGroupsDataSource extends NodeHttpDataSource {
   }
 
   async addMembers(group: string, members: string[], isAdmin: boolean = false, personalOnly: boolean = false): Promise<MemberAddResult[]> {
-    const parent = await this.resolve(group);
+    // Always fetch via find() so parent.children comes back expanded; lookup() returns a
+    // pruned projection and replacing that empty list on save would drop existing members.
+    const resolved = await this.resolve(group);
+    const parent = await this.find(resolved.id);
     const children: any[] = Array.isArray(parent.children) ? parent.children : [];
     const results: MemberAddResult[] = [];
     let mutated = false;
@@ -208,7 +211,9 @@ export class NodeGroupsDataSource extends NodeHttpDataSource {
       }
       const existing = children.find((r) => r?.child?.id === child.id);
       if (existing) {
-        if (existing.isAdmin === isAdmin) {
+        // Server returns isAdmin as null/undefined for non-admin relations; normalize
+        // the comparison so re-runs report `noop` instead of `updated`.
+        if ((existing.isAdmin ?? false) === isAdmin) {
           results.push({member: m, status: 'noop'});
         } else {
           existing.isAdmin = isAdmin;
@@ -216,7 +221,8 @@ export class NodeGroupsDataSource extends NodeHttpDataSource {
           results.push({member: m, status: 'updated'});
         }
       } else {
-        children.push({parent: {id: parent.id}, child: {id: child.id}, isAdmin});
+        // Each GroupRelation row needs a non-null id; the server rejects the save otherwise.
+        children.push({id: randomUUID(), parent: {id: parent.id}, child: {id: child.id}, isAdmin});
         mutated = true;
         results.push({member: m, status: 'added'});
       }
@@ -230,7 +236,8 @@ export class NodeGroupsDataSource extends NodeHttpDataSource {
   }
 
   async removeMembers(group: string, members: string[], personalOnly: boolean = false): Promise<MemberRemoveResult[]> {
-    const parent = await this.resolve(group);
+    const resolved = await this.resolve(group);
+    const parent = await this.find(resolved.id);
     const results: MemberRemoveResult[] = [];
     const children: any[] = Array.isArray(parent.children) ? parent.children : [];
     let mutated = false;
