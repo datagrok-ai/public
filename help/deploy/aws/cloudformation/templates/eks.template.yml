@@ -666,24 +666,394 @@ Resources:
                                 - DbiResourceId
             - Ref: "AWS::NoValue"
 
-  # ==================== Helm install (AWS LB Controller + Datagrok) ====================
+  # ==================== AWS Load Balancer Controller ====================
+  #
+  # LBC runs in kube-system and watches Ingress resources, provisioning ALBs on
+  # demand. The Datagrok Ingress (created by the Helm release below) triggers
+  # ALB creation.
   #
   # Requires the one-time activation of AWSQS::Kubernetes::Helm in the target
-  # region. Customers see the activation link in the help page.
-  #
-  # NOTE (Phase 2): The resources below are scaffolding for the seamless install.
-  # They reference DatagrokChartEffectiveVersion and the service-version params so
-  # the final --set values carry through. Do not remove; Phase 2 wiring depends on
-  # these logical IDs.
+  # region — see deploy-amazon-eks.md prerequisites.
 
-  DatagrokChartEffectiveVersion:
-    Type: AWS::CloudFormation::WaitConditionHandle
-    Metadata:
-      chart_version:
+  LBCIAMPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-lbc"
+          - postfix:
+              Ref: Postfix
+      Description: "AWS Load Balancer Controller permissions (upstream iam_policy.json)"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - iam:CreateServiceLinkedRole
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "iam:AWSServiceName": elasticloadbalancing.amazonaws.com
+          - Effect: Allow
+            Action:
+              - ec2:DescribeAccountAttributes
+              - ec2:DescribeAddresses
+              - ec2:DescribeAvailabilityZones
+              - ec2:DescribeInternetGateways
+              - ec2:DescribeVpcs
+              - ec2:DescribeVpcPeeringConnections
+              - ec2:DescribeSubnets
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeInstances
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeTags
+              - ec2:GetCoipPoolUsage
+              - ec2:DescribeCoipPools
+              - ec2:GetSecurityGroupsForVpc
+              - elasticloadbalancing:DescribeLoadBalancers
+              - elasticloadbalancing:DescribeLoadBalancerAttributes
+              - elasticloadbalancing:DescribeListeners
+              - elasticloadbalancing:DescribeListenerCertificates
+              - elasticloadbalancing:DescribeSSLPolicies
+              - elasticloadbalancing:DescribeRules
+              - elasticloadbalancing:DescribeTargetGroups
+              - elasticloadbalancing:DescribeTargetGroupAttributes
+              - elasticloadbalancing:DescribeTargetHealth
+              - elasticloadbalancing:DescribeTags
+              - elasticloadbalancing:DescribeTrustStores
+              - elasticloadbalancing:DescribeListenerAttributes
+              - elasticloadbalancing:DescribeCapacityReservation
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - cognito-idp:DescribeUserPoolClient
+              - acm:ListCertificates
+              - acm:DescribeCertificate
+              - iam:ListServerCertificates
+              - iam:GetServerCertificate
+              - waf-regional:GetWebACL
+              - waf-regional:GetWebACLForResource
+              - waf-regional:AssociateWebACL
+              - waf-regional:DisassociateWebACL
+              - wafv2:GetWebACL
+              - wafv2:GetWebACLForResource
+              - wafv2:AssociateWebACL
+              - wafv2:DisassociateWebACL
+              - shield:GetSubscriptionState
+              - shield:DescribeProtection
+              - shield:CreateProtection
+              - shield:DeleteProtection
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:RevokeSecurityGroupIngress
+              - ec2:CreateSecurityGroup
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - ec2:CreateTags
+            Resource: "arn:aws:ec2:*:*:security-group/*"
+            Condition:
+              StringEquals:
+                "ec2:CreateAction": CreateSecurityGroup
+              "Null":
+                "aws:RequestTag/elbv2.k8s.aws/cluster": "false"
+          - Effect: Allow
+            Action:
+              - ec2:CreateTags
+              - ec2:DeleteTags
+            Resource: "arn:aws:ec2:*:*:security-group/*"
+            Condition:
+              "Null":
+                "aws:RequestTag/elbv2.k8s.aws/cluster": "true"
+                "aws:ResourceTag/elbv2.k8s.aws/cluster": "false"
+          - Effect: Allow
+            Action:
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:RevokeSecurityGroupIngress
+              - ec2:DeleteSecurityGroup
+            Resource: "*"
+            Condition:
+              "Null":
+                "aws:ResourceTag/elbv2.k8s.aws/cluster": "false"
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:CreateLoadBalancer
+              - elasticloadbalancing:CreateTargetGroup
+            Resource: "*"
+            Condition:
+              "Null":
+                "aws:RequestTag/elbv2.k8s.aws/cluster": "false"
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:CreateListener
+              - elasticloadbalancing:DeleteListener
+              - elasticloadbalancing:CreateRule
+              - elasticloadbalancing:DeleteRule
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:AddTags
+              - elasticloadbalancing:RemoveTags
+            Resource:
+              - "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*"
+              - "arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*"
+              - "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*"
+            Condition:
+              "Null":
+                "aws:RequestTag/elbv2.k8s.aws/cluster": "true"
+                "aws:ResourceTag/elbv2.k8s.aws/cluster": "false"
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:AddTags
+              - elasticloadbalancing:RemoveTags
+            Resource:
+              - "arn:aws:elasticloadbalancing:*:*:listener/net/*/*/*"
+              - "arn:aws:elasticloadbalancing:*:*:listener/app/*/*/*"
+              - "arn:aws:elasticloadbalancing:*:*:listener-rule/net/*/*/*"
+              - "arn:aws:elasticloadbalancing:*:*:listener-rule/app/*/*/*"
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:ModifyLoadBalancerAttributes
+              - elasticloadbalancing:SetIpAddressType
+              - elasticloadbalancing:SetSecurityGroups
+              - elasticloadbalancing:SetSubnets
+              - elasticloadbalancing:DeleteLoadBalancer
+              - elasticloadbalancing:ModifyTargetGroup
+              - elasticloadbalancing:ModifyTargetGroupAttributes
+              - elasticloadbalancing:DeleteTargetGroup
+              - elasticloadbalancing:ModifyListenerAttributes
+              - elasticloadbalancing:ModifyCapacityReservation
+              - elasticloadbalancing:ModifyIpPools
+            Resource: "*"
+            Condition:
+              "Null":
+                "aws:ResourceTag/elbv2.k8s.aws/cluster": "false"
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:AddTags
+            Resource:
+              - "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*"
+              - "arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*"
+              - "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*"
+            Condition:
+              StringEquals:
+                "elasticloadbalancing:CreateAction":
+                  - CreateTargetGroup
+                  - CreateLoadBalancer
+              "Null":
+                "aws:RequestTag/elbv2.k8s.aws/cluster": "false"
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:RegisterTargets
+              - elasticloadbalancing:DeregisterTargets
+            Resource: "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*"
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:SetWebAcl
+              - elasticloadbalancing:ModifyListener
+              - elasticloadbalancing:AddListenerCertificates
+              - elasticloadbalancing:RemoveListenerCertificates
+              - elasticloadbalancing:ModifyRule
+              - elasticloadbalancing:SetRulePriorities
+            Resource: "*"
+
+  LBCServiceAccountRole:
+    Type: AWS::IAM::Role
+    DependsOn: DatagrokClusterOIDCProvider
+    Properties:
+      RoleName:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-lbc-role"
+          - postfix:
+              Ref: Postfix
+      AssumeRolePolicyDocument:
+        Fn::Sub:
+          - |
+            {
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": "arn:aws:iam::${AWS::AccountId}:oidc-provider/${issuer}"
+                },
+                "Action": "sts:AssumeRoleWithWebIdentity",
+                "Condition": {
+                  "StringEquals": {
+                    "${issuer}:aud": "sts.amazonaws.com",
+                    "${issuer}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
+                  }
+                }
+              }]
+            }
+          - issuer:
+              Fn::Select:
+                - 1
+                - Fn::Split:
+                    - "//"
+                    - Fn::GetAtt:
+                        - EKSCluster
+                        - OpenIdConnectIssuerUrl
+      ManagedPolicyArns:
+        - Ref: LBCIAMPolicy
+
+  LBCHelmRelease:
+    Type: AWSQS::Kubernetes::Helm
+    DependsOn:
+      - EKSNodeGroup
+      - LBCServiceAccountRole
+    Properties:
+      ClusterID:
+        Ref: EKSCluster
+      Namespace: kube-system
+      Name: aws-load-balancer-controller
+      Repository: https://aws.github.io/eks-charts
+      Chart: aws-load-balancer-controller
+      Version: 1.10.1
+      ValueYaml:
+        Fn::Sub:
+          - |
+            clusterName: ${ClusterName}
+            region: ${AWS::Region}
+            vpcId: ${VpcId}
+            serviceAccount:
+              create: true
+              name: aws-load-balancer-controller
+              annotations:
+                eks.amazonaws.com/role-arn: ${RoleArn}
+          - ClusterName:
+              Ref: EKSCluster
+            VpcId:
+              Ref: DatagrokVPC
+            RoleArn:
+              Fn::GetAtt:
+                - LBCServiceAccountRole
+                - Arn
+
+  # ==================== Datagrok Helm release ====================
+
+  DatagrokHelmRelease:
+    Type: AWSQS::Kubernetes::Helm
+    DependsOn:
+      - DatagrokDB
+      - DatagrokS3
+      - LBCHelmRelease
+      - DatagrokServiceAccountRole
+    Properties:
+      ClusterID:
+        Ref: EKSCluster
+      Namespace:
+        Ref: HelmNamespace
+      Name: datagrok
+      Repository: oci://registry-1.docker.io/datagrok
+      Chart: datagrok-chart
+      Version:
         Fn::If:
           - UseChartVersionOverride
           - Ref: HelmChartVersion
           - Ref: DatagrokVersion
+      ValueYaml:
+        Fn::Sub:
+          - |
+            datagrok:
+              image:
+                tag: ${DatagrokTag}
+              adminPassword: "${AdminPassword}"
+            postgres:
+              internal: false
+              useIamAuth: ${RdsIamAuth}
+              region: ${AWS::Region}
+              adminUser: datagrok_admin
+              external:
+                host: ${RdsEndpoint}
+                port: 5432
+                ssl: true
+            storage:
+              type: s3
+              s3:
+                bucket: ${S3Bucket}
+                region: ${AWS::Region}
+            rabbitmq:
+              image:
+                tag: ${RabbitMQTag}
+              password: "${RmqPassword}"
+            grokPipe:
+              image:
+                tag: ${GrokPipeTag}
+              apiKey: "${PipeApiKey}"
+            jkg:
+              image:
+                tag: ${JkgTag}
+            grokConnect:
+              image:
+                tag: ${GrokConnectTag}
+            spawner:
+              image:
+                tag: ${GrokSpawnerTag}
+              apiKey: "${SpawnerKey}"
+              mode: kubernetes
+            ingress:
+              enabled: true
+              className: alb
+              annotations:
+                alb.ingress.kubernetes.io/scheme: internet-facing
+                alb.ingress.kubernetes.io/target-type: ip
+                alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+                alb.ingress.kubernetes.io/certificate-arn: ${CertArn}
+              tls:
+                enabled: false
+            serviceAccount:
+              create: true
+              name: datagrok
+              annotations:
+                eks.amazonaws.com/role-arn: ${SaRoleArn}
+          - DatagrokTag:
+              Ref: DatagrokVersion
+            RabbitMQTag:
+              Ref: RabbitmqVersion
+            GrokPipeTag:
+              Ref: GrokPipeVersion
+            JkgTag:
+              Ref: JKGVersion
+            GrokConnectTag:
+              Ref: GrokConnectVersion
+            GrokSpawnerTag:
+              Ref: GrokSpawnerVersion
+            RdsIamAuth:
+              Ref: EnableRdsIamAuth
+            RdsEndpoint:
+              Fn::GetAtt:
+                - DatagrokDB
+                - Endpoint.Address
+            S3Bucket:
+              Ref: DatagrokS3
+            CertArn:
+              Ref: DatagrokArnSSLCertificate
+            SaRoleArn:
+              Fn::GetAtt:
+                - DatagrokServiceAccountRole
+                - Arn
+            AdminPassword:
+              Fn::Sub:
+                - "{{resolve:secretsmanager:${s}:SecretString:password}}"
+                - s:
+                    Ref: DatagrokAdminPassword
+            RmqPassword:
+              Fn::Sub:
+                - "{{resolve:secretsmanager:${s}:SecretString:password}}"
+                - s:
+                    Ref: RabbitMQPassword
+            PipeApiKey:
+              Fn::Sub:
+                - "{{resolve:secretsmanager:${s}:SecretString:key}}"
+                - s:
+                    Ref: GrokPipeApiKey
+            SpawnerKey:
+              Fn::Sub:
+                - "{{resolve:secretsmanager:${s}:SecretString:key}}"
+                - s:
+                    Ref: SpawnerApiKey
 
   # ==================== ALB discovery (seamless r53/dns) ====================
   #
@@ -784,12 +1154,11 @@ Resources:
               Ref: DatagrokLoadBalancerLookupFunction
       RetentionInDays: 7
 
-  # Phase 2: depend on the Helm install resources so this only fires after the
-  # ingress is created and LBC has provisioned the ALB.
+  # Fires after DatagrokHelmRelease creates the Ingress and LBC provisions the ALB.
   DatagrokLoadBalancer:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
-      - EKSNodeGroup
+      - DatagrokHelmRelease
       - DatagrokLoadBalancerLookupLogGroup
     Properties:
       ServiceToken:
