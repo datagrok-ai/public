@@ -87,6 +87,29 @@ describe('NodeGroupsDataSource.resolve', () => {
   });
 });
 
+describe('NodeGroupsDataSource.save', () => {
+  it('POSTs the group body to /public/v1/groups and auto-generates an id when missing', async () => {
+    const {client, calls} = makeMock((method, path, body) => {
+      if (method === 'POST' && path === '/public/v1/groups') return {...body, friendlyName: 'Chemists'};
+      throw new Error(`unexpected ${method} ${path}`);
+    });
+    const ds = new NodeGroupsDataSource(client);
+    await ds.save({friendlyName: 'Chemists'});
+    expect(calls[0].path).toBe('/public/v1/groups');
+    expect(calls[0].body.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+  });
+
+  it('appends saveRelations=true when requested', async () => {
+    const {client, calls} = makeMock((method, path) => {
+      if (method === 'POST' && path === '/public/v1/groups?saveRelations=true') return {id: 'g'};
+      throw new Error(`unexpected ${method} ${path}`);
+    });
+    const ds = new NodeGroupsDataSource(client);
+    await ds.save({id: 'g', friendlyName: 'Chemists'}, true);
+    expect(calls[0].path).toBe('/public/v1/groups?saveRelations=true');
+  });
+});
+
 describe('NodeGroupsDataSource.addMembers', () => {
   it('appends new relations and POSTs with saveRelations=true', async () => {
     const {client, calls} = makeMock((method, path, _body) => {

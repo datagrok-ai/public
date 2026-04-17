@@ -1,4 +1,11 @@
 /// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
+import {randomUUID} from 'crypto';
+
+export function ensureBodyId<T extends {id?: string} | Record<string, any>>(body: T): T {
+  if (body && typeof body === 'object' && !(body as any).id)
+    (body as any).id = randomUUID();
+  return body;
+}
 
 export interface BatchOperation {
   id?: string;
@@ -159,7 +166,7 @@ export class NodeGroupsDataSource extends NodeHttpDataSource {
 
   async save(group: any, saveRelations: boolean = false): Promise<any> {
     const q = buildQuery({saveRelations: saveRelations ? 'true' : undefined});
-    return this.client.post(`/public/v1/groups${q}`, group);
+    return this.client.post(`/public/v1/groups${q}`, ensureBodyId(group));
   }
 
   async lookup(name: string): Promise<any[]> {
@@ -265,6 +272,45 @@ export class NodeGroupsDataSource extends NodeHttpDataSource {
   }
 }
 
+export class NodeSharesDataSource {
+  constructor(private client: NodeApiClient) {}
+
+  async share(entity: string, groups: string, access: string = 'View'): Promise<any> {
+    const name = encodeURIComponent(entity.replace(':', '.'));
+    const q = buildQuery({groups, access});
+    return this.client.post(`/public/v1/entities/${name}/shares${q}`);
+  }
+
+  async list(entityId: string): Promise<any[]> {
+    const q = buildQuery({entityId});
+    return this.client.get(`/privileges/permissions${q}`);
+  }
+}
+
+export class NodeUsersDataSource extends NodeHttpDataSource {
+  constructor(client: NodeApiClient) { super(client, 'users'); }
+
+  async save(user: any): Promise<any> {
+    return this.client.post('/public/v1/users', ensureBodyId(user));
+  }
+}
+
+export class NodeConnectionsDataSource extends NodeHttpDataSource {
+  constructor(client: NodeApiClient) { super(client, 'connections'); }
+
+  async save(conn: any, saveCredentials: boolean = false): Promise<any> {
+    const q = buildQuery({saveCredentials: saveCredentials ? 'true' : undefined});
+    return this.client.post(`/public/v1/connections${q}`, conn);
+  }
+
+  async test(conn: any): Promise<void> {
+    const result = await this.client.post(`/public/v1/connections/test`, conn);
+    const text = typeof result === 'string' ? result.replace(/^"|"$/g, '') : String(result ?? '');
+    if (text !== 'ok')
+      throw new Error(text || 'Connection test failed');
+  }
+}
+
 export class NodeFuncsDataSource extends NodeHttpDataSource {
   async run(name: string, params?: Record<string, any>): Promise<any> {
     const normalizedName = name.replace(':', '.');
@@ -316,15 +362,16 @@ export class NodeFilesDataSource {
 export class NodeDapi {
   constructor(private client: NodeApiClient) {}
 
-  get users(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'users'); }
+  get users(): NodeUsersDataSource { return new NodeUsersDataSource(this.client); }
   get groups(): NodeGroupsDataSource { return new NodeGroupsDataSource(this.client); }
   get functions(): NodeFuncsDataSource { return new NodeFuncsDataSource(this.client, 'functions'); }
-  get connections(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'connections'); }
+  get connections(): NodeConnectionsDataSource { return new NodeConnectionsDataSource(this.client); }
   get queries(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'queries'); }
   get scripts(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'scripts'); }
   get packages(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'packages'); }
   get reports(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'reports'); }
   get files(): NodeFilesDataSource { return new NodeFilesDataSource(this.client); }
+  get shares(): NodeSharesDataSource { return new NodeSharesDataSource(this.client); }
 
   async raw(method: string, path: string, body?: any): Promise<any> {
     // Raw paths are relative to server root (e.g. /api/users/current).

@@ -55,6 +55,12 @@ export async function server(argv: any): Promise<boolean> {
       if (output !== 'quiet') console.log(`Deleted ${rest[0]}`);
       return true;
     }
+    if (entity === 'shares' && verb === 'add') return handleSharesAdd(dapi, rest, argv, output);
+    if (entity === 'shares' && verb === 'list') return handleSharesList(dapi, rest, output);
+    if (entity === 'users' && verb === 'save') return handleUserSave(dapi, argv, output);
+    if (entity === 'groups' && verb === 'save') return handleGroupSave(dapi, argv, output);
+    if (entity === 'connections' && verb === 'save') return handleConnSave(dapi, argv, output);
+    if (entity === 'connections' && verb === 'test') return handleConnTest(dapi, rest, argv, output);
     if (entity === 'groups' && verb === 'add-members') return handleGroupAddMembers(dapi, rest, argv, output);
     if (entity === 'groups' && verb === 'remove-members') return handleGroupRemoveMembers(dapi, rest, argv, output);
     if (entity === 'groups' && verb === 'list-members') return handleGroupListMembers(dapi, rest, argv, output);
@@ -147,6 +153,112 @@ async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: 
 
   const result = await dapi.functions.run(funcName, params);
   printOutput(result, output);
+  return true;
+}
+
+function readJsonFile(jsonPath: string): any {
+  return JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+}
+
+function readJsonBody(argv: any, entity: string): any {
+  if (!argv.json)
+    throw new Error(`Usage: grok s ${entity} save --json ${entity}.json`);
+  try {
+    return readJsonFile(argv.json);
+  } catch (err: any) {
+    throw new Error(`Cannot read ${entity} file '${argv.json}': ${err.message}`);
+  }
+}
+
+async function handleSharesAdd(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  const [entity, ...groupArgs] = rest;
+  if (!entity || !groupArgs.length) {
+    printError(new Error('Usage: grok s shares add <entity-id-or-name> <group>[,<group>...] [--access View|Edit]'));
+    return false;
+  }
+  const groups = groupArgs.flatMap((g) => g.split(',')).map((g) => g.trim()).filter(Boolean).join(',');
+  const access = typeof argv.access === 'string' ? argv.access : 'View';
+  if (access !== 'View' && access !== 'Edit') {
+    printError(new Error(`Invalid --access '${access}'. Use 'View' or 'Edit'.`));
+    return false;
+  }
+  const result = await dapi.shares.share(entity, groups, access);
+  printOutput(result, output);
+  if (result?.status === 'failed') process.exitCode = 1;
+  return true;
+}
+
+async function handleSharesList(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
+  const entityId = rest[0];
+  if (!entityId) {
+    printError(new Error('Usage: grok s shares list <entity-id>   (entity id must be a UUID)'));
+    return false;
+  }
+  const perms = await dapi.shares.list(entityId);
+  const flat = (Array.isArray(perms) ? perms : []).map((p: any) => ({
+    group: p?.userGroup?.friendlyName ?? p?.userGroup?.name ?? p?.userGroup?.id ?? '',
+    groupId: p?.userGroup?.id ?? '',
+    access: p?.permission?.name ?? p?.permission?.friendlyName ?? '',
+    personal: p?.userGroup?.personal ?? false,
+  }));
+  printOutput(flat, output);
+  return true;
+}
+
+async function handleUserSave(dapi: NodeDapi, argv: any, output: OutputFormat): Promise<boolean> {
+  let body: any;
+  try { body = readJsonBody(argv, 'users'); }
+  catch (err: any) { printError(err); return false; }
+  const result = await dapi.users.save(body);
+  printOutput(result, output);
+  return true;
+}
+
+async function handleGroupSave(dapi: NodeDapi, argv: any, output: OutputFormat): Promise<boolean> {
+  let body: any;
+  try { body = readJsonBody(argv, 'groups'); }
+  catch (err: any) { printError(err); return false; }
+  const saveRelations = argv['save-relations'] === true || argv.saveRelations === true;
+  const result = await dapi.groups.save(body, saveRelations);
+  printOutput(result, output);
+  return true;
+}
+
+async function handleConnSave(dapi: NodeDapi, argv: any, output: OutputFormat): Promise<boolean> {
+  if (!argv.json) {
+    printError(new Error('Usage: grok s connections save --json conn.json [--save-credentials]'));
+    return false;
+  }
+  let body: any;
+  try {
+    body = readJsonFile(argv.json);
+  } catch (err: any) {
+    printError(new Error(`Cannot read connection file '${argv.json}': ${err.message}`));
+    return false;
+  }
+  const saveCredentials = argv['save-credentials'] === true || argv.saveCredentials === true;
+  const result = await dapi.connections.save(body, saveCredentials);
+  printOutput(result, output);
+  return true;
+}
+
+async function handleConnTest(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  let body: any;
+  if (argv.json) {
+    try {
+      body = readJsonFile(argv.json);
+    } catch (err: any) {
+      printError(new Error(`Cannot read connection file '${argv.json}': ${err.message}`));
+      return false;
+    }
+  } else if (rest[0]) {
+    body = await dapi.connections.find(rest[0]);
+  } else {
+    printError(new Error('Usage: grok s connections test <id-or-name> | --json conn.json'));
+    return false;
+  }
+  await dapi.connections.test(body);
+  if (output !== 'quiet') console.log('ok');
   return true;
 }
 
@@ -331,6 +443,16 @@ Special commands:
   grok s files list [path] [-r]                       List files (recursive with -r)
   grok s raw <METHOD> <path>                          Hit any API endpoint
   grok s describe <entity-type>                       Show entity JSON schema
+  grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
+                                                      Share an entity with one or more groups
+  grok s shares list <entity-id>                      List who an entity (UUID) is shared with
+  grok s users save --json user.json                  Create or update a user from a JSON file
+  grok s groups save --json group.json [--save-relations]
+                                                      Create or update a group from a JSON file
+  grok s connections save --json conn.json [--save-credentials]
+                                                      Create or update a connection from a JSON file
+  grok s connections test <id-or-name>                Test connectivity of an existing connection
+  grok s connections test --json conn.json            Test connectivity of a connection defined in JSON
   grok s groups add-members <group> <m>... [--admin]  Add one or more users/groups as members
   grok s groups remove-members <group> <m>...         Remove members (no-op if not a member)
   grok s groups list-members <group> [--admin]        List members (optionally filter by admin)
@@ -356,9 +478,16 @@ Batch manifest options (in manifest.json):
 Examples:
   grok s users list
   grok s users list --output json --limit 10
+  grok s users save --json user.json
+  grok s groups save --json group.json --save-relations
+  grok s shares add "JohnDoe:MyConnection" Chemists,Admins --access Edit
+  grok s shares list <entity-uuid>
   grok s connections list --filter "PostgreSQL"
   grok s connections get <id>
   grok s connections delete <id>
+  grok s connections save --json conn.json --save-credentials
+  grok s connections test "JohnDoe:MyConnection"
+  grok s connections test --json conn.json
   grok s functions run 'Chem:smilesToMw("ccc")'
   grok s functions run Chem:test --json params.json
   grok s files list "System:AppData" -r
