@@ -45,7 +45,7 @@ function getSettings(gc: DG.GridColumn): FormSettings {
   return settings;
 }
 
-let scene: Scene;
+const scenes = new WeakMap<DG.Grid, Scene>();
 
 /** Returns approximate length in characters of the longest value in the column. */
 function getMaxValueWidth(column: DG.Column): number {
@@ -217,20 +217,22 @@ export class FormCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseEnter(gridCell: DG.GridCell, e: MouseEvent): void {
-    scene = FormCellRenderer.makeScene(gridCell);
-    if (scene.elements.every((e) => e.bounds.width < 25 && e.bounds.height < 25)) {
-      setTimeout(() => ui.tooltip.show(this.makeBestScene(gridCell).toCanvas(),
-        gridCell.documentBounds.right, gridCell.documentBounds.top), 200);
+    const scene = FormCellRenderer.makeScene(gridCell);
+    scenes.set(gridCell.grid, scene);
+    if (scene.elements.every((el) => el.bounds.width < 25 && el.bounds.height < 25)) {
+      ui.tooltip.show(this.makeBestScene(gridCell).toCanvas(),
+        gridCell.documentBounds.right, gridCell.documentBounds.top, {delay: 200});
     }
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
-    const el = scene?.hitTest(e.offsetX, e.offsetY);
-    if (el?.style?.tooltip)
-      setTimeout(() => ui.tooltip.show(el.style!.tooltip!, e.x + 20, e.y - 20));
-    else
-      ui.tooltip.hide();
-    //super.onMouseMove(gridCell, e);
+    const el = scenes.get(gridCell.grid)?.hitTest(e.offsetX, e.offsetY);
+    ui.tooltip.show(el?.style?.tooltip ?? null, e.x + 20, e.y - 20, {delay: 200});
+  }
+
+  onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
+    scenes.delete(gridCell.grid);
+    ui.tooltip.hide();
   }
 
   onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void {
