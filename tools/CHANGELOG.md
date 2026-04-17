@@ -8,6 +8,7 @@
 * `grok s groups save` — create/update a group from a JSON file (`--save-relations` optional)
 * `grok s shares add` — share an entity with one or more groups (`--access View|Edit`)
 * `grok s shares list` — list who an entity is shared with
+* Tools: Normalize package name to lowercase in grok create, preserve original as friendlyName
 
 ## 5.1.3 (2026-02-03)
 
