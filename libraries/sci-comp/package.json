@@ -8,7 +8,7 @@
     "access": "public"
   },
   "license": "MIT",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "friendlyName": "Scientific Computing",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
