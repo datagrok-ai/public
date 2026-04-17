@@ -27,9 +27,13 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
 import {CallbackAction} from './solver-tools';
 
 import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
-  getCategoryWidget, getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
+  getCategoryWidget, getReducedTable, closeWindows, getEquationsFromFile,
   getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions,
-  extractIvpNameAndDescription} from './utils';
+  prefetchRecentModelsTable, getCachedRecentModelsTable, invalidateRecentCache,
+  prefetchMyModelFiles, getCachedMyModelFiles, invalidateMyModelFilesCache,
+  prefetchExternalLibraryEntries, getCachedExternalLibraryEntries,
+  prefetchFolderListing, getCachedFileInfo, invalidateFolderListing,
+  ExternalLibraryEntry} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
@@ -279,15 +283,6 @@ type LookupData = {
 export type UiOptions = {
   inputsTabDockRatio: number,
   graphsDockRatio: number,
-};
-
-/** External (custom) Library model entry resolved from external-models.json */
-type ExternalLibraryEntry = {
-  modelPath: string,
-  displayName: string,
-  description: string,
-  iconUrl: string,
-  helpUrl: string | undefined,
 };
 
 /** Solver of differential equations */
@@ -583,6 +578,9 @@ export class DiffStudio {
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing, dockOptions?: UiOptions) {
+    prefetchRecentModelsTable();
+    prefetchMyModelFiles();
+    prefetchExternalLibraryEntries(_package.webRoot);
     this.solverView = DG.TableView.create(this.solutionTable, false);
     if (toAddTableView) {
       grok.shell.windows.showToolbox = false;
@@ -949,6 +947,10 @@ export class DiffStudio {
 
       try {
         await grok.dapi.files.writeAsText(path, modelCode);
+        invalidateMyModelFilesCache();
+        prefetchMyModelFiles();
+        invalidateFolderListing(folder);
+        prefetchFolderListing(folder);
         await this.saveModelToRecent(path, true);
         grok.shell.info(`Model saved to ${path}`);
       } catch (error) {
@@ -1126,6 +1128,7 @@ export class DiffStudio {
         manifest.models.push({path: targetPath, icon: 'default.png'});
 
       await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(manifest, null, 2));
+      invalidateFolderListing(`${PATH.LIBRARY_FOLDER}/`);
 
       if (createdFileName !== null)
         grok.shell.info(`Saved to Library as ${createdFileName}`);
@@ -1831,19 +1834,26 @@ export class DiffStudio {
 
       // Add recent models to the Recent folder
       try {
-        const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
-        const files = await grok.dapi.files.list(folder);
-        const names = files.map((file) => file.name);
-
-        if (names.includes(PATH.RECENT)) {
-          const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
-          const recentDf = dfs[0];
-          const size = recentDf.rowCount;
+        const recentDf = await getCachedRecentModelsTable();
+        const size = recentDf.rowCount;
+        if (size > 0) {
           const infoCol = recentDf.col(TITLE.INFO);
           const isCustomCol = recentDf.col(TITLE.IS_CUST);
 
           if ((infoCol === null) || (isCustomCol === null))
             throw new Error('corrupted data file');
+
+          const uniqueFolders = new Set<string>();
+          for (let i = 0; i < size; ++i) {
+            if (isCustomCol.get(i)) {
+              const p: string = infoCol.get(i);
+              const idx = p.lastIndexOf('/');
+              if (idx >= 0)
+                uniqueFolders.add(p.slice(0, idx + 1));
+            }
+          }
+          for (const f of uniqueFolders)
+            prefetchFolderListing(f);
 
           for (let i = 0; i < size; ++i) {
             if (isCustomCol.get(i))
@@ -1948,7 +1958,8 @@ export class DiffStudio {
   /** Add model from ivp-file to browse tree folder */
   private async putCustomModelToRecents(path: string) {
     try {
-      if (!(await grok.dapi.files.exists(path)))
+      const file = await getCachedFileInfo(path);
+      if (!file)
         return;
 
       const idx = path.lastIndexOf('/');
@@ -1956,10 +1967,6 @@ export class DiffStudio {
       const item = this.recentFolder.item(name);
       const iconUrl = `${_package.webRoot}/files/icons/default.png`;
       ui.tooltip.bind(item.root, () => buildModelTooltip(name, path, iconUrl));
-
-      const folderPath = path.slice(0, idx + 1);
-      const fileList = await grok.dapi.files.list(folderPath);
-      const file = fileList.find((file) => file.nqName === path);
 
       item.root.addEventListener('contextmenu', (ev) => {
         ev.preventDefault();
@@ -2012,46 +2019,9 @@ export class DiffStudio {
     }
   } // putCustomModelToRecents
 
-  /** Load & resolve all external (custom) models registered in external-models.json */
-  private async getExternalLibraryEntries(): Promise<ExternalLibraryEntry[]> {
-    const entries: ExternalLibraryEntry[] = [];
-    try {
-      const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
-      if (!(await grok.dapi.files.exists(manifestPath)))
-        return entries;
-
-      const text = await grok.dapi.files.readAsText(manifestPath);
-      const parsed = JSON.parse(text);
-      if (!Array.isArray(parsed?.models))
-        return entries;
-
-      for (const entry of parsed.models) {
-        const modelPath: string | undefined = entry?.path;
-        const iconFile: string | undefined = entry?.icon;
-        const helpUrl: string | undefined = entry?.help;
-        if (!modelPath)
-          continue;
-
-        const content = await getEquationsFromFile(modelPath);
-        if (content === null)
-          continue;
-
-        const {name, description} = extractIvpNameAndDescription(content);
-        const fallbackName = modelPath.slice(modelPath.lastIndexOf('/') + 1);
-        const displayName = name || fallbackName;
-        const iconUrl = `${_package.webRoot}files/icons/${iconFile || 'default.png'}`;
-
-        entries.push({modelPath, displayName, description, iconUrl, helpUrl});
-      }
-    } catch {
-      // silently skip if the manifest is missing or malformed
-    }
-    return entries;
-  }
-
   /** Read external-models.json and add each registered model to the Library tree folder */
   private async addExternalModelsToFolder(folder: DG.TreeViewGroup): Promise<void> {
-    const entries = await this.getExternalLibraryEntries();
+    const entries = await getCachedExternalLibraryEntries(_package.webRoot);
     for (const e of entries)
       this.addExternalModelToFolder(folder, e.modelPath, e.displayName, e.description, e.iconUrl, e.helpUrl);
   }
@@ -2063,13 +2033,7 @@ export class DiffStudio {
     ui.tooltip.bind(item.root, () => buildModelTooltip(displayName, description, iconUrl));
 
     const openFile = async (asPreview: boolean) => {
-      if (!(await grok.dapi.files.exists(modelPath))) {
-        grok.shell.warning(`File not found: ${modelPath}`);
-        return;
-      }
-      const folderPath = modelPath.slice(0, modelPath.lastIndexOf('/') + 1);
-      const fileList = await grok.dapi.files.list(folderPath);
-      const file = fileList.find((f) => f.nqName === modelPath);
+      const file = await getCachedFileInfo(modelPath);
       if (!file) {
         grok.shell.warning(`File not found: ${modelPath}`);
         return;
@@ -2173,6 +2137,7 @@ export class DiffStudio {
           }
           entry.help = value;
           await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(parsed, null, 2));
+          invalidateFolderListing(`${PATH.LIBRARY_FOLDER}/`);
           dlg.close();
           grok.events.fireCustomEvent(LIBRARY_CHANGED_EVENT, null);
         } catch (e) {
@@ -2243,6 +2208,10 @@ export class DiffStudio {
           ]),
         ]);
       }
+
+      invalidateRecentCache();
+      prefetchRecentModelsTable();
+      invalidateFolderListing(folder);
     } catch (err) {
       grok.shell.warning(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
     }
@@ -2314,7 +2283,7 @@ export class DiffStudio {
       for (const name of EXAMPLE_TITLES)
         root.append(this.getCardWithBuiltInModel(name));
 
-      const entries = await this.getExternalLibraryEntries();
+      const entries = await getCachedExternalLibraryEntries(_package.webRoot);
       for (const entry of entries)
         root.append(this.getCardWithExternalModel(entry));
 
@@ -2362,26 +2331,33 @@ export class DiffStudio {
       const view = DG.View.create();
 
       try {
-        const folderPath = `${grok.shell.user.project.name}:${PATH.HOME}/`;
-        const files = await grok.dapi.files.list(folderPath);
-        const names = files.map((file) => file.name);
+        const recentDf = await getCachedRecentModelsTable();
+        const size = recentDf.rowCount;
 
-        if (names.includes(PATH.RECENT)) {
+        if (size > 0) {
           const root = ui.div([]);
-
-          const dfs = await grok.dapi.files.readBinaryDataFrames(`${folderPath}${PATH.RECENT}`);
-          const recentDf = dfs[0];
-          const size = recentDf.rowCount;
           const infoCol = recentDf.col(TITLE.INFO);
           const isCustomCol = recentDf.col(TITLE.IS_CUST);
 
           if ((infoCol === null) || (isCustomCol === null))
             throw new Error('corrupted data file');
 
+          const uniqueFolders = new Set<string>();
+          for (let i = 0; i < size; ++i) {
+            if (isCustomCol.get(i)) {
+              const p: string = infoCol.get(i);
+              const idx = p.lastIndexOf('/');
+              if (idx >= 0)
+                uniqueFolders.add(p.slice(0, idx + 1));
+            }
+          }
+          for (const f of uniqueFolders)
+            prefetchFolderListing(f);
+
           for (let i = 0; i < size; ++i) {
             if (isCustomCol.get(i)) {
               const path: string = infoCol.get(i);
-              if (!(await grok.dapi.files.exists(path)))
+              if (!(await getCachedFileInfo(path)))
                 continue;
               root.append(await this.getCardWithCustomModel(path));
             } else
@@ -2511,9 +2487,7 @@ export class DiffStudio {
         ui.divText(HINT.DBL_CLICK_RUN),
       ]));
 
-      const folderPath = path.slice(0, idx + 1);
-      const fileList = await grok.dapi.files.list(folderPath);
-      const file = fileList.find((file) => file.nqName === path);
+      const file = await getCachedFileInfo(path);
 
       const run = async () => {
         const solver = new DiffStudio(false, true, true);
@@ -2552,13 +2526,7 @@ export class DiffStudio {
     ui.tooltip.bind(card, () => buildModelTooltip(displayName, description, iconUrl));
 
     const run = async () => {
-      if (!(await grok.dapi.files.exists(modelPath))) {
-        grok.shell.warning(`File not found: ${modelPath}`);
-        return;
-      }
-      const folderPath = modelPath.slice(0, modelPath.lastIndexOf('/') + 1);
-      const fileList = await grok.dapi.files.list(folderPath);
-      const file = fileList.find((f) => f.nqName === modelPath);
+      const file = await getCachedFileInfo(modelPath);
       if (!file) {
         grok.shell.warning(`File not found: ${modelPath}`);
         return;
@@ -2580,14 +2548,10 @@ export class DiffStudio {
     const lastModel: LastModel = {info: TITLE.BASIC, isCustom: false};
 
     try {
-      const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
-      const files = await grok.dapi.files.list(folder);
-      const names = files.map((file) => file.name);
+      const recentDf = await getCachedRecentModelsTable();
+      const size = recentDf.rowCount;
 
-      if (names.includes(PATH.RECENT)) {
-        const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
-        const recentDf = dfs[0];
-        const size = recentDf.rowCount;
+      if (size > 0) {
         const infoCol = recentDf.col(TITLE.INFO);
         const isCustomCol = recentDf.col(TITLE.IS_CUST);
 
@@ -2652,7 +2616,7 @@ export class DiffStudio {
   /** Append external (manifest-registered) library models to the Library menu group */
   private async appendMenuWithExternalLibraryModels(menu: DG.Menu): Promise<void> {
     try {
-      const entries = await this.getExternalLibraryEntries();
+      const entries = await getCachedExternalLibraryEntries(_package.webRoot);
       for (const entry of entries) {
         menu.item(entry.displayName, async () => {
           try {
@@ -2678,7 +2642,7 @@ export class DiffStudio {
   /** Append menu with my and recent models */
   private async appendMenuWithRecentModels(menu: DG.Menu) {
     try {
-      const recentDf = await getRecentModelsTable();
+      const recentDf = await getCachedRecentModelsTable();
       const size = recentDf.rowCount;
       const infoCol = recentDf.col(TITLE.INFO);
       const isCustomCol = recentDf.col(TITLE.IS_CUST);
@@ -2688,6 +2652,18 @@ export class DiffStudio {
           menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.CORRUPTED_DATA_FILE});
           return;
         }
+
+        const uniqueFolders = new Set<string>();
+        for (let i = 0; i < size; ++i) {
+          if (isCustomCol.get(i)) {
+            const p: string = infoCol.get(i);
+            const idx = p.lastIndexOf('/');
+            if (idx >= 0)
+              uniqueFolders.add(p.slice(0, idx + 1));
+          }
+        }
+        for (const f of uniqueFolders)
+          prefetchFolderListing(f);
 
         const submenu = menu.group(TITLE.RECENT);
 
@@ -2719,43 +2695,44 @@ export class DiffStudio {
     }, null, {description: MODEL_HINT.get(name) ?? ''});
   }
 
-  /** Append menu with custom model */
+  /** Append menu item for a custom model by path (checks existence via cached folder listing) */
   private async appendMenuWithCustomModel(menu: DG.Menu, path: TITLE) {
     try {
-      if (await grok.dapi.files.exists(path)) {
-        const idx = path.lastIndexOf('/');
-        const name = path.slice(idx + 1, path.length);
-        const folderPath = path.slice(0, idx + 1);
-        const fileList = await grok.dapi.files.list(folderPath);
-        const file = fileList.find((file) => file.nqName === path);
-
-        menu.item(name, async () => {
-          try {
-            const equations = await file.readAsString();
-            this.mainPath = `${PATH.FILE}/${path}`;
-            this.entityPath = '';
-            await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
-            await this.saveModelToRecent(path, true);
-          } catch (err) {
-            grok.shell.warning(`File not found: ${path}`);
-          }
-        }, null, {description: path});
-      }
+      const file = await getCachedFileInfo(path);
+      if (!file)
+        return;
+      this.appendMenuWithCustomModelByFile(menu, file);
     } catch (e) {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
   } // appendMenuWithCustomModel
 
+  /** Append menu item for a custom model using an already-resolved FileInfo (no extra I/O at build time) */
+  private appendMenuWithCustomModelByFile(menu: DG.Menu, file: DG.FileInfo) {
+    const path = file.fullPath;
+    menu.item(file.name, async () => {
+      try {
+        const equations = await file.readAsString();
+        this.mainPath = `${PATH.FILE}/${path}`;
+        this.entityPath = '';
+        await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
+        await this.saveModelToRecent(path, true);
+      } catch (err) {
+        grok.shell.warning(`File not found: ${path}`);
+      }
+    }, null, {description: path});
+  }
+
   /** Append menu with models from user's files */
   private async appendMenuWithMyModels(menu: DG.Menu) {
     try {
-      const myModelFiles = await getMyModelFiles();
+      const myModelFiles = await getCachedMyModelFiles();
       if (myModelFiles.length < 1)
         menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.NO_MY_MODELS});
       else {
         const submenu = menu.group(TITLE.MY_MODELS);
         for (const file of myModelFiles)
-          await this.appendMenuWithCustomModel(submenu, file.fullPath as TITLE);
+          this.appendMenuWithCustomModelByFile(submenu, file);
         submenu.endGroup();
       }
     } catch (err) {

@@ -7,7 +7,9 @@ import * as ui from 'datagrok-api/ui';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 
 import {_package} from './package';
-import {getRecentModelsTable, getEquationsFromFile, extractIvpNameAndDescription} from './utils';
+import {getCachedRecentModelsTable, prefetchRecentModelsTable,
+  getCachedExternalLibraryEntries, prefetchExternalLibraryEntries,
+  getCachedFileInfo, prefetchFolderListing, invalidateFolderListing} from './utils';
 import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC, PATH, LINK,
   LIBRARY_CHANGED_EVENT} from './ui-constants';
 import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE, getLink} from './app';
@@ -22,6 +24,8 @@ export class DiffStudioHub {
   view: DG.View;
 
   constructor() {
+    prefetchRecentModelsTable();
+    prefetchExternalLibraryEntries(_package.webRoot);
     this.view = DG.View.fromRoot(this.root);
     this.view.name = this.name;
     this.view.helpUrl = LINK.DIF_STUDIO_REL;
@@ -107,7 +111,7 @@ export class DiffStudioHub {
   /** Build the "Recent" section from the recent models table */
   private async buildRecent(): Promise<void> {
     try {
-      const recentDf = await getRecentModelsTable();
+      const recentDf = await getCachedRecentModelsTable();
       if (recentDf.rowCount === 0)
         return;
 
@@ -116,13 +120,25 @@ export class DiffStudioHub {
       if (!infoCol || !isCustomCol)
         return;
 
+      const uniqueFolders = new Set<string>();
+      for (let i = 0; i < recentDf.rowCount; ++i) {
+        if (isCustomCol.get(i)) {
+          const p: string = infoCol.get(i);
+          const idx = p.lastIndexOf('/');
+          if (idx >= 0)
+            uniqueFolders.add(p.slice(0, idx + 1));
+        }
+      }
+      for (const f of uniqueFolders)
+        prefetchFolderListing(f);
+
       const cards: HTMLElement[] = [];
       for (let i = 0; i < recentDf.rowCount; ++i) {
         const info: string = infoCol.get(i);
         const isCustom: boolean = isCustomCol.get(i);
 
         if (isCustom) {
-          if (!(await grok.dapi.files.exists(info)))
+          if (!(await getCachedFileInfo(info)))
             continue;
           const idx = info.lastIndexOf('/');
           const name = info.slice(idx + 1);
@@ -197,35 +213,11 @@ export class DiffStudioHub {
   private async buildExternalModelCards(): Promise<HTMLElement[]> {
     const cards: HTMLElement[] = [];
     try {
-      const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
-      if (!(await grok.dapi.files.exists(manifestPath)))
-        return cards;
-
-      const text = await grok.dapi.files.readAsText(manifestPath);
-      const parsed = JSON.parse(text);
-      if (!Array.isArray(parsed?.models))
-        return cards;
-
-      for (const entry of parsed.models) {
-        const modelPath: string | undefined = entry?.path;
-        const iconFile: string | undefined = entry?.icon;
-        const helpUrl: string | undefined = entry?.help;
-        if (!modelPath)
-          continue;
-
-        const content = await getEquationsFromFile(modelPath);
-        if (content === null)
-          continue;
-
-        const {name, description} = extractIvpNameAndDescription(content);
-        const fallbackName = modelPath.slice(modelPath.lastIndexOf('/') + 1);
-        const displayName = name || fallbackName;
-        const iconUrl = `${_package.webRoot}files/icons/${iconFile || 'default.png'}`;
-
-        const run = () => this.openFileAsPreview(modelPath);
-
-        const card = this.buildModelCard(displayName, description, run, iconUrl);
-        this.addCustomModelContextMenu(card, modelPath, helpUrl, run);
+      const entries = await getCachedExternalLibraryEntries(_package.webRoot);
+      for (const entry of entries) {
+        const run = () => this.openFileAsPreview(entry.modelPath);
+        const card = this.buildModelCard(entry.displayName, entry.description, run, entry.iconUrl);
+        this.addCustomModelContextMenu(card, entry.modelPath, entry.helpUrl, run);
         cards.push(card);
       }
     } catch {
@@ -236,13 +228,7 @@ export class DiffStudioHub {
 
   /** Open an IVP file as a Diff Studio preview */
   private async openFileAsPreview(path: string): Promise<void> {
-    if (!(await grok.dapi.files.exists(path))) {
-      grok.shell.warning(`File not found: ${path}`);
-      return;
-    }
-    const folderPath = path.slice(0, path.lastIndexOf('/') + 1);
-    const fileList = await grok.dapi.files.list(folderPath);
-    const file = fileList.find((f) => f.nqName === path);
+    const file = await getCachedFileInfo(path);
     if (!file) {
       grok.shell.warning(`File not found: ${path}`);
       return;
@@ -293,6 +279,7 @@ export class DiffStudioHub {
           }
           entry.help = value;
           await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(parsed, null, 2));
+          invalidateFolderListing(`${PATH.LIBRARY_FOLDER}/`);
           dlg.close();
           grok.events.fireCustomEvent(LIBRARY_CHANGED_EVENT, null);
           await this.render();

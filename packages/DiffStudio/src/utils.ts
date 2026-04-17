@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH, UI_TIME} from './ui-constants';
+import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH, UI_TIME,
+  LIBRARY_CHANGED_EVENT} from './ui-constants';
 import {CONTROL_EXPR, METHOD_KEY_WORD} from './constants';
 import {CONTROL_SEP, BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR} from './scripting-tools';
 import {DEFAULT_OPTIONS} from './solver-tools';
@@ -265,31 +266,187 @@ export async function getRecentModelsTable(): Promise<DG.DataFrame> {
   return dfs[0];
 }
 
+let recentDfPromise: Promise<DG.DataFrame> | null = null;
+
+/** Kick off (or reuse) a background read of the recent-models dataframe */
+export function prefetchRecentModelsTable(): void {
+  if (recentDfPromise !== null)
+    return;
+  recentDfPromise = getRecentModelsTable().catch((e) => {
+    recentDfPromise = null;
+    throw e;
+  });
+}
+
+/** Get memoized recent-models dataframe; deduplicates concurrent callers */
+export function getCachedRecentModelsTable(): Promise<DG.DataFrame> {
+  if (recentDfPromise === null)
+    prefetchRecentModelsTable();
+  return recentDfPromise!;
+}
+
+/** Drop cached recent-models promise so the next read re-hits storage */
+export function invalidateRecentCache(): void {
+  recentDfPromise = null;
+}
+
 /** Return model files from user's home */
 export async function getMyModelFiles(): Promise<DG.FileInfo[]> {
   const folder = `${grok.shell.user.project.name}:Home/`;
   return await grok.dapi.files.list(folder, true, MISC.MODEL_FILE_EXT);
 }
 
+let myModelFilesPromise: Promise<DG.FileInfo[]> | null = null;
+
+/** Kick off (or reuse) a background read of the user's model files */
+export function prefetchMyModelFiles(): void {
+  if (myModelFilesPromise !== null)
+    return;
+  myModelFilesPromise = getMyModelFiles().catch((e) => {
+    myModelFilesPromise = null;
+    throw e;
+  });
+}
+
+/** Get memoized user's model files; deduplicates concurrent callers */
+export function getCachedMyModelFiles(): Promise<DG.FileInfo[]> {
+  if (myModelFilesPromise === null)
+    prefetchMyModelFiles();
+  return myModelFilesPromise!;
+}
+
+/** Drop cached my-models promise so the next read re-hits storage */
+export function invalidateMyModelFilesCache(): void {
+  myModelFilesPromise = null;
+}
+
 /** Get equations from file */
 export async function getEquationsFromFile(path: string): Promise<string | null> {
   try {
-    const exist = await grok.dapi.files.exists(path);
-    const idx = path.lastIndexOf('/');
-    const folderPath = path.slice(0, idx + 1);
-    let file: DG.FileInfo;
-
-    if (exist) {
-      const fileList = await grok.dapi.files.list(folderPath);
-      file = fileList.find((file) => file.nqName === path);
-
-      return await file.readAsString();
-    } else
-      return null;
-  } catch (e) {
+    return await grok.dapi.files.readAsText(path);
+  } catch {
     return null;
   }
 }
+
+const folderListingCache = new Map<string, Promise<DG.FileInfo[]>>();
+
+/** Get memoized non-recursive listing of a folder; deduplicates concurrent callers */
+export function getCachedFolderListing(folderPath: string): Promise<DG.FileInfo[]> {
+  let p = folderListingCache.get(folderPath);
+  if (!p) {
+    p = grok.dapi.files.list(folderPath).catch((e) => {
+      folderListingCache.delete(folderPath);
+      throw e;
+    });
+    folderListingCache.set(folderPath, p);
+  }
+  return p;
+}
+
+/** Kick off (or reuse) a background listing of a folder */
+export function prefetchFolderListing(folderPath: string): void {
+  void getCachedFolderListing(folderPath);
+}
+
+/** Drop cached listing for a folder so the next read re-hits storage */
+export function invalidateFolderListing(folderPath: string): void {
+  folderListingCache.delete(folderPath);
+}
+
+/** Resolve a FileInfo for a given full path via the folder-listing cache; null if not present */
+export async function getCachedFileInfo(path: string): Promise<DG.FileInfo | null> {
+  const idx = path.lastIndexOf('/');
+  if (idx < 0)
+    return null;
+  const folder = path.slice(0, idx + 1);
+  try {
+    const listing = await getCachedFolderListing(folder);
+    return listing.find((f) => f.nqName === path) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** External (custom) Library model entry resolved from external-models.json */
+export type ExternalLibraryEntry = {
+  modelPath: string,
+  displayName: string,
+  description: string,
+  iconUrl: string,
+  helpUrl: string | undefined,
+};
+
+/** Load & resolve all external (custom) models registered in external-models.json */
+export async function getExternalLibraryEntries(webRoot: string): Promise<ExternalLibraryEntry[]> {
+  const entries: ExternalLibraryEntry[] = [];
+  try {
+    const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+    if (!(await grok.dapi.files.exists(manifestPath)))
+      return entries;
+
+    const text = await grok.dapi.files.readAsText(manifestPath);
+    const parsed = JSON.parse(text);
+    if (!Array.isArray(parsed?.models))
+      return entries;
+
+    for (const entry of parsed.models) {
+      const modelPath: string | undefined = entry?.path;
+      const iconFile: string | undefined = entry?.icon;
+      const helpUrl: string | undefined = entry?.help;
+      if (!modelPath)
+        continue;
+
+      const content = await getEquationsFromFile(modelPath);
+      if (content === null)
+        continue;
+
+      const {name, description} = extractIvpNameAndDescription(content);
+      const fallbackName = modelPath.slice(modelPath.lastIndexOf('/') + 1);
+      const displayName = name || fallbackName;
+      const iconUrl = `${webRoot}files/icons/${iconFile || 'default.png'}`;
+
+      entries.push({modelPath, displayName, description, iconUrl, helpUrl});
+    }
+  } catch {
+    // silently skip if manifest is missing or malformed
+  }
+  return entries;
+}
+
+let externalEntriesPromise: Promise<ExternalLibraryEntry[]> | null = null;
+let externalEntriesWebRoot: string | null = null;
+
+/** Kick off (or reuse) a background resolution of external library entries */
+export function prefetchExternalLibraryEntries(webRoot: string): void {
+  externalEntriesWebRoot = webRoot;
+  if (externalEntriesPromise !== null)
+    return;
+  externalEntriesPromise = getExternalLibraryEntries(webRoot).catch((e) => {
+    externalEntriesPromise = null;
+    throw e;
+  });
+}
+
+/** Get memoized external library entries; deduplicates concurrent callers */
+export function getCachedExternalLibraryEntries(webRoot: string): Promise<ExternalLibraryEntry[]> {
+  if (externalEntriesPromise === null || externalEntriesWebRoot !== webRoot)
+    prefetchExternalLibraryEntries(webRoot);
+  return externalEntriesPromise!;
+}
+
+/** Drop cached external entries promise so the next read re-hits storage */
+export function invalidateExternalLibraryEntriesCache(): void {
+  externalEntriesPromise = null;
+}
+
+// Central invalidation: whenever external-models.json changes, drop the cache
+// and kick off a fresh background resolution (if webRoot is known).
+grok.events.onCustomEvent(LIBRARY_CHANGED_EVENT).subscribe(() => {
+  invalidateExternalLibraryEntriesCache();
+  if (externalEntriesWebRoot !== null)
+    prefetchExternalLibraryEntries(externalEntriesWebRoot);
+});
 
 /** Extract `#name:` and `#description:` from an .ivp file content */
 export function extractIvpNameAndDescription(content: string): {name: string, description: string} {
