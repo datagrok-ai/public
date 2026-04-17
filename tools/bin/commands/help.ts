@@ -388,10 +388,20 @@ Verbs:
   delete    Delete an entity by ID
 
 Special commands:
-  grok s functions run <Name:func(args)>   Call a function
-  grok s files list [path] [-r]            List files (recursive with -r)
-  grok s raw <METHOD> <path>               Hit any API endpoint
-  grok s describe <entity-type>            Show entity JSON schema
+  grok s functions run <Name:func(args)>             Call a function
+  grok s files list [path] [-r]                      List files (recursive with -r)
+  grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
+                                                     Share an entity with groups
+  grok s shares list <entity-id>                     List who an entity (UUID) is shared with
+  grok s users save --json user.json                 Create or update a user from JSON
+  grok s groups save --json group.json [--save-relations]
+                                                     Create or update a group from JSON
+  grok s connections save --json conn.json [--save-credentials]
+                                                     Create or update a connection from JSON
+  grok s connections test <id-or-name>               Test connectivity of an existing connection
+  grok s connections test --json conn.json           Test connectivity of a connection defined in JSON
+  grok s raw <METHOD> <path>                         Hit any API endpoint
+  grok s describe <entity-type>                      Show entity JSON schema
 
 Options:
   --host <alias|url>    Server alias from config or full URL
@@ -407,6 +417,13 @@ Examples:
   grok s connections list --filter "PostgreSQL" --output json
   grok s connections get <id>
   grok s connections delete <id>
+  grok s connections save --json conn.json --save-credentials
+  grok s connections test "JohnDoe:MyConnection"
+  grok s connections test --json conn.json
+  grok s users save --json user.json
+  grok s groups save --json group.json --save-relations
+  grok s shares add "JohnDoe:MyConnection" Chemists,Admins --access Edit
+  grok s shares list <entity-uuid>
   grok s functions run 'Chem:smilesToMw("ccc")'
   grok s files list "System:AppData" -r
   grok s raw GET /api/users/current
