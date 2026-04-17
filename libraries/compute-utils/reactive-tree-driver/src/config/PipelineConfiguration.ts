@@ -138,6 +138,9 @@ export type ActionInfo = {
   confirmationMessage?: string;
   icon?: string;
   runOnInit?: undefined;
+  /** Show this action on a specific child step instead of where it's defined.
+   *  Uses configId of the target step. The action's from/to still resolve at definition scope. */
+  visibleOn?: string;
 };
 
 export type DataActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {

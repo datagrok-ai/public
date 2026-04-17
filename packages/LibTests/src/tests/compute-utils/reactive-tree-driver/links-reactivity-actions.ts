@@ -702,4 +702,310 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       expectObservable(outputs$, '^ 1000ms !').toBe('-a', {a: new Set(['out1'])});
     });
   });
+
+  test('Pipeline action with visibleOn routes to child step', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+        },
+      ],
+      actions: [{
+        id: 'action1',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
+        position: 'buttons',
+        visibleOn: 'step2',
+        handler({controller}) {
+          controller.setAll('out1', controller.getFirst('in1'));
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+
+      // The action should be visible on step2, not on the pipeline root
+      const step2Node = tree.nodeTree.getNode([{idx: 1}]);
+      const step2Actions = tree.linksState.getNodeActionsData(step2Node.getItem().uuid);
+      expectDeepEqual(step2Actions?.length, 1);
+      expectDeepEqual(step2Actions?.[0].id, 'action1');
+      expectDeepEqual(step2Actions?.[0].position, 'buttons');
+
+      // Pipeline root should have no actions
+      const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
+      expectDeepEqual(rootActions, undefined);
+
+      // The action should still work — it resolves from/to at pipeline level
+      const action = [...tree.linksState.actions.values()][0];
+      const step1Node = tree.nodeTree.getNode([{idx: 0}]);
+
+      // Set step1 output, then run the action to copy it to step2
+      cold('-a').subscribe(() => {
+        step1Node.getItem().getStateStore().editState('res', 42);
+      });
+      cold('--a').subscribe(() => {
+        tree.runAction(action.uuid);
+      });
+      expectObservable(step2Node.getItem().getStateStore().getStateChanges('a')).toBe('a-b', {a: undefined, b: 42});
+    });
+  });
+
+  test('Pipeline action with visibleOn routes to deeply nested step', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'nestedPipeline',
+          type: 'static',
+          steps: [
+            {
+              id: 'innerStep1',
+              nqName: 'LibTests:TestAdd2',
+            },
+            {
+              id: 'innerStep2',
+              nqName: 'LibTests:TestMul2',
+            },
+          ],
+        },
+      ],
+      actions: [{
+        id: 'action1',
+        from: 'in1:nestedPipeline/innerStep1/res',
+        to: 'out1:nestedPipeline/innerStep2/a',
+        position: 'buttons',
+        visibleOn: 'innerStep2',
+        handler({controller}) {
+          controller.setAll('out1', controller.getFirst('in1'));
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+
+      // innerStep2 is at path [nestedPipeline, innerStep2]
+      const innerStep2Node = tree.nodeTree.getNode([{idx: 0}, {idx: 1}]);
+      const innerStep2Actions = tree.linksState.getNodeActionsData(innerStep2Node.getItem().uuid);
+      expectDeepEqual(innerStep2Actions?.length, 1);
+      expectDeepEqual(innerStep2Actions?.[0].id, 'action1');
+
+      // Root and nestedPipeline should have no actions
+      const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
+      expectDeepEqual(rootActions, undefined);
+      const nestedActions = tree.linksState.getNodeActionsData(tree.nodeTree.getNode([{idx: 0}]).getItem().uuid);
+      expectDeepEqual(nestedActions, undefined);
+
+      // Action should still work across the nested boundary
+      const innerStep1Node = tree.nodeTree.getNode([{idx: 0}, {idx: 0}]);
+      cold('-a').subscribe(() => {
+        innerStep1Node.getItem().getStateStore().editState('res', 77);
+      });
+      cold('--a').subscribe(() => {
+        const action = [...tree.linksState.actions.values()][0];
+        tree.runAction(action.uuid);
+      });
+      expectObservable(innerStep2Node.getItem().getStateStore().getStateChanges('a')).toBe('a-b', {a: undefined, b: 77});
+    });
+  });
+
+  test('FuncCall action with visibleOn routes to child step', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+          initialValues: {
+            a: 1,
+            b: 2,
+          },
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+          initialValues: {
+            a: 3,
+            b: 4,
+          },
+        },
+      ],
+      actions: [{
+        id: 'action1',
+        type: 'funccall',
+        from: ['a:step1/a', 'b:step1/b', 'fc(call):step2'],
+        to: 'out(call):step2',
+        position: 'buttons',
+        visibleOn: 'step1',
+        async handler({controller}) {
+          const a = controller.getFirst('a');
+          const b = controller.getFirst('b');
+          const fc = controller.getFirst('fc');
+          expectDeepEqual(fc instanceof DG.FuncCall, true);
+          const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
+          const nfc = func.prepare({a: a + 10, b: b + 10});
+          controller.setFuncCall('out', nfc);
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: false});
+    await tree.init().toPromise();
+
+    // Action should be visible on step1, not on pipeline root
+    const step1Node = tree.nodeTree.getNode([{idx: 0}]);
+    const step1Actions = tree.linksState.getNodeActionsData(step1Node.getItem().uuid);
+    expectDeepEqual(step1Actions?.length, 1);
+    expectDeepEqual(step1Actions?.[0].id, 'action1');
+    expectDeepEqual(step1Actions?.[0].position, 'buttons');
+
+    const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
+    expectDeepEqual(rootActions, undefined);
+
+    // Action should still work — replaces step2's FuncCall
+    const action = [...tree.linksState.actions.values()][0];
+    await tree.runAction(action.uuid).toPromise();
+    await tree.treeMutationsLocked$.pipe(filter((x) => !x), take(1)).toPromise();
+    const step2Node = tree.nodeTree.getNode([{idx: 1}]);
+    const a = step2Node.getItem().getStateStore().getState('a');
+    const b = step2Node.getItem().getStateStore().getState('b');
+    expectDeepEqual(a, 11);
+    expectDeepEqual(b, 12);
+  });
+
+  test('Pipeline mutation action with visibleOn routes to child step', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'nestedPipeline1',
+          type: 'parallel',
+          stepTypes: [
+            {
+              id: 'step1',
+              nqName: 'LibTests:TestAdd2',
+            },
+          ],
+          initialSteps: [
+            {
+              id: 'step1',
+            },
+          ],
+        },
+        {
+          id: 'step',
+          nqName: 'LibTests:TestSub2',
+        },
+      ],
+      actions: [{
+        id: 'action1',
+        from: [],
+        position: 'buttons',
+        to: 'out1:nestedPipeline1',
+        type: 'pipeline',
+        visibleOn: 'step',
+        handler({controller}) {
+          controller.setPipelineState('out1',
+            {
+              id: 'nestedPipeline1',
+              steps: [
+                {
+                  id: 'step1',
+                  initialValues: {a: 5},
+                },
+                {
+                  id: 'step1',
+                  initialValues: {a: 10},
+                },
+              ],
+            },
+          );
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: false});
+    await tree.init().toPromise();
+
+    // Action should be visible on 'step', not on pipeline root
+    const stepNode = tree.nodeTree.getNode([{idx: 1}]);
+    const stepActions = tree.linksState.getNodeActionsData(stepNode.getItem().uuid);
+    expectDeepEqual(stepActions?.length, 1);
+    expectDeepEqual(stepActions?.[0].id, 'action1');
+    expectDeepEqual(stepActions?.[0].position, 'buttons');
+
+    const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
+    expectDeepEqual(rootActions, undefined);
+
+    // Action should still work — mutates nestedPipeline1
+    const action = [...tree.linksState.actions.values()][0];
+    await tree.runAction(action.uuid).toPromise();
+    const nestedNode = tree.nodeTree.getNode([{idx: 0}]);
+    const children = nestedNode.getChildren();
+    expectDeepEqual(children.length, 2);
+    const child1Val = tree.nodeTree.getNode([{idx: 0}, {idx: 0}]).getItem().getStateStore().getState('a');
+    const child2Val = tree.nodeTree.getNode([{idx: 0}, {idx: 1}]).getItem().getStateStore().getState('a');
+    expectDeepEqual(child1Val, 5);
+    expectDeepEqual(child2Val, 10);
+  });
+
+  test('Pipeline action without visibleOn stays on pipeline node', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+      ],
+      actions: [{
+        id: 'action1',
+        from: 'in1:step1/a',
+        to: 'out1:step1/a',
+        position: 'buttons',
+        handler({controller}) {
+          controller.setAll('out1', 99);
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+
+      // Without visibleOn, action stays on pipeline root
+      const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
+      expectDeepEqual(rootActions?.length, 1);
+      expectDeepEqual(rootActions?.[0].id, 'action1');
+
+      // step1 should have no actions
+      const step1Node = tree.nodeTree.getNode([{idx: 0}]);
+      const step1Actions = tree.linksState.getNodeActionsData(step1Node.getItem().uuid);
+      expectDeepEqual(step1Actions, undefined);
+    });
+  });
 });
