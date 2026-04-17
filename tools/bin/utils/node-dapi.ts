@@ -137,6 +137,134 @@ export class NodeHttpDataSource<T = any> {
   }
 }
 
+export type MemberAddStatus = 'added' | 'updated' | 'noop' | 'error';
+export type MemberRemoveStatus = 'removed' | 'not-member' | 'error';
+
+export interface MemberAddResult {
+  member: string;
+  status: MemberAddStatus;
+  error?: string;
+}
+
+export interface MemberRemoveResult {
+  member: string;
+  status: MemberRemoveStatus;
+  error?: string;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export class NodeGroupsDataSource extends NodeHttpDataSource {
+  constructor(client: NodeApiClient) { super(client, 'groups'); }
+
+  async save(group: any, saveRelations: boolean = false): Promise<any> {
+    const q = buildQuery({saveRelations: saveRelations ? 'true' : undefined});
+    return this.client.post(`/public/v1/groups${q}`, group);
+  }
+
+  async lookup(name: string): Promise<any[]> {
+    const q = buildQuery({query: name});
+    return this.client.get(`/public/v1/groups/lookup${q}`);
+  }
+
+  async resolve(idOrName: string, opts: {personalOnly?: boolean} = {}): Promise<any> {
+    if (UUID_RE.test(idOrName))
+      return this.find(idOrName);
+    const matches: any[] = await this.lookup(idOrName);
+    let candidates = matches;
+    if (opts.personalOnly)
+      candidates = matches.filter((g) => g?.personal === true);
+    if (!candidates.length) {
+      const suffix = opts.personalOnly ? ' (personal)' : '';
+      throw new Error(`No group matching '${idOrName}'${suffix}`);
+    }
+    if (candidates.length > 1) {
+      const list = candidates.map((g) => `  ${g.id}  ${g.friendlyName ?? g.name ?? ''}`).join('\n');
+      throw new Error(`Multiple groups match '${idOrName}':\n${list}\nUse the ID to disambiguate.`);
+    }
+    return candidates[0];
+  }
+
+  async addMembers(group: string, members: string[], isAdmin: boolean = false, personalOnly: boolean = false): Promise<MemberAddResult[]> {
+    const parent = await this.resolve(group);
+    const children: any[] = Array.isArray(parent.children) ? parent.children : [];
+    const results: MemberAddResult[] = [];
+    let mutated = false;
+
+    for (const m of members) {
+      let child: any;
+      try {
+        child = await this.resolve(m, {personalOnly});
+      } catch (err: any) {
+        results.push({member: m, status: 'error', error: err?.message ?? String(err)});
+        continue;
+      }
+      const existing = children.find((r) => r?.child?.id === child.id);
+      if (existing) {
+        if (existing.isAdmin === isAdmin) {
+          results.push({member: m, status: 'noop'});
+        } else {
+          existing.isAdmin = isAdmin;
+          mutated = true;
+          results.push({member: m, status: 'updated'});
+        }
+      } else {
+        children.push({parent: {id: parent.id}, child: {id: child.id}, isAdmin});
+        mutated = true;
+        results.push({member: m, status: 'added'});
+      }
+    }
+
+    if (mutated) {
+      parent.children = children;
+      await this.save(parent, true);
+    }
+    return results;
+  }
+
+  async removeMembers(group: string, members: string[], personalOnly: boolean = false): Promise<MemberRemoveResult[]> {
+    const parent = await this.resolve(group);
+    const results: MemberRemoveResult[] = [];
+    const children: any[] = Array.isArray(parent.children) ? parent.children : [];
+    let mutated = false;
+    for (const m of members) {
+      let child: any;
+      try {
+        child = await this.resolve(m, {personalOnly});
+      } catch (err: any) {
+        results.push({member: m, status: 'error', error: err?.message ?? String(err)});
+        continue;
+      }
+      const idx = children.findIndex((r) => r?.child?.id === child.id);
+      if (idx === -1) {
+        results.push({member: m, status: 'not-member'});
+      } else {
+        children.splice(idx, 1);
+        mutated = true;
+        results.push({member: m, status: 'removed'});
+      }
+    }
+
+    if (mutated) {
+      parent.children = children;
+      await this.save(parent, true);
+    }
+    return results;
+  }
+
+  async getMembers(group: string, admin?: boolean): Promise<any[]> {
+    const parent = await this.resolve(group);
+    const q = buildQuery({admin: admin === undefined ? undefined : String(admin)});
+    return this.client.get(`/public/v1/groups/${encodeURIComponent(parent.id)}/members${q}`);
+  }
+
+  async getMemberships(group: string, admin?: boolean): Promise<any[]> {
+    const parent = await this.resolve(group);
+    const q = buildQuery({admin: admin === undefined ? undefined : String(admin)});
+    return this.client.get(`/public/v1/groups/${encodeURIComponent(parent.id)}/memberships${q}`);
+  }
+}
+
 export class NodeFuncsDataSource extends NodeHttpDataSource {
   async run(name: string, params?: Record<string, any>): Promise<any> {
     const normalizedName = name.replace(':', '.');
@@ -189,7 +317,7 @@ export class NodeDapi {
   constructor(private client: NodeApiClient) {}
 
   get users(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'users'); }
-  get groups(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'groups'); }
+  get groups(): NodeGroupsDataSource { return new NodeGroupsDataSource(this.client); }
   get functions(): NodeFuncsDataSource { return new NodeFuncsDataSource(this.client, 'functions'); }
   get connections(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'connections'); }
   get queries(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'queries'); }

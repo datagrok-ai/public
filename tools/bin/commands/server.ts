@@ -55,6 +55,10 @@ export async function server(argv: any): Promise<boolean> {
       if (output !== 'quiet') console.log(`Deleted ${rest[0]}`);
       return true;
     }
+    if (entity === 'groups' && verb === 'add-members') return handleGroupAddMembers(dapi, rest, argv, output);
+    if (entity === 'groups' && verb === 'remove-members') return handleGroupRemoveMembers(dapi, rest, argv, output);
+    if (entity === 'groups' && verb === 'list-members') return handleGroupListMembers(dapi, rest, argv, output);
+    if (entity === 'groups' && verb === 'list-memberships') return handleGroupListMemberships(dapi, rest, argv, output);
 
     const source = (dapi as any)[entity];
     if (!source || !ENTITIES.includes(entity)) {
@@ -142,6 +146,57 @@ async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: 
   }
 
   const result = await dapi.functions.run(funcName, params);
+  printOutput(result, output);
+  return true;
+}
+
+async function handleGroupAddMembers(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  const [group, ...members] = rest;
+  if (!group || !members.length) {
+    printError(new Error('Usage: grok s groups add-members <group> <member> [<member> ...] [--admin] [--user]'));
+    return false;
+  }
+  const isAdmin = argv.admin === true;
+  const personalOnly = argv.user === true;
+  const results = await dapi.groups.addMembers(group, members, isAdmin, personalOnly);
+  printOutput(results, output);
+  const anyError = results.some((r) => r.status === 'error');
+  if (anyError) process.exitCode = 1;
+  return true;
+}
+
+async function handleGroupRemoveMembers(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  const [group, ...members] = rest;
+  if (!group || !members.length) {
+    printError(new Error('Usage: grok s groups remove-members <group> <member> [<member> ...] [--user]'));
+    return false;
+  }
+  const personalOnly = argv.user === true;
+  const results = await dapi.groups.removeMembers(group, members, personalOnly);
+  printOutput(results, output);
+  const anyError = results.some((r) => r.status === 'error');
+  if (anyError) process.exitCode = 1;
+  return true;
+}
+
+async function handleGroupListMembers(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  if (!rest[0]) {
+    printError(new Error('Usage: grok s groups list-members <group> [--admin | --no-admin]'));
+    return false;
+  }
+  const admin: boolean | undefined = typeof argv.admin === 'boolean' ? argv.admin : undefined;
+  const result = await dapi.groups.getMembers(rest[0], admin);
+  printOutput(result, output);
+  return true;
+}
+
+async function handleGroupListMemberships(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  if (!rest[0]) {
+    printError(new Error('Usage: grok s groups list-memberships <group> [--admin | --no-admin]'));
+    return false;
+  }
+  const admin: boolean | undefined = typeof argv.admin === 'boolean' ? argv.admin : undefined;
+  const result = await dapi.groups.getMemberships(rest[0], admin);
   printOutput(result, output);
   return true;
 }
@@ -276,6 +331,10 @@ Special commands:
   grok s files list [path] [-r]                       List files (recursive with -r)
   grok s raw <METHOD> <path>                          Hit any API endpoint
   grok s describe <entity-type>                       Show entity JSON schema
+  grok s groups add-members <group> <m>... [--admin]  Add one or more users/groups as members
+  grok s groups remove-members <group> <m>...         Remove members (no-op if not a member)
+  grok s groups list-members <group> [--admin]        List members (optionally filter by admin)
+  grok s groups list-memberships <group> [--admin]    List parent groups
   grok s batch <entity> <verb> arg1 [arg2 ...]        Batch operation (one round-trip)
   grok s batch <entity> <verb> --json params.json     Batch from JSON array
   grok s batch manifest.json                          Run a workflow manifest
@@ -307,6 +366,10 @@ Examples:
   grok s describe connections
   grok s users list --host dev
   grok s users list --host "https://mygrok.com/api"
+  grok s groups add-members Admins alice bob --admin
+  grok s groups remove-members Admins alice
+  grok s groups list-members Admins --admin
+  grok s groups list-memberships alice
   grok s batch files delete "System:AppData/old.txt" "System:AppData/tmp.txt"
   grok s batch users create --json users.json
   grok s batch manifest.json
