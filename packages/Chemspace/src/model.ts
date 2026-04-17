@@ -36,19 +36,11 @@ export type ChemspacePrice = {
     priceEur?: number;
 }
 
-export type ChemspacePricesTableItem = {
-    packMg: number;
-    priceUsd?: number;
-    priceEur?: number;
-    vendorName: string;
-    vendorCode: string;
-    leadTimeDays?: number;
-    purity: number;
-}
+export type ChemspacePricesTableItem = ChemspacePrice & Omit<ChemspaceOffer, 'prices'>;
 
 export type ChemspacePriceColumns = {
     vendorName: string;
-    leadTimeDays?: number;
+    leadTimeDays: number | null;
     priceUsd: number;
     packMg: number;
 }
