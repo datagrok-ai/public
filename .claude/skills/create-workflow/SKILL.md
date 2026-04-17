@@ -5,6 +5,7 @@ when-to-use: When the user asks to create, design, or scaffold a Compute2 workfl
 context: fork
 effort: high
 argument-hint: "[workflow description]"
+disable-model-invocation: true
 ---
 
 # Create a Compute2 workflow
