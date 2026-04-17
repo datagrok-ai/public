@@ -229,3 +229,65 @@ async function doSync(
   console.log(`user-files: sync complete — ${files.length} total agent file(s)`);
   return {dir, files};
 }
+
+// ── Package index generation ──────────────────────────────────────────
+
+const KNOWLEDGE_FILE = 'package-knowledge.json';
+
+interface PackageKnowledge {
+  packageName: string;
+  description: string;
+  keywords: string[];
+  overview?: string | string[];
+  apiRef?: string;
+  docsRef?: string;
+}
+
+let cachedPackageIndex: string | null | undefined;
+
+export async function generatePackageIndex(): Promise<string | null> {
+  if (cachedPackageIndex !== undefined)
+    return cachedPackageIndex;
+
+  const packages: PackageKnowledge[] = [];
+  const packagesDir = path.join(WORKSPACE, 'packages');
+  try {
+    const pkgDirs = await fs.readdir(packagesDir, {withFileTypes: true});
+    for (const entry of pkgDirs) {
+      if (!entry.isDirectory())
+        continue;
+      const knowledgePath = path.join(packagesDir, entry.name, 'agents', KNOWLEDGE_FILE);
+      try {
+        const raw = await fs.readFile(knowledgePath, 'utf-8');
+        const parsed = JSON.parse(raw) as PackageKnowledge;
+        if (parsed.packageName && parsed.description)
+          packages.push(parsed);
+        else
+          console.warn(`package-index: ${entry.name}/${KNOWLEDGE_FILE} missing required fields, skipping`);
+      } catch {
+        // No knowledge file for this package — skip
+      }
+    }
+  } catch (e: any) {
+    console.warn(`package-index: failed to scan workspace packages: ${e.message}`);
+  }
+
+  if (packages.length === 0) {
+    cachedPackageIndex = null;
+    return null;
+  }
+
+  packages.sort((a, b) => a.packageName.localeCompare(b.packageName));
+
+  let md = 'IMPORTANT: Before searching or grepping the codebase, ALWAYS check this table first.\n' +
+    'If a package looks relevant, read its `agents/package-knowledge.json` for full details.\n' +
+    'Only fall back to code search if no package here matches the user\'s question.\n\n';
+  md += '| Package | Description | Keywords |\n';
+  md += '|---------|-------------|----------|\n';
+  for (const pkg of packages)
+    md += `| ${pkg.packageName} | ${pkg.description} | ${pkg.keywords.slice(0, 8).join(', ')} |\n`;
+
+  cachedPackageIndex = md;
+  console.log(`package-index: generated index with ${packages.length} package(s)`);
+  return md;
+}

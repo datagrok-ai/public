@@ -103,6 +103,40 @@ duplicate syncs for the same user.
 
 ---
 
+## Package knowledge index
+
+Packages can ship a structured `agents/package-knowledge.json` file that describes the package's
+capabilities in a machine-readable format:
+
+```json
+{
+  "packageName": "Admetica",
+  "description": "ADMET property prediction for small molecules using ChemProp v2 neural networks",
+  "keywords": ["admet", "absorption", "molecules", "smiles", "chemprop"],
+  "overview": ["Predicts ADMET molecular properties using ChemProp v2 neural networks.", "..."],
+  "apiRef": "src/package-api.ts",
+  "docsRef": "../../help/datagrok/solutions/domains/chem/chem.md"
+}
+```
+
+At startup, the runtime scans `/workspace/packages/*/agents/package-knowledge.json` on the local
+filesystem (no network calls, no ZIP downloads) and aggregates all found files into a unified
+markdown table. This table is injected directly into Claude's system prompt as
+`## Available Packages`, giving Claude immediate awareness of all package capabilities without
+requiring a tool call.
+
+The index is cached after the first scan — subsequent messages reuse the cached result.
+
+Claude is instructed to consult this table first when a user asks about platform capabilities,
+and to read the full `package-knowledge.json` for details before falling back to code search.
+
+**Future direction:** consolidate the package index, agent file listings, and other dynamic context
+into a generated `CLAUDE.md` or skills file rather than appending sections to the system prompt.
+This would align with how Claude Code natively consumes project context and make the knowledge
+layer easier to inspect and debug.
+
+---
+
 ## Open design questions
 
 1. **File count scaling** — the system prompt currently lists up to 50 agent files. As the

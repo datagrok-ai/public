@@ -1,0 +1,26 @@
+{
+  "packageName": "Admetica",
+  "description": "ADMET property prediction for small molecules using ChemProp v2 neural networks",
+  "keywords": [
+    "admet", "absorption", "distribution", "metabolism", "excretion", "toxicity",
+    "molecules", "smiles", "chemprop", "property prediction", "cheminformatics", "drug-likeness",
+    "Caco2", "Lipophilicity", "Solubility", "PPBR", "VDss", "CYP1A2-Inhibitor", "CYP2C19-Inhibitor",
+    "CYP2C9-Inhibitor", "CYP2C9-Substrate", "CYP2D6-Inhibitor", "CYP2D6-Substrate", "CL-Hepa", "CL-Micro",
+    "Half-Life", "hERG", "LD50"
+  ],
+  "overview": [
+    "Predicts ADMET (Absorption, Distribution, Metabolism, Excretion, Toxicity) molecular properties",
+    "using pre-trained ChemProp v2 neural networks running in a Docker container.",
+    "",
+    "Single molecule: click on a molecule cell — the Admetica panel appears in the",
+    "context panel (Biology section) with predictions for that molecule.",
+    "",
+    "Batch predictions: Top Menu > Chem > Admetica > Calculate... Opens a dialog",
+    "to select models, templates, and visualization options (pie charts, forms).",
+    "Results are added as color-coded columns to the table.",
+    "",
+    "Accepts SMILES and molblock inputs, falls back to CPU when GPU is unavailable."
+  ],
+  "apiRef": "src/package-api.ts",
+  "docsRef": "../../help/datagrok/solutions/domains/chem/chem.md"
+}
