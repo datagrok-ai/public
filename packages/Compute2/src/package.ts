@@ -301,7 +301,7 @@ export class PackageFunctions {
         },
         {
           id: 'step2',
-          nqName: 'Compute2:LongFailingScript',
+          nqName: 'Compute2:FastScript',
         },
       ],
       links: [{
