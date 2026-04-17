@@ -114,6 +114,10 @@
     border-radius: 4px;
 }
 
+.diff-studio-hub-card * {
+    cursor: inherit;
+}
+
 .diff-studio-hub-card:hover {
     background-color: var(--grey-1);
 }

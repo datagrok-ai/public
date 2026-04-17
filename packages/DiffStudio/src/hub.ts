@@ -1,4 +1,4 @@
-// Centralized hub for Diff Studio: templates, library, recent & custom models
+// Centralized hub for Diff Studio Implements templates, library, recent & custom models
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
