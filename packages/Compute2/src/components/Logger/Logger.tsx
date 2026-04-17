@@ -14,11 +14,14 @@ export const Logger = Vue.defineComponent({
       required: true,
     },
     linkIds: {
-      type: Array as  Vue.PropType<string[]>,
+      type: Array as Vue.PropType<string[]>,
       required: true,
     },
   },
-  setup(props) {
+  emits: {
+    'linkClicked': (_linkId: string) => true,
+  },
+  setup(props, {emit}) {
     const typeFilterOpts = ['all', 'tree', 'links'] as const;
     const treeEvents = new Set(['treeUpdateStarted', 'treeUpdateFinished', 'treeUpdateMutation']);
 
@@ -26,11 +29,17 @@ export const Logger = Vue.defineComponent({
     const linksFilter = Vue.ref<string[]>([]);
     const linksFilterOpts = Vue.computed(() => props.linkIds);
 
+    const linkStyle = {
+      cursor: 'pointer',
+      color: 'var(--blue-1)',
+      textDecoration: 'underline',
+    };
+
     const formatPath = (path?: NodePath, addIdx?: number, removeIdx?: number, id?: string) => {
       let str = path?.length ? [...path.map(({idx, id}) => `[${idx}]${id}`)].join('/') : '';
-      const append = (suffix : string) => str += str ? `/${suffix}` : `${suffix}`;
+      const append = (suffix: string) => str += str ? `/${suffix}` : `${suffix}`;
       if (addIdx != null && removeIdx != null)
-        append(`[${removeIdx}→${addIdx}]${id}`);
+        append(`[${removeIdx}\u2192${addIdx}]${id}`);
       else if (removeIdx != null)
         append(`-[${removeIdx}]${id}`);
       else if (addIdx != null) {
@@ -39,7 +48,7 @@ export const Logger = Vue.defineComponent({
         append(id);
       }
       return str;
-    }
+    };
 
     return () => {
       const items = props.logs.filter((item) => {
@@ -98,7 +107,9 @@ export const Logger = Vue.defineComponent({
               {item.type}
               </div>,
             <div key={item.uuid + '3'}>
-              {pathString}
+              <span style={linkStyle} onClick={() => emit('linkClicked', item.id)}>
+                {pathString}
+              </span>
             </div>,
             <div key={item.uuid + '4'}>
               {item.linkUUID}

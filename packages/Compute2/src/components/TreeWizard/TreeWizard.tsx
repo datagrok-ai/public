@@ -35,7 +35,6 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
 import {BehaviorSubject} from 'rxjs';
 
-const DEVELOPERS_GROUP = 'Developers';
 
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
@@ -575,14 +574,6 @@ export const TreeWizard = Vue.defineComponent({
     // additional
     ////
 
-    const isUserDeveloper = Vue.ref(false);
-    Vue.onMounted(async () => {
-      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
-
-      if (userGroups.find((group) => group.friendlyName === DEVELOPERS_GROUP))
-        isUserDeveloper.value = true;
-    });
 
     ////
     // render
@@ -596,11 +587,11 @@ export const TreeWizard = Vue.defineComponent({
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
             onClick={() => treeHidden.value = !treeHidden.value }
           />
-          { isUserDeveloper.value && <IconFA
+          <IconFA
             name='bug'
             tooltip={inspectorHidden.value ? 'Show inspector': 'Hide inspector'}
             onClick={() => inspectorHidden.value = !inspectorHidden.value }
-          /> }
+          />
           {isTreeReady.value &&
             treeState.value &&
             (hasSubtreeFixableInconsistencies(treeState.value, states.calls, states.consistency) ?
@@ -679,6 +670,8 @@ export const TreeWizard = Vue.defineComponent({
               config={config.value}
               logs={logs.value}
               links={links.value}
+              selectedUuid={chosenStepUuid.value}
+              stepStates={states}
               ref={inspectorInstance}
               dock-spawn-title='Inspector'
               class='h-full overflow-scroll'
