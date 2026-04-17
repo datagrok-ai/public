@@ -115,7 +115,7 @@ function calculateSectorWeight(sector: { sectorColor: string; subsectors: Subsec
 
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
-  const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames);
+  const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames).filter((c) => c != null);
   const vectorX = e.offsetX - gridCell.bounds.midX;
   const vectorY = e.offsetY - gridCell.bounds.midY;
   const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);

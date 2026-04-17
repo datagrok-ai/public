@@ -49,11 +49,7 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
 
     const getColor = (tag: string) => {
       const colors = gridCell.gridColumn.temp['catColors'] ??= {};
-      if (colors[tag] || (colors[tag] === 0))
-        return colors[tag];
-
-      const keys = Object.keys(colors);
-      colors[tag] ??= DG.Color.getCategoricalColor(keys.length);
+      return colors[tag] ??= DG.Color.getCategoricalColor(Object.keys(colors).length);
     };
 
     const len = values.map((tag) => measure(g, tag) + 3).reduce((total, num) => total + num, 0);

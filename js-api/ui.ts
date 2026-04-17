@@ -1495,11 +1495,26 @@ export class tools {
   }
 }
 
+/** Options for tooltip display. Future-proof — add fields here as tooltip features grow. */
+export interface ITooltipOptions {
+  /** Delay in milliseconds before the tooltip appears. Defaults to 0 (immediate). */
+  delay?: number;
+}
+
 /** Represents a tooltip. */
 export class Tooltip {
+  private _pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Hides the tooltip. */
+  private _cancelPending(): void {
+    if (this._pendingTimer !== null) {
+      clearTimeout(this._pendingTimer);
+      this._pendingTimer = null;
+    }
+  }
+
+  /** Hides the tooltip. Also cancels any pending {@link showDelayed} call. */
   hide(): void {
+    this._cancelPending();
     api.grok_Tooltip_Hide();
   }
 
@@ -1512,9 +1527,35 @@ export class Tooltip {
     return element;
   }
 
-  /** Shows the tooltip at the specified position */
-  show(content: HTMLElement | string, x: number, y: number): void {
-    api.grok_Tooltip_Show(content, x, y);
+  /** Shows the tooltip at the specified position.
+   *
+   * Any pending delayed show is cancelled first. Passing `null`/`undefined` for `content`
+   * hides the tooltip and cancels any pending show — ideal for hover handlers where a single
+   * call replaces the show+hide+debounce quartet:
+   *
+   * ```ts
+   * onMouseMove(e) {
+   *   const t = getTooltipFor(e);   // string | HTMLElement | null
+   *   ui.tooltip.show(t, e.x + 16, e.y + 16, {delay: 200});
+   * }
+   * ```
+   */
+  show(content: HTMLElement | string | null | undefined, x: number, y: number,
+       options?: ITooltipOptions): void {
+    this._cancelPending();
+    if (content == null) {
+      api.grok_Tooltip_Hide();
+      return;
+    }
+    const delay = options?.delay ?? 0;
+    if (delay <= 0) {
+      api.grok_Tooltip_Show(content, x, y);
+      return;
+    }
+    this._pendingTimer = setTimeout(() => {
+      this._pendingTimer = null;
+      api.grok_Tooltip_Show(content, x, y);
+    }, delay);
   }
 
   showRowGroup(dataFrame: DataFrame, indexPredicate: IndexPredicate, x: number, y: number): void {
