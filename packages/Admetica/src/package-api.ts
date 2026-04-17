@@ -12,44 +12,96 @@ export namespace funcs {
     return await grok.functions.call('Admetica:Info', {});
   }
 
+  /**
+   * @param {any} smiles
+   *   semType: Molecule
+   * @returns {Promise<any>}
+   */
   export async function admeticaWidget(smiles: any ): Promise<any> {
     return await grok.functions.call('Admetica:AdmeticaWidget', { smiles });
   }
 
+  /**
+   * @param {string} property
+   * @returns {Promise<any>}
+   */
   export async function getModels(property: string ): Promise<any> {
     return await grok.functions.call('Admetica:GetModels', { property });
   }
 
+  /**
+   * @param {DG.DataFrame} table
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   * @param {any} absorption
+   *   choices: Admetica:getModels('Absorption')
+   *   nullable: true
+   * @param {any} distribution
+   *   choices: Admetica:getModels('Distribution')
+   *   nullable: true
+   * @param {any} metabolism
+   *   choices: Admetica:getModels('Metabolism')
+   *   nullable: true
+   * @param {any} excretion
+   *   choices: Admetica:getModels('Excretion')
+   *   nullable: true
+   */
   export async function admeticaHT(table: DG.DataFrame , molecules: DG.Column , absorption: any | null, distribution: any | null, metabolism: any | null, excretion: any | null): Promise<void> {
     return await grok.functions.call('Admetica:AdmeticaHT', { table, molecules, absorption, distribution, metabolism, excretion });
   }
 
+  /**
+   * @param {any} call
+   */
   export async function admeticaEditor(call: any ): Promise<void> {
     return await grok.functions.call('Admetica:AdmeticaEditor', { call });
   }
 
+  /**
+   * @param {DG.DataFrame} table - Input data table
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   * @param {string} template
+   * @param {any} models
+   * @param {boolean} addPiechart
+   * @param {boolean} addForm
+   */
   export async function admeticaMenu(table: DG.DataFrame , molecules: DG.Column , template: string , models: any , addPiechart: boolean , addForm: boolean ): Promise<void> {
     return await grok.functions.call('Admetica:AdmeticaMenu', { table, molecules, template, models, addPiechart, addForm });
   }
 
+  /**
+   * @param {DG.DataFrame} table
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   * @param {any} props
+   *   optional: true
+   * @returns {Promise<DG.DataFrame>}
+   */
   export async function getAdmeProperties(table: DG.DataFrame , molecules: DG.Column , props?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Admetica:GetAdmeProperties', { table, molecules, props });
   }
 
   /**
-  Predicts ADME properties for a given molecule.
-  */
+   * Predicts ADME properties for a given molecule.
+   * @param {string} molecule
+   *   semType: Molecule
+   * @returns {Promise<DG.DataFrame>}
+   */
   export async function getAdmePropertiesSingle(molecule: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Admetica:GetAdmePropertiesSingle', { molecule });
   }
 
+  /**
+   * @returns {Promise<DG.View>}
+   */
   export async function runAdmeticaApplication(): Promise<DG.View> {
     return await grok.functions.call('Admetica:RunAdmeticaApplication', {});
   }
 
   /**
-  Evaluating ADMET properties
-  */
+   * Evaluating ADMET properties
+   */
   export async function admeticaDemo(): Promise<void> {
     return await grok.functions.call('Admetica:AdmeticaDemo', {});
   }
