@@ -426,7 +426,7 @@ export class StaticPipelineNode extends PipelineNodeBase {
 }
 
 export class DynamicPipelineNode extends PipelineNodeBase {
-  public readonly nodeType = 'dynamic';
+  public readonly nodeType = this.config.type;
 
   constructor(
     public readonly config: PipelineConfigurationDynamicProcessed,
