@@ -33,14 +33,19 @@ export type {GradientDescentSettings} from './optimizers/gradient-descent';
 export {Adam} from './optimizers/adam';
 export type {AdamSettings} from './optimizers/adam';
 
+export {LBFGS} from './optimizers/lbfgs';
+export type {LBFGSSettings} from './optimizers/lbfgs';
+
 // --- Auto-register built-in optimizers ---
 import {registerOptimizer} from './registry';
 import {NelderMead} from './optimizers/nelder-mead';
 import {PSO} from './optimizers/pso';
 import {GradientDescent} from './optimizers/gradient-descent';
 import {Adam} from './optimizers/adam';
+import {LBFGS} from './optimizers/lbfgs';
 
 registerOptimizer('nelder-mead', () => new NelderMead());
 registerOptimizer('pso', () => new PSO());
 registerOptimizer('gradient-descent', () => new GradientDescent());
 registerOptimizer('adam', () => new Adam());
+registerOptimizer('l-bfgs', () => new LBFGS());
