@@ -4,7 +4,7 @@ import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
-import {syncUserFiles, WORKSPACE} from './sync-utils';
+import {syncUserFiles, generatePackageIndex, WORKSPACE} from './sync-utils';
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
@@ -89,10 +89,14 @@ Rules:
 
 const MAX_AGENT_FILES_IN_PROMPT = 50;
 
-function buildSystemPrompt(mode?: string, agentFiles?: string[]): string {
+function buildSystemPrompt(mode?: string, agentFiles?: string[], packageIndex?: string | null): string {
   if (mode === 'bash') return BASH_EXEC_PROMPT;
   if (mode === 'none') return '';
   let prompt = DATAGROK_PROMPT;
+  // TODO: consolidate package index, agent files, and other dynamic context
+  // into a generated CLAUDE.md or skills file instead of appending to the system prompt
+  if (packageIndex)
+    prompt += `\n\n## Available Packages\n\n` + packageIndex;
   if (agentFiles && agentFiles.length > 0) {
     const shown = agentFiles.slice(0, MAX_AGENT_FILES_IN_PROMPT);
     const overflow = agentFiles.length - shown.length;
@@ -184,8 +188,9 @@ function buildMcpServers(apiKey?: string, mcpServerUrl?: string): Record<string,
 function buildOptions(
   resume?: string, apiKey?: string, mcpServerUrl?: string,
   systemPromptMode?: string, userDir?: string, agentFiles?: string[],
+  packageIndex?: string | null,
 ) {
-  const systemPrompt = buildSystemPrompt(systemPromptMode, agentFiles);
+  const systemPrompt = buildSystemPrompt(systemPromptMode, agentFiles, packageIndex);
   const mcpServers = buildMcpServers(apiKey, mcpServerUrl);
   return {
     systemPrompt,
@@ -344,8 +349,9 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
 
   let gotResult = false;
   try {
+    const packageIndex = await generatePackageIndex();
     const existingSession = getSession(sid);
-    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles);
+    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles, packageIndex);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
