@@ -55,6 +55,7 @@ export async function server(argv: any): Promise<boolean> {
       if (output !== 'quiet') console.log(`Deleted ${rest[0]}`);
       return true;
     }
+    if (entity === 'files' && verb === 'put') return handleFilesPut(dapi, rest, output);
     if (entity === 'shares' && verb === 'add') return handleSharesAdd(dapi, rest, argv, output);
     if (entity === 'shares' && verb === 'list') return handleSharesList(dapi, rest, output);
     if (entity === 'users' && verb === 'save') return handleUserSave(dapi, argv, output);
@@ -105,6 +106,23 @@ export async function server(argv: any): Promise<boolean> {
     printError(err);
     return false;
   }
+}
+
+async function handleFilesPut(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
+  const [localPath, remotePath] = rest;
+  if (!localPath || !remotePath) {
+    printError(new Error('Usage: grok s files put <local-path> <remote-path>\n  e.g. grok s files put ./smiles.csv "System:DemoFiles/smiles.csv"'));
+    return false;
+  }
+  if (!fs.existsSync(localPath)) {
+    printError(new Error(`Local file not found: ${localPath}`));
+    return false;
+  }
+  const result = await dapi.files.put(localPath, remotePath);
+  if (output === 'quiet') return true;
+  if (output === 'json') printOutput(result, output);
+  else console.log(`Uploaded ${result.size} bytes to ${result.path}`);
+  return true;
 }
 
 async function handleRaw(dapi: NodeDapi, method: string | undefined, rest: string[], output: OutputFormat): Promise<boolean> {
@@ -440,7 +458,10 @@ Verbs:
 
 Special commands:
   grok s functions run <Name:func(args)>              Call a function
-  grok s files list [path] [-r]                       List files (recursive with -r)
+  grok s files list <path> [-r]                       List files (recursive with -r)
+  grok s files get <path>                             Download a file (returns bytes)
+  grok s files delete <path>                          Delete a file
+  grok s files put <local> <remote>                   Upload a local file
   grok s raw <METHOD> <path>                          Hit any API endpoint
   grok s describe <entity-type>                       Show entity JSON schema
   grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
@@ -491,6 +512,7 @@ Examples:
   grok s functions run 'Chem:smilesToMw("ccc")'
   grok s functions run Chem:test --json params.json
   grok s files list "System:AppData" -r
+  grok s files put ./smiles.csv "System:DemoFiles/smiles.csv"
   grok s raw GET /api/users/current
   grok s describe connections
   grok s users list --host dev
@@ -499,8 +521,8 @@ Examples:
   grok s groups remove-members Admins alice
   grok s groups list-members Admins --admin
   grok s groups list-memberships alice
-  grok s batch files delete "System:AppData/old.txt" "System:AppData/tmp.txt"
+  grok s batch files delete "System:AppData/old.txt" "System:DemoFiles/tmp.txt"
   grok s batch users create --json users.json
   grok s batch manifest.json
-  grok s batch files delete "System:AppData/a" "System:AppData/b" --output json
+  grok s batch files delete "System:AppData/a" "System:DemoFiles/b" --output json
 `;

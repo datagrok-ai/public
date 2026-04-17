@@ -97,6 +97,37 @@ export class NodeApiClient {
   get(path: string): Promise<any> { return this.request('GET', path); }
   post(path: string, body?: any): Promise<any> { return this.request('POST', path, body); }
   del(path: string): Promise<any> { return this.request('DELETE', path); }
+
+  /**
+   * POST raw bytes with `Content-Type: application/octet-stream` — used for file uploads
+   * where the body must be the file content itself, not JSON.
+   */
+  async putBytes(path: string, bytes: Uint8Array | Buffer): Promise<any> {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': this.token,
+        'Content-Type': 'application/octet-stream',
+      },
+      body: bytes as any,
+    });
+    if (!res.ok) {
+      const rawText = await res.text();
+      let errBody: any;
+      try { errBody = JSON.parse(rawText); } catch { errBody = {error: rawText || `HTTP ${res.status}`}; }
+      const err: NodeApiError = {
+        error: errBody?.message ?? errBody?.error ?? `HTTP ${res.status}`,
+        source: errBody?.source ?? 'Server',
+        errorCode: errBody?.errorCode ?? res.status,
+        stackTrace: errBody?.stackTrace,
+      };
+      throw Object.assign(new Error(err.error), {apiError: err});
+    }
+    const ct = res.headers.get('content-type') ?? '';
+    if (ct.includes('application/json'))
+      return res.json();
+    return res.text();
+  }
 }
 
 function buildQuery(params: Record<string, any>): string {
@@ -339,12 +370,22 @@ function tryParseJson(s: string): any {
 export class NodeFilesDataSource {
   constructor(private client: NodeApiClient) {}
 
+  /**
+   * Split a user-facing file path into {connector, path}.
+   *
+   * Input format: `<connector>/<file-path>` where `<connector>` is the connection's
+   * full name — including namespace — e.g. `System:DemoFiles/smiles_1M.csv`.
+   * The connector can contain colons (the namespace separator); the file path
+   * starts after the first `/`. Colons in the connector segment are converted
+   * to `.` so it forms a single URL path segment (the Dart server reverses
+   * this with `replaceAll('.', ':')`).
+   */
   private splitPath(filePath: string): {connector: string; path: string} {
-    const colonIdx = filePath.indexOf(':');
-    if (colonIdx === -1)
-      return {connector: filePath.replace(':', '.'), path: ''};
-    const connector = filePath.slice(0, colonIdx).replace(':', '.');
-    const path = filePath.slice(colonIdx + 1).replace(/^\//, '');
+    const slashIdx = filePath.indexOf('/');
+    if (slashIdx === -1)
+      return {connector: filePath.replace(/:/g, '.'), path: ''};
+    const connector = filePath.slice(0, slashIdx).replace(/:/g, '.');
+    const path = filePath.slice(slashIdx + 1);
     return {connector, path};
   }
 
@@ -357,12 +398,28 @@ export class NodeFilesDataSource {
 
   async get(filePath: string): Promise<any> {
     const {connector, path} = this.splitPath(filePath);
-    return this.client.get(`/public/v1/files/${connector}/${path}`);
+    const seg = path ? `${connector}/${path}` : connector;
+    return this.client.get(`/public/v1/files/${seg}`);
   }
 
   async delete(filePath: string): Promise<void> {
     const {connector, path} = this.splitPath(filePath);
-    await this.client.del(`/public/v1/files/${connector}/${path}`);
+    const seg = path ? `${connector}/${path}` : connector;
+    await this.client.del(`/public/v1/files/${seg}`);
+  }
+
+  /**
+   * Upload a local file to a Datagrok file share.
+   * Streams raw bytes to POST `/public/v1/files/<connector>/<path>` — no base64,
+   * no JSON wrapping — so it handles large files without blowing up memory.
+   */
+  async put(localPath: string, remotePath: string): Promise<any> {
+    const fs = require('fs') as typeof import('fs');
+    const {connector, path} = this.splitPath(remotePath);
+    if (!path) throw new Error(`Remote path must include a file name after the connector: got '${remotePath}'`);
+    const bytes = fs.readFileSync(localPath);
+    const res = await this.client.putBytes(`/public/v1/files/${connector}/${path}`, bytes);
+    return {path: remotePath, size: bytes.length, response: res};
   }
 }
 
