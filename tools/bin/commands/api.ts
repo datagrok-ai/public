@@ -55,10 +55,11 @@ function generateQueryWrappers(): void {
       const description = utils.getScriptDescription(q, utils.commentMap[utils.queryExtension]);
       const inputs = utils.getScriptInputs(q, utils.commentMap[utils.queryExtension]);
       const outputType = utils.getScriptOutputType(q, utils.commentMap[utils.queryExtension]);
+      const resolvedOutputType = outputType === 'void' ? utils.dgToTsTypeMap['dataframe'] : outputType;
       tb.replace('PARAMS_OBJECT', inputs)
         .replace('TYPED_PARAMS', inputs)
-        .replace('FUNC_DESCRIPTION', description)
-        .replace('OUTPUT_TYPE', outputType === 'void' ? utils.dgToTsTypeMap['dataframe'] : outputType);
+        .replace('FUNC_JSDOC', {description, inputs, outputType: resolvedOutputType})
+        .replace('OUTPUT_TYPE', resolvedOutputType);
       wrappers.push(tb.build(1));
     }
   }
@@ -103,7 +104,7 @@ function generateScriptWrappers(): void {
       const outputType = utils.getScriptOutputType(script);
       tb.replace('PARAMS_OBJECT', inputs)
         .replace('TYPED_PARAMS', inputs)
-        .replace('FUNC_DESCRIPTION', description)
+        .replace('FUNC_JSDOC', {description, inputs, outputType})
         .replace('OUTPUT_TYPE', outputType);
       wrappers.push(tb.build(1));
     }
@@ -143,7 +144,7 @@ function generateFunctionWrappers(): void {
         .replace('FUNC_NAME_LOWERCASE', name)
         .replace('PACKAGE_NAMESPACE', _package?.friendlyName ?? '')
         .replace('PARAMS_OBJECT', annotationInputs)
-        .replace('FUNC_DESCRIPTION', description)
+        .replace('FUNC_JSDOC', {description, inputs: annotationInputs, outputType})
         .replace('TYPED_PARAMS', annotationInputs)
         .replace('OUTPUT_TYPE', outputType);
       wrappers.push(tb.build(1));
