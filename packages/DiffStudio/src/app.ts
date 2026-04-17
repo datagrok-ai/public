@@ -2031,8 +2031,6 @@ export class DiffStudio {
         const helpUrl: string | undefined = entry?.help;
         if (!modelPath)
           continue;
-        if (!(await grok.dapi.files.exists(modelPath)))
-          continue;
 
         const content = await getEquationsFromFile(modelPath);
         if (content === null)
@@ -2658,10 +2656,6 @@ export class DiffStudio {
       for (const entry of entries) {
         menu.item(entry.displayName, async () => {
           try {
-            if (!(await grok.dapi.files.exists(entry.modelPath))) {
-              grok.shell.warning(`File not found: ${entry.modelPath}`);
-              return;
-            }
             const equations = await getEquationsFromFile(entry.modelPath);
             if (equations === null) {
               grok.shell.warning(`Failed to read model: ${entry.modelPath}`);

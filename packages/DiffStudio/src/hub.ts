@@ -213,9 +213,6 @@ export class DiffStudioHub {
         if (!modelPath)
           continue;
 
-        if (!(await grok.dapi.files.exists(modelPath)))
-          continue;
-
         const content = await getEquationsFromFile(modelPath);
         if (content === null)
           continue;
