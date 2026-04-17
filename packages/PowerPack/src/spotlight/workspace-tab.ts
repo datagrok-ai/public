@@ -2,12 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
-import {getMyGroupFavorites} from './group-favorites';
+import {getMyGroupFavorites, getAdminGroups} from './group-favorites';
+import {showManageFavoritesDialog} from './manage-favorites-dialog';
+import type {GroupFavorites} from './group-favorites';
 import type {SpotlightWidget} from './spotlight-widget';
 
 
 /** Returns the platform icon for an entity via its registered EntityMeta handler. */
-function entityIcon(entity: DG.Entity): HTMLElement {
+export function entityIcon(entity: DG.Entity): HTMLElement {
   return DG.ObjectHandler.forEntity(entity)?.renderIcon(entity.dart) ?? ui.iconFA('file');
 }
 
@@ -56,12 +58,21 @@ function createCard(entity: DG.Entity, root: HTMLElement, group?: DG.Group): HTM
 }
 
 /** Creates a section with header and a row of cards. */
-function createSection(title: string, iconName: string, entities: DG.Entity[], root: HTMLElement, group?: DG.Group): HTMLElement {
+function createSection(
+  title: string, iconName: string, entities: DG.Entity[], root: HTMLElement,
+  group?: DG.Group, onEdit?: () => void,
+): HTMLElement {
   const headerIcon = ui.iconFA(iconName);
-  const header = ui.h3(
-    ui.span([headerIcon, ui.span([` ${title}`])]),
-    'pp-workspace-section-header',
-  );
+  const headerSpan = ui.span([headerIcon, ui.span([` ${title}`])]);
+  const header = ui.h3(headerSpan, 'pp-workspace-section-header');
+
+  if (group && onEdit) {
+    const editBtn = ui.iconFA('pencil', onEdit);
+    editBtn.classList.add('pp-workspace-section-edit');
+    ui.tooltip.bind(editBtn, `Manage favorites for ${group.friendlyName}`);
+    header.appendChild(editBtn);
+  }
+
   const cards = entities.map((e) => createCard(e, root, group));
   const row = ui.divH(cards, 'pp-workspace-cards-row');
   return ui.divV([header, row], 'pp-workspace-section');
@@ -128,18 +139,23 @@ export class WorkspaceTab {
   }
 
   private async populate(root: HTMLElement, user: DG.User): Promise<void> {
-    const [groupFavorites] = await Promise.all([
+    const [groupFavorites, adminGroups] = await Promise.all([
       getMyGroupFavorites(),
-      //this.spotlight.initRecentData(),
+      getAdminGroups(),
     ]);
 
-    // Group favorites sections
-    if (groupFavorites.length > 0) {
-      groupFavorites.sort((a, b) => a.group.friendlyName.localeCompare(b.group.friendlyName));
-      for (const {group, entities, isAdmin} of groupFavorites)
-        if (entities.length > 0)
-          root.appendChild(createSection(group.friendlyName, 'star', entities, root, isAdmin ? group : undefined));
-    }
+    // Container for group sections + manage link (for easy rebuild)
+    const groupContainer = ui.divV([], 'pp-workspace-group-container');
+    root.appendChild(groupContainer);
+
+    const rebuildSections = async (): Promise<void> => {
+      groupContainer.innerHTML = '';
+      const freshFavorites = await getMyGroupFavorites();
+      const freshAdminGroups = await getAdminGroups();
+      this.renderGroupSections(groupContainer, freshFavorites, freshAdminGroups, rebuildSections);
+    };
+
+    this.renderGroupSections(groupContainer, groupFavorites, adminGroups, rebuildSections);
 
     // New user fallback — show onboarding content instead of empty state
     if (groupFavorites.length === 0 && user.joined > dayjs().subtract(5, 'day')) {
@@ -161,6 +177,46 @@ export class WorkspaceTab {
         this.spotlight.recentEntities.slice(0, maxRecent),
         this.spotlight.recentEntityTimes.slice(0, maxRecent),
       ));
+    }
+  }
+
+  private renderGroupSections(
+    container: HTMLElement,
+    groupFavorites: GroupFavorites[],
+    adminGroups: DG.Group[],
+    rebuildSections: () => Promise<void>,
+  ): void {
+    const displayedGroupIds = new Set<string>();
+
+    if (groupFavorites.length > 0) {
+      groupFavorites.sort((a, b) => a.group.friendlyName.localeCompare(b.group.friendlyName));
+      for (const {group, entities, isAdmin} of groupFavorites) {
+        if (entities.length > 0) {
+          displayedGroupIds.add(group.id);
+          const onEdit = isAdmin ? () => {
+            showManageFavoritesDialog(group, [...entities], rebuildSections);
+          } : undefined;
+          container.appendChild(
+            createSection(group.friendlyName, 'star', entities, container, isAdmin ? group : undefined, onEdit),
+          );
+        }
+      }
+    }
+
+    // "Manage favorites for another group..." link — for admin groups with no current pins
+    const extraGroups = adminGroups.filter((g) => !displayedGroupIds.has(g.id));
+    if (extraGroups.length > 0) {
+      const manageLink = ui.link('Manage favorites for another group...', () => {
+        const menu = DG.Menu.popup();
+        for (const g of extraGroups) {
+          menu.item(g.friendlyName || g.name, () => {
+            showManageFavoritesDialog(g, [], rebuildSections);
+          });
+        }
+        menu.show();
+      });
+      manageLink.classList.add('pp-workspace-manage-link');
+      container.appendChild(manageLink);
     }
   }
 }
