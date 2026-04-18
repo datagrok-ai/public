@@ -15,6 +15,7 @@ browser or a logged-in session.
 | Task                                                        | Command                                                |
 |-------------------------------------------------------------|--------------------------------------------------------|
 | Create / update a user                                      | `grok s users save --json user.json`                   |
+| Block / unblock a user                                      | `grok s users block <login>` / `users unblock <login>` |
 | Create / update a group                                     | `grok s groups save --json group.json`                 |
 | Add or remove users in a group                              | `grok s groups add-members <group> <user>...`          |
 | List members of a group                                     | `grok s groups list-members <group>`                   |
@@ -24,7 +25,9 @@ browser or a logged-in session.
 | Create / update a connection                                | `grok s connections save --json conn.json`             |
 | Test a connection                                           | `grok s connections test <id-or-name>`                 |
 | Run a registered function                                   | `grok s functions run 'Pkg:fn(arg1,arg2)'`             |
+| List functions with rich filters                            | `grok s functions list --type script --language python --package Chem` |
 | List / browse files in a file share                         | `grok s files list "System:AppData" -r`                |
+| Upload / download a table (CSV)                             | `grok s tables upload <name> file.csv` / `tables download <name> -O out.csv` |
 | Check whether a package is deployed                         | `grok s packages list --filter "MyPlugin"`             |
 | Hit any undocumented endpoint                               | `grok s raw GET /api/users/current`                    |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
@@ -126,6 +129,17 @@ grok s groups list-memberships alice.mendel                    # groups a user b
 When a name is ambiguous the command prints every matching group and exits non-zero —
 pass a UUID to disambiguate, or add `--user` to restrict lookup to personal groups.
 
+## User administration
+
+```bash
+grok s users block   alice.mendel        # accept login, UUID, or namespace:name
+grok s users unblock alice.mendel
+```
+
+Both commands resolve the argument to a full user record first, so the server receives
+the entire object (matching the Python client's `grok.users.block(user)`). Blocking
+flips `status` to `Blocked` and terminates active sessions; unblocking restores `Active`.
+
 ## Sharing entities
 
 ```bash
@@ -143,6 +157,30 @@ grok s functions run 'Chem:smilesToMw("CCO")'                  # positional args
 grok s functions run 'Pkg:fn({smiles:"CCO", radius:2})'        # named args
 grok s functions run Pkg:fn --json params.json                 # big input from a file
 ```
+
+## Listing functions with filters
+
+`grok s functions list` composes a smart filter from flags so you don't have to hand-roll
+`text=` expressions. All flags are optional and combine with `and`; `--filter` lets you
+add any other smart-filter clause.
+
+```bash
+grok s functions list --type script --language python          # all python scripts
+grok s functions list --type query --package Chembl            # data-queries in one package
+grok s functions list --package PowerPack --type package       # package-bundled funcs only
+grok s functions list --language r --limit 20 --output json
+grok s functions list --type script --filter 'name contains "similarity"'
+```
+
+Flag cheat sheet:
+
+| Flag         | Values                                                     | Notes                                                             |
+|--------------|------------------------------------------------------------|-------------------------------------------------------------------|
+| `--type`     | `script`, `query` (alias for `data-query`), `function`, `package` | `function` matches both standalone and package-bundled funcs     |
+| `--language` | `python`, `r`, `julia`, `nodejs`, `octave`, `grok`, `javascript`, `pyodide` | Filters in the CLI (the server doesn't index Script.language); implies `--type script` when used alone |
+| `--package`  | package short name (e.g. `Chem`, `PowerPack`)              | Maps to `package.shortName` in the smart filter                  |
+| `--filter`   | any smart-filter expression                                | Combined with the other flags via `and`                          |
+| `--limit` / `--offset` | integers                                         | Applied client-side — the public list endpoint returns the full match set |
 
 ## Files
 
@@ -163,6 +201,24 @@ grok s files delete "System:AppData/MyPlugin/old.csv"
 without blowing up memory. Use `batch files.put` only when you want to bundle an
 upload with other operations in a single round-trip (the batch path base64-encodes
 the `source` before sending).
+
+## Tables
+
+CSV-level table I/O — the shell counterpart to Python's `grok.tables.upload/download`.
+Unlike `files put`, this registers a proper Datagrok table entity (returns `{ID, ...}`).
+
+```bash
+grok s tables upload MyTable ./data.csv                         # CSV → table
+grok s tables upload MyTable ./data.csv --output json           # get ID and markup back
+grok s tables download MyTable                                  # CSV to stdout (pipe-friendly)
+grok s tables download MyTable -O ./data.csv                    # CSV to a local file
+grok s tables download <uuid>                                   # UUID or namespace:name both work
+```
+
+Upload streams raw bytes with `Content-Type: text/csv` so it handles large tables
+without loading the whole file into a JSON envelope. `-O` / `--output-file` avoids
+colliding with the format flag (`--output table|json|csv|quiet`), which still controls
+how the upload result is printed.
 
 ## Raw API access
 
