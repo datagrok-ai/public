@@ -99,15 +99,17 @@ export class NodeApiClient {
   del(path: string): Promise<any> { return this.request('DELETE', path); }
 
   /**
-   * POST raw bytes with `Content-Type: application/octet-stream` — used for file uploads
-   * where the body must be the file content itself, not JSON.
+   * POST raw bytes — used for file/table uploads where the body must be the content
+   * itself, not JSON. Defaults to `application/octet-stream`; pass `text/csv` (or
+   * similar) when the server demands a specific content type.
    */
-  async putBytes(path: string, bytes: Uint8Array | Buffer): Promise<any> {
+  async putBytes(path: string, bytes: Uint8Array | Buffer,
+                 contentType: string = 'application/octet-stream'): Promise<any> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
       headers: {
         'Authorization': this.token,
-        'Content-Type': 'application/octet-stream',
+        'Content-Type': contentType,
       },
       body: bytes as any,
     });
@@ -331,6 +333,14 @@ export class NodeUsersDataSource extends NodeHttpDataSource {
   async save(user: any): Promise<any> {
     return this.client.post('/public/v1/users', ensureBodyId(user));
   }
+
+  async block(user: any): Promise<void> {
+    await this.client.post('/public/v1/users/block', user);
+  }
+
+  async unblock(user: any): Promise<void> {
+    await this.client.post('/public/v1/users/unblock', user);
+  }
 }
 
 export class NodeConnectionsDataSource extends NodeHttpDataSource {
@@ -423,6 +433,31 @@ export class NodeFilesDataSource {
   }
 }
 
+export class NodeTablesDataSource {
+  constructor(private client: NodeApiClient) {}
+
+  /** GET /public/v1/tables/{name} — returns CSV text. Name accepts UUID or `namespace:name`. */
+  async download(name: string): Promise<string> {
+    const seg = encodeURIComponent(name.replace(/:/g, '.'));
+    const result = await this.client.get(`/public/v1/tables/${seg}`);
+    // Datagrok returns HTTP 200 + ApiError JSON when the table isn't found.
+    const parsed = typeof result === 'string' ? tryParseJson(result) : result;
+    if (parsed && typeof parsed === 'object' && parsed['#type'] === 'ApiError') {
+      const err: NodeApiError = {error: parsed.message ?? 'Table download failed', errorCode: parsed.errorCode, stackTrace: parsed.stackTrace};
+      throw Object.assign(new Error(err.error), {apiError: err});
+    }
+    return result as string;
+  }
+
+  /** POST /public/v1/tables/{name} with raw CSV bytes. Returns `{ID, Grok name, Markup, URL}`. */
+  async upload(name: string, localPath: string): Promise<any> {
+    const fs = require('fs') as typeof import('fs');
+    const bytes = fs.readFileSync(localPath);
+    const seg = encodeURIComponent(name.replace(/:/g, '.'));
+    return this.client.putBytes(`/public/v1/tables/${seg}`, bytes, 'text/csv');
+  }
+}
+
 export class NodeDapi {
   constructor(private client: NodeApiClient) {}
 
@@ -436,6 +471,7 @@ export class NodeDapi {
   get reports(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'reports'); }
   get files(): NodeFilesDataSource { return new NodeFilesDataSource(this.client); }
   get shares(): NodeSharesDataSource { return new NodeSharesDataSource(this.client); }
+  get tables(): NodeTablesDataSource { return new NodeTablesDataSource(this.client); }
 
   async raw(method: string, path: string, body?: any): Promise<any> {
     // Raw paths are relative to server root (e.g. /api/users/current).

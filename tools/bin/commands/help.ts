@@ -380,7 +380,7 @@ Usage: grok server <entity> <verb> [args] [options]
 Manage a Datagrok server from the command line.
 
 Entities:
-  users, groups, functions, connections, queries, scripts, packages, reports, files
+  users, groups, functions, connections, queries, scripts, packages, reports, files, tables
 
 Verbs:
   list      List entities
@@ -389,17 +389,23 @@ Verbs:
 
 Special commands:
   grok s functions run <Name:func(args)>             Call a function
+  grok s functions list [--type <t>] [--language <l>] [--package <p>] [--filter <expr>]
+                                                     Type: script|query|function|package; language applies to scripts
   grok s files list [path] [-r]                      List files (recursive with -r)
   grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
                                                      Share an entity with groups
   grok s shares list <entity-id>                     List who an entity (UUID) is shared with
   grok s users save --json user.json                 Create or update a user from JSON
+  grok s users block <id-or-login>                   Block a user from the platform
+  grok s users unblock <id-or-login>                 Unblock a previously blocked user
   grok s groups save --json group.json [--save-relations]
                                                      Create or update a group from JSON
   grok s connections save --json conn.json [--save-credentials]
                                                      Create or update a connection from JSON
   grok s connections test <id-or-name>               Test connectivity of an existing connection
   grok s connections test --json conn.json           Test connectivity of a connection defined in JSON
+  grok s tables upload <name> <file.csv>             Upload a CSV as a Datagrok table
+  grok s tables download <name-or-id> [-O <file>]    Download a table as CSV (stdout by default)
   grok s raw <METHOD> <path>                         Hit any API endpoint
   grok s describe <entity-type>                      Show entity JSON schema
 
