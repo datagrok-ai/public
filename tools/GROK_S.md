@@ -30,6 +30,7 @@ browser or a logged-in session.
 | Upload / download a table (CSV)                             | `grok s tables upload <name> file.csv` / `tables download <name> -O out.csv` |
 | Check whether a package is deployed                         | `grok s packages list --filter "MyPlugin"`             |
 | Hit any undocumented endpoint                               | `grok s raw GET /api/users/current`                    |
+| Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
 
 ## Configuration
@@ -220,6 +221,33 @@ without loading the whole file into a JSON envelope. `-O` / `--output-file` avoi
 colliding with the format flag (`--output table|json|csv|quiet`), which still controls
 how the upload result is printed.
 
+## Server health
+
+```bash
+grok s healthcheck                             # full per-module health
+grok s healthcheck --module scripting          # filter to one module
+grok s healthcheck --output json               # machine-readable
+```
+
+Hits `GET /public/v1/healthcheck`. Response:
+
+```json
+{
+  "status":  "ok",
+  "server":  "https://public.datagrok.ai",
+  "version": "1.27",
+  "time":    "2026-04-19T19:20:00.000Z",
+  "services": [
+    { "key": "scripting", "type": "Service", "name": "...", "status": "Running", "started": true, "enabled": true, "time": "..." }
+  ]
+}
+```
+
+`services` is the same payload as `/admin/health` (per-`GrokServiceInfo` records).
+Requires a valid dev key (standard `grok s` auth). For an anonymous liveness probe —
+load balancer, k8s readiness — hit `/admin/health` directly; it's on the server's
+unauthenticated allowlist.
+
 ## Raw API access
 
 When no dedicated subcommand exists, fall through to `grok s raw`:
@@ -328,5 +356,6 @@ Every subcommand above is idempotent — re-running the whole block is safe.
 - Source: `public/tools/bin/commands/server.ts`, `public/tools/bin/utils/node-dapi.ts`.
 - The Node client talks directly to `/public/v1/` — no Dart interop, no browser, no
   logged-in session required. Authentication uses the developer key from the config.
-- If `grok s` is not working, start by running `grok s raw GET /api/users/current` —
-  this verifies the URL, the key, and basic connectivity in one step.
+- If `grok s` is not working, start by running `grok s healthcheck` — it verifies the
+  URL, the key, and basic connectivity, and returns per-module status if the server is
+  reachable. Fall back to `grok s raw GET /api/users/current` to isolate auth issues.

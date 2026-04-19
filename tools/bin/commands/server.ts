@@ -38,6 +38,7 @@ export async function server(argv: any): Promise<boolean> {
     if (entity === 'batch') return handleBatch(dapi, argv, verb, rest, output);
     if (entity === 'raw') return handleRaw(dapi, verb, rest, output);
     if (entity === 'describe') return handleDescribe(dapi, verb ?? rest[0], output);
+    if (entity === 'healthcheck') return handleHealthcheck(dapi, argv, output);
     if (entity === 'functions' && verb === 'run') return handleFuncRun(dapi, rest, argv, output);
     if (entity === 'functions' && verb === 'list') return handleFunctionsList(dapi, argv, limit, offset, filter, output);
     if (entity === 'files' && verb === 'list') {
@@ -241,6 +242,29 @@ async function handleRaw(dapi: NodeDapi, method: string | undefined, rest: strin
   const path = rest[0];
   const result = await dapi.raw(method, path);
   printOutput(result, output);
+  return true;
+}
+
+async function handleHealthcheck(dapi: NodeDapi, argv: any, output: OutputFormat): Promise<boolean> {
+  const module: string | undefined = argv.module;
+  const path = module
+    ? `/api/public/v1/healthcheck?module=${encodeURIComponent(module)}`
+    : '/api/public/v1/healthcheck';
+  const result = await dapi.raw('GET', path);
+
+  if (output === 'json') {
+    printOutput(result, output);
+    return true;
+  }
+
+  if (output !== 'quiet') {
+    console.log(`status:  ${result?.status ?? ''}`);
+    console.log(`server:  ${result?.server ?? ''}`);
+    console.log(`version: ${result?.version ?? ''}`);
+    console.log(`time:    ${result?.time ?? ''}`);
+    console.log('');
+  }
+  printOutput(result?.services ?? [], output);
   return true;
 }
 
@@ -575,6 +599,7 @@ Special commands:
   grok s files put <local> <remote>                   Upload a local file
   grok s raw <METHOD> <path>                          Hit any API endpoint
   grok s describe <entity-type>                       Show entity JSON schema
+  grok s healthcheck [--module <name>]                Check server + per-module health
   grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
                                                       Share an entity with one or more groups
   grok s shares list <entity-id>                      List who an entity (UUID) is shared with
