@@ -541,6 +541,8 @@ export interface IDartApi {
   grok_Grid_GetMaxVisibleCol(grid: any): any;
   grok_Grid_GetVisibleCells(grid: any, column: any): any;
   grok_Grid_AutoSize(grid: any, maxWidth: Num, maxHeight: Num, minWidth: Num, minHeight: Num, autoSizeOnDataChange: Bool): any;
+  grok_Grid_SetColumnsWidthType(grid: any, type: String, columns: any): any;
+  grok_GridColumn_SetWidthType(gc: any, type: String, extraWidth: Num): any;
   grok_Grid_TableRowToGrid(grid: any, tableRow: Num): any;
   grok_Grid_GridRowToTable(grid: any, gridRow: Num): any;
   grok_Grid_Render(grid: any, g: any, bounds: any): any;
@@ -1033,7 +1035,7 @@ export interface IDartApi {
   grok_Dapi_Notifications_ForCurrentUser(): any;
   grok_Dapi_Notifications_CountUnread(): Promise<any>;
   grok_Dapi_Notifications_MarkAllAsRead(): Promise<any>;
-  grok_Dapi_Notifications_MarkAsRead(notificationId: string): Promise<any>;
+  grok_Dapi_Notifications_MarkAsRead(notificationId: String): Promise<any>;
   grok_Dapi_Activity(): any;
   grok_Dapi_Activity_Where(activityClient: any, userId: String, start: any, end: any): any;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
@@ -1796,7 +1798,7 @@ export interface IDartApi {
   grok_UserNotification_CreatedAt(notification: any): any;
   grok_UserNotification_ReadAt(notification: any): any;
   grok_UserNotification_IsRead(notification: any): any;
-  grok_UserNotification_Id(notification: any): string;
+  grok_UserNotification_Id(notification: any): any;
   grok_Get_StackTrace_Hash(stackTrace: String): any;
   grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
   grok_GetLogger(params: any): any;
