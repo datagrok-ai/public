@@ -115,6 +115,10 @@ export interface SettingsInterface {
 
   enableIndexedDBTablesCache: boolean;
 
+  allowViewerMinimization: boolean;
+
+  viewersToTrellis: boolean;
+
   dateFormat: string;
 
   integerNumberFormat: string;

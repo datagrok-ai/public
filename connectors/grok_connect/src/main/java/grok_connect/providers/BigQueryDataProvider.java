@@ -20,12 +20,13 @@ import serialization.StringColumn;
 import serialization.Types;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 
 public class BigQueryDataProvider extends JdbcDataProvider {
-    private static final String SERVICE_ACCOUNT_METHOD = "Service Account/OAuthType=0";
-    private static final String OAUTH_METHOD = "OAuthType=2";
+    private static final String SERVICE_ACCOUNT_METHOD = "Service Account";
+    private static final String OAUTH_METHOD = "OAuth";
 
     public BigQueryDataProvider() {
         driverClassName = "com.simba.googlebigquery.jdbc42.Driver";
@@ -43,7 +44,25 @@ public class BigQueryDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.SECRET_KEY, "Key file that is used to authenticate the\n" +
                     "service account email address. This parameter supports keys in .json format.", SERVICE_ACCOUNT_METHOD, new Prop("rsa"), ".json"));
             add(new Property(Property.STRING_TYPE, "#OAuthAccessToken", null, OAUTH_METHOD, new Prop("password")));
+            add(new Property(Property.STRING_TYPE, "oauthScopes",
+                    "Space-separated OAuth scopes to request when consenting via the "
+                            + "configured OpenID Provider. Defaulted from the connector's OAuthSpec "
+                            + "under the active IdP flavour (oidc / azure). See "
+                            + "GENERALIZED_OAUTH_CONNECTORS.md.", OAUTH_METHOD));
         }};
+
+        // Lazy OAuth/OpenID consent descriptor. Datlas reads this to
+        // decide which scopes to request at the IdP popup. For Google
+        // Workspace federation, use the classic BigQuery scope; for
+        // Azure AD, use Google's resource-uri /.default convention.
+        descriptor.oauth = new OAuthSpec()
+                .scopes("oidc", Arrays.asList(
+                        "https://www.googleapis.com/auth/bigquery",
+                        "offline_access"))
+                .scopes("azure", Arrays.asList(
+                        "https://bigquery.googleapis.com/.default",
+                        "offline_access"))
+                .tokenProperty("OAuthAccessToken");
 
         descriptor.nameBrackets = "`";
         descriptor.typesMap = new HashMap<String, String>() {{

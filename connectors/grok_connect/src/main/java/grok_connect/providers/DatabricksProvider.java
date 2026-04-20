@@ -3,6 +3,7 @@ package grok_connect.providers;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.OAuthSpec;
 import grok_connect.utils.*;
 import serialization.DataFrame;
 import serialization.IntColumn;
@@ -15,8 +16,24 @@ import java.util.*;
 @SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 public class DatabricksProvider extends JdbcDataProvider {
     private static final String PAT_METHOD = "Personal Access Token";
+    // Existing machine-to-machine OAuth client-credentials flow.
+    // Kept alongside the new lazy-OAuth method — a client secret M2M
+    // grant is fundamentally different from a user-consent flow and
+    // some deployments rely on it.
     private static final String OAUTH_METHOD = "OAuth Client Credentials";
-    private static final String FEDERATED_SSO = "Federated (SSO)";
+    // Lazy-OAuth (post-rename): replaces the former "Federated (SSO)"
+    // label. Same JDBC sink (AuthMech=11, Auth_Flow=0,
+    // Auth_AccessToken=<token>) — the only difference is that the
+    // access token is now stored per-connection by Datlas rather than
+    // re-exchanged from the user's session token at query time.
+    private static final String OAUTH_METHOD_NAME = "OAuth";
+
+    // Public Microsoft constant: first-party AzureDatabricks service
+    // principal app id. Stable across all Azure tenants — not a
+    // secret, not per-customer, not configuration. Same value the
+    // databricks-cli and Terraform Databricks provider hardcode.
+    private static final String AZURE_DATABRICKS_APP_ID =
+            "2ff814a6-3304-4ab8-85cb-cd0e6f879c1d";
 
     public DatabricksProvider() {
         driverClassName = "com.databricks.client.jdbc.Driver";
@@ -42,8 +59,24 @@ public class DatabricksProvider extends JdbcDataProvider {
                     "The secret associated with the client ID.", OAUTH_METHOD, new Prop("password")));
             add(new Property(Property.STRING_TYPE, "tenantId",
                     "Azure Directory ID (tenant GUID) used for OAuth authentication. Leave empty for AWS or GCP workspaces.", OAUTH_METHOD));
-            add(new Property(Property.STRING_TYPE, "#token", null, FEDERATED_SSO, new Prop("password")));
+            add(new Property(Property.STRING_TYPE, "#token", null, OAUTH_METHOD_NAME, new Prop("password")));
+            add(new Property(Property.STRING_TYPE, "oauthScopes",
+                    "Space-separated OAuth scopes to request when consenting via the "
+                            + "configured OpenID Provider. Defaulted from the connector's OAuthSpec "
+                            + "under the active IdP flavour (oidc / azure). See "
+                            + "GENERALIZED_OAUTH_CONNECTORS.md.", OAUTH_METHOD_NAME));
         }};
+
+        // Lazy OAuth/OpenID consent descriptor. Azure AD uses
+        // first-party AzureDatabricks passthrough (no token exchange);
+        // every other OIDC provider triggers a /oidc/v1/token exchange
+        // on Datlas (see `_postProcessToken` in `oauth.dart`).
+        descriptor.oauth = new OAuthSpec()
+                .scopes("azure", Arrays.asList(
+                        AZURE_DATABRICKS_APP_ID + "/user_impersonation",
+                        "offline_access"))
+                .scopes("oidc", Collections.singletonList("offline_access"))
+                .tokenProperty("Auth_AccessToken");
 
         descriptor.nameBrackets = "`";
         descriptor.defaultSchema = "default";
@@ -87,7 +120,7 @@ public class DatabricksProvider extends JdbcDataProvider {
             properties.setProperty("AuthMech", "11");
             properties.setProperty("Auth_Flow", "1");
         }
-        else if (FEDERATED_SSO.equals(method)) {
+        else if (OAUTH_METHOD_NAME.equals(method)) {
             String token = (String) conn.credentials.parameters.get("#token");
             properties.setProperty("AuthMech", "11");
             properties.setProperty("Auth_Flow", "0");
@@ -473,7 +506,7 @@ public class DatabricksProvider extends JdbcDataProvider {
                 return false;
             }
             // Permission error - detection inconclusive
-            logger.debug("system.information_schema query failed (may lack permissions): {}", e.getMessage());
+            logger.debug("system.information_schema query failed (may lack permissions): {}", simplifyDatabricksError(e.getMessage()));
         }
 
         // Method 3: Try legacy information_schema directly (no catalog prefix)
