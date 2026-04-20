@@ -47,6 +47,34 @@ stack's template with the EKS template preserves your database and bucket. See
     2. Find `AWSQS::Kubernetes::Helm` and click **Activate**.
     3. Repeat for `AWSQS::Kubernetes::Resource`.
 
+## Deployment profiles
+
+| Profile | Description | Use when |
+|---------|-------------|----------|
+| **Full stack** (default) | Creates EKS cluster, node group, RDS, S3, IAM, and installs the Helm chart | Starting from scratch |
+| **Existing cluster** | Creates RDS, S3, IAM/IRSA, and secrets only — skips EKS cluster and node group | You already manage an EKS cluster |
+
+To use an existing cluster, set `UseExistingCluster=true` and provide your cluster
+details (`ExistingClusterName`, `ExistingClusterOIDCIssuerUrl`,
+`ExistingClusterSecurityGroupId`) when launching the stack. Gather them with:
+
+```bash
+CLUSTER=my-cluster
+aws eks describe-cluster --name $CLUSTER --query '{
+  OIDCIssuerUrl: cluster.identity.oidc.issuer,
+  SecurityGroupId: cluster.resourcesVpcConfig.clusterSecurityGroupId
+}'
+```
+
+The stack creates all supporting infrastructure (database, storage, IAM roles) and
+outputs the values needed for the Helm chart install. Follow the post-deploy steps
+in the [Helm chart guide](../k8s/install-helm-chart.md#using-an-existing-eks-cluster).
+
+> The stack does **not** create an EKS cluster, node group, or Fargate profile.
+> Ensure your existing cluster has sufficient node capacity and that the
+> [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
+> is already installed.
+
 ## Deploy Datagrok components
 
 We prepared a specific template for every need of our customers. Answer the simple questions below to use the right one for you.
