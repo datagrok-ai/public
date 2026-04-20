@@ -1,8 +1,10 @@
 // Dynamic workflow with data links and restrictions.
 // Users can add/remove analysis steps. The output of
 // the prepare step feeds into each analysis step's input.
+//
+// Install: npm i @datagrok-libraries/compute-api
 
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import type {PipelineConfiguration} from '@datagrok-libraries/compute-api';
 
 //name: DynamicWorkflow
 //tags: model
@@ -12,6 +14,8 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 export function dynamicWorkflow(): PipelineConfiguration {
   return {
     id: 'dynamic-analysis',
+    nqName: 'MyPackage:DynamicWorkflow',
+    version: '1.0',
     type: 'static',
     steps: [
       {

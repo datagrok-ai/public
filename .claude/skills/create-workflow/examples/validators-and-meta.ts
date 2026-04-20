@@ -1,7 +1,9 @@
 // Workflow with validators, meta links, and actions.
 // Demonstrates: cross-field validation, UI metadata, and user-triggered actions.
+//
+// Install: npm i @datagrok-libraries/compute-api
 
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import type {PipelineConfiguration} from '@datagrok-libraries/compute-api';
 
 //name: ValidatedWorkflow
 //tags: model
@@ -11,6 +13,8 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 export function validatedWorkflow(): PipelineConfiguration {
   return {
     id: 'validated',
+    nqName: 'MyPackage:ValidatedWorkflow',
+    version: '1.0',
     type: 'static',
     steps: [
       {
