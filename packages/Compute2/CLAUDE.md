@@ -223,10 +223,19 @@ grok test --skip-build --skip-publish \
 | ComputeUtils: Driver links retention | links-retention.ts |
 | ComputeUtils: Driver structure check hook running | structurecheck-hook.ts |
 
+### Testing Rules
+
+**Mandatory conventions for all new RTD tests:**
+
+- **RxJS virtual time only.** Use `TestScheduler` via `createTestScheduler()` from `test-utils.ts`. Never use `async/await`, `setTimeout`, `toPromise()`, or real async operations.
+- **Mock state only.** Use `mockMode: true` when creating `StateTree`. Use `FuncCallMockAdapter` / `MemoryStore` — never real `DG.FuncCall` instances or server calls.
+- **Inline configs.** Define `PipelineConfiguration` objects directly in the test file. Do not fetch configs from the server via `callHandler()` or `grok.functions.call()`.
+- **Marble diagrams for reactivity.** Test observable sequences with `expectObservable()`, `cold()`, `hot()` inside `testScheduler.run()`.
+- **Snapshot compare for tree structure.** Use `snapshotCompare(tree.toSerializedState({disableNodesUUID: true}), 'Name')`.
+
 ### Testing Notes
 
-- Tests use RxJS `TestScheduler`. The `before()` hook in Datagrok test framework runs **once per category** (beforeAll), not before each test.
-- Use `createTestScheduler()` from `test-utils.ts` which resets `frame`/`index` before each `run()` call.
+- `before()` runs **once per category** (beforeAll), not per test. Use `createTestScheduler()` which resets `frame`/`index` on each `run()` call.
 - LibTests webpack intentionally bundles its own `rxjs` so `TestScheduler` can intercept `AsyncScheduler.delegate`.
 - Puppeteer browser path and Datagrok host settings are environment-specific. Check Claude Code memory files for your local setup, or configure `PUPPETEER_EXECUTABLE_PATH` and `--host` as needed.
 
