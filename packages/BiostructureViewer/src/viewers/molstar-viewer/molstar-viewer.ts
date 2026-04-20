@@ -16,9 +16,9 @@ import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {to_mmCIF} from 'molstar/lib/mol-model/structure/export/mmcif';
 import {utf8ByteCount, utf8Write} from 'molstar/lib/mol-io/common/utf8';
-import { zip } from 'molstar/lib/mol-util/zip/zip';
-import { SyncRuntimeContext } from 'molstar/lib/mol-task/execution/synchronous';
-import { AssetManager } from 'molstar/lib/mol-util/assets';
+import {zip} from 'molstar/lib/mol-util/zip/zip';
+import {SyncRuntimeContext} from 'molstar/lib/mol-task/execution/synchronous';
+import {AssetManager} from 'molstar/lib/mol-util/assets';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {
@@ -41,14 +41,26 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData} from './molstar-viewer-open';
 import {defaults, molecule3dFileExtensions} from './consts';
 import {createRcsbViewer, disposeRcsbViewer} from './utils';
+import {
+  createBindingSiteOverlay,
+  getLigandSeedExpression,
+  buildBindingSiteComponentFromExpression,
+  buildBindingSiteComponentFromPositions,
+  getLigandAtomPositions,
+  BindingSiteOverlayHandlers,
+} from './binding-site';
+import {MolScriptBuilder as MS} from 'molstar/lib/mol-script/language/builder';
 
 import {_package} from '../../package';
-import { convertWasm } from '../../conversion/wasm/converterWasm';
-import { StateObjectRef } from 'molstar/lib/mol-state';
-import { createStructureRepresentationParams } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
-import { StructureRepresentationRegistry } from 'molstar/lib/mol-repr/structure/registry';
-import { StateTransforms } from 'molstar/lib/mol-plugin-state/transforms';
-import { StateElements } from 'molstar/lib/examples/proteopedia-wrapper/helpers';
+import {convertWasm} from '../../conversion/wasm/converterWasm';
+import {StateObjectRef} from 'molstar/lib/mol-state';
+import {createStructureRepresentationParams} from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
+import {StructureRepresentationRegistry} from 'molstar/lib/mol-repr/structure/registry';
+import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
+import {StateElements} from 'molstar/lib/examples/proteopedia-wrapper/helpers';
+import {Structure, StructureElement, StructureProperties as SP} from 'molstar/lib/mol-model/structure';
+import {PluginUIContext} from 'molstar/lib/mol-plugin-ui/context';
+import {StructureRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -71,6 +83,7 @@ const enum PROPS_CATS {
   LAYOUT = 'Layout',
   CONTROLS = 'Controls',
   BEHAVIOUR = 'Behaviour',
+  BINDING_SITE = 'Binding Site',
 }
 
 export enum PROPS {
@@ -115,6 +128,11 @@ export enum PROPS {
   showCurrentRowLigand = 'showCurrentRowLigand',
   showMouseOverRowLigand = 'showMouseOverRowLigand',
   zoom = 'zoom',
+
+  // -- Binding Site --
+  showBindingSite = 'showBindingSite',
+  bindingSiteRadius = 'bindingSiteRadius',
+  bindingSiteWholeResidues = 'bindingSiteWholeResidues',
 }
 
 const pdbDefault: string = '';
@@ -193,6 +211,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   // }(this);
   [PROPS.zoom]: boolean;
 
+  // -- Binding Site --
+  [PROPS.showBindingSite]: boolean;
+  [PROPS.bindingSiteRadius]: number;
+  [PROPS.bindingSiteWholeResidues]: boolean;
+
   constructor() {
     super();
 
@@ -212,7 +235,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       {category: PROPS_CATS.DATA});
     this.biostructureDataProvider = this.string(PROPS.biostructureDataProvider, defaults.biostructureDataProvider,
       {category: PROPS_CATS.DATA, /* fill choices in setData() */});
-    
+
     this.ligandColumnName = this.string(PROPS.ligandColumnName, defaults.ligandColumnName,
       {category: PROPS_CATS.DATA});
     // this.pdbProvider = this.string(PROPS.pdbProvider, defaults.pdbProvider,
@@ -277,6 +300,16 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // --
     this.zoom = this.bool(PROPS.zoom, false, {userEditable: false});
+
+    // -- Binding Site --
+    this.showBindingSite = this.bool(PROPS.showBindingSite, false,
+      {category: PROPS_CATS.BINDING_SITE, description: 'Highlight protein residues near the ligand'});
+    this.bindingSiteRadius = this.float(PROPS.bindingSiteRadius, 5,
+      {category: PROPS_CATS.BINDING_SITE, min: 3, max: 10,
+        description: 'Radius in \u00C5 for binding site residue selection'});
+    this.bindingSiteWholeResidues = this.bool(PROPS.bindingSiteWholeResidues, true,
+      {category: PROPS_CATS.BINDING_SITE, description: 'Include whole residues (not just atoms within radius)'});
+
     this.root.style.textAlign = 'center';
 
     this.logger = _package.logger;
@@ -295,7 +328,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private _initButtonExpand() {
     const button = $('.msp-btn.msp-btn-icon.msp-btn-link-toggle-off');
-    button.on('click',  () => this.root.requestFullscreen());
+    button.on('click', () => this.root.requestFullscreen());
   }
 
   private async _initProps() {
@@ -356,35 +389,35 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const plugin: PluginContext = this.viewer.plugin;
       const state: Partial<PluginLayoutStateProps> = {};
       switch (property.name) {
-        case PROPS.layoutShowLog: {
-          // PluginCommands.Layout.Update(plugin, );
-          const _k = 11;
-          break;
-        }
-        case PROPS.layoutShowControls: {
-          state.showControls = this.layoutShowControls;
-          break;
-        }
-        case PROPS.layoutIsExpanded: {
-          state.isExpanded = this.layoutIsExpanded;
-          break;
-        }
-        case PROPS.layoutRegionStateLeft:
-        case PROPS.layoutRegionStateTop:
-        case PROPS.layoutRegionStateRight:
-        case PROPS.layoutRegionStateBottom: {
-          state.regionState = {
-            left: this.layoutRegionStateLeft,
-            top: this.layoutRegionStateTop,
-            right: this.layoutRegionStateRight,
-            bottom: this.layoutRegionStateBottom,
-          };
-          break;
-        }
-        case PROPS.layoutControlsDisplay: {
-          state.controlsDisplay = this.layoutControlsDisplay as PluginLayoutControlsDisplay;
-          break;
-        }
+      case PROPS.layoutShowLog: {
+        // PluginCommands.Layout.Update(plugin, );
+        const _k = 11;
+        break;
+      }
+      case PROPS.layoutShowControls: {
+        state.showControls = this.layoutShowControls;
+        break;
+      }
+      case PROPS.layoutIsExpanded: {
+        state.isExpanded = this.layoutIsExpanded;
+        break;
+      }
+      case PROPS.layoutRegionStateLeft:
+      case PROPS.layoutRegionStateTop:
+      case PROPS.layoutRegionStateRight:
+      case PROPS.layoutRegionStateBottom: {
+        state.regionState = {
+          left: this.layoutRegionStateLeft,
+          top: this.layoutRegionStateTop,
+          right: this.layoutRegionStateRight,
+          bottom: this.layoutRegionStateBottom,
+        };
+        break;
+      }
+      case PROPS.layoutControlsDisplay: {
+        state.controlsDisplay = this.layoutControlsDisplay as PluginLayoutControlsDisplay;
+        break;
+      }
         // case PROPS.viewportShowExpand: {
         //   await PluginCommands.State.ToggleExpanded(plugin,
         //     {state: {isExpanded: this.viewportShowExpand}})
@@ -398,47 +431,77 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // Type checks
     switch (property.name) {
-      case PROPS.dataJson: {
-        if (typeof this.dataJson !== 'string')
-          throw new Error(`Property '${property.name}' value is of invalid type '${typeof this.dataJson}'.`);
-        break;
-      }
+    case PROPS.dataJson: {
+      if (typeof this.dataJson !== 'string')
+        throw new Error(`Property '${property.name}' value is of invalid type '${typeof this.dataJson}'.`);
+      break;
+    }
     }
 
     switch (property.name) {
-      case PROPS.biostructureDataProvider: {
-        // reset for setData
-        this.biostructureDataProviderFunc = null;
-        break;
-      }
-      case PROPS.pdb:
-      case PROPS.dataJson: {
-        // reset for setData
-        this.dataEff = null;
-        break;
-      }
+    case PROPS.biostructureDataProvider: {
+      // reset for setData
+      this.biostructureDataProviderFunc = null;
+      break;
+    }
+    case PROPS.pdb:
+    case PROPS.dataJson: {
+      // reset for setData
+      this.dataEff = null;
+      break;
+    }
 
-      case PROPS.representation: {
-        const checkAndUpdate = () => {
-          if (!this.setDataInProgress && this.viewer)
-            this.updateView(this.representation);
-          else
-            requestAnimationFrame(checkAndUpdate);
-        };
-        checkAndUpdate();
-        break;
-      }
-      
-      case PROPS.showImportControls:
-        break;
-      case PROPS.layoutIsExpanded:
-        this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
-        break;
-      case PROPS.showSelectedRowsLigands:
-      case PROPS.showCurrentRowLigand:
-      case PROPS.showMouseOverRowLigand:
+    case PROPS.representation: {
+      const checkAndUpdate = () => {
+        if (!this.setDataInProgress && this.viewer)
+          this.updateView(this.representation);
+        else
+          requestAnimationFrame(checkAndUpdate);
+      };
+      checkAndUpdate();
+      break;
+    }
+
+    case PROPS.showImportControls:
+      break;
+    case PROPS.layoutIsExpanded:
+      this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
+      // Mol* layout shift: re-parent and re-measure the binding-site overlay.
+      // Schedule a few retries because Mol* animates the layout change.
+      this._attachBindingSiteOverlay();
+      setTimeout(() => this._attachBindingSiteOverlay(), 200);
+      setTimeout(() => this._attachBindingSiteOverlay(), 600);
+      break;
+    case PROPS.showSelectedRowsLigands:
+    case PROPS.showCurrentRowLigand:
+    case PROPS.showMouseOverRowLigand:
+      this.onRebuildViewLigandsRequest.next();
+      break;
+    case PROPS.showBindingSite:
+    case PROPS.bindingSiteRadius:
+    case PROPS.bindingSiteWholeResidues:
+      // When the user explicitly toggles the binding site OFF, also clear
+      // Mol*'s built-in click-to-focus representation. Mol*'s default focus
+      // behavior auto-creates ball-and-stick for the surroundings (5 Å) of
+      // any clicked atom (tag `structure-focus-surr-repr`), which is visually
+      // indistinguishable from our binding-site view. Without this, a
+      // residue the user clicked in the 3D scene leaves orphaned side-chain
+      // sticks behind when our checkbox is turned off.
+      if (property.name === PROPS.showBindingSite && !this.showBindingSite && this.viewer)
+        try { this.viewer.plugin.managers.structure.focus.clear(); } catch { /* noop */ }
+
+      // Path B (ligand column): full rebuild covers applyBindingSiteView.
+      // Path A (HET in PDB): trigger directly through the syncer.
+      if (this.ligandColumnName && this.dataFrame)
         this.onRebuildViewLigandsRequest.next();
-        break;
+      else {
+        this.viewSyncer.sync(`onPropertyChanged(${property.name})`, async () => {
+          await this.clearBindingSiteView();
+          if (this.showBindingSite) await this.applyBindingSiteView();
+        });
+      }
+      this._refreshBindingSiteOverlay();
+      break;
     }
 
     const propName: string = property.name;
@@ -449,16 +512,16 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     });
 
     switch (property.name) {
-      case PROPS.dataJson:
-      case PROPS.pdb:
-      case PROPS.pdbTag:
-      case PROPS.biostructureDataProvider:
-      case PROPS.biostructureIdColumnName:
-      case PROPS.ligandValue:
-      case PROPS.ligandColumnName: {
-        this.setData(logIndent + 1, callLog);
-        break;
-      }
+    case PROPS.dataJson:
+    case PROPS.pdb:
+    case PROPS.pdbTag:
+    case PROPS.biostructureDataProvider:
+    case PROPS.biostructureIdColumnName:
+    case PROPS.ligandValue:
+    case PROPS.ligandColumnName: {
+      this.setData(logIndent + 1, callLog);
+      break;
+    }
     }
     this.logger.debug(`${logPrefix}, end`);
   }
@@ -500,21 +563,21 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     ui.tools.waitForElementInDom(this.root).then(() => this.initializeResizeHandling());
     this.logger.debug(`${logPrefix}, end`);
   }
-  
+
   initializeResizeHandling(): void {
     const dialogPanel = this.root.closest('.dialog-floating') as HTMLElement;
     const accPanel = this.root.closest('.d4-accordion-pane-content') as HTMLElement;
     const resizeTarget = dialogPanel || accPanel;
-    
+
     if (!resizeTarget) return;
-    
+
     const setDimensions = (element: HTMLElement | null, width: number, height: number) => {
       if (element) {
         element.style.width = `${width}px`;
         element.style.height = `${height}px`;
       }
     };
-    
+
     const resizeCanvasAndViewer = (width: number, height: number) => {
       const canvas = this.viewer?.plugin.canvas3dContext?.canvas;
       setDimensions(this.viewerDiv!, width, height);
@@ -523,7 +586,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       this.viewer?.plugin.canvas3d?.handleResize();
       this.viewer?.plugin.handleResize();
     };
-    
+
     this.subs.push(ui.onSizeChanged(resizeTarget).subscribe(() => {
       const width = resizeTarget.clientWidth;
       const height = resizeTarget.clientHeight;
@@ -539,7 +602,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
       if (accPanel)
         resizeCanvasAndViewer(width, height);
-    }))
+    }));
   }
 
   override detach(): void {
@@ -555,6 +618,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         await this.destroyView(true, logIndent + 1, callLog);
         this.viewed = false;
       }
+      this._destroyBindingSiteOverlay();
       superDetach();
     });
     this.logger.debug(`${logPrefix}, end`);
@@ -579,11 +643,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   async writeToFormat(format: 'cif' | 'pdb') {
     const fileName = 'file';
-    const { structures } = this.viewer!.plugin.managers.structure.hierarchy.current;
+    const {structures} = this.viewer!.plugin.managers.structure.hierarchy.current;
     const _s = structures[0];
     const s = _s.transform?.cell.obj?.data ?? _s.cell.obj?.data;
     const cif = to_mmCIF(fileName, s!) as string;
-    
+
     if (format === 'cif')
       DG.Utils.download(`${fileName}.cif`, cif);
     else if (format === 'pdb') {
@@ -591,10 +655,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       DG.Utils.download(`${fileName}.pdb`, pdb);
     }
   }
-  
+
   async _exportHierarchy(plugin: PluginContext, options?: { format?: 'cif' }) {
     const format = options?.format ?? 'cif';
-    const { structures } = plugin.managers.structure.hierarchy.current;
+    const {structures} = plugin.managers.structure.hierarchy.current;
     const files: [name: string, data: string | Uint8Array][] = [];
     const entryMap = new Map<string, number>();
     for (const _s of structures) {
@@ -602,13 +666,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       if (!s) continue;
       const name = s.model.entryId || 'unnamed';
 
-      const fileName = entryMap.has(name)
-        ? `${name}_${entryMap.get(name)! + 1}.${format}`
-        : `${name}.${format}`;
+      const fileName = entryMap.has(name) ?
+        `${name}_${entryMap.get(name)! + 1}.${format}` :
+        `${name}.${format}`;
       entryMap.set(name, (entryMap.get(name) ?? 0) + 1);
 
       if (s.elementCount > 100000)
-        await new Promise(res => setTimeout(res, 50));
+        await new Promise((res) => setTimeout(res, 50));
 
       try {
         files.push([fileName, to_mmCIF(name, s)]);
@@ -616,8 +680,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         this.logger.error(e);
       }
     }
-    
-    var blob;
+
+    let blob;
     if (files.length === 1)
       blob = new Blob([files[0][1] as BlobPart]), files[0][0];
     else if (files.length > 1) {
@@ -632,7 +696,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         }
       }
       const assetManager = new AssetManager();
-      const ctx = { runtime: SyncRuntimeContext, assetManager };
+      const ctx = {runtime: SyncRuntimeContext, assetManager};
       const buffer = await zip(ctx.runtime, zipData);
       //@ts-ignore
       blob = new Blob([new Uint8Array(buffer, 0, buffer.byteLength)]);
@@ -676,9 +740,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         if (this.pdb) pdb = this.pdb;
         if (pdb && pdb != pdbDefault)
           this.dataEff = {binary: false, ext: 'pdb', data: pdb!};
-        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty) {
+        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty)
           this.dataEff = BiostructureDataJson.toData(this.dataJson);
-        }
+
         if (this.biostructureDataProvider) {
           if (!this.biostructureDataProviderFunc) {
             this.biostructureDataProviderFunc = this.biostructureDataProviderList
@@ -732,6 +796,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     if (this.dataFrame && this.ligandColumnName)
       await this.destroyViewLigands(logIndent + 1, callLog);
+    await this.clearBindingSiteView();
 
     if (free /* detach */) {
       if (this.viewerDiv) {
@@ -777,13 +842,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const splash = buildSplash(this.root, `Loading data of '${id}'.`);
     try {
       // while loading the next, the previous structure is covered by splash
-      const dataString = col.semType === DG.SEMTYPE.MOLECULE3D
-        ? BiostructureDataJson.fromData({ binary: false, data: id, ext: 'pdb' })
-        : await (async () => {
-          const fetchData = await this.biostructureDataProviderFunc!.prepare({ id }).call();
+      const dataString = col.semType === DG.SEMTYPE.MOLECULE3D ?
+        BiostructureDataJson.fromData({binary: false, data: id, ext: 'pdb'}) :
+        await (async () => {
+          const fetchData = await this.biostructureDataProviderFunc!.prepare({id}).call();
           return fetchData.getOutputParamValue() as string;
         })();
-      
+
       const dataEff = BiostructureDataJson.toData(dataString);
       const plugin = this.viewer!.plugin;
       await this.destroyViewLigands(0, callLog);
@@ -817,6 +882,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       Object.assign(props, this.viewerProps);
       // this.viewer = new RcsbViewer(this.viewerDiv, props);
       this.viewer = await createRcsbViewer(this.viewerDiv, props);
+      await this._disableMolstarAutoFocusRepresentation();
     }
     if (!this.viewer) throw new Error(`The 'viewer' is not created.`);
 
@@ -825,10 +891,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     }));
 
-    const isPdbColumn = this.biostructureIdColumnName
-      ? this.dataFrame.getCol(this.biostructureIdColumnName).semType === DG.SEMTYPE.MOLECULE3D
-      : false;
-      
+    const isPdbColumn = this.biostructureIdColumnName ?
+      this.dataFrame.getCol(this.biostructureIdColumnName).semType === DG.SEMTYPE.MOLECULE3D :
+      false;
+
     const hasValidDataProvider = this.biostructureDataProviderFunc && !isPdbColumn;
     if (this.dataFrame && (hasValidDataProvider || isPdbColumn)) {
       this.viewSubs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, DebounceIntervals.currentRow).subscribe(
@@ -856,6 +922,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         await this.buildViewLigands(logIndent, callLog);
       }
     }
+    // Attach the V2b overlay after viewer is ready (idempotent)
+    this._ensureBindingSiteOverlay();
+    // Path A: apply if no ligandColumnName but showBindingSite is already true
+    if (this.showBindingSite && !this.ligandColumnName)
+      await this.applyBindingSiteView();
+    // Re-evaluate overlay visibility (polymer presence, ligand availability).
+    this._refreshBindingSiteOverlay();
 
     this.logger.debug(`${logPrefix}, end`);
   }
@@ -894,10 +967,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private async updateView(type: any) {
     const entries = this.viewer!.plugin.managers.structure.selection.entries;
     const state = this.viewer!.plugin.state;
-    entries.forEach(async ({ selection }, ref) => {
+    entries.forEach(async ({selection}, ref) => {
       const cell = StateObjectRef.resolveAndCheck(state!.data, ref);
       if (cell) {
-        const components = this.viewer!.plugin.build().to(cell)
+        const components = this.viewer!.plugin.build().to(cell);
         const repr = createStructureRepresentationParams(this.viewer!.plugin, void 0, {
           type: type
         });
@@ -905,7 +978,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         await components.commit();
       }
     });
-  }  
+  }
 
   private calcSize(logIndent: number, caller: string): void {
     const callLog = `calcSize( <- ${caller} )`;
@@ -996,36 +1069,36 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     let ligandValue: string;
     let ligandFormat: BuiltInTrajectoryFormat | TrajectoryFormatProvider;
     switch (ligandSemType) {
-      case DG.SEMTYPE.MOLECULE: {
-        switch (ligandUnits) {
-          default: {
-            ligandFormat = 'sdf';
-            ligandValue = ligandCellValue + '$$$$';
-          }
-        }
+    case DG.SEMTYPE.MOLECULE: {
+      switch (ligandUnits) {
+      default: {
+        ligandFormat = 'sdf';
+        ligandValue = ligandCellValue + '$$$$';
+      }
+      }
+      break;
+    }
+
+    case DG.SEMTYPE.MOLECULE3D: {
+      switch (ligandUnits) {
+      case Molecule3DUnits.pdb: {
+        ligandFormat = 'pdb';
+        ligandValue = ligandCellValue;
         break;
       }
-
-      case DG.SEMTYPE.MOLECULE3D: {
-        switch (ligandUnits) {
-          case Molecule3DUnits.pdb: {
-            ligandFormat = 'pdb';
-            ligandValue = ligandCellValue;
-            break;
-          }
-          case Molecule3DUnits.pdbqt: {
-            ligandFormat = 'pdbqt';
-            ligandValue = ligandCellValue;
-            break;
-          }
-          default:
-            throw new Error(`Unsupported units '${ligandUnits}' of '${DG.SEMTYPE.MOLECULE3D}' ligand.`);
-        }
+      case Molecule3DUnits.pdbqt: {
+        ligandFormat = 'pdbqt';
+        ligandValue = ligandCellValue;
         break;
       }
-
       default:
-        throw new Error(`Unsupported ligand semantic type '${ligandSemType}'.`);
+        throw new Error(`Unsupported units '${ligandUnits}' of '${DG.SEMTYPE.MOLECULE3D}' ligand.`);
+      }
+      break;
+    }
+
+    default:
+      throw new Error(`Unsupported ligand semantic type '${ligandSemType}'.`);
     }
     // const ligandBlob: Blob = new Blob([ligandStr], {type: 'text/plain'});
     // return ligandBlob;
@@ -1047,6 +1120,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.logger.debug(`${logPrefix}, start`);
 
     if (!this.viewer) throw new Error('The viewer is not created'); // return; // There is not PDB data
+    await this.clearBindingSiteView();
     if (!this.ligandColumnName) return;
 
     const allLigands: LigandMapItem[] = [
@@ -1122,11 +1196,236 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // Because of the async nature of loading structures to .viewer, the .dataFrame property can be changed (to null).
     // So collect data from the .dataFrame synchronously and then add ligands to the .viewer with postponed sync.
-    await Promise.all(ligandTaskList.map(async (task) => {try {await task()} catch (e) {_package.logger.error(e);}})).then(() => {
+    await Promise.all(ligandTaskList.map(async (task) => { try { await task(); } catch (e) { _package.logger.error(e); } })).then(() => {
       this.ligands = newLigands;
     });
 
+    // Binding site: Path B (ligand from column). Apply after ligands are on stage.
+    if (this.showBindingSite)
+      await this.applyBindingSiteView();
+    this._refreshBindingSiteOverlay();
+
     this.logger.debug(`${logPrefix}, end`);
+  }
+
+  // -- Binding site --
+
+  /** Refs of the current binding-site Mol* state objects (for cleanup). */
+  private bindingSiteRefs: string[] = [];
+  /** The overlay DOM element attached to this.root. Null until first buildViewWithData. */
+  private bindingSiteOverlay: HTMLElement | null = null;
+
+  /** Idempotently creates and attaches the V2b overlay to this.root. */
+  private _ensureBindingSiteOverlay(): void {
+    if (this.bindingSiteOverlay) return;
+    const handlers: BindingSiteOverlayHandlers = {
+      getShowBindingSite: () => this.showBindingSite,
+      setShowBindingSite: (v: boolean) => { this.setOptions({[PROPS.showBindingSite]: v}); },
+      getBindingSiteRadius: () => this.bindingSiteRadius,
+      setBindingSiteRadius: (v: number) => { this.setOptions({[PROPS.bindingSiteRadius]: v}); },
+      isLigandAvailable: () => this._isLigandAvailable(),
+      hasPolymer: () => this._hasPolymer(),
+    };
+    this.bindingSiteOverlay = createBindingSiteOverlay(handlers);
+    this._attachBindingSiteOverlay();
+  }
+
+  /**
+   * Returns true if any loaded structure contains polymer (protein) atoms.
+   * The binding-site overlay is hidden when this is false — small-molecule-
+   * only views don't have side chains to highlight.
+   *
+   * Uses StructureProperties.entity.type on the first element of each unit;
+   * Mol* guarantees all atoms in a unit share the same entity type.
+   */
+  private _hasPolymer(): boolean {
+    // Default to "yes, show the button" while we don't yet have a loaded
+    // structure to inspect. Only hide when we can positively confirm there
+    // is no polymer (structure present but all units are non-polymer).
+    if (!this.viewer) return true;
+    const structures = this.viewer.plugin.managers.structure.hierarchy.current.structures;
+    if (structures.length === 0) return true;
+    let sawAnyUnit = false;
+    for (const sRef of structures) {
+      const s = sRef.cell.obj?.data as Structure | undefined;
+      if (!s) continue;
+      for (const unit of s.units) {
+        if (unit.elements.length === 0) continue;
+        sawAnyUnit = true;
+        const loc = StructureElement.Location.create(s, unit, unit.elements[0]);
+        try {
+          if (SP.entity.type(loc) === 'polymer') return true;
+        } catch { /* fall through */ }
+      }
+    }
+    // No units examined → loading, assume polymer. Only hide when units
+    // existed and none were polymer.
+    return !sawAnyUnit;
+  }
+
+  /**
+   * Attach (or re-parent) the binding-site overlay to `.msp-viewport` when
+   * available, so the overlay lives in Mol*'s viewport coordinate system
+   * and is naturally clipped/visible with the same stacking as the strip.
+   * Falls back to `this.root` until the viewport element exists.
+   */
+  private _attachBindingSiteOverlay(): void {
+    if (!this.bindingSiteOverlay) return;
+    const viewport = this.root.querySelector('.msp-viewport') as HTMLElement | null;
+    const target: HTMLElement = viewport ?? this.root;
+    if (getComputedStyle(target).position === 'static')
+      target.style.position = 'relative';
+    if (this.bindingSiteOverlay.parentElement !== target)
+      target.appendChild(this.bindingSiteOverlay);
+    (this.bindingSiteOverlay as any)._bsvReposition?.();
+  }
+
+  /** Removes the V2b overlay from DOM and unregisters document listeners. */
+  private _destroyBindingSiteOverlay(): void {
+    if (!this.bindingSiteOverlay) return;
+    (this.bindingSiteOverlay as any)._bsvCleanup?.();
+    this.bindingSiteOverlay.remove();
+    this.bindingSiteOverlay = null;
+  }
+
+  /** Push current viewer state to the overlay without re-creating it. */
+  private _refreshBindingSiteOverlay(): void {
+    (this.bindingSiteOverlay as any)?._bsvRefreshUI?.();
+  }
+
+  /**
+   * Disable Mol*'s built-in `StructureFocusRepresentation` behavior so that
+   * clicking a residue or ligand does not auto-render ball-and-stick side
+   * chains for the surroundings. Our "Show binding site" checkbox is the
+   * single source of truth for side-chain visibility — without this, Mol*'s
+   * own focus behavior renders a parallel binding-site view with the same
+   * 5 Å radius, confusing the user and leaving orphaned geometry when our
+   * checkbox is toggled off. Called once per viewer, right after
+   * `createRcsbViewer` returns.
+   */
+  private async _disableMolstarAutoFocusRepresentation(): Promise<void> {
+    if (!this.viewer) return;
+    const plugin = this.viewer.plugin;
+    let focusBehaviorRef: string | null = null;
+    plugin.state.behaviors.cells.forEach((cell, ref) => {
+      if (cell.transform?.transformer?.id === 'ms-plugin.create-structure-focus-representation')
+        focusBehaviorRef = ref as string;
+    });
+    if (!focusBehaviorRef) return;
+    try {
+      const b = plugin.state.behaviors.build();
+      b.to(focusBehaviorRef).update((old: any) => ({...old, components: []}));
+      await plugin.runTask(plugin.state.behaviors.updateTree(b));
+    } catch (e) {
+      this.logger.warning(`_disableMolstarAutoFocusRepresentation failed: ${String(e)}`);
+    }
+  }
+
+  /**
+   * Returns true if there is a ligand seed available:
+   * - Path B: ligandColumnName is set and the column has data.
+   * - Path A: the loaded structure has at least one non-blocked HET.
+   */
+  private _isLigandAvailable(): boolean {
+    if (this.dataFrame && this.ligandColumnName) return true;
+    if (!this.viewer) return false;
+    const structures = this.viewer.plugin.managers.structure.hierarchy.current.structures;
+    for (const sRef of structures) {
+      const s = sRef.cell.obj?.data as Structure | undefined;
+      if (!s) continue;
+      if (getLigandSeedExpression(s) !== null) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Main entry: decides which path to use and applies the binding-site representation.
+   * Called at the end of buildViewWithData (Path A) and at the end of buildViewLigands (Path B).
+   */
+  private async applyBindingSiteView(): Promise<void> {
+    if (!this.showBindingSite) return;
+    if (!this.viewer) return;
+
+    // Clear any existing binding-site components first
+    await this.clearBindingSiteView();
+
+    const plugin = this.viewer.plugin;
+    const structures = plugin.managers.structure.hierarchy.current.structures;
+    if (structures.length === 0) return;
+
+    const radius = this.bindingSiteRadius;
+    const wholeResidues = this.bindingSiteWholeResidues;
+
+    // Path B: ligand column present — cross-structure lookup
+    if (this.dataFrame && this.ligandColumnName) {
+      await this._applyBindingSitePathB(plugin, structures, radius, wholeResidues);
+      return;
+    }
+
+    // Path A: HET inside the loaded PDB/mmCIF
+    await this._applyBindingSitePathA(plugin, structures, radius, wholeResidues);
+  }
+
+  private async _applyBindingSitePathA(
+    plugin: PluginUIContext,
+    structures: ReadonlyArray<StructureRef>,
+    radius: number,
+    wholeResidues: boolean,
+  ): Promise<void> {
+    // Apply to the main (first) structure only.
+    const sRef = structures[0];
+    const s = sRef?.cell.obj?.data as Structure | undefined;
+    if (!s) return;
+
+    const ligandExpr = getLigandSeedExpression(s);
+    if (!ligandExpr) return; // apo — no-op
+
+    const surroundingsExpr = MS.struct.modifier.includeSurroundings({
+      '0': ligandExpr, 'radius': radius, 'as-whole-residues': wholeResidues,
+    });
+    const refs = await buildBindingSiteComponentFromExpression(
+      plugin, sRef.cell.transform.ref, surroundingsExpr);
+    this.bindingSiteRefs.push(...refs);
+  }
+
+  private async _applyBindingSitePathB(
+    plugin: PluginUIContext,
+    structures: ReadonlyArray<StructureRef>,
+    radius: number,
+    wholeResidues: boolean,
+  ): Promise<void> {
+    // Pick the "seed" ligand structure: prefer current row, fall back to first selected
+    const seedLigand = this.ligands.current ?? this.ligands.selected[0] ?? null;
+    if (!seedLigand?.structureRefs || seedLigand.structureRefs.length === 0) return;
+
+    // addLigandOnStage returns [_molData.ref, _molTrajectory.ref, _model.ref, _structure.ref, _component.ref]
+    const ligandStructureRef = seedLigand.structureRefs[3];
+    if (!ligandStructureRef) return;
+
+    const ligandCell = plugin.state.data.selectQ((q) => q.byRef(ligandStructureRef))[0];
+    const ligandStructure = ligandCell?.obj?.data as Structure | undefined;
+    if (!ligandStructure) return;
+
+    const ligandPositions = getLigandAtomPositions(ligandStructure);
+    if (!ligandPositions) return;
+
+    // Protein structure is structures[0] (the first loaded trajectory)
+    const proteinRef = structures[0];
+    if (!proteinRef) return;
+    const proteinStructureRef = proteinRef.cell.transform.ref;
+
+    const refs = await buildBindingSiteComponentFromPositions(
+      plugin, proteinStructureRef, ligandPositions, radius, wholeResidues,
+    );
+    this.bindingSiteRefs.push(...refs);
+  }
+
+  /** Removes all binding-site state objects created by applyBindingSiteView. */
+  private async clearBindingSiteView(): Promise<void> {
+    if (this.bindingSiteRefs.length === 0) return;
+    if (!this.viewer) { this.bindingSiteRefs = []; return; }
+    await removeVisualsData(this.viewer.plugin, this.bindingSiteRefs, 'clearBindingSiteView');
+    this.bindingSiteRefs = [];
   }
 
   // -- IRenderer--

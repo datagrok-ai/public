@@ -3113,3 +3113,28 @@
 .msp-plugin .msp-plugin-content {
     color: #332b1f
 }
+
+/* ── Binding site overlay: popover show/hide ────────────────────────────── */
+.bsv-bs-popover-hidden {
+  display: none !important;
+}
+
+/* ── Binding site overlay: slider thumb (Mol* palette) ──────────────────── */
+.msp-plugin .bsv-bs-popover input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ae5d04;
+  border: 2px solid #eeece7;
+  cursor: pointer;
+}
+
+.msp-plugin .bsv-bs-popover input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ae5d04;
+  border: 2px solid #eeece7;
+  cursor: pointer;
+}
