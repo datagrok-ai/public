@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grok test *)"
+      "Bash(grok test *)",
+      "Bash(grep -v \"\\\\.g\\\\.ts$\")",
+      "Bash(grep -v \"package-api\\\\.ts$\")"
     ]
   }
 }

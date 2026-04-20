@@ -678,14 +678,14 @@ export class DiffStudio {
 
   /** Return the save model button */
   private getSaveBtn(): HTMLButtonElement {
-    const btn = ui.bigButton(TITLE.SAVE, async () => await this.saveToMyFiles(), HINT.SAVE_MY);
+    const btn = ui.bigButton(TITLE.SAVE, () => this.saveToMyFiles(), HINT.SAVE_MY);
     btn.disabled = true;
     return btn;
   }
 
   /** Return the download model widget */
   private getDownLoadIcon(): HTMLElement {
-    const icon = ui.iconFA('arrow-to-bottom', async () => await this.saveToLocalFile(), HINT.SAVE_LOC);
+    const icon = ui.iconFA('arrow-to-bottom', () => this.saveToLocalFile(), HINT.SAVE_LOC);
     icon.classList.add('diff-studio-ribbon-download');
 
     return icon;
@@ -699,7 +699,7 @@ export class DiffStudio {
     icn.classList.add('diff-studio-svg-icon');
 
     const wgt = ui.divH([icn, span]);
-    wgt.onclick = async () => await this.runFitting();
+    wgt.onclick = () => this.runFitting();
     ui.tooltip.bind(wgt, 'Fit parameters. Opens a separate view');
 
     return wgt;
@@ -715,7 +715,7 @@ export class DiffStudio {
 
     icn.classList.add('diff-studio-ribbon-sa-icon');
     const wgt = ui.divH([icn, span]);
-    wgt.onclick = async () => await this.runSensitivityAnalysis();
+    wgt.onclick = () => this.runSensitivityAnalysis();
     ui.tooltip.bind(wgt, 'Run sensitivity analysis. Opens a separate view');
 
     return wgt;
@@ -788,7 +788,7 @@ export class DiffStudio {
     wgt.style.minWidth = '20px';
     wgt.style.marginLeft = '7px';
     wgt.style.marginRight = '14px';
-    wgt.onclick = async () => await this.exportToJS();
+    wgt.onclick = () => this.exportToJS();
     ui.tooltip.bind(wgt, HINT.TO_JS);
 
     return wgt;
@@ -798,7 +798,7 @@ export class DiffStudio {
   private getAddToModelHubWgt(): HTMLElement {
     const icon = ui.iconFA(
       'layer-plus',
-      async () => await this.saveModelToLibrary(),
+      () => this.saveModelToLibrary(),
       HINT.SAVE_TO_LIB,
     );
 

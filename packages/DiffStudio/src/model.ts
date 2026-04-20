@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+// @ts-ignore
 import '../css/app-styles.css';
 import {DiffStudio, UiOptions} from './app';
 
@@ -37,9 +38,9 @@ export class Model {
     grok.shell.windows.help.visible = true;
   }
 
-  public async run(): Promise<void> {
+  public run(): Promise<void> {
     const solver = new DiffStudio(true, undefined, undefined, undefined, this.uiOptions);
-    await solver.runModel(this.model);
+    return solver.runModel(this.model);
   }
 
   public async runDemo(): Promise<void> {
