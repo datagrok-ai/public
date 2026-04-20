@@ -157,6 +157,53 @@ variants; you can deploy it directly if you prefer a single-file template.
 
 The chart repo also ships a ready-made `values-eks.yaml` skeleton you can copy.
 
+### CFN profiles
+
+The `datagrok-eks-cfn.yaml` template supports two deployment profiles:
+
+| Profile | `UseExistingCluster` | Creates | Use when |
+|---------|---------------------|---------|----------|
+| **Full stack** (default) | `false` | EKS cluster, node group, RDS, S3, IAM, secrets | Starting from scratch |
+| **Existing cluster** | `true` | RDS, S3, IAM/IRSA, secrets only | You already have an EKS cluster |
+
+#### Using an existing EKS cluster
+
+If your organization already manages an EKS cluster, you can deploy only the
+Datagrok-specific infrastructure (database, storage, IAM roles) into it:
+
+1. Gather your cluster details:
+   ```bash
+   CLUSTER=my-cluster
+   aws eks describe-cluster --name $CLUSTER --query '{
+     OIDCIssuerUrl: cluster.identity.oidc.issuer,
+     SecurityGroupId: cluster.resourcesVpcConfig.clusterSecurityGroupId
+   }'
+   ```
+
+2. Deploy the CFN stack with `UseExistingCluster=true`:
+   ```bash
+   aws cloudformation create-stack --stack-name datagrok \
+     --template-body file://datagrok-eks-cfn.yaml \
+     --capabilities CAPABILITY_NAMED_IAM \
+     --parameters \
+       ParameterKey=UseExistingCluster,ParameterValue=true \
+       ParameterKey=ExistingClusterName,ParameterValue=$CLUSTER \
+       ParameterKey=ExistingClusterOIDCIssuerUrl,ParameterValue=<oidc-url> \
+       ParameterKey=ExistingClusterSecurityGroupId,ParameterValue=<sg-id> \
+       ParameterKey=VpcId,ParameterValue=<vpc-id> \
+       ParameterKey=PrivateSubnets,ParameterValue='<subnet-1>,<subnet-2>' \
+       ParameterKey=PublicSubnets,ParameterValue='<subnet-1>,<subnet-2>' \
+       ParameterKey=DBSubnets,ParameterValue='<subnet-1>,<subnet-2>'
+   ```
+
+3. Install the Helm chart using the stack outputs (same as the full-stack flow,
+   step 4 onward).
+
+> The stack does **not** create an EKS cluster, node group, or Fargate profile.
+> Ensure your existing cluster has nodes (or Fargate profiles) capable of
+> scheduling the Datagrok pods and that the AWS Load Balancer Controller is
+> already installed.
+
 ## Production install on GCP GKE
 
 Same flow as EKS, but use the `values-gke.yaml` overlay (Cloud SQL + GCS + GKE
