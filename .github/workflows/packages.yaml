@@ -389,6 +389,35 @@ jobs:
       - id: datagrok-tools
         run: npm install -g datagrok-tools@latest
       - if: ${{ matrix.unpublished_deps != '' }}
+        name: Build local linked dependencies (recursive, leaves-first)
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          declare -A built
+          build_local_deps() {
+            local pkg_dir="$1"
+            local pkg_json="$pkg_dir/package.json"
+            [[ ! -f "$pkg_json" ]] && return
+            local rels
+            rels=$(jq -r '
+              ((.dependencies // {}) + (.devDependencies // {}))
+              | to_entries[]
+              | select(.value | test("^\\.\\./|^file:|^link:"))
+              | .value | sub("^(file:|link:)"; "")
+            ' "$pkg_json")
+            for rel in $rels; do
+              local target
+              target=$(realpath "$pkg_dir/$rel")
+              if [[ -z "${built[$target]:-}" ]]; then
+                built[$target]=1
+                build_local_deps "$target"
+                echo "::group::Building local dep $target"
+                (cd "$target" && npm install && npm run build)
+                echo "::endgroup::"
+              fi
+            done
+          }
+          build_local_deps "$(pwd)"
+      - if: ${{ matrix.unpublished_deps != '' }}
         run: grok link
         working-directory: packages/${{ matrix.package }}
       - name: webpack cache
