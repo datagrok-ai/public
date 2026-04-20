@@ -1,5 +1,15 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+
+/** Regex that matches `${...}` column refs, accounting for escaped braces `\{`/`\}` inside. */
+const COL_REF_REGEX = /\$\{((?:\\.|[^}\\])*)\}/g;
+
+/** Escape a column name so it can be safely embedded in `${...}` — wraps nested braces. */
+const escapeColName = (name: string): string => grok.functions.handleOuterBracketsInColName(name, true);
+
+/** Wrap a column name as a `${...}` reference, escaping nested braces. */
+const wrapCol = (name: string): string => `\${${escapeColName(name)}}`;
 
 /** Formula Line types */
 const enum ITEM_TYPE {
@@ -303,7 +313,10 @@ class Table {
     });
 
     if (setCurrentByAxes && srcAxes?.x && srcAxes?.y) {
-      const checkAxesInFormula = (formula: string) => formula.includes(srcAxes.x!) && formula.includes(srcAxes.y!);
+      // Escape axis names so nested braces (e.g. `${AGE} + 10`) match their escaped form in the formula.
+      const escapedX = escapeColName(srcAxes.x!);
+      const escapedY = escapeColName(srcAxes.y!);
+      const checkAxesInFormula = (formula: string) => formula.includes(escapedX) && formula.includes(escapedY);
       let itemIdx = formulaLineItems.findIndex((item: DG.FormulaLine) => checkAxesInFormula(item.formula ?? ''));
       if (itemIdx === -1) {
         itemIdx = annotationRegionItems.findIndex((item: DG.AnnotationRegion) => item.type === ITEM_TYPE.AREA_REGION_ANNOTATION
@@ -939,8 +952,8 @@ class Editor {
   private getTitleFromFormula(formula: string): string {
     let title = formula;
     if (title) {
-      const regexp = /\${(.+?)}/gi;
-      const matches: string[][] = [...title.matchAll(regexp)].map((m) => [m[0], m[1]]);
+      const matches: string[][] = [...title.matchAll(COL_REF_REGEX)]
+        .map((m) => [m[0], grok.functions.handleOuterBracketsInColName(m[1], false)]);
       for (const match of matches)
         title = title!.replace(match[0], match[1]);
     }
@@ -969,28 +982,22 @@ class Editor {
       if (isBand)
         return resultOk ? '' : 'Invalid formula syntax';
 
-      // Must contain exactly one '='
-      const parts = value.split('=');
-      if (parts.length !== 2)
+      // Replace each ${...} col-ref with a sentinel to check structure without
+      // being confused by `=` chars inside nested column names (e.g. `${${AGE} = 10}`).
+      const sentinel = '\u0001COL\u0001';
+      const skeleton = value.replace(COL_REF_REGEX, sentinel);
+      if (skeleton.split('=').length !== 2)
         return 'Line formula should be in format: ${x or y column} = expression';
 
-      const [lhsRaw, rhsRaw] = parts.map(p => p.trim());
-
-      // LHS must be exactly one ${...}
-      const lhsMatch = /^\$\{([^}]+)\}$/.exec(lhsRaw);
-      if (!lhsMatch)
+      // LHS must be exactly one ${...}.
+      if (skeleton.split('=')[0].trim() !== sentinel)
         return 'Left side must be a single column in format ${column}';
 
-      const lhsColumn = lhsMatch[1].trim();
-
-      // Extract all ${...} on RHS
-      const rhsColumnRegex = /\$\{([^}]+)\}/g;
-      const rhsColumns: string[] = [];
-
-      let match;
-      while ((match = rhsColumnRegex.exec(rhsRaw)) !== null) {
-        rhsColumns.push(match[1].trim());
-      }
+      // Extract column refs from the original value; unescape each to get real names.
+      const refs = [...value.matchAll(COL_REF_REGEX)]
+        .map(m => grok.functions.handleOuterBracketsInColName(m[1].trim(), false));
+      const lhsColumn = refs[0];
+      const rhsColumns = refs.slice(1);
 
       // If RHS references the same column → invalid
       if (rhsColumns.includes(lhsColumn))
@@ -1219,7 +1226,7 @@ class Editor {
       value: colName ? this.dataFrame.col(colName) ?? undefined : undefined,
       onValueChanged: (value) => {
         const oldFormula = item.formula!;
-        item.formula = '${' + value + '} = ' + ibValue.value;
+        item.formula = `${wrapCol((value as DG.Column).name)} = ${ibValue.value}`;
         this.onItemChangedAction(itemIdx, true);
         this.setTitleIfEmpty(oldFormula, item.formula);
       }});
@@ -1230,7 +1237,7 @@ class Editor {
 
     const ibValue = ui.input.string('Value', {value: value, onValueChanged: (value) => {
       const oldFormula = item.formula!;
-      item.formula = '${' + ibColumn.value + '} = ' + value;
+      item.formula = `${wrapCol((ibColumn.value as DG.Column).name)} = ${value}`;
       this.onItemChangedAction(itemIdx, true);
       this.setTitleIfEmpty(oldFormula, item.formula);
     }});
@@ -1327,8 +1334,8 @@ class CreationControl {
         if (itemCaption === ITEM_CAPTION.FORMULA_REGION) {
           const item: DG.FormulaAnnotationRegion = {
             type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
-            formula1: '${' + colY.name + '} = ${' + colX.name + '}' + ' + ' + colY.stats.q2.toFixed(1),
-            formula2: '${' + colY.name + '} = ${' + colX.name + '}' + ' - ' + colY.stats.q2.toFixed(1),
+            formula1: `${wrapCol(colY.name)} = ${wrapCol(colX.name)} + ${colY.stats.q2.toFixed(1)}`,
+            formula2: `${wrapCol(colY.name)} = ${wrapCol(colX.name)} - ${colY.stats.q2.toFixed(1)}`,
           };
 
           this.annotationRegionsJustCreatedItems.unshift(item);
@@ -1338,29 +1345,29 @@ class CreationControl {
         }
 
         let item: DG.FormulaLine = {};
-        
+
         /** Fill the item with the necessary data */
         switch (itemCaption) {
           case ITEM_CAPTION.LINE:
-            item.formula = '${' + colY.name + '} = ${' + colX.name + '}';
+            item.formula = `${wrapCol(colY.name)} = ${wrapCol(colX.name)}`;
             break;
 
           case ITEM_CAPTION.VERT_LINE:
             const vertVal = (valX ?? colX.stats.q2).toFixed(1);
             item.orientation = ITEM_ORIENTATION.VERTICAL;
-            item.formula = '${' + colX.name + '} = ' + vertVal;
+            item.formula = `${wrapCol(colX.name)} = ${vertVal}`;
             break;
 
           case ITEM_CAPTION.HORZ_LINE:
             const horzVal = (valY ?? colY.stats.q2).toFixed(1);
             item.orientation = ITEM_ORIENTATION.HORIZONTAL;
-            item.formula = '${' + colY.name + '} = ' + horzVal;
+            item.formula = `${wrapCol(colY.name)} = ${horzVal}`;
             break;
 
           case ITEM_CAPTION.VERT_BAND:
             const left = colX.stats.q1.toFixed(1);
             const right = colX.stats.q3.toFixed(1);
-            item.formula = '${' + colX.name + '} in(' + left + ', ' + right + ')';
+            item.formula = `${wrapCol(colX.name)} in(${left}, ${right})`;
             item.orientation = ITEM_ORIENTATION.VERTICAL;
             item.column2 = colY.name;
             break;
@@ -1368,7 +1375,7 @@ class CreationControl {
           case ITEM_CAPTION.HORZ_BAND:
             const bottom = colY.stats.q1.toFixed(1);
             const top = colY.stats.q3.toFixed(1);
-            item.formula = '${' + colY.name + '} in(' + bottom + ', ' + top + ')';
+            item.formula = `${wrapCol(colY.name)} in(${bottom}, ${top})`;
             item.orientation = ITEM_ORIENTATION.HORIZONTAL;
             item.column2 = colX.name;
             break;
@@ -1398,13 +1405,19 @@ class CreationControl {
       ], onClickAction);
 
       const cols = getCols();
-      if (cols.x?.isNumerical && !cols.xMap && cols.y?.isNumerical && !cols.yMap) {
+      // Bands don't use axis maps; any xMap/yMap leaking through from the preview viewer is spurious.
+      const currentItem = getCurrentItem();
+      const isBandCurrent = currentItem && !isAnnotationRegionType(currentItem.type)
+        && (currentItem as DG.FormulaLine).type === ITEM_TYPE.BAND;
+      const xMapActive = !isBandCurrent && !!cols.xMap;
+      const yMapActive = !isBandCurrent && !!cols.yMap;
+      if (cols.x?.isNumerical && !xMapActive && cols.y?.isNumerical && !yMapActive) {
         const regionItems: Record<string, string> = {
           [ITEM_CAPTION.FORMULA_REGION]: 'Adds a new area defined by two formula lines.',
           [ITEM_CAPTION.RECT_REGION]: 'Draws a rectangle area.',
           [ITEM_CAPTION.POLYGON_REGION]: 'Draws a polygon area using lasso tool.',
         }
-  
+
         for (const itemCaption in regionItems)
           menu.item(itemCaption, () => onClickAction(itemCaption), null, {
             description: regionItems[itemCaption]
@@ -1539,7 +1552,7 @@ export class FormulaLinesDialog {
             : property.name === 'xColumnName' ? this.preview.axisCols.x.name : null;
           if (newCol) {
             this.editor.inputColumn2Changing = true;
-            item.formula = '${' + newCol + '} = ' + (meta.expression ?? '0');
+            item.formula = `${wrapCol(newCol)} = ${meta.expression ?? '0'}`;
             const col = this.preview.dataFrame.col(newCol);
             if (this.editor.columnInput && col)
               this.editor.columnInput.value = col;
