@@ -14,6 +14,7 @@ import {ControllerCancelled, FuncallActionController, LinkController, MetaContro
 import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
+import {GranularMutationOp} from '../data/common-types';
 import {DriverLogger} from '../data/Logger';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
 
@@ -40,6 +41,10 @@ export class Link {
   public lastPipelineMutations?: {
     path: NodePath,
     initConfig: PipelineInstanceConfig,
+  }[];
+  public lastGranularMutations?: {
+    path: NodePath,
+    ops: GranularMutationOp[],
   }[];
   public returnResult: any;
 
@@ -100,7 +105,7 @@ export class Link {
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs]) =>
-          this.runHandler(inputs, inputSet, outputSet, inputNames, outputNames, actions, baseNode, scope),
+          this.runHandler(inputs, inputSet, outputSet, inputNames, outputNames, actions, baseNode, scope, state),
       ),
       map((controller) => this.setHandlerResults(controller, state)),
       catchError((error) => {
@@ -186,8 +191,9 @@ export class Link {
     actions: Record<string, Map<string, string>>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
+    state?: BaseTree<StateTreeNode>,
   ) {
-    const controller = this.getControllerInstance(inputs, inputSet, outputSet, actions, baseNode, scope);
+    const controller = this.getControllerInstance(inputs, inputSet, outputSet, actions, baseNode, scope, state);
     if (this.logger) {
       this.logger.logLink('linkRunStarted', {
         prefix: this.prefix,
@@ -215,6 +221,17 @@ export class Link {
     throw Error(`Unable to run handler for link ${this.matchInfo.spec.id}`);
   }
 
+  private resolveOutputNodes(state: BaseTree<StateTreeNode>): Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]> {
+    const result: Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]> = {};
+    for (const [outputAlias, outputItems] of Object.entries(this.matchInfo.outputs)) {
+      result[outputAlias] = outputItems.map((output) => {
+        const path = [...this.prefix, ...output.path];
+        return {node: state.getNode(path), path};
+      });
+    }
+    return result;
+  }
+
   private getControllerInstance(
     inputs: Record<string, any>,
     inputSet: Set<string>,
@@ -222,6 +239,7 @@ export class Link {
     actions: Record<string, Map<string, string>>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
+    state?: BaseTree<StateTreeNode>,
   ) {
     if (this.isValidator)
       return new ValidatorController(inputs, inputSet, outputSet, this.matchInfo.spec.id, actions, baseNode, scope);
@@ -229,8 +247,10 @@ export class Link {
     if (this.isMeta)
       return new MetaController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
 
-    if (this.isMutation)
-      return new MutationController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+    if (this.isMutation) {
+      const outputNodes = state ? this.resolveOutputNodes(state) : {};
+      return new MutationController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope, outputNodes);
+    }
 
     if (this.isNodeMeta)
       return new NodeMetaController(inputs, inputSet, new Set(descriptionOutputs), this.matchInfo.spec.id, scope);
@@ -262,6 +282,7 @@ export class Link {
 
   private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NodeMetaController | FuncallActionController | RuntimeReturnController, state: BaseTree<StateTreeNode>) {
     this.lastPipelineMutations = [];
+    this.lastGranularMutations = [];
     if (this.logger) {
       this.logger.logLink('linkRunFinished', {
         prefix: this.prefix,
@@ -297,6 +318,9 @@ export class Link {
           const initConfig = controller.outputs[outputAlias];
           if (initConfig)
             this.lastPipelineMutations.push({path: nodePath, initConfig});
+          const ops = controller.granularOps[outputAlias];
+          if (ops?.length)
+            this.lastGranularMutations!.push({path: nodePath, ops});
         } else if (controller instanceof NodeMetaController) {
           const data = controller.outputs[outputAlias];
           const descrStore = node.getItem().nodeDescription;
@@ -357,7 +381,10 @@ export class Action extends Link {
     return this.isRunning$.pipe(
       filter((isRunning) => !isRunning),
       take(1),
-      map(() => this.lastPipelineMutations),
+      map(() => ({
+        pipelineMutations: this.lastPipelineMutations,
+        granularMutations: this.lastGranularMutations,
+      })),
     );
   }
 }

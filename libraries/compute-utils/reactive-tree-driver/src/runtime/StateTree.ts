@@ -13,7 +13,7 @@ import {loadFuncCall, loadInstanceState, makeFuncCall, saveFuncCall, saveInstanc
 import {ConsistencyInfo, DynamicPipelineNode, FuncCallNode, FuncCallStateInfo, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
 import {LinksState} from './LinksState';
-import {ValidationResult} from '../data/common-types';
+import {GranularMutationOp, ValidationResult} from '../data/common-types';
 import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
 
@@ -319,6 +319,52 @@ export class StateTree {
     });
   }
 
+  private applyGranularOps(parentPath: NodePath, ops: GranularMutationOp[]): Observable<TreeUpdateMutationPayload> {
+    const details: TreeUpdateMutationPayload[] = [];
+    for (const op of ops) {
+      if (op.op === 'add') {
+        const subConfig = StateTree.getSubConfig(this.config, parentPath, op.configId);
+        const pos = op.position ?? this.nodeTree.getNode(parentPath).getChildren().length;
+        if (isPipelineStepConfig(subConfig)) {
+          const fcNode = new FuncCallNode(subConfig, false);
+          fcNode.initState(subConfig);
+          this.nodeTree.attachBrunch(parentPath, new TreeNode(fcNode), op.configId, pos);
+        } else {
+          StateTree.fromPipelineConfig({
+            config: this.config,
+            startNode: subConfig,
+            startPath: [...parentPath, {id: op.configId, idx: pos}],
+            startState: this,
+            isReadonly: false,
+            defaultValidators: this.defaultValidators,
+            mockMode: this.mockMode,
+          });
+        }
+        details.push({mutationRootPath: parentPath, addIdx: pos, id: op.configId});
+      } else if (op.op === 'remove') {
+        const data = this.nodeTree.find((item) => item.uuid === op._uuid);
+        if (data == null)
+          throw new Error(`Granular removeStep: node uuid ${op._uuid} not found`);
+        const [node, path] = data;
+        this.nodeTree.removeBrunch(path);
+        const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
+        details.push({mutationRootPath, removeIdx, id: node.getItem().config.id});
+      } else if (op.op === 'move') {
+        const data = this.nodeTree.find((item) => item.uuid === op._uuid);
+        if (data == null)
+          throw new Error(`Granular moveStep: node uuid ${op._uuid} not found`);
+        const [node, path] = data;
+        this.nodeTree.removeBrunch(path);
+        const [ppath, oldIdx] = this.getMutationSlice(path);
+        this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, op.position);
+        details.push({mutationRootPath: ppath, addIdx: op.position, removeIdx: oldIdx, id: node.getItem().config.id});
+      }
+    }
+    return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(
+      concatMap(() => from(details)),
+    );
+  }
+
   public runStep(uuid: string, mockResults?: Record<string, any>, mockDelay?: number) {
     return this.withTreeLock(() => {
       if (!this.mockMode && mockResults)
@@ -376,35 +422,43 @@ export class StateTree {
     if (action.spec.type === 'pipeline') {
       return this.mutateTree(() => {
         return action.execPipelineMutations(additionalParams).pipe(
-          concatMap((lastPipelineMutations) => from(lastPipelineMutations ?? []).pipe(
-            concatMap((data) => {
-              const ppath = data.path.slice(0, -1);
-              const last = indexFromEnd(data.path);
-              const subConfig = last ? StateTree.getSubConfig(this.config, ppath, last.id) : this.config;
-              if (isPipelineStepConfig(subConfig))
-                throw new Error(`FuncCall node ${JSON.stringify(data.path)}, but pipeline is expected`);
-              const subTree = StateTree.fromInstanceConfig(
-                {
-                  instanceConfig: data.initConfig,
-                  config: subConfig,
-                  isReadonly: false,
-                  defaultValidators: this.defaultValidators,
-                  mockMode: this.mockMode,
-                });
-              if (last) {
-                this.nodeTree.removeBrunch(data.path);
-                this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
-              } else
-                this.nodeTree.replaceRoot(subTree.nodeTree.root);
+          concatMap(({pipelineMutations, granularMutations}) => {
+            const replacements$ = from(pipelineMutations ?? []).pipe(
+              concatMap((data) => {
+                const ppath = data.path.slice(0, -1);
+                const last = indexFromEnd(data.path);
+                const subConfig = last ? StateTree.getSubConfig(this.config, ppath, last.id) : this.config;
+                if (isPipelineStepConfig(subConfig))
+                  throw new Error(`FuncCall node ${JSON.stringify(data.path)}, but pipeline is expected`);
+                const subTree = StateTree.fromInstanceConfig(
+                  {
+                    instanceConfig: data.initConfig,
+                    config: subConfig,
+                    isReadonly: false,
+                    defaultValidators: this.defaultValidators,
+                    mockMode: this.mockMode,
+                  });
+                if (last) {
+                  this.nodeTree.removeBrunch(data.path);
+                  this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
+                } else
+                  this.nodeTree.replaceRoot(subTree.nodeTree.root);
 
-              const mutationData: TreeUpdateMutationPayload = last ? {
-                mutationRootPath: ppath,
-                addIdx: last.idx,
-                id: last.id,
-              } : {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
-              return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(mutationData));
-            })),
-          ),
+                const mutationData: TreeUpdateMutationPayload = last ? {
+                  mutationRootPath: ppath,
+                  addIdx: last.idx,
+                  id: last.id,
+                } : {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
+                return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(mutationData));
+              }),
+            );
+
+            const granular$ = from(granularMutations ?? []).pipe(
+              concatMap((data) => this.applyGranularOps(data.path, data.ops)),
+            );
+
+            return merge(replacements$, granular$);
+          }),
           toArray(),
           map((details) => [{isMutation: true, details}]),
         );

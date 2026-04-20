@@ -3,10 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TreeNode} from '../data/BaseTree';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController} from '../RuntimeControllers';
-import {RestrictionType, ValidationResult} from '../data/common-types';
+import {GranularMutationOp, RestrictionType, StepHandle, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {ScopeInfo} from './Link';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
+import {NodePath} from '../data/BaseTree';
 
 export class ControllerCancelled extends Error { };
 
@@ -137,20 +138,83 @@ export class MetaController extends ControllerBase<any | undefined> implements I
 }
 
 export class MutationController extends ControllerBase<PipelineInstanceConfig | undefined> implements IRuntimePipelineMutationController {
+  public granularOps: Record<string, GranularMutationOp[]> = {};
+  private removedUuids = new Set<string>();
+  private usedMode: Record<string, 'replace' | 'granular'> = {};
+
   constructor(
     public inputs: Record<string, any[]>,
     public inputsSet: Set<string>,
     public outputsSet: Set<string>,
     public id: string,
-    public scopeInfo?: ScopeInfo,
+    public scopeInfo: ScopeInfo | undefined,
+    public outputNodes: Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]>,
   ) {
     super(inputs, inputsSet, outputsSet, id, scopeInfo);
+  }
+
+  private checkExclusivity(name: string, mode: 'replace' | 'granular') {
+    const current = this.usedMode[name];
+    if (current && current !== mode) {
+      throw new Error(
+        `Handler for action ${this.id}: cannot mix setPipelineState and granular ops (addStep/removeStep/moveStep) on the same output "${name}"`,
+      );
+    }
+    this.usedMode[name] = mode;
   }
 
   setPipelineState(name: string, state?: PipelineInstanceConfig) {
     this.checkIsClosed();
     this.checkOutput(name);
+    this.checkExclusivity(name, 'replace');
     this.outputs[name] = state;
+  }
+
+  getSteps(name: string): StepHandle[] {
+    this.checkIsClosed();
+    this.checkOutput(name);
+    const nodes = this.outputNodes[name];
+    if (!nodes?.length)
+      return [];
+    const result: StepHandle[] = [];
+    for (const {node} of nodes) {
+      const children = node.getChildren();
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        result.push({
+          configId: child.id,
+          position: i,
+          _uuid: child.item.getItem().uuid,
+        });
+      }
+    }
+    return result;
+  }
+
+  addStep(name: string, configId: string, position?: number) {
+    this.checkIsClosed();
+    this.checkOutput(name);
+    this.checkExclusivity(name, 'granular');
+    (this.granularOps[name] ??= []).push({op: 'add', configId, position});
+  }
+
+  removeStep(name: string, step: StepHandle) {
+    this.checkIsClosed();
+    this.checkOutput(name);
+    this.checkExclusivity(name, 'granular');
+    if (this.removedUuids.has(step._uuid))
+      throw new Error(`Handler for action ${this.id}: step handle (configId="${step.configId}") was already removed — stale handle`);
+    this.removedUuids.add(step._uuid);
+    (this.granularOps[name] ??= []).push({op: 'remove', _uuid: step._uuid});
+  }
+
+  moveStep(name: string, step: StepHandle, position: number) {
+    this.checkIsClosed();
+    this.checkOutput(name);
+    this.checkExclusivity(name, 'granular');
+    if (this.removedUuids.has(step._uuid))
+      throw new Error(`Handler for action ${this.id}: step handle (configId="${step.configId}") was already removed — stale handle`);
+    (this.granularOps[name] ??= []).push({op: 'move', _uuid: step._uuid, position});
   }
 }
 
