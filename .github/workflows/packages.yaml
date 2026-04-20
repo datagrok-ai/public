@@ -388,6 +388,19 @@ jobs:
           echo "alias=$alias" >> $GITHUB_OUTPUT
       - id: datagrok-tools
         run: npm install -g datagrok-tools@latest
+      # Build any locally-linked dependencies (those declared as relative paths,
+      # file:, or link: in package.json) before `grok link` symlinks them.
+      # Without this, `grok link` (npm-link mode) only creates symlinks — it does
+      # not build the linked source tree. Build artifacts (.d.ts/.js) are
+      # gitignored in repos like js-api, so ts-loader fails resolving namespace
+      # imports (`import * as DG from 'datagrok-api/dg'`) with a confusing
+      # TypeScript "Debug Failure." Building the deps here populates the
+      # artifacts the symlinks need to point at.
+      #
+      # Walk is recursive (linked deps may themselves link to other local deps)
+      # and post-order (leaves built before parents). The `built` map dedups by
+      # canonical path so a dep reached via multiple parents is built only once,
+      # and also breaks any cycles.
       - if: ${{ matrix.unpublished_deps != '' }}
         name: Build local linked dependencies (recursive, leaves-first)
         working-directory: packages/${{ matrix.package }}
@@ -397,6 +410,7 @@ jobs:
             local pkg_dir="$1"
             local pkg_json="$pkg_dir/package.json"
             [[ ! -f "$pkg_json" ]] && return
+            # Pull every dep (deps + devDeps) whose value is a local path spec.
             local rels
             rels=$(jq -r '
               ((.dependencies // {}) + (.devDependencies // {}))
@@ -407,6 +421,7 @@ jobs:
             for rel in $rels; do
               local target
               target=$(realpath "$pkg_dir/$rel")
+              # Mark before recursing so cycles terminate.
               if [[ -z "${built[$target]:-}" ]]; then
                 built[$target]=1
                 build_local_deps "$target"
