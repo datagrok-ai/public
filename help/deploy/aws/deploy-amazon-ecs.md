@@ -1,10 +1,19 @@
 ---
-title: "AWS CloudFormation"
-sidebar_position: 1
+title: "AWS CloudFormation (ECS)"
+sidebar_position: 2
+format: 'mdx'
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+
+:::danger Deprecated
+
+The ECS deployment path is deprecated and will be removed in a future release. For new stands, use the
+[AWS CloudFormation (EKS)](deploy-amazon-eks.md) deployment. If you operate an existing ECS stand, plan a
+migration — the EKS CFN template preserves your RDS database and S3 bucket on stack replacement.
+
+:::
 
 The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing metadata,
 and [persistent file storage](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing files

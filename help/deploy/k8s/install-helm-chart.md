@@ -8,6 +8,15 @@ in-cluster PostgreSQL with local PVCs (laptop / single-node clusters), as well a
 managed cloud databases (RDS / Cloud SQL) with object storage (S3 / GCS) on EKS or
 GKE.
 
+:::tip On AWS?
+
+For turnkey EKS deployments, use the [AWS CloudFormation (EKS)](../aws/deploy-amazon-eks.md)
+template — it provisions the cluster, RDS, S3, and IAM, and installs this chart
+automatically. This page covers manual Helm installs for any Kubernetes cluster
+(on-prem, GKE, AKS, kind, k3s, MicroK8s).
+
+:::
+
 ## Prerequisites
 
 * Kubernetes 1.27+ with a default StorageClass (or an existing PVC for stateful data)
@@ -15,10 +24,26 @@ GKE.
 * For cloud installs: a managed Postgres instance, an object storage bucket, and an
   IAM role / service account that the cluster can use to reach them
 
+## Chart version
+
+The chart version always matches the Datagrok app version exactly — `--version 1.27.0`
+pulls a chart that deploys Datagrok `1.27.0`, and every sub-service (grok-pipe,
+grok-spawner, grok-connect, Jupyter Kernel Gateway) defaults to the same tag. You can
+override any individual service image tag via `--set <service>.image.tag=...` — see
+[Service versions](#service-versions) below.
+
+Available chart versions:
+
+| Version                       | Published from               | Use for           |
+|-------------------------------|------------------------------|-------------------|
+| `1.27.0`, `1.26.5`, ...       | release tags                 | Production        |
+| `1.27.0-rc`, `1.26.5-rc`, ... | `release/*` branches         | Release candidates|
+| `0.0.0-bleeding-edge`         | `master`, nightly            | Dev / evaluation  |
+
 ## Quick install (in-cluster Postgres + local storage)
 
 ```bash
-helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
+helm install datagrok oci://registry-1.docker.io/datagrok/datagrok-chart \
   --version 1.26.5 \
   --namespace datagrok --create-namespace \
   --set postgres.password=$(openssl rand -base64 24) \
@@ -37,10 +62,37 @@ Stable releases are
 published on a versioned cadence; bleeding-edge is rebuilt by Jenkins after every
 merge to master.
 
+## Service versions
+
+Every service image tag defaults to the chart version. Override individual tags
+when you need to run a newer grok-connect against an older datagrok core, or
+to pin a specific service during a rollout:
+
+```bash
+helm install datagrok oci://registry-1.docker.io/datagrok/datagrok-chart \
+  --version 1.27.0 \
+  --set datagrok.image.tag=1.27.0 \
+  --set grokPipe.image.tag=1.27.0 \
+  --set grokConnect.image.tag=1.27.1 \
+  --set spawner.image.tag=1.27.0 \
+  --set jkg.image.tag=1.27.0 \
+  --set rabbitmq.image.tag=4.0.5-management \
+  -n datagrok
+```
+
+RabbitMQ follows its own upstream release cadence and is not tied to the Datagrok
+version.
+
 ## Production install on AWS EKS
 
+The easiest path is the [AWS CloudFormation (EKS) template](../aws/deploy-amazon-eks.md),
+which provisions EKS, RDS, S3, IAM with IRSA, and installs this Helm chart for
+you. The manual steps below are useful when you want to manage the cluster
+yourself or when deploying into a pre-existing EKS cluster.
+
 The `datagrok-eks-cfn.yaml` CloudFormation template (in the chart repo under
-`deploy/k8s/`) provisions EKS, RDS, S3, and the necessary IAM with IRSA.
+`deploy/k8s/`) is the same source-of-truth template used by the shipped CFN
+variants; you can deploy it directly if you prefer a single-file template.
 
 1. Deploy the CFN stack and capture its outputs (RDS endpoint, bucket name, IAM
    role ARN, ACM cert ARN).
@@ -97,7 +149,7 @@ The `datagrok-eks-cfn.yaml` CloudFormation template (in the chart repo under
 
 5. Install:
    ```bash
-   helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
+   helm install datagrok oci://registry-1.docker.io/datagrok/datagrok-chart \
      --version 1.26.5 \
      -f values-prod.yaml \
      -n datagrok --create-namespace
@@ -113,7 +165,7 @@ Workload Identity).
 ## Upgrades
 
 ```bash
-helm upgrade datagrok oci://registry-1.docker.io/datagrok/datagrok \
+helm upgrade datagrok oci://registry-1.docker.io/datagrok/datagrok-chart \
   --version 1.26.6 \
   -f values-prod.yaml \
   -n datagrok
