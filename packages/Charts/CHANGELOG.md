@@ -1,5 +1,9 @@
 # Charts changelog
 
+## v.next
+
+* GROK-19683: Charts | Tree viewer: Option to customize molecule label size
+
 ## 1.7.0 (2026-03-20)
 
 ### Features
