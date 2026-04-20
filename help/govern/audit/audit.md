@@ -81,7 +81,6 @@ Each event is associated with a fixed type and the user session that triggered i
 * project-opened
 * entity-shared
 * entity-shared-silent
-* table-produced
 * user-invited
 * comment-posted
 * dialog-ok
