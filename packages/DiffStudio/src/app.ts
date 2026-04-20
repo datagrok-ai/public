@@ -285,6 +285,12 @@ export type UiOptions = {
   graphsDockRatio: number,
 };
 
+/** Metadata attached to a tree item; consumed by the centralized selection handler. */
+type ItemPreviewMeta =
+  | {kind: 'builtin', state: EDITOR_STATE}
+  | {kind: 'custom', path: string}
+  | {kind: 'external', path: string};
+
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
@@ -544,6 +550,10 @@ export class DiffStudio {
   private recentFolder: DG.TreeViewGroup | null = null;
   private libraryFolder: DG.TreeViewGroup | null = null;
   private librarySub: {unsubscribe: () => void} | null = null;
+  private treeSelSub: {unsubscribe: () => void} | null = null;
+  private treeFocusSub: {unsubscribe: () => void} | null = null;
+  private treeFocusGuardCleanup: (() => void) | null = null;
+  private pendingItemPreviewTimer: number | null = null;
   private browsePanel: DG.BrowsePanel | null = null;
   private isRecentRun = false;
 
@@ -1865,16 +1875,132 @@ export class DiffStudio {
       } catch (err) {
         grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
       };
+
+      this.setupTreeItemSelection();
     }
   } // createTree
 
+  /** Single, debounced subscription that opens the preview for the selected tree item.
+   *  Replaces per-item `item.onSelected` handlers so that arrow-key navigation is not
+   *  broken by focus-stealing previews fired on every node. The per-selection timer
+   *  is cancellable by a following dblclick so that dblclick opens the full view
+   *  without first racing against a preview. Focus restoration is armed for both
+   *  items and folders so that the subsequent preview (item or folder gallery) does
+   *  not trap focus in the preview view and break keyboard navigation. */
+  private setupTreeItemSelection(): void {
+    this.treeSelSub?.unsubscribe();
+    this.treeSelSub = this.appTree!.rootNode.onSelectedNodeChanged.subscribe((node: any) => {
+      if (!this.appTree?.root.isConnected) {
+        this.treeSelSub?.unsubscribe();
+        this.treeSelSub = null;
+        return;
+      }
+      this.cancelPendingItemPreview();
+      if (!node || !this.appTree.root.contains(node.root))
+        return;
+
+      this.armTreeFocusRestore();
+
+      if (!node.root.classList?.contains('d4-tree-view-item'))
+        return;
+      const meta = node.value as ItemPreviewMeta | undefined;
+      if (!meta || !meta.kind)
+        return;
+      this.pendingItemPreviewTimer = window.setTimeout(async () => {
+        this.pendingItemPreviewTimer = null;
+        await this.openItemPreview(meta);
+      }, UI_TIME.DBL_CLICK_DELAY);
+    });
+  }
+
+  /** Capture tree scroll position and arm a one-shot focus restore for the next view change. */
+  private armTreeFocusRestore(): void {
+    const panelRoot = this.appTree?.rootNode.root.parentElement;
+    if (!panelRoot)
+      return;
+    this.restoreTreeFocus(panelRoot, panelRoot.scrollTop);
+  }
+
+  /** Cancel any preview that was scheduled by the centralized selection handler. */
+  private cancelPendingItemPreview(): void {
+    if (this.pendingItemPreviewTimer !== null) {
+      clearTimeout(this.pendingItemPreviewTimer);
+      this.pendingItemPreviewTimer = null;
+    }
+  }
+
+  /** Open the preview for a tree item based on its `value` metadata. Focus restore
+   *  is armed by the caller in `setupTreeItemSelection`, so no focus handling here. */
+  private async openItemPreview(meta: ItemPreviewMeta): Promise<void> {
+    if (meta.kind === 'builtin') {
+      DiffStudio.closeOpenPreviews();
+      const solver = new DiffStudio(false, true, true);
+      const preview = await solver.getStatePreview(meta.state);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addPreview(preview);
+      return;
+    }
+
+    const file = await getCachedFileInfo(meta.path);
+    if (!file)
+      return;
+    DiffStudio.closeOpenPreviews();
+    const solver = new DiffStudio(false, true, true);
+    const preview = await solver.getFilePreview(file, meta.path);
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showBrowse = true;
+    grok.shell.addPreview(preview);
+    if (meta.kind === 'custom')
+      await this.saveModelToRecent(meta.path, true);
+  }
+
+  /** Return focus to the browse tree once the preview view takes over, and keep it
+   *  there while the preview grid/renderer finishes loading (otherwise arrow keys
+   *  would target the preview). */
+  private restoreTreeFocus(panelRoot: HTMLElement, treeNodeY: number): void {
+    this.treeFocusSub?.unsubscribe();
+    this.treeFocusSub = grok.events.onCurrentViewChanged.subscribe(() => {
+      this.treeFocusSub?.unsubscribe();
+      this.treeFocusSub = null;
+      panelRoot.scrollTo(0, treeNodeY);
+      this.appTree?.rootNode.root.focus();
+      this.guardTreeFocus();
+    });
+  }
+
+  /** Redirect focus back to the tree if anything steals it during the next
+   *  1.5 seconds (e.g. grid auto-focus after data loads). Cleared on first
+   *  user mousedown or after the timeout, whichever comes first. */
+  private guardTreeFocus(): void {
+    this.treeFocusGuardCleanup?.();
+    const treeRoot = this.appTree?.rootNode.root;
+    if (!treeRoot)
+      return;
+    const onFocusIn = (e: FocusEvent) => {
+      if (!treeRoot.contains(e.target as Node))
+        treeRoot.focus();
+    };
+    const clear = () => {
+      document.removeEventListener('focusin', onFocusIn, true);
+      document.removeEventListener('mousedown', clear, true);
+      clearTimeout(timer);
+      this.treeFocusGuardCleanup = null;
+    };
+    const timer = setTimeout(clear, 1500);
+    this.treeFocusGuardCleanup = clear;
+    document.addEventListener('focusin', onFocusIn, true);
+    document.addEventListener('mousedown', clear, true);
+  }
+
   /** Add template/example model to browse tree folder */
   private putBuiltInModelToFolder(name: TITLE, folder: DG.TreeViewGroup, section: TITLE): void {
-    const item = folder.item(name);
+    const state = STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE;
+    const meta: ItemPreviewMeta = {kind: 'builtin', state};
+    const item = folder.item(name, meta);
     const description = MODEL_HINT.get(name) ?? '';
     const iconUrl = getModelIconUrl(name);
     ui.tooltip.bind(item.root, () => buildModelTooltip(name, description, iconUrl));
-    const state = STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE;
 
     const run = async () => {
       const solver = new DiffStudio(false);
@@ -1911,39 +2037,10 @@ export class DiffStudio {
       menu.show({x: ev.clientX, y: ev.clientY, causedBy: ev});
     });
 
-    // Debounce single-click so a following dblclick can cancel the preview open.
-    let previewTimer: number | null = null;
-
-    item.onSelected.subscribe(() => {
-      if (previewTimer !== null)
-        return;
-      previewTimer = window.setTimeout(async () => {
-        previewTimer = null;
-        const panelRoot = this.appTree.rootNode.root.parentElement!;
-        const treeNodeY = panelRoot.scrollTop!;
-
-        DiffStudio.closeOpenPreviews();
-        const solver = new DiffStudio(false, true, true);
-        const preview = await solver.getStatePreview(state);
-        grok.shell.windows.showToolbox = false;
-        grok.shell.windows.showBrowse = true;
-        grok.shell.addPreview(preview);
-
-        setTimeout(() => {
-          panelRoot.scrollTo(0, treeNodeY);
-          item.root.focus();
-        }, UI_TIME.BROWSING);
-      }, UI_TIME.DBL_CLICK_DELAY);
-    });
-
     item.root.addEventListener('dblclick', async (e) => {
       e.stopImmediatePropagation();
       e.preventDefault();
-
-      if (previewTimer !== null) {
-        clearTimeout(previewTimer);
-        previewTimer = null;
-      }
+      this.cancelPendingItemPreview();
 
       const solver = new DiffStudio(false);
       grok.shell.windows.showToolbox = false;
@@ -1964,7 +2061,8 @@ export class DiffStudio {
 
       const idx = path.lastIndexOf('/');
       const name = path.slice(idx + 1, path.length);
-      const item = this.recentFolder.item(name);
+      const meta: ItemPreviewMeta = {kind: 'custom', path};
+      const item = this.recentFolder.item(name, meta);
       const iconUrl = `${_package.webRoot}/files/icons/default.png`;
       ui.tooltip.bind(item.root, () => buildModelTooltip(name, path, iconUrl));
 
@@ -1988,27 +2086,10 @@ export class DiffStudio {
           .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
       });
 
-      item.onSelected.subscribe(async () => {
-        const panelRoot = this.appTree.rootNode.root.parentElement!;
-        const treeNodeY = panelRoot.scrollTop!;
-
-        DiffStudio.closeOpenPreviews();
-        const solver = new DiffStudio(false, true, true);
-        const preview = await solver.getFilePreview(file, path);
-        grok.shell.windows.showToolbox = false;
-        grok.shell.windows.showBrowse = true;
-        grok.shell.addPreview(preview);
-        await this.saveModelToRecent(path, true);
-
-        setTimeout(async () => {
-          panelRoot.scrollTo(0, treeNodeY);
-          item.root.focus();
-        }, UI_TIME.BROWSING);
-      });
-
       item.root.addEventListener('dblclick', async (e) => {
         e.stopImmediatePropagation();
         e.preventDefault();
+        this.cancelPendingItemPreview();
 
         const equations = await file.readAsString();
         const solver = new DiffStudio();
@@ -2029,10 +2110,11 @@ export class DiffStudio {
   /** Add a single external (custom) model entry to the Library tree folder */
   private addExternalModelToFolder(folder: DG.TreeViewGroup, modelPath: string, displayName: string,
     description: string, iconUrl: string, helpUrl: string | undefined): void {
-    const item = folder.item(displayName);
+    const meta: ItemPreviewMeta = {kind: 'external', path: modelPath};
+    const item = folder.item(displayName, meta);
     ui.tooltip.bind(item.root, () => buildModelTooltip(displayName, description, iconUrl));
 
-    const openFile = async (asPreview: boolean) => {
+    const openFullView = async () => {
       const file = await getCachedFileInfo(modelPath);
       if (!file) {
         grok.shell.warning(`File not found: ${modelPath}`);
@@ -2041,41 +2123,17 @@ export class DiffStudio {
       const solver = new DiffStudio(false, true, true);
       grok.shell.windows.showToolbox = false;
       grok.shell.windows.showBrowse = true;
-      if (asPreview) {
-        DiffStudio.closeOpenPreviews();
-        grok.shell.addPreview(await solver.getFilePreview(file, modelPath));
-      } else
-        grok.shell.addView(await solver.getFilePreview(file, modelPath));
+      grok.shell.addView(await solver.getFilePreview(file, modelPath));
     };
-
-    let previewTimer: number | null = null;
-
-    item.onSelected.subscribe(() => {
-      if (previewTimer !== null)
-        return;
-      previewTimer = window.setTimeout(async () => {
-        previewTimer = null;
-        const panelRoot = this.appTree.rootNode.root.parentElement!;
-        const treeNodeY = panelRoot.scrollTop;
-        await openFile(true);
-        setTimeout(() => {
-          panelRoot.scrollTo(0, treeNodeY);
-          item.root.focus();
-        }, UI_TIME.BROWSING);
-      }, UI_TIME.DBL_CLICK_DELAY);
-    });
 
     item.root.addEventListener('dblclick', async (e) => {
       e.stopImmediatePropagation();
       e.preventDefault();
-      if (previewTimer !== null) {
-        clearTimeout(previewTimer);
-        previewTimer = null;
-      }
-      await openFile(false);
+      this.cancelPendingItemPreview();
+      await openFullView();
     });
 
-    this.attachExternalContextMenu(item.root, modelPath, helpUrl, () => openFile(false));
+    this.attachExternalContextMenu(item.root, modelPath, helpUrl, openFullView);
   }
 
   /** Attach Run/Copy link/Help/Settings context menu to an external (custom) model element */
