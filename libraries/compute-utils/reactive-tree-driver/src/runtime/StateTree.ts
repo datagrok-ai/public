@@ -224,67 +224,97 @@ export class StateTree {
     });
   }
 
+  // --- Internal unguarded primitives (caller must hold the tree lock) ---
+
+  private addSubTreeInternal(parentPath: NodePath, id: string, pos: number): TreeUpdateMutationPayload {
+    const subConfig = StateTree.getSubConfig(this.config, parentPath, id);
+    if (isPipelineStepConfig(subConfig)) {
+      const fcNode = new FuncCallNode(subConfig, false);
+      fcNode.initState(subConfig);
+      this.nodeTree.attachBrunch(parentPath, new TreeNode(fcNode), id, pos);
+    } else {
+      StateTree.fromPipelineConfig({
+        config: this.config,
+        startNode: subConfig,
+        startPath: [...parentPath, {id, idx: pos}],
+        startState: this,
+        isReadonly: false,
+        defaultValidators: this.defaultValidators,
+        mockMode: this.mockMode,
+      });
+    }
+    return {mutationRootPath: parentPath, addIdx: pos, id};
+  }
+
+  private removeSubtreeInternal(uuid: string): TreeUpdateMutationPayload {
+    const data = this.nodeTree.find((item) => item.uuid === uuid);
+    if (data == null)
+      throw new Error(`Node uuid ${uuid} not found`);
+    const [node, path] = data;
+    this.nodeTree.removeBrunch(path);
+    const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
+    return {mutationRootPath, removeIdx, id: node.getItem().config.id};
+  }
+
+  private moveSubtreeInternal(uuid: string, newIdx: number): TreeUpdateMutationPayload {
+    const data = this.nodeTree.find((item) => item.uuid === uuid);
+    if (data == null)
+      throw new Error(`Node uuid ${uuid} not found`);
+    const [node, path] = data;
+    this.nodeTree.removeBrunch(path);
+    const [ppath, oldIdx] = this.getMutationSlice(path);
+    this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, newIdx);
+    return {mutationRootPath: ppath, addIdx: newIdx, removeIdx: oldIdx, id: node.getItem().config.id};
+  }
+
+  private replaceSubtreeInternal(path: NodePath, initConfig: PipelineInstanceConfig): {detail: TreeUpdateMutationPayload, subTree: StateTree} {
+    const ppath = path.slice(0, -1);
+    const last = indexFromEnd(path);
+    const subConfig = last ? StateTree.getSubConfig(this.config, ppath, last.id) : this.config;
+    if (isPipelineStepConfig(subConfig))
+      throw new Error(`FuncCall node ${JSON.stringify(path)}, but pipeline is expected`);
+    const subTree = StateTree.fromInstanceConfig({
+      instanceConfig: initConfig,
+      config: subConfig,
+      isReadonly: false,
+      defaultValidators: this.defaultValidators,
+      mockMode: this.mockMode,
+    });
+    if (last) {
+      this.nodeTree.removeBrunch(path);
+      this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
+    } else
+      this.nodeTree.replaceRoot(subTree.nodeTree.root);
+
+    const detail: TreeUpdateMutationPayload = last ? {
+      mutationRootPath: ppath,
+      addIdx: last.idx,
+      id: last.id,
+    } : {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
+    return {detail, subTree};
+  }
+
+  // --- Public guarded methods ---
+
   public moveSubtree(uuid: string, newIdx: number) {
     return this.mutateTree(() => {
-      const data = this.nodeTree.find((item) => item.uuid === uuid);
-      if (data == null)
-        throw new Error(`Node uuid ${uuid} not found`);
-      const [node, path] = data;
-      this.nodeTree.removeBrunch(path);
-      const [ppath, oldIdx] = this.getMutationSlice(path);
-      this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, newIdx);
-      const details: TreeUpdateMutationPayload[] = [{
-        mutationRootPath: ppath,
-        addIdx: newIdx,
-        removeIdx: oldIdx,
-        id: node.getItem().config.id,
-      }];
-      return of([{isMutation: true, details}]);
+      const detail = this.moveSubtreeInternal(uuid, newIdx);
+      return of([{isMutation: true, details: [detail]}]);
     });
   }
 
   public removeSubtree(uuid: string) {
     return this.mutateTree(() => {
-      const data = this.nodeTree.find((item) => item.uuid === uuid);
-      if (data == null)
-        throw new Error(`Node uuid ${uuid} not found`);
-      const [node, path] = data;
-      this.nodeTree.removeBrunch(path);
-      const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
-      const details: TreeUpdateMutationPayload[] = [{
-        mutationRootPath,
-        removeIdx,
-        id: node.getItem().config.id,
-      }];
-      return of([{isMutation: true, details}]);
+      const detail = this.removeSubtreeInternal(uuid);
+      return of([{isMutation: true, details: [detail]}]);
     });
   }
 
   public addSubTree(puuid: string, id: string, pos: number) {
     return this.mutateTree(() => {
       const [_root, _nqName, ppath] = StateTree.findPipelineNode(this, puuid);
-      const subConfig = StateTree.getSubConfig(this.config, ppath, id);
-      if (isPipelineStepConfig(subConfig)) {
-        const fcNode = new FuncCallNode(subConfig, false);
-        fcNode.initState(subConfig);
-        this.nodeTree.attachBrunch(ppath, new TreeNode(fcNode), id, pos);
-      } else {
-        StateTree.fromPipelineConfig({
-          config: this.config,
-          startNode: subConfig,
-          startPath: [...ppath, {id, idx: pos}],
-          startState: this,
-          isReadonly: false,
-          defaultValidators: this.defaultValidators,
-          mockMode: this.mockMode,
-        });
-      }
-      const details: TreeUpdateMutationPayload[] = [{
-        mutationRootPath: ppath,
-        addIdx: pos,
-        id,
-      }];
-      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([{isMutation: true, details}]));
+      const detail = this.addSubTreeInternal(ppath, id, pos);
+      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([{isMutation: true, details: [detail]}]));
     });
   }
 
@@ -323,42 +353,12 @@ export class StateTree {
     const details: TreeUpdateMutationPayload[] = [];
     for (const op of ops) {
       if (op.op === 'add') {
-        const subConfig = StateTree.getSubConfig(this.config, parentPath, op.configId);
         const pos = op.position ?? this.nodeTree.getNode(parentPath).getChildren().length;
-        if (isPipelineStepConfig(subConfig)) {
-          const fcNode = new FuncCallNode(subConfig, false);
-          fcNode.initState(subConfig);
-          this.nodeTree.attachBrunch(parentPath, new TreeNode(fcNode), op.configId, pos);
-        } else {
-          StateTree.fromPipelineConfig({
-            config: this.config,
-            startNode: subConfig,
-            startPath: [...parentPath, {id: op.configId, idx: pos}],
-            startState: this,
-            isReadonly: false,
-            defaultValidators: this.defaultValidators,
-            mockMode: this.mockMode,
-          });
-        }
-        details.push({mutationRootPath: parentPath, addIdx: pos, id: op.configId});
-      } else if (op.op === 'remove') {
-        const data = this.nodeTree.find((item) => item.uuid === op._uuid);
-        if (data == null)
-          throw new Error(`Granular removeStep: node uuid ${op._uuid} not found`);
-        const [node, path] = data;
-        this.nodeTree.removeBrunch(path);
-        const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
-        details.push({mutationRootPath, removeIdx, id: node.getItem().config.id});
-      } else if (op.op === 'move') {
-        const data = this.nodeTree.find((item) => item.uuid === op._uuid);
-        if (data == null)
-          throw new Error(`Granular moveStep: node uuid ${op._uuid} not found`);
-        const [node, path] = data;
-        this.nodeTree.removeBrunch(path);
-        const [ppath, oldIdx] = this.getMutationSlice(path);
-        this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, op.position);
-        details.push({mutationRootPath: ppath, addIdx: op.position, removeIdx: oldIdx, id: node.getItem().config.id});
-      }
+        details.push(this.addSubTreeInternal(parentPath, op.configId, pos));
+      } else if (op.op === 'remove')
+        details.push(this.removeSubtreeInternal(op._uuid));
+      else if (op.op === 'move')
+        details.push(this.moveSubtreeInternal(op._uuid, op.position));
     }
     return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(
       concatMap(() => from(details)),
@@ -425,31 +425,8 @@ export class StateTree {
           concatMap(({pipelineMutations, granularMutations}) => {
             const replacements$ = from(pipelineMutations ?? []).pipe(
               concatMap((data) => {
-                const ppath = data.path.slice(0, -1);
-                const last = indexFromEnd(data.path);
-                const subConfig = last ? StateTree.getSubConfig(this.config, ppath, last.id) : this.config;
-                if (isPipelineStepConfig(subConfig))
-                  throw new Error(`FuncCall node ${JSON.stringify(data.path)}, but pipeline is expected`);
-                const subTree = StateTree.fromInstanceConfig(
-                  {
-                    instanceConfig: data.initConfig,
-                    config: subConfig,
-                    isReadonly: false,
-                    defaultValidators: this.defaultValidators,
-                    mockMode: this.mockMode,
-                  });
-                if (last) {
-                  this.nodeTree.removeBrunch(data.path);
-                  this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
-                } else
-                  this.nodeTree.replaceRoot(subTree.nodeTree.root);
-
-                const mutationData: TreeUpdateMutationPayload = last ? {
-                  mutationRootPath: ppath,
-                  addIdx: last.idx,
-                  id: last.id,
-                } : {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
-                return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(mutationData));
+                const {detail, subTree} = this.replaceSubtreeInternal(data.path, data.initConfig);
+                return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(detail));
               }),
             );
 
