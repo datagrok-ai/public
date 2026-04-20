@@ -1,5 +1,6 @@
 # Diff Studio
 
+[![JOSS](https://joss.theoj.org/papers/10.21105/joss.09090/status.svg)](https://doi.org/10.21105/joss.09090)
 [![Run: Diff Studio](https://img.shields.io/badge/app-%20Diff%20Studio-red.svg)](https://public.datagrok.ai/apps/DiffStudio)
 [![Tutorial: Differential equations](https://img.shields.io/badge/tutorial-Differential%20Equations-yellow.svg)](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Differentialequations)
 [![Documentation](https://img.shields.io/badge/docs-online-blue.svg)](https://datagrok.ai/help/compute/diff-studio)
@@ -17,34 +18,50 @@ The solver takes a set of the differential equations in a declarative form, and 
 
 Datagrok provides intuitive tools for the rapid solving ODEs.
 
-* Run the solver:
-  * Go to **Apps > Compute**
-  * Run **Diff Studio**
+* Launch Diff Studio:
+  * Go to **Apps > Compute** and run **Diff Studio**
+  * The **Hub** opens with ready-to-run models grouped into **Templates**, **Library** and **Recent**
+* Run a model:
+  * Double-click any card on the Hub to run it
+  * Or click **Create** to start from a basic template
+  * Or click **Upload** to load an *ivp*-file from your disk
+  * Or drag an *ivp*-file right into the browser
   * Modify inputs and explore computations
 * Modify equations:
   * Turn on the **Edit** toggle on the top panel
   * Edit formulas or add new ones
   * Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes
-* Use templates:
-  * Click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** icon on the top panel
-  * Go to **Templates** and select one of them
-  * Once you have completed your model, turn off the **Edit** toggle  
 * Save model:
   * Click the **Save** button on the top panel to save model to your platform files (**Browse > Files > My files**)
   * Click <i class="fas fa-arrow-to-bottom"></i> **Download** to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor
-  * Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Hub**
-* Drag-n-drop:
-  * Drag *ivp*-file with equations right into the browser
-* Load model:
-  * Click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** on the top panel
-  * Select **Import...** to load model from local file
-  * **My Models** contains models from your platform files
-  * Find last called models in **Recent**
-  * Explore examples in **Library**. They cover all possibilities of Diff Studio
+  * Click <i class="fas fa-layer-plus"></i> **Save to Library** to publish the model to your personal **Library** — it appears on the Hub and in the browse tree
+* Reopen a model:
+  * Pick it from the **Hub** (Templates, Library, Recent) — double-click the card
+  * Or use the browse tree: **Browse > Apps > Compute > Diff Studio > Templates | Library | Recent**
+  * Or use the <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** menu on the top panel — it also exposes **Import...** and **My Models**
 * Analyze model
   * Turn off the **Edit** toggle on the top panel
   * Click the **Fit** icon to [optimize inputs](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
   * Click the **Sensitivity** icon to run [sensitivity analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
+
+## Hub
+
+The **Hub** is the default landing view of Diff Studio. It shows all available models as cards and exposes the most common actions.
+
+* Action buttons at the top:
+  * <i class="fas fa-sync"></i> **Refresh** — reload the Hub contents
+  * **Create** — start a new model from the basic template
+  * **Upload** — load a local *ivp*-file and run it
+* Card sections:
+  * **Templates** — starter models (`Basic`, `Advanced`, `Extended`)
+  * **Library** — built-in use cases plus models you have saved to your personal Library
+  * **Recent** — models you have opened recently, including custom files
+* Card interactions:
+  * Hover a card for a tooltip with the model description
+  * Double-click a card to run the model
+  * Right-click a card for a context menu: **Run**, **Copy link**, **Help**. Custom Library cards also expose **Settings...** for editing the help link
+
+The same sections are mirrored in the browse tree under **Browse > Apps > Compute > Diff Studio**.
 
 ## Create model from template
 
@@ -56,9 +73,9 @@ Start from one of these templates:
 | `Advanced` | extra math features, including *expressions*, *constants*, *parameters* and *tolerance* specification|
 | `Extended` | the *annotating* feature for extended UI generation                 |
 
-## Use cases
+## Library
 
-The solver has built-in use cases. Get access to them via the context menu. You can use them as a template.
+The **Library** section on the Hub contains built-in example models. You can run them directly from Hub cards or from the browse tree, and use them as a starting point — they cover the main features of Diff Studio.
 
 * `Chem reactions`
   * simulates [mass-action kinetics](https://en.wikipedia.org/wiki/Law_of_mass_action)
@@ -88,6 +105,14 @@ The solver has built-in use cases. Get access to them via the context menu. You 
 * `Pollution`
   * describes a chemical reaction part of the air pollution [model](https://archimede.uniba.it/~testset/report/pollu.pdf) consisting of 25 reaction and 20 reacting compounds
   * demonstrates the simulation of processes described by a stiff system of ODEs
+
+### Custom models
+
+You can extend the **Library** with your own models:
+
+* Open or write a model in the editor, then click <i class="fas fa-layer-plus"></i> **Save to Library** on the top panel. The file is stored under `System:AppData/DiffStudio/library` and registered in the Library manifest (`external-models.json`).
+* The saved model appears on the Hub in the **Library** section and in **Browse > Apps > Compute > Diff Studio > Library**.
+* Right-click a custom model card and choose **Settings...** to set a help link for it.
 
 Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations). The primary solvers are [CVODE](https://sundials.readthedocs.io/en/latest/cvode/index.html) and [LSODA](https://doi.org/10.1137/0904010) — variable-order methods that automatically detect stiffness and switch between Adams (non-stiff) and BDF (stiff) formulations.
 
@@ -278,7 +303,7 @@ This table compares the efficiency of the methods when solving each test problem
 
 ## Platform applications
 
-Once you are satisfied with the result, click <i class="fas fa-layer-plus"></i> icon on the top panel to save your model to **Model Hub**.
+Once you are satisfied with the result, click <i class="fas fa-layer-plus"></i> **Save to Library** on the top panel to publish your model to the **Library**. It becomes available on the Hub and in **Browse > Apps > Compute > Diff Studio > Library** for yourself and anyone with access to your files.
 
 You can export your model to JavaScript script. To do so:
 
@@ -292,6 +317,22 @@ Apply [scripting](https://datagrok.ai/help/compute/scripting) tools to get:
 * non-elementary and special functions' use
 * Datagrok packages' functions call
 
+## Citation
+
+If you use Diff Studio in your research, please cite our [JOSS paper](https://doi.org/10.21105/joss.09090):
+
+```
+@article{diffstudio2026joss,
+  title = {Diff Studio: Ecosystem for Interactive Modeling by Ordinary Differential Equations},
+  author = {Viktor Makarichev, Larisa Bankurova, Gennadii Zakharov, Leonid Stolbov, Steven Mehrman, Dan Skatov, Jeffrey Cohen, Paul Sass, Davit Rizhinashvili, Andrew Skalkin},
+  journal = {Journal of Open Source Software},
+  year = {2026},
+  volume = {11},
+  number = {120},
+  doi = {10.21105/joss.09090}
+}
+```
+
 ## Links
 
 Run Diff Studio online [here](https://public.datagrok.ai/apps/DiffStudio), or complete an interactive [tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Differentialequations).
@@ -302,3 +343,4 @@ See also
 * [Sensitivity analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
 * [Parameter optimization](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
 * [Community](https://community.datagrok.ai/t/solving-differential-equations/878)
+
