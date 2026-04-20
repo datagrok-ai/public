@@ -146,7 +146,7 @@ export class StateTree {
   private addSubTreeInternal(parentPath: NodePath, id: string, pos: number): TreeUpdateMutationPayload {
     const subConfig = StateTree.getSubConfig(this.config, parentPath, id);
     if (isPipelineStepConfig(subConfig)) {
-      const fcNode = new FuncCallNode(subConfig, false);
+      const fcNode = new FuncCallNode(subConfig, false, this.logger);
       fcNode.initState(subConfig);
       this.nodeTree.attachBrunch(parentPath, new TreeNode(fcNode), id, pos);
     } else {
@@ -158,6 +158,7 @@ export class StateTree {
         isReadonly: false,
         defaultValidators: this.defaultValidators,
         mockMode: this.mockMode,
+        logger: this.logger,
       });
     }
     return {mutationRootPath: parentPath, addIdx: pos, id};
@@ -196,6 +197,7 @@ export class StateTree {
       isReadonly: false,
       defaultValidators: this.defaultValidators,
       mockMode: this.mockMode,
+      logger: this.logger,
     });
     if (last) {
       this.nodeTree.removeBrunch(path);

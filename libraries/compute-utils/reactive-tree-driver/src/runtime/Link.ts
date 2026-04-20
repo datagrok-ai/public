@@ -15,7 +15,7 @@ import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
 import {GranularMutationOp} from '../data/common-types';
-import {DriverLogger} from '../data/Logger';
+import {DriverLogger, reportError} from '../data/Logger';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
 
 const VALIDATOR_DEBOUNCE_TIME = 250;
@@ -82,11 +82,8 @@ export class Link {
 
     if (linksState) {
       for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
-        if (minfos.length > 1) {
-          const msg = `Node ${this.matchInfo.spec.id} prefix ${this.prefix} multiple action nodes with the same name ${name}`;
-          console.error(msg);
-          grok.shell.error(msg);
-        }
+        if (minfos.length > 1)
+          reportError('warning', `link:${this.matchInfo.spec.id}`, `Multiple action nodes with the same name ${name}`, this.logger);
         const nodeActions = minfos.map((minfo) => {
           const node = state.getNode([...this.prefix, ...minfo.path]);
           const actions = linksState.nodesActions.get(node.getItem().uuid) ?? [];
@@ -105,14 +102,14 @@ export class Link {
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs]) =>
-          this.runHandler(inputs, inputSet, outputSet, inputNames, outputNames, actions, baseNode, scope, state),
+          this.runHandler(inputs, inputSet, outputSet, inputNames, outputNames, actions, baseNode, scope, state).pipe(
+            map((controller) => this.setHandlerResults(controller, state)),
+            catchError((error) => {
+              reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger);
+              return EMPTY;
+            }),
+          ),
       ),
-      map((controller) => this.setHandlerResults(controller, state)),
-      catchError((error) => {
-        console.error(error);
-        grok.shell.error(error?.message);
-        return EMPTY;
-      }),
       timestamp(),
       map(({timestamp}) => timestamp),
       takeUntil(this.destroyed$),

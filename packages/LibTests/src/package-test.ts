@@ -27,6 +27,7 @@ import './tests/compute-utils/reactive-tree-driver/sequence-run';
 import './tests/compute-utils/reactive-tree-driver/links-retention';
 import './tests/compute-utils/reactive-tree-driver/structurecheck-hook';
 import './tests/compute-utils/reactive-tree-driver/pipeline-granular-mutations';
+import './tests/compute-utils/reactive-tree-driver/error-handling';
 
 export const _package = new DG.Package();
 export {tests};

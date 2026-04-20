@@ -87,7 +87,7 @@ export function fromPipelineConfig({
   }, new Set<ConfigTraverseItem>());
 
   const tree = traverse(startNode, (acc, state, path) => {
-    const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly);
+    const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly, logger);
     if (isFuncCallNode(node)) {
       if (!isPipelineStepConfig(state))
         throw new Error(`Wrong FuncCall node state type ${state.type} on path ${JSON.stringify(path)}`);
@@ -123,7 +123,7 @@ export function fromPipelineInstanceState({
   });
 
   const tree = traverse(state, (acc, state, path) => {
-    const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly || state.isReadonly);
+    const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly || state.isReadonly, logger);
     node.restoreState(state);
     return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, mockMode, logger});
   }, undefined as StateTree | undefined);
@@ -159,7 +159,7 @@ export function fromPipelineInstanceConfig({
   }, new Set<PipelineInstanceConfig>());
 
   const tree = traverse(instanceConfig, (acc, state, path) => {
-    const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly);
+    const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly, logger);
     if (isFuncCallNode(node))
       node.initState(state);
     return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, mockMode, logger});
@@ -232,10 +232,11 @@ function makeTreeNode(
   refMap: PipelineRefMap,
   path: Readonly<NodePath>,
   isReadonly: boolean,
+  logger?: DriverLogger,
 ) {
   const confPath = path.map((p) => p.id);
   const nodeConf = getConfigByInstancePath(confPath, config, refMap);
-  const node = makeNode(nodeConf, isReadonly);
+  const node = makeNode(nodeConf, isReadonly, logger);
   const ppath = path.slice(0, -1);
   const idx = indexFromEnd(path)?.idx ?? 0;
   return [node, ppath, idx] as const;
@@ -244,13 +245,14 @@ function makeTreeNode(
 function makeNode(
   nodeConf: PipelineConfigurationProcessed | PipelineStepConfigurationProcessed,
   isReadonly: boolean,
+  logger?: DriverLogger,
 ) {
   if (isPipelineStepConfig(nodeConf))
-    return new FuncCallNode(nodeConf, isReadonly);
+    return new FuncCallNode(nodeConf, isReadonly, logger);
   else if (isPipelineStaticConfig(nodeConf))
-    return new StaticPipelineNode(nodeConf, isReadonly);
+    return new StaticPipelineNode(nodeConf, isReadonly, logger);
   else if (isPipelineDynamicConfig(nodeConf))
-    return new DynamicPipelineNode(nodeConf, isReadonly);
+    return new DynamicPipelineNode(nodeConf, isReadonly, logger);
 
   throw new Error(`Wrong node type ${nodeConf}`);
 }

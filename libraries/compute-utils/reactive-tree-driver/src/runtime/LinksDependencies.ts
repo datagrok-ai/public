@@ -3,6 +3,7 @@ import {v4 as uuidv4} from 'uuid';
 import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
+import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
 import {parseLinkIO} from '../config/LinkSpec';
 
@@ -49,7 +50,7 @@ function addOutputDeps(state: BaseTree<StateTreeNode>, deps: Map<string, Depende
   }
 }
 
-export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: Link[]) {
+export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: Link[], logger?: DriverLogger) {
   const deps = new Map<string, IoDeps>();
   for (const link of links) {
     const linkId = link.uuid;
@@ -63,11 +64,8 @@ export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: L
         if (depsData[ioName] == null)
           depsData[ioName] = {};
         if (depType === 'data') {
-          if (depsData[ioName][depType]) {
-            const msg = `Duplicate deps path ${JSON.stringify(stepPath)} io ${ioName}`;
-            console.error(msg);
-            grok.shell.error(msg);
-          }
+          if (depsData[ioName][depType])
+            reportError('warning', 'ioDependencies', `Duplicate deps path ${JSON.stringify(stepPath)} io ${ioName}`, logger);
           depsData[ioName][depType] = linkId;
         }
         deps.set(node.getItem().uuid, depsData);
@@ -77,7 +75,7 @@ export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: L
   return deps;
 }
 
-export function createDefaultValidators(state: BaseTree<StateTreeNode>) {
+export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?: DriverLogger) {
   const defaultValidators = state.traverse(state.root, (acc, node, path) => {
     const item = node.getItem();
     if (!isFuncCallNode(item))
@@ -117,7 +115,7 @@ export function createDefaultValidators(state: BaseTree<StateTreeNode>) {
         outputsUUID: new Map(),
         isDefaultValidator: true,
       };
-      return new Link(path, minfo, 0);
+      return new Link(path, minfo, 0, logger);
     }).filter((x) => !!x);
     return [...acc, ...(validators ?? [])];
   }, [] as Link[]);
