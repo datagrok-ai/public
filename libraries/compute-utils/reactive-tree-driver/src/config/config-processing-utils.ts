@@ -7,6 +7,7 @@ import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
+import {DriverLogger, reportError} from '../data/Logger';
 
 //
 // Internal config processing
@@ -58,8 +59,8 @@ function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineCon
   return isPipelineStaticInitial(c) || isPipelineParallelInitial(c) || isPipelineSequentialInitial(c);
 }
 
-export async function getProcessedConfig(conf: PipelineConfigurationInitial): Promise<PipelineConfigurationProcessed> {
-  const pconf = await configProcessing(conf, new Map());
+export async function getProcessedConfig(conf: PipelineConfigurationInitial, logger?: DriverLogger): Promise<PipelineConfigurationProcessed> {
+  const pconf = await configProcessing(conf, new Map(), logger);
   return pconf as PipelineConfigurationProcessed;
 }
 
@@ -86,37 +87,38 @@ export function containsPipelineRef<T>(store: PipelineRefStore<T>, nqName: strin
 async function configProcessing(
   conf: ConfigInitialTraverseItem,
   loadedPipelines: PipelineRefStore<null>,
+  logger?: DriverLogger,
 ): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncCallIODescription[]> | PipelineSelfRef> {
   if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
     addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
   if (isStepConfigInitial(conf)) {
-    const pconf = await processStepConfig(conf);
+    const pconf = await processStepConfig(conf, logger);
     return pconf;
   } else if (isPipelineStaticInitial(conf)) {
-    const pconf = processStaticConfig(conf);
+    const pconf = processStaticConfig(conf, logger);
     const steps = await Promise.all(conf.steps.map(async (step) => {
       processUIFlags(step);
-      const sconf = await configProcessing(step, loadedPipelines);
+      const sconf = await configProcessing(step, loadedPipelines, logger);
       return sconf;
     }));
-    checkUniqId(steps);
+    checkUniqId(steps, logger);
     return {...pconf, steps};
   } else if (isPipelineDynamicInitial(conf)) {
-    const pconf = processDynamicConfig(conf);
+    const pconf = processDynamicConfig(conf, logger);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
       processUIFlags(item);
-      const nconf = await configProcessing(item, loadedPipelines);
+      const nconf = await configProcessing(item, loadedPipelines, logger);
       return nconf;
     }));
-    checkUniqId(stepTypes);
+    checkUniqId(stepTypes, logger);
     return {...pconf, stepTypes};
   } else if (isPipelineRefInitial(conf)) {
     const pconf = await callHandler<LoadedPipeline>(conf.provider, conf).toPromise();
     if (containsPipelineRef(loadedPipelines, pconf.nqName, pconf.version))
       return {id: pconf.id, nqName: pconf.nqName, version: pconf.version, type: 'selfRef'};
     addPipelineRef(loadedPipelines, pconf.nqName, pconf.version, null);
-    return configProcessing(pconf, loadedPipelines);
+    return configProcessing(pconf, loadedPipelines, logger);
   }
   throw new Error(`Pipeline configuration node type matching failed: ${conf}`);
 }
@@ -129,24 +131,24 @@ function processUIFlags(item: PipelineDynamicItem<LinkSpecString, never, Pipelin
   }
 }
 
-function processStaticConfig(conf: PipelineConfigurationStaticInitial) {
+function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: DriverLogger) {
   const links = conf.links?.map((link) => processLinkData(link));
-  const actions = processPipelineActions(conf.actions ?? []);
+  const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
   return {...conf, links, actions, onInit, onReturn};
 }
 
-function processDynamicConfig(conf: PipelineConfigurationDynamicInitial) {
+function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?: DriverLogger) {
   const links = conf.links?.map((link) => processLinkData(link));
-  const actions = processPipelineActions(conf.actions ?? []);
+  const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
   return {...conf, actions, links, onInit, onReturn};
 }
 
-async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>) {
-  const actions = processStepActions(conf.actions ?? []);
+async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>, logger?: DriverLogger) {
+  const actions = processStepActions(conf.actions ?? [], logger);
   const io = await getFuncCallIO(conf.nqName);
   const func = DG.Func.byName(conf.nqName);
   const viewersHookMakerName = getViewersHook(func);
@@ -175,14 +177,14 @@ function isOptional(prop: DG.Property) {
   return prop.options.optional === 'true';
 }
 
-function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[]) {
-  checkUniqId(actionsInput);
+function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
+  checkUniqId(actionsInput, logger);
   const actions = actionsInput.map((action) => ({...processLinkData(action)}));
   return actions;
 }
 
-function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[]) {
-  checkUniqId(actionsInput);
+function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
+  checkUniqId(actionsInput, logger);
   const actions = actionsInput.map((action) => ({...processLinkData(action)}));
   return actions;
 }
@@ -215,14 +217,11 @@ function processLink(io: LinkSpecString, ioType: IOType) {
     return [];
 }
 
-function checkUniqId(items: {id: string}[]) {
+function checkUniqId(items: {id: string}[], logger?: DriverLogger) {
   const ids = new Set<string>();
   for (const item of items) {
-    if (ids.has(item.id)) {
-      const msg = `Id ${item.id} is not unique`;
-      console.error(msg);
-      grok.shell.error(msg);
-    }
+    if (ids.has(item.id))
+      reportError('warning', 'configProcessing', `Id ${item.id} is not unique`, logger);
     ids.add(item.id);
   }
 }

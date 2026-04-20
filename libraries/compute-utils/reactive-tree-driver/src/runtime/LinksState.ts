@@ -59,7 +59,7 @@ export class LinksState {
     this.nodesActions = nodesActions;
 
     this.stepsDependencies = calculateStepsDependencies(state, links);
-    this.ioDependencies = calculateIoDependencies(state, links);
+    this.ioDependencies = calculateIoDependencies(state, links, this.logger);
 
     if (isMutation) {
       const newData = addedLinks.filter((link) => this.isDataLink(link));
@@ -96,7 +96,7 @@ export class LinksState {
   public updateLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
     const newLinks = this.createStateLinks(state);
     if (this.defaultValidators) {
-      const validators = createDefaultValidators(state);
+      const validators = createDefaultValidators(state, this.logger);
       newLinks.push(...validators);
     }
     return this.mergeLinks(oldLinks, newLinks, 'link');

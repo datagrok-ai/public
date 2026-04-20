@@ -12,7 +12,7 @@ import {PipelineConfiguration} from './config/PipelineConfiguration';
 import {getProcessedConfig, PipelineConfigurationProcessed} from './config/config-processing-utils';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from './runtime/StateTreeNodes';
 import {ValidationResult} from './data/common-types';
-import {DriverLogger} from './data/Logger';
+import {DriverLogger, reportError} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
 import {getStartedOrNull} from '../../shared-utils/utils';
 
@@ -42,12 +42,12 @@ export class Driver {
   constructor(private mockMode = false) {
     this.commands$.pipe(
       withLatestFrom(this.states$),
-      concatMap(([msg, state]) => this.executeCommand(msg, state)),
-      catchError((error) => {
-        console.error(error);
-        grok.shell.error(error?.message);
-        return EMPTY;
-      }),
+      concatMap(([msg, state]) => this.executeCommand(msg, state).pipe(
+        catchError((error) => {
+          reportError('recoverable', `command:${msg.event}`, error, this.logger);
+          return EMPTY;
+        }),
+      )),
       takeUntil(this.closed$),
     ).subscribe();
 
@@ -261,7 +261,7 @@ export class Driver {
         if (msg.config)
           return of([stateLoaded, msg.config] as const);
         return callHandler<PipelineConfiguration>(stateLoaded.nqName, {version: stateLoaded.version}).pipe(
-          concatMap((conf) => from(getProcessedConfig(conf))),
+          concatMap((conf) => from(getProcessedConfig(conf, this.logger))),
           map((config) => [stateLoaded, config, metaCall, isFavorite] as const),
         );
       }),
@@ -292,7 +292,7 @@ export class Driver {
 
   private initPipeline(msg: InitPipeline) {
     return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
-      concatMap((conf) => from(getProcessedConfig(conf))),
+      concatMap((conf) => from(getProcessedConfig(conf, this.logger))),
       map((config) => msg.instanceConfig ?
         StateTree.fromInstanceConfig({
           config,

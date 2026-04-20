@@ -1,5 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TreeNode} from '../data/BaseTree';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController} from '../RuntimeControllers';
@@ -35,21 +33,13 @@ export class ControllerBase<T> {
   }
 
   protected checkInput(name: string) {
-    if (!this.inputsSet.has(name)) {
-      const e = new Error(`Handler for Link ${this.id} is trying to get an unknown input ${name}`);
-      console.error(e);
-      grok.shell.error(e.message);
-      throw e;
-    }
+    if (!this.inputsSet.has(name))
+      throw new Error(`Handler for Link ${this.id} is trying to get an unknown input ${name}`);
   }
 
   protected checkOutput(name: string) {
-    if (!this.outputsSet.has(name)) {
-      const e = new Error(`Handler for Link ${this.id} is trying to set an unknown output ${name}`);
-      console.error(e);
-      grok.shell.error(e.message);
-      throw e;
-    }
+    if (!this.outputsSet.has(name))
+      throw new Error(`Handler for Link ${this.id} is trying to set an unknown output ${name}`);
   }
 
   protected checkIsClosed() {

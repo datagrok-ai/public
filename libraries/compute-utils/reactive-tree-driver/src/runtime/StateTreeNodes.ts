@@ -11,6 +11,7 @@ import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBrid
 import {isPipelineConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
 import {RestrictionType, ValidationResult} from '../data/common-types';
+import {DriverLogger, reportError} from '../data/Logger';
 import {customDeepEqual, mergeValidationResults} from '../utils';
 
 export const descriptionOutputs = ['title', 'description', 'tags'] as const;
@@ -64,7 +65,7 @@ export class FuncCallNode implements IStoreProvider {
   public uuid = uuidv4();
   public readonly nodeType = 'funccall';
 
-  public instancesWrapper = new FuncCallInstancesBridge(this.config.io!, this.config.states ?? [], this.isReadonly);
+  public instancesWrapper: FuncCallInstancesBridge;
   public pendingId?: string;
 
   public consistencyInfo$ = new BehaviorSubject<Record<string, ConsistencyInfo>>({});
@@ -79,7 +80,9 @@ export class FuncCallNode implements IStoreProvider {
   constructor(
     public readonly config: PipelineStepConfigurationProcessed,
     public isReadonly: boolean,
+    private logger?: DriverLogger,
   ) {
+    this.instancesWrapper = new FuncCallInstancesBridge(this.config.io!, this.config.states ?? [], this.isReadonly, this.logger);
     this.getConsistencyChanges().pipe(
       takeUntil(this.closed$),
     ).subscribe(this.consistencyInfo$);
@@ -326,6 +329,7 @@ export class PipelineNodeBase implements IStoreProvider {
   constructor(
     public readonly config: PipelineConfigurationProcessed,
     public readonly isReadonly: boolean,
+    protected logger?: DriverLogger,
   ) {
     this.store = new MemoryStore(config.states ?? [], false);
   }
@@ -387,8 +391,7 @@ export class PipelineNodeBase implements IStoreProvider {
       try {
         return this.config.structureCheck(state);
       } catch (e: any) {
-        grok.shell.error(e);
-        console.error(e);
+        reportError('warning', 'structureCheck', e instanceof Error ? e : new Error(String(e)), this.logger);
       }
     }
   }
@@ -400,8 +403,9 @@ export class StaticPipelineNode extends PipelineNodeBase {
   constructor(
     public readonly config: PipelineConfigurationStaticProcessed,
     public readonly isReadonly: boolean,
+    logger?: DriverLogger,
   ) {
-    super(config, isReadonly);
+    super(config, isReadonly, logger);
   }
 
   toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
@@ -431,8 +435,9 @@ export class DynamicPipelineNode extends PipelineNodeBase {
   constructor(
     public readonly config: PipelineConfigurationDynamicProcessed,
     public readonly isReadonly: boolean,
+    logger?: DriverLogger,
   ) {
-    super(config, isReadonly);
+    super(config, isReadonly, logger);
   }
 
   toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
