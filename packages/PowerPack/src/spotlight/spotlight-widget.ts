@@ -300,7 +300,7 @@ export class SpotlightWidget extends DG.Widget {
       this.sharedNotifications.push(c.notification);
       this.sharedUsers.push(user);
       this.sharedWithMe.push(ent);
-      this.sharedEntityTimes.push(c.notification.createdAt ?? null);
+      this.sharedEntityTimes.push(c.notification.createdAt ? dayjs(c.notification.createdAt.toDate()) : null);
     }
 
     // Update timestamps for existing items if SQL has a more recent time
@@ -435,7 +435,7 @@ export class SpotlightWidget extends DG.Widget {
         if (title === SpotlightTabNames.SHARED_WITH_ME) {
           const sharedTime = this.sharedEntityTimes[i];
           const notificationIsLatest = sharedNotification?.text &&
-            (!sharedTime || !sharedNotification.createdAt || !sharedTime.isAfter(sharedNotification.createdAt));
+            (!sharedTime || !sharedNotification.createdAt || !sharedTime.isAfter(sharedNotification.createdAt.toDate()));
           if (notificationIsLatest) {
             const icon = ui.iconFA('clock');
             ui.tooltip.bind(icon, () => {
