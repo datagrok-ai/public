@@ -1,50 +1,57 @@
-# 3D Scatter Plot — Run Results
+# 3D Scatter plot — Run Results
 
-**Date**: 2026-04-07
-**URL**: http://localhost:8888/
+**Date**: 2026-04-20
+**URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Open the demog dataset | PASS | PASSED | 5850 rows, 11 columns loaded |
-| 2 | Click 3d Scatter plot in Viewers tab | PASS | PASSED | Viewer opened as rotatable 3D model with axes |
-| 3a | Click on single data point highlights grid row | PASS | PASSED | Clicked point selected row 3975, tooltip shown with row data |
-| 3b | Zoom in/out with mouse wheel | PASS | PASSED | Zoom in/out via wheel events worked correctly |
-| 4a | Modify Color property to SEX | PASS | PASSED | setOptions({colorColumnName: 'SEX'}) applied, verified via getOptions() |
-| 4b | Modify Size property to AGE | PASS | PASSED | setOptions({sizeColumnName: 'AGE'}) applied, verified via getOptions() |
-| 4c | Change Color to RACE and Size to WEIGHT | PASS | PASSED | Both properties changed and verified, points colored by race with varying sizes |
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 1 | Open demog dataset | 3s | PASS | PASSED | `grok.dapi.files.readCsv('System:DemoFiles/demog.csv')`; 5850 rows, 11 cols |
+| 2 | Click 3D Scatter plot in Viewers toolbox | 5s | PASS | PASSED | Clicked `[name="icon-3d-scatter-plot"]`; viewer container + canvas appeared; default axes X=AGE, Y=HEIGHT, Z=WEIGHT |
+| 3 | Click point highlights grid row | 4s | PASS | PASSED | Dispatched mousedown/mouseup/click on canvas center; `currentRowIdx` changed 0 → 3262; tooltip with row values rendered |
+| 3 | Scroll wheel zooms | 3s | PASS | PASSED | Dispatched 5 forward + 5 backward wheel events on canvas; view updated (camera rotated/zoomed), canvas remained rendered |
+| 4 | Click gear icon (Settings) opens Property Pane | 2s | PASS | PASSED | Gear `[name="icon-font-icon-settings"]` lives on grandparent element of viewer container; clicking toggled the pane |
+| 4 | Modify properties (Color, Size, markerDefaultSize) | 2s | PASS | PASSED | UI combo-box click in Property Pane did not open a column picker — fell back to `viewer.setOptions({colorColumnName:'SEX', sizeColumnName:'AGE', markerDefaultSize:15})`. Colors changed (F orange / M blue), marker sizes varied by AGE |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | ~20s |
-| Spec file generation | ~3s |
-| Spec script execution | 10s |
+| Model thinking (scenario steps) | 1m 40s |
+| grok-browser execution (scenario steps) | 15s |
+| Execute via grok-browser (total) | 1m 55s |
+| Spec file generation | 30s |
+| Spec script execution | 6s |
+| **Total scenario run (with model)** | 2m 31s |
 
 ## Summary
 
-All steps passed. The 3D Scatter Plot opens correctly as a rotatable 3D model, data point clicking selects the corresponding row in the grid, mouse wheel zoom works, and property modifications (Color, Size) are correctly reflected in the visualization via `setOptions()` with `colorColumnName` and `sizeColumnName` keys.
+All four scenario steps passed against dev. 3D Scatter plot opens by clicking the Viewers toolbox
+icon, click-on-canvas selects the underlying row in the grid (with tooltip), mouse wheel
+manipulates the 3D view, and properties set via the API reflect immediately in the viewer.
+Playwright spec passed in 3.2s. **Total scenario run (with model): 2m 31s.**
 
 ## Retrospective
 
 ### What worked well
-- Viewer opened reliably via toolbox icon click
-- Data point click interaction selected the correct row in the grid
-- `setOptions({colorColumnName: ..., sizeColumnName: ...})` works for changing properties
-- `getOptions().look.colorColumnName` / `.sizeColumnName` for reading current values
-- Zoom via mouse wheel worked correctly
-- Updated spec to use CDP connection for consistency
+- JS API dataset open + semType wait completed in under a second.
+- `[name="icon-3d-scatter-plot"]` is stable and reliable.
+- `viewer.getOptions().look.*` gives a clean read-back channel for verifying property changes.
+- Click + tooltip confirms row highlighting without needing to decode a WebGL pixel.
 
 ### What did not work
-- `v3d.props.color` and `v3d.setOptions({color: 'RACE'})` do not work — must use `colorColumnName` and `sizeColumnName` flat keys
-- `v3d.setOptions({look: {colorColumnName: ...}})` (nested under look) does not apply — must use flat keys
+- The Property Pane column combo-boxes (`[name="div-column-combobox-color"]`) did not open a column picker on `.click()` — the drop-down stayed hidden. Falling back to `viewer.setOptions({colorColumnName: ...})` was needed. Root cause unclear; the combo probably needs a pointerdown + keyboard interaction rather than `.click()`.
+- The viewer's title bar gear icon is rendered on the **grandparent** of `viewer-3d-scatter-plot` (not the container or its immediate parent). Standard `container.querySelector('[name="icon-font-icon-settings"]')` returns `null`, which the viewers reference could call out explicitly.
+- Scroll-wheel zoom does not expose a numeric `zoom`/`camera` property on `viewer.getOptions().look`, so automated regression against "zoom actually happened" is indirect (visual).
 
 ### Suggestions for the platform
-- 3D scatter plot should support `color` and `size` shorthand property names like other viewers do
+- Make `div-column-combobox-*` respond to plain `.click()` by programmatically showing the column drop-down, so UI-driven tests can change columns without falling back to JS API.
+- Expose the 3D scatter plot camera state (zoom/rotation) in `look` so tests can assert camera changes deterministically.
+- Add `body.selenium`-driven title-bar icons directly to the viewer's container (`viewer-<Name>`) rather than a wrapper two levels up, so scoping to the container is sufficient.
 
 ### Suggestions for the scenario
-- Step 3 says "Clicking on the single data on the viewer should highlight same data line in the grid" — clearer as "Clicking a data point selects the corresponding row in the grid"
-- Consider specifying which properties to modify in step 4 for deterministic testing
+- "click the Gear icon. The Property Pane opens" — on dev, the Property Pane often is already open from the right sidebar when a viewer is added. Reword as "click the Gear icon to open/focus the Property Pane for this viewer", and list which sections must exist (Data / Axes / Marker / Style / Legend).
+- Step 3 "Interact with all elements on the viewer" is open-ended — enumerate concrete interactions (single click, right-click context menu, mouse drag rotate, wheel zoom) with expected outcomes.
+- Add an explicit verification step: after modifying Color and Size, check that `Color:` and `Size:` combo boxes on the viewer show the chosen column names, and that the legend reflects the new color column.

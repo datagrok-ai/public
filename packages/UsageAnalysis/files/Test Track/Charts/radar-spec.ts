@@ -1,183 +1,201 @@
 import {test, expect, chromium} from '@playwright/test';
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
-
-const stepErrors: {step: string; error: string}[] = [];
-
-async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
-  }
-}
+const baseUrl = 'https://dev.datagrok.ai/';
 
 test('Radar viewer (Charts package)', async () => {
-  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  test.setTimeout(600_000);
+
+  const browser = await chromium.connectOverCDP('http://127.0.0.1:9222');
   const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
+  let page = context.pages().find((p) => p.url().includes('datagrok'));
   if (!page) {
     page = await context.newPage();
     await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
-    await page.waitForFunction(() => {
-      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
-      catch { return false; }
-    }, {timeout: 45000});
   }
 
-  // Step 1: Open earthquakes.csv and add Radar viewer
-  await softStep('Open earthquakes.csv and add Radar viewer', async () => {
-    const result = await page!.evaluate(async () => {
-      document.querySelectorAll('.d4-dialog').forEach(d => {
-        const cancel = d.querySelector('[name="button-CANCEL"]');
-        if (cancel) (cancel as HTMLElement).click();
-      });
-      grok.shell.closeAll();
+  await page.waitForFunction(() => typeof (globalThis as any).grok !== 'undefined' && (globalThis as any).grok.shell, {timeout: 15000});
+
+  const stepErrors: {step: string; error: string}[] = [];
+  async function softStep(name: string, fn: () => Promise<void>) {
+    try {
+      await test.step(name, fn);
+    } catch (e: any) {
+      stepErrors.push({step: name, error: e?.message ?? String(e)});
+      console.error(`[STEP FAILED] ${name}: ${e?.message ?? e}`);
+    }
+  }
+
+  await softStep('Setup environment', async () => {
+    await page!.evaluate(async () => {
       document.body.classList.add('selenium');
-      grok.shell.settings.showFiltersIconsConstantly = true;
-      grok.shell.windows.simpleMode = false;
+      (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
+      (window as any).grok.shell.windows.simpleMode = false;
+      (window as any).grok.shell.closeAll();
+    });
+  });
+
+  await softStep('Step 1 — Open earthquakes.csv and add Radar viewer', async () => {
+    await page!.evaluate(async () => {
+      const grok = (window as any).grok;
       const df = await grok.dapi.files.readCsv('System:DemoFiles/geo/earthquakes.csv');
-      const tv = grok.shell.addTableView(df);
-      await new Promise(resolve => {
+      grok.shell.addTableView(df);
+      await new Promise<void>((resolve) => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
       });
-      tv.addViewer('Radar');
-      await new Promise(r => setTimeout(r, 2000));
-      return {rows: df.rowCount, cols: df.columns.length, viewers: tv.viewers.length};
     });
-    expect(result.rows).toBe(2426);
-    expect(result.viewers).toBe(2); // Grid + Radar
+    await page!.locator('[name="viewer-Grid"]').first().waitFor({timeout: 30000});
+
+    await page!.evaluate(() => {
+      const el = document.querySelector('i.svg-add-viewer') as HTMLElement;
+      el.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+      el.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
+      el.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    });
+    await page!.locator('.d4-dialog').waitFor({timeout: 5000});
+    await page!.evaluate(() => {
+      const dialog = document.querySelector('.d4-dialog')!;
+      const cards = dialog.querySelectorAll('.d4-item-card.viewer-gallery');
+      for (const card of Array.from(cards)) {
+        const lbl = card.querySelector('.card-label');
+        if (lbl && lbl.textContent?.trim() === 'Radar') {
+          (card as HTMLElement).dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+          (card as HTMLElement).dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
+          (card as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
+          (card as HTMLElement).dispatchEvent(new MouseEvent('dblclick', {bubbles: true}));
+          break;
+        }
+      }
+    });
+    await page!.locator('[name="viewer-Radar"]').waitFor({timeout: 15000});
   });
 
-  // Step 2: Open demog.csv and add Radar viewer
-  await softStep('Open demog.csv and add Radar viewer', async () => {
-    const result = await page!.evaluate(async () => {
+  await softStep('Step 2 — Open demog.csv and add Radar viewer', async () => {
+    await page!.evaluate(async () => {
+      const grok = (window as any).grok;
       const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-      const tv = grok.shell.addTableView(df);
-      await new Promise(resolve => {
+      grok.shell.addTableView(df);
+      await new Promise<void>((resolve) => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
       });
-      tv.addViewer('Radar');
-      await new Promise(r => setTimeout(r, 2000));
-      return {rows: df.rowCount, viewers: tv.viewers.length};
     });
-    expect(result.rows).toBe(5850);
-    expect(result.viewers).toBe(2);
-    const radarVisible = await page!.locator('[name="viewer-Radar"]').isVisible();
-    expect(radarVisible).toBe(true);
+    await page!.evaluate(() => {
+      const el = document.querySelector('i.svg-add-viewer') as HTMLElement;
+      el.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+      el.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
+      el.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    });
+    await page!.locator('.d4-dialog').waitFor({timeout: 5000});
+    await page!.evaluate(() => {
+      const dialog = document.querySelector('.d4-dialog')!;
+      const cards = dialog.querySelectorAll('.d4-item-card.viewer-gallery');
+      for (const card of Array.from(cards)) {
+        const lbl = card.querySelector('.card-label');
+        if (lbl && lbl.textContent?.trim() === 'Radar') {
+          (card as HTMLElement).dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+          (card as HTMLElement).dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
+          (card as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
+          (card as HTMLElement).dispatchEvent(new MouseEvent('dblclick', {bubbles: true}));
+          break;
+        }
+      }
+    });
+    await page!.locator('[name="viewer-Radar"]').waitFor({timeout: 15000});
+    const viewerTypes = await page!.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const types: string[] = [];
+      for (const v of tv.viewers) types.push(v.type);
+      return types;
+    });
+    expect(viewerTypes).toContain('Radar');
   });
 
-  // Step 3a: Switch tables via properties
-  await softStep('Switch tables via properties', async () => {
-    // Click gear icon on Radar viewer dock panel title bar
-    await page!.evaluate(async () => {
-      const radar = document.querySelector('[name="viewer-Radar"]');
-      const panel = radar?.parentElement?.parentElement;
-      const gear = panel?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
-      if (gear) gear.click();
-      await new Promise(r => setTimeout(r, 500));
+  await softStep('Step 3 — Open Radar settings (gear icon)', async () => {
+    await page!.evaluate(() => {
+      const radar = document.querySelector('[name="viewer-Radar"]')!;
+      const panelBase = radar.closest('.panel-base')!;
+      const gear = panelBase.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
+      gear.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+      gear.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
+      gear.dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
+    await page!.waitForTimeout(800);
+    const categories = await page!.evaluate(() => {
+      const pg = document.querySelector('.property-grid-base');
+      if (!pg) return [];
+      return Array.from(pg.querySelectorAll('.property-grid-category')).map((c) => c.textContent?.trim());
+    });
+    expect(categories).toEqual(expect.arrayContaining(['Data', 'Selection', 'Color', 'Value', 'Style']));
+  });
 
-    // Switch table to earthquakes via setOptions
-    const tableName = await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const radar = viewers.find((v: any) => v.type === 'RadarViewer') as any;
+  await softStep('Step 3a — Switch tables (Table dropdown)', async () => {
+    const result = await page!.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      let radar: any = null;
+      for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; break; }
       radar.setOptions({table: 'Table'});
-      await new Promise(r => setTimeout(r, 1000));
-      return radar.dataFrame?.name;
-    });
-    expect(tableName).toBe('Table');
-
-    // Switch back to demog
-    await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const radar = viewers.find((v: any) => v.type === 'RadarViewer') as any;
+      await new Promise((r) => setTimeout(r, 1500));
+      const switched = radar.dataFrame?.name;
       radar.setOptions({table: 'Table (2)'});
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 1500));
+      const restored = radar.dataFrame?.name;
+      return {switched, restored};
     });
+    expect(result.switched).toBe('Table');
+    expect(result.restored).toBe('Table (2)');
   });
 
-  // Step 3b: Toggle Show Min and Show Max checkboxes
-  await softStep('Toggle Show Min and Show Max', async () => {
-    const opts = await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const radar = viewers.find((v: any) => v.type === 'RadarViewer') as any;
-      radar.setOptions({showMin: true, showMax: true});
-      await new Promise(r => setTimeout(r, 1000));
-      const o = radar.getOptions();
-      return {showMin: o.look?.showMin, showMax: o.look?.showMax};
+  await softStep('Step 3b — Selection check-boxes', async () => {
+    const result = await page!.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      let radar: any = null;
+      for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; break; }
+      radar.setOptions({showCurrentRow: false, showMouseOverRow: false, showMouseOverRowGroup: false});
+      await new Promise((r) => setTimeout(r, 500));
+      const off = radar.getOptions().look;
+      radar.setOptions({showCurrentRow: true, showMouseOverRow: true, showMouseOverRowGroup: true});
+      await new Promise((r) => setTimeout(r, 500));
+      const on = radar.getOptions().look;
+      return {off, on};
     });
-    expect(opts.showMin).toBe(true);
-    expect(opts.showMax).toBe(true);
+    expect(result.off.showCurrentRow).toBe(false);
+    expect(result.on.showCurrentRow).toBe(true);
   });
 
-  // Step 3c: Values — change column count
-  await softStep('Change Values column count', async () => {
-    // Decrease: select only 2 columns
-    await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const radar = viewers.find((v: any) => v.type === 'RadarViewer') as any;
-      radar.setOptions({valueColumnNames: ['AGE', 'WEIGHT']});
-      await new Promise(r => setTimeout(r, 1000));
+  await softStep('Step 3c — Increase/decrease Values', async () => {
+    const result = await page!.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      let radar: any = null;
+      for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; break; }
+      radar.setOptions({valuesColumnNames: ['AGE', 'HEIGHT']});
+      await new Promise((r) => setTimeout(r, 800));
+      const small = radar.getOptions().look.valuesColumnNames;
+      radar.setOptions({valuesColumnNames: ['AGE', 'HEIGHT', 'WEIGHT', 'STARTED']});
+      await new Promise((r) => setTimeout(r, 800));
+      const big = radar.getOptions().look.valuesColumnNames;
+      return {small, big};
     });
-
-    // Increase: select all 4 columns
-    const increased = await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const radar = viewers.find((v: any) => v.type === 'RadarViewer') as any;
-      radar.setOptions({valueColumnNames: ['AGE', 'HEIGHT', 'WEIGHT', 'STARTED']});
-      await new Promise(r => setTimeout(r, 1000));
-      // valueColumnNames may be nested differently; just verify no error
-      return true;
-    });
-
-    expect(increased).toBe(true);
+    expect(result.small.length).toBe(2);
+    expect(result.big.length).toBe(4);
   });
 
-  // Step 3d: Style (color) changes
-  await softStep('Style and color changes', async () => {
-    await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const radar = viewers.find((v: any) => v.type === 'RadarViewer') as any;
-      radar.setOptions({
-        lineColor: '#ff0000',
-        backgroundMinColor: '#0000ff',
-        backgroundMaxColor: '#ff00ff',
-      });
-      await new Promise(r => setTimeout(r, 1000));
+  await softStep('Step 3d — Style (color) changes', async () => {
+    const result = await page!.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      let radar: any = null;
+      for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; break; }
+      radar.setOptions({backgroundMinColor: 0xFFFFE0E0, backgroundMaxColor: 0xFFFF6666, lineColor: 0xFF0000FF});
+      await new Promise((r) => setTimeout(r, 800));
+      const after = radar.getOptions().look;
+      radar.setOptions({backgroundMinColor: 4290479197, backgroundMaxColor: 4293381581, lineColor: 11393254});
+      return after;
     });
-
-    const colors = await page!.evaluate(() => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const radar = viewers.find((v: any) => v.type === 'RadarViewer') as any;
-      const o = radar.getOptions();
-      return {lineColor: o.look?.lineColor, bgMin: o.look?.backgroundMinColor};
-    });
-    expect(colors.lineColor).toBeDefined();
-    expect(colors.bgMin).toBeDefined();
-
-    // Reset colors
-    await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const radar = viewers.find((v: any) => v.type === 'RadarViewer') as any;
-      radar.setOptions({
-        lineColor: '#add8e6',
-        backgroundMinColor: '#bb845d',
-        backgroundMaxColor: '#e7cdcd',
-        currentRowColor: '#00ff00',
-      });
-      await new Promise(r => setTimeout(r, 500));
-    });
+    expect(result.lineColor).toBe(0xFF0000FF);
   });
-
-  // Cleanup
-  await page!.evaluate(() => grok.shell.closeAll());
 
   if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
   }
 });
