@@ -36,7 +36,12 @@ See `packages/Compute2/CLAUDE.md` for full test categories and build/run instruc
 
 ## After Making Changes
 
-1. Rebuild compute-utils: `cd libraries/compute-utils && npm run build`
-2. Rebuild Compute2: `cd packages/Compute2 && npm run build`
-3. Publish: `cd packages/Compute2 && grok publish --release`
-4. Run tests: see `packages/Compute2/CLAUDE.md` for full test instructions
+1. **Write tests for your changes.** Every new feature, bug fix, or behavior change must have corresponding tests. Add them to the appropriate file in `packages/LibTests/src/tests/compute-utils/reactive-tree-driver/`, or create a new file and register it in `packages/LibTests/src/package-test.ts`.
+2. Rebuild compute-utils: `cd libraries/compute-utils && npm run build`
+3. Rebuild LibTests: `cd packages/LibTests && npm run build-all`
+4. Publish LibTests: `cd packages/LibTests && grok publish --release`
+5. **Run ALL RTD tests** — not just the ones you added. Changes to the driver can break unrelated tests due to shared reactive state and link recalculation. Verify the full suite passes:
+   ```bash
+   grok test --skip-build --skip-publish --category "ComputeUtils: Driver"
+   ```
+   Environment-specific settings (Puppeteer path, `--host`) vary by machine — check Claude Code memory files for your local setup.
