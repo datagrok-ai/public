@@ -309,6 +309,7 @@ export enum UI_TIME {
   FACET_DOCKING = 100,
   TITLE_REMOVING = 500,
   DBL_CLICK_DELAY = 250,
+  SOLVE_DEBOUNCE_MS = 40,
 };
 
 /** Numerical methods names */

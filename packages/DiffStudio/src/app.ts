@@ -9,9 +9,9 @@ import type {EditorState} from '@codemirror/state';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {getFormatted} from '@datagrok-libraries/compute-utils/function-views/src/shared/lookup-tools';
-import {getIvp2WebWorker, getPipelineCreator} from 'diff-grok';
+import {getIvp2WebWorker, getPipelineCreator, getInputVector, applyPipeline, getOutputNames} from 'diff-grok';
 
-import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
+import {CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 
@@ -22,7 +22,7 @@ import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES
 
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
-  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
+  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS, INCEPTION} from './scripting-tools';
 
 import {CallbackAction} from './solver-tools';
 
@@ -1204,12 +1204,11 @@ export class DiffStudio {
       if (this.toCheckPerformance && !customSettings)
         ivp.solverSettings = `{maxTimeMs: ${this.secondsLimit * 1000}}`;
 
-      const scriptText = getScriptLines(ivp).join('\n');
-      const script = DG.Script.create(scriptText);
       const params = getScriptParams(ivp);
-      const call = script.prepare(params);
-
-      await call.call();
+      const ivpWW = getIvp2WebWorker(ivp);
+      const inputVector = getInputVector(params, ivp);
+      const pipeline = getPipelineCreator(ivp).getPipeline(inputVector);
+      const solutionArrs = applyPipeline(pipeline, ivpWW, inputVector);
 
       if (!customSettings)
         ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
@@ -1224,7 +1223,28 @@ export class DiffStudio {
         }
       }
 
-      this.solutionTable = call.outputs[DF_NAME];
+      const outputNames = getOutputNames(ivp);
+      this.solutionTable = DG.DataFrame.fromColumns(
+        outputNames.map((n, i) => DG.Column.fromFloat64Array(n, solutionArrs[i])),
+      );
+      this.solutionTable.name = ivp.name;
+
+      if (ivp.updates !== null) {
+        const argArr = solutionArrs[0];
+        const rowCount = argArr.length;
+        const step = argArr[1] - argArr[0];
+        const boundaryThreshold = step * 0.6;
+        const stageNames = [ivp.arg.updateName ?? INCEPTION, ...ivp.updates.map((u) => u.name)];
+        const stageCol = new Array<string>(rowCount);
+        let stageIdx = 0;
+        stageCol[0] = stageNames[0];
+        for (let i = 1; i < rowCount; ++i) {
+          if (argArr[i] - argArr[i - 1] < boundaryThreshold && stageIdx < stageNames.length - 1)
+            ++stageIdx;
+          stageCol[i] = stageNames[stageIdx];
+        }
+        this.solutionTable.columns.add(DG.Column.fromStrings(STAGE_COL_NAME, stageCol));
+      }
 
       if (hasNaN(this.solutionTable)) {
         grok.shell.warning(ERROR_MSG.NANS_OBTAINED);
@@ -1529,12 +1549,11 @@ export class DiffStudio {
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.caption = options.friendlyName ?? options.name;
 
-      //@ts-ignore
-      input.onChanged.subscribe(async (value) => {
+      DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
         if (value !== null) {
           //@ts-ignore
           ivp.arg[key].value = value;
-          await this.solve(ivp, getInputsPath());
+          this.solve(ivp, getInputsPath());
         }
       });
 
@@ -1548,11 +1567,10 @@ export class DiffStudio {
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.caption = options.friendlyName ?? options.name;
 
-      //@ts-ignore
-      input.onChanged.subscribe(async (value) => {
+      DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
         if (value !== null) {
-        ivp.inits.get(key)!.value = value;
-        await this.solve(ivp, getInputsPath());
+          ivp.inits.get(key)!.value = value;
+          this.solve(ivp, getInputsPath());
         }
       });
 
@@ -1567,11 +1585,10 @@ export class DiffStudio {
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
         input.caption = options.friendlyName ?? options.name;
 
-        //@ts-ignore
-        input.onChanged.subscribe(async (value) => {
+        DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
           if (value !== null) {
             ivp.params!.get(key)!.value = value;
-            await this.solve(ivp, getInputsPath());
+            this.solve(ivp, getInputsPath());
           }
         });
 
@@ -1588,11 +1605,10 @@ export class DiffStudio {
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.caption = options.friendlyName ?? options.name;
 
-      //@ts-ignore
-      input.onChanged.subscribe(async (value) => {
+      DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
         if (value !== null) {
           ivp.loop!.count.value = value;
-          await this.solve(ivp, getInputsPath());
+          this.solve(ivp, getInputsPath());
         }
       });
 

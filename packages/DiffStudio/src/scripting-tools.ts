@@ -29,7 +29,7 @@ export const DEFAULT_SOLVER_SETTINGS: string = '{}';
 const COLUMNS = `${SERVICE}columns`;
 const COMMENT_SEQ = '//';
 export const STAGE_COL_NAME = `${SERVICE}Stage`;
-const INCEPTION = 'Inception';
+export const INCEPTION = 'Inception';
 
 /** Solver package name */
 const PACKAGE_NAME = 'DiffStudio';
