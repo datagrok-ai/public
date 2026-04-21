@@ -29,17 +29,20 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Biology | Admetica',
+    description: 'Panel with ADMET predictions for a molecule.',
     meta: {role: 'widgets', domain: 'chem'},
   })
   static async admeticaWidget(
-    @grok.decorators.param({ name: 'smiles', options: { semType: 'Molecule' }}) semValue: DG.SemanticValue): Promise<DG.Widget<any>> {
+    @grok.decorators.param({name: 'smiles', options: {semType: 'Molecule', description: 'Molecule to predict.'}}) semValue: DG.SemanticValue): Promise<DG.Widget<any>> {
     const smiles = await grok.functions.call('Chem:convertMolNotation',
       { molecule: semValue.value, sourceNotation: DG.chem.Notation.Unknown, targetNotation: DG.chem.Notation.Smiles });
     return await getModelsSingle(smiles, semValue);
   }
 
-  @grok.decorators.func()
-  static async getModels(property?: string): Promise<string[]> {
+  @grok.decorators.func({description: 'Lists available ADMET properties.'})
+  static async getModels(
+    @grok.decorators.param({options: {description: 'Category: Absorption, Distribution, Metabolism, Excretion, Toxicity.'}}) property?: string,
+  ): Promise<string[]> {
     await setProperties();
     return properties.subgroup
       .filter((subg: Subgroup) => !property || subg.name === property)
@@ -47,16 +50,18 @@ export class PackageFunctions {
       .map((model: Model) => model.name);
   }
 
-  @grok.decorators.func({ name: 'AdmeticaHT',
+  @grok.decorators.func({
+    name: 'AdmeticaHT',
+    description: 'Runs ADMET predictions for Hit Triage.',
     meta: {role: 'hitTriageFunction'},
   })
   static async admeticaHT(
-    table: DG.DataFrame,
-    @grok.decorators.param({ options: { semType: 'Molecule' } }) molecules: DG.Column,
-    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Absorption\')', nullable: true } }) absorption: string[],
-    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Distribution\')', nullable: true } }) distribution: string[],
-    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Metabolism\')', nullable: true } }) metabolism: string[],
-    @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Excretion\')', nullable: true } }) excretion: string[],
+    @grok.decorators.param({options: {description: 'Table with molecules.'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule', description: 'Molecule column.'}}) molecules: DG.Column,
+    @grok.decorators.param({options: {choices: 'Admetica:getModels(\'Absorption\')', nullable: true}}) absorption: string[],
+    @grok.decorators.param({options: {choices: 'Admetica:getModels(\'Distribution\')', nullable: true}}) distribution: string[],
+    @grok.decorators.param({options: {choices: 'Admetica:getModels(\'Metabolism\')', nullable: true}}) metabolism: string[],
+    @grok.decorators.param({options: {choices: 'Admetica:getModels(\'Excretion\')', nullable: true}}) excretion: string[],
   ): Promise<void> {
     const models: string[] = [
       ...absorption,
@@ -90,29 +95,31 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'name': 'AdmeticaMenu',
+    'description': 'Predicts ADMET properties and appends result columns.',
     'top-menu': 'Chem | Admetica | Сalculate...',
     'editor': 'Admetica:AdmeticaEditor',
   })
   static async admeticaMenu(
-    @grok.decorators.param({options: { description: 'Input data table' }}) table: DG.DataFrame,
-    @grok.decorators.param({options: { semType: 'Molecule' }}) molecules: DG.Column,
-      template: string,
-      models: string[],
-      addPiechart: boolean,
-      addForm: boolean,
+    @grok.decorators.param({options: {description: 'Table with molecules.'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule', description: 'Molecule column.'}}) molecules: DG.Column,
+    @grok.decorators.param({options: {description: 'Optional JSON config.'}}) template: string,
+    @grok.decorators.param({options: {description: 'Properties to compute.'}}) models: string[],
+    @grok.decorators.param({options: {description: 'Add a pie-chart column.'}}) addPiechart: boolean,
+    @grok.decorators.param({options: {description: 'Add a form viewer.'}}) addForm: boolean,
   ): Promise<void> {
     await performChemicalPropertyPredictions(molecules, table, models, template, addPiechart, addForm);
   }
 
   @grok.decorators.func({
     name: 'getAdmeProperties',
+    description: 'Predicts ADMET properties for a molecule column.',
     meta: {vectorFunc: 'true'},
     outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async getAdmeProperties(
-    table: DG.DataFrame,
-    @grok.decorators.param({ options: { semType: 'Molecule' } }) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>', options: { optional: true }}) props?: string[],
+    @grok.decorators.param({options: {description: 'Target table for results.'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule', description: 'Molecule column.'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'list<string>', options: {optional: true, description: 'Properties to compute. All if omitted.'}}) props?: string[],
   ): Promise<DG.DataFrame> {
     const isMolblock = molecules.meta.units === DG.UNITS.Molecule.MOLBLOCK ||
       (!molecules.meta.units && DG.Detector.sampleCategories(molecules, (s) => s.includes('M  END'), 1));
@@ -133,10 +140,10 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'getAdmePropertiesSingle',
-    description: 'Predicts ADME properties for a given molecule.',
+    description: 'Predicts ADMET properties for a given molecule.',
   })
   static async getAdmePropertiesSingle(
-    @grok.decorators.param({ options: { semType: 'Molecule' } }) molecule: string,
+    @grok.decorators.param({options: {semType: 'Molecule', description: 'Molecule (SMILES or molfile).'}}) molecule: string,
   ): Promise<DG.DataFrame> {
     const col = DG.Column.fromStrings('Molecule', [molecule]);
     return await PackageFunctions.getAdmeProperties(DG.DataFrame.fromColumns([col]), col);
