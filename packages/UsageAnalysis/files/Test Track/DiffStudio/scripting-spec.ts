@@ -20,10 +20,9 @@ test.use({
   launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
 });
 
-test('DiffStudio Scripting: Edit toggle, JS script view, Save, Model Hub', async ({page}) => {
+test('DiffStudio Scripting: Edit toggle, </> JS view, Run, Save with //tags: model, Model Hub', async ({page}) => {
   test.setTimeout(300_000);
 
-  // Login
   await page.goto(baseUrl);
   const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
   if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
@@ -36,7 +35,6 @@ test('DiffStudio Scripting: Edit toggle, JS script view, Save, Model Hub', async
   await page.locator('[name="Browse"]').waitFor({timeout: 120000});
   await page.waitForTimeout(2000);
 
-  // Setup: close dialogs, Tabs mode, close all views
   await page.evaluate(async () => {
     document.querySelectorAll('.d4-dialog').forEach(d => {
       const cancel = d.querySelector('[name="button-CANCEL"]');
@@ -48,129 +46,124 @@ test('DiffStudio Scripting: Edit toggle, JS script view, Save, Model Hub', async
     grok.shell.windows.simpleMode = true;
   });
 
-  // Setup: open Bioreactor model directly via DiffStudio:demoBioreactor and verify view name
-  await softStep('Setup: open Bioreactor via DiffStudio:demoBioreactor', async () => {
+  await softStep('Setup: Open Diff Studio + Bioreactor', async () => {
     await page.evaluate(async () => {
-      const func = DG.Func.find({package: 'DiffStudio', name: 'demoBioreactor'})[0];
-      if (!func) throw new Error('DiffStudio:demoBioreactor function not found');
-      await func.apply({});
+      const f = DG.Func.find({name: 'runDiffStudio', package: 'DiffStudio'})[0];
+      const call = f.prepare();
+      await call.call();
+      grok.shell.addView(call.getOutputParamValue());
     });
-    await page.waitForFunction(() => grok.shell.v?.name === 'Bioreactor', null, {timeout: 30000});
+    await page.waitForFunction(() => grok.shell.v?.name === 'Diff Studio', null, {timeout: 30000});
     await page.waitForTimeout(2000);
-    const viewName = await page.evaluate(() => grok.shell.v?.name);
-    expect(viewName).toBe('Bioreactor');
+    const card = page.locator('.diff-studio-hub-card', {hasText: 'Bioreactor'}).first();
+    await card.waitFor({timeout: 15000});
+    await card.dblclick();
+    await page.waitForFunction(() => grok.shell.v?.name === 'Bioreactor', null, {timeout: 30000});
+    await page.waitForTimeout(3000);
   });
 
-  // Step 1: Open Diff Studio -> Edit toggle -> </> icon opens JS script view
-  // AMBIGUOUS: ribbon icons are background-image-only `image-icon diff-studio-svg-icon` divs
-  // with NO name / aria-label / data-* attributes — cannot be selected reliably.
-  await softStep('Step 1: Edit toggle + </> icon (AMBIGUOUS - icons have no name/aria)', async () => {
-    test.info().annotations.push({type: 'ambiguous', description:
-      'DiffStudio ribbon icons are background-image CSS on .image-icon.diff-studio-svg-icon ' +
-      'elements with no name, aria-label, data-* or title. Standard selectors cannot target ' +
-      'the "Edit" toggle or the "</>" JS script icon. Scenario is blocked at the UI layer.'});
-
-    const probe = await page.evaluate(() => {
-      // Try the most reachable selectors by text content or class hints.
-      const textEdit = Array.from(document.querySelectorAll('span, button, div'))
-        .find(el => el.textContent?.trim() === 'Edit' && (el as HTMLElement).offsetParent !== null);
-      const textCode = Array.from(document.querySelectorAll('span, button, div'))
-        .find(el => el.textContent?.trim() === '</>' && (el as HTMLElement).offsetParent !== null);
-      const ribbonIcons = document.querySelectorAll('.image-icon.diff-studio-svg-icon').length;
-      const namedIcons = document.querySelectorAll('.image-icon.diff-studio-svg-icon[name]').length;
-      return {
-        editFound: !!textEdit,
-        codeFound: !!textCode,
-        ribbonIcons,
-        namedIcons,
-      };
+  await softStep('Step 1: Turn on Edit toggle; click </> to open JS script view', async () => {
+    await page.evaluate(() => {
+      const editRibbonItem = Array.from(document.querySelectorAll('.d4-ribbon-item'))
+        .find(el => el.textContent?.trim() === 'Edit') as HTMLElement;
+      const editor = editRibbonItem?.querySelector('.ui-input-bool-switch .ui-input-editor') as HTMLElement;
+      editor?.click();
     });
-    test.info().annotations.push({type: 'info', description:
-      `Probe: editTextSpan=${probe.editFound}, codeTextSpan=${probe.codeFound}, ` +
-      `diff-studio ribbon icons=${probe.ribbonIcons}, icons with [name]=${probe.namedIcons}`});
+    await page.waitForTimeout(2000);
+    const switchOn = await page.evaluate(() =>
+      document.querySelector('.d4-ribbon-item .ui-input-switch')?.classList.contains('ui-input-switch-on'));
+    expect(switchOn).toBe(true);
 
-    // Record absence of ScriptView as the regression indicator.
-    const hasScriptView = await page.evaluate(() =>
-      Array.from(grok.shell.views).some(v => v.type === 'ScriptView'));
-    test.info().annotations.push({type: 'info',
-      description: `ScriptView opened after attempted Edit+</>: ${hasScriptView}`});
-    // Do NOT fail the spec — document the blocker.
-    expect(probe.ribbonIcons).toBeGreaterThan(0);
+    await page.evaluate(() => {
+      const span = Array.from(document.querySelectorAll('.d4-ribbon-name'))
+        .find(el => el.textContent?.trim() === '</>') as HTMLElement;
+      const rect = span.getBoundingClientRect();
+      span.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: rect.left+5, clientY: rect.top+5}));
+      span.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, clientX: rect.left+5, clientY: rect.top+5}));
+      span.dispatchEvent(new MouseEvent('click', {bubbles: true, clientX: rect.left+5, clientY: rect.top+5}));
+    });
+    await page.waitForFunction(() => grok.shell.v?.type === 'ScriptView', null, {timeout: 15000});
+    await page.waitForTimeout(1500);
+    const info = await page.evaluate(() => ({
+      type: grok.shell.v?.type,
+      hasCM: document.querySelectorAll('.CodeMirror').length,
+    }));
+    expect(info.type).toBe('ScriptView');
+    expect(info.hasCM).toBeGreaterThan(0);
   });
 
-  // Step 2: Run Script and move the Final slider.
-  // AMBIGUOUS: requires the JS script view from Step 1, which could not be opened.
-  await softStep('Step 2: Run script; adjust Final (AMBIGUOUS - blocked by Step 1)', async () => {
-    test.info().annotations.push({type: 'ambiguous', description:
-      'Cannot reach Run button or the "Final" input — JS script view was not opened (Step 1 ' +
-      'selector blocker). No reliable path to the ScriptView ribbon Run icon either.'});
+  await softStep('Step 2: Run the script; adjust Final input; live update', async () => {
+    await page.locator('[name="icon-play"]').click();
+    await page.waitForSelector('[name="input-host-Final"] input', {timeout: 30000});
+    await page.waitForTimeout(2000);
+    const finalInput = page.locator('[name="input-host-Final"] input');
+    const before = await finalInput.inputValue();
+    await finalInput.click();
+    await page.keyboard.press('Control+a');
+    await page.keyboard.type('500');
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(2500);
+    const after = await finalInput.inputValue();
+    expect(after).toBe('500');
+    expect(after).not.toBe(before);
+    const missingFacet = await page.evaluate(() =>
+      !document.body.innerText.includes('Facet') && !document.querySelector('[name="input-host-Process-mode"]'));
+    expect(missingFacet).toBe(true);
+  });
 
-    const info = await page.evaluate(() => {
+  await softStep('Step 3: Add //tags: model; Save the script', async () => {
+    await page.evaluate(() => {
       const scriptView = Array.from(grok.shell.views).find(v => v.type === 'ScriptView');
-      const runIcon = document.querySelector('.d4-ribbon-item i.fa-play');
-      const finalInput = document.querySelector('input[name="input-Final"]');
-      return {
-        scriptViewPresent: !!scriptView,
-        runIconPresent: !!runIcon,
-        finalInputPresent: !!finalInput,
-      };
+      if (scriptView) grok.shell.v = scriptView;
     });
-    test.info().annotations.push({type: 'info', description:
-      `scriptView=${info.scriptViewPresent}, runIcon=${info.runIconPresent}, ` +
-      `finalInput=${info.finalInputPresent}`});
-  });
-
-  // Step 3: Add //tags: model and save the script.
-  // AMBIGUOUS: requires the CodeMirror editor to be visible (from Step 1).
-  await softStep('Step 3: Add //tags: model; Save (AMBIGUOUS - blocked by Step 1)', async () => {
-    test.info().annotations.push({type: 'ambiguous', description:
-      'Cannot script CodeMirror content — the editor is not mounted without the JS script view.'});
-
-    const cmPresent = await page.evaluate(() => {
-      const cm = document.querySelector('.CodeMirror') as any;
-      return !!cm?.CodeMirror;
+    await page.waitForTimeout(2000);
+    const tagAdded = await page.evaluate(() => {
+      const cm = (document.querySelector('.CodeMirror') as any)?.CodeMirror;
+      if (!cm) return false;
+      const text = cm.getValue();
+      if (text.includes('//tags: model')) return true;
+      cm.setValue(text.replace('//language: javascript', '//language: javascript\n//tags: model'));
+      return cm.getValue().includes('//tags: model');
     });
-    test.info().annotations.push({type: 'info',
-      description: `CodeMirror editor mounted: ${cmPresent}`});
+    expect(tagAdded).toBe(true);
+    await page.locator('[name="button-Save"]').click();
+    await page.waitForTimeout(3000);
   });
 
-  // Step 4: Access Model in Model Hub (Apps > Run Model Hub).
-  // AMBIGUOUS: no DG.Func with name 'ModelHub' registered as app; canonical function unclear.
-  await softStep('Step 4: Access Model Hub (AMBIGUOUS - no discrete ModelHub app fn)', async () => {
-    test.info().annotations.push({type: 'ambiguous', description:
-      'No function named "ModelHub" appears in DG.Func.find({tags:[FUNC_TYPES.APP]}) on dev. ' +
-      'Compute2:modelCatalog is a plausible entry point but the scenario says Apps > "Run Model ' +
-      'Hub" — there is no such canonical app name to target by.'});
-
-    const found = await page.evaluate(() => {
-      const apps = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
-      return {
-        total: apps.length,
-        hasModelHubByName: apps.some(f => f.name === 'ModelHub' || f.name === 'modelHub'),
-        computeCandidates: apps
-          .filter(f => /model|catalog|hub/i.test(f.name))
-          .map(f => `${f.package?.name ?? '?'}:${f.name}`),
-      };
+  await softStep('Step 4: Access Model in Model Hub (Compute2:modelCatalog)', async () => {
+    await page.evaluate(async () => {
+      const f = DG.Func.find({package: 'Compute2', name: 'modelCatalog'})[0];
+      const call = f.prepare();
+      await call.call();
+      const view = call.getOutputParamValue();
+      if (view) grok.shell.addView(view);
     });
-    test.info().annotations.push({type: 'info', description:
-      `App fns total=${found.total}, ModelHub named fn=${found.hasModelHubByName}, ` +
-      `candidates=${JSON.stringify(found.computeCandidates)}`});
+    await page.waitForFunction(() => grok.shell.v?.name === 'Model Hub', null, {timeout: 30000});
+    await page.waitForTimeout(3000);
+    const hasBioreactor = await page.evaluate(() =>
+      !!Array.from(document.querySelectorAll('.d4-list-item')).find(el => el.textContent?.trim() === 'Bioreactor'));
+    expect(hasBioreactor).toBe(true);
   });
 
-  // Step 5: Interact with Model in Model Hub (Final slider).
-  // AMBIGUOUS: blocked by Step 4 — cannot open a model from a hub that couldn't be opened by name.
-  await softStep('Step 5: Adjust Final in Model Hub (AMBIGUOUS - blocked by Step 4)', async () => {
-    test.info().annotations.push({type: 'ambiguous', description:
-      'Depends on Step 4 (Model Hub entry). Without a canonical Model Hub view, cannot locate a ' +
-      '"Bioreactor" card or the "Final" input inside an opened model.'});
-
-    const finalInputPresent = await page.evaluate(() =>
-      !!document.querySelector('input[name="input-Final"]'));
-    test.info().annotations.push({type: 'info',
-      description: `Final input present in current view: ${finalInputPresent}`});
+  await softStep('Step 5: Interact with saved model; adjust Final', async () => {
+    await page.evaluate(async () => {
+      const items = Array.from(document.querySelectorAll('.d4-list-item'))
+        .filter(el => el.textContent?.trim() === 'Bioreactor') as HTMLElement[];
+      const card = items[items.length - 1];
+      card.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true}));
+    });
+    await page.waitForSelector('[name="input-host-Final"] input', {timeout: 30000});
+    await page.waitForTimeout(2000);
+    const inp = page.locator('[name="input-host-Final"] input');
+    await inp.click();
+    await page.keyboard.press('Control+a');
+    await page.keyboard.type('800');
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(2500);
+    const after = await inp.inputValue();
+    expect(after).toBe('800');
   });
 
-  // Cleanup
   await page.evaluate(() => grok.shell.closeAll());
 
   if (stepErrors.length > 0) {

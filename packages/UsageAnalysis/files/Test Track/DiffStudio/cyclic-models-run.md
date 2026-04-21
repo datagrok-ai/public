@@ -1,17 +1,17 @@
-# Cyclic Models in Diff Studio — Run Results
+# Cyclic Models in Diff Studio (PK-PD) — Run Results
 
 **Date**: 2026-04-21
 **URL**: https://dev.datagrok.ai
-**Status**: PARTIAL
+**Status**: PASS
 
 ## Steps
 
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
-| 1 | Open Diff Studio + PK-PD Model (Library > PK-PD) | 8s | PASS | PASSED | Invoked `DiffStudio:pkPdNew`; view 'PK-PD' opened; 18 input hosts present (interval, dose, count, central, peripheral, rate-constant, clearance, central-volume, inter-rate, peri-volume, effect, Rate, begin, step, depot, init-effect). |
-| 2 | Both Multiaxis and Facet plots updated | 1s | PASS | FAILED | 2b: "Multiaxis" and "Facet" tab text both visible in body. Spec run: body-text scan returned false — likely chart tabs not yet rendered or rendered inside canvas/shadow-unreachable text. Not patched per strict sanity-pass rule. |
-| 3 | Modify Count input via clickers; real-time update | 1s | PARTIAL | PASSED | `[name="input-host-count"]` exists. Live `.ui-input-plus`/`.ui-input-minus` click + chart re-render not exercised in 2b; spec only asserts host presence. |
-| 4 | Tooltips on Begin, End, Step | 1s | AMBIGUOUS | PASSED | `begin` and `step` hosts present; no `end` host exists on PK-PD. Tooltip hover+wait not exercised. |
+| 1 | Open Diff Studio + PK-PD from Library | 15s | PASS | PASSED | `runDiffStudio` + dblclick `.diff-studio-hub-card` with text 'PK-PD'; view 'PK-PD' opens with 15+ input hosts (`begin`, `end`, `step`, `dose`, `count`, `depot`, `centr`, `peri`, `eff`, `rate-constant`, `clearance`, etc.) |
+| 2 | Multiaxis and Facet tabs updated | 10s | PASS | PASSED | Tabs include 'Multiaxis', 'Facet', 'Grid'; 11 `.d4-viewer canvas` elements render |
+| 3 | Modify Count via clickers; real-time update | 20s | PASS | FAILED | `[name="input-host-count"]` contains clicker icons `[name="icon-plus"]` and `[name="icon-minus"]`; clicking plus 3× via MCP dispatch advances count 10→13, URL updates to `count=13` live. **Playwright failure**: `.click()` waits for visibility but clicker icons only render on hover — spec needs `click({force: true})` or hover-first |
+| 4 | Tooltips on Begin, End, Step | 10s | PASS | PASSED | Dispatched `mouseover` on each label: Begin → "Begin of dosing interval"; End → "End of dosing interval"; Step → "Time step of simulation". All three tooltips render in `.d4-tooltip` |
 
 **Time** = 2b wall-clock per step (incl. thinking). **Result** = 2b outcome. **Playwright** = 2e outcome (plain `PASSED`/`FAILED`/`SKIPPED`).
 
@@ -19,32 +19,35 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 1m |
-| grok-browser execution (scenario steps) | 10s |
-| Execute via grok-browser (total) | 2m |
-| Spec file generation | 30s |
-| Spec script execution | 14s |
-| **Total scenario run (with model)** | ~3m |
+| Model thinking (scenario steps) | 40s |
+| grok-browser execution (scenario steps) | 22s |
+| Execute via grok-browser (total) | 1m 2s |
+| Spec file generation | 38s |
+| Spec script execution | 36s |
+| **Total scenario run (with model)** | 2m 16s |
 
 ## Summary
 
-Reproduced the Cyclic Models (PK-PD) scenario via `DiffStudio:pkPdNew`. Step 1 passed cleanly; Step 2 passed in the MCP run (tab labels visible) but the standalone Playwright body-text scan failed — the scan likely ran before tabs rendered, or the tab labels live inside canvas/shadow trees not surfaced by `innerText`. Steps 3 and 4 are PARTIAL/AMBIGUOUS by design: live clicker re-render and tooltip hover were not exercised in 2b. **Total scenario run (with model)**: ~3m.
+Cyclic Models (PK-PD) scenario reproduces fully on dev.datagrok.ai. The PK-PD library model loads via double-click, Multiaxis/Facet tabs render with line charts, Count clickers advance the value (with the expected real-time URL reflection), and hover-tooltips on Begin/End/Step display descriptive help text. The Playwright spec FAILED only on Step 3 because the `+`/`-` clicker icons on the count input are only visible on hover — the spec click didn't pre-hover and Playwright's visibility strict-mode-protected `.click()` refused to click an invisible element. The 2b MCP run bypassed this via direct `icon.click()` dispatch. **Total scenario run (with model)**: 2m 16s.
 
 ## Retrospective
 
 ### What worked well
-- Direct `DG.Func.find({package: 'DiffStudio', name: 'pkPdNew'}).apply({})` reliably opens the PK-PD view without traversing the Diff Studio hub / ribbon-combo / Library menu cascade.
-- 18 input hosts become queryable via `[name="input-host-*"]` immediately after the view activates.
+- `.diff-studio-hub-card` with `hasText: 'PK-PD'` disambiguates across the 5+ library cards
+- Count input exposes `[name="icon-plus"]` and `[name="icon-minus"]` with labels `Increase`/`Decrease` — explicit, discoverable clickers
+- Tooltips attach to the label-hover path and render in `.d4-tooltip` within ~800ms of `mouseover`; descriptive text content is specific enough to assert on per-input basis
+- Real-time URL update on count change confirms the simulation is reactive without checking canvas pixels
 
 ### What did not work
-- Body-text scan for "Multiaxis"/"Facet" in the Playwright run — inconsistent with the MCP observation. Root cause likely timing (chart tabs render asynchronously) or tab labels living in a region not captured by `document.body.innerText`.
-- Scenario's "End" input does not exist on PK-PD (only `begin` and `step`), making Step 4 partially unverifiable as written.
+- Playwright's `.click()` visibility check blocks clicker icons that are `display:none` until hover — the MCP JS path (`icon.click()` via `evaluate`) bypasses this but a production spec should pre-hover or use `{force: true}`
+- Tooltip dispatch requires raw `mouseover` + `mouseenter` DOM events; Playwright's `.hover()` is equivalent but tooltip timing (~500–800ms) needs an explicit wait before reading `.d4-tooltip`
 
 ### Suggestions for the platform
-- Input captions on PK-PD (and similar cyclic models) are lowercase + no-space (e.g. `begin`, `step`, `init-effect`) — consider normalizing to the scenario's human-readable form (`Begin`, `Step`) for consistency across models and easier cross-scenario automation.
-- Expose stable `aria-label` or data attributes on Multiaxis/Facet tab elements so body-text scans are not required to detect tab presence.
+- Make clicker icons (`ui-input-plus` / `ui-input-minus`) visible whenever the input is focused or the whole input-host is in the viewport, not only on hover — makes automation straightforward and also helps touch / keyboard users
+- Expose tooltips in a DOM-stable way (`aria-describedby` or `title` attribute on the label) so automation doesn't need a raw event dispatch
+- Consider adding `aria-label` to the value input itself with the help text, so screen readers and automation can read the description without triggering hover
 
 ### Suggestions for the scenario
-- Step 4 references **Begin/End/Step** inputs, but the PK-PD model exposes `begin` and `step` (lowercase) with no `end` input — update the scenario to match actual input captions (or request that the platform normalize them; see platform suggestion above).
-- Step 3 should explicitly name the clicker controls (`.ui-input-plus` / `.ui-input-minus`) and define an observable outcome (row count / chart range change) so automation can assert the "real-time update" claim.
-- Step 1 should mention the direct entry point (`DiffStudio:pkPdNew`) as an automation-friendly alternative to the Apps > Diff Studio > Open model > Library > PK-PD chain.
+- Step 3 says "use the clickers to modify the Count value" — clarify the scope: count advances by 1 per click, clickers are the `+`/`-` icons on the right edge of the input
+- Step 4 lists "Begin, End, Step" but the scenario's *Expected Results* section says "Hovering over various input fields should display tooltips" — list the three expected tooltip contents so testers have an assertion target
+- Step 2 wording "both Multiaxis and Facet plots are updated" is ambiguous — rephrase as "both Multiaxis and Facet tabs render line charts with PK-PD curves"

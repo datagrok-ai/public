@@ -1,49 +1,55 @@
 # Scaffold Tree — Run Results
 
-**Date**: 2026-04-09
+**Date**: 2026-04-21
 **URL**: https://dev.datagrok.ai
-**Status**: FAIL
+**Status**: PARTIAL
 
 ## Steps
 
-| # | Step | Result | Time | Playwright | Notes |
-|---|------|--------|------|------------|-------|
-| 1 | Open SPGI.csv | PASS | 12s | N/A | 3624 rows, 88 cols; Structure semType=Molecule |
-| 2 | Chem > Analyze > Scaffold Tree | PASS | 5s | N/A | Viewer added showing "Scaffold Tree is empty" with toolbar |
-| 3 | Click + to add root structure | FAIL | 3s | N/A | + icon clicked via MCP but no sketcher dialog appeared |
-| 3b | Magic wand to generate tree | FAIL | 0s | N/A | Known issue: backend returns 502 (same as scaffold-tree-functions scenario) |
-| 4-end | Highlighting, filtering, cloning, etc. | SKIP | 0s | N/A | Cannot test — no scaffolds in tree |
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 1 | Open SPGI.csv | 9s | PASS | PASSED | 3624 molecules |
+| 2 | Chem → Analyze → Scaffold Tree → viewer appears | 5s | PASS | PASSED | Scaffold Tree viewer added to `grok.shell.tv.viewers` |
+| 3 | Magic wand → scaffold tree generated | 30s | PASS | PASSED | Tree DOM nodes (`.d4-tree-view-node`) populated |
+| 4 | Scaffold highlighting issue sub-scenarios (filter/SF interactions, cloned views, disable-and-reopen) | n/a | SKIP | SKIPPED | Each sub-scenario involves filter panel + structure filter + cloned views + color pickers → too many canvas interactions for automated replay |
+| 5 | Scaffold tree reorient check with chembl-scaffolds.csv | n/a | SKIP | SKIPPED | Requires context-panel Chemistry → Rendering column dropdown which is a canvas combo |
+| 6 | Invalid-structure recovery | n/a | SKIP | SKIPPED | Requires drawing/editing in the sketcher which is canvas |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | 30s |
-| Spec file generation | N/A |
-| Spec script execution | N/A |
+| Model thinking (scenario steps) | 40s |
+| grok-browser execution (scenario steps) | n/a |
+| Execute via grok-browser (total) | 40s |
+| Spec file generation | 25s |
+| Spec script execution | 50.3s |
+| **Total scenario run (with model)** | ~2m |
 
 ## Summary
 
-Steps 1-2 passed: SPGI.csv loaded and the Scaffold Tree viewer was added with the "empty" state. However, adding scaffolds failed both via the + button (no dialog appeared) and the magic wand (backend 502 error). All subsequent tests (highlighting, filtering, coloring, cloning, structure modification) were skipped since no scaffold tree could be generated. This is the same backend unavailability issue as the scaffold-tree-functions scenario.
+Smoke coverage only: Scaffold Tree viewer launches from the Chem menu and the magic wand generates a scaffold tree on SPGI.csv in ~30s. The many cross-cutting sub-scenarios (filter interaction, cloned views, invalid-structure recovery, scatterplot color propagation) require manual verification because they hinge on canvas interactions and compound filter state.
 
 ## Retrospective
 
 ### What worked well
-- SPGI.csv opened correctly with 3624 rows and 88 columns
-- The Scaffold Tree viewer added correctly via Chem > Analyze > Scaffold Tree menu
-- The empty state message "Scaffold Tree is empty" and toolbar icons displayed properly
+- Scaffold Tree viewer instantiation via Chem menu is stable
+- Magic-wand generator finishes in ~30s on 3624-row SPGI.csv
 
 ### What did not work
-- The + button click didn't open a sketcher dialog to add a root structure
-- The magic wand (generate) icon was inactive due to backend 502 error
-- All scaffold-dependent functionality could not be tested
+- Scenario contains 6+ independent sub-scenarios; single Playwright spec cannot assert them all
+- Cloned view + filter panel state combined with scaffold tree coloring is not scriptable without canvas pixel testing
 
 ### Suggestions for the platform
-- The + button should open a sketcher dialog regardless of backend availability
-- Show an explicit error when the scaffold generation backend is unavailable
-- The "inactive" state of the magic wand icon should have a tooltip explaining the reason
+- Expose scaffold-tree API: `chem.scaffoldTree(df, molCol, opts)` returning the tree structure directly
+- Scaffold node DOM nodes should carry `data-scaffold-smiles` so automation can target a specific scaffold by structure
+- `d4-scaffold-tree-node` for each node + `[name="scaffold-tree-filter-checkbox"]` for the per-scaffold enable toggle
 
 ### Suggestions for the scenario
-- This is a very large multi-section scenario — consider splitting into separate test files
-- "Modifying scaffold structure" and "Handling empty scaffold values" could be standalone scenarios
-- The smiles_50.csv file referenced doesn't exist — update to an available dataset
+- Split the file into several focused run scenarios:
+  - `scaffold-tree-highlight-filter.md`
+  - `scaffold-tree-cloned-view.md`
+  - `scaffold-tree-invalid-structure.md`
+  - `scaffold-tree-scatterplot-colors.md`
+- Each sub-scenario ends with a single explicit expected result
+- Update `smiles_50.csv` references — use `smiles_small.csv` or the actual dataset name present on dev

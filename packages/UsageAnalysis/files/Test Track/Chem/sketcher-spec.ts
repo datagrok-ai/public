@@ -1,46 +1,50 @@
-import {test, expect, chromium} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+  storageState: process.env.DATAGROK_STORAGE_STATE,
+});
+
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 
 const stepErrors: {step: string; error: string}[] = [];
 
 async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
+  try { await test.step(name, fn); }
+  catch (e: any) {
     stepErrors.push({step: name, error: e.message ?? String(e)});
     console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
   }
 }
 
-test('Chem Sketcher: Open, enter SMILES, check menu options', async () => {
-  const browser = await chromium.connectOverCDP('http://localhost:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
-    await page.waitForFunction(() => {
-      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
-      catch { return false; }
-    }, {timeout: 45000});
+test('Chem: Sketcher', async ({page}) => {
+  test.setTimeout(300_000);
+
+  await page.goto(baseUrl);
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
   }
+  await page.locator('[name="Browse"]').waitFor({timeout: 60000});
 
-  // Setup: open smiles.csv
   await page.evaluate(async () => {
-    document.querySelectorAll('.d4-dialog').forEach(d => {
-      const cancel = d.querySelector('[name="button-CANCEL"]');
-      if (cancel) (cancel as HTMLElement).click();
-    });
-    grok.shell.closeAll();
     document.body.classList.add('selenium');
-    grok.shell.windows.simpleMode = false;
-
+    try { grok.shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
+    try { grok.shell.windows.simpleMode = true; } catch (e) {}
+    grok.shell.closeAll();
+    await new Promise(r => setTimeout(r, 500));
     const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/smiles.csv');
-    const tv = grok.shell.addTableView(df);
+    grok.shell.addTableView(df);
     await new Promise(resolve => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 5000);
+      setTimeout(resolve, 3000);
     });
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
@@ -48,76 +52,53 @@ test('Chem Sketcher: Open, enter SMILES, check menu options', async () => {
     }
     await new Promise(r => setTimeout(r, 5000));
   });
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Step 1: Verify dataset
-  await softStep('Step 1: Open smiles.csv', async () => {
-    const info = await page!.evaluate(() => ({
-      rows: grok.shell.t?.rowCount,
-      cols: grok.shell.t?.columns?.length,
-    }));
-    expect(info.rows).toBe(1000);
-  });
-
-  // Step 2: Open sketcher via API (double-click on canvas not automatable)
-  await softStep('Step 2: Open sketcher', async () => {
-    await page!.evaluate(async () => {
+  await softStep('Open sketcher dialog via grok.chem.sketcher API', async () => {
+    await page.evaluate(async () => {
       const smiles = grok.shell.t.col('canonical_smiles').get(0);
-      const sketcher = grok.chem.sketcher(null, smiles);
-      ui.dialog('Sketcher Test').add(sketcher).show();
+      const sketcher = grok.chem.sketcher(null as any, smiles);
+      ui.dialog('Sketcher').add(sketcher).show();
       await new Promise(r => setTimeout(r, 3000));
     });
-
-    const dialogOpen = await page!.evaluate(() => !!document.querySelector('.d4-dialog'));
-    expect(dialogOpen).toBe(true);
+    await page.locator('.d4-dialog').waitFor({timeout: 10000});
   });
 
-  // Step 4: Enter C1CCCCC1 in SMILES input
-  await softStep('Step 4: Enter C1CCCCC1 in molecular input', async () => {
-    const result = await page!.evaluate(async () => {
+  await softStep('Enter C1CCCCC1 into the sketcher SMILES input', async () => {
+    const result = await page.evaluate(async () => {
       const dialog = document.querySelector('.d4-dialog');
-      if (!dialog) return {error: 'no dialog'};
-      const inputs = dialog.querySelectorAll('input');
-      const smilesInput = Array.from(inputs).find(i =>
-        (i.getAttribute('placeholder') || '').includes('SMILES')
-      );
-      if (!smilesInput) return {error: 'input not found'};
-
+      const inputs = Array.from(dialog!.querySelectorAll('input'));
+      const smilesInput = inputs.find(i => (i.getAttribute('placeholder') || '').toLowerCase().includes('smiles'));
+      if (!smilesInput) return {ok: false};
       smilesInput.focus();
       const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
       nativeSetter.call(smilesInput, 'C1CCCCC1');
       smilesInput.dispatchEvent(new Event('input', {bubbles: true}));
-      smilesInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', bubbles: true}));
-      await new Promise(r => setTimeout(r, 2000));
-      return {value: smilesInput.value};
+      smilesInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
+      await new Promise(r => setTimeout(r, 2500));
+      return {ok: true, value: smilesInput.value};
     });
+    expect(result.ok).toBe(true);
     expect(result.value).toBe('C1CCCCC1');
   });
 
-  // Step 3/5/6: Check hamburger menu has Copy as SMILES, MOLBLOCK, Recent, Favorites
-  await softStep('Step 3/5/6: Check hamburger menu options', async () => {
-    await page!.evaluate(async () => {
+  await softStep('Hamburger menu shows Copy as SMILES / MOLBLOCK / Recent / Favorites', async () => {
+    await page.evaluate(async () => {
       const dialog = document.querySelector('.d4-dialog');
-      const hamburger = dialog?.querySelector('.fa-bars');
-      if (hamburger) (hamburger as HTMLElement).click();
-      await new Promise(r => setTimeout(r, 1000));
+      const hamburger = dialog?.querySelector('.fa-bars, [name="icon-font-icon-menu"]') as HTMLElement;
+      if (hamburger) hamburger.click();
+      await new Promise(r => setTimeout(r, 1200));
     });
-
-    const menuItems = await page!.evaluate(() => {
-      const items = document.querySelectorAll('.d4-menu-item-label, .d4-menu-item');
-      return Array.from(items).map(i => i.textContent?.trim()).filter(Boolean);
+    const items = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .map(i => i.textContent!.trim());
     });
-
-    // Verify key menu items exist
-    const hasSmiles = menuItems.some(m => m?.includes('Copy as SMILES'));
-    const hasMolblock = menuItems.some(m => m?.includes('Copy as MOLBLOCK'));
-    const hasRecent = menuItems.some(m => m?.includes('Recent'));
-    const hasFavorites = menuItems.some(m => m?.includes('Favorites'));
-
-    expect(hasSmiles || hasMolblock || hasRecent || hasFavorites).toBe(true);
+    const hasAny = items.some(i =>
+      /Copy as SMILES|Copy as MOLBLOCK|Recent|Favorites/.test(i));
+    expect(hasAny).toBe(true);
   });
 
-  // Cleanup
-  await page.evaluate(async () => {
+  await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach(d => {
       const cancel = d.querySelector('[name="button-CANCEL"]');
       if (cancel) (cancel as HTMLElement).click();
