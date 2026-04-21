@@ -105,21 +105,28 @@ duplicate syncs for the same user.
 
 ## Package knowledge index
 
-Packages can ship a structured `agents/package-knowledge.json` file that describes the package's
+Packages can ship a structured `agents/package-knowledge.yaml` file that describes the package's
 capabilities in a machine-readable format:
 
-```json
-{
-  "packageName": "Admetica",
-  "description": "ADMET property prediction for small molecules using ChemProp v2 neural networks",
-  "keywords": ["admet", "absorption", "molecules", "smiles", "chemprop"],
-  "overview": ["Predicts ADMET molecular properties using ChemProp v2 neural networks.", "..."],
-  "apiRef": "src/package-api.ts",
-  "docsRef": "../../help/datagrok/solutions/domains/chem/chem.md"
-}
+```yaml
+packageName: Admetica
+description: ADMET property prediction for small molecules using ChemProp v2 neural networks
+keywords:
+  - admet
+  - absorption
+  - molecules
+  - smiles
+  - chemprop
+overview: |
+  Predicts ADMET molecular properties using ChemProp v2 neural networks.
+
+  Single molecule: click on a molecule cell — the Admetica panel appears
+  in the context panel (Biology section) with predictions.
+apiRef: src/package-api.ts
+docsRef: ../../help/datagrok/solutions/domains/chem/chem.md
 ```
 
-At startup, the runtime scans `/workspace/packages/*/agents/package-knowledge.json` on the local
+At startup, the runtime scans `/workspace/packages/*/agents/package-knowledge.yaml` on the local
 filesystem (no network calls, no ZIP downloads) and aggregates all found files into a unified
 markdown table. This table is injected directly into Claude's system prompt as
 `## Available Packages`, giving Claude immediate awareness of all package capabilities without
@@ -128,7 +135,7 @@ requiring a tool call.
 The index is cached after the first scan — subsequent messages reuse the cached result.
 
 Claude is instructed to consult this table first when a user asks about platform capabilities,
-and to read the full `package-knowledge.json` for details before falling back to code search.
+and to read the full `package-knowledge.yaml` for details before falling back to code search.
 
 **Future direction:** consolidate the package index, agent file listings, and other dynamic context
 into a generated `CLAUDE.md` or skills file rather than appending sections to the system prompt.
