@@ -236,3 +236,14 @@ ROS34PRw is the default method. CVODE and LSODA are recommended as general-purpo
 - The package uses Datagrok's `@grok.decorators` for function registration (not plain JSDoc comments)
 - Models can be saved to "Model Hub" for sharing and reuse
 - Sensitivity analysis and parameter fitting are integrated via `@datagrok-libraries/compute-utils`
+
+## Styling conventions
+
+- **Put styles in CSS, not inline.** Define classes in `css/app-styles.css` and apply them with `element.classList.add('...')`. Avoid `element.style.cssText = '...'` and `element.style.prop = '...'` in TypeScript, except for values that must be computed at runtime (e.g. toggling `display: none`, setting a width derived from a measurement).
+- Class names follow the `diff-studio-*` prefix for namespacing.
+- When adding a new UI element, first check `css/app-styles.css` for a reusable class; only introduce a new one if none fits.
+
+## Code style (functions)
+
+- **Every function gets a JSDoc comment.** Place a `/** ... */` block immediately above each function (top-level functions, exported functions, inner arrow functions, and methods) describing what it does. Keep it to one or two sentences focused on the WHY / contract, not a line-by-line restatement of the body.
+- **Mark the closing brace of long functions.** When a function body exceeds 20 lines, append `// <functionName>` to its closing brace so readers can see which function is ending. Example: `} // showExportDialog`. Do not add this marker to shorter functions.

@@ -69,6 +69,125 @@
     margin-right: 8px;
 }
 
+/* Export dialog */
+
+.diff-studio-export-body {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.diff-studio-export-split {
+    height: 480px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.diff-studio-export-options {
+    flex: 0 0 260px;
+    width: 260px;
+    box-sizing: border-box;
+    padding: 4px 12px 4px 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-right: 1px solid var(--grey-2);
+    position: relative;
+}
+
+.diff-studio-export-form {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-left: 24px;
+}
+
+.diff-studio-export-form .ui-input-label {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.diff-studio-export-settings-icon {
+    position: absolute;
+    top: 8px;
+    left: 4px;
+    z-index: 1;
+    cursor: pointer;
+    padding: 4px 6px;
+    color: var(--grey-5);
+}
+
+.diff-studio-export-settings-icon:hover {
+    color: var(--grey-7);
+}
+
+.diff-studio-export-preview-host {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    padding-left: 12px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.diff-studio-export-preview {
+    font-family: var(--grok-font-family-monospace, monospace);
+    font-size: 12px;
+    margin: 0;
+    padding: 12px 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
+    overflow: auto;
+    background: var(--grey-1);
+    border-radius: 4px;
+}
+
+.diff-studio-export-copy-icon {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    z-index: 2;
+    padding: 4px 6px;
+    cursor: pointer;
+    color: var(--grey-5);
+    background: var(--grey-1);
+    border-radius: 3px;
+}
+
+.diff-studio-export-copy-feedback {
+    position: absolute;
+    top: 12px;
+    right: 48px;
+    z-index: 2;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: var(--green-1, #e6f4ea);
+    color: var(--green-2, #1b7a3f);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.diff-studio-export-copy-feedback--visible {
+    opacity: 1;
+}
+
+.diff-studio-export-copy-feedback--error {
+    background: var(--red-1, #fdecea);
+    color: var(--red-2, #c82333);
+}
+
+.diff-studio-export-actions-row {
+    align-items: center;
+    padding: 10px 4px 0 4px;
+}
+
+.diff-studio-export-filename {
+    flex: 1 1 auto;
+}
+
 .diff-studio-inputs-category {    
     font-size: 13px;
     font-weight: bold;

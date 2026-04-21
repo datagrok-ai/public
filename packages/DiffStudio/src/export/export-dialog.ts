@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -6,11 +5,13 @@ import {convertIvpToLatex, ConvertOptions} from 'diff-grok';
 
 import {LINK} from '../ui-constants';
 
+//@ts-ignore
+import '../../css/app-styles.css';
+
 type Format = 'latex' | 'markdown';
 
-/* Mirrors diff-grok/src/latex-export/output/tex-formatter.ts (not re-exported at top level).
-   Packages match what buildLatexDocument emits — align (amsmath), symbols (amssymb),
-   booktabs rules (booktabs). Re-check on diff-grok version bumps. */
+/** Wraps a LaTeX body fragment into a standalone compilable document with the preamble
+ * used by `diff-grok`'s `buildLatexDocument` (amsmath, amssymb, booktabs). */
 function wrapTex(content: string): string {
   return [
     '\\documentclass{article}',
@@ -26,14 +27,17 @@ function wrapTex(content: string): string {
   ].join('\n');
 }
 
+/** Returns today's date as an ISO-8601 `YYYY-MM-DD` string, used in default export file names. */
 function isoDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Returns the file-name extension that matches the chosen export format (`tex` or `md`). */
 function extForFormat(f: Format): string {
   return f === 'latex' ? 'tex' : 'md';
 }
 
+/** Returns the human-readable dialog title for the chosen export format. */
 function titleForFormat(f: Format): string {
   return f === 'latex' ? 'Export as LaTeX' : 'Export as Markdown';
 }
@@ -41,6 +45,8 @@ function titleForFormat(f: Format): string {
 const MULT_CDOT = 'a · b';
 const MULT_JUXT = 'ab';
 
+/** Opens the interactive export dialog: lets the user tune LaTeX/Markdown conversion options,
+ * live-preview the result, copy it to the clipboard, or download it as a file. */
 export function showExportDialog(
   ivpText: string,
   modelName: string,
@@ -69,8 +75,8 @@ export function showExportDialog(
     tooltipText: 'Include the constants table (fixed values used in equations).',
   });
 
-  const compactInput = ui.input.bool('Compact layout', {
-    value: true,
+  const compactInput = ui.input.bool('Compact', {
+    value: false,
     tooltipText: 'Compact mode: no section headings, inline initial conditions. ' +
       'Suitable for small models (up to three equations).',
   });
@@ -80,93 +86,110 @@ export function showExportDialog(
     tooltipText: 'Symbol used for multiplication. "a · b" renders \\cdot; ' +
       '"ab" uses juxtaposition, common in physics papers.',
   });
-  const standaloneInput = ui.input.bool('Standalone document', {
+  const standaloneInput = ui.input.bool('Standalone', {
     value: true,
     tooltipText: 'Wrap the output with \\documentclass{article} and the required \\usepackage lines ' +
       'so the file compiles with pdflatex out of the box. ' +
       'Turn off to get a body fragment for pasting into an existing LaTeX document. Ignored for Markdown.',
   });
 
-  const groupHeader = (text: string): HTMLElement => {
-    const h = ui.element('div');
-    h.textContent = text;
-    h.style.cssText =
-      'margin: 12px 0 4px 0; font-size: 11px; font-weight: 600; ' +
-      'text-transform: uppercase; letter-spacing: 0.4px; color: var(--grey-5);';
-    return h;
-  };
-
-  const optionsPanel = ui.divV([
-    groupHeader('Format'),
-    formatInput.root,
-    groupHeader('Include'),
+  const extraEls: HTMLElement[] = [
     metaInput.root,
     initsInput.root,
     paramsInput.root,
     constsInput.root,
-    groupHeader('Style'),
-    compactInput.root,
     cdotInput.root,
-    standaloneInput.root,
+  ];
+
+  let extrasVisible = false;
+  /** Shows or hides the secondary export options toggled by the settings icon. */
+  const applyExtrasVisibility = (): void => {
+    for (const el of extraEls)
+      el.style.display = extrasVisible ? '' : 'none';
+  };
+
+  const settingsIcon = ui.iconFA('cog', () => {
+    extrasVisible = !extrasVisible;
+    applyExtrasVisibility();
+  }, 'Customize export');
+  settingsIcon.classList.add('diff-studio-export-settings-icon');
+
+  const formEl = ui.form([
+    formatInput,
+    compactInput,
+    standaloneInput,
+    metaInput,
+    initsInput,
+    paramsInput,
+    constsInput,
+    cdotInput,
   ]);
-  optionsPanel.style.cssText =
-    'flex: 0 0 260px; width: 260px; box-sizing: border-box; ' +
-    'padding: 4px 16px 4px 4px; overflow-y: auto; overflow-x: hidden; ' +
-    'border-right: 1px solid var(--grey-2);';
+  formEl.classList.add('diff-studio-export-form');
+
+  const optionsPanel = ui.divH([settingsIcon, formEl]);
+  optionsPanel.classList.add('diff-studio-export-options');
+
+  applyExtrasVisibility();
 
   const previewEl = ui.element('pre');
-  previewEl.style.cssText =
-    'font-family: var(--grok-font-family-monospace, monospace); ' +
-    'font-size: 12px; margin: 0; padding: 12px 16px; ' +
-    'white-space: pre-wrap; word-break: break-word; ' +
-    'box-sizing: border-box; height: 100%; width: 100%; overflow: auto; ' +
-    'background: var(--grey-1); border-radius: 4px;';
+  previewEl.classList.add('diff-studio-export-preview');
+
+  const copyFeedback = ui.element('span');
+  copyFeedback.classList.add('diff-studio-export-copy-feedback');
+
+  let feedbackTimer: number | null = null;
+  /** Briefly shows an inline status badge next to the copy icon. Used instead of
+   * `grok.shell.info/error` because the modal overlay dims shell-level balloons. */
+  const showCopyFeedback = (text: string, isError: boolean): void => {
+    copyFeedback.textContent = text;
+    copyFeedback.classList.toggle('diff-studio-export-copy-feedback--error', isError);
+    copyFeedback.classList.add('diff-studio-export-copy-feedback--visible');
+    if (feedbackTimer !== null) window.clearTimeout(feedbackTimer);
+    feedbackTimer = window.setTimeout(() => {
+      copyFeedback.classList.remove('diff-studio-export-copy-feedback--visible');
+      feedbackTimer = null;
+    }, 1500);
+  };
 
   const copyIcon = ui.icons.copy(async () => {
     if (!lastResult) return;
     try {
       await navigator.clipboard.writeText(lastResult);
-      grok.shell.info('Copied to clipboard');
+      showCopyFeedback('Copied', false);
     } catch {
-      grok.shell.error('Clipboard access denied');
+      showCopyFeedback('Copy failed', true);
     }
   }, 'Copy the generated source to the clipboard.');
-  copyIcon.style.cssText =
-    'position: absolute; top: 10px; right: 14px; z-index: 2; ' +
-    'padding: 4px 6px; cursor: pointer; ' +
-    'color: var(--grey-5); background: var(--grey-1); border-radius: 3px;';
+  copyIcon.classList.add('diff-studio-export-copy-icon');
 
-  const previewPanel = ui.div([previewEl, copyIcon]);
-  previewPanel.style.cssText =
-    'flex: 1 1 auto; min-width: 0; height: 100%; ' +
-    'display: flex; padding-left: 12px; box-sizing: border-box; ' +
-    'position: relative;';
+  const previewPanel = ui.div([previewEl, copyFeedback, copyIcon]);
+  previewPanel.classList.add('diff-studio-export-preview-host');
 
   const fileNameInput = ui.input.string('File name', {
     value: `${sanitizeBase(modelName)}-${isoDate()}.${extForFormat(initialFormat)}`,
     nullable: false,
     tooltipText: 'Name of the file created by Download. ' +
-      'The extension updates automatically with the selected format. Required.',
+      'The extension updates automatically with the selected format.',
   });
+  fileNameInput.root.classList.add('diff-studio-export-filename');
 
-  fileNameInput.root.style.flex = '1 1 auto';
-  const actionsRow = ui.divH([fileNameInput.root], {style: {
-    alignItems: 'center', padding: '10px 4px 0 4px',
-  }});
+  const actionsRow = ui.divH([fileNameInput.root]);
+  actionsRow.classList.add('diff-studio-export-actions-row');
 
   const split = ui.divH([optionsPanel, previewPanel]);
-  split.style.cssText = 'height: 480px; width: 100%; box-sizing: border-box;';
+  split.classList.add('diff-studio-export-split');
 
   const body = ui.divV([split, actionsRow]);
-  body.style.cssText = 'width: 100%; box-sizing: border-box;';
+  body.classList.add('diff-studio-export-body');
 
   const dialog = ui.dialog({
     title: titleForFormat(initialFormat),
-    helpUrl: LINK.LOAD_SAVE,
+    helpUrl: LINK.DIF_STUDIO_REL,
   }).add(body);
 
   let lastResult: string | null = null;
 
+  /** Collects the current dialog inputs into a `ConvertOptions` object for `convertIvpToLatex`. */
   const collectOptions = (): Partial<ConvertOptions> => ({
     format: (formatInput.value as Format) ?? 'latex',
     includeMetadata: metaInput.value,
@@ -178,14 +201,19 @@ export function showExportDialog(
   });
 
   let hasResult = false;
+  /** Returns `true` when the file-name input contains a non-blank value. */
   const hasFileName = (): boolean => (fileNameInput.value ?? '').trim().length > 0;
 
+  /** Syncs button/icon states with the current preview and file-name validity:
+   * hides the copy icon when there is nothing to copy and disables Download accordingly. */
   const updateButtons = (): void => {
     copyIcon.style.display = hasResult ? '' : 'none';
     const dl = dialog.getButton('Download');
     if (dl) dl.disabled = !(hasResult && hasFileName());
   };
 
+  /** Regenerates the preview from the current options; wraps LaTeX into a standalone document
+   * when requested, and reports conversion errors inline in the preview pane. */
   const regenerate = (): void => {
     try {
       const opts = collectOptions();
@@ -238,8 +266,10 @@ export function showExportDialog(
 
   regenerate();
   dialog.show({modal: true, resizable: true, center: true, width: 960, height: 640});
-}
+} // showExportDialog
 
+/** Sanitizes a model name for use as a file-name base: strips unsafe characters, trims
+ * stray separators, and falls back to `'diff-export'` when nothing usable remains. */
 function sanitizeBase(name: string): string {
   const cleaned = (name || '').trim().replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
   return cleaned || 'diff-export';
