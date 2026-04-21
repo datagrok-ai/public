@@ -58,7 +58,7 @@ function generateQueryWrappers(): void {
       const resolvedOutputType = outputType === 'void' ? utils.dgToTsTypeMap['dataframe'] : outputType;
       tb.replace('PARAMS_OBJECT', inputs)
         .replace('TYPED_PARAMS', inputs)
-        .replace('FUNC_JSDOC', {description, inputs, outputType: resolvedOutputType})
+        .replace('FUNC_JSDOC', {description, inputs})
         .replace('OUTPUT_TYPE', resolvedOutputType);
       wrappers.push(tb.build(1));
     }
@@ -104,7 +104,7 @@ function generateScriptWrappers(): void {
       const outputType = utils.getScriptOutputType(script);
       tb.replace('PARAMS_OBJECT', inputs)
         .replace('TYPED_PARAMS', inputs)
-        .replace('FUNC_JSDOC', {description, inputs, outputType})
+        .replace('FUNC_JSDOC', {description, inputs})
         .replace('OUTPUT_TYPE', outputType);
       wrappers.push(tb.build(1));
     }
@@ -144,7 +144,7 @@ function generateFunctionWrappers(): void {
         .replace('FUNC_NAME_LOWERCASE', name)
         .replace('PACKAGE_NAMESPACE', _package?.friendlyName ?? '')
         .replace('PARAMS_OBJECT', annotationInputs)
-        .replace('FUNC_JSDOC', {description, inputs: annotationInputs, outputType})
+        .replace('FUNC_JSDOC', {description, inputs: annotationInputs})
         .replace('TYPED_PARAMS', annotationInputs)
         .replace('OUTPUT_TYPE', outputType);
       wrappers.push(tb.build(1));
