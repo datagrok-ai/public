@@ -767,7 +767,7 @@ export const TreeWizard = Vue.defineComponent({
                   navigation: ({runLabel, allowRerun}: {runLabel: string, allowRerun: boolean}) => (
                     <>
                       {
-                        <Button onClick={goBack} style={{'margin-right': 'auto'}}>
+                        <Button onClick={goBack}>
                           Back
                         </Button>
                       }
@@ -836,7 +836,7 @@ export const TreeWizard = Vue.defineComponent({
                   return (
                     <>
                       { !isRootChoosen.value &&
-                        <Button onClick={goBack} style={{'margin-right': 'auto'}}>
+                        <Button onClick={goBack}>
                           Back
                         </Button>
                       }

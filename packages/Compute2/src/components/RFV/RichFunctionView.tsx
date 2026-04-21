@@ -555,7 +555,7 @@ export const RichFunctionView = Vue.defineComponent({
                     isReadonly={isReadonly.value}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
-                <div class='flex sticky bottom-0 justify-end' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
+                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
                   { slots.navigation ?
                     slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
                     showRun.value &&

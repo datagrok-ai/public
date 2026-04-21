@@ -172,7 +172,7 @@ export const PipelineView = Vue.defineComponent({
                 </div>
               </div>
               { slots.navigation &&
-                <div class='flex sticky bottom-0 justify-end' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
+                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
                   {slots.navigation()}
                 </div>
               }
