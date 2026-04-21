@@ -10,15 +10,11 @@ import * as DG from 'datagrok-api/dg';
 export namespace funcs {
   /**
    * Creates a timelines viewer
-   * @returns {Promise<any>}
    */
   export async function timelinesViewer(): Promise<any> {
     return await grok.functions.call('Charts:TimelinesViewer', {});
   }
 
-  /**
-   * @returns {Promise<any>}
-   */
   export async function flagCellRenderer(): Promise<any> {
     return await grok.functions.call('Charts:FlagCellRenderer', {});
   }
@@ -81,7 +77,6 @@ export namespace funcs {
 
   /**
    * Creates a chord viewer
-   * @returns {Promise<any>}
    */
   export async function chordViewer(): Promise<any> {
     return await grok.functions.call('Charts:ChordViewer', {});
@@ -89,7 +84,6 @@ export namespace funcs {
 
   /**
    * Creates a globe viewer
-   * @returns {Promise<any>}
    */
   export async function globeViewer(): Promise<any> {
     return await grok.functions.call('Charts:GlobeViewer', {});
@@ -97,7 +91,6 @@ export namespace funcs {
 
   /**
    * Creates a group analysis viewer
-   * @returns {Promise<any>}
    */
   export async function groupAnalysisViewer(): Promise<any> {
     return await grok.functions.call('Charts:GroupAnalysisViewer', {});
@@ -105,7 +98,6 @@ export namespace funcs {
 
   /**
    * Creates a multiplot viewer
-   * @returns {Promise<any>}
    */
   export async function multiPlotViewer(): Promise<any> {
     return await grok.functions.call('Charts:MultiPlotViewer', {});
@@ -113,7 +105,6 @@ export namespace funcs {
 
   /**
    * Creates a radar viewer
-   * @returns {Promise<any>}
    */
   export async function radarViewer(): Promise<any> {
     return await grok.functions.call('Charts:RadarViewer', {});
@@ -121,7 +112,6 @@ export namespace funcs {
 
   /**
    * Creates a sankey viewer
-   * @returns {Promise<any>}
    */
   export async function sankeyViewer(): Promise<any> {
     return await grok.functions.call('Charts:SankeyViewer', {});
@@ -129,7 +119,6 @@ export namespace funcs {
 
   /**
    * Creates a sunburst viewer
-   * @returns {Promise<any>}
    */
   export async function sunburstViewer(): Promise<any> {
     return await grok.functions.call('Charts:SunburstViewer', {});
@@ -137,7 +126,6 @@ export namespace funcs {
 
   /**
    * Creates a surface plot viewer
-   * @returns {Promise<any>}
    */
   export async function surfacePlot(): Promise<any> {
     return await grok.functions.call('Charts:SurfacePlot', {});
@@ -145,7 +133,6 @@ export namespace funcs {
 
   /**
    * Creates a tree viewer
-   * @returns {Promise<any>}
    */
   export async function treeViewer(): Promise<any> {
     return await grok.functions.call('Charts:TreeViewer', {});
@@ -153,7 +140,6 @@ export namespace funcs {
 
   /**
    * Creates a word cloud viewer
-   * @returns {Promise<any>}
    */
   export async function wordCloudViewer(): Promise<any> {
     return await grok.functions.call('Charts:WordCloudViewer', {});

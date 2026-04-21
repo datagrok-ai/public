@@ -14,15 +14,11 @@ export namespace funcs {
 
   /**
    * Lists available optimization targets.
-   * @returns {Promise<any>}
    */
   export async function getFolders(): Promise<any> {
     return await grok.functions.call('Reinvent4:GetFolders', {});
   }
 
-  /**
-   * @param {any} call
-   */
   export async function reinventEditor(call: any ): Promise<void> {
     return await grok.functions.call('Reinvent4:ReinventEditor', { call });
   }
@@ -30,8 +26,6 @@ export namespace funcs {
   /**
    * @param {string} ligand
    *   semType: Molecule
-   * @param {string} optimize
-   * @returns {Promise<string>}
    */
   export async function runReinvent(ligand: string , optimize: string ): Promise<string> {
     return await grok.functions.call('Reinvent4:RunReinvent', { ligand, optimize });
@@ -43,7 +37,6 @@ export namespace funcs {
    *   semType: Molecule
    * @param {string} optimize - Optimization target.
    *   choices: Reinvent4:getFolders
-   * @returns {Promise<DG.DataFrame>}
    */
   export async function reinvent(ligand: string , optimize: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Reinvent4:Reinvent', { ligand, optimize });
