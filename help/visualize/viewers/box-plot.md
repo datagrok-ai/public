@@ -56,6 +56,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Table | string |  |
 | **Statistics** | | |
 | Show Statistics | boolean |  |
+| Statistics Format | string | Format for statistics and p-value values. |
 | Show Total Count | boolean |  |
 | Show Inliers Count | boolean | Shown values count inside lower and upper bounds, where: IQR = Q3 - Q1. Lower Bound = Q1 - (1.5 * IQR). Upper Bound = Q3 + (1.5 * IQR). |
 | Show Outliers Count | boolean | Shown values count outside lower and upper bounds, where: IQR = Q3 - Q1. Lower Bound = Q1 - (1.5 * IQR). Upper Bound = Q3 + (1.5 * IQR). |
