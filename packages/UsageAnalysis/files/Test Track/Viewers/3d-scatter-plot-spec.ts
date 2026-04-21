@@ -1,134 +1,137 @@
-import {test, expect, chromium} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
-const datasetPath = 'System:DemoFiles/demog.csv';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+});
 
 const stepErrors: {step: string; error: string}[] = [];
 
 async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
-  }
+  try { await test.step(name, fn); }
+  catch (e: any) { stepErrors.push({step: name, error: e.message ?? String(e)}); }
 }
 
-test('3D Scatter plot', async () => {
-  test.setTimeout(600_000);
+test('3d Scatter plot scenario', async ({page}) => {
+  test.setTimeout(300_000);
 
-  const browser = await chromium.connectOverCDP('http://127.0.0.1:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find((p) => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
+  const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+  const login = process.env.DATAGROK_LOGIN ?? 'admin';
+  const password = process.env.DATAGROK_PASSWORD ?? 'admin';
+
+  await page.goto(baseUrl);
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
   }
+  await page.locator('[name="Browse"]').waitFor({timeout: 60000});
 
-  await page.waitForFunction(() => typeof (globalThis as any).grok !== 'undefined' && (globalThis as any).grok.shell, {timeout: 15000});
-
-  // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
+  await page.evaluate(async () => {
+    const g: any = (window as any).grok;
     document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = false;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    grok.shell.addTableView(df);
+    g.shell.settings.showFiltersIconsConstantly = true;
+    g.shell.windows.simpleMode = true;
+    g.shell.closeAll();
+    const df = await g.dapi.files.readCsv('System:DemoFiles/demog.csv');
+    g.shell.addTableView(df);
     await new Promise<void>((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
       setTimeout(resolve, 3000);
     });
-  }, datasetPath);
+    const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+    const hasBioChem = cols.some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
+    if (hasBioChem) {
+      for (let i = 0; i < 50; i++) {
+        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        await new Promise((r) => setTimeout(r, 200));
+      }
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Step 2: Click 3D Scatter plot icon in Viewers toolbox
-  await softStep('Add 3D Scatter plot', async () => {
-    await page.evaluate(() => {
-      const icon = document.querySelector('[name="icon-3d-scatter-plot"]') as HTMLElement;
-      icon.click();
-    });
+  await softStep('Step 1 — demog dataset open', async () => {
+    const rows = await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.rowCount);
+    expect(rows).toBe(5850);
+  });
+
+  await softStep('Step 2 — click 3d Scatter plot icon; viewer opens', async () => {
+    await page.locator('[name="icon-3d-scatter-plot"]').click();
     await page.locator('[name="viewer-3d-scatter-plot"]').waitFor({timeout: 10000});
-    const hasCanvas = await page.evaluate(() => !!document.querySelector('[name="viewer-3d-scatter-plot"] canvas'));
-    expect(hasCanvas).toBe(true);
-  });
-
-  // Step 3a: Click a data point — current row should change
-  await softStep('Click point highlights grid row', async () => {
-    const result = await page.evaluate(async () => {
-      const v = document.querySelector('[name="viewer-3d-scatter-plot"]') as HTMLElement;
-      const canvas = v.querySelector('canvas') as HTMLCanvasElement;
-      const rect = canvas.getBoundingClientRect();
-      const tv = grok.shell.tv;
-      const df = tv.dataFrame;
-      const beforeCurrent = df.currentRowIdx;
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const fire = (type: string) =>
-        canvas.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: cx, clientY: cy, button: 0}));
-      fire('mousemove');
-      fire('mousedown');
-      fire('mouseup');
-      fire('click');
-      await new Promise((r) => setTimeout(r, 400));
-      return {beforeCurrent, afterCurrent: df.currentRowIdx};
+    const hasType = await page.evaluate(() => {
+      const g: any = (window as any).grok;
+      return Array.from(g.shell.tv.viewers).some((v: any) => v.type === '3d scatter plot');
     });
-    expect(result.afterCurrent).not.toBe(result.beforeCurrent);
+    expect(hasType).toBe(true);
   });
 
-  // Step 3b: Wheel events should change the view (zoom)
-  await softStep('Scroll wheel zoom', async () => {
-    await page.evaluate(async () => {
+  await softStep('Step 3a — click on viewer changes currentRowIdx', async () => {
+    const beforeIdx = await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.currentRowIdx);
+    const box = await page.locator('[name="viewer-3d-scatter-plot"]').boundingBox();
+    if (!box) throw new Error('viewer bounding box unavailable');
+    await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.5);
+    await page.waitForTimeout(600);
+    const afterIdx = await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.currentRowIdx);
+    expect(afterIdx).not.toBe(beforeIdx);
+  });
+
+  await softStep('Step 3b — mouse wheel zoom', async () => {
+    const ok = await page.evaluate(async () => {
       const v = document.querySelector('[name="viewer-3d-scatter-plot"]') as HTMLElement;
-      const canvas = v.querySelector('canvas') as HTMLCanvasElement;
+      const canvas = v?.querySelector('canvas') as HTMLCanvasElement;
+      if (!canvas) return false;
       const rect = canvas.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
       for (let i = 0; i < 5; i++) {
-        canvas.dispatchEvent(new WheelEvent('wheel', {bubbles: true, cancelable: true, clientX: cx, clientY: cy, deltaY: -120, deltaMode: 0}));
+        canvas.dispatchEvent(new WheelEvent('wheel', {
+          bubbles: true, cancelable: true, clientX: cx, clientY: cy,
+          deltaY: -120, deltaMode: 0, view: window,
+        }));
         await new Promise((r) => setTimeout(r, 50));
       }
-      for (let i = 0; i < 5; i++) {
-        canvas.dispatchEvent(new WheelEvent('wheel', {bubbles: true, cancelable: true, clientX: cx, clientY: cy, deltaY: 120, deltaMode: 0}));
-        await new Promise((r) => setTimeout(r, 50));
-      }
+      await new Promise((r) => setTimeout(r, 500));
+      return true;
     });
-    // visual change; no deterministic assertion — verify the viewer still renders
-    const stillThere = await page.evaluate(() => !!document.querySelector('[name="viewer-3d-scatter-plot"] canvas'));
-    expect(stillThere).toBe(true);
+    expect(ok).toBe(true);
   });
 
-  // Step 4a: Open settings (gear icon)
-  await softStep('Open Settings (gear)', async () => {
+  await softStep('Step 4 — gear opens Property Pane; properties reflect on viewer', async () => {
     await page.evaluate(() => {
-      const v = document.querySelector('[name="viewer-3d-scatter-plot"]') as HTMLElement;
-      const gp = v.parentElement!.parentElement!;
-      const gear = gp.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
+      const viewer = document.querySelector('[name="viewer-3d-scatter-plot"]') as HTMLElement;
+      const panelBase = viewer.parentElement!.parentElement!;
+      const gear = panelBase.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
       gear.click();
     });
-    await page.waitForTimeout(400);
-  });
+    await page.locator('[name="ScatterPlot3dLook"]').waitFor({timeout: 5000});
 
-  // Step 4b: Modify properties via JS API (UI combo-boxes did not open a picker on click)
-  await softStep('Modify Color, Size, markerDefaultSize', async () => {
-    const after = await page.evaluate(async () => {
-      const viewer: any = Array.from(grok.shell.tv.viewers as any).find((v: any) => v.type === '3d scatter plot');
-      viewer.setOptions({colorColumnName: 'SEX', sizeColumnName: 'AGE', markerDefaultSize: 15});
+    const result = await page.evaluate(async () => {
+      const g: any = (window as any).grok;
+      const v3d: any = Array.from(g.shell.tv.viewers).find((x: any) => x.type === '3d scatter plot');
+      v3d.setOptions({
+        colorColumnName: 'RACE',
+        sizeColumnName: 'WEIGHT',
+        backColor: 0xFFF5F5F5,
+        markerOpacity: 90,
+      });
       await new Promise((r) => setTimeout(r, 500));
       return {
-        color: viewer.getOptions().look.colorColumnName,
-        size: viewer.getOptions().look.sizeColumnName,
+        colorCol: v3d.props.colorColumnName,
+        sizeCol: v3d.props.sizeColumnName,
+        markerOpacity: v3d.props.markerOpacity,
       };
     });
-    expect(after.color).toBe('SEX');
-    expect(after.size).toBe('AGE');
+    expect(result.colorCol).toBe('RACE');
+    expect(result.sizeCol).toBe('WEIGHT');
+    expect(result.markerOpacity).toBe(90);
   });
 
-  // Cleanup
-  await page.evaluate(() => grok.shell.closeAll());
+  await page.evaluate(() => (window as any).grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  if (stepErrors.length > 0)
+    throw new Error('Step failures:\n' + stepErrors.map((e) => `- ${e.step}: ${e.error}`).join('\n'));
 });

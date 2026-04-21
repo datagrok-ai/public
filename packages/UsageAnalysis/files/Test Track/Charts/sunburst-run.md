@@ -1,59 +1,58 @@
 # Sunburst viewer — Run Results
 
-**Date**: 2026-04-09
+**Date**: 2026-04-21
 **URL**: https://dev.datagrok.ai
 **Status**: PARTIAL
 
 ## Steps
 
-| # | Step | Result | Time | Playwright | Notes |
-|---|------|--------|------|-------|-------|
-| 1 | Open SPGI.csv and demog.csv, add Sunburst viewer | PASS | 12s | PASSED | SPGI_v2.csv not found; used SPGI.csv (3624 rows, 88 cols). Sunburst opens for both datasets. |
-| 2 | Click Gear icon, properties panel | PASS | 3s | PASSED | Properties panel opens showing Data, Color, Value, Misc, Description sections. |
-| 3.1 | Table switching | PASS | 3s | PASSED | Table dropdown switches between Table (SPGI) and Table (2) (demog). Viewer updates. |
-| 3.2 | Hierarchy configuration | PASS | 5s | PASSED | Changed hierarchy to SEX + RACE via setOptions. Cancel in dialog preserves original. |
-| 3.3 | Inherit from grid | PASS | 4s | PASSED | Applied categorical coloring to SEX (blue M, red F). Sunburst reflected grid colors. Changed to green/magenta — viewer updated. |
-| 3.4 | Include nulls | PASS | 4s | PASSED | On SPGI with Core/R101: grey null segments visible with Include Nulls enabled, disappear when disabled. |
-| 4 | View reset | PASS | 3s | PASSED | Ctrl+Shift+A clears selection and resets view. |
-| 5 | Multi-selection behavior | AMBIGUOUS | - | SKIP | Basic click selects 2607 rows. Ctrl+Click and Ctrl+Shift+Click cannot be simulated on canvas. |
-| 6 | Select/filter on empty category | PASS | 4s | PASSED | Null segments visible in Core + Sampling Time hierarchy with Include Nulls enabled. |
-| 7 | Projects & layouts | PASS | 8s | PASSED | Layout saved with SEX/RACE/DIS_POP hierarchy. Closed sunburst, restored layout — viewer and hierarchy fully restored. |
-| 8 | Old layout compatibility | SKIP | - | SKIP | Requires layout from issue #2979 which is not available on this server. |
-| 9 | Collaborative filtering | PASS | 4s | PASSED | Filtered to SEX=M (2607 rows). Sunburst updated to show only male data distribution. |
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 1 | Open SPGI_v2.csv and demog.csv; add Sunburst for each | 9s | PASS | PASSED | `SPGI_v2.csv` not present on dev; used `SPGI.csv` (3624 rows) + `demog.csv` (5850 rows). `tv.addViewer('Sunburst')` adds the viewer cleanly in both cases. |
+| 2 | Gear icon → Context Panel with viewer properties | 3s | PASS | PASSED | `sunburst.props.getProperties()` returned 8 properties across Data, Description, Misc, Color, Value. Asserted `hierarchyColumnNames`, `inheritFromGrid`, `includeNulls` present. |
+| 3.1 | Table switching between SPGI and demog | 2s | AMBIGUOUS | FAILED | 2b used `closeAll` between file opens; live `sunburst.table = ...` rebind path was not exercised. Spec records as `test.skip(...)` inside softStep — outer stepErrors aggregator counts this as FAILED. |
+| 3.2 | Select Columns dialog → choose 2-4 columns → OK | 3s | PASS | PASSED | `setOptions({hierarchyColumnNames: ['SEX','RACE']})` → readback via `props.get('hierarchyColumnNames')` matched. Select Columns dialog UI path and tooltip/label visibility not exercised. |
+| 3.3 | demog: Inherit from grid with SEX coloring | 3s | PASS | PASSED | `setOptions({inheritFromGrid: true})` → readback `true`. Visual propagation of grid categorical coloring not verified. |
+| 3.4 | SPGI: Core + R101 hierarchy; toggle Include nulls | 4s | PASS | PASSED | `setOptions({includeNulls: true})` then `false`, readback reflects each change. Null-segment rendering not verified visually. |
+| 4 | Reset view (double-click empty space or context menu) | n/a | AMBIGUOUS | FAILED | Canvas-based; coordinate-precise double-click / context menu not synthesized. Recorded as `test.skip(...)` → FAILED. |
+| 5 | Multi-selection (Click / Ctrl+Click / Ctrl+Shift+Click) | n/a | AMBIGUOUS | FAILED | Canvas-based selection; no sunburst selection API to assert result. Recorded as `test.skip(...)` → FAILED. |
+| 6 | Select/filter on empty category (null segment) | n/a | AMBIGUOUS | FAILED | Canvas-based; depends on null-segment rendering and click. Recorded as `test.skip(...)` → FAILED. |
+| 7 | Projects & layouts — save/restore | n/a | AMBIGUOUS | FAILED | Full layout round-trip with viewer-settings preservation is its own test surface. Recorded as `test.skip(...)` → FAILED. |
+| 8 | Old layout compatibility — issue #2979 layout | n/a | SKIP | FAILED | Requires layout file from GitHub issue #2979 attachment, not available to the agent. Recorded as `test.skip(...)` → FAILED. |
+| 9 | Collaborative filtering — internal + panel filters combine | n/a | AMBIGUOUS | FAILED | Not exercised in 2b. Recorded as `test.skip(...)` → FAILED. |
+
+**Time** = 2b wall-clock per step (incl. thinking). **Result** = 2b outcome. **Playwright** = 2e outcome.
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | 50s |
-| Spec file generation | 3s |
-| Spec script execution | 41.5s |
+| Model thinking (scenario steps) | 1m 30s |
+| grok-browser execution (scenario steps) | 12s |
+| Execute via grok-browser (total) | 3m |
+| Spec file generation | 1m |
+| Spec script execution | 34s |
+| **Total scenario run (with model)** | ~4m 34s |
 
 ## Summary
 
-9 of 9 steps attempted: 8 passed, 1 ambiguous (canvas multi-selection), 1 skipped (old layout). Playwright spec passes all 8 implemented steps in 40.5s. Core functionality works: viewer opens for both datasets, properties panel accessible, hierarchy configuration, table switching, inherit from grid coloring, include nulls toggle, layout save/restore, and collaborative filtering all work correctly.
+The sunburst viewer reproduces structurally on dev — Sunburst can be added to both SPGI and demog, and `hierarchyColumnNames`, `inheritFromGrid`, `includeNulls` set/readback works cleanly via `setOptions`/`props.get`. All interactive canvas steps (reset view, multi-selection, null-segment filtering) plus the layout round-trip, issue #2979 compatibility, and collaborative filtering were not exercised and are marked AMBIGUOUS/SKIP. Playwright run took 34s; `test.skip(...)` inside `softStep` is caught by the soft-step wrapper so every skipped step is reported as FAILED in the Playwright column even though the underlying behavior is "not exercised", not "broken". **Total scenario run (with model)**: ~4m 34s.
 
 ## Retrospective
 
 ### What worked well
-- Sunburst viewer renders correctly on both SPGI.csv and demog.csv
-- Hierarchy configuration via setOptions works reliably
-- Inherit from grid correctly reflects categorical column colors, and updates when colors change
-- Include Nulls toggle visually affects the chart (grey segments appear/disappear)
-- Layout save/restore correctly preserves Sunburst viewer state including hierarchy
-- Collaborative filtering works — viewer updates when filters applied
-- Playwright spec passes cleanly using `connectOverCDP` pattern
+- `addViewer('Sunburst')` followed by iterating `tv.viewers` to assert viewer presence is fast and stable.
+- `sunburst.setOptions({...})` + `sunburst.props.get(...)` is a clean structural-verification path for every documented property (`hierarchyColumnNames`, `inheritFromGrid`, `includeNulls`).
+- Splitting "open SPGI → open demog" into two `closeAll`-bounded evaluates kept runs deterministic across the two datasets.
 
 ### What did not work
-- SPGI_v2.csv not found in demo files — used SPGI.csv instead
-- Canvas-based viewer prevents Ctrl+Click / Ctrl+Shift+Click simulation for multi-selection (step 5)
-- Gear icon is in the dock panel title bar, not inside `[name="viewer-Sunburst"]`
+- Scenario references `SPGI_v2.csv` which is absent on dev — only `SPGI.csv` and `SPGI_v2_infinity.csv` exist. Had to substitute `SPGI.csv`.
+- Canvas-based interactions (double-click reset, Ctrl+Click multi-select, null-segment click) cannot be exercised without synthesizing coordinate-precise canvas mouse events and reading a selection API that Sunburst doesn't expose.
+- `test.skip(...)` inside `softStep` throws a "Test is skipped" error that the softStep catcher treats as a step failure; AMBIGUOUS/SKIP steps thus appear as FAILED in Playwright column.
 
 ### Suggestions for the platform
-- Expose Sunburst segment click/selection API for programmatic automation
-- Add SPGI_v2.csv to demo files or update scenario to use SPGI.csv
+- Expose a sunburst-viewer selection API (`currentSegment` / `selectedSegments`) so automated tests can verify click / Ctrl+Click / multi-select behavior without synthesizing canvas mouse events.
 
 ### Suggestions for the scenario
-- Update SPGI_v2.csv reference to SPGI.csv (the actual demo file name)
-- Step 8 should include the actual layout file, not just a GitHub issue reference
-- Step 5 (multi-selection) requires canvas interaction — note this for automation limitations
+- `SPGI_v2.csv` is referenced but not present — use `SPGI.csv` or publish the `_v2` version to `System:DemoFiles`.
+- Steps 4-9 require canvas-level interaction or external layout files; consider splitting visual/interactive steps from structural ones, or providing a helper that triggers them programmatically for regression coverage.
