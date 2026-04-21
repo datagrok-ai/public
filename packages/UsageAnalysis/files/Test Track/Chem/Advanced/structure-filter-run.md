@@ -1,46 +1,46 @@
 # Structure Filter — Run Results
 
-**Date**: 2026-04-09
+**Date**: 2026-04-21
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Time | Playwright | Notes |
-|---|------|--------|------|------------|-------|
-| 1 | Open SPGI.csv, open filter panel | PASS | 17s | PASSED | 3624 rows, 90 cols; filter panel with 43 filters including Structure substructure filter |
-| 2 | Set substructure filter (benzene) | PASS | 5s | PASSED | `grok.chem.searchSubstructure(col, 'c1ccccc1')` found 1356/3624 matches; filter applied |
-| 3 | Disable filter, close/open panel, re-enable | PASS | 5s | PASSED | `df.filter.setAll(true)` reset to 3624; `fg.close()` hid panel; `getFiltersGroup()` reopened |
-| 4 | Clone view, verify filter sync | PASS | 8s | PASSED | Cloned view "Table (2)" created; applied benzene filter synced in both views (1356 rows) |
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 1 | Open SPGI.csv and show filter panel | 9s | PASS | PASSED | 3624 rows, ≥1 filter cards |
+| 2 | `grok.chem.searchSubstructure(Structure, 'c1ccccc1')` → BitSet | 4s | PASS | PASSED | matchCount > 0 and < 3624; `df.filter.trueCount` matches |
+| 3 | `df.filter.setAll(true)` → reset, close + reopen panel | 4s | PASS | PASSED | closed width ≤ 0, reopened width > 0 |
+| 4 | Clone view (`grok.shell.addTableView(df)`) + apply benzene filter → both views share the filter | 4s | PASS | PASSED | `views.length ≥ 2`, `df.filter.trueCount > 0` |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | 40s |
-| Spec file generation | 3s |
-| Spec script execution | 24s |
+| Model thinking (scenario steps) | 30s |
+| grok-browser execution (scenario steps) | n/a |
+| Execute via grok-browser (total) | 30s |
+| Spec file generation | 25s |
+| Spec script execution | 24.0s |
+| **Total scenario run (with model)** | ~1m 30s |
 
 ## Summary
 
-All 4 core steps passed. The Structure filter panel opened with 43 filters for SPGI.csv. Benzene substructure search matched 1356/3624 molecules. Filter panel close/open cycle worked correctly. Cloned view shared the same filter state via shared DataFrame.
+Substructure filtering via `grok.chem.searchSubstructure` works on SPGI.csv (3624 rows): benzene substructure yields a bitset applied through `df.filter.and(bs)`, with consistent counts between bitset.trueCount and df.filter.trueCount. Filter panel close/reopen preserves state; cloning the view and reapplying a filter yields a shared filter across both views (single dataframe). Not automated: DnD column → filter panel, right-click "Current value → Use as filter" (context-menu text-match that lacks stable selectors), the sketcher-driven flow.
 
 ## Retrospective
 
 ### What worked well
-- `grok.chem.searchSubstructure(col, 'c1ccccc1')` API works for programmatic substructure filtering
-- `df.filter.and(bs)` applies the bitset as a filter immediately
-- `fg.close()` and `getFiltersGroup()` toggle the filter panel correctly
-- Cloned views share the same DataFrame, so filter changes are automatically synced
+- `grok.chem.searchSubstructure(col, smarts)` is the right automation primitive — avoids the sketcher entirely
+- `.first()` locator after a cloned view prevents strict-mode violation on duplicate `.d4-grid[name="viewer-Grid"]`
 
 ### What did not work
-- The structure filter's `setMolecule()` method doesn't exist — had to use `grok.chem.searchSubstructure` + `df.filter.and()` instead
-- Drawing in the structure filter sketcher via automation was not attempted (canvas-based)
+- Scenario asks for drag-and-drop of a column header into the filter panel — Playwright `dragTo()` requires precise coordinates that are fragile
 
 ### Suggestions for the platform
-- The structure filter should expose a `setMolecule(smiles)` API for programmatic testing
-- Filter sync status could show an indicator when views share the same filter
+- Add `grok.shell.tv.addFilter(colName)` helper so automation can seed filters without DnD
+- "Use as filter" context-menu entry deserves `[name="menu-use-as-filter"]` for click-through automation
 
 ### Suggestions for the scenario
-- The scenario has multiple sub-sections (4 separate test blocks) — consider splitting into numbered steps
-- Step about "Current value > Use as filter" requires right-clicking a cell — not easily automatable
+- Split "DnD column → filter" into its own scenario; it's a UX-heavy micro-behavior
+- The "both cloned views share filter" expectation should be stated explicitly (filter on a dataframe is single-source, so all views reflect the same state)

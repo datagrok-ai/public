@@ -20,10 +20,9 @@ test.use({
   launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
 });
 
-test('DiffStudio Files & Sharing: Open pk.ivp, modify inputs, share URL', async ({page}) => {
+test('DiffStudio Files & Sharing: pk.ivp preview, modify Step/Count, URL reload', async ({page, context}) => {
   test.setTimeout(300_000);
 
-  // Login
   await page.goto(baseUrl);
   const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
   if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
@@ -36,7 +35,6 @@ test('DiffStudio Files & Sharing: Open pk.ivp, modify inputs, share URL', async 
   await page.locator('[name="Browse"]').waitFor({timeout: 120000});
   await page.waitForTimeout(2000);
 
-  // Setup: close dialogs, set Tabs mode, close all views
   await page.evaluate(async () => {
     document.querySelectorAll('.d4-dialog').forEach(d => {
       const cancel = d.querySelector('[name="button-CANCEL"]');
@@ -48,85 +46,87 @@ test('DiffStudio Files & Sharing: Open pk.ivp, modify inputs, share URL', async 
     grok.shell.windows.simpleMode = true;
   });
 
-  // Step 1: Navigate to Browse > Files > App Data > Diff Studio > Library; click pk.ivp; preview opens
-  await softStep('Step 1: Open pk.ivp preview via /files/ URL', async () => {
-    await page.goto(`${baseUrl}/files/System.AppData/DiffStudio/library/pk.ivp`);
+  await softStep('Step 1: Open pk.ivp file preview', async () => {
+    await page.evaluate(async () => {
+      const previewFn = DG.Func.find({name: 'previewIvp', package: 'DiffStudio'})[0];
+      const info = await grok.dapi.files.list('System:AppData/DiffStudio/library/', false, 'pk.ivp');
+      const file = info[0];
+      const call = previewFn.prepare({file: file});
+      await call.call();
+      const view = call.getOutputParamValue();
+      if (view) grok.shell.addView(view);
+    });
+    await page.waitForFunction(() => grok.shell.v?.name === 'PK', null, {timeout: 30000});
     await page.waitForTimeout(2000);
-
-    // Wait for the file view to appear (name contains 'pk.ivp')
-    await page.waitForFunction(() => {
-      const v = grok.shell.v;
-      return !!v && typeof v.name === 'string' && v.name.toLowerCase().includes('pk.ivp');
-    }, null, {timeout: 30000});
-
-    const info = await page.evaluate(() => {
-      const v = grok.shell.v;
-      const inputHosts = document.querySelectorAll('.ui-input-root').length;
-      const bodyText = document.body.innerText || '';
-      return {
-        viewName: v?.name ?? null,
-        viewType: v?.type ?? null,
-        inputHosts,
-        hasMultiaxis: bodyText.includes('Multiaxis'),
-        hasFacet: bodyText.includes('Facet'),
-      };
-    });
-
-    test.info().annotations.push({type: 'info', description:
-      `view=${info.viewName} type=${info.viewType} .ui-input-root count=${info.inputHosts} ` +
-      `multiaxis=${info.hasMultiaxis} facet=${info.hasFacet}`});
-
-    // Assert a view did open and contains pk.ivp in its name. Do NOT assert interactive inputs —
-    // on dev, the /files/ URL opens a non-interactive file preview (0 inputs observed in 2b).
-    expect(info.viewName).toBeTruthy();
-    expect(info.viewName!.toLowerCase()).toContain('pk.ivp');
+    const inputs = await page.locator('[name^="input-host-"]').count();
+    expect(inputs).toBeGreaterThan(5);
   });
 
-  // Step 2: Set Step to 0.1 via slider; Count to 4 via clicker; view updates
-  // 2b run log: FAIL — input-host-Step and input-host-Count are NOT present in this preview DOM.
-  await softStep('Step 2: Modify Step=0.1 and Count=4 (FAIL per 2b — inputs absent in file preview)', async () => {
-    const result = await page.evaluate(() => {
-      const stepHost = document.querySelector('[name="input-host-Step"]');
-      const countHost = document.querySelector('[name="input-host-Count"]');
-      const anyInputHosts = document.querySelectorAll('[name^="input-host-"]').length;
-      const inputRoots = document.querySelectorAll('.ui-input-root').length;
-      return {
-        stepHostFound: !!stepHost,
-        countHostFound: !!countHost,
-        anyInputHosts,
-        inputRoots,
-      };
-    });
+  await softStep('Step 2: Set Step=0.1 (slider+textbox) and Count=4 (clicker)', async () => {
+    const stepInp = page.locator('[name="input-host-step"] input.ui-input-editor');
+    await stepInp.click();
+    await page.keyboard.press('Control+a');
+    await page.keyboard.type('0.1');
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(1500);
 
-    test.info().annotations.push({type: 'ambiguous', description:
-      `input-host-Step found=${result.stepHostFound}, input-host-Count found=${result.countHostFound}, ` +
-      `total input-host-* count=${result.anyInputHosts}, .ui-input-root count=${result.inputRoots}. ` +
-      'The /files/ URL opens a non-interactive file preview — Step/Count inputs are not exposed there.'});
+    // Count via clicker — force click (icons only visible on hover)
+    for (let i = 0; i < 3; i++) {
+      await page.locator('[name="input-host-count"] [name="icon-plus"]').click({force: true});
+      await page.waitForTimeout(400);
+    }
+    await page.waitForTimeout(1500);
 
-    // This step is FAIL per the 2b log — assert so the Playwright run records it as such.
-    expect(result.stepHostFound,
-      'input-host-Step not present: /files/ URL opens a raw file preview, not an interactive DiffStudio model').toBe(true);
-    expect(result.countHostFound,
-      'input-host-Count not present: /files/ URL opens a raw file preview, not an interactive DiffStudio model').toBe(true);
+    const stepVal = await stepInp.inputValue();
+    const countVal = await page.locator('[name="input-host-count"] input.ui-input-editor').inputValue();
+    expect(parseFloat(stepVal)).toBeCloseTo(0.1);
+    expect(countVal).toBe('4');
+    const url = page.url();
+    expect(url).toContain('step=0.1');
+    expect(url).toContain('count=4');
   });
 
-  // Step 3: Copy URL; paste in new tab; same inputs appear
-  // 2b run log: AMBIGUOUS — depends on step 2 producing a parameterized URL; step 2 blocked.
-  await softStep('Step 3: Share URL (AMBIGUOUS per 2b — blocked by step 2)', async () => {
-    test.info().annotations.push({type: 'ambiguous', description:
-      'Step 3 cannot be exercised because step 2 is blocked on dev — the /files/ URL preview ' +
-      'does not expose interactive Step/Count inputs, so there is no parameterized URL to copy ' +
-      'and validate in a new tab. Would be meaningful only after step 2 produces a URL with ' +
-      'query-string inputs.'});
-
-    const currentUrl = page.url();
-    test.info().annotations.push({type: 'info', description:
-      `current URL after step 2: ${currentUrl}`});
-    // Soft existence check — we can at least confirm a URL was set to the pk.ivp file path.
-    expect(currentUrl.toLowerCase()).toContain('pk.ivp');
+  await softStep('Step 3: Open URL in a new tab; model loads with same inputs', async () => {
+    const url = page.url();
+    const newTab = await context.newPage();
+    await newTab.goto(url);
+    // login if needed on new tab (shared context — session cookie carries)
+    await newTab.waitForFunction(() => (window as any).grok?.shell?.v?.name === 'PK', null, {timeout: 60000});
+    await newTab.waitForTimeout(3000);
+    const state = await newTab.evaluate(() => ({
+      viewName: grok.shell.v?.name,
+      stepVal: (document.querySelector('[name="input-host-step"] input.ui-input-editor') as HTMLInputElement)?.value,
+      countVal: (document.querySelector('[name="input-host-count"] input.ui-input-editor') as HTMLInputElement)?.value,
+    }));
+    expect(state.viewName).toBe('PK');
+    expect(parseFloat(state.stepVal)).toBeCloseTo(0.1);
+    expect(state.countVal).toBe('4');
+    await newTab.close();
   });
 
-  // Cleanup
+  // Step 4: REMARK — not a test but a consistency check. With count<=3 expect no Multiaxis/Facet.
+  await softStep('Step 4: REMARK — with 1-3 curves no Multiaxis/Facet; with >=4 curves they appear', async () => {
+    // Currently count=4 — check what's there
+    const tabsAt4 = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.tab-handle-text'))
+        .map(t => t.textContent?.trim()).filter(Boolean));
+    // Then drop to 1 and re-check
+    const countInp = page.locator('[name="input-host-count"] input.ui-input-editor');
+    await countInp.click();
+    await page.keyboard.press('Control+a');
+    await page.keyboard.type('1');
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(2500);
+    const tabsAt1 = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.tab-handle-text'))
+        .map(t => t.textContent?.trim()).filter(Boolean));
+    test.info().annotations.push({type: 'remark',
+      description: `tabsAt4=${tabsAt4.join(',')} tabsAt1=${tabsAt1.join(',')}`});
+    // REMARK only — assertion is permissive
+    expect(tabsAt1).not.toContain('Multiaxis');
+    expect(tabsAt1).not.toContain('Facet');
+  });
+
   await page.evaluate(() => grok.shell.closeAll());
 
   if (stepErrors.length > 0) {

@@ -1,6 +1,8 @@
-import {test, expect, chromium} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 
 const stepErrors: {step: string; error: string}[] = [];
 
@@ -13,20 +15,26 @@ async function softStep(name: string, fn: () => Promise<void>) {
   }
 }
 
-test('DiffStudio Catalog: Library, Model Hub, Run, Modify', async () => {
-  const browser = await chromium.connectOverCDP('http://localhost:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
-    await page.waitForFunction(() => {
-      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
-      catch { return false; }
-    }, {timeout: 45000});
-  }
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+});
 
-  // Setup
+test('DiffStudio Catalog: PK-PD load, save to Model Hub, refresh, run, modify dose', async ({page}) => {
+  test.setTimeout(300_000);
+
+  await page.goto(baseUrl);
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
+  }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
+  await page.waitForTimeout(2000);
+
   await page.evaluate(async () => {
     document.querySelectorAll('.d4-dialog').forEach(d => {
       const cancel = d.querySelector('[name="button-CANCEL"]');
@@ -34,159 +42,110 @@ test('DiffStudio Catalog: Library, Model Hub, Run, Modify', async () => {
     });
     grok.shell.closeAll();
     document.body.classList.add('selenium');
-    grok.shell.windows.simpleMode = false;
+    grok.shell.settings.showFiltersIconsConstantly = true;
+    grok.shell.windows.simpleMode = true;
   });
 
-  // Step 1: Open DiffStudio and load PK-PD from Library
-  await softStep('Open DiffStudio and load PK-PD from Library', async () => {
-    await page!.evaluate(async () => {
-      await grok.functions.call('DiffStudio:runDiffStudio');
-      await new Promise(r => setTimeout(r, 3000));
-
-      // Click open model combo
-      const combo = document.querySelector('.diff-studio-ribbon-widget') as HTMLElement;
-      if (combo) combo.click();
-      await new Promise(r => setTimeout(r, 800));
-
-      // Click Library
-      const items = document.querySelectorAll('[role="menuitem"]');
-      const lib = Array.from(items).find(i => i.textContent?.trim().startsWith('Library'));
-      if (lib) (lib as HTMLElement).click();
-      await new Promise(r => setTimeout(r, 800));
-
-      // Select PK-PD
-      const items2 = document.querySelectorAll('[role="menuitem"]');
-      const pkpd = Array.from(items2).find(i => {
-        const t = i.textContent?.trim();
-        return t === 'PK-PD' || t === 'pk-pd';
-      });
-      if (pkpd) (pkpd as HTMLElement).click();
-      await new Promise(r => setTimeout(r, 5000));
+  await softStep('Step 1: Open PK-PD from Diff Studio Library', async () => {
+    await page.evaluate(async () => {
+      const f = DG.Func.find({name: 'runDiffStudio', package: 'DiffStudio'})[0];
+      const call = f.prepare();
+      await call.call();
+      grok.shell.addView(call.getOutputParamValue());
     });
-
-    const info = await page!.evaluate(() => {
-      const tv = grok.shell.tv;
-      const df = tv?.dataFrame;
-      return {name: tv?.name, rows: df?.rowCount, cols: df?.columns?.length};
-    });
-    expect(info.rows).toBeGreaterThan(0);
-    expect(info.cols).toBeGreaterThanOrEqual(5);
+    await page.waitForFunction(() => grok.shell.v?.name === 'Diff Studio', null, {timeout: 30000});
+    await page.waitForTimeout(2000);
+    const card = page.locator('.diff-studio-hub-card', {hasText: 'PK-PD'}).first();
+    await card.waitFor({timeout: 15000});
+    await card.dblclick();
+    await page.waitForFunction(() => grok.shell.v?.name === 'PK-PD', null, {timeout: 30000});
+    await page.waitForTimeout(2000);
   });
 
-  // Step 2: Save to Model Hub
-  await softStep('Save to Model Hub', async () => {
-    const result = await page!.evaluate(async () => {
-      const icon = document.querySelector('.diff-studio-ribbon-save-to-model-catalog-icon') as HTMLElement;
-      if (icon) icon.click();
-      await new Promise(r => setTimeout(r, 3000));
-      return {iconFound: !!icon};
-    });
-    expect(result.iconFound).toBe(true);
+  await softStep('Step 2: Click Save to Model Hub icon', async () => {
+    await page.locator('.diff-studio-ribbon-save-to-model-catalog-icon').click();
+    // Wait for balloon / notification
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('.d4-balloon, .grok-notification'))
+        .some(b => b.textContent?.includes('Saved to Library') || b.textContent?.includes('PK-PD.ivp')),
+      null, {timeout: 15000}).catch(() => {});
+    await page.waitForTimeout(2000);
   });
 
-  // Step 3: Access Model Hub
-  await softStep('Access Model Hub', async () => {
-    const viewName = await page!.evaluate(async () => {
-      const v = await grok.functions.call('Compute2:modelCatalog');
-      grok.shell.v = v;
-      await new Promise(r => setTimeout(r, 3000));
-      return grok.shell.v?.name;
+  await softStep('Step 3: Open Model Hub (Apps > Model Hub)', async () => {
+    await page.evaluate(async () => {
+      const f = DG.Func.find({package: 'Compute2', name: 'modelCatalog'})[0];
+      const call = f.prepare();
+      await call.call();
+      const view = call.getOutputParamValue();
+      if (view) grok.shell.addView(view);
     });
-    expect(viewName).toBe('Model Hub');
+    await page.waitForFunction(() => grok.shell.v?.name === 'Model Hub', null, {timeout: 30000});
+    await page.waitForTimeout(3000);
+    const pkpdCount = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.d4-list-item'))
+        .filter(e => e.textContent?.trim() === 'PK-PD').length);
+    expect(pkpdCount).toBeGreaterThan(0);
   });
 
-  // Step 4: Refresh catalog
-  await softStep('Refresh Model Hub catalog', async () => {
-    const hasPKPD = await page!.evaluate(async () => {
-      const syncIcons = document.querySelectorAll('i.fa-sync');
-      for (const el of syncIcons) {
-        const rect = el.getBoundingClientRect();
-        if (rect.top > 60 && rect.top < 120 && rect.width > 0) {
-          (el as HTMLElement).click();
-          break;
-        }
+  await softStep('Step 4: Click Refresh icon; catalog reloads', async () => {
+    await page.evaluate(() => {
+      const refresh = Array.from(document.querySelectorAll('.grok-icon'))
+        .find(e => e.className.includes('fa-sync')) as HTMLElement;
+      refresh?.click();
+    });
+    await page.waitForTimeout(3000);
+    const pkpdCount = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.d4-list-item'))
+        .filter(e => e.textContent?.trim() === 'PK-PD').length);
+    expect(pkpdCount).toBeGreaterThan(0);
+  });
+
+  await softStep('Step 5: Run PK-PD from catalog', async () => {
+    await page.evaluate(() => {
+      const items = Array.from(document.querySelectorAll('.d4-list-item'))
+        .filter(e => e.textContent?.trim() === 'PK-PD') as HTMLElement[];
+      const last = items[items.length - 1];
+      last?.click();
+      last?.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true}));
+    });
+    await page.waitForFunction(() => grok.shell.v?.name === 'PK-PD', null, {timeout: 30000});
+    await page.waitForTimeout(3000);
+    const info = await page.evaluate(() => ({
+      hasCount: !!document.querySelector('[name="input-host-count"]'),
+      hasDose: !!document.querySelector('[name="input-host-dose"]'),
+      hasMultiaxis: document.body.innerText.includes('Multiaxis'),
+    }));
+    expect(info.hasCount).toBe(true);
+    expect(info.hasDose).toBe(true);
+    expect(info.hasMultiaxis).toBe(true);
+  });
+
+  await softStep('Step 6: Modify dose input; verify live update and URL', async () => {
+    const inp = page.locator('[name="input-host-dose"] input.ui-input-editor');
+    const before = await inp.inputValue();
+    await inp.click();
+    await page.keyboard.press('Control+a');
+    await page.keyboard.type('5000');
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(2500);
+    const after = await inp.inputValue();
+    expect(after).toBe('5000');
+    expect(after).not.toBe(before);
+    expect(page.url()).toContain('dose=5000');
+  });
+
+  // Cleanup: delete the saved PK-PD file from the user's catalog
+  await page.evaluate(async () => {
+    try {
+      const files = await grok.dapi.files.list('System:AppData/DiffStudio/', true, 'PK-PD.ivp');
+      for (const f of files) {
+        if (f.path?.includes('library/PK-PD')) continue;
+        await grok.dapi.files.delete(f);
       }
-      await new Promise(r => setTimeout(r, 3000));
-      const labels = document.querySelectorAll('.d4-link-label');
-      return Array.from(labels).some(l => l.textContent?.trim() === 'PK-PD');
-    });
-    expect(hasPKPD).toBe(true);
+    } catch (e) { /* ignore */ }
+    grok.shell.closeAll();
   });
-
-  // Step 5: Run PK-PD from catalog
-  await softStep('Run PK-PD model from Model Hub', async () => {
-    await page!.evaluate(async () => {
-      // Select PK-PD card
-      const labels = document.querySelectorAll('span.d4-link-label');
-      for (const el of labels) {
-        if (el.textContent?.trim() === 'PK-PD') {
-          (el as HTMLElement).click();
-          break;
-        }
-      }
-      await new Promise(r => setTimeout(r, 1000));
-
-      // Run via JS API (double-click does not open model)
-      const obj = grok.shell.o;
-      if (obj && typeof obj.apply === 'function')
-        await obj.apply();
-    });
-
-    // Wait for the new view to appear and switch to it
-    await page!.waitForTimeout(5000);
-    const info = await page!.evaluate(() => {
-      const views = Array.from(grok.shell.views);
-      const tableViews = views.filter(v => v.type === 'TableView');
-      const newest = tableViews[tableViews.length - 1];
-      if (newest) grok.shell.v = newest;
-      const tv = grok.shell.tv;
-      const df = tv?.dataFrame;
-      return {rows: df?.rowCount, cols: df?.columns?.length, name: tv?.name, viewCount: views.length};
-    });
-    expect(info.rows).toBeGreaterThan(0);
-    expect(info.cols).toBeGreaterThanOrEqual(5);
-  });
-
-  // Step 6: Modify inputs and verify results
-  await softStep('Modify inputs and verify results update', async () => {
-    // Ensure the PK-PD TableView is active and wait for render
-    await page!.evaluate(async () => {
-      const views = Array.from(grok.shell.views);
-      const tableViews = views.filter(v => v.type === 'TableView');
-      const newest = tableViews[tableViews.length - 1];
-      if (newest) {
-        grok.shell.v = newest;
-        // Click the view tab handle to bring it to front
-        const handle = document.querySelector(`[name="view-handle: ${newest.name}"]`) as HTMLElement;
-        if (handle) handle.click();
-      }
-      await new Promise(r => setTimeout(r, 2000));
-    });
-
-    // Find and modify the dose input (uses name="input-dose" attribute)
-    const result = await page!.evaluate(async () => {
-      const doseInput = document.querySelector('input[name="input-dose"]') as HTMLInputElement;
-      if (!doseInput) return {found: false};
-
-      doseInput.focus();
-      doseInput.select();
-      const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
-      nativeSetter.call(doseInput, '20000');
-      doseInput.dispatchEvent(new Event('input', {bubbles: true}));
-      doseInput.dispatchEvent(new Event('change', {bubbles: true}));
-      doseInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', bubbles: true}));
-      await new Promise(r => setTimeout(r, 3000));
-
-      const canvases = document.querySelectorAll('canvas').length;
-      return {found: true, doseValue: doseInput.value, canvases};
-    });
-
-    expect(result.found).toBe(true);
-    expect(result.canvases).toBeGreaterThanOrEqual(2);
-  });
-
-  // Cleanup
-  await page.evaluate(() => grok.shell.closeAll());
 
   if (stepErrors.length > 0) {
     const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');

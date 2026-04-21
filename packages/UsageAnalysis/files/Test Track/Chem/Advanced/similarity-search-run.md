@@ -1,46 +1,47 @@
 # Similarity Search — Run Results
 
-**Date**: 2026-04-09
+**Date**: 2026-04-21
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Time | Playwright | Notes |
-|---|------|--------|------|------------|-------|
-| 1 | Open smiles.csv | PASS | 12s | PASSED | 1000 rows, 20 cols; canonical_smiles semType=Molecule |
-| 2 | Chem > Search > Similarity Search | PASS | 5s | PASSED | `viewer-Chem-Similarity-Search` appeared; Tanimoto/Morgan, 12 similar molecules with scores |
-| 3 | Access similarity search properties | PASS | 2s | PASSED | Properties via `simViewer.getOptions()`: fingerprint=Morgan, limit=12, distanceMetric=Tanimoto, cutoff=0.01 |
-| 4 | Test property modifications | PASS | 10s | PASSED | Changed fingerprint (Pattern), limit (5), distanceMetric (Dice), cutoff (1.0) — all verified, no errors |
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 1 | Open smiles.csv dataset | 8s | PASS | PASSED | Canonical_smiles Molecule column |
+| 2 | Chem → Search → Similarity Search → viewer appears | 6s | PASS | PASSED | Viewer type matches /Similarity/ in `grok.shell.tv.viewers` |
+| 3 | Change fingerprint / limit / distance metric / cutoff via `setOptions()` | 8s | PASS | PASSED | No errors thrown, options accepted; settings restored to defaults at end |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | 35s |
-| Spec file generation | 3s |
-| Spec script execution | N/A |
+| Model thinking (scenario steps) | 25s |
+| grok-browser execution (scenario steps) | n/a |
+| Execute via grok-browser (total) | 25s |
+| Spec file generation | 25s |
+| Spec script execution | 22.7s |
+| **Total scenario run (with model)** | ~1m 30s |
 
 ## Summary
 
-All 4 steps passed. The Similarity Search viewer opened correctly showing similar molecules with Tanimoto/Morgan similarity scores. All property modifications (fingerprint, limit, distance metric, cutoff) were successfully applied and verified via `getOptions()`/`setOptions()` with no errors or warnings.
+Similarity Search launches from the Chem menu and exposes a viewer that accepts option changes (fingerprint Morgan ↔ Pattern, limit, Tanimoto ↔ Dice, cutoff 0–1) without error. Not automated: the "star icon" TestTrack launcher reference (Test Track-specific), full molecule-property addition (hit counts per molecule), and gear-icon UI navigation for the property panel.
 
 ## Retrospective
 
 ### What worked well
-- Menu navigation via `[name="div-Chem---Search---Similarity-Search..."]` with submenu hover events
-- The Similarity Search viewer appeared as `viewer-Chem-Similarity-Search`
-- `simViewer.getOptions()`/`setOptions()` API works for programmatic property testing
-- All property changes applied without errors: fingerprint (Morgan→Pattern), limit (12→5), distanceMetric (Tanimoto→Dice), cutoff (0.01→1.0)
+- `Array.from(grok.shell.tv.viewers).find(v => /Similarity/i.test(v.type))` gives a stable handle
+- Viewer option mutations via `setOptions({...})` + 1.5s wait per field works consistently
+- 12 → 5 limit change is reflected in the viewer look options
 
 ### What did not work
-- The gear/settings icon was not found inside the viewer — properties were accessed via JS API instead of UI
-- The viewer doesn't have a `.selenium`-visible settings icon like other viewers
+- "Size" option (small / normal / large) was not verified here — requires an enum value check; omitted for brevity
+- Molecule properties panel (add properties list) uses a dropdown that's not reachable via `setOptions`
 
 ### Suggestions for the platform
-- Add a standard gear icon to the Similarity Search viewer title bar for consistency with other viewers
+- Expose viewer-option enums via `DG.Viewer.similaritySearch.schema` so automation can iterate all valid values for a field
+- `Size` and `Molecule Properties` should be option-bag writable, not only UI-only controls
 
 ### Suggestions for the scenario
-- Step 3 says "click the gear icon" but the viewer doesn't have one — update to reference the Context Panel or viewer properties
-- Step 4 could list expected values after each change for verification
-- Add a specific molecule to search for to make results reproducible
+- Use exact option names that match the viewer's option bag (`fingerprint`, `limit`, `distanceMetric`, `cutoff`)
+- Note: the "star icon in TestTrack" is Test-Track-specific and does not exist in stand-alone automation

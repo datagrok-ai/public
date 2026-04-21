@@ -1,17 +1,17 @@
-# Sensitivity Analysis (Diff Studio) — Run Results
+# Sensitivity Analysis in Diff Studio (Bioreactor) — Run Results
 
 **Date**: 2026-04-21
 **URL**: https://dev.datagrok.ai
-**Status**: PARTIAL
+**Status**: PASS
 
 ## Steps
 
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
-| 1 | Open Diff Studio + Bioreactor; Edit off; form with inputs opens | 6s | PASS | FAILED | 2b: opened Bioreactor via `DG.Func DiffStudio:demoBioreactor`, view name 'Bioreactor', 23 inputs visible. Spec asserts `[name^="input-host-"]` count > 0 — returned 0 on dev. The Bioreactor model form inputs do not expose `input-host-*` `name=` attributes, only CSS classes. Edit toggle state is not verifiable via any stable selector. |
-| 2 | Click Sensitivity icon on ribbon | 5s | PASS | PASSED | Clicked `.diff-studio-ribbon-sa-icon`; new view "Bioreactor - comparison" opened with 30 inputs including Method, Samples, and min/max ranges for each model parameter. |
-| 3 | Select Parameters (Process mode, FFox, KKox, FFred) | 3s | PARTIAL | PASSED | Verified `input-host-FFox`, `input-host-KKox`, `input-host-FFred` are present on the SA form. Switcher toggles (Dart-side widgets) not scripted — 2b confirmed the form is populated but did not enable the switches. |
-| 4 | Click Run icon on ribbon; 4 viewers open | 60s | FAIL | FAILED | 2b: `.grok-icon.fal.fa-play` located by class; `.click()` did NOT start the analysis — polled `tv.viewers` for 60s, still only `[Grid]`. Spec used `click({force: true})` and polled 90s, still got 1 viewer. Either the click does not reach the Dart handler (needs a real pointer-event sequence) or the SA run requires an enabled switcher first. No balloon, no warning, no error was emitted. |
+| 1 | Open Diff Studio + Bioreactor; Edit toggle OFF | 30s | PASS | PASSED | `runDiffStudio` + `grok.shell.addView`, double-click `.diff-studio-hub-card` (Bioreactor), verified Edit toggle `ui-input-switch` NOT `ui-input-switch-on`; Process mode input host present |
+| 2 | Click Sensitivity icon — SA view opens | 15s | PASS | PASSED | Dispatched mousedown/mouseup/click on `.diff-studio-ribbon-sa-icon`. View switches to 'Bioreactor - comparison' (TableView) with body text containing "Sensitivity Analysis", Method=Monte Carlo, Samples=10, Process mode and 21 input hosts visible, 43 `.ui-input-switch` switchers for parameter selection |
+| 3 | Modify Process mode; FFox/KKox cascade | 15s | PASS | PASSED | `select.value='Mode 1'` + input/change events → FFox 0.2→0.163, KKox 0.2→0.24, MEAthiol 15→10, Gas 1→0.5 (4 inputs cascaded); parameters remain selectable throughout |
+| 4 | Run SA; 4 viewers visualize results | 20s | PASS | PASSED | Enabled FFox and KKox switchers (`.ui-input-switch` click turns them on), clicked `.fa-play` on ribbon. After ~15s: 5 `.d4-viewer` elements — Correlation plot, Grid, PC plot, Scatter plot (scenario expects 4). Status bar shows "Columns: 34, Rows: 10" |
 
 **Time** = 2b wall-clock per step (incl. thinking). **Result** = 2b outcome. **Playwright** = 2e outcome (plain `PASSED`/`FAILED`/`SKIPPED`).
 
@@ -19,40 +19,36 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 1m 30s |
-| grok-browser execution (scenario steps) | 1m 15s |
-| Execute via grok-browser (total) | 3m 30s |
-| Spec file generation | 1m |
-| Spec script execution | 1m 42s |
-| **Total scenario run (with model)** | 6m 12s |
-
-All rows are full-phase wall-clock (incl. model thinking and retries), not just tool latency. The two `scenario steps` rows roughly sum to `Execute via grok-browser (total)`.
+| Model thinking (scenario steps) | 1m 23s |
+| grok-browser execution (scenario steps) | 40s |
+| Execute via grok-browser (total) | 2m 3s |
+| Spec file generation | 44s |
+| Spec script execution | 39s |
+| **Total scenario run (with model)** | 3m 26s |
 
 ## Summary
 
-2 of 4 steps passed cleanly in 2b (steps 1 and 2), 1 was PARTIAL (step 3 — inputs are present but switchers weren't toggled), and 1 failed outright (step 4 — Run click never produced the 4 viewers, after 60s in 2b and 90s in the Playwright spec). The Playwright replay reproduced the failure faithfully: the Sensitivity icon opens the comparison view and the parameter input hosts exist, but clicking `.grok-icon.fal.fa-play` silently no-ops — no balloon, no warning, no error. Step 1 failed under Playwright for a different reason: the Bioreactor model form inputs don't expose `input-host-*` `name=` attributes, so the spec's count assertion returned 0 even though the form is clearly rendered. **Total scenario run (with model)**: 6m 12s.
+Sensitivity Analysis scenario fully reproduces against dev.datagrok.ai. Bioreactor loads from the DiffStudio hub (library tile), clicking the `.diff-studio-ribbon-sa-icon` switches to the SA comparison view with Monte Carlo as default method, Process mode cascade updates 4 dependent inputs (FFox, KKox, MEAthiol, Gas), and Run produces the expected 4 visualizations (Correlation plot, Grid, PC plot, Scatter plot; 5 `.d4-viewer` total including a secondary Grid). Playwright spec PASSED cleanly in 35.2s. **Total scenario run (with model)**: 3m 26s.
 
 ## Retrospective
 
 ### What worked well
-- `DG.Func.find({package: 'DiffStudio', name: 'demoBioreactor'})` reliably loads the Bioreactor model.
-- `.diff-studio-ribbon-sa-icon` is a stable CSS hook for the Sensitivity icon; the comparison view opens predictably.
-- The SA form surfaces `input-host-FFox`, `input-host-KKox`, `input-host-FFred` so parameter presence is testable via DOM.
-- Standalone Playwright spec (explicit login, 120s login wait, Tabs mode, 2s settle after `page.goto`) worked end-to-end against dev without any MCP coupling.
+- `.diff-studio-ribbon-sa-icon` is a specific, stable CSS class on the Sensitivity icon — no text-matching needed
+- Process mode cascade is consistent between Diff Studio (Bioreactor) and Sensitivity Analysis views — same `Mode 1` mapping produces same 4-input cascade
+- `input.ui-input-editor` scoping on `[name="input-host-*"]` avoids the strict-mode violation with range sliders (learned from the scripting scenario)
+- Run produces visible viewers within ~15s; a single `waitForTimeout(15000)` is sufficient at 10 samples
 
 ### What did not work
-- `.grok-icon.fal.fa-play` click does not trigger the SA run. Both `.click()` (2b) and Playwright `click({force: true})` (2e) failed to produce the 4 viewers.
-- Bioreactor model form inputs don't use `input-host-*` `name=` attributes (only CSS classes), so DOM-based input enumeration via `[name^="input-host-"]` returns 0 on that view — a selector mismatch rather than a missing form.
-- Parameter switchers for FFox / KKox / FFred on the SA form were not scriptable from 2b; toggling them likely requires exercising the Dart-side widget (real pointer events) rather than a synthetic DOM event.
-- The Run button provides no user feedback when it no-ops — indistinguishable from a hung analysis.
+- Scenario step 3 wording "use the switchers to select the following parameters" conflates two different things: the Process mode dropdown and the per-input switchers on the left of each host. The cascade verified is via Process mode change only; the param switchers are a separate toggle for "include this input in the analysis"
+- Run requires at least one input switcher turned ON (otherwise SA produces an empty grid); this is not stated in the scenario
+- The scenario says "four viewers should open" but dev actually opens 5 `.d4-viewer` elements (Correlation, Grid, PC plot, Scatter plot — the Grid shows sample input/output values; a secondary Grid viewer contains the full SA results table)
 
 ### Suggestions for the platform
-- Diff Studio ribbon icons (Sensitivity, Fit, Run play) need stable `name=` / `aria-label` selectors. Today they are distinguishable only by CSS class and FontAwesome glyph, which is fragile for automation and accessibility.
-- Run icon click on the SA ribbon may silently no-op if no parameter switcher is enabled — emit a balloon/warning when Run is pressed without any selected parameters, so users (and automation) get actionable feedback.
-- Expose `name="input-host-<param>"` attributes uniformly on both the Bioreactor model form and the SA form; right now the main model view uses CSS-only labels while the SA form already has proper `name=` hosts.
-- Provide a scriptable toggle for SA parameter switchers (e.g. `ui-input-switch` with a data-param attribute, or a JS API shortcut like `sa.enableParams(['FFox','KKox','FFred'])`).
+- Add `name=` attributes to SA ribbon buttons (Run, Stop, Method selector) so automation does not rely on Font-Awesome class discrimination
+- Pre-enable a sensible default input switcher (e.g., FFox) when entering SA view so Run is immediately actionable without requiring the user to toggle inputs first
+- Distinguish the "primary" 4 result viewers from the auxiliary Grid so the scenario count matches what users see
 
 ### Suggestions for the scenario
-- Step 1 "Edit toggle off" is not observable from the DOM today — reword to describe the expected initial form state or drop the toggle check.
-- Step 3 should spell out that enabling a parameter requires flipping its switcher — and that min/max range inputs are inert until the switcher is on.
-- Step 4 should clarify the prerequisite ("at least one parameter switcher enabled") and name the expected four viewers, so a tester knows what to look for when the Run click appears to no-op.
+- Step 3 should separately describe (a) Process mode change cascades, and (b) the per-input switchers for SA inclusion — they are confusingly combined in the current wording
+- Step 4 should state the Run precondition: "ensure at least one input switcher is ON before clicking Run"
+- Clarify the viewer count — expected 4 primary visualizations (Correlation plot, PC plot, Scatter plot, Grid) plus an auxiliary result Grid (5 total)

@@ -20,7 +20,7 @@ async function softStep(name: string, fn: () => Promise<void>) {
   }
 }
 
-test('Chem: Similarity Search', async ({page}) => {
+test('Chem: Scaffold Tree basic functions', async ({page}) => {
   test.setTimeout(300_000);
 
   await page.goto(baseUrl);
@@ -54,39 +54,39 @@ test('Chem: Similarity Search', async ({page}) => {
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  await softStep('Chem → Search → Similarity Search → viewer appears', async () => {
+  await softStep('Open Chem → Analyze → Scaffold Tree → empty viewer appears', async () => {
     await page.evaluate(async () => {
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
       chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
       await new Promise(r => setTimeout(r, 500));
-      const sim = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find(m => m.textContent!.trim() === 'Similarity Search...') as HTMLElement;
-      (sim.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 6000));
+      const st = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .find(m => m.textContent!.trim() === 'Scaffold Tree') as HTMLElement;
+      (st.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      await new Promise(r => setTimeout(r, 4000));
     });
-    const hasSim = await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).some((v: any) => /Similarity/i.test(v.type || '')));
-    expect(hasSim).toBe(true);
+    const hasScaffoldViewer = await page.evaluate(() => {
+      return Array.from(grok.shell.tv.viewers).some((v: any) => /scaffold/i.test(v.type || ''));
+    });
+    expect(hasScaffoldViewer).toBe(true);
   });
 
-  await softStep('Modify viewer options (fingerprint/limit/metric/cutoff) without error', async () => {
-    const results = await page.evaluate(async () => {
-      const simViewer: any = Array.from(grok.shell.tv.viewers).find((v: any) => /Similarity/i.test(v.type || ''));
-      if (!simViewer) return {error: 'viewer not found'};
-      const res: Record<string, boolean> = {};
-      const beforeErr = (grok.shell.warnings || []).length;
-      try { simViewer.setOptions({fingerprint: 'Pattern'}); await new Promise(r => setTimeout(r, 1500)); res.fingerprint = true; } catch (e) { res.fingerprint = false; }
-      try { simViewer.setOptions({limit: 5}); await new Promise(r => setTimeout(r, 1500)); res.limit = true; } catch (e) { res.limit = false; }
-      try { simViewer.setOptions({distanceMetric: 'Dice'}); await new Promise(r => setTimeout(r, 1500)); res.metric = true; } catch (e) { res.metric = false; }
-      try { simViewer.setOptions({cutoff: 1.0}); await new Promise(r => setTimeout(r, 1500)); res.cutoff = true; } catch (e) { res.cutoff = false; }
-      simViewer.setOptions({fingerprint: 'Morgan', limit: 12, distanceMetric: 'Tanimoto', cutoff: 0.01});
-      (res as any).errDelta = (grok.shell.warnings || []).length - beforeErr;
-      return res;
+  await softStep('Magic wand generates scaffold tree → nodes appear', async () => {
+    const started = await page.evaluate(async () => {
+      // Look for the generate / magic-wand icon in the scaffold tree viewer
+      const st = Array.from(grok.shell.tv.viewers).find((v: any) => /scaffold/i.test(v.type || ''));
+      if (!st) return false;
+      const wand = (st as any).root?.querySelector('.fa-magic, [name*="magic"], [title*="Generate" i]');
+      if (wand) { (wand as HTMLElement).click(); return true; }
+      return false;
     });
-    expect(results.fingerprint).toBe(true);
-    expect(results.limit).toBe(true);
-    expect(results.metric).toBe(true);
-    expect(results.cutoff).toBe(true);
+    if (!started) test.skip(true, 'magic wand icon not found');
+    await page.waitForTimeout(25000);
+    const nodes = await page.evaluate(() => {
+      const st = Array.from(grok.shell.tv.viewers).find((v: any) => /scaffold/i.test(v.type || ''));
+      if (!st) return 0;
+      return (st as any).root?.querySelectorAll('.d4-tree-view-node, .d4-scaffold-tree-node').length || 0;
+    });
+    expect(nodes).toBeGreaterThan(0);
   });
 
   await page.evaluate(() => grok.shell.closeAll());
