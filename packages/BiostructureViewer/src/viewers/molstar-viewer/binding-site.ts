@@ -159,7 +159,11 @@ export async function buildBindingSiteComponentFromPositions(
   if (wholeResidues) {
     try {
       const sel = StructureSelection.Singletons(proteinStructureData, subStructure);
-      const expanded = Q.modifiers.wholeResidues((() => sel) as any);
+      // Mol*'s `wholeResidues` expects a StructureQuery `(ctx) => selection`; we
+      // pass a thunk that ignores ctx and returns an already-computed selection.
+      // The runtime contract is respected — only the signature doesn't match.
+      const thunk = (() => sel) as unknown as StructureQuery;
+      const expanded = Q.modifiers.wholeResidues(thunk);
       const expandedSel = StructureQuery.run(expanded, proteinStructureData);
       subStructure = StructureSelection.unionStructure(expandedSel);
     } catch (e) {
@@ -229,6 +233,15 @@ export type BindingSiteOverlayHandlers = {
   hasPolymer: () => boolean;
 };
 
+/** Overlay root element with the imperative methods the viewer uses to drive
+ *  layout and cleanup. The methods are attached as expandos in
+ *  `createBindingSiteOverlay`; declaring them here keeps callers type-safe. */
+export type BindingSiteOverlayElement = HTMLElement & {
+  _bsvReposition?: () => void;
+  _bsvRefreshUI?: () => void;
+  _bsvCleanup?: () => void;
+};
+
 /**
  * Computes the vertical offset from `ancestor`'s padding box to `descendant`'s
  * top edge, using `offsetTop`/`offsetParent` chain. Returns local (unzoomed)
@@ -294,12 +307,13 @@ function positionOverlayRelativeToStrip(wrapper: HTMLElement): void {
  * Creates the binding-site overlay DOM element.
  * The element is positioned absolute to visually extend the .msp-viewport-controls
  * strip downward. The caller appends it to viewer.root, then should call
- * `(wrapper as any)._bsvReposition()` once the Mol* strip is in the DOM.
+ * `wrapper._bsvReposition()` once the Mol* strip is in the DOM.
  * @param {BindingSiteOverlayHandlers} handlers state getters/setters and predicates owned by the viewer.
- * @return {HTMLElement} the overlay root element with expando `_bsvReposition` / `_bsvRefreshUI` / `_bsvCleanup`.
+ * @return {BindingSiteOverlayElement} the overlay root element with
+ *   expando methods `_bsvReposition` / `_bsvRefreshUI` / `_bsvCleanup`.
  */
-export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): HTMLElement {
-  const wrapper = document.createElement('div');
+export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): BindingSiteOverlayElement {
+  const wrapper = document.createElement('div') as BindingSiteOverlayElement;
   wrapper.className = 'bsv-bs-overlay';
   wrapper.style.cssText = [
     'position:absolute',
@@ -703,7 +717,7 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   // Exposed so molstar-viewer.ts can trigger repositioning after the Mol*
   // plugin has finished rendering its chrome.
   const reposition = () => { positionOverlayRelativeToStrip(wrapper); attachResizeObserver(); };
-  (wrapper as any)._bsvReposition = () => {
+  wrapper._bsvReposition = () => {
     reposition();
     // Re-try a few times to catch async chrome mounts / panel animations.
     for (const ms of [150, 500, 1500]) setTimeout(reposition, ms);
@@ -718,7 +732,7 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
     refreshUI();
   }, 500);
 
-  (wrapper as any)._bsvCleanup = () => {
+  wrapper._bsvCleanup = () => {
     document.removeEventListener('keydown', onKeydown, {capture: true});
     document.removeEventListener('click', onOutsideClick, {capture: false});
     if (radiusTimer !== null) clearTimeout(radiusTimer);
@@ -727,7 +741,7 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
     if (popover.parentElement) popover.parentElement.removeChild(popover);
   };
 
-  (wrapper as any)._bsvRefreshUI = refreshUI;
+  wrapper._bsvRefreshUI = refreshUI;
 
   refreshUI();
 

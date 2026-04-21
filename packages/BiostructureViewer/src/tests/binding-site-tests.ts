@@ -10,6 +10,17 @@ import {DebounceIntervals, MolstarViewer, PROPS as msvPROPS} from '../viewers/mo
 import {_package} from '../package-test';
 
 
+// Test-only view over the private binding-site internals. A plain interface
+// plus `unknown` bridge is the idiomatic TS way to reach private members from
+// tests without using `any` — the bridge is local to `asInternals`, while
+// every downstream access is fully type-checked.
+interface MolstarViewerInternals {
+  bindingSiteRefs: string[];
+  _isLigandAvailable(): boolean;
+}
+
+const asInternals = (v: MolstarViewer): MolstarViewerInternals => v as unknown as MolstarViewerInternals;
+
 async function loadPdb(sampleRelPath: string): Promise<BiostructureData> {
   return {binary: true, ext: 'pdb', data: await _package.files.readAsBytes(sampleRelPath)};
 }
@@ -51,7 +62,7 @@ category('BindingSite', () => {
     expect(viewer.showBindingSite, false, 'showBindingSite default');
     expect(viewer.bindingSiteRadius, 5, 'bindingSiteRadius default');
     expect(viewer.bindingSiteWholeResidues, true, 'bindingSiteWholeResidues default');
-    expect((viewer as any).bindingSiteRefs.length, 0, 'bindingSiteRefs empty before any toggle');
+    expect(asInternals(viewer).bindingSiteRefs.length, 0, 'bindingSiteRefs empty before any toggle');
   }, {timeout: 20000});
 
   test('pathA-het-in-pdb', async () => {
@@ -60,7 +71,7 @@ category('BindingSite', () => {
     const {viewer} = await createPathAViewerFromSample('samples/1bdq.pdb');
 
     await toggleBindingSite(viewer, true);
-    await awaitCheck(() => (viewer as any).bindingSiteRefs.length >= 2,
+    await awaitCheck(() => asInternals(viewer).bindingSiteRefs.length >= 2,
       'Path A binding site refs not created', 10000);
   }, {timeout: 45000});
 
@@ -68,11 +79,11 @@ category('BindingSite', () => {
     // 1bdq-wo-ligands.pdb has ligand HETs stripped. Toggle should be a noop.
     const {viewer} = await createPathAViewerFromSample('samples/1bdq-wo-ligands.pdb');
 
-    expect((viewer as any)._isLigandAvailable(), false,
+    expect(asInternals(viewer)._isLigandAvailable(), false,
       'Apo structure should not report a ligand');
 
     await toggleBindingSite(viewer, true);
-    expect((viewer as any).bindingSiteRefs.length, 0,
+    expect(asInternals(viewer).bindingSiteRefs.length, 0,
       'Apo structure should produce zero binding-site refs');
   }, {timeout: 45000});
 
@@ -103,11 +114,11 @@ category('BindingSite', () => {
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'Path B requires a current ligand');
 
-    expect((viewer as any)._isLigandAvailable(), true,
+    expect(asInternals(viewer)._isLigandAvailable(), true,
       'Ligand column should be reported as available');
 
     await toggleBindingSite(viewer, true);
-    await awaitCheck(() => (viewer as any).bindingSiteRefs.length >= 2,
+    await awaitCheck(() => asInternals(viewer).bindingSiteRefs.length >= 2,
       'Path B binding site refs not created', 10000);
   }, {timeout: 50000});
 
@@ -115,11 +126,11 @@ category('BindingSite', () => {
     const {viewer} = await createPathAViewerFromSample('samples/1bdq.pdb');
 
     await toggleBindingSite(viewer, true);
-    await awaitCheck(() => (viewer as any).bindingSiteRefs.length >= 2,
+    await awaitCheck(() => asInternals(viewer).bindingSiteRefs.length >= 2,
       'binding site refs not created on enable', 10000);
 
     await toggleBindingSite(viewer, false);
-    expect((viewer as any).bindingSiteRefs.length, 0,
+    expect(asInternals(viewer).bindingSiteRefs.length, 0,
       'bindingSiteRefs should be empty after disable');
   }, {timeout: 45000});
 
@@ -127,7 +138,7 @@ category('BindingSite', () => {
     const {viewer} = await createPathAViewerFromSample('samples/1bdq.pdb');
 
     await toggleBindingSite(viewer, true);
-    await awaitCheck(() => (viewer as any).bindingSiteRefs.length >= 2,
+    await awaitCheck(() => asInternals(viewer).bindingSiteRefs.length >= 2,
       'binding site refs not created on enable', 10000);
 
     viewer.setOptions({[msvPROPS.bindingSiteRadius]: 8});
@@ -136,7 +147,7 @@ category('BindingSite', () => {
 
     // Radius identity change is flaky to assert cross-platform; at minimum
     // the view should still have the component + representation present.
-    expect((viewer as any).bindingSiteRefs.length >= 2, true,
+    expect(asInternals(viewer).bindingSiteRefs.length >= 2, true,
       'bindingSiteRefs should still exist after radius change');
     expect(viewer.bindingSiteRadius, 8, 'radius property should reflect new value');
   }, {timeout: 45000});
@@ -146,7 +157,7 @@ category('BindingSite', () => {
     // report "ligand not available" so the viewer hides the binding-site UI.
     const {viewer} = await createPathAViewerFromSample('samples/1bdq-wo-ligands.pdb');
 
-    expect((viewer as any)._isLigandAvailable(), false,
+    expect(asInternals(viewer)._isLigandAvailable(), false,
       '_isLigandAvailable should be false without a ligand column or HET');
   }, {timeout: 30000});
 });

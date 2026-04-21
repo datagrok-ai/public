@@ -48,6 +48,7 @@ import {
   buildBindingSiteComponentFromPositions,
   getLigandAtomPositions,
   BindingSiteOverlayHandlers,
+  BindingSiteOverlayElement,
 } from './binding-site';
 import {MolScriptBuilder as MS} from 'molstar/lib/mol-script/language/builder';
 
@@ -1213,7 +1214,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   /** Refs of the current binding-site Mol* state objects (for cleanup). */
   private bindingSiteRefs: string[] = [];
   /** The overlay DOM element attached to this.root. Null until first buildViewWithData. */
-  private bindingSiteOverlay: HTMLElement | null = null;
+  private bindingSiteOverlay: BindingSiteOverlayElement | null = null;
 
   /** Idempotently creates and attaches the overlay to this.root. */
   private _ensureBindingSiteOverlay(): void {
@@ -1277,20 +1278,20 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       target.style.position = 'relative';
     if (this.bindingSiteOverlay.parentElement !== target)
       target.appendChild(this.bindingSiteOverlay);
-    (this.bindingSiteOverlay as any)._bsvReposition?.();
+    this.bindingSiteOverlay._bsvReposition?.();
   }
 
   /** Removes the overlay from DOM and unregisters document listeners. */
   private _destroyBindingSiteOverlay(): void {
     if (!this.bindingSiteOverlay) return;
-    (this.bindingSiteOverlay as any)._bsvCleanup?.();
+    this.bindingSiteOverlay._bsvCleanup?.();
     this.bindingSiteOverlay.remove();
     this.bindingSiteOverlay = null;
   }
 
   /** Push current viewer state to the overlay without re-creating it. */
   private _refreshBindingSiteOverlay(): void {
-    (this.bindingSiteOverlay as any)?._bsvRefreshUI?.();
+    this.bindingSiteOverlay?._bsvRefreshUI?.();
   }
 
   /**
@@ -1314,7 +1315,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (!focusBehaviorRef) return;
     try {
       const b = plugin.state.behaviors.build();
-      b.to(focusBehaviorRef).update((old: any) => ({...old, components: []}));
+      b.to(focusBehaviorRef).update((old) => ({...old, components: []}));
       await plugin.runTask(plugin.state.behaviors.updateTree(b));
     } catch (e) {
       this.logger.warning(`_disableMolstarAutoFocusRepresentation failed: ${String(e)}`);
