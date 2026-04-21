@@ -51,7 +51,7 @@ RTD source: `libraries/compute-utils/reactive-tree-driver/`
 
 ### Core Concepts
 
-- **Tree structure**: Composed of nested pipeline nodes and FuncCallNode leaves. Pipeline types: `static` (immutable sequence), `parallel` (independent items, add/remove at runtime), `sequential` (mutable sequence, items can use data from previous items).
+- **Tree structure**: Composed of nested pipeline nodes and FuncCallNode leaves. Pipeline types: `static` (immutable sequence), `dynamic` (mutable set of steps, add/remove at runtime), `action` (lightweight placeholder for visibleOn actions). `parallel` and `sequential` are legacy aliases for `dynamic`.
 - **Driver** (`src/Driver.ts`): Main orchestrator. Manages state, commands, validations, consistency. Uses RxJS BehaviorSubjects for reactive state.
 - **Links**: Propagate data between FuncCall inputs/outputs via pattern-matching queries. Roles: `data` (value propagation), `validator` (validation results), `meta` (UI metadata/hooks).
 - **StateTree** (`src/runtime/StateTree.ts`): Tree state management.
