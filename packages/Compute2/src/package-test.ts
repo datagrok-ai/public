@@ -4,6 +4,7 @@ import {TestContext, runTests, tests, initAutoTests as initTests} from '@datagro
 import './test/viewers-hook';
 import './test/app-launch';
 import './test/rfv';
+import './test/navigation';
 
 export const _package = new DG.Package();
 export {tests};

@@ -5,7 +5,7 @@ import * as Vue from 'vue';
 import {BigButton, Button, DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel, tooltip} from '@datagrok-libraries/webcomponents-vue';
 import {
   isFuncCallState, isParallelPipelineState,
-  isSequentialPipelineState,
+  isSequentialPipelineState, isStaticPipelineState,
   PipelineState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -822,8 +822,6 @@ export const TreeWizard = Vue.defineComponent({
               buttonActions={buttonActions.value}
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'
-              onProceedClicked={onPipelineProceed}
-              onBackClicked={goBack}
               onUpdate:funcCall={onPipelineFuncCallUpdate}
               onAddNode={({itemId, position}) => {
                 if (chosenStepUuid.value)
@@ -831,7 +829,25 @@ export const TreeWizard = Vue.defineComponent({
               }}
               ref={pipelineViewRef}
               view={currentView.value}
-            />
+            >
+              {{
+                navigation: () => {
+                  const isAction = isStaticPipelineState(chosenStepState.value!) && chosenStepState.value!.isActionStep;
+                  return (
+                    <>
+                      { !isRootChoosen.value &&
+                        <Button onClick={goBack} style={{'margin-right': 'auto'}}>
+                          Back
+                        </Button>
+                      }
+                      <BigButton onClick={isAction ? goNextStep : onPipelineProceed}>
+                        Next
+                      </BigButton>
+                    </>
+                  );
+                },
+              }}
+            </PipelineView>
           }
         </DockManager>
       </div>, [[ifOverlapping, isGlobalLocked.value || !treeState.value]])

@@ -128,12 +128,21 @@ import {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driv
 ```bash
 # From packages/Compute2/
 npm install                # Install dependencies
+grok link                  # Link local libraries (REQUIRED before building)
 npm run build              # grok api && grok check --soft && webpack
 npm run build-all          # Build full chain: js-api -> utils -> compute-utils -> Compute2
 npm run lint               # ESLint check
 npm run lint-fix           # ESLint auto-fix
-npm run link-all           # Link local datagrok-api and @datagrok-libraries/*
 ```
+
+### Local Libraries Must Be Linked
+
+**Always use `grok link` before building.** Compute2 must build against the local source of
+`@datagrok-libraries/compute-utils`, `@datagrok-libraries/utils`, etc. — not the npm-published copies
+in `node_modules`. The npm versions exist only so CI can resolve dependencies; for local development
+they are stale and will mask type errors or miss recent changes.
+
+After `npm install` (which restores npm copies), always re-run `grok link` to re-establish symlinks.
 
 ### Building After RTD Changes
 

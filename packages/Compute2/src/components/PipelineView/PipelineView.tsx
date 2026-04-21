@@ -5,7 +5,7 @@ import * as Vue from 'vue';
 import {DockManager, IconFA, ifOverlapping, MarkDown, RibbonMenu, RibbonPanel, tooltip} from '@datagrok-libraries/webcomponents-vue';
 import {History} from '../History/History';
 import {hasAddControls, PipelineWithAdd} from '../../utils';
-import {isFuncCallState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {isFuncCallState, isStaticPipelineState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useHelp} from '../../composables/use-help';
 import {hasContextHelp} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
@@ -38,12 +38,10 @@ export const PipelineView = Vue.defineComponent({
   },
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
-    'proceedClicked': () => true,
-    'backClicked': () => true,
     'actionRequested': (_actionUuid: string) => true,
     'addNode': (_data: {itemId: string, position: number}) => true,
   },
-  setup(props, {emit}) {
+  setup(props, {emit, slots}) {
     Vue.onRenderTriggered((event) => {
       console.log('PipelineView onRenderTriggered', event);
     });
@@ -76,15 +74,15 @@ export const PipelineView = Vue.defineComponent({
       if (el === functionsRef.value) functionsHidden.value = true;
     };
 
-    const hasInnerStep = Vue.ref(false);
     const name = Vue.ref('');
     const version = Vue.ref<string | undefined>(undefined);
+    const isActionStep = Vue.ref(false);
 
     Vue.watch(state, (state) => {
-      hasInnerStep.value = !isFuncCallState(state) && state.steps.length > 0;
       name.value = !isFuncCallState(state) ? (state.friendlyName ?? state.nqName ?? '') : '';
       version.value = !isFuncCallState(state) ? (state.version ?? '') : '';
       disableHistory.value = !isFuncCallState(state) ? state.disableHistory : false;
+      isActionStep.value = isStaticPipelineState(state) && !!state.isActionStep;
     }, {immediate: true});
 
     Vue.watch(currentCall, (call) => {
@@ -92,6 +90,8 @@ export const PipelineView = Vue.defineComponent({
     }, {immediate: true});
 
     const description = Vue.computed(() => {
+      if (isActionStep.value)
+        return `Available actions${name.value ? ` for ${name.value}` : ''}:`;
       return `This is ${name.value} workflow${version.value ? ` version ${version.value}` : ''}. You may:`;
     });
 
@@ -121,34 +121,18 @@ export const PipelineView = Vue.defineComponent({
               dock-spawn-dock-type='fill'
               dock-spawn-title='Actions'
               {...{mode: 'Card'}}
-              class={'p-2'}
+              class={'p-2 flex flex-col'}
               style={{overflow: 'auto'}}
             >
               <div
-                style={{minWidth: '200px'}}
+                style={{minWidth: '200px', flex: '1'}}
               >
                 <span>
                   {description.value}
                 </span>
 
                 <div class={'grok-gallery-grid'}>
-                  { hasInnerStep.value &&
-                    <div
-                      class={cardsClasses}
-                      onClick={() => emit('proceedClicked')}
-                    >
-                      <IconFA name='plane-departure' class={'d4-picture'} />
-                      <div> Proceed to the first step </div>
-                    </div> }
-                  { !isRoot.value &&
-                    <div
-                      class={cardsClasses}
-                      onClick={() => emit('backClicked')}
-                    >
-                      <IconFA name='long-arrow-left' class={'d4-picture'} />
-                      <div> Go Back </div>
-                    </div> }
-                  { hasContextHelp(currentCall.value?.func) &&
+                  { !isActionStep.value && hasContextHelp(currentCall.value?.func) &&
                     <div
                       class={cardsClasses}
                       onClick={() => {
@@ -160,7 +144,7 @@ export const PipelineView = Vue.defineComponent({
                       <div> Show help </div>
                     </div>
                   }
-                  { currentCall.value && !disableHistory.value &&
+                  { !isActionStep.value && currentCall.value && !disableHistory.value &&
                     <div
                       class={cardsClasses}
                       onClick={() => historyHidden.value = false}
@@ -177,7 +161,7 @@ export const PipelineView = Vue.defineComponent({
                       <div> { action.friendlyName ?? action.uuid } </div>
                     </div>, [[tooltip, action.description]]))
                   }
-                  { hasAddControls(state.value) &&
+                  { !isActionStep.value && hasAddControls(state.value) &&
                     <div
                       class={cardsClasses}
                       onClick={() => functionsHidden.value = false}
@@ -187,6 +171,11 @@ export const PipelineView = Vue.defineComponent({
                     </div> }
                 </div>
               </div>
+              { slots.navigation &&
+                <div class='flex sticky bottom-0 justify-end' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
+                  {slots.navigation()}
+                </div>
+              }
             </div>
           }
           { (hasAddControls(state.value) && !functionsHidden.value) &&

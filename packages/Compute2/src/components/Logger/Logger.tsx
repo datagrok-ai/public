@@ -96,6 +96,21 @@ export const Logger = Vue.defineComponent({
             <div key={item.uuid + '4'}>
             </div>
           ]);
+        } else if (item.type === 'error') {
+          const dateString = item.timestamp.toISOString();
+          return ([
+            <div key={item.uuid + '1'}>
+              {dateString}
+            </div>,
+            <div key={item.uuid + '2'}>
+              {item.type} ({item.severity})
+              </div>,
+            <div key={item.uuid + '3'}>
+              {item.context}: {item.message}
+            </div>,
+            <div key={item.uuid + '4'}>
+            </div>
+          ]);
         } else {
           const dateString = item.timestamp.toISOString();
           const pathString = formatPath([...item.prefix, ...(item.basePath ?? [])], undefined, undefined, item.id);

@@ -134,6 +134,7 @@ export type PipelineInstanceBase<I, T> = {
 export type PipelineStateStatic<S, T> = PipelineInstanceBase<{
   type: 'static',
   steps: PipelineStateRec<S, T>[];
+  isActionStep?: boolean;
 }, T>;
 
 // dynamic (unified type for both parallel and sequential)
