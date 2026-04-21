@@ -13,7 +13,8 @@ export namespace funcs {
   }
 
   /**
-   * @param {any} smiles
+   * Panel with ADMET predictions for a molecule.
+   * @param {any} smiles - Molecule to predict.
    *   semType: Molecule
    * @returns {Promise<any>}
    */
@@ -22,7 +23,8 @@ export namespace funcs {
   }
 
   /**
-   * @param {string} property
+   * Lists available ADMET properties.
+   * @param {string} property - Category: Absorption, Distribution, Metabolism, Excretion, Toxicity.
    * @returns {Promise<any>}
    */
   export async function getModels(property: string ): Promise<any> {
@@ -30,8 +32,9 @@ export namespace funcs {
   }
 
   /**
-   * @param {DG.DataFrame} table
-   * @param {DG.Column} molecules
+   * Runs ADMET predictions for Hit Triage.
+   * @param {DG.DataFrame} table - Table with molecules.
+   * @param {DG.Column} molecules - Molecule column.
    *   semType: Molecule
    * @param {any} absorption
    *   choices: Admetica:getModels('Absorption')
@@ -58,23 +61,25 @@ export namespace funcs {
   }
 
   /**
-   * @param {DG.DataFrame} table - Input data table
-   * @param {DG.Column} molecules
+   * Predicts ADMET properties and appends result columns.
+   * @param {DG.DataFrame} table - Table with molecules.
+   * @param {DG.Column} molecules - Molecule column.
    *   semType: Molecule
-   * @param {string} template
-   * @param {any} models
-   * @param {boolean} addPiechart
-   * @param {boolean} addForm
+   * @param {string} template - Optional JSON config.
+   * @param {any} models - Properties to compute.
+   * @param {boolean} addPiechart - Add a pie-chart column.
+   * @param {boolean} addForm - Add a form viewer.
    */
   export async function admeticaMenu(table: DG.DataFrame , molecules: DG.Column , template: string , models: any , addPiechart: boolean , addForm: boolean ): Promise<void> {
     return await grok.functions.call('Admetica:AdmeticaMenu', { table, molecules, template, models, addPiechart, addForm });
   }
 
   /**
-   * @param {DG.DataFrame} table
-   * @param {DG.Column} molecules
+   * Predicts ADMET properties for a molecule column.
+   * @param {DG.DataFrame} table - Target table for results.
+   * @param {DG.Column} molecules - Molecule column.
    *   semType: Molecule
-   * @param {any} props
+   * @param {any} props - Properties to compute. All if omitted.
    *   optional: true
    * @returns {Promise<DG.DataFrame>}
    */
@@ -83,8 +88,8 @@ export namespace funcs {
   }
 
   /**
-   * Predicts ADME properties for a given molecule.
-   * @param {string} molecule
+   * Predicts ADMET properties for a given molecule.
+   * @param {string} molecule - Molecule (SMILES or molfile).
    *   semType: Molecule
    * @returns {Promise<DG.DataFrame>}
    */

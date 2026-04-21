@@ -15,7 +15,7 @@ export class PackageFunctions
     grok.shell.info(_package.webRoot);
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({description: 'Lists available optimization targets.'})
   static async getFolders(): Promise<string[]> {  
     const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
     return targetsFiles.filter((dir) =>  dir.isDirectory).map((dir) => dir.name);
@@ -69,12 +69,13 @@ export class PackageFunctions
 
   @grok.decorators.func({
     'name': 'Reinvent',
+    'description': 'Generates molecules from a seed ligand.',
     'editor': 'Reinvent4:ReinventEditor',
     'meta': {'role': 'hitDesignerFunction'}
   })
   static async reinvent(
-    @grok.decorators.param({'options':{'semType':'Molecule','initialValue':'\'OC(CN1CCCC1)NC(CCC1)CC1Cl\''}}) ligand: string,
-    @grok.decorators.param({'options':{'choices':'Reinvent4:getFolders'}}) optimize: string
+    @grok.decorators.param({options: {semType: 'Molecule', initialValue: '\'OC(CN1CCCC1)NC(CCC1)CC1Cl\'', description: 'Seed molecule (SMILES).'}}) ligand: string,
+    @grok.decorators.param({options: {choices: 'Reinvent4:getFolders', description: 'Optimization target.'}}) optimize: string,
   ): Promise<DG.DataFrame> {  
     const resultDfPromise = grok.functions.call('Reinvent4:runReinvent', {
       ligand: ligand,
@@ -119,6 +120,7 @@ export class PackageFunctions
   }
 
   @grok.decorators.func({
+    'description': 'Generates molecules from a seed ligand.',
     'top-menu': 'Chem | Generate molecules...',
     'editor': 'Reinvent4:ReinventEditor'
   })

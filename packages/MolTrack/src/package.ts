@@ -46,7 +46,7 @@ export class PackageFunctions {
     meta: {browsePath: 'Chem', icon: 'images/moltrack.png'},
   })
   static async molTrackApp(
-    @grok.decorators.param({options: {metaUrl: true, optional: true}}) path: string,
+    @grok.decorators.param({options: {metaUrl: true, optional: true, description: 'View to open: "Compound", "Batch", "Register", "Search", "Saved Searches", "Bulk", "Assay", "Schema".'}}) path: string,
   ): Promise<DG.ViewBase> {
     const url = new URL(window.location.href);
     const corporateCompoundId = url.searchParams.get('corporate_compound_id');
@@ -199,7 +199,7 @@ export class PackageFunctions {
     outputs: [{type: 'object', name: 'compound'}],
   })
   static async getCompoundByCorporateId(
-    @grok.decorators.param({}) corporateValue: string,
+    @grok.decorators.param({options: {description: 'Corporate compound ID to look up.'}}) corporateValue: string,
   ) {
     return await MolTrackDockerService.getCompoundByCorporateId(corporateValue);
   }
@@ -209,7 +209,7 @@ export class PackageFunctions {
     outputs: [{type: 'object', name: 'batch'}],
   })
   static async getBatchByCorporateId(
-    @grok.decorators.param({}) corporateValue: string,
+    @grok.decorators.param({options: {description: 'Corporate batch ID to look up.'}}) corporateValue: string,
   ) {
     return await MolTrackDockerService.getBatchByCorporateId(corporateValue);
   }
@@ -220,7 +220,7 @@ export class PackageFunctions {
     outputs: [{type: 'string', name: 'result'}],
   })
   static async registerMolTrackProperties(
-    @grok.decorators.param({}) jsonPayload: string,
+    @grok.decorators.param({options: {description: 'JSON schema defining entity properties to register (name, value_type, entity_type, nullable, etc.).'}}) jsonPayload: string,
   ): Promise<string> {
     return MolTrackDockerService.updateSchema(jsonPayload);
   }
@@ -230,7 +230,7 @@ export class PackageFunctions {
     outputs: [{type: 'string', name: 'result'}],
   })
   static async registerAssays(
-    @grok.decorators.param({}) assayPayload: string,
+    @grok.decorators.param({options: {description: 'JSON describing assays to register (name, properties, result types).'}}) assayPayload: string,
   ): Promise<string> {
     return await MolTrackDockerService.registerAssay(assayPayload);
   }
@@ -240,10 +240,10 @@ export class PackageFunctions {
     outputs: [{type: 'dataframe', name: 'result'}],
   })
   static async registerBulk(
-    @grok.decorators.param({type: 'file'}) csvFile: DG.FileInfo,
-    @grok.decorators.param({}) scope: string,
-    @grok.decorators.param({}) mapping: string,
-    @grok.decorators.param({}) errorHandling: string,
+    @grok.decorators.param({type: 'file', options: {description: 'CSV file with rows to register.'}}) csvFile: DG.FileInfo,
+    @grok.decorators.param({options: {description: 'Entity scope: "compounds", "batches", "assays", "assay_runs", "assay_results".'}}) scope: string,
+    @grok.decorators.param({options: {description: 'JSON mapping CSV columns to MolTrack property names.'}}) mapping: string,
+    @grok.decorators.param({options: {description: '"reject_all" aborts on any invalid row, "reject_row" skips invalid rows.'}}) errorHandling: string,
   ): Promise<DG.DataFrame> {
     return await MolTrackDockerService.registerBulk(csvFile, scope, mapping, errorHandling);
   }
@@ -253,8 +253,8 @@ export class PackageFunctions {
     outputs: [{type: 'dataframe', name: 'df'}],
   })
   static async search(
-    @grok.decorators.param({}) query: string,
-    @grok.decorators.param({}) entityEndpoint: string,
+    @grok.decorators.param({options: {description: 'JSON-encoded MolTrack search query with keys: level, output, filter, output_format.'}}) query: string,
+    @grok.decorators.param({options: {description: 'Entity to search: "compounds", "batches", "assays", "assay_runs", "assay_results".'}}) entityEndpoint: string,
   ) {
     return await MolTrackDockerService.search(JSON.parse(query), entityEndpoint);
   }
@@ -284,7 +284,7 @@ export class PackageFunctions {
     outputs: [{type: 'dataframe', name: 'result'}],
   })
   static async retrieveEntity(
-    @grok.decorators.param({}) scope: string,
+    @grok.decorators.param({options: {description: 'Entity scope: "compounds", "batches", "assays", "assay_runs", "assay_results".'}}) scope: string,
   ): Promise<DG.DataFrame | undefined> {
     const flatten: boolean = true;
     const resultJson = await MolTrackDockerService.retrieveEntity(scope);
