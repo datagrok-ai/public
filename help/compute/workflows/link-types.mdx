@@ -479,6 +479,43 @@ have a matching `id`, nested items are referenced in `steps`
 regardless of a workflow type. For script nodes it is possible to
 provide `initialValues` and `inputRestrictions`.
 
+#### `getSteps`
+
+```
+getSteps(name: string): StepHandle[];
+```
+
+Returns current steps of the target dynamic workflow as an array of
+`StepHandle` objects. Each handle has `configId`, `position`, and an
+internal `_uuid`.
+
+#### `addStep`
+
+```
+addStep(name: string, configId: string, position?: number): void;
+```
+
+Adds a step to the target dynamic workflow by `configId` (must match
+one of the `stepTypes` ids). Optional `position` inserts at the given
+index; omit to append.
+
+#### `removeStep`
+
+```
+removeStep(name: string, step: StepHandle): void;
+```
+
+Removes a step from the target dynamic workflow. Pass a handle
+obtained from `getSteps`.
+
+#### `moveStep`
+
+```
+moveStep(name: string, step: StepHandle, position: number): void;
+```
+
+Moves a step to a new position within the target dynamic workflow.
+
 
 ### Init hook
 
