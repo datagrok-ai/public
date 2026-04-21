@@ -464,6 +464,11 @@ Sets FuncCall to an output query with the specified name.
 
 Used to replace dynamic workflow content. Has a type `pipeline`.
 Targets script io as inputs and dynamic workflows as outputs.
+To target a child dynamic workflow, use a path in `to` (e.g.,
+`to: 'out1:analyses'`). To target the workflow where the action is
+defined (self-reference), use just the query name with no path
+(e.g., `to: 'out1'`).
+
 Controller has additional methods:
 
 #### `setPipelineState`
