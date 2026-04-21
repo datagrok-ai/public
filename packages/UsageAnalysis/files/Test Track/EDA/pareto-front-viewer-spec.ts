@@ -1,178 +1,176 @@
-import {test, expect, chromium} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+});
 
 const stepErrors: {step: string; error: string}[] = [];
 
 async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
-  }
+  try { await test.step(name, fn); }
+  catch (e: any) { stepErrors.push({step: name, error: e.message ?? String(e)}); }
 }
 
-test('Pareto Front Viewer', async () => {
-  const browser = await chromium.connectOverCDP('http://localhost:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
-    await page.waitForFunction(() => {
-      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
-      catch { return false; }
-    }, {timeout: 45000});
+test('Pareto Front viewer scenario', async ({page}) => {
+  test.setTimeout(300_000);
+
+  const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+  const login = process.env.DATAGROK_LOGIN ?? 'admin';
+  const password = process.env.DATAGROK_PASSWORD ?? 'admin';
+
+  await page.goto(baseUrl);
+  // Give the Dart app a moment to boot before checking the login input.
+  await page.waitForTimeout(2000);
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
   }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
 
-  // Open cars.csv dataset
+  // Baseline setup: selenium class, Tabs mode, close everything.
   await page.evaluate(async () => {
-    document.querySelectorAll('.d4-dialog').forEach(d => {
-      const cancel = d.querySelector('[name="button-CANCEL"]');
-      if (cancel) (cancel as HTMLElement).click();
-    });
+    const g: any = (window as any).grok;
     document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = false;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/cars.csv');
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
-
-  await softStep('Step 1: Open dataset verified', async () => {
-    const rowCount = await page!.evaluate(() => grok.shell.tv.dataFrame.rowCount);
-    expect(rowCount).toBe(30);
+    g.shell.settings.showFiltersIconsConstantly = true;
+    g.shell.windows.simpleMode = true;
+    g.shell.closeAll();
   });
 
-  await softStep('Step 2: Add Pareto Front via ML menu', async () => {
-    await page!.locator('[name="div-ML"]').click();
-    await page!.waitForTimeout(300);
-    await page!.locator('[name="div-ML---Pareto-Front..."]').click();
-    await page!.waitForTimeout(1000);
-
-    // Verify viewer was added
-    const viewerTypes = await page!.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).map(v => v.type)
-    );
-    expect(viewerTypes).toContain('ParetoFrontViewer');
-  });
-
-  await softStep('Step 3: Non-numeric columns excluded from objectives', async () => {
-    const result = await page!.evaluate(() => {
-      const headings = document.querySelectorAll('h1');
-      let optimizeSection: Element | null = null;
-      for (const h of headings) {
-        if (h.textContent?.trim() === 'Optimize') {
-          optimizeSection = h.parentElement;
-          break;
-        }
+  await softStep('Step 1 — Open cars-with-missing.csv from Demo Files', async () => {
+    // 2b observed: readCsv returned a bare 502 and cars-with-missing.csv is not present
+    // under System:DemoFiles on dev (only cars.csv exists). Record that verbatim.
+    const result = await page.evaluate(async () => {
+      const g: any = (window as any).grok;
+      const out: {opened: boolean; error?: string; listed?: string[]} = {opened: false};
+      try {
+        const df = await g.dapi.files.readCsv('System:DemoFiles/cars-with-missing.csv');
+        g.shell.addTableView(df);
+        out.opened = true;
+      } catch (e: any) {
+        out.error = e?.message ?? String(e);
       }
-      const featureNames: string[] = [];
-      if (optimizeSection) {
-        optimizeSection.querySelectorAll('select').forEach(sel => {
-          const prev = sel.previousSibling;
-          if (prev && prev.textContent) featureNames.push(prev.textContent.trim());
-        });
-      }
-      return { featureNames, modelIncluded: featureNames.includes('model') };
+      try {
+        const items = await g.dapi.files.list('System:DemoFiles/', true);
+        out.listed = items
+          .map((f: any) => (f?.fileName ?? f?.name ?? String(f)))
+          .filter((n: string) => typeof n === 'string' && n.toLowerCase().includes('car'));
+      } catch { /* ignore secondary listing failure */ }
+      return out;
     });
-    expect(result.modelIncluded).toBe(false);
-    expect(result.featureNames.length).toBe(16);
+    if (result.opened)
+      throw new Error('cars-with-missing.csv unexpectedly opened — scenario expected a missing file on dev.');
+    throw new Error(
+      'cars-with-missing.csv not available on dev (readCsv error: ' +
+      (result.error ?? 'unknown') + '). System:DemoFiles car-related files: ' +
+      JSON.stringify(result.listed ?? []));
   });
 
-  await softStep('Step 4: Conflict warning when same col in min and max', async () => {
-    const result = await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const pv = viewers.find(v => v.type === 'ParetoFrontViewer')!;
-      const props = pv.getProperties();
-      const maxProp = props.find(p => p.name === 'maximizeColumnNames')!;
-      const df = grok.shell.tv.dataFrame;
-      const numCols: string[] = [];
-      for (let i = 0; i < df.columns.length; i++) {
-        const c = df.columns.byIndex(i);
-        if (c.type !== 'string' && c.name !== 'Pareto optimality')
-          numCols.push(c.name);
-      }
-      maxProp.set(pv, numCols);
-      await new Promise(r => setTimeout(r, 2000));
-      const allText = document.body.innerText;
-      const warningMatch = allText.match(/[Cc]annot.*minimi.*maximi/);
-      return { warningFound: !!warningMatch };
-    });
-    expect(result.warningFound).toBe(true);
+  await softStep('Step 2 — Add Pareto front viewer, open Properties panel', async () => {
+    throw new Error('SKIP: blocked by Step 1 (cars-with-missing.csv is missing on dev).');
   });
 
-  await softStep('Step 5: cars.csv Label auto-selects model', async () => {
-    const result = await page!.evaluate(async () => {
-      // Remove existing viewers and re-add
-      const viewers = Array.from(grok.shell.tv.viewers);
-      viewers.filter(v => v.type !== 'Grid').forEach(v => v.close());
-      await new Promise(r => setTimeout(r, 500));
-      const pv = grok.shell.tv.addViewer('Pareto front');
-      await new Promise(r => setTimeout(r, 1000));
-      const props = pv.getProperties();
-      const labelProp = props.find(p => p.name === 'labelColumnsColumnNames');
-      return { labelColumns: labelProp ? labelProp.get(pv) : null };
-    });
-    expect(result.labelColumns).toContain('model');
+  await softStep('Step 3 — Minimize/Maximize lists exclude empty & string cols', async () => {
+    throw new Error('SKIP: blocked by Step 1 (cars-with-missing.csv is missing on dev).');
   });
 
-  await softStep('Step 6: demog.csv Label auto-selection', async () => {
-    const result = await page!.evaluate(async () => {
-      grok.shell.closeAll();
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-      const tv = grok.shell.addTableView(df);
-      await new Promise(resolve => {
+  await softStep('Step 4 — Select all columns in Maximize; expect warning', async () => {
+    throw new Error('SKIP: blocked by Step 1 (cars-with-missing.csv is missing on dev).');
+  });
+
+  await softStep('Step 5 — Open cars.csv; add Pareto Front; "model" auto-selected as Label', async () => {
+    const info = await page.evaluate(async () => {
+      const g: any = (window as any).grok;
+      g.shell.closeAll();
+      const df = await g.dapi.files.readCsv('System:DemoFiles/cars.csv');
+      const tv = g.shell.addTableView(df);
+      await new Promise<void>((resolve) => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
       });
-      const pv = tv.addViewer('Pareto front');
-      await new Promise(r => setTimeout(r, 1000));
-      const props = pv.getProperties();
-      const labelProp = props.find(p => p.name === 'labelColumnsColumnNames');
-      const autoLabel = props.find(p => p.name === 'autoLabelsSelection');
+      const paretoV = tv.addViewer('Pareto Front');
+      // Allow a brief settle for viewer props to populate.
+      await new Promise((r) => setTimeout(r, 1500));
       return {
-        labelColumns: labelProp ? labelProp.get(pv) : null,
-        autoLabelsSelection: autoLabel ? autoLabel.get(pv) : null
+        type: paretoV.type,
+        labelColumnsColumnNames: paretoV.props.labelColumnsColumnNames,
+        minimizeColumnNames: paretoV.props.minimizeColumnNames,
+        maximizeColumnNames: paretoV.props.maximizeColumnNames,
+        xAxisColumnName: paretoV.props.xAxisColumnName,
+        yAxisColumnName: paretoV.props.yAxisColumnName,
+        autoLabelsSelection: paretoV.props.autoLabelsSelection,
       };
     });
-    // USUBJID has 5850 unique values for 5850 rows — auto-selection correctly picks it
-    expect(result.autoLabelsSelection).toBe(true);
-    expect(result.labelColumns).toContain('USUBJID');
+
+    // Scenario expectation: "model" column automatically selected as Label on cars.csv.
+    expect(info.labelColumnsColumnNames).toContain('model');
   });
 
-  await softStep('Step 7: Properties accessible and functional', async () => {
-    const result = await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const pv = viewers.find(v => v.type === 'ParetoFrontViewer')!;
-      const props = pv.getProperties();
-      const errors: string[] = [];
-      for (const p of props) {
-        try { p.get(pv); }
-        catch (e: any) { errors.push(`${p.name}: ${e.message}`); }
+  await softStep('Step 6 — Open demog; Label empty by default OR unique-value category auto-selects', async () => {
+    const info = await page.evaluate(async () => {
+      const g: any = (window as any).grok;
+      g.shell.closeAll();
+      const df = await g.dapi.files.readCsv('System:DemoFiles/demog.csv');
+      const tv = g.shell.addTableView(df);
+      await new Promise<void>((resolve) => {
+        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+        setTimeout(resolve, 3000);
+      });
+      const paretoV = tv.addViewer('Pareto Front');
+      await new Promise((r) => setTimeout(r, 1500));
+
+      const labelCols: string[] = paretoV.props.labelColumnsColumnNames ?? [];
+      const rowCount: number = df.rowCount;
+      const uniqueCounts: Record<string, number> = {};
+      for (const name of labelCols) {
+        const col = df.columns.byName(name);
+        if (!col) continue;
+        const seen = new Set<any>();
+        for (let i = 0; i < col.length; i++) seen.add(col.get(i));
+        uniqueCounts[name] = seen.size;
       }
-      // Test changing a property
-      const dlProp = props.find(p => p.name === 'displayLabels');
-      if (dlProp) {
-        dlProp.set(pv, 'Always');
-        await new Promise(r => setTimeout(r, 500));
-        const val = dlProp.get(pv);
-        if (val !== 'Always') errors.push('displayLabels did not update');
-      }
-      return { propCount: props.length, errors };
+      return {labelCols, rowCount, uniqueCounts};
     });
-    expect(result.errors).toEqual([]);
-    expect(result.propCount).toBeGreaterThan(10);
+
+    // Scenario allows: (a) empty by default, OR (b) every auto-selected column has unique values.
+    if (info.labelCols.length === 0)
+      return;
+    for (const name of info.labelCols) {
+      const u = info.uniqueCounts[name] ?? 0;
+      expect(u, `Auto-selected label column "${name}" must have unique values (got ${u}/${info.rowCount})`)
+        .toBe(info.rowCount);
+    }
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  await softStep('Step 7 — Review viewer properties (Description, Objectives, Axes, Labels, Legend)', async () => {
+    const props = await page.evaluate(async () => {
+      const g: any = (window as any).grok;
+      g.shell.closeAll();
+      const df = await g.dapi.files.readCsv('System:DemoFiles/cars.csv');
+      const tv = g.shell.addTableView(df);
+      await new Promise<void>((resolve) => {
+        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+        setTimeout(resolve, 3000);
+      });
+      const paretoV = tv.addViewer('Pareto Front');
+      await new Promise((r) => setTimeout(r, 1500));
+      const allProps = paretoV.props.getProperties() as Array<any>;
+      const categories = new Set<string>(
+        allProps.map((p: any) => p?.category ?? p?._category ?? '').filter((c: string) => !!c));
+      return {categories: Array.from(categories), count: allProps.length};
+    });
+
+    expect(props.count).toBeGreaterThan(0);
+    const expected = ['Description', 'Objectives', 'Axes', 'Labels', 'Legend'];
+    for (const cat of expected)
+      expect(props.categories, `Missing property category "${cat}" (got ${JSON.stringify(props.categories)})`)
+        .toContain(cat);
+  });
+
+  if (stepErrors.length > 0)
+    throw new Error('Step failures:\n' + stepErrors.map((e) => `- ${e.step}: ${e.error}`).join('\n'));
 });

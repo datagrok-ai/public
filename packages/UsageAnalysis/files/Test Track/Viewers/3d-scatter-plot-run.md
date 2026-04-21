@@ -1,6 +1,6 @@
 # 3D Scatter plot — Run Results
 
-**Date**: 2026-04-20
+**Date**: 2026-04-21
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -9,49 +9,76 @@
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
 | 1 | Open demog dataset | 3s | PASS | PASSED | `grok.dapi.files.readCsv('System:DemoFiles/demog.csv')`; 5850 rows, 11 cols |
-| 2 | Click 3D Scatter plot in Viewers toolbox | 5s | PASS | PASSED | Clicked `[name="icon-3d-scatter-plot"]`; viewer container + canvas appeared; default axes X=AGE, Y=HEIGHT, Z=WEIGHT |
-| 3 | Click point highlights grid row | 4s | PASS | PASSED | Dispatched mousedown/mouseup/click on canvas center; `currentRowIdx` changed 0 → 3262; tooltip with row values rendered |
-| 3 | Scroll wheel zooms | 3s | PASS | PASSED | Dispatched 5 forward + 5 backward wheel events on canvas; view updated (camera rotated/zoomed), canvas remained rendered |
-| 4 | Click gear icon (Settings) opens Property Pane | 2s | PASS | PASSED | Gear `[name="icon-font-icon-settings"]` lives on grandparent element of viewer container; clicking toggled the pane |
-| 4 | Modify properties (Color, Size, markerDefaultSize) | 2s | PASS | PASSED | UI combo-box click in Property Pane did not open a column picker — fell back to `viewer.setOptions({colorColumnName:'SEX', sizeColumnName:'AGE', markerDefaultSize:15})`. Colors changed (F orange / M blue), marker sizes varied by AGE |
+| 2 | Click 3D Scatter plot in Viewers toolbox | 3s | PASS | PASSED | Clicked `[name="icon-3d-scatter-plot"]`; `[name="viewer-3d-scatter-plot"]` appeared; default axes X=AGE, Y=HEIGHT, Z=WEIGHT |
+| 3 | Click point highlights grid row | 2s | PASS | PASSED | MCP click inside viewer region; `currentRowIdx` changed 0 → 1611; grid scrolled to row 1612 with highlighted cell |
+| 3 | Scroll wheel zooms | 2s | PASS | PASSED | Dispatched 5 WheelEvent down on canvas; axes scale visibly changed (HEIGHT axis now spans ~140-200), plot enlarged |
+| 4 | Click gear icon opens Property Pane | 2s | PASS | PASSED | Gear `[name="icon-font-icon-settings"]` lives on viewer grandparent (`.panel-base`); clicking showed pane with Data/Axes/Marker/Events/Misc/Style/Legend/Description sections |
+| 4 | Modify properties reflected in viewer | 3s | PASS | PASSED | UI click on `[name="div-column-combobox-color"]` in the pane did not open a column picker — fell back to `v3d.setOptions({colorColumnName:'RACE', sizeColumnName:'WEIGHT', backColor:0xFFF5F5F5, markerOpacity:90})`. Legend "Asian / Black / Caucasian / Other" rendered at top, markers recolored and resized |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 1m 40s |
+| Model thinking (scenario steps) | 2m 30s |
 | grok-browser execution (scenario steps) | 15s |
-| Execute via grok-browser (total) | 1m 55s |
-| Spec file generation | 30s |
-| Spec script execution | 6s |
-| **Total scenario run (with model)** | 2m 31s |
+| Execute via grok-browser (total) | 2m 45s |
+| Spec file generation | 40s |
+| Spec script execution | 10s |
+| **Total scenario run (with model)** | 3m 35s |
 
 ## Summary
 
-All four scenario steps passed against dev. 3D Scatter plot opens by clicking the Viewers toolbox
-icon, click-on-canvas selects the underlying row in the grid (with tooltip), mouse wheel
-manipulates the 3D view, and properties set via the API reflect immediately in the viewer.
-Playwright spec passed in 3.2s. **Total scenario run (with model): 2m 31s.**
+All four scenario steps passed against dev. 3D Scatter plot mounts via Viewers toolbox icon,
+canvas click selects the underlying row (grid auto-scrolls and highlights), wheel events zoom
+the 3D view, and setting Color/Size/backColor/markerOpacity through the viewer API is reflected
+visually (legend, marker colors & sizes). Playwright spec passed in 10.1s.
+**Total scenario run (with model): 3m 35s.**
 
 ## Retrospective
 
 ### What worked well
-- JS API dataset open + semType wait completed in under a second.
-- `[name="icon-3d-scatter-plot"]` is stable and reliable.
-- `viewer.getOptions().look.*` gives a clean read-back channel for verifying property changes.
-- Click + tooltip confirms row highlighting without needing to decode a WebGL pixel.
+- `[name="icon-3d-scatter-plot"]` and `[name="viewer-3d-scatter-plot"]` are stable.
+- MCP real mouse click on the viewer region hit a marker cleanly — `currentRowIdx`
+  changed and the grid auto-scrolled, which is a deterministic signal.
+- `v3d.setOptions({...})` changes are immediately visible; no refresh needed.
+- `grok.dapi.files.readCsv` + `onSemanticTypeDetected` gives a reliable dataset setup
+  path in ~1s on dev.
 
 ### What did not work
-- The Property Pane column combo-boxes (`[name="div-column-combobox-color"]`) did not open a column picker on `.click()` — the drop-down stayed hidden. Falling back to `viewer.setOptions({colorColumnName: ...})` was needed. Root cause unclear; the combo probably needs a pointerdown + keyboard interaction rather than `.click()`.
-- The viewer's title bar gear icon is rendered on the **grandparent** of `viewer-3d-scatter-plot` (not the container or its immediate parent). Standard `container.querySelector('[name="icon-font-icon-settings"]')` returns `null`, which the viewers reference could call out explicitly.
-- Scroll-wheel zoom does not expose a numeric `zoom`/`camera` property on `viewer.getOptions().look`, so automated regression against "zoom actually happened" is indirect (visual).
+- Property Pane column combobox (`[name="div-column-combobox-color"]` inside
+  `.grok-prop-panel`) did not open a picker on plain `.click()` — popup never appeared.
+  Fell back to JS API. Same issue reported in 2026-04-20 run — recurring.
+- The viewer's title-bar gear icon is on the **grandparent** of `viewer-3d-scatter-plot`
+  (class `.panel-base`), not on the container. `container.querySelector('[name="icon-font-icon-settings"]')`
+  returns null. Inconsistent with other viewers where icons are scoped within the container.
+- Wheel-zoom has no exposed numeric state (`zoom` / `camera`) on `viewer.props` or
+  `getOptions().look`, so asserting "zoom happened" requires visual screenshot, not API.
+- Playwright default `testMatch` is `*.spec.ts` (dot) but the skill convention is
+  `*-spec.ts` (dash). Had to create a temporary config with `testMatch` override to
+  discover the spec.
 
 ### Suggestions for the platform
-- Make `div-column-combobox-*` respond to plain `.click()` by programmatically showing the column drop-down, so UI-driven tests can change columns without falling back to JS API.
-- Expose the 3D scatter plot camera state (zoom/rotation) in `look` so tests can assert camera changes deterministically.
-- Add `body.selenium`-driven title-bar icons directly to the viewer's container (`viewer-<Name>`) rather than a wrapper two levels up, so scoping to the container is sufficient.
+- Make `[name="div-column-combobox-*"]` inside the property pane respond to plain
+  `.click()` by opening the column picker programmatically (same as the canvas-overlay
+  combos). Blocker for UI-first property automation.
+- Move the viewer title-bar icons (`icon-font-icon-settings`, `icon-font-icon-menu`,
+  `icon-font-icon-help`) into `[name="viewer-<Name>"]` so scoping to the container
+  is sufficient.
+- Expose 3D scatter plot camera state (zoom, rotation, pan) in the viewer properties
+  so automated tests can assert view changes without relying on screenshots.
 
 ### Suggestions for the scenario
-- "click the Gear icon. The Property Pane opens" — on dev, the Property Pane often is already open from the right sidebar when a viewer is added. Reword as "click the Gear icon to open/focus the Property Pane for this viewer", and list which sections must exist (Data / Axes / Marker / Style / Legend).
-- Step 3 "Interact with all elements on the viewer" is open-ended — enumerate concrete interactions (single click, right-click context menu, mouse drag rotate, wheel zoom) with expected outcomes.
-- Add an explicit verification step: after modifying Color and Size, check that `Color:` and `Size:` combo boxes on the viewer show the chosen column names, and that the legend reflects the new color column.
+- Rewrite step 3 "Interact with all elements on the viewer" as a concrete bulleted
+  list: single-click (→ current row changes), wheel up / wheel down (→ zoom in / out),
+  mouse drag (→ camera rotation), right-click (→ context menu). Each with a measurable
+  expected outcome.
+- Step 4 "Modify various properties" is vague. Name the specific properties to test
+  (Color, Size, Marker Opacity, Background Color) and require a visible-effect check
+  per property (legend appears, markers resize, background tint, opacity).
+- Precondition: Property Pane may already be docked from the right sidebar. Reword
+  as "click the Gear icon to focus/reveal the Property Pane for this viewer".
+
+### Suggestions for the skill
+- Document that Playwright's default `testMatch` rejects `-spec.ts`; either adopt
+  `.spec.ts` naming or include a one-off `testMatch` override in the run instructions
+  (e.g. `--config` pointing at a temp file, as done here).

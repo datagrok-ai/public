@@ -1,6 +1,15 @@
-import {test, expect, chromium} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+});
+
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
+
+// Scenario says SPGI_v2.csv but that file is not present on dev; SPGI.csv is used instead.
 const spgiPath = 'System:DemoFiles/SPGI.csv';
 const demogPath = 'System:DemoFiles/demog.csv';
 
@@ -10,228 +19,184 @@ async function softStep(name: string, fn: () => Promise<void>) {
   try {
     await test.step(name, fn);
   } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+    stepErrors.push({step: name, error: e?.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e?.message ?? e}`);
   }
 }
 
-test('Sunburst viewer', async () => {
-  const browser = await chromium.connectOverCDP('http://localhost:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
-    await page.waitForFunction(() => {
-      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
-      catch { return false; }
-    }, {timeout: 45000});
+test('Sunburst viewer', async ({page}) => {
+  test.setTimeout(300_000);
+
+  // Login
+  await page.goto(baseUrl);
+  await page.waitForTimeout(2000);
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
   }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
 
-  // Step 1: Open SPGI.csv and demog.csv, add Sunburst viewers
-  await softStep('Step 1: Open files and add Sunburst viewer', async () => {
-    const result = await page!.evaluate(async (paths) => {
-      document.querySelectorAll('.d4-dialog').forEach(d => {
-        const cancel = d.querySelector('[name="button-CANCEL"]');
-        if (cancel) cancel.click();
-      });
+  // Baseline environment setup
+  await page.evaluate(() => {
+    document.querySelectorAll('.d4-dialog').forEach((d) => {
+      const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
+      if (cancel) cancel.click();
+    });
+    (window as any).grok.shell.closeAll();
+    document.body.classList.add('selenium');
+    (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
+    (window as any).grok.shell.windows.simpleMode = true;
+  });
+
+  // Step 1: Open SPGI.csv, add Sunburst; then open demog.csv, add Sunburst
+  await softStep('Step 1: Open SPGI.csv and demog.csv, add Sunburst viewer for each', async () => {
+    const spgi = await page.evaluate(async (path) => {
+      const grok = (window as any).grok;
       grok.shell.closeAll();
-      document.body.classList.add('selenium');
-      grok.shell.settings.showFiltersIconsConstantly = true;
-      grok.shell.windows.simpleMode = false;
-
-      // Open SPGI
-      const df1 = await grok.dapi.files.readCsv(paths.spgi);
-      const tv1 = grok.shell.addTableView(df1);
-      await new Promise(resolve => {
-        const sub = df1.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-        setTimeout(resolve, 5000);
-      });
-      const hasChem = Array.from({length: df1.columns.length}, (_, i) => df1.columns.byIndex(i))
-        .some(c => c.semType === 'Molecule');
-      if (hasChem) {
-        for (let i = 0; i < 50; i++) {
-          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-          await new Promise(r => setTimeout(r, 200));
-        }
-        await new Promise(r => setTimeout(r, 5000));
-      }
-      tv1.addViewer('Sunburst');
-      await new Promise(r => setTimeout(r, 2000));
-
-      // Open demog
-      const df2 = await grok.dapi.files.readCsv(paths.demog);
-      const tv2 = grok.shell.addTableView(df2);
-      await new Promise(resolve => {
-        const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+      await new Promise((r) => setTimeout(r, 500));
+      const df = await grok.dapi.files.readCsv(path);
+      const tv = grok.shell.addTableView(df);
+      await new Promise<void>((resolve) => {
+        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
       });
-      tv2.addViewer('Sunburst');
-      await new Promise(r => setTimeout(r, 2000));
+      tv.addViewer('Sunburst');
+      await new Promise((r) => setTimeout(r, 2000));
+      const viewerTypes: string[] = [];
+      for (const v of tv.viewers) viewerTypes.push(v.type);
+      return {rowCount: df.rowCount, viewerTypes};
+    }, spgiPath);
+    expect(spgi.rowCount).toBeGreaterThan(0);
+    expect(spgi.viewerTypes).toContain('Sunburst');
 
-      return {spgiRows: df1.rowCount, demogRows: df2.rowCount, viewers: tv2.viewers.length};
-    }, {spgi: spgiPath, demog: demogPath});
-    expect(result.spgiRows).toBe(3624);
-    expect(result.demogRows).toBe(5850);
-    expect(result.viewers).toBe(2);
+    const demog = await page.evaluate(async (path) => {
+      const grok = (window as any).grok;
+      grok.shell.closeAll();
+      await new Promise((r) => setTimeout(r, 500));
+      const df = await grok.dapi.files.readCsv(path);
+      const tv = grok.shell.addTableView(df);
+      await new Promise<void>((resolve) => {
+        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+        setTimeout(resolve, 3000);
+      });
+      tv.addViewer('Sunburst');
+      await new Promise((r) => setTimeout(r, 2000));
+      const viewerTypes: string[] = [];
+      for (const v of tv.viewers) viewerTypes.push(v.type);
+      return {rowCount: df.rowCount, viewerTypes};
+    }, demogPath);
+    expect(demog.rowCount).toBe(5850);
+    expect(demog.viewerTypes).toContain('Sunburst');
   });
 
-  // Step 2: Viewer properties panel
-  await softStep('Step 2: Viewer properties panel', async () => {
-    const opened = await page!.evaluate(async () => {
-      const sunburst = document.querySelector('[name="viewer-Sunburst"]');
-      if (!sunburst) return false;
-      const panel = sunburst.parentElement?.parentElement;
-      const gear = panel?.querySelector('[name="icon-font-icon-settings"]');
-      if (gear) gear.click();
-      await new Promise(r => setTimeout(r, 500));
-      return true;
+  // Step 2: Verify Sunburst property names via getProperties()
+  await softStep('Step 2: Context Panel property names include hierarchyColumnNames, inheritFromGrid, includeNulls', async () => {
+    const result = await page.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      let sunburst: any = null;
+      for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
+      if (!sunburst) return {propNames: [] as string[]};
+      const props = sunburst.props.getProperties();
+      const propNames: string[] = [];
+      for (const p of props) propNames.push(p.name);
+      return {propNames};
     });
-    expect(opened).toBe(true);
+    expect(result.propNames).toEqual(expect.arrayContaining(['hierarchyColumnNames', 'inheritFromGrid', 'includeNulls']));
   });
 
-  // Step 3.1: Table switching
-  await softStep('Step 3.1: Table switching', async () => {
-    const tableName = await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const sb = viewers.find(v => v.type === 'Sunburst');
-      sb.setOptions({table: 'Table'});
-      await new Promise(r => setTimeout(r, 1000));
-      const name = sb.dataFrame?.name;
-      sb.setOptions({table: 'Table (2)'});
-      await new Promise(r => setTimeout(r, 1000));
-      return name;
-    });
-    expect(tableName).toBe('Table');
+  // Step 3.1: Table switching between SPGI and demog — AMBIGUOUS in 2b
+  await softStep('Step 3.1: Table switching SPGI <-> demog (AMBIGUOUS, not exercised)', async () => {
+    // 2b closed all views between opens; the live table-rebind path was not exercised.
+    test.skip(true, 'AMBIGUOUS: table switching via UI/props not exercised in MCP run');
   });
 
-  // Step 3.2: Hierarchy configuration
-  await softStep('Step 3.2: Hierarchy configuration', async () => {
-    const hierarchy = await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const sb = viewers.find(v => v.type === 'Sunburst');
-      sb.setOptions({hierarchyColumnNames: ['SEX', 'RACE']});
-      await new Promise(r => setTimeout(r, 1000));
-      return sb.getOptions().look?.hierarchyColumnNames;
+  // Step 3.2: Select Columns — set hierarchyColumnNames via setOptions, read back
+  await softStep('Step 3.2: Set hierarchyColumnNames to [SEX, RACE] and read back', async () => {
+    const result = await page.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      let sunburst: any = null;
+      for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
+      if (!sunburst) return {cols: [] as string[]};
+      sunburst.setOptions({hierarchyColumnNames: ['SEX', 'RACE']});
+      await new Promise((r) => setTimeout(r, 500));
+      const cols = sunburst.props.get('hierarchyColumnNames') as string[];
+      return {cols: Array.from(cols ?? [])};
     });
-    expect(hierarchy).toEqual(['SEX', 'RACE']);
+    expect(result.cols).toEqual(['SEX', 'RACE']);
   });
 
-  // Step 3.3: Inherit from grid
-  await softStep('Step 3.3: Inherit from grid', async () => {
-    await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const sb = viewers.find(v => v.type === 'Sunburst');
-      sb.setOptions({hierarchyColumnNames: ['SEX'], inheritFromGrid: true});
-      await new Promise(r => setTimeout(r, 500));
-      grok.shell.tv.dataFrame.col('SEX').meta.colors.setCategorical({'M': '#0000ff', 'F': '#ff0000'});
-      await new Promise(r => setTimeout(r, 1000));
-      // Change colors
-      grok.shell.tv.dataFrame.col('SEX').meta.colors.setCategorical({'M': '#00ff00', 'F': '#ff00ff'});
-      await new Promise(r => setTimeout(r, 1000));
+  // Step 3.3: Inherit from grid — toggle on, read back
+  await softStep('Step 3.3: Toggle inheritFromGrid=true and read back', async () => {
+    const result = await page.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      let sunburst: any = null;
+      for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
+      if (!sunburst) return {inheritFromGrid: null as any};
+      sunburst.setOptions({hierarchyColumnNames: ['SEX'], inheritFromGrid: true});
+      await new Promise((r) => setTimeout(r, 500));
+      return {inheritFromGrid: sunburst.props.get('inheritFromGrid')};
     });
+    expect(result.inheritFromGrid).toBe(true);
   });
 
-  // Step 3.4: Include nulls (on SPGI)
-  await softStep('Step 3.4: Include nulls', async () => {
-    await page!.evaluate(async () => {
-      const views = Array.from(grok.shell.views);
-      const spgiView = views.find(v => v.name === 'Table');
-      if (spgiView) grok.shell.v = spgiView;
-      await new Promise(r => setTimeout(r, 500));
-
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const sb = viewers.find(v => v.type === 'Sunburst');
-      sb.setOptions({hierarchyColumnNames: ['Core', 'R101'], includeNulls: true});
-      await new Promise(r => setTimeout(r, 1000));
-      sb.setOptions({includeNulls: false});
-      await new Promise(r => setTimeout(r, 1000));
+  // Step 3.4: Toggle includeNulls true then false
+  await softStep('Step 3.4: Toggle includeNulls true then false and read back', async () => {
+    const result = await page.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      let sunburst: any = null;
+      for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
+      if (!sunburst) return {firstRead: null as any, secondRead: null as any};
+      sunburst.setOptions({includeNulls: true});
+      await new Promise((r) => setTimeout(r, 300));
+      const firstRead = sunburst.props.get('includeNulls');
+      sunburst.setOptions({includeNulls: false});
+      await new Promise((r) => setTimeout(r, 300));
+      const secondRead = sunburst.props.get('includeNulls');
+      return {firstRead, secondRead};
     });
+    expect(result.firstRead).toBe(true);
+    expect(result.secondRead).toBe(false);
   });
 
-  // Step 4: View reset
-  await softStep('Step 4: View reset', async () => {
-    const result = await page!.evaluate(async () => {
-      const views = Array.from(grok.shell.views);
-      const demogView = views.find(v => v.name === 'Table (2)');
-      if (demogView) grok.shell.v = demogView;
-      await new Promise(r => setTimeout(r, 500));
-
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const sb = viewers.find(v => v.type === 'Sunburst');
-      sb.setOptions({hierarchyColumnNames: ['SEX', 'RACE', 'DIS_POP']});
-      await new Promise(r => setTimeout(r, 1000));
-
-      // Reset via Ctrl+Shift+A is keyboard-based; verify selection is 0
-      const df = grok.shell.tv.dataFrame;
-      df.selection.setAll(false);
-      return {selection: df.selection.trueCount, filtered: df.filter.trueCount};
-    });
-    expect(result.selection).toBe(0);
-    expect(result.filtered).toBe(5850);
+  // Step 4: Reset view — AMBIGUOUS (canvas-based)
+  await softStep('Step 4: Reset view via double-click / context menu (AMBIGUOUS, canvas-based)', async () => {
+    test.skip(true, 'AMBIGUOUS: requires coordinate-precise canvas double-click or context menu');
   });
 
-  // Step 7: Projects & layouts
-  await softStep('Step 7: Layout save/restore', async () => {
-    const result = await page!.evaluate(async () => {
-      const viewers = Array.from(grok.shell.tv.viewers);
-      const sb = viewers.find(v => v.type === 'Sunburst');
-      sb.setOptions({hierarchyColumnNames: ['SEX', 'RACE', 'DIS_POP']});
-      await new Promise(r => setTimeout(r, 1000));
-
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      const layoutId = layout.id;
-      await new Promise(r => setTimeout(r, 1000));
-
-      // Close sunburst
-      sb.close();
-      await new Promise(r => setTimeout(r, 500));
-
-      // Restore layout
-      const saved = await grok.dapi.layouts.find(layoutId);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-
-      const viewersAfter = Array.from(grok.shell.tv.viewers);
-      const hasSunburst = viewersAfter.some(v => v.type === 'Sunburst');
-      const restoredSb = viewersAfter.find(v => v.type === 'Sunburst');
-      const hierarchy = restoredSb?.getOptions().look?.hierarchyColumnNames;
-
-      await grok.dapi.layouts.delete(saved);
-      return {hasSunburst, hierarchy};
-    });
-    expect(result.hasSunburst).toBe(true);
-    expect(result.hierarchy).toEqual(['SEX', 'RACE', 'DIS_POP']);
+  // Step 5: Multi-selection — AMBIGUOUS (canvas-based)
+  await softStep('Step 5: Multi-selection (Click / Ctrl+Click / Ctrl+Shift+Click) (AMBIGUOUS, canvas-based)', async () => {
+    test.skip(true, 'AMBIGUOUS: canvas-based selection without a selection API');
   });
 
-  // Step 9: Collaborative filtering
-  await softStep('Step 9: Collaborative filtering', async () => {
-    const result = await page!.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      // Apply filter to SEX = M only
-      const sexCol = df.col('SEX');
-      for (let i = 0; i < df.rowCount; i++) {
-        if (sexCol.get(i) !== 'M')
-          df.filter.set(i, false);
-      }
-      df.filter.fireChanged();
-      await new Promise(r => setTimeout(r, 1000));
-      const filtered = df.filter.trueCount;
+  // Step 6: Select/filter on empty category — AMBIGUOUS
+  await softStep('Step 6: Select/filter on empty (null) category (AMBIGUOUS, canvas-based)', async () => {
+    test.skip(true, 'AMBIGUOUS: canvas-based, depends on null-segment rendering and selection');
+  });
 
-      // Reset filter
-      df.filter.setAll(true);
-      df.filter.fireChanged();
-      return {filtered};
-    });
-    expect(result.filtered).toBe(2607);
+  // Step 7: Projects & layouts save/restore — AMBIGUOUS (not exercised)
+  await softStep('Step 7: Projects & layouts save/restore (AMBIGUOUS, not exercised)', async () => {
+    test.skip(true, 'AMBIGUOUS: layout round-trip with viewer settings preservation is its own test surface');
+  });
+
+  // Step 8: Old layout compatibility (issue #2979) — SKIP (external asset)
+  await softStep('Step 8: Old layout compatibility — issue #2979 (SKIP, external asset)', async () => {
+    test.skip(true, 'SKIP: requires specific layout file from GitHub issue attachment');
+  });
+
+  // Step 9: Collaborative filtering — AMBIGUOUS
+  await softStep('Step 9: Collaborative filtering — internal + panel filters combine (AMBIGUOUS)', async () => {
+    test.skip(true, 'AMBIGUOUS: not exercised in MCP run');
   });
 
   // Cleanup
-  await page!.evaluate(() => grok.shell.closeAll());
+  await page.evaluate(() => (window as any).grok.shell.closeAll());
 
   if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
   }
 });

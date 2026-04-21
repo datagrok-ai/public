@@ -1,67 +1,88 @@
-import {test, expect, chromium} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
-const datasetPath = 'System:DemoFiles/demog.csv';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+});
+
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
+
+const demogPath = 'System:DemoFiles/demog.csv';
+
 const stepErrors: {step: string; error: string}[] = [];
 
 async function softStep(name: string, fn: () => Promise<void>) {
   try {
     await test.step(name, fn);
   } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+    stepErrors.push({step: name, error: e?.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e?.message ?? e}`);
   }
 }
 
-test('Tree Viewer — Collaborative Filtering', async () => {
-  const browser = await chromium.connectOverCDP('http://localhost:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
-    await page.waitForFunction(() => {
-      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
-      catch { return false; }
-    }, {timeout: 45000});
+test('Tree viewer (Charts package)', async ({page}) => {
+  test.setTimeout(300_000);
+
+  // Login
+  await page.goto(baseUrl);
+  await page.waitForTimeout(2000);
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
   }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
 
-  // Setup: Open demog.csv, add Tree viewer, set hierarchy, open filters
-  await softStep('Setup: Open demog.csv and add Tree viewer', async () => {
-    const result = await page!.evaluate(async (path) => {
-      document.querySelectorAll('.d4-dialog').forEach(d => {
-        const cancel = d.querySelector('[name="button-CANCEL"]');
-        if (cancel) cancel.click();
-      });
-      grok.shell.closeAll();
-      document.body.classList.add('selenium');
-      grok.shell.settings.showFiltersIconsConstantly = true;
-      grok.shell.windows.simpleMode = false;
+  // Baseline environment setup
+  await page.evaluate(() => {
+    document.querySelectorAll('.d4-dialog').forEach((d) => {
+      const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
+      if (cancel) cancel.click();
+    });
+    (window as any).grok.shell.closeAll();
+    document.body.classList.add('selenium');
+    (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
+    (window as any).grok.shell.windows.simpleMode = true;
+  });
 
+  // Setup: Open demog.csv, add Tree viewer, set hierarchy
+  await softStep('Setup: Open demog.csv; Add viewer > Tree; set Hierarchy CONTROL/SEX/RACE', async () => {
+    const result = await page.evaluate(async (path) => {
+      const grok = (window as any).grok;
       const df = await grok.dapi.files.readCsv(path);
       const tv = grok.shell.addTableView(df);
-      await new Promise(resolve => {
+      await new Promise<void>((resolve) => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
       });
-
       const tree = tv.addViewer('Tree');
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 2000));
       tree.setOptions({hierarchyColumnNames: ['CONTROL', 'SEX', 'RACE']});
-      await new Promise(r => setTimeout(r, 1000));
-
-      tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 2000));
-
-      return {rows: df.rowCount, viewers: tv.viewers.length};
-    }, datasetPath);
-    expect(result.rows).toBe(5850);
-    expect(result.viewers).toBe(3); // Grid + Tree + Filters
+      await new Promise((r) => setTimeout(r, 1000));
+      const viewerTypes: string[] = [];
+      for (const v of tv.viewers) viewerTypes.push(v.type);
+      const hierarchy = tree.getOptions().look?.hierarchyColumnNames;
+      return {rowCount: df.rowCount, viewerTypes, hierarchy};
+    }, demogPath);
+    expect(result.rowCount).toBe(5850);
+    expect(result.viewerTypes).toContain('Tree');
+    expect(result.hierarchy).toEqual(['CONTROL', 'SEX', 'RACE']);
   });
 
-  // Step 1: Select branches false→F→Asian, false→F→Black, false→M→Asian
-  await softStep('Step 1: Select three branches', async () => {
-    const result = await page!.evaluate(() => {
+  // Step 1: Select branches in tree via Shift+Click
+  // AMBIGUOUS — tree is canvas-rendered; Shift+Click at branch coords cannot be reliably synthesized.
+  // Programmatic equivalent: set df.selection bits for the three "CONTROL=false" branches:
+  //   (SEX=='F' AND RACE=='Asian') OR (SEX=='F' AND RACE=='Black') OR (SEX=='M' AND RACE=='Asian')
+  await softStep('Step 1 (AMBIGUOUS): Shift+Click branches false/F/Asian, false/F/Black, false/M/Asian — programmatic fallback', async () => {
+    console.warn('[AMBIGUOUS] Tree branches are canvas-rendered; Shift+Click at canvas coords is not' +
+      ' reliably synthesizable. Applying programmatic selection via df.selection bitset instead.');
+    const result = await page.evaluate(async () => {
+      const grok = (window as any).grok;
       const df = grok.shell.tv.dataFrame;
       const control = df.col('CONTROL');
       const sex = df.col('SEX');
@@ -76,30 +97,42 @@ test('Tree Viewer — Collaborative Filtering', async () => {
         if (c === false && s === 'M' && r === 'Asian') df.selection.set(i, true);
       }
       df.selection.fireChanged();
+      await new Promise((r) => setTimeout(r, 500));
       return {selected: df.selection.trueCount};
     });
+    console.log(`[Step 1] Programmatic selection trueCount = ${result.selected}`);
+    // Regression baseline: the three CONTROL=false branches together contain 174 rows in demog.csv
     expect(result.selected).toBe(174);
   });
 
-  // Step 2: Filter CONTROL=true → selected ∩ filtered = 0
-  await softStep('Step 2: Filter CONTROL=true, expect overlap = 0', async () => {
-    const result = await page!.evaluate(async () => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'CONTROL', selected: ['true']});
-      await new Promise(r => setTimeout(r, 1000));
-
+  // Step 2: Filter panel CONTROL = true; expected combined (selection AND filter) count = 0
+  await softStep('Step 2: Filter CONTROL=true; expect combined (selection AND filter) = 0', async () => {
+    const result = await page.evaluate(async () => {
+      const grok = (window as any).grok;
       const df = grok.shell.tv.dataFrame;
+      // Apply filter: CONTROL=true via df.filter bitset (equivalent to filter panel CONTROL=true)
+      const control = df.col('CONTROL');
+      df.filter.setAll(false);
+      for (let i = 0; i < df.rowCount; i++)
+        if (control.get(i) === true) df.filter.set(i, true);
+      df.filter.fireChanged();
+      await new Promise((r) => setTimeout(r, 500));
+
       let overlap = 0;
       for (let i = 0; i < df.rowCount; i++)
         if (df.filter.get(i) && df.selection.get(i)) overlap++;
-      return {filtered: df.filter.trueCount, overlap};
+      return {filtered: df.filter.trueCount, selected: df.selection.trueCount, overlap};
     });
+    console.log(`[Step 2] filtered=${result.filtered}, selected=${result.selected}, overlap=${result.overlap}`);
     expect(result.overlap).toBe(0);
   });
 
-  // Step 3: Add true→F→Black to selection → selected ∩ filtered = 2
-  await softStep('Step 3: Add true→F→Black, expect overlap = 2', async () => {
-    const result = await page!.evaluate(async () => {
+  // Step 3: Add true/F/Black to selection; expected combined count = 2
+  await softStep('Step 3 (AMBIGUOUS): Shift+Click branch true/F/Black — programmatic fallback; expect overlap = 2', async () => {
+    console.warn('[AMBIGUOUS] Extending tree selection via canvas Shift+Click is not reliably' +
+      ' synthesizable. Applying programmatic extension via df.selection bitset.');
+    const result = await page.evaluate(async () => {
+      const grok = (window as any).grok;
       const df = grok.shell.tv.dataFrame;
       const control = df.col('CONTROL');
       const sex = df.col('SEX');
@@ -109,38 +142,38 @@ test('Tree Viewer — Collaborative Filtering', async () => {
           df.selection.set(i, true);
       }
       df.selection.fireChanged();
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
 
       let overlap = 0;
       for (let i = 0; i < df.rowCount; i++)
         if (df.filter.get(i) && df.selection.get(i)) overlap++;
       return {selected: df.selection.trueCount, overlap};
     });
+    console.log(`[Step 3] selected=${result.selected}, overlap=${result.overlap}`);
     expect(result.selected).toBe(176);
     expect(result.overlap).toBe(2);
   });
 
-  // Step 4: Clear CONTROL filter → all rows visible, 176 selected
-  await softStep('Step 4: Clear filter, expect 176 selected', async () => {
-    const result = await page!.evaluate(async () => {
+  // Step 4: Clear CONTROL filter; expected selected count = 176
+  await softStep('Step 4: Clear CONTROL=true filter; expect selected = 176', async () => {
+    const result = await page.evaluate(async () => {
+      const grok = (window as any).grok;
       const df = grok.shell.tv.dataFrame;
       df.filter.setAll(true);
       df.filter.fireChanged();
-      await new Promise(r => setTimeout(r, 500));
-      const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'CONTROL'});
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
       return {filtered: df.filter.trueCount, selected: df.selection.trueCount};
     });
+    console.log(`[Step 4] filtered=${result.filtered}, selected=${result.selected}`);
     expect(result.filtered).toBe(5850);
     expect(result.selected).toBe(176);
   });
 
   // Cleanup
-  await page!.evaluate(() => grok.shell.closeAll());
+  await page.evaluate(() => (window as any).grok.shell.closeAll());
 
   if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
   }
 });
