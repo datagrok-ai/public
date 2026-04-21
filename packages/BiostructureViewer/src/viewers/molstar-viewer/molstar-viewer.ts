@@ -922,7 +922,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         await this.buildViewLigands(logIndent, callLog);
       }
     }
-    // Attach the V2b overlay after viewer is ready (idempotent)
+    // Attach the overlay after viewer is ready (idempotent)
     this._ensureBindingSiteOverlay();
     // Path A: apply if no ligandColumnName but showBindingSite is already true
     if (this.showBindingSite && !this.ligandColumnName)
@@ -1215,7 +1215,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   /** The overlay DOM element attached to this.root. Null until first buildViewWithData. */
   private bindingSiteOverlay: HTMLElement | null = null;
 
-  /** Idempotently creates and attaches the V2b overlay to this.root. */
+  /** Idempotently creates and attaches the overlay to this.root. */
   private _ensureBindingSiteOverlay(): void {
     if (this.bindingSiteOverlay) return;
     const handlers: BindingSiteOverlayHandlers = {
@@ -1280,7 +1280,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     (this.bindingSiteOverlay as any)._bsvReposition?.();
   }
 
-  /** Removes the V2b overlay from DOM and unregisters document listeners. */
+  /** Removes the overlay from DOM and unregisters document listeners. */
   private _destroyBindingSiteOverlay(): void {
     if (!this.bindingSiteOverlay) return;
     (this.bindingSiteOverlay as any)._bsvCleanup?.();

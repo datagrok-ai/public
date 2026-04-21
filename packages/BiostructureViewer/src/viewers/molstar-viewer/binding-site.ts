@@ -207,7 +207,7 @@ export async function buildBindingSiteComponentFromExpression(
 }
 
 // ---------------------------------------------------------------------------
-// UI — V2b right-strip overlay
+// UI — right-strip overlay
 // ---------------------------------------------------------------------------
 
 const BULLSEYE_SVG =
@@ -291,7 +291,7 @@ function positionOverlayRelativeToStrip(wrapper: HTMLElement): void {
 }
 
 /**
- * Creates the V2b binding-site overlay DOM element.
+ * Creates the binding-site overlay DOM element.
  * The element is positioned absolute to visually extend the .msp-viewport-controls
  * strip downward. The caller appends it to viewer.root, then should call
  * `(wrapper as any)._bsvReposition()` once the Mol* strip is in the DOM.
