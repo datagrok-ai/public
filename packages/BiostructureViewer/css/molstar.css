@@ -3119,22 +3119,55 @@
   display: none !important;
 }
 
-/* ── Binding site overlay: slider thumb (Mol* palette) ──────────────────── */
+/* ── Binding site overlay: slider (Mol* palette) ─────────────────────────
+   Explicitly styles track + thumb (and their focus states) so the browser
+   never falls back to its OS-accent progress-fill layer.                  */
+.msp-plugin .bsv-bs-popover input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  accent-color: #d5d1c5;
+  outline: none;
+}
+
+.msp-plugin .bsv-bs-popover input[type='range']::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  background: #d5d1c5;
+  border: none;
+  border-radius: 0;
+}
+
 .msp-plugin .bsv-bs-popover input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
+  margin-top: -4px; /* center 12px thumb on 4px track */
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #ae5d04;
-  border: 2px solid #eeece7;
+  background: #eeece7;
+  border: 2px solid #9c835f;
   cursor: pointer;
+}
+
+/* Firefox track + thumb + progress-fill. */
+.msp-plugin .bsv-bs-popover input[type='range']::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  background: #d5d1c5;
+  border: none;
+  border-radius: 0;
+}
+
+.msp-plugin .bsv-bs-popover input[type='range']::-moz-range-progress {
+  background: #d5d1c5;
+  height: 4px;
 }
 
 .msp-plugin .bsv-bs-popover input[type='range']::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #ae5d04;
-  border: 2px solid #eeece7;
+  background: #eeece7;
+  border: 2px solid #9c835f;
   cursor: pointer;
 }

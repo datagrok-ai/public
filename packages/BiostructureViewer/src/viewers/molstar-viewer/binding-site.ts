@@ -390,7 +390,7 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   // `.msp-control-group-header`. Flat — no border, no radius.
   const popHeader = document.createElement('div');
   popHeader.style.cssText = [
-    'padding:3px 10px', 'font-size:13px', 'font-weight:normal', 'color:#332b1f',
+    'padding:3px 10px', 'font-size:14px', 'font-weight:bold', 'color:#332b1f',
     'background:#eeece7', 'display:flex', 'align-items:center', 'gap:6px', 'line-height:24px',
   ].join(';');
   popHeader.innerHTML =
@@ -401,53 +401,76 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   popover.appendChild(popHeader);
 
   const popBody = document.createElement('div');
-  popBody.style.cssText = 'padding:6px 10px';
+  popBody.style.cssText = 'padding:0';
   popover.appendChild(popBody);
+
+  // Mol* .msp-control-row look: 32px tall row, darker background than the
+  // popover, 1px gap between rows showing the popover background through.
+  const ROW_STYLE = [
+    'display:flex', 'align-items:center',
+    'height:32px', 'margin-top:1px', 'background:#eeece7',
+  ].join(';');
+  const LABEL_STYLE = [
+    // 140px fits "Show side chains" at 14px without ellipsis truncation.
+    // Mol*'s own .msp-control-row-label is 120px but assumes single-word labels.
+    'width:140px', 'flex-shrink:0', 'padding:0 10px',
+    'text-align:right', 'line-height:32px',
+    'font-size:14px', 'color:#63533c',
+    'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis',
+  ].join(';');
+  // Right column — slightly lighter than the row bg so the control cell stands
+  // out from the label column. Matches Mol*'s `.msp-form-control` background
+  // (#f3f2ee) over `.msp-control-row` (#eeece7).
+  const CONTROL_STYLE = [
+    'flex:1', 'display:flex', 'align-items:center', 'gap:8px', 'padding:0 10px',
+    'background:#f3f2ee', 'height:32px',
+  ].join(';');
 
   // Row: show binding site checkbox (the toggle)
   const showRow = document.createElement('label');
-  showRow.style.cssText = [
-    'display:flex', 'align-items:center', 'gap:8px', 'padding:4px 0',
-    'cursor:pointer', 'color:#332b1f', 'font-size:13px',
-  ].join(';');
+  showRow.style.cssText = ROW_STYLE + ';cursor:pointer';
+  const showLbl = document.createElement('span');
+  showLbl.style.cssText = LABEL_STYLE;
+  showLbl.textContent = 'Show side chains';
+  const showCtrl = document.createElement('span');
+  // Checkbox is much narrower than the slider; center it so it sits over the
+  // same x-range the slider's thumb traverses on the Radius row below.
+  showCtrl.style.cssText = CONTROL_STYLE + ';justify-content:center';
   const showChk = document.createElement('input');
   showChk.type = 'checkbox';
   showChk.id = 'bsv-bs-show-chk';
-  showChk.setAttribute('aria-label', 'Show binding site');
+  showChk.setAttribute('aria-label', 'Show side chains');
   showChk.style.cssText = 'width:13px;height:13px;accent-color:#ae5d04;cursor:pointer;margin:0';
-  const showLbl = document.createElement('span');
-  showLbl.style.cssText = 'flex:1';
-  showLbl.textContent = 'Show binding site';
-  showRow.appendChild(showChk);
+  showCtrl.appendChild(showChk);
   showRow.appendChild(showLbl);
+  showRow.appendChild(showCtrl);
   popBody.appendChild(showRow);
 
   // Row: radius slider
   const radiusRow = document.createElement('div');
-  radiusRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0';
+  radiusRow.style.cssText = ROW_STYLE;
   const radiusLabel = document.createElement('span');
-  radiusLabel.style.cssText = 'font-size:13px;color:#332b1f;flex-shrink:0;width:50px';
+  radiusLabel.style.cssText = LABEL_STYLE;
   radiusLabel.textContent = 'Radius';
+  const radiusCtrl = document.createElement('span');
+  radiusCtrl.style.cssText = CONTROL_STYLE;
   const radiusSlider = document.createElement('input');
   radiusSlider.type = 'range';
   radiusSlider.min = '3';
   radiusSlider.max = '10';
   radiusSlider.step = '0.5';
   radiusSlider.setAttribute('aria-label', 'Binding site radius in angstroms');
-  radiusSlider.style.cssText = [
-    'flex:1', 'height:4px', 'outline:none', 'cursor:pointer',
-    '-webkit-appearance:none', 'appearance:none', 'background:#d5d1c5', 'border-radius:0',
-  ].join(';');
+  radiusSlider.style.cssText = 'flex:1;height:4px;cursor:pointer';
   const radiusVal = document.createElement('span');
   radiusVal.style.cssText = [
     'font-size:13px', 'color:#ae5d04', 'font-weight:600', 'width:44px',
     'text-align:right', 'flex-shrink:0', 'font-family:Consolas,monospace',
   ].join(';');
+  radiusCtrl.appendChild(radiusSlider);
+  radiusCtrl.appendChild(radiusVal);
   radiusRow.appendChild(radiusLabel);
-  radiusRow.appendChild(radiusSlider);
-  radiusRow.appendChild(radiusVal);
+  radiusRow.appendChild(radiusCtrl);
   popBody.appendChild(radiusRow);
-
 
   // Popover is attached to the viewer root (same parent as wrapper) so it is
   // not affected by wrapper's pointer-events:none or flex layout. Attached
