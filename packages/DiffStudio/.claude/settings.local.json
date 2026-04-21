@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(npx eslint:*)",
-      "Read(//c/Users/vmaka/Datagrok/public/**)",
-      "Read(//c/Users/vmaka/Datagrok/public/js-api/src/widgets/**)"
-    ]
-  }
-}
