@@ -421,6 +421,9 @@ export interface IBoxPlotSettings {
 
   showQ3: boolean;
 
+  /// Number of digits after the decimal point for statistics values.
+  statisticsPrecision: number;
+
   viewport: string;
 
   allowColorSynchronization: boolean;
