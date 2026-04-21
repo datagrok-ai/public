@@ -148,6 +148,13 @@ export async function polyToolEnumerateChemTopMenu() : Promise<void> {
   await PackageFunctions.polyToolEnumerateChemTopMenu();
 }
 
+//name: chemEnumerateReactions
+//description: Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)
+//top-menu: Chem | Transform | Reactions | Enumerate...
+export async function chemEnumerateReactionsTopMenu() : Promise<void> {
+  await PackageFunctions.chemEnumerateReactionsTopMenu();
+}
+
 //input: dataframe df { description: Input data table }
 //input: column macroMolecule 
 export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column) : Promise<void> {
@@ -170,11 +177,12 @@ export async function ptEnumeratorHelmApp() : Promise<void> {
 
 //name: Chem Enumerator
 //tags: app
+//output: view result
 //meta.icon: img/icons/structure.png
 //meta.browsePath: Peptides | PolyTool
 //meta.role: app
-export async function ptEnumeratorChemApp() : Promise<void> {
-  await PackageFunctions.ptEnumeratorChemApp();
+export async function ptEnumeratorChemApp() {
+  return await PackageFunctions.ptEnumeratorChemApp();
 }
 
 //name: Polytool Helm Enumerator dialog
