@@ -179,7 +179,7 @@ export async function ptEnumeratorHelmApp() : Promise<void> {
 //tags: app
 //output: view result
 //meta.icon: img/icons/structure.png
-//meta.browsePath: Peptides | PolyTool
+//meta.browsePath: Chem | PolyTool
 //meta.role: app
 export async function ptEnumeratorChemApp() {
   return await PackageFunctions.ptEnumeratorChemApp();

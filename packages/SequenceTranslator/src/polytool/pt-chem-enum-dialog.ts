@@ -13,8 +13,8 @@ import {
   ChemEnumMode,
   ChemEnumModes,
   ChemEnumRGroup,
-  enumerate,
-  enumerateSample,
+  enumerateRaw,
+  enumerateSampleRaw,
   extractRNumbers,
   makeCore,
   makeRGroup,
@@ -668,14 +668,16 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
 
   const redrawPreview = () => {
     ui.empty(previewHost);
-    const samples = enumerateSample(
+    // Uncanonicalized but parseable — no sync RDKit work during enumeration;
+    // drawMolecule parses each visible SMILES lazily when the card renders.
+    const samples = enumerateSampleRaw(
       {cores: state.cores, rGroups: state.rGroupsByNum, mode: state.mode, maxResults: Math.min(CHEM_ENUM_MAX_RESULTS, 1000)},
-      rdkit, PREVIEW_COUNT);
+      PREVIEW_COUNT);
     if (samples.length === 0) {
       previewHost.appendChild(ui.divText('Preview will appear once cores and R-groups are valid.', {style: {color: 'var(--grey-4)', padding: '20px 12px', fontSize: '12px'}}));
       return;
     }
-    samples.forEach((s, i) => {
+    samples.forEach((s: {smiles: string; rGroupSmilesByNum: Map<number, string>}, i: number) => {
       const rTag = [...s.rGroupSmilesByNum.keys()].sort((a, b) => a - b).map((n) => 'R' + n).join(',');
       previewHost.appendChild(buildCard({smiles: s.smiles, subtitle: `sample ${i + 1} · ${rTag}`}));
     });
@@ -881,10 +883,12 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
 
 // ─── Execution ──────────────────────────────────────────────────────────────
 
-async function executeEnumeration(state: ChemEnumDialogState, rdkit: RDModule): Promise<void> {
+async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Enumerating...');
   try {
-    const results = enumerate({cores: state.cores, rGroups: state.rGroupsByNum, mode: state.mode}, rdkit);
+    // Stage 1 — string-level join, no RDKit calls. Produces parseable but uncanonical SMILES.
+    pi.update(10, 'Building molecules...');
+    const results = enumerateRaw({cores: state.cores, rGroups: state.rGroupsByNum, mode: state.mode});
     if (!results) { grok.shell.warning('Enumeration failed — check validation messages in the dialog.'); return; }
     if (results.length === 0) { grok.shell.warning('No molecules produced.'); return; }
 
@@ -902,6 +906,24 @@ async function executeEnumeration(state: ChemEnumDialogState, rdkit: RDModule): 
 
     const df = DG.DataFrame.fromColumns([smilesCol, coreCol, ...rCols]);
     df.name = 'Chem Enumeration';
+
+    // Stage 2 — canonicalize the whole Enumerated column in parallel via Chem workers.
+    pi.update(40, `Canonicalizing ${results.length.toLocaleString()} molecule(s)...`);
+    try {
+      await grok.functions.call('Chem:convertNotation', {
+        data: df,
+        molecules: smilesCol,
+        targetNotation: DG.chem.Notation.Smiles,
+        overwrite: true,
+        join: false,
+        kekulize: false,
+      });
+    } catch (err: any) {
+      // Canonicalization is a nice-to-have; the uncanonical SMILES are still valid output.
+      _package.logger.warning(`Canonicalization skipped: ${err?.message ?? err}`);
+    }
+
+    pi.update(90, 'Finalizing...');
     await grok.data.detectSemanticTypes(df);
 
     if (state.appendToTable) {
