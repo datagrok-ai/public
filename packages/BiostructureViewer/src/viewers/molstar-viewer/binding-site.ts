@@ -225,12 +225,23 @@ export async function buildBindingSiteComponentFromExpression(
 // UI — right-strip overlay
 // ---------------------------------------------------------------------------
 
-const BULLSEYE_SVG =
-  '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-  '<circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1" fill="none"/>' +
-  '<circle cx="8" cy="8" r="3.5" stroke="currentColor" stroke-width="1" fill="none"/>' +
-  '<circle cx="8" cy="8" r="1.25" fill="currentColor"/>' +
-  '</svg>';
+/** Bullseye SVG markup — three concentric circles on a 16×16 canvas.
+ * `color` defaults to `currentColor` so the icon inherits the surrounding
+ * `.msp-btn-link-toggle-off/on` color; pass an explicit hex when placing the
+ * icon somewhere that doesn't belong to a Mol* button hierarchy (e.g. inside
+ * our popover header, which has its own colour).
+ * @param {number} size pixel width and height (square).
+ * @param {string} color stroke + fill colour; defaults to `currentColor`.
+ * @return {string} SVG markup.
+ */
+function makeBullseyeSvg(size: number = 16, color: string = 'currentColor'): string {
+  return '<svg width="' + size + '" height="' + size + '"' +
+    ' viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<circle cx="8" cy="8" r="6.5" stroke="' + color + '" stroke-width="1" fill="none"/>' +
+    '<circle cx="8" cy="8" r="3.5" stroke="' + color + '" stroke-width="1" fill="none"/>' +
+    '<circle cx="8" cy="8" r="1.25" fill="' + color + '"/>' +
+    '</svg>';
+}
 
 export type BindingSiteOverlayHandlers = {
   getShowBindingSite: () => boolean;
@@ -329,14 +340,15 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   const iconHolder = document.createElement('div');
   iconHolder.className = 'bsv-bs-icon-holder';
 
-  // Backdrop behind the icon — same values as Mol*'s native
-  // `.msp-semi-transparent-background` (#eeece7 @ 0.5 opacity).
+  // Mol*'s native strip buttons each sit over a `.msp-semi-transparent-background`
+  // sibling (#eeece7 @ 0.5 opacity). Reuse the same class to match exactly —
+  // anything smaller/larger makes our bullseye stand out against the strip.
   const iconBg = document.createElement('div');
-  iconBg.className = 'bsv-bs-icon-bg';
+  iconBg.className = 'msp-semi-transparent-background';
   iconHolder.appendChild(iconBg);
 
   // Use the exact same native Mol* classes as the strip icons, so we
-  // inherit:
+  // inherit their transparent background + color states:
   //   msp-btn-link-toggle-off → color: #9c835f (muted, default)
   //   :hover                  → color: #ae5d04 (orange accent)
   //   msp-btn-link-toggle-on  → color: #332b1f (fully saturated on active)
@@ -345,7 +357,8 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   iconBtn.type = 'button';
   iconBtn.setAttribute('aria-label', 'Binding site');
   iconBtn.setAttribute('title', 'Binding site');
-  iconBtn.innerHTML = BULLSEYE_SVG;
+  // Strip icon inherits color from `.msp-btn-link-toggle-on/off` via currentColor.
+  iconBtn.innerHTML = makeBullseyeSvg();
   iconHolder.appendChild(iconBtn);
 
   wrapper.appendChild(iconHolder);
@@ -360,11 +373,9 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
 
   const popHeader = document.createElement('div');
   popHeader.className = 'bsv-bs-popover-header';
-  popHeader.innerHTML =
-    BULLSEYE_SVG
-      .replace('width="16" height="16"', 'width="13" height="13"')
-      .replace(/currentColor/g, '#332b1f') +
-    '<span>Binding Site</span>';
+  // Header icon is 13px (matches the 14px-text-height + bold weight) and uses
+  // the popover's primary text colour directly (no Mol* button context here).
+  popHeader.innerHTML = makeBullseyeSvg(13, '#332b1f') + '<span>Binding Site</span>';
   popover.appendChild(popHeader);
 
   const popBody = document.createElement('div');
@@ -425,7 +436,10 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
    *  @return {ClipBox} viewport-relative clip box (inclusive bounds). */
   type ClipBox = {left: number; right: number; top: number; bottom: number; width: number};
   const findClipBox = (parent: HTMLElement): ClipBox => {
-    let minLeft = -Infinity; let minTop = -Infinity; let maxRight = Infinity; let maxBottom = Infinity;
+    let minLeft = -Infinity;
+    let minTop = -Infinity;
+    let maxRight = Infinity;
+    let maxBottom = Infinity;
     let el: HTMLElement | null = parent;
     while (el && el !== document.body) {
       const o = getComputedStyle(el);
@@ -449,41 +463,43 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
     return {left: minLeft, right: maxRight, top: minTop, bottom: maxBottom, width: maxRight - minLeft};
   };
 
-  /** Position the popover to the left of the icon, matching Mol*'s native
-   *  `.msp-viewport-controls-panel` offset (`right: 36px`). Clamps the
-   *  popover's actual right edge and width to the visible clip box so
-   *  the popover is never cut off by a narrow parent's `overflow: hidden`. */
+  /** Position the popover in viewport coordinates (`position: fixed`). Body-
+   *  attached to escape Mol*'s stacking context / overflow clip, but clamped
+   *  to the `.msp-viewport` rectangle so it never floats outside the 3D
+   *  panel's visible area. In a narrow Mol* viewport the popover shrinks;
+   *  labels truncate with ellipsis, slider + value stay readable. */
   const positionPopover = () => {
     const parent = wrapper.parentElement;
     if (!parent) return;
-    const pRect = parent.getBoundingClientRect();
-    const clipRect = findClipBox(parent as HTMLElement);
     const iRect = iconBtn.getBoundingClientRect();
+    // Viewport bounds: prefer `.msp-viewport`, fall back to the overlay's
+    // own parent (which sits inside it).
+    const viewport = (parent.closest('.msp-viewport') ?? parent) as HTMLElement;
+    const vRect = viewport.getBoundingClientRect();
 
-    // Ideal right edge for popover: 36 px left of the icon.
-    const idealRightEdge = iRect.left - 36;
-    // Clamp to clip box (leave 6 px margin from clip edges).
-    const actualRightEdge = Math.min(idealRightEdge, clipRect.right - 6);
-    const minLeftEdge = clipRect.left + 6;
-
-    // Convert actualRightEdge into `right` CSS offset from parent's right.
-    const rightOffset = Math.max(6, pRect.right - actualRightEdge);
-
-    // Width: natural 290 (matches Mol*'s native `.msp-viewport-controls-panel`);
-    // clamp to fit between clip-left and actualRightEdge.
+    const margin = 6;
     const naturalWidth = 290;
-    const availableWidth = actualRightEdge - minLeftEdge;
-    const width = Math.max(180, Math.min(naturalWidth, availableWidth));
+    const maxWidth = Math.max(160, vRect.width - margin * 2);
+    const width = Math.min(naturalWidth, maxWidth);
+
+    // Horizontal: anchor 36 px left of the icon, then clamp so the popover
+    // stays inside [vRect.left + margin, vRect.right - margin].
+    const preferredLeft = iRect.left - 36 - width;
+    const minLeft = vRect.left + margin;
+    const maxLeft = vRect.right - margin - width;
+    const leftPx = Math.max(minLeft, Math.min(maxLeft, preferredLeft));
+
+    // Vertical: pin to the TOP of the Mol* viewport — matches the native
+    // `.msp-viewport-controls-panel` convention (Settings / Controls Info
+    // panel). Using `strip.top` would place the popover at the icon's
+    // vertical position, which is the *bottom* half of a tall narrow
+    // viewport (the strip is bottom-anchored by Mol*'s layout).
+    const topPx = vRect.top + margin;
 
     popover.style.width = `${width}px`;
-    popover.style.right = `${rightOffset}px`;
-    popover.style.left = 'auto';
-
-    // Top: align with the Mol* strip's top when present, else 10 px.
-    const strip = parent.querySelector('.msp-viewport-controls-buttons') as HTMLElement | null;
-    const stripTop = strip ? offsetTopWithin(strip, parent as HTMLElement) : null;
-    const top = stripTop !== null ? stripTop : 10;
-    popover.style.top = `${Math.max(6, top)}px`;
+    popover.style.left = `${leftPx}px`;
+    popover.style.top = `${topPx}px`;
+    popover.style.right = 'auto';
   };
 
   const updateSliderGradient = (r: number) => {
@@ -528,9 +544,12 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
 
   const openPopover = () => {
     popoverOpen = true;
-    // Ensure popover is attached to the viewer root (not to wrapper).
-    const parent = wrapper.parentElement;
-    if (parent && popover.parentElement !== parent) parent.appendChild(popover);
+    // Attach to <body> so the popover escapes the Mol* viewport's stacking
+    // context (and any overflow:hidden ancestor). Without this, in a narrow
+    // docked viewer the popover gets clipped by the right-adjacent panel.
+    // With position:fixed + body-attachment we can always render at full
+    // 290 px width and overlap the strip / Components panel on top.
+    if (popover.parentElement !== document.body) document.body.appendChild(popover);
     positionPopover();
     popover.classList.remove('bsv-bs-popover-hidden');
     refreshUI();
@@ -550,6 +569,9 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
       closePopover();
     else
       openPopover();
+    // Drop focus so Mol*'s generic `.msp-btn:focus` bg doesn't linger on the
+    // icon (would leave the bullseye looking "pressed" until focus moves on).
+    iconBtn.blur();
   });
   iconBtn.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {

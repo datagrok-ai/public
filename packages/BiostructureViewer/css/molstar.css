@@ -3114,15 +3114,167 @@
     color: #332b1f
 }
 
-/* ── Binding site overlay: popover show/hide ────────────────────────────── */
+/* ── Binding site overlay: wrapper (sits at the right of .msp-viewport) ─── */
+.msp-plugin .bsv-bs-overlay {
+  position: absolute;
+  right: 10px;
+  top: 162px;  /* initial placeholder; runtime sets via positionOverlayRelativeToStrip */
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+/* ── Binding site overlay: bullseye icon + its semi-transparent backdrop ──
+   Match the native `.msp-viewport-controls-buttons > div` shape exactly — no
+   border-radius / overflow clip. The `.msp-semi-transparent-background` child
+   blends into the canvas the same way as the native strip's backdrop.         */
+.msp-plugin .bsv-bs-icon-holder {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  pointer-events: none;
+}
+
+/* Mol*'s generic `.msp-btn:focus` / `:active` rules paint a #f3f2ee background
+   that persists after click. The native strip avoids it by blurring between
+   clicks; we force the bullseye fully transparent in every non-hover state so
+   it visually matches the other strip icons at rest. `:hover` intentionally
+   falls through to Mol*'s own hover rule (#e9e6e0 bg + #ae5d04 icon).        */
+.msp-plugin .bsv-bs-icon-btn,
+.msp-plugin .bsv-bs-icon-btn:focus,
+.msp-plugin .bsv-bs-icon-btn:focus-visible,
+.msp-plugin .bsv-bs-icon-btn:active {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+  background: transparent !important;
+  outline: none;
+  box-shadow: none;
+}
+
+/* ── Binding site overlay: popover ─────────────────────────────────────────
+   Popover-internal rules are NOT prefixed with `.msp-plugin` because the
+   popover is portaled to <body> (escapes overflow:hidden / stacking-context
+   clips in narrow docked panes). Positioning is in fixed viewport coords. */
+.bsv-bs-popover {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 290px;
+  background: #e0ddd4;
+  color: #332b1f;
+  font-family: "Helvetica Neue", "Segoe UI", Helvetica, "Source Sans Pro", Arial, sans-serif;
+  font-size: 14px;
+  z-index: 9999;
+  overflow: hidden;
+  pointer-events: all;
+}
+
+/* The popover is portaled to <body>, so it doesn't inherit Mol*'s global
+   `.msp-plugin * { box-sizing: border-box }` reset. Force border-box on all
+   descendants so pixel widths (140 px label column, 44 px value readout,
+   etc.) include their padding, matching the layout we designed for.         */
+.bsv-bs-popover,
+.bsv-bs-popover * {
+  box-sizing: border-box;
+}
+
 .bsv-bs-popover-hidden {
   display: none !important;
 }
 
+.bsv-bs-popover-header {
+  /* Matches Mol*'s .msp-control-group-header (bg + layout), bold + 14px to
+     read as a section title.                                               */
+  padding: 3px 10px;
+  background: #eeece7;
+  color: #332b1f;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Binding site overlay: rows (Mol* .msp-control-row pattern) ──────────── */
+.bsv-bs-row {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  margin-top: 1px;  /* popover bg peeks through as a 1 px hairline separator */
+  background: #eeece7;  /* label column shows through here */
+}
+
+/* Only the `<label>` row (show/toggle) is clickable end-to-end. */
+label.bsv-bs-row {
+  cursor: pointer;
+}
+
+.bsv-bs-row-label {
+  /* 140 px fits "Show side chains" at 14 px without ellipsis truncation at
+     the natural popover width (290 px). If the popover is clamped narrower
+     (small Mol* viewport), `flex-shrink: 1` lets the label give up space
+     down to `min-width: 60px` so the control cell always fits its slider +
+     value readout. Label text truncates with ellipsis as it shrinks.       */
+  flex: 0 1 140px;
+  min-width: 60px;
+  padding: 0 10px;
+  text-align: right;
+  line-height: 32px;
+  font-size: 14px;
+  color: #63533c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bsv-bs-row-ctrl {
+  /* Right column — lighter than the row bg so the control cell stands out.
+     Matches Mol*'s .msp-form-control background (#f3f2ee) over row #eeece7.
+     `min-width: 120px` ensures the slider track + value readout always have
+     room when the popover itself shrinks.                                  */
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  height: 32px;
+  background: #f3f2ee;
+}
+
+/* Checkbox is much narrower than the slider; centering it horizontally puts
+   it over the slider's midpoint on the row below, giving a shared axis.    */
+.bsv-bs-row-ctrl--center {
+  justify-content: center;
+}
+
+.bsv-bs-show-chk {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: #ae5d04;
+  cursor: pointer;
+}
+
 /* ── Binding site overlay: slider (Mol* palette) ─────────────────────────
-   Explicitly styles track + thumb (and their focus states) so the browser
-   never falls back to its OS-accent progress-fill layer.                  */
-.msp-plugin .bsv-bs-popover input[type='range'] {
+   Explicitly styles track + thumb so the browser never falls back to its
+   OS-accent progress-fill layer or native thumb.                          */
+.bsv-bs-popover .bsv-bs-radius-slider {
+  flex: 1;
+  /* `min-width: 0` lets the slider shrink below its intrinsic 129 px width so
+     the 44 px value readout and the 8 px gap stay inside the flex row. Without
+     this, the value ends up past the popover's right edge and the `overflow:
+     hidden` on `.bsv-bs-popover` clips it off. */
+  min-width: 0;
+  height: 4px;
+  cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
@@ -3130,7 +3282,7 @@
   outline: none;
 }
 
-.msp-plugin .bsv-bs-popover input[type='range']::-webkit-slider-runnable-track {
+.bsv-bs-popover .bsv-bs-radius-slider::-webkit-slider-runnable-track {
   width: 100%;
   height: 4px;
   background: #d5d1c5;
@@ -3138,7 +3290,7 @@
   border-radius: 0;
 }
 
-.msp-plugin .bsv-bs-popover input[type='range']::-webkit-slider-thumb {
+.bsv-bs-popover .bsv-bs-radius-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   margin-top: -4px; /* center 12px thumb on 4px track */
   width: 12px;
@@ -3147,10 +3299,11 @@
   background: #eeece7;
   border: 2px solid #9c835f;
   cursor: pointer;
+  box-shadow: none;
 }
 
-/* Firefox track + thumb + progress-fill. */
-.msp-plugin .bsv-bs-popover input[type='range']::-moz-range-track {
+/* Firefox track + progress-fill + thumb. */
+.bsv-bs-popover .bsv-bs-radius-slider::-moz-range-track {
   width: 100%;
   height: 4px;
   background: #d5d1c5;
@@ -3158,16 +3311,27 @@
   border-radius: 0;
 }
 
-.msp-plugin .bsv-bs-popover input[type='range']::-moz-range-progress {
+.bsv-bs-popover .bsv-bs-radius-slider::-moz-range-progress {
   background: #d5d1c5;
   height: 4px;
 }
 
-.msp-plugin .bsv-bs-popover input[type='range']::-moz-range-thumb {
+.bsv-bs-popover .bsv-bs-radius-slider::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border-radius: 50%;
   background: #eeece7;
   border: 2px solid #9c835f;
   cursor: pointer;
+}
+
+.bsv-bs-radius-val {
+  /* Monospace + 13 px makes the number readout visually stable as it changes. */
+  width: 44px;
+  flex-shrink: 0;
+  text-align: right;
+  font-family: Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ae5d04;
 }
