@@ -10,7 +10,7 @@ import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debo
 import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
 import {ViewAction} from '../config/PipelineInstance';
-import {calculateStepsDependencies, calculateIoDependencies, createDefaultValidators, DependenciesData, IoDeps} from './LinksDependencies';
+import {calculateStepsDependencies, calculateIoDependencies, createDefaultValidators, DependenciesData, IoDeps} from './links-dependencies';
 
 export interface LinksData {
   uuid: string;
