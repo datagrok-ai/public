@@ -588,13 +588,9 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
     return toJs(await api.grok_DataConnectionsDataSource_Get_Db_Info(this.dart, c.dart, catalog))
   }
 
-  /** Initiates the OAuth consent flow for a connection whose auth method is 'OAuth'.
-   * Fetches an authorize URL from the server, opens a popup to the configured IdP,
-   * exchanges the authorization code via {@link OAuthConnectorRouter}, and persists
-   * the tokens on the connection's credentials.
-   * See core/docs/design/GENERALIZED_OAUTH_CONNECTORS.md. */
+  /** Initiates the OAuth consent flow for a connection whose auth method is 'OAuth'. */
   async requestOAuthConsent(c: DataConnection): Promise<void> {
-    await api.grok_DataConnectionsDataSource_RequestOAuthConsent(this.dart, c.dart);
+    await api.grok_DataConnectionsDataSource_RequestOAuthConsent(c.dart);
   }
 }
 

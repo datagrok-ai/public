@@ -59,8 +59,8 @@ public class DatabricksProvider extends JdbcDataProvider {
                     "The secret associated with the client ID.", OAUTH_METHOD, new Prop("password")));
             add(new Property(Property.STRING_TYPE, "tenantId",
                     "Azure Directory ID (tenant GUID) used for OAuth authentication. Leave empty for AWS or GCP workspaces.", OAUTH_METHOD));
-            add(new Property(Property.STRING_TYPE, "#token", null, OAUTH_METHOD_NAME, new Prop("password")));
-            add(new Property(Property.STRING_TYPE, "oauthScopes",
+            add(new Property(Property.STRING_TYPE, DbCredentials.TOKEN, null, OAUTH_METHOD_NAME, new Prop("password")));
+            add(new Property(Property.STRING_TYPE, DbCredentials.OAUTH_SCOPES,
                     "Space-separated OAuth scopes to request when consenting via the "
                             + "configured OpenID Provider. Defaulted from the connector's OAuthSpec "
                             + "under the active IdP flavour (oidc / azure). See "
@@ -121,7 +121,7 @@ public class DatabricksProvider extends JdbcDataProvider {
             properties.setProperty("Auth_Flow", "1");
         }
         else if (OAUTH_METHOD_NAME.equals(method)) {
-            String token = (String) conn.credentials.parameters.get("#token");
+            String token = (String) conn.credentials.parameters.get(DbCredentials.TOKEN);
             properties.setProperty("AuthMech", "11");
             properties.setProperty("Auth_Flow", "0");
             setIfNotNull(properties, "Auth_AccessToken", token);

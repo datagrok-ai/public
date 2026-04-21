@@ -19,10 +19,7 @@ import serialization.DataFrame;
 import serialization.StringColumn;
 import serialization.Types;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.HashMap;
+import java.util.*;
 
 public class BigQueryDataProvider extends JdbcDataProvider {
     private static final String SERVICE_ACCOUNT_METHOD = "Service Account";
@@ -43,22 +40,22 @@ public class BigQueryDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.OAUTH_SERVICE_ACCOUNT_EMAIL, "Set the OAuthServiceAcctEmail property to your Google service account email address.", SERVICE_ACCOUNT_METHOD));
             add(new Property(Property.STRING_TYPE, DbCredentials.SECRET_KEY, "Key file that is used to authenticate the\n" +
                     "service account email address. This parameter supports keys in .json format.", SERVICE_ACCOUNT_METHOD, new Prop("rsa"), ".json"));
-            add(new Property(Property.STRING_TYPE, "#OAuthAccessToken", null, OAUTH_METHOD, new Prop("password")));
-            add(new Property(Property.STRING_TYPE, "oauthScopes",
+            add(new Property(Property.STRING_TYPE, DbCredentials.TOKEN, null, OAUTH_METHOD, new Prop("password")));
+            add(new Property(Property.STRING_TYPE, DbCredentials.OAUTH_SCOPES,
                     "Space-separated OAuth scopes to request when consenting via the "
                             + "configured OpenID Provider. Defaulted from the connector's OAuthSpec "
                             + "under the active IdP flavour (oidc / azure). See "
                             + "GENERALIZED_OAUTH_CONNECTORS.md.", OAUTH_METHOD));
         }};
 
-        // Lazy OAuth/OpenID consent descriptor. Datlas reads this to
-        // decide which scopes to request at the IdP popup. For Google
-        // Workspace federation, use the classic BigQuery scope; for
-        // Azure AD, use Google's resource-uri /.default convention.
+        // Lazy OAuth/OpenID consent descriptor. Google OAuth doesn't
+        // accept the `offline_access` scope — refresh tokens are
+        // requested via `access_type=offline` URL param (added by Datlas
+        // in the authorize URL builder). Azure AD uses the standard
+        // `offline_access` scope convention.
         descriptor.oauth = new OAuthSpec()
-                .scopes("oidc", Arrays.asList(
-                        "https://www.googleapis.com/auth/bigquery",
-                        "offline_access"))
+                .scopes("oidc", Collections.singletonList(
+                        "https://www.googleapis.com/auth/bigquery"))
                 .scopes("azure", Arrays.asList(
                         "https://bigquery.googleapis.com/.default",
                         "offline_access"))
@@ -93,10 +90,11 @@ public class BigQueryDataProvider extends JdbcDataProvider {
         if (conn.credentials == null)
             throw new GrokConnectException("Credentials can't be null");
 
-        boolean resolvedByDatagrok = conn.credentials.parameters.getOrDefault("#dg_resolved", Boolean.FALSE).equals(true);
-        com.simba.googlebigquery.jdbc42.DataSource ds = getDataSource(conn, resolvedByDatagrok);
-        if (resolvedByDatagrok)
-            return ds.getConnection();
+        com.simba.googlebigquery.jdbc42.DataSource ds = getDataSource(conn);
+        // Pool key includes a hash of the access token (see
+        // getDataSourceKey) so OAuth and GCP-secret-manager-resolved
+        // ephemeral tokens each get their own pool entry; HikariCP
+        // idle-evicts entries for rotated tokens.
         String key = getDataSourceKey(conn, ds);
         Connection connection = ConnectionPool.getConnection(ds, key);
         return (Connection) Proxy.newProxyInstance(
@@ -173,21 +171,19 @@ public class BigQueryDataProvider extends JdbcDataProvider {
             return null;
     }
 
-    private com.simba.googlebigquery.jdbc42.DataSource getDataSource(DataConnection conn, boolean resolvedByDatagrok) throws GrokConnectException {
+    private com.simba.googlebigquery.jdbc42.DataSource getDataSource(DataConnection conn) throws GrokConnectException {
         try {
             com.simba.googlebigquery.jdbc42.DataSource ds = new com.simba.googlebigquery.jdbc42.DataSource();
-            ds.setLogDirectory("");
+            ds.setLogLevel("0");
             ds.setURL(getConnectionString(conn));
-            if (!conn.hasCustomConnectionString()) {
+            if (!conn.hasCustomConnectionString())
                 ds.setProjectId(conn.get("projectId"));
-                ds.setLogLevel("2");
-            }
 
             String method = (String) conn.credentials.parameters.get("#chosen-auth-method");
-            if (GrokConnectUtil.isEmpty(method) && !resolvedByDatagrok)
+            if (GrokConnectUtil.isEmpty(method))
                 throw new GrokConnectException("Authentication method was not set");
-            if (resolvedByDatagrok || method.equals(OAUTH_METHOD)) {
-                String token = (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY);
+            if (method.equals(OAUTH_METHOD)) {
+                String token = (String) conn.credentials.parameters.get(DbCredentials.TOKEN);
                 if (GrokConnectUtil.isEmpty(token))
                     throw new GrokConnectException("Invalid OAuth token");
                 ds.setOAuthType(2);
@@ -232,7 +228,7 @@ public class BigQueryDataProvider extends JdbcDataProvider {
                 privateKeyHash = getKeyHash(jsonSecretKey);
             }
             else
-                privateKeyHash = getKeyHash((String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY));
+                privateKeyHash = getKeyHash((String) conn.credentials.parameters.get(DbCredentials.TOKEN));
 
             rawKey.append("key=");
             rawKey.append(privateKeyHash);
