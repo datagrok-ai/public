@@ -96,6 +96,29 @@ reactive-tree-driver/
       ViewCommunication.ts      # Driver <-> UI command types
 ```
 
+### Action Steps
+
+Action steps (`type: 'action'`) are lightweight static pipelines with no children and no history,
+designed as targets for `visibleOn` actions from outer pipelines. In the config they only need
+`id`, `type: 'action'`, and optionally `friendlyName`/`description`/`tags`. During config processing
+they are converted to `PipelineConfigurationStaticProcessed` with `isActionStep: true`.
+
+Action steps are always navigable (included in back/next sequence). Regular pipelines with children
+are skipped by default; set `forceNavigate: true` to include them.
+
+### Navigation
+
+PipelineView has a sticky Back/Next bottom bar (same pattern as RFV). Back is hidden on root.
+- **FuncCall steps**: Back/Next via `findPrevStep`/`findNextStep` (DFS navigable sequence)
+- **Action steps**: same as FuncCall (always navigable since `steps.length === 0`)
+- **Regular pipelines**: Next uses `onPipelineProceed` (enters first child), Back uses `findPrevStep`
+- **Skipped pipelines**: `findPrevStep`/`findNextStep` still work when the user manually selects a
+  skipped pipeline — they find the nearest navigable neighbor
+
+Navigation functions (`findPrevStep`, `findNextStep`) in `src/utils.ts` locate the target node by
+uuid regardless of navigability, then return the nearest navigable neighbor. This ensures Back works
+correctly even on manually-selected skipped pipelines.
+
 ### Link Limitations
 
 - No cycles in data links

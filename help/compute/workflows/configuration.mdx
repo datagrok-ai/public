@@ -57,12 +57,13 @@ This id is used in [links](./links-spec) for paths.
 
 #### `type`
 
-There are three workflow types and a reference type, specified by the
-`type` field:
+There are three workflow types, an action step type, and a reference
+type, specified by the `type` field:
 
 - `static`
 - `parallel`
 - `sequential`
+- `action`
 - `ref`
 
 [Static workflow](#static-workflows) is an immutable sequence of
@@ -74,6 +75,11 @@ conventional, sequential workflow, as the name suggest, is a mutable
 sequence of steps. Parallel workflow is a mutable set of steps, where
 steps should not depend on each other. Both are using
 the [stepTypes](#steptypes) field to define steps.
+
+[Action step](#action-steps) is a lightweight placeholder designed to
+display actions from outer pipelines via
+[visibleOn](./link-types#visibleon). It has no child steps
+and no history.
 
 References are used to [reuse](#reusing-workflows) configurations
 returned by providers. References have a different set of fields;
@@ -207,6 +213,21 @@ _Optional_
 
 Is an array of initial steps. Each item is a reference to a
 [stepTypes](#steptypes) item.
+
+### Action steps
+
+An action step is a lightweight step type designed to display
+pipeline-level [actions](./link-types#action-options) in a dedicated
+place within the workflow tree. Under the hood it is a static pipeline
+with no child steps and no history. Action steps are always included
+in the back/next navigation sequence.
+
+Use action steps with [visibleOn](./link-types#visibleon) to route
+actions from an outer pipeline to the action step, giving them their
+own card-based UI.
+
+The only required fields are `id` and `type: 'action'`. Optional
+fields: `friendlyName`, `description`, `tags`.
 
 ### Additional stepTypes items options
 
