@@ -13,6 +13,12 @@ module.exports = (env) => {
     console.warn('Building DEV ONLY Compute2 build with vue devtools support');
 
   const config = {
+    cache: {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [__filename],
+      },
+    },
     mode,
     entry: {
       test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
@@ -27,6 +33,7 @@ module.exports = (env) => {
     module: {
       rules: [
 	{test: /\.tsx?$/, loader: 'babel-loader', options: {
+          cacheDirectory: true,
           'plugins': [['@vue/babel-plugin-jsx', { isCustomElement: tag => tag.startsWith('dg-') || tag === 'dock-spawn-ts' }]],
 	}},
 	{test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
