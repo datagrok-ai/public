@@ -208,19 +208,30 @@ export type NestedItemContext = {
   disableUIDragging?: boolean;
 };
 
+// action step (lightweight placeholder for displaying actions via visibleOn)
+
+export type AbstractPipelineActionConfiguration = {
+  type: 'action';
+  id: ItemId;
+  friendlyName?: string;
+  description?: string;
+  tags?: string[];
+};
+
 // fixed pipeline
 
 export type PipelineStaticItem<P, S, R> =
-PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R;
+PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | AbstractPipelineActionConfiguration | R;
 
 export type AbstractPipelineStaticConfiguration<P, S, R> = {
   steps: PipelineStaticItem<P, S, R>[];
   type: 'static';
+  isActionStep?: boolean;
 } & PipelineConfigurationBase<P>;
 
 // dynamic pipeline (unified type for parallel and sequential)
 
-export type PipelineDynamicItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & NestedItemContext);
+export type PipelineDynamicItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | AbstractPipelineActionConfiguration | R) & NestedItemContext);
 
 export type AbstractPipelineDynamicConfiguration<P, S, R> = {
   initialSteps?: StepDynamicInitialConfig[];

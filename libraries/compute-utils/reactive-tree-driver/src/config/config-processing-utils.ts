@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
+import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
@@ -21,7 +21,7 @@ export type FuncCallIODescription = {
 }
 
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<LinkSpecString, never>;
-type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial;
+type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial | AbstractPipelineActionConfiguration;
 
 export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
 export type PipelineConfigurationDynamicProcessed = AbstractPipelineDynamicConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
@@ -51,8 +51,12 @@ function isPipelineRefInitial(c: ConfigInitialTraverseItem): c is PipelineRefIni
   return !!((c as PipelineRefInitial).type === 'ref');
 }
 
+function isActionConfigInitial(c: ConfigInitialTraverseItem): c is AbstractPipelineActionConfiguration {
+  return (c as AbstractPipelineActionConfiguration).type === 'action';
+}
+
 function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepConfigurationInitial {
-  return !isPipelineStaticInitial(c) && !isPipelineParallelInitial(c) && !isPipelineSequentialInitial(c) && !isPipelineRefInitial(c);
+  return !isPipelineStaticInitial(c) && !isPipelineParallelInitial(c) && !isPipelineSequentialInitial(c) && !isPipelineRefInitial(c) && !isActionConfigInitial(c);
 }
 
 function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationInitial {
@@ -88,11 +92,13 @@ async function configProcessing(
   conf: ConfigInitialTraverseItem,
   loadedPipelines: PipelineRefStore<null>,
   logger?: DriverLogger,
-): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncCallIODescription[]> | PipelineSelfRef> {
+): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncCallIODescription[]> | AbstractPipelineActionConfiguration | PipelineSelfRef> {
   if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
     addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
-  if (isStepConfigInitial(conf)) {
+  if (isActionConfigInitial(conf)) {
+    return processActionConfig(conf);
+  } else if (isStepConfigInitial(conf)) {
     const pconf = await processStepConfig(conf, logger);
     return pconf;
   } else if (isPipelineStaticInitial(conf)) {
@@ -158,6 +164,20 @@ async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString,
     viewersHook = await hookMaker.apply();
   }
   return {...conf, viewersHook, io, actions};
+}
+
+function processActionConfig(conf: AbstractPipelineActionConfiguration): PipelineConfigurationStaticProcessed {
+  return {
+    id: conf.id,
+    type: 'static',
+    friendlyName: conf.friendlyName,
+    tags: conf.tags,
+    steps: [],
+    links: [],
+    actions: [],
+    disableHistory: true,
+    isActionStep: true,
+  } as PipelineConfigurationStaticProcessed;
 }
 
 async function getFuncCallIO(nqName: NqName): Promise<FuncCallIODescription[]> {
