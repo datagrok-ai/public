@@ -331,7 +331,8 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     ).subscribe(this.isRunable$);
 
     const inputs = this.io.filter((item) => item.direction === 'input');
-    (this.getIOEditsFlag(inputs)).subscribe(this.outdatedChanged$);
+    if (inputs.length > 0)
+      this.getIOEditsFlag(inputs).subscribe(this.outdatedChanged$);
 
     this.outdatedChanged$.pipe(
       withLatestFrom(this.isOutputOutdated$),
