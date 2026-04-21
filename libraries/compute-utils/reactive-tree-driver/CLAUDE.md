@@ -14,7 +14,7 @@
 ## What This Library Does
 
 Reactive tree driver propagates data through dynamically created and mutated function call trees. It manages:
-- Tree state (static/parallel/sequential pipeline nodes, action steps, FuncCall leaves)
+- Tree state (static/dynamic pipeline nodes, action steps, FuncCall leaves)
 - Data/validator/meta links between steps
 - Consistency tracking and validation
 - Serialization/deserialization of pipeline state

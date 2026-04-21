@@ -49,7 +49,7 @@ Configuration is a tree of JavaScript objects and arrays of type
 ### Common configuration options
 
 The following fields are available for `PipelineConfiguration` of
-types `static`, `parallel` and `sequential`.
+types `static` and `dynamic`.
 
 #### `id`
 
@@ -57,24 +57,23 @@ This id is used in [links](./links-spec) for paths.
 
 #### `type`
 
-There are three workflow types, an action step type, and a reference
+There are two workflow types, an action step type, and a reference
 type, specified by the `type` field:
 
 - `static`
-- `parallel`
-- `sequential`
+- `dynamic`
 - `action`
 - `ref`
+
+`parallel` and `sequential` are accepted as legacy aliases for
+`dynamic`. Do not use them in new code.
 
 [Static workflow](#static-workflows) is an immutable sequence of
 steps. It is using field [steps](#steps) to define its steps.
 
-Parallel and sequential are [dynamic
-workflows](#dynamic-workflows). The difference between them is mostly
-conventional, sequential workflow, as the name suggest, is a mutable
-sequence of steps. Parallel workflow is a mutable set of steps, where
-steps should not depend on each other. Both are using
-the [stepTypes](#steptypes) field to define steps.
+[Dynamic workflows](#dynamic-workflows) have a mutable set of steps
+that users can add, remove, and reorder at runtime. They use
+the [stepTypes](#steptypes) field to define available step templates.
 
 [Action step](#action-steps) is a lightweight placeholder designed to
 display actions from outer pipelines via

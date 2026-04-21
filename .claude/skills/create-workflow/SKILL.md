@@ -84,7 +84,8 @@ dayjs.extend(timezone);
 2. Read `help/compute/workflows/link-types.mdx`.
 3. Choose workflow type:
    - `static` — fixed sequence of steps
-   - `dynamic` (or `parallel`/`sequential` aliases) — user can add/remove steps at runtime
+   - `dynamic` — user can add/remove steps at runtime
+   - `action` — lightweight placeholder for displaying actions via visibleOn
 4. Design the `PipelineConfiguration` object:
    - Define steps with `id` and `nqName`
    - Define data links with `from`/`to` using LQL paths
