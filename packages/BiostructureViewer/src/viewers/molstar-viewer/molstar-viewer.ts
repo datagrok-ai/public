@@ -1197,9 +1197,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // Because of the async nature of loading structures to .viewer, the .dataFrame property can be changed (to null).
     // So collect data from the .dataFrame synchronously and then add ligands to the .viewer with postponed sync.
-    await Promise.all(ligandTaskList.map(async (task) => { try { await task(); } catch (e) { _package.logger.error(e); } })).then(() => {
-      this.ligands = newLigands;
-    });
+    await Promise.all(ligandTaskList.map(async (task) => {
+      try {
+        await task();
+      } catch (e) {
+        _package.logger.error(e);
+      }
+    }));
+    this.ligands = newLigands;
 
     // Binding site: Path B (ligand from column). Apply after ligands are on stage.
     if (this.showBindingSite)
@@ -1424,7 +1429,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   /** Removes all binding-site state objects created by applyBindingSiteView. */
   private async clearBindingSiteView(): Promise<void> {
     if (this.bindingSiteRefs.length === 0) return;
-    if (!this.viewer) { this.bindingSiteRefs = []; return; }
+    if (!this.viewer) {
+      this.bindingSiteRefs = [];
+      return;
+    }
     await removeVisualsData(this.viewer.plugin, this.bindingSiteRefs, 'clearBindingSiteView');
     this.bindingSiteRefs = [];
   }

@@ -79,12 +79,10 @@ category('BindingSite', () => {
     // 1bdq-wo-ligands.pdb has ligand HETs stripped. Toggle should be a noop.
     const {viewer} = await createPathAViewerFromSample('samples/1bdq-wo-ligands.pdb');
 
-    expect(asInternals(viewer)._isLigandAvailable(), false,
-      'Apo structure should not report a ligand');
+    expect(asInternals(viewer)._isLigandAvailable(), false, 'Apo structure should not report a ligand');
 
     await toggleBindingSite(viewer, true);
-    expect(asInternals(viewer).bindingSiteRefs.length, 0,
-      'Apo structure should produce zero binding-site refs');
+    expect(asInternals(viewer).bindingSiteRefs.length, 0, 'Apo structure should produce zero binding-site refs');
   }, {timeout: 45000});
 
   test('pathB-ligand-column', async () => {
@@ -114,8 +112,7 @@ category('BindingSite', () => {
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'Path B requires a current ligand');
 
-    expect(asInternals(viewer)._isLigandAvailable(), true,
-      'Ligand column should be reported as available');
+    expect(asInternals(viewer)._isLigandAvailable(), true, 'Ligand column should be reported as available');
 
     await toggleBindingSite(viewer, true);
     await awaitCheck(() => asInternals(viewer).bindingSiteRefs.length >= 2,
@@ -130,16 +127,15 @@ category('BindingSite', () => {
       'binding site refs not created on enable', 10000);
 
     await toggleBindingSite(viewer, false);
-    expect(asInternals(viewer).bindingSiteRefs.length, 0,
-      'bindingSiteRefs should be empty after disable');
+    expect(asInternals(viewer).bindingSiteRefs.length, 0, 'bindingSiteRefs should be empty after disable');
   }, {timeout: 45000});
 
   test('radius-change-rebuilds', async () => {
     const {viewer} = await createPathAViewerFromSample('samples/1bdq.pdb');
+    const v = asInternals(viewer);
 
     await toggleBindingSite(viewer, true);
-    await awaitCheck(() => asInternals(viewer).bindingSiteRefs.length >= 2,
-      'binding site refs not created on enable', 10000);
+    await awaitCheck(() => v.bindingSiteRefs.length >= 2, 'binding site refs not created on enable', 10000);
 
     viewer.setOptions({[msvPROPS.bindingSiteRadius]: 8});
     await delay(DebounceIntervals.ligands * 2.5);
@@ -147,8 +143,7 @@ category('BindingSite', () => {
 
     // Radius identity change is flaky to assert cross-platform; at minimum
     // the view should still have the component + representation present.
-    expect(asInternals(viewer).bindingSiteRefs.length >= 2, true,
-      'bindingSiteRefs should still exist after radius change');
+    expect(v.bindingSiteRefs.length >= 2, true, 'bindingSiteRefs should still exist after radius change');
     expect(viewer.bindingSiteRadius, 8, 'radius property should reflect new value');
   }, {timeout: 45000});
 
@@ -157,7 +152,6 @@ category('BindingSite', () => {
     // report "ligand not available" so the viewer hides the binding-site UI.
     const {viewer} = await createPathAViewerFromSample('samples/1bdq-wo-ligands.pdb');
 
-    expect(asInternals(viewer)._isLigandAvailable(), false,
-      '_isLigandAvailable should be false without a ligand column or HET');
+    expect(asInternals(viewer)._isLigandAvailable(), false, 'Apo structure should not report a ligand');
   }, {timeout: 30000});
 });

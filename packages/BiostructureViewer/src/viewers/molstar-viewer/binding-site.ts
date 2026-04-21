@@ -76,7 +76,8 @@ export function getLigandSeedExpression(structure: Structure): Expression | null
         curCount = 0;
       }
       const element = SP.atom.type_symbol(loc);
-      if (element !== 'H' && element !== 'D') curCount++;
+      if (element !== 'H' && element !== 'D')
+        curCount++;
     }
     if (prevResIdx !== -1) commit();
   }
@@ -107,16 +108,26 @@ export function getLigandSeedExpression(structure: Structure): Expression | null
  * @return {Float32Array | null} interleaved xyz positions, or null for an empty structure.
  */
 export function getLigandAtomPositions(ligandStructure: Structure): Float32Array | null {
-  const positions: number[] = [];
+  // Pass 1: total atom count — lets us allocate the Float32Array once
+  // at the final size and write via index assignment. Cheaper than growing
+  // a number[] via push and re-copying into a typed array at the end.
+  let atomCount = 0;
+  for (const unit of ligandStructure.units)
+    atomCount += unit.elements.length;
+  if (atomCount === 0) return null;
+
+  const positions = new Float32Array(atomCount * 3);
+  let w = 0;
   for (const unit of ligandStructure.units) {
     const {elements, conformation} = unit;
     for (let i = 0, n = elements.length; i < n; i++) {
       const eIdx = elements[i];
-      positions.push(conformation.x(eIdx), conformation.y(eIdx), conformation.z(eIdx));
+      positions[w++] = conformation.x(eIdx);
+      positions[w++] = conformation.y(eIdx);
+      positions[w++] = conformation.z(eIdx);
     }
   }
-  if (positions.length === 0) return null;
-  return new Float32Array(positions);
+  return positions;
 }
 
 /**
@@ -272,7 +283,6 @@ function offsetTopWithin(descendant: HTMLElement, ancestor: HTMLElement): number
 function positionOverlayRelativeToStrip(wrapper: HTMLElement): void {
   const container = wrapper.parentElement;
   if (!container) return;
-  wrapper.style.right = '10px';
 
   // Anchor to `.msp-viewport-controls-buttons` (the inner button stack) —
   // its bottom edge matches the last icon exactly. The outer
@@ -315,98 +325,41 @@ function positionOverlayRelativeToStrip(wrapper: HTMLElement): void {
 export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): BindingSiteOverlayElement {
   const wrapper = document.createElement('div') as BindingSiteOverlayElement;
   wrapper.className = 'bsv-bs-overlay';
-  wrapper.style.cssText = [
-    'position:absolute',
-    'right:10px',
-    'top:162px', // placeholder — replaced by positionOverlayRelativeToStrip
-    'z-index:1000',
-    'display:flex',
-    'flex-direction:column',
-    'align-items:flex-end',
-    'pointer-events:none',
-  ].join(';');
 
-  // Icon container holds a semi-transparent backdrop behind the button so the
-  // icon blends with the canvas the same way the native strip icons do.
   const iconHolder = document.createElement('div');
   iconHolder.className = 'bsv-bs-icon-holder';
-  iconHolder.style.cssText = [
-    'position:relative',
-    'width:32px',
-    'height:32px',
-    'pointer-events:none',
-    'border-radius:3px',
-    'overflow:hidden',
-  ].join(';');
 
   // Backdrop behind the icon — same values as Mol*'s native
   // `.msp-semi-transparent-background` (#eeece7 @ 0.5 opacity).
   const iconBg = document.createElement('div');
-  iconBg.style.cssText = [
-    'position:absolute',
-    'inset:0',
-    'background:#eeece7',
-    'opacity:0.5',
-    'pointer-events:none',
-  ].join(';');
+  iconBg.className = 'bsv-bs-icon-bg';
   iconHolder.appendChild(iconBg);
 
-  const iconBtn = document.createElement('button');
   // Use the exact same native Mol* classes as the strip icons, so we
   // inherit:
   //   msp-btn-link-toggle-off → color: #9c835f (muted, default)
   //   :hover                  → color: #ae5d04 (orange accent)
   //   msp-btn-link-toggle-on  → color: #332b1f (fully saturated on active)
+  const iconBtn = document.createElement('button');
   iconBtn.className = 'msp-btn msp-btn-icon msp-btn-link msp-btn-link-toggle-off bsv-bs-icon-btn';
   iconBtn.type = 'button';
   iconBtn.setAttribute('aria-label', 'Binding site');
   iconBtn.setAttribute('title', 'Binding site');
   iconBtn.innerHTML = BULLSEYE_SVG;
-  iconBtn.style.cssText = [
-    'position:absolute',
-    'inset:0',
-    'pointer-events:all',
-    'display:flex',
-    'align-items:center',
-    'justify-content:center',
-    'background:transparent',
-  ].join(';');
   iconHolder.appendChild(iconBtn);
 
   wrapper.appendChild(iconHolder);
 
-  // Popover attached to wrapper.parentElement (viewer root). Styled to
-  // match Mol*'s own `.msp-viewport-controls-panel` — FLAT: no border,
-  // no border-radius, no shadow. Only bg #e0ddd4 and a subtle darker header.
+  // Popover attached to wrapper.parentElement (viewer root). Width / top /
+  // left / right are set at runtime by _bsvReposition based on the viewport
+  // clip box — the rest lives in CSS (`.bsv-bs-popover`).
   const popover = document.createElement('div');
   popover.className = 'msp-viewport-controls-panel bsv-bs-popover bsv-bs-popover-hidden';
   popover.setAttribute('role', 'dialog');
   popover.setAttribute('aria-label', 'Binding site options');
-  popover.style.cssText = [
-    'position:absolute',
-    'top:0',
-    'left:0',
-    'width:290px',
-    'background:#e0ddd4',
-    'border:none',
-    'border-radius:0',
-    'box-shadow:none',
-    'z-index:9999',
-    'overflow:hidden',
-    'pointer-events:all',
-    // Match Mol*'s typography
-    'font-family:"Helvetica Neue","Segoe UI",Helvetica,"Source Sans Pro",Arial,sans-serif',
-    'font-size:14px',
-    'color:#332b1f',
-  ].join(';');
 
-  // Mol*-style header: subtle beige bar (#eeece7), matches native
-  // `.msp-control-group-header`. Flat — no border, no radius.
   const popHeader = document.createElement('div');
-  popHeader.style.cssText = [
-    'padding:3px 10px', 'font-size:14px', 'font-weight:bold', 'color:#332b1f',
-    'background:#eeece7', 'display:flex', 'align-items:center', 'gap:6px', 'line-height:24px',
-  ].join(';');
+  popHeader.className = 'bsv-bs-popover-header';
   popHeader.innerHTML =
     BULLSEYE_SVG
       .replace('width="16" height="16"', 'width="13" height="13"')
@@ -415,46 +368,21 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   popover.appendChild(popHeader);
 
   const popBody = document.createElement('div');
-  popBody.style.cssText = 'padding:0';
   popover.appendChild(popBody);
-
-  // Mol* .msp-control-row look: 32px tall row, darker background than the
-  // popover, 1px gap between rows showing the popover background through.
-  const ROW_STYLE = [
-    'display:flex', 'align-items:center',
-    'height:32px', 'margin-top:1px', 'background:#eeece7',
-  ].join(';');
-  const LABEL_STYLE = [
-    // 140px fits "Show side chains" at 14px without ellipsis truncation.
-    // Mol*'s own .msp-control-row-label is 120px but assumes single-word labels.
-    'width:140px', 'flex-shrink:0', 'padding:0 10px',
-    'text-align:right', 'line-height:32px',
-    'font-size:14px', 'color:#63533c',
-    'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis',
-  ].join(';');
-  // Right column — slightly lighter than the row bg so the control cell stands
-  // out from the label column. Matches Mol*'s `.msp-form-control` background
-  // (#f3f2ee) over `.msp-control-row` (#eeece7).
-  const CONTROL_STYLE = [
-    'flex:1', 'display:flex', 'align-items:center', 'gap:8px', 'padding:0 10px',
-    'background:#f3f2ee', 'height:32px',
-  ].join(';');
 
   // Row: show binding site checkbox (the toggle)
   const showRow = document.createElement('label');
-  showRow.style.cssText = ROW_STYLE + ';cursor:pointer';
+  showRow.className = 'bsv-bs-row';
   const showLbl = document.createElement('span');
-  showLbl.style.cssText = LABEL_STYLE;
+  showLbl.className = 'bsv-bs-row-label';
   showLbl.textContent = 'Show side chains';
   const showCtrl = document.createElement('span');
-  // Checkbox is much narrower than the slider; center it so it sits over the
-  // same x-range the slider's thumb traverses on the Radius row below.
-  showCtrl.style.cssText = CONTROL_STYLE + ';justify-content:center';
+  showCtrl.className = 'bsv-bs-row-ctrl bsv-bs-row-ctrl--center';
   const showChk = document.createElement('input');
   showChk.type = 'checkbox';
   showChk.id = 'bsv-bs-show-chk';
+  showChk.className = 'bsv-bs-show-chk';
   showChk.setAttribute('aria-label', 'Show side chains');
-  showChk.style.cssText = 'width:13px;height:13px;accent-color:#ae5d04;cursor:pointer;margin:0';
   showCtrl.appendChild(showChk);
   showRow.appendChild(showLbl);
   showRow.appendChild(showCtrl);
@@ -462,24 +390,21 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
 
   // Row: radius slider
   const radiusRow = document.createElement('div');
-  radiusRow.style.cssText = ROW_STYLE;
+  radiusRow.className = 'bsv-bs-row';
   const radiusLabel = document.createElement('span');
-  radiusLabel.style.cssText = LABEL_STYLE;
+  radiusLabel.className = 'bsv-bs-row-label';
   radiusLabel.textContent = 'Radius';
   const radiusCtrl = document.createElement('span');
-  radiusCtrl.style.cssText = CONTROL_STYLE;
+  radiusCtrl.className = 'bsv-bs-row-ctrl';
   const radiusSlider = document.createElement('input');
   radiusSlider.type = 'range';
   radiusSlider.min = '3';
   radiusSlider.max = '10';
   radiusSlider.step = '0.5';
+  radiusSlider.className = 'bsv-bs-radius-slider';
   radiusSlider.setAttribute('aria-label', 'Binding site radius in angstroms');
-  radiusSlider.style.cssText = 'flex:1;height:4px;cursor:pointer';
   const radiusVal = document.createElement('span');
-  radiusVal.style.cssText = [
-    'font-size:13px', 'color:#ae5d04', 'font-weight:600', 'width:44px',
-    'text-align:right', 'flex-shrink:0', 'font-family:Consolas,monospace',
-  ].join(';');
+  radiusVal.className = 'bsv-bs-radius-val';
   radiusCtrl.appendChild(radiusSlider);
   radiusCtrl.appendChild(radiusVal);
   radiusRow.appendChild(radiusLabel);
@@ -621,12 +546,18 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   iconBtn.addEventListener('mousedown', (e: MouseEvent) => { e.preventDefault(); });
   iconBtn.addEventListener('click', (e: MouseEvent) => {
     e.stopPropagation();
-    if (popoverOpen) closePopover(); else openPopover();
+    if (popoverOpen)
+      closePopover();
+    else
+      openPopover();
   });
   iconBtn.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      if (popoverOpen) closePopover(); else openPopover();
+      if (popoverOpen)
+        closePopover();
+      else
+        openPopover();
     }
   });
 
@@ -716,7 +647,10 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
 
   // Exposed so molstar-viewer.ts can trigger repositioning after the Mol*
   // plugin has finished rendering its chrome.
-  const reposition = () => { positionOverlayRelativeToStrip(wrapper); attachResizeObserver(); };
+  const reposition = () => {
+    positionOverlayRelativeToStrip(wrapper);
+    attachResizeObserver();
+  };
   wrapper._bsvReposition = () => {
     reposition();
     // Re-try a few times to catch async chrome mounts / panel animations.
@@ -726,7 +660,10 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   // Safety net: a 500 ms polling interval. Wasteful but bulletproof against
   // any missed mutation/resize events. Stops when overlay is detached.
   const pollInterval = window.setInterval(() => {
-    if (!wrapper.isConnected) { window.clearInterval(pollInterval); return; }
+    if (!wrapper.isConnected) {
+      window.clearInterval(pollInterval);
+      return;
+    }
     positionOverlayRelativeToStrip(wrapper);
     attachResizeObserver();
     refreshUI();
@@ -736,8 +673,14 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
     document.removeEventListener('keydown', onKeydown, {capture: true});
     document.removeEventListener('click', onOutsideClick, {capture: false});
     if (radiusTimer !== null) clearTimeout(radiusTimer);
-    if (resizeObserver) { resizeObserver.disconnect(); resizeObserver = null; }
-    if (mutationObserver) { mutationObserver.disconnect(); mutationObserver = null; }
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+    if (mutationObserver) {
+      mutationObserver.disconnect();
+      mutationObserver = null;
+    }
     if (popover.parentElement) popover.parentElement.removeChild(popover);
   };
 
