@@ -287,31 +287,24 @@ export function validateParams(params: ChemEnumParams): ChemEnumValidation {
 // ─── SMILES assembly ────────────────────────────────────────────────────────
 
 /**
- * Joins a core with one R-group per R-number using shared ring-closure digits
- * across a disconnected SMILES, then canonicalizes via RDKit.
+ * Pure-string join: core + one R-group per R-number share ring-closure digits
+ * across a disconnected SMILES. Returns a SMILES that RDKit can parse, but
+ * **not canonicalized** — call `Chem:convertNotation` or {@link assembleMolecule}
+ * for canonical output. No RDKit calls — safe to run on millions of rows without
+ * blocking the main thread.
  *
- *   core: `C[*:1]N[*:2]`, R1=`[*:1]CC`, R2=`[*:2]O`
- *   pick digits 50, 51 → `C%50N%51.CC%50.O%51` → RDKit → `CCCN O` (canonical)
+ *   core: `C[*:1]N[*:2]`, R1=`O[*:1]`, R2=`S[*:2]`
+ *   → `C%50N%51.O%50.S%51` (uncanonical but valid)
  */
-export function assembleMolecule(
+export function buildJoinedSmiles(
   coreSmiles: string,
   rgSmilesByNum: Map<number, string>,
-  rdkit: RDModule,
 ): string | null {
   if (rgSmilesByNum.size === 0) return null;
 
-  const coreCanon = canonicalizeKeepingRLabels(coreSmiles, rdkit);
-  if (coreCanon === null) return null;
-  const rgCanonByNum = new Map<number, string>();
-  for (const [k, s] of rgSmilesByNum) {
-    const c = canonicalizeKeepingRLabels(s, rdkit);
-    if (c === null) return null;
-    rgCanonByNum.set(k, c);
-  }
-
-  const coreFixed = moveStartRLabelToBranch(coreCanon);
+  const coreFixed = moveStartRLabelToBranch(coreSmiles);
   const rgsFixed = new Map<number, string>();
-  for (const [k, s] of rgCanonByNum) rgsFixed.set(k, moveStartRLabelToBranch(s));
+  for (const [k, s] of rgSmilesByNum) rgsFixed.set(k, moveStartRLabelToBranch(s));
 
   const allPieces = [coreFixed, ...rgsFixed.values()];
   const digits = pickFreeRingDigits(allPieces, rgSmilesByNum.size);
@@ -329,24 +322,24 @@ export function assembleMolecule(
   for (const [k, s] of rgsFixed)
     assembledRgs.push(substituteRLabelWithRingDigit(s, k, digitByNum.get(k)!));
 
-  const joined = [assembledCore, ...assembledRgs].join('.');
+  return [assembledCore, ...assembledRgs].join('.');
+}
 
+/**
+ * Joins a core with one R-group per R-number and canonicalizes via RDKit.
+ * Per-molecule sync RDKit call — **do not use in bulk**; prefer {@link buildJoinedSmiles}
+ * + a batched `Chem:convertNotation` over the whole column.
+ */
+export function assembleMolecule(
+  coreSmiles: string,
+  rgSmilesByNum: Map<number, string>,
+  rdkit: RDModule,
+): string | null {
+  const joined = buildJoinedSmiles(coreSmiles, rgSmilesByNum);
+  if (!joined) return null;
   let mol: RDMol | null = null;
   try {
     mol = rdkit.get_mol(joined);
-    if (!mol || !mol.is_valid()) return null;
-    return mol.get_smiles();
-  } catch {
-    return null;
-  } finally {
-    mol?.delete();
-  }
-}
-
-function canonicalizeKeepingRLabels(smi: string, rdkit: RDModule): string | null {
-  let mol: RDMol | null = null;
-  try {
-    mol = rdkit.get_mol(smi);
     if (!mol || !mol.is_valid()) return null;
     return mol.get_smiles();
   } catch {
@@ -491,6 +484,57 @@ export function enumerateSample(
     const rgSmiByNum = new Map<number, string>();
     for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
     const smi = assembleMolecule(core.smiles, rgSmiByNum, rdkit);
+    if (!smi) continue;
+
+    const originalRgs = new Map<number, string>();
+    for (const [n, rg] of assignment) originalRgs.set(n, rg.originalSmiles);
+    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: originalRgs};
+
+    if (reservoir.length < sampleSize) {
+      reservoir.push(item);
+    } else {
+      const j = Math.floor(rand() * (seen + 1));
+      if (j < sampleSize) reservoir[j] = item;
+    }
+    seen++;
+  }
+  return reservoir;
+}
+
+/**
+ * No-RDKit enumeration — returns *uncanonical* joined SMILES per assignment.
+ * Intended as the first stage of a bulk pipeline: collect these into a column
+ * and canonicalize with one parallel `Chem:convertNotation` call instead of
+ * per-row sync RDKit work.
+ */
+export function enumerateRaw(params: ChemEnumParams): ChemEnumResult[] | null {
+  const v = validateParams(params);
+  if (!v.ok) return null;
+
+  const out: ChemEnumResult[] = [];
+  for (const {core, assignment} of iterateAssignments(params)) {
+    const rgSmiByNum = new Map<number, string>();
+    for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
+    const smi = buildJoinedSmiles(core.smiles, rgSmiByNum);
+    if (!smi) continue;
+
+    const originalRgs = new Map<number, string>();
+    for (const [n, rg] of assignment) originalRgs.set(n, rg.originalSmiles);
+    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: originalRgs});
+  }
+  return out;
+}
+
+/** Reservoir-sample with the no-RDKit join. Output SMILES are uncanonical but parseable. */
+export function enumerateSampleRaw(
+  params: ChemEnumParams, sampleSize: number, rand: () => number = Math.random,
+): ChemEnumResult[] {
+  const reservoir: ChemEnumResult[] = [];
+  let seen = 0;
+  for (const {core, assignment} of iterateAssignments(params)) {
+    const rgSmiByNum = new Map<number, string>();
+    for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
+    const smi = buildJoinedSmiles(core.smiles, rgSmiByNum);
     if (!smi) continue;
 
     const originalRgs = new Map<number, string>();
