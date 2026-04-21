@@ -129,18 +129,33 @@
 }
 
 .diff-studio-export-preview {
-    font-family: var(--grok-font-family-monospace, monospace);
-    font-size: 12px;
-    margin: 0;
-    padding: 12px 16px;
-    white-space: pre-wrap;
-    word-break: break-word;
     box-sizing: border-box;
     height: 100%;
     width: 100%;
-    overflow: auto;
+    overflow: hidden;
     background: var(--grey-1);
     border-radius: 4px;
+}
+
+.diff-studio-export-preview .cm-editor {
+    height: 100%;
+    width: 100%;
+    font-size: 12px;
+    background: transparent;
+}
+
+.diff-studio-export-preview .cm-scroller {
+    overflow: auto;
+    font-family: var(--grok-font-family-monospace, monospace);
+}
+
+.diff-studio-export-preview .cm-content {
+    padding: 12px 0;
+}
+
+.diff-studio-export-preview .cm-gutters {
+    background: transparent;
+    border-right: 1px solid var(--grey-2);
 }
 
 .diff-studio-export-copy-icon {

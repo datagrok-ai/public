@@ -1,6 +1,9 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import type {EditorView} from 'codemirror';
+import type {EditorState, Compartment, Extension} from '@codemirror/state';
+
 import {convertIvpToLatex, ConvertOptions} from 'diff-grok';
 
 import {LINK} from '../ui-constants';
@@ -9,6 +12,34 @@ import {LINK} from '../ui-constants';
 import '../../css/app-styles.css';
 
 type Format = 'latex' | 'markdown';
+
+/** Cached CodeMirror 6 modules; populated on first call to `getCM()` and reused for later dialogs. */
+let _cm: {
+  basicSetup: typeof import('codemirror')['basicSetup'];
+  EditorView: typeof EditorView;
+  EditorState: typeof EditorState;
+  Compartment: typeof Compartment;
+  markdown: typeof import('@codemirror/lang-markdown')['markdown'];
+  StreamLanguage: typeof import('@codemirror/language')['StreamLanguage'];
+  stex: typeof import('@codemirror/legacy-modes/mode/stex')['stex'];
+} | null = null;
+
+/** Lazily imports CodeMirror 6 plus the language modes used by the export preview
+ * (Markdown, and stex via StreamLanguage for LaTeX). Results are cached. */
+async function getCM() {
+  if (!_cm) {
+    const [{basicSetup, EditorView}, {EditorState, Compartment}, {markdown}, {StreamLanguage}, {stex}] =
+      await Promise.all([
+        import('codemirror'),
+        import('@codemirror/state'),
+        import('@codemirror/lang-markdown'),
+        import('@codemirror/language'),
+        import('@codemirror/legacy-modes/mode/stex'),
+      ]);
+    _cm = {basicSetup, EditorView, EditorState, Compartment, markdown, StreamLanguage, stex};
+  }
+  return _cm;
+} // getCM
 
 /** Wraps a LaTeX body fragment into a standalone compilable document with the preamble
  * used by `diff-grok`'s `buildLatexDocument` (amsmath, amssymb, booktabs). */
@@ -76,7 +107,7 @@ export function showExportDialog(
   });
 
   const compactInput = ui.input.bool('Compact', {
-    value: false,
+    value: true,
     tooltipText: 'Compact mode: no section headings, inline initial conditions. ' +
       'Suitable for small models (up to three equations).',
   });
@@ -131,8 +162,58 @@ export function showExportDialog(
 
   applyExtrasVisibility();
 
-  const previewEl = ui.element('pre');
+  const previewEl = ui.div();
   previewEl.classList.add('diff-studio-export-preview');
+
+  let editorView: EditorView | null = null;
+  let langCompartment: Compartment | null = null;
+  let pendingDoc = '';
+
+  /** Returns the CodeMirror language extension matching the currently selected format:
+   * `stex` (via `StreamLanguage`) for LaTeX, `markdown()` for Markdown. Falls back to
+   * an empty extension array when CM modules haven't finished loading yet. */
+  const getLanguageExt = (): Extension => {
+    if (!_cm) return [];
+    const fmt = (formatInput.value as Format) ?? 'latex';
+    return fmt === 'markdown' ? _cm.markdown() : _cm.StreamLanguage.define(_cm.stex);
+  };
+
+  /** Replaces the preview editor's document with `text`. If the editor is still being
+   * loaded, stashes the value in `pendingDoc` so it is applied on first mount. */
+  const setPreviewText = (text: string): void => {
+    if (editorView) {
+      editorView.dispatch({
+        changes: {from: 0, to: editorView.state.doc.length, insert: text},
+      });
+    } else
+      pendingDoc = text;
+  };
+
+  /** Reconfigures the language compartment so syntax highlighting follows the format
+   * input (LaTeX vs. Markdown). No-op until the editor has been mounted. */
+  const syncLanguage = (): void => {
+    if (!editorView || !langCompartment) return;
+    editorView.dispatch({effects: langCompartment.reconfigure(getLanguageExt())});
+  };
+
+  /** Mounts the CodeMirror preview into `previewEl` as a read-only editor with a
+   * reconfigurable language compartment, then flushes any text queued while loading. */
+  const initEditor = async (): Promise<void> => {
+    const cm = await getCM();
+    langCompartment = new cm.Compartment();
+    editorView = new cm.EditorView({
+      doc: pendingDoc,
+      extensions: [
+        cm.basicSetup,
+        langCompartment.of(getLanguageExt()),
+        cm.EditorView.editable.of(false),
+        cm.EditorState.readOnly.of(true),
+      ],
+      parent: previewEl,
+    });
+    pendingDoc = '';
+  };
+  initEditor();
 
   const copyFeedback = ui.element('span');
   copyFeedback.classList.add('diff-studio-export-copy-feedback');
@@ -220,7 +301,7 @@ export function showExportDialog(
       const converted = convertIvpToLatex(ivpText, opts);
       const isLatex = opts.format === 'latex';
       const result = (isLatex && standaloneInput.value) ? wrapTex(converted) : converted;
-      previewEl.textContent = result;
+      setPreviewText(result);
       if (!result.trim()) {
         lastResult = null;
         hasResult = false;
@@ -229,7 +310,7 @@ export function showExportDialog(
         hasResult = true;
       }
     } catch (e) {
-      previewEl.textContent = `// Error: ${(e as Error).message}`;
+      setPreviewText(`// Error: ${(e as Error).message}`);
       lastResult = null;
       hasResult = false;
     }
@@ -253,6 +334,7 @@ export function showExportDialog(
     fileNameInput.value = fileNameInput.value.replace(/\.(md|tex)$/i, `.${newExt}`);
     standaloneInput.root.style.display = (fmt === 'latex') ? '' : 'none';
     dialog.title = titleForFormat(fmt);
+    syncLanguage();
   });
 
   // hide Standalone up-front if Markdown was the initial format

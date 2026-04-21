@@ -317,6 +317,19 @@ Apply [scripting](https://datagrok.ai/help/compute/scripting) tools to get:
 * non-elementary and special functions' use
 * Datagrok packages' functions call
 
+## Export to LaTeX and Markdown
+
+Diff Studio can render a model as LaTeX or Markdown for use in papers, reports and notebooks. Click the <i class="fas fa-file-export"></i> **Export** icon on the top panel to open the export dialog. In the dialog:
+
+* pick the output **Format**:
+  * `latex` — generates a `.tex` source. Toggle **Standalone** to wrap the output with `\documentclass{article}` and the required `\usepackage` lines so the file compiles with `pdflatex` out of the box
+  * `markdown` — generates a `.md` file with LaTeX math blocks, suitable for GitHub, Jupyter, or static-site generators
+* review the result in a live preview with syntax highlighting that follows the selected format
+* toggle which sections to include (title & description, initial conditions, parameters, constants)
+* enable **Compact** mode for small models (no section headings, inline initial conditions)
+* choose between `\cdot` and juxtaposition for multiplication
+* **Copy** the source to the clipboard or **Download** it as a file
+
 ## Citation
 
 If you use Diff Studio in your research, please cite our [JOSS paper](https://doi.org/10.21105/joss.09090):

@@ -54,6 +54,12 @@ The package is accessible via **Apps > Compute > Diff Studio** in the Datagrok p
 - `iter-checker-callback.ts` - Iteration limit checking
 - `time-checker-callback.ts` - Computation time limit checking
 
+**export/** directory
+- `export-dialog.ts` - Interactive LaTeX/Markdown export dialog for the current model
+- Uses `convertIvpToLatex` from `diff-grok` to render the IVP text
+- Live-preview is a read-only CodeMirror 6 editor; language (`stex` for LaTeX via `StreamLanguage`, `markdown()` for Markdown) is swapped in-place through a `Compartment` when the format input changes
+- Offers clipboard copy and file download; LaTeX output can be wrapped into a standalone compilable document
+
 ### Templates and Examples
 
 **templates.ts** - Three starter templates:
