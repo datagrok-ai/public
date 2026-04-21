@@ -1,0 +1,43 @@
+packageName: MolTrack
+description: Registration, tracking, and searching of chemical compounds, batches, and assay data
+keywords:
+  - registration
+  - compound
+  - batch
+  - assay
+  - bulk registration
+  - corporate id
+  - structure search
+  - substructure search
+  - similarity search
+  - saved searches
+  - schema
+  - custom properties
+  - cheminformatics
+  - mol-track
+overview: |
+  Registers, tracks, and searches chemical compounds, batches, and assay data,
+  backed by the mol-track service running in a Docker container.
+
+  Home: Browse > Chem > MolTrack. Landing view shows live entity counts next
+  to quick actions. Left tree: Register, Search, Saved Searches.
+
+  Single registration: Register > Compound | Batch | Assay. Form view with a
+  molecule sketcher and schema-driven fields, including custom properties.
+
+  Bulk registration: Register > Bulk. Upload a CSV, map columns to MolTrack
+  fields in the mapping editor, choose an error-handling mode, submit.
+  Returns a result table showing which rows registered and which failed.
+
+  Schema: Register > Schema. Add or edit the custom properties that appear
+  in every registration form.
+
+  Search: pick a scope (compounds, batches, assays, ...) and build a query
+  over any field, including custom properties. Structure search supports
+  substructure and similarity with an adjustable threshold.
+  Save queries to Saved Searches to re-run.
+
+  Entity lookup: opening a cell that holds a MolTrack corporate ID shows the
+  full compound or batch in the context panel.
+apiRef: src/package-api.ts
+docsRef: README.md
