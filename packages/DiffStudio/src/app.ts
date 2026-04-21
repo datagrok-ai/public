@@ -37,6 +37,8 @@ import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTa
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
+import {showExportDialog} from './export/export-dialog';
+
 //@ts-ignore
 import '../css/app-styles.css';
 
@@ -571,6 +573,7 @@ export class DiffStudio {
   private appStateInputWgt = this.getEditToggle();
   private saveBtn = this.getSaveBtn();
   private downLoadIcon = this.getDownLoadIcon();
+  private exportIcon = this.getExportIcon();
   private helpIcon = this.getHelpIcon();
   private openHelpInNewTabIcon = this.getHelpInNewTabIcon();
   private exportToJsWgt = this.getExportToJsWgt();
@@ -655,7 +658,7 @@ export class DiffStudio {
     return [
       [this.openComboMenu, this.addNewWgt],
       [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
-      [this.addToModelCatalogWgt, this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
+      [this.addToModelCatalogWgt, this.exportIcon, this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
     ];
   } // getRibbonPanels
 
@@ -687,6 +690,31 @@ export class DiffStudio {
   private getDownLoadIcon(): HTMLElement {
     const icon = ui.iconFA('arrow-to-bottom', () => this.saveToLocalFile(), HINT.SAVE_LOC);
     icon.classList.add('diff-studio-ribbon-download');
+
+    return icon;
+  }
+
+  private getExportIcon(): HTMLElement {
+    const icon = ui.iconFA('file-export', () => {
+      if (!this.editorView) {
+        grok.shell.info('No model loaded');
+        return;
+      }
+      const text = this.editorView.state.doc.toString();
+      if (!text.trim()) {
+        grok.shell.info('No model loaded');
+        return;
+      }
+      let name = 'diff-export';
+      try {
+        const ivp = getIVP(text);
+        if (ivp?.name) name = ivp.name;
+      } catch {
+        // parser failures are fine here — fall back to the default name
+      }
+      showExportDialog(text, name, 'latex');
+    }, 'Export model as LaTeX or Markdown');
+    icon.classList.add('diff-studio-ribbon-icon');
 
     return icon;
   }

@@ -31,3 +31,6 @@ dist/
 # Emitted *.js files
 src/**/*.js
 
+# Claude Code local settings
+.claude/settings.local.json
+
