@@ -3126,6 +3126,12 @@
   pointer-events: none;
 }
 
+/* Toggled by `refreshUI` when no polymer is loaded — side-chain visualization
+   isn't meaningful without a protein, so we hide the overlay entirely.     */
+.msp-plugin .bsv-bs-overlay--hidden {
+  display: none;
+}
+
 /* ── Binding site overlay: bullseye icon + its semi-transparent backdrop ──
    Match the native `.msp-viewport-controls-buttons > div` shape exactly — no
    border-radius / overflow clip. The `.msp-semi-transparent-background` child
@@ -3155,6 +3161,11 @@
   background: transparent !important;
   outline: none;
   box-shadow: none;
+}
+
+/* Dimmed state when no ligand is available (toggled by refreshUI). */
+.msp-plugin .bsv-bs-icon-btn--disabled {
+  opacity: 0.35;
 }
 
 /* ── Binding site overlay: popover ─────────────────────────────────────────
@@ -3277,7 +3288,13 @@ label.bsv-bs-row {
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  background: transparent;
+  /* Orange progress fill: `--progress` is set from JS each time the slider
+     value changes. Colours + gradient direction stay in CSS. */
+  background: linear-gradient(
+    to right,
+    #ae5d04 var(--bsv-bs-progress, 0%),
+    #d5d1c5 var(--bsv-bs-progress, 0%)
+  );
   accent-color: #d5d1c5;
   outline: none;
 }

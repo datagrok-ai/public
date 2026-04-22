@@ -503,8 +503,10 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   };
 
   const updateSliderGradient = (r: number) => {
+    // Only the percentage is a runtime value; the gradient + colours live in
+    // CSS (`.bsv-bs-radius-slider`) via the `--bsv-bs-progress` custom property.
     const pct = ((r - 3) / 7 * 100).toFixed(1);
-    radiusSlider.style.background = `linear-gradient(to right, #ae5d04 ${pct}%, #d5d1c5 ${pct}%)`;
+    radiusSlider.style.setProperty('--bsv-bs-progress', `${pct}%`);
   };
 
   const refreshUI = () => {
@@ -515,7 +517,7 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
 
     // No polymer loaded → hide the overlay entirely. Side-chain
     // highlighting is not meaningful without a protein.
-    wrapper.style.display = applicable ? '' : 'none';
+    wrapper.classList.toggle('bsv-bs-overlay--hidden', !applicable);
     if (!applicable) {
       if (popoverOpen) closePopover();
       return;
@@ -528,7 +530,7 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
     //   :hover         → #ae5d04   (orange accent, automatic)
     iconBtn.classList.toggle('msp-btn-link-toggle-off', !active);
     iconBtn.classList.toggle('msp-btn-link-toggle-on', active);
-    iconBtn.style.opacity = ligAvail ? '' : '0.35';
+    iconBtn.classList.toggle('bsv-bs-icon-btn--disabled', !ligAvail);
     iconBtn.disabled = !ligAvail;
     iconBtn.setAttribute('title', ligAvail ? 'Binding site' : 'No ligand detected');
 
