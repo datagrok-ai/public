@@ -1,5 +1,10 @@
 import { test } from '@playwright/test';
 
+test.use({
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
+});
+
 const stepErrors: { step: string; error: string }[] = [];
 
 async function softStep(name: string, fn: () => Promise<void>) {

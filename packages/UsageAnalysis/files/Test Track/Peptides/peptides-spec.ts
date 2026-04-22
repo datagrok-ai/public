@@ -1,5 +1,10 @@
 import {test, expect, chromium} from '@playwright/test';
 
+test.use({
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
+});
+
 const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 const stepErrors: {step: string; error: string}[] = [];

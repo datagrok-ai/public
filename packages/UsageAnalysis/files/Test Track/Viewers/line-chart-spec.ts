@@ -1,6 +1,15 @@
 import {test, expect, type Page} from '@playwright/test';
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
+});
+
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 const datasetPath = 'System:DemoFiles/demog.csv';
 
 const stepErrors: {step: string; error: string}[] = [];
@@ -109,23 +118,22 @@ async function openDatasetWithLineChart(page: Page, path: string) {
 // -- Setup --
 
 async function setupDemogLineChart(page: Page) {
-  // Phase 1: Navigate and wait for full Dart interop
   await page.goto(baseUrl);
-  // Wait for the platform UI to be fully loaded (sidebar visible = Dart app initialized)
-  await page.locator('[name="Toolbox"], [name="Browse"], .d4-sidebar').first().waitFor({timeout: 60000});
-  // Extra wait for Dart interop functions to register
-  await page.waitForFunction(() => {
-    try {
-      if (typeof grok === 'undefined' || !grok.shell) return false;
-      grok.shell.settings.showFiltersIconsConstantly;
-      return true;
-    } catch { return false; }
-  }, {timeout: 30000});
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
+  }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
 
   // Phase 2: Open dataset
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
+    grok.shell.windows.simpleMode = true;
     grok.shell.closeAll();
     const df = await grok.dapi.files.readCsv(path);
     const tv = grok.shell.addTableView(df);
@@ -133,15 +141,6 @@ async function setupDemogLineChart(page: Page) {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
       setTimeout(resolve, 3000);
     });
-    const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
-      .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-    if (hasBioChem) {
-      for (let i = 0; i < 50; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      await new Promise(r => setTimeout(r, 5000));
-    }
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 

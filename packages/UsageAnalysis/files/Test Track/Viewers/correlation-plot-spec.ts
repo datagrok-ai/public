@@ -1,5 +1,10 @@
 import {test, expect} from '@playwright/test';
 
+test.use({
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
+});
+
 const baseUrl = process.env.BASE_URL ?? 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 

@@ -1,5 +1,10 @@
 import {test, expect, Page} from '@playwright/test';
 
+test.use({
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
+});
+
 const baseUrl = 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';

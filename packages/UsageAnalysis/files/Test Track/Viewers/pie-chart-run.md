@@ -112,9 +112,17 @@
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | ~4 min |
-| Spec file generation | ~10s |
-| Spec script execution | 58.2s (1 passed, 0 failed) |
+| Model thinking (scenario steps) | 32s |
+| grok-browser execution (scenario steps) | 8s |
+| Execute via grok-browser (total) | 40s |
+| Spec file generation | 7s |
+| Spec script execution | 47s |
+| **Total scenario run (with model)** | 1m 34s |
+
+All rows are full-phase wall-clock (incl. model thinking and retries). The two `scenario steps`
+rows sum to `Execute via grok-browser (total)`. Spec was not rewritten (existing spec is correct
+per the user's instruction); the 7s reflects verification/sanity-pass only. Spec execution used
+the existing `playwright.config.files-and-sharing.ts` (testMatch: `/-spec\.ts$/`).
 
 ## Summary
 

@@ -1,6 +1,6 @@
 # Bar chart tests (Playwright) — Run Results
 
-**Date**: 2026-04-07
+**Date**: 2026-04-22
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -112,13 +112,16 @@
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | ~3 min |
-| Spec file generation | ~10s |
-| Spec script execution | 1m 0s (1 passed, 0 failed) |
+| Model thinking (scenario steps) | 45s |
+| grok-browser execution (scenario steps) | 2m 18s |
+| Execute via grok-browser (total) | 3m 3s |
+| Spec file generation | 21s |
+| Spec script execution | 52s |
+| **Total scenario run (with model)** | 5m 0s |
 
 ## Summary
 
-All 15 bar chart test sections passed on dev.datagrok.ai. All viewer properties (stack, sorting, axis type, color coding, include nulls, bar style, labels, controls, aggregation, date/time split, legend, title/description, values-instead-of-categories, orientation) behave correctly. Layout save/restore with SPGI dataset preserves filter and color column. Filter panel collaborative filtering confirmed.
+All 15 bar chart test sections passed on dev.datagrok.ai. All viewer properties (stack, sorting, axis type, color coding, include nulls, bar style, labels, controls, aggregation, date/time split, legend, title/description, values-instead-of-categories, orientation) behave correctly. Layout save/restore with SPGI dataset preserves filter and color column. Filter panel collaborative filtering confirmed. **Total scenario run (with model): 5m 0s.**
 
 ## Retrospective
 

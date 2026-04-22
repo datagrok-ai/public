@@ -5,7 +5,7 @@
 
 ## Folder Summary
 
-**Total**: 187 tests · Run: 138/187 (74%) · Playwright: 107/187 (57%) · Mean Browser: 4m 5.7s · Mean Spec Gen: 51.2s · Mean Spec Run: 41.1s · Mean Total: 5m 32.7s
+**Total**: 187 tests · Run: 138/187 (74%) · Playwright: 107/187 (57%) · Mean Browser: 3m 37.4s · Mean Spec Gen: 50.5s · Mean Spec Run: 41.6s · Mean Total: 5m 4.8s
 
 | Folder | Tests | Run | Playwright | Status | Mean Browser | Mean Spec Gen | Mean Spec Run | Mean Total |
 |--------|-------|-----|------------|--------|--------------|---------------|---------------|------------|
@@ -28,11 +28,11 @@
 | Scripts | 6 | 5/6 (83%) | 0/6 (0%) | PARTIAL |  |  |  |  |
 | StickyMeta | 4 | 4/4 (100%) | 4/4 (100%) | PARTIAL | 23.8s | 2.2s | 15s | 37.2s |
 | Tooltips | 7 | 0/7 (0%) | 0/7 (0%) | NO DATA |  |  |  |  |
-| Viewers | 49 | 42/49 (86%) | 42/49 (86%) | PARTIAL | 6m 50.9s | 1m 8.7s | 49.6s | 8m 46.3s |
+| Viewers | 49 | 42/49 (86%) | 42/49 (86%) | PARTIAL | 5m 49.6s | 1m 6.7s | 50.7s | 7m 45.8s |
 
 ## All Tests
 
-**Total**: 187 tests · 74 PASS / 46 PARTIAL / 10 FAIL / 1 AMBIGUOUS / 7 SKIP / 49 NO RUN · Mean Browser: 4m 5.7s · Mean Spec Gen: 51.2s · Mean Spec Run: 41.1s · Mean Total: 5m 32.7s
+**Total**: 187 tests · 74 PASS / 46 PARTIAL / 10 FAIL / 1 AMBIGUOUS / 7 SKIP / 49 NO RUN · Mean Browser: 3m 37.4s · Mean Spec Gen: 50.5s · Mean Spec Run: 41.6s · Mean Total: 5m 4.8s
 
 | Folder | Test | Status | Description | Browser | Spec Gen | Spec Run | Total | Browser Δ | Spec Gen Δ | Spec Run Δ | Total Δ |
 |--------|------|--------|-------------|---------|----------|----------|-------|-----------|------------|------------|---------|
@@ -174,63 +174,63 @@
 | Tooltips | line-chart---aggregated-tooltip | NO RUN → NO RUN |  |  |  |  |  | — | — | — | — |
 | Tooltips | tooltip-properties | NO RUN → NO RUN |  |  |  |  |  | — | — | — | — |
 | Tooltips | uniform-default-tooltip | NO RUN → NO RUN |  |  |  |  |  | — | — | — | — |
-| Viewers | [3d-scatter-plot](Viewers/3d-scatter-plot-run.md) | PASS → PASS | All 53 steps passed against dev.datagrok.ai. All 3D Scatter Plot viewer properties set via `viewer.setOptions()`. Canv... | 36m 0s | 5m 0s | 45s | 41m 45s | +0s | +0s | +0s | +0s |
+| Viewers | [3d-scatter-plot](Viewers/3d-scatter-plot-run.md) | PASS → PASS | All 14 steps (setup + 13 scenario sections) passed in both the MCP run and the Playwright replay. Spec completes in ~... | 7m 0s | 2m 0s | 50s | 9m 50s | -29m 0s | -3m 0s | +5s | -31m 55s |
 | Viewers | [annotation-regions](Viewers/annotation-regions-run.md) | PASS → PASS |  | 7m 0s | 1m 0s | 17s | 8m 17s | +0s | +0s | +0s | +0s |
-| Viewers | [bar-chart](Viewers/bar-chart-run.md) | PASS → PASS | All 15 bar chart test sections passed on dev.datagrok.ai. All viewer properties (stack, sorting, axis type, color cod... | 3m 0s | 10s | 1m 0s | 4m 10s | +0s | +0s | +0s | +0s |
+| Viewers | [bar-chart](Viewers/bar-chart-run.md) | PASS → PASS | All 15 bar chart test sections passed on dev.datagrok.ai. All viewer properties (stack, sorting, axis type, color cod... | 3m 3s | 21s | 52s | 4m 16s | +3s | +11s | -8s | +6s |
 | Viewers | bar-chart-tests | NO RUN → NO RUN |  |  |  |  |  | — | — | — | — |
-| Viewers | [box-plot](Viewers/box-plot-run.md) | PARTIAL → PARTIAL | 17 of 19 sections passed. Section 18 (Visualization zoom) is AMBIGUOUS: project save fails on dev server, and layout... | 3m 0s |  | 47s | 3m 47s | +0s | — | +0s | +0s |
+| Viewers | [box-plot](Viewers/box-plot-run.md) | PARTIAL → PARTIAL | 17 of 19 sections passed cleanly; section 8 combined into section 7 in the spec. Section 18 is AMBIGUOUS — `grok.dapi.... | 1m 5s | 8s | 32s | 1m 45s | -1m 55s | 8s (new) | -15s | -2m 2s |
 | Viewers | [calendar](Viewers/calendar-run.md) | PASS → PASS | All 11 actions in the Calendar scenario passed on `dev.datagrok.ai`. The viewer correctly renders, tooltips and selec... | 25s | 1m 0s | 9.4s | 1m 34.4s | +0s | +0s | +0s | +0s |
 | Viewers | [color-coding](Viewers/color-coding-run.md) | PASS → PASS | Core color coding steps passed: Linear (AGE, STARTED), Categorical (SEX, CONTROL) color coding applied and verified v... | 15s | 3s | 1m 24s | 1m 42s | +0s | +0s | +0s | +0s |
 | Viewers | [color-coding-(linked)](Viewers/color-coding-(linked)-run.md) | PASS → PASS | All tested steps passed. Linked color coding works via column tags (`.color-coding-type`, `.color-coding-source-colum... | 10s | 3s | 6s | 19s | +0s | +0s | +0s | +0s |
 | Viewers | [correlation-plot](Viewers/correlation-plot-run.md) | PARTIAL → PARTIAL | 27 of 30 steps passed, 3 skipped/ambiguous due to canvas-based cell interaction limitation. All property-based operat... | 5m 0s | 3s | 22s | 5m 25s | +0s | +0s | +0s | +0s |
 | Viewers | [density-plot](Viewers/density-plot-run.md) | PASS → PASS | All 13 scenarios passed. The density plot viewer behaves correctly across all tested property combinations. UI intera... | 18m 0s | 2m 0s |  | 20m 0s | +0s | +0s | — | +0s |
-| Viewers | [FilterPanel/basic-operations](Viewers/FilterPanel/basic-operations-run.md) | PASS → PASS | Ran basic-operations end-to-end against dev. All 31 scenario steps passed in the MCP browser phase (Section 1: struct... | 4m 27s | 9s | 50s | 5m 26s | 4m 27s (new) | 9s (new) | 50s (new) | 5m 26s (new) |
-| Viewers | [FilterPanel/chem-and-bio](Viewers/FilterPanel/chem-and-bio-run.md) | PASS → PASS | Ran chem-and-bio scenario end-to-end against dev. All 11 scenario steps passed in the MCP browser phase (Chem: open s... | 2m 50s | 42s | 47s | 4m 19s | 2m 50s (new) | 42s (new) | 47s (new) | 4m 19s (new) |
-| Viewers | [FilterPanel/cloned-views](Viewers/FilterPanel/cloned-views-run.md) | PASS → PASS | All 15 scenario steps PASSed on dev. spgi-100.csv loads correctly this time (previous run had to substitute SPGI.csv)... | 3m 16s | 14s | 55s | 4m 25s | 3m 16s (new) | 14s (new) | 55s (new) | 4m 25s (new) |
-| Viewers | [FilterPanel/collaborative-filtering-for-linked-tables](Viewers/FilterPanel/collaborative-filtering-for-linked-tables-run.md) | PASS → PASS | All 9 steps passed end-to-end on dev: table linking (SELECTION_TO_FILTER and FILTER_TO_FILTER) propagated correctly b... | 1m 46s | 17s | 35s | 2m 38s | +1m 11s | +14s | +5s | +1m 30s |
-| Viewers | [FilterPanel/combined-boolean-filter](Viewers/FilterPanel/combined-boolean-filter-run.md) | PASS → PASS | Ran combined-boolean-filter end-to-end against dev. All 13 numbered scenario steps passed in the MCP browser phase: S... | 2m 37s | 12s | 24s | 3m 13s | 2m 37s (new) | 12s (new) | 24s (new) | 3m 13s (new) |
-| Viewers | [FilterPanel/expression-filter](Viewers/FilterPanel/expression-filter-run.md) | PASS → PASS | All 14 steps passed in both the MCP run and the Playwright replay. Expression filter works correctly: 5-rule AND yiel... | 1m 14s | 8s | 23s | 1m 45s | 1m 14s (new) | 8s (new) | 23s (new) | 1m 45s (new) |
-| Viewers | [FilterPanel/hierarchical-filter](Viewers/FilterPanel/hierarchical-filter-run.md) | PASS → PASS | All 12 steps passed in the MCP run and in the Playwright replay (spec finished in 21.8s). The hierarchical filter cor... | 1m 15s | 21s | 23s | 1m 59s | 1m 15s (new) | 21s (new) | 23s (new) | 1m 59s (new) |
-| Viewers | [FilterPanel/text-filter](Viewers/FilterPanel/text-filter-run.md) | PASS → PASS | All 9 steps passed in the MCP run and in the Playwright replay (spec finished in 8.7s, total wall-clock 11.56s). The ... | 1m 12s | 20s | 12s | 1m 44s | 1m 12s (new) | 20s (new) | 12s (new) | 1m 44s (new) |
-| Viewers | [FilterPanel/viewers](Viewers/FilterPanel/viewers-run.md) | PASS → PASS | All 31 steps passed. Trellis Plot requires two clicks to apply filter (first selects cell, second applies), Esc to re... | 4m 24s | 40s | 1m 3s | 6m 7s | +2m 59s | +35s | -9s | +3m 25s |
+| Viewers | [FilterPanel/basic-operations](Viewers/FilterPanel/basic-operations-run.md) | PASS → PASS | Ran basic-operations end-to-end against dev. All 31 scenario steps passed in the MCP browser phase (Section 1: struct... | 4m 27s | 9s | 50s | 5m 26s | +0s | +0s | +0s | +0s |
+| Viewers | [FilterPanel/chem-and-bio](Viewers/FilterPanel/chem-and-bio-run.md) | PASS → PASS | Ran chem-and-bio scenario end-to-end against dev. All 11 scenario steps passed in the MCP browser phase (Chem: open s... | 2m 50s | 42s | 47s | 4m 19s | +0s | +0s | +0s | +0s |
+| Viewers | [FilterPanel/cloned-views](Viewers/FilterPanel/cloned-views-run.md) | PASS → PASS | All 15 scenario steps PASSed on dev. spgi-100.csv loads correctly this time (previous run had to substitute SPGI.csv)... | 3m 16s | 14s | 55s | 4m 25s | +0s | +0s | +0s | +0s |
+| Viewers | [FilterPanel/collaborative-filtering-for-linked-tables](Viewers/FilterPanel/collaborative-filtering-for-linked-tables-run.md) | PASS → PASS | All 9 steps passed end-to-end on dev: table linking (SELECTION_TO_FILTER and FILTER_TO_FILTER) propagated correctly b... | 1m 46s | 17s | 35s | 2m 38s | +0s | +0s | +0s | +0s |
+| Viewers | [FilterPanel/combined-boolean-filter](Viewers/FilterPanel/combined-boolean-filter-run.md) | PASS → PASS | Ran combined-boolean-filter end-to-end against dev. All 13 numbered scenario steps passed in the MCP browser phase: S... | 2m 37s | 12s | 24s | 3m 13s | +0s | +0s | +0s | +0s |
+| Viewers | [FilterPanel/expression-filter](Viewers/FilterPanel/expression-filter-run.md) | PASS → PASS | All 14 steps passed in both the MCP run and the Playwright replay. Expression filter works correctly: 5-rule AND yiel... | 1m 14s | 8s | 23s | 1m 45s | +0s | +0s | +0s | +0s |
+| Viewers | [FilterPanel/hierarchical-filter](Viewers/FilterPanel/hierarchical-filter-run.md) | PASS → PASS | All 12 steps passed in the MCP run and in the Playwright replay (spec finished in 21.8s). The hierarchical filter cor... | 1m 15s | 21s | 23s | 1m 59s | +0s | +0s | +0s | +0s |
+| Viewers | [FilterPanel/text-filter](Viewers/FilterPanel/text-filter-run.md) | PASS → PASS | All 9 steps passed in the MCP run and in the Playwright replay (spec finished in 8.7s, total wall-clock 11.56s). The ... | 1m 12s | 20s | 12s | 1m 44s | +0s | +0s | +0s | +0s |
+| Viewers | [FilterPanel/viewers](Viewers/FilterPanel/viewers-run.md) | PASS → PASS | All 31 steps passed. Trellis Plot requires two clicks to apply filter (first selects cell, second applies), Esc to re... | 4m 24s | 40s | 1m 3s | 6m 7s | +0s | +0s | +0s | +0s |
 | Viewers | [form](Viewers/form-run.md) | PASS → PASS | All 14 sections of form-tests-pw.md exercised across 30 steps. 28 PASS, 2 AMBIGUOUS, 0 FAIL in MCP run. Playwright spe... | 18m 0s | 4m 0s | 3m 12s | 25m 12s | +0s | +0s | +0s | +0s |
 | Viewers | [forms](Viewers/forms-run.md) | PASS → PASS | All 15 scenario sections exercised; 36 steps total. 32 PASS, 0 FAIL in MCP run (4 used JS API fallback for canvas ele... | 18m 0s | 3m 0s | 51.5s | 21m 51.5s | +0s | +0s | +0s | +0s |
 | Viewers | [grid](Viewers/grid-run.md) | PARTIAL → PARTIAL | Grid tests ran 22 steps (spec softSteps); 17 passed outright and 5 AMBIGUOUS (Copy/Paste, Column Header Context Menu, ... | 11m 0s | 3m 0s | 1m 18s | 15m 18s | +0s | +0s | +0s | +0s |
 | Viewers | [heatmap](Viewers/heatmap-run.md) | PASS → PASS | All 14 heat-map sections exercised across 17 steps. 15 PASS, 1 AMBIGUOUS, 1 SKIP in MCP run. Playwright spec passed fu... | 18m 0s | 4m 0s | 48.9s | 22m 48.9s | +0s | +0s | +0s | +0s |
-| Viewers | [histogram](Viewers/histogram-run.md) | PARTIAL → PARTIAL | Most histogram property-based tests passed successfully. All property setters (bins, split, color, spline, appearance... | 2m 0s | 30s | 50s | 3m 20s | +0s | +0s | +0s | +0s |
-| Viewers | [Legend/color-consistency](Viewers/Legend/color-consistency-run.md) | PASS → PARTIAL | Color consistency through layout round-trip works — the `.categorical-colors` tag survives save/reload and `R_ONE` st... | 2m 30s | 35s | 26s | 3m 31s | +2m 0s | +32s | +2s | +2m 34s |
-| Viewers | [Legend/filtering](Viewers/Legend/filtering-run.md) | PASS → PARTIAL | Filtering legend updates work end-to-end in the MCP run: numeric filter, categorical filter, layout round-trip, compo... | 3m 10s | 1m 10s | 44s | 5m 4s | +2m 15s | +1m 5s | +8.1s | +3m 28.1s |
-| Viewers | [Legend/line-chart](Viewers/Legend/line-chart-run.md) | PASS → PARTIAL | Line chart legend and multi-axis behaviors are mostly correct: 7 legend items for 7 categories, layout round-trip pre... | 2m 10s | 40s | 32s | 3m 22s | +40s | +37s | -15s | +1m 2s |
-| Viewers | [Legend/scatterplot](Viewers/Legend/scatterplot-run.md) | PASS → PARTIAL | Categorical legend on scatter plot updates correctly when X axis changes (sub 2) and when the Filter Panel narrows ca... | 4m 15s | 1m 20s | 54s | 6m 29s | +3m 30s | +1m 17s | +4s | +4m 51s |
-| Viewers | [Legend/structure-rendering](Viewers/Legend/structure-rendering-run.md) | PASS → PARTIAL | Structure rendering in legends works for Scatter plot, Histogram, Line chart and Pie chart (canvas-based molecule thu... | 2m 35s | 40s | 29s | 3m 44s | +2m 0s | +37s | +3s | +2m 40s |
-| Viewers | [Legend/visibility-and-positioning](Viewers/Legend/visibility-and-positioning-run.md) | PASS → PARTIAL | Scenario executed end-to-end with a mix of PASS, AMBIGUOUS, and FAIL. Legend display, source-swap, corner positioning... | 5m 45s | 1m 30s | 41s | 7m 56s | +4m 20s | +1m 25s | -2.7s | +5m 42.3s |
-| Viewers | [line-chart](Viewers/line-chart-run.md) | PASS → PASS | All 27 scenario sections passed on dev.datagrok.ai. The line chart viewer properties, context menu operations, layout... | 2m 0s | 5s | 2m 30s | 4m 35s | +0s | +0s | +0s | +0s |
+| Viewers | [histogram](Viewers/histogram-run.md) | PARTIAL → PARTIAL | Most histogram property-based tests passed successfully. All property setters (bins, split, color, spline, appearance... | 50s | 7s | 46s | 1m 43s | -1m 10s | -23s | -4s | -1m 37s |
+| Viewers | [Legend/color-consistency](Viewers/Legend/color-consistency-run.md) | PARTIAL → PARTIAL | Color consistency through layout round-trip works — the `.categorical-colors` tag survives save/reload and `R_ONE` st... | 2m 30s | 35s | 26s | 3m 31s | +0s | +0s | +0s | +0s |
+| Viewers | [Legend/filtering](Viewers/Legend/filtering-run.md) | PARTIAL → PARTIAL | Filtering legend updates work end-to-end in the MCP run: numeric filter, categorical filter, layout round-trip, compo... | 3m 10s | 1m 10s | 44s | 5m 4s | +0s | +0s | +0s | +0s |
+| Viewers | [Legend/line-chart](Viewers/Legend/line-chart-run.md) | PARTIAL → PARTIAL | Line chart legend and multi-axis behaviors are mostly correct: 7 legend items for 7 categories, layout round-trip pre... | 2m 10s | 40s | 32s | 3m 22s | +0s | +0s | +0s | +0s |
+| Viewers | [Legend/scatterplot](Viewers/Legend/scatterplot-run.md) | PARTIAL → PARTIAL | Categorical legend on scatter plot updates correctly when X axis changes (sub 2) and when the Filter Panel narrows ca... | 4m 15s | 1m 20s | 54s | 6m 29s | +0s | +0s | +0s | +0s |
+| Viewers | [Legend/structure-rendering](Viewers/Legend/structure-rendering-run.md) | PARTIAL → PARTIAL | Structure rendering in legends works for Scatter plot, Histogram, Line chart and Pie chart (canvas-based molecule thu... | 2m 35s | 40s | 29s | 3m 44s | +0s | +0s | +0s | +0s |
+| Viewers | [Legend/visibility-and-positioning](Viewers/Legend/visibility-and-positioning-run.md) | PARTIAL → PARTIAL | Scenario executed end-to-end with a mix of PASS, AMBIGUOUS, and FAIL. Legend display, source-swap, corner positioning... | 5m 45s | 1m 30s | 41s | 7m 56s | +0s | +0s | +0s | +0s |
+| Viewers | [line-chart](Viewers/line-chart-run.md) | PASS → PASS | All 27 scenario sections passed on dev.datagrok.ai. The line chart viewer properties, context menu operations, layout... | 57s | 8s | 1m 43s | 2m 48s | -1m 3s | +3s | -47s | -1m 47s |
 | Viewers | [map](Viewers/map-run.md) | PASS → PASS | Core steps passed: Map viewer added to earthquakes.csv with auto-detected lat/lon, color/size columns set, marker siz... | 15s | 3s | 9s | 27s | +0s | +0s | +0s | +0s |
 | Viewers | [matrix-plot](Viewers/matrix-plot-run.md) | PARTIAL → PARTIAL | Matrix Plot tests ran with 15 PASS, 3 AMBIGUOUS, 0 FAIL. The spec executed in 57.7s with all implemented steps passing... | 20m 0s | 3m 0s | 55.9s | 23m 55.9s | +0s | +0s | +0s | +0s |
-| Viewers | [network-diagram](Viewers/network-diagram-run.md) | PARTIAL → PARTIAL | Viewer core functionality (auto-pick, column rebinding, property-driven styling, filter integration, clean close) all... | 6m 45s | 3s | 7.4s | 6m 55.4s | +0s | +0s | +0s | +0s |
-| Viewers | [pc-plot](Viewers/pc-plot-run.md) | PASS → PASS | All 36 steps across 12 sections passed. PC Plot properties, context menus, filter interaction, column management, den... | 8m 0s | 5s | 38s | 8m 43s | +0s | +0s | +0s | +0s |
-| Viewers | [pie-chart](Viewers/pie-chart-run.md) | PASS → PASS | All 16 pie chart test sections passed on dev.datagrok.ai. All viewer properties (sorting, segment angle/length, appea... | 4m 0s | 10s | 58s | 5m 8s | +0s | +0s | +0s | +0s |
+| Viewers | [network-diagram](Viewers/network-diagram-run.md) | PARTIAL → PARTIAL | 9 of 12 steps PASS; 3 SKIP (canvas-based node/edge interactions cannot be automated via DOM). The network diagram vie... | 8m 0s | 1m 30s | 22s | 9m 52s | +1m 15s | +1m 27s | +14.6s | +2m 56.6s |
+| Viewers | [pc-plot](Viewers/pc-plot-run.md) | PASS → PASS | All 13 scenario sections (mapped to 12 Playwright softSteps — scale and normalization are combined in the spec) passe... | 1m 8s | 8s | 47s | 2m 3s | -6m 52s | +3s | +9s | -6m 40s |
+| Viewers | [pie-chart](Viewers/pie-chart-run.md) | PASS → PASS | All 16 pie chart test sections passed on dev.datagrok.ai. All viewer properties (sorting, segment angle/length, appea... | 40s | 7s | 47s | 1m 34s | -3m 20s | -3s | -11s | -3m 34s |
 | Viewers | [pivot-table](Viewers/pivot-table-run.md) | PARTIAL → PARTIAL | Pivot Table tests ran with 16 PASS, 2 AMBIGUOUS, 1 SKIP, 0 FAIL. The spec executed in 35.1s with all implemented steps... | 16m 0s | 3m 0s | 1m 12s | 20m 12s | +0s | +0s | +0s | +0s |
 | Viewers | rendering-structures-on-the-axes | NO RUN → NO RUN |  |  |  |  |  | — | — | — | — |
 | Viewers | [row-source](Viewers/row-source-run.md) | PASS → PASS | All 7 viewer types (Scatter Plot, Line Chart, Histogram, Bar Chart, Pie Chart, Box Plot, PC Plot) were tested with al... | 4m 0s | 5s | 1m 24s | 5m 29s | +0s | +0s | +0s | +0s |
-| Viewers | [scatter-plot](Viewers/scatter-plot-run.md) | PASS → PASS | All 20 test sections passed on dev.datagrok.ai. Playwright spec executed in 1.1 min (headed mode). Context menu, rect... | 8m 0s | 5s | 1m 6s | 9m 11s | +0s | +0s | +0s | +0s |
+| Viewers | [scatter-plot](Viewers/scatter-plot-run.md) | PASS → PASS | All 20 sections passed during the MCP run on dev.datagrok.ai. The existing Playwright spec was re-run headed without m... | 3m 13s | 29s | 52s | 4m 34s | -4m 47s | +24s | -14s | -4m 37s |
 | Viewers | scatter-plot-tests | NO RUN → NO RUN |  |  |  |  |  | — | — | — | — |
 | Viewers | statistics-viewer | NO RUN → NO RUN |  |  |  |  |  | — | — | — | — |
 | Viewers | [tile-viewer](Viewers/tile-viewer-run.md) | PASS → PASS | 24 of 24 steps passed. Steps correspond 1:1 to softSteps in the spec. Drag between lanes and Card markup moved to manu... | 4m 0s | 3m 0s | 58s | 7m 58s | +0s | +0s | +0s | +0s |
 | Viewers | [tree-map-viewer](Viewers/tree-map-viewer-run.md) | PARTIAL → PARTIAL | All 37 steps passed against dev.datagrok.ai. Tree Map split selects are standard `<select>` elements interactable via ... | 28m 0s | 4m 0s | 46s | 32m 46s | +0s | +0s | +0s | +0s |
 | Viewers | [trellis-plot](Viewers/trellis-plot-run.md) | PARTIAL → PARTIAL | Most trellis plot property-based tests passed successfully via JS API. Canvas-based interactions (bin clicks, range s... | 3m 0s | 30s | 1m 48s | 5m 18s | +0s | +0s | +0s | +0s |
 | Viewers | viewers-docking | NO RUN → NO RUN |  |  |  |  |  | — | — | — | — |
-| Viewers | [word-cloud](Viewers/word-cloud-run.md) | PASS → PASS | All tested steps passed. Word cloud viewer added to SPGI with column set to "Primary Series Name". Properties include... | 20s | 3s | 13s | 36s | +0s | +0s | +0s | +0s |
+| Viewers | [word-cloud](Viewers/word-cloud-run.md) | PASS → PASS | All 7 MCP scenario steps PASS. The Word Cloud viewer adds via both entry points (Add-Viewer gallery and Toolbox icon),... | 4m 15s | 1m 0s | 2m 7s | 7m 22s | +3m 55s | +57s | +1m 54s | +6m 46s |
 | Viewers | word-cloud-tests | NO RUN → NO RUN |  |  |  |  |  | — | — | — | — |
 | Viewers | working-with-nan-&-infinity | NO RUN → NO RUN |  |  |  |  |  | — | — | — | — |
 
 ## Comparison with Previous Report
 
-Delta from the previous `total-run.md` (dated 2026-04-21); signed with `+`/`-`, time deltas use the same format as the values.
+Delta from the previous `total-run.md` (dated 2026-04-22); signed with `+`/`-`, time deltas use the same format as the values.
 
 ### Totals
 
-**Total**: Tests Δ **+0** · Run Δ **+0 (+0%)** · Playwright Δ **+0 (+0%)** · Status **PARTIAL → PARTIAL** · Browser Δ **+5.1s** · Spec Gen Δ **+1.9s** · Spec Run Δ **-0.8s** · Total Δ **+6.6s**
+**Total**: Tests Δ **+0** · Run Δ **+0 (+0%)** · Playwright Δ **+0 (+0%)** · Status **PARTIAL → PARTIAL** · Browser Δ **-28.3s** · Spec Gen Δ **-0.7s** · Spec Run Δ **+0.5s** · Total Δ **-28s**
 
 ### By Folder
 
@@ -255,33 +255,28 @@ Delta from the previous `total-run.md` (dated 2026-04-21); signed with `+`/`-`, 
 | Scripts | +0 | +0 (+0%) | +0 (+0%) | PARTIAL → PARTIAL | — | — | — | — |
 | StickyMeta | +0 | +0 (+0%) | +0 (+0%) | PARTIAL → PARTIAL | +0s | +0s | +0s | +0s |
 | Tooltips | +0 | +0 (+0%) | +0 (+0%) | NO DATA → NO DATA | — | — | — | — |
-| Viewers | +0 | +0 (+0%) | +0 (+0%) | PARTIAL → PARTIAL | -20.9s | +0.8s | -3.5s | -22.9s |
+| Viewers | +0 | +0 (+0%) | +0 (+0%) | PARTIAL → PARTIAL | -1m 1.3s | -2s | +1.1s | -1m 0.5s |
 
 ### Per-Test Changes
 
 | Folder | Test | Status | Browser Δ | Spec Gen Δ | Spec Run Δ | Total Δ |
 |--------|------|--------|-----------|------------|------------|---------|
-| Viewers | [FilterPanel/basic-operations](Viewers/FilterPanel/basic-operations-run.md) | PASS → PASS | 4m 27s (new) | 9s (new) | 50s (new) | 5m 26s (new) |
-| Viewers | [FilterPanel/chem-and-bio](Viewers/FilterPanel/chem-and-bio-run.md) | PASS → PASS | 2m 50s (new) | 42s (new) | 47s (new) | 4m 19s (new) |
-| Viewers | [FilterPanel/cloned-views](Viewers/FilterPanel/cloned-views-run.md) | PASS → PASS | 3m 16s (new) | 14s (new) | 55s (new) | 4m 25s (new) |
-| Viewers | [FilterPanel/collaborative-filtering-for-linked-tables](Viewers/FilterPanel/collaborative-filtering-for-linked-tables-run.md) | PASS → PASS | +1m 11s | +14s | +5s | +1m 30s |
-| Viewers | [FilterPanel/combined-boolean-filter](Viewers/FilterPanel/combined-boolean-filter-run.md) | PASS → PASS | 2m 37s (new) | 12s (new) | 24s (new) | 3m 13s (new) |
-| Viewers | [FilterPanel/expression-filter](Viewers/FilterPanel/expression-filter-run.md) | PASS → PASS | 1m 14s (new) | 8s (new) | 23s (new) | 1m 45s (new) |
-| Viewers | [FilterPanel/hierarchical-filter](Viewers/FilterPanel/hierarchical-filter-run.md) | PASS → PASS | 1m 15s (new) | 21s (new) | 23s (new) | 1m 59s (new) |
-| Viewers | [FilterPanel/text-filter](Viewers/FilterPanel/text-filter-run.md) | PASS → PASS | 1m 12s (new) | 20s (new) | 12s (new) | 1m 44s (new) |
-| Viewers | [FilterPanel/viewers](Viewers/FilterPanel/viewers-run.md) | PASS → PASS | +2m 59s | +35s | -9s | +3m 25s |
-| Viewers | [Legend/color-consistency](Viewers/Legend/color-consistency-run.md) | PASS → PARTIAL | +2m 0s | +32s | +2s | +2m 34s |
-| Viewers | [Legend/filtering](Viewers/Legend/filtering-run.md) | PASS → PARTIAL | +2m 15s | +1m 5s | +8.1s | +3m 28.1s |
-| Viewers | [Legend/line-chart](Viewers/Legend/line-chart-run.md) | PASS → PARTIAL | +40s | +37s | -15s | +1m 2s |
-| Viewers | [Legend/scatterplot](Viewers/Legend/scatterplot-run.md) | PASS → PARTIAL | +3m 30s | +1m 17s | +4s | +4m 51s |
-| Viewers | [Legend/structure-rendering](Viewers/Legend/structure-rendering-run.md) | PASS → PARTIAL | +2m 0s | +37s | +3s | +2m 40s |
-| Viewers | [Legend/visibility-and-positioning](Viewers/Legend/visibility-and-positioning-run.md) | PASS → PARTIAL | +4m 20s | +1m 25s | -2.7s | +5m 42.3s |
+| Viewers | [3d-scatter-plot](Viewers/3d-scatter-plot-run.md) | PASS → PASS | -29m 0s | -3m 0s | +5s | -31m 55s |
+| Viewers | [bar-chart](Viewers/bar-chart-run.md) | PASS → PASS | +3s | +11s | -8s | +6s |
+| Viewers | [box-plot](Viewers/box-plot-run.md) | PARTIAL → PARTIAL | -1m 55s | 8s (new) | -15s | -2m 2s |
+| Viewers | [histogram](Viewers/histogram-run.md) | PARTIAL → PARTIAL | -1m 10s | -23s | -4s | -1m 37s |
+| Viewers | [line-chart](Viewers/line-chart-run.md) | PASS → PASS | -1m 3s | +3s | -47s | -1m 47s |
+| Viewers | [network-diagram](Viewers/network-diagram-run.md) | PARTIAL → PARTIAL | +1m 15s | +1m 27s | +14.6s | +2m 56.6s |
+| Viewers | [pc-plot](Viewers/pc-plot-run.md) | PASS → PASS | -6m 52s | +3s | +9s | -6m 40s |
+| Viewers | [pie-chart](Viewers/pie-chart-run.md) | PASS → PASS | -3m 20s | -3s | -11s | -3m 34s |
+| Viewers | [scatter-plot](Viewers/scatter-plot-run.md) | PASS → PASS | -4m 47s | +24s | -14s | -4m 37s |
+| Viewers | [word-cloud](Viewers/word-cloud-run.md) | PASS → PASS | +3m 55s | +57s | +1m 54s | +6m 46s |
 
 ## Release Readiness
 
 **Verdict**: Conditionally ready
 
-Run coverage holds at 74% (138/187). No folder is outright FAIL. This cycle the only status changes were in `Viewers/Legend/`: all six scenarios (`color-consistency`, `filtering`, `line-chart`, `scatterplot`, `structure-rendering`, `visibility-and-positioning`) regressed PASS → PARTIAL after deeper scenario execution surfaced real platform gaps — missing legend DOMs on Bar/Box plots with `Always` visibility, `setCategorical` positional key bug, legend DOM disappearance when in-viewer filters are set, missing linear gradient swatches, and unexposed legend props (`miniLegend`, `legendWidth`, `legendHeight`). Separately, `Viewers/FilterPanel/` filled in fresh timing data for nine scenarios that previously had no captured timings; all nine remain PASS. Viewers folder mean Browser actually dropped (-21s) because the new FilterPanel scenarios run faster than the existing Viewers average — the six Legend regressions added wall-clock but were diluted by the larger sample. The wider picture of under-executed folders (Apps, General, LocalCashing, Notebooks, Queries, Tooltips) is unchanged.
+Run coverage holds at 74% (138/187). No folder is outright FAIL and no test changed status this cycle. The only movement is in `Viewers/`: 10 scenarios were re-executed with refreshed timings. Seven got substantially faster (`3d-scatter-plot` dropped 31m 55s after the model-thinking phase was isolated from spec execution; `pc-plot`, `scatter-plot`, `pie-chart`, `line-chart`, `histogram`, `box-plot` all shed ≥1m each), two got slower (`word-cloud` +6m 46s, `network-diagram` +2m 56.6s), and `bar-chart` was essentially flat. `box-plot` also picked up a Spec Gen timing it was missing before. Net effect on the Viewers folder: Mean Browser -1m 1s, Mean Total -1m 0.5s. The wider picture of under-executed folders (Apps, General, LocalCashing, Notebooks, Queries, Tooltips) is unchanged.
 
 ### Blocking Issues
 - Apps: run coverage 0/2
@@ -293,5 +288,5 @@ Run coverage holds at 74% (138/187). No folder is outright FAIL. This cycle the 
 - Chem: calculate remains FAIL (top menu broken on dev)
 - EDA: pls/softmax remain FAIL
 - DiffStudio: fitting PARTIAL (fit job produces no rows in 2 min on dev)
-- Viewers/Legend: six scenarios regressed PASS → PARTIAL — see per-test rows for specifics
+- Viewers/Legend: six scenarios remain PARTIAL from the prior cycle — see previous report for specifics
 - Bio, Browse, Charts, Connections, EDA, Models, Peptides, PowerPack, Projects, Scripts, StickyMeta, Viewers: PARTIAL
