@@ -165,7 +165,6 @@ export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Co
                 } catch (e) {
                     if ((e as Error)?.message === 'cancelled')
                         throw e;
-                    console.log(`***************** 10 attemps failed for molecule ${globalIndex}`);
                     // Update counter even for failures
                     const currentCount = ++counter;
                     pb.update((currentCount / molCol.length) * 100, `Loaded ${currentCount} of ${molCol.length} molecules`);
@@ -178,22 +177,11 @@ export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Co
             
             // Process results and set molecules at correct indices
             // This ensures deterministic assignment regardless of promise completion order
-            for (let resultIndex = 0; resultIndex < results.length; resultIndex++) {
-                const result = results[resultIndex];
+            for (const result of results) {
                 if (result.status === 'fulfilled') {
                     const { index, molecule, success } = result.value;
-                    if (success && molecule !== null) {
-                        console.log(`set molecule ${molecule} on idx: ${index}`)
-                        // Set molecule at the correct index - this is now deterministic
+                    if (success && molecule !== null)
                         molCol.set(index, molecule);
-                    }
-                } else {
-                    const reason = (result as PromiseRejectedResult).reason as Error;
-                    if (reason?.message === 'cancelled')
-                        continue;
-                    // Handle rejected promise (shouldn't happen with allSettled, but handle it)
-                    const globalIndex = batchIndex * BATCH_SIZE + resultIndex;
-                    console.log(`Failed to load molecule at index ${globalIndex}`);
                 }
             }
             
@@ -204,8 +192,6 @@ export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Co
                 await DG.delay(1000);
             }
         }
-    } catch (e: any) {
-        throw e;
     } finally {
         pb.close();
     }

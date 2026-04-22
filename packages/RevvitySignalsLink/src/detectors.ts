@@ -1,13 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-
-export const _package = new DG.Package();
-
-export async function addRevvityDetector(semTypeName: string, regexp: string) {
-    DG.SemanticValue.registerRegExpDetector(semTypeName, regexp);
-}
-
 export function convertIdentifierFormatToRegexp(formats: string[]): string {
     if (!formats || formats.length === 0) {
         return '';

@@ -88,63 +88,43 @@ async function request<T>(
   text?: boolean,
 ): Promise<RevvityApiResponse<T>> {
   const maxRetries = 9;
-  let lastError: Error | string | undefined;
-  let lastResponseStatus: number | undefined;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const headers: any = customHeaders ?? {
-        'x-api-key': await getApiKey(),
-        'Accept': 'application/vnd.api+json',
-      };
-      if (method === 'POST')
-        headers['Content-Type'] = 'application/json';
+    const headers: any = customHeaders ?? {
+      'x-api-key': await getApiKey(),
+      'Accept': 'application/vnd.api+json',
+    };
+    if (method === 'POST')
+      headers['Content-Type'] = 'application/json';
 
-      const url = `${await getApiUrl()}${path}`;
-      const response = await grok.dapi.fetchProxy(url, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-      });
+    const url = `${await getApiUrl()}${path}`;
+    const response = await grok.dapi.fetchProxy(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
 
-      lastResponseStatus = response.status;
-
-      // Handle 429 (Too Many Requests) - retry after delay
-      if (response.status === 429 && attempt < maxRetries) {
-       // console.log(`${attempt} attempt for ${path} failed`);
-        await delay(1000);
-        continue; // Retry the request
-      }
-
-      const res: RevvityApiResponse<T> = text ? await response.text() : await response.json();
-
-      if (!response.ok || res.errors) {
-        if (res.errors) {
-          //check for 403 error to further check in getUsers method
-          if (res.errors.length === 1 && res.errors[0].status === '403')
-            throw '403';
-          throw res.errors.map((error) => error.detail).join(';');
-        }
-        throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
-      }
-      
-    //  console.log(`${attempt} attempt for ${path} succeeded`);
-      return res;
-    } catch (error) {
-      lastError = error as Error | string;
-      
-      // Only retry if we got a 429 error and have retries left
-      if (lastResponseStatus === 429 && attempt < maxRetries) {
-        await delay(1000);
-        continue;
-      }
-      
-      // For any other error or if we've exhausted retries, throw immediately
-      throw lastError;
+    // Handle 429 (Too Many Requests) - retry after delay
+    if (response.status === 429 && attempt < maxRetries) {
+      await delay(1000);
+      continue;
     }
+
+    const res: RevvityApiResponse<T> = text ? await response.text() : await response.json();
+
+    if (!response.ok || res.errors) {
+      if (res.errors) {
+        //check for 403 error to further check in getUsers method
+        if (res.errors.length === 1 && res.errors[0].status === '403')
+          throw new Error('403');
+        throw res.errors.map((error) => error.detail).join(';');
+      }
+      throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
+    }
+
+    return res;
   }
-  
-  throw lastError || new Error('Request failed after retries');
+  throw new Error('Request failed after retries');
 }
 
 export async function queryUsers(): Promise<RevvityApiResponse> {

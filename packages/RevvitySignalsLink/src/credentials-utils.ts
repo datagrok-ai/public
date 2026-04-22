@@ -1,29 +1,24 @@
 import { API_KEY_PARAM_NAME, API_URL_PARAM_NAME } from "./constants";
 import { _package } from "./package";
 
-let apiKey = '';
-let apiUrl = '';
+const cache = new Map<string, string>();
 
-export async function getApiKey(): Promise<string> {
-    if (apiKey === '') {
-        const credentials = await _package.getCredentials();
-        if (!credentials)
-            throw new Error('API key is not set in package credentials');
-        if (!credentials.parameters[API_KEY_PARAM_NAME])
-            throw new Error('API key is not set in package credentials');
-        apiKey = credentials.parameters[API_KEY_PARAM_NAME];
-    }
-    return apiKey;
+async function getCredential(paramName: string, label: string): Promise<string> {
+    const cached = cache.get(paramName);
+    if (cached !== undefined)
+        return cached;
+    const credentials = await _package.getCredentials();
+    if (!credentials || !credentials.parameters[paramName])
+        throw new Error(`${label} is not set in package credentials`);
+    const value = credentials.parameters[paramName];
+    cache.set(paramName, value);
+    return value;
 }
 
-export async function getApiUrl(): Promise<string> {
-    if (apiUrl === '') {
-        const credentials = await _package.getCredentials();
-        if (!credentials)
-            throw new Error('API URL is not set in package credentials');
-        if (!credentials.parameters[API_URL_PARAM_NAME])
-            throw new Error('API URL is not set in package credentials');
-        apiUrl = credentials.parameters[API_URL_PARAM_NAME];
-    }
-    return apiUrl;
+export function getApiKey(): Promise<string> {
+    return getCredential(API_KEY_PARAM_NAME, 'API key');
+}
+
+export function getApiUrl(): Promise<string> {
+    return getCredential(API_URL_PARAM_NAME, 'API URL');
 }

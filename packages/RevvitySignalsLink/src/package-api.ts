@@ -9,6 +9,13 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
+  Compares two dataframes row by row and outputs differences with row numbers
+  */
+  export async function compareDataframes(df1: DG.DataFrame , df2: DG.DataFrame ): Promise<DG.DataFrame> {
+    return await grok.functions.call('RevvitySignalsLink:CompareDataframes', { df1, df2 });
+  }
+
+  /**
   ETL process for Revvity Signals data - exports libraries, processes CSV files, and prepares data for MolTrack
   */
   export async function revvityETL(): Promise<DG.DataFrame> {
@@ -43,10 +50,6 @@ export namespace funcs {
 
   export async function getLibraries(): Promise<string> {
     return await grok.functions.call('RevvitySignalsLink:GetLibraries', {});
-  }
-
-  export async function registerRevvityIdsFormats(): Promise<void> {
-    return await grok.functions.call('RevvitySignalsLink:RegisterRevvityIdsFormats', {});
   }
 
   export async function getTags(type: string , assetTypeId: string ): Promise<string> {
