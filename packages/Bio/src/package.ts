@@ -86,6 +86,10 @@ import {BilnNotationProvider} from './utils/biln';
 import {showMonomerCollectionsView} from './utils/monomer-lib/monomer-collections-view';
 import {ISequenceColumnInput} from '@datagrok-libraries/bio/src/utils/sequence-column-input';
 import {SequenceColumnInput} from './utils/sequence-column-input';
+import {showNumberingSchemeDialog} from './utils/annotations/numbering-ui';
+import {showLiabilityScannerDialog} from './utils/annotations/liability-scanner-ui';
+import {showAnnotationManagerDialog} from './utils/annotations/annotation-manager-ui';
+import {numberAntibodyColumn} from './utils/antibody-numbering/number-antibody';
 
 import * as api from './package-api';
 export const _package = new BioPackage(/*{debug: true}/**/);
@@ -479,11 +483,11 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Apply Numbering Scheme',
-    description: 'Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack',
+    description: 'Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)',
     'top-menu': 'Bio | Annotate | Apply Numbering Scheme...',
   })
   static applyNumberingScheme(): void {
-    import('./utils/annotations/numbering-ui').then((m) => m.showNumberingSchemeDialog());
+    showNumberingSchemeDialog();
   }
 
   @grok.decorators.func({
@@ -492,7 +496,7 @@ export class PackageFunctions {
     'top-menu': 'Bio | Annotate | Scan Liabilities...',
   })
   static scanLiabilities(): void {
-    import('./utils/annotations/liability-scanner-ui').then((m) => m.showLiabilityScannerDialog());
+    showLiabilityScannerDialog();
   }
 
   @grok.decorators.func({
@@ -501,7 +505,7 @@ export class PackageFunctions {
     'top-menu': 'Bio | Annotate | Manage Annotations...',
   })
   static manageAnnotations(): void {
-    import('./utils/annotations/annotation-manager-ui').then((m) => m.showAnnotationManagerDialog());
+    showAnnotationManagerDialog();
   }
 
   @grok.decorators.func({
@@ -991,6 +995,20 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'double', options: {initialValue: '0'}}) gapExtend: number = 0,
   ): Promise<DG.Column<string>> {
     return alignWithPepsea(sequenceCol, method, gapOpen, gapExtend);
+  }
+
+  @grok.decorators.func({
+    name: 'Immunum',
+    description: 'Assigns antibody numbering (IMGT/Kabat) using the immunum WASM library',
+    meta: {role: 'antibodyNumbering'},
+  })
+  static async immunumAntibodyNumbering(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @grok.decorators.param({type: 'dataframe'}) df: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) seqCol: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {choices: ['imgt', 'kabat'], initialValue: 'imgt'}}) scheme: string,
+  ): Promise<DG.DataFrame> {
+    return numberAntibodyColumn(seqCol, scheme);
   }
 
   @grok.decorators.func({
