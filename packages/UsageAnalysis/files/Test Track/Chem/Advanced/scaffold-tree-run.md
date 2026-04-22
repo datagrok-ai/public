@@ -1,6 +1,6 @@
 # Scaffold Tree — Run Results
 
-**Date**: 2026-04-21
+**Date**: 2026-04-23
 **URL**: https://dev.datagrok.ai
 **Status**: PARTIAL
 
@@ -19,12 +19,12 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 40s |
-| grok-browser execution (scenario steps) | n/a |
-| Execute via grok-browser (total) | 40s |
+| Model thinking (scenario steps) | 16s |
+| grok-browser execution (scenario steps) | 41s |
+| Execute via grok-browser (total) | 57s |
 | Spec file generation | 25s |
-| Spec script execution | 50.3s |
-| **Total scenario run (with model)** | ~2m |
+| Spec script execution | 49.6s |
+| **Total scenario run (with model)** | 2m 12s |
 
 ## Summary
 

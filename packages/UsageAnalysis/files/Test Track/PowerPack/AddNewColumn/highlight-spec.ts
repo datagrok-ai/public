@@ -1,60 +1,155 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect} from '@playwright/test';
 
 test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
   actionTimeout: 15_000,
   navigationTimeout: 60_000,
 });
 
-const BASE_URL = 'https://release-ec2.datagrok.ai/';
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 
-async function login(page: Page) {
-  await page.goto(BASE_URL);
-  await page.fill('input[placeholder="Login"]', 'claude');
-  await page.fill('input[placeholder="Password"]', 'grokclaude');
-  await page.click('button:has-text("LOGIN")');
-  await page.waitForSelector('.grok-app', { timeout: 30000 });
+const BLUE = 'rgb(80, 169, 197)';
+
+const stepErrors: {step: string; error: string}[] = [];
+
+async function softStep(name: string, fn: () => Promise<void>) {
+  try { await test.step(name, fn); }
+  catch (e: any) { stepErrors.push({step: name, error: e?.message ?? String(e)}); }
 }
 
-async function openDemog(page: Page) {
+test('Add New Column — column name highlighting in expression editor', async ({page}) => {
+  test.setTimeout(300_000);
+
+  await page.goto(baseUrl);
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
+  }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
+
   await page.evaluate(async () => {
-    const df = await (window as any).grok.data.getDemoTable('demog.csv');
-    (window as any).grok.shell.addTableView(df);
+    document.body.classList.add('selenium');
+    // @ts-ignore
+    grok.shell.settings.showFiltersIconsConstantly = true;
+    // @ts-ignore
+    grok.shell.windows.simpleMode = true;
+    // @ts-ignore
+    grok.shell.closeAll();
+    // @ts-ignore
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
+    // @ts-ignore
+    grok.shell.addTableView(df);
+    await new Promise(resolve => {
+      // @ts-ignore
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
+      setTimeout(() => resolve(null), 3000);
+    });
   });
-  await page.waitForTimeout(2000);
-}
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-async function openAddNewColumnDialog(page: Page) {
-  await page.evaluate(() => {
-    (window as any).grok.shell.topMenu.find('Edit').find('Add New Column...').click();
-  });
-  await page.waitForSelector('.d4-dialog', { timeout: 5000 });
-}
-
-test.describe('PowerPack: Highlight', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-    await page.evaluate(() => (window as any).grok.shell.closeAll());
-    await openDemog(page);
-    await openAddNewColumnDialog(page);
-  });
-
-  test('Step 3: Abs(${age}) — column name highlighted with cm-column-name', async ({ page }) => {
-    const editor = page.locator('.d4-dialog .cm-content');
-    await editor.click();
-    await page.keyboard.type('Abs(${age})');
-    await page.waitForTimeout(1000);
-
-    const highlighted = page.locator('.d4-dialog .cm-content .cm-column-name');
-    await expect(highlighted).toBeVisible();
+  await softStep('1. Open demog.csv dataset', async () => {
+    const rows = await page.evaluate(() => (globalThis as any).grok.shell.tv.dataFrame.rowCount);
+    expect(rows).toBe(5850);
   });
 
-  test('Step 4: Avg($[age]) — column name highlighted with cm-column-name', async ({ page }) => {
-    const editor = page.locator('.d4-dialog .cm-content');
-    await editor.click();
-    await page.keyboard.type('Avg($[age])');
-    await page.waitForTimeout(1000);
-
-    const highlighted = page.locator('.d4-dialog .cm-content .cm-column-name');
-    await expect(highlighted).toBeVisible();
+  await softStep('2. Open Add New Column dialog', async () => {
+    await page.locator('[name="icon-add-new-column"]').click();
+    await page.locator('[name="dialog-Add-New-Column"]').waitFor({timeout: 10_000});
+    await page.locator('.d4-dialog .cm-content').waitFor({timeout: 5_000});
   });
+
+  await softStep('3a. Paste Abs(${AGE}) — ${AGE} highlighted in blue', async () => {
+    await page.locator('.d4-dialog .cm-content').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.press('Delete');
+    await page.keyboard.type('Abs(${AGE})');
+    await page.waitForTimeout(300);
+    const token = await page.evaluate(() => {
+      const cm = document.querySelector('.d4-dialog .cm-content')!;
+      const span = Array.from(cm.querySelectorAll('span'))
+        .find(s => s.classList.contains('cm-column-name') && s.textContent === '${AGE}');
+      return span
+        ? {color: getComputedStyle(span as HTMLElement).color, hasClass: span.classList.contains('cm-column-name')}
+        : null;
+    });
+    expect(token).not.toBeNull();
+    expect(token!.hasClass).toBe(true);
+    expect(token!.color).toBe(BLUE);
+  });
+
+  await softStep('3b. Paste Avg($[AGE]) — $[AGE] highlighted in blue', async () => {
+    await page.locator('.d4-dialog .cm-content').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.press('Delete');
+    await page.keyboard.type('Avg($[AGE])');
+    await page.waitForTimeout(300);
+    const token = await page.evaluate(() => {
+      const cm = document.querySelector('.d4-dialog .cm-content')!;
+      const span = Array.from(cm.querySelectorAll('span'))
+        .find(s => s.classList.contains('cm-column-name') && s.textContent === '$[AGE]');
+      return span
+        ? {color: getComputedStyle(span as HTMLElement).color, hasClass: span.classList.contains('cm-column-name')}
+        : null;
+    });
+    expect(token).not.toBeNull();
+    expect(token!.hasClass).toBe(true);
+    expect(token!.color).toBe(BLUE);
+  });
+
+  await softStep('4. Add function + column via autocomplete — column highlighted in blue', async () => {
+    await page.locator('.d4-dialog .cm-content').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.press('Delete');
+    await page.keyboard.type('Sqrt(');
+    await page.keyboard.type('$');
+    await page.locator('.cm-tooltip-autocomplete').waitFor({timeout: 5_000});
+    await page.keyboard.type('HE');
+    await page.waitForFunction(() => {
+      const li = document.querySelector('.cm-tooltip-autocomplete li[aria-selected="true"]');
+      return li?.textContent === 'HEIGHT';
+    }, null, {timeout: 5_000});
+    // CodeMirror autocomplete inserts on mousedown; Playwright's .click() dispatches
+    // the full sequence and can race with the popup's stability check. Dispatch
+    // mousedown directly so the completion is inserted reliably.
+    await page.evaluate(() => {
+      const popup = document.querySelector('.cm-tooltip-autocomplete')!;
+      const li = Array.from(popup.querySelectorAll('li')).find(l => l.textContent === 'HEIGHT')!;
+      li.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, cancelable: true, button: 0}));
+    });
+    await page.waitForFunction(() => {
+      const cm = document.querySelector('.d4-dialog .cm-content');
+      return cm?.textContent === 'Sqrt(${HEIGHT}';
+    }, null, {timeout: 5_000});
+    await page.keyboard.type(')');
+    await page.waitForTimeout(500);
+    const token = await page.evaluate(() => {
+      const cm = document.querySelector('.d4-dialog .cm-content');
+      if (!cm) return {dialogClosed: true} as any;
+      // CM retokenizes after each keystroke. The HEIGHT reference may render as
+      // a single span "${HEIGHT}" or as several spans ($, {, HEIGHT, }) — all
+      // carrying the .cm-column-name class. Accept either shape: find any
+      // cm-column-name span whose text contains "HEIGHT".
+      const span = Array.from(cm.querySelectorAll('span.cm-column-name'))
+        .find(s => s.textContent?.includes('HEIGHT'));
+      return span
+        ? {color: getComputedStyle(span as HTMLElement).color, hasClass: span.classList.contains('cm-column-name'), text: span.textContent}
+        : null;
+    });
+    expect(token).not.toBeNull();
+    expect((token as any).dialogClosed).toBeUndefined();
+    expect((token as any).hasClass).toBe(true);
+    expect((token as any).color).toBe(BLUE);
+  });
+
+  await page.locator('[name="button-CANCEL"]').click().catch(() => {});
+
+  if (stepErrors.length > 0)
+    throw new Error('Soft step failures:\n' + stepErrors.map(e => `- ${e.step}: ${e.error}`).join('\n'));
 });

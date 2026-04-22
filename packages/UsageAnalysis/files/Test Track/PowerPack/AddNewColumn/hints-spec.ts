@@ -1,77 +1,91 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect} from '@playwright/test';
 
 test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
   actionTimeout: 15_000,
   navigationTimeout: 60_000,
 });
 
-const BASE_URL = 'https://release-ec2.datagrok.ai/';
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 
-async function login(page: Page) {
-  await page.goto(BASE_URL);
-  await page.fill('input[placeholder="Login"]', 'claude');
-  await page.fill('input[placeholder="Password"]', 'grokclaude');
-  await page.click('button:has-text("LOGIN")');
-  await page.waitForSelector('.grok-app', { timeout: 30000 });
+const stepErrors: {step: string; error: string}[] = [];
+
+async function softStep(name: string, fn: () => Promise<void>) {
+  try { await test.step(name, fn); }
+  catch (e: any) { stepErrors.push({step: name, error: e?.message ?? String(e)}); }
 }
 
-async function openDemog(page: Page) {
+test('AddNewColumn: hints — hover shows function signature', async ({page}) => {
+  test.setTimeout(300_000);
+
+  await page.goto(baseUrl);
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
+  }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
+
   await page.evaluate(async () => {
-    const df = await (window as any).grok.data.getDemoTable('demog.csv');
-    (window as any).grok.shell.addTableView(df);
-  });
-  await page.waitForTimeout(2000);
-}
-
-async function openAddNewColumnDialog(page: Page) {
-  await page.evaluate(() => {
-    (window as any).grok.shell.topMenu.find('Edit').find('Add New Column...').click();
-  });
-  await page.waitForSelector('.d4-dialog', { timeout: 5000 });
-}
-
-test.describe('PowerPack: Hints', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-    await page.evaluate(() => (window as any).grok.shell.closeAll());
-    await openDemog(page);
-    await openAddNewColumnDialog(page);
-  });
-
-  test('Step 3-4: Type function and hover — tooltip with signature appears', async ({ page }) => {
-    const editor = page.locator('.d4-dialog .cm-content');
-    await editor.click();
-    await page.keyboard.type('Abs(${AGE})');
-    await page.waitForTimeout(1000);
-
-    // Hover over "Abs" text in the editor to trigger tooltip
-    // Find the text node containing "Abs" and hover over it
-    const absRect = await page.evaluate(() => {
-      const cmContent = document.querySelector('.d4-dialog .cm-content');
-      if (!cmContent) return null;
-      const walker = document.createTreeWalker(cmContent, NodeFilter.SHOW_TEXT);
-      let node;
-      while (node = walker.nextNode()) {
-        const text = node.textContent || '';
-        const idx = text.indexOf('Abs');
-        if (idx >= 0) {
-          const range = document.createRange();
-          range.setStart(node, idx);
-          range.setEnd(node, idx + 3);
-          const rect = range.getBoundingClientRect();
-          return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-        }
-      }
-      return null;
+    document.body.classList.add('selenium');
+    // @ts-ignore
+    grok.shell.settings.showFiltersIconsConstantly = true;
+    // @ts-ignore
+    grok.shell.windows.simpleMode = true;
+    // @ts-ignore
+    grok.shell.closeAll();
+    // @ts-ignore
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
+    // @ts-ignore
+    grok.shell.addTableView(df);
+    await new Promise(resolve => {
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
+      setTimeout(resolve, 3000);
     });
-
-    if (absRect) {
-      await page.mouse.move(absRect.x, absRect.y);
-      await page.waitForTimeout(2000);
-    }
-
-    // Check for tooltip with function signature
-    const tooltip = page.locator('.d4-tooltip-popup, .cm-tooltip');
-    await expect(tooltip).toBeVisible({ timeout: 5000 });
   });
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+
+  await softStep('Open Add New Column dialog', async () => {
+    await page.evaluate(() => (document.querySelector('[name="icon-add-new-column"]') as HTMLElement).click());
+    await page.locator('.d4-dialog [name="button-Add-New-Column---OK"]').waitFor({timeout: 10000});
+  });
+
+  await softStep('Insert a function (Abs) into the formula field', async () => {
+    await page.locator('.d4-dialog .cm-content').click();
+    await page.keyboard.type('a');
+    await page.waitForSelector('.cm-tooltip-autocomplete', {timeout: 3000});
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    const content = await page.evaluate(() => document.querySelector('.d4-dialog .cm-content')?.textContent);
+    expect(content).toBe('Abs(num)');
+  });
+
+  await softStep('Hover function name → tooltip with signature appears', async () => {
+    const sigText = await page.evaluate(async () => {
+      const line = document.querySelector('.d4-dialog .cm-content .cm-line') as HTMLElement;
+      const range = document.createRange();
+      range.selectNodeContents(line);
+      const r = range.getClientRects()[0];
+      const x = r.x + 10, y = r.y + r.height/2;
+      for (const type of ['mouseover', 'mouseenter', 'mousemove'])
+        line.dispatchEvent(new MouseEvent(type, {bubbles: true, cancelable: true, clientX: x, clientY: y, view: window}));
+      await new Promise(res => setTimeout(res, 1500));
+      const tip = document.querySelector('.cm-tooltip-hover');
+      return tip?.textContent ?? null;
+    });
+    expect(sigText).not.toBeNull();
+    expect(sigText).toContain('Abs');
+    expect(sigText).toContain('num');
+  });
+
+  await page.locator('[name="button-Add-New-Column---CANCEL"]').click();
+
+  if (stepErrors.length > 0)
+    throw new Error('Step errors:\n' + stepErrors.map(e => `- ${e.step}: ${e.error}`).join('\n'));
 });

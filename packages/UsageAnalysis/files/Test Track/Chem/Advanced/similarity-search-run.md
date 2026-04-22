@@ -1,6 +1,6 @@
 # Similarity Search — Run Results
 
-**Date**: 2026-04-21
+**Date**: 2026-04-23
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -16,12 +16,12 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 25s |
-| grok-browser execution (scenario steps) | n/a |
-| Execute via grok-browser (total) | 25s |
+| Model thinking (scenario steps) | 20s |
+| grok-browser execution (scenario steps) | 17s |
+| Execute via grok-browser (total) | 37s |
 | Spec file generation | 25s |
-| Spec script execution | 22.7s |
-| **Total scenario run (with model)** | ~1m 30s |
+| Spec script execution | 24.8s |
+| **Total scenario run (with model)** | 1m 27s |
 
 ## Summary
 

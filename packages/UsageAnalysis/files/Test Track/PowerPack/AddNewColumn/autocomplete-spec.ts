@@ -1,101 +1,111 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect} from '@playwright/test';
 
 test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
   actionTimeout: 15_000,
   navigationTimeout: 60_000,
 });
 
-const BASE_URL = 'https://release-ec2.datagrok.ai/';
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 
-async function login(page: Page) {
-  await page.goto(BASE_URL);
-  await page.fill('input[placeholder="Login"]', 'claude');
-  await page.fill('input[placeholder="Password"]', 'grokclaude');
-  await page.click('button:has-text("LOGIN")');
-  await page.waitForSelector('.grok-app', { timeout: 30000 });
+const stepErrors: {step: string; error: string}[] = [];
+
+async function softStep(name: string, fn: () => Promise<void>) {
+  try { await test.step(name, fn); }
+  catch (e: any) { stepErrors.push({step: name, error: e?.message ?? String(e)}); }
 }
 
-async function openDemog(page: Page) {
-  await page.evaluate(async () => {
-    const df = await (window as any).grok.data.getDemoTable('demog.csv');
-    (window as any).grok.shell.addTableView(df);
-  });
-  await page.waitForTimeout(2000);
-}
+test('AddNewColumn: autocomplete (demog)', async ({page}) => {
+  test.setTimeout(300_000);
 
-async function openAddNewColumnDialog(page: Page) {
-  await page.evaluate(() => {
-    (window as any).grok.shell.topMenu.find('Edit').find('Add New Column...').click();
-  });
-  await page.waitForSelector('.d4-dialog', { timeout: 5000 });
-}
-
-test.describe('PowerPack: Autocomplete', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-    await page.evaluate(() => (window as any).grok.shell.closeAll());
-    await openDemog(page);
-    await openAddNewColumnDialog(page);
-  });
-
-  test('Step 3: Type letter "a" — autocomplete tooltip appears', async ({ page }) => {
-    const editor = page.locator('.d4-dialog .cm-content');
-    await editor.click();
-    await page.keyboard.type('a');
-    await page.waitForTimeout(1000);
-
-    // Autocomplete dropdown should appear
-    const autocomplete = page.locator('.cm-tooltip-autocomplete');
-    await expect(autocomplete).toBeVisible({ timeout: 3000 });
-  });
-
-  test('Step 4-5: Select function via Enter — added as Abs(num)', async ({ page }) => {
-    const editor = page.locator('.d4-dialog .cm-content');
-    await editor.click();
-    await page.keyboard.type('a');
-    await page.waitForTimeout(1000);
-
-    // Select first item with Enter
+  await page.goto(baseUrl);
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(500);
+  }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
 
-    const editorText = await page.evaluate(() => {
-      const cm = document.querySelector('.d4-dialog .cm-content');
-      return cm?.textContent || '';
+  await page.evaluate(async () => {
+    document.body.classList.add('selenium');
+    // @ts-ignore
+    grok.shell.settings.showFiltersIconsConstantly = true;
+    // @ts-ignore
+    grok.shell.windows.simpleMode = true;
+    // @ts-ignore
+    grok.shell.closeAll();
+    // @ts-ignore
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
+    // @ts-ignore
+    grok.shell.addTableView(df);
+    await new Promise(resolve => {
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
+      setTimeout(resolve, 3000);
     });
-    // Function should be inserted with parameter type placeholder
-    expect(editorText).toMatch(/Abs\(.*\)/);
+  });
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+
+  await softStep('Open demog, open Add New Column', async () => {
+    await page.evaluate(() => (document.querySelector('[name="icon-add-new-column"]') as HTMLElement).click());
+    await page.locator('.d4-dialog [name="button-Add-New-Column---OK"]').waitFor({timeout: 10000});
   });
 
-  test('Step 6-7: Clear and Ctrl+Space — autocomplete appears', async ({ page }) => {
-    const editor = page.locator('.d4-dialog .cm-content');
-    await editor.click();
+  await softStep('Type "a" → autocomplete tooltip appears', async () => {
+    await page.locator('.d4-dialog .cm-content').click();
     await page.keyboard.type('a');
-    await page.waitForTimeout(500);
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
+    await page.waitForSelector('.cm-tooltip-autocomplete', {timeout: 3000});
+    const items = await page.$$eval('.cm-tooltip-autocomplete li', nodes => nodes.slice(0, 8).map(n => (n as HTMLElement).textContent));
+    expect(items.length).toBeGreaterThan(0);
+    expect(items).toContain('Abs');
+  });
 
-    // Clear the editor
-    await page.keyboard.press('Control+a');
-    await page.keyboard.press('Backspace');
-    await page.waitForTimeout(500);
+  await softStep('Select function via Enter → inserted as "Abs(num)"', async () => {
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    const content = await page.evaluate(() => document.querySelector('.d4-dialog .cm-content')?.textContent);
+    expect(content).toBe('Abs(num)');
+  });
 
-    // Ctrl+Space should trigger autocomplete
+  await softStep('Clear, type "a", select via ArrowDown+Enter → inserted as "Acos(num)"', async () => {
+    await page.keyboard.press('Control+A');
+    await page.keyboard.press('Delete');
+    await page.keyboard.type('a');
+    await page.waitForSelector('.cm-tooltip-autocomplete', {timeout: 3000});
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    const content = await page.evaluate(() => document.querySelector('.d4-dialog .cm-content')?.textContent);
+    expect(content).toBe('Acos(num)');
+  });
+
+  await softStep('Clear field; Ctrl+Space → autocomplete tooltip', async () => {
+    await page.keyboard.press('Control+A');
+    await page.keyboard.press('Delete');
     await page.keyboard.press('Control+Space');
-    await page.waitForTimeout(1000);
-
-    const autocomplete = page.locator('.cm-tooltip-autocomplete');
-    await expect(autocomplete).toBeVisible({ timeout: 3000 });
+    await page.waitForSelector('.cm-tooltip-autocomplete', {timeout: 3000});
+    const count = await page.$$eval('.cm-tooltip-autocomplete li', nodes => nodes.length);
+    expect(count).toBeGreaterThan(0);
   });
 
-  test('Step 8: $ symbol — column autocomplete appears', async ({ page }) => {
-    const editor = page.locator('.d4-dialog .cm-content');
-    await editor.click();
+  await softStep('Press $ → tooltip lists columns', async () => {
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => (document.querySelector('.d4-dialog .cm-content') as HTMLElement).focus());
     await page.keyboard.type('$');
-    await page.waitForTimeout(1000);
-
-    // Column autocomplete should appear
-    const autocomplete = page.locator('.cm-tooltip-autocomplete');
-    await expect(autocomplete).toBeVisible({ timeout: 3000 });
+    await page.waitForSelector('.cm-tooltip-autocomplete', {timeout: 3000});
+    const items = await page.$$eval('.cm-tooltip-autocomplete li', nodes => nodes.map(n => (n as HTMLElement).textContent));
+    expect(items).toContain('HEIGHT');
+    expect(items).toContain('WEIGHT');
+    expect(items).toContain('AGE');
   });
+
+  await page.locator('[name="button-Add-New-Column---CANCEL"]').click();
+
+  if (stepErrors.length > 0)
+    throw new Error('Step errors:\n' + stepErrors.map(e => `- ${e.step}: ${e.error}`).join('\n'));
 });

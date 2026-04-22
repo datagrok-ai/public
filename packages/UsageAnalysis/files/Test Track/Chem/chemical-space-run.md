@@ -1,6 +1,6 @@
 # Chemical Space — Run Results
 
-**Date**: 2026-04-21
+**Date**: 2026-04-23
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -16,12 +16,12 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 20s |
-| grok-browser execution (scenario steps) | n/a |
-| Execute via grok-browser (total) | 20s |
+| Model thinking (scenario steps) | 31s |
+| grok-browser execution (scenario steps) | 15s |
+| Execute via grok-browser (total) | 46s |
 | Spec file generation | 20s |
-| Spec script execution | 56.3s |
-| **Total scenario run (with model)** | ~2m |
+| Spec script execution | 59.8s |
+| **Total scenario run (with model)** | 2m 6s |
 
 ## Summary
 

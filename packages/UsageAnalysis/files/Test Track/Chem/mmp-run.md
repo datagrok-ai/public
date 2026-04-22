@@ -1,6 +1,6 @@
 # Matched Molecular Pairs — Run Results
 
-**Date**: 2026-04-21
+**Date**: 2026-04-23
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -16,12 +16,12 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 30s |
-| grok-browser execution (scenario steps) | n/a |
-| Execute via grok-browser (total) | 30s |
+| Model thinking (scenario steps) | 20s |
+| grok-browser execution (scenario steps) | 1m 7s |
+| Execute via grok-browser (total) | 1m 27s |
 | Spec file generation | 20s |
-| Spec script execution | 1m 12s |
-| **Total scenario run (with model)** | ~2m |
+| Spec script execution | 1m 14s |
+| **Total scenario run (with model)** | 3m 1s |
 
 ## Summary
 

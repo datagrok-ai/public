@@ -1,6 +1,6 @@
 # Elemental Analysis — Run Results
 
-**Date**: 2026-04-21
+**Date**: 2026-04-23
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -16,12 +16,12 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 1m |
-| grok-browser execution (scenario steps) | n/a (skipped — spec was the verification) |
-| Execute via grok-browser (total) | 1m |
+| Model thinking (scenario steps) | 19s |
+| grok-browser execution (scenario steps) | 19s |
+| Execute via grok-browser (total) | 38s |
 | Spec file generation | 30s |
-| Spec script execution | 28.9s |
-| **Total scenario run (with model)** | ~3m |
+| Spec script execution | 30.9s |
+| **Total scenario run (with model)** | 1m 39s |
 
 ## Summary
 
