@@ -84,7 +84,7 @@ export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?:
       if (io.nullable || io.direction === 'output')
         return;
       const spec: LinkSpec = {
-        id: uuidv4(),
+        id: `::${io.id}`,
         from: parseLinkIO(`in:${io.id}`, io.direction),
         to: parseLinkIO(`out:${io.id}`, io.direction),
         type: 'validator',

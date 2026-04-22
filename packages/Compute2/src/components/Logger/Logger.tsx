@@ -31,12 +31,21 @@ export const Logger = Vue.defineComponent({
     'linkClicked': (_linkId: string) => true,
   },
   setup(props, {emit}) {
-    const typeFilterOpts = ['all', 'tree', 'links'] as const;
-    const treeEvents = new Set(['treeUpdateStarted', 'treeUpdateFinished', 'treeUpdateMutation']);
+    const eventTypeOptions: FilterOption[] = [
+      {value: 'treeUpdateStarted', label: 'treeUpdateStarted', detail: 'tree'},
+      {value: 'treeUpdateFinished', label: 'treeUpdateFinished', detail: 'tree'},
+      {value: 'treeUpdateMutation', label: 'treeUpdateMutation', detail: 'tree'},
+      {value: 'linkAdded', label: 'linkAdded', detail: 'link'},
+      {value: 'linkRemoved', label: 'linkRemoved', detail: 'link'},
+      {value: 'linkRunStarted', label: 'linkRunStarted', detail: 'link'},
+      {value: 'linkRunFinished', label: 'linkRunFinished', detail: 'link'},
+      {value: 'actionAdded', label: 'actionAdded', detail: 'action'},
+      {value: 'actionRemoved', label: 'actionRemoved', detail: 'action'},
+      {value: 'error', label: 'error', detail: 'error'},
+    ];
 
-    const typeFilter = Vue.ref<typeof typeFilterOpts[number]>('all');
+    const eventsFilter = Vue.ref<string[]>([]);
     const linksFilter = Vue.ref<string[]>([]);
-    const showDefaultValidators = Vue.ref(false);
 
     const linkStyle = {
       cursor: 'pointer',
@@ -49,16 +58,12 @@ export const Logger = Vue.defineComponent({
       item.type === 'linkRunStarted' || item.type === 'linkRunFinished' ||
       item.type === 'actionAdded' || item.type === 'actionRemoved';
 
-    const checkboxStyle = {display: 'flex', alignItems: 'center', gap: '3px', fontSize: '12px', whiteSpace: 'nowrap' as const};
-
     return () => {
       const items = props.logs.filter((item) => {
-        if (!showDefaultValidators.value && isLinkLogItem(item) && item.isDefaultValidator)
+        if (isLinkLogItem(item) && item.isDefaultValidator)
           return false;
-        if (typeFilter.value === 'tree')
-          return treeEvents.has(item.type);
-        if (typeFilter.value === 'links')
-          return !treeEvents.has(item.type);
+        if (eventsFilter.value.length)
+          return eventsFilter.value.includes(item.type);
         return true;
       }).filter((item) => {
         if (linksFilter.value.length) {
@@ -128,24 +133,19 @@ export const Logger = Vue.defineComponent({
       return (
         <>
           <div style={{display: 'flex', flexDirection: 'row', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap', gap: '5px'}}>
-            <div style={{marginRight: '5px'}}>Events:</div>
-            <div style={{marginRight: '10px'}}>
-              <select onChange={(ev) => typeFilter.value = (ev.target as any)?.value ?? 'all'} value={typeFilter.value}>
-                {typeFilterOpts.map(option => (
-                  <option value={option}>{option}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{marginRight: '5px'}}>Links:</div>
+            <div style={{marginRight: '2px'}}>Events:</div>
+            <FilterDropdown
+              options={eventTypeOptions}
+              modelValue={eventsFilter.value}
+              onUpdate:modelValue={(v: string[]) => eventsFilter.value = v}
+              placeholder='all'
+            />
+            <div style={{marginRight: '2px', marginLeft: '5px'}}>Links:</div>
             <FilterDropdown
               options={props.linkFilterOptions}
               modelValue={linksFilter.value}
               onUpdate:modelValue={(v: string[]) => linksFilter.value = v}
             />
-            <label style={checkboxStyle}>
-              <input type='checkbox' v-model={showDefaultValidators.value} />
-              Default validators
-            </label>
           </div>
           <div style={{overflow: 'scroll', display: 'grid', gridTemplateColumns: 'auto auto auto', columnGap: '10px', rowGap: '5px'}}>
             {logs}
