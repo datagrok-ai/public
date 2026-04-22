@@ -271,6 +271,7 @@ export class Driver {
           config,
           isReadonly: !!msg.readonly,
           defaultValidators: true,
+          batchLinks: true,
           mockMode: this.mockMode,
           logger: this.logger,
         }), metaCall, isFavorite] as const),
@@ -299,6 +300,7 @@ export class Driver {
           instanceConfig: msg.instanceConfig,
           isReadonly: false,
           defaultValidators: true,
+          batchLinks: true,
           mockMode: this.mockMode,
           logger: this.logger,
         }) :
@@ -306,6 +308,7 @@ export class Driver {
           config,
           isReadonly: false,
           defaultValidators: true,
+          batchLinks: true,
           mockMode: this.mockMode,
           logger: this.logger,
         })),

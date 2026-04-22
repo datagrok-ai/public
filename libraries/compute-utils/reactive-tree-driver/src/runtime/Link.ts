@@ -36,6 +36,7 @@ export class Link {
   public readonly isNodeMeta = this.matchInfo.spec.type === 'nodemeta' || this.matchInfo.spec.type === 'selector';
   public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
   public readonly isReturn = this.matchInfo.spec.type === 'return';
+  public readonly isBatchable: boolean;
 
   // probably a better api
   public lastPipelineMutations?: {
@@ -62,7 +63,14 @@ export class Link {
     public matchInfo: MatchInfo,
     private customDebounceTime?: number,
     private logger?: DriverLogger,
-  ) {}
+  ) {
+    const spec = this.matchInfo.spec;
+    if (spec.type === 'validator' || spec.type === 'meta' ||
+        spec.type === 'nodemeta' || spec.type === 'selector')
+      this.isBatchable = !spec.sequential;
+    else
+      this.isBatchable = false;
+  }
 
   wire(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     if (this.isWired)
@@ -73,7 +81,7 @@ export class Link {
     const inputSet = new Set(this.getOrderedIO(this.matchInfo.inputs));
     const outputSet = new Set(this.getOrderedIO(this.matchInfo.outputs));
 
-    const inputsChanges$ = this.makeInputsChanges(state);
+    const inputsChanges$ = this.makeInputsChanges(state, linksState);
     const baseNode = this.matchInfo.basePath ?
       state.getNode(([...this.prefix, ...this.matchInfo.basePath])) :
       undefined;
@@ -134,7 +142,7 @@ export class Link {
     this.destroyed$.next(true);
   }
 
-  private makeInputsChanges(state: BaseTree<StateTreeNode>) {
+  private makeInputsChanges(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     const inputs = Object.entries(this.matchInfo.inputs).map(([inputAlias, inputItems]) => {
       const nodes = inputItems.map(
         (input) => [
@@ -165,6 +173,18 @@ export class Link {
       this.trigger$.pipe(withLatestFrom(inputsEntries$)) :
       this.trigger$.pipe(map((scope) => [scope, [] as any[]] as const));
 
+    const toInputsChanges = ([scope, entries]: readonly [any, any]) =>
+      [scope as ScopeInfo | undefined, Object.fromEntries(entries) as Record<string, any>] as const;
+
+    if (this.isBatchable && linksState?.batchLinks) {
+      inputsEntries$.pipe(
+        filter(() => this.isActive$.value),
+        takeUntil(this.destroyed$),
+      ).subscribe(() => linksState.scheduleBatch(this.uuid));
+
+      return inputsTriggered$.pipe(map(toInputsChanges));
+    }
+
     const debounceVal = this.customDebounceTime ?? (this.isValidator ? VALIDATOR_DEBOUNCE_TIME : 0);
 
     const activeInputs$ = inputsEntries$.pipe(
@@ -173,10 +193,7 @@ export class Link {
       map((obs) => [undefined, obs] as const),
     );
 
-    const inputsChanges$ = merge(activeInputs$, inputsTriggered$).pipe(
-      map(([scope, entries]) => [scope, Object.fromEntries(entries)] as const),
-    );
-    return inputsChanges$;
+    return merge(activeInputs$, inputsTriggered$).pipe(map(toInputsChanges));
   }
 
   private runHandler(
