@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/diff-studio",
   "friendlyName": "Diff Studio",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "Environment for in-browser modeling with ordinary differential equations.",
   "author": {
     "name": "Viktor Makarichev",

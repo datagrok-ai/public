@@ -3,7 +3,8 @@
     "allow": [
       "Bash(grok test *)",
       "Bash(grep -v \"\\\\.g\\\\.ts$\")",
-      "Bash(grep -v \"package-api\\\\.ts$\")"      
+      "Bash(grep -v \"package-api\\\\.ts$\")",
+      "WebFetch(domain:datagrok.ai)"
     ]
   }
 }
