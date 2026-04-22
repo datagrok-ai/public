@@ -45,9 +45,10 @@ export class StateTree {
     private mockMode = false,
     private defaultValidators = false,
     private logger?: DriverLogger,
+    private batchLinks = false,
   ) {
     this.nodeTree = new BaseTree(item);
-    this.linksState = new LinksState(defaultValidators, this.logger);
+    this.linksState = new LinksState(defaultValidators, this.logger, batchLinks);
 
     this.linksState.runningLinks$.pipe(
       map((links) => !!links?.length),
@@ -157,6 +158,7 @@ export class StateTree {
         startState: this,
         isReadonly: false,
         defaultValidators: this.defaultValidators,
+        batchLinks: this.batchLinks,
         mockMode: this.mockMode,
         logger: this.logger,
       });
@@ -196,6 +198,7 @@ export class StateTree {
       config: subConfig,
       isReadonly: false,
       defaultValidators: this.defaultValidators,
+      batchLinks: this.batchLinks,
       mockMode: this.mockMode,
       logger: this.logger,
     });
@@ -249,6 +252,7 @@ export class StateTree {
           config: subConfig,
           mockMode: this.mockMode,
           defaultValidators: this.defaultValidators,
+          batchLinks: this.batchLinks,
           isReadonly,
         },
       ).pipe(

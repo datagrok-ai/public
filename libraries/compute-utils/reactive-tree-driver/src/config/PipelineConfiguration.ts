@@ -95,6 +95,7 @@ export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P>
   type: 'validator'
   handler: Validator;
   runOnInit?: undefined;
+  sequential?: boolean;
 };
 
 export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -102,6 +103,7 @@ export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   actions?: undefined;
   handler: MetaHandler;
   runOnInit?: undefined;
+  sequential?: boolean;
 };
 
 export type PipelineInitConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -125,6 +127,7 @@ export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> 
   actions?: undefined;
   handler: SelectorHandler;
   runOnInit?: undefined;
+  sequential?: boolean;
 };
 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P>;
