@@ -18,6 +18,8 @@ async function softStep(name: string, fn: () => Promise<void>) {
 test.use({
   viewport: {width: 1920, height: 1080},
   launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
 });
 
 test('DiffStudio Files & Sharing: pk.ivp preview, modify Step/Count, URL reload', async ({page, context}) => {

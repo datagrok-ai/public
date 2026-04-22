@@ -1,196 +1,183 @@
-import {test, expect, chromium} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 
-const baseUrl = process.env.BASE_URL ?? 'https://dev.datagrok.ai';
-const datasetPath = 'System:DemoFiles/demog.csv';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
+});
+
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 
 const stepErrors: {step: string; error: string}[] = [];
 
 async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
-  }
+  try { await test.step(name, fn); }
+  catch (e: any) { stepErrors.push({step: name, error: e?.message ?? String(e)}); }
 }
 
-test('Network diagram', async () => {
-  test.setTimeout(600_000);
+test('Network diagram', async ({page}) => {
+  test.setTimeout(300_000);
 
-  // Reuse the existing Chrome session (user is already logged in)
-  const browser = await chromium.connectOverCDP('http://127.0.0.1:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
+  await page.goto(baseUrl);
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
   }
-  await page.waitForFunction(() => {
-    try {
-      return typeof grok !== 'undefined' && grok.shell
-        && typeof grok.shell.closeAll === 'function'
-        && grok.dapi && grok.dapi.files;
-    } catch { return false; }
-  }, {timeout: 60000});
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
 
-  // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
+  await page.evaluate(async () => {
+    const w = window as any;
     document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = false;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
+    w.grok.shell.settings.showFiltersIconsConstantly = true;
+    w.grok.shell.windows.simpleMode = true;
+    w.grok.shell.closeAll();
+    const df = await w.grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
+    const tv = w.grok.shell.addTableView(df);
+    await new Promise((resolve: any) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
       setTimeout(resolve, 3000);
     });
     tv.getFiltersGroup();
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
+  });
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Step 2: Add Network Diagram via Toolbox
-  await softStep('Add Network diagram', async () => {
-    await page.evaluate(() => {
-      const icon = document.querySelector('[name="icon-network-diagram"]');
-      if (icon) (icon as HTMLElement).click();
+  await softStep('Step 2: Add Network diagram via Toolbox icon', async () => {
+    await page.locator('[name="icon-network-diagram"]').click();
+    await page.locator('[name="viewer-Network-diagram"]').waitFor({timeout: 15000});
+    await page.waitForTimeout(1500);
+    const info = await page.evaluate(() => {
+      const w = window as any;
+      const nd = w.grok.shell.tv.viewers.find((v: any) => v.type === 'Network diagram');
+      return {added: !!nd, node1: nd?.props.node1ColumnName, node2: nd?.props.node2ColumnName};
     });
-    await page.locator('[name="viewer-Network-diagram"]').waitFor({timeout: 10000});
-    await page.locator('[name="viewer-Network-diagram"] canvas').waitFor({timeout: 10000});
-    const cols = await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
-      return { n1: nd.props.node1ColumnName, n2: nd.props.node2ColumnName };
-    });
-    expect(cols.n1).toBeTruthy();
-    expect(cols.n2).toBeTruthy();
+    expect(info.added).toBe(true);
+    expect(info.node1).toBeTruthy();
+    expect(info.node2).toBeTruthy();
   });
 
-  // Step 3: Switch Node 1 = RACE, Node 2 = DEMOG (popup unreliable → JS API fallback)
-  await softStep('Set Node 1 = RACE, Node 2 = DEMOG', async () => {
-    await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
+  await softStep('Step 3: Switch Node 1 to RACE, Node 2 to DEMOG', async () => {
+    const info = await page.evaluate(async () => {
+      const w = window as any;
+      const nd = w.grok.shell.tv.viewers.find((v: any) => v.type === 'Network diagram');
       nd.props.node1ColumnName = 'RACE';
       nd.props.node2ColumnName = 'DEMOG';
+      await new Promise((r: any) => setTimeout(r, 800));
+      return {node1: nd.props.node1ColumnName, node2: nd.props.node2ColumnName};
+    });
+    expect(info.node1).toBe('RACE');
+    expect(info.node2).toBe('DEMOG');
+  });
+
+  // Steps 4-7: canvas click/shift+click/ctrl+click/dblclick on vis.js-rendered nodes — omitted
+  // because the viewer renders into canvas (no DOM handles for nodes/edges).
+
+  await softStep('Step 8: Open Property Pane via Gear icon', async () => {
+    await page.evaluate(() => {
+      const root = document.querySelector('[name="viewer-Network-diagram"]')!;
+      const panel = root.closest('.panel-base')!;
+      (panel.querySelector('[name="icon-font-icon-settings"]') as HTMLElement).click();
     });
     await page.waitForTimeout(800);
-    const cols = await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
-      return { n1: nd.props.node1ColumnName, n2: nd.props.node2ColumnName };
+    const hasData = await page.evaluate(() => {
+      return !!Array.from(document.querySelectorAll('.property-grid-category'))
+        .find(e => e.textContent?.trim() === 'Data');
     });
-    expect(cols.n1).toBe('RACE');
-    expect(cols.n2).toBe('DEMOG');
+    expect(hasData).toBe(true);
   });
 
-  // Steps 4-7: canvas click selection — vis.js/Hammer.js does not respond to synthetic events.
-  // Verify capability via property defaults only.
-  await softStep('Click selection capability (props only)', async () => {
-    const props = await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
-      return {
-        sr: nd.props.selectRowsOnClick,
-        se: nd.props.selectEdgesOnClick,
-      };
-    });
-    expect(props.sr).toBe(true);
-    expect(props.se).toBe(true);
-  });
-
-  // Steps 8-9: Configure Data props (gear not in DOM → JS API fallback)
-  await softStep('Set Data props', async () => {
-    await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
+  await softStep('Step 9: Set edge/node color/size/width columns', async () => {
+    const after = await page.evaluate(async () => {
+      const w = window as any;
+      const nd = w.grok.shell.tv.viewers.find((v: any) => v.type === 'Network diagram');
       nd.props.edgeColorColumnName = 'AGE';
       nd.props.edgeColorAggrType = 'avg';
       nd.props.edgeWidthColumnName = 'WEIGHT';
       nd.props.edgeWidthAggrType = 'avg';
       nd.props.node1SizeColumnName = 'AGE';
       nd.props.node1ColorColumnName = 'SEX';
-    });
-    await page.waitForTimeout(1500);
-    const props = await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
+      await new Promise((r: any) => setTimeout(r, 1000));
       return {
-        ec: nd.props.edgeColorColumnName,
-        ew: nd.props.edgeWidthColumnName,
-        n1s: nd.props.node1SizeColumnName,
-        n1c: nd.props.node1ColorColumnName,
+        edgeColor: nd.props.edgeColorColumnName,
+        edgeWidth: nd.props.edgeWidthColumnName,
+        node1Size: nd.props.node1SizeColumnName,
+        node1Color: nd.props.node1ColorColumnName,
       };
     });
-    expect(props.ec).toBe('AGE');
-    expect(props.ew).toBe('WEIGHT');
-    expect(props.n1s).toBe('AGE');
-    expect(props.n1c).toBe('SEX');
+    expect(after.edgeColor).toBe('AGE');
+    expect(after.edgeWidth).toBe('WEIGHT');
+    expect(after.node1Size).toBe('AGE');
+    expect(after.node1Color).toBe('SEX');
   });
 
-  // Step 10: Style toggles
-  await softStep('Toggle Style props', async () => {
-    await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
+  await softStep('Step 10: Style toggles (selectors, arrows, simulation)', async () => {
+    const res = await page.evaluate(async () => {
+      const w = window as any;
+      const nd = w.grok.shell.tv.viewers.find((v: any) => v.type === 'Network diagram');
       nd.props.showColumnSelectors = false;
-    });
-    await page.waitForTimeout(400);
-    const off = await page.locator('[name="viewer-Network-diagram"] [name="div-column-combobox-node1"]')
-      .evaluate((el) => getComputedStyle(el).display);
-    expect(off).toBe('none');
-
-    await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
+      await new Promise((r: any) => setTimeout(r, 400));
+      const hiddenCount = Array.from(document.querySelectorAll('[name="viewer-Network-diagram"] [name^="div-column-combobox"]'))
+        .filter(e => !!(e as HTMLElement).offsetParent).length;
       nd.props.showColumnSelectors = true;
+      await new Promise((r: any) => setTimeout(r, 400));
+      const shownCount = Array.from(document.querySelectorAll('[name="viewer-Network-diagram"] [name^="div-column-combobox"]'))
+        .filter(e => !!(e as HTMLElement).offsetParent).length;
       nd.props.showArrows = 'to';
+      await new Promise((r: any) => setTimeout(r, 400));
       nd.props.suspendSimulation = true;
+      await new Promise((r: any) => setTimeout(r, 400));
+      const suspT = nd.props.suspendSimulation;
+      nd.props.suspendSimulation = false;
+      return {hiddenCount, shownCount, arrows: nd.props.showArrows, suspT, suspF: nd.props.suspendSimulation};
     });
-    await page.waitForTimeout(400);
-    const on = await page.locator('[name="viewer-Network-diagram"] [name="div-column-combobox-node1"]')
-      .evaluate((el) => getComputedStyle(el).display);
-    expect(on).not.toBe('none');
-    const props = await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
-      return { arrows: nd.props.showArrows, susp: nd.props.suspendSimulation };
-    });
-    expect(props.arrows).toBe('to');
-    expect(props.susp).toBe(true);
+    expect(res.hiddenCount).toBe(0);
+    expect(res.shownCount).toBe(2);
+    expect(res.arrows).toBe('to');
+    expect(res.suspT).toBe(true);
+    expect(res.suspF).toBe(false);
   });
 
-  // Step 11: Filter + Show Filtered Out toggle
-  await softStep('Filter AGE > 40, toggle showFilteredOutNodes', async () => {
+  await softStep('Step 11: Filter AGE > 40 and toggle Show Filtered Out Nodes', async () => {
+    const res = await page.evaluate(async () => {
+      const w = window as any;
+      const tv = w.grok.shell.tv;
+      const df = tv.dataFrame;
+      const bs = df.filter;
+      const age = df.col('AGE');
+      for (let i = 0; i < df.rowCount; i++) bs.set(i, age.get(i) > 40, false);
+      bs.fireChanged();
+      await new Promise((r: any) => setTimeout(r, 800));
+      const filteredCount = bs.trueCount;
+      const nd = tv.viewers.find((v: any) => v.type === 'Network diagram');
+      nd.props.showFilteredOutNodes = true;
+      await new Promise((r: any) => setTimeout(r, 500));
+      return {filteredCount, total: df.rowCount, showFilteredOut: nd.props.showFilteredOutNodes};
+    });
+    expect(res.filteredCount).toBeGreaterThan(0);
+    expect(res.filteredCount).toBeLessThan(res.total);
+    expect(res.showFilteredOut).toBe(true);
+  });
+
+  await softStep('Step 12: Close viewer via × icon', async () => {
     await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      const ageCol = df.col('AGE');
-      df.filter.init((i) => ageCol.get(i) > 40);
+      const root = document.querySelector('[name="viewer-Network-diagram"]')!;
+      const panel = root.closest('.panel-base')!;
+      (panel.querySelector('[name="Close"]') as HTMLElement).click();
     });
     await page.waitForTimeout(800);
-    const fc = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(fc).toBeLessThan(5850);
-    expect(fc).toBeGreaterThan(0);
-
-    await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
-      nd.props.showFilteredOutNodes = true;
+    const gone = await page.evaluate(() => {
+      const w = window as any;
+      return !w.grok.shell.tv.viewers.find((v: any) => v.type === 'Network diagram');
     });
-    await page.waitForTimeout(600);
-    const sfo = await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
-      return nd.props.showFilteredOutNodes;
-    });
-    expect(sfo).toBe(true);
+    expect(gone).toBe(true);
   });
 
-  // Step 12: Close viewer (no DOM × → JS API)
-  await softStep('Close viewer', async () => {
-    await page.evaluate(() => {
-      const nd = grok.shell.tv.viewers.find(v => v.type === 'Network diagram');
-      nd.close();
-    });
-    await page.waitForTimeout(500);
-    const remaining = await page.evaluate(() =>
-      grok.shell.tv.viewers.filter(v => v.type === 'Network diagram').length);
-    expect(remaining).toBe(0);
-    // cleanup filter
-    await page.evaluate(() => grok.shell.tv.dataFrame.filter.setAll(true));
-  });
-
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  if (stepErrors.length > 0)
+    throw new Error('Step failures:\n' + stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n'));
 });

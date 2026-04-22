@@ -1,6 +1,15 @@
 import {test, expect, type Page} from '@playwright/test';
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
+});
+
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 const datasetPath = 'System:DemoFiles/demog.csv';
 
 const stepErrors: {step: string; error: string}[] = [];
@@ -102,25 +111,34 @@ async function clickMenuItemUnderParent(page: Page, parentText: string, itemText
   await page.waitForTimeout(300);
 }
 
-// -- Setup --
+// -- Test --
 
-async function setupDemogScatterPlot(page: Page) {
+test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
+  test.setTimeout(600_000);
+  stepErrors.length = 0;
+
   await page.goto(baseUrl);
-  // Wait for Dart interop to be fully ready (grok.shell.settings accessor requires Dart runtime)
-  await page.waitForFunction(() => {
-    try { return typeof grok !== 'undefined' && grok.shell && grok.shell.settings != null; }
-    catch { return false; }
-  }, {timeout: 30000});
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
+  }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
 
-  await page.evaluate(async (path: string) => {
+  // Phase 2: Open dataset
+  await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
+    grok.shell.windows.simpleMode = true;
     grok.shell.closeAll();
     const df = await grok.dapi.files.readCsv(path);
     const tv = grok.shell.addTableView(df);
     await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, 5000);
     });
     const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
       .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
@@ -134,21 +152,14 @@ async function setupDemogScatterPlot(page: Page) {
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Add scatter plot via Toolbox icon click (UI)
+  // Phase 3: Add scatter plot via Toolbox icon click (UI)
   await page.evaluate(() => {
     document.querySelector('[name="icon-scatter-plot"]')!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
   });
   await page.locator('[name="viewer-Scatter-plot"]').waitFor({timeout: 10000});
-}
-
-// -- Test --
-
-test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
-  stepErrors.length = 0;
 
   // ── Changing axes ──────────────────────────────────────────────────────
   await softStep('Changing axes', async () => {
-    await setupDemogScatterPlot(page);
     await setColumnViaSelector(page, 'div-column-combobox-x', 'AGE');
     expect(await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName

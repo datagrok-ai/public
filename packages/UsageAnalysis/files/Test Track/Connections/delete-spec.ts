@@ -1,5 +1,10 @@
 import { test, expect, Page } from '@playwright/test';
 
+test.use({
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
+});
+
 const BASE_URL = 'https://public.datagrok.ai';
 
 // Prerequisite: Adding-spec.ts and Edit-spec.ts must have run

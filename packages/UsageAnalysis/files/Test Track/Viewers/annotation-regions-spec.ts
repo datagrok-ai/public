@@ -1,5 +1,10 @@
 import {test, expect, chromium, Page} from '@playwright/test';
 
+test.use({
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
+});
+
 declare const grok: any;
 
 const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';

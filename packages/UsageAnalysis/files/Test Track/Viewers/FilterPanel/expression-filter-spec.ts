@@ -3,6 +3,8 @@ import {test, expect} from '@playwright/test';
 test.use({
   viewport: {width: 1920, height: 1080},
   launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+  actionTimeout: 15_000,
+  navigationTimeout: 60_000,
 });
 
 const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
