@@ -1,38 +1,42 @@
 import {test, expect} from '@playwright/test';
 
-const baseUrl = 'https://dev.datagrok.ai';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+});
+
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 
 const stepErrors: {step: string; error: string}[] = [];
 
 async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
-  }
+  try { await test.step(name, fn); }
+  catch (e: any) { stepErrors.push({step: name, error: e?.message ?? String(e)}); }
 }
 
 test('Collaborative Filtering for Linked Tables', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
 
-  // Phase 1: Navigate and wait for full Dart-JS bridge initialization
   await page.goto(baseUrl);
-  await page.waitForFunction(() => {
-    try {
-      if (typeof grok === 'undefined' || !grok.shell) return false;
-      // Verify Dart interop functions are wired by calling a simple getter
-      const v = grok.shell.v;
-      return true;
-    } catch { return false; }
-  }, {timeout: 60000});
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
+  }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
 
   // Phase 2: Run linking script — open 3 tables and link them
   await softStep('1. Run JS script to link 3 tables', async () => {
     const result = await page.evaluate(async () => {
       document.body.classList.add('selenium');
       grok.shell.settings.showFiltersIconsConstantly = true;
+      grok.shell.windows.simpleMode = true;
       grok.shell.closeAll();
 
       const df1 = await grok.data.files.openTable('System:DemoFiles/SPGI.csv');

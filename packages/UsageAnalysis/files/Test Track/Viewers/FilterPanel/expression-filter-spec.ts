@@ -1,30 +1,41 @@
 import {test, expect} from '@playwright/test';
 
-const baseUrl = 'https://dev.datagrok.ai';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+});
+
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 const datasetPath = 'System:DemoFiles/demog.csv';
 
 const stepErrors: {step: string; error: string}[] = [];
 
 async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
-  }
+  try { await test.step(name, fn); }
+  catch (e: any) { stepErrors.push({step: name, error: e?.message ?? String(e)}); }
 }
 
 test('Filter panel — Expression filter', async ({page}) => {
   test.setTimeout(600_000);
 
-  // Phase 1: Navigate
   await page.goto(baseUrl);
-  await page.waitForFunction(() => typeof grok !== 'undefined' && grok.shell, {timeout: 15000});
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
+    await page.keyboard.press('Enter');
+  }
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
 
   // Phase 2: Open dataset
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
+    grok.shell.windows.simpleMode = true;
     grok.shell.closeAll();
     const df = await grok.dapi.files.readCsv(path);
     const tv = grok.shell.addTableView(df);

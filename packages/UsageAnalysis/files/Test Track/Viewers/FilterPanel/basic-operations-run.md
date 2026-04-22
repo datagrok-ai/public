@@ -1,70 +1,89 @@
 # Basic Operations — Run Results
 
-**Date**: 2026-04-05
+**Date**: 2026-04-22
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|-------|-------|
-| 1.1 | Hover Structure, click Sketch icon → Sketcher opens | PASS | PASSED | Sketcher dialog with SMILES input opened |
-| 1.2 | Enter c1ccccc1 → molecule appears | PASS | PASSED | Typed SMILES + Enter, molecule rendered |
-| 1.3 | Click OK → 32 rows filtered | PASS | PASSED | filteredRows=32 |
-| 1.4 | Scroll to Stereo Category, click R_ONE | PASS | PASSED | 15 rows via JS API (canvas-based categories) |
-| 1.5 | Average Mass filter menu → Min/max → set max=400 | PASS | PASSED | 4 rows shown via histogram JS API |
-| 1.6 | Uncheck global Turn filters on/off | PASS | PASSED | All 100 rows shown, filters greyed out |
-| 1.7 | Re-enable global Turn filters on/off | PASS | PASSED | 4 rows restored |
-| 1.8 | Disable Stereo Category per-filter checkbox | PASS | PASSED | Count increased to 9 (Structure + AvgMass only) |
-| 1.9 | Close Filter Panel | PASS | PASSED | All 100 rows shown |
-| 1.10 | Reopen — Stereo Category still disabled | PASS | PASSED | checkbox.checked=false confirmed; 51 rows (possible default missing-value filtering) |
-| 1.11 | Reset all filters (↺ icon + confirm) | PASS | PASSED | 100 rows, all cards present |
-| 1.12 | Close Filter Panel | PASS | PASSED | 100 rows |
-| 1.13 | Reopen — default state, no active filters | PASS | PASSED | 100 rows, 41 cards, no filtering |
-| 1.14 | Remove Structure filter (X icon) | PASS | PASSED | Structure gone after reset cycle |
-| 1.15 | Remove Core filter (X icon) | PASS | PASSED | Core removed, 40 filters remain |
-| 1.16 | Close and reopen — removed filters absent | PASS | PASSED | No Structure or Core, 40 cards |
-| 2.1 | Hamburger → Remove All | PASS | PASSED | 0 filter cards, 100 rows |
-| 2.2 | Add ID filter (drag column header) | PASS | PASSED | Via JS API fg.updateOrAdd (canvas drag not automatable) |
-| 2.3 | Add CAST Idea ID (column header menu → Add Filter) | PASS | PASSED | Via JS API, appeared at top |
-| 2.4 | Add Structure (right-click cell → Use as filter) | PASS | PASSED | Substructure filter added at top |
-| 2.5 | Add Scaffold Tree Filter (context menu → Add filter) | PASS | PASSED | Via JS API (reference: always use JS API) |
-| 2.6 | Verify order: ScaffoldTree, Structure, CAST Idea ID, ID | PASS | PASSED | Order confirmed via filter types |
-| 2.7 | Hamburger → Remove All | PASS | PASSED | 0 cards |
-| 2.8 | Close Filter Panel | PASS | PASSED | Panel closed without errors |
-| 3.1 | Hide Structure, Core, R1 via Order Or Hide Columns | PASS | PASSED | Via grid column visible=false API |
-| 3.2 | Verify grid doesn't show Structure, Core, R1 | PASS | PASSED | 86 visible columns |
-| 3.3 | Open Filter Panel — no Structure/Core/R1 cards | PASS | PASSED | 39 filters, none for hidden columns |
-| 3.4 | Restore columns — all visible again | PASS | PASSED | 89 visible columns |
-| 3.5 | Hamburger → Remove All | PASS | PASSED | 0 cards |
-| 3.6 | Close Filter Panel | PASS | PASSED | Panel closed |
-| 3.7 | Reopen — Structure, Core, R1 cards present | PASS | PASSED | 42 filters, all three present |
+### Section 1: Filtering and resetting
+
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 0 | Open spgi-100 + Filter Panel | 28s | PASS | PASSED | `readCsv` + `addTableView` + `getFiltersGroup()`; 100 rows × 90 cols, 42 filter cards |
+| 1.1-1.3 | Sketch c1ccccc1 → 32 rows | 17s | PASS | PASSED | `.sketch-link` click → SMILES via native value setter + Enter → `[name="button-OK"]`; 32 rows |
+| 1.4-1.5 | Stereo Category R_ONE → 15 rows | 9s | PASS | PASSED | JS API only (canvas categories): `fg.updateOrAdd({type: CATEGORICAL, column: 'Stereo Category', selected: ['R_ONE']})` |
+| 1.6-1.7 | Average Mass max=400 → 4 rows | 7s | PASS | PASSED | JS API: `fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: col.min, max: 400})` |
+| 1.8 | Disable all filters globally → 100 | 7s | PASS | PASSED | `.d4-filter-group-header input[type="checkbox"]` click |
+| 1.9 | Re-enable all filters → 4 | 7s | PASS | PASSED | Same global checkbox toggled back |
+| 1.10 | Disable Stereo Category → 9 | 10s | PASS | PASSED | Per-card checkbox click; rows = 9 (Structure + AvgMass active) |
+| 1.11 | Close Filter Panel → 100 | 8s | PASS | PASSED | `getFiltersGroup().close()`; all rows shown |
+| 1.12 | Reopen — Stereo still disabled | 9s | PASS | PASSED | `stereoChecked === false` confirmed; rows = 9 (Structure + AvgMass survive) |
+| 1.13 | Reset (↺) → 100 | 14s | PASS | PASSED | `.fa-arrow-rotate-left` click; no confirm dialog appeared this run, reset still applied |
+| 1.14-1.15 | Close/reopen — default state | 11s | PASS | PASSED | 100 rows, 42 cards |
+| 1.16-1.17 | Remove Structure & Core (X) | 9s | PASS | PASSED | `[name="icon-times"]` scoped to filter card; 40 cards remain |
+| 1.18 | Close/reopen — removed absent | 12s | PASS | PASSED | 40 cards, no Structure/Core |
+
+### Section 2: Adding Filters
+
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 2.1 | Hamburger → Remove All → 0 cards | 13s | PASS | PASSED | Found titlebar hamburger via `.panel-titlebar [name="icon-font-icon-menu"]`; menu item `Remove All`; OK confirm not always shown but Remove All applied |
+| 2.2 | Add ID (drag) → histogram | 4s | PASS | PASSED | JS API only (drag is canvas): `fg.updateOrAdd({type: 'histogram', column: 'Id'})` |
+| 2.3 | Add CAST Idea ID (col header menu) | 4s | PASS | PASSED | JS API equivalent |
+| 2.4 | Add Structure (right-click cell) | 4s | PASS | PASSED | `fg.updateOrAdd({type: 'Chem:substructureFilter', column: 'Structure', columnName: 'Structure'})` |
+| 2.5 | Add Scaffold Tree (Filter Panel ctx menu) | 4s | PASS | PASSED | `fg.updateOrAdd({type: 'Chem:scaffoldTreeFilter', ...})` |
+| 2.6 | Verify order: ScaffoldTree, Structure, CAST, Id | 6s | PASS | PASSED | `fg.filters` enumeration: [Structure (scaffold), Structure (substructure), CAST Idea ID, Id] |
+| 2.7 | Hamburger → Remove All → 0 cards | 12s | PASS | PASSED | Same hamburger flow |
+| 2.8 | Close Filter Panel | 7s | PASS | PASSED | `getFiltersGroup().close()`; panel removed |
+
+### Section 3: Hidden Columns
+
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 3.1-3.3 | Hide Structure/Core/R1 → grid 86 visible cols | 12s | PASS | PASSED | `grid.columns.byName(...).visible = false` + `grid.invalidate()` |
+| 3.4 | Open Filter Panel — no hidden cards | 8s | PASS | PASSED | 39 cards, none for Structure/Core/R1 |
+| 3.5 | Restore columns → 89 visible | 9s | PASS | PASSED | `visible = true` for all three |
+| 3.6-3.7 | Hamburger Remove All + close | 25s | PASS | PASSED | 0 cards, panel closed |
+| 3.8 | Reopen — Structure/Core/R1 cards present | 9s | PASS | PASSED | 42 cards, all three present |
+
+**Time** = step 2b wall-clock per step (incl. model thinking + waits). **Result** = step 2b outcome. **Playwright** = step 2e outcome (existing spec ran without modification).
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Model thinking (scenario steps) | 2m 53s |
+| grok-browser execution (scenario steps) | 1m 34s |
+| Execute via grok-browser (total) | 4m 27s |
+| Spec file generation | 9s |
+| Spec script execution | 50s |
+| **Total scenario run (with model)** | 6m 9s |
+
+`Execute via grok-browser (total)` = end of step 2b – start of step 2b. The two `scenario steps` rows (thinking + grok-browser execution) sum to that total. `Spec script execution` = `npx playwright test ... --headed` wall-clock (47.1s test + ~3s startup/teardown). `Total scenario run` = end of step 2e – start of step 2b.
 
 ## Summary
 
-All filter panel basic operations work correctly on dev server. Structure/substructure filtering (32 rows for benzene), categorical filtering (R_ONE → 15 rows), histogram range filtering (max 400 → 4 rows), global enable/disable toggle, per-filter enable/disable, reset, remove, close/reopen persistence, filter adding via 4 methods, and hidden column exclusion all pass. Minor note: after close/reopen with a disabled filter, the panel shows 51 filtered rows instead of 100, suggesting default missing-value filtering on reopen.
+Ran basic-operations end-to-end against dev. All 31 scenario steps passed in the MCP browser phase (Section 1: structure → 32, Stereo R_ONE → 15, Mass max 400 → 4, global toggle, per-filter toggle, close/reopen persistence, reset, remove via X. Section 2: hamburger Remove All, add 4 filters via JS API, verify order. Section 3: hide columns, verify exclusion from filter panel, restore, verify reappearance). Existing `basic-operations-spec.ts` was left untouched per user instruction; re-running it produced 22 PASSED softSteps in 47.1s. **Total scenario run (with model)**: 6m 9s.
 
 ## Retrospective
 
 ### What worked well
-- JS API (fg.updateOrAdd, fg.close, grid.columns.byName.visible) reliably controls all filter operations
-- Filter state persistence: disabled Stereo Category survived close/reopen
-- Reset correctly clears all filter values while keeping cards
-- Hidden column exclusion from filter panel works as expected
-- Filter ordering: new filters appear at the top consistently
-- Global and per-filter enable/disable toggle work correctly
+- All filter operations completed successfully on the first try this run — no retries needed
+- Disabled Stereo Category survived close/reopen as expected (DOM checkbox state preserved)
+- JS API additions (`fg.updateOrAdd`) reliably created all four filter types in correct top-of-list order (ScaffoldTree → Structure substructure → CAST Idea ID → Id)
+- Hidden columns correctly excluded from the filter panel after `Remove All` + reopen — and reappear when columns are re-shown
+- Hamburger menu flow (`.panel-titlebar [name="icon-font-icon-menu"]` → `.d4-menu-item-label` text match → optional confirm OK) is robust
 
 ### What did not work
-- Closing filter panel via DOM icon-times: all icon-times are per-filter remove buttons, viewer close button is on dock panel title bar (used JS API fg.close() instead)
-- fg.setEnabled() JS API didn't visibly change isFiltering state in filter enumeration, but DOM checkbox click worked
-- Canvas-based elements (categorical checkboxes, grid column headers) require JS API — cannot be clicked via DOM
+- Reset (↺) icon click did not show a confirmation dialog this run — reset was applied directly with no prompt. Spec still works because it tries to click OK if the dialog appears (no-op otherwise)
+- Drag-from-grid, column-header-menu Add Filter, right-click cell → Use as filter, and Filter Panel right-click → Add filter (steps 2.2-2.5) all rely on canvas / context menu interactions that are not automatable; spec falls back to `fg.updateOrAdd` for all four
 
 ### Suggestions for the platform
-- Add a dedicated `name=` attribute on the filter panel viewer close button (separate from per-filter remove icons)
-- Make fg.setEnabled() more discoverable — current behavior is inconsistent with isFiltering enumeration
-- Consider exposing `fg.resetAll()` as a JS API method (currently requires finding the reset icon in DOM)
+- Consider exposing a `name=` attribute on the Filter Panel header reset icon (currently found via `.fa-arrow-rotate-left` class) for more stable automation
+- Reset confirmation dialog inconsistency (sometimes shown, sometimes not) — clarify the trigger condition; if intentional (e.g. only when filters are dirty), document it
 
 ### Suggestions for the scenario
-- Step 10: specify expected row count when disabling Stereo Category ("~9 rows" for Structure + Average Mass)
-- Step 12: clarify expected row count on reopen (51 vs 100 due to possible missing-value filtering)
-- Steps 2.2-2.5: note that drag-from-grid and right-click-cell methods require canvas interaction — JS API is the practical automation path
+- Steps 2.2-2.5 should explicitly note that drag/right-click/context-menu adds are functionally equivalent to JS API `fg.updateOrAdd` calls — useful for both manual testers (knowing what to expect) and automation authors
+- Step 1.10 should specify expected row count after disabling Stereo Category (~9 rows for Structure + Average Mass intersection)
+- Step 1.13 wording "confirm the prompt" implies a dialog always appears — observed behavior is that the prompt does not always show; either the wording should be "and confirm if prompted" or the platform behavior should be made consistent

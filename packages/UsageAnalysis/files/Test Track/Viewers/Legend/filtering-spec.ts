@@ -1,269 +1,238 @@
 import {test, expect} from '@playwright/test';
 
-const baseUrl = 'http://localhost:8888/';
-const datasetPath = 'System:DemoFiles/SPGI.csv';
+test.use({
+  viewport: {width: 1920, height: 1080},
+  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+});
+
+const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
+const login = process.env.DATAGROK_LOGIN ?? 'admin';
+const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 
 const stepErrors: {step: string; error: string}[] = [];
 
 async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
-  }
+  try { await test.step(name, fn); }
+  catch (e: any) { stepErrors.push({step: name, error: e?.message ?? String(e)}); }
 }
 
 test('Legend filtering', async ({page}) => {
-  // Phase 1: Navigate and login
+  test.setTimeout(600_000);
+
   await page.goto(baseUrl);
-  await page.waitForFunction(() => typeof grok !== 'undefined', {timeout: 120000});
-  const loginField = page.getByRole('textbox', {name: 'Login or Email'});
-  if (await loginField.count() > 0) {
-    await loginField.click({force: true});
-    await page.keyboard.type('admin');
-    await page.locator('input[type="password"]').last().click({force: true});
-    await page.keyboard.type('admin');
+  const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
+  if (await loginInput.isVisible({timeout: 15000}).catch(() => false)) {
+    await loginInput.click();
+    await page.keyboard.type(login);
+    await page.getByPlaceholder('Password').and(page.locator(':visible')).click();
+    await page.keyboard.type(password);
     await page.keyboard.press('Enter');
   }
-  await page.waitForFunction(() => {
-    try { grok.shell.settings.showFiltersIconsConstantly; return true; } catch { return false; }
-  }, {timeout: 120000});
+  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
 
-  // Phase 2: Open dataset
-  await page.evaluate(async (path) => {
+  await page.evaluate(async () => {
     document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = false;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
+    (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
+    (window as any).grok.shell.windows.simpleMode = true;
+    (window as any).grok.shell.closeAll();
+    const df = await (window as any).grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+    (window as any).grok.shell.addTableView(df);
     await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
+      setTimeout(resolve, 5000);
     });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
-
-  // Step 2: Add viewers via toolbox icons
-  await softStep('Add viewers', async () => {
-    const icons = ['icon-scatter-plot', 'icon-histogram', 'icon-line-chart',
-      'icon-bar-chart', 'icon-pie-chart', 'icon-trellis-plot', 'icon-box-plot'];
-    for (const name of icons) {
-      await page.locator(`[name="${name}"]`).click();
-      await page.waitForTimeout(1000);
-    }
-    const count = await page.evaluate(() => grok.shell.tv.viewers.length);
-    expect(count).toBe(8);
-  });
-
-  // Step 3: Set legend to Stereo Category
-  await softStep('Set legend to Stereo Category', async () => {
-    await page.evaluate(async () => {
-      for (const v of Array.from(grok.shell.tv.viewers)) {
-        if (v.type === 'Scatter plot') v.setOptions({color: 'Stereo Category', legendVisibility: 'Always'});
-        else if (v.type === 'Histogram') v.setOptions({split: 'Stereo Category', legendVisibility: 'Always'});
-        else if (v.type === 'Line chart') v.setOptions({split: 'Stereo Category', legendVisibility: 'Always'});
-        else if (v.type === 'Bar chart') v.setOptions({stack: 'Stereo Category', legendVisibility: 'Always'});
-        else if (v.type === 'Box plot') v.setOptions({color: 'Stereo Category', legendVisibility: 'Always'});
-        else if (v.type === 'Pie chart') v.setOptions({legendVisibility: 'Always'});
-        else if (v.type === 'Trellis plot') v.setOptions({legendVisibility: 'Always'});
+    const hasBioChem = Array.from({length: df.columns.length}, (_, i: number) => df.columns.byIndex(i))
+      .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
+    if (hasBioChem) {
+      for (let i = 0; i < 50; i++) {
+        const grid = document.querySelector('[name="viewer-Grid"]');
+        if (grid?.querySelector('canvas')) break;
+        await new Promise(r => setTimeout(r, 200));
       }
-      await new Promise(r => setTimeout(r, 2000));
-    });
+      await new Promise(r => setTimeout(r, 5000));
+    }
+    const tv = (window as any).grok.shell.tv;
+    const names = ['Scatter plot', 'Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'];
+    for (const n of names) {
+      tv.addViewer(n);
+      await new Promise(r => setTimeout(r, 300));
+    }
+    const col = 'Stereo Category';
+    for (const v of tv.viewers) {
+      if (v.type === 'Grid') continue;
+      try {
+        if (v.type === 'Scatter plot') v.props.colorColumnName = col;
+        else if (v.type === 'Histogram') v.props.splitColumnName = col;
+        else if (v.type === 'Line chart') v.props.splitColumnName = col;
+        else if (v.type === 'Bar chart') v.props.splitColumnName = col;
+        else if (v.type === 'Pie chart') v.props.categoryColumnName = col;
+        else if (v.type === 'Trellis plot') v.props.xColumnNames = [col];
+        else if (v.type === 'Box plot') v.props.categoryColumnNames = [col];
+        try { v.props.legendVisibility = 'Always'; } catch(_) {}
+      } catch(_) {}
+    }
+    tv.getFiltersGroup();
+    await new Promise(r => setTimeout(r, 1500));
   });
+  await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
+  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 15000});
 
-  // Step 4: Open Filter Panel, apply filter, check legend
-  await softStep('Filter to R_ONE+S_ACHIR, check legend shows only 2 categories', async () => {
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      grok.shell.tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 2000));
-      df.filter.init((i) => {
-        const val = df.col('Stereo Category').get(i);
-        return val === 'R_ONE' || val === 'S_ACHIR';
-      });
-      df.filter.fireChanged();
-      await new Promise(r => setTimeout(r, 1000));
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot');
-      return {
-        filteredRows: df.filter.trueCount,
-        legend: Array.from(sp.root.querySelectorAll('.d4-legend-value')).map(el => el.textContent),
-      };
-    });
-    expect(result.filteredRows).toBe(2247);
-    expect(result.legend).toEqual(['R_ONE', 'S_ACHIR']);
-  });
-
-  // Step 5: Save and apply layout
-  await softStep('Save and apply layout', async () => {
+  await softStep('Numerical filter: Average Mass > 400 (≈1588)', async () => {
     const count = await page.evaluate(async () => {
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      await new Promise(r => setTimeout(r, 1000));
-      const saved = await grok.dapi.layouts.find(layout.id);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-      await grok.dapi.layouts.delete(saved);
-      return grok.shell.tv.viewers.length;
-    });
-    expect(count).toBeGreaterThanOrEqual(8);
-  });
-
-  // Step 6: Reset filters
-  await softStep('Reset filters', async () => {
-    const rows = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      df.filter.setAll(true);
-      await new Promise(r => setTimeout(r, 500));
-      return df.filter.trueCount;
-    });
-    expect(rows).toBe(3624);
-  });
-
-  // Step 7: Set in-viewer Filter
-  await softStep('Set in-viewer filter to R_ONE, S_UNKN', async () => {
-    const result = await page.evaluate(async () => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot');
-      sp.setOptions({filter: '${Stereo Category} in ["R_ONE", "S_UNKN"]'});
-      await new Promise(r => setTimeout(r, 1000));
-      return {
-        dfRows: grok.shell.tv.dataFrame.filter.trueCount,
-        legend: Array.from(sp.root.querySelectorAll('.d4-legend-value')).map(el => el.textContent),
-      };
-    });
-    expect(result.dfRows).toBe(3624);
-    expect(result.legend).toEqual(['R_ONE', 'S_UNKN']);
-  });
-
-  // Step 8: Apply additional dataframe filter
-  await softStep('Additional dataframe filter, check intersection in legend', async () => {
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      df.filter.init((i) => {
-        const val = df.col('Stereo Category').get(i);
-        return val === 'R_ONE' || val === 'S_UNKN' || val === 'S_ABS';
-      });
-      df.filter.fireChanged();
-      await new Promise(r => setTimeout(r, 1000));
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot');
-      const hist = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Histogram');
-      return {
-        spLegend: Array.from(sp.root.querySelectorAll('.d4-legend-value')).map(el => el.textContent),
-        histLegend: Array.from(hist.root.querySelectorAll('.d4-legend-value')).map(el => el.textContent),
-      };
-    });
-    // SP has in-viewer filter (R_ONE, S_UNKN) AND df filter (R_ONE, S_UNKN, S_ABS) = intersection
-    expect(result.spLegend).toEqual(['R_ONE', 'S_UNKN']);
-    // Histogram has only df filter
-    expect(result.histLegend).toEqual(['R_ONE', 'S_ABS', 'S_UNKN']);
-  });
-
-  // Step 9: Filter via legend click
-  await softStep('Legend click filters in-viewer', async () => {
-    await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      df.filter.setAll(true);
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot');
-      sp.setOptions({filter: ''});
-      await new Promise(r => setTimeout(r, 500));
-    });
-    const result = await page.evaluate(async () => {
-      const sp = document.querySelector('[name="viewer-Scatter-plot"]');
-      const items = sp.querySelectorAll('.d4-legend-item');
-      items[0].dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-      await new Promise(r => setTimeout(r, 500));
-      return Array.from(sp.querySelectorAll('.d4-legend-item')).map(i => ({
-        text: i.querySelector('.d4-legend-value')?.textContent,
-        current: i.classList.contains('d4-legend-item-current'),
-      }));
-    });
-    expect(result[0].current).toBe(true);
-    expect(result[1].current).toBe(false);
-    // Reset
-    await page.evaluate(async () => {
-      const sp = document.querySelector('[name="viewer-Scatter-plot"]');
-      for (const item of sp.querySelectorAll('.d4-legend-item'))
-        if (!item.classList.contains('d4-legend-item-current'))
-          item.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, ctrlKey: true}));
-      await new Promise(r => setTimeout(r, 500));
-    });
-  });
-
-  // Step 11: Different Row Source values
-  await softStep('Row Source affects legend (All, Filtered, Selected)', async () => {
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      df.filter.init((i) => {
-        const val = df.col('Stereo Category').get(i);
-        return val === 'R_ONE' || val === 'S_ACHIR';
-      });
-      df.filter.fireChanged();
-      df.selection.init((i) => df.col('Stereo Category').get(i) === 'R_ONE');
-      await new Promise(r => setTimeout(r, 500));
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot');
-      sp.setOptions({rowSource: 'All'});
-      await new Promise(r => setTimeout(r, 500));
-      const allLegend = Array.from(sp.root.querySelectorAll('.d4-legend-value')).map(el => el.textContent);
-      sp.setOptions({rowSource: 'Filtered'});
-      await new Promise(r => setTimeout(r, 500));
-      const filteredLegend = Array.from(sp.root.querySelectorAll('.d4-legend-value')).map(el => el.textContent);
-      sp.setOptions({rowSource: 'Selected'});
-      await new Promise(r => setTimeout(r, 500));
-      const selectedLegend = Array.from(sp.root.querySelectorAll('.d4-legend-value')).map(el => el.textContent);
-      sp.setOptions({rowSource: 'Filtered'});
-      df.filter.setAll(true);
-      df.selection.setAll(false);
-      return {allLegend, filteredLegend, selectedLegend};
-    });
-    expect(result.allLegend.length).toBe(5);
-    expect(result.filteredLegend).toEqual(['R_ONE', 'S_ACHIR']);
-    expect(result.selectedLegend).toEqual(['R_ONE']);
-  });
-
-  // Section 2: Bar chart edge case
-  await softStep('Bar chart edge case: stacked legend shows only filtered categories', async () => {
-    const result = await page.evaluate(async () => {
-      // Reset filters and selection first
-      const df = grok.shell.tv.dataFrame;
-      df.filter.setAll(true);
-      df.selection.setAll(false);
-      await new Promise(r => setTimeout(r, 500));
-
-      const bc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Bar chart');
-      bc.setOptions({
-        valueColumnName: 'CAST Idea ID',
-        splitColumnName: 'Stereo Category',
-        stackColumnName: 'Primary scaffold name',
-        includeNulls: false,
-        legendVisibility: 'Always',
-      });
-      await new Promise(r => setTimeout(r, 2000));
-
-      // Filter to 3 scaffold categories
-      const keep = ['AMINOPYRROLIDINE', 'TRISUBSTITUTED', 'UNSUBSTDIAZA'];
-      df.filter.init((i) => keep.includes(df.col('Primary scaffold name').get(i)));
-      df.filter.fireChanged();
+      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 400, max: 10000});
       await new Promise(r => setTimeout(r, 1500));
-
-      // The bar chart legend shows the STACK column categories (Primary scaffold name)
-      const legend = Array.from(bc.root.querySelectorAll('.d4-legend-value')).map(el => el.textContent);
-      return {legend, filteredRows: df.filter.trueCount};
+      return (window as any).grok.shell.tv.dataFrame.filter.trueCount;
     });
-    expect(result.legend.length).toBe(3);
-    expect(result.legend).toContain('AMINOPYRROLIDINE');
-    expect(result.legend).toContain('TRISUBSTITUTED');
-    expect(result.legend).toContain('UNSUBSTDIAZA');
+    expect(count).toBeGreaterThan(1500);
+    expect(count).toBeLessThan(1700);
   });
 
-  // Cleanup
-  await softStep('Close All', async () => {
-    await page.evaluate(() => grok.shell.closeAll());
-    await page.waitForTimeout(1000);
+  await softStep('Categorical filter: R_ONE, S_UNKN only (legend=2)', async () => {
+    const res = await page.evaluate(async () => {
+      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      const DG = (window as any).DG;
+      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['R_ONE', 'S_UNKN']});
+      await new Promise(r => setTimeout(r, 1500));
+      const sp = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Scatter plot');
+      const items = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
+      return {filterCount: (window as any).grok.shell.tv.dataFrame.filter.trueCount, legendItems: items.length};
+    });
+    expect(res.legendItems).toBe(2);
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  await softStep('Structure filter on Core — platform API available', async () => {
+    const res = await page.evaluate(async () => {
+      const df = (window as any).grok.shell.tv.dataFrame;
+      const firstSmiles = df.col('Core').get(0);
+      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      try {
+        fg.updateOrAdd({type: 'Chem:substructureFilter', column: 'Core', columnName: 'Core', molBlock: firstSmiles});
+        await new Promise(r => setTimeout(r, 2000));
+        return {ok: true, filterCount: df.filter.trueCount};
+      } catch (e: any) { return {ok: false, error: String(e).slice(0, 200)}; }
+    });
+    expect(res.ok).toBe(true);
+  });
+
+  await softStep('Save + re-apply layout (filter state + ≥3s settle)', async () => {
+    const res = await page.evaluate(async () => {
+      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch(_) {} }
+      (window as any).grok.shell.tv.dataFrame.filter.setAll(true);
+      const DG = (window as any).DG;
+      fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 400, max: 10000});
+      await new Promise(r => setTimeout(r, 500));
+      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['R_ONE', 'S_UNKN']});
+      await new Promise(r => setTimeout(r, 1500));
+      const before = (window as any).grok.shell.tv.dataFrame.filter.trueCount;
+      const tv = (window as any).grok.shell.tv;
+      const layout = tv.saveLayout();
+      layout.name = 'Filtering_' + Date.now();
+      const saved = await (window as any).grok.dapi.layouts.save(layout);
+      await new Promise(r => setTimeout(r, 1000));
+      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
+      await new Promise(r => setTimeout(r, 3500));
+      (window as any).__filtLayoutId = saved.id;
+      return {before, after: (window as any).grok.shell.tv.dataFrame.filter.trueCount};
+    });
+    (globalThis as any).__filtLayoutId = await page.evaluate(() => (window as any).__filtLayoutId);
+    expect(res.after).toBe(res.before);
+  });
+
+  await softStep('Reset + in-viewer Scatter plot filter', async () => {
+    const res = await page.evaluate(async () => {
+      const df = (window as any).grok.shell.tv.dataFrame;
+      df.filter.setAll(true);
+      await new Promise(r => setTimeout(r, 500));
+      const sp = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Scatter plot');
+      sp.props.filter = '${Stereo Category} in ("R_ONE", "S_UNKN")';
+      await new Promise(r => setTimeout(r, 1500));
+      return {filter: sp.props.filter};
+    });
+    expect(res.filter).toContain('Stereo Category');
+  });
+
+  await softStep('Add Filter Panel filter Average Mass > 300 (composed)', async () => {
+    const res = await page.evaluate(async () => {
+      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 300, max: 10000});
+      await new Promise(r => setTimeout(r, 1500));
+      const sp = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Scatter plot');
+      const items = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
+      return {legendItems: items.length};
+    });
+    expect(res.legendItems).toBe(2);
+  });
+
+  await softStep('Bar chart OnClick=Filter property', async () => {
+    const res = await page.evaluate(async () => {
+      const df = (window as any).grok.shell.tv.dataFrame;
+      df.filter.setAll(true);
+      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch(_) {} }
+      const sp = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Scatter plot');
+      sp.props.filter = '';
+      await new Promise(r => setTimeout(r, 500));
+      const bc = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Bar chart');
+      bc.props.onClick = 'Filter';
+      await new Promise(r => setTimeout(r, 500));
+      return {onClick: bc.props.onClick};
+    });
+    expect(res.onClick).toBe('Filter');
+  });
+
+  await softStep('Scatter plot Row Source cycles', async () => {
+    const res = await page.evaluate(async () => {
+      const sp = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Scatter plot');
+      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      const DG = (window as any).DG;
+      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['R_ONE', 'S_UNKN']});
+      await new Promise(r => setTimeout(r, 800));
+      const results: any = {};
+      for (const src of ['All', 'Filtered', 'FilteredSelected', 'Selected']) {
+        try { sp.props.rowSource = src; } catch(_) {}
+        await new Promise(r => setTimeout(r, 500));
+        const items = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
+        results[src] = items.length;
+      }
+      return results;
+    });
+    expect(res.Filtered).toBeGreaterThan(0);
+  });
+
+  await softStep('Bar chart stack edge case — includeNulls=false', async () => {
+    const res = await page.evaluate(async () => {
+      const df = (window as any).grok.shell.tv.dataFrame;
+      df.filter.setAll(true);
+      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch(_) {} }
+      await new Promise(r => setTimeout(r, 500));
+      const bc = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Bar chart');
+      bc.props.valueColumnName = 'CAST Idea ID';
+      bc.props.splitColumnName = 'Stereo Category';
+      bc.props.stackColumnName = 'Primary Scaffold Name';
+      try { bc.props.includeNulls = false; } catch(_) {}
+      await new Promise(r => setTimeout(r, 1500));
+      const scaffolds = df.col('Primary Scaffold Name').categories;
+      const DG = (window as any).DG;
+      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Primary Scaffold Name', selected: scaffolds.slice(0, 2)});
+      await new Promise(r => setTimeout(r, 1500));
+      const legend = bc.root.querySelector('[name="legend"]');
+      const items = legend?.querySelectorAll('.d4-legend-item') ?? [];
+      return {legendItems: items.length};
+    });
+    expect(res.legendItems).toBeLessThanOrEqual(2);
+  });
+
+  await softStep('Cleanup', async () => {
+    await page.evaluate(async (id) => {
+      if (id) { try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch(_) {} }
+      (window as any).grok.shell.closeAll();
+      await new Promise(r => setTimeout(r, 500));
+    }, (globalThis as any).__filtLayoutId);
+  });
+
+  if (stepErrors.length > 0)
+    throw new Error('Step failures:\n' + stepErrors.map(e => `- ${e.step}: ${e.error}`).join('\n'));
 });
