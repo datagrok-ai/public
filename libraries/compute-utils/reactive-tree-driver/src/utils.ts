@@ -106,3 +106,33 @@ const customFastEqual = createCustomEqual({
 
 // TODO: try using lib apis
 export const customDeepEqual = (a: any, b: any) => (a == null && b == null) || customFastEqual(a, b);
+
+/** Format a single path segment: `id[0]`, `id[2]`. */
+export function formatPathSegment(seg: {idx: number; id: string}): string {
+  return `${seg.id}[${seg.idx}]`;
+}
+
+/** Format a node path as `step[0]/child[1]::ioName`.
+ *  Segments joined by `/`, IO name appended after `::`. */
+export function formatNodePath(path: readonly {idx: number; id: string}[], ioName?: string): string {
+  const str = path.map(formatPathSegment).join('/');
+  return ioName ? `${str}::${ioName}` : str;
+}
+
+/** Format a mutation path: `parent/+id[2]` (add), `parent/-id[2]` (remove), `parent/id[2→3]` (move). */
+export function formatMutationPath(
+  path: readonly {idx: number; id: string}[] | undefined,
+  addIdx?: number, removeIdx?: number, id?: string,
+): string {
+  let str = path?.length ? path.map(formatPathSegment).join('/') : '';
+  const append = (suffix: string) => str += str ? `/${suffix}` : suffix;
+  if (addIdx != null && removeIdx != null)
+    append(`${id}[${removeIdx}\u2192${addIdx}]`);
+  else if (removeIdx != null)
+    append(`-${id}[${removeIdx}]`);
+  else if (addIdx != null)
+    append(`+${id}[${addIdx}]`);
+  else if (id)
+    append(id);
+  return str;
+}
