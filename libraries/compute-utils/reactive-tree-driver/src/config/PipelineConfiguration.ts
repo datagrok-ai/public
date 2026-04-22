@@ -96,6 +96,7 @@ export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P>
   handler: Validator;
   runOnInit?: undefined;
   sequential?: boolean;
+  debounce?: number;
 };
 
 export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {

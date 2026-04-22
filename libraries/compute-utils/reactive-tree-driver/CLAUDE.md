@@ -10,6 +10,7 @@
 - **Build**: `cd libraries/compute-utils && npm run build` (runs `tsc`, outputs `.js` + `.d.ts` alongside `.ts` files)
 - **Build everything**: `cd packages/Compute2 && npm run build-all`
 - **Publish**: Always use `grok publish --release` for compute packages
+- **User docs**: `help/compute/workflows/` — configuration, link types, link spec language, code usage, examples
 
 ## What This Library Does
 

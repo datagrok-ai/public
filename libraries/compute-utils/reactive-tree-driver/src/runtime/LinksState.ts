@@ -179,7 +179,11 @@ export class LinksState {
           .filter((x) => !!x)
           .flat();
         const links = matchedLinks.map((minfo) => {
-          const link = new Link(path, minfo, undefined, this.logger);
+          const spec = minfo.spec;
+          const debounce = spec.type === 'validator'
+            ? (spec.debounce ?? (this.batchLinks ? 0 : undefined))
+            : undefined;
+          const link = new Link(path, minfo, debounce, this.logger);
           return link;
         });
         return [...acc, ...links];

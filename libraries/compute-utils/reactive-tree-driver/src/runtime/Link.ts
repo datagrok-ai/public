@@ -65,8 +65,10 @@ export class Link {
     private logger?: DriverLogger,
   ) {
     const spec = this.matchInfo.spec;
-    if (spec.type === 'validator' || spec.type === 'meta' ||
-        spec.type === 'nodemeta' || spec.type === 'selector')
+    if (spec.type === 'validator') {
+      const effectiveDebounce = this.customDebounceTime ?? VALIDATOR_DEBOUNCE_TIME;
+      this.isBatchable = effectiveDebounce === 0 && !spec.sequential;
+    } else if (spec.type === 'meta' || spec.type === 'nodemeta' || spec.type === 'selector')
       this.isBatchable = !spec.sequential;
     else
       this.isBatchable = false;

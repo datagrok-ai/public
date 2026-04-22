@@ -284,6 +284,11 @@ results will be merged. There are several validation severity levels,
 also it is possible to show user executable actions alongside text
 messages.
 
+By default, validators run without debounce and are executed in batches
+for better performance. To add a debounce delay (for example, for
+expensive validation logic that should not fire on every keystroke),
+set the `debounce` option.
+
 Validators have the following additional configuration options:
 
 #### `actions`
@@ -298,6 +303,19 @@ later shown alongside validation results via
 [`setValidation`](#setvalidation) controller method. It must receive
 `ValidationResult` as a data argument.
 
+
+#### `debounce`
+
+_Optional_
+
+Debounce time in milliseconds. When set to a positive value, the
+validator handler waits for the specified duration after the last input
+change before firing. This is useful for expensive validators (such as
+server-side checks) where firing on every keystroke is wasteful.
+
+When omitted or set to `0`, the validator runs immediately and is
+eligible for batched execution with other validators, which reduces
+per-validator scheduling overhead.
 
 Validation controller has the following additional methods:
 
