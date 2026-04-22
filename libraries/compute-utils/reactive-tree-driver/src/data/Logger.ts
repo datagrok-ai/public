@@ -17,6 +17,7 @@ export interface LinkLogPayload {
   prefix: Readonly<NodePath>,
   basePath?: Readonly<NodePath>,
   id: string,
+  isDefaultValidator?: boolean,
 }
 
 export interface LinkLogItem extends DebugLogBase, LinkLogPayload {}

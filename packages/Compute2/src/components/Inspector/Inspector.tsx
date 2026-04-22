@@ -11,6 +11,7 @@ import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import {LinksData} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {MatchedNodePaths} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/link-matching';
+import {formatNodePath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallStateInfo, ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {LinkIOParsed, LinkSelectorSegment, LinkTagSegment} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/LinkSpec';
@@ -80,12 +81,8 @@ function linkIOArrayToStrings(ios: LinkIOParsed[] | undefined): string | string[
 /** Convert a MatchedNodePaths record to readable path strings. */
 function matchedPathsToStrings(paths: Record<string, MatchedNodePaths>): Record<string, string[]> {
   const result: Record<string, string[]> = {};
-  for (const [name, matched] of Object.entries(paths)) {
-    result[name] = matched.map((m) => {
-      const pathStr = m.path.map((seg) => `[${seg.idx}]${seg.id}`).join('/');
-      return m.ioName ? `${pathStr} (${m.ioName})` : pathStr;
-    });
-  }
+  for (const [name, matched] of Object.entries(paths))
+    result[name] = matched.map((m) => formatNodePath(m.path, m.ioName));
   return result;
 }
 
