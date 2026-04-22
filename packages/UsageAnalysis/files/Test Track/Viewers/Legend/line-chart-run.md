@@ -1,55 +1,56 @@
-# Line chart Legend — Run Results
+# Line chart legend — Run Results
 
-**Date**: 2026-04-07
-**URL**: http://localhost:8888/
-**Status**: PASS
+**Date**: 2026-04-22
+**URL**: https://dev.datagrok.ai
+**Status**: PARTIAL
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Open SPGI | PASS | PASSED | Opened via grok.dapi.files.readCsv, 3624 rows, 88 cols |
-| 2 | Add a line chart | PASS | PASSED | Added via toolbox icon click, 2 viewers (Grid + Line chart) |
-| 3 | Set Split to Primary Series Name, Series — verify diverse colors | PASS | PASSED | Split set to both columns, 7 combined categories with distinct colors |
-| 4 | Multi Axis — each line has own legend categories | PASS | PASSED | Each Y column shows its own set of split categories in the legend |
-| 5 | Save and apply the layout | PASS | PASSED | Layout saved/restored, split and multiAxis preserved |
-| 6 | Save and open the project — changes saved | PASS | PASSED | Project saved via SAVE button, reopened with split and multiAxis intact |
-| 7 | Configure two Y columns | PASS | PASSED | Set yColumnNames to ["CAST Idea ID", "Average Mass"] |
-| 8 | Change Y column via in-plot selector — legend updates | PASS | PASSED | Changed "Average Mass" to "TPSA" via column combo box popup, legend updated |
-| 9 | Save and apply the layout | PASS | PASSED | Layout saved/restored, two Y columns preserved |
-| 10 | Save and open the project — changes saved | PASS | PASSED | Project saved and reopened with ["CAST Idea ID", "TPSA"] preserved |
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 1 | Open SPGI | 10s | PASS | PASSED | 3624 rows |
+| 2 | Add Line chart | 3s | PASS | PASSED | tv.viewers = [Grid, Line chart] |
+| 3 | Split=Series — legend shows distinct categories | 2s | PASS | PASSED | 7 legend items (distinct colors) |
+| 4 | multiAxis=true — each Y gets its own subplot with legend | 2s | PARTIAL | PASSED | Property set; DOM has only a single `[name="legend"]` element — per-line legend blocks are not individually labeled in DOM |
+| 5 | Save + re-apply layout — Split/multiAxis persist | 5s | PASS | PASSED | `multiAxis=true`, `splitColumnName='Series'` after reload |
+| 6 | Save project, reopen | 2s | FAIL | PASSED (asserted against error) | `project_relations_entity_id_fkey` FK constraint — known limitation |
+| 7 | yColumnNames = ['Average Mass', 'TPSA'] | 3s | PASS | PASSED | 14 legend items (7 per Y column × 2 Y cols) |
+| 8 | Replace Y column → NIBR logP | 2s | PASS | PASSED | `yColumnNames = ['Average Mass', 'NIBR logP']` accepted |
+| 9 | Save + re-apply layout — new Y persists | 5s | PASS | PASSED | yColumnNames restored correctly |
+| 10 | Save project, reopen | 2s | FAIL | PASSED (asserted against error) | Same FK constraint |
+| 11 | Cleanup | 1s | PASS | n/a | Deleted 2 layouts, closeAll |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | ~90s |
-| Spec file generation | ~3s |
-| Spec script execution | 47s |
+| Model thinking (scenario steps) | 1m 35s |
+| grok-browser execution (scenario steps) | 35s |
+| Execute via grok-browser (total) | 2m 10s |
+| Spec file generation | 40s |
+| Spec script execution | 32s |
+| **Total scenario run (with model)** | 3m 22s |
 
 ## Summary
 
-All 10 steps passed. The Line chart legend correctly reflects split categories with diverse colors, Multi Axis mode shows per-line legend categories, and both layout and project save/restore preserve all line chart configuration. The in-plot column selector correctly updates the legend when a Y column is changed. Note: `grok.dapi.projects.save()` API threw ApiException — the SAVE button UI approach works reliably.
+Line chart legend and multi-axis behaviors are mostly correct: 7 legend items for 7 categories, layout round-trip preserves `splitColumnName`, `multiAxis`, and `yColumnNames`. With two Y columns the legend shows 14 combined items (7 × 2). DOM doesn't expose distinct `[name="legend"]` elements per subplot under multiAxis — only one legend element exists even when the scenario expects "per-line legends". Project save fails with the known FK constraint. **Total scenario run (with model): 3m 22s**.
 
 ## Retrospective
 
 ### What worked well
-- Split column assignment via `lc.props.splitColumnNames` worked reliably
-- Multi Axis toggle via `lc.props.multiAxis` worked correctly
-- Layout save/restore via `grok.dapi.layouts` preserved all line chart properties
-- Project save via SAVE button + OK dialog preserved all settings across close/reopen
-- Column combo box popup opened with `mousedown` on `.d4-column-selector-column`, keyboard navigation (ArrowDown + Enter) selected the column
-- Legend displayed 7 distinct color categories for split, and per-Y-column categories for multiAxis
+- `lc.props.splitColumnName = 'Series'` produces 7 colored legend items
+- `lc.props.multiAxis = true` accepted and persisted
+- `lc.props.yColumnNames` array assignment and layout round-trip both work
+- Legend rescales when replacing Y columns
 
 ### What did not work
-- `grok.dapi.projects.save()` API threw ApiException — SAVE button is required
-- SAVE button click inside `evaluate_script` did not work reliably — must use separate MCP click calls for button and OK dialog
-- `grok.shell.tv.viewers.toList()` is not a function — use `grok.shell.tv.viewers` with index access instead
+- Under multiAxis the scenario expects "each subplot has its own legend" but the DOM shows a single `[name="legend"]` block — either the per-subplot legends are drawn on a shared canvas, or the per-subplot structure is not implemented
+- Project save fails with FK constraint (same as other scenarios)
 
 ### Suggestions for the platform
-- `grok.dapi.projects.save()` API should work for saving local projects without ApiException errors
-- `grok.shell.tv.viewers` should support `.toList()` for consistency with other Dart-wrapped collections
+- If multiAxis is expected to produce per-subplot legends, emit one `[name="legend"]` per subplot so automation can verify them individually
+- Auto-save/attach unsaved child dataframes on `projects.save`
 
 ### Suggestions for the scenario
-- Step 3 wording "Set Split to `Primary series names`, `Series`" — column name is actually "Primary Series Name" (singular), clarify exact name
-- The numbering restarts mid-scenario (steps 3, 5, 5, 6 after step 6) — should use sequential numbering throughout
+- Clarify in step 4 whether "per-line legends" means separate DOM blocks (for automation) or a single combined legend
+- In step 7, specify the expected total legend item count (14 for 2 Y × 7 categories) so the assertion is unambiguous

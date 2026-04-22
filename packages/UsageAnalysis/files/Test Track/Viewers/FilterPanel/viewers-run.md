@@ -47,13 +47,16 @@
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | ~85s |
-| Spec file generation | ~5s |
-| Spec script execution | 72s (PASSED) |
+| Model thinking (scenario steps) | 3m 1s |
+| grok-browser execution (scenario steps) | 1m 23s |
+| Execute via grok-browser (total) | 4m 24s |
+| Spec file generation | 40s |
+| Spec script execution | 1m 3s |
+| **Total scenario run (with model)** | 6m 7s |
 
 ## Summary
 
-All 31 steps passed. Trellis Plot requires two clicks to apply filter (first selects cell, second applies), Esc to reset. PC Plot range slider drag works via SVG handle + Playwright page.mouse. All viewers (Scatter Plot, Bar Chart, Histogram, PC Plot, Trellis Plot, Pie Chart) interact correctly with the Filter Panel.
+All 31 steps passed. Trellis Plot requires two clicks to apply filter (first selects cell, second applies), Esc to reset. PC Plot range slider drag works via SVG handle + Playwright page.mouse. All viewers (Scatter Plot, Bar Chart, Histogram, PC Plot, Trellis Plot, Pie Chart) interact correctly with the Filter Panel. **Total scenario run (with model): 6m 7s**.
 
 ## Retrospective
 

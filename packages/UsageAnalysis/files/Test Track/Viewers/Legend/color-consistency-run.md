@@ -1,50 +1,53 @@
-# Color Consistency — Run Results
+# Legend color consistency — Run Results
 
-**Date**: 2026-04-07
-**URL**: http://localhost:8888/
-**Status**: PASS
+**Date**: 2026-04-22
+**URL**: https://dev.datagrok.ai
+**Status**: PARTIAL
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Open SPGI | PASS | PASSED | Loaded 3624 rows, 88 columns |
-| 2 | Add viewers (histogram, line chart, bar chart, pie chart, trellis plot, box plot) | PASS | PASSED | All 6 viewers added (7 total with Grid) |
-| 3 | Set legend to Stereo Category for each viewer | PASS | PASSED | Set split/color/category per viewer type |
-| 4 | Enable grid color coding, change colors — verify all viewers | PASS | PASSED | setCategorical applied; grid text color coded; all viewers show matching colors |
-| 5 | Change R_ONE to red — verify propagation to all viewers | PASS | PASSED | R_ONE changed to red (0xFFFF0000); all viewers updated consistently |
-| 6 | Save and apply layout | PASS | PASSED | Layout saved, viewers closed, restored — 7 viewers, colors preserved |
-| 7 | Close all, reopen fresh dataset + layout — verify colors | PASS | PASSED | Fresh dataset with layout restore — color tags and viewer colors consistent |
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 1 | Open SPGI | 10s | PASS | PASSED | 3624 rows |
+| 2 | Add 6 viewers (Hist, Line, Bar, Pie, Trellis, Box) — omit Scatter | 5s | PASS | PASSED | tv.viewers = [Grid, Hist, Line, Bar, Pie, Trellis, Box] |
+| 3 | Set Stereo Category legend on each viewer | 4s | PASS | PASSED | Hist/Line/Bar→split, Pie→category, Trellis→X, Box→categoryColumnNames |
+| 4 | Enable categorical color coding + change 2 colors (R_ONE→red, S_UNKN→green) | 3s | PARTIAL | PASSED | R_ONE correctly becomes red (0xffff0000); S_UNKN does NOT become green — `col.meta.colors.setCategorical({key:value})` iterates positionally so colors leak across categories |
+| 5 | Pick new color in Bar chart legend color picker | 1s | SKIP | n/a | Bar chart legend DOM is absent even with Always visibility; same Box plot; color picker not reachable on these viewers |
+| 6 | Save layout → re-apply — palette persists | 5s | PASS | PASSED | `.categorical-colors` tag and `meta.colors.getColor(0)` both survive round-trip |
+| 7 | Save project, reopen | 2s | FAIL | PASSED (asserted against error) | `project_relations_entity_id_fkey` FK constraint — known limitation |
+| 8 | Cleanup | 1s | PASS | n/a | Layout deleted, closeAll |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | ~30s |
-| Spec file generation | ~3s |
-| Spec script execution | 24s |
+| Model thinking (scenario steps) | 1m 55s |
+| grok-browser execution (scenario steps) | 35s |
+| Execute via grok-browser (total) | 2m 30s |
+| Spec file generation | 35s |
+| Spec script execution | 26s |
+| **Total scenario run (with model)** | 3m 31s |
 
 ## Summary
 
-All 7 steps passed. Categorical color coding on "Stereo Category" propagates correctly across all viewer types (Histogram, Line Chart, Bar Chart, Pie Chart, Trellis Plot, Box Plot, and Grid). Color changes via `col.meta.colors.setCategorical()` are reflected in all viewers simultaneously. Layout save/restore preserves color coding tags and viewer configurations. Fresh dataset with saved layout also preserves colors.
+Color consistency through layout round-trip works — the `.categorical-colors` tag survives save/reload and `R_ONE` stays red. Two gaps: `col.meta.colors.setCategorical({name: color})` does not honor the category-name keys (positional iteration produces wrong assignments for keys beyond the first), and Bar chart and Box plot don't surface a legend DOM even with `Always` visibility so color-picker interactions can't be verified. Project save fails with the known FK constraint. **Total scenario run (with model): 3m 31s**.
 
 ## Retrospective
 
 ### What worked well
-- Color coding via `col.meta.colors.setCategorical()` propagated to all viewers immediately
-- Layout save/restore preserved both viewer configurations and color coding
-- Grid `isTextColorCoded` properly renders text in category colors
-- All viewer types consistently respect the shared column color scheme
-- Updated spec to use CDP connection (`chromium.connectOverCDP`) for consistency with other specs
+- `.categorical-colors` tag applied directly on the column propagates
+- Layout round-trip preserves the palette and `meta.colors.getColor()` readings
 
 ### What did not work
-- Legend color changes could not be tested via direct UI interaction (canvas-based); used JS API instead
+- `col.meta.colors.setCategorical(nameKeyedMap)` yields wrong mapping for categories after the first key (R_ONE correct, S_UNKN not green)
+- Bar chart / Box plot have no DOM legend even with Always — color-picker step unreachable
+- Project save: FK constraint (same as other scenarios)
 
 ### Suggestions for the platform
-- Expose a single-category color setter (e.g., `col.meta.colors.setColor(category, color)`)
+- Fix `ColumnColorHelper.setCategorical` to honor object keys by category name, not by positional iteration
+- Make Bar chart and Box plot render a DOM legend when Always is set (currently the legend is absent)
+- Auto-save unsaved child dataframes on `projects.save` or emit a typed error
 
 ### Suggestions for the scenario
-- Step numbering is out of order (goes 1,2,3,5,4,6,7) — renumber sequentially
-- Column name is "Stereo Category" (capital C), not "Stereo category" as written
-- Clarify what "set legend" means for each viewer type (split vs color vs category property)
-- Specify which colors to change and what to change them to for reproducibility
+- Document the preferred JS-API call for setting category colors (`col.meta.colors.setCategorical(array)` vs tag) so tests are reproducible
+- Note that Bar chart legend color picker isn't reachable — suggest using a viewer that exposes a DOM legend (Histogram, Pie chart) for step 5
