@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {LogItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {formatNodePath, formatMutationPath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import {FilterDropdown, FilterOption} from '../Inspector/FilterDropdown';
 
 
 function formatTime(d: Date): string {
@@ -21,8 +22,8 @@ export const Logger = Vue.defineComponent({
       type: Array as Vue.PropType<LogItem[]>,
       required: true,
     },
-    linkIds: {
-      type: Array as Vue.PropType<string[]>,
+    linkFilterOptions: {
+      type: Array as Vue.PropType<FilterOption[]>,
       required: true,
     },
   },
@@ -35,7 +36,6 @@ export const Logger = Vue.defineComponent({
 
     const typeFilter = Vue.ref<typeof typeFilterOpts[number]>('all');
     const linksFilter = Vue.ref<string[]>([]);
-    const linksFilterOpts = Vue.computed(() => props.linkIds);
     const showDefaultValidators = Vue.ref(false);
 
     const linkStyle = {
@@ -43,7 +43,6 @@ export const Logger = Vue.defineComponent({
       color: 'var(--blue-1)',
       textDecoration: 'underline',
     };
-
 
     const isLinkLogItem = (item: LogItem): item is LogItem & {linkUUID: string; prefix: any; basePath?: any; id: string; isDefaultValidator?: boolean} =>
       item.type === 'linkAdded' || item.type === 'linkRemoved' ||
@@ -138,14 +137,11 @@ export const Logger = Vue.defineComponent({
               </select>
             </div>
             <div style={{marginRight: '5px'}}>Links:</div>
-            <div style={{marginRight: '10px'}}>
-              <select multiple onChange={(ev) => linksFilter.value = Array.from((ev.target as any)?.selectedOptions ?? []).map((x: any) => x.value)} value={linksFilter.value}>
-                {linksFilterOpts.value.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{marginRight: '10px'}}> Selected: {linksFilter.value.join(', ')} </div>
+            <FilterDropdown
+              options={props.linkFilterOptions}
+              modelValue={linksFilter.value}
+              onUpdate:modelValue={(v: string[]) => linksFilter.value = v}
+            />
             <label style={checkboxStyle}>
               <input type='checkbox' v-model={showDefaultValidators.value} />
               Default validators
