@@ -317,8 +317,7 @@ function positionOverlayRelativeToStrip(wrapper: HTMLElement): void {
  *   expando methods `_bsvReposition` / `_bsvRefreshUI` / `_bsvCleanup`.
  */
 export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): BindingSiteOverlayElement {
-  const wrapper = document.createElement('div') as BindingSiteOverlayElement;
-  wrapper.className = 'bsv-bs-overlay';
+  const wrapper = ui.div([], 'bsv-bs-overlay') as BindingSiteOverlayElement;
 
   // Mol*'s native strip buttons each sit over a `.msp-semi-transparent-background`
   // sibling (#eeece7 @ 0.5 opacity). Reuse the same native class to match
