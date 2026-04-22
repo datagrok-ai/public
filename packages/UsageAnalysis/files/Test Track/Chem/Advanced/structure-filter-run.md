@@ -1,6 +1,6 @@
 # Structure Filter — Run Results
 
-**Date**: 2026-04-21
+**Date**: 2026-04-23
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -17,12 +17,12 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 30s |
-| grok-browser execution (scenario steps) | n/a |
-| Execute via grok-browser (total) | 30s |
+| Model thinking (scenario steps) | 22s |
+| grok-browser execution (scenario steps) | 16s |
+| Execute via grok-browser (total) | 38s |
 | Spec file generation | 25s |
-| Spec script execution | 24.0s |
-| **Total scenario run (with model)** | ~1m 30s |
+| Spec script execution | 29.0s |
+| **Total scenario run (with model)** | 1m 32s |
 
 ## Summary
 

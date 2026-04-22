@@ -1,6 +1,6 @@
 # ChemProp — Run Results
 
-**Date**: 2026-04-21
+**Date**: 2026-04-23
 **URL**: https://dev.datagrok.ai
 **Status**: PARTIAL
 
@@ -18,12 +18,12 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 1m |
-| grok-browser execution (scenario steps) | n/a |
-| Execute via grok-browser (total) | 1m |
+| Model thinking (scenario steps) | 16s |
+| grok-browser execution (scenario steps) | 10s |
+| Execute via grok-browser (total) | 26s |
 | Spec file generation | 30s |
-| Spec script execution | 18.3s |
-| **Total scenario run (with model)** | ~2m 30s |
+| Spec script execution | 19.1s |
+| **Total scenario run (with model)** | 1m 15s |
 
 ## Summary
 

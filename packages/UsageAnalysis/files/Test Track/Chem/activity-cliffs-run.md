@@ -1,6 +1,6 @@
 # Activity Cliffs — Run Results
 
-**Date**: 2026-04-21
+**Date**: 2026-04-23
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -17,12 +17,12 @@
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 30s |
-| grok-browser execution (scenario steps) | n/a |
-| Execute via grok-browser (total) | 30s |
+| Model thinking (scenario steps) | 19s |
+| grok-browser execution (scenario steps) | 55s |
+| Execute via grok-browser (total) | 1m 14s |
 | Spec file generation | 20s |
-| Spec script execution | 1m 0s |
-| **Total scenario run (with model)** | ~2m 30s |
+| Spec script execution | 1m 4s |
+| **Total scenario run (with model)** | 2m 38s |
 
 ## Summary
 
