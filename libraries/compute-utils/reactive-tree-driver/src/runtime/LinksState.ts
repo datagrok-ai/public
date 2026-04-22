@@ -5,7 +5,7 @@ import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
-import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity, EMPTY} from 'rxjs';
+import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity, EMPTY, asapScheduler} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap, finalize} from 'rxjs/operators';
 import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
@@ -52,7 +52,7 @@ export class LinksState {
     ).subscribe(this.runningLinks$);
 
     this.batchTrigger$.pipe(
-      debounceTime(0),
+      debounceTime(0, asapScheduler),
       takeUntil(this.closed$),
     ).subscribe(() => {
       const pending = [...this.batchPending];
@@ -101,7 +101,7 @@ export class LinksState {
         of(this.wireLinks(state)),
         this.runNewInits(state),
         this.runLinks(state, initLinks, false),
-        (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
+        (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0, asapScheduler), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
       ).pipe(toArray(), mapTo(undefined));
     }
   }
@@ -241,7 +241,7 @@ export class LinksState {
               this.runningLinks$,
               this.getLinkRunObs(linkUUID),
             ]).pipe(
-              isMeta ? identity : debounceTime(0),
+              isMeta ? identity : debounceTime(0, asapScheduler),
               filter(([running]) => !running || running.length === 0),
               take(1),
               mapTo(undefined),
@@ -272,7 +272,7 @@ export class LinksState {
   public waitForLinks() {
     return this.runningLinks$.pipe(
       filter((links) => links == null || links?.length === 0),
-      debounceTime(0),
+      debounceTime(0, asapScheduler),
       take(1),
     );
   }

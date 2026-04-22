@@ -6,7 +6,7 @@ import {HandlerBase} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, NodePathSegment, TreeNode} from '../data/BaseTree';
 import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, MatchedIO, MatchedNodePaths, MatchInfo} from './link-matching';
-import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from 'rxjs';
+import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler} from 'rxjs';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
@@ -191,7 +191,7 @@ export class Link {
 
     const activeInputs$ = inputsEntries$.pipe(
       filter(() => this.isActive$.value),
-      debounceTime(debounceVal),
+      debounceTime(debounceVal, debounceVal === 0 ? asapScheduler : undefined),
       map((obs) => [undefined, obs] as const),
     );
 
