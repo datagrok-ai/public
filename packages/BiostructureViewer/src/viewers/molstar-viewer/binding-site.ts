@@ -1,3 +1,4 @@
+import * as ui from 'datagrok-api/ui';
 import {PluginUIContext} from 'molstar/lib/mol-plugin-ui/context';
 import {
   Structure,
@@ -225,24 +226,6 @@ export async function buildBindingSiteComponentFromExpression(
 // UI — right-strip overlay
 // ---------------------------------------------------------------------------
 
-/** Bullseye SVG markup — three concentric circles on a 16×16 canvas.
- * `color` defaults to `currentColor` so the icon inherits the surrounding
- * `.msp-btn-link-toggle-off/on` color; pass an explicit hex when placing the
- * icon somewhere that doesn't belong to a Mol* button hierarchy (e.g. inside
- * our popover header, which has its own colour).
- * @param {number} size pixel width and height (square).
- * @param {string} color stroke + fill colour; defaults to `currentColor`.
- * @return {string} SVG markup.
- */
-function makeBullseyeSvg(size: number = 16, color: string = 'currentColor'): string {
-  return '<svg width="' + size + '" height="' + size + '"' +
-    ' viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-    '<circle cx="8" cy="8" r="6.5" stroke="' + color + '" stroke-width="1" fill="none"/>' +
-    '<circle cx="8" cy="8" r="3.5" stroke="' + color + '" stroke-width="1" fill="none"/>' +
-    '<circle cx="8" cy="8" r="1.25" fill="' + color + '"/>' +
-    '</svg>';
-}
-
 export type BindingSiteOverlayHandlers = {
   getShowBindingSite: () => boolean;
   setShowBindingSite: (v: boolean) => void;
@@ -337,76 +320,58 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   const wrapper = document.createElement('div') as BindingSiteOverlayElement;
   wrapper.className = 'bsv-bs-overlay';
 
-  const iconHolder = document.createElement('div');
-  iconHolder.className = 'bsv-bs-icon-holder';
-
   // Mol*'s native strip buttons each sit over a `.msp-semi-transparent-background`
-  // sibling (#eeece7 @ 0.5 opacity). Reuse the same class to match exactly —
-  // anything smaller/larger makes our bullseye stand out against the strip.
-  const iconBg = document.createElement('div');
-  iconBg.className = 'msp-semi-transparent-background';
-  iconHolder.appendChild(iconBg);
+  // sibling (#eeece7 @ 0.5 opacity). Reuse the same native class to match
+  // exactly — anything smaller/larger makes our bullseye stand out.
+  const iconBg = ui.div([], 'msp-semi-transparent-background');
 
-  // Use the exact same native Mol* classes as the strip icons, so we
-  // inherit their transparent background + color states:
+  // Keep raw `<button>` (not `ui.button`) so we can apply Mol*'s native
+  // strip-icon classes, which drive the color states for free:
   //   msp-btn-link-toggle-off → color: #9c835f (muted, default)
   //   :hover                  → color: #ae5d04 (orange accent)
   //   msp-btn-link-toggle-on  → color: #332b1f (fully saturated on active)
+  // The glyph itself comes from `ui.iconFA('bullseye')` — the FA icon
+  // inherits `currentColor` from the parent button automatically.
   const iconBtn = document.createElement('button');
   iconBtn.className = 'msp-btn msp-btn-icon msp-btn-link msp-btn-link-toggle-off bsv-bs-icon-btn';
   iconBtn.type = 'button';
   iconBtn.setAttribute('aria-label', 'Binding site');
   iconBtn.setAttribute('title', 'Binding site');
-  // Strip icon inherits color from `.msp-btn-link-toggle-on/off` via currentColor.
-  iconBtn.innerHTML = makeBullseyeSvg();
-  iconHolder.appendChild(iconBtn);
+  iconBtn.appendChild(ui.iconFA('bullseye'));
 
+  const iconHolder = ui.div([iconBg, iconBtn], 'bsv-bs-icon-holder');
   wrapper.appendChild(iconHolder);
 
   // Popover attached to wrapper.parentElement (viewer root). Width / top /
   // left / right are set at runtime by _bsvReposition based on the viewport
   // clip box — the rest lives in CSS (`.bsv-bs-popover`).
-  const popover = document.createElement('div');
-  popover.className = 'msp-viewport-controls-panel bsv-bs-popover bsv-bs-popover-hidden';
+  const popover = ui.div([], 'msp-viewport-controls-panel bsv-bs-popover bsv-bs-popover-hidden');
   popover.setAttribute('role', 'dialog');
   popover.setAttribute('aria-label', 'Binding site options');
 
-  const popHeader = document.createElement('div');
-  popHeader.className = 'bsv-bs-popover-header';
-  // Header icon is 13px (matches the 14px-text-height + bold weight) and uses
-  // the popover's primary text colour directly (no Mol* button context here).
-  popHeader.innerHTML = makeBullseyeSvg(13, '#332b1f') + '<span>Binding Site</span>';
+  // FA bullseye icon — size + colour driven by CSS (`.bsv-bs-popover-header
+  // .fa-bullseye`) so the header is self-contained styling-wise.
+  const popHeader = ui.divH([
+    ui.iconFA('bullseye'),
+    ui.span(['Binding Site']),
+  ], 'bsv-bs-popover-header');
   popover.appendChild(popHeader);
 
-  const popBody = document.createElement('div');
-  popover.appendChild(popBody);
-
-  // Row: show binding site checkbox (the toggle)
-  const showRow = document.createElement('label');
-  showRow.className = 'bsv-bs-row';
-  const showLbl = document.createElement('span');
-  showLbl.className = 'bsv-bs-row-label';
-  showLbl.textContent = 'Show side chains';
-  const showCtrl = document.createElement('span');
-  showCtrl.className = 'bsv-bs-row-ctrl bsv-bs-row-ctrl--center';
+  // Row: show binding site checkbox (the toggle).
+  // `<label>` keeps the whole row clickable for toggling the checkbox without
+  // needing `for=` / id plumbing — wraps both the text and the control cell.
   const showChk = document.createElement('input');
   showChk.type = 'checkbox';
   showChk.id = 'bsv-bs-show-chk';
   showChk.className = 'bsv-bs-show-chk';
   showChk.setAttribute('aria-label', 'Show side chains');
-  showCtrl.appendChild(showChk);
-  showRow.appendChild(showLbl);
-  showRow.appendChild(showCtrl);
-  popBody.appendChild(showRow);
+  const showRow = ui.element('label', 'bsv-bs-row') as HTMLLabelElement;
+  showRow.appendChild(ui.divText('Show side chains', 'bsv-bs-row-label'));
+  showRow.appendChild(ui.divH([showChk], 'bsv-bs-row-ctrl bsv-bs-row-ctrl--center'));
 
-  // Row: radius slider
-  const radiusRow = document.createElement('div');
-  radiusRow.className = 'bsv-bs-row';
-  const radiusLabel = document.createElement('span');
-  radiusLabel.className = 'bsv-bs-row-label';
-  radiusLabel.textContent = 'Radius';
-  const radiusCtrl = document.createElement('span');
-  radiusCtrl.className = 'bsv-bs-row-ctrl';
+  // Row: radius slider. Raw `<input type=range>` kept deliberately — Datagrok's
+  // `ui.input.slider` uses a Material blue accent + 28 px layout that clashes
+  // with the Mol*-palette row we match to `.msp-control-row`.
   const radiusSlider = document.createElement('input');
   radiusSlider.type = 'range';
   radiusSlider.min = '3';
@@ -414,13 +379,14 @@ export function createBindingSiteOverlay(handlers: BindingSiteOverlayHandlers): 
   radiusSlider.step = '0.5';
   radiusSlider.className = 'bsv-bs-radius-slider';
   radiusSlider.setAttribute('aria-label', 'Binding site radius in angstroms');
-  const radiusVal = document.createElement('span');
-  radiusVal.className = 'bsv-bs-radius-val';
-  radiusCtrl.appendChild(radiusSlider);
-  radiusCtrl.appendChild(radiusVal);
-  radiusRow.appendChild(radiusLabel);
-  radiusRow.appendChild(radiusCtrl);
-  popBody.appendChild(radiusRow);
+  const radiusVal = ui.divText('', 'bsv-bs-radius-val');
+  const radiusRow = ui.divH([
+    ui.divText('Radius', 'bsv-bs-row-label'),
+    ui.divH([radiusSlider, radiusVal], 'bsv-bs-row-ctrl'),
+  ], 'bsv-bs-row');
+
+  const popBody = ui.divV([showRow, radiusRow]);
+  popover.appendChild(popBody);
 
   // Popover is attached to the viewer root (same parent as wrapper) so it is
   // not affected by wrapper's pointer-events:none or flex layout. Attached

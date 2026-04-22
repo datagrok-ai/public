@@ -3168,6 +3168,14 @@
   opacity: 0.35;
 }
 
+/* FA bullseye glyph inside the strip icon button — size it to match the
+   native Mol* strip icons, inherit the button's `currentColor` state. */
+.msp-plugin .bsv-bs-icon-btn .fa-bullseye {
+  font-size: 16px;
+  color: inherit;
+  line-height: 1;
+}
+
 /* ── Binding site overlay: popover ─────────────────────────────────────────
    Popover-internal rules are NOT prefixed with `.msp-plugin` because the
    popover is portaled to <body> (escapes overflow:hidden / stacking-context
@@ -3211,6 +3219,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* FA bullseye glyph in the popover header — 13 px matches the 14 px bold
+   text cap height, explicit `#332b1f` for the primary text colour. */
+.bsv-bs-popover-header .fa-bullseye {
+  font-size: 13px;
+  color: #332b1f;
 }
 
 /* ── Binding site overlay: rows (Mol* .msp-control-row pattern) ──────────── */
