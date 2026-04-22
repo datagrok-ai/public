@@ -253,8 +253,8 @@ category('ComputeUtils: Driver links batching', async () => {
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const links = [...tree.linksState.links.values()];
-      // Link itself reports batchable, but LinksState.batchLinks is false
-      expectDeepEqual(links[0].isBatchable, true);
+      // With batchLinks disabled, validators get default debounce (250ms) and are not batchable
+      expectDeepEqual(links[0].isBatchable, false);
       expectDeepEqual(tree.linksState.batchLinks, false);
     });
   });

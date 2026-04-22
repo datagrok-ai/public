@@ -6,6 +6,8 @@ Compute2 (`@datagrok/compute2`) is the modeling UI and workflow execution packag
 
 The core workflow engine lives in a separate library: `@datagrok-libraries/compute-utils`, specifically the `reactive-tree-driver/` subdirectory.
 
+**User documentation**: `help/compute/workflows/` — covers workflow configuration, link types and query language, code usage, and examples.
+
 ## Architecture
 
 ```
