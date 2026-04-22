@@ -7,7 +7,6 @@ import { convertComplexConditionToSignalsSearchQuery, SignalsSearchField, Signal
 import { addMoleculeStructures, getConditionForLibAndType, materialsCondition, retrieveQueriesMap } from './compounds';
 import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
-import { getTermsForField } from './package';
 import { createPath, createViewFromPreDefinedQuery, openedView, openRevvityNode, updateView } from './view-utils';
 import { getAppHeader, getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 import { funcs } from './package-api';
@@ -166,7 +165,7 @@ export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: 
         totalDf = resDf;
       else
         totalDf.append(resDf, true);
-      pb.update(((i + 1) * batchSize / count) * batchSize, i + 1 === calls ? `Finished loading` : `Loaded ${(i + 1) * batchSize} of ${count}`);
+      pb.update(((i + 1) * batchSize / count) * 100, i + 1 === calls ? `Finished loading` : `Loaded ${(i + 1) * batchSize} of ${count}`);
     }
     pb.close();
     if (totalDf) {
@@ -186,11 +185,8 @@ export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: 
   
   // if total number of results are more then 100, add ability to load them all
   if (totalCount) {
-    let countInt: number | undefined = undefined;
-    try {
-      countInt = parseInt(totalCount)
-    } catch (e: any) { }
-    if (countInt) {
+    const countInt = Number(totalCount);
+    if (Number.isFinite(countInt) && countInt > 0) {
       const infoDiv = ui.divH([]);
       infoDiv.append(ui.divText(`${resultDf.rowCount} of ${countInt} rows`, 'revvity-search-results-count'));
       loadAllResDiv.append(infoDiv);
@@ -246,7 +242,7 @@ export async function getPropertiesForLibAndEntityType(libId: string, compoundTy
         propOptions.friendlyName = nameArr[1];
       const prop = DG.Property.fromOptions(propOptions);
       prop.options[SUGGESTIONS_FUNCTION] = async (text: string) => {
-        const terms = await getTermsForField(tagName, compoundType, libId, true);
+        const terms: string[] = await funcs.getTermsForField(tagName, compoundType, libId, true);
         return terms.filter((it) => it.toLowerCase().includes(text.toLowerCase()));
       }
       filterFields.push(prop);
