@@ -43,10 +43,10 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData} from './molstar-viewer-open';
 import {
-  AtomMapping3D, CHEM_MOL3D_HOVER_EVENT, CHEM_SELECTION_EVENT,
-  ChemSelectionEventArgs, Mol3DHoverEventArgs,
-  computeSerials, getSelectionCache, selectionCacheKey,
+  CHEM_MOL3D_HOVER_EVENT, CHEM_SELECTION_EVENT, ChemSelectionEventArgs,
+  getSelectionCache,
 } from './molstar-highlight-utils';
+import {MolstarHighlightController} from './molstar-highlight-controller';
 import {defaults, molecule3dFileExtensions} from './consts';
 import {createRcsbViewer, disposeRcsbViewer} from './utils';
 
@@ -57,14 +57,8 @@ import {createStructureRepresentationParams} from 'molstar/lib/mol-plugin-state/
 import {StructureRepresentationRegistry} from 'molstar/lib/mol-repr/structure/registry';
 import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
 import {StateElements} from 'molstar/lib/examples/proteopedia-wrapper/helpers';
-import {MolScriptBuilder} from 'molstar/lib/mol-script/language/builder';
-import {Script} from 'molstar/lib/mol-script/script';
-import {Bond, Structure, StructureSelection, StructureElement, StructureProperties} from 'molstar/lib/mol-model/structure';
+import {Bond, StructureElement, StructureProperties} from 'molstar/lib/mol-model/structure';
 import {InteractivityManager} from 'molstar/lib/mol-plugin-state/manager/interactivity';
-import {Color} from 'molstar/lib/mol-util/color';
-import {
-  setStructureOverpaint, clearStructureOverpaint,
-} from 'molstar/lib/mol-plugin-state/helpers/structure-overpaint';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -297,6 +291,18 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     this.logger = _package.logger;
     this.viewSyncer = new PromiseSyncer(this.logger);
+
+    // The highlight controller owns overpaint state + the 3D↔2D bridge.
+    // It reads viewer state through getters so the viewer instance itself
+    // is the only thing that needs to be captured in the closures.
+    this.highlightController = new MolstarHighlightController({
+      getPlugin: () => this.viewer?.plugin,
+      getLigands: () => this.ligands,
+      getDataFrame: () => this.dataFrame,
+      getLigandColumnName: () => this.ligandColumnName,
+      viewSyncer: this.viewSyncer,
+      logger: this.logger,
+    });
 
     this.setDataRequest = new Subject<void>();
     this.subs.push(DG.debounce(this.setDataRequest, DebounceIntervals.setData)
@@ -733,6 +739,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private readonly logger: ILogger;
   private readonly viewSyncer: PromiseSyncer;
+  /** Highlight controller — public so tests and any external consumer can
+   *  call `.highlightAllLigandAtoms`, `.applyBaseColors`, etc. directly
+   *  without reaching into private viewer state. */
+  public readonly highlightController: MolstarHighlightController;
+  /** Timer that debounces `plugin.state.data.events.changed` into a single
+   *  highlight replay per burst — see the subscription in `_open`. */
+  private _stateChangeTimer: ReturnType<typeof setTimeout> | null = null;
   private setDataInProgress: boolean = false;
 
   private viewerDiv?: HTMLDivElement;
@@ -890,7 +903,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
                 `[molstar-picker] live highlight atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${persistent}`);
               // Pass the event's atoms + mapping directly so transient
               // (preview) highlights work even though they're not cached.
-              this.highlightAllLigandAtoms({rowIdx, atoms, mapping3D});
+              this.highlightController.highlightAllLigandAtoms({rowIdx, atoms, mapping3D});
             }
           } catch (err: unknown) {
             this.logger.error(
@@ -911,7 +924,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           this._stateChangeTimer = setTimeout(() => {
             this._stateChangeTimer = null;
             if (getSelectionCache())
-              this._replayHighlightIfCached();
+              this.highlightController.replayHighlightIfCached();
           }, 500) as any;
         };
         canvas.addEventListener('click', reapplyOnClick);
@@ -935,7 +948,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       // Dedup: we track the last (rowIdx, atomSerial, mode) tuple and skip
       // repeat fires so the downstream 2D renderer isn't flooded with
       // redundant work on every mousemove pixel within the same atom radius.
-      this._lastHoverFired = null;
+      this.highlightController.resetHoverDedup();
       try {
         this.viewSubs.push(plugin.behaviors.interaction.hover.subscribe(
           (event: InteractivityManager.HoverEvent) => {
@@ -946,7 +959,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
               const loci = event.current.loci;
               if (loci.kind === 'empty-loci') {
-                this._fireMol3DHover(rowIdx, null, 'preview');
+                this.highlightController.fireMol3DHover(rowIdx, null, 'preview');
                 return;
               }
 
@@ -959,7 +972,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
               let loc: StructureElement.Location | null = null;
               if (loci.kind === 'element-loci') {
                 if (StructureElement.Loci.isEmpty(loci)) {
-                  this._fireMol3DHover(rowIdx, null, 'preview');
+                  this.highlightController.fireMol3DHover(rowIdx, null, 'preview');
                   return;
                 }
                 loc = StructureElement.Loci.getFirstLocation(loci) ?? null;
@@ -981,7 +994,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
               const {modifiers} = event;
               const mode: 'preview' | 'paint' | 'erase' =
                 modifiers.shift && modifiers.control ? 'erase' : (modifiers.shift ? 'paint' : 'preview');
-              this._fireMol3DHover(rowIdx, atomSerial, mode);
+              this.highlightController.fireMol3DHover(rowIdx, atomSerial, mode);
             } catch (err: unknown) {
               this.logger.error(
                 `${CHEM_MOL3D_HOVER_EVENT} emit failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -1009,7 +1022,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       } else {
         // Non-ligand viewer (e.g. "3D Structure" panel showing a single
         // molecule). Replay any cached selection after the structure loads.
-        this._replayHighlightIfCached();
+        this.highlightController.replayHighlightIfCached();
       }
     }
 
@@ -1106,7 +1119,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       [this.dataEff, this.dataEffStructureRefs] = await this.rebuildViewCurrentRow(
         oldStructureRefs, newCurrentRowIdx, 0, callLog);
       // Protein structure was rebuilt — reapply highlights on ligands.
-      this._replayHighlightIfCached();
+      this.highlightController.replayHighlightIfCached();
     });
   }
 
@@ -1295,7 +1308,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     });
 
     // Replay highlights after ligands are built (via syncer queue).
-    this._replayHighlightIfCached();
+    this.highlightController.replayHighlightIfCached();
 
     this.logger.debug(`${logPrefix}, end`);
   }
@@ -1337,430 +1350,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     throw new Error('Not implemented');
   }
 
-  /** Guard against concurrent async highlight updates. */
-  private _highlightInProgress = false;
-  private _stateChangeTimer: ReturnType<typeof setTimeout> | null = null;
-
-  /** Last-fired 3D→2D hover tuple — used to dedup Molstar's
-   *  per-mousemove-pixel hover firing. null = no atom currently hovered. */
-  private _lastHoverFired: {rowIdx: number; atomSerial: number | null; mode: string} | null = null;
-
-  /** Emits CHEM_MOL3D_HOVER_EVENT for the 3D→2D hover bridge, with dedup.
-   *  `atomSerial: null` means the cursor left all ligand atoms — the 2D
-   *  side clears its preview. */
-  private _fireMol3DHover(
-    rowIdx: number, atomSerial: number | null, mode: 'preview' | 'paint' | 'erase',
-  ): void {
-    const last = this._lastHoverFired;
-    if (last && last.rowIdx === rowIdx && last.atomSerial === atomSerial && last.mode === mode)
-      return;
-    this._lastHoverFired = {rowIdx, atomSerial, mode};
-    const args: Mol3DHoverEventArgs = {
-      mol3DColumnName: this.ligandColumnName!, rowIdx, atom3DSerial: atomSerial, mode,
-    };
-    grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, args);
-  }
-
-  /** Returns all Molstar structure components, or null if unavailable. */
-  private _getAllComponents(): any[] | null {
-    const plugin = this.viewer?.plugin;
-    if (!plugin) return null;
-    const structures = plugin.managers.structure.hierarchy.current.structures;
-    if (!structures || structures.length === 0) return null;
-    const comps = structures.flatMap((s: any) => s.components ?? []);
-    return comps.length > 0 ? comps : null;
-  }
-  /** Last received atom selection event args. Replayed after the viewer
-   *  rebuilds its ligands so the highlight persists across cell switches
-   *  (switching away destroys the viewer; switching back rebuilds it). */
-
-  // -- Interactive atom highlighting (2D ↔ 3D bridge) ----------------------
-
-  /** Replays highlights for all loaded ligands. Reads directly from the
-   *  SMILES column's temp providers (the source of truth) so highlights
-   *  appear automatically whenever Molstar rebuilds, without needing a
-   *  fresh selection event. */
-  private _replayHighlightIfCached(): void {
-    this.logger.debug('[molstar-picker] scheduling replay after buildViewLigands');
-    // Queue the replay through the viewSyncer so it runs AFTER all
-    // pending structure rebuilds (rebuildViewCurrentRow, buildViewLigands)
-    // have completed. This prevents the common issue where our overpaint
-    // is applied to structures that are then immediately replaced.
-    this.viewSyncer.sync('replayHighlight', async () => {
-      this.logger.debug('[molstar-picker] replay firing now (synced)');
-      try {
-        const comps = this._getAllComponents();
-        if (comps && this.viewer?.plugin)
-          await clearStructureOverpaint(this.viewer.plugin, comps);
-      } catch {
-        /* best-effort */
-      }
-      await this._applyBaseColors();
-      await this.highlightAllLigandAtoms();
-    });
-  }
-
-  /** Applies distinct base colors to loaded ligand structures so the user
-   *  can tell them apart. Called after ligands are built and on each
-   *  highlight update. Does NOT require any atom selection — runs
-   *  unconditionally when 2+ poses are loaded. */
-  private async _applyBaseColors(): Promise<void> {
-    const plugin = this.viewer?.plugin;
-    if (!plugin) return;
-
-    const loadedLigands: { rowIdx: number, structureRefs: string[] | null }[] = [];
-    const seenRows = new Set<number>();
-    const lig = this.ligands;
-    if (lig) {
-      const currentRow = lig.current?.rowIdx;
-      if (currentRow != null && currentRow >= 0 && !seenRows.has(currentRow)) {
-        loadedLigands.push(lig.current!);
-        seenRows.add(currentRow);
-      }
-      const hoveredRow = lig.hovered?.rowIdx;
-      if (hoveredRow != null && hoveredRow >= 0 && !seenRows.has(hoveredRow)) {
-        loadedLigands.push(lig.hovered!);
-        seenRows.add(hoveredRow);
-      }
-      if (lig.selected) {
-        for (const sel of lig.selected) {
-          if (sel.rowIdx >= 0 && !seenRows.has(sel.rowIdx)) {
-            loadedLigands.push(sel);
-            seenRows.add(sel.rowIdx);
-          }
-        }
-      }
-    }
-    if (loadedLigands.length < 2) return;
-
-    const allComponents = this._getAllComponents();
-    if (!allComponents) return;
-
-    // Determine current (selected) row — leave its pose in default colors.
-    // Only color the OTHER (comparison) pose in teal.
-    const currentRowIdx = this.dataFrame?.currentRowIdx ?? -1;
-
-    for (const ligand of loadedLigands) {
-      if (ligand.rowIdx === currentRowIdx) continue; // skip current row
-
-      let structure: Structure | undefined;
-      if (ligand.structureRefs && ligand.structureRefs.length >= 4) {
-        const cell = plugin.state.data.cells.get(ligand.structureRefs[3]);
-        if (cell?.obj?.data) structure = cell.obj.data;
-      }
-      if (!structure) continue;
-
-      const targetStructure = structure;
-      await setStructureOverpaint(
-        plugin, allComponents, Color(0x616161),
-        async (structureData: Structure) => {
-          if (structureData !== targetStructure)
-            return StructureElement.Loci.none(structureData);
-          // Only color carbon atoms — leave N, O, S, etc. in their
-          // default element colors so heteroatoms stay recognizable.
-          const query = MolScriptBuilder.struct.generator.atomGroups({
-            'atom-test': MolScriptBuilder.core.rel.eq([
-              MolScriptBuilder.acp('elementSymbol'),
-              MolScriptBuilder.es('C'),
-            ]),
-          });
-          const sel = Script.getStructureSelection(query, structureData);
-          return StructureSelection.toLociWithSourceUnits(sel);
-        },
-      );
-    }
-  }
-
-  /** Reads the highlighted atom indices for a given row from the SMILES
-   *  column's temp substruct providers. Returns empty array if none. */
-  /** Reads highlighted atom indices for a given row from a specific
-   *  molecule column's temp substruct providers. The column is identified
-   *  by name (not searched by semType) to avoid ambiguity when a DataFrame
-   *  has multiple molecule columns. */
-  private _getHighlightedAtomsFromColumn(rowIdx: number, molColName?: string): number[] {
-    const df = this.dataFrame;
-    if (!df) return [];
-    // Use the explicitly provided column name, or fall back to finding
-    // the molecule column linked to this viewer's ligand column.
-    let molCol: DG.Column | null = null;
-    if (molColName)
-      molCol = df.col(molColName);
-    if (!molCol) {
-      // Fall back: find the molecule column that has atom-picker providers.
-      molCol = df.columns.toList().find(
-        (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE &&
-          ((c.temp as Record<string, unknown>)?.['chem-substruct-providers'] as unknown[] ?? [])
-            .some((p: any) => p.__atomPicker)) ?? null;
-    }
-    if (!molCol) return [];
-    // Read the atom-picker provider for this row from col.temp.
-    const providers = ((molCol.temp as Record<string, unknown>)?.['chem-substruct-providers'] ?? []) as
-      Array<{__atomPicker?: boolean; __rowIdx?: number; __atoms?: Set<number>}>;
-    const picker = providers.find(
-      (p) => p.__atomPicker && p.__rowIdx === rowIdx);
-    if (!picker?.__atoms || picker.__atoms.size === 0) return [];
-    return [...picker.__atoms];
-  }
-
-  /** Applies overpaint for ALL loaded ligands. Reads atom highlights
-   *  directly from the SMILES column's providers (source of truth),
-   *  falling back to the event cache. */
-  public async highlightAllLigandAtoms(
-    liveEvent?: { rowIdx: number, atoms: number[], mapping3D: AtomMapping3D | null } | null,
-  ): Promise<void> {
-    const plugin = this.viewer?.plugin;
-    if (!plugin) return;
-    // NOTE: no _highlightInProgress guard here — this method is the
-    // single entry point for applying highlights and must always run,
-    // even if a previous overpaint is mid-flight.
-
-    this.logger.debug('[molstar-picker] highlightAllLigandAtoms called');
-
-    // Collect all loaded ligands with their rows and structure refs.
-    // Deduplicate by rowIdx — if current and hovered point to the same
-    // row, only process it once (avoids applying the same mapping twice
-    // and prevents stale highlights when the hovered row changes).
-    type LigandInfo = { rowIdx: number, structureRefs: string[] | null };
-    const loadedLigands: LigandInfo[] = [];
-    const seenRows = new Set<number>();
-    const lig = this.ligands;
-    if (lig) {
-      const currentRowIdx = lig.current?.rowIdx;
-      if (lig.current && currentRowIdx != null && currentRowIdx >= 0 && !seenRows.has(currentRowIdx)) {
-        loadedLigands.push(lig.current);
-        seenRows.add(currentRowIdx);
-      }
-      const hoveredRowIdx = lig.hovered?.rowIdx;
-      if (lig.hovered && hoveredRowIdx != null && hoveredRowIdx >= 0 && !seenRows.has(hoveredRowIdx)) {
-        loadedLigands.push(lig.hovered);
-        seenRows.add(hoveredRowIdx);
-      }
-      if (lig.selected) {
-        for (const sel of lig.selected) {
-          if (sel.rowIdx >= 0 && !seenRows.has(sel.rowIdx)) {
-            loadedLigands.push(sel);
-            seenRows.add(sel.rowIdx);
-          }
-        }
-      }
-    }
-
-    this.logger.debug('[molstar-picker] loaded ligands:', () =>
-      loadedLigands.map((l) => ({row: l.rowIdx, hasRefs: !!l.structureRefs})));
-
-    // Collect serials per ligand row.
-    const currentRowIdx = this.dataFrame?.currentRowIdx ?? -1;
-    type LigandHighlight = {
-      serials: number[], isCurrent: boolean, dataRef: string | null
-    };
-    const highlights: LigandHighlight[] = [];
-
-    // Build cache key prefix from the current dataframe + molecule column.
-    const df = this.dataFrame;
-    const molCol = df?.columns.toList().find(
-      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE);
-    const dfId = df?.id ?? '';
-    const dfName = df?.name ?? '';
-    const colName = molCol?.name ?? '';
-    const cache = getSelectionCache();
-
-    for (const ligand of loadedLigands) {
-      let atoms: number[] = [];
-      let mapping3D: AtomMapping3D | null = null;
-
-      if (liveEvent && liveEvent.rowIdx === ligand.rowIdx && liveEvent.atoms.length > 0) {
-        atoms = liveEvent.atoms;
-        mapping3D = liveEvent.mapping3D;
-      }
-      if (atoms.length === 0) {
-        const key = selectionCacheKey(dfId, dfName, colName, ligand.rowIdx);
-        const cached = cache.get(key);
-        if (cached && cached.atoms.length > 0) {
-          atoms = cached.atoms;
-          mapping3D = cached.mapping3D ?? null;
-        }
-      }
-      if (atoms.length === 0) {
-        atoms = this._getHighlightedAtomsFromColumn(ligand.rowIdx, colName);
-        const key = selectionCacheKey(dfId, dfName, colName, ligand.rowIdx);
-        const cached = cache.get(key);
-        mapping3D = cached?.mapping3D ?? null;
-      }
-      if (atoms.length === 0) continue;
-
-      let structure: Structure | undefined;
-      if (ligand.structureRefs && ligand.structureRefs.length >= 4) {
-        const cell = plugin.state.data.cells.get(ligand.structureRefs[3]);
-        if (cell?.obj?.data) structure = cell.obj.data;
-      }
-
-      const serials = computeSerials(atoms, mapping3D, structure);
-      if (serials.length === 0) continue;
-
-      // Store the data ref (first ref from addLigandOnStage) to scope
-      // the overpaint to this ligand's subtree only.
-      const dataRef = ligand.structureRefs?.[0] ?? null;
-      highlights.push({
-        serials,
-        isCurrent: ligand.rowIdx === currentRowIdx,
-        dataRef,
-      });
-    }
-
-    const allComponents = this._getAllComponents();
-    if (!allComponents) return;
-
-    await clearStructureOverpaint(plugin, allComponents);
-    await this._applyBaseColors();
-
-    for (const h of highlights) {
-      const color = h.isCurrent ? Color(0xFFFF00) : Color(0x00BCD4);
-      // Apply overpaint to ALL components but scope the loci getter
-      // to only match atoms in structures descended from this ligand's
-      // data ref. This avoids the stale Structure identity issue while
-      // still preventing cross-molecule contamination.
-      await setStructureOverpaint(
-        plugin, allComponents, color,
-        async (structureData: Structure) => {
-          // If we have a data ref, check if this structure descends
-          // from it by walking up the state tree.
-          if (h.dataRef) {
-            let found = false;
-            try {
-              // Find the state cell for this structure and walk parents.
-              for (const [, cell] of plugin.state.data.cells) {
-                if (cell.obj?.data === structureData) {
-                  let cur: any = cell;
-                  for (let d = 0; cur && d < 6; d++) {
-                    if (cur.transform?.ref === h.dataRef) {
-                      found = true;
-                      break;
-                    }
-                    const pRef = cur.transform?.parent;
-                    cur = pRef ? plugin.state.data.cells.get(pRef) : null;
-                  }
-                  break;
-                }
-              }
-            } catch {
-              // skip check, allow fallback
-              found = true;
-            }
-            if (!found) return StructureElement.Loci.none(structureData);
-          }
-
-          const atomSet = MolScriptBuilder.set(...h.serials);
-          const query = MolScriptBuilder.struct.generator.atomGroups({
-            'atom-test': MolScriptBuilder.core.set.has([
-              atomSet,
-              MolScriptBuilder.ammp('id'),
-            ]),
-          });
-          const sel = Script.getStructureSelection(query, structureData);
-          return StructureSelection.toLociWithSourceUnits(sel);
-        },
-      );
-    }
-  }
-
-  /**
-   * Highlights specific atoms in the 3D Molstar view using overpaint.
-   *
-   * @param atomIndices  0-based atom indices from the 2D picker.
-   * @param mapping3D    Optional pre-computed mapping.
-   * @param precomputedSerials  If true, atomIndices are already 1-based
-   *                            serials (skip the 2D→3D mapping step).
-   */
-  public async highlightLigandAtoms(
-    atomIndices: number[],
-    mapping3D?: AtomMapping3D | null,
-    precomputedSerials?: boolean,
-  ): Promise<void> {
-    const plugin = this.viewer?.plugin;
-    if (!plugin) return;
-    if (this._highlightInProgress) return; // skip concurrent calls
-    this._highlightInProgress = true;
-
-    try {
-      // Find the current structure's components via the hierarchy manager.
-      // These are the StructureComponentRef objects that setStructureOverpaint
-      // needs to iterate and apply overpaint layers to.
-      const structures = plugin.managers.structure.hierarchy.current.structures;
-      if (!structures || structures.length === 0) return;
-
-      // Collect ALL components from all structures so overpaint covers everything.
-      const allComponents = structures.flatMap((s: any) => s.components ?? []);
-      if (allComponents.length === 0) return;
-
-      // Clear any previous overpaint first.
-      await clearStructureOverpaint(plugin, allComponents);
-
-      if (atomIndices.length === 0) return;
-
-      let mol3DSerials: number[];
-      if (precomputedSerials) {
-        // Already 1-based serials — use directly.
-        mol3DSerials = atomIndices;
-      } else {
-        // Compute serials from 2D atom indices.
-        let structure: Structure | undefined;
-        const currentLigand = this.ligands?.current;
-        if (currentLigand?.structureRefs && currentLigand.structureRefs.length >= 4) {
-          const structureRef = currentLigand.structureRefs[3];
-          const structureCell = plugin.state.data.cells.get(structureRef);
-          if (structureCell?.obj?.data)
-            structure = structureCell.obj.data;
-        }
-        if (!structure && structures.length > 0)
-          structure = structures[0]?.cell?.obj?.data;
-
-        mol3DSerials = computeSerials(atomIndices, mapping3D, structure);
-      }
-      if (mol3DSerials.length === 0) return;
-
-      _package.logger.debug(`[molstar-picker] overpaint serials [${mol3DSerials.slice(0, 10)}]`);
-
-      const serialSet = mol3DSerials;
-
-      // Apply yellow overpaint to matching atoms across all components.
-      await setStructureOverpaint(
-        plugin,
-        allComponents,
-        Color(0xFFFF00), // yellow
-        async (structureData: Structure) => {
-          // Build the query against the provided structure
-          const atomSet = MolScriptBuilder.set(...serialSet);
-          const query = MolScriptBuilder.struct.generator.atomGroups({
-            'atom-test': MolScriptBuilder.core.set.has([
-              atomSet,
-              MolScriptBuilder.ammp('id'),
-            ]),
-          });
-          const sel = Script.getStructureSelection(query, structureData);
-          return StructureSelection.toLociWithSourceUnits(sel);
-        },
-      );
-      this.logger.debug('[molstar-picker] overpaint applied');
-    } catch (err: any) {
-      this.logger.error(
-        `highlightLigandAtoms failed: ${err?.message ?? err}`);
-    } finally { this._highlightInProgress = false; }
-  }
-
-  /**
-   * Clears any atom-level overpaint applied by {@link highlightLigandAtoms}.
-   */
-  public async clearLigandAtomHighlight(): Promise<void> {
-    const plugin = this.viewer?.plugin;
-    if (!plugin) return;
-    try {
-      const structures = plugin.managers.structure.hierarchy.current.structures;
-      if (!structures || structures.length === 0) return;
-      const allComponents = structures.flatMap((s: any) => s.components ?? []);
-      if (allComponents.length === 0) return;
-      await clearStructureOverpaint(plugin, allComponents);
-    } catch { /* viewer may be disposed */ }
-  }
+  // The highlight state + overpaint pipeline lives in
+  // `MolstarHighlightController` (see `molstar-highlight-controller.ts`).
+  // Wire-ups above this comment forward the relevant events and lifecycle
+  // hooks (`highlightController.fireMol3DHover`,
+  // `highlightController.replayHighlightIfCached`,
+  // `highlightController.highlightAllLigandAtoms`) to that controller.
 }
 
 /** margin indent */

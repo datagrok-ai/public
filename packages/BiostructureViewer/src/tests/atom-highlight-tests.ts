@@ -74,7 +74,7 @@ category('atom-highlight', () => {
     });
     await delay(500);
 
-    await viewer.highlightAllLigandAtoms();
+    await viewer.highlightController.highlightAllLigandAtoms();
   }, {timeout: 45000});
 
   test('base colors applied to comparison pose', async () => {
@@ -86,6 +86,6 @@ category('atom-highlight', () => {
     await delay(DebounceIntervals.ligands * 2.5);
     await viewer.awaitRendered();
 
-    await (viewer as any)._applyBaseColors();
+    await viewer.highlightController.applyBaseColors();
   }, {timeout: 45000});
 });
