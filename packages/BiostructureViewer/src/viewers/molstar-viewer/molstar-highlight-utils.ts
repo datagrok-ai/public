@@ -157,9 +157,12 @@ export function computeSerials(
       /* fall through */
     }
     if (heavySerials.length > 0) {
-      return atomIndices
-        .filter((i) => i >= 0 && i < heavySerials.length)
-        .map((i) => heavySerials[i]);
+      const serials: number[] = [];
+      for (const i of atomIndices) {
+        if (i >= 0 && i < heavySerials.length)
+          serials.push(heavySerials[i]);
+      }
+      return serials;
     }
   }
   return atomIndices.map((i) => i + 1);
