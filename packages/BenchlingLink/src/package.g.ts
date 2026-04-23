@@ -95,12 +95,12 @@ export async function getAssayResults(schemaId?: string, createdAt_lt?: string, 
 }
 
 //name: Get Assay Runs
-//input: string schemaId { nullable: true }
+//input: string schemaId 
 //input: double minCreatedTime { nullable: true }
 //input: double maxCreatedTime { nullable: true }
 //input: string ids { nullable: true }
 //output: dataframe result
-export async function getAssayRuns(schemaId?: string, minCreatedTime?: number, maxCreatedTime?: number, ids?: string) : Promise<any> {
+export async function getAssayRuns(schemaId: string, minCreatedTime?: number, maxCreatedTime?: number, ids?: string) : Promise<any> {
   return await PackageFunctions.getAssayRuns(schemaId, minCreatedTime, maxCreatedTime, ids);
 }
 
@@ -122,6 +122,7 @@ export async function createAASequence(name: string, aminoAcids: string, aliases
 //name: Create DNA Sequence
 //input: string name 
 //input: string bases 
+//input: bool isCircular 
 //input: string aliases { nullable: true }
 //input: string annotations { nullable: true }
 //input: string authorIds { nullable: true }
@@ -130,32 +131,31 @@ export async function createAASequence(name: string, aminoAcids: string, aliases
 //input: string folderId { nullable: true }
 //input: string schemaId { nullable: true }
 //output: dataframe result
-export async function createDNASequence(name: string, bases: string, aliases?: string, annotations?: string, authorIds?: string, customFields?: string, fields?: string, folderId?: string, schemaId?: string) : Promise<any> {
-  return await PackageFunctions.createDNASequence(name, bases, aliases, annotations, authorIds, customFields, fields, folderId, schemaId);
+export async function createDNASequence(name: string, bases: string, isCircular: boolean, aliases?: string, annotations?: string, authorIds?: string, customFields?: string, fields?: string, folderId?: string, schemaId?: string) : Promise<any> {
+  return await PackageFunctions.createDNASequence(name, bases, isCircular, aliases, annotations, authorIds, customFields, fields, folderId, schemaId);
 }
 
 //name: Create Assay Result
 //input: string schemaId 
-//input: string fields { nullable: true }
-//input: string entityIds { nullable: true }
-//input: string storageIds { nullable: true }
-//input: string assayRunId { nullable: true }
-//input: string authorIds { nullable: true }
-//input: string customFields { nullable: true }
+//input: string fields 
+//input: string projectId { nullable: true }
+//input: string fieldValidation { nullable: true }
+//input: string id { nullable: true }
 //output: dataframe result
-export async function createAssayResult(schemaId: string, fields?: string, entityIds?: string, storageIds?: string, assayRunId?: string, authorIds?: string, customFields?: string) : Promise<any> {
-  return await PackageFunctions.createAssayResult(schemaId, fields, entityIds, storageIds, assayRunId, authorIds, customFields);
+export async function createAssayResult(schemaId: string, fields: string, projectId?: string, fieldValidation?: string, id?: string) : Promise<any> {
+  return await PackageFunctions.createAssayResult(schemaId, fields, projectId, fieldValidation, id);
 }
 
 //name: Create Assay Run
 //input: string schemaId 
-//input: string fields { nullable: true }
-//input: string name { nullable: true }
-//input: string authorIds { nullable: true }
-//input: string customFields { nullable: true }
+//input: string fields 
+//input: string projectId { nullable: true }
+//input: string validationComment { nullable: true }
+//input: string validationStatus { nullable: true }
+//input: string id { nullable: true }
 //output: dataframe result
-export async function createAssayRun(schemaId: string, fields?: string, name?: string, authorIds?: string, customFields?: string) : Promise<any> {
-  return await PackageFunctions.createAssayRun(schemaId, fields, name, authorIds, customFields);
+export async function createAssayRun(schemaId: string, fields: string, projectId?: string, validationComment?: string, validationStatus?: string, id?: string) : Promise<any> {
+  return await PackageFunctions.createAssayRun(schemaId, fields, projectId, validationComment, validationStatus, id);
 }
 
 //name: Get Molecules
@@ -185,11 +185,17 @@ export async function getMolecules(sort?: string, createdAt?: string, modifiedAt
 
 //name: Create Molecule
 //input: string name 
-//input: string smiles 
-//input: string formula { nullable: true }
+//input: string value 
+//input: string structureFormat { nullable: true }
+//input: string aliases { nullable: true }
+//input: string authorIds { nullable: true }
+//input: string customFields { nullable: true }
+//input: string fields { nullable: true }
+//input: string folderId { nullable: true }
+//input: string schemaId { nullable: true }
 //output: dataframe result
-export async function createMolecule(name: string, smiles: string, formula?: string) : Promise<any> {
-  return await PackageFunctions.createMolecule(name, smiles, formula);
+export async function createMolecule(name: string, value: string, structureFormat?: string, aliases?: string, authorIds?: string, customFields?: string, fields?: string, folderId?: string, schemaId?: string) : Promise<any> {
+  return await PackageFunctions.createMolecule(name, value, structureFormat, aliases, authorIds, customFields, fields, folderId, schemaId);
 }
 
 //name: Get Projects

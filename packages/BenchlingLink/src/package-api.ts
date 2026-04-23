@@ -28,7 +28,7 @@ export namespace funcs {
     return await grok.functions.call('BenchlingLink:GetAssayResults', { schemaId, createdAt_lt, createdAt_gt, createdAt_lte, createdAt_gte, minCreatedTime, maxCreatedTime, sort, entityIds, storageIds, assayRunIds, automationOutputProcessorId, ids, modifiedAt_lt, modifiedAt_gt, modifiedAt_lte, modifiedAt_gte, archiveReason });
   }
 
-  export async function getAssayRuns(schemaId: string | null, minCreatedTime: number | null, maxCreatedTime: number | null, ids: string | null): Promise<DG.DataFrame> {
+  export async function getAssayRuns(schemaId: string , minCreatedTime: number | null, maxCreatedTime: number | null, ids: string | null): Promise<DG.DataFrame> {
     return await grok.functions.call('BenchlingLink:GetAssayRuns', { schemaId, minCreatedTime, maxCreatedTime, ids });
   }
 
@@ -36,24 +36,24 @@ export namespace funcs {
     return await grok.functions.call('BenchlingLink:CreateAASequence', { name, aminoAcids, aliases, annotations, authorIds, customFields, fields, folderId, schemaId });
   }
 
-  export async function createDNASequence(name: string , bases: string , aliases: string | null, annotations: string | null, authorIds: string | null, customFields: string | null, fields: string | null, folderId: string | null, schemaId: string | null): Promise<DG.DataFrame> {
-    return await grok.functions.call('BenchlingLink:CreateDNASequence', { name, bases, aliases, annotations, authorIds, customFields, fields, folderId, schemaId });
+  export async function createDNASequence(name: string , bases: string , isCircular: boolean , aliases: string | null, annotations: string | null, authorIds: string | null, customFields: string | null, fields: string | null, folderId: string | null, schemaId: string | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('BenchlingLink:CreateDNASequence', { name, bases, isCircular, aliases, annotations, authorIds, customFields, fields, folderId, schemaId });
   }
 
-  export async function createAssayResult(schemaId: string , fields: string | null, entityIds: string | null, storageIds: string | null, assayRunId: string | null, authorIds: string | null, customFields: string | null): Promise<DG.DataFrame> {
-    return await grok.functions.call('BenchlingLink:CreateAssayResult', { schemaId, fields, entityIds, storageIds, assayRunId, authorIds, customFields });
+  export async function createAssayResult(schemaId: string , fields: string , projectId: string | null, fieldValidation: string | null, id: string | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('BenchlingLink:CreateAssayResult', { schemaId, fields, projectId, fieldValidation, id });
   }
 
-  export async function createAssayRun(schemaId: string , fields: string | null, name: string | null, authorIds: string | null, customFields: string | null): Promise<DG.DataFrame> {
-    return await grok.functions.call('BenchlingLink:CreateAssayRun', { schemaId, fields, name, authorIds, customFields });
+  export async function createAssayRun(schemaId: string , fields: string , projectId: string | null, validationComment: string | null, validationStatus: string | null, id: string | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('BenchlingLink:CreateAssayRun', { schemaId, fields, projectId, validationComment, validationStatus, id });
   }
 
   export async function getMolecules(sort: string | null, createdAt: string | null, modifiedAt: string | null, name: string | null, nameIncludes: string | null, folderId: string | null, mentionedIn: string | null, projectId: string | null, registryId: string | null, schemaId: string | null, schemaFields: string | null, archiveReason: string | null, mentions: string | null, ids: string | null, entityRegistryIds_anyOf: string | null, names_anyOf: string | null, authorIds_anyOf: string | null, chemicalSubstructure_mol: string | null, chemicalSubstructure_smiles: string | null): Promise<DG.DataFrame> {
     return await grok.functions.call('BenchlingLink:GetMolecules', { sort, createdAt, modifiedAt, name, nameIncludes, folderId, mentionedIn, projectId, registryId, schemaId, schemaFields, archiveReason, mentions, ids, entityRegistryIds_anyOf, names_anyOf, authorIds_anyOf, chemicalSubstructure_mol, chemicalSubstructure_smiles });
   }
 
-  export async function createMolecule(name: string , smiles: string , formula: string | null): Promise<DG.DataFrame> {
-    return await grok.functions.call('BenchlingLink:CreateMolecule', { name, smiles, formula });
+  export async function createMolecule(name: string , value: string , structureFormat: string | null, aliases: string | null, authorIds: string | null, customFields: string | null, fields: string | null, folderId: string | null, schemaId: string | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('BenchlingLink:CreateMolecule', { name, value, structureFormat, aliases, authorIds, customFields, fields, folderId, schemaId });
   }
 
   export async function getProjects(sort: string | null, archiveReason: string | null, ids: string | null, name: string | null): Promise<DG.DataFrame> {

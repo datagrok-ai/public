@@ -1,22 +1,26 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { queryAASequences, postAASequence } from './aaSequencesApi';
 import { queryDNASequences, postDNASequence } from './dnaSequencesApi';
-import { queryAssayResults, queryAssayRuns, postAssayResult, postAssayRun } from './assayApi';
+import { queryAssayResults, queryAssayRuns, postAssayResults, postAssayRuns } from './assayApi';
 import { queryMolecules, postMolecule } from './moleculesApi';
 import { dataFrameFromObjects } from './utils';
 import {u2} from "@datagrok-libraries/utils/src/u2";
 import { queryPlates, postPlate } from './platesApi';
 import { queryMixtures, postMixture } from './mixturesApi';
 import { queryDnaOligos, postDnaOligo } from './dnaOligosApi';
+import { queryProjects } from './projectsApi';
 
 export * from './package.g';
 export const _package = new DG.Package();
 
-const STORAGE_NAME = 'BenchlingLinkFuncEditor';
-let openedView: DG.View | null = null;
+// JSON-parse a string body field only when caller supplied it. Used by every createX wrapper
+// because InputForm delivers array/object inputs as JSON strings.
+function assignJson(body: any, key: string, raw: string | undefined): void {
+  if (raw)
+    body[key] = JSON.parse(raw);
+}
 
 export class PackageFunctions {
   @grok.decorators.app({
@@ -42,146 +46,27 @@ export class PackageFunctions {
 
   @grok.decorators.appTreeBrowser({app: 'Benchling'})
   static async benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void> {
-    function createFuncEditorView(funcName: string, v: DG.View) {
-      let func = DG.Func.byName(funcName);
-      let editorDiv = ui.div();
-      let gridDiv = ui.div();
-      let root = ui.splitV([editorDiv, gridDiv], {style: {height: '100%', width: '100%'}}, true);
-      gridDiv.setAttribute('style', 'overflow:hidden !important');
-      let df: DG.DataFrame | null;
-
-      const addToWorkspaceButton = ui.icons.add(() => {
-        if (df) {
-          grok.shell.addTablePreview(df);
-        }
-      }, 'Add results to workspace');
-      v.setRibbonPanels([[addToWorkspaceButton]]);
-
-      // Restore state if exists
-      const saved = grok.userSettings.getValue(STORAGE_NAME, funcName);
-      const funcCall = func.prepare(saved ? JSON.parse(saved) : null);
-      renderEditorAndRun();
-
-      async function renderEditorAndRun() {
-        ui.empty(editorDiv);
-        let form = await DG.InputForm.forFuncCall(funcCall);
-        form.root.style.flexWrap = 'wrap';
-        form.root.style.height = '100%';
-        form.root.style.maxWidth = 'unset';
-        DG.debounce(form.onInputChanged, 1000).subscribe(() => {
-          runFunc();
-        })
-        editorDiv.appendChild(form.root);
-        runFunc();
-      }
-
-      async function runFunc() {
-        //save request settings
-        const params: {[key: string]: any} = {};
-        Object.keys(funcCall.inputParams).forEach((paramName) => {
-          if (funcCall.inputParams[paramName].value)
-            params[paramName] = funcCall.inputParams[paramName].value;
-        });
-        grok.userSettings.add(STORAGE_NAME, funcName, JSON.stringify(params));
-
-        //run function
-        ui.empty(gridDiv);
-        try {
-          df = (await funcCall.call()).getOutputParamValue();
-          let grid = df!.plot.grid();
-          grid.root.style.width = '100%';
-          grid.root.style.height = '95%';
-          gridDiv.appendChild(grid.root);
-        } catch (e) {
-          gridDiv.appendChild(ui.divText('Error: ' + e));
-        }
-      }
-
-      return root;
-    }
-
-    const addBenchlingView = (viewName: string, funcName: string) => {
-      if (openedView)
-        openedView.close();
-      openedView = DG.View.create(viewName);
-      openedView.name = viewName;
-      openedView.root.appendChild(createFuncEditorView(funcName, openedView));
-      const path = ['Home', 'Benchling', viewName];
-      grok.shell.addPreview(openedView);
-      setBreadcrumbs(path, treeNode);
-    }
-
-    const setBreadcrumbs = (path: string[], tree: DG.TreeViewGroup) => {
-      const breadcrumbs = ui.breadcrumbs(path);
-      breadcrumbs.onPathClick.subscribe(async (value) => {
-        const actualItem = value[value.length - 1];
-        if (actualItem === breadcrumbs.path[breadcrumbs.path.length - 1])
-          return;
-        if (actualItem === 'Benchling')
-          tree.currentItem = tree;
+    const addFuncNode = (label: string, funcName: string): void => {
+      const node = treeNode.item(label);
+      node.value = DG.Func.byName(funcName);
+      node.onSelected.subscribe(async () => {
+         const objHandler = DG.ObjectHandler.forEntity(node.value);
+        if (objHandler)
+          grok.shell.preview = await objHandler.renderPreview(node.value);
       });
-      if (grok.shell.v) {
-        if (breadcrumbs.path.length !== 0 && breadcrumbs.path[0] === 'Home') { // integrate it to the actual breadcrumbs element
-          const homeIcon = ui.iconFA('home', () => {
-            grok.shell.v.close();
-            grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME);
-          }, 'Home');
-          breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
-        }
-        const viewNameRoot = grok.shell.v.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
-        if (viewNameRoot) {
-          viewNameRoot.textContent = '';
-          viewNameRoot.appendChild(breadcrumbs.root);
-        }
-      }
-    }
+    };
 
     try {
       treeNode.items.length = 0;
-      const aaSequenceNode = treeNode.item('AA Sequences');
-      aaSequenceNode.onSelected.subscribe(async () => {
-        addBenchlingView('AA Sequences', 'BenchlingLink:getAASequences');
-      });
-
-      const dnaSequencesNode = treeNode.item('DNA Sequences');
-      dnaSequencesNode.onSelected.subscribe(async () => {
-        addBenchlingView('DNA Sequences', 'BenchlingLink:getDNASequences');
-      });
-
-      const assayResultsNode = treeNode.item('Assay Results');
-      assayResultsNode.onSelected.subscribe(async () => {
-        addBenchlingView('Assay Results', 'BenchlingLink:getAssayResults');
-      });
-
-      const assayRunsNode = treeNode.item('Assay Runs');
-      assayRunsNode.onSelected.subscribe(async () => {
-        addBenchlingView('Assay Runs', 'BenchlingLink:getAssayRuns');
-      });
-
-      const moleculesNode = treeNode.item('Molecules');
-      moleculesNode.onSelected.subscribe(async () => {
-        addBenchlingView('Molecules', 'BenchlingLink:getMolecules');
-      });
-
-      const platesNode = treeNode.item('Plates');
-      platesNode.onSelected.subscribe(async () => {
-        addBenchlingView('Plates', 'BenchlingLink:getPlates');
-      });
-
-      const mixturesNode = treeNode.item('Mixtures');
-      mixturesNode.onSelected.subscribe(async () => {
-        addBenchlingView('Mixtures', 'BenchlingLink:getMixtures');
-      });
-
-      const dnaOligosNode = treeNode.item('DNA Oligos');
-      dnaOligosNode.onSelected.subscribe(async () => {
-        addBenchlingView('DNA Oligos', 'BenchlingLink:getDnaOligos');
-      });
-
-      const projectsNode = treeNode.item('Projects');
-      projectsNode.onSelected.subscribe(async () => {
-        addBenchlingView('Projects', 'BenchlingLink:getProjects');
-      });
+      addFuncNode('AA Sequences', 'BenchlingLink:getAASequences');
+      addFuncNode('DNA Sequences', 'BenchlingLink:getDNASequences');
+      addFuncNode('Assay Results', 'BenchlingLink:getAssayResults');
+      addFuncNode('Assay Runs', 'BenchlingLink:getAssayRuns');
+      addFuncNode('Molecules', 'BenchlingLink:getMolecules');
+      addFuncNode('Plates', 'BenchlingLink:getPlates');
+      addFuncNode('Mixtures', 'BenchlingLink:getMixtures');
+      addFuncNode('DNA Oligos', 'BenchlingLink:getDnaOligos');
+      addFuncNode('Projects', 'BenchlingLink:getProjects');
     } catch (e: any) {
       grok.shell.error(e?.message ?? e);
     }
@@ -234,8 +119,7 @@ export class PackageFunctions {
       authorIds_anyOf,
       returning,
     };
-    const aaSequences = await queryAASequences(params);
-    return aaSequences;
+    return await queryAASequences(params);
   }
 
   @grok.decorators.func({name: 'Get DNA Sequences'})
@@ -285,8 +169,7 @@ export class PackageFunctions {
       authorIds_anyOf,
       returning,
     };
-    const dnaSequences = await queryDNASequences(params);
-    return dnaSequences;
+    return await queryDNASequences(params);
   }
 
   @grok.decorators.func({name: 'Get Assay Results'})
@@ -330,13 +213,12 @@ export class PackageFunctions {
       modifiedAt_gte,
       archiveReason,
     };
-    const assayResults = await queryAssayResults(params);
-    return assayResults;
+    return await queryAssayResults(params);
   }
 
   @grok.decorators.func({name: 'Get Assay Runs'})
   static async getAssayRuns(
-    @grok.decorators.param({options: {nullable: true}}) schemaId?: string,
+    schemaId: string,
     @grok.decorators.param({options: {nullable: true}}) minCreatedTime?: number,
     @grok.decorators.param({options: {nullable: true}}) maxCreatedTime?: number,
     @grok.decorators.param({options: {nullable: true}}) ids?: string
@@ -347,8 +229,7 @@ export class PackageFunctions {
       maxCreatedTime,
       ids,
     };
-    const assayRuns = await queryAssayRuns(params);
-    return assayRuns;
+    return await queryAssayRuns(params);
   }
 
   @grok.decorators.func({name: 'Create AA Sequence'})
@@ -363,23 +244,23 @@ export class PackageFunctions {
     @grok.decorators.param({options: {nullable: true}}) folderId?: string,
     @grok.decorators.param({options: {nullable: true}}) schemaId?: string,
   ): Promise<DG.DataFrame> {
-    // Parse JSON string inputs for array/object fields if provided
     const body: any = { name, aminoAcids };
-    if (aliases) body.aliases = JSON.parse(aliases);
-    if (annotations) body.annotations = JSON.parse(annotations);
-    if (authorIds) body.authorIds = JSON.parse(authorIds);
-    if (customFields) body.customFields = JSON.parse(customFields);
-    if (fields) body.fields = JSON.parse(fields);
+    assignJson(body, 'aliases', aliases);
+    assignJson(body, 'annotations', annotations);
+    assignJson(body, 'authorIds', authorIds);
+    assignJson(body, 'customFields', customFields);
+    assignJson(body, 'fields', fields);
     if (folderId) body.folderId = folderId;
     if (schemaId) body.schemaId = schemaId;
     const result = await postAASequence(body);
-    return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+    return dataFrameFromObjects([result]);
   }
 
   @grok.decorators.func({name: 'Create DNA Sequence'})
   static async createDNASequence(
     name: string,
     bases: string,
+    isCircular: boolean,
     @grok.decorators.param({options: {nullable: true}}) aliases?: string,
     @grok.decorators.param({options: {nullable: true}}) annotations?: string,
     @grok.decorators.param({options: {nullable: true}}) authorIds?: string,
@@ -388,54 +269,50 @@ export class PackageFunctions {
     @grok.decorators.param({options: {nullable: true}}) folderId?: string,
     @grok.decorators.param({options: {nullable: true}}) schemaId?: string,
   ): Promise<DG.DataFrame> {
-    const body: any = { name, bases };
-    if (aliases) body.aliases = JSON.parse(aliases);
-    if (annotations) body.annotations = JSON.parse(annotations);
-    if (authorIds) body.authorIds = JSON.parse(authorIds);
-    if (customFields) body.customFields = JSON.parse(customFields);
-    if (fields) body.fields = JSON.parse(fields);
+    const body: any = { name, bases, isCircular };
+    assignJson(body, 'aliases', aliases);
+    assignJson(body, 'annotations', annotations);
+    assignJson(body, 'authorIds', authorIds);
+    assignJson(body, 'customFields', customFields);
+    assignJson(body, 'fields', fields);
     if (folderId) body.folderId = folderId;
     if (schemaId) body.schemaId = schemaId;
     const result = await postDNASequence(body);
-    return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+    return dataFrameFromObjects([result]);
   }
 
   @grok.decorators.func({name: 'Create Assay Result'})
   static async createAssayResult(
     schemaId: string,
-    @grok.decorators.param({options: {nullable: true}}) fields?: string,
-    @grok.decorators.param({options: {nullable: true}}) entityIds?: string,
-    @grok.decorators.param({options: {nullable: true}}) storageIds?: string,
-    @grok.decorators.param({options: {nullable: true}}) assayRunId?: string,
-    @grok.decorators.param({options: {nullable: true}}) authorIds?: string,
-    @grok.decorators.param({options: {nullable: true}}) customFields?: string,
+    fields: string,
+    @grok.decorators.param({options: {nullable: true}}) projectId?: string,
+    @grok.decorators.param({options: {nullable: true}}) fieldValidation?: string,
+    @grok.decorators.param({options: {nullable: true}}) id?: string,
   ): Promise<DG.DataFrame> {
-    const body: any = { schemaId };
-    if (fields) body.fields = JSON.parse(fields);
-    if (entityIds) body.entityIds = JSON.parse(entityIds);
-    if (storageIds) body.storageIds = JSON.parse(storageIds);
-    if (assayRunId) body.assayRunId = assayRunId;
-    if (authorIds) body.authorIds = JSON.parse(authorIds);
-    if (customFields) body.customFields = JSON.parse(customFields);
-    const result = await postAssayResult(body);
-    return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+    const item: any = { schemaId, fields: JSON.parse(fields) };
+    if (projectId) item.projectId = projectId;
+    assignJson(item, 'fieldValidation', fieldValidation);
+    if (id) item.id = id;
+    const result = await postAssayResults({ assayResults: [item] });
+    return dataFrameFromObjects([result]);
   }
 
   @grok.decorators.func({name: 'Create Assay Run'})
   static async createAssayRun(
     schemaId: string,
-    @grok.decorators.param({options: {nullable: true}}) fields?: string,
-    @grok.decorators.param({options: {nullable: true}}) name?: string,
-    @grok.decorators.param({options: {nullable: true}}) authorIds?: string,
-    @grok.decorators.param({options: {nullable: true}}) customFields?: string,
+    fields: string,
+    @grok.decorators.param({options: {nullable: true}}) projectId?: string,
+    @grok.decorators.param({options: {nullable: true}}) validationComment?: string,
+    @grok.decorators.param({options: {nullable: true}}) validationStatus?: string,
+    @grok.decorators.param({options: {nullable: true}}) id?: string,
   ): Promise<DG.DataFrame> {
-    const body: any = { schemaId };
-    if (fields) body.fields = JSON.parse(fields);
-    if (name) body.name = name;
-    if (authorIds) body.authorIds = JSON.parse(authorIds);
-    if (customFields) body.customFields = JSON.parse(customFields);
-    const result = await postAssayRun(body);
-    return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+    const item: any = { schemaId, fields: JSON.parse(fields) };
+    if (projectId) item.projectId = projectId;
+    if (validationComment) item.validationComment = validationComment;
+    if (validationStatus) item.validationStatus = validationStatus;
+    if (id) item.id = id;
+    const result = await postAssayRuns({ assayRuns: [item] });
+    return dataFrameFromObjects([result]);
   }
 
   @grok.decorators.func({name: 'Get Molecules'})
@@ -467,13 +344,13 @@ export class PackageFunctions {
       name,
       nameIncludes,
       folderId,
-      mentionedIn,
+      mentionedIn: mentionedIn ? mentionedIn.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
       projectId,
       registryId,
       schemaId,
       schemaFields,
       archiveReason,
-      mentions,
+      mentions: mentions ? mentions.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
       ids,
       entityRegistryIds_anyOf,
       names_anyOf,
@@ -487,13 +364,27 @@ export class PackageFunctions {
   @grok.decorators.func({name: 'Create Molecule'})
   static async createMolecule(
     name: string,
-    smiles: string,
-    @grok.decorators.param({options: {nullable: true}}) formula?: string,
+    value: string,
+    @grok.decorators.param({options: {nullable: true}}) structureFormat?: string,
+    @grok.decorators.param({options: {nullable: true}}) aliases?: string,
+    @grok.decorators.param({options: {nullable: true}}) authorIds?: string,
+    @grok.decorators.param({options: {nullable: true}}) customFields?: string,
+    @grok.decorators.param({options: {nullable: true}}) fields?: string,
+    @grok.decorators.param({options: {nullable: true}}) folderId?: string,
+    @grok.decorators.param({options: {nullable: true}}) schemaId?: string,
   ): Promise<DG.DataFrame> {
-    const body: any = { name, smiles };
-    if (formula) body.formula = formula;
+    const format = structureFormat ?? 'smiles';
+    if (format !== 'smiles' && format !== 'molfile')
+      throw new Error(`createMolecule: unknown structureFormat '${format}'. Expected 'smiles' or 'molfile'.`);
+    const body: any = { name, chemicalStructure: { structureFormat: format, value } };
+    assignJson(body, 'aliases', aliases);
+    assignJson(body, 'authorIds', authorIds);
+    assignJson(body, 'customFields', customFields);
+    assignJson(body, 'fields', fields);
+    if (folderId) body.folderId = folderId;
+    if (schemaId) body.schemaId = schemaId;
     const result = await postMolecule(body);
-    return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+    return dataFrameFromObjects([result]);
   }
 
   @grok.decorators.func({name: 'Get Projects'})
@@ -509,8 +400,7 @@ export class PackageFunctions {
       ids,
       name,
     };
-    const projects = await (await import('./projectsApi')).queryProjects(params);
-    return projects;
+    return await queryProjects(params);
   }
 
   @grok.decorators.func({name: 'Get Plates'})
@@ -589,12 +479,12 @@ export class PackageFunctions {
     const body: any = { name, schemaId };
     if (barcode) body.barcode = barcode;
     if (containerSchemaId) body.containerSchemaId = containerSchemaId;
-    if (fields) body.fields = JSON.parse(fields);
+    assignJson(body, 'fields', fields);
     if (parentStorageId) body.parentStorageId = parentStorageId;
     if (projectId) body.projectId = projectId;
-    if (wells) body.wells = JSON.parse(wells);
+    assignJson(body, 'wells', wells);
     const result = await postPlate(body);
-    return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+    return dataFrameFromObjects([result]);
   }
 
   @grok.decorators.func({name: 'Get Mixtures'})
@@ -659,17 +549,16 @@ export class PackageFunctions {
     @grok.decorators.param({options: {nullable: true}}) fields?: string,
     @grok.decorators.param({options: {nullable: true}}) folderId?: string,
   ): Promise<DG.DataFrame> {
-    const body: any = { name, schemaId, units };
-    body.ingredients = JSON.parse(ingredients);
-    if (aliases) body.aliases = JSON.parse(aliases);
+    const body: any = { name, schemaId, units, ingredients: JSON.parse(ingredients) };
+    assignJson(body, 'aliases', aliases);
     if (amount) body.amount = amount;
-    if (authorIds) body.authorIds = JSON.parse(authorIds);
-    if (customFields) body.customFields = JSON.parse(customFields);
+    assignJson(body, 'authorIds', authorIds);
+    assignJson(body, 'customFields', customFields);
     if (entityRegistryId) body.entityRegistryId = entityRegistryId;
-    if (fields) body.fields = JSON.parse(fields);
+    assignJson(body, 'fields', fields);
     if (folderId) body.folderId = folderId;
     const result = await postMixture(body);
-    return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+    return dataFrameFromObjects([result]);
   }
 
   @grok.decorators.func({name: 'Get DNA Oligos'})
@@ -738,15 +627,15 @@ export class PackageFunctions {
     @grok.decorators.param({options: {nullable: true}}) helm?: string,
   ): Promise<DG.DataFrame> {
     const body: any = { name, bases };
-    if (aliases) body.aliases = JSON.parse(aliases);
-    if (annotations) body.annotations = JSON.parse(annotations);
-    if (authorIds) body.authorIds = JSON.parse(authorIds);
-    if (customFields) body.customFields = JSON.parse(customFields);
-    if (fields) body.fields = JSON.parse(fields);
+    assignJson(body, 'aliases', aliases);
+    assignJson(body, 'annotations', annotations);
+    assignJson(body, 'authorIds', authorIds);
+    assignJson(body, 'customFields', customFields);
+    assignJson(body, 'fields', fields);
     if (folderId) body.folderId = folderId;
     if (schemaId) body.schemaId = schemaId;
     if (helm) body.helm = helm;
     const result = await postDnaOligo(body);
-    return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
+    return dataFrameFromObjects([result]);
   }
 }
