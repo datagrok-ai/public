@@ -394,7 +394,10 @@ export class FuncCall extends Entity {
 
   /** Returns views with result. Should be called on succeeded FuncCall **/
   getResultViews(): ViewBase[] {
-    return toJs(api.grok_FuncCall_GetOutputViews(this.dart));
+    const views: ViewBase[] = toJs(api.grok_FuncCall_GetOutputViews(this.dart));
+    for (const view of views)
+      setTimeout(() => api.grok_View_OnAdded(view.dart), 200);
+    return views;
   }
 
   /** Makes a shallow copy. */
