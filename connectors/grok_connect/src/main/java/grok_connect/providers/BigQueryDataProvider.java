@@ -11,6 +11,8 @@ import java.sql.SQLException;
 
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.GroupAggregation;
+import grok_connect.table_query.TableJoin;
+import grok_connect.table_query.TableQuery;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
 import org.json.JSONObject;
@@ -20,6 +22,8 @@ import serialization.StringColumn;
 import serialization.Types;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BigQueryDataProvider extends JdbcDataProvider {
     private static final String SERVICE_ACCOUNT_METHOD = "Service Account";
@@ -78,6 +82,37 @@ public class BigQueryDataProvider extends JdbcDataProvider {
             put("bytes", Types.BLOB);
         }};
         descriptor.canBrowseSchema = true;
+    }
+
+    // BigQuery identifier paths are `project.dataset.table[.column]`
+    @Override
+    public String queryTableSql(TableQuery query) {
+        String sql = query.toSql();
+        String projectId = query.connection != null ? query.connection.get("projectId") : null;
+        if (GrokConnectUtil.isEmpty(projectId))
+            return sql;
+        Set<String> datasets = new HashSet<>();
+        if (GrokConnectUtil.isNotEmpty(query.schema))
+            datasets.add(query.schema);
+        if (query.joins != null)
+            for (TableJoin j : query.joins) {
+                collectDataset(datasets, j.leftTableName);
+                collectDataset(datasets, j.rightTableName);
+            }
+        for (String ds : datasets) {
+            if (ds.startsWith(projectId + ".")) continue;
+            String dsRef = "`" + ds + "`.";
+            sql = sql.replace(dsRef, "`" + projectId + "`." + dsRef);
+        }
+        return sql.replaceAll(
+                "`" + Pattern.quote(projectId) + "`\\.`([^`]+)`\\.`([^`]+)`",
+                "`" + Matcher.quoteReplacement(projectId) + ".$1.$2`");
+    }
+
+    private static void collectDataset(Set<String> out, String qualifiedTableName) {
+        if (GrokConnectUtil.isEmpty(qualifiedTableName) || !qualifiedTableName.contains("."))
+            return;
+        out.add(qualifiedTableName.substring(0, qualifiedTableName.lastIndexOf('.')));
     }
 
     @Override
