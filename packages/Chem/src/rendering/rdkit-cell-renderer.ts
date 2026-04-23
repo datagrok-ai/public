@@ -18,6 +18,7 @@ import {
   ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG,
   ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG,
   CHEM_INTERACTIVE_SELECTION_EVENT, CHEM_ATOM_PICKER_LINKED_COL,
+  CHEM_MOL3D_HOVER_EVENT,
   FIXED_SCALE_TAG,
   HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC,
   HIGHLIGHT_BY_SCAFFOLD_TAG, MIN_MOL_IMAGE_SIZE, PARENT_MOL_COL,
@@ -48,6 +49,17 @@ interface ChemSelectionEvent {
   clearAll?: boolean;
   mapping3D?: AtomIndexMapping | null;
   mol3DColumnName?: string;
+}
+
+/** Payload for CHEM_MOL3D_HOVER_EVENT fired by BiostructureViewer's Molstar
+ *  viewer (3D→2D reverse bridge). Mirrors `Mol3DHoverEventArgs` in
+ *  `molstar-highlight-utils.ts`; duplicated here to avoid a cross-package
+ *  import from Chem into BiostructureViewer. */
+interface Mol3DHoverEventArgs {
+  mol3DColumnName: string;
+  rowIdx: number;
+  atom3DSerial: number | null;
+  mode: 'preview' | 'paint' | 'erase';
 }
 
 /** Substruct provider with atom-picker metadata fields. */
@@ -183,11 +195,20 @@ M  END
   /** Tracks the last atom processed by hover so we don't re-fire on
    *  every mousemove pixel within the same atom's radius. */
   private _lastHoveredAtom: {col: string, rowIdx: number, atomIdx: number, erase?: boolean} | null = null;
-  /** The currently previewed atom (hover without Alt). Shown alongside
+  /** The currently previewed atom (hover with no modifier). Shown alongside
    *  the persistent selection but removed when the cursor moves away. */
   private _previewAtomIdx: number | null = null;
   /** The row the preview is on. */
   private _previewRowIdx: number = -1;
+  /** Tracks whether the active preview was set by a 3D→2D hover event
+   *  (`_onMol3DHoverEvent`) rather than a 2D mouse hover. Needed because
+   *  every DOM mousemove — including moves over the 3D viewer — runs the
+   *  2D `_onDocumentMouseMove` handler, whose no-modifier branch calls
+   *  `_removePreviewAtom` when no 2D cell is under the cursor. Without
+   *  this flag, a 3D hover would set the preview and the very next DOM
+   *  mousemove over the 3D canvas would wipe it. Paint/erase don't hit
+   *  this race because they don't touch `_previewAtomIdx`. */
+  private _previewFrom3D: boolean = false;
 
   constructor(rdKitModule: RDModule) {
     super();
@@ -212,8 +233,8 @@ M  END
   }
 
   /** Builds a selection event with optional 3D mapping for the linked
-   *  Molecule3D column. Used by _removeAtomFromRow, _toggleAtomInRow,
-   *  and _updateRowSelection to avoid repeating the mapping logic. */
+   *  Molecule3D column. Used by _removeAtomFromRow and _updateRowSelection
+   *  to avoid repeating the mapping logic. */
   private _buildSelectionEvent(
     col: DG.Column, rowIdx: number, atoms: number[], persistent: boolean = true,
   ): ChemSelectionEvent {
@@ -263,17 +284,22 @@ M  END
 
   /** Returns true when the interactive atom picker should be active
    *  for the given molecule column. Checks for the explicit tag
-   *  (CHEM_ATOM_PICKER_LINKED_COL) set by BiostructureViewer when
-   *  a Molstar viewer binds to the dataframe. The tag is guaranteed
-   *  to exist by the time the user clicks on a Molecule3D cell
-   *  (which is required to activate the picker). */
+   *  (CHEM_ATOM_PICKER_LINKED_COL) written by BSV's Molstar viewer on
+   *  dataframe bind, Docking's `getAutodockResults` post-run write, or
+   *  the BSV widget embedded in Docking's AutoDock panel. Persistent
+   *  `col.tags[...]` is preferred; session-only `col.temp[...]` is a
+   *  backward-compat fallback so links created on older builds that
+   *  wrote to `temp` still resolve within the current session. */
   private _isPickerActive(col: DG.Column): boolean {
-    return !!col.temp[CHEM_ATOM_PICKER_LINKED_COL];
+    return !!this._getLinkedMol3DColName(col);
   }
 
   /** Returns the name of the linked Molecule3D column, or null. */
   private _getLinkedMol3DColName(col: DG.Column): string | null {
-    return (col.temp[CHEM_ATOM_PICKER_LINKED_COL] as string) ?? null;
+    const fromTags = col.tags[CHEM_ATOM_PICKER_LINKED_COL];
+    if (fromTags) return fromTags;
+    const fromTemp = col.temp?.[CHEM_ATOM_PICKER_LINKED_COL];
+    return typeof fromTemp === 'string' ? fromTemp : null;
   }
 
   ensureCanvasSize(w: number, h: number): OffscreenCanvas {
@@ -619,6 +645,14 @@ M  END
       document.addEventListener('keydown', (e: KeyboardEvent) => {
         this._onDocumentKeyDown(e);
       });
+      // Reverse 3D→2D bridge: BiostructureViewer's Molstar viewer fires
+      // CHEM_MOL3D_HOVER_EVENT when the user hovers a ligand atom. We
+      // reverse-map the 3D atom serial to a 2D atom index and route it
+      // through the same preview/paint/erase rendering methods the 2D
+      // hover path uses — so both directions land in the same provider
+      // `__atoms` set and Escape clears both.
+      grok.events.onCustomEvent(CHEM_MOL3D_HOVER_EVENT).subscribe(
+        (args: unknown) => this._onMol3DHoverEvent(args));
     }
 
     const molString = gridCell.cell.value;
@@ -815,10 +849,12 @@ M  END
    *  listeners (which failed because the rendering canvas is not the
    *  interactive canvas). */
   // -- Hover-paint atom picker ------------------------------------------------
-  // Hold Alt and move the mouse over atoms in a SMILES cell to "paint" them
+  // Hold Shift and move the mouse over atoms in a SMILES cell to "paint" them
   // into the selection. No click is needed, so the grid never changes the
   // current cell and the context panel (e.g. AutoDock Molstar viewer) stays
-  // open. Alt+click on an already-selected atom removes it (toggle).
+  // open. Hold Ctrl+Shift while hovering an already-selected atom to erase it.
+  // Matches Datagrok's grid selection convention (Shift = extend, Ctrl+Shift
+  // = deselect). Press Escape to clear the entire painted selection.
 
   /** Resolves the molecule cell and atom under the cursor. */
   private _hitTestAtom(e: MouseEvent): {
@@ -871,34 +907,45 @@ M  END
   }
 
   /**
-   * Mousemove handler — two modes:
+   * Mousemove handler — three modes, matching Datagrok's grid selection
+   * convention (Shift extends, Ctrl+Shift deselects):
    *
-   * **Without Alt (preview):** highlights ONLY the single atom under the
+   * **No modifier (preview):** highlights ONLY the single atom under the
    * cursor. Moving to a different atom highlights that one instead. Moving
    * away from all atoms clears the preview. No persistent selection.
    *
-   * **With Alt (paint):** each atom the cursor passes over is ADDED to
-   * the persistent selection. The selection accumulates until cleared
+   * **Shift + hover (paint):** each atom the cursor passes over is ADDED
+   * to the persistent selection. The selection accumulates until cleared
    * with Escape.
+   *
+   * **Ctrl+Shift + hover (erase):** each atom the cursor passes over is
+   * REMOVED from the persistent selection. Mirrors the grid's
+   * Ctrl+Shift+drag deselect gesture.
    */
   private _onDocumentMouseMove(e: MouseEvent): void {
     // Only activate the picker when the current cell's column is
-    // linked to a molecule column via the explicit picker tag
-    // (set by BiostructureViewer's Molecule3D cell renderer on first render).
+    // linked to a molecule column via the explicit picker tag (set by
+    // BiostructureViewer's Molstar viewer, Docking pipeline, or the
+    // BSV widget embedded in Docking's AutoDock panel). Uses
+    // `_getLinkedMol3DColName` so persistent `col.tags[...]` is checked
+    // first with a `col.temp[...]` fallback for backward compatibility.
     const df = grok.shell.tv?.grid?.dataFrame;
     if (df) {
       const curCol = df.currentCol;
       if (!curCol) return;
       const hasTagLink = df.columns.toList().some(
-        (c: DG.Column) => c.temp[CHEM_ATOM_PICKER_LINKED_COL] === curCol.name);
+        (c: DG.Column) => this._getLinkedMol3DColName(c) === curCol.name);
       if (!hasTagLink) return;
     }
 
     const hit = this._hitTestAtom(e);
-    const isPaint = e.altKey;
-    const isErase = e.shiftKey && !e.altKey;
+    // Shift alone = add (matches grid's Shift+drag extend-selection);
+    // Ctrl+Shift = remove (matches grid's Ctrl+Shift+drag deselect).
+    // Order matters: check erase first so Ctrl+Shift isn't also treated as paint.
+    const isErase = e.shiftKey && e.ctrlKey;
+    const isPaint = e.shiftKey && !e.ctrlKey;
 
-    // -- Alt/Shift: persistent paint/erase mode --
+    // -- Shift / Ctrl+Shift: persistent paint/erase mode --
     if (isPaint || isErase) {
       this._previewAtomIdx = null;
       if (!hit) return;
@@ -922,7 +969,12 @@ M  END
 
     // -- No modifier: preview mode --
     if (!hit) {
-      if (this._previewAtomIdx !== null)
+      // Only clear the preview if it came from 2D. A preview set by a
+      // 3D→2D hover event must survive 2D mousemoves over the 3D viewer
+      // (which otherwise reach this branch on every pixel); it is cleared
+      // only by the corresponding 3D "cursor left the atom" event (a
+      // `_onMol3DHoverEvent` with `atom3DSerial === null`).
+      if (this._previewAtomIdx !== null && !this._previewFrom3D)
         this._removePreviewAtom();
       this._lastHoveredAtom = null;
       return;
@@ -935,11 +987,102 @@ M  END
     if (this._isSameAtom(col.name, rowIdx, nearest)) return;
     this._lastHoveredAtom = {col: col.name, rowIdx, atomIdx: nearest};
 
+    // 2D hover takes ownership of the preview (overrides any 3D-sourced
+    // preview that might still be active).
+    this._previewFrom3D = false;
     this._setPreviewAtom(col, rowIdx, nearest, cellInfo.bondAtoms);
     grid.invalidate();
   }
 
-  /** Escape key clears the persistent Alt+hover selection. */
+  /**
+   * Reverse 3D→2D hover handler. Called when BiostructureViewer's Molstar
+   * viewer fires CHEM_MOL3D_HOVER_EVENT — the user is hovering a ligand
+   * atom in the 3D pose, and we need to highlight the matching 2D atom.
+   *
+   * Flow:
+   *   1. Resolve the linked 2D SMILES column (the one whose
+   *      CHEM_ATOM_PICKER_LINKED_COL tag points to the fired 3D column).
+   *   2. Compute (on demand) the 2D↔3D atom-index mapping for the row's
+   *      (smiles, pose3D) pair via `mapAtomIndices2Dto3D`.
+   *   3. Reverse-look-up the 3D Molstar atom serial → 2D atom index.
+   *      Inverts the same transform `computeSerials` does forward:
+   *          forward:  idx2D → mapped=mapping[idx2D] → serial=pdbSerials[mapped] || mapped+1
+   *          reverse:  serial → mapped=(pdbSerials.indexOf(serial) || serial-1) → idx2D=mapping.indexOf(mapped)
+   *   4. Route by `mode`: preview / paint / erase — each delegates to the
+   *      existing 2D rendering path (`_setPreviewAtom`, `_addAtomToRow`,
+   *      `_removeAtomFromRow`) so both directions share the same storage.
+   *
+   * Events with `atom3DSerial: null` mean "cursor left all ligand atoms" —
+   * clear the transient preview (painted atoms are untouched).
+   */
+  private _onMol3DHoverEvent(args: unknown): void {
+    if (!args || typeof args !== 'object') return;
+    const {mol3DColumnName, rowIdx, atom3DSerial, mode} = args as Mol3DHoverEventArgs;
+    if (typeof mol3DColumnName !== 'string' || typeof rowIdx !== 'number' ||
+        rowIdx < 0) return;
+
+    const grid = grok.shell.tv?.grid;
+    if (!grid) return;
+    const df = grid.dataFrame;
+    if (!df) return;
+
+    // Find the 2D SMILES column linked to this 3D pose column.
+    const smilesCol = df.columns.toList().find(
+      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE &&
+        this._getLinkedMol3DColName(c) === mol3DColumnName);
+    if (!smilesCol) return;
+
+    // Cursor left an atom → clear the preview only. Painted atoms stay.
+    if (atom3DSerial == null) {
+      this._removePreviewAtom();
+      grid.invalidate();
+      return;
+    }
+
+    const smiles2D = smilesCol.get(rowIdx);
+    const mol3DCol = df.col(mol3DColumnName);
+    const pose3D = mol3DCol?.get(rowIdx);
+    if (!smiles2D || !pose3D) return;
+
+    let mapping: AtomIndexMapping | null;
+    try {
+      mapping = mapAtomIndices2Dto3D(this.rdKitModule, smiles2D, pose3D);
+    } catch {
+      return;
+    }
+    if (!mapping) return;
+
+    // Reverse-look-up: 3D Molstar atom id → heavy-atom 3D index → 2D index.
+    const mapped = mapping.pdbSerials ?
+      mapping.pdbSerials.indexOf(atom3DSerial) :
+      atom3DSerial - 1;
+    if (mapped < 0) return;
+    const idx2D = mapping.mapping.indexOf(mapped);
+    if (idx2D < 0) return;
+
+    // `_getCellAtomPositions` cache key is `molString|WxH`. Using 100x100
+    // here matches what `_removePreviewAtom` already does — we only need
+    // `bondAtoms` (topology, dimension-independent), not pixel positions.
+    const cellInfo = this._getCellAtomPositions(smiles2D, 100, 100);
+    const bondAtoms = cellInfo?.bondAtoms ?? new Map<number, [number, number]>();
+
+    if (mode === 'paint')
+      this._addAtomToRow(smilesCol, rowIdx, idx2D, bondAtoms);
+    else if (mode === 'erase')
+      this._removeAtomFromRow(smilesCol, rowIdx, idx2D, bondAtoms);
+    else {
+      // Mark the preview as 3D-sourced BEFORE setting it, so the 2D
+      // `_onDocumentMouseMove` no-modifier branch does not wipe it on
+      // the next DOM mousemove over the 3D canvas.
+      this._previewFrom3D = true;
+      this._setPreviewAtom(smilesCol, rowIdx, idx2D, bondAtoms);
+    }
+
+    this._clearRendersCache();
+    grid.invalidate();
+  }
+
+  /** Escape key clears the persistent Shift+hover painted selection. */
   private _onDocumentKeyDown(e: KeyboardEvent): void {
     if (e.key !== 'Escape') return;
     const grid = grok.shell.tv?.grid;
@@ -955,6 +1098,7 @@ M  END
       .filter((p) => !p.__atomPicker);
     this._lastHoveredAtom = null;
     this._previewAtomIdx = null;
+    this._previewFrom3D = false;
     // Clear render cache so the 2D cell redraws without highlights.
     this._clearRendersCache();
     grid.invalidate();
@@ -970,15 +1114,15 @@ M  END
    *  point, but only if it falls within `CLICK_TOLERANCE_PX` (CSS pixels).
    *  Returns null if the user clicked too far from any atom. */
 
-  /** Returns the persistent (Alt+painted) atoms for a given row. These
+  /** Returns the persistent (Shift+painted) atoms for a given row. These
    *  are the atoms stored in the provider's `__atoms` set. */
   private _getPersistentAtoms(col: DG.Column, rowIdx: number): Set<number> {
     const prov = this._getProviderForRow(col, rowIdx);
     return new Set<number>(prov?.__atoms ?? []);
   }
 
-  /** Adds a single atom to the persistent selection (Alt+hover paint mode).
-   *  Unlike _toggleAtomInRow, this only ADDS — never removes. */
+  /** Adds a single atom to the persistent selection (Shift+hover paint mode).
+   *  Only ADDs — for removal use `_removeAtomFromRow`. */
   private _addAtomToRow(col: DG.Column, rowIdx: number, atomIdx: number,
     bondAtoms: Map<number, [number, number]>): void {
     const current = this._getPersistentAtoms(col, rowIdx);
@@ -987,7 +1131,7 @@ M  END
     this._updateRowSelection(col, rowIdx, [...current], {add: true}, bondAtoms);
   }
 
-  /** Removes a single atom from the persistent selection (Shift+hover).
+  /** Removes a single atom from the persistent selection (Ctrl+Shift+hover).
    *  Works the same way as Escape (direct provider manipulation) but
    *  for a single atom instead of clearing all. */
   private _removeAtomFromRow(col: DG.Column, rowIdx: number, atomIdx: number,
@@ -1049,13 +1193,15 @@ M  END
   }
 
   /** Removes just the preview atom, restoring the display to only the
-   *  persistent (Alt+painted) selection. Also re-broadcasts the persistent
+   *  persistent (Shift+painted) selection. Also re-broadcasts the persistent
    *  atoms after a delay so Molstar picks them up after any viewer rebuild
    *  triggered by hover-row changes. */
   private _removePreviewAtom(): void {
     const prevAtom = this._previewAtomIdx;
     const prevRow = this._previewRowIdx;
     this._previewAtomIdx = null;
+    // Reset the source flag so a subsequent 2D hover starts fresh.
+    this._previewFrom3D = false;
     if (prevAtom === null) return;
 
     const grid = grok.shell.tv?.grid;
@@ -1069,7 +1215,7 @@ M  END
     const persistent = this._getPersistentAtoms(molCol, prevRow);
     if (persistent.size > 0) {
       // Restore just the persistent atoms in 2D and 3D.
-      // Fire event as non-persistent so the cache keeps the stable Alt set.
+      // Fire event as non-persistent so the cache keeps the stable Shift-paint set.
       const cellInfo = this._getCellAtomPositions(
         molCol.get(prevRow), 100, 100);
       const bondAtoms = cellInfo?.bondAtoms ?? new Map();
@@ -1084,43 +1230,6 @@ M  END
       });
     }
     grid.invalidate();
-  }
-
-  /** Toggles a single atom in a row's atom-picker selection. Adds the atom
-   *  if it's not in the current selection, removes it if it is. Used by
-   *  Alt+click for one-atom-at-a-time fine-tuning. Also re-derives the
-   *  highlighted bonds from the new atom set using `bondAtoms`. */
-  private _toggleAtomInRow(col: DG.Column, rowIdx: number, atomIdx: number,
-    bondAtoms: Map<number, [number, number]>): void {
-    const prior = this._getProviderForRow(col, rowIdx);
-    const current = new Set<number>(prior?.__atoms ?? []);
-    if (current.has(atomIdx))
-      current.delete(atomIdx);
-    else
-      current.add(atomIdx);
-    // Build the fresh provider (same shape as _updateRowSelection writes).
-    const pickColor: number[] = [1.0, 1.0, 0.0, 1.0]; // intense yellow #FFFF00
-    const atomsArr = [...current];
-    const highlightAtomColors: {[k: number]: number[]} = {};
-    for (const a of atomsArr) highlightAtomColors[a] = pickColor;
-    const {bondsArr, highlightBondColors} =
-      computeSelectedBonds(current, bondAtoms, pickColor);
-    const provider: AtomPickerProvider = {
-      getSubstruct: (ridx) => {
-        if (!this._isPickerActive(col)) return undefined;
-        if (ridx !== rowIdx) return undefined;
-        return {atoms: atomsArr, bonds: bondsArr, highlightAtomColors, highlightBondColors};
-      },
-    };
-    provider.__atomPicker = true;
-    provider.__rowIdx = rowIdx;
-    provider.__atoms = current;
-    col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = this._getProviders(col).filter(
-      (p) => !p.__atomPicker || p.__rowIdx !== rowIdx);
-    addSubstructProvider(col.temp, provider);
-
-    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT,
-      this._buildSelectionEvent(col, rowIdx, atomsArr));
   }
 
 
@@ -1142,7 +1251,7 @@ M  END
     const current = new Set<number>(prior?.__atoms ?? []);
 
     // No modifier → replace existing selection with boxed atoms.
-    // Alt (add) → keep existing and union with boxed atoms.
+    // Shift (add) → keep existing and union with boxed atoms.
     if (!modifiers.add) current.clear();
     for (const a of boxed) current.add(a);
 

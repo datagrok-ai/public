@@ -56,6 +56,19 @@ export const CHEM_INTERACTIVE_SELECTION_EVENT = 'chem-interactive-selection-chan
  *  for interactive atom picking. Value = the Molecule3D column name.
  *  Set by BiostructureViewer when a Molstar viewer binds to a dataframe. */
 export const CHEM_ATOM_PICKER_LINKED_COL = '%chem-atom-picker-linked-col';
+
+/** Custom event ID fired by BiostructureViewer's Molstar viewer when the
+ *  user hovers a ligand atom in the 3D pose. The Chem rdkit-cell-renderer
+ *  listens and renders the corresponding 2D atom highlight (reverse of
+ *  CHEM_INTERACTIVE_SELECTION_EVENT — 3D→2D instead of 2D→3D).
+ *
+ *  Event args: `{mol3DColumnName: string, rowIdx: number,
+ *                atom3DSerial: number | null, mode: 'preview' | 'paint' | 'erase'}`.
+ *  `atom3DSerial` is the Molstar 1-based atom id (matches what
+ *  `molstar-highlight-utils.computeSerials` produces for forward highlights).
+ *  `atom3DSerial: null` signals "cursor left the atom" — clear the preview.
+ *  `mode` mirrors the 2D modifier semantics (shift = paint, ctrl+shift = erase). */
+export const CHEM_MOL3D_HOVER_EVENT = 'chem-mol3d-hover-changed';
 export const SCAFFOLD_COL = 'scaffold-col';
 export const SCAFFOLD_COL_SYNC = '%scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';
