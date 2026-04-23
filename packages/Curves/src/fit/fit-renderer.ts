@@ -440,7 +440,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       let userParamsFlag = true;
       const fitFunc = getSeriesFitFunction(series);
       let curve: ((x: number) => number) | null = null;
-      if (!(series.connectDots && !series.showFitLine)) {
+      if (fitFunc && !(series.connectDots && !series.showFitLine)) {
         if (series.parameters) {
           if (data.chartOptions?.logX) {
             if (series.parameters[2] > 0) // check if sigmoid, then log
