@@ -26,25 +26,26 @@ automatically. This page covers manual Helm installs for any Kubernetes cluster
 
 ## Chart version
 
-The chart version always matches the Datagrok app version exactly — `--version 1.27.0`
-pulls a chart that deploys Datagrok `1.27.0`, and every sub-service (grok-pipe,
-grok-spawner, grok-connect, Jupyter Kernel Gateway) defaults to the same tag. You can
-override any individual service image tag via `--set <service>.image.tag=...` — see
-[Service versions](#service-versions) below.
+The chart is published as an OCI artifact in the shared `datagrok/datagrok` Docker Hub
+repo under tags suffixed with `-helm` to keep the chart and image tag namespaces
+disjoint. `--version 1.27.0-helm` pulls a chart that deploys Datagrok `1.27.0`, and
+every sub-service (grok-pipe, grok-spawner, grok-connect, Jupyter Kernel Gateway)
+defaults to the same app tag. Override individual service image tags via
+`--set <service>.image.tag=...` — see [Service versions](#service-versions) below.
 
 Available chart versions:
 
-| Version                       | Published from               | Use for           |
-|-------------------------------|------------------------------|-------------------|
-| `1.27.0`, `1.26.5`, ...       | release tags                 | Production        |
-| `1.27.0-rc`, `1.26.5-rc`, ... | `release/*` branches         | Release candidates|
-| `0.0.0-bleeding-edge`         | `master`, nightly            | Dev / evaluation  |
+| Version                            | Published from               | Use for           |
+|------------------------------------|------------------------------|-------------------|
+| `1.27.0-helm`, `1.26.5-helm`, ...  | release tags                 | Production        |
+| `1.27.0-rc-helm`, ...              | `release/*` branches         | Release candidates|
+| `bleeding-edge-helm`               | `master`, nightly            | Dev / evaluation  |
 
 ## Quick install (in-cluster Postgres + local storage)
 
 ```bash
-helm install datagrok oci://registry-1.docker.io/datagrok/datagrok-chart \
-  --version 1.26.5 \
+helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
+  --version 1.26.5-helm \
   --namespace datagrok --create-namespace \
   --set postgres.password=$(openssl rand -base64 24) \
   --set postgres.adminPassword=$(openssl rand -base64 24) \
@@ -55,12 +56,8 @@ This installs PostgreSQL, RabbitMQ, the datagrok app, grok-pipe, grok-spawner,
 grok-connect, and JupyterKernelGateway with default resources. Suitable for
 evaluation, dev, or single-tenant production.
 
-To track the latest unstable build (rebuilt nightly from `master`), use
-`--version 0.0.0-bleeding-edge` instead of a release version. (Helm requires
-SemVer 2.0, so the bleeding-edge chart is published as a prerelease version.)
-Stable releases are
-published on a versioned cadence; bleeding-edge is rebuilt by Jenkins after every
-merge to master.
+To track the latest unstable build (rebuilt after every merge to `master`), use
+`--version bleeding-edge-helm` instead of a release version.
 
 ## Service versions
 
@@ -69,8 +66,8 @@ when you need to run a newer grok-connect against an older datagrok core, or
 to pin a specific service during a rollout:
 
 ```bash
-helm install datagrok oci://registry-1.docker.io/datagrok/datagrok-chart \
-  --version 1.27.0 \
+helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
+  --version 1.27.0-helm \
   --set datagrok.image.tag=1.27.0 \
   --set grokPipe.image.tag=1.27.0 \
   --set grokConnect.image.tag=1.27.1 \
@@ -149,8 +146,8 @@ variants; you can deploy it directly if you prefer a single-file template.
 
 5. Install:
    ```bash
-   helm install datagrok oci://registry-1.docker.io/datagrok/datagrok-chart \
-     --version 1.26.5 \
+   helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
+     --version 1.26.5-helm \
      -f values-prod.yaml \
      -n datagrok --create-namespace
    ```
@@ -212,8 +209,8 @@ Workload Identity).
 ## Upgrades
 
 ```bash
-helm upgrade datagrok oci://registry-1.docker.io/datagrok/datagrok-chart \
-  --version 1.26.6 \
+helm upgrade datagrok oci://registry-1.docker.io/datagrok/datagrok \
+  --version 1.26.6-helm \
   -f values-prod.yaml \
   -n datagrok
 ```

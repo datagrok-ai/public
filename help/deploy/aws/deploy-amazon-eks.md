@@ -243,7 +243,7 @@ separately — by convention it matches the Datagrok app version exactly.
 | Parameter | Default | What it controls |
 |---|---|---|
 | `DatagrokVersion` | `bleeding-edge` | `datagrok/datagrok` image tag (main app) |
-| `HelmChartVersion` | same as `DatagrokVersion` | Chart tag pulled from `oci://registry-1.docker.io/datagrok/datagrok-chart` |
+| `HelmChartVersion` | same as `DatagrokVersion` | Chart tag base pulled from `oci://registry-1.docker.io/datagrok/datagrok` (template appends `-helm`, e.g. `1.26.5` → chart tag `1.26.5-helm`) |
 | `GrokPipeVersion` | same as `DatagrokVersion` | `datagrok/grok_pipe` image tag |
 | `GrokSpawnerVersion` | same as `DatagrokVersion` | `datagrok/grok_spawner` image tag |
 | `GrokConnectVersion` | same as `DatagrokVersion` | `datagrok/grok_connect` image tag |
