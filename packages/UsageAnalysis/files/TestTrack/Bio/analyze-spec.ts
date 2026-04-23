@@ -1,9 +1,7 @@
 import {test, expect} from '@playwright/test';
+import {specTestOptions, softStep, stepErrors} from '../spec-login';
 
-test.use({
-  actionTimeout: 15_000,
-  navigationTimeout: 60_000,
-});
+test.use(specTestOptions);
 
 const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 const datasets = [
@@ -11,17 +9,6 @@ const datasets = [
   {name: 'HELM', path: 'System:AppData/Bio/samples/HELM.csv'},
   {name: 'MSA', path: 'System:AppData/Bio/samples/MSA.csv'},
 ];
-
-const stepErrors: {step: string; error: string}[] = [];
-
-async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
-  }
-}
 
 for (const ds of datasets) {
   test(`Bio Analyze on ${ds.name}`, async ({page}) => {

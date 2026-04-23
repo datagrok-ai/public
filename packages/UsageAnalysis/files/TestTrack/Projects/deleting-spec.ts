@@ -1,9 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
+import {specTestOptions} from '../spec-login';
 
-test.use({
-  actionTimeout: 15_000,
-  navigationTimeout: 60_000,
-});
+test.use(specTestOptions);
 
 const BASE_URL = 'https://release-ec2.datagrok.ai';
 const LOGIN = 'claude';

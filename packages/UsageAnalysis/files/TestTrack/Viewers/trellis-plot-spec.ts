@@ -1,24 +1,11 @@
 import {test, expect} from '@playwright/test';
+import {specTestOptions, softStep, stepErrors} from '../spec-login';
 
-test.use({
-  actionTimeout: 15_000,
-  navigationTimeout: 60_000,
-});
+test.use(specTestOptions);
 
 const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 const curvesPath = 'System:DemoFiles/curves.csv';
-
-const stepErrors: {step: string; error: string}[] = [];
-
-async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
-  }
-}
 
 test('Trellis plot tests', async ({page}) => {
   // Phase 1: Navigate

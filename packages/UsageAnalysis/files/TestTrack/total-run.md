@@ -17,7 +17,7 @@
 
 ## Folder Summary
 
-**Total**: 177 tests · Run: 135/177 (76%) · Playwright: 111/177 (63%) · Mean Pass: 🟡 81% · Mean Browser: 3m 57s · Mean Spec Gen: 57.6s · Mean Spec Run: 41.3s · Mean Total (sum per test): 5m 22s
+**Total**: 176 tests · Run: 136/176 (77%) · Playwright: 112/176 (64%) · Mean Pass: 🟡 82% · Mean Browser: 3m 58s · Mean Spec Gen: 58.4s · Mean Spec Run: 41.1s · Mean Total (sum per test): 5m 24s
 
 | Folder | Tests | Run | Playwright | Status | Mean Pass % | Mean Browser | Mean Spec Gen | Mean Spec Run | Mean Total |
 |---|---|---|---|---|---|---|---|---|---|
@@ -40,11 +40,11 @@
 | Scripts | 6 | 5/6 (83%) | 0/6 (0%) | 🟡 PARTIAL | 🟡 89% |  |  |  |  |
 | StickyMeta | 4 | 4/4 (100%) | 4/4 (100%) | 🟡 PARTIAL | 🟡 68% | 23.8s | 2.2s | 15s | 37.2s |
 | Tooltips | 7 | 0/7 (0%) | 0/7 (0%) | ⚪ NO DATA |  |  |  |  |  |
-| Viewers | 46 | 43/46 (93%) | 43/46 (93%) | 🟡 PARTIAL | 🟡 92% | 6m 11s | 1m 17s | 53s | 7m 52s |
+| Viewers | 46 | 44/46 (96%) | 44/46 (96%) | 🟡 PARTIAL | 🟡 92% | 6m 8s | 1m 18s | 52s | 7m 50s |
 
 ## All Tests
 
-**Total**: 177 tests · 🟢 76 PASS / 🟡 45 PARTIAL / 🔴 9 FAIL / 🟡 1 AMBIGUOUS / 🟡 4 SKIP / ⚪ 42 NO RUN · Mean Pass: 🟡 81% · Mean Browser: 3m 57s · Mean Spec Gen: 57.6s · Mean Spec Run: 41.3s · Mean Total (sum per test): 5m 22s
+**Total**: 176 tests · 🟢 76 PASS / 🟡 46 PARTIAL / 🔴 9 FAIL / 🟡 1 AMBIGUOUS / 🟡 4 SKIP / ⚪ 40 NO RUN · Mean Pass: 🟡 82% · Mean Browser: 3m 58s · Mean Spec Gen: 58.4s · Mean Spec Run: 41.1s · Mean Total (sum per test): 5m 24s
 
 | Folder | Test | Status | Pass % | Description | Browser (model+MCP) | Spec Gen (model) | Spec Run (Playwright) | Total (sum) | Pass Δ (1d) | Pass Δ (7d) | Trend (≤7d) | Browser Δ | Spec Gen Δ | Spec Run Δ | Total Δ |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -231,7 +231,7 @@
 | Viewers | [tree-map-viewer](Viewers/tree-map-viewer-run.md) | 🟡 PARTIAL → PARTIAL | 🟢 100% (36/36) | All 37 steps passed against dev.datagrok.ai. Tree Map split selects are standard `<select>` elements interactable via `v… | 28m | 4m | 46s | 32m 46s | ⚪ +0% (36/36 → 36/36) | 🟢 100% (baseline) | ⚪ 100·100 | ⚪ +0s | ⚪ +0s | ⚪ +0s | ⚪ +0s |
 | Viewers | [trellis-plot](Viewers/trellis-plot-run.md) | 🟡 PARTIAL → PARTIAL | 🟡 84% (70/84) | Most trellis plot property-based tests passed successfully via JS API. Canvas-based interactions (bin clicks, range slid… | 3m | 30s | 1m 48s | 5m 18s | ⚪ +0% (70/84 → 70/84) | 🟡 84% (baseline) | ⚪ 84·84 | ⚪ +0s | ⚪ +0s | ⚪ +0s | ⚪ +0s |
 | Viewers | [word-cloud](Viewers/word-cloud-run.md) | 🟢 PASS → PASS | 🟢 100% (7/7) | All 7 MCP scenario steps PASS. The Word Cloud viewer adds via both entry points (Add-Viewer gallery and Toolbox icon), t… | 4m 15s | 1m | 2m 7s | 7m 22s | ⚪ +0% (7/7 → 7/7) | 🟢 100% (baseline) | ⚪ 100·100 | ⚪ +0s | ⚪ +0s | ⚪ +0s | ⚪ +0s |
-| Viewers | word-cloud-tests | ⚪ NO RUN → NO RUN |  |  |  |  |  |  | — | — | — | ⚪ — | ⚪ — | ⚪ — | ⚪ — |
+| Viewers | [word-cloud-tests](Viewers/word-cloud-tests-run.md) | ⚪ → 🟡 NO RUN → PARTIAL | 🟡 85% (23/27) | Word Cloud renders correctly and accepts all 7 documented properties via `setOptions`. Empty-space click does not clear… | 6m 30s | 1m 15s | 17s | 8m 2s | 🟡 85% (baseline) | 🟡 85% (baseline) | ⚪ 85 | 🟡 6m 30s (new) | 🟡 1m 15s (new) | 🟡 17s (new) | 🟡 8m 2s (new) |
 | Viewers | [working-with-nan-infinity](Viewers/working-with-nan-infinity-run.md) | 🟢 new: PASS | 🟢 100% (9/9) | All 9 spec steps PASSED in 1m 24s. NaN and Infinity values in numeric columns are handled gracefully across Scatter Plot… | 6m | 3m | 1m 24s | 10m 24s | 🟢 100% (baseline) | 🟢 100% (baseline) | ⚪ 100 | 🟡 6m (new) | 🟡 3m (new) | 🟡 1m 24s (new) | 🟡 10m 24s (new) |
 | Viewers | color-coding-(linked) | 🟢 removed: PASS |  |  |  |  |  |  | — | — | — | ⚪ — | ⚪ — | ⚪ — | ⚪ — |
 | Viewers | rendering-structures-on-the-axes | ⚪ removed: NO RUN |  |  |  |  |  |  | — | — | — | ⚪ — | ⚪ — | ⚪ — | ⚪ — |
@@ -245,9 +245,9 @@ Deltas are computed against two baselines pulled from git history of `total-run.
 
 ### Totals
 
-**Total (1d)**: Tests Δ **-10** · Run Δ **🔴 -3** · Status **🟡 PARTIAL → 🟡 PARTIAL** · Mean Pass Δ **🟢 +4%** · Browser Δ **🔴 +14.9s** · Spec Gen Δ **🔴 +6.3s** · Spec Run Δ **🟢 -0.6s** · Total Δ **🔴 +12s**
+**Total (1d)**: Tests Δ **-11** · Run Δ **🟢 -2** · Status **🟡 PARTIAL → 🟡 PARTIAL** · Mean Pass Δ **🟢 +5%** · Browser Δ **🔴 +15.9s** · Spec Gen Δ **🔴 +7.1s** · Spec Run Δ **🟢 -0.8s** · Total Δ **🔴 +14s**
 
-**Total (7d)**: Mean Pass Δ **—** · Browser Δ **🟡 3m 57s (new)** · Spec Gen Δ **🟡 57.6s (new)** · Spec Run Δ **🟡 41.3s (new)** · Total Δ **🟡 5m 22s (new)** _(7d-only deltas — count and status deltas live in the 1d row to avoid double-counting.)_
+**Total (7d)**: Mean Pass Δ **—** · Browser Δ **🟡 3m 58s (new)** · Spec Gen Δ **🟡 58.4s (new)** · Spec Run Δ **🟡 41.1s (new)** · Total Δ **🟡 5m 24s (new)** _(7d-only deltas — count and status deltas live in the 1d row to avoid double-counting.)_
 
 ### By Folder
 
@@ -272,7 +272,7 @@ Deltas are computed against two baselines pulled from git history of `total-run.
 | Scripts | +0 | ⚪ +0 | 🟡 PARTIAL → PARTIAL | ⚪ +0% | — | ⚪ — | ⚪ — | ⚪ — | ⚪ — |
 | StickyMeta | +0 | ⚪ +0 | 🟡 PARTIAL → PARTIAL | ⚪ +0% | — | ⚪ +0s | ⚪ +0s | ⚪ +0s | ⚪ +0s |
 | Tooltips | +0 | ⚪ +0 | ⚪ NO DATA | — | — | ⚪ — | ⚪ — | ⚪ — | ⚪ — |
-| Viewers | -3 | 🟢 +1 | 🟡 PARTIAL → PARTIAL | 🟢 +2% | — | 🔴 +21.6s | 🔴 +10.3s | 🔴 +1.8s | 🔴 +5.3s |
+| Viewers | -3 | 🟢 +2 | 🟡 PARTIAL → PARTIAL | 🟢 +2% | — | 🔴 +19s | 🔴 +11.1s | 🔴 +0.8s | 🔴 +3.3s |
 
 ### Per-Test Changes
 
@@ -414,7 +414,7 @@ Lists tests where Pass % (1d or 7d), status, or any timing component changed vs.
 | Viewers | [statistics](Viewers/statistics-run.md) | 🟢 new: PASS | 🟢 100% (baseline) | 🟢 100% (baseline) | ⚪ 100 | 🟡 20m (new) | 🟡 4m (new) | 🟡 2m (new) | 🟡 26m (new) |
 | Viewers | [tile-viewer](Viewers/tile-viewer-run.md) | 🟢 PASS → PASS | ⚪ +0% (24/24 → 24/24) | 🟢 100% (baseline) | ⚪ 100·100 | 🟡 4m (removed) | ⚪ +0s | ⚪ +0s | 🟢 -4m |
 | Viewers | [trellis-plot](Viewers/trellis-plot-run.md) | 🟡 PARTIAL → PARTIAL | ⚪ +0% (70/84 → 70/84) | 🟡 84% (baseline) | ⚪ 84·84 | ⚪ +0s | ⚪ +0s | ⚪ +0s | ⚪ +0s |
-| Viewers | word-cloud-tests | ⚪ NO RUN → NO RUN | — | — | — | ⚪ — | ⚪ — | ⚪ — | ⚪ — |
+| Viewers | [word-cloud-tests](Viewers/word-cloud-tests-run.md) | ⚪ → 🟡 NO RUN → PARTIAL | 🟡 85% (baseline) | 🟡 85% (baseline) | ⚪ 85 | 🟡 6m 30s (new) | 🟡 1m 15s (new) | 🟡 17s (new) | 🟡 8m 2s (new) |
 | Viewers | [working-with-nan-infinity](Viewers/working-with-nan-infinity-run.md) | 🟢 new: PASS | 🟢 100% (baseline) | 🟢 100% (baseline) | ⚪ 100 | 🟡 6m (new) | 🟡 3m (new) | 🟡 1m 24s (new) | 🟡 10m 24s (new) |
 | Viewers | color-coding-(linked) | 🟢 removed: PASS | — | — | — | ⚪ — | ⚪ — | ⚪ — | ⚪ — |
 | Viewers | rendering-structures-on-the-axes | ⚪ removed: NO RUN | — | — | — | ⚪ — | ⚪ — | ⚪ — | ⚪ — |

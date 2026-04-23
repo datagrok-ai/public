@@ -1,6 +1,6 @@
 # Word cloud — Run Results
 
-**Date**: 2026-04-22
+**Date**: 2026-04-23
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -8,56 +8,71 @@
 
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
-| 1 | Open SPGI dataset | 18s | PASS | FAILED | 3624 rows, 88 cols; Bio/Chem wait applied (Molecule column); Playwright timed out at login step before setup ran |
-| 2 | Open Add Viewer gallery → click Word Cloud tile | 12s | PASS | FAILED | Gallery opened; tile clicked; viewer added without console errors; Playwright blocked by login timeout |
-| 3 | Close and re-add via Toolbox Viewers > Word Cloud icon | 4s | PASS | FAILED | Toolbox icon name is `icon-Word-cloud` (capital W). Re-add succeeded without errors |
-| 4 | Interact with hamburger menu (displayed-text clicks skipped) | 3s | PASS | FAILED | Hamburger opens menu with "General / Pick Up/Apply / Properties.../ To Script". Canvas word clicks not automatable |
-| 5 | Open Property Pane via Gear icon | 4s | PASS | FAILED | Gear on `.panel-base` wrapper; Data section appears in property grid |
-| 6 | Modify column=Stereo Category, minTextSize=20, maxTextSize=80, bold, rotationStep=90 | 3s | PASS | FAILED | All properties applied; viewer re-rendered with new values; no console errors |
-| 7 | Close viewer | 2s | PASS | FAILED | Clean close via `[name="Close"]` |
+| 1 | Open SPGI dataset (setup + semType wait) | 18s | PASS | PASSED | 3624 rows, 88 cols; Bio/Chem wait applied (Molecule columns detected: Structure, Core, R1–R3, R100, R101) |
+| 2 | Open Add Viewer gallery, click Word Cloud tile | 4s | PASS | PASSED | Gallery opens with "Add Viewer" title; `.d4-item-card.viewer-gallery` with innerText "Word Cloud"; viewer added (`tv.viewers` includes type "Word cloud"). No viewer errors; only unrelated 404s for missing icon resources |
+| 3 | Close viewer, re-add via Toolbox icon | 2s | PASS | PASSED | Close via `[name="Close"]` on `.panel-base`; re-add via `[name="icon-Word-cloud"]` (capital W) in Toolbox Viewers section |
+| 4 | Interact with hamburger menu (displayed-text clicks skipped) | 2s | PASS | PASSED | Hamburger `[name="icon-font-icon-menu"]` opens menu with items: General, Pick Up / Apply, Properties..., To Script. Canvas word clicks not automatable from DOM |
+| 5 | Open Property Pane via Gear icon | 2s | PASS | PASSED | Gear `[name="icon-font-icon-settings"]` opens Context Panel; Data category visible in `.property-grid-category` |
+| 6 | Modify column=Stereo Category, minTextSize=20, maxTextSize=80, bold, rotationStep=90 | 3s | PASS | PASSED | All 5 property setters applied via `wc.props.*`; viewer re-rendered. Valid prop names: `columnColumnName`, `shape`, `minTextSize`, `maxTextSize`, `minRotationDegree`, `maxRotationDegree`, `rotationStep`, `gridSize`, `drawOutOfBound`, `fontFamily`, `bold` |
+| 7 | Cleanup: close viewer | 1s | PASS | PASSED | Clean close via `[name="Close"]`; `tv.viewers` no longer contains Word cloud |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | 3m 30s |
-| grok-browser execution (scenario steps) | 46s |
-| Execute via grok-browser (total) | 4m 15s |
-| Spec file generation | 1m |
-| Spec script execution | 2m 7s |
-| **Total scenario run (with model)** | 7m 30s |
+| Model thinking (scenario steps) | 1m 45s |
+| grok-browser execution (scenario steps) | 32s |
+| Execute via grok-browser (total) | 2m 17s |
+| Spec file generation | 50s |
+| Spec script execution | 27s |
+| **Total scenario run (with model)** | 4m 5s |
 
 ## Summary
 
-All 7 MCP scenario steps PASS. The Word Cloud viewer adds via both entry points (Add-Viewer
-gallery and Toolbox icon), the hamburger menu opens, the gear icon opens Property Pane, and
-property modifications propagate to the viewer with no console errors. The generated Playwright
-spec failed at the login step (timeout waiting for `[name="Browse"]`) — the 15s `isVisible`
-check on the login input returned false before the dev-server login form rendered, so login
-never executed. The scenario logic itself is sound (identical to the network-diagram spec that
-passed); this was an intermittent dev-server/login-timing issue rather than a spec defect.
+All 7 scenario steps PASS in both the MCP run against https://dev.datagrok.ai and the
+generated Playwright replay (27.2s, all softSteps green). Word Cloud adds via both entry
+points (Add-Viewer gallery and Toolbox `[name="icon-Word-cloud"]`), hamburger menu opens
+with expected items, gear opens Property Pane, and all five property modifications
+propagate. No Word-cloud-specific console errors; only 4 unrelated 404s for missing icon
+resources unrelated to the viewer.
 
 ## Retrospective
 
 ### What worked well
-- Add-Viewer gallery is easy to drive via the MCP `click` tool when the snapshot uid for the Word Cloud tile is known
-- `wc.getProperties().map(p => p.name)` quickly enumerates valid property names (`columnColumnName`, etc.)
-- Closing and re-adding the viewer between two entry points validates both paths in one scenario
-- Hamburger menu DOM items are queryable via `.d4-menu-popup` even though the viewer body is canvas
+- Add-Viewer gallery click is reliably driven by `.d4-item-card.viewer-gallery` filter on
+  `innerText === 'Word Cloud'` rather than relying on the Playwright `text=` operator
+  (which can match multiple rows when "Recently used" also contains the viewer)
+- `wc.getProperties().map(p => p.name)` from inside `page.evaluate` quickly enumerates the
+  valid property surface and avoids guessing names
+- The shared `spec-login.ts` + `softStep`/`stepErrors` wrapper kept the spec compact and
+  failure-isolating — every softStep recorded independently
 
 ### What did not work
-- Reference doc/spec conventions assume `column` or `wordColumnName` as the property; the actual name is `columnColumnName`
-- Canvas-based word rendering means clicking a displayed text (step 4 "press on displayed text") is not practical from DOM automation
-- Playwright's `isVisible` on the login input returned false within 15s on dev.datagrok.ai; the spec skipped the login branch and then timed out waiting for Browse. Per skill rules (no post-run edits), left as FAILED
-- Word cloud `shape` property accepts enum values but the reference lists no enumeration — had to guess valid values from the existing default (`circle`)
+- The name `columnColumnName` is still counterintuitive for a single-column viewer — the
+  obvious guess is `column` or `wordColumnName`. Reflection-generated naming leaks into
+  the public property surface
+- Canvas-based word rendering prevents the Step 4 sub-requirement "pressing the displayed
+  text should select appropriate rows" from being exercised via DOM automation — we can
+  only verify the hamburger menu and submit a screenshot
+- Scenario step 1 title reads "World cloud" (typo) in the original `.md` — cosmetic but
+  carries through copy-paste into other artifacts
 
 ### Suggestions for the platform
-- Rename `columnColumnName` to simply `column` for a viewer whose sole input is one column — the double-`Column` suffix is an auto-generated artifact from reflection and leaks into the public property surface
-- Provide a fallback click-target for the "Add viewer" icon with a `name=` attribute so automation does not have to fall back to `aria-label`
-- Have the word-cloud scenario include an enumeration of valid `shape` values (e.g. `circle`, `rectangle`) in the Settings help
+- Rename `columnColumnName` to `column` for viewers whose sole input is one column — the
+  double-`Column` suffix is an auto-generated artifact that leaks into the public API
+- Add a `name=` attribute to the "Add viewer" ribbon icon so selectors don't have to fall
+  back to `aria-label` (e.g. `[name="icon-add-viewer"]`)
+- Emit a curated list of valid `shape` enum values (currently only `circle` default is
+  visible) in the property-grid tooltip/help
 
 ### Suggestions for the scenario
-- Step 4 "Pressing the displayed text should select appropriate columns" is ambiguous — the word cloud does not change columns on word click; it filters the dataframe. Clarify the expected behavior
-- Step 5 wording is inconsistent with the reference doc — the gear icon opens the Property Pane but Tabs mode shows it in the Context Pane (right side), not the Toolbox. Mention the target pane
-- Add an explicit column name for step 6 (e.g. "change Column to `Stereo Category`") rather than leaving "modify various properties" open-ended
-- Step 1 title says "World cloud" — typo, should be "Word cloud"; same typo recurs in several places in the .md file
+- Fix the "World cloud" → "Word cloud" typo in the scenario title and body
+- Step 4 "Pressing the displayed text should select appropriate columns" is ambiguous —
+  clicking words in a Word Cloud filters rows by that word, it does not change columns.
+  Clarify to "…should filter the dataframe to rows matching that word"
+- Step 5 mentions the **Property Pane** — explicitly say it appears in the **Context
+  Panel (right side)** in Tabs mode, since the Toolbox on the left contains unrelated
+  sections
+- Step 6 "Modify various properties" is open-ended — enumerate a concrete suggested set
+  (e.g. `Column`, `Min text size`, `Max text size`, `Bold`, `Rotation step`) to make the
+  test deterministic
