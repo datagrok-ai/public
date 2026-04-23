@@ -32,6 +32,23 @@ category('atom-highlight', () => {
     view?.close();
   });
 
+  /** Creates a Biostructure viewer wired to the shared `df`/`pdbData`, docks
+   *  it into `view`, sets the first row as current, and waits for the ligand
+   *  debounce + first render. `extraProps` override/extend the defaults. */
+  async function makeViewer(extraProps: Record<string, unknown> = {}): Promise<MolstarViewer> {
+    const viewer = (await df.plot.fromType('Biostructure', {
+      [msvPROPS.dataJson]: BiostructureDataJson.fromData(pdbData),
+      [msvPROPS.ligandColumnName]: ligandCol.name,
+      [msvPROPS.showCurrentRowLigand]: true,
+      ...extraProps,
+    })) as unknown as MolstarViewer;
+    view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
+    df.currentRowIdx = 0;
+    await delay(DebounceIntervals.ligands * 2.5);
+    await viewer.awaitRendered();
+    return viewer;
+  }
+
   test('global cache stores persistent events only', async () => {
     grok.events.fireCustomEvent(CHEM_SELECTION_EVENT, {
       rowIdx: 999, atoms: [0, 1, 2], persistent: true,
@@ -50,16 +67,7 @@ category('atom-highlight', () => {
   });
 
   test('highlightAllLigandAtoms — runs without error', async () => {
-    const viewer = (await df.plot.fromType('Biostructure', {
-      [msvPROPS.dataJson]: BiostructureDataJson.fromData(pdbData),
-      [msvPROPS.ligandColumnName]: ligandCol.name,
-      [msvPROPS.showCurrentRowLigand]: true,
-    })) as unknown as MolstarViewer;
-    view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
-
-    df.currentRowIdx = 0;
-    await delay(DebounceIntervals.ligands * 2.5);
-    await viewer.awaitRendered();
+    const viewer = await makeViewer();
 
     grok.events.fireCustomEvent(CHEM_SELECTION_EVENT, {
       rowIdx: 0, atoms: [0, 1, 2], persistent: true,
@@ -70,17 +78,9 @@ category('atom-highlight', () => {
   }, {timeout: 45000});
 
   test('base colors applied to comparison pose', async () => {
-    const viewer = (await df.plot.fromType('Biostructure', {
-      [msvPROPS.dataJson]: BiostructureDataJson.fromData(pdbData),
-      [msvPROPS.ligandColumnName]: ligandCol.name,
-      [msvPROPS.showCurrentRowLigand]: true,
+    const viewer = await makeViewer({
       [msvPROPS.showMouseOverRowLigand]: true,
-    })) as unknown as MolstarViewer;
-    view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
-
-    df.currentRowIdx = 0;
-    await delay(DebounceIntervals.ligands * 2.5);
-    await viewer.awaitRendered();
+    });
 
     df.mouseOverRowIdx = 1;
     await delay(DebounceIntervals.ligands * 2.5);
