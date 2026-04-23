@@ -252,8 +252,22 @@ M  END
     return event;
   }
 
-  /** Clears the render cache so the 2D cell fully redraws. */
+  /** Clears the render cache so the 2D cell fully redraws.
+   *  Drops references to the cached `ImageData` entries before replacing the
+   *  cache instance — `DG.LruCache` does not expose a public `.clear()`
+   *  method, so we zero out the backing `K`/`V` arrays and the key→index
+   *  map via a narrow cast. This unblocks GC of the canvas-backed
+   *  `ImageData` objects rather than waiting for the GC to detect the
+   *  whole old cache is unreachable. */
   private _clearRendersCache(): void {
+    const old = this.rendersCache as unknown as {
+      K?: unknown[]; V?: unknown[]; items?: Record<string, number>;
+      size?: number; head?: number; tail?: number;
+    };
+    old.K?.fill(undefined);
+    old.V?.fill(undefined);
+    old.items = {};
+    old.size = 0;
     this.rendersCache.onItemEvicted = null;
     this.rendersCache = new DG.LruCache<String, ImageData>();
   }
@@ -270,6 +284,20 @@ M  END
       last.rowIdx === rowIdx &&
       last.atomIdx === atomIdx &&
       (erase === undefined || last.erase === erase);
+  }
+
+  /** Combines `_isSameAtom` + `_lastHoveredAtom` write: returns `true` when
+   *  the cursor is still on the same atom (caller should bail); otherwise
+   *  updates `_lastHoveredAtom` to the new (col, rowIdx, atomIdx, erase)
+   *  tuple and returns `false`. Consolidates the dup'd check-then-update
+   *  pattern that showed up at every hover-mode branch in
+   *  `_onDocumentMouseMove`. */
+  private _trackHoveredAtom(
+    colName: string, rowIdx: number, atomIdx: number, erase?: boolean,
+  ): boolean {
+    if (this._isSameAtom(colName, rowIdx, atomIdx, erase)) return true;
+    this._lastHoveredAtom = {col: colName, rowIdx, atomIdx, erase};
+    return false;
   }
 
   /** Returns true when the interactive atom picker should be active
@@ -944,8 +972,7 @@ M  END
       const col = gridCell.tableColumn!;
       const rowIdx = gridCell.tableRowIndex!;
 
-      if (this._isSameAtom(col.name, rowIdx, nearest, isErase)) return;
-      this._lastHoveredAtom = {col: col.name, rowIdx, atomIdx: nearest, erase: isErase};
+      if (this._trackHoveredAtom(col.name, rowIdx, nearest, isErase)) return;
 
       if (isErase)
         this._removeAtomFromRow(col, rowIdx, nearest, cellInfo.bondAtoms);
@@ -974,8 +1001,7 @@ M  END
     const col = gridCell.tableColumn!;
     const rowIdx = gridCell.tableRowIndex!;
 
-    if (this._isSameAtom(col.name, rowIdx, nearest)) return;
-    this._lastHoveredAtom = {col: col.name, rowIdx, atomIdx: nearest};
+    if (this._trackHoveredAtom(col.name, rowIdx, nearest)) return;
 
     // 2D hover takes ownership of the preview (overrides any 3D-sourced
     // preview that might still be active).
