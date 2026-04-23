@@ -20,9 +20,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {CHEM_ATOM_PICKER_LINKED_COL} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-
 import {_package} from '../package';
+
+/** Persistent column tag used to link a SMILES (Molecule) column to a
+ *  specific Molecule3D column for the Chem atom-picker bridge. Mirrors
+ *  the same-named constant in Chem's `src/constants.ts` and (eventually)
+ *  in `@datagrok-libraries/bio/src/viewers/molecule3d`; duplicated here
+ *  to avoid a hard dependency on a bio release that publishes the
+ *  constant. Keep the string value in sync across packages. */
+export const CHEM_ATOM_PICKER_LINKED_COL = '%chem-atom-picker-linked-col';
 
 /** Chem cross-package event for atom selection sync — mirrors the
  *  constant in Chem's `src/constants.ts`. Defined here to avoid a

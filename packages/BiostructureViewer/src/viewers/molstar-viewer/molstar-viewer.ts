@@ -32,7 +32,10 @@ import {
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
 import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
-import {CHEM_ATOM_PICKER_LINKED_COL, IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
+import {IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
+// Keep the atom-picker tag constant local (sourced from mol3d-link.ts)
+// until `@datagrok-libraries/bio` is published with the export.
+import {CHEM_ATOM_PICKER_LINKED_COL} from '../../utils/mol3d-link';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getDataProviderList} from '@datagrok-libraries/bio/src/utils/data-provider';
