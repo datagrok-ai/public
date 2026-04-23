@@ -7,6 +7,7 @@ import '../css/file_editors.css';
 import {getDocument, PDFDocumentProxy, PDFPageProxy} from 'pdfjs-dist';
 import 'pdfjs-dist/webpack';
 import {renderAsync} from 'docx-preview';
+import katex from 'katex';
 import {LatexViewer} from './latex/latex-viewer';
 export * from './package.g';
 export const _package = new DG.Package();
@@ -133,6 +134,13 @@ export class PackageFunctions {
       });
     });
     return view;
+  }
+
+
+  @grok.decorators.func({description: 'Render LaTeX to HTML using KaTeX. Used by core markup via Funcs.byName lookup.'})
+  static renderMath(latex: string,
+    @grok.decorators.param({options: {initialValue: 'false'}}) displayMode: boolean = false): string {
+    return katex.renderToString(latex, {displayMode, throwOnError: false, output: 'html'});
   }
 
 

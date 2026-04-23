@@ -37,6 +37,7 @@ import './dapi/functions-annotations';
 import './dapi/vector-functions-and-scripts';
 import './widgets/files-widget';
 import './widgets/legend';
+import './widgets/markdown';
 import './widgets/tree-view';
 import './utils/color';
 // import './package/upload';

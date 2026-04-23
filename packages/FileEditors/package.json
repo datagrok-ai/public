@@ -15,6 +15,7 @@
     "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.13",
     "docx-preview": "^0.1.18",
+    "katex": "^0.13.13",
     "latex.js": "^0.12.6",
     "pdfjs-dist": "^2.16.105",
     "rtf.js": "^3.0.9",

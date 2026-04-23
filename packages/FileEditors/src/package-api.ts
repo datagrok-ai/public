@@ -32,6 +32,13 @@ export namespace funcs {
     return await grok.functions.call('FileEditors:PreviewRtf', { file });
   }
 
+  /**
+  Render LaTeX to HTML using KaTeX. Used by core markup via Funcs.byName lookup.
+  */
+  export async function renderMath(latex: string , displayMode: boolean ): Promise<string> {
+    return await grok.functions.call('FileEditors:RenderMath', { latex, displayMode });
+  }
+
   export async function previewTex(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('FileEditors:PreviewTex', { file });
   }

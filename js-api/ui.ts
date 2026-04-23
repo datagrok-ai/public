@@ -234,6 +234,15 @@ export function tags(entity: Entity): HTMLElement {
 }
 
 /**
+ * Renders markdown text as HTML. Supports LaTeX math via `$$...$$` (block) and `$...$` (inline).
+ *
+ * Tip: if your markdown contains LaTeX commands like `\begin{aligned}` or `\frac{a}{b}`, remember
+ * that plain JS/TS string and template literals process `\b`, `\f`, `\r`, `\\` as escape
+ * sequences at parse time. Tag the template literal with `String.raw` — e.g.
+ * `` ui.markdown(String.raw`$$\frac{a}{b}$$`) `` — so the backslashes reach the renderer intact.
+ * For plain strings (non-template-literal sources) or short inline usages, double each backslash
+ * (`\\begin{aligned}`, `\\frac{a}{b}`) instead.
+ *
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/markdown}
  */
 export function markdown(text: string): HTMLElement {
