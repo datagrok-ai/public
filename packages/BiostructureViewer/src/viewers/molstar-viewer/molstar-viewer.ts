@@ -880,25 +880,23 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       // when the viewer IS alive. Works for BOTH the AutoDock Molstar panel
       // and the 3D Structure Molstar panel. The module-level listener
       // (registered at module load) handles caching for replay.
-      this.viewSubs.push(grok.events.onCustomEvent(
-        'chem-interactive-selection-changed').subscribe((_args: unknown) => {
-        const args = _args as ChemSelectionEventArgs;
-        try {
-          if (args?.atoms?.length >= 0) {
-            this.logger.debug(`[molstar-picker] live highlight atomsLen=${args.atoms.length} rowIdx=${args?.rowIdx} persistent=${args?.persistent}`);
-            // Pass the event's atoms + mapping directly so transient
-            // (preview) highlights work even though they're not cached.
-            this.highlightAllLigandAtoms({
-              rowIdx: args.rowIdx,
-              atoms: args.atoms,
-              mapping3D: args.mapping3D ?? null,
-            });
+      this.viewSubs.push(grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
+        .subscribe((_args: unknown) => {
+          const {rowIdx = -1, atoms = [], mapping3D = null, persistent} =
+            (_args ?? {}) as ChemSelectionEventArgs;
+          try {
+            if (atoms.length >= 0) {
+              this.logger.debug(
+                `[molstar-picker] live highlight atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${persistent}`);
+              // Pass the event's atoms + mapping directly so transient
+              // (preview) highlights work even though they're not cached.
+              this.highlightAllLigandAtoms({rowIdx, atoms, mapping3D});
+            }
+          } catch (err: unknown) {
+            this.logger.error(
+              `${CHEM_SELECTION_EVENT} handler failed: ${err instanceof Error ? err.message : String(err)}`);
           }
-        } catch (err: any) {
-          this.logger.error(
-            `${CHEM_SELECTION_EVENT} handler failed: ${err?.message ?? err}`);
-        }
-      }));
+        }));
 
       // Reapply highlights on any click/interaction in the Molstar canvas.
       // This catches zoom, focus, right-click etc. that may trigger
@@ -1282,7 +1280,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         hoveredLigand.structureRefs = await addLigandOnStage(plugin, hoveredLigandData, color, this.zoom);
       });
     }
-    this.logger.debug(`${logPrefix},\nnewLigands = ${JSON.stringify(newLigands)}`);
+    this.logger.debug(`${logPrefix}, newLigands:`, () => newLigands);
 
     // Because of the async nature of loading structures to .viewer, the .dataFrame property can be changed (to null).
     // So collect data from the .dataFrame synchronously and then add ligands to the .viewer with postponed sync.
@@ -1527,13 +1525,15 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const seenRows = new Set<number>();
     const lig = this.ligands;
     if (lig) {
-      if (lig.current && lig.current.rowIdx >= 0 && !seenRows.has(lig.current.rowIdx)) {
+      const currentRowIdx = lig.current?.rowIdx;
+      if (lig.current && currentRowIdx != null && currentRowIdx >= 0 && !seenRows.has(currentRowIdx)) {
         loadedLigands.push(lig.current);
-        seenRows.add(lig.current.rowIdx);
+        seenRows.add(currentRowIdx);
       }
-      if (lig.hovered && lig.hovered.rowIdx >= 0 && !seenRows.has(lig.hovered.rowIdx)) {
+      const hoveredRowIdx = lig.hovered?.rowIdx;
+      if (lig.hovered && hoveredRowIdx != null && hoveredRowIdx >= 0 && !seenRows.has(hoveredRowIdx)) {
         loadedLigands.push(lig.hovered);
-        seenRows.add(lig.hovered.rowIdx);
+        seenRows.add(hoveredRowIdx);
       }
       if (lig.selected) {
         for (const sel of lig.selected) {
