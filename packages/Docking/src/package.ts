@@ -6,7 +6,13 @@ import * as DG from 'datagrok-api/dg';
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
 import {IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
-import {CHEM_ATOM_PICKER_LINKED_COL} from '@datagrok-libraries/bio/src/viewers/molecule3d';
+
+/** Persistent column tag used to link a SMILES column to a Molecule3D
+ *  column for the Chem atom-picker bridge. Mirrors the same-named
+ *  constant in Chem's `src/constants.ts` and BSV's `utils/mol3d-link.ts`;
+ *  duplicated here to avoid a hard dependency on a bio release that
+ *  publishes the constant. Keep the string value in sync across packages. */
+const CHEM_ATOM_PICKER_LINKED_COL = '%chem-atom-picker-linked-col';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2, ensureNoDockingError} from './utils/auto-dock-service';
