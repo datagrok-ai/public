@@ -142,8 +142,10 @@ Parameters:
     Type: String
     Default: ''
     Description: >
-      Datagrok Helm chart version published at oci://registry-1.docker.io/datagrok/datagrok-chart.
-      Leave empty to use the same value as DatagrokVersion (chart releases mirror the app release).
+      Datagrok Helm chart version published at oci://registry-1.docker.io/datagrok/datagrok
+      (tags suffixed with `-helm`, e.g. `1.26.5-helm`). Pass the base version only; the
+      `-helm` suffix is appended automatically by the install step. Leave empty to use
+      the same value as DatagrokVersion (chart releases mirror the app release).
   HelmNamespace:
     Type: String
     Default: datagrok
@@ -680,10 +682,13 @@ Resources:
     Type: AWS::CloudFormation::WaitConditionHandle
     Metadata:
       chart_version:
-        Fn::If:
-          - UseChartVersionOverride
-          - Ref: HelmChartVersion
-          - Ref: DatagrokVersion
+        Fn::Sub:
+          - "${base}-helm"
+          - base:
+              Fn::If:
+                - UseChartVersionOverride
+                - Ref: HelmChartVersion
+                - Ref: DatagrokVersion
 
   # ==================== ALB discovery (seamless r53/dns) ====================
   #
