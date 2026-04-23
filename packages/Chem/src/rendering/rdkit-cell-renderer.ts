@@ -36,6 +36,7 @@ import {mapAtomIndices2Dto3D} from '../utils/atom-index-mapper';
 import {
   findNearestAtom, computeSelectedBonds, extractAtomPositionsFromSvg,
 } from '../utils/chem-atom-picker-utils';
+import {handleMol3DHoverEvent, Mol3DHoverRendererDeps} from './mol3d-hover-handler';
 
 import {_package} from '../package';
 import {AtomIndexMapping} from '../utils/atom-index-mapper';
@@ -49,17 +50,6 @@ interface ChemSelectionEvent {
   clearAll?: boolean;
   mapping3D?: AtomIndexMapping | null;
   mol3DColumnName?: string;
-}
-
-/** Payload for CHEM_MOL3D_HOVER_EVENT fired by BiostructureViewer's Molstar
- *  viewer (3D→2D reverse bridge). Mirrors `Mol3DHoverEventArgs` in
- *  `molstar-highlight-utils.ts`; duplicated here to avoid a cross-package
- *  import from Chem into BiostructureViewer. */
-interface Mol3DHoverEventArgs {
-  mol3DColumnName: string;
-  rowIdx: number;
-  atom3DSerial: number | null;
-  mode: 'preview' | 'paint' | 'erase';
 }
 
 /** Substruct provider with atom-picker metadata fields. */
@@ -994,92 +984,14 @@ M  END
     grid.invalidate();
   }
 
-  /**
-   * Reverse 3D→2D hover handler. Called when BiostructureViewer's Molstar
-   * viewer fires CHEM_MOL3D_HOVER_EVENT — the user is hovering a ligand
-   * atom in the 3D pose, and we need to highlight the matching 2D atom.
-   *
-   * Flow:
-   *   1. Resolve the linked 2D SMILES column (the one whose
-   *      CHEM_ATOM_PICKER_LINKED_COL tag points to the fired 3D column).
-   *   2. Compute (on demand) the 2D↔3D atom-index mapping for the row's
-   *      (smiles, pose3D) pair via `mapAtomIndices2Dto3D`.
-   *   3. Reverse-look-up the 3D Molstar atom serial → 2D atom index.
-   *      Inverts the same transform `computeSerials` does forward:
-   *          forward:  idx2D → mapped=mapping[idx2D] → serial=pdbSerials[mapped] || mapped+1
-   *          reverse:  serial → mapped=(pdbSerials.indexOf(serial) || serial-1) → idx2D=mapping.indexOf(mapped)
-   *   4. Route by `mode`: preview / paint / erase — each delegates to the
-   *      existing 2D rendering path (`_setPreviewAtom`, `_addAtomToRow`,
-   *      `_removeAtomFromRow`) so both directions share the same storage.
-   *
-   * Events with `atom3DSerial: null` mean "cursor left all ligand atoms" —
-   * clear the transient preview (painted atoms are untouched).
-   */
+  /** Reverse 3D→2D hover handler. Delegates to `handleMol3DHoverEvent` in
+   *  `mol3d-hover-handler.ts` so the renderer file stays focused on
+   *  rendering. The cast is required because TypeScript enforces `private`
+   *  on the callbacks the handler needs (`_getLinkedMol3DColName`, etc.) —
+   *  the structural interface `Mol3DHoverRendererDeps` names them
+   *  identically so the cast is a no-op at runtime. */
   private _onMol3DHoverEvent(args: unknown): void {
-    if (!args || typeof args !== 'object') return;
-    const {mol3DColumnName, rowIdx, atom3DSerial, mode} = args as Mol3DHoverEventArgs;
-    if (typeof mol3DColumnName !== 'string' || typeof rowIdx !== 'number' ||
-        rowIdx < 0) return;
-
-    const grid = grok.shell.tv?.grid;
-    if (!grid) return;
-    const df = grid.dataFrame;
-    if (!df) return;
-
-    // Find the 2D SMILES column linked to this 3D pose column.
-    const smilesCol = df.columns.toList().find(
-      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE &&
-        this._getLinkedMol3DColName(c) === mol3DColumnName);
-    if (!smilesCol) return;
-
-    // Cursor left an atom → clear the preview only. Painted atoms stay.
-    if (atom3DSerial == null) {
-      this._removePreviewAtom();
-      grid.invalidate();
-      return;
-    }
-
-    const smiles2D = smilesCol.get(rowIdx);
-    const mol3DCol = df.col(mol3DColumnName);
-    const pose3D = mol3DCol?.get(rowIdx);
-    if (!smiles2D || !pose3D) return;
-
-    let mapping: AtomIndexMapping | null;
-    try {
-      mapping = mapAtomIndices2Dto3D(this.rdKitModule, smiles2D, pose3D);
-    } catch {
-      return;
-    }
-    if (!mapping) return;
-
-    // Reverse-look-up: 3D Molstar atom id → heavy-atom 3D index → 2D index.
-    const mapped = mapping.pdbSerials ?
-      mapping.pdbSerials.indexOf(atom3DSerial) :
-      atom3DSerial - 1;
-    if (mapped < 0) return;
-    const idx2D = mapping.mapping.indexOf(mapped);
-    if (idx2D < 0) return;
-
-    // `_getCellAtomPositions` cache key is `molString|WxH`. Using 100x100
-    // here matches what `_removePreviewAtom` already does — we only need
-    // `bondAtoms` (topology, dimension-independent), not pixel positions.
-    const cellInfo = this._getCellAtomPositions(smiles2D, 100, 100);
-    const bondAtoms = cellInfo?.bondAtoms ?? new Map<number, [number, number]>();
-
-    if (mode === 'paint')
-      this._addAtomToRow(smilesCol, rowIdx, idx2D, bondAtoms);
-    else if (mode === 'erase')
-      this._removeAtomFromRow(smilesCol, rowIdx, idx2D, bondAtoms);
-    else {
-      // Mark the preview as 3D-sourced BEFORE setting it, so the 2D
-      // `_onDocumentMouseMove` no-modifier branch does not wipe it on
-      // the next DOM mousemove over the 3D canvas.
-      this._previewFrom3D = true;
-      this._setPreviewAtom(smilesCol, rowIdx, idx2D, bondAtoms);
-    }
-
-    this._clearRendersCache();
-    grid.invalidate();
+    handleMol3DHoverEvent(this as unknown as Mol3DHoverRendererDeps, args);
   }
 
   /** Escape key clears the persistent Shift+hover painted selection. */
