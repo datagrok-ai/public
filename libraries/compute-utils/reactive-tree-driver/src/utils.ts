@@ -1,12 +1,45 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Observable, defer, of} from 'rxjs';
+import {Observable, OperatorFunction, defer, from, merge, of} from 'rxjs';
+import {concatMap, distinctUntilChanged, filter, map, reduce, share, withLatestFrom, windowToggle} from 'rxjs/operators';
 import dayjs from 'dayjs';
 import {deepEqual, createCustomEqual, TypeEqualityComparator} from 'fast-equals';
 import {HandlerBase} from './config/PipelineConfiguration';
 import {ValidationResult} from './data/common-types';
 import {NodeAddressSegment, NodePathSegment, TreeNode} from './data/BaseTree';
 import {StateTreeNode} from './runtime/StateTreeNodes';
+
+/**
+ * Buffers [key, value] pairs during a lock period, deduplicating by key (latest wins).
+ * On unlock, all buffered entries are emitted. While unlocked, values pass through.
+ */
+export function bufferKeysDuringLock<K, V>(
+  lock$: Observable<boolean>,
+): OperatorFunction<readonly [K, V], readonly [K, V]> {
+  return (source$) => {
+    const shared$ = source$.pipe(share());
+    const lockDistinct$ = lock$.pipe(distinctUntilChanged());
+    const lockOn$ = lockDistinct$.pipe(filter((l) => l));
+    const lockOff$ = lockDistinct$.pipe(filter((l) => !l));
+
+    return merge(
+      shared$.pipe(
+        withLatestFrom(lockDistinct$),
+        filter(([, locked]) => !locked),
+        map(([item]) => item),
+      ),
+      shared$.pipe(
+        windowToggle(lockOn$, () => lockOff$),
+        concatMap((window$) => window$.pipe(
+          reduce((acc, [k, v]) => acc.set(k, v), new Map<K, V>()),
+          concatMap((buffered) => from(
+            [...buffered].map(([k, v]) => [k, v] as const),
+          )),
+        )),
+      ),
+    );
+  };
+}
 
 export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): Observable<R> {
   if (typeof handler === 'string') {
