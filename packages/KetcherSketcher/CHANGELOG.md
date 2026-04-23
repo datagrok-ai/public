@@ -1,9 +1,8 @@
 # Ketcher Sketcher changelog
 
-## v.next
+## 2.4.2 (2026-04-23)
 
-* Parallelized Ketcher read-back on every edit (getSmiles / getMolfile v2000 / v3000 now run concurrently)
-* Flattened nested-ternary notation getters and collapsed four near-identical setters into a single helper
+* Reset explicitMol on change only if molecule has been already set
 
 ## 2.4.1 (2026-03-18)
 

@@ -49,16 +49,18 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         // });
         this.setMoleculeFromHost();
         (this._sketcher.editor as any).subscribe('change', async () => {
-          this.explicitMol = null;
-          //getSmiles() throws when the canvas holds a SMARTS query — fall back to null
-          const [smilesResult, mol2000, mol3000] = await Promise.all([
-            this._sketcher!.getSmiles().catch(() => null),
-            this._sketcher!.getMolfile(KETCHER_MOLV2000),
-            this._sketcher!.getMolfile(KETCHER_MOLV3000),
-          ]);
-          this._smiles = smilesResult;
-          this._molV2000 = mol2000;
-          this._molV3000 = mol3000;
+          // we do not reset explicit mol in case this is the first change event called after ketcher was created
+          // since change event is fired not only when user changes the molecule but also when the molecule is
+          // initially set into ketcher
+          if (this._smiles !== null || this._molV2000 !== null || this._molV3000 !== null || this._smarts !== null)
+            this.explicitMol = null;
+          try {
+            this._smiles = await this._sketcher!.getSmiles();
+          } catch { //in case we are working with smarts - getSmiles() will fail with exception
+            this._smiles = null;
+          }
+          this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
+          this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
           this.onChanged.next(null);
         });
       },
@@ -182,10 +184,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   private _setNotation(notation: NotationKey, value: string): void {
-    this._smiles = notation === 'smiles' ? value : null;
-    this._molV2000 = notation === 'molblock' ? value : null;
-    this._molV3000 = notation === 'molblockV3000' ? value : null;
-    this._smarts = notation === 'smarts' ? value : null;
     this.setKetcherMolecule(value);
     if (notation !== 'smarts')
       this.explicitMol = {notation, value};
