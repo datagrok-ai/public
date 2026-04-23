@@ -62,6 +62,25 @@ category('atom-picker-3d-hover', () => {
   let mol3DCol: DG.Column;
   let view: DG.TableView;
 
+  // Re-open (or re-activate) the table view and clear provider state. Called
+  // before every test because Datagrok's `grok.shell.tv` can drift between
+  // tests — `_onMol3DHoverEvent` bails when `grok.shell.tv?.grid` is not the
+  // view whose DataFrame holds our SMILES column. Rebinding here ensures the
+  // handler consistently finds the right grid + dataFrame on every fire.
+  async function ensureActiveView(): Promise<void> {
+    // Re-focus the existing view so `grok.shell.tv` returns it. If the view
+    // was closed by a prior teardown, re-add the DataFrame which produces a
+    // fresh view over the same data.
+    if (!view || !view.dataFrame)
+      view = grok.shell.addTableView(df);
+    grok.shell.v = view;
+    df.currentRowIdx = 0;
+    smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
+    view.grid.invalidate();
+    await awaitGrid(view.grid);
+    await delay(200);
+  }
+
   before(async () => {
     smilesCol = DG.Column.fromStrings('smiles', [SMILES_ETHANOL, 'CC']);
     smilesCol.semType = DG.SEMTYPE.MOLECULE;
@@ -152,8 +171,7 @@ category('atom-picker-3d-hover', () => {
   // -------------------------------------------------------------------------
 
   test('paint-accumulates-three-serials', async () => {
-    // Clear any state from previous tests.
-    smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
+    await ensureActiveView();
 
     // Paint serials 1, 2, 3 sequentially (→ 2D indices 0, 1, 2 for CCO).
     for (const serial of [1, 2, 3]) {
@@ -178,8 +196,9 @@ category('atom-picker-3d-hover', () => {
   // -------------------------------------------------------------------------
 
   test('erase-removes-one-atom-others-remain', async () => {
+    await ensureActiveView();
+
     // Set up: paint atoms at serials 1, 2, 3.
-    smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
     for (const serial of [1, 2, 3]) {
       grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, {
         mol3DColumnName: mol3DCol.name,
@@ -219,8 +238,9 @@ category('atom-picker-3d-hover', () => {
   // -------------------------------------------------------------------------
 
   test('null-serial-preview-leaves-paint-atoms-intact', async () => {
+    await ensureActiveView();
+
     // Set up: paint serial 2 (a C atom in ethanol).
-    smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
     grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, {
       mol3DColumnName: mol3DCol.name,
       rowIdx: 0,
@@ -262,8 +282,7 @@ category('atom-picker-3d-hover', () => {
   // -------------------------------------------------------------------------
 
   test('mousemove-outside-grid-does-not-wipe-3d-preview', async () => {
-    // Clear state.
-    smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
+    await ensureActiveView();
 
     // Establish a 3D-sourced preview (sets _previewFrom3D = true internally).
     grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, {
