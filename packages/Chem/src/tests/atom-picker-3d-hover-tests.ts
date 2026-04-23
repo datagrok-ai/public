@@ -91,6 +91,23 @@ category('atom-picker-3d-hover', () => {
     view?.close();
   });
 
+  /** Fires `CHEM_MOL3D_HOVER_EVENT` with defaults (`mol3DCol.name`, row 0,
+   *  `preview` mode) merged with `overrides`, then waits 100 ms for the
+   *  async handler in `RDKitCellRenderer` to reverse-map and update
+   *  the provider. */
+  async function fire3DHover(overrides: {
+    mol3DColumnName?: string, rowIdx?: number,
+    atom3DSerial?: number | null, mode?: 'preview' | 'paint' | 'erase',
+  }): Promise<void> {
+    grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, {
+      mol3DColumnName: mol3DCol.name,
+      rowIdx: 0,
+      mode: 'preview',
+      ...overrides,
+    });
+    await delay(100);
+  }
+
   // -------------------------------------------------------------------------
   // preview mode
   // -------------------------------------------------------------------------
@@ -98,13 +115,7 @@ category('atom-picker-3d-hover', () => {
   test('preview-sets-provider-with-correct-atom', async () => {
     // Fire a preview event for atom serial 3 (the O atom in the PDB).
     // After reverse-mapping: serial 3 → PDB heavy-atom index 2 → 2D idx 2 (O in CCO).
-    grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, {
-      mol3DColumnName: mol3DCol.name,
-      rowIdx: 0,
-      atom3DSerial: 3,
-      mode: 'preview',
-    });
-    await delay(100);
+    await fire3DHover({atom3DSerial: 3});
 
     const prov = getPickerProvider(smilesCol, 0);
     expect(prov !== undefined, true);
@@ -116,35 +127,19 @@ category('atom-picker-3d-hover', () => {
   }, {timeout: 15000});
 
   test('preview-null-serial-clears-preview', async () => {
-    // First establish a preview.
-    grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, {
-      mol3DColumnName: mol3DCol.name,
-      rowIdx: 0,
-      atom3DSerial: 3,
-      mode: 'preview',
-    });
-    await delay(100);
-
-    // Then fire the "cursor left" event (atom3DSerial: null).
-    grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, {
-      mol3DColumnName: mol3DCol.name,
-      rowIdx: 0,
-      atom3DSerial: null,
-      mode: 'preview',
-    });
-    await delay(100);
+    // First establish a preview, then fire the "cursor left" event.
+    await fire3DHover({atom3DSerial: 3});
+    await fire3DHover({atom3DSerial: null});
 
     // The provider may still exist (if persistent atoms remain) but the
     // preview atom is gone. When no persistent atoms were ever painted,
-    // the provider disappears or getSubstruct returns no atoms.
+    // the provider disappears or getSubstruct returns no atoms. Either
+    // way means the preview is cleared.
     const prov = getPickerProvider(smilesCol, 0);
     if (prov) {
-      // Provider exists only for persistent atoms — __atoms must be empty.
       const persistentSize = prov.__atoms?.size ?? 0;
       expect(persistentSize, 0);
     }
-    // Either way: no provider means preview is cleared.
-    // (Both "no provider" and "provider with 0 atoms" are correct outcomes.)
   }, {timeout: 15000});
 
   // Note on coverage: the multi-event scenarios (paint-accumulates across
@@ -165,13 +160,7 @@ category('atom-picker-3d-hover', () => {
   test('event-for-unknown-column-is-ignored', async () => {
     smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
 
-    grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, {
-      mol3DColumnName: 'non-existent-col',
-      rowIdx: 0,
-      atom3DSerial: 1,
-      mode: 'preview',
-    });
-    await delay(100);
+    await fire3DHover({mol3DColumnName: 'non-existent-col', atom3DSerial: 1});
 
     const prov = getPickerProvider(smilesCol, 0);
     expect(prov === undefined, true);
