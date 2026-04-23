@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
 import {IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+import {CHEM_ATOM_PICKER_LINKED_COL} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2, ensureNoDockingError} from './utils/auto-dock-service';
@@ -105,6 +106,15 @@ export class PackageFunctions{
     formatColumns(autodockResults);
     const processedResults = processAutodockResults(autodockResults, table);
     await grok.data.detectSemanticTypes(processedResults);
+
+    // Link the SMILES ligand column to the produced Molecule3D pose column via
+    // the Chem atom-picker tag, so interactive atom highlighting activates
+    // automatically for docking output. Uses `col.tags[...]` for persistence
+    // across save/reload; constant is sourced from `@datagrok-libraries/bio`.
+    const poseCol = processedResults.columns.toList().find(
+      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
+    if (poseCol)
+      ligands.tags[CHEM_ATOM_PICKER_LINKED_COL] = poseCol.name;
     return processedResults;
   }
 
@@ -116,7 +126,7 @@ export class PackageFunctions{
   })
   static async runAutodock(
     @grok.decorators.param({options: {description: '\'Input data table\''}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule', description: '\'Small molecules to dock\''}}) ligands: DG.Column,
+    @grok.decorators.param({options: {semType: 'Molecule', description: '\'Small molecules to dock\''}}) ligands: DG.Column,
     @grok.decorators.param({options: {choices: 'Docking:getConfigFiles', description: '\'Folder with config and macromolecule\''}}) target: string,
     @grok.decorators.param({type: 'int', options: {initialValue: '10', description: '\'Number of output conformations for each small molecule\''}}) poses: number): Promise<void> {
 
@@ -213,6 +223,23 @@ export class PackageFunctions{
     }
     result.appendChild(ui.tableFromMap(map));
     widget.root.append(result);
+
+    // Append the atom-picker "Link SMILES column" checkbox at the bottom
+    // of the AutoDock panel. Rendered via BiostructureViewer's exposed
+    // function rather than as a separate cell panel, so the UI stays as
+    // a single "AutoDock" section in the context panel instead of two.
+    // Fails silently if BSV isn't installed / the function isn't found.
+    try {
+      const linkWidget = await grok.functions.call(
+        'BiostructureViewer:mol3dAtomPickerLinkWidget',
+        {mol3DCol: molecule.cell.column},
+      ) as DG.Widget | null;
+      if (linkWidget?.root)
+        widget.root.append(linkWidget.root);
+    } catch (err: unknown) {
+      _package.logger.debug(
+        `mol3dAtomPickerLinkWidget unavailable: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     return widget;
   }
