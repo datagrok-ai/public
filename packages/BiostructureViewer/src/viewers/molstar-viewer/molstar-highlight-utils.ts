@@ -20,6 +20,23 @@ import {_package} from '../../package';
  *  Mirrors CHEM_INTERACTIVE_SELECTION_EVENT from Chem's constants.ts. */
 export const CHEM_SELECTION_EVENT = 'chem-interactive-selection-changed';
 
+/** Event name fired BY this viewer when the user hovers a ligand atom in
+ *  the 3D pose. Chem's rdkit-cell-renderer listens and renders the
+ *  corresponding 2D atom highlight (the reverse of CHEM_SELECTION_EVENT).
+ *  Mirrors CHEM_MOL3D_HOVER_EVENT from Chem's constants.ts. */
+export const CHEM_MOL3D_HOVER_EVENT = 'chem-mol3d-hover-changed';
+
+/** Payload shape for CHEM_MOL3D_HOVER_EVENT. `atom3DSerial` is the Molstar
+ *  1-based atom id (same numbering that `computeSerials` produces for the
+ *  forward direction), or null when the cursor leaves all ligand atoms.
+ *  `mode` mirrors the 2D modifier semantics. */
+export interface Mol3DHoverEventArgs {
+  mol3DColumnName: string;
+  rowIdx: number;
+  atom3DSerial: number | null;
+  mode: 'preview' | 'paint' | 'erase';
+}
+
 // -- Types -------------------------------------------------------------------
 
 /** Atom-index mapping produced by Chem's mapAtomIndices2Dto3D.

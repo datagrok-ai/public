@@ -32,7 +32,7 @@ import {
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
 import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
-import {IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
+import {CHEM_ATOM_PICKER_LINKED_COL, IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getDataProviderList} from '@datagrok-libraries/bio/src/utils/data-provider';
@@ -40,7 +40,8 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData} from './molstar-viewer-open';
 import {
-  AtomMapping3D, CHEM_SELECTION_EVENT, ChemSelectionEventArgs,
+  AtomMapping3D, CHEM_MOL3D_HOVER_EVENT, CHEM_SELECTION_EVENT,
+  ChemSelectionEventArgs, Mol3DHoverEventArgs,
   computeSerials, getSelectionCache, selectionCacheKey,
 } from './molstar-highlight-utils';
 import {defaults, molecule3dFileExtensions} from './consts';
@@ -55,7 +56,8 @@ import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
 import {StateElements} from 'molstar/lib/examples/proteopedia-wrapper/helpers';
 import {MolScriptBuilder} from 'molstar/lib/mol-script/language/builder';
 import {Script} from 'molstar/lib/mol-script/script';
-import {Structure, StructureSelection, StructureElement} from 'molstar/lib/mol-model/structure';
+import {Bond, Structure, StructureSelection, StructureElement, StructureProperties} from 'molstar/lib/mol-model/structure';
+import {InteractivityManager} from 'molstar/lib/mol-plugin-state/manager/interactivity';
 import {Color} from 'molstar/lib/mol-util/color';
 import {
   setStructureOverpaint, clearStructureOverpaint,
@@ -334,13 +336,17 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // Set the two-way link tag on the SMILES column so the Chem cell
     // renderer knows which Molecule3D column activates the atom picker.
+    // Persist via `col.tags[...]` so the link survives save/reload; use
+    // the shared constant from `@datagrok-libraries/bio` to stay in sync
+    // with the BSV widget (embedded in Docking's AutoDock panel), the
+    // Docking pipeline post-run write, and Chem's reader.
     if (this.ligandColumnName) {
       const ligandCol = this.dataFrame.col(this.ligandColumnName);
       if (ligandCol) {
         const smilesCol = this.dataFrame.columns.toList().find(
           (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && c.name !== this.ligandColumnName);
         if (smilesCol)
-          smilesCol.temp['%chem-atom-picker-linked-col'] = this.ligandColumnName;
+          smilesCol.tags[CHEM_ATOM_PICKER_LINKED_COL] = this.ligandColumnName;
       }
     }
   }
@@ -917,6 +923,77 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         }} as any);
       }
 
+      // --- Reverse 3D→2D hover bridge ------------------------------------
+      // Subscribe to Molstar's hover observable. When the user hovers a
+      // LIGAND (non-polymer) atom in the 3D viewer, fire
+      // CHEM_MOL3D_HOVER_EVENT so Chem's rdkit-cell-renderer can highlight
+      // the corresponding 2D atom. Receptor atoms are filtered out; H atoms
+      // are ignored (2D renderings have only heavy atoms). The `mode` field
+      // mirrors the 2D modifier scheme (shift = paint, ctrl+shift = erase).
+      //
+      // Dedup: we track the last (rowIdx, atomSerial, mode) tuple and skip
+      // repeat fires so the downstream 2D renderer isn't flooded with
+      // redundant work on every mousemove pixel within the same atom radius.
+      this._lastHoverFired = null;
+      try {
+        this.viewSubs.push(plugin.behaviors.interaction.hover.subscribe(
+          (event: InteractivityManager.HoverEvent) => {
+            try {
+              if (!this.dataFrame || !this.ligandColumnName) return;
+              const rowIdx = this.dataFrame.currentRowIdx;
+              if (rowIdx == null || rowIdx < 0) return;
+
+              const loci = event.current.loci;
+              if (loci.kind === 'empty-loci') {
+                this._fireMol3DHover(rowIdx, null, 'preview');
+                return;
+              }
+
+              // Resolve the hovered atom from whichever loci kind Molstar
+              // produced. Element-loci (direct atom pick) is the ideal case.
+              // Bond-loci is what Molstar's default ball-and-stick picker
+              // emits when hovering between atoms — pick the `a` side so the
+              // user still gets a single-atom highlight in 2D. Other kinds
+              // (structure-loci, volume-loci, etc.) are ignored.
+              let loc: StructureElement.Location | null = null;
+              if (loci.kind === 'element-loci') {
+                if (StructureElement.Loci.isEmpty(loci)) {
+                  this._fireMol3DHover(rowIdx, null, 'preview');
+                  return;
+                }
+                loc = StructureElement.Loci.getFirstLocation(loci) ?? null;
+              } else if (loci.kind === 'bond-loci' && loci.bonds.length > 0) {
+                const bond = loci.bonds[0] as Bond.Location;
+                loc = StructureElement.Location.create(loci.structure, bond.aUnit, bond.aUnit.elements[bond.aIndex]);
+              }
+              if (!loc) return;
+              // Filter: only ligand (non-polymer) atoms. Receptor residues ignored.
+              // When the ligand is loaded as a standalone SDF (no receptor), every
+              // atom is 'non-polymer' anyway, so this is a no-op in that case.
+              try {
+                if (StructureProperties.entity.type(loc) !== 'non-polymer') return;
+              } catch { /* entity lookup failed — skip rather than risk false-pos */ return; }
+              // Skip explicit H — 2D SMILES have only heavy atoms.
+              if (StructureProperties.atom.type_symbol(loc) === 'H') return;
+
+              const atomSerial = StructureProperties.atom.id(loc);
+              const {modifiers} = event;
+              const mode: 'preview' | 'paint' | 'erase' =
+                modifiers.shift && modifiers.control ? 'erase' : (modifiers.shift ? 'paint' : 'preview');
+              this._fireMol3DHover(rowIdx, atomSerial, mode);
+            } catch (err: unknown) {
+              this.logger.error(
+                `${CHEM_MOL3D_HOVER_EVENT} emit failed: ${err instanceof Error ? err.message : String(err)}`);
+            }
+          },
+        ));
+      } catch (err: unknown) {
+        // Older Molstar builds without `behaviors.interaction.hover` — reverse
+        // bridge just won't activate; forward direction remains unaffected.
+        this.logger.debug(
+          `Molstar hover subscription unavailable: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
       if (this.dataFrame && this.ligandColumnName) {
         this.viewSubs.push(this.dataFrame.onSelectionChanged.subscribe(
           this.dataFrameOnSelectionChanged.bind(this)));
@@ -1262,6 +1339,26 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   /** Guard against concurrent async highlight updates. */
   private _highlightInProgress = false;
   private _stateChangeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Last-fired 3D→2D hover tuple — used to dedup Molstar's
+   *  per-mousemove-pixel hover firing. null = no atom currently hovered. */
+  private _lastHoverFired: {rowIdx: number; atomSerial: number | null; mode: string} | null = null;
+
+  /** Emits CHEM_MOL3D_HOVER_EVENT for the 3D→2D hover bridge, with dedup.
+   *  `atomSerial: null` means the cursor left all ligand atoms — the 2D
+   *  side clears its preview. */
+  private _fireMol3DHover(
+    rowIdx: number, atomSerial: number | null, mode: 'preview' | 'paint' | 'erase',
+  ): void {
+    const last = this._lastHoverFired;
+    if (last && last.rowIdx === rowIdx && last.atomSerial === atomSerial && last.mode === mode)
+      return;
+    this._lastHoverFired = {rowIdx, atomSerial, mode};
+    const args: Mol3DHoverEventArgs = {
+      mol3DColumnName: this.ligandColumnName!, rowIdx, atom3DSerial: atomSerial, mode,
+    };
+    grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, args);
+  }
 
   /** Returns all Molstar structure components, or null if unavailable. */
   private _getAllComponents(): any[] | null {

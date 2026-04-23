@@ -43,6 +43,7 @@ import {BiostructureDataProviderApp} from './apps/biostructure-data-provider-app
 import {copyRawValue, downloadRawValue, showBiostructureViewer, showNglViewer} from './utils/context-menu';
 import {defaultErrorHandler} from './utils/err-info';
 import {extractSequenceColumns} from './utils/sequence-handler';
+import {getMol3DAtomPickerLinkWidget} from './panels/mol3d-atom-picker-link-panel';
 
 export * from './package.g';
 export const _package: BsvPackage = new BsvPackage();
@@ -750,13 +751,6 @@ export class PackageFunctions {
     const widget = new DG.Widget(ui.div([]));
     widget.root.append(ui.loader());
     const {dataFrame, column, rowIndex} = molecule.cell;
-    // Set the atom-picker link tag on the SMILES column so the Chem
-    // cell renderer knows which Molecule3D column activates the picker.
-    const smilesCol = dataFrame.columns.toList().find(
-      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && c.name !== column.name);
-    if (smilesCol)
-      smilesCol.temp['%chem-atom-picker-linked-col'] = column.name;
-
     const tableView = grok.shell.getTableView(dataFrame.name);
     const {grid} = tableView;
     const gridCell = grid.cell(column.name, rowIndex);
@@ -779,6 +773,19 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
   ): DG.Widget {
     return pdbFileInfoWidget(molecule.value);
+  }
+
+  /** Cross-package helper exposed as a Grok function so Docking's AutoDock
+   *  info panel can inject the "Link SMILES column" checkbox at the bottom
+   *  of its own widget, instead of creating a second top-level section
+   *  with the same name. Called via
+   *  `grok.functions.call('BiostructureViewer:mol3dAtomPickerLinkWidget', {mol3DCol})`. */
+  @grok.decorators.func({
+    name: 'mol3dAtomPickerLinkWidget',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static mol3dAtomPickerLinkWidget(mol3DCol: DG.Column): DG.Widget {
+    return getMol3DAtomPickerLinkWidget(mol3DCol);
   }
 
   @grok.decorators.func({
