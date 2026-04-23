@@ -53,4 +53,9 @@ public class DataSource
     }};
 
     public Map<String, String> typesMap;
+
+    /** Lazy OAuth/OpenID consent descriptor. Non-null on connectors
+     * that support per-connection OAuth. See
+     * {@code core/docs/design/GENERALIZED_OAUTH_CONNECTORS.md}. */
+    public OAuthSpec oauth;
 }

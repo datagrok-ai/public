@@ -592,6 +592,11 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
   async getDatabaseInfo(c: DataConnection, catalog: string | null = null): Promise<DbInfo[]> {
     return toJs(await api.grok_DataConnectionsDataSource_Get_Db_Info(this.dart, c.dart, catalog))
   }
+
+  /** Initiates the OAuth consent flow for a connection whose auth method is 'OAuth'. */
+  async requestOAuthConsent(c: DataConnection): Promise<void> {
+    await api.grok_DataConnectionsDataSource_RequestOAuthConsent(c.dart);
+  }
 }
 
 /**

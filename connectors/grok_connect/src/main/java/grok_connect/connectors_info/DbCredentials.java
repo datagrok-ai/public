@@ -41,6 +41,11 @@ public class DbCredentials
     public static final String PWD = "PWD";
     public static final String OAUTH2_CLIENT_ID = "OAuth2ClientID";
     public static final String OAUTH2_SECRET = "OAuth2Secret";
+    /// Resolved OAuth access token — populated by Datlas on server-side
+    /// credential resolution for any connector whose auth method is
+    /// `AuthMethod.OAuth` (see GENERALIZED_OAUTH_CONNECTORS.md).
+    public static final String TOKEN = "#token";
+    public static final String OAUTH_SCOPES = "oauthScopes";
 
     public String server;
     public String port;
