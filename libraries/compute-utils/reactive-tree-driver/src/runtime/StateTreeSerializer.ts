@@ -1,4 +1,4 @@
-import {Observable, BehaviorSubject, merge} from 'rxjs';
+import {Observable, BehaviorSubject, asapScheduler, merge} from 'rxjs';
 import {map, scan, debounceTime} from 'rxjs/operators';
 import {BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -97,7 +97,7 @@ export function getNodesDescriptions(nodeTree: BaseTree<StateTreeNode>) {
         }
         return {...acc, [name]: val};
       }, {} as Record<string, string[] | string>),
-      debounceTime(0),
+      debounceTime(0, asapScheduler),
     );
     return [...acc, [item.uuid, descriptions$] as const];
   }, [] as (readonly [string, Observable<Record<string, string | string[]> | undefined>])[]);

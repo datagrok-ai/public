@@ -30,10 +30,10 @@ export function useReactiveTreeDriver(
 ) {
   const driver = new Driver();
 
-  const treeMutationsLocked = useObservable(driver.treeMutationsLocked$);
-  const isGlobalLocked = useObservable(driver.globalROLocked$);
-
   const globalLock$ = driver.globalROLocked$.pipe(distinctUntilChanged());
+
+  const treeMutationsLocked = useObservable(driver.treeMutationsLocked$.pipe(bufferDuringLock(globalLock$)));
+  const isGlobalLocked = useObservable(driver.globalROLocked$);
 
   const treeState = useObservable(driver.currentState$.pipe(
     map((x) => markFuncCallsRaw(x)),
