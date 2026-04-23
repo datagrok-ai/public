@@ -165,7 +165,7 @@ const PK_PD_MODEL = `#name: PK-PD
 #meta.solver: {method: 'lsoda'}`;
 
 /** Gluconic acid production */
-const ACID_PROD_MODEL = `#name: GA-production
+const ACID_PROD_MODEL = `#name: Acid production
 #description: Gluconic acid (GA) production by Aspergillus niger modeling
 #equations:
   dX/dt = rX
