@@ -127,12 +127,47 @@ export function processAutodockResults(autodockResults: DG.DataFrame, table: DG.
   const affinityDescription = 'Estimated Free Energy of Binding.\
     Lower values correspond to stronger binding.';
   const poseCol = autodockResults.col(POSE_COL);
-  poseCol!.name = table.columns.getUnusedName(POSE_COL);
-  setPose(poseCol!.name);
   const affinityCol = autodockResults.col(BINDING_ENERGY_COL);
-  affinityCol!.name = table.columns.getUnusedName(BINDING_ENERGY_COL);
-  setAffinity(affinityCol!.name);
-  const processedTable = DG.DataFrame.fromColumns([poseCol!, affinityCol!]);
-  affinityCol!.setTag(DG.TAGS.DESCRIPTION, affinityDescription);
+  // Both columns are required. Missing either means AutoDock didn't
+  // produce the expected output (e.g. the docking-autodock container
+  // was stopped, the target folder was unreadable, or the pipeline
+  // returned partial results). Surface this with a shell warning and
+  // return an empty DataFrame instead of crashing on `null!.name`.
+  if (!poseCol || !affinityCol) {
+    // `auto-dock-app.ts#getAutodockResults` creates a fallback DataFrame
+    // with only a `pose` STRING column (no `binding energy`) when every
+    // ligand failed to dock. The per-ligand error messages are written
+    // into that pose column. Surface them so the user sees the real
+    // problem instead of a generic "missing column" notice.
+    if (poseCol && !affinityCol && poseCol.type === DG.TYPE.STRING) {
+      const errorMessages: string[] = [];
+      for (let i = 0; i < poseCol.length && errorMessages.length < 3; i++) {
+        const v = poseCol.get(i);
+        if (typeof v === 'string' && v.trim().length > 0)
+          errorMessages.push(v.trim().slice(0, 200));
+      }
+      const msgSuffix = errorMessages.length > 0
+        ? ` Docking errors: ${errorMessages.join(' | ')}`
+        : ' Docker container reachable but no valid poses produced — check container logs.';
+      grok.shell.warning(`AutoDock failed to produce binding-energy results.${msgSuffix}`);
+      return DG.DataFrame.create();
+    }
+    const missing = [
+      !poseCol ? POSE_COL : null,
+      !affinityCol ? BINDING_ENERGY_COL : null,
+    ].filter(Boolean).join(', ');
+    const actualCols = autodockResults.columns.names().join(', ');
+    grok.shell.warning(
+      `AutoDock results are missing expected column(s): ${missing}. ` +
+      `Actual columns returned: [${actualCols}]. ` +
+      `Check that the docking-autodock container is running and the target folder is accessible.`);
+    return DG.DataFrame.create();
+  }
+  poseCol.name = table.columns.getUnusedName(POSE_COL);
+  setPose(poseCol.name);
+  affinityCol.name = table.columns.getUnusedName(BINDING_ENERGY_COL);
+  setAffinity(affinityCol.name);
+  const processedTable = DG.DataFrame.fromColumns([poseCol, affinityCol]);
+  affinityCol.setTag(DG.TAGS.DESCRIPTION, affinityDescription);
   return processedTable;
 }

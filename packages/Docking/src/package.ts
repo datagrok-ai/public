@@ -9,13 +9,6 @@ import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL
 import {IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
-/** Persistent column tag used to link a SMILES column to a Molecule3D
- *  column for the Chem atom-picker bridge. Mirrors the same-named
- *  constant in Chem's `src/constants.ts` and BSV's `utils/mol3d-link.ts`;
- *  duplicated here to avoid a hard dependency on a bio release that
- *  publishes the constant. Keep the string value in sync across packages. */
-const CHEM_ATOM_PICKER_LINKED_COL = '%chem-atom-picker-linked-col';
-
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2, ensureNoDockingError} from './utils/auto-dock-service';
 import {TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
@@ -113,16 +106,18 @@ export class PackageFunctions{
 
     formatColumns(autodockResults);
     const processedResults = processAutodockResults(autodockResults, table);
+    // `processAutodockResults` returns an empty DataFrame when AutoDock's
+    // output is missing required columns — skip downstream wiring.
+    if (processedResults.columns.length === 0)
+      return processedResults;
     await grok.data.detectSemanticTypes(processedResults);
 
-    // Link the SMILES ligand column to the produced Molecule3D pose column via
-    // the Chem atom-picker tag, so interactive atom highlighting activates
-    // automatically for docking output. Uses `col.tags[...]` for persistence
-    // across save/reload; constant is sourced from `@datagrok-libraries/bio`.
-    const poseCol = processedResults.columns.toList().find(
-      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
-    if (poseCol)
-      ligands.tags[CHEM_ATOM_PICKER_LINKED_COL] = poseCol.name;
+    // NOTE: the SMILES↔pose atom-picker link is NOT written here. Users
+    // activate it explicitly via the "Link SMILES column" checkbox in the
+    // AutoDock context panel (`mol3dAtomPickerLinkWidget`). Auto-linking
+    // was rejected to avoid ambiguous pairings when the table has more
+    // than one SMILES column and to keep the interactive-highlight opt-in
+    // rather than implicit.
     return processedResults;
   }
 
