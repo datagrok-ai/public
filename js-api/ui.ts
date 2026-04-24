@@ -205,9 +205,10 @@ export function accordion(key: any = null): Accordion {
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
  * @param {Object} pages - list of page factories
  * @param {boolean} vertical
+ * @param {string} key - when provided, the currently selected pane is persisted across sessions
  * @returns {TabControl} */
-export function tabControl(pages: { [key: string]: any; } | null = null, vertical: boolean = false): TabControl {
-  let tabs = TabControl.create(vertical);
+export function tabControl(pages: { [key: string]: any; } | null = null, vertical: boolean = false, key: string | null = null): TabControl {
+  let tabs = TabControl.create(vertical, key);
   if (pages != null) {
     for (let key of Object.keys(pages)) {
       let value = pages[key];

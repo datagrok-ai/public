@@ -184,7 +184,7 @@ export interface IDartApi {
   grok_TabPane_Get_Header(p: any): any;
   grok_TabPane_Get_Content(p: any): any;
   grok_TabPane_Get_Parent(p: any): any;
-  grok_TabControl(vertical: Bool): any;
+  grok_TabControl(vertical: Bool, key: String): any;
   grok_ToolboxPage_Get_Accordion(t: any): any;
   grok_VirtualItemView(verticalScroll: any, maxCols: any): any;
   grok_VirtualItemView_Get_Root(v: any): any;
