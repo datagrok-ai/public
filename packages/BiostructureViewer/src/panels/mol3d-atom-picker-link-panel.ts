@@ -25,8 +25,8 @@ import {
  *  State transitions:
  *  - Check the box → show the dropdown in an empty "no selection" state.
  *    **No link is written yet.** The user must explicitly pick a SMILES
- *    column via the dropdown — avoiding auto-selection when multiple
- *    molecule columns exist (drizhina review #5).
+ *    column via the dropdown — avoids ambiguous auto-selection when
+ *    multiple molecule columns exist.
  *  - Pick a SMILES column → write the link tag.
  *  - Change dropdown (while checked, already linked) → rewrite the link
  *    to the new SMILES column, clearing the previous.
@@ -54,8 +54,8 @@ export function getMol3DAtomPickerLinkWidget(mol3DCol: DG.Column): DG.Widget {
 
   // Dropdown: pre-selects the currently-linked SMILES column if any;
   // otherwise stays empty (`null`) so the user must make an explicit
-  // choice — drizhina #5 asked us not to auto-pick when multiple
-  // molecule columns are present.
+  // choice — avoids ambiguous auto-selection when multiple molecule
+  // columns are present.
   const choiceInput = ui.input.choice('SMILES column', {
     value: currentLinkedSmiles ?? null,
     items: smilesNames,

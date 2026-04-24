@@ -7,7 +7,7 @@
  * event protocol and atom-mapping types.
  *
  * The selection cache itself lives on `MolstarViewer.selectionCache`
- * (class-static, initiated at first viewer construction — review #3).
+ * (class-static, initiated at first viewer construction).
  */
 
 import * as DG from 'datagrok-api/dg';

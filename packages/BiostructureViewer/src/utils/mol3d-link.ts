@@ -1,7 +1,7 @@
 /**
  * Helpers for manual SMILES↔Molecule3D column linking (Chem atom-picker
- * bridge). The link is stored as a **reciprocal pair of persistent tags**
- * — one on each column pointing to its partner — per drizhina review #5:
+ * bridge). The link is stored as a **reciprocal pair of persistent tags**,
+ * one on each column pointing to its partner:
  *
  *   smilesCol.tags[CHEM_ATOM_PICKER_LINKED_COL]        = mol3DColName
  *   mol3DCol.tags [CHEM_ATOM_PICKER_LINKED_SMILES_COL] = smilesColName
@@ -38,8 +38,8 @@ export const CHEM_ATOM_PICKER_LINKED_COL = '%chem-atom-picker-linked-col';
 
 /** Reciprocal tag on the Mol3D column pointing back at the linked SMILES
  *  column name. Lets Mol3D→SMILES lookup be O(1) and makes the link
- *  self-describing from either side (drizhina review #5). Mirror the
- *  same-named constant in Chem's `src/constants.ts`. */
+ *  self-describing from either side. Mirror the same-named constant in
+ *  Chem's `src/constants.ts`. */
 export const CHEM_ATOM_PICKER_LINKED_SMILES_COL = '%chem-atom-picker-linked-smiles-col';
 
 /** Chem cross-package event for atom selection sync — mirrors the

@@ -72,7 +72,7 @@ category('mol3d-link', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Two-way tag pair (drizhina review #5)
+  // Two-way tag pair
   // -------------------------------------------------------------------------
 
   test('setSmilesColLink-writes-reciprocal-tag-on-mol3d', async () => {

@@ -353,7 +353,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private static viewerCounter: number = -1;
   private readonly viewerId: number = ++MolstarViewer.viewerCounter;
 
-  // -- Class-static selection cache (review #3) --------------------------------
+  // -- Class-static selection cache --------------------------------------------
   // Shared across every MolstarViewer instance. Populated from
   // CHEM_SELECTION_EVENT so that selections made before a viewer is open can
   // be replayed on first load. Keys: composite dfId-dfName-colName-rowIdx.
@@ -423,12 +423,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         this.ligandColumnName = molCol.name;
     }
 
-    // Write the two-way tag pair (drizhina review #5) — forward on the
-    // SMILES column pointing at the Mol3D column name, reverse on the
-    // Mol3D column pointing back at the SMILES column name. Persist via
-    // `col.tags[...]` so the link survives save/reload; use the shared
-    // constants to stay in sync with the BSV widget, the Docking pipeline
-    // post-run write, and Chem's reader.
+    // Write the two-way tag pair — forward on the SMILES column pointing
+    // at the Mol3D column name, reverse on the Mol3D column pointing back
+    // at the SMILES column name. Persist via `col.tags[...]` so the link
+    // survives save/reload; use the shared constants to stay in sync
+    // with the BSV widget, the Docking pipeline post-run write, and
+    // Chem's reader.
     if (this.ligandColumnName) {
       const ligandCol = this.dataFrame.col(this.ligandColumnName);
       if (ligandCol) {
