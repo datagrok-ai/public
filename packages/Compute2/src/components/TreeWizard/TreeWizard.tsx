@@ -30,6 +30,8 @@ import {take} from 'rxjs/operators';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
+import {createCompositorOverlayService} from '../../composables/use-compositor-overlay';
+import {compositorOverlay} from '../../directives/compositor-overlay';
 import {CustomExport, ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
@@ -72,6 +74,8 @@ export const TreeWizard = Vue.defineComponent({
       console.log('TreeWizard onRenderTriggered', event);
     });
 
+    const overlayService = createCompositorOverlayService();
+
     const {
       treeMutationsLocked,
       isGlobalLocked,
@@ -97,7 +101,7 @@ export const TreeWizard = Vue.defineComponent({
       moveStep,
       changeFuncCall,
       returnResult,
-    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'));
+    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'), overlayService);
 
     setHelpService();
 
@@ -850,7 +854,7 @@ export const TreeWizard = Vue.defineComponent({
             </PipelineView>
           }
         </DockManager>
-      </div>, [[ifOverlapping, isGlobalLocked.value || !treeState.value]])
+      </div>, [[compositorOverlay, overlayService.isActive.value || !treeState.value]])
     );
   },
 });

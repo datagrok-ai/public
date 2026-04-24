@@ -1,0 +1,26 @@
+.c2-compositor-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.85);
+  z-index: 3000;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.c2-compositor-overlay .grok-loader {
+  transform: scale(1.5);
+}
+
+.c2-compositor-overlay--active {
+  pointer-events: auto;
+  animation: c2-fade-in 100ms ease-out 150ms forwards;
+}
+
+@keyframes c2-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

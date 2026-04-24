@@ -11,6 +11,7 @@ import {IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {useUrlSearchParams} from '@vueuse/core';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {compositorOverlay} from '../directives/compositor-overlay';
 
 const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -50,6 +51,7 @@ export const RFVApp = Vue.defineComponent({
     const currentCallState = Vue.ref(
       {isRunning: false, isOutputOutdated: true, isRunnable: false, runError: undefined, pendingDependencies: []},
     );
+    const overlayActive = Vue.ref(false);
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
 
     const func = Vue.shallowRef<DG.Func | undefined>(undefined);
@@ -107,6 +109,7 @@ export const RFVApp = Vue.defineComponent({
 
     const run = async () => {
       if (!currentFuncCall.value) return;
+      overlayActive.value = true;
       currentCallState.value.isRunning = true;
       try {
         await currentFuncCall.value.call(undefined, undefined, {processed: true, report: false});
@@ -116,6 +119,7 @@ export const RFVApp = Vue.defineComponent({
         currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'false';
       } finally {
         currentCallState.value.isRunning = false;
+        overlayActive.value = false;
       }
     };
 
@@ -164,7 +168,7 @@ export const RFVApp = Vue.defineComponent({
     }
 
     return () => (
-      <div class='w-full h-full flex'>
+      Vue.withDirectives(<div class='w-full h-full flex'>
         <RibbonPanel view={currentView.value}>
           {!currentCallState.value.isOutputOutdated &&
             <IconFA
@@ -188,7 +192,7 @@ export const RFVApp = Vue.defineComponent({
           showRunButton={!isRunningOnInput.value}
           view={currentView.value}
         />
-      </div>
+      </div>, [[compositorOverlay, overlayActive.value]])
     );
   },
 });

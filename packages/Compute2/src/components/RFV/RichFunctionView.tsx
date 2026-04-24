@@ -539,7 +539,7 @@ export const RichFunctionView = Vue.defineComponent({
                 ref={formRef}
               >
                 {
-                  Vue.withDirectives(<InputForm
+                  <InputForm
                     key={currentCall.value?.id}
                     ref={inputFormComponentRef}
                     funcCall={currentCall.value}
@@ -553,7 +553,7 @@ export const RichFunctionView = Vue.defineComponent({
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
                     isReadonly={isReadonly.value}
-                  />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
+                  />
                 }
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
                   { slots.navigation ?
@@ -582,13 +582,13 @@ export const RichFunctionView = Vue.defineComponent({
                     {...tabConfig}
                   >
                     {
-                      Vue.withDirectives(<Viewer
+                      <Viewer
                         type={options['type'] as string}
                         options={options}
                         dataFrame={tabContent.df.value}
                         class='w-full'
                         onViewerChanged={(v) => setViewerRef(v, tabContent.name, options['type'] as string)}
-                      />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
+                      />
                     }
                   </div>;
                 }
@@ -606,7 +606,7 @@ export const RichFunctionView = Vue.defineComponent({
                     {...tabConfig}
                   />;
 
-                  return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value, 'Recalculating...']]);
+                  return panel;
                 }
               })
           }

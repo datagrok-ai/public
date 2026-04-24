@@ -11,6 +11,7 @@ import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-ut
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 import {PipelineInstanceConfig, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {CompositorOverlayService} from './use-compositor-overlay';
 
 function bufferDuringLock<T>(lock$: Observable<boolean>): MonoTypeOperatorFunction<T> {
   return audit(() => lock$.pipe(filter((locked) => !locked), take(1)));
@@ -27,6 +28,7 @@ export function useReactiveTreeDriver(
   providerFunc: Vue.Ref<string>,
   version: Vue.Ref<string | undefined>,
   instanceConfig: Vue.Ref<PipelineInstanceConfig | undefined>,
+  overlayService?: CompositorOverlayService,
 ) {
   const driver = new Driver();
 
@@ -47,6 +49,15 @@ export function useReactiveTreeDriver(
   const config = useObservable(driver.currentConfig$.pipe(bufferDuringLock(globalLock$)));
   const links = useObservable(driver.currentLinks$.pipe(bufferDuringLock(globalLock$)));
   const result = useObservable(driver.result$);
+
+  if (overlayService) {
+    Vue.watch(isGlobalLocked, (locked) => {
+      if (locked && !overlayService.isActive.value)
+        overlayService.show();
+      if (!locked)
+        overlayService.hide();
+    });
+  }
 
   const states = Vue.reactive({
     calls: {} as Record<string, FuncCallStateInfo | undefined>,
@@ -139,10 +150,12 @@ export function useReactiveTreeDriver(
   };
 
   const runStep = async (uuid: string) => {
+    await overlayService?.show();
     driver.sendCommand({event: 'runStep', uuid});
   };
 
   const runSequence = async (startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean) => {
+    await overlayService?.show();
     driver.sendCommand({event: 'runSequence', startUuid, rerunWithConsistent, includeNonNested});
   };
 
