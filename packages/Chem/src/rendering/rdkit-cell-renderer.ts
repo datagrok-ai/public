@@ -141,6 +141,49 @@ export class GridCellRendererProxy extends DG.GridCellRenderer {
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
     this.renderer.renderInternal(g, x, y, w, h, gridCell, cellStyle);
   }
+
+  // -- Interaction event forwarding ----------------------------------------
+  // Datagrok's grid dispatches mouse/key events to the renderer INSTANCE it
+  // has registered (this proxy), not to the wrapped `renderer`. Without
+  // these forwarders every override on the real renderer (e.g.
+  // `RDKitCellRenderer.onMouseMove`) silently hits the base class no-op
+  // and the interactive atom picker never sees a hover. Forward them all.
+
+  override onMouseEnter(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onMouseEnter(gridCell, e);
+  }
+
+  override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onMouseLeave(gridCell, e);
+  }
+
+  override onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onMouseDown(gridCell, e);
+  }
+
+  override onMouseUp(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onMouseUp(gridCell, e);
+  }
+
+  override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onMouseMove(gridCell, e);
+  }
+
+  override onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onClick(gridCell, e);
+  }
+
+  override onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onDoubleClick(gridCell, e);
+  }
+
+  override onKeyDown(gridCell: DG.GridCell, e: KeyboardEvent): void {
+    this.renderer.onKeyDown(gridCell, e);
+  }
+
+  override onKeyPress(gridCell: DG.GridCell, e: KeyboardEvent): void {
+    this.renderer.onKeyPress(gridCell, e);
+  }
 }
 
 export class RDKitCellRenderer extends DG.GridCellRenderer {
@@ -163,25 +206,6 @@ M  END
    *  bond is highlighted iff both of its atoms are in the picked set). */
   atomPositionsCache: DG.LruCache<string, CellInteractiveInfo> =
     new DG.LruCache<string, CellInteractiveInfo>();
-  /** Whether the single document-level mousedown listener has been
-   *  registered. We use ONE global listener (capture phase) instead of
-   *  per-canvas listeners because:
-   *  (a) Datagrok's grid stops dispatching `onMouseDown` after a table
-   *      switch, and
-   *  (b) the canvas from `g.canvas` (render context) is NOT the element
-   *      that receives mouse events — it's a rendering-only canvas.
-   *  The document listener catches ALL mousedowns, finds the active grid
-   *  via `grok.shell.tv.grid`, and hit-tests to determine if a molecule
-   *  cell was clicked. */
-  /** Drag state shared across the global mousemove/mouseup listeners.
-   *  Null when no drag is active.
-   *
-   *  We use capture-phase document listeners (`addEventListener('mouseup',
-   *  handler, true)`) rather than grid renderer lifecycle methods because
-   *  Datagrok's grid event pipeline can swallow `onMouseUp` before it reaches
-   *  the renderer. Capture-phase fires at document BEFORE the event walks
-   *  down to its target, so any `stopPropagation` on the canvas cannot stop
-   *  it from firing. */
   /** Tracks the last atom processed by hover so we don't re-fire on
    *  every mousemove pixel within the same atom's radius. */
   private _lastHoveredAtom: {col: string, rowIdx: number, atomIdx: number, erase?: boolean} | null = null;
@@ -192,12 +216,11 @@ M  END
   private _previewRowIdx: number = -1;
   /** Tracks whether the active preview was set by a 3D→2D hover event
    *  (`_onMol3DHoverEvent`) rather than a 2D mouse hover. Needed because
-   *  every DOM mousemove — including moves over the 3D viewer — runs the
-   *  2D `_onDocumentMouseMove` handler, whose no-modifier branch calls
-   *  `_removePreviewAtom` when no 2D cell is under the cursor. Without
-   *  this flag, a 3D hover would set the preview and the very next DOM
-   *  mousemove over the 3D canvas would wipe it. Paint/erase don't hit
-   *  this race because they don't touch `_previewAtomIdx`. */
+   *  the `onMouseLeave` override would clear the preview when the cursor
+   *  leaves a 2D molecule cell — but a 3D-sourced preview must persist
+   *  until the corresponding 3D "cursor left the atom" event arrives
+   *  (`_onMol3DHoverEvent` with `atom3DSerial === null`). Paint/erase
+   *  don't hit this race because they don't touch `_previewAtomIdx`. */
   private _previewFrom3D: boolean = false;
 
   constructor(rdKitModule: RDModule) {
@@ -291,7 +314,7 @@ M  END
    *  updates `_lastHoveredAtom` to the new (col, rowIdx, atomIdx, erase)
    *  tuple and returns `false`. Consolidates the dup'd check-then-update
    *  pattern that showed up at every hover-mode branch in
-   *  `_onDocumentMouseMove`. */
+   *  `onMouseMove`. */
   private _trackHoveredAtom(
     colName: string, rowIdx: number, atomIdx: number, erase?: boolean,
   ): boolean {
@@ -650,19 +673,34 @@ M  END
     return [];
   }
 
-  private _documentListenerAttached = false;
+  /** Registered once on first render — attaches global listeners that the
+   *  renderer override hooks can't cover:
+   *   - **keydown** (Escape-to-clear): kept global so Escape works with the
+   *     cursor anywhere on the page, not only when a molecule cell has
+   *     focus.
+   *   - **mousemove (shift / ctrl+shift only)**: Datagrok's grid captures
+   *     shift-drag as its native "extend row selection" gesture and never
+   *     dispatches `onMouseMove` to the cell renderer while shift is held,
+   *     so the override-based hover path (which handles the no-modifier
+   *     preview case cleanly) misses paint/erase. A capture-phase document
+   *     listener gated on `shiftKey` runs BEFORE the grid's capture and
+   *     routes the drag into `_onShiftDragMouseMove`. */
+  private _globalListenersAttached = false;
 
   render(g: any, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
-    // Register document-level listeners for the hover-paint atom picker.
-    if (!this._documentListenerAttached) {
-      this._documentListenerAttached = true;
-      document.addEventListener('mousemove', (e: MouseEvent) => {
-        this._onDocumentMouseMove(e);
-      });
+    if (!this._globalListenersAttached) {
+      this._globalListenersAttached = true;
       document.addEventListener('keydown', (e: KeyboardEvent) => {
         this._onDocumentKeyDown(e);
       });
+      // Capture phase so we see the mousemove before the grid's internal
+      // shift-drag handler swallows it for row-range selection. Gated on
+      // shiftKey to keep the no-modifier hover path fully in
+      // `onMouseMove`/`onMouseLeave` overrides (drizhina's review ask).
+      document.addEventListener('mousemove', (e: MouseEvent) => {
+        if (e.shiftKey) this._onShiftDragMouseMove(e);
+      }, true);
       // Reverse 3D→2D bridge: BiostructureViewer's Molstar viewer fires
       // CHEM_MOL3D_HOVER_EVENT when the user hovers a ligand atom. We
       // reverse-map the 3D atom serial to a 2D atom index and route it
@@ -859,13 +897,6 @@ M  END
     }
   }
 
-  /** Global mousedown handler (capture phase on document). Finds the active
-   *  grid via `grok.shell.tv.grid`, hit-tests to determine which cell was
-   *  clicked, and starts a drag if it's a molecule cell with the picker
-   *  enabled. This replaces both the renderer's `onMouseDown` lifecycle
-   *  (which stops dispatching after a table switch) and per-canvas
-   *  listeners (which failed because the rendering canvas is not the
-   *  interactive canvas). */
   // -- Hover-paint atom picker ------------------------------------------------
   // Hold Shift and move the mouse over atoms in a SMILES cell to "paint" them
   // into the selection. No click is needed, so the grid never changes the
@@ -873,45 +904,26 @@ M  END
   // open. Hold Ctrl+Shift while hovering an already-selected atom to erase it.
   // Matches Datagrok's grid selection convention (Shift = extend, Ctrl+Shift
   // = deselect). Press Escape to clear the entire painted selection.
+  //
+  // Wired via `DG.GridCellRenderer.onMouseMove` / `onMouseLeave` overrides —
+  // Datagrok's grid dispatches these only when the cursor is over one of our
+  // molecule cells, so there's no document-wide mousemove listener.
 
-  /** Resolves the molecule cell and atom under the cursor. */
-  private _hitTestAtom(e: MouseEvent): {
-    grid: DG.Grid; gridCell: DG.GridCell; cellInfo: CellInteractiveInfo;
-    nearest: number; pointerCellX: number; pointerCellY: number;
+  /** Resolves the atom under the cursor within a specific `gridCell`.
+   *  Called from `onMouseMove` after Datagrok's grid has already done the
+   *  cell-level hit test and picker-active check. Event coordinates are
+   *  grid-canvas-relative (`e.offsetX/Y`); we translate into cell-local
+   *  space via `gridCell.bounds`. */
+  private _hitTestAtomInCell(gridCell: DG.GridCell, e: MouseEvent): {
+    cellInfo: CellInteractiveInfo; nearest: number;
   } | null {
-    const grid = grok.shell.tv?.grid;
-    if (!grid) return null;
-    let gridRoot: HTMLElement | null = null;
-    try {
-      gridRoot = grid.root;
-    } catch {
-      return null;
-    }
-    if (!gridRoot) return null;
-
-    const gridRect = gridRoot.getBoundingClientRect();
-    const localX = e.clientX - gridRect.left;
-    const localY = e.clientY - gridRect.top;
-    if (localX < 0 || localY < 0 ||
-        localX > gridRect.width || localY > gridRect.height) return null;
-
-    let gridCell: DG.GridCell | null = null;
-    try {
-      gridCell = grid.hitTest(localX, localY);
-    } catch {
-      return null;
-    }
-    if (!gridCell?.tableColumn || gridCell.tableRowIndex == null ||
-        gridCell.tableRowIndex < 0) return null;
-    if (gridCell.tableColumn.semType !== DG.SEMTYPE.MOLECULE) return null;
-    if (!this._isPickerActive(gridCell.tableColumn)) return null;
-
+    if (gridCell.tableRowIndex == null || gridCell.tableRowIndex < 0) return null;
     const molString: string = gridCell.cell.value;
     if (!molString || DG.chem.Sketcher.isEmptyMolfile(molString)) return null;
 
     const bounds = gridCell.bounds;
-    const pointerCellX = e.clientX - (gridRect.left + bounds.left);
-    const pointerCellY = e.clientY - (gridRect.top + bounds.top);
+    const pointerCellX = e.offsetX - bounds.left;
+    const pointerCellY = e.offsetY - bounds.top;
     if (pointerCellX < 0 || pointerCellY < 0 ||
         pointerCellX > bounds.width || pointerCellY > bounds.height) return null;
 
@@ -921,75 +933,36 @@ M  END
     const nearest = findNearestAtom(cellInfo.positions, pointerCellX, pointerCellY);
     if (nearest === null) return null;
 
-    return {grid, gridCell, cellInfo, nearest, pointerCellX, pointerCellY};
+    return {cellInfo, nearest};
   }
 
   /**
-   * Mousemove handler — three modes, matching Datagrok's grid selection
-   * convention (Shift extends, Ctrl+Shift deselects):
+   * No-modifier hover handler — highlights ONLY the single atom under the
+   * cursor (preview mode). Moving to a different atom highlights that one
+   * instead. Moving off all atoms clears the preview.
    *
-   * **No modifier (preview):** highlights ONLY the single atom under the
-   * cursor. Moving to a different atom highlights that one instead. Moving
-   * away from all atoms clears the preview. No persistent selection.
+   * **Shift / Ctrl+Shift paths are NOT handled here** — Datagrok's grid
+   * captures shift-drag for its native row-range-selection gesture and
+   * does not dispatch `onMouseMove` to cell renderers while shift is
+   * held. Those modes are handled by `_onShiftDragMouseMove` via a
+   * capture-phase document listener (see `render()` above).
    *
-   * **Shift + hover (paint):** each atom the cursor passes over is ADDED
-   * to the persistent selection. The selection accumulates until cleared
-   * with Escape.
-   *
-   * **Ctrl+Shift + hover (erase):** each atom the cursor passes over is
-   * REMOVED from the persistent selection. Mirrors the grid's
-   * Ctrl+Shift+drag deselect gesture.
+   * `onMouseLeave` handles preview-clear when the cursor leaves the cell
+   * toward a non-molecule column.
    */
-  private _onDocumentMouseMove(e: MouseEvent): void {
-    // Only activate the picker when the current cell's column is
-    // linked to a molecule column via the explicit picker tag (set by
-    // BiostructureViewer's Molstar viewer, Docking pipeline, or the
-    // BSV widget embedded in Docking's AutoDock panel). Uses
-    // `_getLinkedMol3DColName` so persistent `col.tags[...]` is checked
-    // first with a `col.temp[...]` fallback for backward compatibility.
-    const df = grok.shell.tv?.grid?.dataFrame;
-    if (df) {
-      const curCol = df.currentCol;
-      if (!curCol) return;
-      const hasTagLink = df.columns.toList().some(
-        (c: DG.Column) => this._getLinkedMol3DColName(c) === curCol.name);
-      if (!hasTagLink) return;
-    }
-
-    const hit = this._hitTestAtom(e);
-    // Shift alone = add (matches grid's Shift+drag extend-selection);
-    // Ctrl+Shift = remove (matches grid's Ctrl+Shift+drag deselect).
-    // Order matters: check erase first so Ctrl+Shift isn't also treated as paint.
-    const isErase = e.shiftKey && e.ctrlKey;
-    const isPaint = e.shiftKey && !e.ctrlKey;
-
-    // -- Shift / Ctrl+Shift: persistent paint/erase mode --
-    if (isPaint || isErase) {
-      this._previewAtomIdx = null;
-      if (!hit) return;
-
-      const {gridCell, nearest, cellInfo, grid} = hit;
-      const col = gridCell.tableColumn!;
-      const rowIdx = gridCell.tableRowIndex!;
-
-      if (this._trackHoveredAtom(col.name, rowIdx, nearest, isErase)) return;
-
-      if (isErase)
-        this._removeAtomFromRow(col, rowIdx, nearest, cellInfo.bondAtoms);
-      else
-        this._addAtomToRow(col, rowIdx, nearest, cellInfo.bondAtoms);
-
-      this._clearRendersCache();
-      grid.invalidate();
+  override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (e.shiftKey) return; // shift/ctrl+shift handled by document listener
+    const col = gridCell.tableColumn;
+    if (!col || col.semType !== DG.SEMTYPE.MOLECULE || !this._isPickerActive(col))
       return;
-    }
 
-    // -- No modifier: preview mode --
+    const hit = this._hitTestAtomInCell(gridCell, e);
+
     if (!hit) {
       // Only clear the preview if it came from 2D. A preview set by a
-      // 3D→2D hover event must survive 2D mousemoves over the 3D viewer
-      // (which otherwise reach this branch on every pixel); it is cleared
-      // only by the corresponding 3D "cursor left the atom" event (a
+      // 3D→2D hover event must survive 2D mousemoves (which otherwise reach
+      // this branch on every pixel); it is cleared only by the
+      // corresponding 3D "cursor left the atom" event (a
       // `_onMol3DHoverEvent` with `atom3DSerial === null`).
       if (this._previewAtomIdx !== null && !this._previewFrom3D)
         this._removePreviewAtom();
@@ -997,17 +970,93 @@ M  END
       return;
     }
 
-    const {gridCell, nearest, cellInfo, grid} = hit;
-    const col = gridCell.tableColumn!;
     const rowIdx = gridCell.tableRowIndex!;
-
-    if (this._trackHoveredAtom(col.name, rowIdx, nearest)) return;
+    if (this._trackHoveredAtom(col.name, rowIdx, hit.nearest)) return;
 
     // 2D hover takes ownership of the preview (overrides any 3D-sourced
     // preview that might still be active).
     this._previewFrom3D = false;
-    this._setPreviewAtom(col, rowIdx, nearest, cellInfo.bondAtoms);
+    this._setPreviewAtom(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
+    gridCell.grid.invalidate();
+  }
+
+  /**
+   * Shift-drag mousemove handler (paint / erase).
+   *
+   * **Shift alone (paint):** each atom the cursor passes over is ADDED
+   * to the persistent selection. Selection accumulates until cleared
+   * with Escape. **Ctrl+Shift (erase):** each atom the cursor passes
+   * over is REMOVED. Matches the grid's Shift+drag extend / Ctrl+Shift
+   * deselect convention.
+   *
+   * Wired from a capture-phase document listener (not the renderer
+   * override) because Datagrok's grid captures shift-drag as its
+   * native row-range-selection gesture and never dispatches
+   * `onMouseMove` to cell renderers while shift is held. We do the
+   * page-coord → grid-cell hit test ourselves via `grok.shell.tv.grid`.
+   */
+  private _onShiftDragMouseMove(e: MouseEvent): void {
+    const isErase = e.shiftKey && e.ctrlKey;
+    const isPaint = e.shiftKey && !e.ctrlKey;
+    if (!isPaint && !isErase) return;
+
+    const grid = grok.shell.tv?.grid;
+    if (!grid) return;
+    let gridRoot: HTMLElement | null = null;
+    try { gridRoot = grid.root; } catch { return; }
+    if (!gridRoot) return;
+
+    const gridRect = gridRoot.getBoundingClientRect();
+    const localX = e.clientX - gridRect.left;
+    const localY = e.clientY - gridRect.top;
+    if (localX < 0 || localY < 0 || localX > gridRect.width || localY > gridRect.height) return;
+
+    let gridCell: DG.GridCell | null = null;
+    try { gridCell = grid.hitTest(localX, localY); } catch { return; }
+    const col = gridCell?.tableColumn;
+    if (!gridCell || !col || col.semType !== DG.SEMTYPE.MOLECULE) return;
+    if (!this._isPickerActive(col)) return;
+
+    const molString: string = gridCell.cell.value;
+    if (!molString || DG.chem.Sketcher.isEmptyMolfile(molString)) return;
+
+    const bounds = gridCell.bounds;
+    const pointerCellX = e.clientX - (gridRect.left + bounds.left);
+    const pointerCellY = e.clientY - (gridRect.top + bounds.top);
+    if (pointerCellX < 0 || pointerCellY < 0 ||
+        pointerCellX > bounds.width || pointerCellY > bounds.height) return;
+
+    const cellInfo = this._getCellAtomPositions(molString, bounds.width, bounds.height);
+    if (!cellInfo || cellInfo.positions.size === 0) return;
+
+    const nearest = findNearestAtom(cellInfo.positions, pointerCellX, pointerCellY);
+    if (nearest === null) return;
+
+    this._previewAtomIdx = null;
+    const rowIdx = gridCell.tableRowIndex!;
+    if (this._trackHoveredAtom(col.name, rowIdx, nearest, isErase)) return;
+
+    if (isErase)
+      this._removeAtomFromRow(col, rowIdx, nearest, cellInfo.bondAtoms);
+    else
+      this._addAtomToRow(col, rowIdx, nearest, cellInfo.bondAtoms);
+
+    this._clearRendersCache();
     grid.invalidate();
+  }
+
+  /** Clears the 2D-sourced preview when the cursor leaves a molecule cell.
+   *  With the document-listener approach the "no-hit" branch of the
+   *  mousemove handler did this; with `onMouseMove` we only fire inside
+   *  molecule cells, so `onMouseLeave` picks up the residual case of the
+   *  cursor moving onto a non-molecule column or out of the grid entirely. */
+  override onMouseLeave(gridCell: DG.GridCell, _e: MouseEvent): void {
+    const col = gridCell.tableColumn;
+    if (!col || col.semType !== DG.SEMTYPE.MOLECULE || !this._isPickerActive(col))
+      return;
+    if (this._previewAtomIdx !== null && !this._previewFrom3D)
+      this._removePreviewAtom();
+    this._lastHoveredAtom = null;
   }
 
   /** Reverse 3D→2D hover handler. Delegates to `handleMol3DHoverEvent` in
