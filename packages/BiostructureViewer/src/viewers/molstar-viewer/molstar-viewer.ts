@@ -427,8 +427,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     // at the Mol3D column name, reverse on the Mol3D column pointing back
     // at the SMILES column name. Persist via `col.tags[...]` so the link
     // survives save/reload; use the shared constants to stay in sync
-    // with the BSV widget, the Docking pipeline post-run write, and
-    // Chem's reader.
+    // with the BSV link widget and Chem's reader.
     if (this.ligandColumnName) {
       const ligandCol = this.dataFrame.col(this.ligandColumnName);
       if (ligandCol) {
