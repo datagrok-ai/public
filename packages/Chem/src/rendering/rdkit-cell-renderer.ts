@@ -321,9 +321,9 @@ M  END
 
   /** Returns true when the interactive atom picker should be active
    *  for the given molecule column. Checks for the explicit tag
-   *  (CHEM_ATOM_PICKER_LINKED_COL) written by BSV's Molstar viewer on
-   *  dataframe bind, Docking's `getAutodockResults` post-run write, or
-   *  the BSV widget embedded in Docking's AutoDock panel. Persistent
+   *  (CHEM_ATOM_PICKER_LINKED_COL), which is written either by BSV's
+   *  Molstar viewer on dataframe bind, or by the BSV link widget the
+   *  user can open from the AutoDock context panel. Persistent
    *  `col.tags[...]` is preferred; session-only `col.temp[...]` is a
    *  backward-compat fallback so links created on older builds that
    *  wrote to `temp` still resolve within the current session. */
