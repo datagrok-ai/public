@@ -44,7 +44,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData} from './molstar-viewer-open';
 import {
   CHEM_MOL3D_HOVER_EVENT, CHEM_SELECTION_EVENT, ChemSelectionEventArgs,
-  getSelectionCache,
+  SelectionCacheEntry, selectionCacheKey,
 } from './molstar-highlight-utils';
 import {MolstarHighlightController} from './molstar-highlight-controller';
 import {defaults, molecule3dFileExtensions} from './consts';
@@ -325,6 +325,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.logger = _package.logger;
     this.viewSyncer = new PromiseSyncer(this.logger);
 
+    // Initialize the class-static selection cache + its CHEM_SELECTION_EVENT
+    // subscription on first viewer creation (singleton per process). See
+    // `MolstarViewer.selectionCache` / `MolstarViewer._initSelectionCache`.
+    MolstarViewer._initSelectionCache();
+
     // The highlight controller owns overpaint state + the 3D↔2D bridge.
     // It reads viewer state through getters so the viewer instance itself
     // is the only thing that needs to be captured in the closures.
@@ -347,6 +352,48 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private static viewerCounter: number = -1;
   private readonly viewerId: number = ++MolstarViewer.viewerCounter;
+
+  // -- Class-static selection cache (review #3) --------------------------------
+  // Shared across every MolstarViewer instance. Populated from
+  // CHEM_SELECTION_EVENT so that selections made before a viewer is open can
+  // be replayed on first load. Keys: composite dfId-dfName-colName-rowIdx.
+
+  /** Composite-key LRU cache of persistent atom selections. */
+  public static selectionCache: DG.LruCache<string, SelectionCacheEntry> =
+    new DG.LruCache<string, SelectionCacheEntry>();
+
+  /** Idempotent subscriber guard — the CHEM_SELECTION_EVENT subscription
+   *  registers exactly once, on first viewer construction. */
+  private static _selectionSubscribed = false;
+
+  /** Subscribes once to CHEM_SELECTION_EVENT and routes persistent events
+   *  into `selectionCache`. Idempotent — safe to call from every constructor. */
+  private static _initSelectionCache(): void {
+    if (MolstarViewer._selectionSubscribed) return;
+    MolstarViewer._selectionSubscribed = true;
+    grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
+      .subscribe((_args: unknown) => {
+        const {
+          rowIdx = -1, atoms = [], persistent, clearAll, mapping3D, column,
+        } = (_args as ChemSelectionEventArgs) ?? {};
+        if (persistent === false) return;
+        const col = column as DG.Column | undefined;
+        const dfId = col?.dataFrame?.id ?? '';
+        const dfName = col?.dataFrame?.name ?? '';
+        const colName = col?.name ?? '';
+        _package.logger.debug(
+          `[molstar-picker] caching selection event atomsLen=${atoms.length} rowIdx=${rowIdx}`);
+        if (clearAll) {
+          // LruCache has no clear() — just replace; the old instance is GC'd.
+          MolstarViewer.selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
+        } else {
+          const key = selectionCacheKey(dfId, dfName, colName, rowIdx);
+          MolstarViewer.selectionCache.set(key, {
+            atoms, mapping3D: atoms.length > 0 ? (mapping3D ?? null) : null,
+          });
+        }
+      });
+  }
 
   private _initButtonExpand() {
     const button = $('.msp-btn.msp-btn-icon.msp-btn-link-toggle-off');
@@ -989,8 +1036,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           if (this._stateChangeTimer) clearTimeout(this._stateChangeTimer);
           this._stateChangeTimer = setTimeout(() => {
             this._stateChangeTimer = null;
-            if (getSelectionCache())
-              this.highlightController.replayHighlightIfCached();
+            this.highlightController.replayHighlightIfCached();
           }, 500) as any;
         };
         canvas.addEventListener('click', reapplyOnClick);

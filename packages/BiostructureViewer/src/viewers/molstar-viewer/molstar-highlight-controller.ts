@@ -35,9 +35,9 @@ import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {
   AtomMapping3D, CHEM_MOL3D_HOVER_EVENT, Mol3DHoverEventArgs,
-  computeSerials, getSelectionCache, selectionCacheKey,
+  computeSerials, selectionCacheKey,
 } from './molstar-highlight-utils';
-import type {LigandMap} from './molstar-viewer';
+import {MolstarViewer, type LigandMap} from './molstar-viewer';
 
 /** Narrow view of `MolstarViewer` that the highlight controller needs. */
 export interface HighlightHost {
@@ -192,7 +192,7 @@ export class MolstarHighlightController {
     const dfId = df?.id ?? '';
     const dfName = df?.name ?? '';
     const colName = molCol?.name ?? '';
-    const cache = getSelectionCache();
+    const cache = MolstarViewer.selectionCache;
 
     const highlights: LigandHighlight[] = [];
     for (const ligand of loadedLigands) {

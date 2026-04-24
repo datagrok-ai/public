@@ -23,13 +23,15 @@ import {
  *        SMILES column: [ dropdown ]   <-- shown only when checked
  *
  *  State transitions:
- *  - Check the box → auto-link to the currently selected dropdown
- *    value (or the first SMILES column if no prior link); dropdown
- *    becomes visible.
+ *  - Check the box → show the dropdown in an empty "no selection" state.
+ *    **No link is written yet.** The user must explicitly pick a SMILES
+ *    column via the dropdown — avoiding auto-selection when multiple
+ *    molecule columns exist (drizhina review #5).
+ *  - Pick a SMILES column → write the link tag.
+ *  - Change dropdown (while checked, already linked) → rewrite the link
+ *    to the new SMILES column, clearing the previous.
  *  - Uncheck → clear the link (both tag and residual highlights);
  *    dropdown hidden.
- *  - Change dropdown (while checked) → rewrite the link to the new
- *    SMILES column, clearing the previous.
  *
  *  Empty state: if the DataFrame has no SMILES columns, the widget
  *  renders a short info message and no controls. */
@@ -50,17 +52,23 @@ export function getMol3DAtomPickerLinkWidget(mol3DCol: DG.Column): DG.Widget {
   const currentLinkedSmiles = findLinkedSmilesColName(df, mol3DCol.name);
   const smilesNames = smilesCols.map((c) => c.name);
 
-  // Dropdown reflects the currently-linked SMILES column name, or
-  // defaults to the first available SMILES column if no link exists.
+  // Dropdown: pre-selects the currently-linked SMILES column if any;
+  // otherwise stays empty (`null`) so the user must make an explicit
+  // choice — drizhina #5 asked us not to auto-pick when multiple
+  // molecule columns are present.
   const choiceInput = ui.input.choice('SMILES column', {
-    value: currentLinkedSmiles ?? smilesNames[0],
+    value: currentLinkedSmiles ?? null,
     items: smilesNames,
+    nullable: true,
     onValueChanged: (newName) => {
-      // Only write a new link when the enable checkbox is on; otherwise
-      // changing the dropdown while disabled is a no-op (prevents
-      // accidentally re-linking after an unlink).
-      if (!enableInput.value || !newName)
+      if (!enableInput.value) return;
+      if (!newName) {
+        // Dropdown cleared while checkbox is on: drop the link but keep
+        // the checkbox state — user can pick again without re-toggling.
+        clearLinksToMol3D(df, mol3DCol.name);
+        df.fireValuesChanged();
         return;
+      }
       clearLinksToMol3D(df, mol3DCol.name);
       const newCol = df.col(newName);
       if (newCol)
@@ -75,21 +83,13 @@ export function getMol3DAtomPickerLinkWidget(mol3DCol: DG.Column): DG.Widget {
     value: currentLinkedSmiles !== null,
     onValueChanged: (checked) => {
       if (checked) {
-        // Auto-link to the dropdown's current value so the checkbox
-        // state always matches a real tag (no "checked but unlinked"
-        // limbo state).
-        const target = choiceInput.value || smilesNames[0];
-        const newCol = df.col(target);
-        if (newCol) {
-          clearLinksToMol3D(df, mol3DCol.name);
-          setSmilesColLink(newCol, mol3DCol.name);
-          df.fireValuesChanged();
-        }
+        // Show dropdown; the onValueChanged handler writes the tag on pick.
         choiceWrap.style.display = '';
       } else {
         clearLinksToMol3D(df, mol3DCol.name);
-        df.fireValuesChanged();
+        choiceInput.value = null;
         choiceWrap.style.display = 'none';
+        df.fireValuesChanged();
       }
     },
   });

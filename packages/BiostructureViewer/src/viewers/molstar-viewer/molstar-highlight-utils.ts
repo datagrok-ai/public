@@ -1,13 +1,15 @@
 /**
- * Shared types, constants, and cache utilities for the interactive atom
+ * Shared types, constants, and pure helpers for the interactive atom
  * highlighting bridge between Chem (2D SMILES) and Molstar (3D poses).
  *
  * Extracted from molstar-viewer.ts to keep the viewer class focused on
- * Molstar lifecycle management while this module handles the cross-package
+ * Molstar lifecycle management while this module owns the cross-package
  * event protocol and atom-mapping types.
+ *
+ * The selection cache itself lives on `MolstarViewer.selectionCache`
+ * (class-static, initiated at first viewer construction — review #3).
  */
 
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Structure} from 'molstar/lib/mol-model/structure';
@@ -66,7 +68,7 @@ export interface SelectionCacheEntry {
   mapping3D: AtomMapping3D | null;
 }
 
-// -- Cache -------------------------------------------------------------------
+// -- Pure computations -------------------------------------------------------
 
 /** Builds a composite cache key: dfId-dfName-columnName-rowIdx. */
 export function selectionCacheKey(
@@ -75,49 +77,6 @@ export function selectionCacheKey(
   return `${dfId}-${dfName}-${colName}-${rowIdx}`;
 }
 
-/**
- * Per-row cache of atom selection events. Uses composite keys
- * (dfId-dfName-colName-rowIdx) to avoid collisions across different
- * dataframes, columns, or tabs.
- */
-let _selectionCache: DG.LruCache<string, SelectionCacheEntry> | null = null;
-
-export function getSelectionCache(): DG.LruCache<string, SelectionCacheEntry> {
-  if (!_selectionCache)
-    _selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
-  return _selectionCache;
-}
-
-// Register at module load — no lazy guard needed.
-grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
-  .subscribe((_args: unknown) => {
-    const {
-      rowIdx = -1, atoms = [], persistent, clearAll, mapping3D, column,
-    } = (_args as ChemSelectionEventArgs) ?? {};
-    const isPersistent = persistent !== false;
-    const col = column as DG.Column | undefined;
-    const dfId = col?.dataFrame?.id ?? '';
-    const dfName = col?.dataFrame?.name ?? '';
-    const colName = col?.name ?? '';
-
-    _package.logger.debug(
-      `[molstar-picker-global] caching selection event atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${isPersistent}`);
-
-    if (isPersistent) {
-      const cache = getSelectionCache();
-      if (clearAll)
-        _selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
-      else {
-        const key = selectionCacheKey(dfId, dfName, colName, rowIdx);
-        if (atoms.length > 0)
-          cache.set(key, {atoms, mapping3D: mapping3D ?? null});
-        else
-          cache.set(key, {atoms: [], mapping3D: null});
-      }
-    }
-  });
-
-// -- Pure computations -------------------------------------------------------
 
 /** Converts 2D atom indices to 3D PDB serial numbers using the
  *  pre-computed mapping. Falls back to heavy-atom serial order from
