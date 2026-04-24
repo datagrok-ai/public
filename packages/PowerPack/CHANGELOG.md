@@ -4,6 +4,8 @@
 
 * Activity Dashboard: Reduced Spotlight tab load time by fetching entities server-side in parallel with SQL, and progressively rendering the Recent section
 * GROK-19613: Add New Column dialog: Fixed duplicate scrollbars appearing on the column and function list panels when the dialog is resized
+* Activity Dashboard: Replaced the "Mark all as read" floating button in the Notifications tab with a left-aligned "N unread · Mark all as read" summary row to prevent overlap with notification text in narrow panels
+* Activity Dashboard: Fixed unread count header and tab badge not updating when marking a single notification as read
 
 ## 1.8.0 (2026-03-13)
 
