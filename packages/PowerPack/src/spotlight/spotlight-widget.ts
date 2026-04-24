@@ -96,7 +96,7 @@ export class SpotlightWidget extends DG.Widget {
       'Learn': () => new LearningWidget().root,
     };
 
-    this.tabControl = ui.tabControl(tabs, true);
+    this.tabControl = ui.tabControl(tabs, true, 'spotlight-widget');
     this.subs.push(this.tabControl.onTabChanged.subscribe((tabPane: DG.TabPane) => {
       this.cleanLists();
       tabPane.name === 'Learn' ? tabPane.content.parentElement?.classList.add('power-pack-overflow-hidden') :
