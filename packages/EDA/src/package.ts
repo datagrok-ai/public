@@ -95,7 +95,10 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'bool', 'options': {'caption': 'Center', 'initialValue': 'false', 'description': 'Indicating whether the variables should be shifted to be zero centered.'}}) center: boolean,
     @grok.decorators.param({'type': 'bool', 'options': {'caption': 'Scale', 'initialValue': 'false', 'description': 'Indicating whether the variables should be scaled to have unit variance.'}}) scale: boolean): Promise<void> {
     try {
-      const pcaTable = await computePCA(table, features, components, center, scale);
+      // "column_list" might be passed as array of columns, not DG.ColumnList (slack: https://datagrok.slack.com/archives/C04BF3YM6CF/p1776968116891119)
+      const featuresToPass = Array.isArray(features) ? DG.DataFrame.fromColumns(features).columns : features;
+
+      const pcaTable = await computePCA(table, featuresToPass, components, center, scale);
       addPrefixToEachColumnName('PC', pcaTable.columns);
 
       if (table.id === null) // table is loaded from a local file
@@ -1031,5 +1034,4 @@ export class PackageFunctions {
     df.name = 'Synthetic';
     return df;
   }
-
 }
