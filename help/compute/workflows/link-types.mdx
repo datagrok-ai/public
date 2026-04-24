@@ -215,6 +215,13 @@ to any node the parent workflow can reach. This is useful when an action
 logically belongs to a child step's UI but needs access to sibling steps'
 data. Works with all action types (data, funccall, pipeline).
 
+Because `from`/`to` resolve independently, a pipeline mutation action can
+read from a step _inside_ its own target pipeline. For example, an action
+with `to: 'out1:targetPipeline'` can also use
+`from: 'in1:targetPipeline/step1/result'` to read a child step's output and
+decide which step type to add. This works because the forward-only constraint
+only applies to reference selectors (`@ref`), not to independent path specs.
+
 ### Data links
 
 Workflow `links` items with a type field `data`. Used to pass data

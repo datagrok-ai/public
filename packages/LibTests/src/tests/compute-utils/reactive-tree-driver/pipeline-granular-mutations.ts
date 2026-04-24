@@ -520,3 +520,169 @@ category('ComputeUtils: Driver pipeline granular: link interaction', async () =>
     });
   });
 });
+
+category('ComputeUtils: Driver pipeline granular: action reads from target', async () => {
+  let testScheduler: TestScheduler;
+
+  before(async () => {
+    testScheduler = createTestScheduler();
+  });
+
+  test('Pipeline action reads step output inside its target pipeline', async () => {
+    // Simple case: action targets a dynamic pipeline and reads from a step inside it
+    const config: PipelineConfiguration = {
+      id: 'root',
+      type: 'static',
+      steps: [
+        {
+          id: 'analyses',
+          type: 'dynamic',
+          stepTypes: [
+            {id: 'regression', nqName: 'LibTests:TestMul2'},
+            {id: 'clustering', nqName: 'LibTests:TestAdd2'},
+          ],
+          initialSteps: [{id: 'regression'}],
+        },
+      ],
+      actions: [
+        {
+          id: 'add-based-on-output',
+          type: 'pipeline',
+          from: 'in1:analyses/regression/a',
+          to: 'out1:analyses',
+          position: 'none',
+          handler({controller}) {
+            const val = controller.getFirst<number>('in1');
+            if (val === 1)
+              controller.addStep('out1', 'clustering');
+            else
+              controller.addStep('out1', 'regression');
+          },
+        },
+      ],
+    };
+
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const analysesNode = tree.nodeTree.getNode([{idx: 0}]);
+      // Set the regression step's output
+      const regressionNode = tree.nodeTree.getNode([{idx: 0}, {idx: 0}]);
+      cold('-a').subscribe(() => {
+        regressionNode.getItem().getStateStore().setState('a', 1);
+      });
+      // Run the action — should read a=1 and add 'clustering'
+      cold('--a').subscribe(() => {
+        const action = getAction(tree, 'add-based-on-output');
+        tree.runAction(action.uuid).subscribe();
+      });
+      cold('---a').subscribe(() => {
+        const children = analysesNode.getChildren();
+        expectDeepEqual(children.length, 2, {prefix: 'Child count after add'});
+        expectDeepEqual(children[1].id, 'clustering', {prefix: 'Added clustering based on val=1'});
+      });
+    });
+  });
+
+  test('Pipeline action with visibleOn reads step output inside target to decide step type', async () => {
+    // Complex scenario:
+    // - pipeline with step1, step2 (action step), and a dynamic target pipeline
+    // - action has visibleOn: 'actionStep' (shown on the action step)
+    // - action reads from step1/res (first step output)
+    // - action reads from targetPipeline/first(regression)/a (inside the target)
+    // - based on both values, decides which step type to add
+    const config: PipelineConfiguration = {
+      id: 'root',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+        {
+          id: 'actionStep',
+          type: 'action',
+        },
+        {
+          id: 'targetPipeline',
+          type: 'dynamic',
+          stepTypes: [
+            {id: 'regression', nqName: 'LibTests:TestMul2'},
+            {id: 'clustering', nqName: 'LibTests:TestAdd2'},
+          ],
+          initialSteps: [{id: 'regression'}],
+        },
+      ],
+      actions: [
+        {
+          id: 'conditional-add',
+          type: 'pipeline',
+          from: ['stepOut:step1/res', 'targetVal:targetPipeline/first(regression)/a'],
+          to: 'out1:targetPipeline',
+          position: 'buttons',
+          visibleOn: 'actionStep',
+          handler({controller}) {
+            const stepOutput = controller.getFirst<number>('stepOut');
+            const existingVal = controller.getFirst<number>('targetVal');
+            // Use step1 output + existing step value to decide what to add
+            if (stepOutput === 10 && existingVal === 5)
+              controller.addStep('out1', 'clustering');
+            else
+              controller.addStep('out1', 'regression');
+          },
+        },
+      ],
+    };
+
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+
+      // Verify action is routed to the action step via visibleOn
+      const actionStepNode = tree.nodeTree.getNode([{idx: 1}]);
+      const actionStepActions = tree.linksState.getNodeActionsData(actionStepNode.getItem().uuid);
+      expectDeepEqual(actionStepActions?.length, 1, {prefix: 'Action visible on actionStep'});
+      expectDeepEqual(actionStepActions?.[0].id, 'conditional-add', {prefix: 'Correct action id'});
+
+      // Pipeline root should have no actions
+      const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
+      expectDeepEqual(rootActions, undefined, {prefix: 'No actions on root'});
+
+      const step1Node = tree.nodeTree.getNode([{idx: 0}]);
+      const regressionNode = tree.nodeTree.getNode([{idx: 2}, {idx: 0}]);
+      const targetNode = tree.nodeTree.getNode([{idx: 2}]);
+
+      // Set step1 output and existing regression step value
+      cold('-a').subscribe(() => {
+        step1Node.getItem().getStateStore().editState('res', 10);
+        regressionNode.getItem().getStateStore().setState('a', 5);
+      });
+      // Run the action — should read stepOut=10, targetVal=5 → add clustering
+      cold('--a').subscribe(() => {
+        const action = getAction(tree, 'conditional-add');
+        tree.runAction(action.uuid).subscribe();
+      });
+      cold('---a').subscribe(() => {
+        const children = targetNode.getChildren();
+        expectDeepEqual(children.length, 2, {prefix: 'Child count after conditional add'});
+        expectDeepEqual(children[1].id, 'clustering', {prefix: 'Added clustering because stepOut=10 and targetVal=5'});
+      });
+
+      // Now test the other branch: set different values
+      cold('----a').subscribe(() => {
+        step1Node.getItem().getStateStore().editState('res', 99);
+      });
+      cold('-----a').subscribe(() => {
+        const action = getAction(tree, 'conditional-add');
+        tree.runAction(action.uuid).subscribe();
+      });
+      cold('------a').subscribe(() => {
+        const children = targetNode.getChildren();
+        expectDeepEqual(children.length, 3, {prefix: 'Child count after second add'});
+        expectDeepEqual(children[2].id, 'regression', {prefix: 'Added regression because stepOut!=10'});
+      });
+    });
+  });
+});
