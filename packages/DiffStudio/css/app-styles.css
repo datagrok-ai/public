@@ -58,10 +58,149 @@
     margin-right: 8px;
 }
 
-.diff-studio-ribbon-download {    
+.diff-studio-ribbon-download {
     font-weight: normal;
     margin-left: 8px;
     margin-right: 8px;
+}
+
+.diff-studio-ribbon-icon {
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+/* Export dialog */
+
+.diff-studio-export-body {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.diff-studio-export-split {
+    height: 480px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.diff-studio-export-options {
+    flex: 0 0 260px;
+    width: 260px;
+    box-sizing: border-box;
+    padding: 4px 12px 4px 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-right: 1px solid var(--grey-2);
+    position: relative;
+}
+
+.diff-studio-export-form {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-left: 24px;
+}
+
+.diff-studio-export-form .ui-input-label {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.diff-studio-export-settings-icon {
+    position: absolute;
+    top: 8px;
+    left: 4px;
+    z-index: 1;
+    cursor: pointer;
+    padding: 4px 6px;
+    color: var(--grey-5);
+}
+
+.diff-studio-export-settings-icon:hover {
+    color: var(--grey-7);
+}
+
+.diff-studio-export-preview-host {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    padding-left: 12px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.diff-studio-export-preview {
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: var(--grey-1);
+    border-radius: 4px;
+}
+
+.diff-studio-export-preview .cm-editor {
+    height: 100%;
+    width: 100%;
+    font-size: 12px;
+    background: transparent;
+}
+
+.diff-studio-export-preview .cm-scroller {
+    overflow: auto;
+    font-family: var(--grok-font-family-monospace, monospace);
+}
+
+.diff-studio-export-preview .cm-content {
+    padding: 12px 0;
+}
+
+.diff-studio-export-preview .cm-gutters {
+    background: transparent;
+    border-right: 1px solid var(--grey-2);
+}
+
+.diff-studio-export-copy-icon {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    z-index: 2;
+    padding: 4px 6px;
+    cursor: pointer;
+    color: var(--grey-5);
+    background: var(--grey-1);
+    border-radius: 3px;
+}
+
+.diff-studio-export-copy-feedback {
+    position: absolute;
+    top: 12px;
+    right: 48px;
+    z-index: 2;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: var(--green-1, #e6f4ea);
+    color: var(--green-2, #1b7a3f);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.diff-studio-export-copy-feedback--visible {
+    opacity: 1;
+}
+
+.diff-studio-export-copy-feedback--error {
+    background: var(--red-1, #fdecea);
+    color: var(--red-2, #c82333);
+}
+
+.diff-studio-export-actions-row {
+    align-items: center;
+    padding: 10px 4px 0 4px;
+}
+
+.diff-studio-export-filename {
+    flex: 1 1 auto;
 }
 
 .diff-studio-inputs-category {    
@@ -94,7 +233,76 @@
     width: 24px;
 }
 
-.diff-studio-ribbon-save-to-model-catalog-icon { 
+.diff-studio-ribbon-save-to-model-catalog-icon {
     margin-left: 4px;
     margin-right: 8px;
+}
+
+/* Diff Studio Hub */
+
+.diff-studio-hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.diff-studio-hub-card {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.diff-studio-hub-card * {
+    cursor: inherit;
+}
+
+.diff-studio-hub-card:hover {
+    background-color: var(--grey-1);
+}
+
+.diff-studio-hub-card-description {
+    color: var(--grey-4);
+    font-size: 12px;
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.diff-studio-hub-card-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.diff-studio-hub-card-header {
+    align-items: center;
+    gap: 8px;
+}
+
+.diff-studio-hub-header {
+    margin-bottom: 24px;
+}
+
+.diff-studio-hub-buttons {
+    align-items: center;
+    gap: 12px;
+}
+
+.diff-studio-hub-tooltip-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.diff-studio-hub-tooltip-name {
+    color: var(--blue-1);
+    font-weight: bold;
+}
+
+.diff-studio-hub-tooltip-header {
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
 }

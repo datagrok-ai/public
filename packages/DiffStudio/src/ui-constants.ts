@@ -38,6 +38,7 @@ export enum HINT {
   ABORT = 'Abort computations',
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
   CLICK_RUN = `Click to run`,
+  DBL_CLICK_RUN = `Double-click to run`,
   SOLVE = `Solve equations (${HOT_KEY.RUN})`,
   NO_MY_MODELS = 'No models in My files',
   FAILED_TO_LOAD_MY_MODELS = 'Failed to load models from My files: file system error',
@@ -46,6 +47,7 @@ export enum HINT {
   CORRUPTED_DATA_FILE = 'Failed to load recent models: corrupted data file',
   EDIT = 'Edit',
   UPDATE = 'Apply all changes to the current file',
+  SAVE_TO_LIB = 'Save model to Library',
 }; // HINT
 
 /** UI titles */
@@ -259,8 +261,8 @@ Turn off the **${TITLE.EDIT}** toggle, and perform analysis:
 * Click the **Fit** icon on the top panel to [optimize inputs](${LINK.FITTING}).
 * Click the **Sensitivity** icon to run [sensitivity analysis](${LINK.SENS_AN}).
 
-# Catalog
-Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Hub**.
+# Library
+Click <i class="fas fa-layer-plus"></i> icon to save model to **Library**.
 
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
@@ -289,6 +291,9 @@ export enum PATH {
   SYSTEM = 'System',
   FILE = 'file',
   SLASH = '/',
+  LIBRARY_FOLDER = 'System:AppData/DiffStudio/library',
+  EXTERNAL_MODELS_JSON = 'external-models.json',
+  APP_DATA_MATCH = 'system.appdata/diffstudio',
 };
 
 /** UI time constants */
@@ -303,6 +308,8 @@ export enum UI_TIME {
   WGT_CLICK = 10,
   FACET_DOCKING = 100,
   TITLE_REMOVING = 500,
+  DBL_CLICK_DELAY = 250,
+  SOLVE_DEBOUNCE_MS = 1,
 };
 
 /** Numerical methods names */
@@ -329,6 +336,9 @@ export const MAX_RECENT_COUNT = 10;
 
 export const CUSTOM_MODEL_IMAGE_LINK = 'images/custom.png';
 
+/** Custom event name — fired whenever external-models.json is modified */
+export const LIBRARY_CHANGED_EVENT = 'diff-studio:library-changed';
+
 /** Model image link */
 export const modelImageLink = new Map([
   [TITLE.BASIC, 'images/basic.png'],
@@ -343,6 +353,22 @@ export const modelImageLink = new Map([
   [TITLE.NIM, 'images/nimotuzumab.png'],
   [TITLE.BIO, 'images/bioreactor.png'],
   [TITLE.POLL, 'images/pollution.png'],
+]);
+
+/** Model icon path (files/icons/) */
+export const MODEL_ICON = new Map([
+  [TITLE.BASIC, 'icons/template.png'],
+  [TITLE.ADV, 'icons/advanced.png'],
+  [TITLE.EXT, 'icons/extended.png'],
+  [TITLE.CHEM, 'icons/chem-react.png'],
+  [TITLE.ROB, 'icons/robertson.png'],
+  [TITLE.FERM, 'icons/fermentation.png'],
+  [TITLE.PK, 'icons/pk.png'],
+  [TITLE.PKPD, 'icons/pkpd.png'],
+  [TITLE.ACID, 'icons/ga-production.png'],
+  [TITLE.NIM, 'icons/nimotuzumab.png'],
+  [TITLE.BIO, 'icons/_bioreactor.png'],
+  [TITLE.POLL, 'icons/pollution.png'],
 ]);
 
 /** Inputs table constants */

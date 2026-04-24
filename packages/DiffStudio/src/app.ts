@@ -9,28 +9,37 @@ import type {EditorState} from '@codemirror/state';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {getFormatted} from '@datagrok-libraries/compute-utils/function-views/src/shared/lookup-tools';
-import {getIvp2WebWorker, getPipelineCreator} from 'diff-grok';
+import {getIvp2WebWorker, getPipelineCreator, getInputVector, applyPipeline, getOutputNames} from 'diff-grok';
 
-import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
+import {CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
-  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT,
-  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF, MAX_FACET_GRAPHS_COUNT} from './ui-constants';
+  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT, MODEL_ICON,
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF, MAX_FACET_GRAPHS_COUNT,
+  LIBRARY_CHANGED_EVENT} from './ui-constants';
 
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
-  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
+  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS, INCEPTION} from './scripting-tools';
 
 import {CallbackAction} from './solver-tools';
 
-import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
-  getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
-  getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions} from './utils';
+import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
+  getCategoryWidget, getReducedTable, closeWindows, getEquationsFromFile,
+  getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions,
+  prefetchRecentModelsTable, getCachedRecentModelsTable, invalidateRecentCache,
+  prefetchMyModelFiles, getCachedMyModelFiles, invalidateMyModelFilesCache,
+  prefetchExternalLibraryEntries, getCachedExternalLibraryEntries,
+  prefetchFolderListing, getCachedFileInfo, invalidateFolderListing,
+  ExternalLibraryEntry} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
+import {showExportDialog} from './export/export-dialog';
+
+//@ts-ignore
 import '../css/app-styles.css';
 
 import {_package} from './package';
@@ -59,7 +68,7 @@ const COLORS = DG.Color.categoricalPalette;
 const COLORS_COUNT = COLORS.length;
 
 /** State of IVP code editor */
-enum EDITOR_STATE {
+export enum EDITOR_STATE {
   EMPTY = 'empty',
   BASIC_TEMPLATE = 'basic',
   ADVANCED_TEMPLATE = 'advanced',
@@ -75,6 +84,24 @@ enum EDITOR_STATE {
   BIOREACTOR = 'bioreactor',
   POLLUTION = 'pollution',
 };
+
+/** Build rich tooltip for a model (icon + name + description) matching hub cards */
+function buildModelTooltip(name: string, description: string, iconUrl: string): HTMLElement {
+  const tooltipIcon = ui.iconImage('diff-studio', iconUrl);
+  tooltipIcon.classList.add('diff-studio-hub-tooltip-icon');
+  const tooltipName = ui.label(name);
+  tooltipName.classList.add('diff-studio-hub-tooltip-name');
+  const tooltipHeader = ui.divH([tooltipIcon, tooltipName]);
+  tooltipHeader.classList.add('diff-studio-hub-tooltip-header');
+  const tooltipDesc = ui.divText(description);
+  return ui.divV([tooltipHeader, tooltipDesc]);
+}
+
+/** Icon URL for a built-in model */
+function getModelIconUrl(title: TITLE): string {
+  const iconFile = MODEL_ICON.get(title);
+  return iconFile ? `${_package.webRoot}files/${iconFile}` : `${_package.webRoot}/package.png`;
+}
 
 /** Return path corresponding to state */
 function stateToPath(state: EDITOR_STATE): string {
@@ -112,7 +139,7 @@ const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
 ]);
 
 /** Model title-to-editor state map */
-const STATE_BY_TITLE = new Map<TITLE, EDITOR_STATE>([
+export const STATE_BY_TITLE = new Map<TITLE, EDITOR_STATE>([
   [TITLE.BASIC, EDITOR_STATE.BASIC_TEMPLATE],
   [TITLE.ADV, EDITOR_STATE.ADVANCED_TEMPLATE],
   [TITLE.EXT, EDITOR_STATE.EXTENDED_TEMPLATE],
@@ -148,7 +175,7 @@ const MODELS: string[] = [
 ];
 
 /** Return help link with respect to IVP editor state */
-function getLink(state: EDITOR_STATE): string {
+export function getLink(state: EDITOR_STATE): string {
   switch (state) {
   case EDITOR_STATE.CHEM_REACT:
     return LINK.CHEM_REACT;
@@ -259,6 +286,12 @@ export type UiOptions = {
   inputsTabDockRatio: number,
   graphsDockRatio: number,
 };
+
+/** Metadata attached to a tree item; consumed by the centralized selection handler. */
+type ItemPreviewMeta =
+  | {kind: 'builtin', state: EDITOR_STATE}
+  | {kind: 'custom', path: string}
+  | {kind: 'external', path: string};
 
 /** Solver of differential equations */
 export class DiffStudio {
@@ -400,7 +433,13 @@ export class DiffStudio {
     this.editorView!.dom.addEventListener('keydown', async (e) => saveBtn.hidden = false);
 
     this.toRunWhenFormCreated = true;
+    this.schedulePreviewDock();
 
+    return this.solverView;
+  } // getFilePreview
+
+  /** Dock the inputs tab on the left and kick off solving — shared by previews */
+  private schedulePreviewDock(): void {
     setTimeout(() => {
       const node = this.solverView.dockManager.dock(
         this.tabControl.root,
@@ -414,9 +453,28 @@ export class DiffStudio {
 
       this.runSolving();
     }, UI_TIME.PREVIEW_RUN_SOLVING);
+  }
+
+  /** Return preview view for a built-in template/example */
+  public async getStatePreview(state: EDITOR_STATE): Promise<DG.View> {
+    closeWindows();
+    const equations = MODEL_BY_STATE.get(state) as string;
+
+    await this.createEditorView(equations);
+
+    this.editorState = state;
+    this.solverView.helpUrl = getLink(state);
+    this.entityPath = stateToPath(state);
+    this.toChangePath = true;
+
+    this.solverView.setRibbonPanels(this.getRibbonPanels());
+    this.updateRibbonWgts();
+
+    this.toRunWhenFormCreated = true;
+    this.schedulePreviewDock();
 
     return this.solverView;
-  } // getFilePreview
+  } // getStatePreview
 
   /** Run Diff Studio with the specified content */
   public async handleContent(content: string): Promise<void> {
@@ -444,7 +502,7 @@ export class DiffStudio {
     setTimeout(async () => {
       await this.runSolving();
     }, UI_TIME.APP_RUN_SOLVING);
-  } // handleContent
+  } // runModel
 
   /** Set starting pass */
   public setStartingPath(path: string): void {
@@ -457,6 +515,11 @@ export class DiffStudio {
   private startingPath = '';
   private startingInputs: Map<string, number> | null = null;
   private solverView: DG.TableView;
+
+  /** Close all tracked DiffStudio previews. */
+  private static closeOpenPreviews(): void {
+    grok.shell.preview = null;
+  }
 
   private entityPath: string = PATH.CUSTOM;
   private mainPath: string = PATH.APPS_DS;
@@ -487,6 +550,12 @@ export class DiffStudio {
   private fromFileHandler = false;
   private appTree: DG.TreeViewGroup | null = null;
   private recentFolder: DG.TreeViewGroup | null = null;
+  private libraryFolder: DG.TreeViewGroup | null = null;
+  private librarySub: {unsubscribe: () => void} | null = null;
+  private treeSelSub: {unsubscribe: () => void} | null = null;
+  private treeFocusSub: {unsubscribe: () => void} | null = null;
+  private treeFocusGuardCleanup: (() => void) | null = null;
+  private pendingItemPreviewTimer: number | null = null;
   private browsePanel: DG.BrowsePanel | null = null;
   private isRecentRun = false;
 
@@ -504,6 +573,7 @@ export class DiffStudio {
   private appStateInputWgt = this.getEditToggle();
   private saveBtn = this.getSaveBtn();
   private downLoadIcon = this.getDownLoadIcon();
+  private exportIcon = this.getExportIcon();
   private helpIcon = this.getHelpIcon();
   private openHelpInNewTabIcon = this.getHelpInNewTabIcon();
   private exportToJsWgt = this.getExportToJsWgt();
@@ -521,9 +591,15 @@ export class DiffStudio {
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing, dockOptions?: UiOptions) {
+    prefetchRecentModelsTable();
+    prefetchMyModelFiles();
+    prefetchExternalLibraryEntries(_package.webRoot);
     this.solverView = DG.TableView.create(this.solutionTable, false);
-    if (toAddTableView)
+    if (toAddTableView) {
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
       grok.shell.addView(this.solverView);
+    }
 
     this.uiOpts = dockOptions ?? {
       inputsTabDockRatio: DOCK_RATIO.INPUTS_TAB,
@@ -582,9 +658,16 @@ export class DiffStudio {
     return [
       [this.openComboMenu, this.addNewWgt],
       [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
-      [this.addToModelCatalogWgt, this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
+      [this.addToModelCatalogWgt, this.exportIcon, this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
     ];
   } // getRibbonPanels
+
+  /** Switch the app to the equations editor pane */
+  public showEditor(): void {
+    if (this.isEditState)
+      return;
+    this.appStateInputWgt.click();
+  }
 
   /** Update ribbon panel widgets */
   private updateRibbonWgts() {
@@ -598,15 +681,40 @@ export class DiffStudio {
 
   /** Return the save model button */
   private getSaveBtn(): HTMLButtonElement {
-    const btn = ui.bigButton(TITLE.SAVE, async () => await this.saveToMyFiles(), HINT.SAVE_MY);
+    const btn = ui.bigButton(TITLE.SAVE, () => this.saveToMyFiles(), HINT.SAVE_MY);
     btn.disabled = true;
     return btn;
   }
 
   /** Return the download model widget */
   private getDownLoadIcon(): HTMLElement {
-    const icon = ui.iconFA('arrow-to-bottom', async () => await this.saveToLocalFile(), HINT.SAVE_LOC);
+    const icon = ui.iconFA('arrow-to-bottom', () => this.saveToLocalFile(), HINT.SAVE_LOC);
     icon.classList.add('diff-studio-ribbon-download');
+
+    return icon;
+  }
+
+  private getExportIcon(): HTMLElement {
+    const icon = ui.iconFA('file-export', () => {
+      if (!this.editorView) {
+        grok.shell.info('No model loaded');
+        return;
+      }
+      const text = this.editorView.state.doc.toString();
+      if (!text.trim()) {
+        grok.shell.info('No model loaded');
+        return;
+      }
+      let name = 'diff-export';
+      try {
+        const ivp = getIVP(text);
+        if (ivp?.name) name = ivp.name;
+      } catch {
+        // parser failures are fine here — fall back to the default name
+      }
+      showExportDialog(text, name, 'latex');
+    }, 'Export model as LaTeX or Markdown');
+    icon.classList.add('diff-studio-ribbon-icon');
 
     return icon;
   }
@@ -619,7 +727,7 @@ export class DiffStudio {
     icn.classList.add('diff-studio-svg-icon');
 
     const wgt = ui.divH([icn, span]);
-    wgt.onclick = async () => await this.runFitting();
+    wgt.onclick = () => this.runFitting();
     ui.tooltip.bind(wgt, 'Fit parameters. Opens a separate view');
 
     return wgt;
@@ -635,7 +743,7 @@ export class DiffStudio {
 
     icn.classList.add('diff-studio-ribbon-sa-icon');
     const wgt = ui.divH([icn, span]);
-    wgt.onclick = async () => await this.runSensitivityAnalysis();
+    wgt.onclick = () => this.runSensitivityAnalysis();
     ui.tooltip.bind(wgt, 'Run sensitivity analysis. Opens a separate view');
 
     return wgt;
@@ -708,18 +816,18 @@ export class DiffStudio {
     wgt.style.minWidth = '20px';
     wgt.style.marginLeft = '7px';
     wgt.style.marginRight = '14px';
-    wgt.onclick = async () => await this.exportToJS();
+    wgt.onclick = () => this.exportToJS();
     ui.tooltip.bind(wgt, HINT.TO_JS);
 
     return wgt;
   }
 
-  /** Return the export to JavaScript widget */
+  /** Return the save-to-Library widget */
   private getAddToModelHubWgt(): HTMLElement {
     const icon = ui.iconFA(
       'layer-plus',
-      async () => await this.saveToModelHub(),
-      'Save to Model Hub',
+      () => this.saveModelToLibrary(),
+      HINT.SAVE_TO_LIB,
     );
 
     icon.classList.add('diff-studio-ribbon-save-to-model-catalog-icon');
@@ -877,6 +985,10 @@ export class DiffStudio {
 
       try {
         await grok.dapi.files.writeAsText(path, modelCode);
+        invalidateMyModelFilesCache();
+        prefetchMyModelFiles();
+        invalidateFolderListing(folder);
+        prefetchFolderListing(folder);
         await this.saveModelToRecent(path, true);
         grok.shell.info(`Model saved to ${path}`);
       } catch (error) {
@@ -994,46 +1106,80 @@ export class DiffStudio {
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
       const sView = DG.ScriptView.create(script);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
       grok.shell.addView(sView);
     } catch (err) {
       this.processError(err);
     }
   }; // exportToJS
 
-  /** Get JS-script for solving the current IVP */
-  private async saveToModelHub(): Promise<void> {
+  /** Save the current model to the Library folder and register it in external-models.json */
+  private async saveModelToLibrary(): Promise<void> {
     try {
       const model = this.editorView!.state.doc.toString();
       const ivp = getIVP(model);
       await this.tryToSolve(ivp);
 
-      let lines = [
-        `//name: ${ivp.name}`,
-        '//language: javascript',
-      ];
+      const lowerMain = this.mainPath.toLowerCase();
+      const fromFile = this.mainPath.includes(PATH.FILE) && lowerMain.includes(PATH.APP_DATA_MATCH);
 
-      if (ivp.descr)
-        lines.push(`//description: ${ivp.descr}`);
+      let targetPath: string;
+      let createdFileName: string | null = null;
 
-      lines = lines.concat([
-        '//tags: model',
-        '',
-        `const model = \`${model}\`;`,
-        '',
-        `await grok.functions.call('DiffStudio:runModel', {`,
-        `  'model': model,`,
-        `  'inputsTabDockRatio': ${this.uiOpts.inputsTabDockRatio},`,
-        `  'graphsDockRatio': ${this.uiOpts.graphsDockRatio},`,
-        '});',
-      ]);
+      if (fromFile) {
+        const rel = this.mainPath.slice(PATH.FILE.length + 1);
+        const firstDot = rel.indexOf('.');
+        targetPath = (firstDot > 0) ? `${rel.slice(0, firstDot)}:${rel.slice(firstDot + 1)}` : rel;
+      } else {
+        const folder = PATH.LIBRARY_FOLDER;
+        const baseName = sanitizeModelFileName(ivp.name ?? '');
+        let existingNames: string[] = [];
+        try {
+          const list = await grok.dapi.files.list(folder, false, MISC.MODEL_FILE_EXT);
+          existingNames = list.map((f) => f.fileName);
+        } catch {
+          existingNames = [];
+        }
+        const freeName = unusedFileName(baseName, existingNames);
+        createdFileName = `${freeName}.${MISC.MODEL_FILE_EXT}`;
+        targetPath = `${folder}/${createdFileName}`;
+        await grok.dapi.files.writeAsText(targetPath, model);
+      }
 
-      const script = DG.Script.create(lines.join('\n'));
-      grok.dapi.scripts.save(script);
-      grok.shell.info('Saved to Model Hub');
+      const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+      const manifest: {models: {path: string, icon: string}[]} = {models: []};
+
+      if (await grok.dapi.files.exists(manifestPath)) {
+        try {
+          const text = await grok.dapi.files.readAsText(manifestPath);
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed?.models))
+            manifest.models = parsed.models;
+        } catch {
+          // keep default empty
+        }
+      }
+
+      const alreadyListed = manifest.models.some((m) => m?.path === targetPath);
+      if (!alreadyListed)
+        manifest.models.push({path: targetPath, icon: 'default.png'});
+
+      await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(manifest, null, 2));
+      invalidateFolderListing(`${PATH.LIBRARY_FOLDER}/`);
+
+      if (createdFileName !== null)
+        grok.shell.info(`Saved to Library as ${createdFileName}`);
+      else if (!alreadyListed)
+        grok.shell.info('Registered in Library');
+      else
+        grok.shell.info('Already in Library');
+
+      grok.events.fireCustomEvent(LIBRARY_CHANGED_EVENT, null);
     } catch (err) {
       this.processError(err);
     }
-  }; // saveToModelCatalog
+  } // saveModelToLibrary
 
   /** Set multi-axis line chart with the solution */
   private setSolutionViewer(): void {
@@ -1086,12 +1232,11 @@ export class DiffStudio {
       if (this.toCheckPerformance && !customSettings)
         ivp.solverSettings = `{maxTimeMs: ${this.secondsLimit * 1000}}`;
 
-      const scriptText = getScriptLines(ivp).join('\n');
-      const script = DG.Script.create(scriptText);
       const params = getScriptParams(ivp);
-      const call = script.prepare(params);
-
-      await call.call();
+      const ivpWW = getIvp2WebWorker(ivp);
+      const inputVector = getInputVector(params, ivp);
+      const pipeline = getPipelineCreator(ivp).getPipeline(inputVector);
+      const solutionArrs = applyPipeline(pipeline, ivpWW, inputVector);
 
       if (!customSettings)
         ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
@@ -1106,7 +1251,28 @@ export class DiffStudio {
         }
       }
 
-      this.solutionTable = call.outputs[DF_NAME];
+      const outputNames = getOutputNames(ivp);
+      this.solutionTable = DG.DataFrame.fromColumns(
+        outputNames.map((n, i) => DG.Column.fromFloat64Array(n, solutionArrs[i])),
+      );
+      this.solutionTable.name = ivp.name;
+
+      if (ivp.updates !== null) {
+        const argArr = solutionArrs[0];
+        const rowCount = argArr.length;
+        const step = argArr[1] - argArr[0];
+        const boundaryThreshold = step * 0.6;
+        const stageNames = [ivp.arg.updateName ?? INCEPTION, ...ivp.updates.map((u) => u.name)];
+        const stageCol = new Array<string>(rowCount);
+        let stageIdx = 0;
+        stageCol[0] = stageNames[0];
+        for (let i = 1; i < rowCount; ++i) {
+          if (argArr[i] - argArr[i - 1] < boundaryThreshold && stageIdx < stageNames.length - 1)
+            ++stageIdx;
+          stageCol[i] = stageNames[stageIdx];
+        }
+        this.solutionTable.columns.add(DG.Column.fromStrings(STAGE_COL_NAME, stageCol));
+      }
 
       if (hasNaN(this.solutionTable)) {
         grok.shell.warning(ERROR_MSG.NANS_OBTAINED);
@@ -1411,12 +1577,11 @@ export class DiffStudio {
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.caption = options.friendlyName ?? options.name;
 
-      //@ts-ignore
-      input.onChanged.subscribe(async (value) => {
+      DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
         if (value !== null) {
           //@ts-ignore
           ivp.arg[key].value = value;
-          await this.solve(ivp, getInputsPath());
+          this.solve(ivp, getInputsPath());
         }
       });
 
@@ -1430,11 +1595,10 @@ export class DiffStudio {
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.caption = options.friendlyName ?? options.name;
 
-      //@ts-ignore
-      input.onChanged.subscribe(async (value) => {
+      DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
         if (value !== null) {
-        ivp.inits.get(key)!.value = value;
-        await this.solve(ivp, getInputsPath());
+          ivp.inits.get(key)!.value = value;
+          this.solve(ivp, getInputsPath());
         }
       });
 
@@ -1449,11 +1613,10 @@ export class DiffStudio {
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
         input.caption = options.friendlyName ?? options.name;
 
-        //@ts-ignore
-        input.onChanged.subscribe(async (value) => {
+        DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
           if (value !== null) {
             ivp.params!.get(key)!.value = value;
-            await this.solve(ivp, getInputsPath());
+            this.solve(ivp, getInputsPath());
           }
         });
 
@@ -1470,11 +1633,10 @@ export class DiffStudio {
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.caption = options.friendlyName ?? options.name;
 
-      //@ts-ignore
-      input.onChanged.subscribe(async (value) => {
+      DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
         if (value !== null) {
           ivp.loop!.count.value = value;
-          await this.solve(ivp, getInputsPath());
+          this.solve(ivp, getInputsPath());
         }
       });
 
@@ -1702,117 +1864,396 @@ export class DiffStudio {
       this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
     else {
       const templatesFolder = this.getFolderWithBultInModels(TEMPLATE_TITLES, TITLE.TEMPL);
-      const examplesFolder = this.getFolderWithBultInModels(EXAMPLE_TITLES, TITLE.LIBRARY);
+      const examplesFolder = this.getLibraryFolder();
+      this.libraryFolder = examplesFolder;
+      this.librarySub?.unsubscribe();
+      this.librarySub = grok.events.onCustomEvent(LIBRARY_CHANGED_EVENT).subscribe(() => {
+        if (!this.libraryFolder || !this.libraryFolder.root.isConnected) {
+          this.librarySub?.unsubscribe();
+          this.librarySub = null;
+          return;
+        }
+        void this.refreshLibraryFolder();
+      });
 
-      const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup) => {
-        models.forEach((name) => this.putBuiltInModelToFolder(name, folder));
+      const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup, section: TITLE) => {
+        models.forEach((name) => this.putBuiltInModelToFolder(name, folder, section));
       };
 
-      putModelsToFolder(TEMPLATE_TITLES, templatesFolder);
-      putModelsToFolder(EXAMPLE_TITLES, examplesFolder);
+      putModelsToFolder(TEMPLATE_TITLES, templatesFolder, TITLE.TEMPL);
+      putModelsToFolder(EXAMPLE_TITLES, examplesFolder, TITLE.LIBRARY);
+      await this.addExternalModelsToFolder(examplesFolder);
 
       this.recentFolder = this.getFolderWithRecentModels();
 
       // Add recent models to the Recent folder
       try {
-        const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
-        const files = await grok.dapi.files.list(folder);
-        const names = files.map((file) => file.name);
-
-        if (names.includes(PATH.RECENT)) {
-          const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
-          const recentDf = dfs[0];
-          const size = recentDf.rowCount;
+        const recentDf = await getCachedRecentModelsTable();
+        const size = recentDf.rowCount;
+        if (size > 0) {
           const infoCol = recentDf.col(TITLE.INFO);
           const isCustomCol = recentDf.col(TITLE.IS_CUST);
 
           if ((infoCol === null) || (isCustomCol === null))
             throw new Error('corrupted data file');
 
+          const uniqueFolders = new Set<string>();
+          for (let i = 0; i < size; ++i) {
+            if (isCustomCol.get(i)) {
+              const p: string = infoCol.get(i);
+              const idx = p.lastIndexOf('/');
+              if (idx >= 0)
+                uniqueFolders.add(p.slice(0, idx + 1));
+            }
+          }
+          for (const f of uniqueFolders)
+            prefetchFolderListing(f);
+
           for (let i = 0; i < size; ++i) {
             if (isCustomCol.get(i))
               await this.putCustomModelToRecents(infoCol.get(i));
             else
-              this.putBuiltInModelToFolder(infoCol.get(i), this.recentFolder);
+              this.putBuiltInModelToFolder(infoCol.get(i), this.recentFolder, TITLE.RECENT);
           }
         }
       } catch (err) {
         grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
       };
+
+      this.setupTreeItemSelection();
     }
   } // createTree
 
-  /** Add template/example model to browse tree folder */
-  private putBuiltInModelToFolder(name: TITLE, folder: DG.TreeViewGroup): void {
-    const item = folder.item(name);
-    ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
+  /** Single, debounced subscription that opens the preview for the selected tree item.
+   *  Replaces per-item `item.onSelected` handlers so that arrow-key navigation is not
+   *  broken by focus-stealing previews fired on every node. The per-selection timer
+   *  is cancellable by a following dblclick so that dblclick opens the full view
+   *  without first racing against a preview. Focus restoration is armed for both
+   *  items and folders so that the subsequent preview (item or folder gallery) does
+   *  not trap focus in the preview view and break keyboard navigation. */
+  private setupTreeItemSelection(): void {
+    this.treeSelSub?.unsubscribe();
+    this.treeSelSub = this.appTree!.rootNode.onSelectedNodeChanged.subscribe((node: any) => {
+      if (!this.appTree?.root.isConnected) {
+        this.treeSelSub?.unsubscribe();
+        this.treeSelSub = null;
+        return;
+      }
+      this.cancelPendingItemPreview();
+      if (!node || !this.appTree.root.contains(node.root))
+        return;
 
-    item.onSelected.subscribe(async () => {
-      const panelRoot = this.appTree.rootNode.root.parentElement!;
-      const treeNodeY = panelRoot.scrollTop!;
+      this.armTreeFocusRestore();
+
+      if (!node.root.classList?.contains('d4-tree-view-item'))
+        return;
+      const meta = node.value as ItemPreviewMeta | undefined;
+      if (!meta || !meta.kind)
+        return;
+      this.pendingItemPreviewTimer = window.setTimeout(async () => {
+        this.pendingItemPreviewTimer = null;
+        await this.openItemPreview(meta);
+      }, UI_TIME.DBL_CLICK_DELAY);
+    });
+  }
+
+  /** Capture tree scroll position and arm a one-shot focus restore for the next view change. */
+  private armTreeFocusRestore(): void {
+    const panelRoot = this.appTree?.rootNode.root.parentElement;
+    if (!panelRoot)
+      return;
+    this.restoreTreeFocus(panelRoot, panelRoot.scrollTop);
+  }
+
+  /** Cancel any preview that was scheduled by the centralized selection handler. */
+  private cancelPendingItemPreview(): void {
+    if (this.pendingItemPreviewTimer !== null) {
+      clearTimeout(this.pendingItemPreviewTimer);
+      this.pendingItemPreviewTimer = null;
+    }
+  }
+
+  /** Open the preview for a tree item based on its `value` metadata. Focus restore
+   *  is armed by the caller in `setupTreeItemSelection`, so no focus handling here. */
+  private async openItemPreview(meta: ItemPreviewMeta): Promise<void> {
+    if (meta.kind === 'builtin') {
+      DiffStudio.closeOpenPreviews();
+      const solver = new DiffStudio(false, true, true);
+      const preview = await solver.getStatePreview(meta.state);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addPreview(preview);
+      return;
+    }
+
+    const file = await getCachedFileInfo(meta.path);
+    if (!file)
+      return;
+    DiffStudio.closeOpenPreviews();
+    const solver = new DiffStudio(false, true, true);
+    const preview = await solver.getFilePreview(file, meta.path);
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showBrowse = true;
+    grok.shell.addPreview(preview);
+    if (meta.kind === 'custom')
+      await this.saveModelToRecent(meta.path, true);
+  }
+
+  /** Return focus to the browse tree once the preview view takes over, and keep it
+   *  there while the preview grid/renderer finishes loading (otherwise arrow keys
+   *  would target the preview). */
+  private restoreTreeFocus(panelRoot: HTMLElement, treeNodeY: number): void {
+    this.treeFocusSub?.unsubscribe();
+    this.treeFocusSub = grok.events.onCurrentViewChanged.subscribe(() => {
+      this.treeFocusSub?.unsubscribe();
+      this.treeFocusSub = null;
+      panelRoot.scrollTo(0, treeNodeY);
+      this.appTree?.rootNode.root.focus();
+      this.guardTreeFocus();
+    });
+  }
+
+  /** Redirect focus back to the tree if anything steals it during the next
+   *  1.5 seconds (e.g. grid auto-focus after data loads). Cleared on first
+   *  user mousedown or after the timeout, whichever comes first. */
+  private guardTreeFocus(): void {
+    this.treeFocusGuardCleanup?.();
+    const treeRoot = this.appTree?.rootNode.root;
+    if (!treeRoot)
+      return;
+    const onFocusIn = (e: FocusEvent) => {
+      if (!treeRoot.contains(e.target as Node))
+        treeRoot.focus();
+    };
+    const clear = () => {
+      document.removeEventListener('focusin', onFocusIn, true);
+      document.removeEventListener('mousedown', clear, true);
+      clearTimeout(timer);
+      this.treeFocusGuardCleanup = null;
+    };
+    const timer = setTimeout(clear, 1500);
+    this.treeFocusGuardCleanup = clear;
+    document.addEventListener('focusin', onFocusIn, true);
+    document.addEventListener('mousedown', clear, true);
+  }
+
+  /** Add template/example model to browse tree folder */
+  private putBuiltInModelToFolder(name: TITLE, folder: DG.TreeViewGroup, section: TITLE): void {
+    const state = STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE;
+    const meta: ItemPreviewMeta = {kind: 'builtin', state};
+    const item = folder.item(name, meta);
+    const description = MODEL_HINT.get(name) ?? '';
+    const iconUrl = getModelIconUrl(name);
+    ui.tooltip.bind(item.root, () => buildModelTooltip(name, description, iconUrl));
+
+    const run = async () => {
+      const solver = new DiffStudio(false);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(
+        await solver.runSolverApp(undefined, state) as DG.View,
+        undefined, null, null,
+      );
+    };
+
+    item.root.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const menu = DG.Menu.popup()
+        .item('Run', run, null, {description: 'Run model'});
+
+      const linkSection = (section === TITLE.RECENT) ?
+        (TEMPLATE_TITLES.includes(name) ? TITLE.TEMPL : TITLE.LIBRARY) :
+        section;
+      menu.item('Copy link', async () => {
+        const url = `${window.location.origin}${PATH.APPS_DS}/${linkSection}/${state}${PATH.PARAM}`;
+        await navigator.clipboard.writeText(url);
+        grok.shell.info('Model link copied to clipboard');
+      }, null, {description: 'Copy the model link to clipboard'});
+
+      if (section !== TITLE.RECENT) {
+        menu.item('Help', () => {
+          grok.shell.windows.help.visible = true;
+          grok.shell.windows.help.showHelp(getLink(state));
+        }, null, {description: 'Open help for this model'});
+      }
+
+      menu.show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+    });
+
+    item.root.addEventListener('dblclick', async (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      this.cancelPendingItemPreview();
 
       const solver = new DiffStudio(false);
-      grok.shell.addView( await solver.runSolverApp(
-        undefined,
-        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-      ) as DG.View, undefined, null, null);
-
-      setTimeout(() => {
-        panelRoot.scrollTo(0, treeNodeY);
-        item.root.focus();
-      }, UI_TIME.BROWSING);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(
+        await solver.runSolverApp(undefined, state) as DG.View,
+        undefined, null, null,
+      );
     });
   }
 
   /** Add model from ivp-file to browse tree folder */
   private async putCustomModelToRecents(path: string) {
     try {
-      const exist = await grok.dapi.files.exists(path);
+      const file = await getCachedFileInfo(path);
+      if (!file)
+        return;
+
       const idx = path.lastIndexOf('/');
       const name = path.slice(idx + 1, path.length);
-      const item = this.recentFolder.item(name);
-      ui.tooltip.bind(item.root, path);
+      const meta: ItemPreviewMeta = {kind: 'custom', path};
+      const item = this.recentFolder.item(name, meta);
+      const iconUrl = `${_package.webRoot}/files/icons/default.png`;
+      ui.tooltip.bind(item.root, () => buildModelTooltip(name, path, iconUrl));
 
-      const folderPath = path.slice(0, idx + 1);
-      let file: DG.FileInfo;
-
-      if (exist) {
-        const fileList = await grok.dapi.files.list(folderPath);
-        file = fileList.find((file) => file.nqName === path);
-      }
-
-      item.onSelected.subscribe(async () => {
-        const panelRoot = this.appTree.rootNode.root.parentElement!;
-        const treeNodeY = panelRoot.scrollTop!;
-
-        if (exist) {
-          const solver = new DiffStudio(false, true, true);
-          grok.shell.addView(await solver.getFilePreview(file, path));
-          await this.saveModelToRecent(path, true);
-        } else
-          grok.shell.warning(`File not found: ${path}`);
-
-        setTimeout(async () => {
-          panelRoot.scrollTo(0, treeNodeY);
-          item.root.focus();
-        }, UI_TIME.BROWSING);
+      item.root.addEventListener('contextmenu', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        DG.Menu.popup()
+          .item('Run', async () => {
+            DiffStudio.closeOpenPreviews();
+            const solver = new DiffStudio(false, true, true);
+            const preview = await solver.getFilePreview(file, path);
+            grok.shell.windows.showToolbox = false;
+            grok.shell.windows.showBrowse = true;
+            grok.shell.addView(preview);
+          }, null, {description: 'Run model'})
+          .item('Copy link', async () => {
+            const url = `${window.location.origin}/${PATH.FILE}/${path.replace(':', '.')}`;
+            await navigator.clipboard.writeText(url);
+            grok.shell.info('Model link copied to clipboard');
+          }, null, {description: 'Copy the model link to clipboard'})
+          .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
       });
 
       item.root.addEventListener('dblclick', async (e) => {
         e.stopImmediatePropagation();
         e.preventDefault();
+        this.cancelPendingItemPreview();
 
-        if (exist) {
-          const equations = await file.readAsString();
-          const solver = new DiffStudio();
-          await solver.runSolverApp(equations);
-        } else
-          grok.shell.warning(`File not found: ${path}`);
+        const equations = await file.readAsString();
+        const solver = new DiffStudio();
+        await solver.runSolverApp(equations);
       });
     } catch (e) {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
   } // putCustomModelToRecents
+
+  /** Read external-models.json and add each registered model to the Library tree folder */
+  private async addExternalModelsToFolder(folder: DG.TreeViewGroup): Promise<void> {
+    const entries = await getCachedExternalLibraryEntries(_package.webRoot);
+    for (const e of entries)
+      this.addExternalModelToFolder(folder, e.modelPath, e.displayName, e.description, e.iconUrl, e.helpUrl);
+  }
+
+  /** Add a single external (custom) model entry to the Library tree folder */
+  private addExternalModelToFolder(folder: DG.TreeViewGroup, modelPath: string, displayName: string,
+    description: string, iconUrl: string, helpUrl: string | undefined): void {
+    const meta: ItemPreviewMeta = {kind: 'external', path: modelPath};
+    const item = folder.item(displayName, meta);
+    ui.tooltip.bind(item.root, () => buildModelTooltip(displayName, description, iconUrl));
+
+    const openFullView = async () => {
+      const file = await getCachedFileInfo(modelPath);
+      if (!file) {
+        grok.shell.warning(`File not found: ${modelPath}`);
+        return;
+      }
+      const solver = new DiffStudio(false, true, true);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(await solver.getFilePreview(file, modelPath));
+    };
+
+    item.root.addEventListener('dblclick', async (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      this.cancelPendingItemPreview();
+      await openFullView();
+    });
+
+    this.attachExternalContextMenu(item.root, modelPath, helpUrl, openFullView);
+  }
+
+  /** Attach Run/Copy link/Help/Settings context menu to an external (custom) model element */
+  private attachExternalContextMenu(target: HTMLElement, modelPath: string, helpUrl: string | undefined,
+    run: () => void | Promise<void>): void {
+    target.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      DG.Menu.popup()
+        .item('Run', run, null, {description: 'Run model'})
+        .item('Copy link', async () => {
+          const url = `${window.location.origin}/${PATH.FILE}/${modelPath.replace(':', '.')}`;
+          await navigator.clipboard.writeText(url);
+          grok.shell.info('Model link copied to clipboard');
+        }, null, {description: 'Copy the model link to clipboard'})
+        .item('Help', () => {
+          if (helpUrl)
+            window.open(helpUrl, '_blank');
+          else
+            grok.shell.warning('Help link is not defined. To set help, right click the model and select "Settings..."');
+        }, null, {description: 'Open help in a new tab'})
+        .item('Settings...', () => this.openExternalModelSettings(modelPath, helpUrl), null,
+          {description: 'Configure model properties'})
+        .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+    });
+  }
+
+  /** Rebuild Library tree folder: remove all items, then re-populate with built-in + external models */
+  private async refreshLibraryFolder(): Promise<void> {
+    if (!this.libraryFolder)
+      return;
+    this.libraryFolder.removeChildrenWhere(() => true);
+    EXAMPLE_TITLES.forEach((name) => this.putBuiltInModelToFolder(name, this.libraryFolder!, TITLE.LIBRARY));
+    await this.addExternalModelsToFolder(this.libraryFolder);
+  }
+
+  /** Show settings dialog for an external model entry */
+  private openExternalModelSettings(modelPath: string, currentHelpUrl: string | undefined): void {
+    const linkInput = ui.input.string('Help link', {
+      value: currentHelpUrl ?? '',
+      nullable: false,
+      tooltipText: 'Set the link to the help page',
+    });
+
+    const dlg = ui.dialog({title: 'Model settings'})
+      .add(linkInput)
+      .addButton('Save', async () => {
+        const value = linkInput.value?.trim();
+        if (!value)
+          return;
+        try {
+          const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+          const text = await grok.dapi.files.readAsText(manifestPath);
+          const parsed = JSON.parse(text);
+          const entry = parsed?.models?.find?.((m: {path?: string}) => m?.path === modelPath);
+          if (!entry) {
+            grok.shell.error('Model entry not found in external-models.json');
+            return;
+          }
+          entry.help = value;
+          await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(parsed, null, 2));
+          invalidateFolderListing(`${PATH.LIBRARY_FOLDER}/`);
+          dlg.close();
+          grok.events.fireCustomEvent(LIBRARY_CHANGED_EVENT, null);
+        } catch (e) {
+          grok.shell.error(`Failed to save settings: ${e instanceof Error ? e.message : 'platform issue'}`);
+        }
+      }, undefined, 'Save settings')
+      .show();
+
+    const saveBtn = dlg.getButton('Save');
+    saveBtn.disabled = !linkInput.value?.trim();
+    linkInput.onChanged.subscribe(() => {
+      saveBtn.disabled = !linkInput.value?.trim();
+    });
+  }
 
   /** Save model to recent models file */
   private async saveModelToRecent(modelSpecification: string, isCustom: boolean) {
@@ -1860,7 +2301,7 @@ export class DiffStudio {
         if (isCustom)
           this.putCustomModelToRecents(info);
         else
-          this.putBuiltInModelToFolder(info, this.recentFolder);
+          this.putBuiltInModelToFolder(info, this.recentFolder, TITLE.RECENT);
       } else { // a file with reccent models doesn't exist
         await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
           DG.DataFrame.fromColumns([
@@ -1869,6 +2310,10 @@ export class DiffStudio {
           ]),
         ]);
       }
+
+      invalidateRecentCache();
+      prefetchRecentModelsTable();
+      invalidateFolderListing(folder);
     } catch (err) {
       grok.shell.warning(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
     }
@@ -1891,12 +2336,89 @@ export class DiffStudio {
   /** Return folder with built-in models (examples/templates) */
   private getFolderWithBultInModels(models: TITLE[], title: string): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(title, null, false);
-    folder.onSelected.subscribe(() => {
+    let previewTimer: number | null = null;
+
+    const buildView = (): DG.View => {
       const view = this.getBuiltInModelsCardsView(models);
       view.name = title;
-      grok.shell.addView(view, undefined, undefined, null);
       view.basePath = 'apps/DiffStudio/';
       view.path = `${title}`;
+      return view;
+    };
+
+    folder.onSelected.subscribe(() => {
+      if (previewTimer !== null)
+        return;
+      previewTimer = window.setTimeout(() => {
+        previewTimer = null;
+        DiffStudio.closeOpenPreviews();
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
+        grok.shell.addPreview(buildView());
+      }, UI_TIME.DBL_CLICK_DELAY);
+    });
+
+    folder.root.addEventListener('dblclick', (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      if (previewTimer !== null) {
+        clearTimeout(previewTimer);
+        previewTimer = null;
+      }
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(buildView(), undefined, undefined, null);
+    });
+
+    return folder;
+  }
+
+  /** Return Library folder: built-in examples + external (custom) models from external-models.json */
+  private getLibraryFolder(): DG.TreeViewGroup {
+    const folder = this.appTree.getOrCreateGroup(TITLE.LIBRARY, null, false);
+    let previewTimer: number | null = null;
+
+    const buildView = async (): Promise<DG.View> => {
+      const view = DG.View.create();
+      const root = ui.div([]);
+
+      for (const name of EXAMPLE_TITLES)
+        root.append(this.getCardWithBuiltInModel(name));
+
+      const entries = await getCachedExternalLibraryEntries(_package.webRoot);
+      for (const entry of entries)
+        root.append(this.getCardWithExternalModel(entry));
+
+      root.classList.add('grok-gallery-grid');
+      view.root.append(root);
+      view.name = TITLE.LIBRARY;
+      view.basePath = 'apps/DiffStudio/';
+      view.path = TITLE.LIBRARY;
+      return view;
+    };
+
+    folder.onSelected.subscribe(() => {
+      if (previewTimer !== null)
+        return;
+      previewTimer = window.setTimeout(async () => {
+        previewTimer = null;
+        DiffStudio.closeOpenPreviews();
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
+        grok.shell.addPreview(await buildView());
+      }, UI_TIME.DBL_CLICK_DELAY);
+    });
+
+    folder.root.addEventListener('dblclick', async (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      if (previewTimer !== null) {
+        clearTimeout(previewTimer);
+        previewTimer = null;
+      }
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(await buildView(), undefined, undefined, null);
     });
 
     return folder;
@@ -1905,31 +2427,42 @@ export class DiffStudio {
   /** Return folder with recent models */
   private getFolderWithRecentModels(): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
+    let previewTimer: number | null = null;
 
-    folder.onSelected.subscribe(async () => {
+    const buildView = async (): Promise<DG.View> => {
       const view = DG.View.create();
 
       try {
-        const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
-        const files = await grok.dapi.files.list(folder);
-        const names = files.map((file) => file.name);
+        const recentDf = await getCachedRecentModelsTable();
+        const size = recentDf.rowCount;
 
-        if (names.includes(PATH.RECENT)) {
+        if (size > 0) {
           const root = ui.div([]);
-
-          const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
-          const recentDf = dfs[0];
-          const size = recentDf.rowCount;
           const infoCol = recentDf.col(TITLE.INFO);
           const isCustomCol = recentDf.col(TITLE.IS_CUST);
 
           if ((infoCol === null) || (isCustomCol === null))
             throw new Error('corrupted data file');
 
+          const uniqueFolders = new Set<string>();
           for (let i = 0; i < size; ++i) {
-            if (isCustomCol.get(i))
-              root.append(await this.getCardWithCustomModel(infoCol.get(i)));
-            else
+            if (isCustomCol.get(i)) {
+              const p: string = infoCol.get(i);
+              const idx = p.lastIndexOf('/');
+              if (idx >= 0)
+                uniqueFolders.add(p.slice(0, idx + 1));
+            }
+          }
+          for (const f of uniqueFolders)
+            prefetchFolderListing(f);
+
+          for (let i = 0; i < size; ++i) {
+            if (isCustomCol.get(i)) {
+              const path: string = infoCol.get(i);
+              if (!(await getCachedFileInfo(path)))
+                continue;
+              root.append(await this.getCardWithCustomModel(path));
+            } else
               root.append(this.getCardWithBuiltInModel(infoCol.get(i)));
           }
 
@@ -1939,12 +2472,37 @@ export class DiffStudio {
           view.append(ui.h2('No recent models'));
 
         view.name = TITLE.RECENT;
-        grok.shell.addView(view, undefined, undefined, null);
         view.basePath = 'apps/DiffStudio/';
         view.path = TITLE.RECENT;
       } catch (err) {
         grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
-      };
+      }
+
+      return view;
+    };
+
+    folder.onSelected.subscribe(() => {
+      if (previewTimer !== null)
+        return;
+      previewTimer = window.setTimeout(async () => {
+        previewTimer = null;
+        DiffStudio.closeOpenPreviews();
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
+        grok.shell.addPreview(await buildView());
+      }, UI_TIME.DBL_CLICK_DELAY);
+    });
+
+    folder.root.addEventListener('dblclick', async (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      if (previewTimer !== null) {
+        clearTimeout(previewTimer);
+        previewTimer = null;
+      }
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(await buildView(), undefined, undefined, null);
     });
 
     return folder;
@@ -1982,19 +2540,39 @@ export class DiffStudio {
   /** Return card with built-in model*/
   private getCardWithBuiltInModel(name: TITLE): HTMLDivElement {
     const card = this.getCard(name, MODEL_HINT.get(name) ?? '', modelImageLink.get(name));
+    const state = STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE;
+    const linkSection = TEMPLATE_TITLES.includes(name) ? TITLE.TEMPL : TITLE.LIBRARY;
 
-    card.onclick = async () => {
+    const run = async () => {
       setTimeout(async () => {
         const solver = new DiffStudio();
-        const v = await solver.runSolverApp(
-          undefined,
-          STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-        ) as DG.TableView;
+        const v = await solver.runSolverApp(undefined, state) as DG.TableView;
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
         grok.shell.v = v;
       }, UI_TIME.BROWSING);
     };
 
-    ui.tooltip.bind(card, HINT.CLICK_RUN);
+    card.ondblclick = run;
+
+    card.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      DG.Menu.popup()
+        .item('Run', run, null, {description: 'Run model'})
+        .item('Copy link', async () => {
+          const url = `${window.location.origin}${PATH.APPS_DS}/${linkSection}/${state}${PATH.PARAM}`;
+          await navigator.clipboard.writeText(url);
+          grok.shell.info('Model link copied to clipboard');
+        }, null, {description: 'Copy the model link to clipboard'})
+        .item('Help', () => {
+          grok.shell.windows.help.visible = true;
+          grok.shell.windows.help.showHelp(getLink(state));
+        }, null, {description: 'Open help for this model'})
+        .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+    });
+
+    ui.tooltip.bind(card, HINT.DBL_CLICK_RUN);
 
     return card;
   } // getCardWithBuiltInModel
@@ -2002,53 +2580,80 @@ export class DiffStudio {
   /** Return card with custom model*/
   private async getCardWithCustomModel(path: string): Promise<HTMLDivElement> {
     try {
-      const exist = await grok.dapi.files.exists(path);
       const idx = path.lastIndexOf('/');
       const name = path.slice(idx + 1, path.length);
 
       const card = this.getCard(name, 'Custom model', CUSTOM_MODEL_IMAGE_LINK);
       ui.tooltip.bind(card, () => ui.divV([
         ui.divText(path),
-        ui.divText(HINT.CLICK_RUN),
+        ui.divText(HINT.DBL_CLICK_RUN),
       ]));
 
-      const folderPath = path.slice(0, idx + 1);
-      let file: DG.FileInfo;
+      const file = await getCachedFileInfo(path);
 
-      if (exist) {
-        const fileList = await grok.dapi.files.list(folderPath);
-        file = fileList.find((file) => file.nqName === path);
-      }
+      const run = async () => {
+        const solver = new DiffStudio(false, true, true);
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
+        grok.shell.addView(await solver.getFilePreview(file, path));
 
-      card.onclick = async () => {
-        if (exist) {
-          const solver = new DiffStudio(false, true, true);
-          grok.shell.addView(await solver.getFilePreview(file, path));
-
-          await this.saveModelToRecent(path, true);
-        } else
-          grok.shell.warning(`File not found: ${path}`);
+        await this.saveModelToRecent(path, true);
       };
+
+      card.ondblclick = run;
+
+      card.addEventListener('contextmenu', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        DG.Menu.popup()
+          .item('Run', run, null, {description: 'Run model'})
+          .item('Copy link', async () => {
+            const url = `${window.location.origin}/${PATH.FILE}/${path.replace(':', '.')}`;
+            await navigator.clipboard.writeText(url);
+            grok.shell.info('Model link copied to clipboard');
+          }, null, {description: 'Copy the model link to clipboard'})
+          .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+      });
 
       return card;
     } catch (e) {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
-  } // getCardWithBuiltInModel
+  } // getCardWithCustomModel
+
+  /** Return card with external (custom Library) model — matches the hub's Library cards */
+  private getCardWithExternalModel(entry: ExternalLibraryEntry): HTMLDivElement {
+    const {modelPath, displayName, description, iconUrl, helpUrl} = entry;
+    const card = this.getCard(displayName, description, CUSTOM_MODEL_IMAGE_LINK);
+    ui.tooltip.bind(card, () => buildModelTooltip(displayName, description, iconUrl));
+
+    const run = async () => {
+      const file = await getCachedFileInfo(modelPath);
+      if (!file) {
+        grok.shell.warning(`File not found: ${modelPath}`);
+        return;
+      }
+      const solver = new DiffStudio(false, true, true);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(await solver.getFilePreview(file, modelPath));
+    };
+
+    card.ondblclick = run;
+    this.attachExternalContextMenu(card, modelPath, helpUrl, run);
+
+    return card;
+  } // getCardWithExternalModel
 
   /** Return last called model */
   private async getLastCalledModel(): Promise<LastModel> {
     const lastModel: LastModel = {info: TITLE.BASIC, isCustom: false};
 
     try {
-      const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
-      const files = await grok.dapi.files.list(folder);
-      const names = files.map((file) => file.name);
+      const recentDf = await getCachedRecentModelsTable();
+      const size = recentDf.rowCount;
 
-      if (names.includes(PATH.RECENT)) {
-        const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
-        const recentDf = dfs[0];
-        const size = recentDf.rowCount;
+      if (size > 0) {
         const infoCol = recentDf.col(TITLE.INFO);
         const isCustomCol = recentDf.col(TITLE.IS_CUST);
 
@@ -2091,8 +2696,9 @@ export class DiffStudio {
       )
       .item(TITLE.EXT, async () =>
         await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
-      .endGroup()
-      .group(TITLE.LIBRARY)
+      .endGroup();
+
+    const libraryGroup = menu.group(TITLE.LIBRARY)
       .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
       .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
       .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
@@ -2101,16 +2707,44 @@ export class DiffStudio {
       .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
       .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
       .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
-      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL})
-      .endGroup();
+      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL});
+
+    await this.appendMenuWithExternalLibraryModels(libraryGroup);
+    libraryGroup.endGroup();
 
     return menu;
   } // getOpenMenu
 
+  /** Append external (manifest-registered) library models to the Library menu group */
+  private async appendMenuWithExternalLibraryModels(menu: DG.Menu): Promise<void> {
+    try {
+      const entries = await getCachedExternalLibraryEntries(_package.webRoot);
+      for (const entry of entries) {
+        menu.item(entry.displayName, async () => {
+          try {
+            const equations = await getEquationsFromFile(entry.modelPath);
+            if (equations === null) {
+              grok.shell.warning(`Failed to read model: ${entry.modelPath}`);
+              return;
+            }
+            this.mainPath = `${PATH.FILE}/${entry.modelPath}`;
+            this.entityPath = '';
+            await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
+            await this.saveModelToRecent(entry.modelPath, true);
+          } catch (err) {
+            grok.shell.warning(`Failed to open model: ${entry.modelPath}`);
+          }
+        }, null, {description: entry.description || entry.modelPath});
+      }
+    } catch {
+      // silently skip if manifest is missing or malformed
+    }
+  }
+
   /** Append menu with my and recent models */
   private async appendMenuWithRecentModels(menu: DG.Menu) {
     try {
-      const recentDf = await getRecentModelsTable();
+      const recentDf = await getCachedRecentModelsTable();
       const size = recentDf.rowCount;
       const infoCol = recentDf.col(TITLE.INFO);
       const isCustomCol = recentDf.col(TITLE.IS_CUST);
@@ -2120,6 +2754,18 @@ export class DiffStudio {
           menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.CORRUPTED_DATA_FILE});
           return;
         }
+
+        const uniqueFolders = new Set<string>();
+        for (let i = 0; i < size; ++i) {
+          if (isCustomCol.get(i)) {
+            const p: string = infoCol.get(i);
+            const idx = p.lastIndexOf('/');
+            if (idx >= 0)
+              uniqueFolders.add(p.slice(0, idx + 1));
+          }
+        }
+        for (const f of uniqueFolders)
+          prefetchFolderListing(f);
 
         const submenu = menu.group(TITLE.RECENT);
 
@@ -2151,42 +2797,44 @@ export class DiffStudio {
     }, null, {description: MODEL_HINT.get(name) ?? ''});
   }
 
-  /** Append menu with custom model */
+  /** Append menu item for a custom model by path (checks existence via cached folder listing) */
   private async appendMenuWithCustomModel(menu: DG.Menu, path: TITLE) {
     try {
-      if (await grok.dapi.files.exists(path)) {
-        const idx = path.lastIndexOf('/');
-        const name = path.slice(idx + 1, path.length);
-        const folderPath = path.slice(0, idx + 1);
-        const fileList = await grok.dapi.files.list(folderPath);
-        const file = fileList.find((file) => file.nqName === path);
-
-        menu.item(name, async () => {
-          try {
-            const equations = await file.readAsString();
-            this.mainPath = `${PATH.FILE}/${path}`;
-            this.entityPath = '';
-            await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
-            await this.saveModelToRecent(path, true);
-          } catch (err) {
-            grok.shell.warning(`File not found: ${path}`);
-          }
-        }, null, {description: path});
-      }
+      const file = await getCachedFileInfo(path);
+      if (!file)
+        return;
+      this.appendMenuWithCustomModelByFile(menu, file);
     } catch (e) {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
   } // appendMenuWithCustomModel
 
+  /** Append menu item for a custom model using an already-resolved FileInfo (no extra I/O at build time) */
+  private appendMenuWithCustomModelByFile(menu: DG.Menu, file: DG.FileInfo) {
+    const path = file.fullPath;
+    menu.item(file.name, async () => {
+      try {
+        const equations = await file.readAsString();
+        this.mainPath = `${PATH.FILE}/${path}`;
+        this.entityPath = '';
+        await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
+        await this.saveModelToRecent(path, true);
+      } catch (err) {
+        grok.shell.warning(`File not found: ${path}`);
+      }
+    }, null, {description: path});
+  }
+
   /** Append menu with models from user's files */
   private async appendMenuWithMyModels(menu: DG.Menu) {
     try {
-      const myModelFiles = await getMyModelFiles();
+      const myModelFiles = await getCachedMyModelFiles();
       if (myModelFiles.length < 1)
         menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.NO_MY_MODELS});
       else {
         const submenu = menu.group(TITLE.MY_MODELS);
-        myModelFiles.forEach(async (file) => await this.appendMenuWithCustomModel(submenu, file.fullPath as TITLE));
+        for (const file of myModelFiles)
+          this.appendMenuWithCustomModelByFile(submenu, file);
         submenu.endGroup();
       }
     } catch (err) {

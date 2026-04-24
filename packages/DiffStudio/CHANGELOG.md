@@ -1,5 +1,13 @@
 # Diff Studio changelog
 
+## 1.6.0 (2026-05-05)
+
+Added:
+
+* Hub - centralized landing view with Templates, Library, and Recent
+* Save to Library - publish models to the personal Library
+* Export to LaTeX and Markdown
+
 ## 1.5.2 (2026-03-14)
 
 Updated the bioreactor model

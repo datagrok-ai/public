@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
+import {DiffStudioHub} from './hub';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 import {getBallFlightSim} from './demo/ball-flight';
@@ -17,7 +18,7 @@ import {ACID_PRODUCTION_MODEL_INFO} from './demo/acid-production';
 import {POLLUTION_MODEL_INFO} from './demo/pollution';
 
 import {DF_NAME} from './constants';
-import {UI_TIME} from './ui-constants';
+import {PATH, TITLE, UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from 'diff-grok';
 import {Model, ModelInfo} from './model';
@@ -41,6 +42,8 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static dock(): void {
     const df = grok.data.demo.demog(100);
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showBrowse = true;
     const view = grok.shell.addTableView(df);
 
     setTimeout(() => {
@@ -78,8 +81,24 @@ export class PackageFunctions {
   })
   static async runDiffStudio(): Promise<DG.ViewBase> {
     const path = grok.shell.startUri;
-    const toSetStartingPath = (path === window.location.href);
 
+    const wasProcessed = DiffStudio.isStartingUriProcessed;
+    DiffStudio.isStartingUriProcessed = true;
+
+    const isDeepLink = path.includes(PATH.MODEL) ||
+      path.includes(PATH.PARAM) ||
+      path.includes(`/${TITLE.TEMPL}`) ||
+      path.includes(`/${TITLE.LIBRARY}`) ||
+      path.includes(`/${TITLE.RECENT}`);
+
+    if (wasProcessed || !isDeepLink) {
+      const hub = new DiffStudioHub();
+      hub.renderHeader();
+      setTimeout(() => hub.renderRest(), 0);
+      return hub.view;
+    }
+
+    const toSetStartingPath = (path === window.location.href);
     const proxiView = DG.View.create();
 
     setTimeout(async () => {
@@ -92,8 +111,11 @@ export class PackageFunctions {
 
       const view = await solver.runSolverApp();
 
-      if (view !== null)
+      if (view !== null) {
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
         grok.shell.addView(view);
+      }
     }, UI_TIME.APP_RUN_SOLVING);
 
     return proxiView;
@@ -122,19 +144,20 @@ export class PackageFunctions {
 
   @grok.decorators.fileViewer({fileViewer: 'ivp'})
   static async previewIvp(file: DG.FileInfo): Promise<DG.View> {
-    let path: string;
+    const wasProcessed = DiffStudio.isStartingUriProcessed;
+    DiffStudio.isStartingUriProcessed = true;
 
-    if (!DiffStudio.isStartingUriProcessed) {
-      DiffStudio.isStartingUriProcessed = true;
-      path = grok.shell.startUri;
-    } else
-      path = window.location.href;
+    // Only honor URL params on the initial deep-link load. On subsequent file clicks,
+    // window.location.href still holds the previous file's params and would be misapplied.
+    const path = wasProcessed ? file.fullPath : grok.shell.startUri;
 
     const proxiView = DG.View.create();
 
     setTimeout(async () => {
       proxiView.close();
       const solver = new DiffStudio(false, true, true);
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
       grok.shell.addView(await solver.getFilePreview(file, path));
     }, UI_TIME.PREVIEW_RUN_SOLVING);
 
