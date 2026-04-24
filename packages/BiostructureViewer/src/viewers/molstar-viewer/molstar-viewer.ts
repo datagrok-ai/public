@@ -1350,12 +1350,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     throw new Error('Not implemented');
   }
 
-  // The highlight state + overpaint pipeline lives in
-  // `MolstarHighlightController` (see `molstar-highlight-controller.ts`).
-  // Wire-ups above this comment forward the relevant events and lifecycle
-  // hooks (`highlightController.fireMol3DHover`,
-  // `highlightController.replayHighlightIfCached`,
-  // `highlightController.highlightAllLigandAtoms`) to that controller.
 }
 
 /** margin indent */

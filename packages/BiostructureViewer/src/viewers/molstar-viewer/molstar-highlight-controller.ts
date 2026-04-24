@@ -39,9 +39,7 @@ import {
 } from './molstar-highlight-utils';
 import type {LigandMap} from './molstar-viewer';
 
-/** Narrow view of `MolstarViewer` that the highlight controller needs. Only
- *  getter functions for fields that can change at runtime, plus direct
- *  references to the always-available viewSyncer/logger. */
+/** Narrow view of `MolstarViewer` that the highlight controller needs. */
 export interface HighlightHost {
   getPlugin(): PluginContext | undefined;
   getLigands(): LigandMap;
