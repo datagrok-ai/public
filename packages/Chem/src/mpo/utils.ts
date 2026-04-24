@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import {checkPackage} from '../utils/elemental-analysis-utils';
+
 import {
   DEFAULT_AGGREGATION,
   DESIRABILITY_PROFILE_TYPE,
@@ -13,6 +15,16 @@ import {
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
+
+export const UNTITLED_PROFILE = 'Untitled Profile';
+
+export function isEdaPackageInstalled(): boolean {
+  if (!checkPackage('EDA', 'getPmpoAppItems')) {
+    grok.shell.warning('EDA package is not installed');
+    return false;
+  }
+  return true;
+}
 
 export type MpoProfileInfo = DesirabilityProfile & {
   fileName: string;
@@ -153,7 +165,7 @@ export function updateMpoPath(
 export function createDefaultProfile(): DesirabilityProfile {
   return {
     type: DESIRABILITY_PROFILE_TYPE,
-    name: '',
+    name: UNTITLED_PROFILE,
     description: '',
     properties: {},
   };
@@ -168,7 +180,7 @@ export function createProfileForDf(df: DG.DataFrame): DesirabilityProfile {
     props[col.name] = createDefaultNumerical(1, col.min, col.max);
     count++;
   }
-  return {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
+  return {type: DESIRABILITY_PROFILE_TYPE, name: UNTITLED_PROFILE, description: '', properties: props};
 }
 
 export function mergeProfileWithDf(existing: DesirabilityProfile, df: DG.DataFrame): DesirabilityProfile {
@@ -228,7 +240,7 @@ export function setupMpoBreadcrumbs(view: DG.ViewBase, lastSegment: string): voi
 
   const homeEl = breadcrumbs.root.firstElementChild;
   if (homeEl) {
-    const homeIcon = ui.iconFA('home', () => grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME));
+    const homeIcon = ui.iconFA('home', () => grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME), 'Home');
     homeEl.replaceWith(homeIcon);
   }
 

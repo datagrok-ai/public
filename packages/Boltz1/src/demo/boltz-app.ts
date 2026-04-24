@@ -2,11 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {u2} from "@datagrok-libraries/utils/src/u2";
+import {u2} from '@datagrok-libraries/utils/src/u2';
 import * as yaml from 'js-yaml';
 
-import { BoltzService } from '../utils/boltz-service';
-import { _package } from '../package';
+import {BoltzService} from '../utils/boltz-service';
+import {_package} from '../package';
 
 import '../css/boltz.css';
 
@@ -42,20 +42,20 @@ export class Boltz1AppView {
   }
 
   private createSamplesInput(): void {
-    this.samplesInput = ui.input.int('Results', { value: 1 });
+    this.samplesInput = ui.input.int('Results', {value: 1});
     this.samplesInput.root.classList.add('boltz-samples-input');
     this.divV.append(this.samplesInput.root);
   }
 
   private createAddButton(): HTMLElement {
     this.menu = DG.Menu.popup();
-    FUNC_PROPS_FIELDS.forEach(prop =>
+    FUNC_PROPS_FIELDS.forEach((prop) =>
       this.menu.item(prop, () => {
         const uniqueName = this.getUniqueEntityName(prop);
         const div = this.createInputSection(prop, uniqueName);
         this.divV.insertBefore(div, this.samplesInput.root);
         this.divV.scrollTop = this.divV.scrollHeight;
-      })
+      }),
     );
 
     const addButton = ui.button('Add', () => this.menu.show());
@@ -71,7 +71,7 @@ export class Boltz1AppView {
     this.setProteinInput(FUNC_PROPS_FIELD.PROTEIN + '_1', PROTEIN_1);
     this.setProteinInput(FUNC_PROPS_FIELD.PROTEIN + '_2', PROTEIN_2);
   }
-  
+
   private setProteinInput(uniqueName: string, value: string): void {
     let input = this.sequenceInputs.get(uniqueName);
     if (!input) {
@@ -85,10 +85,10 @@ export class Boltz1AppView {
   private getExampleYaml(): string {
     return yaml.dump({
       sequences: [
-        { ENTITY_TYPE: FUNC_PROPS_FIELD.PROTEIN, id: FUNC_PROPS_FIELD.PROTEIN + '_1', sequence: PROTEIN_1, modifications: [] },
-        { ENTITY_TYPE: FUNC_PROPS_FIELD.PROTEIN, id: FUNC_PROPS_FIELD.PROTEIN + '_2', sequence: PROTEIN_2, modifications: [] }
+        {ENTITY_TYPE: FUNC_PROPS_FIELD.PROTEIN, id: FUNC_PROPS_FIELD.PROTEIN + '_1', sequence: PROTEIN_1, modifications: []},
+        {ENTITY_TYPE: FUNC_PROPS_FIELD.PROTEIN, id: FUNC_PROPS_FIELD.PROTEIN + '_2', sequence: PROTEIN_2, modifications: []},
       ],
-      constraints: []
+      constraints: [],
     });
   }
 
@@ -109,12 +109,12 @@ export class Boltz1AppView {
     const addButton = this.createAddButton();
     const exampleButton = this.createExampleButton();
 
-    Object.assign(submitButton.style, { margin: '0' });
-    Object.assign(addButton.style, { margin: '0' });
-    Object.assign(exampleButton.style, { margin: '0' });
+    Object.assign(submitButton.style, {margin: '0'});
+    Object.assign(addButton.style, {margin: '0'});
+    Object.assign(exampleButton.style, {margin: '0'});
 
     this.divV.append(
-      ui.divH([addButton, exampleButton, submitButton], 'boltz-buttons-container')
+      ui.divH([addButton, exampleButton, submitButton], 'boltz-buttons-container'),
     );
   }
 
@@ -134,21 +134,21 @@ export class Boltz1AppView {
       div.remove();
       this.sequenceInputs.delete(uniqueName);
       this.pocketInputs.delete(uniqueName);
-    }), () => {});
+    }, 'Delete'), () => {}, 'Delete');
 
     deleteButton.style.marginLeft = 'auto';
     titleDiv.append(deleteButton);
     div.append(titleDiv);
-    
+
     switch (type) {
-      case FUNC_PROPS_FIELD.LIGAND:
-        div.append(this.createLigandTabControl(uniqueName));
-        break;
-      case FUNC_PROPS_FIELD.POCKET:
-        div.append(this.createPocketRestraintInputs(uniqueName));
-        break;
-      default:
-        div.append(this.createModifiableInput(uniqueName, div));
+    case FUNC_PROPS_FIELD.LIGAND:
+      div.append(this.createLigandTabControl(uniqueName));
+      break;
+    case FUNC_PROPS_FIELD.POCKET:
+      div.append(this.createPocketRestraintInputs(uniqueName));
+      break;
+    default:
+      div.append(this.createModifiableInput(uniqueName, div));
     }
 
     return div;
@@ -173,18 +173,18 @@ export class Boltz1AppView {
   }
 
   private createPocketRestraintInputs(uniqueName: string): HTMLElement {
-    const binderChain = ui.input.choice('Binder Chain', { items: ['A', 'B', 'C', 'D'], nullable: true });
-    const pocketChain = ui.input.choice('Pocket Chain', { items: ['A', 'B', 'C', 'D'], nullable: true });
+    const binderChain = ui.input.choice('Binder Chain', {items: ['A', 'B', 'C', 'D'], nullable: true});
+    const pocketChain = ui.input.choice('Pocket Chain', {items: ['A', 'B', 'C', 'D'], nullable: true});
     const pocketResidues = ui.input.list('Pocket Residues');
 
     pocketResidues.root.style.width = '150px';
 
-    [binderChain, pocketChain].forEach(inp => inp.root.style.width = '50px');
+    [binderChain, pocketChain].forEach((inp) => inp.root.style.width = '50px');
     this.pocketInputs.set(`${uniqueName} ${binderChain.caption}`, binderChain);
     this.pocketInputs.set(`${uniqueName} ${pocketChain.caption}`, pocketChain);
     this.pocketInputs.set(`${uniqueName} ${pocketResidues.caption}`, pocketResidues);
 
-    return ui.divH([binderChain.root, pocketChain.root, pocketResidues.root], { style: { justifyContent: 'space-between', width: '80%' } });
+    return ui.divH([binderChain.root, pocketChain.root, pocketResidues.root], {style: {justifyContent: 'space-between', width: '80%'}});
   }
 
   private createModifiableInput(uniqueName: string, div: HTMLDivElement): HTMLDivElement {
@@ -213,29 +213,29 @@ export class Boltz1AppView {
       .map(([, inputs]) => {
         const position = inputs[0].value.trim();
         const ccd = inputs[1].value.trim();
-        return position && ccd ? { position, ccd } : null;
+        return position && ccd ? {position, ccd} : null;
       })
       .filter(Boolean) as { ccd: string; position: string }[];
   }
 
   private generateYaml(): string {
     const sequences = Array.from(this.sequenceInputs.entries())
-      .filter(([name]) => !name.includes(" Position") && !name.includes(" CCD"))
+      .filter(([name]) => !name.includes(' Position') && !name.includes(' CCD'))
       .map(([name, input]) => {
         const baseType = name.split('_')[0] as FUNC_PROPS_FIELD;
-  
+
         if ([FUNC_PROPS_FIELD.PROTEIN, FUNC_PROPS_FIELD.RNA, FUNC_PROPS_FIELD.DNA].includes(baseType)) {
-          return { 
-            ENTITY_TYPE: baseType, 
-            id: name, 
-            sequence: input.value, 
-            modifications: this.getModificationsForSequence(name)
+          return {
+            ENTITY_TYPE: baseType,
+            id: name,
+            sequence: input.value,
+            modifications: this.getModificationsForSequence(name),
           };
         } else if (baseType === FUNC_PROPS_FIELD.LIGAND) {
-          return { 
-            ENTITY_TYPE: baseType, 
-            id: name, 
-            [input.value === 'SMILES' ? 'smiles' : 'ccd']: input.value 
+          return {
+            ENTITY_TYPE: baseType,
+            id: name,
+            [input.value === 'SMILES' ? 'smiles' : 'ccd']: input.value,
           };
         }
       })
@@ -245,11 +245,11 @@ export class Boltz1AppView {
 
     this.pocketInputs.forEach((input, key) => {
       const uniqueName = key.split(' ')[0];
-        
+
       const binderChain = this.pocketInputs.get(`${uniqueName} Binder Chain`)?.value;
       const pocketChain = this.pocketInputs.get(`${uniqueName} Pocket Chain`)?.value;
       const pocketResidues = this.pocketInputs.get(`${uniqueName} Pocket Residues`)?.value;
-    
+
       const contacts = pocketResidues ? pocketResidues.map((resIdx: string) => {
         return [pocketChain, resIdx];
       }) : [];
@@ -258,12 +258,12 @@ export class Boltz1AppView {
         constraints.push({
           pocket: {
             binder: binderChain,
-            contacts: contacts
-          }
+            contacts: contacts,
+          },
         });
       }
     });
-    return yaml.dump({ sequences, constraints });
+    return yaml.dump({sequences, constraints});
   }
 
   public getView(): DG.ViewBase {
@@ -283,5 +283,5 @@ export enum FUNC_PROPS_FIELD {
 
 export const FUNC_PROPS_FIELDS = [...Object.values(FUNC_PROPS_FIELD)];
 
-const PROTEIN_1 = "HHHHHHMAEGEITTFTALTEKFNLPPGNYKKPKLLYCSNGGHFLRILPDGTVDGTRDRSDQHIQLQLSAESVGEVYIKSTETGQYLAMDTDGLLYGSQTPNEECLFLERLEENHYNTYISKKHAEKNWFVGLKKNGSCKRGPRTHYGQKAILFLPLPV";
-const PROTEIN_2 = "AVLFPVLLEVQRAVQLVVAPWLLQPAPGAPPPERLSLPAGRRLVVNLWATWCVLAALGLALGPPHRALVPGDPQAFRGLAHLVLGRHGNPLLLRVARAEGPRAVAAAFAGHPQLHLLPGSLALGQALELLLPWLQVLGPAPSCVLERGYLRRRQGAEGLPFRSWLREQGLAGLQARVARLLRALGPALAAELPPPVAAEALRAGLSAPVGGLLRAAARLLEAGQPPPGPEPLRAAALAVLAAIAAFLAAVAL"
+const PROTEIN_1 = 'HHHHHHMAEGEITTFTALTEKFNLPPGNYKKPKLLYCSNGGHFLRILPDGTVDGTRDRSDQHIQLQLSAESVGEVYIKSTETGQYLAMDTDGLLYGSQTPNEECLFLERLEENHYNTYISKKHAEKNWFVGLKKNGSCKRGPRTHYGQKAILFLPLPV';
+const PROTEIN_2 = 'AVLFPVLLEVQRAVQLVVAPWLLQPAPGAPPPERLSLPAGRRLVVNLWATWCVLAALGLALGPPHRALVPGDPQAFRGLAHLVLGRHGNPLLLRVARAEGPRAVAAAFAGHPQLHLLPGSLALGQALELLLPWLQVLGPAPSCVLERGYLRRRQGAEGLPFRSWLREQGLAGLQARVARLLRALGPALAAELPPPVAAEALRAGLSAPVGGLLRAAARLLEAGQPPPGPEPLRAAALAVLAAIAAFLAAVAL';

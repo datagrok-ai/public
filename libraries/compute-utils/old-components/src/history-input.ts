@@ -59,7 +59,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
   private _historyDialog = this.getHistoryDialog();
 
   private _visibleInput = ui.input.string(this.label, {value: ''});
-  private _visibleIcon = ui.iconFA('search', () => this.showSelectionDialog());
+  private _visibleIcon = ui.iconFA('search', () => this.showSelectionDialog(), 'Search');
   private _chosenRun: DG.FuncCall | null = null;
   private _chosenRunId: string | null = null;
 

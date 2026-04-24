@@ -48,6 +48,7 @@ export async function loadLayoutFromUserStorage(studyId: string, viewName: strin
     }
   }
   catch (e) {
+    console.warn(`Failed to load layout for ${studyId}/${viewName}:`, e);
     return;
   }
 }
@@ -70,7 +71,7 @@ async function deleteLayoutFromUserStorage(studyId: string, viewName: string): P
     }
   }
   catch (e) {
-    // Ignore errors when deleting
+    console.warn(`Failed to delete layout for ${studyId}/${viewName}:`, e);
   }
 }
 

@@ -26,6 +26,20 @@ export const PRECLINICAL_CASE_APP_PATH: string = '/apps/Preclinicalcase';
 export const studyLoadedSubject = new Subject<{name: string, loaded: boolean, errorDomains?: string[]}>();
 export const studies: {[key: string]: PreclinicalStudy} = {};
 
+type DefineXmlRoot = {
+  ODM?: {
+    Study?: {
+      GlobalVariables?: {StudyName?: string; ProtocolName?: string; StudyDescription?: string};
+      MetaDataVersion?: {ItemDef?: Array<{
+        _Name?: string;
+        Description?: {__text?: string; TranslatedText?: {__text?: string}};
+      }>};
+    };
+  };
+};
+
+type LoadableView = {loaded?: boolean; load?: () => void};
+
 export async function cdiscAppTB(treeNode: DG.TreeViewGroup,
   currentStudy: string, currentViewName: string) {
   const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
@@ -104,8 +118,7 @@ export async function createStudyWithConfig(files: DG.FileInfo[], treeNode: DG.T
   let config: StudyConfig | null = null;
   let dmDf: DG.DataFrame | null = null;
   let tsDf: DG.DataFrame | null = null;
-  try {
-    const studySavedConfig = files.filter((it) => it.name === studyConfigJsonFileName);
+  const studySavedConfig = files.filter((it) => it.name === studyConfigJsonFileName);
     if (studySavedConfig.length)
       config = JSON.parse(await studySavedConfig[0].readAsString());
 
@@ -114,7 +127,7 @@ export async function createStudyWithConfig(files: DG.FileInfo[], treeNode: DG.T
       const defineXml = files.filter((it) => it.name === defineXmlFileName);
       if (defineXml.length) {
         const parser = new X2JS();
-        const defineJson = parser.xml2js(await defineXml[0].readAsString()) as any;
+        const defineJson = parser.xml2js(await defineXml[0].readAsString()) as DefineXmlRoot;
         config.name = defineJson?.ODM?.Study?.GlobalVariables?.StudyName;
         config.protocol = defineJson?.ODM?.Study?.GlobalVariables?.ProtocolName;
         config.description = defineJson?.ODM?.Study?.GlobalVariables?.StudyDescription;
@@ -189,10 +202,7 @@ export async function createStudyWithConfig(files: DG.FileInfo[], treeNode: DG.T
         addStudyToBrowseTree(studies[config.name!], treeNode, files);
       }
     }
-    return config;
-  } catch (e: any) {
-    throw e;
-  }
+  return config;
 }
 
 export function addStudyToBrowseTree(study: PreclinicalStudy, treeNode: DG.TreeViewGroup, studyFiles?: DG.FileInfo[]) {
@@ -335,8 +345,9 @@ async function loadView(study: PreclinicalStudy, viewName: string, parentNode: D
     const tableView = currentOpenedView as DG.TableView;
     await setupTableViewLayout(tableView, study.studyId, viewName);
   }
-  if ((view as any).loaded === false && typeof (view as any).load === 'function')
-    (view as any).load();
+  const loadable = view as unknown as LoadableView;
+  if (loadable.loaded === false && typeof loadable.load === 'function')
+    loadable.load();
   view.path = `${PRECLINICAL_CASE_APP_PATH}/${encodeURI(study.studyId)}/${encodeURI(viewName)}`;
 };
 
@@ -404,26 +415,26 @@ export async function readClinicalData(study: PreclinicalStudy, importedFiles?: 
       const dfs = await grok.dapi.files.readBinaryDataFrames(d42DataFrames[0]);
       for (const df of dfs) {
         if (df.name.startsWith('supp') &&
-              !studies[study.studyId].domains.supp.filter((it) => it.name == df.name).length)
+              !studies[study.studyId].domains.supp.filter((it) => it.name === df.name).length)
           studies[study.studyId].domains.supp.push(df);
-        else if (!(studies[study.studyId].domains as any)[df.name])
-          (studies[study.studyId].domains as any)[df.name] = df;
+        else if (!studies[study.studyId].domains.has(df.name))
+          studies[study.studyId].domains.set(df.name, df);
       }
     } else {
       for (let i = 0; i < studyFiles.length; i++) {
         const domainNameWithExt = studyFiles[i].fileName.toLowerCase();
         const domainNameWithoutExt = removeExtension(domainNameWithExt);
         pb.update(i / studyFiles.length * 100, `Reading ${domainNameWithExt}...`);
-        if (!(studies[study.studyId].domains as any)[domainNameWithoutExt] &&
+        if (!studies[study.studyId].domains.has(domainNameWithoutExt) &&
           (domainsNames.includes(domainNameWithoutExt) || domainNameWithoutExt.startsWith('supp'))) {
           const df = await readClinicalFile(studyFiles[i]);
           if (df) {
             df.name = domainNameWithoutExt;
             if (domainNameWithoutExt.startsWith('supp') &&
-              !studies[study.studyId].domains.supp.filter((it) => it.name == domainNameWithoutExt).length)
+              !studies[study.studyId].domains.supp.filter((it) => it.name === domainNameWithoutExt).length)
               studies[study.studyId].domains.supp.push(df);
-            else if (!(studies[study.studyId].domains as any)[domainNameWithoutExt])
-              (studies[study.studyId].domains as any)[domainNameWithoutExt] = df;
+            else if (!studies[study.studyId].domains.has(domainNameWithoutExt))
+              studies[study.studyId].domains.set(domainNameWithoutExt, df);
           } else
             notLoadedDomains.push(domainNameWithExt);
         }

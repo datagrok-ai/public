@@ -5,11 +5,11 @@
   "scripts": {
     "docusaurus": "docusaurus",
     "docusaurus-wiki-debug": "docusaurus start --config docusaurus-wiki-debug.config.js",
-    "start": "node generatePluginsPages.js latest && ./generate_docs_py.sh && docusaurus start",
-    "start-windows": "node generatePluginsPages.js latest && generate_docs_py.cmd && docusaurus start",
-    "start-debug": "cd ../js-api && npm install && cd ../docusaurus && node generatePluginsPages.js create && generate_docs_py.cmd && docusaurus start --config docusaurus-debug.config.js",
-    "build": "node generatePluginsPages.js && ./generate_docs_py.sh && docusaurus build",
-    "build-windows": "set NODE_OPTIONS=--max_old_space_size=8192 && node generatePluginsPages.js && generate_docs_py.cmd && docusaurus build",
+    "start": "node generatePluginsPages.js latest && ./generate_docs_py.sh && node preprocess-readme.js && docusaurus start",
+    "start-windows": "node generatePluginsPages.js latest && generate_docs_py.cmd && node preprocess-readme.js && docusaurus start",
+    "start-debug": "cd ../js-api && npm install && cd ../docusaurus && node generatePluginsPages.js create && generate_docs_py.cmd && node preprocess-readme.js && docusaurus start --config docusaurus-debug.config.js",
+    "build": "node generatePluginsPages.js && ./generate_docs_py.sh && node preprocess-readme.js && docusaurus build",
+    "build-windows": "set NODE_OPTIONS=--max_old_space_size=8192 && node generatePluginsPages.js && generate_docs_py.cmd && node preprocess-readme.js && docusaurus build",
     "bare-build": "set NODE_OPTIONS=--max_old_space_size=8192 && docusaurus build",
     "generate-plugins-pages": "node generatePluginsPages.js",
     "generate-python-docs": "./generate_docs_py.sh",
@@ -23,10 +23,10 @@
     "lint": "markdownlint-cli2-fix \"help/**/*.{md,mdx}\""
   },
   "dependencies": {
-    "@docusaurus/core": "3.2.1",
-    "@docusaurus/plugin-client-redirects": "^3.2.1",
-    "@docusaurus/plugin-google-tag-manager": "^3.7.0",
-    "@docusaurus/preset-classic": "3.2.1",
+    "@docusaurus/core": "3.10.0",
+    "@docusaurus/plugin-client-redirects": "^3.10.0",
+    "@docusaurus/plugin-google-tag-manager": "^3.10.0",
+    "@docusaurus/preset-classic": "3.10.0",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-brands-svg-icons": "^6.5.2",
     "@fortawesome/free-regular-svg-icons": "^6.5.2",
@@ -44,19 +44,19 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@docusaurus/logger": "3.2.1",
-    "@docusaurus/module-type-aliases": "3.2.1",
-    "@docusaurus/tsconfig": "3.2.1",
-    "@docusaurus/types": "3.2.1",
+    "@docusaurus/logger": "3.10.0",
+    "@docusaurus/module-type-aliases": "3.10.0",
+    "@docusaurus/tsconfig": "3.10.0",
+    "@docusaurus/types": "3.10.0",
     "@types/node": "^20.14.1",
     "@types/react": "^18.2.29",
-    "docusaurus-plugin-typedoc": "^1.0.0",
-    "docusaurus-theme-search-typesense": "0.18.0",
+    "docusaurus-plugin-typedoc": "^1.4.2",
+    "docusaurus-theme-search-typesense": "0.26.0",
     "markdownlint-cli2": "^0.13.0",
     "ts-node": "^10.9.2",
-    "typedoc": "^0.25.13",
-    "typedoc-plugin-markdown": "^4.0.0",
-    "typedoc-plugin-replace-text": "^3.3.0",
+    "typedoc": "^0.28.18",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "typedoc-plugin-replace-text": "^4.2.0",
     "typescript": "^5.4.5",
     "unist-util-visit": "^5.0.0"
   },
@@ -73,6 +73,6 @@
     ]
   },
   "engines": {
-    "node": ">=18.0"
+    "node": ">=20.0"
   }
 }

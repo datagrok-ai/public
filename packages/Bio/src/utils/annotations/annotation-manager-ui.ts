@@ -63,7 +63,7 @@ export function showAnnotationManagerDialog(): void {
         setColumnAnnotations(selectedCol, updated);
         df.fireValuesChanged();
         refreshList();
-      });
+      }, 'Delete');
       removeBtn.style.cursor = 'pointer';
       removeBtn.style.color = '#999';
       removeBtn.style.marginLeft = '8px';

@@ -1,0 +1,26 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%BoundingBox: 0 0 200 200
+%%Title: Simple Test
+%%EndComments
+
+% White background
+1 1 1 setrgbcolor
+0 0 200 200 rectfill
+
+% Red square
+1 0 0 setrgbcolor
+50 50 100 100 rectfill
+
+% Black border
+0 0 0 setrgbcolor
+2 setlinewidth
+newpath
+50 50 moveto
+150 50 lineto
+150 150 lineto
+50 150 lineto
+closepath
+stroke
+
+showpage
+%%EOF

@@ -35,6 +35,7 @@ const config = {
         [
             'docusaurus-plugin-typedoc',
             {
+                docsPath: './api',
                 entryPoints: ['../js-api/dg.ts', '../js-api/ui.ts', '../js-api/grok.ts'],
                 tsconfig: '../js-api/tsconfig.json',
                 readme: '../help/develop/packages/js-api.md',
@@ -43,15 +44,17 @@ const config = {
                 out: './js-api',
                 indexFormat: "table",
                 parametersFormat: "table",
-                propertiesFormat: "table",
+                interfacePropertiesFormat: "table",
+                classPropertiesFormat: "table",
+                typeAliasPropertiesFormat: "table",
                 enumMembersFormat: "table",
                 typeDeclarationFormat: "table",
                 expandParameters: false,
                 sanitizeComments: true,
                 sidebar: { pretty: true },
-                textContentMappings: {
-                    "title.indexPage": "JavaScript API",
-                    "title.memberPage": "{name}",
+                pageTitleTemplates: {
+                    index: "JavaScript API",
+                    member: "{name}",
                 },
                 plugin: ['typedoc-plugin-replace-text'],
                 replaceText: {
@@ -184,12 +187,13 @@ const config = {
             typesenseServerConfig: {
                 nodes: [
                     {
-                        host: 'typesense.datagrok.ai',
+                        host: 'datagrok.ai',
                         port: 443,
+                        path: '/typesense',
                         protocol: 'https',
                     }
                 ],
-                apiKey: 'jjq4uhJvQ9hqo7TcPTpDIKvn1EsoAb86',
+                apiKey: '23vmY72BpQAytsutm24pCUNJJXh2txjU',
             },
 
             // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters

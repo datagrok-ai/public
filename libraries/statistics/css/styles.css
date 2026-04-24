@@ -84,9 +84,12 @@
 }
 
 
-.statistics-mpo-row .ui-input-choice .ui-input-editor {
+.statistics-mpo-row .ui-input-choice .ui-input-editor,
+.statistics-mpo-row .ui-input-column .ui-input-editor {
   width: 100px !important;
   max-width: none !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ui-form .statistics-mpo-row .ui-input-root {
@@ -134,6 +137,47 @@
 
 .statistics-mpo-cat-desirability {
   width: 70px;
+}
+
+.statistics-compute-dialog-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+}
+
+.statistics-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.statistics-compute-dialog-pane-header {
+  border: none;
+  border-left: 4px solid transparent;
+  border-radius: 1px;
+  padding: 4px 8px;
+  min-height: 28px;
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+
+.statistics-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.statistics-compute-dialog-pane-header.selected {
+  border-left: 4px solid var(--blue-1);
+  background-color: #f2f2f5;
+}
+
+.statistics-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.statistics-compute-dialog-pane-header>span {
+  padding: 0 4px;
+}
+
+.statistics-compute-dialog-host {
+  max-height: 550px;
+  max-width: 800px;
+  min-width: 550px;
+  overflow: clip;
+}
+
+.statistics-compute-dialog-descriptors-group {
+  margin-left: 16px;
+  overflow: hidden;
+}
+
+.oy-scroll {
+  overflow-y: scroll;
 }
 
 .statistics-mpo-weight-toggle {

@@ -630,6 +630,13 @@ dataset column and the scaffold tree.
 ![scaffold-tree-coloring](scaffold-tree-coloring.gif)
 
 </TabItem>
+<TabItem value="reorder" label="Reorder">
+
+To rearrange nodes within the same level:
+* **Drag and drop**: Drag a scaffold card above or below a sibling
+* **Keyboard**: Select a node and press **Alt+Shift+Up/Down**
+
+</TabItem>
 </Tabs>
 </details>
 
@@ -1044,6 +1051,9 @@ The Pareto front represents a set of non-dominated solutions in multi-objective 
 Launch an interactive Pareto Front [application](../../../../visualize/viewers/pareto-front-viewer.md#application) that enables real-time exploration of optimization results.
 
 </details>
+
+For details on MPO profiles, desirability curves, scoring, and visualization, see the
+[MPO page](mpo.md).
 
 ## Generative chemistry
 

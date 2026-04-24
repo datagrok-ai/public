@@ -162,6 +162,23 @@ await DG.delay(200); // wait for the filter to be applied
 - `column` is the canonical state field (`columnName` is a backwards-compat alias)
 - Use `DG.delay` for timing
 
+## Menu (`DG.Menu`)
+
+Source: `src/widgets/menu.ts`. Option interfaces: `src/widgets/types.ts`.
+
+```typescript
+DG.Menu.popup()
+  .item('Action', () => grok.shell.info('clicked'))
+  .separator()
+  .group('Sub').item('Inner', () => {}).endGroup()
+  .items(['A', 'B'], (s) => use(s), { radioGroup: 'grp', isChecked: (s) => s === cur })
+  .show();
+```
+
+- All methods return `Menu` (fluent chain) — read `menu.ts` for the full API
+- Viewer context menu: `viewer.onContextMenu.subscribe((menu) => { menu.item(...); })`
+- Samples: `ApiSamples/scripts/ui/components/popup-menu.js`, `menu-customization.js`, `menu-advanced.js`
+
 ## Server API Usage (grok.dapi)
 
 Plugin code accesses the server via `grok.dapi` (instance of `Dapi` class from `src/dapi.ts`).

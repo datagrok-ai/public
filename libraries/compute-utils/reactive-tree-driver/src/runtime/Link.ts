@@ -6,7 +6,7 @@ import {HandlerBase} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, NodePathSegment, TreeNode} from '../data/BaseTree';
 import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, MatchedIO, MatchedNodePaths, MatchInfo} from './link-matching';
-import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from 'rxjs';
+import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler} from 'rxjs';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
@@ -14,7 +14,8 @@ import {ControllerCancelled, FuncallActionController, LinkController, MetaContro
 import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
-import {DriverLogger} from '../data/Logger';
+import {GranularMutationOp} from '../data/common-types';
+import {DriverLogger, reportError} from '../data/Logger';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
 
 const VALIDATOR_DEBOUNCE_TIME = 250;
@@ -35,11 +36,16 @@ export class Link {
   public readonly isNodeMeta = this.matchInfo.spec.type === 'nodemeta' || this.matchInfo.spec.type === 'selector';
   public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
   public readonly isReturn = this.matchInfo.spec.type === 'return';
+  public readonly isBatchable: boolean;
 
   // probably a better api
   public lastPipelineMutations?: {
     path: NodePath,
     initConfig: PipelineInstanceConfig,
+  }[];
+  public lastGranularMutations?: {
+    path: NodePath,
+    ops: GranularMutationOp[],
   }[];
   public returnResult: any;
 
@@ -57,7 +63,16 @@ export class Link {
     public matchInfo: MatchInfo,
     private customDebounceTime?: number,
     private logger?: DriverLogger,
-  ) {}
+  ) {
+    const spec = this.matchInfo.spec;
+    if (spec.type === 'validator') {
+      const effectiveDebounce = this.customDebounceTime ?? VALIDATOR_DEBOUNCE_TIME;
+      this.isBatchable = effectiveDebounce === 0 && !spec.sequential;
+    } else if (spec.type === 'meta' || spec.type === 'nodemeta' || spec.type === 'selector')
+      this.isBatchable = !spec.sequential;
+    else
+      this.isBatchable = false;
+  }
 
   wire(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     if (this.isWired)
@@ -68,7 +83,7 @@ export class Link {
     const inputSet = new Set(this.getOrderedIO(this.matchInfo.inputs));
     const outputSet = new Set(this.getOrderedIO(this.matchInfo.outputs));
 
-    const inputsChanges$ = this.makeInputsChanges(state);
+    const inputsChanges$ = this.makeInputsChanges(state, linksState);
     const baseNode = this.matchInfo.basePath ?
       state.getNode(([...this.prefix, ...this.matchInfo.basePath])) :
       undefined;
@@ -77,11 +92,8 @@ export class Link {
 
     if (linksState) {
       for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
-        if (minfos.length > 1) {
-          const msg = `Node ${this.matchInfo.spec.id} prefix ${this.prefix} multiple action nodes with the same name ${name}`;
-          console.error(msg);
-          grok.shell.error(msg);
-        }
+        if (minfos.length > 1)
+          reportError('warning', `link:${this.matchInfo.spec.id}`, `Multiple action nodes with the same name ${name}`, this.logger);
         const nodeActions = minfos.map((minfo) => {
           const node = state.getNode([...this.prefix, ...minfo.path]);
           const actions = linksState.nodesActions.get(node.getItem().uuid) ?? [];
@@ -100,14 +112,14 @@ export class Link {
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs]) =>
-          this.runHandler(inputs, inputSet, outputSet, inputNames, outputNames, actions, baseNode, scope),
+          this.runHandler(inputs, inputSet, outputSet, inputNames, outputNames, actions, baseNode, scope, state).pipe(
+            map((controller) => this.setHandlerResults(controller, state)),
+            catchError((error) => {
+              reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger);
+              return EMPTY;
+            }),
+          ),
       ),
-      map((controller) => this.setHandlerResults(controller, state)),
-      catchError((error) => {
-        console.error(error);
-        grok.shell.error(error?.message);
-        return EMPTY;
-      }),
       timestamp(),
       map(({timestamp}) => timestamp),
       takeUntil(this.destroyed$),
@@ -132,7 +144,7 @@ export class Link {
     this.destroyed$.next(true);
   }
 
-  private makeInputsChanges(state: BaseTree<StateTreeNode>) {
+  private makeInputsChanges(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     const inputs = Object.entries(this.matchInfo.inputs).map(([inputAlias, inputItems]) => {
       const nodes = inputItems.map(
         (input) => [
@@ -163,18 +175,27 @@ export class Link {
       this.trigger$.pipe(withLatestFrom(inputsEntries$)) :
       this.trigger$.pipe(map((scope) => [scope, [] as any[]] as const));
 
+    const toInputsChanges = ([scope, entries]: readonly [any, any]) =>
+      [scope as ScopeInfo | undefined, Object.fromEntries(entries) as Record<string, any>] as const;
+
+    if (this.isBatchable && linksState?.batchLinks) {
+      inputsEntries$.pipe(
+        filter(() => this.isActive$.value),
+        takeUntil(this.destroyed$),
+      ).subscribe(() => linksState.scheduleBatch(this.uuid));
+
+      return inputsTriggered$.pipe(map(toInputsChanges));
+    }
+
     const debounceVal = this.customDebounceTime ?? (this.isValidator ? VALIDATOR_DEBOUNCE_TIME : 0);
 
     const activeInputs$ = inputsEntries$.pipe(
       filter(() => this.isActive$.value),
-      debounceTime(debounceVal),
+      debounceTime(debounceVal, debounceVal === 0 ? asapScheduler : undefined),
       map((obs) => [undefined, obs] as const),
     );
 
-    const inputsChanges$ = merge(activeInputs$, inputsTriggered$).pipe(
-      map(([scope, entries]) => [scope, Object.fromEntries(entries)] as const),
-    );
-    return inputsChanges$;
+    return merge(activeInputs$, inputsTriggered$).pipe(map(toInputsChanges));
   }
 
   private runHandler(
@@ -186,14 +207,16 @@ export class Link {
     actions: Record<string, Map<string, string>>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
+    state?: BaseTree<StateTreeNode>,
   ) {
-    const controller = this.getControllerInstance(inputs, inputSet, outputSet, actions, baseNode, scope);
+    const controller = this.getControllerInstance(inputs, inputSet, outputSet, actions, baseNode, scope, state);
     if (this.logger) {
       this.logger.logLink('linkRunStarted', {
         prefix: this.prefix,
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
         basePath: this.matchInfo.basePath,
+        isDefaultValidator: this.matchInfo.isDefaultValidator,
       });
     }
     if (this.matchInfo.spec.handler) {
@@ -215,6 +238,17 @@ export class Link {
     throw Error(`Unable to run handler for link ${this.matchInfo.spec.id}`);
   }
 
+  private resolveOutputNodes(state: BaseTree<StateTreeNode>): Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]> {
+    const result: Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]> = {};
+    for (const [outputAlias, outputItems] of Object.entries(this.matchInfo.outputs)) {
+      result[outputAlias] = outputItems.map((output) => {
+        const path = [...this.prefix, ...output.path];
+        return {node: state.getNode(path), path};
+      });
+    }
+    return result;
+  }
+
   private getControllerInstance(
     inputs: Record<string, any>,
     inputSet: Set<string>,
@@ -222,6 +256,7 @@ export class Link {
     actions: Record<string, Map<string, string>>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
+    state?: BaseTree<StateTreeNode>,
   ) {
     if (this.isValidator)
       return new ValidatorController(inputs, inputSet, outputSet, this.matchInfo.spec.id, actions, baseNode, scope);
@@ -229,8 +264,10 @@ export class Link {
     if (this.isMeta)
       return new MetaController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
 
-    if (this.isMutation)
-      return new MutationController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+    if (this.isMutation) {
+      const outputNodes = state ? this.resolveOutputNodes(state) : {};
+      return new MutationController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope, outputNodes);
+    }
 
     if (this.isNodeMeta)
       return new NodeMetaController(inputs, inputSet, new Set(descriptionOutputs), this.matchInfo.spec.id, scope);
@@ -262,12 +299,14 @@ export class Link {
 
   private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NodeMetaController | FuncallActionController | RuntimeReturnController, state: BaseTree<StateTreeNode>) {
     this.lastPipelineMutations = [];
+    this.lastGranularMutations = [];
     if (this.logger) {
       this.logger.logLink('linkRunFinished', {
         prefix: this.prefix,
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
         basePath: this.matchInfo.basePath,
+        isDefaultValidator: this.matchInfo.isDefaultValidator,
       });
     }
     const outputsEntries = Object.entries(this.matchInfo.outputs).map(([outputAlias, outputItems]) => {
@@ -297,6 +336,9 @@ export class Link {
           const initConfig = controller.outputs[outputAlias];
           if (initConfig)
             this.lastPipelineMutations.push({path: nodePath, initConfig});
+          const ops = controller.granularOps[outputAlias];
+          if (ops?.length)
+            this.lastGranularMutations!.push({path: nodePath, ops});
         } else if (controller instanceof NodeMetaController) {
           const data = controller.outputs[outputAlias];
           const descrStore = node.getItem().nodeDescription;
@@ -357,7 +399,10 @@ export class Action extends Link {
     return this.isRunning$.pipe(
       filter((isRunning) => !isRunning),
       take(1),
-      map(() => this.lastPipelineMutations),
+      map(() => ({
+        pipelineMutations: this.lastPipelineMutations,
+        granularMutations: this.lastGranularMutations,
+      })),
     );
   }
 }

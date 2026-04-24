@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import { EChartViewer } from '../echart/echart-viewer';
-import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
+import {EChartViewer} from '../echart/echart-viewer';
+import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 
 import * as utils from '../../utils/utils';
 import * as echarts from 'echarts';
@@ -58,6 +58,12 @@ export class TreeViewer extends EChartViewer {
   symbol: symbolType;
   symbolSize: number;
   fontSize: number;
+  moleculeSize: string;
+  moleculeSizesMap: Record<string, {width: number; height: number}> = {
+    small: {width: 70, height: 80},
+    normal: {width: 100, height: 120},
+    large: {width: 150, height: 180},
+  };
   showCounts: boolean;
   sizeColumnName: string = '';
   sizeAggrType: DG.AggregationType = 'avg';
@@ -93,14 +99,16 @@ export class TreeViewer extends EChartViewer {
   constructor() {
     super();
 
-    this.layout = <layoutType> this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'], category: 'Style'});
-    this.orient = <orientation> this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'], category: 'Style' });
-    this.initialTreeDepth = this.int('initialTreeDepth', 3, { min: 0, max: 5, category: 'Style'});
-    this.symbol = <symbolType> this.string('symbol', 'emptyCircle', { choices: [
+    this.layout = <layoutType> this.string('layout', 'orthogonal', {choices: ['orthogonal', 'radial'], category: 'Style'});
+    this.orient = <orientation> this.string('orient', 'LR', {choices: ['LR', 'RL', 'TB', 'BT'], category: 'Style'});
+    this.initialTreeDepth = this.int('initialTreeDepth', 3, {min: 0, max: 5, category: 'Style'});
+    this.symbol = <symbolType> this.string('symbol', 'emptyCircle', {choices: [
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
-    ], category: 'Style' });
+    ], category: 'Style'});
     this.symbolSize = this.int('symbolSize', 7, {category: 'Style', description: 'Used unless an aggregation function is specified'});
     this.fontSize = this.int('fontSize', 12, {category: 'Style', max: 30});
+    this.moleculeSize = this.string('moleculeSize', 'fit', {choices: [...Object.keys(this.moleculeSizesMap), 'fit'], category: 'Style',
+      description: 'Size of molecule labels. "fit" scales molecules to the available space.'});
     this.labelRotate = this.int('labelRotate', 45, {category: 'Style', max: 360});
     this.showCounts = this.bool('showCounts', false, {category: 'Style'});
     this.mouseOverLineColor = this.int('mouseOverLineColor', 0x6C5E5E, {category: 'Style'});
@@ -109,13 +117,13 @@ export class TreeViewer extends EChartViewer {
     this.showMouseOverLine = this.bool('showMouseOverLine', false, {category: 'Style'});
 
     this.sizeColumnName = this.string('sizeColumnName', '', {category: 'Size'});
-    this.sizeAggrType = <DG.AggregationType> this.string('sizeAggrType', DG.AGG.AVG, { choices: this.aggregations, category: 'Size' });
+    this.sizeAggrType = <DG.AggregationType> this.string('sizeAggrType', DG.AGG.AVG, {choices: this.aggregations, category: 'Size'});
 
     this.colorColumnName = this.string('colorColumnName', '', {category: 'Color'});
-    this.colorAggrType = <DG.AggregationType> this.string('colorAggrType', DG.AGG.AVG, { choices: this.aggregations, category: 'Color' });
+    this.colorAggrType = <DG.AggregationType> this.string('colorAggrType', DG.AGG.AVG, {choices: this.aggregations, category: 'Color'});
 
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null, {category: 'Data', columnTypeFilter: DG.TYPE.CATEGORICAL});
-    this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter', 'None']});
+    this.onClick = <onClickOptions> this.string('onClick', 'Select', {choices: ['Select', 'Filter', 'None']});
     this.includeNulls = this.bool('includeNulls', true, {category: 'Value'});
 
     this.option = {
@@ -205,7 +213,7 @@ export class TreeViewer extends EChartViewer {
         if (isStructure) {
           const image = await TreeUtils.getMoleculeImage(ancestor, 150, 100);
           if (image) {
-            const { width, height } = image;
+            const {width, height} = image;
             const pixels = image.getContext('2d')!.getImageData(0, 0, width, height).data;
             if (pixels.some((_, i) => i % 4 === 3 && pixels[i] !== 0))
               div.appendChild(image);
@@ -218,7 +226,7 @@ export class TreeViewer extends EChartViewer {
           firstAncestor = false;
         }
       }
-      const resultDiv = ui.divV([div, ui.divText(params.value, { style: { fontWeight: 'bold' } })]);
+      const resultDiv = ui.divV([div, ui.divText(params.value, {style: {fontWeight: 'bold'}})]);
       const {x, y} = params.event.event;
       if (x && y)
         ui.tooltip.show(resultDiv, x, y);
@@ -337,7 +345,7 @@ export class TreeViewer extends EChartViewer {
 
   paintBranchByPath(paths: string | string[], color: number, selection: SelectionData | null = null): void {
     const hoverStyle = {
-      lineStyle: { color: DG.Color.toHtml(color) },
+      lineStyle: {color: DG.Color.toHtml(color)},
     };
 
     const pathsArray = Array.isArray(paths) ? paths : [paths];
@@ -369,7 +377,7 @@ export class TreeViewer extends EChartViewer {
     const updatedTree = this.buildSeriesConfig(path, hoverStyle, originalTree);
     const updatedOption = {
       ...this.chart!.getOption(),
-      series: [{ ...this.chart!.getOption()?.series?.[0], data: [updatedTree] }],
+      series: [{...this.chart!.getOption()?.series?.[0], data: [updatedTree]}],
     };
 
     //@ts-ignore
@@ -398,7 +406,7 @@ export class TreeViewer extends EChartViewer {
         if (isMatch) {
           if (selection) {
             const countsMatch = selection[node.path] === node.value;
-            hoverStyle = { ...hoverStyle, lineStyle: { ...hoverStyle.lineStyle, type: countsMatch ? null : 'dashed' } };
+            hoverStyle = {...hoverStyle, lineStyle: {...hoverStyle.lineStyle, type: countsMatch ? null : 'dashed'}};
           }
           Object.assign(node, hoverStyle);
         }
@@ -439,7 +447,7 @@ export class TreeViewer extends EChartViewer {
 
     this.setChartOption();
 
-    const { name } = p;
+    const {name} = p;
 
     switch (name) {
     case 'layout':
@@ -485,6 +493,10 @@ export class TreeViewer extends EChartViewer {
     case 'fontSize':
       this.option.series[0].label.fontSize = p.get(this);
       this.option.series[0].leaves.label.fontSize = p.get(this);
+      this.render();
+      break;
+
+    case 'moleculeSize':
       this.render();
       break;
 
@@ -555,7 +567,7 @@ export class TreeViewer extends EChartViewer {
       },
     };
 
-    const { label, leavesLabel } = orientations[this.orient] || {};
+    const {label, leavesLabel} = orientations[this.orient] || {};
     if (label && leavesLabel) {
       this.option.series[0].label = label;
       this.option.series[0].leaves.label = leavesLabel;
@@ -573,7 +585,7 @@ export class TreeViewer extends EChartViewer {
   }
 
   addParentPaths(data: SelectionData): SelectionData {
-    const result: SelectionData = { ...data };
+    const result: SelectionData = {...data};
 
     for (const path in data) {
       const count = data[path];
@@ -620,7 +632,7 @@ export class TreeViewer extends EChartViewer {
   applySelectionFilterChange(paths: string[] | null, bitset: DG.BitSet, changedProp: boolean = false, isFilter: boolean = false): void {
     this.setChartOption();
 
-    const { filter, rowCount } = this.dataFrame;
+    const {filter, rowCount} = this.dataFrame;
     const hasActiveFilter = filter.trueCount !== rowCount;
     const treeData = !isFilter || hasActiveFilter ? this.getSelectionFilterData(bitset) : {};
     const newPaths = Object.keys(treeData);
@@ -723,13 +735,13 @@ export class TreeViewer extends EChartViewer {
     const aggregations = [];
 
     if (this.sizeColumnName && this.applySizeAggr) {
-      aggregations.push({ type: <DG.AggregationType> this.sizeAggrType,
-        columnName: this.sizeColumnName, propertyName: 'size' });
+      aggregations.push({type: <DG.AggregationType> this.sizeAggrType,
+        columnName: this.sizeColumnName, propertyName: 'size'});
     }
 
     if (this.colorColumnName && this.applyColorAggr) {
-      aggregations.push({ type: <DG.AggregationType> this.colorAggrType,
-        columnName: this.colorColumnName, propertyName: 'color' });
+      aggregations.push({type: <DG.AggregationType> this.colorAggrType,
+        columnName: this.colorColumnName, propertyName: 'color'});
     }
     return [await TreeUtils.toTree(this.dataFrame, this.eligibleHierarchyNames, this.filter, null, aggregations, true, undefined, undefined, this.includeNulls, false)];
   }
@@ -741,7 +753,6 @@ export class TreeViewer extends EChartViewer {
     params.data.label = {
       show: true,
       fontSize: 0,
-      formatter: '{b}',
       color: 'rgba(0,0,0,0)',
       height: height.toString(),
       width: width.toString(),
@@ -761,49 +772,48 @@ export class TreeViewer extends EChartViewer {
 
   formatLabel(params: any): string {
     if (params.data.semType === 'Molecule') {
-      const minImageWidth = 70;
-      const minImageHeight = 80;
+      if (this.moleculeSize !== 'fit') {
+        const {width, height} = this.moleculeSizesMap[this.moleculeSize];
+        this.renderMoleculeQueued(params, width, height);
+        return ' ';
+      }
+
+      const {width: minW, height: minH} = this.moleculeSizesMap.small;
+      const {width: maxW, height: maxH} = this.moleculeSizesMap.large;
       //@ts-ignore
       const itemLayouts = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
+
       if (this.layout === 'radial') {
         const totalNodes = itemLayouts.filter((item: any) => item && item.x !== undefined).length;
         const chartSize = Math.min(this.chart.getWidth(), this.chart.getHeight());
-        const maxDim = Math.max(minImageWidth, Math.floor(chartSize / Math.max(1, Math.sqrt(totalNodes))));
-        const renderWidth = Math.min(maxDim, 150);
-        const renderHeight = Math.min(Math.floor(renderWidth * minImageHeight / minImageWidth), 150);
+        const maxDim = Math.max(minW, Math.floor(chartSize / Math.max(1, Math.sqrt(totalNodes))));
+        const renderWidth = Math.min(maxDim, maxW);
+        const renderHeight = Math.min(Math.floor(renderWidth * minH / minW), maxH);
         this.renderMoleculeQueued(params, renderWidth, renderHeight);
         return ' ';
       }
 
-      const getCurrentItemIndex = params.dataIndex - 1;
-      const ItemLayoutInfo = itemLayouts.find((item: any, index: number) => getCurrentItemIndex === index);
-
-      const { x, y } = ItemLayoutInfo;
+      const ItemLayoutInfo = itemLayouts[params.dataIndex - 1];
+      const {x, y} = ItemLayoutInfo;
       const isVerticalOrientation = this.isVerticalOrientation();
+      const axis = (item: any) => isVerticalOrientation ? item.y : item.x;
 
       const sortedItems = [...itemLayouts]
-        .filter((item: any) => item && (item.x !== undefined && item.y !== undefined))
-        .sort((a: any, b: any) => isVerticalOrientation ? a.y - b.y : a.x - b.x);
+        .filter((item: any) => item && item.x !== undefined && item.y !== undefined)
+        .sort((a: any, b: any) => axis(a) - axis(b));
 
-      let positions: number[];
-      let distances: number[];
-
-      if (isVerticalOrientation) {
-        positions = sortedItems.map((item: any) => item.y);
-        distances = positions.slice(1).map((y: number, index: number) => y - positions[index]);
-      } else {
-        positions = sortedItems.map((item: any) => item.x);
-        distances = positions.slice(1).map((x: number, index: number) => x - positions[index]);
-      }
+      const positions = sortedItems.map(axis);
+      const distances = positions.slice(1).map((p: number, i: number) => p - positions[i]);
 
       const averageDistance = distances.length ? distances.reduce((acc, val) => acc + val, 0) / distances.length : 0;
       const chartSize = isVerticalOrientation ? this.chart.getHeight() : this.chart.getWidth();
       const tolerance = Math.max(20, Math.min(averageDistance, chartSize * 0.05));
 
       const sortedPositions = [...new Set(positions)];
-      const nodesAtLevel = sortedItems.filter((item: any) => Math.abs(isVerticalOrientation ? item.y - y : item.x - x) <= tolerance);
+      const current = isVerticalOrientation ? y : x;
+      const nodesAtLevel = sortedItems.filter((item: any) => Math.abs(axis(item) - current) <= tolerance);
 
-      const index = sortedPositions.indexOf(isVerticalOrientation ? y : x);
+      const index = sortedPositions.indexOf(current);
       const availableSpace = (index === 0) ?
         (sortedPositions[1] - sortedPositions[0]) :
         (index === sortedPositions.length - 1) ?
@@ -812,17 +822,13 @@ export class TreeViewer extends EChartViewer {
 
       const labelHeight = Math.floor(chartSize / nodesAtLevel.length);
 
-      if (availableSpace >= minImageWidth && labelHeight >= minImageHeight) {
-        const scaleByWidth = availableSpace / minImageWidth;
-        const scaleByHeight = labelHeight / minImageHeight;
-        const scale = Math.min(scaleByWidth, scaleByHeight);
-
-        const renderWidth = Math.max(minImageWidth, minImageWidth * scale);
-        const renderHeight = Math.max(minImageHeight, minImageHeight * scale);
-
-        this.renderMoleculeQueued(params, renderWidth, renderHeight);
+      if (availableSpace >= minW && labelHeight >= minH) {
+        const scale = Math.min(availableSpace / minW, labelHeight / minH);
+        this.renderMoleculeQueued(params, Math.min(maxW, minW * scale), Math.min(maxH, minH * scale));
         return ' ';
       }
+      if (params.data.label?.backgroundColor?.image)
+        params.data.label = undefined;
       return ' ';
     }
     const labelText = this.showCounts ? `${params.name}: ${params.value}` : `${params.name}`;
@@ -851,7 +857,7 @@ export class TreeViewer extends EChartViewer {
   }
 
   updateCollapsedState(data: TreeDataType[]): void {
-    const { initialTreeDepth } = this;
+    const {initialTreeDepth} = this;
 
     const traverse = (node: TreeDataType, depth: number) => {
       node.collapsed = depth > initialTreeDepth;

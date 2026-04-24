@@ -123,8 +123,8 @@ export class CruddyViewFeature {
         });
       }
 
-      const left = ui.iconFA('chevron-left', (_) => q(Math.max(0, v.queryOptions.offset! - v.queryOptions.limit!)));
-      const right = ui.iconFA('chevron-right', (_) => q(Math.max(0, v.queryOptions.offset! + v.queryOptions.limit!)));
+      const left = ui.iconFA('chevron-left', (_) => q(Math.max(0, v.queryOptions.offset! - v.queryOptions.limit!)), 'Previous');
+      const right = ui.iconFA('chevron-right', (_) => q(Math.max(0, v.queryOptions.offset! + v.queryOptions.limit!)), 'Next');
       v.setRibbonPanels([...v.getRibbonPanels(), ...[[divRange, left, right]]]);
 
       v.onQueryCompleted.subscribe()
@@ -195,7 +195,7 @@ export class CruddyViewFeature {
             v.entityType.crud.create(entity).then((_) => grok.shell.info('Created'));
           })
           .show();
-      }));
+      }, 'Add'));
     });
   }
 }

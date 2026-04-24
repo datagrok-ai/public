@@ -1,5 +1,15 @@
 # Datagrok-tools changelog
 
+## 6.1.10 (2026-04-17)
+
+* `grok s connections save` — create/update a connection from a JSON file (`--save-credentials` optional)
+* `grok s connections test` — test connectivity by JSON body or by existing id/name
+* `grok s users save` — create/update a user from a JSON file
+* `grok s groups save` — create/update a group from a JSON file (`--save-relations` optional)
+* `grok s shares add` — share an entity with one or more groups (`--access View|Edit`)
+* `grok s shares list` — list who an entity is shared with
+* Tools: Normalize package name to lowercase in grok create, preserve original as friendlyName
+
 ## 5.1.3 (2026-02-03)
 
 * GROK-19407:

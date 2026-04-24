@@ -5,6 +5,7 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {createTestScheduler} from '../../../test-utils';
 import {switchMap} from 'rxjs/operators';
 import {FuncCallNode, PipelineNodeBase} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
@@ -55,10 +56,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
 
   let testScheduler: TestScheduler;
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   test('Remove obsolete consistency', async () => {

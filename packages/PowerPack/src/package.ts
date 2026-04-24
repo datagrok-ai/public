@@ -23,7 +23,8 @@ import {initSearch, createFuncTableViewWidget} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
-import {ActivityDashboardWidget} from './widgets/activity-dashboard-widget';
+import {SpotlightWidget} from './spotlight/spotlight-widget';
+import {getAdminGroups, getMyGroupFavorites} from './spotlight/group-favorites';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
 export * from './package.g';
@@ -139,10 +140,10 @@ export class PackageFunctions {
       'showName': 'false',
     },
     order: '-1',
-    name: 'Activity dashboard',
+    name: 'Spotlight',
   })
   static activityDashboardWidget(): DG.Widget {
-    return new ActivityDashboardWidget();
+    return new SpotlightWidget();
   }
 
   @grok.decorators.dashboard({
@@ -421,6 +422,44 @@ grok.events.onContextMenu.subscribe((args) => {
   }
 
   menu?.item('Formula Lines...', () => PackageFunctions.formulaLinesDialog(src));
+});
+
+function getEntity(x: any) {
+  if (x instanceof DG.TreeViewGroup)
+    return x.value;
+  return null;
+}
+
+grok.events.onContextMenu.subscribe((args) => {
+  const item = args?.args?.item;
+  const entity = DG.toJs(item?.value ?? item);
+  if (!(entity instanceof DG.Entity) || entity instanceof DG.User ||entity instanceof DG.Group)
+    return;
+
+  const menu: DG.Menu = args.args.menu;
+  Promise.all([getAdminGroups(), getMyGroupFavorites()]).then(([allAdminGroups, groupFavorites]) => {
+    if (allAdminGroups.length === 0)
+      return;
+    const pinnedGroupIds = new Set<string>();
+    for (const gf of groupFavorites)
+      if (gf.entities.some((e) => e.id === entity.id))
+        pinnedGroupIds.add(gf.group.id);
+
+    allAdminGroups.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
+    menu.group('Group favorites').items(allAdminGroups, async (group) => {
+      if (pinnedGroupIds.has(group.id)) {
+        await DG.Favorites.remove(entity, group);
+        grok.shell.info(`Unpinned "${entity.friendlyName}" from ${group.friendlyName}`);
+      }
+      else {
+        await DG.Favorites.add(entity, group);
+        grok.shell.info(`Pinned "${entity.friendlyName}" to ${group.friendlyName}`);
+      }
+    }, {
+      isChecked: (group) => pinnedGroupIds.has(group.id),
+      toString: (group) => group.friendlyName,
+    }).endGroup();
+  });
 });
 
 function _viewerGallery(view: DG.ViewBase): void {

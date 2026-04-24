@@ -10,7 +10,7 @@ Commands:
     add         Add an object template
     api         Create wrapper functions
     build       Build a package or multiple packages
-    check       Check package content (function signatures, etc.)
+    check       Check package content (function signatures, etgc.)
     claude      Launch Claude Code in a Datagrok dev container
     config      Create and manage config files
     create      Create a package
@@ -23,6 +23,7 @@ Commands:
     test        Run package tests
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
+    server (s)  Manage a Datagrok server (list/get/delete entities, run functions)
 
 To get help on a particular command, use:
     grok <command> --help
@@ -372,6 +373,70 @@ Examples:
 The instance name must match a server alias in ~/.grok/config.yaml.
 `;
 
+const HELP_SERVER = `
+Usage: grok server <entity> <verb> [args] [options]
+       grok s <entity> <verb> [args] [options]
+
+Manage a Datagrok server from the command line.
+
+Entities:
+  users, groups, functions, connections, queries, scripts, packages, reports, files, tables
+
+Verbs:
+  list      List entities
+  get       Get a single entity by ID or name
+  delete    Delete an entity by ID
+
+Special commands:
+  grok s functions run <Name:func(args)>             Call a function
+  grok s functions list [--type <t>] [--language <l>] [--package <p>] [--filter <expr>]
+                                                     Type: script|query|function|package; language applies to scripts
+  grok s files list [path] [-r]                      List files (recursive with -r)
+  grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
+                                                     Share an entity with groups
+  grok s shares list <entity-id>                     List who an entity (UUID) is shared with
+  grok s users save --json user.json                 Create or update a user from JSON
+  grok s users block <id-or-login>                   Block a user from the platform
+  grok s users unblock <id-or-login>                 Unblock a previously blocked user
+  grok s groups save --json group.json [--save-relations]
+                                                     Create or update a group from JSON
+  grok s connections save --json conn.json [--save-credentials]
+                                                     Create or update a connection from JSON
+  grok s connections test <id-or-name>               Test connectivity of an existing connection
+  grok s connections test --json conn.json           Test connectivity of a connection defined in JSON
+  grok s tables upload <name> <file.csv>             Upload a CSV as a Datagrok table
+  grok s tables download <name-or-id> [-O <file>]    Download a table as CSV (stdout by default)
+  grok s raw <METHOD> <path>                         Hit any API endpoint
+  grok s describe <entity-type>                      Show entity JSON schema
+
+Options:
+  --host <alias|url>    Server alias from config or full URL
+  --output <format>     Output format: table (default), json, csv, quiet
+  --filter <text>       Smart filter expression
+  --limit <n>           Page size (default: 50)
+  --offset <n>          Start offset (default: 0)
+  -r, --recursive       Recursive (for files list)
+  --json <file>         Read function parameters from JSON file
+
+Examples:
+  grok s users list
+  grok s connections list --filter "PostgreSQL" --output json
+  grok s connections get <id>
+  grok s connections delete <id>
+  grok s connections save --json conn.json --save-credentials
+  grok s connections test "JohnDoe:MyConnection"
+  grok s connections test --json conn.json
+  grok s users save --json user.json
+  grok s groups save --json group.json --save-relations
+  grok s shares add "JohnDoe:MyConnection" Chemists,Admins --access Edit
+  grok s shares list <entity-uuid>
+  grok s functions run 'Chem:smilesToMw("ccc")'
+  grok s files list "System:AppData" -r
+  grok s raw GET /api/users/current
+  grok s describe connections
+  grok s users list --host dev
+`;
+
 export const help = {
   add: HELP_ADD,
   api: HELP_API,
@@ -389,5 +454,7 @@ export const help = {
   test: HELP_TEST,
   testall: HELP_TESTALL,
   migrate: HELP_MIGRATE,
+  server: HELP_SERVER,
+  s: HELP_SERVER,
   help: HELP,
 };

@@ -3,9 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as yaml from 'js-yaml';
-import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, BoltzResponse, Config } from '../utils/constants';
+import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, BoltzResponse, Config } from './constants';
 import { _package } from '../package';
-import { getFromPdbs, prop } from '../utils/utils';
+import { getFromPdbs, prop } from './utils';
 
 export class BoltzService {
   static async getBoltzConfigFolders(): Promise<string[]> {
@@ -20,35 +20,42 @@ export class BoltzService {
 
     const body = {
       yaml: config,
-      ...(msa && msa.trim() !== "" && { msa: msa }),
+      ...(msa && msa.trim() !== '' && { msa: msa }),
     };
-  
+
     const params: RequestInit = {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
     };
-  
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(boltzContainer.id, '/predict', params);
-      
-    if (!response && !boltzContainer.status.startsWith('started') && !boltzContainer.status.startsWith('checking')) {
-      this.throwError('Container failed to start.');
+
+    const response: Response = await grok.dapi.docker.dockerContainers.fetchProxy(boltzContainer.id, '/predict', params);
+    const contentType = response.headers.get('content-type');
+    const isJson = contentType === 'application/json';
+
+    if (!response.ok) {
+      if (isJson) {
+        const json = await response.json();
+        if (json['datagrok-error'])
+          throw new Error(`Datagrok error: ${json['datagrok-error']}`);
+        throw new Error(response.statusText);
+      }
+      const text = await response.text();
+      throw new Error(`Error: ${text}`);
     }
-  
-    let jsonResponse: BoltzResponse;
-    try {
-      jsonResponse = await response.json();
-    } catch (err) {
-      this.throwError('Error parsing response from Boltz container.');
+
+    if (!isJson) {
+      const text = await response.text();
+      throw new Error(`Error: Boltz expected JSON response, got '${text}'.`);
     }
-  
+
+    const jsonResponse: BoltzResponse = await response.json();
+
     if (!jsonResponse.success) {
       _package.logger.error(jsonResponse.error);
-      this.throwError('Prediction attempt failed: ' + jsonResponse.error);
+      throw new Error('Prediction attempt failed: ' + jsonResponse.error);
     }
-  
+
     return jsonResponse.result!;
   }
 
@@ -82,8 +89,15 @@ export class BoltzService {
       });
 
       const yamlString = yaml.dump(config);
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: yamlString, msa: '' }));
-      resultDf.append(result, true);
+      try {
+        const result = DG.DataFrame.fromCsv(
+          await grok.functions.call('Boltz1:runBoltz', { config: yamlString, msa: '' }));
+        resultDf.append(result, true);
+      } catch (err: any) {
+        const msg = err?.message ?? String(err);
+        _package.logger.error(`Folding failed for sequence ${index + 1}: ${msg}`);
+        grok.shell.warning(`Skipped sequence ${index + 1}: ${msg}`);
+      }
     }
 
     this.processBoltzResult(resultDf);
@@ -114,18 +128,25 @@ export class BoltzService {
           id: [chainId],
           smiles: isSmiles
             ? molecule
-            : await grok.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles),
+            : grok.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles),
         },
       };
 
       sequences.push(ligandBlock);
       constraints[0].pocket.binder = chainId;
-      const updatedConfig = yaml.dump(existingConfig);
 
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: updatedConfig, msa: msaFile}));
-      resultDf.append(result, true);
-
-      sequences.pop();
+      try {
+        const updatedConfig = yaml.dump(existingConfig);
+        const result = DG.DataFrame.fromCsv(
+          await grok.functions.call('Boltz1:runBoltz', { config: updatedConfig, msa: msaFile }));
+        resultDf.append(result, true);
+      } catch (err: any) {
+        const msg = err?.message ?? String(err);
+        _package.logger.error(`Docking failed for ligand ${index + 1}: ${msg}`);
+        grok.shell.warning(`Skipped ligand ${index + 1}: ${msg}`);
+      } finally {
+        sequences.pop();
+      }
     }
 
     this.processBoltzResult(resultDf);
@@ -133,7 +154,7 @@ export class BoltzService {
     return resultDf;
   }
   
-  static async boltzWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
+  static async boltzWidget(molecule: DG.SemanticValue): Promise<DG.Widget | null> {
     const value = molecule.value;
     const boltzResults: DG.DataFrame = getFromPdbs(molecule);
     const widget = new DG.Widget(ui.div([]));
@@ -156,10 +177,5 @@ export class BoltzService {
     widget.root.append(result);
   
     return widget;
-  }
-
-  static throwError(message: string): never {
-    grok.shell.error(message);
-    throw new Error(message);
   }
 }

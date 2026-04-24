@@ -167,7 +167,7 @@ export async function denialSearch(s: string, w?: DG.Widget): Promise<DG.Widget 
     if (json?.reason) {
       const widget = w ?? DG.Widget.fromRoot(ui.div([], {style: {display: 'flex'}}));
       Array.from(widget.root.children).forEach((c) => c.remove());
-      const refreshIcon = ui.icons.sync(() => denialSearch(s, widget));
+      const refreshIcon = ui.icons.sync(() => denialSearch(s, widget), 'Refresh');
       refreshIcon.style.marginLeft = '10px';
       const content =
         ui.divH([ui.h1(json.reason, {style: {textAlign: 'center', margin: 'auto'}}),

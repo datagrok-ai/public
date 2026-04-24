@@ -45,7 +45,7 @@ import {AwesomeViewer} from './awesome-viewer.js'
 
 //name: AwesomeViewer
 //description: Creates an awesome viewer
-//tags: viewer
+//meta.role: viewer
 //output: viewer result
 export function awesome() {
   return new AwesomeViewer();
@@ -413,7 +413,7 @@ the following script:
 ```python
 # name: Bar chart
 # language: python
-# tags: demo, viewers
+# tags: viewers
 # input: dataframe df
 # input: column splitColumnName {type: categorical}
 # input: column valueColumnName {type: numerical}
@@ -551,7 +551,7 @@ doing it in a package:
 ```js
 import {AwesomeViewer} from './awesome-viewer.js'
 
-//tags: autostart
+//meta.role: autostart
 export function initFunctionPackage() {
   grok.shell.registerViewer('AwesomeViewer', 'Creates an awesome viewer', () => new AwesomeViewer());
 }

@@ -102,13 +102,13 @@ export class MpoCategoricalEditor {
         this._prop.categories.splice(idx + 1, 0, newCat);
         this.buildForm();
         this.onChanged.next(this._prop);
-      });
+      }, 'Add');
 
       const del = ui.icons.delete(() => {
         this._prop.categories.splice(idx, 1);
         this.buildForm();
         this.onChanged.next(this._prop);
-      });
+      }, 'Delete');
 
       elements.push(ui.divH([add, del], 'statistics-mpo-control-buttons'));
     }

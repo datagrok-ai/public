@@ -1,5 +1,10 @@
 # Power Pack changelog
 
+## 1.8.1 ()
+
+* Activity Dashboard: Reduced Spotlight tab load time by fetching entities server-side in parallel with SQL, and progressively rendering the Recent section
+* GROK-19613: Add New Column dialog: Fixed duplicate scrollbars appearing on the column and function list panels when the dialog is resized
+
 ## 1.8.0 (2026-03-13)
 
 ### Features

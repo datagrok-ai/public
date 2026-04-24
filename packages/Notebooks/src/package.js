@@ -42,7 +42,7 @@ class NotebookView extends DG.ViewBase {
 
     this.html = '';
     this.saveAsComboPopup = ui.comboPopup(ui.iconFA('arrow-to-bottom', () => {
-    }), ['As HTML', 'As PDF'], (item) => {
+    }, 'Download'), ['As HTML', 'As PDF'], (item) => {
       if (item === 'As HTML') {
         let a = document.createElement('a');
         a.download = `${this.notebook.name}.html`;
@@ -331,14 +331,14 @@ class NotebookView extends DG.ViewBase {
           ui.dialog({ title: 'Restart Kernel' })
           .onOK(() => sessionContext.restartKernel())
           .show();
-        }),
+        }, 'Restart'),
         ui.iconFA('forward', () => {
           ui.dialog({ title: 'Restart Kernel and run all cells' })
           .onOK(() => sessionContext.restartKernel().then(restarted => {
             if (restarted) NotebookActions.runAll(nbWidget.content, nbWidget.context.sessionContext)
           }))
           .show();
-        }),
+        }, 'Run all'),
         new CellTypeSwitcher(nbWidget.content).node,
       ],
       // [this.environmentInput.root],

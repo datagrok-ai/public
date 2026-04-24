@@ -102,6 +102,10 @@ export abstract class Filter extends Widget {
     );
   }
 
+  /** Called when the filter's enabled state changes (checkbox toggled on the filter panel).
+   * Override to react to enable/disable. */
+  onActiveChanged(active: boolean): void {}
+
   /** Gets called when a previously used filter gets moved in the DOM tree.
    * Normally, you don't need to do anything, but this might be handy for
    * the iframe-based filters. */

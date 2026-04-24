@@ -15,6 +15,7 @@ Category: **Bioinformatics**. Top menu: `Bio | ...`.
 - `@datagrok-libraries/chem-meta` — RDKit API types (`RDModule`)
 - `@datagrok-libraries/tutorials` — tutorial framework
 - `@biowasm/aioli` — WebAssembly runtime for kalign (MSA)
+- `immunum` — WebAssembly antibody/TCR numbering (IMGT/Kabat) — run in a worker via `src/utils/antibody-numbering/`
 - `ajv` / `ajv-errors` — JSON schema validation for monomer libraries
 - `openchemlib` — molfile conversion, chirality engine
 
@@ -44,7 +45,7 @@ Other packages depend on these implementations: **Helm**, **Peptides**, **Biostr
 |---|---|---|
 | `Bio \| Analyze \| Activity Cliffs...` | `activityCliffs` | Detects sequence pairs with similar structure but significant activity difference |
 | `Bio \| Analyze \| Sequence Space...` | `sequenceSpaceTopMenu` | UMAP/tSNE 2D projection of sequences by pairwise distance |
-| `Bio \| Analyze \| MSA...` | `multipleSequenceAlignmentDialog` | Multiple sequence alignment via kalign (WASM) or PepSeA (Docker) |
+| `Bio \| Analyze \| MSA...` | `multipleSequenceAlignmentDialog` | Multiple sequence alignment via kalign (WASM) for canonical sequences, or dynamically discovered engines (e.g. PepSeA Docker) for non-canonical |
 | `Bio \| Analyze \| Composition` | `compositionAnalysis` | Docks a WebLogo viewer for sequence composition |
 | `Bio \| Transform \| Convert Sequence Notation...` | `convertDialog` | FASTA ↔ SEPARATOR ↔ HELM ↔ BILN conversion |
 | `Bio \| Transform \| To Atomic Level...` | `toAtomicLevel` | Converts sequences to V3000 molfiles |
@@ -59,6 +60,9 @@ Other packages depend on these implementations: **Helm**, **Peptides**, **Biostr
 | `Bio \| Manage \| Monomer Libraries` | `manageLibrariesView` | Full monomer library management UI |
 | `Bio \| Manage \| Monomers` | `manageMonomersView` | Individual monomer CRUD editor |
 | `Bio \| Manage \| Match with Monomer Library...` | `matchWithMonomerLibrary` | Matches molecules to library monomers |
+| `Bio \| Annotate \| Apply Numbering Scheme...` | `applyNumberingScheme` | Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) via any registered engine |
+| `Bio \| Annotate \| Scan Liabilities...` | `scanLiabilities` | Scans macromolecule sequences for deamidation / oxidation / other liabilities |
+| `Bio \| Annotate \| Manage Annotations...` | `manageAnnotations` | View and manage sequence annotations on macromolecule columns |
 
 **Registered Viewers:**
 - `WebLogo` → `WebLogoViewer` — sequence logo with entropy/full-height modes
@@ -177,9 +181,80 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 
 | File | Purpose |
 |---|---|
-| `multiple-sequence-alignment.ts` | `multipleSequenceAlignment()` — core MSA via **kalign** (WebAssembly/Aioli). Supports per-cluster alignment, gap penalties, selected-rows-only mode. |
-| `multiple-sequence-alignment-ui.ts` | `multipleSequenceAlignmentUI()` — MSA dialog with column selection, alignment method (kalign vs PepSeA), gap penalties |
-| `pepsea.ts` | `pepseaAlignSequences()` — MSA for HELM peptides via **PepSeA Docker container** (mafft/linsi/ginsi methods) |
+| `multiple-sequence-alignment.ts` | `runKalign()` — core MSA via **kalign** (WebAssembly/Aioli). Supports per-cluster alignment, gap penalties, selected-rows-only mode. Used for canonical sequences (DNA/RNA/PT). |
+| `multiple-sequence-alignment-ui.ts` | `multipleSequenceAlignmentUI()` — MSA dialog with column selection, mode switching (kalign for canonical, dynamically discovered engines for non-canonical), per-cluster alignment, selected-rows-only. |
+| `pepsea.ts` | `alignWithPepsea()` / `runPepsea()` — MSA for HELM peptides via **PepSeA Docker container** (mafft/linsi/ginsi methods). Registered as a `sequenceMSA` engine via `pepseaMsa()` in `package.ts`. |
+
+##### Adding a New MSA Engine
+
+Non-canonical MSA engines are discovered dynamically via `DG.Func.find({meta: {role: 'sequenceMSA'}})`.
+To add a new alignment engine (in this or any other package):
+
+1. Register a function with `meta.role: 'sequenceMSA'` and `outputs: [{name: 'result', type: 'column'}]`.
+2. The **first parameter** must be a `column` input with `semType: 'Macromolecule'` — the sequences to align.
+3. All **remaining parameters** are engine-specific configuration (method, gap penalties, etc.) and will be rendered automatically in the MSA dialog under "Alignment parameters".
+4. The function must **create and return** the aligned output column with appropriate metadata tags (`meta.units`, `semType`, `aligned`, `alphabet`, `separator`, etc.). Different engines can produce different output notations (e.g. PepSeA produces separator notation with `.` delimiter).
+5. The MSA dialog handles clustering and row selection — the engine function receives a single column to align.
+
+Example (decorator style):
+```typescript
+@grok.decorators.func({
+  name: 'My Aligner',
+  description: 'Custom MSA engine',
+  meta: {role: 'sequenceMSA'},
+  outputs: [{name: 'result', type: 'column'}],
+})
+static async myAligner(
+  @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequenceCol: DG.Column<string>,
+  @grok.decorators.param({type: 'double'}) gapOpen: number = 1.0,
+): Promise<DG.Column<string>> {
+  // Align sequences, create result column with metadata tags, return it.
+}
+```
+
+See `pepseaMsa()` in `package.ts` and `alignWithPepsea()` in `pepsea.ts` for a complete reference implementation.
+
+#### Antibody Numbering
+
+| File | Purpose |
+|---|---|
+| `utils/annotations/numbering-ui.ts` | `showNumberingSchemeDialog()` — generic dialog for applying antibody numbering. Discovers registered engines via `DG.Func.find({meta: {role: 'antibodyNumbering'}})`, reads the selected engine's `scheme` parameter `choices` to populate the scheme dropdown (updates when the engine changes), runs the chosen engine, and applies the result (regions/annotations + aligned column). |
+| `utils/antibody-numbering/number-antibody.ts` | `numberAntibodyColumn()` — built-in Bio engine. Runs immunum in a worker, builds the result DataFrame in the shape the dialog expects (`position_names`, `chain_type`, `annotations_json`, `numbering_detail`, `numbering_map`). |
+| `utils/antibody-numbering/immunum-client.ts` | Worker client: spawns a **fresh worker per call** and terminates it before returning so the WASM instance is freed. Request/response is one `MessageChannel` round-trip. |
+| `utils/antibody-numbering/immunum.worker.ts` | Worker entry — fetches `immunum_bg.wasm` from the dist/ directory (resolved via `self.location`), initializes the module, caches an `Annotator` per (scheme, chains) tuple for the lifetime of the worker, converts immunum's `Map<posCode, residue>` + `query_start` into the per-row result shape. |
+| `utils/antibody-numbering/immunum-glue.js` | Browser/worker-safe port of `node_modules/immunum/immunum.js`. Byte-identical wasm-bindgen glue — only the Node-only `require('fs').readFileSync` top-level loader is replaced with an explicit `initImmunum(bytes)` entry point. |
+| `utils/antibody-numbering/types.ts` | `ImmunumNumberingRow`, `ImmunumWorkerRequest`/`ImmunumWorkerResponse`, `IMMUNUM_SCHEMES`. |
+
+**Expected output shape (matches antpack reference script `scripts/number_antibody.py`):**
+
+A `DG.DataFrame` with 5 string columns, one row per input sequence:
+
+| Column | Example | Purpose |
+|---|---|---|
+| `position_names` | `"1, 2, 3, ..., 27A, ..."` | Comma-separated scheme position codes, in order |
+| `chain_type` | `"Heavy"` / `"Light"` / `""` | UI-facing chain group (immunum `H` → Heavy; `K`/`L` → Light) |
+| `annotations_json` | JSON array of FR/CDR region defs | Scheme-specific FR1-4 / CDR1-3 with `start`/`end` as *position codes* (not char indices); resolved via `numbering_map` |
+| `numbering_detail` | JSON `[{position, aa}, ...]` | Per-residue position → amino acid |
+| `numbering_map` | JSON `{posCode: charIdx}` | Char index into the **extracted** (gap-free, uppercased) input sequence |
+
+The numbering-ui dialog remaps `numbering_map` indices from ungapped to gapped via `buildUngappedToGappedMap()` so aligned MSA source columns still line up.
+
+##### Adding a New Antibody Numbering Engine
+
+Antibody numbering engines are discovered dynamically via `DG.Func.find({meta: {role: 'antibodyNumbering'}})`.
+To add a new engine (in this package or any other):
+
+1. Register a function with `meta.role: 'antibodyNumbering'` that takes `(df: DG.DataFrame, seqCol: DG.Column<string>, scheme: string)` and returns a `DG.DataFrame`.
+2. Declare the **supported schemes** on the `scheme` parameter via the `choices` option (e.g. `{choices: ['imgt', 'kabat'], initialValue: 'imgt'}`). The dialog reads these at open time and when the user switches engines, so only schemes your engine actually supports show up in the dropdown.
+3. The returned DataFrame **must** have the 5 string columns listed above with exactly those names — the numbering-ui dialog reads them by name.
+4. `position_names` / `numbering_detail` / `numbering_map` must agree: every code in `position_names` must key `numbering_map` and have a matching entry in `numbering_detail`.
+5. `annotations_json` is a JSON-serialized array of region definitions with `start` / `end` as scheme position codes (strings like `"1"`, `"105"`), **not** char indices. Use `SCHEME_REGIONS` from `@datagrok-libraries/bio/src/utils/macromolecule/numbering-schemes` for the canonical boundaries.
+
+Reference implementation: `immunumAntibodyNumbering()` in `package.ts` and `numberAntibodyColumn()` in `utils/antibody-numbering/number-antibody.ts`.
+
+Existing engines:
+- **Bio** — `immunumAntibodyNumbering` (WASM, in-worker, IMGT/Kabat only — advertised via the `scheme` param's `choices`)
+- **scripts/number_antibody.py** — Python/AntPack reference (non-commercial license, not shipped in production; kept for correctness cross-checks only)
 
 #### Seq Helper — `src/utils/seq-helper/`
 
@@ -279,6 +354,7 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | `helm-tests.ts` | HELM-specific operations |
 | `msa-tests.ts` | Multiple sequence alignment |
 | `pepsea-tests.ts` | PepSeA Docker MSA |
+| `antibody-numbering-tests.ts` | Immunum antibody numbering worker + DataFrame shape (IMGT/Kabat, heavy/light, empty-input handling) |
 | `to-atomic-level-tests.ts` | Sequence → molfile conversion |
 | `to-atomic-level-ui-tests.ts` | Atomic level UI widgets |
 | `activity-cliffs-tests.ts` | Activity cliff detection |
@@ -351,7 +427,11 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | Sequence space (UMAP/tSNE) | `src/analysis/sequence-space.ts` |
 | Similarity/diversity viewers | `src/analysis/sequence-similarity-viewer.ts` / `sequence-diversity-viewer.ts` |
 | MSA (kalign) | `src/utils/multiple-sequence-alignment.ts` |
-| MSA (PepSeA Docker) | `src/utils/pepsea.ts` |
+| MSA (PepSeA Docker) | `src/utils/pepsea.ts` + `pepseaMsa()` in `src/package.ts` |
+| Adding MSA engines | See "Adding a New MSA Engine" in Multiple Sequence Alignment section |
+| Antibody numbering dialog | `src/utils/annotations/numbering-ui.ts` (`showNumberingSchemeDialog`) |
+| Antibody numbering (immunum WASM in worker) | `src/utils/antibody-numbering/` (`immunum.worker.ts`, `immunum-client.ts`, `number-antibody.ts`, `immunum-glue.js`) |
+| Adding antibody numbering engines | See "Adding a New Antibody Numbering Engine" in Antibody Numbering section |
 | Notation conversion | `src/utils/convert.ts` |
 | Seq → molfile conversion | `src/utils/sequence-to-mol.ts` |
 | HELM → molfile pipeline | `src/utils/helm-to-molfile/converter/` |

@@ -6,6 +6,7 @@ import {FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore, Memory
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncCallIODescription} from '../config/config-processing-utils';
 import {StateItem} from '../config/PipelineConfiguration';
+import {DriverLogger, reportError} from '../data/Logger';
 
 export interface RestrictionState {
   type: RestrictionType,
@@ -62,7 +63,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   private closed$ = new Subject<true>();
   private initialData?: BridgePreInitData;
 
-  constructor(private io: FuncCallIODescription[], private states: StateItem[], public readonly isReadonly: boolean) {
+  constructor(private io: FuncCallIODescription[], private states: StateItem[], public readonly isReadonly: boolean, private logger?: DriverLogger) {
     for (const item of this.io)
       this.metaStates[item.id] = new BehaviorSubject<any>(undefined);
 
@@ -233,9 +234,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
 
   setMeta(id: string, handlerId: string, meta: any | undefined) {
     if (!this.metaStates[id]) {
-      const err = `No such io state ${id}, in meta handler ${handlerId}`;
-      grok.shell.error(err);
-      console.error(err);
+      reportError('warning', 'bridge:setMeta', `No such io state ${id}, in meta handler ${handlerId}`, this.logger);
       return;
     }
     const currentMeta = this.metaStates[id].value ?? {};
@@ -265,8 +264,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
         catchError((e) => {
           this.runError$.next(String(e));
           this.outdatedChanged$.next(true);
-          console.error(e);
-          grok.shell.error(e);
+          reportError('recoverable', 'bridge:run', e instanceof Error ? e : new Error(String(e)), this.logger);
           return EMPTY;
         }),
         finalize(() => {
@@ -333,7 +331,8 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     ).subscribe(this.isRunable$);
 
     const inputs = this.io.filter((item) => item.direction === 'input');
-    (this.getIOEditsFlag(inputs)).subscribe(this.outdatedChanged$);
+    if (inputs.length > 0)
+      this.getIOEditsFlag(inputs).subscribe(this.outdatedChanged$);
 
     this.outdatedChanged$.pipe(
       withLatestFrom(this.isOutputOutdated$),

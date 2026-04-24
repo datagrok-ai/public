@@ -36,7 +36,7 @@ import {
 } from '../utils/misc';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {LogoSummaryTable} from './logo-summary';
-import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {TAGS as bioTAGS, MONOMER_CANONICALIZER_FUNC_TAG} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
@@ -244,6 +244,16 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.LOGO_SUMMARY_TABLE) ??
       splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName), PeptideUtils.getSeqHelper()).columns.toList();
     return this._positionColumns!;
+  }
+
+  /** Copies the monomer canonicalizer tag from the sequence column to a monomer column. */
+  protected propagateCanonicalizerTag(monomerCol: DG.Column): void {
+    const seqCol = this.dataFrame?.col(this.sequenceColumnName);
+    if (!seqCol) return;
+    const notationProvider: any = seqCol.temp[SeqTemps.notationProvider] ?? null;
+    const canonFuncName: string | null = notationProvider?.monomerCanonicalizerFuncName ?? null;
+    if (canonFuncName)
+      monomerCol.setTag(MONOMER_CANONICALIZER_FUNC_TAG, canonFuncName);
   }
 
   _monomerPositionStats: MonomerPositionStats | null = null;
@@ -1069,6 +1079,7 @@ export class MonomerPosition extends SARViewer {
       sumGridCol.visible = false;
     const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
     CR.setMonomerRenderer(monomerCol, this.alphabet, true);
+    this.propagateCanonicalizerTag(monomerCol);
     this.cacheInvariantMapColors();
 
     grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this,
@@ -1496,6 +1507,7 @@ export class MostPotentResidues extends SARViewer {
 
     // Setting Monomer column renderer
     CR.setMonomerRenderer(monomerCol, this.alphabet, true);
+    this.propagateCanonicalizerTag(monomerCol);
     grid.onCellRender.subscribe(
       (args: DG.GridCellRenderArgs) => renderCell(args, this, false, undefined, undefined));
 

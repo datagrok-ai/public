@@ -113,7 +113,7 @@ export function configIcon(currentMolecule: string, widget: DG.Widget): HTMLElem
       });
     dlg.root.classList.add('retrosynthesis-settings-dlg');
     dlg.show();
-  });
+  }, 'Settings');
   return settings;
 }
 

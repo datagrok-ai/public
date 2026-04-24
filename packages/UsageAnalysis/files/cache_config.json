@@ -1,6 +1,6 @@
 [
   {
-    "path": "/Test Track",
+    "path": "/TestTrack",
     "invalidateOn": "0 0 1 1 *",
     "preflight": true
   }

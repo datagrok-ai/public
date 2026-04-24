@@ -253,8 +253,10 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   i.classList.add(`fa-${name}`);
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return i;
 }
 
@@ -276,8 +278,10 @@ export function iconImage(name: string, path: string,
   i.style.backgroundImage = `url(${path})`;
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return _options(i, options);
 }
 
@@ -300,8 +304,10 @@ export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEve
 
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return i;
 }
 
@@ -407,12 +413,12 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
     if (divActual) divActual.style.display = 'block';
     close.style.display = 'block';
     show.style.display = 'none';
-  });
+  }, 'Show info');
   let close = iconFA('times', () => {
     if (divActual) divActual.style.display = 'none';
     close.style.display = 'none';
     show.style.display = reopenable ? 'block' : 'none';
-  });
+  }, 'Close');
   if (header !== null && header !== undefined) {
     divContent.push(h1(header));
   }
@@ -1489,11 +1495,26 @@ export class tools {
   }
 }
 
+/** Options for tooltip display. Future-proof — add fields here as tooltip features grow. */
+export interface ITooltipOptions {
+  /** Delay in milliseconds before the tooltip appears. Defaults to 0 (immediate). */
+  delay?: number;
+}
+
 /** Represents a tooltip. */
 export class Tooltip {
+  private _pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Hides the tooltip. */
+  private _cancelPending(): void {
+    if (this._pendingTimer !== null) {
+      clearTimeout(this._pendingTimer);
+      this._pendingTimer = null;
+    }
+  }
+
+  /** Hides the tooltip. Also cancels any pending {@link showDelayed} call. */
   hide(): void {
+    this._cancelPending();
     api.grok_Tooltip_Hide();
   }
 
@@ -1506,9 +1527,35 @@ export class Tooltip {
     return element;
   }
 
-  /** Shows the tooltip at the specified position */
-  show(content: HTMLElement | string, x: number, y: number): void {
-    api.grok_Tooltip_Show(content, x, y);
+  /** Shows the tooltip at the specified position.
+   *
+   * Any pending delayed show is cancelled first. Passing `null`/`undefined` for `content`
+   * hides the tooltip and cancels any pending show — ideal for hover handlers where a single
+   * call replaces the show+hide+debounce quartet:
+   *
+   * ```ts
+   * onMouseMove(e) {
+   *   const t = getTooltipFor(e);   // string | HTMLElement | null
+   *   ui.tooltip.show(t, e.x + 16, e.y + 16, {delay: 200});
+   * }
+   * ```
+   */
+  show(content: HTMLElement | string | null | undefined, x: number, y: number,
+       options?: ITooltipOptions): void {
+    this._cancelPending();
+    if (content == null) {
+      api.grok_Tooltip_Hide();
+      return;
+    }
+    const delay = options?.delay ?? 0;
+    if (delay <= 0) {
+      api.grok_Tooltip_Show(content, x, y);
+      return;
+    }
+    this._pendingTimer = setTimeout(() => {
+      this._pendingTimer = null;
+      api.grok_Tooltip_Show(content, x, y);
+    }, delay);
   }
 
   showRowGroup(dataFrame: DataFrame, indexPredicate: IndexPredicate, x: number, y: number): void {
@@ -2183,6 +2230,8 @@ export function star(id: string): HTMLElement {
 function _icon(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon grok-font-icon-${type}"></i>`)[0] as HTMLElement;
   e?.addEventListener('click', (e) => handler(e));
+  if (tooltipMsg !== null)
+    e.setAttribute('aria-label', tooltipMsg);
   tooltip.bind(e, tooltipMsg);
   return e;
 }
@@ -2191,6 +2240,8 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
   let e = $(`<i class="grok-icon fal fa-${type}"></i>`)[0] as HTMLElement;
   if (handler != null)
     e?.addEventListener('click', (e) => handler(e));
+  if (tooltipMsg !== null)
+    e.setAttribute('aria-label', tooltipMsg);
   tooltip.bind(e, tooltipMsg);
   return e;
 }
@@ -2400,7 +2451,7 @@ export namespace hints {
     const root = document.createElement('div');
     root.className = 'ui-hint-popup';
 
-    const closeBtn = iconFA('times', () => root.remove());
+    const closeBtn = iconFA('times', () => root.remove(), 'Close');
     closeBtn.style.cssText = `
       position: absolute;
       right: 10px;

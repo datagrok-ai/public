@@ -147,18 +147,93 @@ managers/
 └── complex_column/              # Complex types (JSON, arrays)
 ```
 
+**Hierarchy:**
+
+```
+ColumnManager (interface)
+├── DefaultIntColumnManager     — INTEGER, TINYINT, SMALLINT
+├── DefaultBigIntColumnManager  — BIGINT, plus provider-specific variants
+├── DefaultFloatColumnManager   — FLOAT, DOUBLE, DECIMAL, NUMERIC
+├── DefaultDateTimeColumnManager — DATE, TIMESTAMP, TIME
+├── DefaultBoolColumnManager    — BOOLEAN
+├── DefaultStringColumnManager  — VARCHAR, CHAR, TEXT, UUID
+└── DefaultComplexColumnManager — JSON, ARRAY, nested objects
+```
+
+**Fallback strategy:** If a type converter throws, the column manager silently downgrades
+to `StringColumn`, preserving values at the cost of type information.
+
+**Provider-specific overrides:**
+- `OracleBigIntColumnManager` — handles Oracle `NUMBER` types
+- `SnowflakeBigIntColumnManager` — Snowflake-specific integer handling
+- `MySqlMssqlBoolColumnManager` — MySQL/MSSQL `BIT` type (stored as 0/1)
+- `SQLiteDateTimeColumnManager` — SQLite text-based dates
+- Various DateTime type converters for vendor-specific temporal types
+  (Oracle `TIMESTAMP WITH TIME ZONE`, Microsoft `DateTimeOffset`, etc.)
+
+### SQL Type → Datagrok Type Mapping
+
+Each provider declares a `typesMap` in its `DataSource` descriptor. Example (Postgres):
+
+| SQL Type                                 | Datagrok Type       |
+|------------------------------------------|---------------------|
+| `int`, `int4`, `serial4`                 | `int`               |
+| `int2`, `smallint`, `serial2`            | `int`               |
+| `int8`, `bigint`, `bigserial`            | `bigint`            |
+| `numeric`, `decimal`, `float4`, `float8` | `double`            |
+| `varchar`, `text`, `char`, `uuid`        | `string`            |
+| `boolean`                                | `bool`              |
+| `date`, `timestamp`, `timestamptz`       | `datetime`          |
+| `json`, `jsonb`, `ARRAY`                 | Complex → flattened |
+
+### Query Parameter Handling
+
+**Two interpolation modes:**
+
+**A) Auto-Interpolation** (default, when `autoInterpolation()` returns `true`):
+
+SQL uses `@paramName` placeholders, converted to `?` for `PreparedStatement`:
+
+| Param Type     | JDBC Method       | Notes                                             |
+|----------------|-------------------|---------------------------------------------------|
+| `int`          | `setInt()`        |                                                   |
+| `double`       | `setDouble()`     |                                                   |
+| `bool`         | `setBoolean()`    |                                                   |
+| `string`       | `setString()`     | UUID format → `setObject(UUID)` on some providers |
+| `datetime`     | `setTimestamp()`  | With UTC Calendar                                 |
+| `bigint`       | `setLong()`       |                                                   |
+| `list(string)` | `createArrayOf()` | For `IN` clauses                                  |
+| null           | `setNull()`       | With appropriate SQL type code                    |
+
+**B) Manual Interpolation** (when `autoInterpolation()` returns `false`):
+Values are escaped and interpolated directly into the SQL string. Used by some
+NoSQL providers and specialized connectors.
+
+**Pattern Matching Parameters:**
+
+`@paramName(columnName)` syntax enables server-side filter construction:
+
+| Pattern Type   | Converter                   | Generated SQL             |
+|----------------|-----------------------------|---------------------------|
+| Numeric range  | `numericPatternConverter`   | `col >= ? AND col <= ?`   |
+| String match   | `stringPatternConverter`    | `col LIKE ?` or `col ~ ?` |
+| DateTime range | `dateTimePatternConverter`  | `col >= ? AND col <= ?`   |
+| Boolean        | `boolPatternConverter`      | `col = ?`                 |
+| IN list        | (detected from list value)  | `col IN (?, ?, ?)`        |
+| IS NULL        | (detected from null marker) | `col IS NULL`             |
+
 ### REST API Endpoints
 
 Defined in `GrokConnect.java` using Spark Java:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/query` | POST | Execute query, return binary DataFrame |
-| `/query_socket` | WebSocket | Streaming query results |
-| `/connectors` | GET | List available providers |
-| `/schema` | POST | Get database schema |
-| `/test_connection` | POST | Test connectivity |
-| `/cancel` | POST | Cancel running query |
+| Endpoint           | Method    | Description                            |
+|--------------------|-----------|----------------------------------------|
+| `/query`           | POST      | Execute query, return binary DataFrame |
+| `/query_socket`    | WebSocket | Streaming query results                |
+| `/connectors`      | GET       | List available providers               |
+| `/schema`          | POST      | Get database schema                    |
+| `/test_connection` | POST      | Test connectivity                      |
+| `/cancel`          | POST      | Cancel running query                   |
 
 ### Adding a New Auth Method to a Provider
 
@@ -233,18 +308,18 @@ grok_connect/src/main/java/grok_connect/
 
 ## Key Technologies
 
-| Category | Technology | Version |
-|----------|------------|---------|
-| Language | Java | 8 |
-| Language | Kotlin | 1.6.21 |
-| Build | Maven | 3+ |
-| REST | Spark Java | 2.9.4 |
-| HTTP | Jetty | 9.4.x |
-| JSON | Gson | 2.11.0 |
-| Testing | JUnit 5 | 5.9.2 |
-| Testing | TestContainers | 1.17.6 |
-| Logging | SLF4J + Logback | 1.2.13 |
-| AWS | AWS SDK | 2.20.52 |
+| Category | Technology      | Version |
+|----------|-----------------|---------|
+| Language | Java            | 8       |
+| Language | Kotlin          | 1.6.21  |
+| Build    | Maven           | 3+      |
+| REST     | Spark Java      | 2.9.4   |
+| HTTP     | Jetty           | 9.4.x   |
+| JSON     | Gson            | 2.11.0  |
+| Testing  | JUnit 5         | 5.9.2   |
+| Testing  | TestContainers  | 1.17.6  |
+| Logging  | SLF4J + Logback | 1.2.13  |
+| AWS      | AWS SDK         | 2.20.52 |
 
 ## Adding a New Database Provider
 
@@ -338,6 +413,36 @@ public class PostgresDataProviderTest {
 5. **Parameterized queries** - Prevent SQL injection
 6. **Schema introspection** - Auto-discover tables, columns, types
 7. **Streaming support** - WebSocket for large result sets
+
+## Debugging Query Execution
+
+### Debug Mode
+
+Set `queryCall.options['debugFunc'] = true` to enable:
+- GrokConnect runs 2 dry runs before the actual query (measures timing)
+- Detailed timing logs for connection, fetch, serialization
+- Log messages sent to Datlas via `LOG <json>` WebSocket messages
+
+### Key Log Markers
+
+| Marker                              | What it measures                 |
+|-------------------------------------|----------------------------------|
+| `CONNECTION_RECEIVE`                | Time to obtain JDBC connection   |
+| `DATAFRAME_TO_BYTEARRAY_CONVERSION` | Serialization time per chunk     |
+| `CHECKSUM_SEND`                     | Time to send size announcement   |
+| `SOCKET_BINARY_DATA_EXCHANGE`       | Time to send binary data         |
+| `DRY_RUN`                           | Dry run timing (debug mode only) |
+
+### Fetch Size Tuning
+
+Override via query options:
+- `connectFetchSize`: Override all chunks (rows or `"N MB"` for byte-based)
+- `initConnectFetchSize`: Override first chunk only (rows)
+
+Example: `queryCall.options['connectFetchSize'] = '5 MB'` targets 5 MB chunks.
+
+Default adaptive behavior: initial 100 rows, then auto-calculated per chunk targeting
+10 MB (`MAX_CHUNK_SIZE_BYTES`), capped at 100,000 rows (`MAX_FETCH_SIZE`).
 
 ## Runtime Configuration
 

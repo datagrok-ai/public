@@ -1,4 +1,7 @@
-import type {HitDesignCampaign} from './types';
+import type {HitDesignCampaign, HitTriageCampaign} from './types';
+
+// Re-export shared compute-function constants from the statistics library
+export {funcTypeNames, HTScriptPrefix, HTQueryPrefix, ComputeQueryMolColName} from '@datagrok-libraries/statistics/src/compute-functions/consts';
 
 export const CampaignIdKey = 'campaignId';
 export const HitDesignCampaignIdKey = 'campaignId';
@@ -16,9 +19,6 @@ export const ViDColName = 'V-iD';
 export const ViDSemType = 'HIT_DESIGN_VID';
 export const HTcampaignName = 'HTcampaignName';
 export const HDcampaignName = 'HDcampaignName';
-export const HTScriptPrefix = 'HTScript';
-export const HTQueryPrefix = 'HTQuery';
-export const ComputeQueryMolColName = 'molecules';
 export const i18n = {
   startNewCampaign: 'New Campaign',
   createNewCampaign: 'New Campaign',
@@ -33,12 +33,6 @@ export const i18n = {
   createNewCampaignHeader: 'New Campaign',
   selectTemplate: 'Template',
   noInformation: 'No Information',
-} as const;
-
-export const funcTypeNames = {
-  script: 'script',
-  function: 'function-package',
-  query: 'data-query',
 } as const;
 
 export const HDCampaignsGroupingLSKey = 'HDCampaignsGrouping';
@@ -66,5 +60,24 @@ export const DefaultCampaignTableInfoGetters = {
 } as const;
 
 export type CampaignTableColumns = keyof typeof DefaultCampaignTableInfoGetters | `campaignFields.${string}`;
+
+export const HTCampaignsGroupingLSKey = 'HTCampaignsGrouping';
+export const HTCampaignTableColumnsLSKey = 'HTCampaignTableColumns';
+export const HTCampaignsTableSortingLSKey = 'HTCampaignsTableSorting';
+
+export const HTDefaultCampaignTableInfoGetters = {
+  'Name': (info: HitTriageCampaign) => info.friendlyName ?? info.name,
+  'Code': (info: HitTriageCampaign) => info.name,
+  'Created': (info: HitTriageCampaign) => info.createDate,
+  'Author': (info: HitTriageCampaign) => info.authorUserFriendlyName ?? '',
+  'Last Modified by': (info: HitTriageCampaign) => info.lastModifiedUserName ?? '',
+  'Total': (info: HitTriageCampaign) => (info.rowCount ?? 0).toString(),
+  'Selected': (info: HitTriageCampaign) => (info.filteredRowCount ?? 0).toString(),
+  'Status': (info: HitTriageCampaign) => info.status,
+} as const;
+
+export type HTCampaignTableColumns = keyof typeof HTDefaultCampaignTableInfoGetters | `campaignFields.${string}`;
+
+export const PepTriageDataSourceTag = 'pepTriageDataSource';
 
 export const HTFunctionOrderingLSKey = 'HTFunctionOrderingLS';

@@ -4,8 +4,7 @@ import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
-
-const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
+import {syncUserFiles, generatePackageIndex, WORKSPACE} from './sync-utils';
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
@@ -88,6 +87,30 @@ Rules:
 - Add surrounding text before/after the block as needed for context.
 - Do NOT put entity info as plain text when a datagrok-entities block is appropriate.`;
 
+const MAX_AGENT_FILES_IN_PROMPT = 50;
+
+function buildSystemPrompt(mode?: string, agentFiles?: string[], packageIndex?: string | null): string {
+  if (mode === 'bash') return BASH_EXEC_PROMPT;
+  if (mode === 'none') return '';
+  let prompt = DATAGROK_PROMPT;
+  // TODO: consolidate package index, agent files, and other dynamic context
+  // into a generated CLAUDE.md or skills file instead of appending to the system prompt
+  if (packageIndex)
+    prompt += `\n\n## Available Packages\n\n` + packageIndex;
+  if (agentFiles && agentFiles.length > 0) {
+    const shown = agentFiles.slice(0, MAX_AGENT_FILES_IN_PROMPT);
+    const overflow = agentFiles.length - shown.length;
+    prompt += `\n\n## User Knowledge Files\n\n` +
+      `The user has personal knowledge files in the \`agents/\` directory. ` +
+      `These contain domain-specific knowledge, instructions, or reference materials. ` +
+      `When relevant to the user's question, read and use these files.\n\n` +
+      `Available files:\n` + shown.map((f) => `- agents/${f}`).join('\n');
+    if (overflow > 0)
+      prompt += `\n- ... and ${overflow} more file(s). Use Glob to discover them.`;
+  }
+  return prompt;
+}
+
 const sessions = new Map<string, string>();
 
 function storeSession(clientId: string, sdkId: string): void {
@@ -162,11 +185,12 @@ function buildMcpServers(apiKey?: string, mcpServerUrl?: string): Record<string,
   return Object.keys(servers).length > 0 ? servers : undefined;
 }
 
-function buildOptions(resume?: string, apiKey?: string, mcpServerUrl?: string, systemPromptMode?: string) {
-  const systemPrompt =
-    systemPromptMode === 'bash' ? BASH_EXEC_PROMPT :
-    systemPromptMode === 'none' ? '' :
-    DATAGROK_PROMPT;
+function buildOptions(
+  resume?: string, apiKey?: string, mcpServerUrl?: string,
+  systemPromptMode?: string, userDir?: string, agentFiles?: string[],
+  packageIndex?: string | null,
+) {
+  const systemPrompt = buildSystemPrompt(systemPromptMode, agentFiles, packageIndex);
   const mcpServers = buildMcpServers(apiKey, mcpServerUrl);
   return {
     systemPrompt,
@@ -175,7 +199,7 @@ function buildOptions(resume?: string, apiKey?: string, mcpServerUrl?: string, s
     permissionMode: 'acceptEdits' as const,
     model: 'opus' as const,
     includePartialMessages: true,
-    cwd: WORKSPACE,
+    cwd: userDir || WORKSPACE,
     ...(resume ? {resume} : {}),
   };
 }
@@ -302,6 +326,21 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const active: ActiveQuery = {abortController, queryHandle: null, pendingInputResolve: null};
   activeQueries.set(sid, active);
 
+  let userDir: string | undefined;
+  let agentFiles: string[] | undefined;
+  const apiUrl = apiUrlFromMcpUrl(mcpUrl);
+  if (apiUrl && data.apiKey) {
+    try {
+      console.log('handleMessage: syncing user files...');
+      const result = await syncUserFiles(apiUrl, data.apiKey);
+      userDir = result.dir;
+      agentFiles = result.files;
+      console.log(`handleMessage: user dir=${userDir}, ${agentFiles?.length ?? 0} agent file(s)`);
+    } catch (e: any) {
+      console.warn('handleMessage: failed to sync user files:', e.message);
+    }
+  }
+
   const DB_CLIENT_TOOLS = new Set([
     'mcp__datagrok__db_list_catalogs', 'mcp__datagrok__db_list_schemas',
     'mcp__datagrok__db_list_tables', 'mcp__datagrok__db_describe_tables',
@@ -310,8 +349,9 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
 
   let gotResult = false;
   try {
+    const packageIndex = await generatePackageIndex();
     const existingSession = getSession(sid);
-    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode);
+    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles, packageIndex);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
@@ -379,6 +419,27 @@ app.get('/ws', upgradeWebSocket(() => {
 
       if (data.type === 'input_response') {
         handleInputResponse(sender, data);
+        return;
+      }
+
+      if (data.type === 'sync_user_files') {
+        const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
+        const apiUrl = apiUrlFromMcpUrl(mcpUrl);
+        if (apiUrl && data.apiKey) {
+          const scope = data.scope || 'all';
+          const packageName = data.packageName;
+          console.log(`sync_user_files: scope=${scope}, packageName=${packageName ?? '<none>'}`);
+          (async () => {
+            try {
+              const result = await syncUserFiles(apiUrl, data.apiKey, scope, packageName);
+              console.log(`sync_user_files: synced ${result.files.length} file(s) (scope=${scope})`);
+              emit(sender, {type: 'sync_status', status: 'done', files: result.files});
+            } catch (e: any) {
+              console.warn('sync_user_files failed:', e.message);
+              emit(sender, {type: 'sync_status', status: 'error', message: e.message});
+            }
+          })();
+        }
         return;
       }
 

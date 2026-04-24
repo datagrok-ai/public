@@ -15,6 +15,7 @@ export class ClaudeRuntimeClient {
   private containerId: string | null = null;
   private mcpServerUrl: string | null = null;
 
+
   public onChunk = new rxjs.Subject<ChunkEvent>();
   public onToolActivity = new rxjs.Subject<ToolActivityEvent>();
   public onToolResult = new rxjs.Subject<ToolResultEvent>();
@@ -22,7 +23,9 @@ export class ClaudeRuntimeClient {
   public onError = new rxjs.Subject<ErrorEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
   public onInputRequest = new rxjs.Subject<InputRequestEvent>();
+  public onSyncStatus = new rxjs.Subject<{status: string; message?: string; files?: string[]}>();
   public onClose = new rxjs.Subject<void>();
+  private _skillNames: string[] | null = null;
 
   private constructor() {}
 
@@ -98,6 +101,12 @@ export class ClaudeRuntimeClient {
       case 'input_request':
         this.onInputRequest.next({sessionId: data.sessionId, toolName: data.toolName, input: data.input});
         break;
+      case 'sync_status':
+        console.log('ClaudeRuntimeClient: sync status:', data.status, data.message ?? '');
+        if (data.status === 'done' && Array.isArray(data.files))
+          this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
+        this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});
+        break;
       }
     };
 
@@ -121,6 +130,25 @@ export class ClaudeRuntimeClient {
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
     }));
+  }
+
+  async syncUserFiles(
+    scope: 'all' | 'user-files' | 'packages' | 'shared' = 'all',
+    packageName?: string,
+  ): Promise<void> {
+    await this.ensureConnected();
+    console.log(`ClaudeRuntimeClient: triggering sync (scope=${scope}${packageName ? `, package=${packageName}` : ''})`);
+    this.ws!.send(JSON.stringify({
+      type: 'sync_user_files',
+      apiKey: grok.dapi.token,
+      mcpServerUrl: this.mcpServerUrl,
+      scope,
+      ...(packageName ? {packageName} : {}),
+    }));
+  }
+
+  getSkillNames(): string[] {
+    return this._skillNames ?? [];
   }
 
   abort(sessionId: string): void {
@@ -167,6 +195,7 @@ export class ClaudeRuntimeClient {
     this.onError.complete();
     this.onAborted.complete();
     this.onInputRequest.complete();
+    this.onSyncStatus.complete();
     this.onClose.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
@@ -175,6 +204,7 @@ export class ClaudeRuntimeClient {
     this.onError = new rxjs.Subject<ErrorEvent>();
     this.onAborted = new rxjs.Subject<AbortedEvent>();
     this.onInputRequest = new rxjs.Subject<InputRequestEvent>();
+    this.onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();
     this.onClose = new rxjs.Subject<void>();
   }
 }

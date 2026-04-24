@@ -33,6 +33,7 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {ISeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
+import {checkCurrentView} from '@datagrok-libraries/utils/src/view-utils';
 import {getMacromoleculeColumns} from './utils/ui-utils';
 import {MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,} from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
@@ -43,6 +44,7 @@ import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 import {invalidateMols, MONOMERIC_COL_TAGS, SubstructureSearchDialog} from './substructure-search/substructure-search';
 import {convert} from './utils/convert';
+import {compareSequencesUI} from './utils/compare-sequences';
 import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
 import {getMonomerInfoWidget} from './widgets/monomer-info-widget';
 import {saveAsFastaUI} from './utils/save-as-fasta';
@@ -58,6 +60,7 @@ import {demoToAtomicLevel} from './demo/bio03-atomic-level';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {MsaWarning} from './utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
+import {alignWithPepsea, pepseaMethods} from './utils/pepsea';
 import {WebLogoApp} from './apps/web-logo-app';
 import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomers-editor';
 import {splitToMonomersUI} from './utils/split-to-monomers';
@@ -83,6 +86,10 @@ import {BilnNotationProvider} from './utils/biln';
 import {showMonomerCollectionsView} from './utils/monomer-lib/monomer-collections-view';
 import {ISequenceColumnInput} from '@datagrok-libraries/bio/src/utils/sequence-column-input';
 import {SequenceColumnInput} from './utils/sequence-column-input';
+import {showNumberingSchemeDialog} from './utils/annotations/numbering-ui';
+import {showLiabilityScannerDialog} from './utils/annotations/liability-scanner-ui';
+import {showAnnotationManagerDialog} from './utils/annotations/annotation-manager-ui';
+import {numberAntibodyColumn} from './utils/antibody-numbering/number-antibody';
 
 import * as api from './package-api';
 export const _package = new BioPackage(/*{debug: true}/**/);
@@ -390,7 +397,7 @@ export class PackageFunctions {
   })
   static monomerInfoPanel(
     @grok.decorators.param({options: {semType: 'Monomer'}}) monomerSv: DG.SemanticValue): DG.Widget {
-    return getMonomerInfoWidget(monomerSv.value as string, _package.monomerLib);
+    return getMonomerInfoWidget(monomerSv, _package.monomerLib);
   }
 
   @grok.decorators.func({
@@ -476,11 +483,11 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Apply Numbering Scheme',
-    description: 'Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack',
+    description: 'Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)',
     'top-menu': 'Bio | Annotate | Apply Numbering Scheme...',
   })
   static applyNumberingScheme(): void {
-    import('./utils/annotations/numbering-ui').then((m) => m.showNumberingSchemeDialog());
+    showNumberingSchemeDialog();
   }
 
   @grok.decorators.func({
@@ -489,7 +496,7 @@ export class PackageFunctions {
     'top-menu': 'Bio | Annotate | Scan Liabilities...',
   })
   static scanLiabilities(): void {
-    import('./utils/annotations/liability-scanner-ui').then((m) => m.showLiabilityScannerDialog());
+    showLiabilityScannerDialog();
   }
 
   @grok.decorators.func({
@@ -498,7 +505,7 @@ export class PackageFunctions {
     'top-menu': 'Bio | Annotate | Manage Annotations...',
   })
   static manageAnnotations(): void {
-    import('./utils/annotations/annotation-manager-ui').then((m) => m.showAnnotationManagerDialog());
+    showAnnotationManagerDialog();
   }
 
   @grok.decorators.func({
@@ -527,10 +534,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object', options: {optional: true}}) options?: (IUMAPOptions | ITSNEOptions) & Options,
     @grok.decorators.param({options: {optional: true}}) demo?: boolean): Promise<DG.Viewer | undefined> {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
-    if (table.name !== grok.shell.tv.dataFrame.name) {
-      grok.shell.error(`Table ${table.name} is not a current table view`);
-      return;
-    }
+    checkCurrentView(table);
     if (!checkInputColumnUI(molecules, 'Activity Cliffs'))
       return;
 
@@ -556,6 +560,7 @@ export class PackageFunctions {
         axesNames: axesNames,
       }).call(undefined, undefined, {processed: false});
 
+      checkCurrentView(table);
       const view = grok.shell.tv;
 
       const description = `Molecules: ${molecules.name}, activities: ${activities.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}, similarity cutoff: ${similarity}`;
@@ -733,10 +738,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {optional: true}}) isDemo?: boolean
   ): Promise<DG.ScatterPlotViewer | undefined> {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
-    if (table.name !== grok.shell.tv.dataFrame.name) {
-      grok.shell.error(`Table ${table.name} is not a current table view`);
-      return;
-    }
+    checkCurrentView(table);
     if (!checkInputColumnUI(molecules, 'Sequence Space'))
       return;
     const clusterColName = table.columns.getUnusedName('Cluster (DBSCAN)');
@@ -755,6 +757,7 @@ export class PackageFunctions {
 
     let res: DG.ScatterPlotViewer | undefined;
     if (plotEmbeddings) {
+      checkCurrentView(table);
       const tv = grok.shell.tv;
       res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
       const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
@@ -812,7 +815,8 @@ export class PackageFunctions {
     // collect current monomer library
     const monomerLib = _package.monomerLib;
     const libJSON = JSON.stringify(monomerLib.toJSON());
-    await api.scripts.molToHelmConverterPy(table, molecules, libJSON);
+    const fileInfo = DG.FileInfo.fromString('monomerLib.json', libJSON);
+    await api.scripts.molToHelmConverterPy(table, molecules, fileInfo);
 
     // semtype is not automatically set, so we set it manually
     const newCol = table.columns.toList().find((c) => c.name.toLowerCase().includes('regenerated sequence') && c.semType !== DG.SEMTYPE.MACROMOLECULE);
@@ -976,6 +980,44 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object', options: {optional: true}}) options?: any
   ): Promise<DG.Column<string>> {
     return multipleSequenceAlignmentUI({col: sequenceCol, clustersCol: clustersCol, ...options}, _package.seqHelper);
+  }
+
+  @grok.decorators.func({
+    name: 'PepSeA',
+    description: 'Aligns non-canonical peptide sequences using PepSeA Docker container (MAFFT)',
+    meta: {role: 'sequenceMSA'},
+    outputs: [{name: 'result', type: 'column'}],
+  })
+  static async pepseaMsa(
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequenceCol: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {choices: ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'], initialValue: 'mafft --auto'}}) method: string = 'mafft --auto',
+    @grok.decorators.param({type: 'double', options: {initialValue: '1.53'}}) gapOpen: number = 1.53,
+    @grok.decorators.param({type: 'double', options: {initialValue: '0'}}) gapExtend: number = 0,
+  ): Promise<DG.Column<string>> {
+    return alignWithPepsea(sequenceCol, method, gapOpen, gapExtend);
+  }
+
+  @grok.decorators.func({
+    name: 'Immunum',
+    description: 'Assigns antibody numbering (IMGT/Kabat) using the immunum WASM library',
+    meta: {role: 'antibodyNumbering'},
+  })
+  static async immunumAntibodyNumbering(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @grok.decorators.param({type: 'dataframe'}) df: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) seqCol: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {choices: ['imgt', 'kabat'], initialValue: 'imgt'}}) scheme: string,
+  ): Promise<DG.DataFrame> {
+    return numberAntibodyColumn(seqCol, scheme);
+  }
+
+  @grok.decorators.func({
+    name: 'Compare Sequences',
+    description: 'Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)',
+    'top-menu': 'Bio | Analyze | Compare sequences...',
+  })
+  static compareSequences(): void {
+    compareSequencesUI();
   }
 
   @grok.decorators.func({

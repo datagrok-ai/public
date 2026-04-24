@@ -207,7 +207,7 @@ export class CohortView extends ClinicalCaseViewBase {
                 grok.shell.info('Please select cohort to edit criteria');
             })
             .show();
-        }),
+        }, 'Add'),
         this.applyChangesDiv,
       ],
     ]);

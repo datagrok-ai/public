@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/block-generated-files.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-generated-files.sh\"",
             "timeout": 5
           }
         ]

@@ -111,16 +111,22 @@ export function buildOutputMeta(outputs: KnimeOutputParam[]): OutputMeta[] {
   return meta;
 }
 
-export function buildSignature(funcName: string, paramMeta: ParamMeta[], outputs: KnimeOutputParam[]): string {
-  const parts: string[] = [];
+export function buildSignature(funcName: string, paramMeta: ParamMeta[], outputMeta: OutputMeta[]): string {
+  const inputParts: string[] = [];
   for (const pm of paramMeta) {
     const dgType = knimeInputTypeToDgType[pm.type] ?? 'string';
-    parts.push(`${dgType} ${pm.sanitizedName}`);
+    inputParts.push(`${dgType} ${pm.sanitizedName}`);
   }
-  const returnType = outputs.length === 1
-    ? (knimeOutputTypeToDgType[outputs[0].type] ?? 'object')
-    : 'object';
-  return `${returnType} ${funcName}(${parts.join(', ')})`;
+  let returnType: string;
+  if (outputMeta.length > 1) {
+    const outputParts = outputMeta.map((om) => `${om.dgType} ${om.sanitizedName}`);
+    returnType = `({${outputParts.join(', ')}})`;
+  }
+  else if (outputMeta.length === 1)
+    returnType = outputMeta[0].dgType;
+  else
+    returnType = 'object';
+  return `${returnType} ${funcName}(${inputParts.join(', ')})`;
 }
 
 function createRunCallback(
@@ -298,12 +304,8 @@ export async function registerFuncFromSpec(
   const funcName = sanitizeFuncName(deployment.name, deployment.id);
   const paramMeta = buildParamMeta(spec.inputs);
   const outputMeta = buildOutputMeta(spec.outputs);
-  const signature = buildSignature(funcName, paramMeta, spec.outputs);
+  const signature = buildSignature(funcName, paramMeta, outputMeta);
   const runCallback = createRunCallback(deployment, paramMeta, outputMeta, client);
-
-  const registrationOutputs = outputMeta.length > 1
-    ? outputMeta.map((om) => ({name: om.sanitizedName, type: om.dgType}))
-    : undefined;
 
   const func = grok.functions.register({
     signature,
@@ -311,7 +313,6 @@ export async function registerFuncFromSpec(
     isAsync: true,
     namespace: 'KnimeLink',
     options: {'engine': 'KNIME'},
-    outputs: registrationOutputs,
   });
 
   for (const prop of func.inputs) {

@@ -16,8 +16,8 @@ export class IconTool extends DG.ViewBase {
     //@ts-ignore
     fileUrl.input.placeholder = '';
 
-    const browseBtn = ui.button(ui.iconFA('folder-open'), ()=> $(browseFile).trigger('click'));
-    const clearImage = ui.button(ui.iconFA('trash-alt'), ()=> deleteImageFile());
+    const browseBtn = ui.button(ui.iconFA('folder-open'), ()=> $(browseFile).trigger('click'), 'Browse');
+    const clearImage = ui.button(ui.iconFA('trash-alt'), ()=> deleteImageFile(), 'Clear image');
     const fileButtons = ui.buttonsInput([
       //@ts-ignore
       ui.divH([
@@ -75,7 +75,7 @@ export class IconTool extends DG.ViewBase {
     infoIcon.style.color='var(--blue-1)';
     infoIcon.style.marginLeft='10px';
 
-    const removeColorBtn = ui.button(ui.iconFA('eye-dropper'), ()=>$(removeColorPicker).trigger('click'));
+    const removeColorBtn = ui.button(ui.iconFA('eye-dropper'), ()=>$(removeColorPicker).trigger('click'), 'Pick color to remove');
     removeColorBtn.style.backgroundColor='var(--steel-1)';
     removeColorBtn.style.border='1px solid var(--steel-2)';
     removeColorBtn.style.width='28px';

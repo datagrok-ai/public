@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {category, before, after, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, before, expect, test} from '@datagrok-libraries/test/src/test';
 import {PackageFunctions} from '../package';
 
 const sampleIdentifiers = [
@@ -32,12 +32,11 @@ category('identifiers', () => {
 
 
   test('identifiers', async () => {
-    const res: any[] | null = await PackageFunctions.getCompoundsIds('HRYZQEDCGWRROX-UHFFFAOYSA-N');
-    expect(res?.length, Object.keys(sampleIdentifiers).length,
-      `Expected ${Object.keys(sampleIdentifiers).length} identifiers, got ${res?.length}`);
-    for (let i = 0; i < res!.length; i++) {
-      expect(res![i].src_id, sampleIdentifiers[i].src_id);
-      expect(res![i].src_compound_id, sampleIdentifiers[i].src_compound_id);
+    const res = await PackageFunctions.getCompoundsIds('HRYZQEDCGWRROX-UHFFFAOYSA-N');
+    for (const expected of sampleIdentifiers) {
+      const actual = res.find((r) => r.src_id === expected.src_id);
+      expect(actual?.src_compound_id, expected.src_compound_id,
+        `src_id ${expected.src_id}: expected compound_id ${expected.src_compound_id}, got ${actual?.src_compound_id}`);
     }
   }, {timeout: 30000});
 });

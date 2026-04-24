@@ -840,6 +840,11 @@ export class AddNewColumnDialog {
     return message?.endsWith(': end of input expected]') ? 'Possible syntax error' : message;
   }
 
+  mappingMatch (type: string, actualType: string) {
+    return VALIDATION_TYPES_MAPPING[type.toLowerCase()] &&
+      VALIDATION_TYPES_MAPPING[type.toLowerCase()].includes(actualType.toLowerCase());
+  }
+
   validateFuncCallTypes(funcCall: DG.FuncCall): string {
     const innerFuncCalls: string[] = [];
     const actualInputParamTypes: { [key: string]: string } = {};
@@ -873,15 +878,12 @@ export class AddNewColumnDialog {
       }
     }
 
-    const mappingMatch = (type: string, actualType: string) => VALIDATION_TYPES_MAPPING[type] &&
-      VALIDATION_TYPES_MAPPING[type].includes(actualType);
-
     //validate types for current function
     for (const property of funcCall.func.inputs) {
       //skip validation of dataframe parameter for vector functions
       if (funcCall.func.options['vectorFunc'] === 'true' && property.propertyType === DG.TYPE.DATA_FRAME)
         continue;
-      let actualInputType = actualInputParamTypes[property.name];
+      let actualInputType = actualInputParamTypes[property.name].toLowerCase();
       let actualSemType = actualInputSemTypes[property.name];
       const input = funcCall.inputs[property.name];
       //check for variables missing in the context
@@ -921,13 +923,13 @@ export class AddNewColumnDialog {
       //check for semType match
       if (property.semType && actualSemType && property.semType !== actualSemType)
         // eslint-disable-next-line max-len
-        return `Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} type instead of ${actualSemType}`;
+        return `Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} semantic type instead of ${actualSemType}`;
       //check column type
       if (property.propertyType === DG.TYPE.COLUMN) {
         if (funcCall.inputs[property.name].func?.name !== COLUMN_FUNCTION_NAME)
           return `Function ${funcCall.func.name} '${property.name}' param should be column type`;
         if (property.propertySubType && property.propertySubType !== actualInputType &&
-          !mappingMatch(property.propertySubType, actualInputType))
+          !this.mappingMatch(property.propertySubType, actualInputType))
           // eslint-disable-next-line max-len
           return `Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} column`;
         //check list type
@@ -936,7 +938,7 @@ export class AddNewColumnDialog {
           return `Function ${funcCall.func.name} '${property.name}' param should be array type`;
         //check type of array if array is not empty
         if (property.propertySubType && property.propertySubType !== actualInputType &&
-          !mappingMatch(property.propertySubType, actualInputType) && funcCall.inputs[property.name].length > 0)
+          !this.mappingMatch(property.propertySubType, actualInputType) && funcCall.inputs[property.name].length > 0)
           // eslint-disable-next-line max-len
           return `Function ${funcCall.func.name} '${property.name}' param should be array of ${property.propertySubType}`;
         //check for typed lists
@@ -948,7 +950,7 @@ export class AddNewColumnDialog {
         //check for type match
         if (property.propertyType !== actualInputType) {
           //check for type match in mapping
-          if (!mappingMatch(property.propertyType, actualInputType))
+          if (!this.mappingMatch(property.propertyType, actualInputType))
             // eslint-disable-next-line max-len
             return `Function ${funcCall.func.name} '${property.name}' param should be ${property.propertyType} type instead of ${actualInputType}`;
         }
@@ -1132,6 +1134,10 @@ export class AddNewColumnDialog {
     control.append(this.widgetFunctions!.root);
     control.classList.add('ui-widget-addnewcolumn-functions');
     control.style.height = 'inherit';
+    // Opt out of ui.css's broad `div.ui-box > *` overflow:auto rule so our own
+    // overflow-x: hidden wins (see power-pack.css). `.ui-div` is in that rule's
+    // :not() exclusion list and has minimal styling side effects.
+    this.widgetFunctions!.root.classList.add('ui-div');
     return control;
   }
 
@@ -1616,9 +1622,13 @@ export class AddNewColumnDialog {
               // eslint-disable-next-line max-len
               throw new Error(`If function params types (${first}, ${second}) do not match and cannot be casted to each other`);
             return resType;
-          } else
-            // eslint-disable-next-line max-len
-            throw new Error(`If function params types (${first}, ${second}) do not match and cannot be casted to each other`);
+          } else {
+            if (!this.mappingMatch(second.toLowerCase(), first.toLowerCase()))
+              // eslint-disable-next-line max-len
+              throw new Error(`If function params types (${first}, ${second}) do not match and cannot be casted to each other`);
+            else
+              return second;
+          }
         }
       }
     }

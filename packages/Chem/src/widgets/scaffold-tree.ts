@@ -678,6 +678,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   progressBar: DG.TaskBarProgressIndicator | null = null;
   moleculeColumnName: string;
   molColPropObserver: MutationObserver | null = null;
+  draggedNode: TreeViewGroup | null = null;
   Table: string;
   treeEncode: string;
   sizesMap: SizesMap = {
@@ -1240,6 +1241,90 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       .show();
   }
 
+  moveNodeTo(node: TreeViewGroup, targetIdx: number): void {
+    const parent = (node.parent ?? this.tree) as TreeViewGroup;
+    const sourceIdx = parent.children.indexOf(node);
+    node.remove();
+    if (sourceIdx >= 0 && sourceIdx < targetIdx)
+      targetIdx--;
+    parent.addNode(node, targetIdx);
+    this.tree.currentItem = node;
+    requestAnimationFrame(() => node.root.scrollIntoView({block: 'nearest'}));
+    this.saveTreeEncode();
+  }
+
+  private saveTreeEncode(): void {
+    this.treeEncodeUpdateInProgress = true;
+    this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
+    this.treeEncodeUpdateInProgress = false;
+  }
+
+  private setupDragAndDrop(molHost: HTMLElement, group: TreeViewGroup): void {
+    if (!isOrphans(group)) {
+      molHost.draggable = true;
+      molHost.addEventListener('dragstart', (e) => {
+        this.draggedNode = group;
+        e.dataTransfer!.effectAllowed = 'move';
+      });
+      molHost.addEventListener('dragend', () => this.draggedNode = null);
+    }
+
+    molHost.addEventListener('dragover', (e) => {
+      if (!this.draggedNode || this.draggedNode === group)
+        return;
+
+      const dragParent = this.draggedNode.parent ?? this.tree;
+      const dropParent = group.parent ?? this.tree;
+      if (dragParent !== dropParent)
+        return;
+
+      e.preventDefault();
+      e.dataTransfer!.dropEffect = 'move';
+      const rect = molHost.getBoundingClientRect();
+      const isTopHalf = e.clientY < rect.top + rect.height / 2;
+      molHost.classList.toggle('chem-drop-target-top', isTopHalf);
+      molHost.classList.toggle('chem-drop-target-bottom', !isTopHalf);
+    });
+
+    molHost.addEventListener('dragleave', (e) => {
+      if (!molHost.contains(e.relatedTarget as Node))
+        molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
+    });
+
+    molHost.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const isTopHalf = molHost.classList.contains('chem-drop-target-top');
+      molHost.classList.remove('chem-drop-target-top', 'chem-drop-target-bottom');
+      if (!this.draggedNode || this.draggedNode === group)
+        return;
+
+      const dropParent = (group.parent ?? this.tree) as TreeViewGroup;
+      const targetIdx = dropParent.children.indexOf(group);
+      if (targetIdx >= 0)
+        this.moveNodeTo(this.draggedNode, isTopHalf ? targetIdx : targetIdx + 1);
+    });
+  }
+
+  moveNode(node: TreeViewGroup, direction: 'up' | 'down'): void {
+    if (node.value === null || value(node).orphans)
+      return;
+
+    const parent = (node.parent ?? this.tree) as TreeViewGroup;
+    const allChildren = parent.children;
+    const nodeIdx = allChildren.indexOf(node);
+    if (nodeIdx < 0)
+      return;
+
+    const step = direction === 'up' ? -1 : 1;
+    let siblingIdx = nodeIdx + step;
+    while (siblingIdx >= 0 && siblingIdx < allChildren.length && isOrphans(allChildren[siblingIdx]))
+      siblingIdx += step;
+    if (siblingIdx < 0 || siblingIdx >= allChildren.length)
+      return;
+
+    this.moveNodeTo(node, direction === 'down' ? siblingIdx + 1 : siblingIdx);
+  }
+
   clear() {
     this.clearFilters();
     this.clearTree();
@@ -1770,7 +1855,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const thisViewer = this;
     const groupValue = group.value as ITreeNode;
     const notIcon = ui.iconFA('equals',
-      () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot));
+      () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot), 'Toggle');
 
     notIcon.onmouseenter = (e) => {
       const text = groupValue.bitwiseNot ?
@@ -1845,7 +1930,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       chosenColor = groupValue.chosenColor!;
       this.setColorToHighlight(group, chosenColor, groupValue.colorOn);
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
-    });
+    }, 'Color');
 
     colorIcon.onmouseenter = (e) => {
       let text;
@@ -1988,6 +2073,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (parentColor)
         value(group).parentColor = parentColor;
     }
+
+    this.setupDragAndDrop(molHost, group);
 
     molHost.onclick = () => this.makeNodeActiveAndFilter(group);
     return group;
@@ -2249,6 +2336,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }
     });
 
+    this.tree.root.addEventListener('keydown', (e) => {
+      if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.altKey && e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.current)
+          this.moveNode(this.current as TreeViewGroup, e.key === 'ArrowUp' ? 'up' : 'down');
+      }
+    }, true);
     this.tree.root.onkeyup = (e) => {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         if (this.current)
@@ -2428,7 +2523,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._bitOpInput.setTooltip('AND: all selected substructures match \n\r OR: any selected substructures match');
     this._bitOpInput.root.style.marginLeft = '20px';
     const iconHost = ui.box(ui.divH([
-      this._iconGenerate = this.allowGenerate !== false ? ui.iconFA('magic', () => this.generateTree()) : null,
+      this._iconGenerate = this.allowGenerate !== false ? ui.iconFA('magic', () => this.generateTree(), 'Generate') : null,
       this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Sketch scaffolds manually'),
       this._iconUpload = ui.iconFA('folder-open', () => this.loadTree(), 'Upload saved tree file'),
       ui.div([], 'd4-ribbon-separator'),
@@ -2455,6 +2550,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.attachGenerateIconTooltip();
 
     this.root.appendChild(ui.splitV([iconHost, this.tree.root]));
+    // Disable inner scroll on tree root to avoid double scrollbar.
+    // Inline !important is needed to override the high-specificity platform selector on ui-box children.
+    this.tree.root.style.setProperty('overflow', 'visible', 'important');
     enableToolbar(thisViewer);
 
     this._message = ui.divText('', 'chem-scaffold-tree-generate-message-hint');

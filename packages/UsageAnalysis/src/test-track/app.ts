@@ -232,7 +232,7 @@ export class TestTrack extends DG.ViewBase {
     };
 
     // Generate tree
-    const filesP = _package.files.list('Test Track', true);
+    const filesP = _package.files.list('TestTrack', true);
     const namePFromDb: string = (await grok.functions.call('UsageAnalysis:TestingName',
       { uid: this.uid, version: this.version, start: this.start })) || NEW_TESTING;
     const nameP: string = this.testingName || namePFromDb;
@@ -309,7 +309,7 @@ export class TestTrack extends DG.ViewBase {
       this.testDescription.set(item.value.name, item.value.text?.textContent || '');
     // Ribbon
     const gh = ui.button(getIcon('github', { style: 'fab' }), () => {
-      window.open('https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis/files/Test Track',
+      window.open('https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis/files/TestTrack',
         '_blank');
       window.focus();
     }, 'Test Track folder');
@@ -394,7 +394,7 @@ export class TestTrack extends DG.ViewBase {
     if (!this.testingNames.includes(this.testingName))
       this.testingNames.push(this.testingName);
 
-    this.addTestingButton = ui.button(getIcon('plus', { style: 'fas' }), async () => { await this.showAddNewTestingDialog() });
+    this.addTestingButton = ui.button(getIcon('plus', { style: 'fas' }), async () => { await this.showAddNewTestingDialog() }, 'Add Testing');
     ui.tooltip.bind(this.addTestingButton, 'Add Testing');
     this.testingNameSelector = ui.input.choice('', {
       items: this.testingNames, value: this.testingName, nullable: false, onValueChanged: (e) => {
@@ -779,7 +779,7 @@ export class TestTrack extends DG.ViewBase {
   }
 
   editTestCase(node: DG.TreeViewNode): void {
-    window.open(`https://github.com/datagrok-ai/public/edit/master/packages/UsageAnalysis/files/Test Track/${node.value.path.replaceAll(': ', '/')}.md`, '_blank')?.focus();
+    window.open(`https://github.com/datagrok-ai/public/edit/master/packages/UsageAnalysis/files/TestTrack/${node.value.path.replaceAll(': ', '/')}.md`, '_blank')?.focus();
   }
 
 

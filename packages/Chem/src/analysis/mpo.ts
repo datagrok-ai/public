@@ -15,12 +15,10 @@ import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/ut
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {MpoProfileManager} from '../mpo/mpo-profile-manager';
 import {PackageFunctions} from '../package';
-import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles} from '../mpo/utils';
+import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles, isEdaPackageInstalled, UNTITLED_PROFILE} from '../mpo/utils';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 
 const CREATE_NEW_PROFILE_ITEM = '+ Create New...';
-const UNTITLED_PROFILE = 'Untitled Profile';
-
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
   mpoProfileEditor: MpoProfileEditor;
@@ -34,7 +32,7 @@ export class MpoProfileDialog {
   manageButton: HTMLElement;
   saveButton: HTMLButtonElement;
 
-  private dialog?: DG.Dialog<{}>;
+  private dialog?: DG.Dialog;
   private mpoContextPanel?: MpoContextPanel;
   private originalProfile: DesirabilityProfile | null = null;
   private suitableProfileNames: string[] = [];
@@ -105,23 +103,10 @@ export class MpoProfileDialog {
   }
 
   async init(): Promise<void> {
-    this.mpoProfiles = await MpoProfileManager.load();
-    this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.name);
-
-    this.profileInput.items = [CREATE_NEW_PROFILE_ITEM, ...this.mpoProfiles.map((p) => p.name)];
-    requestAnimationFrame(() => {
-      this.addCreateNewSeparator();
-      this.highlightSuitableProfiles(this.suitableProfileNames);
-    });
-
-    const defaultProfile = this.suitableProfileNames.length > 0 ?
-      this.suitableProfileNames[0] :
-      this.mpoProfiles[0]?.name ?? null;
-
-    if (defaultProfile) {
-      this.profileInput.value = defaultProfile;
-      await this.loadProfile(defaultProfile);
-    }
+    // refreshProfilesDropdown sets profileInput.value, which triggers onValueChanged → loadProfile
+    await this.refreshProfilesDropdown(
+      () => this.suitableProfileNames[0] ?? this.mpoProfiles[0]?.name ?? '',
+    );
 
     this.listenForProfileChanges();
     this.mpoContextPanel = new MpoContextPanel(this.dataFrame);
@@ -232,10 +217,15 @@ export class MpoProfileDialog {
       return;
     }
 
+    if (!isEdaPackageInstalled())
+      return;
+
     try {
       const pMpoItems = await grok.functions.call('EDA:getPmpoAppItems', {view: tableView});
-      if (!pMpoItems?.profile)
-        throw new Error('pMPO is not applicable for this dataset');
+      if (!pMpoItems?.profile) {
+        grok.shell.warning('pMPO is not applicable for this dataset');
+        return;
+      }
 
       this.currentProfile = pMpoItems.profile;
       this.currentProfileFileName = null;
@@ -247,8 +237,6 @@ export class MpoProfileDialog {
       this.updateOkButtonState();
     } catch (e) {
       grok.shell.warning(`pMPO training failed: ${e instanceof Error ? e.message : e}`);
-      this.methodInput.value = 'Manual';
-      this.createManualProfile();
     }
   }
 
@@ -318,7 +306,7 @@ export class MpoProfileDialog {
     }
   }
 
-  private async refreshProfilesDropdown(selectName: string): Promise<void> {
+  private async refreshProfilesDropdown(selectName?: string | (() => string)): Promise<void> {
     this.mpoProfiles = await MpoProfileManager.load();
     this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.name);
     this.profileInput.items = [CREATE_NEW_PROFILE_ITEM, ...this.mpoProfiles.map((p) => p.name)];
@@ -326,10 +314,14 @@ export class MpoProfileDialog {
       this.addCreateNewSeparator();
       this.highlightSuitableProfiles(this.suitableProfileNames);
     });
-    this.profileInput.value = selectName;
+    const name = typeof selectName === 'function' ? selectName() : selectName;
+    if (name)
+      this.profileInput.value = name;
   }
 
   private addParetoFrontViewer(columnNames: string[]): void {
+    if (!isEdaPackageInstalled())
+      return;
     const view = grok.shell.getTableView(this.dataFrame.name);
     const paretoFrontViewer = DG.Viewer.fromType('Pareto front', this.dataFrame);
     view.addViewer(paretoFrontViewer);

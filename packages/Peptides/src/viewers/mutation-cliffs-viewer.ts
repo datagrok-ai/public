@@ -10,6 +10,8 @@ import $ from 'cash-dom';
 import {PeptidesModel} from '../model';
 import {extractColInfo} from '../utils/misc';
 import {Subscription} from 'rxjs';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {MONOMER_CANONICALIZER_FUNC_TAG} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 export type MutationCliffsWithMonomers = {
   cliffs: MutationCliffs,
   monomers: string[]
@@ -267,15 +269,20 @@ export class MutationCliffsViewer extends DG.JsViewer {
       this._positionColumns = posCols;
       return this._positionColumns;
     }
-    // fallback: generate columns
+    // fallback: generate columns using original (non-canonical) monomers
     const seqCol = this.dataFrame.col(this.sequenceColumnName)!;
     const seqHelper = PeptideUtils.getSeqHelper();
     const seqHandler = seqHelper.getSeqHandler(seqCol);
     const length = seqHandler.maxLength;
     const cols: DG.Column[] = [];
+    // Propagate canonicalizer tag if the source column has a notation provider with one
+    const notationProvider: any = seqCol.temp[SeqTemps.notationProvider] ?? null;
+    const canonFuncName: string | null = notationProvider?.monomerCanonicalizerFuncName ?? null;
     for (let i = 0; i < length; i++) {
-      const monomersAtPosition = seqHandler.getMonomersAtPosition(i, true);
+      const monomersAtPosition = seqHandler.getMonomersAtPosition(i, false);
       const monomerCol = DG.Column.fromList('string', `Position ${i + 1}`, monomersAtPosition);
+      if (canonFuncName)
+        monomerCol.setTag(MONOMER_CANONICALIZER_FUNC_TAG, canonFuncName);
       cols.push(monomerCol);
     }
     this._positionColumns = cols;

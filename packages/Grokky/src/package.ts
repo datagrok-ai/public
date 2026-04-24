@@ -3,10 +3,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {interval} from 'rxjs';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './ai/search/query-matching';
 import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI} from './ai/ui';
 import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
+import {ClaudeRuntimeClient} from './claude/runtime-client';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
 import {biologicsIndex} from './db/indexes/biologics-index';
 import {chemblIndex} from './db/indexes/chembl-index';
@@ -25,8 +27,66 @@ export class PackageFunctions {
     setupSearchUI();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
+    PackageFunctions.ensureAgentsFolder();
+    PackageFunctions.subscribeToSyncEvents();
   }
 
+  // Creates agents/ folder in My Files if it doesn't exist yet.
+  static async ensureAgentsFolder(): Promise<void> {
+    try {
+      const conn = await grok.dapi.connections.filter('name = "My files"').first();
+      if (!conn)
+        return;
+      const agentsPath = `${conn.nqName}/agents`;
+      const exists = await grok.dapi.files.exists(agentsPath);
+      if (!exists) {
+        await grok.dapi.files.writeAsText(`${agentsPath}/README.md`,
+          'Place your personal knowledge files here. Claude will use them as context.');
+        console.log('Grokky: created agents/ folder');
+      }
+    } catch (e: any) {
+      console.warn('Grokky: failed to ensure agents folder:', e.message);
+    }
+  }
+
+  static isAgentsFile(fi: DG.FileInfo): boolean {
+    return (fi.fullPath ?? fi.path ?? fi.name ?? '').includes('agents');
+  }
+
+  // Subscribes to platform events that should trigger file sync.
+  static subscribeToSyncEvents(): void {
+    const sync = (...args: Parameters<ClaudeRuntimeClient['syncUserFiles']>) =>
+      ClaudeRuntimeClient.getInstance().syncUserFiles(...args);
+
+    // MyFiles agents: file operations (create, upload, delete, rename, move)
+    grok.events.onEvent('d4-file-event').subscribe((eventData: any) => {
+      const dartFiles = eventData?.dart?.files;
+      if (!dartFiles)
+        return;
+      const files: DG.FileInfo[] = Array.from({length: dartFiles.length}, (_: any, i: number) => DG.toJs(dartFiles[i]));
+      if (files.some(PackageFunctions.isAgentsFile))
+        sync('user-files');
+    });
+
+    // MyFiles agents: in-place file edits (save)
+    grok.events.onFileEdited.subscribe((fi: DG.FileInfo) => {
+      if (PackageFunctions.isAgentsFile(fi))
+        sync('user-files');
+    });
+
+    // Packages: when a JS bundle is loaded
+    grok.events.onPackageLoaded.subscribe((pkg: DG.Package) => {
+      sync('packages', pkg.name);
+    });
+
+    // Poll for shared connections and package updates every 10 minutes.
+    // No reliable push events exist for sharing or other users' publishes.
+    // TODO: think about more efficient strategies here.
+    interval(15 * 60 * 1000).subscribe(() => {
+      sync('shared');
+      sync('packages');
+    });
+  }
 
   @grok.decorators.autostart({tags: ['autostart']})
   static autostart() {

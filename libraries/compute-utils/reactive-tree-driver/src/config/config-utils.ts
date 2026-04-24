@@ -1,12 +1,12 @@
 import {ItemPathArray} from '../data/common-types';
 import {buildTraverseD} from '../data/graph-traverse-utils';
-import {addPipelineRef, containsPipelineRef, FuncCallIODescription, getPipelineRef, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed, PipelineRefStore} from './config-processing-utils';
+import {addPipelineRef, containsPipelineRef, FuncCallIODescription, getPipelineRef, PipelineConfigurationDynamicProcessed, PipelineConfigurationProcessed, PipelineConfigurationStaticProcessed, PipelineRefStore} from './config-processing-utils';
 import {LinkIOParsed} from './LinkSpec';
-import {PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
+import {AbstractPipelineActionConfiguration, PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
 
 
 export type PipelineStepConfigurationProcessed = PipelineStepConfiguration<LinkIOParsed[], FuncCallIODescription[]>;
-export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed | PipelineSelfRef;
+export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed | AbstractPipelineActionConfiguration | PipelineSelfRef;
 
 export type ConfigItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed;
 
@@ -14,16 +14,22 @@ export function isPipelineStaticConfig(c: ConfigTraverseItem): c is PipelineConf
   return !!((c as PipelineConfigurationStaticProcessed).type === 'static');
 }
 
-export function isPipelineParallelConfig(c: ConfigTraverseItem): c is PipelineConfigurationParallelProcessed {
-  return !!((c as PipelineConfigurationParallelProcessed).type === 'parallel');
+export function isPipelineDynamicConfig(c: ConfigTraverseItem): c is PipelineConfigurationDynamicProcessed {
+  const type = (c as PipelineConfigurationDynamicProcessed).type;
+  return type === 'dynamic' || type === 'parallel' || type === 'sequential';
 }
 
-export function isPipelineSequentialConfig(c: ConfigTraverseItem): c is PipelineConfigurationSequentialProcessed {
-  return !!((c as PipelineConfigurationSequentialProcessed).type === 'sequential');
+/** @deprecated Use isPipelineDynamicConfig */
+export const isPipelineParallelConfig = isPipelineDynamicConfig;
+/** @deprecated Use isPipelineDynamicConfig */
+export const isPipelineSequentialConfig = isPipelineDynamicConfig;
+
+export function isPipelineActionConfig(c: ConfigTraverseItem): c is AbstractPipelineActionConfiguration {
+  return (c as AbstractPipelineActionConfiguration).type === 'action';
 }
 
 export function isPipelineConfig(c: ConfigTraverseItem): c is PipelineConfigurationProcessed {
-  return isPipelineStaticConfig(c) ||isPipelineParallelConfig(c) || isPipelineSequentialConfig(c);
+  return isPipelineStaticConfig(c) || isPipelineDynamicConfig(c);
 }
 
 export function isPipelineSelfRef(c: ConfigTraverseItem): c is PipelineSelfRef {
@@ -31,7 +37,7 @@ export function isPipelineSelfRef(c: ConfigTraverseItem): c is PipelineSelfRef {
 }
 
 export function isPipelineStepConfig(c: ConfigTraverseItem): c is PipelineStepConfigurationProcessed {
-  return !isPipelineConfig(c) && !isPipelineSelfRef(c);
+  return !isPipelineConfig(c) && !isPipelineSelfRef(c) && !isPipelineActionConfig(c);
 }
 
 export type PipelineRefMap = PipelineRefStore<PipelineConfigurationProcessed>
@@ -53,7 +59,7 @@ export function buildRefMap(config: PipelineConfigurationProcessed): PipelineRef
   };
 
   const traverse = buildTraverseD([] as ItemPathArray, (item: ConfigTraverseItem, path: ItemPathArray) => {
-    if (isPipelineSelfRef(item) || isPipelineStepConfig(item))
+    if (isPipelineSelfRef(item) || isPipelineStepConfig(item) || isPipelineActionConfig(item))
       return [] as [ConfigTraverseItem, ItemPathArray][];
     else if (isPipelineStaticConfig(item))
       return item.steps.map((item) => getNextItem(item, path)!).filter((x) => x);
@@ -106,7 +112,7 @@ export function getConfigByInstancePath(
     if (isPipelineStaticConfig(item)) {
       const node = findNextNode(item.steps, segment, path, refMap);
       return [[node, [...path, segment] as ItemPathArray, newRemainingPath] as const];
-    } else if (isPipelineParallelConfig(item) || isPipelineSequentialConfig(item)) {
+    } else if (isPipelineDynamicConfig(item)) {
       const node = findNextNode(item.stepTypes, segment, path, refMap);
       return [[node, [...path, segment] as ItemPathArray, newRemainingPath] as const];
     } else if (isPipelineSelfRef(item))

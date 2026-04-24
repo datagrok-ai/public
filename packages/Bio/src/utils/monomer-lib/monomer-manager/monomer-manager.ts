@@ -486,7 +486,7 @@ export class MonomerManager implements IMonomerManager {
       }
       const monomer = await monomerFromDfRow(this.tv!.dataFrame.rows.get(currentRowIdx));
       await this._newMonomerForm.removeMonomers([monomer], this.libInput.value!);
-    });
+    }, 'Delete');
 
     ui.tooltip.bind(deleteButton, () =>
       `${(this.tv?.dataFrame?.selection?.trueCount ?? 0) > 0 ? 'Delete selected monomers' : 'Delete monomer'}`);

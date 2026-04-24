@@ -48,6 +48,22 @@ export async function peptiHitApp() : Promise<any> {
   return await PackageFunctions.peptiHitApp();
 }
 
+//input: dynamic treeNode 
+//meta.app: PepTriage
+export async function pepTriageAppTreeBrowser(treeNode: any) : Promise<void> {
+  await PackageFunctions.pepTriageAppTreeBrowser(treeNode);
+}
+
+//name: PepTriage
+//tags: app
+//output: view result
+//meta.role: app
+//meta.icon: images/icons/hit-triage-icon.png
+//meta.browsePath: Peptides
+export async function pepTriageApp() : Promise<any> {
+  return await PackageFunctions.pepTriageApp();
+}
+
 //name: Demo Molecules 100
 //output: dataframe result
 //meta.role: hitTriageDataSource
@@ -68,6 +84,14 @@ export async function demoFileIngest1() : Promise<any> {
 //meta.role: hitTriageDataSource
 export async function demoFileIngest2(numberOfMolecules: number) : Promise<any> {
   return await PackageFunctions.demoFileIngest2(numberOfMolecules);
+}
+
+//name: Demo Peptide Sequences
+//input: double peptideCount 
+//output: dataframe result
+//meta.role: pepTriageDataSource
+export async function demoPeptideSequences(peptideCount: number) : Promise<any> {
+  return await PackageFunctions.demoPeptideSequences(peptideCount);
 }
 
 //name: Demo File Submit

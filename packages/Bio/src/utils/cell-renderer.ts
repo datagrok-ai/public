@@ -225,8 +225,8 @@ export class MacromoleculeDifferenceCellRendererBack extends CellRendererWithMon
     const splitter = this.tableCol.temp[SeqTemps.notationProvider]?.separatorSplitter ?? this.tableCol.temp[SeqTemps.notationProvider]?.splitter ?? getSplitter(units, separator);
     const s1SS = splitter(s1);
     const s2SS = splitter(s2);
-    const subParts1 = wu.count(0).take(s1SS.length).map((posIdx) => s1SS.getCanonical(posIdx)).toArray();
-    const subParts2 = wu.count(0).take(s2SS.length).map((posIdx) => s2SS.getCanonical(posIdx)).toArray();
+    const subParts1 = wu.count(0).take(s1SS.length).map((posIdx) => s1SS.getOriginal(posIdx)).toArray();
+    const subParts2 = wu.count(0).take(s2SS.length).map((posIdx) => s2SS.getOriginal(posIdx)).toArray();
     const alphabet = this.tableCol.getTag(bioTAGS.alphabet);
     const biotype = alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
     drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, biotype, this.monomerLib, undefined, undefined);

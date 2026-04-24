@@ -179,9 +179,9 @@ async function openFse(v: DG.View, functionCode: string) {
       (prop) => menu.item(functionPropsLabels[prop.name as FUNC_PROPS_FIELD], () => onItemClick(prop)),
     );
 
-    const button = ui.button([ui.icons.add(() => { })], () => {
+    const button = ui.button([ui.icons.add(() => { }, 'Add')], () => {
       menu.show();
-    });
+    }, 'Add property');
 
     const div = ui.div([button]);
     div.style.cssText += 'margin-left: 152px';
@@ -195,14 +195,14 @@ async function openFse(v: DG.View, functionCode: string) {
       refreshPreview();
     });
     (input.root as HTMLInputElement).placeholder = 'Enter your value...';
-    input.root.appendChild(ui.button(ui.icons.delete(() => { }), () => {
+    input.root.appendChild(ui.button(ui.icons.delete(() => { }, 'Delete'), () => {
       inputScriptCopy[prop.name] = prop.defaultValue;
       refreshPreview();
       input.root.remove();
       const newAddButton = renderAddPropButton();
       addButton.replaceWith(newAddButton);
       addButton = newAddButton;
-    }));
+    }, 'Remove property'));
     (input.root.lastChild as HTMLElement).style.cssText += 'display: inline-flex; justify-content: center; flex-direction: column';
     if (obligatoryFuncProps.includes(prop.name)) {
       input.root.style.cssText += 'padding-right: 35.375px';
@@ -266,7 +266,7 @@ async function openFse(v: DG.View, functionCode: string) {
         'https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation',
         '_blank'
       );
-    });
+    }, 'Function parameters help');
     helpIcon.classList.add('dt-help-icon');
 
     grok.shell.o = ui.divV([
@@ -463,7 +463,7 @@ async function openFse(v: DG.View, functionCode: string) {
     [
       ui.iconFA('eye', () => {
         previewTabs.hidden ? previewTabs.hidden = false : previewTabs.hidden = true;
-      }),
+      }, 'Toggle preview'),
       ui.iconFA('code', () => openScript(), 'Open function editor'),
     ],
   ]);

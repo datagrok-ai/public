@@ -1,8 +1,24 @@
 # Chem changelog
 
-## v.next
+## 1.17.5 (2026-04-15)
 
-* Fixed crash in checkCurrentView when table is opened in Files preview without a registered TableView
+### Features:
+
+* Chem: Stereo agnostic search
+* Chem: Pharmacophore feature highlighting
+
+### Bug fixes
+
+* GROK-19962: Fixed crash in checkCurrentView when table is opened in Files preview without a registered TableView
+* GROK-19994: MMP: Fixed crash when navigating away from MMP view while tab content is lazily rendered
+* GROK-19921: Bio, Chem: Make table view active when adding scatter plot for chemical/sequence space and activity cliffs (in case it was switched during function execution)
+* GROK-19862: Radar: Viewer type naming issue
+* GROK-14952: Chem: Filter Panel and Hamburger menu molecular filters are not sync
+* GROK-18530: Chem: Substructure Filter: incorrect filtering in the cloned view when using the "Similar" option
+* Chem: Scaffold Tree: Fix double vertical scrollbar
+* Chem: MPO: Add EDA package guard and deduplicate profile loading
+* Chem: MPO: Preserve profile name and description on dataset change
+* Chem: MPO: Fix profile naming and cancel behavior
 
 ## 1.17.4 (2026-03-30)
 

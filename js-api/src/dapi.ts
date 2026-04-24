@@ -530,6 +530,11 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
     return toJs(api.grok_EntitiesDataSource_GetRecent(this.dart));
   }
 
+  /** Returns entities favorited by the specified group (or the current user's group if not specified) */
+  getFavorites(group?: Group): Promise<Entity[]> {
+    return toJs(api.grok_EntitiesDataSource_GetFavorites(this.dart, toDart(group)));
+  }
+
   /** Allows to set properties for entities */
   saveProperties(props: Map<Property, any>): Promise<void> {
     return api.grok_EntitiesDataSource_SaveProperties(this.dart, props);
@@ -586,6 +591,11 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
 
   async getDatabaseInfo(c: DataConnection, catalog: string | null = null): Promise<DbInfo[]> {
     return toJs(await api.grok_DataConnectionsDataSource_Get_Db_Info(this.dart, c.dart, catalog))
+  }
+
+  /** Initiates the OAuth consent flow for a connection whose auth method is 'OAuth'. */
+  async requestOAuthConsent(c: DataConnection): Promise<void> {
+    await api.grok_DataConnectionsDataSource_RequestOAuthConsent(c.dart);
   }
 }
 
@@ -1224,6 +1234,14 @@ export class NotificationsDataSource extends HttpDataSource<UserNotification> {
 
   async countUnread(): Promise<number> {
     return api.grok_Dapi_Notifications_CountUnread();
+  }
+
+  async markAllAsRead(): Promise<void> {
+    return api.grok_Dapi_Notifications_MarkAllAsRead();
+  }
+
+  async markAsRead(notificationId: string): Promise<void> {
+    return api.grok_Dapi_Notifications_MarkAsRead(notificationId);
   }
 }
 

@@ -63,7 +63,7 @@ Year - Month' and 'Year - Quarter':
 | **General** | | |
 | Orientation | string |  |
 | Show Mouse Over Rect | boolean |  |
-| Show Filtered Rows | boolean | Show which part is filtered. Only works with RowSource = All. |
+| Show Filtered Rows | boolean | Show which part is filtered Only works with RowSource = All |
 | Show Mouse Over Rows | boolean |  |
 | Back Color | number |  |
 | Axis Color | number |  |

@@ -1,5 +1,9 @@
 # Ketcher Sketcher changelog
 
+## 2.4.2 (2026-04-23)
+
+* Reset explicitMol on change only if molecule has been already set
+
 ## 2.4.1 (2026-03-18)
 
 * Updated ketcher libraries up to 3.12.0

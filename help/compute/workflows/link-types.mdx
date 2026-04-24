@@ -204,6 +204,16 @@ _Optional_
 
 Font awesome icon to be shown as a part of the UI action button.
 
+#### `visibleOn`
+
+_Optional_
+
+Shows the action on a specific child step instead of the node where it is
+defined. The value is the `id` of the target step. The action's `from`/`to`
+still resolve at the definition scope, so the action can read from and write
+to any node the parent workflow can reach. This is useful when an action
+logically belongs to a child step's UI but needs access to sibling steps'
+data. Works with all action types (data, funccall, pipeline).
 
 ### Data links
 
@@ -274,6 +284,11 @@ results will be merged. There are several validation severity levels,
 also it is possible to show user executable actions alongside text
 messages.
 
+By default, validators run without debounce and are executed in batches
+for better performance. To add a debounce delay (for example, for
+expensive validation logic that should not fire on every keystroke),
+set the `debounce` option.
+
 Validators have the following additional configuration options:
 
 #### `actions`
@@ -288,6 +303,19 @@ later shown alongside validation results via
 [`setValidation`](#setvalidation) controller method. It must receive
 `ValidationResult` as a data argument.
 
+
+#### `debounce`
+
+_Optional_
+
+Debounce time in milliseconds. When set to a positive value, the
+validator handler waits for the specified duration after the last input
+change before firing. This is useful for expensive validators (such as
+server-side checks) where firing on every keystroke is wasteful.
+
+When omitted or set to `0`, the validator runs immediately and is
+eligible for batched execution with other validators, which reduces
+per-validator scheduling overhead.
 
 Validation controller has the following additional methods:
 
@@ -454,6 +482,11 @@ Sets FuncCall to an output query with the specified name.
 
 Used to replace dynamic workflow content. Has a type `pipeline`.
 Targets script io as inputs and dynamic workflows as outputs.
+To target a child dynamic workflow, use a path in `to` (e.g.,
+`to: 'out1:analyses'`). To target the workflow where the action is
+defined (self-reference), use just the query name with no path
+(e.g., `to: 'out1'`).
+
 Controller has additional methods:
 
 #### `setPipelineState`
@@ -469,6 +502,43 @@ have a matching `id`, nested items are referenced in `steps`
 regardless of a workflow type. For script nodes it is possible to
 provide `initialValues` and `inputRestrictions`.
 
+#### `getSteps`
+
+```
+getSteps(name: string): StepHandle[];
+```
+
+Returns current steps of the target dynamic workflow as an array of
+`StepHandle` objects. Each handle has `configId`, `position`, and an
+internal `_uuid`.
+
+#### `addStep`
+
+```
+addStep(name: string, configId: string, position?: number): void;
+```
+
+Adds a step to the target dynamic workflow by `configId` (must match
+one of the `stepTypes` ids). Optional `position` inserts at the given
+index; omit to append.
+
+#### `removeStep`
+
+```
+removeStep(name: string, step: StepHandle): void;
+```
+
+Removes a step from the target dynamic workflow. Pass a handle
+obtained from `getSteps`.
+
+#### `moveStep`
+
+```
+moveStep(name: string, step: StepHandle, position: number): void;
+```
+
+Moves a step to a new position within the target dynamic workflow.
+
 
 ### Init hook
 
@@ -481,5 +551,12 @@ when a workflow is created. Usually is used to populate static
 
 Uses the `onReturn` field instead of links and is triggered only
 once when a workflow is started [programmatically](code-usage.mdx) and
-exited via `Accept` button.
+exited via the **Accept** button.
 Otherwise, the same as [data links](#data-links).
+
+The return hook handler receives an `IRuntimeReturnController` with the
+following method in addition to the [common controller methods](#common-controller-methods):
+
+* `controller.returnResult(data)` — sends `data` back to the caller that
+  started the workflow programmatically. The value is emitted through the
+  `result$` observable on the Driver.

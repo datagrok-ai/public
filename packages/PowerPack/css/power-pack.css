@@ -235,6 +235,20 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     margin-top: 4px;
 }
 
+.power-pack-activity-widget-activity-list {
+    display: block !important;
+    width: 100%;
+}
+
+.power-pack-activity-widget-activity-list > .grok-ellipsis {
+    display: none;
+}
+
+.power-pack-activity-widget-see-more {
+    display: inline-block;
+    margin: 8px 0 4px 12px;
+}
+
 .power-pack-widget-header {
     height: 20px;
     font-size: 16px;
@@ -420,9 +434,25 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
   margin-top: 10px !important;
 }
 
+.dlg-add-new-column .ui-widget-addnewcolumn-columns {
+    height: 100%!important;
+}
+
+.dlg-add-new-column .ui-widget-addnewcolumn-functions .grok-actions-browser {
+    overflow-x: hidden !important;
+}
+
 .ui-widget-addnewcolumn-columns, .ui-widget-addnewcolumn-functions {
   display: flex;
   flex-grow: 1;
+}
+
+.ui-widget-addnewcolumn-columns .add-new-column-columns-grid {
+    min-width: unset!important;
+}
+
+.ui-widget-addnewcolumn-columns .add-new-column-columns-grid .d4-layout-center {
+    height: 100%!important;
 }
 
 .ui-widget-addnewcolumn-functions #categories-div {
@@ -990,4 +1020,357 @@ body.dartium .power-pack-widgets-host.ui-div {
 
 .pp-cron-raw-row:has(.pp-cron-invalid) {
     background: rgba(235, 103, 103, 0.08);
+}
+
+.pp-mark-all-read.ui-btn {
+    margin: 0;
+    padding: 4px 10px;
+    font-size: 10px;
+    text-transform: uppercase;
+    box-shadow: none;
+    background-color: var(--steel-3);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: white !important;
+    float: right;
+    visibility: hidden;
+}
+
+.power-pack-activity-widget-notifications-tab:hover .pp-mark-all-read.ui-btn {
+    visibility: visible;
+}
+
+.pp-mark-all-read.ui-btn:hover {
+    -webkit-filter: contrast(90%) brightness(110%);
+}
+
+.power-pack-activity-widget-notifications-tab .grok-notification-unread {
+    font-weight: bolder;
+}
+
+.pp-notification-badge {
+    position: absolute;
+    top: 1px;
+    right: -6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 12px;
+    height: 12px;
+    padding: 0 2px;
+    background-color: #eb6767;
+    color: #fff;
+    font-size: 8px;
+    font-weight: bold;
+    border-radius: 6px;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+
+/* ── Workspace tab ──────────────────────────────────────── */
+
+.pp-workspace-root {
+    padding: 4px 18px 12px;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+.pp-workspace-loader {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pp-workspace-greeting {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--grey-6);
+    margin-bottom: 2px;
+}
+
+.pp-workspace-section {
+    gap: 6px;
+}
+
+.pp-workspace-section-header {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grey-5);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pp-workspace-section-header i {
+    color: var(--blue-1);
+    font-size: 13px;
+}
+
+.pp-workspace-cards-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.pp-workspace-card {
+    position: relative;
+    width: 130px;
+    padding: 16px 12px 12px;
+    border: 1px solid var(--grey-2);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.pp-workspace-card:hover {
+    border-color: var(--blue-1);
+    box-shadow: 0 2px 8px rgba(32, 131, 213, 0.12);
+}
+
+.pp-workspace-root .pp-workspace-card-remove.grok-icon.grok-font-icon-close {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    font-size: 14px;
+    color: var(--grey-3);
+    cursor: pointer;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.pp-workspace-root .pp-workspace-card:hover > .pp-workspace-card-remove.grok-icon.grok-font-icon-close {
+    visibility: visible;
+    opacity: 1;
+}
+
+.pp-workspace-root .pp-workspace-card-remove.grok-icon.grok-font-icon-close:hover {
+    color: var(--red-1);
+    filter: none;
+}
+
+.pp-workspace-card-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--blue-1);
+    opacity: 0.85;
+}
+
+.pp-workspace-card-icon > .grok-icon {
+    max-width: 32px;
+    max-height: 32px;
+}
+
+.pp-workspace-card-icon > .grok-icon.image-icon,
+.pp-workspace-card-icon > .grok-icon.svg-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.pp-workspace-card-icon > svg {
+    width: 32px;
+    height: 32px;
+}
+
+.pp-workspace-card-icon > i.grok-icon:not(.grok-ds) {
+    font-size: 30px;
+}
+
+.pp-workspace-card-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--grey-6);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 110px;
+}
+
+.pp-workspace-empty-hint {
+    color: var(--text-color-light);
+    font-style: italic;
+    font-size: 13px;
+    margin: 8px 0;
+}
+
+.pp-workspace-recent-list {
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.pp-workspace-recent-item {
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    cursor: pointer;
+}
+
+.pp-workspace-recent-item:hover {
+    background-color: var(--grey-1);
+    border-radius: 4px;
+}
+
+.pp-workspace-recent-time {
+    margin-left: auto;
+    color: var(--text-color-light);
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+/* Pencil edit icon on section headers */
+.pp-workspace-section-edit {
+    visibility: hidden;
+    opacity: 0;
+    margin-left: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--grey-3);
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.pp-workspace-section-header:hover .pp-workspace-section-edit {
+    visibility: visible;
+    opacity: 1;
+}
+
+.pp-workspace-section-edit:hover {
+    color: var(--blue-1);
+}
+
+/* Group sections container */
+.pp-workspace-group-container {
+    gap: 20px;
+}
+
+/* "Manage favorites for another group..." link */
+.pp-workspace-manage-link {
+    font-size: 12px;
+    color: var(--blue-1);
+    cursor: pointer;
+    margin-top: 4px;
+}
+
+.pp-workspace-manage-link:hover {
+    text-decoration: underline;
+}
+
+/* ── Manage favorites dialog ──────────────────────────── */
+
+.pp-manage-fav-content {
+    gap: 12px;
+    min-width: 400px;
+}
+
+.pp-manage-fav-section-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grey-5);
+}
+
+.pp-manage-fav-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--grey-2);
+    border-radius: 4px;
+    padding: 4px 0;
+}
+
+.pp-manage-fav-search-results {
+    min-height: 60px;
+}
+
+.pp-manage-fav-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    cursor: default;
+}
+
+.pp-manage-fav-row:hover {
+    background: var(--grey-1);
+}
+
+.pp-manage-fav-row-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pp-manage-fav-row-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--grey-6);
+}
+
+.pp-manage-fav-row-action {
+    flex-shrink: 0;
+    cursor: pointer;
+    color: var(--grey-3);
+    font-size: 13px;
+    padding: 2px;
+    transition: color 0.15s;
+}
+
+.pp-manage-fav-row-action:hover {
+    color: var(--red-3);
+}
+
+.pp-manage-fav-row-action.pp-manage-fav-row-add:hover {
+    color: var(--blue-1);
+}
+
+.pp-manage-fav-empty {
+    color: var(--grey-4);
+    font-style: italic;
+    font-size: 12px;
+    padding: 8px;
+    text-align: center;
+}
+
+.pp-manage-fav-search-bar {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.pp-manage-fav-search-input {
+    flex: 1;
+}
+
+.pp-manage-fav-type-input {
+    width: 130px;
+    flex-shrink: 0;
+}
+
+.pp-manage-fav-search-hint {
+    color: var(--grey-4);
+    font-style: italic;
+    font-size: 12px;
+    padding: 8px;
+    text-align: center;
+}
+
+.pp-manage-fav-row-clickable {
+    cursor: pointer;
 }

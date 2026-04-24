@@ -11,6 +11,7 @@ import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
 import {PipelineConfiguration, CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
+import {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
 import {HistoryApp} from './apps/HistoryApp';
@@ -301,7 +302,7 @@ export class PackageFunctions {
         },
         {
           id: 'step2',
-          nqName: 'Compute2:LongFailingScript',
+          nqName: 'Compute2:FastScript',
         },
       ],
       links: [{
@@ -448,6 +449,106 @@ export class PackageFunctions {
             controller.setValidation('toInitTemp');
         },
       }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
+    editor: 'Compute2:TreeWizardEditor',
+    tags: ['stress'],
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async StressTestPipeline(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    const PIPELINE_COUNT = 10;
+    const STEPS_PER_PIPELINE = 20;
+
+    const dynPipeConfig = {
+      id: 'dynPipe',
+      type: 'dynamic' as const,
+      friendlyName: 'Pipeline',
+      stepTypes: [{
+        id: 'mutateStep',
+        nqName: 'Compute2:StressMutateStep',
+        friendlyName: 'Mutate',
+        disableUIControlls: true,
+      }],
+      initialSteps: Array.from({length: STEPS_PER_PIPELINE}, () => ({id: 'mutateStep'})),
+      onInit: {
+        id: 'initFirstDf',
+        from: [],
+        to: 'out1:first(mutateStep)/df',
+        handler({controller}: any) {
+          const n = 100;
+          const df = DG.DataFrame.create(n);
+          df.name = 'Initial Data';
+          df.columns.addNewInt('id').init((i: number) => i);
+          df.columns.addNewFloat('val1').init(() => Math.random());
+          df.columns.addNewFloat('val2').init(() => Math.random());
+          df.columns.addNewString('cat1').init((i: number) => `cat_${i % 10}`);
+          df.columns.addNewString('cat2').init((i: number) => `grp_${i % 5}`);
+          df.columns.addNewBool('active').init((i: number) => i % 2 === 0);
+          df.columns.addNewInt('count').init(() => Math.floor(Math.random() * 1000));
+          df.columns.addNewFloat('score').init(() => Math.random() * 100);
+          df.columns.addNewDateTime('timestamp').init(() => dayjs(Date.now() - Math.random() * 1e9));
+          df.columns.addNewFloat('noise').init(() => Math.random());
+          controller.setAll('out1', df);
+        },
+      },
+      links: [
+        {
+          id: 'chain',
+          base: 'base:expand(mutateStep)',
+          from: 'from:same(@base, mutateStep)/dfOut',
+          to: 'to:after+(@base, mutateStep)/df',
+        },
+      ],
+    };
+
+    const c: PipelineConfiguration = {
+      id: 'stressRoot',
+      friendlyName: 'Stress Test Pipeline',
+      nqName: 'Compute2:StressTestPipeline',
+      version: '1.0',
+      type: 'dynamic',
+      stepTypes: [
+        {
+          id: 'sharedProducer',
+          nqName: 'Compute2:StressSharedProducer',
+          friendlyName: 'Shared Data Producer',
+          disableUIControlls: true,
+        },
+        {
+          ...dynPipeConfig,
+          disableUIControlls: true,
+        },
+      ],
+      initialSteps: [
+        {id: 'sharedProducer'},
+        ...Array.from({length: PIPELINE_COUNT}, () => ({id: 'dynPipe'})),
+      ],
+      actions: [
+        {
+          id: 'addPipeline',
+          type: 'pipeline' as const,
+          position: 'buttons' as const,
+          friendlyName: 'Add Pipeline',
+          icon: 'plus',
+          from: [],
+          to: 'out1',
+          handler({controller}: {controller: IRuntimePipelineMutationController}) {
+            controller.addStep('out1', 'dynPipe');
+          },
+        },
+      ],
+      links: [
+        {
+          id: 'sharedLink',
+          from: 'in1:sharedProducer/sharedDf',
+          to: 'out1:all(dynPipe)/all(mutateStep)/sharedDf',
+        },
+      ],
     };
     return c;
   }

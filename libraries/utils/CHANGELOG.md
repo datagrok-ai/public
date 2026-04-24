@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.7.2 (2026-04-08)
+
+Added method to ensure the table view for the given dataframe is active
+
 ## 4.6.14 (2025-12-15)
 
 GROK-19378: Forms viewer: Non-molecule semantic type is incorrectly treated as Molecule

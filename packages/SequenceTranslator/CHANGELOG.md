@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.10.14 (2026-04-21)
+
+* Chem Enumeration
+* Helm enumeration improvements, paralel mode
+* Polytool: support for custom notation back-conversion, fix for reversed rule order
+
 ## 1.10.5 (2025-12-11)
 
 * PT-Synthetic: Fix missing molfile handler errors

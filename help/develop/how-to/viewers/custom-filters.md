@@ -12,7 +12,7 @@ The filter then must be registered in the `package.js` file:
 ```js
 //name: Single Choice
 //description: A filter that lets you select exactly one category
-//tags: filter
+//meta.role: filter
 //output: filter result
 export function radioButtonFilter() {
   return new RadioButtonFilter();

@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../css/surechembl.css';
-import {downloadPatentDocuments} from './download-patents';
 import {SearchType} from './constants';
 export * from './package.g';
 export const _package = new DG.Package();
@@ -255,7 +254,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     'name': 'Databases | SureChEMBL | Substructure Search',
     'condition': 'true',
-    meta: {role: 'widgets'},
+    'meta': {role: 'widgets'},
   })
   static sureChemblSubstructureSearchWidget(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {
@@ -266,7 +265,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'Databases | SureChEMBL | Similarity Search',
     'condition': 'true',
-    meta: {role: 'panel,widgets'},
+    'meta': {role: 'panel,widgets'},
   })
   static sureChemblSimilaritySearchWidget(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {

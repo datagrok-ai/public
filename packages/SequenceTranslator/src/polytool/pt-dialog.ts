@@ -19,12 +19,10 @@ import {doPolyToolConvert} from './conversion/pt-conversion';
 import {getOverriddenLibrary} from './conversion/pt-synthetic';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getLibrariesList} from './utils';
-import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
-
 import {
-  PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION, PT_UI_DIALOG_ENUMERATION,
+  PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION,
   PT_UI_GET_HELM, PT_UI_LINEARIZE, PT_UI_LINEARIZE_TT,
-  PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY
+  PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY,
 } from './const';
 
 import {_package} from '../package';
@@ -49,21 +47,6 @@ type PolyToolConvertSerialized = {
   chiralityEngine: boolean;
   rules: string[];
 };
-
-type PolyToolEnumerateChemSerialized = {
-  mol: string;
-  screenLibrary: string | null;
-}
-
-export async function polyToolEnumerateChemUI(cell?: DG.Cell): Promise<void> {
-  await _package.initPromise;
-  try {
-    const dialog = await getPolyToolEnumerationChemDialog(cell);
-    dialog.show({resizable: true});
-  } catch (_err: any) {
-    grok.shell.warning('To run PolyTool Enumeration, sketch the molecule and specify the R group to vary');
-  }
-}
 
 export async function polyToolConvertUI(): Promise<void> {
   await _package.initPromise;
@@ -174,103 +157,6 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     return dialog;
   } catch (err: any) {
     destroy(); // on failing to build a dialog
-    throw err;
-  }
-}
-
-async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dialog> {
-  const subs: Unsubscribable[] = [];
-  const destroy = () => {
-    for (const sub of subs) sub.unsubscribe();
-  };
-  try {
-    const [libList, helmHelper] = await Promise.all([
-      getLibrariesList(), getHelmHelper()]);
-
-    const molStr = (cell && cell.rowIndex >= 0) ? cell.value : PT_CHEM_EXAMPLE;//cell ? cell.value : PT_CHEM_EXAMPLE;
-    let molfileValue: string = await (async (): Promise<string> => {
-      if (DG.chem.isMolBlock(molStr)) return molStr;
-      return (await grok.functions.call('Chem:convertMolNotation', {
-        molecule: molStr,
-        sourceNotation: cell?.column.getTag(DG.TAGS.UNITS) ?? DG.chem.Notation.Unknown,
-        targetNotation: DG.chem.Notation.MolBlock,
-      }));
-    })();
-
-    const molInput = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
-    molInput.syncCurrentObject = false;
-    // sketcher.setMolFile(col.tags[ALIGN_BY_SCAFFOLD_TAG]);
-    molInput.onChanged.subscribe((_: any) => {
-      molfileValue = molInput.getMolFile();
-    });
-    molInput.root.classList.add('ui-input-editor');
-    molInput.root.style.marginTop = '3px';
-    molInput.setMolFile(molfileValue);
-
-    //const helmInput = helmHelper.createHelmInput('Macromolecule', {value: helmValue});
-    const screenLibraryInput = ui.input.choice('Library to use', {value: null, items: libList});
-
-    molInput.root.setAttribute('style', `min-width:250px!important;`);
-    molInput.root.setAttribute('style', `max-width:250px!important;`);
-    screenLibraryInput.input.setAttribute('style', `min-width:250px!important;`);
-
-    const div = ui.div([
-      molInput.root,
-      screenLibraryInput.root
-    ]);
-
-    subs.push(grok.events.onCurrentCellChanged.subscribe(() => {
-      const cell = grok.shell.tv.dataFrame.currentCell;
-
-      if (cell.column.semType === DG.SEMTYPE.MOLECULE)
-        molInput.setValue(cell.value);
-    }));
-
-    const exec = async (): Promise<void> => {
-      try {
-        const molString = molInput.getMolFile();
-
-        if (molString === undefined || molString === '') {
-          grok.shell.warning('PolyTool: no molecule was provided');
-        } else if (!molString.includes('R#')) {
-          grok.shell.warning('PolyTool: no R group was provided');
-        } else {
-          const molecules = await getEnumerationChem(molString, screenLibraryInput.value!);
-          const molCol = DG.Column.fromStrings('Enumerated', molecules);
-          const df = DG.DataFrame.fromColumns([molCol]);
-          grok.shell.addTableView(df);
-        }
-      } catch (err: any) {
-        defaultErrorHandler(err);
-      }
-    };
-
-    // Displays the molecule from a current cell (monitors changes)
-    const dialog = ui.dialog(PT_UI_DIALOG_ENUMERATION)
-      .add(div)
-      .onOK(() => {
-        exec().finally(() => { destroy(); });
-      })
-      .onCancel(() => {
-        destroy();
-      });
-    subs.push(dialog.onClose.subscribe(() => {
-      destroy();
-    }));
-    dialog.history(
-      /* getInput */ (): PolyToolEnumerateChemSerialized => {
-        return {
-          mol: molInput.getMolFile(),
-          screenLibrary: screenLibraryInput.value,
-        };
-      },
-      /* applyInput */ (x: PolyToolEnumerateChemSerialized): void => {
-        molInput.setMolFile(x.mol);
-        screenLibraryInput.value = x.screenLibrary;
-      });
-    return dialog;
-  } catch (err: any) {
-    destroy();
     throw err;
   }
 }

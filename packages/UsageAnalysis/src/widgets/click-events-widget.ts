@@ -11,19 +11,20 @@ interface ClickRecord {
   time: dayjs.Dayjs;
 }
 
+const MAX_LOADED_EVENTS = 10_000;
+
 export class ClickEventsWidget extends DG.Widget {
   readonly ready: Promise<void>;
   pickModeCleanup: (() => void) | null = null;
 
   constructor() {
-    super(ui.div([], {style: {height: '100%'}}));
+    super(ui.div([], {style: {height: '100%', width: '100%'}}));
     this.ready = this._buildUI().then((content) => {
       this.root.replaceChildren(content);
     });
   }
 
   private async _buildUI(): Promise<HTMLElement> {
-    const PAGE_SIZE = 1000;
     const clickCountBySelector: Map<string, number> = new Map();
     const clickCountByElement: Map<Element, number> = new Map();
     let clickChronology: ClickRecord[] = [];
@@ -32,16 +33,32 @@ export class ClickEventsWidget extends DG.Widget {
     const table = DG.DataFrame.create(0, 'Click Events');
     table.columns.addNewString('description');
 
-    const userInput = ui.input.userGroups('User');
-    const newUsersChoiceInput = ui.input.choice<DG.User>('User', {items: [], nullable: true});
-    newUsersChoiceInput.root.style.display = 'none';
-    const newUsersOnlyInput = ui.input.bool('New users only', {value: false});
+    const userInput = ui.input.user('User', {tooltipText: 'User whose click activity to analyze'});
+    let newUsersCache: DG.User[] = [];
+    const newUsersTagsInput = ui.input.tags<DG.User>('User', {
+      tooltipText: 'Select specific new users to analyze; leave empty to show no data',
+      getSuggestions: async (text: string) => {
+        const lower = text.toLowerCase();
+        return newUsersCache.filter((u) => {
+          const name = (u.friendlyName ?? u.login ?? '').toLowerCase();
+          return !lower || name.includes(lower);
+        });
+      },
+    });
+    newUsersTagsInput.root.style.display = 'none';
+    const newUsersOnlyInput = ui.input.bool('New users only', {value: false, tooltipText: 'Filter to users who joined in the last 4 days'});
     const eventTypeInput = ui.input.choice('Event type', {
-      items: ['Clicks', 'Menu clicks', 'Dialogs', 'Inputs', 'Commands', 'All'],
+      items: ['Clicks', 'Menu clicks', 'Dialogs', 'Inputs', 'Commands', 'Drag & drop', 'All'],
       value: 'Clicks',
+      tooltipText: 'Type of platform interactions to analyze',
+    });
+    const dateRangeInput = ui.input.choice('Date range', {
+      items: ['Today', 'Last 7 days', 'Last 30 days', 'All time'],
+      value: 'Last 7 days',
+      tooltipText: 'Time window for loading historical data',
     });
     const chronologyModeInput = ui.input.bool('Latest events', {value: false, tooltipText: 'Show individual events sorted by time, newest first'});
-    const highlightZonesInput = ui.input.bool('Highlight zones', {value: false, tooltipText: 'Highlight clicks from different zones'});
+    const highlightZonesInput = ui.input.bool('Highlight zones', {value: false, tooltipText: 'Overlay color-coded highlights on UI elements showing their click frequency'});
 
     const eventTypeFilters: Record<string, string> = {
       'Clicks': 'eventType.name="click"',
@@ -49,7 +66,8 @@ export class ClickEventsWidget extends DG.Widget {
       'Dialogs': 'eventType.name in ("dialog show","dialog ok","dialog close")',
       'Inputs': 'eventType.name="input"',
       'Commands': 'eventType.name="command"',
-      'All': 'eventType.name in ("click","menu click","dialog show","dialog ok","dialog close","input","command","navigate")',
+      'Drag & drop': 'eventType.name in ("dragstart","drop","dock","undock")',
+      'All': 'eventType.name in ("click","menu click","dialog show","dialog ok","dialog close","input","command","navigate","dragstart","drop","dock","undock")',
     };
     const eventTypeAuditTypes: Record<string, string[]> = {
       'Clicks': ['click'],
@@ -57,23 +75,30 @@ export class ClickEventsWidget extends DG.Widget {
       'Dialogs': ['dialog show', 'dialog ok', 'dialog close'],
       'Inputs': ['input'],
       'Commands': ['command'],
-      'All': ['click', 'menu click', 'dialog show', 'dialog ok', 'dialog close', 'input', 'command', 'navigate'],
+      'Drag & drop': ['dragstart', 'drop', 'dock', 'undock'],
+      'All': ['click', 'menu click', 'dialog show', 'dialog ok', 'dialog close', 'input', 'command', 'navigate', 'dragstart', 'drop', 'dock', 'undock'],
     };
 
     const grid = DG.Viewer.grid(table);
     grid.root.style.width = '100%';
     grid.root.style.height = '100%';
     grid.root.style.position = 'absolute';
-    const gridWrapper = ui.div([grid.root], {style: {flex: '1', position: 'relative', overflow: 'hidden'}});
-    const lastClickDiv = ui.divV([ui.h3('Last clicked elements:')]);
-    lastClickDiv.style.minHeight = '150px';
+    const gridWrapper = ui.div([grid.root], {classes: 'clicks-grid-wrapper'});
+
+    const eventCountLabel = ui.div([], {classes: 'clicks-event-count'});
+    eventCountLabel.style.display = 'none';
+
+    const activityStreamLabel = ui.div(['Activity stream'], {classes: 'clicks-activity-label'});
+    const activityStreamEmpty = ui.div(['Interact with the platform to see events here'], {classes: 'clicks-activity-empty'});
+    const activityStreamDiv = ui.divV([activityStreamLabel, activityStreamEmpty]);
+    activityStreamDiv.classList.add('clicks-activity-stream');
 
     const createTable = () => {
       if (table.rowCount > 0)
         table.rows.removeAt(0, table.rowCount);
       const cols = table.columns.toList();
       cols.forEach((c) => table.columns.remove(c.name));
-      table.columns.addNewString('description');
+      table.columns.addNewString('element');
       if (chronologyModeInput.value)
         table.columns.addNewDateTime('time');
       else
@@ -81,9 +106,9 @@ export class ClickEventsWidget extends DG.Widget {
     };
     createTable();
 
-    const addDataRow = (path: string, options: { count?: number, time?: any } = {}) => {
+    const addDataRow = (path: string, options: { count?: number, time?: dayjs.Dayjs } = {}) => {
       const idx = table.rows.addNew().idx;
-      table.col('description')!.set(idx, path);
+      table.col('element')!.set(idx, path);
       const countCol = table.columns.byName('count');
       const timeCol = table.columns.byName('time');
       if (options.count != undefined && countCol)
@@ -111,21 +136,23 @@ export class ClickEventsWidget extends DG.Widget {
           grid.sort(['time'], [false]);
       }
       else {
-        clickCountBySelector.forEach((count, path) => {
-          addDataRow(path, {count});
-        });
+        clickCountBySelector.forEach((count, path) => addDataRow(path, {count}));
         if (table.rowCount > 0)
           grid.sort(['count'], [false]);
       }
 
       grid.columns.rowHeader!.width = grid.dataFrame.rowCount.toString().length * 8 + 12;
-      if (grid.col('description'))
-        grid.col('description')!.width = 260;
+      if (grid.col('element'))
+        grid.col('element')!.width = 260;
       if (grid.col('time')) {
         grid.col('time')!.format = 'yyyy-MM-dd HH:mm:ss';
         grid.col('time')!.width = 140;
       }
       table.fireValuesChanged();
+
+      const count = chronologyModeInput.value ? clickChronology.length : clickCountBySelector.size;
+      eventCountLabel.textContent = `${count} event${count !== 1 ? 's' : ''}`;
+      eventCountLabel.style.display = count > 0 ? '' : 'none';
     };
 
     const addZoneOverlay = (target: Element, color: string) => {
@@ -133,16 +160,12 @@ export class ClickEventsWidget extends DG.Widget {
       if (rect.width === 0 || rect.height === 0)
         return;
 
-      const overlay = document.createElement('div');
-      overlay.style.position = 'fixed';
+      const overlay = ui.div([], {classes: 'clicks-zone-overlay'});
       overlay.style.top = `${rect.top}px`;
       overlay.style.left = `${rect.left}px`;
       overlay.style.width = `${rect.width}px`;
       overlay.style.height = `${rect.height}px`;
-      overlay.style.zIndex = '2147483640';
-      overlay.style.pointerEvents = 'none';
       overlay.style.backgroundColor = color;
-      overlay.style.transition = 'opacity 0.2s';
 
       document.body.appendChild(overlay);
       activeZoneOverlays.push(overlay);
@@ -153,32 +176,77 @@ export class ClickEventsWidget extends DG.Widget {
       activeZoneOverlays = [];
     };
 
+    const updateHighlightZonesState = () => {
+      const available = !chronologyModeInput.value && eventTypeInput.value === 'Clicks';
+      highlightZonesInput.enabled = available;
+      highlightZonesInput.setTooltip(available ? 'Highlight elements by click frequency' : chronologyModeInput.value ?
+        'Not available in Latest events mode' : 'Only available for the Clicks event type');
+    };
+
+    const buildDateFilter = (): string => {
+      const fmt = (d: dayjs.Dayjs) => d.format('YYYY-MM-DDTHH:mm:ss');
+      const now = dayjs();
+      switch (dateRangeInput.value) {
+        case 'Today': return `eventTime >= "${fmt(now.startOf('day'))}"`;
+        case 'Last 7 days': return `eventTime >= "${fmt(now.subtract(7, 'day').startOf('day'))}"`;
+        case 'Last 30 days': return `eventTime >= "${fmt(now.subtract(30, 'day').startOf('day'))}"`;
+        default: return '';
+      }
+    };
+
+    const getActiveUsers = (): Array<DG.User | DG.Group> => {
+      if (newUsersOnlyInput.value)
+        return (newUsersTagsInput.value as unknown as DG.User[] | null) ?? [];
+      return (userInput.value as unknown as DG.Group[] | null) ?? [];
+    };
+
+    const toUserId = (u: DG.User | DG.Group): string => {
+      const groupUser = (u as DG.Group).user as unknown as DG.User | null;
+      return groupUser != null ? groupUser.id : u.id;
+    };
+
     const updateValues = async () => {
       clickCountBySelector.clear();
       clickCountByElement.clear();
       clickChronology = [];
       highlightZonesInput.value = false;
-      highlightZonesInput.enabled = !chronologyModeInput.value && eventTypeInput.value === 'Clicks';
+      updateHighlightZonesState();
 
-      const userGroups = userInput.value;
-      if (userGroups && userGroups.length > 0) {
+      const activeUsers = getActiveUsers();
+      const ids = activeUsers.map((u) => toUserId(u)).filter((id) => id.length > 0).map((id) => `"${id}"`).join(',');
+      if (ids) {
         ui.setUpdateIndicator(gridWrapper, true);
         try {
-          const ids = userGroups.map((ug: any) => `"${ug.user.id}"`).join(',');
           const eventFilter = eventTypeFilters[eventTypeInput.value ?? 'Clicks'];
-          const filter = `${eventFilter} && session.user.id in (${ids})`;
+          const dateFilter = buildDateFilter();
+          const filter = `${eventFilter} && session.user.id in (${ids})${dateFilter ? ' && ' + dateFilter : ''}`;
           const logEventList = await grok.dapi.log
             .filter(filter)
-            .list({pageSize: PAGE_SIZE});
-          logEventList.forEach((clickEvent: any) => {
-            if (!clickEvent.description || !clickEvent.description.trim())
-              return;
+            .order('eventTime', false)
+            .by(MAX_LOADED_EVENTS)
+            .list();
+          let minTime: dayjs.Dayjs | null = null;
+          let maxTime: dayjs.Dayjs | null = null;
+          for (const clickEvent of logEventList) {
+            if (!clickEvent.description?.trim())
+              continue;
+            if (!(clickEvent.session instanceof DG.UserSession))
+              continue;
             increment({
               userId: clickEvent.session.user.id,
               message: clickEvent.description,
               time: clickEvent.eventTime,
             });
-          });
+            if (minTime === null || clickEvent.eventTime.isBefore(minTime))
+              minTime = clickEvent.eventTime;
+            if (maxTime === null || clickEvent.eventTime.isAfter(maxTime))
+              maxTime = clickEvent.eventTime;
+          }
+          if (minTime !== null && maxTime !== null) {
+            const fmt = (d: dayjs.Dayjs) => d.format('MMM D, YYYY');
+            const rangeStr = minTime.isSame(maxTime, 'day') ? fmt(minTime) : `${fmt(minTime)} – ${fmt(maxTime)}`;
+            ui.tooltip.bind(eventCountLabel, rangeStr);
+          }
         } finally {
           ui.setUpdateIndicator(gridWrapper, false);
         }
@@ -202,38 +270,28 @@ export class ClickEventsWidget extends DG.Widget {
 
     newUsersOnlyInput.onChanged.subscribe(async () => {
       if (newUsersOnlyInput.value) {
-        userInput.value = [];
         const allUsers = await grok.dapi.users.order('joined', true).list();
         const cutoff = dayjs().subtract(4, 'day');
-        const newUsers = allUsers.filter((u: any) => u.joined && u.joined.isAfter(cutoff));
-        newUsersChoiceInput.items = newUsers;
-        if (newUsers.length > 0)
-          newUsersChoiceInput.value = newUsers[0];
+        newUsersCache = allUsers.filter((u) => u.joined && u.joined.isAfter(cutoff));
       }
       else {
-        newUsersChoiceInput.items = [];
-        newUsersChoiceInput.value = null;
+        newUsersCache = [];
         await setDefaultUser();
       }
       userInput.root.style.display = newUsersOnlyInput.value ? 'none' : '';
-      newUsersChoiceInput.root.style.display = newUsersOnlyInput.value ? '' : 'none';
+      newUsersTagsInput.root.style.display = newUsersOnlyInput.value ? '' : 'none';
+      await updateValues();
+      refresh();
     });
 
-    newUsersChoiceInput.onChanged.subscribe(async () => {
-      const selectedUser = newUsersChoiceInput.value;
-      if (!selectedUser)
-        userInput.value = [];
-      else {
-        const groups = await grok.dapi.groups.getGroupsLookup(selectedUser.login);
-        const personalGroup = groups.find((ug) => ug.personal);
-        if (personalGroup)
-          // @ts-ignore
-          userInput.value = [personalGroup];
-      }
-    });
+    this.subs.push(DG.debounce(merge(newUsersTagsInput.onChanged, newUsersTagsInput.onInput), 10).subscribe(async () => {
+      await updateValues();
+      refresh();
+    }));
 
     chronologyModeInput.onChanged.subscribe(async () => {
-      highlightZonesInput.enabled = !chronologyModeInput.value && eventTypeInput.value === 'Clicks';
+      updateHighlightZonesState();
+      activityStreamDiv.style.display = chronologyModeInput.value ? 'none' : '';
       await updateValues();
       createTable();
       refresh();
@@ -244,7 +302,12 @@ export class ClickEventsWidget extends DG.Widget {
         highlightZonesInput.value = false;
         clearZoneOverlays();
       }
-      highlightZonesInput.enabled = !chronologyModeInput.value && eventTypeInput.value === 'Clicks';
+      updateHighlightZonesState();
+      await updateValues();
+      refresh();
+    });
+
+    dateRangeInput.onChanged.subscribe(async () => {
       await updateValues();
       refresh();
     });
@@ -333,9 +396,8 @@ export class ClickEventsWidget extends DG.Widget {
       const auditTypes = eventTypeAuditTypes[eventTypeInput.value ?? 'Clicks'];
       if (msg.auditType && !auditTypes.includes(msg.auditType))
         return;
-      const userGroups = userInput.value;
       const currentUserId = grok.shell.user.id;
-      if (userGroups && userGroups.length > 0 && userGroups.some((ug: DG.User) => ug./*user.*/id === currentUserId)) {
+      if (getActiveUsers().some((u) => toUserId(u) === currentUserId)) {
         const record: ClickRecord = {
           userId: currentUserId,
           message: msg.message,
@@ -349,11 +411,11 @@ export class ClickEventsWidget extends DG.Widget {
         }
         else {
           let idx = -1;
-          const descCol = table.col('description');
+          const elemCol = table.col('element');
           const countCol = table.col('count');
-          if (descCol) {
+          if (elemCol) {
             for (let i = 0; i < table.rowCount; i++) {
-              if (descCol.get(i) === record.message) {
+              if (elemCol.get(i) === record.message) {
                 idx = i;
                 break;
               }
@@ -366,37 +428,47 @@ export class ClickEventsWidget extends DG.Widget {
           grid.sort(['count'], [false]);
         }
         table.fireValuesChanged();
+        const count = chronologyModeInput.value ? clickChronology.length : clickCountBySelector.size;
+        eventCountLabel.textContent = `${count} event${count !== 1 ? 's' : ''}`;
+        eventCountLabel.style.display = '';
       }
 
-      if (lastClickDiv.children.length > 5)
-        lastClickDiv.lastChild?.remove();
-      const entry = ui.divText(`${msg.message}`);
-      if (lastClickDiv.children.length > 0)
-        lastClickDiv.insertBefore(entry, lastClickDiv.children[1]);
+      const entry = ui.div([msg.message], {classes: 'clicks-activity-entry'});
+      activityStreamEmpty.style.display = 'none';
+      if (activityStreamDiv.children.length > 1)
+        activityStreamDiv.insertBefore(entry, activityStreamDiv.children[1]);
       else
-        lastClickDiv.appendChild(entry);
+        activityStreamDiv.appendChild(entry);
+      while (activityStreamDiv.children.length > 6)
+        activityStreamDiv.lastChild?.remove();
     }));
 
     const pickerIcon = ui.iconFA('crosshairs', undefined, 'Pick element to analyze usage');
-    pickerIcon.style.cursor = 'pointer';
-    const pickerRow = ui.divH([pickerIcon, ui.span(['Pick element'])], {
-      style: {alignItems: 'center', gap: '6px', padding: '2px 0 4px 0', cursor: 'pointer', fontSize: '12px'},
-    });
+    const pickerRow = ui.divH([pickerIcon, ui.span(['Pick element'])], {classes: 'clicks-picker-row'});
     pickerRow.addEventListener('click', (e) => {
       e.preventDefault();
       this.togglePicker(pickerIcon);
     });
 
-    const form = ui.form([userInput, newUsersChoiceInput, newUsersOnlyInput, eventTypeInput, chronologyModeInput, highlightZonesInput]);
-    form.style.flex = '0 0 auto';
-    lastClickDiv.style.flex = '0 0 auto';
+    const sectionLabel = (text: string) => ui.div([text], {classes: 'clicks-section-label'});
+
+    const filtersForm = ui.form([userInput, newUsersTagsInput, newUsersOnlyInput, eventTypeInput, dateRangeInput]);
+    filtersForm.classList.add('clicks-filters-form');
+
+    const viewRow = ui.divH([chronologyModeInput.root, highlightZonesInput.root], {classes: 'clicks-view-row'});
+
+    updateHighlightZonesState();
 
     return ui.divV([
-      form,
+      sectionLabel('Filters'),
+      filtersForm,
+      sectionLabel('View'),
+      viewRow,
       pickerRow,
+      eventCountLabel,
       gridWrapper,
-      lastClickDiv,
-    ], {classes: 'grok-inspector', style: {marginLeft: '12px', height: '100%'}});
+      activityStreamDiv,
+    ], {classes: 'grok-inspector clicks-widget'});
   }
 
   async showElementStats(selector: string) {
@@ -451,18 +523,12 @@ export class ClickEventsWidget extends DG.Widget {
     const drawHighlight = (target: HTMLElement) => {
       removeHighlight();
       const rect = target.getBoundingClientRect();
-      highlighter = document.createElement('div');
+      highlighter = ui.div([], {classes: 'clicks-pick-highlight'});
       Object.assign(highlighter.style, {
-        position: 'fixed',
         top: `${rect.top}px`,
         left: `${rect.left}px`,
         width: `${rect.width}px`,
         height: `${rect.height}px`,
-        zIndex: '2147483647',
-        pointerEvents: 'none',
-        boxSizing: 'border-box',
-        border: '2px solid rgba(50, 150, 255, 1)',
-        backgroundColor: 'rgba(50, 150, 255, 0.3)'
       });
       document.body.appendChild(highlighter);
     };

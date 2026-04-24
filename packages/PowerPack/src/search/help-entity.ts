@@ -12,7 +12,7 @@ export class HelpObjectHandler extends DG.ObjectHandler {
   }
 
   renderMarkup(x: HelpObject, context?: any): HTMLElement {
-    const icon = ui.icons.info(() => {});
+    const icon = ui.icons.info(() => {}, 'Info');
     const title = ui.label(x.title);
     const container = ui.divH([icon, title], {style: {alignItems: 'center'}});
     container.addEventListener('click', (e) => {

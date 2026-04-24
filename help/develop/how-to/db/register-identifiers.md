@@ -74,7 +74,7 @@ export class ChemblIdHandler extends DG.ObjectHandler {
 Then you need to register the handler in the `package.ts` file of your package, specifically in the function that autostarts the package:
 
 ```typescript
-//tags: init, autostart
+//meta.role: init, autostart
 export function init() {
   //Register handlers
   DG.ObjectHandler.register(new ChemblIdHandler());

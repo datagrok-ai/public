@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.27.0 (2026-04-09)
+
+* Engine based MSA
+
 ## 2.26.5 (2026-04-01)
 
 ### Features

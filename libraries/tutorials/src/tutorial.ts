@@ -282,7 +282,7 @@ export abstract class Tutorial extends DG.Widget {
       if (this.progress.value === this.steps)
         this.updateProgress(this.track);
       this.close();
-    });
+    }, 'Close');
 
     const linkIcon = ui.button(ui.iconFA('link'), () => {
       navigator.clipboard.writeText(this.url);

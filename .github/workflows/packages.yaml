@@ -359,14 +359,16 @@ jobs:
 
           # docker system prune -af --volumes
 
-          if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
-            DATAGROK_VERSION='latest'
-          else
-            DATAGROK_VERSION='bleeding-edge'
-            export GROK_SPAWNER_VERSION='bleeding-edge'
-            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
-          fi
+          # TODO: revert to 'latest' after next release (bleeding-edge needed for docker 'changed' status fix)
+          DATAGROK_VERSION='bleeding-edge'
+          # if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
+          #   DATAGROK_VERSION='latest'
+          # else
+          #   DATAGROK_VERSION='bleeding-edge'
+          # fi
           export DATAGROK_VERSION
+          export GROK_SPAWNER_VERSION="$DATAGROK_VERSION"
+          export GROK_JUPYTER_KERNEL_GATEWAY_VERSION="$DATAGROK_VERSION"
 
           # Skip initial setup in CI
           sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.docker-compose.yaml
@@ -449,7 +451,7 @@ jobs:
               count=0
               retries=5
               echo "Publishing $dep to ${{ steps.datagrok-image.outputs.alias }}..."
-              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
+              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release --skip-docker-rebuild; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))
@@ -531,12 +533,27 @@ jobs:
             else
               key='admin'
             fi
-            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+            for i in $(seq 1 30); do
+              token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+              if [[ "$token" != "null" && -n "$token" ]]; then
+                break
+              fi
+              echo "Token is null, retrying login ($i/30)..."
+              sleep 10
+            done
+            if [[ "$token" == "null" || -z "$token" ]]; then
+              echo "::error::Failed to obtain auth token after 30 retries"
+              exit 1
+            fi
             long_term_token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/sessions/current/refresh -H "Authorization: ${token}" | jq -r .token)
+            if [[ "$long_term_token" == "null" || -z "$long_term_token" ]]; then
+              echo "::warning::Failed to refresh token, falling back to short-lived token"
+              long_term_token="$token"
+            fi
             until .github/scripts/check-output.sh "curl -s -H 'Authorization: $long_term_token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
             do
-              docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all exec db psql -U postgres -d datagrok -c "SELECT * FROM docker_containers;"
-              .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+              docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all exec db psql -U postgres -d datagrok -c "SELECT * FROM docker_containers;" || true
+              .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}' || true
               sleep 1
               echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
               echo -e "\nRetrying '/api/docker/containers'..."

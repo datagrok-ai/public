@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {NOTATION, NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {BioTags, NOTATION, NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
@@ -17,7 +17,7 @@ import {getExternalAppViewFactories} from './plugins/mermade';
 import {defaultErrorHandler} from './utils/err-info';
 
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
-import {polyToolEnumerateChemUI} from './polytool/pt-dialog';
+import {polyToolEnumerateChemApp, polyToolEnumerateChemUI} from './polytool/pt-chem-enum-dialog';
 import {polyToolEnumerateHelmUI, polyToolEnumerateSeq} from './polytool/pt-enumerate-seq-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
@@ -276,6 +276,16 @@ export class PackageFunctions {
   }
 
 
+  @grok.decorators.func({
+    'top-menu': 'Chem | Transform | Reactions | Enumerate...',
+    'name': 'chemEnumerateReactions',
+    'description': 'Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)'
+  })
+  static async chemEnumerateReactionsTopMenu(): Promise<void> {
+    polyToolEnumerateChemUI();
+  }
+
+
   @grok.decorators.func()
   static async polyToolColumnChoice(
     @grok.decorators.param({options: {description: 'Input data table'}}) df: DG.DataFrame,
@@ -314,14 +324,15 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       icon: 'img/icons/structure.png',
-      browsePath: 'Peptides | PolyTool',
+      browsePath: 'Chem | PolyTool',
       role: 'app'
     },
     name: 'Chem Enumerator',
-    tags: ['app']
+    tags: ['app'],
+    outputs: [{type: 'view', name: 'result'}]
   })
-  static async ptEnumeratorChemApp(): Promise<void> {
-    polyToolEnumerateChemUI();
+  static async ptEnumeratorChemApp() {
+    return await polyToolEnumerateChemApp();
   }
 
 
@@ -397,6 +408,8 @@ export class PackageFunctions {
     col.setTag('alphabet', 'UN');
     col.setTag('.alphabetIsMultichar', 'true');
     col.meta.units = NOTATION.CUSTOM;
+    if (separator && !col.tags[BioTags.separator])
+      col.tags[BioTags.separator] = separator;
     col.tags[PolyToolTags.dataRole] = 'template';
     col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator, _package.helmHelper);
   }
