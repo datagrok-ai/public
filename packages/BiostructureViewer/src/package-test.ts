@@ -11,6 +11,7 @@ import './tests/ngl-gl-service-tests';
 import './tests/pdb-grid-cell-renderer-tests';
 import './tests/molstar-preview-tests';
 import './tests/molstar-viewer-tests';
+import './tests/binding-site-tests';
 // import './tests/viewers';
 import './tests/pdbqt-tests';
 import './tests/data-provider-tests';
