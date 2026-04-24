@@ -17,7 +17,7 @@
 
 ## Folder Summary
 
-**Total**: 177 tests · Run: 136/177 (77%) · Playwright: 120/177 (68%) · Mean Pass: 🟡 81% · Mean Browser: 3m 33s · Mean Spec Gen: 54.4s · Mean Spec Run: 45.4s · Mean Total (sum per test): 4m 49s
+**Total**: 177 tests · Run: 136/177 (77%) · Playwright: 125/177 (71%) · Mean Pass: 🟡 81% · Mean Browser: 3m 32s · Mean Spec Gen: 54.1s · Mean Spec Run: 45s · Mean Total (sum per test): 4m 48s
 
 | Folder | Tests | Run | Playwright | Status | Mean Pass % | Mean Browser | Mean Spec Gen | Mean Spec Run | Mean Total |
 |---|---|---|---|---|---|---|---|---|---|
@@ -37,7 +37,7 @@
 | PowerPack | 9 | 9/9 (100%) | 9/9 (100%) | 🟡 PARTIAL | 🟢 97% | 5m 16s | 1m 9s | 29.8s | 6m 54s |
 | Projects | 8 | 8/8 (100%) | 4/8 (50%) | 🟡 PARTIAL | 🟡 38% |  |  |  |  |
 | Queries | 14 | 0/14 (0%) | 0/14 (0%) | ⚪ NO DATA |  |  |  |  |  |
-| Scripts | 6 | 5/6 (83%) | 0/6 (0%) | 🟡 PARTIAL | 🟡 90% |  |  |  |  |
+| Scripts | 6 | 5/6 (83%) | 5/6 (83%) | 🟡 PARTIAL | 🟡 87% | 1m 17s | 25s | 16s | 1m 58s |
 | StickyMeta | 4 | 4/4 (100%) | 4/4 (100%) | 🟡 PARTIAL | 🟡 77% | 5m 45s | 1m 26s | 56.2s | 8m 8s |
 | Tooltips | 7 | 0/7 (0%) | 0/7 (0%) | ⚪ NO DATA |  |  |  |  |  |
 | Viewers | 46 | 44/46 (96%) | 44/46 (96%) | 🟡 PARTIAL | 🟡 92% | 4m 8s | 52.3s | 48.6s | 4m 42s |
@@ -45,7 +45,7 @@
 
 ## All Tests
 
-**Total**: 177 tests · 🟢 74 PASS / 🟡 47 PARTIAL / 🔴 11 FAIL / 🟡 4 SKIP / ⚪ 41 NO RUN · Mean Pass: 🟡 81% · Mean Browser: 3m 33s · Mean Spec Gen: 54.4s · Mean Spec Run: 45.4s · Mean Total (sum per test): 4m 49s
+**Total**: 177 tests · 🟢 74 PASS / 🟡 47 PARTIAL / 🔴 11 FAIL / 🟡 4 SKIP / ⚪ 41 NO RUN · Mean Pass: 🟡 81% · Mean Browser: 3m 32s · Mean Spec Gen: 54.1s · Mean Spec Run: 45s · Mean Total (sum per test): 4m 48s
 
 | Folder | Test | Status | Pass % | Description | Browser (model+MCP) | Spec Gen (model) | Spec Run (Playwright) | Total (sum) | Pass Δ (1d) | Pass Δ (7d) | Trend (≤7d) | Browser Δ | Spec Gen Δ | Spec Run Δ | Total Δ |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -171,7 +171,7 @@
 | Queries | query-postprocessing | ⚪ NO RUN → NO RUN |  |  |  |  |  |  | — | — | — | — | — | — | — |
 | Queries | transformations | ⚪ NO RUN → NO RUN |  |  |  |  |  |  | — | — | — | — | — | — | — |
 | Queries | visual-query-advanced | ⚪ NO RUN → NO RUN |  |  |  |  |  |  | — | — | — | — | — | — | — |
-| Scripts | [browser](Scripts/browser-run.md) | 🟢 PASS → PASS | 🟡 89% (8/9) | The Scripts Browser scenario passed well. The context pane shows all expected accordions (Details, Script, Run, Activ… |  |  |  |  | ⚪ +0% (8/9 → 8/9) | 🟡 89% · status unchanged (PASS) | ⚪ 89·89·89 | — | — | — | — |
+| Scripts | [browser](Scripts/browser-run.md) | 🟢 PASS → PASS | 🟡 78% (7/9) | Browser scenario passed in the MCP session — all accordions (Details, Script, Run, Activity, Sharing, Chats, Dev) ren… | 1m 17s | 25s | 16s | 1m 58s | 🔴 -11% (8/9 → 7/9) | 🟡 78% · status unchanged (PASS) | 🔴 89·89·78 | 🟡 1m 17s (new) | 🟡 25s (new) | 🟡 16s (new) | 🟡 1m 58s (new) |
 | Scripts | [create](Scripts/create-run.md) | 🟡 PARTIAL → PARTIAL | 🟡 92% (10/12) | The Create scenario completed successfully overall. The script `testRscript` was created, parameters configured, save… |  |  |  |  | ⚪ +0% (10/12 → 10/12) | 🟡 92% · status unchanged (PARTIAL) | ⚪ 92·92·92 | — | — | — | — |
 | Scripts | [delete](Scripts/delete-run.md) | 🟢 PASS → PASS | 🟢 100% (5/5) | All 5 steps passed. The delete flow works correctly with a confirmation dialog and immediate removal from the scripts… |  |  |  |  | ⚪ +0% (5/5 → 5/5) | 🟢 100% · status unchanged (PASS) | ⚪ 100·100·100 | — | — | — | — |
 | Scripts | [edit](Scripts/edit-run.md) | 🟢 PASS → PASS | 🟢 100% (6/6) | All 6 steps passed. The Edit scenario works correctly — edits are saved persistently and visible on re-open. |  |  |  |  | ⚪ +0% (6/6 → 6/6) | 🟢 100% · status unchanged (PASS) | ⚪ 100·100·100 | — | — | — | — |
@@ -269,7 +269,7 @@ _7d comparison: prev7d (2026-04-15) predates the Pass % / timing columns, so onl
 | PowerPack | +0 | 🟡 PARTIAL | ⚪ +0% | ⚪ +0s | ⚪ +0s | ⚪ +0s | ⚪ +0s |
 | Projects | +0 | 🟡 PARTIAL | ⚪ +0% | — | — | — | — |
 | Queries | +0 | ⚪ NO DATA | — | — | — | — | — |
-| Scripts | +0 | 🟡 PARTIAL | ⚪ +0% | — | — | — | — |
+| Scripts | +0 | 🟡 PARTIAL | 🔴 -2% | 🟡 1m 17s (new) | 🟡 25s (new) | 🟡 16s (new) | 🟡 1m 58s (new) |
 | StickyMeta | +0 | 🟡 PARTIAL | 🟢 +10% | 🔴 +5m 22s | 🔴 +1m 24s | 🔴 +41.2s | 🔴 +7m 30s |
 | Tooltips | +0 | ⚪ NO DATA | — | — | — | — | — |
 | Viewers | +0 | 🟡 PARTIAL | ⚪ +0% | 🟢 -2m 3s | 🟢 -24.7s | 🟢 -3.6s | 🟢 -3m 10s |
@@ -339,6 +339,7 @@ _7d comparison: prev7d (2026-04-15) predates the Pass % / timing columns, so onl
 | Projects | projects-copy_clone | 🟡 removed: SKIP | — | — | — | — | — | — | — |
 | Projects | [uploading](Projects/uploading-run.md) | 🟡 PARTIAL → PARTIAL | ⚪ +0% (8/14 → 8/14) | 🟡 57% · status unchanged (PARTIAL) | ⚪ 57·57·57 | — | — | — | — |
 | Queries | browse-&-save-project | ⚪ removed: NO RUN | — | — | — | — | — | — | — |
+| Scripts | [browser](Scripts/browser-run.md) | 🟢 PASS → PASS | 🔴 -11% (8/9 → 7/9) | 🟡 78% · status unchanged (PASS) | 🔴 89·89·78 | 🟡 1m 17s (new) | 🟡 25s (new) | 🟡 16s (new) | 🟡 1m 58s (new) |
 | Scripts | [create](Scripts/create-run.md) | 🟡 PARTIAL → PARTIAL | ⚪ +0% (10/12 → 10/12) | 🟡 92% · status unchanged (PARTIAL) | ⚪ 92·92·92 | — | — | — | — |
 | Scripts | [run](Scripts/run-run.md) | 🟡 PARTIAL → PARTIAL | ⚪ +0% (6/9 → 6/9) | 🟡 67% · status unchanged (PARTIAL) | ⚪ 67·67·67 | — | — | — | — |
 | StickyMeta | [add-and-edit](StickyMeta/add-and-edit-run.md) | 🟢 PASS → PASS | ⚪ +0% (5/5 → 9/9) | 🟢 100% · status unchanged (PASS) | ⚪ 100·100·100 | 🔴 +4m 36s | 🔴 +57s | 🔴 +27s | 🔴 +6m |
