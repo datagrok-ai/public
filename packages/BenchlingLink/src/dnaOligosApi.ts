@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { dataFrameFromObjects } from './utils';
+import { dataFrameFromObjects, randomDnaSequence } from './utils';
 import { UserSummary, ArchiveRecord } from './types';
 
 export interface DnaAnnotation {
@@ -82,14 +82,6 @@ export interface DnaOligoCreateRequest {
   folderId?: string;
   schemaId?: string;
   helm?: string;
-}
-
-function randomDnaSequence(length: number): string {
-  const dna = 'ATGC';
-  let seq = '';
-  for (let i = 0; i < length; i++)
-    seq += dna[Math.floor(Math.random() * dna.length)];
-  return seq;
 }
 
 export const mockDnaOligos: DnaOligosPaginatedList = {

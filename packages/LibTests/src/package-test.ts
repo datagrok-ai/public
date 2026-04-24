@@ -14,6 +14,7 @@ import './tests/compute-utils/reactive-tree-driver/links-matching';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-data';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-validators';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-meta';
+import './tests/compute-utils/reactive-tree-driver/links-batching';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-actions';
 import './tests/compute-utils/reactive-tree-driver/instance-additional';
 import './tests/compute-utils/reactive-tree-driver/funcall-wrappers';
@@ -28,6 +29,8 @@ import './tests/compute-utils/reactive-tree-driver/links-retention';
 import './tests/compute-utils/reactive-tree-driver/structurecheck-hook';
 import './tests/compute-utils/reactive-tree-driver/pipeline-granular-mutations';
 import './tests/compute-utils/reactive-tree-driver/error-handling';
+import './tests/compute-utils/reactive-tree-driver/advanced-coverage';
+import './tests/compute-utils/reactive-tree-driver/buffer-keys-during-lock';
 
 export const _package = new DG.Package();
 export {tests};

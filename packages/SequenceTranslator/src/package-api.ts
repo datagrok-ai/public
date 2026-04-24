@@ -102,6 +102,13 @@ export namespace funcs {
     return await grok.functions.call('SequenceTranslator:PolyToolEnumerateChemTopMenu', {});
   }
 
+  /**
+  Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)
+  */
+  export async function chemEnumerateReactionsTopMenu(): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:ChemEnumerateReactionsTopMenu', {});
+  }
+
   export async function polyToolColumnChoice(df: DG.DataFrame , macroMolecule: DG.Column ): Promise<void> {
     return await grok.functions.call('SequenceTranslator:PolyToolColumnChoice', { df, macroMolecule });
   }
@@ -114,7 +121,7 @@ export namespace funcs {
     return await grok.functions.call('SequenceTranslator:PtEnumeratorHelmApp', {});
   }
 
-  export async function ptEnumeratorChemApp(): Promise<void> {
+  export async function ptEnumeratorChemApp(): Promise<DG.View> {
     return await grok.functions.call('SequenceTranslator:PtEnumeratorChemApp', {});
   }
 

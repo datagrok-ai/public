@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { BaseConditionEditor, ConditionRegistry, Operators, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
@@ -20,8 +19,6 @@ editor.options[SUGGESTIONS_FUNCTION] = getUsersSuggestions;
 editor.friendlyName = 'Editor';
 
 export const structure = DG.Property.create('Structure', DG.TYPE.STRING, (x: any) => x, (x: any, v) => x = v);
-//export const id = DG.Property.create('Id_float', DG.TYPE.FLOAT, (x: any) => x, (x: any, v) => x = v);
-//export const idInt = DG.Property.create('Id_int', DG.TYPE.INT, (x: any) => x, (x: any, v) => x = v);
 structure.semType = DG.SEMTYPE.MOLECULE;
 
 export function getDefaultProperties(): DG.Property[] {

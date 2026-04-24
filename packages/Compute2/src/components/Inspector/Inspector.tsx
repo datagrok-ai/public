@@ -11,10 +11,12 @@ import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import {LinksData} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {MatchedNodePaths} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/link-matching';
+import {formatNodePath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallStateInfo, ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {LinkIOParsed, LinkSelectorSegment, LinkTagSegment} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/LinkSpec';
 import {BehaviorSubject} from 'rxjs';
+import {FilterDropdown, FilterOption} from './FilterDropdown';
 
 interface StepStates {
   calls: Record<string, FuncCallStateInfo | undefined>;
@@ -80,12 +82,8 @@ function linkIOArrayToStrings(ios: LinkIOParsed[] | undefined): string | string[
 /** Convert a MatchedNodePaths record to readable path strings. */
 function matchedPathsToStrings(paths: Record<string, MatchedNodePaths>): Record<string, string[]> {
   const result: Record<string, string[]> = {};
-  for (const [name, matched] of Object.entries(paths)) {
-    result[name] = matched.map((m) => {
-      const pathStr = m.path.map((seg) => `[${seg.idx}]${seg.id}`).join('/');
-      return m.ioName ? `${pathStr} (${m.ioName})` : pathStr;
-    });
-  }
+  for (const [name, matched] of Object.entries(paths))
+    result[name] = matched.map((m) => formatNodePath(m.path, m.ioName));
   return result;
 }
 
@@ -134,28 +132,6 @@ function humanizeConfig(data: any): any {
     }
   }
   return result;
-}
-
-/** Check if any key or string value in a nested structure matches the query (case-insensitive). */
-function deepContains(data: any, q: string): boolean {
-  if (data == null) return false;
-  if (typeof data === 'string') return data.toLowerCase().includes(q);
-  if (typeof data === 'number' || typeof data === 'boolean') return String(data).toLowerCase().includes(q);
-  if (Array.isArray(data)) return data.some((item) => deepContains(item, q));
-  if (typeof data === 'object')
-    return Object.entries(data).some(([k, v]) => k.toLowerCase().includes(q) || deepContains(v, q));
-  return false;
-}
-
-/** Filter data by query. Arrays: keep/drop entire items. Objects: keep/drop entire object. */
-function filterByQuery(data: any, query: string): any {
-  if (data == null) return undefined;
-  const q = query.toLowerCase();
-  if (Array.isArray(data)) {
-    const filtered = data.filter((item) => deepContains(item, q));
-    return filtered.length > 0 ? filtered : undefined;
-  }
-  return deepContains(data, q) ? data : undefined;
 }
 
 // ---- Tab-specific data builders ----
@@ -278,44 +254,90 @@ export const Inspector = Vue.defineComponent({
   },
   setup(props) {
     const selectedTab = Vue.ref('Log');
-    const filterQuery = Vue.ref('');
-    const selectedStepOnly = Vue.ref(false);
-
-    const linkIds = Vue.computed(() => {
-      const items = (props.links ?? []).map((link) => link.matchInfo.spec.id);
-      return [...new Set(items)].sort();
-    });
+    const linksFilterSelection = Vue.ref<string[]>([]);
+    const stepsFilterSelection = Vue.ref<string[]>([]);
 
     const linksData = Vue.computed(() =>
       buildLinksData(props.links ?? [], props.config));
 
+    // --- Filter options per tab ---
+
+    const linkFilterOptions = Vue.computed<FilterOption[]>(() => {
+      const seen = new Set<string>();
+      return linksData.value.filter((l) => {
+        if (seen.has(l.id)) return false;
+        seen.add(l.id);
+        return true;
+      }).map((l) => ({
+        value: l.id,
+        label: l.id,
+        detail: l.type ?? 'data',
+      }));
+    });
+
+    const collectSteps = (state: PipelineState): FilterOption[] => {
+      const result: FilterOption[] = [];
+      const walk = (node: PipelineState) => {
+        result.push({
+          value: node.uuid,
+          label: node.configId,
+          detail: node.friendlyName && node.friendlyName !== node.configId ? node.friendlyName : node.type,
+        });
+        if (!isFuncCallState(node)) {
+          for (const step of node.steps)
+            walk(step);
+        }
+      };
+      walk(state);
+      return result;
+    };
+
+    const stepFilterOptions = Vue.computed<FilterOption[]>(() =>
+      props.treeState ? collectSteps(props.treeState) : []);
+
+    // --- Filtered data ---
+
     const handleLinkClicked = (linkId: string) => {
-      filterQuery.value = linkId;
+      linksFilterSelection.value = [linkId];
       selectedTab.value = 'Links';
     };
 
-    const applyFilter = (data: any) => {
-      if (!filterQuery.value.trim()) return data;
-      return filterByQuery(data, filterQuery.value.trim()) ?? {};
-    };
-
     const filteredLinks = Vue.computed(() => {
-      const q = filterQuery.value.trim().toLowerCase();
-      if (!q) return linksData.value;
-      return linksData.value.filter((l: any) =>
-        l.id?.toLowerCase().includes(q) ||
-        l.uuid?.toLowerCase().includes(q) ||
-        l.type?.toLowerCase().includes(q));
+      if (!linksFilterSelection.value.length) return linksData.value;
+      const sel = new Set(linksFilterSelection.value);
+      return linksData.value.filter((l: any) => sel.has(l.id));
     });
 
-    const showFilter = Vue.computed(() => selectedTab.value !== 'Log');
-    const showSelectedStep = Vue.computed(() =>
-      selectedTab.value === 'Tree State' || selectedTab.value === 'Config');
+    const filterTreeState = (state: PipelineState, uuids: Set<string>): any => {
+      if (uuids.has(state.uuid))
+        return state;
+      if (!isFuncCallState(state)) {
+        const filtered = state.steps
+          .map((s) => filterTreeState(s, uuids))
+          .filter((s) => s != null);
+        if (filtered.length > 0)
+          return {...state, steps: filtered};
+      }
+      return undefined;
+    };
+
+    const filteredTreeState = Vue.computed(() => {
+      if (!props.treeState) return undefined;
+      if (!stepsFilterSelection.value.length) return props.treeState;
+      return filterTreeState(props.treeState, new Set(stepsFilterSelection.value)) ?? props.treeState;
+    });
+
+    const filteredConfig = Vue.computed(() => {
+      if (!props.config) return undefined;
+      if (!stepsFilterSelection.value.length) return props.config;
+      // For config, reuse selected step data when a single step is selected
+      if (stepsFilterSelection.value.length === 1)
+        return buildSelectedStepData(stepsFilterSelection.value[0], props.treeState, props.stepStates) ?? props.config;
+      return props.config;
+    });
 
     const height = 'calc(100% - 20px)';
     const sectionStyle = {height, display: 'flex', flexDirection: 'column' as const};
-    const checkboxStyle = {display: 'flex', alignItems: 'center', gap: '3px', fontSize: '12px', whiteSpace: 'nowrap' as const};
-    const filterBarStyle = {display: 'flex', flex: 1, alignItems: 'center', gap: '2px', minWidth: '100px'};
 
     const lastVisibleIdx = Vue.ref(0);
     return () => (
@@ -327,27 +349,21 @@ export const Inspector = Vue.defineComponent({
             <option>Links</option>
             <option>Config</option>
           </select>
-          { showSelectedStep.value &&
-            <label style={checkboxStyle}>
-              <input type='checkbox' v-model={selectedStepOnly.value} />
-              Selected step
-            </label>
+          { selectedTab.value === 'Links' &&
+            <FilterDropdown
+              options={linkFilterOptions.value}
+              modelValue={linksFilterSelection.value}
+              onUpdate:modelValue={(v: string[]) => linksFilterSelection.value = v}
+              placeholder='all links'
+            />
           }
-          { showFilter.value &&
-            <div style={filterBarStyle}>
-              <input
-                type='text'
-                placeholder='Filter...'
-                v-model={filterQuery.value}
-                style={{flex: 1, padding: '2px 4px', fontSize: '12px'}}
-              />
-              { filterQuery.value &&
-                <span
-                  style={{cursor: 'pointer', color: 'var(--red-3)', padding: '0 4px', fontSize: '14px'}}
-                  onClick={() => filterQuery.value = ''}
-                >&times;</span>
-              }
-            </div>
+          { (selectedTab.value === 'Tree State' || selectedTab.value === 'Config') &&
+            <FilterDropdown
+              options={stepFilterOptions.value}
+              modelValue={stepsFilterSelection.value}
+              onUpdate:modelValue={(v: string[]) => stepsFilterSelection.value = v}
+              placeholder='all steps'
+            />
           }
         </div>
         { selectedTab.value === 'Log' && props.logs &&
@@ -357,7 +373,7 @@ export const Inspector = Vue.defineComponent({
               <Button onClick={() => lastVisibleIdx.value = props.logs?.length ?? 0}>Hide Current</Button>
             </div>
             <Logger
-              linkIds={linkIds.value}
+              linkFilterOptions={linkFilterOptions.value}
               logs={props.logs.slice(lastVisibleIdx.value)}
               onLinkClicked={handleLinkClicked}
             ></Logger>
@@ -365,11 +381,7 @@ export const Inspector = Vue.defineComponent({
         }
         { selectedTab.value === 'Tree State' && props.treeState &&
           <div style={{...sectionStyle, overflow: 'scroll'}}>
-            <VueJsonPretty deep={4} showLength={true} data={applyFilter(toJSON(
-              selectedStepOnly.value
-                ? buildSelectedStepData(props.selectedUuid, props.treeState, props.stepStates)
-                : props.treeState,
-            ))}></VueJsonPretty>
+            <VueJsonPretty deep={4} showLength={true} data={toJSON(filteredTreeState.value)}></VueJsonPretty>
           </div>
         }
         { selectedTab.value === 'Links' && props.links &&
@@ -379,11 +391,7 @@ export const Inspector = Vue.defineComponent({
         }
         { selectedTab.value === 'Config' && props.config &&
           <div style={{...sectionStyle, overflow: 'scroll'}}>
-            <VueJsonPretty deep={4} showLength={true} data={applyFilter(humanizeConfig(toJSON(
-              selectedStepOnly.value
-                ? buildSelectedStepData(props.selectedUuid, props.treeState, props.stepStates)
-                : props.config,
-            )))}></VueJsonPretty>
+            <VueJsonPretty deep={4} showLength={true} data={humanizeConfig(toJSON(filteredConfig.value))}></VueJsonPretty>
           </div>
         }
       </div>

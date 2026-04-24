@@ -13,8 +13,18 @@ export function createPathsTreeTabs(paths: Tree[], pathsObjects: {[key: string]:
   isHorizontal: boolean = true): DG.TabControl {
   const tabControl = ui.tabControl();
 
+  const nameCounts: {[key: string]: number} = {};
   for (let i = 0; i < paths.length; i++) {
-    const pane = tabControl.addPane(paths[i].scores['state score'].toFixed(3),
+    const baseName = paths[i].scores['state score'].toFixed(3);
+    nameCounts[baseName] = (nameCounts[baseName] ?? 0) + 1;
+  }
+  const seenCounts: {[key: string]: number} = {};
+
+  for (let i = 0; i < paths.length; i++) {
+    const baseName = paths[i].scores['state score'].toFixed(3);
+    seenCounts[baseName] = (seenCounts[baseName] ?? 0) + 1;
+    const tabName = nameCounts[baseName] > 1 ? `${baseName} (${seenCounts[baseName]})` : baseName;
+    const pane = tabControl.addPane(tabName,
       () => {
         const pathObject = buildNestedStructure(paths[i]);
         pathsObjects[`${i}`] = processNestedStructure(pathObject, [], 0);

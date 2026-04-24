@@ -415,6 +415,7 @@ export class StaticPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       actions,
+      isActionStep: this.config.isActionStep || undefined,
     };
   }
 

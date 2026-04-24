@@ -1,5 +1,5 @@
 // Types for DNA Sequences API
-import { dataFrameFromObjects } from './utils';
+import { dataFrameFromObjects, randomDnaSequence } from './utils';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 export interface DnaSequence {
@@ -27,6 +27,11 @@ export interface DnaSequence {
   translations?: any[];
   webURL?: string;
 }
+export interface DnaSequencesPaginatedList {
+  dnaSequences: DnaSequence[];
+  nextToken?: string;
+}
+
 export interface DNASequencesQueryParams {
   pageSize?: number;
   nextToken?: string;
@@ -76,6 +81,7 @@ export async function queryDNASequences(params: DNASequencesQueryParams = {}): P
 export interface DnaSequenceCreateRequest {
   name: string;
   bases: string;
+  isCircular: boolean;
   aliases?: string[];
   annotations?: any[];
   authorIds?: string[];
@@ -105,18 +111,10 @@ export async function postDNASequence(body: DnaSequenceCreateRequest): Promise<D
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
   // return data;
-  return mockDnaSequences.dnaSequences[0] as DnaSequence;
+  return mockDnaSequences.dnaSequences[0];
 }
 
-function randomDnaSequence(length: number): string {
-  const dna = 'ATGC';
-  let seq = '';
-  for (let i = 0; i < length; i++)
-    seq += dna[Math.floor(Math.random() * dna.length)];
-  return seq;
-}
-
-export const mockDnaSequences = {
+export const mockDnaSequences: DnaSequencesPaginatedList = {
   dnaSequences: [
     ...Array.from({length: 100}, (_, i) => {
       const len = 20 + Math.floor(Math.random() * 81); // 20-100

@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import * as YAML from 'yaml';
 import {runWithContext, request} from './shared-api-client';
 import {resolveHomeConnection, syncHomeFiles} from './sync-home-files';
 import {syncPackages} from './sync-packages';
@@ -232,13 +233,13 @@ async function doSync(
 
 // ── Package index generation ──────────────────────────────────────────
 
-const KNOWLEDGE_FILE = 'package-knowledge.json';
+const KNOWLEDGE_FILE = 'package-knowledge.yaml';
 
 interface PackageKnowledge {
   packageName: string;
   description: string;
   keywords: string[];
-  overview?: string | string[];
+  overview?: string;
   apiRef?: string;
   docsRef?: string;
 }
@@ -259,7 +260,7 @@ export async function generatePackageIndex(): Promise<string | null> {
       const knowledgePath = path.join(packagesDir, entry.name, 'agents', KNOWLEDGE_FILE);
       try {
         const raw = await fs.readFile(knowledgePath, 'utf-8');
-        const parsed = JSON.parse(raw) as PackageKnowledge;
+        const parsed = YAML.parse(raw) as PackageKnowledge;
         if (parsed.packageName && parsed.description)
           packages.push(parsed);
         else
@@ -280,7 +281,7 @@ export async function generatePackageIndex(): Promise<string | null> {
   packages.sort((a, b) => a.packageName.localeCompare(b.packageName));
 
   let md = 'IMPORTANT: Before searching or grepping the codebase, ALWAYS check this table first.\n' +
-    'If a package looks relevant, read its `agents/package-knowledge.json` for full details.\n' +
+    'If a package looks relevant, read its `agents/package-knowledge.yaml` for full details.\n' +
     'Only fall back to code search if no package here matches the user\'s question.\n\n';
   md += '| Package | Description | Keywords |\n';
   md += '|---------|-------------|----------|\n';

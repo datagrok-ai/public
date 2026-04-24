@@ -5,12 +5,12 @@ import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
-import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity} from 'rxjs';
+import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity, EMPTY, asapScheduler} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap, finalize} from 'rxjs/operators';
 import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
 import {ViewAction} from '../config/PipelineInstance';
-import {calculateStepsDependencies, calculateIoDependencies, createDefaultValidators, DependenciesData, IoDeps} from './LinksDependencies';
+import {calculateStepsDependencies, calculateIoDependencies, createDefaultValidators, DependenciesData, IoDeps} from './links-dependencies';
 
 export interface LinksData {
   uuid: string;
@@ -34,15 +34,37 @@ export class LinksState {
 
   public runningLinks$ = new BehaviorSubject<undefined | string[]>(undefined);
   public forceInitialMetaRun = false;
+  public batchLinks: boolean;
+
+  private batchPending = new Set<string>();
+  private batchTrigger$ = new Subject<void>();
 
   constructor(
     private defaultValidators: boolean = false,
     private logger?: DriverLogger,
+    batchLinks: boolean = false,
   ) {
+    this.batchLinks = batchLinks;
+
     this.linksUpdates.pipe(
       switchMap(() => this.getRunningLinks()),
       takeUntil(this.closed$),
     ).subscribe(this.runningLinks$);
+
+    this.batchTrigger$.pipe(
+      debounceTime(0, asapScheduler),
+      takeUntil(this.closed$),
+    ).subscribe(() => {
+      const pending = [...this.batchPending];
+      this.batchPending.clear();
+      for (const uuid of pending)
+        this.links.get(uuid)?.trigger();
+    });
+  }
+
+  public scheduleBatch(linkUUID: string) {
+    this.batchPending.add(linkUUID);
+    this.batchTrigger$.next();
   }
 
   public update(state: BaseTree<StateTreeNode>, isMutation: boolean) {
@@ -79,7 +101,7 @@ export class LinksState {
         of(this.wireLinks(state)),
         this.runNewInits(state),
         this.runLinks(state, initLinks, false),
-        (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
+        (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0, asapScheduler), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
       ).pipe(toArray(), mapTo(undefined));
     }
   }
@@ -157,7 +179,11 @@ export class LinksState {
           .filter((x) => !!x)
           .flat();
         const links = matchedLinks.map((minfo) => {
-          const link = new Link(path, minfo, undefined, this.logger);
+          const spec = minfo.spec;
+          const debounce = spec.type === 'validator'
+            ? (spec.debounce ?? (this.batchLinks ? 0 : undefined))
+            : undefined;
+          const link = new Link(path, minfo, debounce, this.logger);
           return link;
         });
         return [...acc, ...links];
@@ -187,7 +213,10 @@ export class LinksState {
 
   public runLinks(state: BaseTree<StateTreeNode>, links: Map<string, Link>, isMeta: boolean) {
     const scheduledLinks = new Set<string>();
-    const obs = state.traverse(state.root, (acc, node) => {
+    const batchableLinks: Link[] = [];
+    const sequentialObs: Observable<undefined>[] = [];
+
+    state.traverse(state.root, (_acc, node) => {
       const item = node.getItem();
       const deps = this.stepsDependencies.get(item.uuid);
       const toRunLinks = [...(deps?.links ?? [])]
@@ -200,27 +229,50 @@ export class LinksState {
         const l2 = links.get(b)!;
         return (l2.matchInfo.spec.nodePriority ?? 0) - (l1.matchInfo.spec.nodePriority ?? 0);
       });
-      const linkRuns = priorityOrderedLinks.map((linkUUID) => {
+
+      for (const linkUUID of priorityOrderedLinks) {
         scheduledLinks.add(linkUUID);
-        return combineLatest([
-          this.runningLinks$,
-          this.getLinkRunObs(linkUUID),
-        ]).pipe(
-          isMeta ? identity : debounceTime(0),
-          filter(([running]) => !running || running.length === 0),
-          take(1),
-          mapTo(undefined),
-        );
-      });
-      return [...acc, ...linkRuns];
-    }, [] as Observable<undefined>[]);
-    return concat(...obs);
+        const link = links.get(linkUUID)!;
+        if (this.batchLinks && link.isBatchable) {
+          batchableLinks.push(link);
+        } else {
+          sequentialObs.push(
+            combineLatest([
+              this.runningLinks$,
+              this.getLinkRunObs(linkUUID),
+            ]).pipe(
+              isMeta ? identity : debounceTime(0, asapScheduler),
+              filter(([running]) => !running || running.length === 0),
+              take(1),
+              mapTo(undefined),
+            ),
+          );
+        }
+      }
+      return _acc;
+    }, undefined as void);
+
+    const batchObs = this.runLinksBatched(batchableLinks);
+    return concat(batchObs, ...sequentialObs);
+  }
+
+  private runLinksBatched(links: Link[]) {
+    if (links.length === 0) return EMPTY;
+    return defer(() => {
+      for (const link of links)
+        link.trigger();
+      return this.runningLinks$.pipe(
+        filter((x) => !x || x.length === 0),
+        take(1),
+        mapTo(undefined),
+      );
+    });
   }
 
   public waitForLinks() {
     return this.runningLinks$.pipe(
       filter((links) => links == null || links?.length === 0),
-      debounceTime(0),
+      debounceTime(0, asapScheduler),
       take(1),
     );
   }

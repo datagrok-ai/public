@@ -6,6 +6,8 @@ Compute2 (`@datagrok/compute2`) is the modeling UI and workflow execution packag
 
 The core workflow engine lives in a separate library: `@datagrok-libraries/compute-utils`, specifically the `reactive-tree-driver/` subdirectory.
 
+**User documentation**: `help/compute/workflows/` — covers workflow configuration, link types and query language, code usage, and examples.
+
 ## Architecture
 
 ```
@@ -51,7 +53,7 @@ RTD source: `libraries/compute-utils/reactive-tree-driver/`
 
 ### Core Concepts
 
-- **Tree structure**: Composed of nested pipeline nodes and FuncCallNode leaves. Pipeline types: `static` (immutable sequence), `parallel` (independent items, add/remove at runtime), `sequential` (mutable sequence, items can use data from previous items).
+- **Tree structure**: Composed of nested pipeline nodes and FuncCallNode leaves. Pipeline types: `static` (immutable sequence), `dynamic` (mutable set of steps, add/remove at runtime), `action` (lightweight placeholder for visibleOn actions). `parallel` and `sequential` are legacy aliases for `dynamic`.
 - **Driver** (`src/Driver.ts`): Main orchestrator. Manages state, commands, validations, consistency. Uses RxJS BehaviorSubjects for reactive state.
 - **Links**: Propagate data between FuncCall inputs/outputs via pattern-matching queries. Roles: `data` (value propagation), `validator` (validation results), `meta` (UI metadata/hooks).
 - **StateTree** (`src/runtime/StateTree.ts`): Tree state management.
@@ -96,6 +98,29 @@ reactive-tree-driver/
       ViewCommunication.ts      # Driver <-> UI command types
 ```
 
+### Action Steps
+
+Action steps (`type: 'action'`) are lightweight static pipelines with no children and no history,
+designed as targets for `visibleOn` actions from outer pipelines. In the config they only need
+`id`, `type: 'action'`, and optionally `friendlyName`/`description`/`tags`. During config processing
+they are converted to `PipelineConfigurationStaticProcessed` with `isActionStep: true`.
+
+Action steps are always navigable (included in back/next sequence). Regular pipelines with children
+are skipped by default; set `forceNavigate: true` to include them.
+
+### Navigation
+
+PipelineView has a sticky Back/Next bottom bar (same pattern as RFV). Back is hidden on root.
+- **FuncCall steps**: Back/Next via `findPrevStep`/`findNextStep` (DFS navigable sequence)
+- **Action steps**: same as FuncCall (always navigable since `steps.length === 0`)
+- **Regular pipelines**: Next uses `onPipelineProceed` (enters first child), Back uses `findPrevStep`
+- **Skipped pipelines**: `findPrevStep`/`findNextStep` still work when the user manually selects a
+  skipped pipeline — they find the nearest navigable neighbor
+
+Navigation functions (`findPrevStep`, `findNextStep`) in `src/utils.ts` locate the target node by
+uuid regardless of navigability, then return the nearest navigable neighbor. This ensures Back works
+correctly even on manually-selected skipped pipelines.
+
 ### Link Limitations
 
 - No cycles in data links
@@ -128,12 +153,21 @@ import {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driv
 ```bash
 # From packages/Compute2/
 npm install                # Install dependencies
+grok link                  # Link local libraries (REQUIRED before building)
 npm run build              # grok api && grok check --soft && webpack
 npm run build-all          # Build full chain: js-api -> utils -> compute-utils -> Compute2
 npm run lint               # ESLint check
 npm run lint-fix           # ESLint auto-fix
-npm run link-all           # Link local datagrok-api and @datagrok-libraries/*
 ```
+
+### Local Libraries Must Be Linked
+
+**Always use `grok link` before building.** Compute2 must build against the local source of
+`@datagrok-libraries/compute-utils`, `@datagrok-libraries/utils`, etc. — not the npm-published copies
+in `node_modules`. The npm versions exist only so CI can resolve dependencies; for local development
+they are stale and will mask type errors or miss recent changes.
+
+After `npm install` (which restores npm copies), always re-run `grok link` to re-establish symlinks.
 
 ### Building After RTD Changes
 

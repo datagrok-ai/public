@@ -1,12 +1,45 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Observable, defer, of} from 'rxjs';
+import {Observable, OperatorFunction, defer, from, merge, of} from 'rxjs';
+import {concatMap, distinctUntilChanged, filter, map, reduce, share, withLatestFrom, windowToggle} from 'rxjs/operators';
 import dayjs from 'dayjs';
 import {deepEqual, createCustomEqual, TypeEqualityComparator} from 'fast-equals';
 import {HandlerBase} from './config/PipelineConfiguration';
 import {ValidationResult} from './data/common-types';
 import {NodeAddressSegment, NodePathSegment, TreeNode} from './data/BaseTree';
 import {StateTreeNode} from './runtime/StateTreeNodes';
+
+/**
+ * Buffers [key, value] pairs during a lock period, deduplicating by key (latest wins).
+ * On unlock, all buffered entries are emitted. While unlocked, values pass through.
+ */
+export function bufferKeysDuringLock<K, V>(
+  lock$: Observable<boolean>,
+): OperatorFunction<readonly [K, V], readonly [K, V]> {
+  return (source$) => {
+    const shared$ = source$.pipe(share());
+    const lockDistinct$ = lock$.pipe(distinctUntilChanged());
+    const lockOn$ = lockDistinct$.pipe(filter((l) => l));
+    const lockOff$ = lockDistinct$.pipe(filter((l) => !l));
+
+    return merge(
+      shared$.pipe(
+        withLatestFrom(lockDistinct$),
+        filter(([, locked]) => !locked),
+        map(([item]) => item),
+      ),
+      shared$.pipe(
+        windowToggle(lockOn$, () => lockOff$),
+        concatMap((window$) => window$.pipe(
+          reduce((acc, [k, v]) => acc.set(k, v), new Map<K, V>()),
+          concatMap((buffered) => from(
+            [...buffered].map(([k, v]) => [k, v] as const),
+          )),
+        )),
+      ),
+    );
+  };
+}
 
 export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): Observable<R> {
   if (typeof handler === 'string') {
@@ -106,3 +139,33 @@ const customFastEqual = createCustomEqual({
 
 // TODO: try using lib apis
 export const customDeepEqual = (a: any, b: any) => (a == null && b == null) || customFastEqual(a, b);
+
+/** Format a single path segment: `id[0]`, `id[2]`. */
+export function formatPathSegment(seg: {idx: number; id: string}): string {
+  return `${seg.id}[${seg.idx}]`;
+}
+
+/** Format a node path as `step[0]/child[1]::ioName`.
+ *  Segments joined by `/`, IO name appended after `::`. */
+export function formatNodePath(path: readonly {idx: number; id: string}[], ioName?: string): string {
+  const str = path.map(formatPathSegment).join('/');
+  return ioName ? `${str}::${ioName}` : str;
+}
+
+/** Format a mutation path: `parent/+id[2]` (add), `parent/-id[2]` (remove), `parent/id[2→3]` (move). */
+export function formatMutationPath(
+  path: readonly {idx: number; id: string}[] | undefined,
+  addIdx?: number, removeIdx?: number, id?: string,
+): string {
+  let str = path?.length ? path.map(formatPathSegment).join('/') : '';
+  const append = (suffix: string) => str += str ? `/${suffix}` : suffix;
+  if (addIdx != null && removeIdx != null)
+    append(`${id}[${removeIdx}\u2192${addIdx}]`);
+  else if (removeIdx != null)
+    append(`-${id}[${removeIdx}]`);
+  else if (addIdx != null)
+    append(`+${id}[${addIdx}]`);
+  else if (id)
+    append(id);
+  return str;
+}

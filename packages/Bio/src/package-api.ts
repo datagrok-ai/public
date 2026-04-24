@@ -162,7 +162,7 @@ export namespace funcs {
   }
 
   /**
-  Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack
+  Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)
   */
   export async function applyNumberingScheme(): Promise<void> {
     return await grok.functions.call('Bio:ApplyNumberingScheme', {});
@@ -282,6 +282,20 @@ export namespace funcs {
   */
   export async function pepseaMsa(sequenceCol: DG.Column , method: string , gapOpen: number , gapExtend: number ): Promise<DG.Column> {
     return await grok.functions.call('Bio:PepseaMsa', { sequenceCol, method, gapOpen, gapExtend });
+  }
+
+  /**
+  Assigns antibody numbering (IMGT/Kabat) using the immunum WASM library
+  */
+  export async function immunumAntibodyNumbering(df: DG.DataFrame , seqCol: DG.Column , scheme: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Bio:ImmunumAntibodyNumbering', { df, seqCol, scheme });
+  }
+
+  /**
+  Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)
+  */
+  export async function compareSequences(): Promise<void> {
+    return await grok.functions.call('Bio:CompareSequences', {});
   }
 
   /**

@@ -2,25 +2,26 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getBy} from './pubchem';
-import {COLUMN_NAMES, getSearchWidget} from './widget';
-import {pubChemRest} from './tests/const';
-import {TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL} from './constants';
+import {getBy, smilesToPubChem} from './pubchem';
+import {buildInfoPanel, getSearchWidget} from './widget';
+import {COLUMN_NAMES, pubChemPug} from './constants';
 export * from './package.g';
 export const _package = new DG.Package();
 
-/*
-name: PubChem | Info
-tags: panel, widgets
-input: string molString {semType: Molecule}
-output: widget result
-export async function pubChemPanel(molString: string): Promise<DG.Widget> {
-  const pubChemId = await smilesToPubChem(molString);
-  return new DG.Widget(ui.wait(async () => await buildAccordion(pubChemId)));
-}
-*/
-
 export class PackageFunctions {
+  @grok.decorators.panel({
+    'name': 'Databases | PubChem | Info',
+    'meta': {role: 'widgets'},
+  })
+  static async pubChemPanel(
+    @grok.decorators.param({'options': {'semType': 'Molecule'}}) molString: string): Promise<DG.Widget> {
+    if (!molString)
+      return new DG.Widget(ui.divText('SMILES is empty'));
+    const pubChemId = await smilesToPubChem(molString);
+    return new DG.Widget(ui.wait(async () => await buildInfoPanel(pubChemId)));
+  }
+
+
   @grok.decorators.panel({
     'name': 'Databases | PubChem | Substructure Search',
     'meta': {role: 'widgets'},
@@ -45,7 +46,7 @@ export class PackageFunctions {
     'name': 'Databases | PubChem | Identity Search',
     'meta': {role: 'widgets'},
   })
-  static async pubChemIdentitySearch(
+  static async pubChemIdentitySearchPanel(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molString: string): Promise<DG.Widget> {
     return molString ? await getSearchWidget(molString, 'identity') : new DG.Widget(ui.divText('SMILES is empty'));
   }
@@ -62,7 +63,7 @@ export class PackageFunctions {
   static async pubChemToSmiles(
     id: string): Promise<string> {
     const pubChemId = id.substring(id.indexOf(':') + 1).trim();
-    const url = `${pubChemRest}/pug/compound/cid/${pubChemId}/property/CanonicalSMILES/JSON`;
+    const url = `${pubChemPug}/compound/cid/${pubChemId}/property/CanonicalSMILES/JSON`;
     const response = await grok.dapi.fetchProxy(url);
     const json = await response.json();
     return json['PropertyTable']['Properties'][0][COLUMN_NAMES.CANONICAL_SMILES] ??
@@ -81,8 +82,8 @@ export class PackageFunctions {
   static async inchiKeysToSmiles(
     id: string): Promise<string> {
     const s = await getBy('InChIKey', 'cids', id);
-    const cids = s['IdentifierList']['CID'][0];
-    const smiles = await PackageFunctions.pubChemToSmiles(cids.toString());
+    const cid = s['IdentifierList']['CID'][0];
+    const smiles = await PackageFunctions.pubChemToSmiles(cid.toString());
     return smiles;
   }
 
@@ -92,12 +93,10 @@ export class PackageFunctions {
   })
   static async GetIupacName(
     smiles: string): Promise<string> {
-    // need to escape # sign (triple bond) in URL
-    const preparedSmiles = smiles.replaceAll(TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL);
-    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;
+    const url = `${pubChemPug}/compound/smiles/${encodeURIComponent(smiles)}/property/IUPACName/JSON`;
     const response = await grok.dapi.fetchProxy(url);
     const responseJson = await response.json();
     const result = responseJson.PropertyTable?.Properties;
-    return (result && result[0].hasOwnProperty('IUPACName')) ? result[0].IUPACName : 'Not found in PubChem';
+    return (result && result[0]?.IUPACName != null) ? result[0].IUPACName : 'Not found in PubChem';
   }
 }

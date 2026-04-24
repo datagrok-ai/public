@@ -95,6 +95,8 @@ export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P>
   type: 'validator'
   handler: Validator;
   runOnInit?: undefined;
+  sequential?: boolean;
+  debounce?: number;
 };
 
 export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -102,6 +104,7 @@ export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   actions?: undefined;
   handler: MetaHandler;
   runOnInit?: undefined;
+  sequential?: boolean;
 };
 
 export type PipelineInitConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -125,6 +128,7 @@ export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> 
   actions?: undefined;
   handler: SelectorHandler;
   runOnInit?: undefined;
+  sequential?: boolean;
 };
 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P>;
@@ -208,19 +212,30 @@ export type NestedItemContext = {
   disableUIDragging?: boolean;
 };
 
+// action step (lightweight placeholder for displaying actions via visibleOn)
+
+export type AbstractPipelineActionConfiguration = {
+  type: 'action';
+  id: ItemId;
+  friendlyName?: string;
+  description?: string;
+  tags?: string[];
+};
+
 // fixed pipeline
 
 export type PipelineStaticItem<P, S, R> =
-PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R;
+PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | AbstractPipelineActionConfiguration | R;
 
 export type AbstractPipelineStaticConfiguration<P, S, R> = {
   steps: PipelineStaticItem<P, S, R>[];
   type: 'static';
+  isActionStep?: boolean;
 } & PipelineConfigurationBase<P>;
 
 // dynamic pipeline (unified type for parallel and sequential)
 
-export type PipelineDynamicItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & NestedItemContext);
+export type PipelineDynamicItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | AbstractPipelineActionConfiguration | R) & NestedItemContext);
 
 export type AbstractPipelineDynamicConfiguration<P, S, R> = {
   initialSteps?: StepDynamicInitialConfig[];

@@ -100,4 +100,18 @@ category('Functions: General', () => {
     const sin: DG.Func = await grok.functions.eval('Sin');
     expect(sin.package.nqName, 'core');
   }, {skipReason: 'GROK-15178'});
+
+  test('getResultViews', async () => {
+    const f = grok.functions.register({
+      signature: 'dataframe testGetResultViews()',
+      run: () => DG.DataFrame.fromCsv('a,b\n1,2\n3,4'),
+    });
+    const fc = f.prepare({});
+    await fc.call();
+    const views = fc.getResultViews();
+    expect(Array.isArray(views), true, 'returns array');
+    expect(views.length, 1, 'one view');
+    expect(views[0] instanceof DG.TableView, true, 'view is TableView');
+    expect((views[0] as DG.TableView).dataFrame.columns.length, 2, 'dataframe columns');
+  });
 });

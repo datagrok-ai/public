@@ -59,7 +59,7 @@ export class TestAnalysisManager {
     }
 
     static async collectManualTestNames(): Promise<string[]> { 
-        const files = await _package.files.list('Test Track', true);
+        const files = await _package.files.list('TestTrack', true);
         const tests: string[] = [];
         
         for (const file of files) {

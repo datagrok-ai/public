@@ -980,6 +980,7 @@ export interface IDartApi {
   grok_AI_OpenAiConfigured(): any;
   grok_AI_EntityIndexingEnabled(): any;
   grok_AI_Config(): any;
+  grok_DataConnectionsDataSource_RequestOAuthConsent(c: any): Promise<any>;
 
   // Generated from ../../shared/grok_shared/lib/src/interop/grok_api.dart
   grok_Test_Error(s: any): any;

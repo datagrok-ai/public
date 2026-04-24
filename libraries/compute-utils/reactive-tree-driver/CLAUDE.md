@@ -10,14 +10,22 @@
 - **Build**: `cd libraries/compute-utils && npm run build` (runs `tsc`, outputs `.js` + `.d.ts` alongside `.ts` files)
 - **Build everything**: `cd packages/Compute2 && npm run build-all`
 - **Publish**: Always use `grok publish --release` for compute packages
+- **User docs**: `help/compute/workflows/` — configuration, link types, link spec language, code usage, examples
 
 ## What This Library Does
 
 Reactive tree driver propagates data through dynamically created and mutated function call trees. It manages:
-- Tree state (static/parallel/sequential pipeline nodes + FuncCall leaves)
+- Tree state (static/dynamic pipeline nodes, action steps, FuncCall leaves)
 - Data/validator/meta links between steps
 - Consistency tracking and validation
 - Serialization/deserialization of pipeline state
+
+### Action Steps
+
+`type: 'action'` is a config-level step type that gets converted to a `PipelineConfigurationStaticProcessed`
+with `isActionStep: true` during config processing. It has no children, no links, no history. Designed as
+a `visibleOn` target for actions from outer pipelines. The type guard `isPipelineActionConfig()` identifies
+action configs before processing; after processing they are regular static pipeline configs.
 
 ## Testing Rules
 

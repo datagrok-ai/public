@@ -3,8 +3,17 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {LogItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
-import {NodePath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/BaseTree';
+import {formatNodePath, formatMutationPath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import {FilterDropdown, FilterOption} from '../Inspector/FilterDropdown';
 
+
+function formatTime(d: Date): string {
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  const ms = String(d.getMilliseconds()).padStart(3, '0');
+  return `${h}:${m}:${s}.${ms}`;
+}
 
 export const Logger = Vue.defineComponent({
   name: 'Logger',
@@ -13,8 +22,8 @@ export const Logger = Vue.defineComponent({
       type: Array as Vue.PropType<LogItem[]>,
       required: true,
     },
-    linkIds: {
-      type: Array as Vue.PropType<string[]>,
+    linkFilterOptions: {
+      type: Array as Vue.PropType<FilterOption[]>,
       required: true,
     },
   },
@@ -22,12 +31,21 @@ export const Logger = Vue.defineComponent({
     'linkClicked': (_linkId: string) => true,
   },
   setup(props, {emit}) {
-    const typeFilterOpts = ['all', 'tree', 'links'] as const;
-    const treeEvents = new Set(['treeUpdateStarted', 'treeUpdateFinished', 'treeUpdateMutation']);
+    const eventTypeOptions: FilterOption[] = [
+      {value: 'treeUpdateStarted', label: 'treeUpdateStarted', detail: 'tree'},
+      {value: 'treeUpdateFinished', label: 'treeUpdateFinished', detail: 'tree'},
+      {value: 'treeUpdateMutation', label: 'treeUpdateMutation', detail: 'tree'},
+      {value: 'linkAdded', label: 'linkAdded', detail: 'link'},
+      {value: 'linkRemoved', label: 'linkRemoved', detail: 'link'},
+      {value: 'linkRunStarted', label: 'linkRunStarted', detail: 'link'},
+      {value: 'linkRunFinished', label: 'linkRunFinished', detail: 'link'},
+      {value: 'actionAdded', label: 'actionAdded', detail: 'action'},
+      {value: 'actionRemoved', label: 'actionRemoved', detail: 'action'},
+      {value: 'error', label: 'error', detail: 'error'},
+    ];
 
-    const typeFilter = Vue.ref<typeof typeFilterOpts[number]>('all');
+    const eventsFilter = Vue.ref<string[]>([]);
     const linksFilter = Vue.ref<string[]>([]);
-    const linksFilterOpts = Vue.computed(() => props.linkIds);
 
     const linkStyle = {
       cursor: 'pointer',
@@ -35,57 +53,42 @@ export const Logger = Vue.defineComponent({
       textDecoration: 'underline',
     };
 
-    const formatPath = (path?: NodePath, addIdx?: number, removeIdx?: number, id?: string) => {
-      let str = path?.length ? [...path.map(({idx, id}) => `[${idx}]${id}`)].join('/') : '';
-      const append = (suffix: string) => str += str ? `/${suffix}` : `${suffix}`;
-      if (addIdx != null && removeIdx != null)
-        append(`[${removeIdx}\u2192${addIdx}]${id}`);
-      else if (removeIdx != null)
-        append(`-[${removeIdx}]${id}`);
-      else if (addIdx != null) {
-        append(`+[${addIdx}]${id}`);
-      } else if (id) {
-        append(id);
-      }
-      return str;
-    };
+    const isLinkLogItem = (item: LogItem): item is LogItem & {linkUUID: string; prefix: any; basePath?: any; id: string; isDefaultValidator?: boolean} =>
+      item.type === 'linkAdded' || item.type === 'linkRemoved' ||
+      item.type === 'linkRunStarted' || item.type === 'linkRunFinished' ||
+      item.type === 'actionAdded' || item.type === 'actionRemoved';
 
     return () => {
       const items = props.logs.filter((item) => {
-        if (typeFilter.value === 'all')
-          return true;
-        if (typeFilter.value === 'tree')
-          return treeEvents.has(item.type);
-        if (typeFilter.value === 'links')
-          return !treeEvents.has(item.type);
+        if (isLinkLogItem(item) && item.isDefaultValidator)
+          return false;
+        if (eventsFilter.value.length)
+          return eventsFilter.value.includes(item.type);
+        return true;
       }).filter((item) => {
         if (linksFilter.value.length) {
-          if (item.type === 'linkAdded' || item.type === 'linkRemoved' || item.type === 'linkRunStarted' || item.type === 'linkRunFinished' || item.type === 'actionAdded' || item.type === 'actionRemoved')
+          if (isLinkLogItem(item))
             return linksFilter.value.includes(item.id);
         }
         return true;
       });
       const logs = items.flatMap((item) => {
         if (item.type === 'treeUpdateStarted' || item.type === 'treeUpdateFinished') {
-          const dateString = item.timestamp.toISOString();
           return ([
             <div key={item.uuid + '1'}>
-              {dateString}
+              {formatTime(item.timestamp)}
             </div>,
             <div key={item.uuid + '2'}>
               {item.type}
             </div>,
             <div key={item.uuid + '3'}>
             </div>,
-            <div key={item.uuid + '4'}>
-            </div>
           ]);
         } else if (item.type === 'treeUpdateMutation') {
-          const dateString = item.timestamp.toISOString();
-          const pathString = formatPath(item.mutationRootPath, item.addIdx, item.removeIdx, item.id);
+          const pathString = formatMutationPath(item.mutationRootPath, item.addIdx, item.removeIdx, item.id);
           return ([
             <div key={item.uuid + '1'}>
-              {dateString}
+              {formatTime(item.timestamp)}
             </div>,
             <div key={item.uuid + '2'}>
               {item.type}
@@ -93,52 +96,58 @@ export const Logger = Vue.defineComponent({
             <div key={item.uuid + '3'}>
               {pathString}
             </div>,
-            <div key={item.uuid + '4'}>
-            </div>
           ]);
-        } else {
-          const dateString = item.timestamp.toISOString();
-          const pathString = formatPath([...item.prefix, ...(item.basePath ?? [])], undefined, undefined, item.id);
+        } else if (item.type === 'error') {
           return ([
             <div key={item.uuid + '1'}>
-              {dateString}
+              {formatTime(item.timestamp)}
+            </div>,
+            <div key={item.uuid + '2'}>
+              {item.type} ({item.severity})
+              </div>,
+            <div key={item.uuid + '3'}>
+              {item.context}: {item.message}
+            </div>,
+          ]);
+        } else {
+          const segments = [...item.prefix, ...(item.basePath ?? [])].map((s) => ({idx: s.idx, id: s.id}));
+          const pathStr = formatNodePath(segments);
+          const pathString = pathStr ? `${pathStr}/${item.id}` : item.id;
+          const isDefault = item.isDefaultValidator;
+          return ([
+            <div key={item.uuid + '1'}>
+              {formatTime(item.timestamp)}
             </div>,
             <div key={item.uuid + '2'}>
               {item.type}
               </div>,
             <div key={item.uuid + '3'}>
-              <span style={linkStyle} onClick={() => emit('linkClicked', item.id)}>
-                {pathString}
-              </span>
+              { isDefault
+                ? <span>{pathString}</span>
+                : <span style={linkStyle} onClick={() => emit('linkClicked', item.id)}>{pathString}</span>
+              }
             </div>,
-            <div key={item.uuid + '4'}>
-              {item.linkUUID}
-            </div>
           ]);
         }
       });
       return (
         <>
-          <div style={{display: 'flex', flexDirection: 'row', marginBottom: '10px'}}>
-            <div style={{marginRight: '5px'}}>Events:</div>
-            <div style={{marginRight: '20px'}}>
-              <select onChange={(ev) => typeFilter.value = (ev.target as any)?.value ?? 'all'} value={typeFilter.value}>
-                {typeFilterOpts.map(option => (
-                  <option value={option}>{option}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{marginRight: '5px'}}>Links:</div>
-            <div style={{marginRight: '20px'}}>
-              <select multiple onChange={(ev) => linksFilter.value = Array.from((ev.target as any)?.selectedOptions ?? []).map((x: any) => x.value)} value={linksFilter.value}>
-                {linksFilterOpts.value.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </div>
-            <div> Selected: {linksFilter.value.join(', ')} </div>
+          <div style={{display: 'flex', flexDirection: 'row', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap', gap: '5px'}}>
+            <div style={{marginRight: '2px'}}>Events:</div>
+            <FilterDropdown
+              options={eventTypeOptions}
+              modelValue={eventsFilter.value}
+              onUpdate:modelValue={(v: string[]) => eventsFilter.value = v}
+              placeholder='all'
+            />
+            <div style={{marginRight: '2px', marginLeft: '5px'}}>Links:</div>
+            <FilterDropdown
+              options={props.linkFilterOptions}
+              modelValue={linksFilter.value}
+              onUpdate:modelValue={(v: string[]) => linksFilter.value = v}
+            />
           </div>
-          <div style={{overflow: 'scroll', display: 'grid', gridTemplateColumns: 'auto auto auto auto', columnGap: '10px', rowGap: '5px'}}>
+          <div style={{overflow: 'scroll', display: 'grid', gridTemplateColumns: 'auto auto auto', columnGap: '10px', rowGap: '5px'}}>
             {logs}
           </div>
         </>

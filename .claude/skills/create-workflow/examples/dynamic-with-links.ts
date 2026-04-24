@@ -24,7 +24,7 @@ export function dynamicWorkflow(): PipelineConfiguration {
       },
       {
         id: 'analyses',
-        type: 'dynamic',    // 'parallel' and 'sequential' are also accepted
+        type: 'dynamic',
         friendlyName: 'Analyses',
         stepTypes: [
           {

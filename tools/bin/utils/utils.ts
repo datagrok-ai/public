@@ -30,31 +30,26 @@ export function descriptionToComment(s: string) {
   return '/**\n' + s + '\n*/\n';
 }
 
+const JSDOC_META_KEYS = ['choices', 'suggestions', 'semType'];
+
 export function buildJsDoc(opts: {
   description: string,
   inputs: {name?: string, type?: string, options?: Record<string, string>}[],
-  outputType: string,
 }): string {
-  const {description, inputs, outputType} = opts;
-  const hasReturns = outputType && outputType !== 'void';
-  if (!description && !inputs.length && !hasReturns)
-    return '';
-  const lines = ['/**'];
+  const {description, inputs} = opts;
+  const lines: string[] = [];
   if (description)
     lines.push(` * ${description}`);
-  for (const input of inputs) {
-    const o = input.options ?? {};
-    const desc = o.description ? ` - ${o.description}` : '';
-    lines.push(` * @param {${input.type}} ${input.name}${desc}`);
-    for (const [k, v] of Object.entries(o)) {
-      if (k !== 'description')
-        lines.push(` *   ${k}: ${v}`);
-    }
+  for (const {name, type, options = {}} of inputs) {
+    const metaLines = JSDOC_META_KEYS
+      .filter((k) => options[k])
+      .map((k) => ` *   ${k}: ${options[k]}`);
+    if (!options.description && !metaLines.length)
+      continue;
+    const desc = options.description ? ` - ${options.description}` : '';
+    lines.push(` * @param {${type}} ${name}${desc}`, ...metaLines);
   }
-  if (hasReturns)
-    lines.push(` * @returns {Promise<${outputType}>}`);
-  lines.push(' */', '');
-  return lines.join('\n');
+  return lines.length ? `/**\n${lines.join('\n')}\n */\n` : '';
 }
 
 export function spaceToCamelCase(s: string, firstUpper: boolean = true): string {

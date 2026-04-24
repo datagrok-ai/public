@@ -393,6 +393,9 @@ export interface IBoxPlotSettings {
 
   statistics: Array<string>;
 
+  /// Format for statistics and p-value values.
+  statisticsFormat: string;
+
   showTotalCount: boolean;
 
   /// Shown values count inside lower and upper bounds, where:
