@@ -1,5 +1,10 @@
 # sci-comp changelog
 
+## 0.3.1 (2026-04-27)
+Optimization:
+
+* The L-BFGS-B method
+
 ## 0.3.0 (2026-04-17)
 Optimization:
 

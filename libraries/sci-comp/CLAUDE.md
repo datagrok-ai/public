@@ -22,8 +22,24 @@ src/optimization/
       gradient-descent.ts         # GradientDescent extends Optimizer<GradientDescentSettings>
       adam.ts                     # Adam extends Optimizer<AdamSettings>
       lbfgs.ts                    # LBFGS extends Optimizer<LBFGSSettings> (quasi-Newton with two-loop recursion + Armijo line search)
+      lbfgs-b/                    # L-BFGS-B (limited-memory BFGS with native box constraints)
+        index.ts                  # LBFGSB class (public surface) + withDefaults validation
+        types.ts                  # LBFGSBSettings, LBFGSBLineSearchSettings, LBFGSBBounds, BOUND_* constants
+        driver.ts                 # runSync / runAsync outer loop (Cauchy → subspace → line search → memory update)
+        line-search.ts            # dcsrch + dcstep — Moré–Thuente strong-Wolfe line search + NaN-bisection wrapper
+        bfgs-mat.ts               # BFGSMat compact representation (ring buffer, W-products, block Cholesky, solveM)
+        bounds.ts                 # normalizeBounds, classifyBounds, project, projectedGradient, maxFeasibleStep
+        cauchy.ts                 # Generalized Cauchy point + binary min-heap
+        subspace.ts               # Subspace minimisation (SMW direct primal) + Morales–Nocedal 2011 project+backtrack
     __tests__/                    # Jest tests per optimizer + registry (sync & async)
       helpers.ts                  # Test utilities: rosenbrock, sphere, gaussian, quadratic3d, etc.
+      lbfgs-b.test.ts             # Scaffold + settings validation
+      lbfgs-b-line-search.test.ts # dcsrch/dcstep coverage + Moré–Thuente §5 functions
+      lbfgs-b-bfgs-mat.test.ts    # Compact rep: single-pair vs closed form, secant equation, K·M·z round-trip
+      lbfgs-b-bounds.test.ts      # Bounds helpers unit tests
+      lbfgs-b-cauchy.test.ts      # Cauchy sweep: unconstrained, 1-D snap, feasibility, c = Wᵀ(xc-x) invariant
+      lbfgs-b-subspace.test.ts    # Subspace min: early exits, Newton-like property, backtrack path
+      lbfgs-b-integration.test.ts # End-to-end: Rosenbrock / Sphere / bounded / fixed / half-bounded / maximize
     examples/                     # Runnable examples (npx tsx src/optimization/single-objective/examples/*.ts)
       unconstrained.ts            # Rosenbrock, Sphere, Gaussian examples
       constrained.ts              # Box constraints example
@@ -33,9 +49,10 @@ src/optimization/
       lbfgs.ts                    # L-BFGS specific example
       registry.ts                 # Registry lookup example
     benchmarks/
-      test-functions.ts           # Shared suite of classical test functions (sphere, rosenbrock, ackley, rastrigin, ...) + HIMMELBLAU_MINIMA
+      test-functions.ts           # Shared suite of classical test functions + BOUNDED_PROBLEMS + HIMMELBLAU_MINIMA
       unconstrained-benchmarks.ts # 15 standard test functions, single x₀ per problem, comparison runner
       multistart-benchmarks.ts    # Same 15 problems × 3 x₀ per problem (baseline + adversarial + near-optimum) — exposes x₀-sensitivity
+      bounded-benchmarks.ts       # 7 bounded problems: L-BFGS-B native bounds vs others via penalty layer
   multi-objectives/
     moead/                        # MOEA/D multi-objective optimizer (defs.ts, moead.ts, utils.ts)
 src/time-series/
@@ -79,10 +96,16 @@ share objective functions through `benchmarks/test-functions.ts`:
 - `unconstrained-benchmarks.ts` — one x₀ per problem, direct head-to-head table.
 - `multistart-benchmarks.ts` — three x₀ per problem (baseline + adversarial
   perturbation + near-optimum) and a success-rate summary across all 45 runs.
+- `bounded-benchmarks.ts` — 7 box-constrained problems. **L-BFGS-B** uses its
+  native `settings.bounds`; all other optimizers route box constraints through
+  `boxConstraints()` + the quadratic-penalty layer. Success requires both
+  numerical accuracy AND exact feasibility (`feas_vio < 1e-6`) — the latter is
+  where penalty-based methods typically fail (~1e-3 violations).
 
-When adding a new optimizer, register it in **both** runners and regenerate
-**both** `.md` reports. When adding a new test function, export it from
-`test-functions.ts` (do not duplicate the body in the runner files).
+When adding a new optimizer, register it in **all three** runners and
+regenerate the `.md` reports. When adding a new test function, export it from
+`test-functions.ts` (do not duplicate the body in the runner files); bounded
+problems are recorded in `BOUNDED_PROBLEMS` there.
 
 **x₀-sensitivity caveat — important when interpreting results.** The single-start
 tables can make local optimizers look stronger than they are on multimodal

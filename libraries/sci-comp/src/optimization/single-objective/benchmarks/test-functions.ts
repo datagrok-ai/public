@@ -109,3 +109,119 @@ export const HIMMELBLAU_MINIMA: ReadonlyArray<Float64Array> = [
   new Float64Array([-3.779310, -3.283186]),
   new Float64Array([3.584428, -1.848126]),
 ];
+
+/* ================================================================== */
+/*  Bounded problems (for bounded-benchmarks.ts)                       */
+/* ================================================================== */
+
+/**
+ * One bounded benchmark problem. `activeBoundsAtOptimum` records how
+ * many variables are pinned at a bound in the solution — useful for
+ * sorting reports so that "bounds inactive" regressions surface first.
+ */
+export interface BoundedTestProblem {
+  name: string;
+  dimension: number;
+  type: string;
+  fn: ObjectiveFunction;
+  x0: Float64Array;
+  lower: Float64Array;
+  upper: Float64Array;
+  knownMin: number;
+  knownPoint: Float64Array;
+  activeBoundsAtOptimum: number;
+}
+
+/** `f(x) = Σ (xᵢ + 1)²` — unconstrained min at x = −1 (shifts to 0 with l=0). */
+const shiftedSphere: ObjectiveFunction = (x) => {
+  let s = 0;
+  for (let i = 0; i < x.length; i++) s += (x[i] + 1) ** 2;
+  return s;
+};
+
+export const BOUNDED_PROBLEMS: BoundedTestProblem[] = [
+  {
+    name: 'Himmelblau (bounds inactive)',
+    dimension: 2,
+    type: 'Bounds should not matter',
+    fn: himmelblau,
+    x0: new Float64Array([0, 0]),
+    lower: new Float64Array([-4, -4]),
+    upper: new Float64Array([4, 4]),
+    knownMin: 0,
+    knownPoint: new Float64Array([3, 2]),
+    activeBoundsAtOptimum: 0,
+  },
+  {
+    name: 'Ackley (bounds inactive)',
+    dimension: 2,
+    type: 'Multimodal, bounds inactive',
+    fn: ackley,
+    x0: new Float64Array([1.5, -1.5]),
+    lower: new Float64Array([-2, -2]),
+    upper: new Float64Array([2, 2]),
+    knownMin: 0,
+    knownPoint: new Float64Array([0, 0]),
+    activeBoundsAtOptimum: 0,
+  },
+  {
+    name: 'Bounded Rosenbrock',
+    dimension: 2,
+    type: 'Upper bound active at solution',
+    fn: rosenbrock,
+    x0: new Float64Array([0, 0]),
+    lower: new Float64Array([-1.5, -1.5]),
+    upper: new Float64Array([0.5, 0.5]),
+    knownMin: 0.25,
+    knownPoint: new Float64Array([0.5, 0.25]),
+    activeBoundsAtOptimum: 1,
+  },
+  {
+    name: 'Bounded Beale',
+    dimension: 2,
+    type: 'Upper bound just touches optimum',
+    fn: beale,
+    x0: new Float64Array([1, 1]),
+    lower: new Float64Array([0, 0]),
+    upper: new Float64Array([3, 3]),
+    knownMin: 0,
+    knownPoint: new Float64Array([3, 0.5]),
+    activeBoundsAtOptimum: 1,
+  },
+  {
+    name: 'Fixed Variables Sphere',
+    dimension: 5,
+    type: '2 fixed (l = u), 3 free',
+    fn: sphere,
+    x0: new Float64Array([5, 2, 5, -1, 5]),
+    lower: new Float64Array([-Infinity, 2, -Infinity, -1, -Infinity]),
+    upper: new Float64Array([Infinity, 2, Infinity, -1, Infinity]),
+    knownMin: 5, // 2² + 1² = 5 from the two fixed coords
+    knownPoint: new Float64Array([0, 2, 0, -1, 0]),
+    activeBoundsAtOptimum: 2,
+  },
+  {
+    name: 'Shifted Sphere, half-bounded',
+    dimension: 4,
+    type: 'Lower-only bound; all coords pinned',
+    fn: shiftedSphere,
+    x0: new Float64Array([2, 2, 2, 2]),
+    lower: new Float64Array([0, 0, 0, 0]),
+    upper: new Float64Array([Infinity, Infinity, Infinity, Infinity]),
+    knownMin: 4, // 4 · (0+1)²
+    knownPoint: new Float64Array([0, 0, 0, 0]),
+    activeBoundsAtOptimum: 4,
+  },
+  {
+    name: 'Bounded Sphere (all pinned)',
+    dimension: 5,
+    type: 'All lower bounds active',
+    fn: sphere,
+    x0: new Float64Array([1, 1, 1, 1, 1]),
+    lower: new Float64Array([0.5, 0.5, 0.5, 0.5, 0.5]),
+    upper: new Float64Array([10, 10, 10, 10, 10]),
+    knownMin: 1.25, // 5 · 0.5²
+    knownPoint: new Float64Array([0.5, 0.5, 0.5, 0.5, 0.5]),
+    activeBoundsAtOptimum: 5,
+  },
+];
