@@ -27,7 +27,7 @@ import {
 const PROVIDERS_KEY = 'substruct-providers';
 
 /** Minimal provider shape used in these tests. */
-type TestProvider = {__atomPicker?: boolean; __scaffold?: boolean; getSubstruct: () => undefined};
+type TestProvider = {__atomPicker?: boolean; __scaffold?: boolean; __ordinaryMarker?: boolean; getSubstruct: () => undefined};
 
 // Builds a minimal DataFrame with one SMILES col and one Molecule3D col.
 function makeDF(): {df: DG.DataFrame; smilesCol: DG.Column; mol3DCol: DG.Column} {
@@ -140,16 +140,18 @@ category('mol3d-link', () => {
   test('clearAtomPickerHighlights-strips-atom-picker-providers', async () => {
     const {smilesCol} = makeDF();
 
-    // Simulate two providers: one atom-picker, one ordinary.
+    // Simulate two providers: one atom-picker (tagged), one ordinary
+    // (marked with `__ordinaryMarker` so we can identify it after the round
+    // trip through `col.temp`, which does not preserve object identity).
     const atomPickerProv: TestProvider = {__atomPicker: true, getSubstruct: () => undefined};
-    const ordinaryProv: TestProvider = {getSubstruct: () => undefined};
+    const ordinaryProv: TestProvider = {__ordinaryMarker: true, getSubstruct: () => undefined};
     smilesCol.temp[PROVIDERS_KEY] = [atomPickerProv, ordinaryProv];
 
     clearAtomPickerHighlights(smilesCol);
 
     const remaining = (smilesCol.temp[PROVIDERS_KEY] ?? []) as TestProvider[];
     // The ordinary provider must survive.
-    expect(remaining.some((p) => p === ordinaryProv), true);
+    expect(remaining.some((p) => p.__ordinaryMarker === true), true);
     // The atom-picker provider must be gone.
     expect(remaining.some((p) => p.__atomPicker === true), false);
   });
@@ -187,6 +189,8 @@ category('mol3d-link', () => {
 
     const remaining = (smilesCol.temp[PROVIDERS_KEY] ?? []) as TestProvider[];
     expect(remaining.length, 1);
-    expect(remaining[0] === scaffoldProv, true);
+    // `col.temp` round-trips values as data, so check by marker rather than
+    // object identity — the surviving provider is the scaffold one.
+    expect(remaining[0].__scaffold === true, true);
   });
 });
