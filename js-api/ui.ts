@@ -234,6 +234,9 @@ export function tags(entity: Entity): HTMLElement {
 }
 
 /**
+ * Renders [text] as GitHub-flavored Markdown. Supports LaTeX math via `$...$` / `$$...$$`;
+ * when embedding LaTeX in a JS template literal, wrap with `String.raw` so backslash escapes survive.
+ *
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/markdown}
  */
 export function markdown(text: string): HTMLElement {

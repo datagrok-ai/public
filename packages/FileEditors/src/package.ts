@@ -8,6 +8,8 @@ import {getDocument, PDFDocumentProxy, PDFPageProxy} from 'pdfjs-dist';
 import 'pdfjs-dist/webpack';
 import {renderAsync} from 'docx-preview';
 import {LatexViewer} from './latex/latex-viewer';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -133,6 +135,15 @@ export class PackageFunctions {
       });
     });
     return view;
+  }
+
+
+  @grok.decorators.func()
+  static renderMath(
+    @grok.decorators.param({type: 'string'}) latex: string,
+    @grok.decorators.param({type: 'bool'}) displayMode: boolean,
+  ): string {
+    return katex.renderToString(latex, {displayMode, throwOnError: false, output: 'html'});
   }
 
 
