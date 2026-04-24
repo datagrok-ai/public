@@ -309,12 +309,8 @@ M  END
       (erase === undefined || last.erase === erase);
   }
 
-  /** Combines `_isSameAtom` + `_lastHoveredAtom` write: returns `true` when
-   *  the cursor is still on the same atom (caller should bail); otherwise
-   *  updates `_lastHoveredAtom` to the new (col, rowIdx, atomIdx, erase)
-   *  tuple and returns `false`. Consolidates the dup'd check-then-update
-   *  pattern that showed up at every hover-mode branch in
-   *  `onMouseMove`. */
+  /** Returns `true` (same atom, caller should bail) or updates
+   *  `_lastHoveredAtom` and returns `false`. */
   private _trackHoveredAtom(
     colName: string, rowIdx: number, atomIdx: number, erase?: boolean,
   ): boolean {
@@ -1045,11 +1041,8 @@ M  END
     grid.invalidate();
   }
 
-  /** Clears the 2D-sourced preview when the cursor leaves a molecule cell.
-   *  With the document-listener approach the "no-hit" branch of the
-   *  mousemove handler did this; with `onMouseMove` we only fire inside
-   *  molecule cells, so `onMouseLeave` picks up the residual case of the
-   *  cursor moving onto a non-molecule column or out of the grid entirely. */
+  /** Clears the 2D-sourced preview when the cursor leaves a molecule cell
+   *  toward a non-molecule column or out of the grid entirely. */
   override onMouseLeave(gridCell: DG.GridCell, _e: MouseEvent): void {
     const col = gridCell.tableColumn;
     if (!col || col.semType !== DG.SEMTYPE.MOLECULE || !this._isPickerActive(col))
@@ -1096,10 +1089,6 @@ M  END
       column: molCol, rowIdx: -1, atoms: [], persistent: true, clearAll: true,
     });
   }
-
-  /** Returns the index of the atom whose center is nearest to the click
-   *  point, but only if it falls within `CLICK_TOLERANCE_PX` (CSS pixels).
-   *  Returns null if the user clicked too far from any atom. */
 
   /** Returns the persistent (Shift+painted) atoms for a given row. These
    *  are the atoms stored in the provider's `__atoms` set. */

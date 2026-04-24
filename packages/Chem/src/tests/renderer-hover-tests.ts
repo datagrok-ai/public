@@ -5,6 +5,20 @@ import * as DG from 'datagrok-api/dg';
 import {CHEM_ATOM_PICKER_LINKED_COL} from '../constants';
 import {GridCellRendererProxy, RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
 
+/** Test-only structural alias for private hover state on RDKitCellRenderer.
+ *  Uses `as unknown as` (not intersection) because TypeScript collapses an
+ *  intersection to `never` when any of the named members is already `private`
+ *  in the base class. The alias names match the real field/method names exactly
+ *  so a rename in the source produces a type error here. */
+interface RDKitCellRendererInternals {
+  _previewAtomIdx: number | null;
+  _previewFrom3D: boolean;
+  _lastHoveredAtom: {col: string; rowIdx: number; atomIdx: number; erase?: boolean} | null;
+  _trackHoveredAtom(col: string, row: number, atom: number, erase?: boolean): boolean;
+  onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void;
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void;
+}
+
 category('renderer-hover', () => {
   let rdkitModule: any;
 
@@ -76,7 +90,7 @@ category('renderer-hover', () => {
   // entirely — preview survives.
 
   test('onMouseLeave-clears-2d-preview-keeps-3d-preview', async () => {
-    const r = new RDKitCellRenderer(rdkitModule);
+    const r = new RDKitCellRenderer(rdkitModule) as unknown as RDKitCellRendererInternals;
 
     const col = DG.Column.fromStrings('smiles', ['CCO']);
     col.semType = DG.SEMTYPE.MOLECULE;
@@ -86,39 +100,39 @@ category('renderer-hover', () => {
     const fakeMe = {} as MouseEvent;
 
     // 2D-sourced preview: onMouseLeave must null _previewAtomIdx.
-    (r as any)._previewAtomIdx = 5;
-    (r as any)._previewFrom3D = false;
+    r._previewAtomIdx = 5;
+    r._previewFrom3D = false;
     r.onMouseLeave(fakeGc, fakeMe);
-    expect((r as any)._previewAtomIdx, null);
+    expect(r._previewAtomIdx, null);
 
     // 3D-sourced preview: onMouseLeave must leave _previewAtomIdx untouched.
-    (r as any)._previewAtomIdx = 7;
-    (r as any)._previewFrom3D = true;
+    r._previewAtomIdx = 7;
+    r._previewFrom3D = true;
     r.onMouseLeave(fakeGc, fakeMe);
-    expect((r as any)._previewAtomIdx, 7);
+    expect(r._previewAtomIdx, 7);
   });
 
   // ---------------------------------------------------------------------------
   // Test 3 — onMouseMove bails immediately when shiftKey is true
   // ---------------------------------------------------------------------------
 
-  // Line 954: `if (e.shiftKey) return;` — the very first statement in
+  // `if (e.shiftKey) return;` — the very first statement in
   // onMouseMove. No column check, no state mutation. Prove the guard works
   // by leaving _previewAtomIdx and _lastHoveredAtom unchanged after a
   // shiftKey move.
 
   test('onMouseMove-bails-on-shiftKey', async () => {
-    const r = new RDKitCellRenderer(rdkitModule);
+    const r = new RDKitCellRenderer(rdkitModule) as unknown as RDKitCellRendererInternals;
 
-    (r as any)._previewAtomIdx = 42;
-    (r as any)._lastHoveredAtom = null;
+    r._previewAtomIdx = 42;
+    r._lastHoveredAtom = null;
 
     // The shiftKey guard fires before any gridCell field access, so an empty
     // gridCell object is safe here.
     r.onMouseMove({} as DG.GridCell, {shiftKey: true} as MouseEvent);
 
-    expect((r as any)._previewAtomIdx, 42);
-    expect((r as any)._lastHoveredAtom, null);
+    expect(r._previewAtomIdx, 42);
+    expect(r._lastHoveredAtom, null);
   });
 
   // ---------------------------------------------------------------------------
@@ -130,9 +144,9 @@ category('renderer-hover', () => {
   // identical args (including erase) returns true = "same, skip".
 
   test('trackHoveredAtom-dedup-across-erase-flag', async () => {
-    const r = new RDKitCellRenderer(rdkitModule);
+    const r = new RDKitCellRenderer(rdkitModule) as unknown as RDKitCellRendererInternals;
     const track = (col: string, row: number, atom: number, erase?: boolean) =>
-      (r as any)._trackHoveredAtom(col, row, atom, erase);
+      r._trackHoveredAtom(col, row, atom, erase);
 
     // First call: no prior state → new atom.
     expect(track('m', 0, 3, false), false);
