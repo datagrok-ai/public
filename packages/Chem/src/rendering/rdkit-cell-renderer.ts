@@ -693,7 +693,7 @@ M  END
       // Capture phase so we see the mousemove before the grid's internal
       // shift-drag handler swallows it for row-range selection. Gated on
       // shiftKey to keep the no-modifier hover path fully in
-      // `onMouseMove`/`onMouseLeave` overrides (drizhina's review ask).
+      // `onMouseMove`/`onMouseLeave` overrides.
       document.addEventListener('mousemove', (e: MouseEvent) => {
         if (e.shiftKey) this._onShiftDragMouseMove(e);
       }, true);

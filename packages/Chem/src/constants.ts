@@ -55,6 +55,13 @@ export const CHEM_INTERACTIVE_SELECTION_EVENT = 'chem-interactive-selection-chan
  *  Set by BiostructureViewer when a Molstar viewer binds to a dataframe. */
 export const CHEM_ATOM_PICKER_LINKED_COL = '%chem-atom-picker-linked-col';
 
+/** Reciprocal tag on a Molecule3D column pointing back to the SMILES column
+ *  that targets it — the other half of the two-way picker link. Value =
+ *  the SMILES column name. Set alongside `CHEM_ATOM_PICKER_LINKED_COL` by
+ *  BiostructureViewer's link widget / `setSmilesColLink`. Mirrors the
+ *  same-named constant in `BiostructureViewer/src/utils/mol3d-link.ts`. */
+export const CHEM_ATOM_PICKER_LINKED_SMILES_COL = '%chem-atom-picker-linked-smiles-col';
+
 /** Custom event ID fired by BiostructureViewer's Molstar viewer when the
  *  user hovers a ligand atom in the 3D pose. The Chem rdkit-cell-renderer
  *  listens and renders the corresponding 2D atom highlight (reverse of

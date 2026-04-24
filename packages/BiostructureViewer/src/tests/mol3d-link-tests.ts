@@ -12,6 +12,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   CHEM_ATOM_PICKER_LINKED_COL,
+  CHEM_ATOM_PICKER_LINKED_SMILES_COL,
   setSmilesColLink,
   clearLinksToMol3D,
   findLinkedSmilesColName,
@@ -71,6 +72,45 @@ category('mol3d-link', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Two-way tag pair (drizhina review #5)
+  // -------------------------------------------------------------------------
+
+  test('setSmilesColLink-writes-reciprocal-tag-on-mol3d', async () => {
+    const {smilesCol, mol3DCol} = makeDF();
+    setSmilesColLink(smilesCol, mol3DCol.name);
+    // Forward tag on SMILES col.
+    expect(smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL), mol3DCol.name);
+    // Reciprocal tag on Mol3D col.
+    expect(mol3DCol.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), smilesCol.name);
+  });
+
+  test('setSmilesColLink-null-clears-both-tags', async () => {
+    const {smilesCol, mol3DCol} = makeDF();
+    setSmilesColLink(smilesCol, mol3DCol.name);
+    setSmilesColLink(smilesCol, null);
+    expect(!smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL), true);
+    expect(!mol3DCol.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), true);
+  });
+
+  test('setSmilesColLink-overwrite-strips-old-mol3d-reciprocal', async () => {
+    // When a SMILES col's link moves from mol3DA to mol3DB, mol3DA should
+    // lose its reciprocal tag — otherwise a stale back-link leaks.
+    const smilesCol = DG.Column.fromStrings('smiles', ['CCO']);
+    smilesCol.semType = DG.SEMTYPE.MOLECULE;
+    const mol3DA = DG.Column.fromStrings('pose_A', ['...']);
+    mol3DA.semType = DG.SEMTYPE.MOLECULE3D;
+    const mol3DB = DG.Column.fromStrings('pose_B', ['...']);
+    mol3DB.semType = DG.SEMTYPE.MOLECULE3D;
+    DG.DataFrame.fromColumns([smilesCol, mol3DA, mol3DB]);
+
+    setSmilesColLink(smilesCol, mol3DA.name);
+    setSmilesColLink(smilesCol, mol3DB.name);
+
+    expect(!mol3DA.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), true);
+    expect(mol3DB.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), smilesCol.name);
+  });
+
+  // -------------------------------------------------------------------------
   // clearLinksToMol3D
   // -------------------------------------------------------------------------
 
@@ -80,8 +120,9 @@ category('mol3d-link', () => {
 
     clearLinksToMol3D(df, mol3DCol.name);
 
-    const tagAfter = smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL);
-    expect(!tagAfter, true);
+    // Both forward + reciprocal tags must be gone after clearing.
+    expect(!smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL), true);
+    expect(!mol3DCol.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), true);
   });
 
   test('clearLinksToMol3D-leaves-unrelated-links-intact', async () => {

@@ -35,7 +35,7 @@ import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-
 import {IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 // Keep the atom-picker tag constant local (sourced from mol3d-link.ts)
 // until `@datagrok-libraries/bio` is published with the export.
-import {CHEM_ATOM_PICKER_LINKED_COL} from '../../utils/mol3d-link';
+import {CHEM_ATOM_PICKER_LINKED_COL, CHEM_ATOM_PICKER_LINKED_SMILES_COL} from '../../utils/mol3d-link';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getDataProviderList} from '@datagrok-libraries/bio/src/utils/data-provider';
@@ -423,19 +423,21 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         this.ligandColumnName = molCol.name;
     }
 
-    // Set the two-way link tag on the SMILES column so the Chem cell
-    // renderer knows which Molecule3D column activates the atom picker.
-    // Persist via `col.tags[...]` so the link survives save/reload; use
-    // the shared constant from `@datagrok-libraries/bio` to stay in sync
-    // with the BSV widget (embedded in Docking's AutoDock panel), the
-    // Docking pipeline post-run write, and Chem's reader.
+    // Write the two-way tag pair (drizhina review #5) — forward on the
+    // SMILES column pointing at the Mol3D column name, reverse on the
+    // Mol3D column pointing back at the SMILES column name. Persist via
+    // `col.tags[...]` so the link survives save/reload; use the shared
+    // constants to stay in sync with the BSV widget, the Docking pipeline
+    // post-run write, and Chem's reader.
     if (this.ligandColumnName) {
       const ligandCol = this.dataFrame.col(this.ligandColumnName);
       if (ligandCol) {
         const smilesCol = this.dataFrame.columns.toList().find(
           (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && c.name !== this.ligandColumnName);
-        if (smilesCol)
+        if (smilesCol) {
           smilesCol.tags[CHEM_ATOM_PICKER_LINKED_COL] = this.ligandColumnName;
+          ligandCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL] = smilesCol.name;
+        }
       }
     }
   }
