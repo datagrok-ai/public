@@ -151,6 +151,10 @@ export interface IDartApi {
   grok_FilesView_Get_ShowSearch(v: any): any;
   grok_FilesView_Set_ShowSearch(v: any, x: Bool): any;
   grok_FilesView_Get_Tree(v: any): any;
+  grok_SpaceView_Create_ForProject(p: any): any;
+  grok_SpaceView_Get_Project(v: any): any;
+  grok_SpaceView_Get_ShowItemPreview(v: any): any;
+  grok_SpaceView_Set_ShowItemPreview(v: any, x: Bool): any;
   grok_ProjectsView(params: any): any;
   grok_ScriptsView(params: any): any;
   grok_ScriptView(script: any): any;
@@ -1531,6 +1535,7 @@ export interface IDartApi {
   grok_Project_IsEmpty(p: any): any;
   grok_Project_IsDashboard(p: any): any;
   grok_Project_IsPackage(p: any): any;
+  grok_Project_Get_IsSpace(p: any): any;
   grok_Project_ToMarkup(p: any): any;
   grok_TableInfo_Get_DataFrame(ti: any): any;
   grok_TableInfo_Get_Columns(ti: any): any;
