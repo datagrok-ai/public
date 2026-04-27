@@ -746,7 +746,8 @@ class Preview {
       this.viewer = DG.Viewer.histogram(this.dataFrame, {
         ...sharedOptions,
         valueColumnName: look.valueColumnName,
-        showRangeSlider: false,
+        showRangeSlider: true,
+        showBinSelector: false,
         showSplitSelector: false,
         filteringEnabled: false,
       });
@@ -761,6 +762,14 @@ class Preview {
         orientation: look.orientation,
         axisType: look.axisType,
         showStackSelector: false,
+        // Bar chart anchors the value-axis range slider (horzScroll) at chartBox.bottom
+        // and the categorical-axis slider (vertScroll) starting at chartBox.top - 10.
+        // With the host's default outerMarginTop=0 and outerMarginBottom=0, the slider
+        // handles render outside the canvas in the small preview viewport and get
+        // clipped — the top y-slider circle disappears entirely. Pad both edges so the
+        // 5px-radius handles fit inside the preview.
+        outerMarginTop: 15,
+        outerMarginBottom: 10,
       });
     }
     else {
@@ -1515,6 +1524,8 @@ class CreationControl {
     createArea: (lassoMode?: boolean) => Promise<DG.AnnotationRegion | null>,  // Used to create area annotation regions
     /// Allow-list of `ITEM_CAPTION` strings to show in the popup. `undefined` means "all five".
     allowedItems?: string[],
+    /// Hex color override for newly-created bands. `undefined` = use `setDefaults`' value.
+    defaultBandColor?: string,
   ) {
     this.formulaLinesHistoryItems = this.loadFormulaLinesHistory();
     this.annotationRegionsHistoryItems = this.loadAnnotationRegionsHistory();
@@ -1605,8 +1616,12 @@ class CreationControl {
         }
 
         item.type ??= getItemTypeByCaption(itemCaption);
-        
+
         item = DG.FormulaLinesHelper.setDefaults(item);
+
+        // Host-specific override: bar chart bands ship grey since the bars are green by default.
+        if (defaultBandColor && item.type === ITEM_TYPE.BAND)
+          item.color = defaultBandColor;
 
         this.formulaLinesJustCreatedItems.unshift(item);
 
@@ -1836,6 +1851,7 @@ export class FormulaLinesDialog {
           resolve(null);
       }),
       allowedItemsForHost(src),
+      src instanceof DG.Viewer && src.type === DG.VIEWER.BAR_CHART ? '#838383' : undefined,
     );
   }
 
