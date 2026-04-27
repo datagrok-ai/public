@@ -100,6 +100,13 @@ function barChartIsVertical(viewer: DG.Viewer): boolean {
   return w > 0 && h / w > 5;
 }
 
+/** Pick the first numeric column whose name is not in `exclude`. Returns null if no such column. */
+function pickFallbackNumericColumn(df: DG.DataFrame, exclude: (string | undefined | null)[]): string | null {
+  const skip = new Set(exclude.filter((n) => n != null));
+  const col = df.columns.toList().find((c) => c.isNumerical && !skip.has(c.name));
+  return col ? col.name : null;
+}
+
 export const DEFAULT_OPTIONS: EditorOptions = {
   allowEditDFLines: true,
 };
@@ -582,20 +589,23 @@ class Preview {
       } else if (src.type === DG.VIEWER.BOX_PLOT) {
         this.dataFrame = src.dataFrame!;
         const look = src.getOptions().look;
-        this.srcAxes = {x: undefined, y: look.valueColumnName, yMap: look.yMap};
+        const fallbackX = pickFallbackNumericColumn(this.dataFrame, [look.valueColumnName]);
+        this.srcAxes = {x: fallbackX ?? undefined, y: look.valueColumnName, yMap: look.yMap};
       } else if (src.type === DG.VIEWER.HISTOGRAM) {
         this.dataFrame = src.dataFrame!;
         const look = src.getOptions().look;
-        this.srcAxes = {x: look.valueColumnName, y: undefined, xMap: look.xMap};
+        const fallbackY = pickFallbackNumericColumn(this.dataFrame, [look.valueColumnName]);
+        this.srcAxes = {x: look.valueColumnName, y: fallbackY ?? undefined, xMap: look.xMap};
       } else if (src.type === DG.VIEWER.BAR_CHART) {
         this.dataFrame = src.dataFrame!;
         const look = src.getOptions().look;
         const isVertical = barChartIsVertical(src);
         // Vertical bars → value on Y; horizontal bars → value on X. The categorical
         // axis (`splitColumnName`) is undefined for the dialog.
+        const fallback = pickFallbackNumericColumn(this.dataFrame, [look.valueColumnName]);
         this.srcAxes = isVertical
-          ? {x: undefined, y: look.valueColumnName, yMap: look.yMap}
-          : {x: look.valueColumnName, y: undefined, xMap: look.xMap};
+          ? {x: fallback ?? undefined, y: look.valueColumnName, yMap: look.yMap}
+          : {x: look.valueColumnName, y: fallback ?? undefined, xMap: look.xMap};
       } else {
         this.dataFrame = src.dataFrame!;
         this.srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName, yMap: src.props.yMap, xMap: src.props.xMap};
