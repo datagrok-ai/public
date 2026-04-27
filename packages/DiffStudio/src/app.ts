@@ -394,26 +394,11 @@ export class DiffStudio {
 
     this.toChangePath = true;
 
-    /** Save change button */
-    const saveBtn = ui.button(TITLE.UPDATE, async () => {
-      const source = new DG.FileSource();
+    // Wire shared Update button to the previewed file; it stays hidden until the user edits
+    this.updateBtnFilePath = file.fullPath;
+    this.updateBtn.hidden = true;
 
-      try {
-        await source.writeAsText(file.fullPath, this.editorView!.state.doc.toString());
-      } catch (error) {
-        grok.shell.error(ERROR_MSG.FAILED_TO_SAVE);
-      }
-
-      saveBtn.hidden = true;
-    }, HINT.UPDATE);
-    this.solverView.append(saveBtn);
-    saveBtn.hidden = true;
-
-    const panels = this.getRibbonPanels();
-    panels[panels.length - 1].push(saveBtn);
-
-    this.solverView.setRibbonPanels(panels);
-
+    this.solverView.setRibbonPanels(this.getRibbonPanels());
     this.updateRibbonWgts();
 
     // Process URL & extract input values
@@ -429,8 +414,6 @@ export class DiffStudio {
         this.startingInputs = null;
       }
     }
-
-    this.editorView!.dom.addEventListener('keydown', async (e) => saveBtn.hidden = false);
 
     this.toRunWhenFormCreated = true;
     this.schedulePreviewDock();
@@ -572,6 +555,8 @@ export class DiffStudio {
   private addNewWgt = this.getAddNewWgt();
   private appStateInputWgt = this.getEditToggle();
   private saveBtn = this.getSaveBtn();
+  private updateBtnFilePath: string | null = null;
+  private updateBtn = this.getUpdateBtn();
   private downLoadIcon = this.getDownLoadIcon();
   private exportIcon = this.getExportIcon();
   private helpIcon = this.getHelpIcon();
@@ -658,7 +643,8 @@ export class DiffStudio {
     return [
       [this.openComboMenu, this.addNewWgt],
       [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
-      [this.addToModelCatalogWgt, this.exportIcon, this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
+      [this.addToModelCatalogWgt, this.exportIcon, this.saveBtn,
+        this.downLoadIcon, this.appStateInputWgt, this.updateBtn],
     ];
   } // getRibbonPanels
 
@@ -681,8 +667,22 @@ export class DiffStudio {
 
   /** Return the save model button */
   private getSaveBtn(): HTMLButtonElement {
-    const btn = ui.bigButton(TITLE.SAVE, () => this.saveToMyFiles(), HINT.SAVE_MY);
-    btn.disabled = true;
+    return ui.bigButton(TITLE.SAVE, () => this.saveToMyFiles(), HINT.SAVE_MY);
+  }
+
+  /** Return the update-current-file button. Hidden until a backing file is known and the user has unsaved edits. */
+  private getUpdateBtn(): HTMLButtonElement {
+    const btn = ui.button(TITLE.UPDATE, async () => {
+      if (!this.updateBtnFilePath || !this.editorView)
+        return;
+      try {
+        await grok.dapi.files.writeAsText(this.updateBtnFilePath, this.editorView.state.doc.toString());
+        btn.hidden = true;
+      } catch {
+        grok.shell.error(ERROR_MSG.FAILED_TO_SAVE);
+      }
+    }, HINT.UPDATE);
+    btn.hidden = true;
     return btn;
   }
 
@@ -899,13 +899,15 @@ export class DiffStudio {
         if (!this.mainPath.includes(PATH.FILE))
           this.entityPath = PATH.CUSTOM;
 
+        if (this.updateBtnFilePath !== null)
+          this.updateBtn.hidden = false;
+
         this.startingInputs = null;
         this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
         this.isSolvingSuccess = false;
         this.toRunWhenFormCreated = true;
         this.toChangeSolutionViewerProps = true;
         this.toSwitchToModelTab = true;
-        this.saveBtn.disabled = false;
         this.updateRefreshWidget(true);
         this.updateExportToJsWidget(true);
         this.updateSaveToModelCatalogWidget(true);
@@ -990,6 +992,12 @@ export class DiffStudio {
         invalidateFolderListing(folder);
         prefetchFolderListing(folder);
         await this.saveModelToRecent(path, true);
+        this.mainPath = `${PATH.FILE}/${path.replace(':', '.')}`;
+        this.entityPath = '';
+        this.toChangePath = true;
+        this.solverView.path = `${this.mainPath}${this.entityPath}`;
+        this.updateBtnFilePath = path;
+        this.updateBtn.hidden = true;
         grok.shell.info(`Model saved to ${path}`);
       } catch (error) {
         grok.shell.error(`Failed to save model: ${error instanceof Error ? error.message : 'platform issue'}`);
@@ -1009,8 +1017,6 @@ export class DiffStudio {
             .onOK(async () => await save())
             .show();
         }
-
-        this.saveBtn.disabled = true;
       }, undefined, HINT.SAVE_MY)
       .show();
   }; // saveToMyFiles
@@ -1020,8 +1026,9 @@ export class DiffStudio {
     toClearStartingInputs: boolean = true, text?: string | undefined): Promise<void> {
     this.toChangeSolutionViewerProps = true;
     this.isModelChanged = false;
-    this.saveBtn.disabled = true;
     this.editorState = state;
+    this.updateBtnFilePath = null;
+    this.updateBtn.hidden = true;
     this.solutionTable = DG.DataFrame.create();
     this.solverView.dataFrame = this.solutionTable;
     this.solverView.helpUrl = getLink(state);
