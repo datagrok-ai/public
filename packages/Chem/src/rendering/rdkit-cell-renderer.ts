@@ -32,14 +32,13 @@ import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas,
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {getGridCellColTemp} from '../utils/ui-utils';
 import {errInfo} from '../utils/err-info';
-import {mapAtomIndices2Dto3D} from '../utils/atom-index-mapper';
+import {mapAtomIndices2Dto3D, AtomIndexMapping} from '../utils/atom-index-mapper';
 import {
   findNearestAtom, computeSelectedBonds, extractAtomPositionsFromSvg,
 } from '../utils/chem-atom-picker-utils';
 import {handleMol3DHoverEvent, Mol3DHoverRendererDeps} from './mol3d-hover-handler';
 
 import {_package} from '../package';
-import {AtomIndexMapping} from '../utils/atom-index-mapper';
 
 /** Shape of the cross-package atom selection event. */
 interface ChemSelectionEvent {
@@ -806,21 +805,6 @@ M  END
       const totalScaffolds = highlightScaffolds ? scaffoldFromColumn.concat(highlightScaffolds) : scaffoldFromColumn;
       this._drawMolecule(x, y, w, h, g.canvas, molString, totalScaffolds, molRegenerateCoords,
         scaffoldRegenerateCoords, cellStyle, true, details, substructObj, renderOpts);
-    }
-  }
-
-  // ========================================================================
-  // Hover-paint atom picker — Shift+hover paints atoms, Ctrl+Shift erases,
-  // Escape clears. Selection is stored in an ISubstructProvider on col.temp
-  // and broadcast via CHEM_INTERACTIVE_SELECTION_EVENT to 3D viewers.
-  // ========================================================================
-
-  /** Safety net: removes any orphaned `.chem-grid-box-picker` overlay divs. */
-  private _sweepOverlays(): void {
-    const orphans = document.querySelectorAll('.chem-grid-box-picker');
-    for (let i = 0; i < orphans.length; i++) {
-      const el = orphans[i];
-      if (el.parentNode) el.parentNode.removeChild(el);
     }
   }
 
