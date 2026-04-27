@@ -32,6 +32,8 @@ import './tests/compute-utils/reactive-tree-driver/error-handling';
 import './tests/compute-utils/reactive-tree-driver/advanced-coverage';
 import './tests/compute-utils/reactive-tree-driver/buffer-keys-during-lock';
 import './tests/compute-utils/fitting/nm-pure-math';
+import './tests/arrow/roundtrip';
+import './tests/arrow/titanic';
 
 export const _package = new DG.Package();
 export {tests};
