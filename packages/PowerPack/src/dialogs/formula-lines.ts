@@ -56,6 +56,27 @@ const enum BTN_CAPTION {
 
 type EditorItem = DG.FormulaLine | DG.AnnotationRegion;
 
+/// Per-viewer allow-list for the creation popup. `undefined` means "all five items".
+/// Region items (FORMULA_REGION / RECT_REGION / POLYGON_REGION) are gated separately
+/// by `cols.x?.isNumerical && cols.y?.isNumerical` so they vanish for single-axis hosts.
+function allowedItemsForHost(src: DG.DataFrame | DG.Viewer): string[] | undefined {
+  if (!(src instanceof DG.Viewer))
+    return undefined;
+  if (src.type === DG.VIEWER.BOX_PLOT)
+    return [ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND];
+  return undefined;
+}
+
+/// Single-axis viewers restrict the column picker in the Editor to their value column.
+/// Returns the value column name when applicable, `undefined` otherwise.
+function singleAxisColumnNameForHost(src: DG.DataFrame | DG.Viewer): string | undefined {
+  if (!(src instanceof DG.Viewer))
+    return undefined;
+  if (src.type === DG.VIEWER.BOX_PLOT)
+    return src.getOptions().look.valueColumnName;
+  return undefined;
+}
+
 export const DEFAULT_OPTIONS: EditorOptions = {
   allowEditDFLines: true,
 };
@@ -375,8 +396,8 @@ interface AxisNames {
 }
 
 interface AxisColumns {
-  y: DG.Column,
-  x: DG.Column,
+  y: DG.Column | null,
+  x: DG.Column | null,
   yMap?: string,
   xMap?: string,
 }
@@ -418,9 +439,10 @@ class Preview {
       ? this.viewer.props.yMap
       : undefined;
 
+    const xColName = this.viewer.props.xColumnName;
     return {
-      y: this.dataFrame.getCol(yColName!),
-      x: this.dataFrame.getCol(this.viewer.props.xColumnName),
+      y: yColName ? this.dataFrame.col(yColName) : null,
+      x: xColName ? this.dataFrame.col(xColName) : null,
       yMap,
       xMap,
     };
@@ -534,6 +556,10 @@ class Preview {
         this.dataFrame = src.dataFrame!;
         const look = src.getOptions().look;
         this.srcAxes = {x: look.xColumnName, y: look.yColumnName, xMap: look.xMap, yMap: look.yMap};
+      } else if (src.type === DG.VIEWER.BOX_PLOT) {
+        this.dataFrame = src.dataFrame!;
+        const look = src.getOptions().look;
+        this.srcAxes = {x: undefined, y: look.valueColumnName, yMap: look.yMap};
       } else {
         this.dataFrame = src.dataFrame!;
         this.srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName, yMap: src.props.yMap, xMap: src.props.xMap};
@@ -684,6 +710,9 @@ class Editor {
     private dataFrame: DG.DataFrame,
     public onItemChangedAction: (itemIdx: number, isFormulaLine: boolean) => boolean,
     private onFormulaValidation: (isValid: boolean) => void,
+    /// Single-axis viewers (box plot, histogram, bar chart) restrict the column picker
+    /// to their value column. `undefined` means "no restriction" (scatter / line / density).
+    private singleAxisColumnName?: string,
   ) {
     this.form = ui.form([]);
   }
@@ -1003,8 +1032,9 @@ class Editor {
       const lhsColumn = refs[0];
       const rhsColumns = refs.slice(1);
 
-      // If RHS references the same column → invalid
-      if (rhsColumns.includes(lhsColumn))
+      // If RHS references the same column → invalid. Constant-only RHS (zero column refs)
+      // is valid — single-axis viewers (box plot, histogram, bar chart) only produce those.
+      if (rhsColumns.length > 0 && rhsColumns.includes(lhsColumn))
         return 'Line formula should contain different columns on both sides of the "=" sign';
 
       // Expression syntax validation comes last
@@ -1199,11 +1229,13 @@ class Editor {
   /** Creates column input for band second column */
   private inputColumn2(itemIdx: number): HTMLElement {
     const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
+    const axisName = this.singleAxisColumnName;
 
     //@ts-ignore
     const ibColumn2 = ui.input.column('Adjacent column', {
       nullable: false,
       table: this.dataFrame,
+      filter: axisName ? (c: DG.Column) => c.name === axisName : undefined,
       value: item.column2 ? this.dataFrame.col(item.column2) ?? undefined : undefined,
       onValueChanged: (value) => {
         this.inputColumn2Changing = true;
@@ -1222,11 +1254,13 @@ class Editor {
   /** Creates column input and text input for constant item */
   private inputConstant(itemIdx: number, colName: string, value: string): HTMLElement {
     const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
+    const axisName = this.singleAxisColumnName;
 
     //@ts-ignore
     const ibColumn = ui.input.column('Column', {
       nullable: false,
       table: this.dataFrame,
+      filter: axisName ? (c: DG.Column) => c.name === axisName : undefined,
       value: colName ? this.dataFrame.col(colName) ?? undefined : undefined,
       onValueChanged: (value) => {
         const oldFormula = item.formula!;
@@ -1313,7 +1347,9 @@ class CreationControl {
     getCols: () => AxisColumns,                              // Used to create constant lines passing through the mouse click point on the Scatter Plot
     getCurrentItem: () => EditorItem | null,                 // Used to create clone
     private onItemCreatedAction: (item: EditorItem) => void,                          // Updates the Table, Preview and Editor states after item creation
-    createArea: (lassoMode?: boolean) => Promise<DG.AnnotationRegion | null>  // Used to create area annotation regions
+    createArea: (lassoMode?: boolean) => Promise<DG.AnnotationRegion | null>,  // Used to create area annotation regions
+    /// Allow-list of `ITEM_CAPTION` strings to show in the popup. `undefined` means "all five".
+    allowedItems?: string[],
   ) {
     this.formulaLinesHistoryItems = this.loadFormulaLinesHistory();
     this.annotationRegionsHistoryItems = this.loadAnnotationRegionsHistory();
@@ -1335,11 +1371,19 @@ class CreationControl {
         const cols: AxisColumns = getCols();
         const colY = cols.y;
         const colX = cols.x;
+        // Two-axis items (LINE, VERT_*, FORMULA_REGION) require both columns; bail
+        // when a single-axis host (box / histogram / bar) only exposes one.
+        const needsX = [ITEM_CAPTION.LINE, ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND,
+          ITEM_CAPTION.FORMULA_REGION].includes(itemCaption as ITEM_CAPTION);
+        const needsY = [ITEM_CAPTION.LINE, ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND,
+          ITEM_CAPTION.FORMULA_REGION].includes(itemCaption as ITEM_CAPTION);
+        if (needsX && !colX || needsY && !colY)
+          return;
         if (itemCaption === ITEM_CAPTION.FORMULA_REGION) {
           const item: DG.FormulaAnnotationRegion = {
             type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
-            formula1: `${wrapCol(colY.name)} = ${wrapCol(colX.name)} + ${colY.stats.q2.toFixed(1)}`,
-            formula2: `${wrapCol(colY.name)} = ${wrapCol(colX.name)} - ${colY.stats.q2.toFixed(1)}`,
+            formula1: `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)} + ${colY!.stats.q2.toFixed(1)}`,
+            formula2: `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)} - ${colY!.stats.q2.toFixed(1)}`,
           };
 
           this.annotationRegionsJustCreatedItems.unshift(item);
@@ -1353,35 +1397,37 @@ class CreationControl {
         /** Fill the item with the necessary data */
         switch (itemCaption) {
           case ITEM_CAPTION.LINE:
-            item.formula = `${wrapCol(colY.name)} = ${wrapCol(colX.name)}`;
+            item.formula = `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)}`;
             break;
 
           case ITEM_CAPTION.VERT_LINE:
-            const vertVal = (valX ?? colX.stats.q2).toFixed(1);
+            const vertVal = (valX ?? colX!.stats.q2).toFixed(1);
             item.orientation = ITEM_ORIENTATION.VERTICAL;
-            item.formula = `${wrapCol(colX.name)} = ${vertVal}`;
+            item.formula = `${wrapCol(colX!.name)} = ${vertVal}`;
             break;
 
           case ITEM_CAPTION.HORZ_LINE:
-            const horzVal = (valY ?? colY.stats.q2).toFixed(1);
+            const horzVal = (valY ?? colY!.stats.q2).toFixed(1);
             item.orientation = ITEM_ORIENTATION.HORIZONTAL;
-            item.formula = `${wrapCol(colY.name)} = ${horzVal}`;
+            item.formula = `${wrapCol(colY!.name)} = ${horzVal}`;
             break;
 
           case ITEM_CAPTION.VERT_BAND:
-            const left = colX.stats.q1.toFixed(1);
-            const right = colX.stats.q3.toFixed(1);
-            item.formula = `${wrapCol(colX.name)} in(${left}, ${right})`;
+            const left = colX!.stats.q1.toFixed(1);
+            const right = colX!.stats.q3.toFixed(1);
+            item.formula = `${wrapCol(colX!.name)} in(${left}, ${right})`;
             item.orientation = ITEM_ORIENTATION.VERTICAL;
-            item.column2 = colY.name;
+            // For single-axis hosts (no Y), fall back to the X column for `column2`.
+            item.column2 = (colY ?? colX!).name;
             break;
 
           case ITEM_CAPTION.HORZ_BAND:
-            const bottom = colY.stats.q1.toFixed(1);
-            const top = colY.stats.q3.toFixed(1);
-            item.formula = `${wrapCol(colY.name)} in(${bottom}, ${top})`;
+            const bottom = colY!.stats.q1.toFixed(1);
+            const top = colY!.stats.q3.toFixed(1);
+            item.formula = `${wrapCol(colY!.name)} in(${bottom}, ${top})`;
             item.orientation = ITEM_ORIENTATION.HORIZONTAL;
-            item.column2 = colX.name;
+            // For single-axis hosts (no X), fall back to the Y column for `column2`.
+            item.column2 = (colX ?? colY!).name;
             break;
 
           case BTN_CAPTION.CLONE:
@@ -1399,14 +1445,16 @@ class CreationControl {
         onItemCreatedAction(item);
       };
 
-      /** Construct popup menu */
-      const menu = DG.Menu.popup().items([
+      /** Construct popup menu — filtered by host viewer's allow-list when set */
+      const allItems = [
         ITEM_CAPTION.LINE,
         ITEM_CAPTION.VERT_LINE,
         ITEM_CAPTION.HORZ_LINE,
         ITEM_CAPTION.VERT_BAND,
         ITEM_CAPTION.HORZ_BAND,
-      ], onClickAction);
+      ];
+      const items = allowedItems ? allItems.filter((c) => allowedItems.includes(c)) : allItems;
+      const menu = DG.Menu.popup().items(items, onClickAction);
 
       const cols = getCols();
       // Bands don't use axis maps; any xMap/yMap leaking through from the preview viewer is spurious.
@@ -1415,7 +1463,9 @@ class CreationControl {
         && (currentItem as DG.FormulaLine).type === ITEM_TYPE.BAND;
       const xMapActive = !isBandCurrent && !!cols.xMap;
       const yMapActive = !isBandCurrent && !!cols.yMap;
-      if (cols.x?.isNumerical && !xMapActive && cols.y?.isNumerical && !yMapActive) {
+      // Region items are hidden for single-axis hosts (box / histogram / bar) — those hosts
+      // pass an `allowedItems` allow-list that the line/band items already filter against.
+      if (allowedItems == null && cols.x?.isNumerical && !xMapActive && cols.y?.isNumerical && !yMapActive) {
         const regionItems: Record<string, string> = {
           [ITEM_CAPTION.FORMULA_REGION]: 'Adds a new area defined by two formula lines.',
           [ITEM_CAPTION.RECT_REGION]: 'Draws a rectangle area.',
@@ -1500,9 +1550,9 @@ export class FormulaLinesDialog {
   {
     /** Init Helpers */
     this.host = this.initHost(src);
-    this.creationControl = this.initCreationControl();
+    this.creationControl = this.initCreationControl(src);
     this.preview = this.initPreview(src);
-    this.editor = this.initEditor();
+    this.editor = this.initEditor(src);
     this.tabs = this.initTabs();
     this.dialog.sub(this.dialog.onClose.subscribe(() => this.dialog.detach()));
 
@@ -1541,10 +1591,11 @@ export class FormulaLinesDialog {
       const isHorz = item.orientation === ITEM_ORIENTATION.HORIZONTAL;
 
       if (currentItem.type === ITEM_TYPE.BAND) {
-        if (isHorz && property.name === 'xColumnName') {
+        if (isHorz && property.name === 'xColumnName' && this.preview.axisCols.x) {
           item.column2 = this.preview.axisCols.x.name;
           this.editor.update(this.currentTable.currentItemIdx, true);
-        } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')) {
+        } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')
+          && this.preview.axisCols.y) {
           item.column2 = this.preview.axisCols.y.name;
           this.editor.update(this.currentTable.currentItemIdx, true);
         }
@@ -1552,8 +1603,8 @@ export class FormulaLinesDialog {
         const meta = DG.FormulaLinesHelper.getMeta(item);
         if (!meta.argName) {
           const newCol = isHorz
-            ? (property.name === 'yColumnName' || property.name === 'yColumnNames') ? this.preview.axisCols.y.name : null
-            : property.name === 'xColumnName' ? this.preview.axisCols.x.name : null;
+            ? (property.name === 'yColumnName' || property.name === 'yColumnNames') ? this.preview.axisCols.y?.name ?? null : null
+            : property.name === 'xColumnName' ? this.preview.axisCols.x?.name ?? null : null;
           if (newCol) {
             this.editor.inputColumn2Changing = true;
             item.formula = `${wrapCol(newCol)} = ${meta.expression ?? '0'}`;
@@ -1606,7 +1657,7 @@ export class FormulaLinesDialog {
     return preview;
   }
 
-  private initCreationControl(): CreationControl {
+  private initCreationControl(src: DG.DataFrame | DG.Viewer): CreationControl {
     return new CreationControl(
       () => this.preview.axisCols,
       () => this.currentTable.currentItem,
@@ -1627,11 +1678,12 @@ export class FormulaLinesDialog {
           });
         } else
           resolve(null);
-      })
+      }),
+      allowedItemsForHost(src),
     );
   }
 
-  private initEditor(): Editor {
+  private initEditor(src: DG.DataFrame | DG.Viewer): Editor {
     return new Editor(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
       this.host.viewerAnnotationRegionItems! ?? this.host.dframeAnnotationRegionItems!,
       this.preview.dataFrame,
@@ -1641,7 +1693,9 @@ export class FormulaLinesDialog {
       },
       (isValid: boolean): void => {
         isValid ? this.dialog.getButton('OK').classList.remove('disabled') : this.dialog.getButton('OK').classList.add('disabled');
-      });
+      },
+      singleAxisColumnNameForHost(src),
+    );
   }
 
   private initTabs(): DG.TabControl {
