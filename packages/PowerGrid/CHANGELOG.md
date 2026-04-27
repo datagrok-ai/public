@@ -7,6 +7,7 @@
 * Tags cell renderer: Fixed missing return in `getColor` that left first render of a new tag with an undefined color
 * Pie chart sparkline: Filter null columns in hit-test so hovering with stale/missing column names no longer throws
 * Forms cell renderer: Scoped per-cell scene via WeakMap keyed on grid (removes cross-grid contamination) and debounced tooltip shows (no more flicker)
+* Vlaaivis manager: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
 
 ## 1.8.1 (2026-03-17)
 

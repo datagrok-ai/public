@@ -2,8 +2,15 @@
 
 ## 1.8.1 ()
 
+* GROK-20040: Workspace: Pin Spaces; selecting a pinned space embeds the Browse-tree `DG.SpaceView` in the right pane and routes per-item previews into the bottom preview pane
+* Workspace: Replaced card grid with a list + entity-controls layout; selecting a pinned query or function shows its parameter editor on the right and runs results into a preview area below the Spotlight widget
+* Workspace: Function/query preview now uses the function's own result views (`FuncCall.getResultViews()`) — single view shown directly, multiple views wrapped in a tab control; falls back to a plain dataframe grid otherwise
+* Workspace: Pinned dashboards (projects) now show a project card on the right and a live project preview below
+* Workspace: Pin entities via drag-and-drop with dynamic drop zones (admin groups + "Myself only")
 * Activity Dashboard: Reduced Spotlight tab load time by fetching entities server-side in parallel with SQL, and progressively rendering the Recent section
 * GROK-19613: Add New Column dialog: Fixed duplicate scrollbars appearing on the column and function list panels when the dialog is resized
+* Activity Dashboard: Replaced the "Mark all as read" floating button in the Notifications tab with a left-aligned "N unread · Mark all as read" summary row to prevent overlap with notification text in narrow panels
+* Activity Dashboard: Fixed unread count header and tab badge not updating when marking a single notification as read
 
 ## 1.8.0 (2026-03-13)
 

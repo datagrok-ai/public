@@ -356,18 +356,28 @@ Examples:
 `;
 
 const HELP_REPORT = `
-Usage: grok report <subcommand> <instance> <id>
+Usage: grok report <subcommand> [args]
 
 Manage Datagrok user error reports
 
 Subcommands:
     fetch    Download a report zip from a managed instance
+    read     Normalize a report (zip or json) into one JSON object on stdout
     resolve  Mark a report as resolved
     ticket   Create a JIRA ticket for a report via the Datlas API
 
+Read flags:
+    --extract-screenshot <path>  Write the screenshot binary to <path>
+    --extract-d42 <dir>          Unpack .d42 sidecar tables into <dir>
+    --extract-actions            Write a sibling <stem>_actions.json
+
 Examples:
-  grok report fetch dev 1528         Download report #1528 from the 'dev' instance
-  grok report resolve dev 1528       Resolve report #1528 on the 'dev' instance
+  grok report fetch dev 1528             Download report #1528 from the 'dev' instance
+  grok report read /tmp/report.zip       Print normalized JSON for a local zip
+  grok report read /tmp/report.json      Print normalized JSON for a raw report.json
+  grok report read dev 1528              Fetch + normalize report #1528 from 'dev'
+  grok report read /tmp/report.zip --extract-screenshot ./shot.png
+  grok report resolve dev 1528           Resolve report #1528 on the 'dev' instance
   grok report ticket dev <report-uuid>   Create a JIRA ticket for a report
 
 The instance name must match a server alias in ~/.grok/config.yaml.

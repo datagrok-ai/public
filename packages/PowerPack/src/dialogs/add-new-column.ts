@@ -448,9 +448,9 @@ export class AddNewColumnDialog {
       // Columns and functions can be drag-n-dropped into the Expression field:
       ui.makeDroppable(this.codeMirrorDiv!, {
         acceptDrop: (dragObject) => this.typeOf(dragObject, DG.Column, DG.Func),
-        doDrop: (dragObject, _) => {
+        doDrop: (args) => {
           cm.focus();
-          this.insertIntoCodeMirror(dragObject, cm);
+          this.insertIntoCodeMirror(args.dragObject, cm);
         },
       });
     }

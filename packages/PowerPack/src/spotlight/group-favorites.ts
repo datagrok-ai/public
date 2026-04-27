@@ -41,3 +41,30 @@ export async function getAdminGroups(): Promise<DG.Group[]> {
   const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
   return userGroup.adminMemberships.filter((g) => !g.personal && g.friendlyName);
 }
+
+/** Alphabetical sort by `friendlyName`; returns a new array. */
+export function sortGroupsByFriendlyName<T extends {friendlyName: string}>(groups: T[]): T[] {
+  return [...groups].sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
+}
+
+/** Returns entities the current user pinned to their personal group ("Myself only"). */
+export async function getMyPersonalFavorites(): Promise<DG.Entity[]> {
+  try {
+    return await grok.dapi.entities.getFavorites(DG.User.current().group);
+  }
+  catch (e) {
+    console.warn('Failed to load personal favorites', e);
+    return [];
+  }
+}
+
+/**
+ * Pins an entity to a group's favorites.
+ * FileInfo entities must be registered on the server before they can be favorited,
+ * so we save them first to ensure they have a persistent server-side ID.
+ */
+export async function pinEntityToGroup(entity: DG.Entity, group: DG.Group): Promise<void> {
+  if (entity instanceof DG.FileInfo)
+    await entity.save();
+  await DG.Favorites.add(entity, group);
+}

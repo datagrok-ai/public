@@ -104,8 +104,10 @@ export function setupSearchUI() {
     searchInput.addEventListener('input', onSearchChanged);
     // set up the enter key listener and modify suggestion
     const searchHelpDiv = document.getElementsByClassName('power-search-help-text-container')[0] as HTMLDivElement;
-    if (searchHelpDiv)
+    if (searchHelpDiv) {
       searchHelpDiv.innerText = `Press Enter to grok. ${searchHelpDiv.innerText}`;
+      searchHelpDiv.style.visibility = 'hidden';
+    }
 
     searchInput.addEventListener('keyup', (event: KeyboardEvent) => {
       if (event.key === 'Enter' && searchInput.value?.trim()) {

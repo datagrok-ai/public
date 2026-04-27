@@ -6,6 +6,7 @@ import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {powerSearch} from './search/power-search';
 import {getSettings, saveSettings, UserWidgetsSettings, widgetHostFromFunc} from './utils';
+import {setWorkspacePreviewHost, setWorkspaceCustomizeEl} from './spotlight/preview-host';
 
 export function welcomeView(): DG.View | undefined {
   let searchStr = null;
@@ -43,8 +44,11 @@ export function welcomeView(): DG.View | undefined {
 
   const searchHost = ui.block([], 'power-pack-search-host');
   const widgetsHost = ui.div([], 'power-pack-widgets-host');
-  const widgetsPanel = ui.div([widgetsHost]);
-  const viewHost = ui.div([widgetsPanel, searchHost]);
+  const previewHost = ui.div([], 'power-pack-workspace-preview');
+  previewHost.style.display = 'none';
+  const widgetsPanel = ui.div([widgetsHost, previewHost], 'power-pack-widgets-panel');
+  const viewHost = ui.div([widgetsPanel, searchHost], 'power-pack-view-host');
+  setWorkspacePreviewHost(previewHost);
   const view = DG.View.create();
   view.root.appendChild(inputHost);
   view.root.appendChild(helpDiv);
@@ -90,7 +94,9 @@ export function welcomeView(): DG.View | undefined {
     );
   }
 
-  widgetsPanel.appendChild(ui.link('Customize widgets...', () => customizeWidgets()));
+  const customizeLink = ui.link('Customize widgets...', () => customizeWidgets());
+  widgetsPanel.appendChild(customizeLink);
+  setWorkspaceCustomizeEl(customizeLink);
 
   function doSearch(s: string) {
     input.value = s;

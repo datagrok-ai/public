@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## v.next
+
+* DiffStudio: `runDiffStudio` returns the solver view directly instead of using a proxy view + `grok.shell.addView`, letting the platform host place it
+
 ## 1.5.2 (2026-03-14)
 
 Updated the bioreactor model

@@ -80,23 +80,12 @@ export class PackageFunctions {
     const path = grok.shell.startUri;
     const toSetStartingPath = (path === window.location.href);
 
-    const proxiView = DG.View.create();
+    const solver = new DiffStudio(false);
 
-    setTimeout(async () => {
-      proxiView.close();
+    if (toSetStartingPath)
+      solver.setStartingPath(path);
 
-      const solver = new DiffStudio(false);
-
-      if (toSetStartingPath)
-        solver.setStartingPath(path);
-
-      const view = await solver.runSolverApp();
-
-      if (view !== null)
-        grok.shell.addView(view);
-    }, UI_TIME.APP_RUN_SOLVING);
-
-    return proxiView;
+    return await solver.runSolverApp();
   }
 
   @grok.decorators.demo({

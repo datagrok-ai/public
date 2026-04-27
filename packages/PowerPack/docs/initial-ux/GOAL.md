@@ -26,7 +26,33 @@ functions, etc) for that. One way to do it would be for power users or admins to
 (such as projects, or queries) to the first screen - either in the "Spotlight" tab, or even 
 in another top-level tab that would be active by default.
 
-Assess the current codebase. Suggest a few different approaches - both from the UI/UX, and from the coding perspectives.
-Make a few different mockups of how this might look like.
+## Workspace
 
+Workspace is the first tab in the "Spotlight" widget. It shows entities "pinned" to groups a user belongs to
+(via the favorites mechanism). Group admin can pin it there.
+
+### Pinning entities to workspace
+
+Two ways to pin an entity:
+- Right-click on it, and under the "Group favorites" submenu check the corresponding groups
+- Drag-and-drop entities right to the "Workspace" widget. Several drop zones (one for each group a user is admin of)
+  should appear, plus the "Myself only" drop zone.
+
+### Usability
+
+On the left, there should be a list of pinned entities. When you click on any of them,
+the right side of the workspace would show entity controls, and the bottom of the Welcome Screen (below the Spotlight widget)
+would contain the preview.
+
+Here is what would be shown in the controls and preview section, depending on the entity type
+
+| entity        | contols                     | preview                       |
+|---------------|-----------------------------|-------------------------------|
+| query         | parameter editor            | results (dynamically updated) |
+| function      | parameter editor            | results (dynamically updated) |
+| app           | app header                  | app preview                   |
+| dashboard     | details (date, author, etc) | dashboard preview             |
+| file          | details (date, size, etc)   | file preview                  |
+| share         | details (date, size, etc)   | folder preview                |
+| db connection | list of queries             |                               |
 
