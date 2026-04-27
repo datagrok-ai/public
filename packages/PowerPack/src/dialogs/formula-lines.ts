@@ -1691,14 +1691,6 @@ class CreationControl {
               description: twoAxisRegionItems[itemCaption]
             });
         }
-        if (xRegionEligible)
-          menu.item(ITEM_CAPTION.VERT_RANGE_REGION, () => onClickAction(ITEM_CAPTION.VERT_RANGE_REGION), null, {
-            description: 'Adds a region bounded by two values on the X axis (q1 .. q3 of the column).'
-          });
-        if (yRegionEligible)
-          menu.item(ITEM_CAPTION.HORZ_RANGE_REGION, () => onClickAction(ITEM_CAPTION.HORZ_RANGE_REGION), null, {
-            description: 'Adds a region bounded by two values on the Y axis (q1 .. q3 of the column).'
-          });
       } else {
         // Single-axis host. Value lives on the X axis when `allowedItems` includes vertical
         // bands (histogram, horizontal bar chart) and on the Y axis otherwise (vertical bar
