@@ -835,6 +835,31 @@ export interface IDensityPlotSettings {
 
   backColor: number;
 
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of viewer-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// When true, lasso area selector is used instead of the rectangular one when drawing annotation regions.
+  lassoTool: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  formulaFont: string;
+
+  annotationFont: string;
+
   viewport: string;
 
   /// Determines the rows shown on the plot.
