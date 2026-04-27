@@ -1,10 +1,9 @@
 // Dual-executor harness for fitting tests.
 //
 // Each fitting test is run once per executor in `ALL_EXECUTORS`.
-// `runFitting('worker', args)` dispatches to the WorkerExecutor when the args
-// carry enough payload (a DG.Func body or an `objectiveSource` string), and
-// falls back to main otherwise so tests that only have a closure-based
-// `objectiveFunc` keep working.
+// `runFitting('worker', args)` dispatches to the WorkerExecutor when the
+// args carry a `DG.Func` body, and falls back to main otherwise so tests
+// that only have a closure-based `objectiveFunc` keep working.
 
 import * as DG from 'datagrok-api/dg';
 import {performNelderMeadOptimization, LOSS} from './imports';
@@ -27,12 +26,10 @@ export type FittingArgs = {
   func?: DG.Func;
   outputTargets?: OutputTargetItem[];
   lossType?: LOSS;
-  objectiveSource?: string;
 };
 
 export async function runFitting(executor: Executor, args: FittingArgs): Promise<OptimizationResult> {
-  const wantsWorker = executor === 'worker' &&
-    (args.func != null || args.objectiveSource != null);
+  const wantsWorker = executor === 'worker' && args.func != null;
   return performNelderMeadOptimization({
     objectiveFunc: args.objectiveFunc,
     inputsBounds: args.inputsBounds,
@@ -44,6 +41,5 @@ export async function runFitting(executor: Executor, args: FittingArgs): Promise
     func: args.func,
     outputTargets: args.outputTargets,
     lossType: args.lossType,
-    objectiveSource: args.objectiveSource,
   });
 }

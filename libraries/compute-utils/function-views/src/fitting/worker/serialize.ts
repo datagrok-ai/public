@@ -1,16 +1,14 @@
-// Wire format and serializer for main → worker dispatch.
+// Serializer for main → worker dispatch.
 //
-// Two task kinds cross the boundary:
+// Two messages cross the boundary:
 //
-//   - 'objective' — generic Float64Array → number objective. Used by tests
-//     that fit pure-math objectives without any DG.Func / FuncCall plumbing.
-//   - 'fit'       — full fitting payload. Mirrors the closure built by
-//     cost-functions.ts:makeConstFunction, but pieces it apart so the
-//     worker can rebuild the cost function locally from the source body and
-//     deserialized DataFrames.
+//   - 'setup-fit' — full immutable bundle (script body, fixed inputs and
+//     fixed DataFrames, output targets, bounds, NM settings, threshold).
+//     Sent once per worker per fit.
+//   - 'run-seed' — seed + sessionId pointer. Sent once per seed.
 //
 // DataFrames cross as Arrow IPC bytes via @datagrok-libraries/arrow toFeather;
-// the worker decodes via arrow-to-lite.
+// the worker decodes via arrow-to-lite once when it receives the setup.
 //
 // Day.js dates → ISO string. Reconstructed in the worker if needed.
 
@@ -20,13 +18,15 @@ import {toFeather} from '@datagrok-libraries/arrow';
 import {LOSS} from '../constants';
 import type {OutputTargetItem, ValueBoundsData} from '../optimizer-misc';
 import type {
-  FitTask, ObjectiveTask, SerializedDataFrameTarget, SerializedOutputTarget,
-  SerializedScalarTarget, WorkerFailure, WorkerReply, WorkerSuccess, WorkerTask,
+  FitSessionSetup, RunSeed, SerializedDataFrameTarget, SerializedOutputTarget,
+  SerializedScalarTarget, SessionId, SetupAck, WorkerFailure, WorkerInbound, WorkerOutbound,
+  WorkerSuccess,
 } from './wire-types';
 
 export type {
-  FitTask, ObjectiveTask, SerializedDataFrameTarget, SerializedOutputTarget,
-  SerializedScalarTarget, WorkerFailure, WorkerReply, WorkerSuccess, WorkerTask,
+  FitSessionSetup, RunSeed, SerializedDataFrameTarget, SerializedOutputTarget,
+  SerializedScalarTarget, SessionId, SetupAck, WorkerFailure, WorkerInbound, WorkerOutbound,
+  WorkerSuccess,
 };
 
 function serializeFixedInputs(
@@ -83,26 +83,8 @@ function serializeOutputTargets(
   return {targets: out, transferables};
 }
 
-export function buildObjectiveTask(args: {
-  taskId: number;
-  source: string;
-  seed: Float64Array;
-  nmSettings: Map<string, number>;
-  threshold?: number;
-}): {task: ObjectiveTask; transferables: Transferable[]} {
-  const task: ObjectiveTask = {
-    kind: 'objective',
-    taskId: args.taskId,
-    source: args.source,
-    seed: args.seed,
-    nmSettings: Array.from(args.nmSettings.entries()),
-    threshold: args.threshold,
-  };
-  return {task, transferables: [args.seed.buffer]};
-}
-
-export function buildFitTask(args: {
-  taskId: number;
+export function buildSetup(args: {
+  sessionId: SessionId;
   fnSource: string;
   paramList: string[];
   outputParamNames: string[];
@@ -113,13 +95,12 @@ export function buildFitTask(args: {
   outputTargets: OutputTargetItem[];
   nmSettings: Map<string, number>;
   threshold?: number;
-  seed: Float64Array;
-}): {task: FitTask; transferables: Transferable[]} {
+}): {setup: FitSessionSetup; transferables: Transferable[]} {
   const fixed = serializeFixedInputs(args.fixedInputs);
   const targets = serializeOutputTargets(args.outputTargets);
-  const task: FitTask = {
-    kind: 'fit',
-    taskId: args.taskId,
+  const setup: FitSessionSetup = {
+    kind: 'setup-fit',
+    sessionId: args.sessionId,
     fnSource: args.fnSource,
     paramList: args.paramList,
     outputParamNames: args.outputParamNames,
@@ -131,16 +112,29 @@ export function buildFitTask(args: {
     outputTargets: targets.targets,
     nmSettings: Array.from(args.nmSettings.entries()),
     threshold: args.threshold,
-    seed: args.seed,
   };
   return {
-    task,
-    transferables: [args.seed.buffer, ...fixed.transferables, ...targets.transferables],
+    setup,
+    transferables: [...fixed.transferables, ...targets.transferables],
   };
 }
 
-// Cap on accepted body size — guards against pasted blobs and runaway parse
-// time. Plan §1.3 calls for 64 KB.
+export function buildRunSeed(args: {
+  sessionId: SessionId;
+  taskId: number;
+  seed: Float64Array;
+}): {run: RunSeed; transferables: Transferable[]} {
+  const run: RunSeed = {
+    kind: 'run-seed',
+    taskId: args.taskId,
+    sessionId: args.sessionId,
+    seed: args.seed,
+  };
+  return {run, transferables: [args.seed.buffer]};
+}
+
+// Cap on accepted body size — guards against pasted blobs and runaway
+// parse time.
 export const MAX_FN_SOURCE_BYTES = 64 * 1024;
 
 export function checkSourceSize(source: string): void {

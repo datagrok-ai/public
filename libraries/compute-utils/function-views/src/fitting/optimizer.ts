@@ -22,7 +22,6 @@ export async function performNelderMeadOptimization(
     func,
     outputTargets,
     lossType,
-    objectiveSource,
   }: {
     objectiveFunc: (x: Float64Array) => Promise<number|undefined>;
     inputsBounds: Record<string, ValueBoundsData>;
@@ -34,7 +33,6 @@ export async function performNelderMeadOptimization(
     func?: DG.Func;
     outputTargets?: OutputTargetItem[];
     lossType?: LOSS;
-    objectiveSource?: string;
   },
 ): Promise<OptimizationResult> {
   const execArgs = {
@@ -47,7 +45,6 @@ export async function performNelderMeadOptimization(
     func,
     outputTargets,
     lossType,
-    objectiveSource,
   };
 
   const useWorker = executor === 'worker' ||

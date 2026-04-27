@@ -7,6 +7,10 @@ export {arrowIpcToLite} from './arrow-to-lite';
 
 export {ColLike, DfLike, getErrors, getIndices, InconsistentTablesError} from './cost-math';
 export {WorkerPool, defaultPoolSize} from './pool';
+export type {RunReply} from './pool';
 export {MainExecutor, WorkerExecutor, canHandle, runWithEphemeralPool} from './executor';
 export type {Executor, ExecutorArgs, ExecutorChoice, ExecutorMode} from './executor';
-export type {WorkerTask, WorkerReply} from './serialize';
+export type {
+  FitSessionSetup, RunSeed, DropSession, WorkerOutbound, WorkerInbound,
+  SetupAck, WorkerSuccess, WorkerFailure, SessionId,
+} from './wire-types';

@@ -1,12 +1,12 @@
-// Fitting worker entry. Long-lived; receives one WorkerTask per message,
-// runs Nelder-Mead on it, posts WorkerReply. Stays alive across messages so
-// the compile cache (func-call-shim.ts) hits across tasks.
+// Fitting worker entry. Long-lived; receives `FitSessionSetup` once per fit
+// to prime per-session state, then `RunSeed` per seed; `DropSession`
+// releases per-session state at fit teardown.
 //
 // Imports are deliberately DG-free:
 //   - `optimizer-nelder-mead` exports only `optimizeNM`; its type-only import
 //     of optimizer-misc is erased by tsc, so the compiled JS has no DG ref.
-//   - `dg-shim`, `arrow-to-lite`, `cost-math`, `func-call-shim`, `serialize`
-//     are pure TypeScript with no datagrok-api/* runtime imports.
+//   - `dg-shim`, `arrow-to-lite`, `cost-math`, `func-call-shim` are pure
+//     TypeScript with no datagrok-api/* runtime imports.
 //
 // Anything that touches DG.* (fitting-utils.ts, optimizer-misc.ts runtime,
 // cost-functions.ts) is intentionally NOT imported here — it would crash a
@@ -15,25 +15,26 @@
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {LOSS} from '../constants';
 import {arrowIpcToLite} from './arrow-to-lite';
-import {createWorkerDG} from './dg-shim';
 import type {LiteDataFrame} from './types';
 import {ColLike, DfLike, getErrors, InconsistentTablesError} from './cost-math';
-import {compileBody, createWorkerFuncCall} from './func-call-shim';
+import {createWorkerFuncCall, WorkerFuncCall} from './func-call-shim';
 import type {
-  ObjectiveTask,
-  FitTask,
-  WorkerTask,
-  WorkerReply,
+  FitSessionSetup,
+  RunSeed,
+  DropSession,
+  WorkerOutbound,
+  SetupAck,
+  WorkerSuccess,
+  WorkerFailure,
   SerializedOutputTarget,
   SerializedDataFrameTarget,
+  SessionId,
 } from './wire-types';
 
 // Mirror of the makeBoundsChecker logic from optimizer-sampler.ts, inlined to
-// avoid pulling in formulas-resolver (which compiles user formula expressions
-// via runtime helpers we don't need in-worker since pure-numeric bounds cover
-// the worker fitting use case). Worker bodies that contain formula bounds
-// would not pass canHandle() on the main thread, so in practice only value
-// bounds reach this path.
+// avoid pulling in formulas-resolver. Worker bodies that contain formula
+// bounds would not pass canHandle() on the main thread, so in practice only
+// value bounds reach this path.
 function makeWorkerBoundsChecker(
   bounds: Record<string, any>,
   variedInputNames: string[],
@@ -43,8 +44,6 @@ function makeWorkerBoundsChecker(
     const b = bounds[name];
     if (!b || b.type !== 'changing') return;
     if (b.bottom?.type !== 'value' || b.top?.type !== 'value') {
-      // Formula bound — give up and accept all points (canHandle should have
-      // already routed this fit to the main arm).
       ranges.push({idx, min: -Infinity, max: Infinity});
       return;
     }
@@ -59,10 +58,6 @@ function makeWorkerBoundsChecker(
   };
 }
 
-// Adapter that lets cost-math.getErrors read a target DG.DataFrame
-// reconstituted from its serialized form. The serialized form keeps only the
-// arg column plus the listed func columns; we wrap them in a structural
-// DfLike.
 type TargetEntry = {
   propName: string;
   argName: string;
@@ -112,21 +107,37 @@ function reifyFixedDataFrames(blobs: Record<string, Uint8Array>): Record<string,
   return out;
 }
 
-function buildCostFunc(task: FitTask): (x: Float64Array) => number | undefined {
-  const targets = buildTargetEntries(task.outputTargets);
-  const fixedDfs = reifyFixedDataFrames(task.fixedDataFrames);
-  const fc = createWorkerFuncCall({
-    source: task.fnSource,
-    paramList: task.paramList,
-    outputNames: task.outputParamNames,
-    fixedInputs: {...task.fixedInputs, ...fixedDfs},
-    variedInputNames: task.variedInputNames,
-  });
-  const variedNames = task.variedInputNames;
-  const checker = makeWorkerBoundsChecker(task.bounds, variedNames);
-  const useRmse = task.lossType === LOSS.RMSE;
+// Per-fit state, primed once on `setup-fit` and reused across all
+// `run-seed` calls for that session.
+type Session = {
+  costFunc: (x: Float64Array) => number | undefined;
+  nmSettings: Map<string, number>;
+  threshold?: number;
+  // Hold a strong reference to the funcCall so V8 keeps the compiled
+  // body and decoded LiteDataFrames alive across runs.
+  fc: WorkerFuncCall;
+};
 
-  return (x: Float64Array): number | undefined => {
+const sessions: Map<SessionId, Session> = new Map();
+
+function buildCostFunc(setup: FitSessionSetup): {
+  cost: (x: Float64Array) => number | undefined;
+  fc: WorkerFuncCall;
+} {
+  const targets = buildTargetEntries(setup.outputTargets);
+  const fixedDfs = reifyFixedDataFrames(setup.fixedDataFrames);
+  const fc = createWorkerFuncCall({
+    source: setup.fnSource,
+    paramList: setup.paramList,
+    outputNames: setup.outputParamNames,
+    fixedInputs: {...setup.fixedInputs, ...fixedDfs},
+    variedInputNames: setup.variedInputNames,
+  });
+  const variedNames = setup.variedInputNames;
+  const checker = makeWorkerBoundsChecker(setup.bounds, variedNames);
+  const useRmse = setup.lossType === LOSS.RMSE;
+
+  const cost = (x: Float64Array): number | undefined => {
     if (!checker(x)) return undefined;
     const varied: Record<string, number> = {};
     for (let i = 0; i < variedNames.length; ++i)
@@ -166,29 +177,42 @@ function buildCostFunc(task: FitTask): (x: Float64Array) => number | undefined {
     }
     return Math.sqrt(sumSq / count);
   };
+  return {cost, fc};
 }
 
-function buildObjective(task: ObjectiveTask): (x: Float64Array) => number | undefined {
-  const fn = compileBody(`return (${task.source}).call(null, x);`, ['x'], []) as
-    (dg: unknown, x: Float64Array) => any;
-  const dg = createWorkerDG();
-  return (x: Float64Array): number | undefined => {
-    const v = fn(dg, x);
-    if (v == null || Number.isNaN(v)) return undefined;
-    return v as number;
-  };
-}
-
-async function run(task: WorkerTask): Promise<WorkerReply> {
-  const settings = new Map<string, number>(task.nmSettings);
+function handleSetup(setup: FitSessionSetup): SetupAck {
   try {
-    const cost: (x: Float64Array) => number | undefined =
-      task.kind === 'objective' ? buildObjective(task) : buildCostFunc(task);
-    const objective = async (x: Float64Array): Promise<number | undefined> => cost(x);
-    const ext = await optimizeNM(objective, task.seed, settings, task.threshold);
+    const {cost, fc} = buildCostFunc(setup);
+    sessions.set(setup.sessionId, {
+      costFunc: cost,
+      nmSettings: new Map<string, number>(setup.nmSettings),
+      threshold: setup.threshold,
+      fc,
+    });
+    return {kind: 'setup-ack', sessionId: setup.sessionId, ok: true};
+  } catch (e: any) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return {kind: 'setup-ack', sessionId: setup.sessionId, ok: false, message: msg};
+  }
+}
+
+async function handleRun(run: RunSeed): Promise<WorkerSuccess | WorkerFailure> {
+  const session = sessions.get(run.sessionId);
+  if (!session) {
+    return {
+      kind: 'failure',
+      taskId: run.taskId,
+      message: `unknown session ${run.sessionId}`,
+      failKind: 'other',
+      seed: run.seed,
+    };
+  }
+  try {
+    const objective = async (x: Float64Array): Promise<number | undefined> => session.costFunc(x);
+    const ext = await optimizeNM(objective, run.seed, session.nmSettings, session.threshold);
     return {
       kind: 'success',
-      taskId: task.taskId,
+      taskId: run.taskId,
       point: ext.point,
       cost: ext.cost,
       iterCosts: ext.iterCosts,
@@ -199,20 +223,35 @@ async function run(task: WorkerTask): Promise<WorkerReply> {
     const failKind = (e && e.name === 'InconsistentTables') ? 'inconsistent' : 'other';
     return {
       kind: 'failure',
-      taskId: task.taskId,
+      taskId: run.taskId,
       message: msg,
       failKind,
-      seed: task.seed,
+      seed: run.seed,
     };
   }
 }
 
-(self as any).onmessage = async (event: MessageEvent<WorkerTask>) => {
-  const reply = await run(event.data);
-  // Float64Arrays inside reply structured-clone fine; success path can also
-  // transfer point.buffer to avoid the extra copy.
-  const transferables: Transferable[] = [];
-  if (reply.kind === 'success') transferables.push(reply.point.buffer);
-  else transferables.push(reply.seed.buffer);
-  (self as any).postMessage(reply, transferables);
+function handleDrop(drop: DropSession): void {
+  sessions.delete(drop.sessionId);
+}
+
+(self as any).onmessage = async (event: MessageEvent<WorkerOutbound>) => {
+  const msg = event.data;
+  if (msg.kind === 'setup-fit') {
+    const ack = handleSetup(msg);
+    (self as any).postMessage(ack);
+    return;
+  }
+  if (msg.kind === 'run-seed') {
+    const reply = await handleRun(msg);
+    const transferables: Transferable[] = [];
+    if (reply.kind === 'success') transferables.push(reply.point.buffer);
+    else transferables.push(reply.seed.buffer);
+    (self as any).postMessage(reply, transferables);
+    return;
+  }
+  if (msg.kind === 'drop-session') {
+    handleDrop(msg);
+    return;
+  }
 };

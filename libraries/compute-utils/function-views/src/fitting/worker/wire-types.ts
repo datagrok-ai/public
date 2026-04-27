@@ -1,12 +1,19 @@
 // Wire types for main ↔ worker messages.
 //
+// Two-message protocol: a fit's immutable bundle (script body, fixed inputs,
+// targets, NM settings) ships once per worker as `FitSessionSetup`; per-seed
+// dispatch sends only `{sessionId, seed}` via `RunSeed`. Worker memory is
+// freed at fit teardown via `DropSession`.
+//
 // Pure type declarations + the LOSS string-enum re-export. Zero runtime
-// imports beyond `../constants` (which itself has none). Kept in a separate
-// file from serialize.ts so the worker entry can import these types without
-// pulling serialize.ts's DG-coupled dependencies into the worker bundle.
+// imports beyond `../constants`. Kept separate from serialize.ts so the
+// worker entry can import these types without pulling serialize.ts's
+// DG-coupled dependencies into the worker bundle.
 
 import type {LOSS} from '../constants';
 import type {ValueBoundsData} from '../optimizer-misc';
+
+export type SessionId = number;
 
 export type SerializedScalarTarget = {
   kind: 'scalar';
@@ -25,18 +32,10 @@ export type SerializedDataFrameTarget = {
 
 export type SerializedOutputTarget = SerializedScalarTarget | SerializedDataFrameTarget;
 
-export type ObjectiveTask = {
-  kind: 'objective';
-  taskId: number;
-  source: string;
-  seed: Float64Array;
-  nmSettings: [string, number][];
-  threshold?: number;
-};
-
-export type FitTask = {
-  kind: 'fit';
-  taskId: number;
+// Outbound — sent once per worker per fit.
+export type FitSessionSetup = {
+  kind: 'setup-fit';
+  sessionId: SessionId;
   fnSource: string;
   paramList: string[];
   outputParamNames: string[];
@@ -48,11 +47,34 @@ export type FitTask = {
   outputTargets: SerializedOutputTarget[];
   nmSettings: [string, number][];
   threshold?: number;
+};
+
+// Outbound — sent once per seed.
+export type RunSeed = {
+  kind: 'run-seed';
+  taskId: number;
+  sessionId: SessionId;
   seed: Float64Array;
 };
 
-export type WorkerTask = ObjectiveTask | FitTask;
+// Outbound — sent once per fit at teardown. Lets the worker free its
+// per-session state. Fire-and-forget, no ack expected. Harmless on
+// ephemeral pools (the worker is about to be terminated anyway); required
+// on long-lived pools so memory doesn't grow per fit.
+export type DropSession = {
+  kind: 'drop-session';
+  sessionId: SessionId;
+};
 
+export type WorkerOutbound = FitSessionSetup | RunSeed | DropSession;
+
+// Inbound — setup acknowledgement. `ok: false` carries a compile or
+// Arrow-decode error.
+export type SetupAck =
+  | { kind: 'setup-ack'; sessionId: SessionId; ok: true }
+  | { kind: 'setup-ack'; sessionId: SessionId; ok: false; message: string };
+
+// Inbound — run results.
 export type WorkerSuccess = {
   kind: 'success';
   taskId: number;
@@ -70,4 +92,4 @@ export type WorkerFailure = {
   seed: Float64Array;
 };
 
-export type WorkerReply = WorkerSuccess | WorkerFailure;
+export type WorkerInbound = SetupAck | WorkerSuccess | WorkerFailure;
