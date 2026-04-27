@@ -3,6 +3,7 @@
 ## v.next
 
 * GROK-20036: Formula Lines dialog: Added `selectId` parameter to focus the dialog on a specific item by id when opened
+* GROK-20036: Formula Lines dialog: Added density plot host support (preview reads `xColumnName`/`yColumnName` from the source viewer)
 
 ## 1.8.1 ()
 

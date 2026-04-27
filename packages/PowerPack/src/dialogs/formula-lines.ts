@@ -530,6 +530,10 @@ class Preview {
         this.dataFrame = src.dataFrame!;
         const innerLook = src.getOptions()['look']['innerViewerLook'];
         this.srcAxes = {y: innerLook['yColumnName'], x: innerLook['xColumnName'], yMap: innerLook['yMap'], xMap: innerLook['xMap']};
+      } else if (src.type === DG.VIEWER.DENSITY_PLOT) {
+        this.dataFrame = src.dataFrame!;
+        const look = src.getOptions().look;
+        this.srcAxes = {x: look.xColumnName, y: look.yColumnName, xMap: look.xMap, yMap: look.yMap};
       } else {
         this.dataFrame = src.dataFrame!;
         this.srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName, yMap: src.props.yMap, xMap: src.props.xMap};
