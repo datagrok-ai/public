@@ -10,7 +10,7 @@
  * Pure TypeScript, no `datagrok-api` imports — safe to use inside a worker.
  */
 
-import {LiteColumn, LiteColumnList, LiteColumnStats, LiteColumnType, LiteDataFrame, LiteRawData}
+import {LiteColumn, LiteColumnList, LiteColumnStats, LiteColumnType, LiteDataFrame}
   from './types';
 
 // Mirror DG.FLOAT_NULL / DG.INT_NULL from js-api/src/const.ts. Hard-coded so

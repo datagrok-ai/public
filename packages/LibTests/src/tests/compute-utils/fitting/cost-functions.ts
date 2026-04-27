@@ -1,6 +1,6 @@
-// §4.2 of WORKERS_PLAN.md — cost-function unit fixtures.
-// Probes makeConstFunction directly (no NM); asserts cost values for
-// known inputs, error paths, and bounds-checker semantics.
+// Cost-function unit fixtures — probe makeConstFunction directly (no NM);
+// assert cost values for known inputs, error paths, and bounds-checker
+// semantics.
 
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';

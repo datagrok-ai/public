@@ -55,9 +55,9 @@ function arrowVectorToLiteColumn(name: string, vector: arrow.Vector, rowCount: n
   if (arrow.DataType.isDictionary(type)) {
     type = vector.data[vector.data.length - 1].dictionary?.type;
     values = unpackDictionary(vector);
-  } else {
+  } else
     values = vector.toArray();
-  }
+
 
   switch (type.typeId) {
   case arrow.Type.Int8:
@@ -93,17 +93,17 @@ function arrowVectorToLiteColumn(name: string, vector: arrow.Vector, rowCount: n
       const bytes = values as Uint8Array;
       for (let i = 0; i < rowCount; ++i)
         bools[i] = (bytes[i >> 3] & (1 << (i & 7))) !== 0;
-    } else {
+    } else
       for (let i = 0; i < rowCount; ++i) bools[i] = Boolean((values as ArrayLike<unknown>)[i]);
-    }
+
     return dg.Column.fromList('bool', name, bools);
   }
   case arrow.Type.Date:
   case arrow.Type.Timestamp: {
     const buf = new Float64Array(rowCount);
-    if (values instanceof BigInt64Array) {
+    if (values instanceof BigInt64Array)
       for (let i = 0; i < rowCount; ++i) buf[i] = timestampBigIntToMs(values[i], (type as any).unit) * 1000;
-    } else {
+    else {
       // values are dates / numbers; coerce.
       for (let i = 0; i < rowCount; ++i) {
         const v = (values as any)[i];

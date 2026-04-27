@@ -1,4 +1,4 @@
-// Worker-side DG shim tests (Phase 3b).
+// Worker-side DG shim tests.
 // All run on the main thread, comparing the shim's LiteDataFrame against a
 // real DG.DataFrame built from identical input data.
 
@@ -171,9 +171,9 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
   });
 
   test('shim_body_wrap_captures_outputs', async () => {
-    // Mimics Phase 3c's body-wrap: given a script body that assigns to a
-    // declared output variable, compile it with the shim's DG injected and
-    // assert the captured output is a LiteDataFrame.
+    // Mimics the worker entry's body-wrap: given a script body that assigns
+    // to a declared output variable, compile it with the shim's DG injected
+    // and assert the captured output is a LiteDataFrame.
     const body = "simulation = DG.DataFrame.fromColumns([" +
       "DG.Column.fromFloat64Array('y', new Float64Array([1,2,3]))" +
       "]);";
@@ -212,9 +212,9 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
   // `const` declarations whose names collide with declared output variables
   // (e.g. `const tempDiff` in object-cooling.js, where `tempDiff` is also
   // a //output: header). The `var X` body-wrap conflicts with `const X` as a
-  // SyntaxError. That's a Phase 3c body-wrapping concern (deciding whether
-  // to use `with(...)`, globalThis sloppy-mode capture, or source rewriting),
-  // not a shim concern. lorenz-attractor.js works because its outputs (`df`)
+  // SyntaxError. That's a body-wrapping concern (deciding whether to use
+  // `with(...)`, globalThis sloppy-mode capture, or source rewriting), not
+  // a shim concern. lorenz-attractor.js works because its outputs (`df`)
   // are not redeclared inside the body.
 });
 

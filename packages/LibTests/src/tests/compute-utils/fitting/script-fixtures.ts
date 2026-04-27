@@ -1,4 +1,4 @@
-// Synthetic JS-language `DG.Func` builders for Phase 3a.
+// Synthetic JS-language `DG.Func` builders.
 //
 // Each helper returns a DG.Script created via DG.Script.create(...) with a
 // known closed-form body. Reused across cost-functions and end-to-end tests.

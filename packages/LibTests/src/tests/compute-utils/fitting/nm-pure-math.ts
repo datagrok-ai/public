@@ -1,12 +1,11 @@
-// §1 of WORKERS_TEST_PLAN.md — pure-math fixtures.
-// Locks down Nelder-Mead and the bounds/sampler invariants without any
-// FuncCall plumbing. These are the fastest tests in the suite and the
-// strongest correctness signal for a worker rewrite.
+// Pure-math fixtures — lock down Nelder-Mead and the bounds/sampler
+// invariants without any FuncCall plumbing. The fastest tests in the suite
+// and the strongest correctness signal for a worker rewrite.
 
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-// `executors.ts` selects the executor; ALL_EXECUTORS becomes ['main','worker']
-// when the worker path lands and every test runs against both.
+// `executors.ts` selects the executor; tests with closure-only objectives
+// fall back to main on the worker iteration.
 import {ALL_EXECUTORS, runFitting} from './executors';
 import {defaultNmSettings, reproSettings, noEarlyStopping, earlyStop,
   rangeBound, formulaBound, isMonotoneNonIncreasing} from './utils';

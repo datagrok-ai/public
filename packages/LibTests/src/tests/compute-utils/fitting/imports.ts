@@ -1,7 +1,6 @@
 // Single point of coupling to compute-utils' fitting internals. The library
 // doesn't re-export these from its public index, so tests reach in via deep
-// paths. When the worker rewrite moves files (Phase 3), only this barrel
-// needs to change.
+// paths. When files move, only this barrel needs to change.
 
 export {performNelderMeadOptimization} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer';
@@ -20,3 +19,5 @@ export {makeConstFunction} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/cost-functions';
 export {runOptimizer} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+export type {ExecutorChoice} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/executor';
