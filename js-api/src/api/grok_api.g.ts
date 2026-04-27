@@ -824,6 +824,17 @@ export interface IDartApi {
   grok_UI_ShortTimestamp(x: any): any;
   grok_UI_MakeDraggable(e: any, allowCopy: any, check: any, getDragObject: any, getDragCaption: any, dragObjectType: String, getDragHint: any, getDragContext: any, onDragStart: any, onDragEnd: any): any;
   grok_UI_MakeDroppable(e: any, acceptDrop: any, doDrop: any): any;
+  grok_UI_MakeDroppableEx(e: any, acceptDrop: any, acceptDrag: any, doDrop: any, onBeginDrag: any, onEndDrag: any, onMouseEnter: any, onMouseOver: any, onMouseLeave: any, onMouseOut: any, getDropElement: any, makeDropZone: any, dropZoneRectTransformation: any, dropSuggestion: String, dropIndication: Bool): any;
+  grok_DragDropArgs_Get_DragObject(a: any): any;
+  grok_DragDropArgs_Get_DragSource(a: any): any;
+  grok_DragDropArgs_Get_DragObjectType(a: any): any;
+  grok_DragDropArgs_Get_Copying(a: any): any;
+  grok_DragDropArgs_Get_Link(a: any): any;
+  grok_DragDropArgs_Get_Event(a: any): any;
+  grok_DragDropArgs_Get_DropEvent(a: any): any;
+  grok_DragDropArgs_Get_DragFromElement(a: any): any;
+  grok_DragDropArgs_Get_Handled(a: any): any;
+  grok_DragDropArgs_Set_Handled(a: any, v: Bool): any;
   grok_UI_InitFormulaAccelerators(textInput: any, table: any): any;
   grok_ML_ApplyModel(model: String, table: any, columnNamesMap: any, showProgress: Bool): Promise<any>;
   grok_ML_MissingValuesImputation(table: any, impute: any, data: any, nearestNeighbours: any): Promise<any>;
@@ -1727,6 +1738,7 @@ export interface IDartApi {
   grok_FileInfo_Get_UpdatedOn(fi: any): any;
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
   grok_FileInfo_ReadAsString(fi: any): Promise<any>;
+  grok_FileInfo_Save(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
   grok_Dapi_Set_Root(root: String): any;
   grok_Dapi_Set_Token(token: String): any;

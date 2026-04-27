@@ -33,10 +33,10 @@ import {
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
-import {__obs} from './src/events';
+import {__obs, DragDropArgs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
-import {CanvasRenderer, GridCellRenderer, SemanticValue, Size} from './src/grid';
+import {CanvasRenderer, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
 import {Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
@@ -745,14 +745,58 @@ export function makeDraggable<T>(e: Element,
   );
 }
 
-export function makeDroppable<T>(e: Element,
-    options?: {
-      acceptDrop?: (dragObject: T) => boolean,
-      doDrop?: (dragObject: T, copying: boolean) => void
-    }): void {
-  api.grok_UI_MakeDroppable(e,
-      options?.acceptDrop ? (dragObject: T) => options?.acceptDrop!(toJs(dragObject)) : null,
-      options?.doDrop ? (dragObject: T, copying: boolean) => options?.doDrop!(toJs(dragObject), toJs(copying)) : null,
+/** Options for {@link makeDroppable}. All callbacks are optional; pass only what you need. */
+export interface IDragAndDropOptions<T = any> {
+  /** Fast predicate used to decide whether to show a drop zone for `dragObject`. */
+  acceptDrop?: (dragObject: T) => boolean;
+  /** Predicate called with the full {@link DragDropArgs} — veto by returning false or setting `args.handled = true`. */
+  acceptDrag?: (args: DragDropArgs<T>) => boolean;
+  /** Handles the drop. Read `args.dragObject`, `args.copying`, `args.link`, etc. */
+  doDrop?: (args: DragDropArgs<T>) => void;
+  /** Fires when a drag session starts and this zone is eligible. */
+  onBeginDrag?: (args: DragDropArgs<T>) => void;
+  /** Fires when a drag session ends (whether it landed here or not). */
+  onEndDrag?: (args: DragDropArgs<T>) => void;
+  onMouseEnter?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  onMouseOver?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  onMouseLeave?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  onMouseOut?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  /** Returns the element that should receive the `d4-drop` class during the drag. */
+  getDropElement?: () => Element;
+  /** Returns a custom drop-zone element, replacing the default `.d4-drop-zone`. */
+  makeDropZone?: () => Element;
+  /** Transforms the default rectangle used to position the drop zone over the host. */
+  dropZoneRectTransformation?: (r: Rect) => Rect;
+  /** Text shown inside the default drop zone. */
+  dropSuggestion?: string;
+  /** When false, suppresses the default `d4-drop-zone` element. Defaults to true. */
+  dropIndication?: boolean;
+}
+
+export function makeDroppable<T = any>(e: Element, options?: IDragAndDropOptions<T>): void {
+  const wrapObj = <R>(cb?: (o: T) => R) =>
+      cb ? (o: any) => cb(toJs(o)) : null;
+  const wrapArgs = <R>(cb?: (a: DragDropArgs<T>) => R) =>
+      cb ? (a: any) => cb(toJs(a)) : null;
+  const wrapMouse = (cb?: (e: MouseEvent, a: DragDropArgs<T>) => void) =>
+      cb ? (me: MouseEvent, a: any) => cb(me, toJs(a)) : null;
+  const wrapRect = (cb?: (r: Rect) => Rect) =>
+      cb ? (r: any) => toDart(cb(toJs(r))) : null;
+  api.grok_UI_MakeDroppableEx(e,
+      wrapObj(options?.acceptDrop),
+      wrapArgs(options?.acceptDrag),
+      wrapArgs(options?.doDrop),
+      wrapArgs(options?.onBeginDrag),
+      wrapArgs(options?.onEndDrag),
+      wrapMouse(options?.onMouseEnter),
+      wrapMouse(options?.onMouseOver),
+      wrapMouse(options?.onMouseLeave),
+      wrapMouse(options?.onMouseOut),
+      options?.getDropElement ?? null,
+      options?.makeDropZone ?? null,
+      wrapRect(options?.dropZoneRectTransformation),
+      options?.dropSuggestion ?? null,
+      options?.dropIndication ?? null,
   );
 }
 
