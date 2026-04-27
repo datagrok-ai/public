@@ -64,6 +64,8 @@ function allowedItemsForHost(src: DG.DataFrame | DG.Viewer): string[] | undefine
     return undefined;
   if (src.type === DG.VIEWER.BOX_PLOT)
     return [ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND];
+  if (src.type === DG.VIEWER.HISTOGRAM)
+    return [ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND];
   return undefined;
 }
 
@@ -72,7 +74,7 @@ function allowedItemsForHost(src: DG.DataFrame | DG.Viewer): string[] | undefine
 function singleAxisColumnNameForHost(src: DG.DataFrame | DG.Viewer): string | undefined {
   if (!(src instanceof DG.Viewer))
     return undefined;
-  if (src.type === DG.VIEWER.BOX_PLOT)
+  if (src.type === DG.VIEWER.BOX_PLOT || src.type === DG.VIEWER.HISTOGRAM)
     return src.getOptions().look.valueColumnName;
   return undefined;
 }
@@ -560,6 +562,10 @@ class Preview {
         this.dataFrame = src.dataFrame!;
         const look = src.getOptions().look;
         this.srcAxes = {x: undefined, y: look.valueColumnName, yMap: look.yMap};
+      } else if (src.type === DG.VIEWER.HISTOGRAM) {
+        this.dataFrame = src.dataFrame!;
+        const look = src.getOptions().look;
+        this.srcAxes = {x: look.valueColumnName, y: undefined, xMap: look.xMap};
       } else {
         this.dataFrame = src.dataFrame!;
         this.srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName, yMap: src.props.yMap, xMap: src.props.xMap};
