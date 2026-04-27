@@ -9,7 +9,14 @@ export {nelderMeadSettingsOpts} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-nelder-mead';
 export {makeBoundsChecker} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-sampler';
-export type {Extremum, OptimizationResult, ValueBoundsData} from
+export type {Extremum, OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig,
+  OutputTargetItem, ValueBoundsData} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-misc';
 export type {EarlyStoppingSettings, ReproSettings} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/constants';
+export {LOSS} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/constants';
+export {makeConstFunction} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/cost-functions';
+export {runOptimizer} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';

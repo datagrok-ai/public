@@ -32,6 +32,9 @@ import './tests/compute-utils/reactive-tree-driver/error-handling';
 import './tests/compute-utils/reactive-tree-driver/advanced-coverage';
 import './tests/compute-utils/reactive-tree-driver/buffer-keys-during-lock';
 import './tests/compute-utils/fitting/nm-pure-math';
+import './tests/compute-utils/fitting/worker-dg-shim';
+import './tests/compute-utils/fitting/cost-functions';
+import './tests/compute-utils/fitting/end-to-end';
 import './tests/arrow/roundtrip';
 import './tests/arrow/titanic';
 

@@ -1,0 +1,248 @@
+// Worker-side DG shim tests (Phase 3b).
+// All run on the main thread, comparing the shim's LiteDataFrame against a
+// real DG.DataFrame built from identical input data.
+
+import * as DG from 'datagrok-api/dg';
+import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
+import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/worker';
+import {toFeather} from '@datagrok-libraries/arrow';
+import {getErrors} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/fitting-utils';
+import {_package} from '../../../package-test';
+
+const shim = createWorkerDG();
+
+function expectColumnDataEqual(lite: LiteColumn, dg: DG.Column, msg: string): void {
+  expect(lite.length, dg.length, `${msg}: length differs`);
+  expect(lite.type, dg.type as any, `${msg}: type differs`);
+  const liteRaw = lite.getRawData() as ArrayLike<unknown>;
+  const dgRaw = dg.getRawData() as ArrayLike<unknown>;
+  expect(liteRaw.length, dgRaw.length, `${msg}: raw length differs`);
+  for (let i = 0; i < liteRaw.length; ++i) {
+    const a = liteRaw[i];
+    const b = dgRaw[i];
+    if (typeof a === 'number' && typeof b === 'number')
+      expectFloat(a, b, 1e-12, `${msg}[${i}]`);
+    else
+      expect(String(a), String(b), `${msg}[${i}]`);
+  }
+}
+
+category('ComputeUtils: Fitting / Worker DG shim', () => {
+  test('shim_lite_vs_dg_int_column', async () => {
+    const arr = new Int32Array([1, 2, 3, -7, 0, 999]);
+    const lite = shim.Column.fromInt32Array('vals', arr);
+    const dg = DG.Column.fromInt32Array('vals', arr);
+    expectColumnDataEqual(lite, dg, 'int');
+    expectFloat(lite.stats.min, dg.stats.min, 1e-12, 'int min');
+    expectFloat(lite.stats.max, dg.stats.max, 1e-12, 'int max');
+  });
+
+  test('shim_lite_vs_dg_float_column', async () => {
+    const arr = new Float64Array([1.5, -2.25, 3.14159, 0, 1e10]);
+    const lite = shim.Column.fromFloat64Array('vals', arr);
+    const dg = DG.Column.fromFloat64Array('vals', arr);
+    expectColumnDataEqual(lite, dg, 'float');
+    expectFloat(lite.stats.min, dg.stats.min, 1e-12, 'float min');
+    expectFloat(lite.stats.max, dg.stats.max, 1e-12, 'float max');
+  });
+
+  test('shim_lite_vs_dg_string_column', async () => {
+    const values = ['alpha', 'beta', 'gamma', '', 'alpha', 'beta'];
+    const lite = shim.Column.fromStrings('vals', values);
+    const dg = DG.Column.fromStrings('vals', values);
+    expect(lite.length, dg.length);
+    expect(lite.type, DG.COLUMN_TYPE.STRING);
+    for (let i = 0; i < values.length; ++i)
+      expect(lite.get(i) as string, dg.get(i) as string, `row ${i}`);
+  });
+
+  test('shim_lite_vs_dg_bigint_column', async () => {
+    let big = BigInt(1);
+    for (let i = 0; i < 40; ++i) big = big * BigInt(2);
+    const arr = new BigInt64Array([BigInt(1), big, -big, BigInt(0)]);
+    const lite = shim.Column.fromBigInt64Array('vals', arr);
+    const dg = DG.Column.fromBigInt64Array('vals', arr);
+    expect(lite.length, dg.length, 'length differs');
+    expect(lite.type, dg.type as any, 'type differs');
+    // DG.Column.fromBigInt64Array.getRawData() throws "Not implemented" on the
+    // current DG version; assert against the original input array instead.
+    const liteRaw = lite.getRawData() as unknown as BigInt64Array;
+    for (let i = 0; i < arr.length; ++i)
+      expect(String(liteRaw[i]), String(arr[i]), `row ${i}`);
+  });
+
+  test('shim_dataframe_fromcolumns_parity', async () => {
+    const ids = new Int32Array([10, 20, 30]);
+    const vals = new Float64Array([1.1, 2.2, 3.3]);
+    const liteDf = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('id', ids),
+      shim.Column.fromFloat64Array('value', vals),
+      shim.Column.fromStrings('label', ['x', 'y', 'z']),
+    ]);
+    const dgDf = DG.DataFrame.fromColumns([
+      DG.Column.fromInt32Array('id', ids),
+      DG.Column.fromFloat64Array('value', vals),
+      DG.Column.fromStrings('label', ['x', 'y', 'z']),
+    ]);
+    expect(liteDf.rowCount, dgDf.rowCount, 'row count');
+    expect(liteDf.columns.length, dgDf.columns.length, 'col count');
+    expect(liteDf.columns.names().join(','), dgDf.columns.names().join(','), 'col order');
+    expectColumnDataEqual(liteDf.col('id')!, dgDf.col('id')!, 'id col');
+    expectColumnDataEqual(liteDf.col('value')!, dgDf.col('value')!, 'value col');
+    // string col compared via .get(i)
+    const a = liteDf.col('label')!;
+    const b = dgDf.col('label')!;
+    for (let i = 0; i < a.length; ++i)
+      expect(a.get(i) as string, b.get(i) as string);
+  });
+
+  test('shim_geterrors_parity', async () => {
+    // Build a target DF and a simulation DF, twice — once as DG, once as
+    // shim Lite — and run getErrors() on both. Output must be byte-identical.
+    const argRaw = new Float64Array([0, 0.5, 1.0, 1.5, 2.0]);
+    const fnRaw = new Float64Array([10, 6.07, 3.68, 2.23, 1.35]);
+    const simArgRaw = new Float64Array([0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]);
+    const simFnRaw = new Float64Array([10.1, 7.8, 6.0, 4.7, 3.6, 2.8, 2.2, 1.7, 1.3]);
+
+    // Real DG side
+    const expArgDg = DG.Column.fromFloat64Array('t', argRaw);
+    const expFnDg = DG.Column.fromFloat64Array('y', fnRaw);
+    const simDg = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('t', simArgRaw),
+      DG.Column.fromFloat64Array('y', simFnRaw),
+    ]);
+
+    // Shim Lite side
+    const expArgLt = shim.Column.fromFloat64Array('t', argRaw);
+    const expFnLt = shim.Column.fromFloat64Array('y', fnRaw);
+    const simLt = shim.DataFrame.fromColumns([
+      shim.Column.fromFloat64Array('t', simArgRaw),
+      shim.Column.fromFloat64Array('y', simFnRaw),
+    ]);
+
+    const dgErrs = getErrors(expArgDg, [expFnDg], simDg, true);
+    const ltErrs = getErrors(expArgLt as any, [expFnLt as any], simLt as any, true);
+    expect(dgErrs.length, ltErrs.length, 'errors length');
+    for (let i = 0; i < dgErrs.length; ++i)
+      expectFloat(dgErrs[i], ltErrs[i], 1e-12, `err[${i}]`);
+  });
+
+  test('arrow_to_lite_roundtrip_int', async () => {
+    const dgDf = DG.DataFrame.fromColumns([
+      DG.Column.fromInt32Array('vals', new Int32Array([1, 2, 3, -7, 0])),
+    ]);
+    const bytes = toFeather(dgDf, true)!;
+    const lite = arrowIpcToLite(bytes);
+    expect(lite.rowCount, dgDf.rowCount);
+    expectColumnDataEqual(lite.col('vals')!, dgDf.col('vals')!, 'int roundtrip');
+  });
+
+  test('arrow_to_lite_roundtrip_float', async () => {
+    const dgDf = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('vals', new Float64Array([1.5, -2.25, 3.14159, 0, 1e10])),
+    ]);
+    const bytes = toFeather(dgDf, true)!;
+    const lite = arrowIpcToLite(bytes);
+    expect(lite.rowCount, dgDf.rowCount);
+    expectColumnDataEqual(lite.col('vals')!, dgDf.col('vals')!, 'float roundtrip');
+  });
+
+  test('arrow_to_lite_roundtrip_string', async () => {
+    const values = ['alpha', 'beta', 'gamma', '', 'alpha'];
+    const dgDf = DG.DataFrame.fromColumns([DG.Column.fromStrings('vals', values)]);
+    const bytes = toFeather(dgDf, true)!;
+    const lite = arrowIpcToLite(bytes);
+    const c = lite.col('vals')!;
+    expect(c.length, values.length);
+    for (let i = 0; i < values.length; ++i)
+      expect(c.get(i) as string, values[i], `row ${i}`);
+  });
+
+  test('shim_stats_lazy_caching', async () => {
+    const arr = new Float64Array([1, 2, 3, 4, 5]);
+    const lite = shim.Column.fromFloat64Array('x', arr);
+    const s1 = lite.stats;
+    const s2 = lite.stats;
+    expect(s1 === s2, true, 'second access must hit cache (same object identity)');
+    expectFloat(s1.min, 1, 1e-12);
+    expectFloat(s1.max, 5, 1e-12);
+  });
+
+  test('shim_body_wrap_captures_outputs', async () => {
+    // Mimics Phase 3c's body-wrap: given a script body that assigns to a
+    // declared output variable, compile it with the shim's DG injected and
+    // assert the captured output is a LiteDataFrame.
+    const body = "simulation = DG.DataFrame.fromColumns([" +
+      "DG.Column.fromFloat64Array('y', new Float64Array([1,2,3]))" +
+      "]);";
+    const wrapped = `var simulation; ${body}; return {simulation};`;
+    const fn = new Function('DG', wrapped) as (dg: any) => {simulation: LiteDataFrame};
+    const out = fn(shim);
+    expect(out.simulation != null, true, 'simulation output captured');
+    expect(out.simulation.rowCount, 3);
+    const c = out.simulation.col('y')!;
+    expect(c.length, 3);
+    expect(c.type, 'double');
+    const raw = c.getRawData() as Float64Array;
+    expectFloat(raw[0], 1, 1e-12);
+    expectFloat(raw[2], 3, 1e-12);
+  });
+
+  test('shim_realscript_lorenz_smoke', async () => {
+    // Load the real production script body, parse the //input: header,
+    // compile via new Function with the shim, and assert the output is a
+    // LiteDataFrame with the expected columns. This is the sentinel for shim
+    // coverage gaps — if a real script uses a DG.* surface the shim doesn't
+    // expose, this test fails immediately.
+    const src = await _package.files.readAsText('shim-fixtures/lorenz-attractor.js');
+    const {body, inputNames, outputNames} = parseScript(src);
+    const wrapped = `var ${outputNames.join(', ')}; ${body}\nreturn {${outputNames.join(', ')}};`;
+    const fn = new Function('DG', ...inputNames, wrapped) as (...args: any[]) => Record<string, LiteDataFrame>;
+    const inputs = {iterations: 100, dt: 0.01, x0: 0, y0: 1, z0: 1.05};
+    const out = fn(shim, ...inputNames.map((n) => (inputs as any)[n]));
+    expect(out.df != null, true, 'df output captured');
+    expect(out.df.rowCount, 101, 'iterations + 1 rows');
+    expect(out.df.columns.names().join(','), 'X,Y,Z');
+  });
+
+  // Note: smoke tests for object-cooling, heat-exchange, and lotka-volterra
+  // are intentionally NOT included here. Those production scripts use inner
+  // `const` declarations whose names collide with declared output variables
+  // (e.g. `const tempDiff` in object-cooling.js, where `tempDiff` is also
+  // a //output: header). The `var X` body-wrap conflicts with `const X` as a
+  // SyntaxError. That's a Phase 3c body-wrapping concern (deciding whether
+  // to use `with(...)`, globalThis sloppy-mode capture, or source rewriting),
+  // not a shim concern. lorenz-attractor.js works because its outputs (`df`)
+  // are not redeclared inside the body.
+});
+
+/** Minimal Datagrok-script header parser: extracts input names and output names. */
+function parseScript(src: string): {body: string; inputNames: string[]; outputNames: string[]} {
+  const inputNames: string[] = [];
+  const outputNames: string[] = [];
+  const lines = src.split('\n');
+  let bodyStart = 0;
+  for (let i = 0; i < lines.length; ++i) {
+    const ln = lines[i];
+    const trimmed = ln.trim();
+    if (trimmed.startsWith('//')) {
+      // //input: <type> <name> [= ...] [{...}] | //output: <type> <name> [...]
+      const m = trimmed.match(/^\/\/(input|output):\s*\S+\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
+      if (m) {
+        if (m[1] === 'input') inputNames.push(m[2]);
+        else outputNames.push(m[2]);
+      }
+      bodyStart = i + 1;
+    } else if (trimmed === '') {
+      bodyStart = i + 1;
+    } else {
+      break;
+    }
+  }
+  return {
+    body: lines.slice(bodyStart).join('\n'),
+    inputNames, outputNames,
+  };
+}
