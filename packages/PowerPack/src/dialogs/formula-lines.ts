@@ -31,6 +31,10 @@ const enum ITEM_CAPTION {
   FORMULA_REGION = 'Region - Formula Lines',
   RECT_REGION = 'Region - Draw Rectangle',
   POLYGON_REGION = 'Region - Draw Lasso',
+  // Axis-bounds formula region — mirrors the axis context-menu's `Annotations > Region`.
+  // VERT bounds the X axis (vertical band-shape); HORZ bounds the Y axis.
+  VERT_RANGE_REGION = 'Region - Vertical Range',
+  HORZ_RANGE_REGION = 'Region - Horizontal Range',
 }
 
 const enum ITEM_ORIENTATION {
@@ -1572,6 +1576,28 @@ class CreationControl {
           return;
         }
 
+        // Axis-bounds formula region — `${col} = q1` / `${col} = q3` for the chosen axis.
+        // Mirrors `addAxisAnnotationsMenu`'s `Add Region` in `core/client/d4/lib/src/utils/utils.dart`.
+        if (itemCaption === ITEM_CAPTION.VERT_RANGE_REGION || itemCaption === ITEM_CAPTION.HORZ_RANGE_REGION) {
+          const isVert = itemCaption === ITEM_CAPTION.VERT_RANGE_REGION;
+          const col = isVert ? colX : colY;
+          const stats = isVert ? xStats : yStats;
+          if (!col || !stats)
+            return;
+          const lhs = wrapCol(col.name);
+          const lo = stats.q1.toFixed(1);
+          const hi = stats.q3.toFixed(1);
+          const item: DG.FormulaAnnotationRegion = {
+            type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
+            formula1: `${lhs} = ${lo}`,
+            formula2: `${lhs} = ${hi}`,
+            header: `${lhs} in [${lo}, ${hi}]`,
+          };
+          this.annotationRegionsJustCreatedItems.unshift(item);
+          onItemCreatedAction(item);
+          return;
+        }
+
         let item: DG.FormulaLine = {};
 
         /** Fill the item with the necessary data */
@@ -1647,18 +1673,48 @@ class CreationControl {
         && (currentItem as DG.FormulaLine).type === ITEM_TYPE.BAND;
       const xMapActive = !isBandCurrent && !!cols.xMap;
       const yMapActive = !isBandCurrent && !!cols.yMap;
-      // Region items are hidden for single-axis hosts (box / histogram / bar) — those hosts
-      // pass an `allowedItems` allow-list that the line/band items already filter against.
-      if (allowedItems == null && cols.x?.isNumerical && !xMapActive && cols.y?.isNumerical && !yMapActive) {
-        const regionItems: Record<string, string> = {
-          [ITEM_CAPTION.FORMULA_REGION]: 'Adds a new area defined by two formula lines.',
-          [ITEM_CAPTION.RECT_REGION]: 'Draws a rectangle area.',
-          [ITEM_CAPTION.POLYGON_REGION]: 'Draws a polygon area using lasso tool.',
+      // 2D hosts: full set of region items (formula, draw rect, draw lasso).
+      // 1D hosts (histogram, bar chart, box plot — `allowedItems != null`) get a draw-rectangle
+      // option that the Dart-side `createDrawnRegion` override converts into a value-axis formula
+      // region, plus a single axis-bounds range item targeting the value column.
+      const xRegionEligible = !!cols.x?.isNumerical && !xMapActive;
+      const yRegionEligible = !!cols.y?.isNumerical && !yMapActive;
+      if (allowedItems == null) {
+        if (xRegionEligible && yRegionEligible) {
+          const twoAxisRegionItems: Record<string, string> = {
+            [ITEM_CAPTION.FORMULA_REGION]: 'Adds a new area defined by two formula lines.',
+            [ITEM_CAPTION.RECT_REGION]: 'Draws a rectangle area.',
+            [ITEM_CAPTION.POLYGON_REGION]: 'Draws a polygon area using lasso tool.',
+          };
+          for (const itemCaption in twoAxisRegionItems)
+            menu.item(itemCaption, () => onClickAction(itemCaption), null, {
+              description: twoAxisRegionItems[itemCaption]
+            });
         }
-
-        for (const itemCaption in regionItems)
-          menu.item(itemCaption, () => onClickAction(itemCaption), null, {
-            description: regionItems[itemCaption]
+        if (xRegionEligible)
+          menu.item(ITEM_CAPTION.VERT_RANGE_REGION, () => onClickAction(ITEM_CAPTION.VERT_RANGE_REGION), null, {
+            description: 'Adds a region bounded by two values on the X axis (q1 .. q3 of the column).'
+          });
+        if (yRegionEligible)
+          menu.item(ITEM_CAPTION.HORZ_RANGE_REGION, () => onClickAction(ITEM_CAPTION.HORZ_RANGE_REGION), null, {
+            description: 'Adds a region bounded by two values on the Y axis (q1 .. q3 of the column).'
+          });
+      } else {
+        // Single-axis host. Value lives on the X axis when `allowedItems` includes vertical
+        // bands (histogram, horizontal bar chart) and on the Y axis otherwise (vertical bar
+        // chart, box plot).
+        const valueOnX = allowedItems.includes(ITEM_CAPTION.VERT_BAND);
+        if (xRegionEligible || yRegionEligible)
+          menu.item(ITEM_CAPTION.RECT_REGION, () => onClickAction(ITEM_CAPTION.RECT_REGION), null, {
+            description: 'Draws a rectangle and converts it to a value-axis formula region.'
+          });
+        if (valueOnX && xRegionEligible)
+          menu.item(ITEM_CAPTION.VERT_RANGE_REGION, () => onClickAction(ITEM_CAPTION.VERT_RANGE_REGION), null, {
+            description: 'Adds a region bounded by two values on the value axis (q1 .. q3 of the column).'
+          });
+        else if (!valueOnX && yRegionEligible)
+          menu.item(ITEM_CAPTION.HORZ_RANGE_REGION, () => onClickAction(ITEM_CAPTION.HORZ_RANGE_REGION), null, {
+            description: 'Adds a region bounded by two values on the value axis (q1 .. q3 of the column).'
           });
       }
 
@@ -1835,13 +1891,19 @@ export class FormulaLinesDialog {
       (item: EditorItem) =>
         this.onItemCreatedAction(item, !isAnnotationRegionType(item?.type ?? '')),
       (lassoMode?: boolean) => new Promise<DG.AnnotationRegion | null>((resolve) => {
-        if (this.preview.viewer instanceof DG.ScatterPlotViewer || this.preview.viewer instanceof DG.LineChartViewer) {
-          this.preview.viewer.disableAnnotationRegionDrawing();
-          this.preview.viewer.setOptions({ annotationRegions: '[]', formulaLines: '[]' });
+        const previewViewer = this.preview.viewer;
+        const supportsDrawing = previewViewer instanceof DG.ScatterPlotViewer
+          || previewViewer instanceof DG.LineChartViewer
+          || previewViewer instanceof DG.HistogramViewer
+          || previewViewer instanceof DG.BarChartViewer;
+        if (supportsDrawing) {
+          const drawHost = previewViewer as DG.ScatterPlotViewer | DG.LineChartViewer | DG.HistogramViewer | DG.BarChartViewer;
+          drawHost.disableAnnotationRegionDrawing();
+          previewViewer.setOptions({ annotationRegions: '[]', formulaLines: '[]' });
           this.editor.update(-1, false);
-          this.preview.viewer.enableAnnotationRegionDrawing(lassoMode, (region: { [key: string]: unknown }) => {
+          drawHost.enableAnnotationRegionDrawing(lassoMode, (region: { [key: string]: unknown }) => {
             region['isDataFrameRegion'] = this.tabs.currentPane.name === ITEM_SOURCE.DATAFRAME;
-            const props = this.preview.viewer.props as DG.IScatterPlotSettings;
+            const props = previewViewer.props as DG.IScatterPlotSettings;
             const annotationRegions = JSON.parse(props.annotationRegions || '[]');
             annotationRegions.push(region);
             props.annotationRegions = JSON.stringify(annotationRegions);
