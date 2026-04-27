@@ -1531,6 +1531,28 @@ export interface IHistogramSettings {
 
   axisFont: string;
 
+  formulaFont: string;
+
+  annotationFont: string;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of viewer-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
   filteredBinsColor: number;
 
   selectedBinsColor: number;
