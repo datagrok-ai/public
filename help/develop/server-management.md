@@ -10,10 +10,6 @@ any task that creates, updates, shares, or inspects entities on the server —
 users, groups, connections, queries, scripts, packages, files, function calls —
 and for bulk operations or integrations that should not depend on a browser.
 
-It is the recommended alternative to UI automation (Playwright, Selenium,
-hand-written HTTP) for data and configuration management: faster, idempotent,
-scriptable, and free of any logged-in session.
-
 `grok s` ships with [`datagrok-tools`](https://www.npmjs.com/package/datagrok-tools).
 Install with `npm install -g datagrok-tools`, then configure a server.
 
