@@ -9,6 +9,7 @@
 * GROK-20036: Formula Lines dialog: Added bar chart host support (orientation-aware preview and popup — vertical bars get horizontal lines/bands, horizontal bars get vertical lines/bands)
 * GROK-20036: Fixed empty scatter preview in formula-lines dialog for box plot, histogram, and bar chart hosts
 * GROK-20036: Formula Lines dialog now uses the matching host viewer type (box plot / histogram / bar chart / density plot) as the preview, instead of always falling back to scatter plot
+* GROK-20036: Hid range slider / split selector and disabled filtering on the histogram preview, hid color scale and bin selector on density plot, hid color selector on box plot, hid stack selector on bar chart
 
 ## 1.8.1 ()
 

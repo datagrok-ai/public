@@ -710,6 +710,8 @@ class Preview {
         yAxisType: look.yAxisType,
         invertXAxis: look.invertXAxis,
         invertYAxis: look.invertYAxis,
+        showColorScale: false,
+        showBinSelector: false,
       });
     }
     else if (previewType === DG.VIEWER.BOX_PLOT) {
@@ -719,12 +721,16 @@ class Preview {
         category1ColumnName: look.category1ColumnName,
         axisType: look.axisType,
         invertYAxis: look.invertYAxis,
+        showColorSelector: false,
       });
     }
     else if (previewType === DG.VIEWER.HISTOGRAM) {
       this.viewer = DG.Viewer.histogram(this.dataFrame, {
         ...sharedOptions,
         valueColumnName: look.valueColumnName,
+        showRangeSlider: false,
+        showSplitSelector: false,
+        filteringEnabled: false,
       });
     }
     else if (previewType === DG.VIEWER.BAR_CHART) {
@@ -736,6 +742,7 @@ class Preview {
         stackColumnName: look.stackColumnName,
         orientation: look.orientation,
         axisType: look.axisType,
+        showStackSelector: false,
       });
     }
     else {
