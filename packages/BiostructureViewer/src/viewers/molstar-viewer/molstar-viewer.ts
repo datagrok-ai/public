@@ -33,8 +33,6 @@ import {
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
 import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-// Sourced from mol3d-link.ts until @datagrok-libraries/bio exports these constants.
-import {CHEM_ATOM_PICKER_LINKED_COL, CHEM_ATOM_PICKER_LINKED_SMILES_COL} from '../../utils/mol3d-link';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getDataProviderList} from '@datagrok-libraries/bio/src/utils/data-provider';
@@ -408,19 +406,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const molCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE3D) ?? this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
       if (molCol)
         this.ligandColumnName = molCol.name;
-    }
-
-    // Write the reciprocal tag pair so the picker link is established on bind.
-    if (this.ligandColumnName) {
-      const ligandCol = this.dataFrame.col(this.ligandColumnName);
-      if (ligandCol) {
-        const smilesCol = this.dataFrame.columns.toList().find(
-          (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && c.name !== this.ligandColumnName);
-        if (smilesCol) {
-          smilesCol.tags[CHEM_ATOM_PICKER_LINKED_COL] = this.ligandColumnName;
-          ligandCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL] = smilesCol.name;
-        }
-      }
     }
   }
 
