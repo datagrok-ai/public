@@ -9,6 +9,21 @@ highlighting different areas of the chart and data, etc.
 
 ![Example of formula lines](../../../uploads/viewers/formula-lines-example.png)
 
+## Supported viewers
+
+| Viewer       | X axis                                               | Y axis                                                          |
+|--------------|------------------------------------------------------|-----------------------------------------------------------------|
+| Scatter plot | yes                                                  | yes                                                             |
+| Line chart   | yes                                                  | yes                                                             |
+| Density plot | yes                                                  | yes                                                             |
+| Box plot     | not supported (categorical)                          | yes (value axis)                                                |
+| Histogram    | yes (value axis)                                     | not supported (count is derived)                                |
+| Bar chart    | yes when `orientation` resolves to `horizontal`      | yes when `orientation` resolves to `vertical`                   |
+
+Box plot, histogram, and bar chart accept only constant-RHS formulas (`${value} = C`) and bands
+(`${value} in (a, b)`) on their value axis. The Formula Lines editor dialog limits the popup-menu
+items and the column picker to match each viewer's supported axes.
+
 Lines information is stored in a special storage in a dataframe or viewer. The viewer automatically reads storages when
 it connects to the dataframe.
 

@@ -66,6 +66,10 @@ function allowedItemsForHost(src: DG.DataFrame | DG.Viewer): string[] | undefine
     return [ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND];
   if (src.type === DG.VIEWER.HISTOGRAM)
     return [ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND];
+  if (src.type === DG.VIEWER.BAR_CHART)
+    return barChartIsVertical(src)
+      ? [ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND]
+      : [ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND];
   return undefined;
 }
 
@@ -74,9 +78,26 @@ function allowedItemsForHost(src: DG.DataFrame | DG.Viewer): string[] | undefine
 function singleAxisColumnNameForHost(src: DG.DataFrame | DG.Viewer): string | undefined {
   if (!(src instanceof DG.Viewer))
     return undefined;
-  if (src.type === DG.VIEWER.BOX_PLOT || src.type === DG.VIEWER.HISTOGRAM)
+  if (src.type === DG.VIEWER.BOX_PLOT || src.type === DG.VIEWER.HISTOGRAM
+    || src.type === DG.VIEWER.BAR_CHART)
     return src.getOptions().look.valueColumnName;
   return undefined;
+}
+
+/// Resolves bar-chart `verticalMode` from the host viewer, mirroring the Dart-side getter
+/// at `bar_chart_core.dart:74` — `look.orientation === 'vertical' || (orientation === 'auto'
+/// && canvas.height / canvas.width > 5)`. The host viewer is already attached when the
+/// dialog opens, so canvas dimensions resolve immediately — no post-attach wait needed.
+function barChartIsVertical(viewer: DG.Viewer): boolean {
+  const orientation = viewer.getOptions().look.orientation;
+  if (orientation === 'vertical')
+    return true;
+  if (orientation === 'horizontal')
+    return false;
+  // auto — derive from the host's canvas aspect ratio.
+  const w = viewer.root.clientWidth;
+  const h = viewer.root.clientHeight;
+  return w > 0 && h / w > 5;
 }
 
 export const DEFAULT_OPTIONS: EditorOptions = {
@@ -566,6 +587,15 @@ class Preview {
         this.dataFrame = src.dataFrame!;
         const look = src.getOptions().look;
         this.srcAxes = {x: look.valueColumnName, y: undefined, xMap: look.xMap};
+      } else if (src.type === DG.VIEWER.BAR_CHART) {
+        this.dataFrame = src.dataFrame!;
+        const look = src.getOptions().look;
+        const isVertical = barChartIsVertical(src);
+        // Vertical bars → value on Y; horizontal bars → value on X. The categorical
+        // axis (`splitColumnName`) is undefined for the dialog.
+        this.srcAxes = isVertical
+          ? {x: undefined, y: look.valueColumnName, yMap: look.yMap}
+          : {x: look.valueColumnName, y: undefined, xMap: look.xMap};
       } else {
         this.dataFrame = src.dataFrame!;
         this.srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName, yMap: src.props.yMap, xMap: src.props.xMap};

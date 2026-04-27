@@ -6,6 +6,7 @@
 * GROK-20036: Formula Lines dialog: Added density plot host support (preview reads `xColumnName`/`yColumnName` from the source viewer)
 * GROK-20036: Formula Lines dialog: Added box plot host support (single-axis preview, popup limited to horizontal lines/bands, validator allows constant-RHS formulas, column picker restricted to the value column)
 * GROK-20036: Formula Lines dialog: Added histogram host support (single-axis preview on X, popup limited to vertical lines/bands, column picker restricted to the value column)
+* GROK-20036: Formula Lines dialog: Added bar chart host support (orientation-aware preview and popup — vertical bars get horizontal lines/bands, horizontal bars get vertical lines/bands)
 
 ## 1.8.1 ()
 
