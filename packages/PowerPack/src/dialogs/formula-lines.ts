@@ -88,10 +88,7 @@ function singleAxisColumnNameForHost(src: DG.DataFrame | DG.Viewer): string | un
   return undefined;
 }
 
-/// Resolves bar-chart `verticalMode` from the host viewer, mirroring the Dart-side getter
-/// at `bar_chart_core.dart:74` — `look.orientation === 'vertical' || (orientation === 'auto'
-/// && canvas.height / canvas.width > 5)`. The host viewer is already attached when the
-/// dialog opens, so canvas dimensions resolve immediately — no post-attach wait needed.
+/// Resolves bar-chart `verticalMode` from the attached host viewer, mirroring the Dart-side getter.
 function barChartIsVertical(viewer: DG.Viewer): boolean {
   const orientation = viewer.getOptions().look.orientation;
   if (orientation === 'vertical')
@@ -582,6 +579,8 @@ class Preview {
    * of the formula to the axes of the original scatterplot.
    */
   private getItemAxes(axesItem: EditorItem): AxisNames {
+    let result: AxisNames;
+
     if (isAnnotationRegionType(axesItem.type)) {
       if (axesItem.type === ITEM_TYPE.AREA_REGION_ANNOTATION)
         return {
@@ -590,33 +589,34 @@ class Preview {
           yMap: (axesItem as DG.AreaAnnotationRegion).yMap,
           xMap: (axesItem as DG.AreaAnnotationRegion).xMap,
         };
-      
-        const item = axesItem as DG.FormulaAnnotationRegion;
-        const meta1 = item.formula1
-          ? DG.FormulaLinesHelper.getMetaByFormula(item.formula1, ITEM_TYPE.LINE)
-          : null;
 
-        const meta2 = item.formula2
-          ? DG.FormulaLinesHelper.getMetaByFormula(item.formula2, ITEM_TYPE.LINE)
-          : null;
-        
-        return {
-          y: meta1?.funcName ?? meta2?.funcName,
-          x: meta1?.argName ?? meta2?.argName,
-          yMap: item.yMap,
-          xMap: item.xMap,
-        };
+      const item = axesItem as DG.FormulaAnnotationRegion;
+      const meta1 = item.formula1
+        ? DG.FormulaLinesHelper.getMetaByFormula(item.formula1, ITEM_TYPE.LINE)
+        : null;
+
+      const meta2 = item.formula2
+        ? DG.FormulaLinesHelper.getMetaByFormula(item.formula2, ITEM_TYPE.LINE)
+        : null;
+
+      // For `axisCol = const` formulas argName is undefined, so the srcAxes swap below decides which axis funcName belongs to.
+      result = {
+        y: meta1?.funcName ?? meta2?.funcName,
+        x: meta1?.argName ?? meta2?.argName,
+        yMap: item.yMap,
+        xMap: item.xMap,
+      };
+    } else {
+      const item = axesItem as DG.FormulaLine;
+      const itemMeta = DG.FormulaLinesHelper.getMeta(item);
+      result = {
+        y: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.argName : itemMeta.funcName,
+        x: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.funcName : itemMeta.argName,
+        xMap: item.xMap,
+        yMap: item.yMap,
+      };
     }
 
-    const item = axesItem as DG.FormulaLine;
-    const itemMeta = DG.FormulaLinesHelper.getMeta(item);
-    const result: AxisNames = {
-      y: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.argName : itemMeta.funcName,
-      x: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.funcName : itemMeta.argName,
-      xMap: item.xMap,
-      yMap: item.yMap,
-    };
-    
     /** If the source axes exist, then we try to set similar axes */
     if (this.srcAxes) {
       result.y ??= this.srcAxes.y;
@@ -628,8 +628,8 @@ class Preview {
         const tmp = result.x;
         result.x = result.y;
         result.y = tmp;
-        
-        const tmpMap = result.x;
+
+        const tmpMap = result.xMap;
         result.xMap = result.yMap;
         result.yMap = tmpMap;
       }
@@ -766,12 +766,8 @@ class Preview {
         orientation: look.orientation,
         axisType: look.axisType,
         showStackSelector: false,
-        // Bar chart anchors the value-axis range slider (horzScroll) at chartBox.bottom
-        // and the categorical-axis slider (vertScroll) starting at chartBox.top - 10.
-        // With the host's default outerMarginTop=0 and outerMarginBottom=0, the slider
-        // handles render outside the canvas in the small preview viewport and get
-        // clipped — the top y-slider circle disappears entirely. Pad both edges so the
-        // 5px-radius handles fit inside the preview.
+        // Bar chart anchors its range-slider handles at the chart edges, so with the default zero outer margins
+        // the 5px handles get clipped in the small preview. Pad top/bottom so the handles fit inside the canvas.
         outerMarginTop: 15,
         outerMarginBottom: 10,
       });
