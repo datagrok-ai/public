@@ -18,6 +18,7 @@ import './tests/data-provider-tests';
 import './tests/context-menu-tests';
 import './tests/pdb-info-tests';
 import './tests/atom-highlight-tests';
+import './tests/pdb-grid-cell-renderer-escape-tests';
 import './tests/mol3d-link-tests';
 import './tests/mol3d-atom-picker-link-widget-tests';
 

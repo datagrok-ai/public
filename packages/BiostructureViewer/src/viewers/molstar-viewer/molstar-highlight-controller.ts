@@ -1,21 +1,7 @@
 /**
- * Controller for the interactive 2D↔3D atom-highlighting bridge.
- *
- * Extracted from `molstar-viewer.ts` (which was approaching 1800 lines) so
- * the viewer class can stay focused on Molstar lifecycle while this module
- * owns:
- *  - overpaint application state (concurrency guard, last-hover dedup);
- *  - the 3D→2D `CHEM_MOL3D_HOVER_EVENT` emitter;
- *  - per-ligand base-color assignment;
- *  - the `highlightAllLigandAtoms` replay pipeline used when Molstar
- *    rebuilds its scene;
- *  - `highlightLigandAtoms` / `clearLigandAtomHighlight` — the single-pose
- *    overpaint API.
- *
- * The controller reads viewer state through a narrow {@link HighlightHost}
- * interface so it does NOT take a circular compile-time dependency on the
- * full `MolstarViewer` class. The viewer builds a host facade in its
- * constructor and passes it in.
+ * Controller for the 2D↔3D atom-highlighting bridge, extracted from molstar-viewer.ts.
+ * Reads viewer state through the narrow HighlightHost interface to avoid a
+ * circular compile-time dependency on the full MolstarViewer class.
  */
 
 import * as grok from 'datagrok-api/grok';
@@ -56,13 +42,10 @@ type LigandInfo = {rowIdx: number, structureRefs: string[] | null};
 type LigandHighlight = {serials: number[], isCurrent: boolean, dataRef: string | null};
 
 export class MolstarHighlightController {
-  /** Guard against concurrent async highlight updates on the single-pose
-   *  `highlightLigandAtoms` path. The multi-pose `highlightAllLigandAtoms`
-   *  intentionally does NOT check this flag — see its docstring. */
+  /** Guards highlightLigandAtoms against concurrent async calls. */
   private _highlightInProgress = false;
 
-  /** Last-fired 3D→2D hover tuple, used to dedup Molstar's per-mousemove
-   *  pixel firing. `null` means no atom is currently hovered. */
+  /** Dedup guard for Molstar's per-pixel hover events. */
   private _lastHoverFired: {
     rowIdx: number, atomSerial: number | null, mode: string,
   } | null = null;
@@ -71,9 +54,7 @@ export class MolstarHighlightController {
 
   // -- 3D→2D hover bridge ----------------------------------------------------
 
-  /** Clears the last-hover dedup state. The viewer calls this before
-   *  re-subscribing Molstar's hover behavior so the first post-rebuild
-   *  hover event is not suppressed as a duplicate. */
+  /** Call before re-subscribing Molstar hover so the first post-rebuild event is not deduped. */
   resetHoverDedup(): void {
     this._lastHoverFired = null;
   }
@@ -97,17 +78,10 @@ export class MolstarHighlightController {
 
   // -- Replay after viewer rebuilds ------------------------------------------
 
-  /** Queues a highlight replay after the viewer finishes rebuilding its
-   *  scene. Reads directly from the molecule column's temp providers (the
-   *  source of truth) so highlights survive cell switches even when no
-   *  fresh `CHEM_SELECTION_EVENT` arrives. */
+  /** Queues a highlight replay through viewSyncer so it lands after any pending
+   *  structure rebuilds (overpaint applied before a rebuild is discarded). */
   replayHighlightIfCached(): void {
-    this.host.logger.debug('[molstar-picker] scheduling replay after buildViewLigands');
-    // Run through the viewSyncer so the replay lands AFTER every pending
-    // structure rebuild — otherwise our overpaint gets applied to objects
-    // that are then immediately replaced.
     this.host.viewSyncer.sync('replayHighlight', async () => {
-      this.host.logger.debug('[molstar-picker] replay firing now (synced)');
       try {
         const plugin = this.host.getPlugin();
         const comps = this._getAllComponents();
@@ -123,9 +97,7 @@ export class MolstarHighlightController {
 
   // -- Base colors -----------------------------------------------------------
 
-  /** Applies distinct base colors to loaded ligand structures so the user
-   *  can tell comparison poses apart from the current row. Runs
-   *  unconditionally when 2+ poses are loaded; never requires a selection. */
+  /** Tints comparison-pose carbons grey so multiple poses are visually distinct. */
   async applyBaseColors(): Promise<void> {
     const plugin = this.host.getPlugin();
     if (!plugin) return;
@@ -136,8 +108,6 @@ export class MolstarHighlightController {
     const allComponents = this._getAllComponents();
     if (!allComponents) return;
 
-    // Leave the currently-selected row in default colors; tint everyone
-    // else's carbons grey so heteroatom colors still read clearly.
     const currentRowIdx = this.host.getDataFrame()?.currentRowIdx ?? -1;
 
     for (const ligand of loadedLigands) {
@@ -167,24 +137,16 @@ export class MolstarHighlightController {
 
   // -- Multi-ligand highlight (main entry point) -----------------------------
 
-  /** Applies overpaint for ALL loaded ligands. Atom indices are resolved per
-   *  row from (in order): the live event (`liveEvent`), the persistent
-   *  selection cache, then the picker providers on the molecule column.
-   *
-   *  NOTE: no `_highlightInProgress` guard — this method is the single
-   *  source of truth for highlight state and must always run to completion,
-   *  even when a previous overpaint is still in flight. */
+  /** Applies overpaint for ALL loaded ligands. Resolves atoms from (in order):
+   *  liveEvent, the persistent selection cache, picker providers on the mol column.
+   *  No _highlightInProgress guard — must always run to completion. */
   async highlightAllLigandAtoms(
     liveEvent?: {rowIdx: number, atoms: number[], mapping3D: AtomMapping3D | null} | null,
   ): Promise<void> {
     const plugin = this.host.getPlugin();
     if (!plugin) return;
-    this.host.logger.debug('[molstar-picker] highlightAllLigandAtoms called');
 
     const loadedLigands = this._collectLoadedLigands();
-    this.host.logger.debug('[molstar-picker] loaded ligands:', () =>
-      loadedLigands.map((l) => ({row: l.rowIdx, hasRefs: !!l.structureRefs})));
-
     const df = this.host.getDataFrame();
     const currentRowIdx = df?.currentRowIdx ?? -1;
     const molCol = df?.columns.toList().find(
@@ -223,8 +185,7 @@ export class MolstarHighlightController {
       const serials = computeSerials(atoms, mapping3D, structure);
       if (serials.length === 0) continue;
 
-      // The first ref from `addLigandOnStage` is the ligand's data root;
-      // we scope overpaint to its subtree so we don't paint the protein.
+      // Scope to the ligand's data subtree (structureRefs[0]) to avoid painting the receptor.
       highlights.push({
         serials,
         isCurrent: ligand.rowIdx === currentRowIdx,
@@ -240,10 +201,6 @@ export class MolstarHighlightController {
 
     for (const h of highlights) {
       const color = h.isCurrent ? Color(0xFFFF00) : Color(0x00BCD4);
-      // Paint every component but use the loci getter to filter the
-      // structure down to atoms belonging to this ligand's data subtree.
-      // This dodges the stale-Structure-identity issue while still keeping
-      // per-molecule isolation.
       await setStructureOverpaint(
         plugin, allComponents, color,
         async (structureData: Structure) => {
@@ -324,7 +281,6 @@ export class MolstarHighlightController {
           return StructureSelection.toLociWithSourceUnits(sel);
         },
       );
-      this.host.logger.debug('[molstar-picker] overpaint applied');
     } catch (err: unknown) {
       this.host.logger.error(
         `highlightLigandAtoms failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -350,9 +306,6 @@ export class MolstarHighlightController {
 
   // -- Internals -------------------------------------------------------------
 
-  /** Collects loaded ligands (current + hovered + selected) deduplicated by
-   *  `rowIdx`. Order matters: `current` wins over `hovered` wins over
-   *  `selected` when the same row appears in more than one slot. */
   private _collectLoadedLigands(): LigandInfo[] {
     const loaded: LigandInfo[] = [];
     const seen = new Set<number>();
@@ -374,8 +327,6 @@ export class MolstarHighlightController {
     return loaded;
   }
 
-  /** Resolves a ligand's Molstar `Structure` via its 4th structureRef, or
-   *  returns `undefined` when the state cell isn't available yet. */
   private _getStructureForLigand(ligand: LigandInfo): Structure | undefined {
     const plugin = this.host.getPlugin();
     if (!plugin) return undefined;
@@ -384,8 +335,6 @@ export class MolstarHighlightController {
     return cell?.obj?.data;
   }
 
-  /** Returns all Molstar structure components across all loaded structures,
-   *  or `null` when nothing is loaded. */
   private _getAllComponents(): any[] | null {
     const plugin = this.host.getPlugin();
     if (!plugin) return null;
@@ -395,11 +344,8 @@ export class MolstarHighlightController {
     return comps.length > 0 ? comps : null;
   }
 
-  /** Walks up Molstar's state cell tree from the cell owning `structureData`
-   *  to determine whether it descends from the given `dataRef` (up to 6
-   *  levels — the depth of `addLigandOnStage`'s transform chain). Errors
-   *  during the walk fail-open (`true`) to preserve the original overpaint
-   *  behavior. */
+  /** Walks up to 6 levels of Molstar's state cell tree to check lineage.
+   *  Fail-open (returns true on error) to preserve prior overpaint behavior. */
   private _structureDescendsFromRef(
     plugin: PluginContext, structureData: Structure, dataRef: string,
   ): boolean {
@@ -420,9 +366,6 @@ export class MolstarHighlightController {
     }
   }
 
-  /** Reads highlighted atom indices for `rowIdx` from the atom-picker
-   *  provider on `molColName` (or the first molecule column that carries
-   *  one, as a fallback). Returns `[]` when no picker is set up. */
   private _getHighlightedAtomsFromColumn(rowIdx: number, molColName?: string): number[] {
     const df = this.host.getDataFrame();
     if (!df) return [];
@@ -433,12 +376,12 @@ export class MolstarHighlightController {
     if (!molCol) {
       molCol = df.columns.toList().find(
         (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE &&
-          ((c.temp as Record<string, unknown>)?.['chem-substruct-providers'] as unknown[] ?? [])
+          ((c.temp as Record<string, unknown>)?.['substruct-providers'] as unknown[] ?? [])
             .some((p: any) => p.__atomPicker)) ?? null;
     }
     if (!molCol) return [];
 
-    const providers = ((molCol.temp as Record<string, unknown>)?.['chem-substruct-providers'] ?? []) as
+    const providers = ((molCol.temp as Record<string, unknown>)?.['substruct-providers'] ?? []) as
       Array<{__atomPicker?: boolean; __rowIdx?: number; __atoms?: Set<number>}>;
     const picker = providers.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
     if (!picker?.__atoms || picker.__atoms.size === 0) return [];

@@ -10,7 +10,7 @@ import {CHEM_SELECTION_EVENT} from '../viewers/molstar-viewer/molstar-highlight-
 
 import {_package} from '../package-test';
 
-category('atom-highlight', () => {
+category('AtomHighlight', () => {
   let pdbData: BiostructureData;
   let df: DG.DataFrame;
   let ligandCol: DG.Column;

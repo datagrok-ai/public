@@ -1,10 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-/** Tag key mirroring `CHEM_ATOM_PICKER_LINKED_COL` from Chem's constants.ts.
- *  Set on a Molecule (SMILES) column to link it to a specific Molecule3D
- *  column for interactive atom picking. Defined here to avoid a
- *  cross-package import. */
+/** Mirrors CHEM_ATOM_PICKER_LINKED_COL from Chem's constants.ts (no cross-package import). */
 const LINKED_TAG = '%chem-atom-picker-linked-col';
 
 const NONE = '(none)';
@@ -19,12 +16,10 @@ export function getMol3DColumnPropertyPanel(mol3DCol: DG.Column): DG.Widget {
   if (!df)
     return new DG.Widget(ui.divText('No DataFrame'));
 
-  // Candidates: all Molecule (SMILES) columns in the same DataFrame.
   const candidates = df.columns.toList()
     .filter((c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE)
     .map((c: DG.Column) => c.name);
 
-  // Current link: the SMILES column whose tag points at this Mol3D column.
   const currentSmiles = df.columns.toList()
     .find((c: DG.Column) => c.temp[LINKED_TAG] === mol3DCol.name)?.name ?? NONE;
 
@@ -32,13 +27,10 @@ export function getMol3DColumnPropertyPanel(mol3DCol: DG.Column): DG.Widget {
     value: currentSmiles,
     items: [NONE].concat(candidates),
     onValueChanged: (value) => {
-      // Clear any existing tag that points at this Mol3D column
-      // (handles switching from one SMILES col to another).
       for (const c of df.columns.toList()) {
         if (c.temp[LINKED_TAG] === mol3DCol.name)
           delete c.temp[LINKED_TAG];
       }
-      // Set the tag on the newly chosen SMILES column.
       if (value !== NONE) {
         const newCol = df.col(value);
         if (newCol)

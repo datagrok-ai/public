@@ -44,15 +44,15 @@ function makeDF(): {df: DG.DataFrame; smilesCol: DG.Column; mol3DCol: DG.Column}
 // setSmilesColLink
 // ---------------------------------------------------------------------------
 
-category('mol3d-link', () => {
-  test('setSmilesColLink-writes-tag', async () => {
+category('Mol3DLink', () => {
+  test('setSmilesColLink — writes tag', async () => {
     const {smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
     const tag = smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL);
     expect(tag, mol3DCol.name);
   });
 
-  test('setSmilesColLink-null-removes-tag', async () => {
+  test('setSmilesColLink — null removes tag', async () => {
     const {smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
     // Sanity: tag was set.
@@ -64,7 +64,7 @@ category('mol3d-link', () => {
     expect(!tagAfter, true);
   });
 
-  test('setSmilesColLink-overwrites-previous', async () => {
+  test('setSmilesColLink — overwrites previous', async () => {
     const {smilesCol} = makeDF();
     setSmilesColLink(smilesCol, 'pose_A');
     setSmilesColLink(smilesCol, 'pose_B');
@@ -75,7 +75,7 @@ category('mol3d-link', () => {
   // Two-way tag pair
   // -------------------------------------------------------------------------
 
-  test('setSmilesColLink-writes-reciprocal-tag-on-mol3d', async () => {
+  test('setSmilesColLink — writes reciprocal tag on Mol3D', async () => {
     const {smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
     // Forward tag on SMILES col.
@@ -84,7 +84,7 @@ category('mol3d-link', () => {
     expect(mol3DCol.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), smilesCol.name);
   });
 
-  test('setSmilesColLink-null-clears-both-tags', async () => {
+  test('setSmilesColLink — null clears both tags', async () => {
     const {smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
     setSmilesColLink(smilesCol, null);
@@ -92,7 +92,7 @@ category('mol3d-link', () => {
     expect(!mol3DCol.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), true);
   });
 
-  test('setSmilesColLink-overwrite-strips-old-mol3d-reciprocal', async () => {
+  test('setSmilesColLink — overwrite strips old Mol3D reciprocal', async () => {
     // When a SMILES col's link moves from mol3DA to mol3DB, mol3DA should
     // lose its reciprocal tag — otherwise a stale back-link leaks.
     const smilesCol = DG.Column.fromStrings('smiles', ['CCO']);
@@ -114,7 +114,7 @@ category('mol3d-link', () => {
   // clearLinksToMol3D
   // -------------------------------------------------------------------------
 
-  test('clearLinksToMol3D-removes-link-for-target-col', async () => {
+  test('clearLinksToMol3D — removes link for target col', async () => {
     const {df, smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
 
@@ -125,7 +125,7 @@ category('mol3d-link', () => {
     expect(!mol3DCol.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), true);
   });
 
-  test('clearLinksToMol3D-leaves-unrelated-links-intact', async () => {
+  test('clearLinksToMol3D — leaves unrelated links intact', async () => {
     // Two SMILES cols; only one is linked to 'pose3D', the other to 'poseX'.
     const smilesA = DG.Column.fromStrings('smilesA', ['CCO']);
     smilesA.semType = DG.SEMTYPE.MOLECULE;
@@ -152,7 +152,7 @@ category('mol3d-link', () => {
   // findLinkedSmilesColName
   // -------------------------------------------------------------------------
 
-  test('findLinkedSmilesColName-returns-linked-smiles-col', async () => {
+  test('findLinkedSmilesColName — returns linked SMILES col', async () => {
     const {df, smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
 
@@ -160,13 +160,13 @@ category('mol3d-link', () => {
     expect(found, smilesCol.name);
   });
 
-  test('findLinkedSmilesColName-returns-null-when-no-link', async () => {
+  test('findLinkedSmilesColName — returns null when no link', async () => {
     const {df, mol3DCol} = makeDF();
     const found = findLinkedSmilesColName(df, mol3DCol.name);
     expect(found === null, true);
   });
 
-  test('findLinkedSmilesColName-returns-null-for-unknown-3d-col', async () => {
+  test('findLinkedSmilesColName — returns null for unknown 3D col', async () => {
     const {df, smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
 
@@ -178,7 +178,7 @@ category('mol3d-link', () => {
   // clearAtomPickerHighlights
   // -------------------------------------------------------------------------
 
-  test('clearAtomPickerHighlights-strips-atom-picker-providers', async () => {
+  test('clearAtomPickerHighlights — strips atom-picker providers', async () => {
     const {smilesCol} = makeDF();
 
     // Simulate two providers: one atom-picker (tagged), one ordinary
@@ -197,7 +197,7 @@ category('mol3d-link', () => {
     expect(remaining.some((p) => p.__atomPicker === true), false);
   });
 
-  test('clearAtomPickerHighlights-fires-clear-all-event', async () => {
+  test('clearAtomPickerHighlights — fires clear-all event', async () => {
     const {smilesCol} = makeDF();
     const CHEM_SELECTION_EVENT = 'chem-interactive-selection-changed';
 
@@ -219,7 +219,7 @@ category('mol3d-link', () => {
     }
   });
 
-  test('clearAtomPickerHighlights-preserves-non-picker-providers', async () => {
+  test('clearAtomPickerHighlights — preserves non-picker providers', async () => {
     const {smilesCol} = makeDF();
 
     const scaffoldProv: TestProvider = {__scaffold: true, getSubstruct: () => undefined};

@@ -1,13 +1,6 @@
 /**
- * Shared types, constants, and pure helpers for the interactive atom
- * highlighting bridge between Chem (2D SMILES) and Molstar (3D poses).
- *
- * Extracted from molstar-viewer.ts to keep the viewer class focused on
- * Molstar lifecycle management while this module owns the cross-package
- * event protocol and atom-mapping types.
- *
- * The selection cache itself lives on `MolstarViewer.selectionCache`
- * (class-static, initiated at first viewer construction).
+ * Types, constants, and pure helpers for the 2D↔3D atom-highlighting bridge.
+ * Extracted from molstar-viewer.ts; the selection cache lives on MolstarViewer.selectionCache.
  */
 
 import * as DG from 'datagrok-api/dg';
@@ -18,20 +11,14 @@ import {_package} from '../../package';
 
 // -- Constants ---------------------------------------------------------------
 
-/** Event name for cross-package atom selection synchronization.
- *  Mirrors CHEM_INTERACTIVE_SELECTION_EVENT from Chem's constants.ts. */
+/** Mirrors CHEM_INTERACTIVE_SELECTION_EVENT from Chem's constants.ts. */
 export const CHEM_SELECTION_EVENT = 'chem-interactive-selection-changed';
 
-/** Event name fired BY this viewer when the user hovers a ligand atom in
- *  the 3D pose. Chem's rdkit-cell-renderer listens and renders the
- *  corresponding 2D atom highlight (the reverse of CHEM_SELECTION_EVENT).
- *  Mirrors CHEM_MOL3D_HOVER_EVENT from Chem's constants.ts. */
+/** Mirrors CHEM_MOL3D_HOVER_EVENT from Chem's constants.ts. Fired by this
+ *  viewer on 3D atom hover; Chem's renderer listens (reverse bridge). */
 export const CHEM_MOL3D_HOVER_EVENT = 'chem-mol3d-hover-changed';
 
-/** Payload shape for CHEM_MOL3D_HOVER_EVENT. `atom3DSerial` is the Molstar
- *  1-based atom id (same numbering that `computeSerials` produces for the
- *  forward direction), or null when the cursor leaves all ligand atoms.
- *  `mode` mirrors the 2D modifier semantics. */
+/** Payload for CHEM_MOL3D_HOVER_EVENT. `atom3DSerial: null` = cursor left the atom. */
 export interface Mol3DHoverEventArgs {
   mol3DColumnName: string;
   rowIdx: number;
@@ -41,9 +28,7 @@ export interface Mol3DHoverEventArgs {
 
 // -- Types -------------------------------------------------------------------
 
-/** Atom-index mapping produced by Chem's mapAtomIndices2Dto3D.
- *  Mirrors the AtomIndexMapping interface from atom-index-mapper.ts
- *  (defined here to avoid a cross-package import). */
+/** Mirrors AtomIndexMapping from atom-index-mapper.ts (no cross-package import). */
 export interface AtomMapping3D {
   mapping: number[];
   method: string;
@@ -70,17 +55,14 @@ export interface SelectionCacheEntry {
 
 // -- Pure computations -------------------------------------------------------
 
-/** Builds a composite cache key: dfId-dfName-columnName-rowIdx. */
 export function selectionCacheKey(
   dfId: string, dfName: string, colName: string, rowIdx: number,
 ): string {
   return `${dfId}-${dfName}-${colName}-${rowIdx}`;
 }
 
-
-/** Converts 2D atom indices to 3D PDB serial numbers using the
- *  pre-computed mapping. Falls back to heavy-atom serial order from
- *  the Molstar Structure, then to naive index+1. */
+/** Converts 2D atom indices to 3D PDB serial numbers. Falls back to
+ *  heavy-atom serial order from the Molstar Structure, then index+1. */
 export function computeSerials(
   atomIndices: number[],
   mapping3D?: AtomMapping3D | null,

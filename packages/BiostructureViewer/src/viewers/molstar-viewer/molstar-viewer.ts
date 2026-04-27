@@ -33,8 +33,7 @@ import {
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
 import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-// Keep the atom-picker tag constant local (sourced from mol3d-link.ts)
-// until `@datagrok-libraries/bio` is published with the export.
+// Sourced from mol3d-link.ts until @datagrok-libraries/bio exports these constants.
 import {CHEM_ATOM_PICKER_LINKED_COL, CHEM_ATOM_PICKER_LINKED_SMILES_COL} from '../../utils/mol3d-link';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
@@ -325,14 +324,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.logger = _package.logger;
     this.viewSyncer = new PromiseSyncer(this.logger);
 
-    // Initialize the class-static selection cache + its CHEM_SELECTION_EVENT
-    // subscription on first viewer creation (singleton per process). See
-    // `MolstarViewer.selectionCache` / `MolstarViewer._initSelectionCache`.
     MolstarViewer._initSelectionCache();
-
-    // The highlight controller owns overpaint state + the 3D↔2D bridge.
-    // It reads viewer state through getters so the viewer instance itself
-    // is the only thing that needs to be captured in the closures.
     this.highlightController = new MolstarHighlightController({
       getPlugin: () => this.viewer?.plugin,
       getLigands: () => this.ligands,
@@ -353,21 +345,17 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private static viewerCounter: number = -1;
   private readonly viewerId: number = ++MolstarViewer.viewerCounter;
 
-  // -- Class-static selection cache --------------------------------------------
-  // Shared across every MolstarViewer instance. Populated from
-  // CHEM_SELECTION_EVENT so that selections made before a viewer is open can
-  // be replayed on first load. Keys: composite dfId-dfName-colName-rowIdx.
+  // -- Class-static selection cache (shared across all instances) ---------------
+  // Populated from CHEM_SELECTION_EVENT; replays highlights when a viewer opens
+  // after a selection was already made.
 
   /** Composite-key LRU cache of persistent atom selections. */
   public static selectionCache: DG.LruCache<string, SelectionCacheEntry> =
     new DG.LruCache<string, SelectionCacheEntry>();
 
-  /** Idempotent subscriber guard — the CHEM_SELECTION_EVENT subscription
-   *  registers exactly once, on first viewer construction. */
   private static _selectionSubscribed = false;
 
-  /** Subscribes once to CHEM_SELECTION_EVENT and routes persistent events
-   *  into `selectionCache`. Idempotent — safe to call from every constructor. */
+  /** Subscribes once to CHEM_SELECTION_EVENT per process lifetime. */
   private static _initSelectionCache(): void {
     if (MolstarViewer._selectionSubscribed) return;
     MolstarViewer._selectionSubscribed = true;
@@ -384,7 +372,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         _package.logger.debug(
           `[molstar-picker] caching selection event atomsLen=${atoms.length} rowIdx=${rowIdx}`);
         if (clearAll) {
-          // LruCache has no clear() — just replace; the old instance is GC'd.
           MolstarViewer.selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
         } else {
           const key = selectionCacheKey(dfId, dfName, colName, rowIdx);
@@ -423,11 +410,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         this.ligandColumnName = molCol.name;
     }
 
-    // Write the two-way tag pair — forward on the SMILES column pointing
-    // at the Mol3D column name, reverse on the Mol3D column pointing back
-    // at the SMILES column name. Persist via `col.tags[...]` so the link
-    // survives save/reload; use the shared constants to stay in sync
-    // with the BSV link widget and Chem's reader.
+    // Write the reciprocal tag pair so the picker link is established on bind.
     if (this.ligandColumnName) {
       const ligandCol = this.dataFrame.col(this.ligandColumnName);
       if (ligandCol) {
@@ -851,12 +834,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private readonly logger: ILogger;
   private readonly viewSyncer: PromiseSyncer;
-  /** Highlight controller — public so tests and any external consumer can
-   *  call `.highlightAllLigandAtoms`, `.applyBaseColors`, etc. directly
-   *  without reaching into private viewer state. */
   public readonly highlightController: MolstarHighlightController;
-  /** Timer that debounces `plugin.state.data.events.changed` into a single
-   *  highlight replay per burst — see the subscription in `_open`. */
   private _stateChangeTimer: ReturnType<typeof setTimeout> | null = null;
   private setDataInProgress: boolean = false;
 
@@ -1003,10 +981,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       if (!(this.dataEff.ext in molecule3dFileExtensions))
         throw new Error(`Unsupported file extension '${this.dataEff.ext}'.`);
 
-      // Subscribe at instance level so we can apply highlights in real-time
-      // when the viewer IS alive. Works for BOTH the AutoDock Molstar panel
-      // and the 3D Structure Molstar panel. The module-level listener
-      // (registered at module load) handles caching for replay.
+      // Instance-level subscription: apply highlights in real-time while the viewer is alive.
+      // _initSelectionCache handles caching for replay (fires once per process).
       this.viewSubs.push(grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
         .subscribe((_args: unknown) => {
           const {rowIdx = -1, atoms = [], mapping3D = null, persistent} =
@@ -1015,8 +991,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
             if (atoms.length >= 0) {
               this.logger.debug(
                 `[molstar-picker] live highlight atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${persistent}`);
-              // Pass the event's atoms + mapping directly so transient
-              // (preview) highlights work even though they're not cached.
               this.highlightController.highlightAllLigandAtoms({rowIdx, atoms, mapping3D});
             }
           } catch (err: unknown) {
@@ -1025,15 +999,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           }
         }));
 
-      // Reapply highlights on any click/interaction in the Molstar canvas.
-      // This catches zoom, focus, right-click etc. that may trigger
-      // structure rebuilds which clear overpaint.
+      // Reapply highlights on canvas interaction (zoom, focus, right-click may trigger rebuilds).
       const canvas = plugin.canvas3d?.webgl?.gl?.canvas as HTMLElement | undefined;
       if (canvas) {
         const reapplyOnClick = () => {
-          // Queue through syncer so it runs AFTER any triggered rebuilds
-          // (which also go through the syncer). This ensures fresh
-          // components are used, not stale references from before rebuild.
           if (this._stateChangeTimer) clearTimeout(this._stateChangeTimer);
           this._stateChangeTimer = setTimeout(() => {
             this._stateChangeTimer = null;
@@ -1050,17 +1019,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         }} as any);
       }
 
-      // --- Reverse 3D→2D hover bridge ------------------------------------
-      // Subscribe to Molstar's hover observable. When the user hovers a
-      // LIGAND (non-polymer) atom in the 3D viewer, fire
-      // CHEM_MOL3D_HOVER_EVENT so Chem's rdkit-cell-renderer can highlight
-      // the corresponding 2D atom. Receptor atoms are filtered out; H atoms
-      // are ignored (2D renderings have only heavy atoms). The `mode` field
-      // mirrors the 2D modifier scheme (shift = paint, ctrl+shift = erase).
-      //
-      // Dedup: we track the last (rowIdx, atomSerial, mode) tuple and skip
-      // repeat fires so the downstream 2D renderer isn't flooded with
-      // redundant work on every mousemove pixel within the same atom radius.
+      // Subscribe to Molstar's hover observable for the 3D→2D reverse bridge.
+      // Fires CHEM_MOL3D_HOVER_EVENT when the user hovers a ligand atom;
+      // receptor and H atoms are filtered out. Dedup is handled by the controller.
       this.highlightController.resetHoverDedup();
       try {
         this.viewSubs.push(plugin.behaviors.interaction.hover.subscribe(
@@ -1076,12 +1037,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
                 return;
               }
 
-              // Resolve the hovered atom from whichever loci kind Molstar
-              // produced. Element-loci (direct atom pick) is the ideal case.
-              // Bond-loci is what Molstar's default ball-and-stick picker
-              // emits when hovering between atoms — pick the `a` side so the
-              // user still gets a single-atom highlight in 2D. Other kinds
-              // (structure-loci, volume-loci, etc.) are ignored.
+              // element-loci: direct atom pick; bond-loci: pick `a` side.
               let loc: StructureElement.Location | null = null;
               if (loci.kind === 'element-loci') {
                 if (StructureElement.Loci.isEmpty(loci)) {
@@ -1094,13 +1050,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
                 loc = StructureElement.Location.create(loci.structure, bond.aUnit, bond.aUnit.elements[bond.aIndex]);
               }
               if (!loc) return;
-              // Filter: only ligand (non-polymer) atoms. Receptor residues ignored.
-              // When the ligand is loaded as a standalone SDF (no receptor), every
-              // atom is 'non-polymer' anyway, so this is a no-op in that case.
+              // Filter: ligand (non-polymer) heavy atoms only.
               try {
                 if (StructureProperties.entity.type(loc) !== 'non-polymer') return;
-              } catch { /* entity lookup failed — skip rather than risk false-pos */ return; }
-              // Skip explicit H — 2D SMILES have only heavy atoms.
+              } catch { return; /* entity lookup failed — skip */ }
               if (StructureProperties.atom.type_symbol(loc) === 'H') return;
 
               const atomSerial = StructureProperties.atom.id(loc);

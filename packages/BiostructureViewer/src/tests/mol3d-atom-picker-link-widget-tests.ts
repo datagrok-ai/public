@@ -63,13 +63,13 @@ function makeDF(): {smilesCol: DG.Column; mol3DCol: DG.Column} {
 // Category
 // ---------------------------------------------------------------------------
 
-category('mol3d-atom-picker-link-widget', () => {
+category('Mol3DAtomPickerLinkWidget', () => {
   // -------------------------------------------------------------------------
   // Empty state — no SMILES columns → widget renders an info message, no
   // interactive controls
   // -------------------------------------------------------------------------
 
-  test('no-smiles-cols-shows-info-message', async () => {
+  test('no SMILES cols — shows info message', async () => {
     const mol3DCol = DG.Column.fromStrings('pose3D', ['...']);
     mol3DCol.semType = DG.SEMTYPE.MOLECULE3D;
     DG.DataFrame.fromColumns([mol3DCol]);
@@ -92,7 +92,7 @@ category('mol3d-atom-picker-link-widget', () => {
   // Initial state — SMILES col present, no link yet → checkbox unchecked
   // -------------------------------------------------------------------------
 
-  test('initial-state-no-link-checkbox-unchecked', async () => {
+  test('initial state — no link, checkbox unchecked', async () => {
     const {mol3DCol} = makeDF();
 
     const widget = await callWidget(mol3DCol);
@@ -107,7 +107,7 @@ category('mol3d-atom-picker-link-widget', () => {
   // Initial state — SMILES col present WITH link → checkbox pre-checked
   // -------------------------------------------------------------------------
 
-  test('initial-state-with-link-checkbox-prechecked', async () => {
+  test('initial state — with link, checkbox prechecked', async () => {
     const {smilesCol, mol3DCol} = makeDF();
     // Pre-set a link so the widget opens with checkbox checked.
     smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_COL, mol3DCol.name);
@@ -124,7 +124,7 @@ category('mol3d-atom-picker-link-widget', () => {
   // Dropdown defaults to the linked SMILES col when a link is pre-set
   // -------------------------------------------------------------------------
 
-  test('initial-state-dropdown-defaults-to-linked-smiles-col', async () => {
+  test('initial state — dropdown defaults to linked SMILES col', async () => {
     const smilesA = DG.Column.fromStrings('smilesA', ['CCO']);
     smilesA.semType = DG.SEMTYPE.MOLECULE;
     const smilesB = DG.Column.fromStrings('smilesB', ['CC']);
@@ -152,7 +152,7 @@ category('mol3d-atom-picker-link-widget', () => {
   // Dropdown visibility reflects initial link state
   // -------------------------------------------------------------------------
 
-  test('initial-state-dropdown-hidden-when-no-link', async () => {
+  test('initial state — dropdown hidden when no link', async () => {
     const {mol3DCol} = makeDF();
 
     const widget = await callWidget(mol3DCol);
@@ -165,7 +165,7 @@ category('mol3d-atom-picker-link-widget', () => {
       expect(wrapper.style.display, 'none');
   });
 
-  test('initial-state-dropdown-visible-when-link-exists', async () => {
+  test('initial state — dropdown visible when link exists', async () => {
     const {smilesCol, mol3DCol} = makeDF();
     smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_COL, mol3DCol.name);
 

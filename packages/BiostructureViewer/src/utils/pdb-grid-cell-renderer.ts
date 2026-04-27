@@ -15,6 +15,7 @@ import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-rendere
 
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
+import {findLinkedSmilesColName, clearAtomPickerHighlights} from './mol3d-link';
 
 import {_package,} from '../package';
 import {LruCache} from 'datagrok-api/dg';
@@ -140,6 +141,19 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
     /*_package.logger.debug('BsV: PdbGridCellRenderer.onClick()');
     const back = PdbGridCellRendererBack.getOrCreate(gridCell);
     back.onClick(gridCell, e);*/
+  }
+
+  /** Escape on a Mol3D cell clears picker highlights on the linked SMILES column.
+   *  Keydowns go to the focused cell's renderer at Dart level; the Chem
+   *  renderer's onKeyDown and grid-root listener don't fire in this case. */
+  override onKeyDown(gridCell: DG.GridCell, e: KeyboardEvent): void {
+    if (e.key !== 'Escape') return;
+    const mol3DCol = gridCell.tableColumn;
+    const df = mol3DCol?.dataFrame;
+    if (!mol3DCol || !df) return;
+    const smilesColName = findLinkedSmilesColName(df, mol3DCol.name);
+    const smilesCol = smilesColName ? df.col(smilesColName) : null;
+    if (smilesCol) clearAtomPickerHighlights(smilesCol);
   }
 
   /**
