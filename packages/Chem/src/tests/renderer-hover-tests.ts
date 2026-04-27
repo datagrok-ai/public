@@ -19,7 +19,7 @@ interface RDKitCellRendererInternals {
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void;
 }
 
-category('renderer-hover', () => {
+category('renderer hover', () => {
   let rdkitModule: any;
 
   before(async () => {
@@ -30,7 +30,7 @@ category('renderer-hover', () => {
   // Test 1 — GridCellRendererProxy must forward all 9 mouse/key events
   // ---------------------------------------------------------------------------
 
-  test('proxy-forwards-onMouseMove', async () => {
+  test('proxy forwards onMouseMove', async () => {
     const flags = {
       enter: false, leave: false, down: false, up: false, move: false,
       click: false, dblClick: false, keyDown: false, keyPress: false,
@@ -89,7 +89,7 @@ category('renderer-hover', () => {
   // grok.shell.tv guard). When _previewFrom3D=true the branch is skipped
   // entirely — preview survives.
 
-  test('onMouseLeave-clears-2d-preview-keeps-3d-preview', async () => {
+  test('onMouseLeave — clears 2D preview, keeps 3D preview', async () => {
     const r = new RDKitCellRenderer(rdkitModule) as unknown as RDKitCellRendererInternals;
 
     const col = DG.Column.fromStrings('smiles', ['CCO']);
@@ -121,7 +121,7 @@ category('renderer-hover', () => {
   // by leaving _previewAtomIdx and _lastHoveredAtom unchanged after a
   // shiftKey move.
 
-  test('onMouseMove-bails-on-shiftKey', async () => {
+  test('onMouseMove — bails on shiftKey', async () => {
     const r = new RDKitCellRenderer(rdkitModule) as unknown as RDKitCellRendererInternals;
 
     r._previewAtomIdx = 42;
@@ -143,7 +143,7 @@ category('renderer-hover', () => {
   // be treated as distinct atoms (returns false = "new"). Calling twice with
   // identical args (including erase) returns true = "same, skip".
 
-  test('trackHoveredAtom-dedup-across-erase-flag', async () => {
+  test('trackHoveredAtom — dedup across erase flag', async () => {
     const r = new RDKitCellRenderer(rdkitModule) as unknown as RDKitCellRendererInternals;
     const track = (col: string, row: number, atom: number, erase?: boolean) =>
       r._trackHoveredAtom(col, row, atom, erase);

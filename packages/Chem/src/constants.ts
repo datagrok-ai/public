@@ -41,38 +41,21 @@ export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove thi
 export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
 export const FIXED_SCALE_TAG = '.%chem-fixed-scale';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
-/** Custom event ID fired by the 2D atom picker after every selection change.
- *  Subscribers (e.g. NGL 3D structure widget, BiostructureViewer Molstar
- *  viewer) react by highlighting/clearing the corresponding atoms in their
- *  3D views. The picker auto-activates when the DataFrame has associated
- *  Molecule3D (docking poses) or HELM columns.
- *
- *  Event args: `{column: DG.Column, rowIdx: number, atoms: number[]}` */
+/** Fired by the 2D atom picker on every selection change. 3D viewers listen
+ *  to apply/clear atom highlights. Args: `{column, rowIdx, atoms, persistent, clearAll}`. */
 export const CHEM_INTERACTIVE_SELECTION_EVENT = 'chem-interactive-selection-changed';
 
-/** Tag set on a Molecule column to link it to a specific Molecule3D column
- *  for interactive atom picking. Value = the Molecule3D column name.
- *  Set by BiostructureViewer when a Molstar viewer binds to a dataframe. */
+/** Tag on a Molecule (SMILES) column linking it to a Molecule3D column.
+ *  Value = Mol3D column name. Mirrored in `BiostructureViewer/src/utils/mol3d-link.ts`. */
 export const CHEM_ATOM_PICKER_LINKED_COL = '%chem-atom-picker-linked-col';
 
-/** Reciprocal tag on a Molecule3D column pointing back to the SMILES column
- *  that targets it — the other half of the two-way picker link. Value =
- *  the SMILES column name. Set alongside `CHEM_ATOM_PICKER_LINKED_COL` by
- *  BiostructureViewer's link widget / `setSmilesColLink`. Mirrors the
- *  same-named constant in `BiostructureViewer/src/utils/mol3d-link.ts`. */
+/** Reciprocal tag on the Mol3D column pointing back to the linked SMILES column.
+ *  Mirrored in `BiostructureViewer/src/utils/mol3d-link.ts`. */
 export const CHEM_ATOM_PICKER_LINKED_SMILES_COL = '%chem-atom-picker-linked-smiles-col';
 
-/** Custom event ID fired by BiostructureViewer's Molstar viewer when the
- *  user hovers a ligand atom in the 3D pose. The Chem rdkit-cell-renderer
- *  listens and renders the corresponding 2D atom highlight (reverse of
- *  CHEM_INTERACTIVE_SELECTION_EVENT — 3D→2D instead of 2D→3D).
- *
- *  Event args: `{mol3DColumnName: string, rowIdx: number,
- *                atom3DSerial: number | null, mode: 'preview' | 'paint' | 'erase'}`.
- *  `atom3DSerial` is the Molstar 1-based atom id (matches what
- *  `molstar-highlight-utils.computeSerials` produces for forward highlights).
- *  `atom3DSerial: null` signals "cursor left the atom" — clear the preview.
- *  `mode` mirrors the 2D modifier semantics (shift = paint, ctrl+shift = erase). */
+/** Fired by BiostructureViewer's Molstar viewer on 3D atom hover (reverse bridge).
+ *  Args: `{mol3DColumnName, rowIdx, atom3DSerial: number|null, mode: 'preview'|'paint'|'erase'}`.
+ *  `atom3DSerial: null` = cursor left the atom; clear the 2D preview. */
 export const CHEM_MOL3D_HOVER_EVENT = 'chem-mol3d-hover-changed';
 export const SCAFFOLD_COL = 'scaffold-col';
 export const SCAFFOLD_COL_SYNC = '%scaffold-col';

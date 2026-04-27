@@ -1,17 +1,9 @@
-/**
- * Pure utility functions for the interactive atom picker.
- *
- * Extracted from rdkit-cell-renderer.ts to keep the renderer class
- * focused on rendering while these handle geometry, SVG parsing,
- * and bond selection computations.
- */
+/** Pure utilities for the interactive atom picker: geometry, SVG parsing, bond selection. */
 
 /** Hit-tolerance in CSS pixels for atom proximity detection. */
 const CLICK_TOLERANCE_PX = 12;
 
-/** Returns the index of the atom whose center is nearest to the given
- *  point, but only if it falls within CLICK_TOLERANCE_PX (CSS pixels).
- *  Returns null if the point is too far from all atoms. */
+/** Returns the nearest atom index within CLICK_TOLERANCE_PX, or null. */
 export function findNearestAtom(
   positions: Map<number, {x: number; y: number}>,
   clickX: number,
@@ -32,10 +24,7 @@ export function findNearestAtom(
   return nearestIdx;
 }
 
-/** Given a set of selected atom indices and a bondAtoms map, returns the
- *  bond indices where BOTH endpoint atoms are in the selection, and a
- *  matching highlightBondColors map with every selected bond painted the
- *  same color. */
+/** Returns bond indices where both endpoint atoms are selected, with colors. */
 export function computeSelectedBonds(
   atoms: Set<number>,
   bondAtoms: Map<number, [number, number]>,
@@ -52,13 +41,9 @@ export function computeSelectedBonds(
   return {bondsArr, highlightBondColors};
 }
 
-/** Extracts atom positions and bond connectivity from an RDKit-generated
- *  SVG element. Atom positions come from two sources:
- *  - Text-labeled heteroatoms: center of the `<text class="atom-N">` bbox.
- *  - Carbons: average of bond-path endpoints touching that atom.
- *
- *  Bond connectivity is read from `<path class="bond-K atom-A atom-B">`
- *  class attributes. */
+/** Extracts atom positions and bond connectivity from an RDKit SVG element.
+ *  Heteroatom positions: center of `<text class="atom-N">` bbox.
+ *  Carbon positions: average of bond-path endpoints (`<path class="bond-K atom-A atom-B">`). */
 export function extractAtomPositionsFromSvg(
   svgEl: SVGSVGElement,
 ): {positions: Map<number, {x: number; y: number}>; bondAtoms: Map<number, [number, number]>} {
@@ -96,7 +81,6 @@ export function extractAtomPositionsFromSvg(
     }
     if (atomIds.length !== 2) continue;
 
-    // Record the bond-index → atom-pair mapping.
     const bondMatch = /(?:^|\s)bond-(\d+)/.exec(cls);
     if (bondMatch) {
       const bondIdx = parseInt(bondMatch[1], 10);

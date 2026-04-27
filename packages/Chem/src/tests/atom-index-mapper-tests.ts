@@ -36,7 +36,7 @@ const SMILES_ETHANOL = 'CCO';
 
 // -- Tests -------------------------------------------------------------------
 
-category('atom-index-mapper', () => {
+category('atom index mapper', () => {
   let rdkitModule: any;
 
   before(async () => {

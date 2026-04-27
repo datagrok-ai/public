@@ -1,12 +1,6 @@
 /**
- * Reverse 3D→2D hover handler — extracted from `rdkit-cell-renderer.ts`.
- *
- * Fired when BiostructureViewer's Molstar viewer posts `CHEM_MOL3D_HOVER_EVENT`
- * because the user is hovering a ligand atom in a 3D pose. The handler looks
- * up the linked 2D SMILES column (via `CHEM_ATOM_PICKER_LINKED_COL`), reverses
- * the 3D Molstar atom serial back to a 2D atom index using the pre-computed
- * `AtomIndexMapping`, and delegates to the renderer's existing 2D rendering
- * methods — so both directions share the same provider storage.
+ * Reverse 3D→2D hover handler for the interactive atom-highlighting bridge.
+ * Extracted from `rdkit-cell-renderer.ts` to keep the renderer file focused.
  */
 
 import * as grok from 'datagrok-api/grok';
@@ -16,10 +10,8 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {mapAtomIndices2Dto3D, AtomIndexMapping} from '../utils/atom-index-mapper';
 
-/** Payload for CHEM_MOL3D_HOVER_EVENT fired by BiostructureViewer's Molstar
- *  viewer (3D→2D reverse bridge). Mirrors `Mol3DHoverEventArgs` in
- *  `molstar-highlight-utils.ts`; duplicated here to avoid a cross-package
- *  import from Chem into BiostructureViewer. */
+/** Payload for CHEM_MOL3D_HOVER_EVENT. Mirrors `Mol3DHoverEventArgs` in
+ *  `molstar-highlight-utils.ts`; duplicated to avoid a cross-package import. */
 export interface Mol3DHoverEventArgs {
   mol3DColumnName: string;
   rowIdx: number;
@@ -27,17 +19,13 @@ export interface Mol3DHoverEventArgs {
   mode: 'preview' | 'paint' | 'erase';
 }
 
-/** Minimal topology info needed to render a 2D atom highlight — subset of
- *  the full `CellInteractiveInfo` the renderer keeps per-cell. */
 interface CellTopology {
   bondAtoms: Map<number, [number, number]>;
 }
 
-/** Callbacks exposed by `RDKitCellRenderer` that the handler needs. Lets us
- *  keep the handler in its own module without a circular import on the
- *  renderer class. Each member mirrors the same-named method on the renderer;
- *  shape kept identical so `this as unknown as Mol3DHoverRendererDeps` is a
- *  safe cast from the class body. */
+/** Subset of RDKitCellRenderer needed by the handler. Shape is identical to
+ *  the renderer's private members so `this as unknown as Mol3DHoverRendererDeps`
+ *  is a safe cast. Avoids a circular import on the full renderer class. */
 export interface Mol3DHoverRendererDeps {
   rdKitModule: RDModule;
   _previewFrom3D: boolean;
@@ -54,9 +42,7 @@ export interface Mol3DHoverRendererDeps {
   _clearRendersCache(): void;
 }
 
-/** Validates a raw event payload against the `Mol3DHoverEventArgs` shape.
- *  Returns the typed payload on success, `null` on any type/shape mismatch
- *  (the subscription uses `args: unknown` so the guard is required). */
+/** Parses and validates a raw CHEM_MOL3D_HOVER_EVENT payload. */
 export function parseMol3DHoverArgs(args: unknown): Mol3DHoverEventArgs | null {
   if (!args || typeof args !== 'object') return null;
   const {mol3DColumnName, rowIdx, atom3DSerial, mode} = args as Mol3DHoverEventArgs;
@@ -65,10 +51,7 @@ export function parseMol3DHoverArgs(args: unknown): Mol3DHoverEventArgs | null {
   return {mol3DColumnName, rowIdx, atom3DSerial, mode};
 }
 
-/** Inverts the forward 2D→3D atom-index mapping. Mirrors the transform in
- *  BSV's `computeSerials`:
- *    forward:  idx2D → mapped = mapping[idx2D] → serial = pdbSerials[mapped] || mapped+1
- *    reverse:  serial → mapped = (pdbSerials.indexOf(serial) ?? serial-1) → idx2D = mapping.indexOf(mapped)
+/** Inverts the 2D→3D mapping: serial → mapped idx → 2D atom index.
  *  Returns -1 when the serial is outside the mapped range. */
 export function reverseMap3DSerialTo2DIdx(
   mapping: AtomIndexMapping, atom3DSerial: number,
@@ -81,29 +64,12 @@ export function reverseMap3DSerialTo2DIdx(
 }
 
 /**
- * Reverse 3D→2D hover handler. Called when BiostructureViewer's Molstar
- * viewer fires CHEM_MOL3D_HOVER_EVENT — the user is hovering a ligand
- * atom in the 3D pose, and we need to highlight the matching 2D atom.
+ * Handles CHEM_MOL3D_HOVER_EVENT: reverses the 3D atom serial to a 2D atom
+ * index and routes preview/paint/erase to the renderer's shared provider path.
+ * `atom3DSerial: null` means "cursor left the atom" — clears the preview only.
  *
- * Flow:
- *   1. Resolve the linked 2D SMILES column (the one whose
- *      CHEM_ATOM_PICKER_LINKED_COL tag points to the fired 3D column).
- *   2. Compute (on demand) the 2D↔3D atom-index mapping for the row's
- *      (smiles, pose3D) pair via `mapAtomIndices2Dto3D`.
- *   3. Reverse-look-up the 3D Molstar atom serial → 2D atom index via
- *      `reverseMap3DSerialTo2DIdx`.
- *   4. Route by `mode`: preview / paint / erase — each delegates to the
- *      renderer's existing 2D rendering methods so both directions share
- *      the same provider storage.
- *
- * Events with `atom3DSerial: null` mean "cursor left all ligand atoms" —
- * clear the transient preview (painted atoms are untouched).
- *
- * NOTE: resolves the DataFrame via `grok.shell.tv?.grid?.dataFrame`. In
- * test harnesses that fire multiple events rapidly without a stable
- * focused view, subsequent events may silently bail at the grid-lookup
- * guard — see `atom-picker-3d-hover-tests.ts` for which scenarios can and
- * cannot be automated today.
+ * NOTE: resolves the DataFrame via `grok.shell.tv?.grid?.dataFrame`; events
+ * fired without a stable focused view silently bail at the grid-lookup guard.
  */
 export function handleMol3DHoverEvent(
   renderer: Mol3DHoverRendererDeps, args: unknown,
@@ -146,9 +112,7 @@ export function handleMol3DHoverEvent(
   const idx2D = reverseMap3DSerialTo2DIdx(mapping, atom3DSerial);
   if (idx2D < 0) return;
 
-  // `_getCellAtomPositions` cache key is `molString|WxH`. Using 100x100 here
-  // matches what `_removePreviewAtom` already does — we only need
-  // `bondAtoms` (topology, dimension-independent), not pixel positions.
+  // 100x100: we only need bondAtoms (topology); pixel positions are dimension-dependent.
   const cellInfo = renderer._getCellAtomPositions(smiles2D, 100, 100);
   const bondAtoms = cellInfo?.bondAtoms ?? new Map<number, [number, number]>();
 
@@ -157,9 +121,7 @@ export function handleMol3DHoverEvent(
   else if (mode === 'erase')
     renderer._removeAtomFromRow(smilesCol, rowIdx, idx2D, bondAtoms);
   else {
-    // Mark the preview as 3D-sourced BEFORE setting it, so the 2D
-    // `_onDocumentMouseMove` no-modifier branch does not wipe it on
-    // the next DOM mousemove over the 3D canvas.
+    // Mark as 3D-sourced before setting so 2D mousemoves don't wipe it.
     renderer._previewFrom3D = true;
     renderer._setPreviewAtom(smilesCol, rowIdx, idx2D, bondAtoms);
   }

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {CHEM_INTERACTIVE_SELECTION_EVENT} from '../constants';
 
-category('atom-picker', () => {
+category('atom picker', () => {
   /** Builds a minimal DataFrame with a SMILES molecule column plus `extra`
    *  columns and applies the `_isPickerActive` detection rule — the picker
    *  auto-activates when any column on the frame has semType

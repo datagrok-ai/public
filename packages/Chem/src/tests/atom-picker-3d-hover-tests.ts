@@ -56,7 +56,7 @@ function getPickerProvider(col: DG.Column, rowIdx: number): AtomPickerProvider |
   return providers.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
 }
 
-category('atom-picker-3d-hover', () => {
+category('atom picker: 3D hover', () => {
   let df: DG.DataFrame;
   let smilesCol: DG.Column;
   let mol3DCol: DG.Column;
@@ -112,7 +112,7 @@ category('atom-picker-3d-hover', () => {
   // preview mode
   // -------------------------------------------------------------------------
 
-  test('preview-sets-provider-with-correct-atom', async () => {
+  test('3D hover — preview sets provider for correct atom', async () => {
     // Fire a preview event for atom serial 3 (the O atom in the PDB).
     // After reverse-mapping: serial 3 → PDB heavy-atom index 2 → 2D idx 2 (O in CCO).
     await fire3DHover({atom3DSerial: 3});
@@ -126,7 +126,7 @@ category('atom-picker-3d-hover', () => {
     expect((substruct!.atoms as number[]).includes(2), true);
   }, {timeout: 15000});
 
-  test('preview-null-serial-clears-preview', async () => {
+  test('3D hover — null serial clears preview', async () => {
     // First establish a preview, then fire the "cursor left" event.
     await fire3DHover({atom3DSerial: 3});
     await fire3DHover({atom3DSerial: null});
@@ -157,7 +157,7 @@ category('atom-picker-3d-hover', () => {
   // unknown column — event for a different 3D column must be ignored
   // -------------------------------------------------------------------------
 
-  test('event-for-unknown-column-is-ignored', async () => {
+  test('3D hover — event for unknown column is ignored', async () => {
     smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
 
     await fire3DHover({mol3DColumnName: 'non-existent-col', atom3DSerial: 1});
