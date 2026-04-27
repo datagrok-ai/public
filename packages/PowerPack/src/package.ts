@@ -298,6 +298,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'int', options: {optional: true}}) currentIndexToSet?: number,
     @grok.decorators.param({type: 'bool', options: {optional: true}}) isDataFrameValue?: boolean,
     @grok.decorators.param({type: 'bool', options: {optional: true}}) isAnnotationArea?: boolean,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) selectId?: string,
   ): void {
     const options = Object.keys(_properties)
       .filter((k) => k in DEFAULT_OPTIONS)
@@ -308,6 +309,7 @@ export class PackageFunctions {
       index: currentIndexToSet,
       isDataFrame: isDataFrameValue,
       isAnnotationArea: isAnnotationArea,
+      selectId: selectId,
     });
   }
 

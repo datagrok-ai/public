@@ -1492,7 +1492,7 @@ export class FormulaLinesDialog {
   constructor(
     src: DG.DataFrame | DG.Viewer,
     private options: EditorOptions = DEFAULT_OPTIONS,
-    private showValueOnOpen?: { index?: number, isDataFrame?: boolean, isAnnotationArea?: boolean })
+    private showValueOnOpen?: { index?: number, isDataFrame?: boolean, isAnnotationArea?: boolean, selectId?: string })
   {
     /** Init Helpers */
     this.host = this.initHost(src);
@@ -1564,11 +1564,24 @@ export class FormulaLinesDialog {
     }));
   }
     
-  private initDefaultOnOpenState(): void {      
+  private initDefaultOnOpenState(): void {
       if (!this.showValueOnOpen)
         return;
 
       this.tabs.currentPane = this.tabs.getPane(this.showValueOnOpen.isDataFrame ? ITEM_SOURCE.DATAFRAME : ITEM_SOURCE.VIEWER);
+      if (this.showValueOnOpen.selectId) {
+        const id = this.showValueOnOpen.selectId;
+        let lineIdx = this.preview.formulaLineItems.findIndex((it) => it.id === id);
+        if (lineIdx >= 0) {
+          this.currentTable.update(lineIdx, true);
+          return;
+        }
+        let regionIdx = this.preview.annotationRegionItems.findIndex((it) => it.id === id);
+        if (regionIdx >= 0) {
+          this.currentTable.update(regionIdx, false);
+          return;
+        }
+      }
       if (this.showValueOnOpen.index) {
         const isFormulaLine = this.preview.formulaLineItems.length > 0 && this.showValueOnOpen.index < this.preview.formulaLineItems.length;
         this.currentTable.update(this.showValueOnOpen.index, isFormulaLine);

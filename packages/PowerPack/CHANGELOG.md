@@ -1,5 +1,9 @@
 # Power Pack changelog
 
+## v.next
+
+* GROK-20036: Formula Lines dialog: Added `selectId` parameter to focus the dialog on a specific item by id when opened
+
 ## 1.8.1 ()
 
 * Activity Dashboard: Reduced Spotlight tab load time by fetching entities server-side in parallel with SQL, and progressively rendering the Recent section
