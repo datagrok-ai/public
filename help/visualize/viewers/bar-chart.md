@@ -119,8 +119,16 @@ Year - Month' and 'Year - Quarter':
 | Font | string |  |
 | Axis Font | string |  |
 | Min Text Height | number |  |
+| Formula Font | string |  |
+| Annotation Font | string |  |
 | Show Clipped Bar Indicators | boolean | When enabled, shows hatched areas and arrows on bars that are clipped by the value axis range. |
 | Controls Font | string | Viewer controls elements font. |
+| **Lines** | | |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| **Annotation regions** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
 | **Description** | | |
 | Show Title | boolean |  |
 
