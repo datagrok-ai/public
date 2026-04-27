@@ -69,6 +69,11 @@ export class Project extends Entity {
     return api.grok_Project_IsPackage(this.dart);
   }
 
+  /** True for Spaces — hierarchical containers with their own storage. See {@link grok.dapi.spaces}. */
+  get isSpace(): boolean {
+    return api.grok_Project_Get_IsSpace(this.dart);
+  }
+
   toMarkup(): string {
     return api.grok_Project_ToMarkup(this.dart);
   }

@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "6.1.10",
+  "version": "6.1.11",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
@@ -9,6 +9,7 @@
     "@babel/traverse": "^7.23.7",
     "@typescript-eslint/typescript-estree": "^8.31.1",
     "@typescript-eslint/visitor-keys": "^8.31.1",
+    "adm-zip": "^0.5.17",
     "archiver": "^4.0.2",
     "archiver-promise": "^1.0.0",
     "datagrok-api": "^1.26.0",
@@ -70,6 +71,7 @@
     "@babel/preset-env": "^7.23.8",
     "@babel/preset-typescript": "7.15.0",
     "@datagrok-misc/eslint-plugin-config": "^1.0.0",
+    "@types/adm-zip": "^0.5.8",
     "@types/ignore-walk": "^4.0.3",
     "@types/inquirer": "^8.2.10",
     "@types/js-yaml": "^4.0.9",

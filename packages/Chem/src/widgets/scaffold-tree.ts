@@ -761,8 +761,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   makeRootDroppable() {
     ui.makeDroppable(this.root, {
       acceptDrop: (draggedItem) => draggedItem instanceof DG.FileInfo && draggedItem.extension === 'tree',
-      doDrop: async (draggedItem, _event) => {
-        const fileContent = await grok.dapi.files.readAsText(draggedItem as DG.FileInfo);
+      doDrop: async (args) => {
+        const fileContent = await grok.dapi.files.readAsText(args.dragObject as DG.FileInfo);
         await this.loadTreeStr(fileContent);
       },
     });

@@ -45,11 +45,6 @@ public class BigQueryDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.SECRET_KEY, "Key file that is used to authenticate the\n" +
                     "service account email address. This parameter supports keys in .json format.", SERVICE_ACCOUNT_METHOD, new Prop("rsa"), ".json"));
             add(new Property(Property.STRING_TYPE, DbCredentials.TOKEN, null, OAUTH_METHOD, new Prop("password")));
-            add(new Property(Property.STRING_TYPE, DbCredentials.OAUTH_SCOPES,
-                    "Space-separated OAuth scopes to request when consenting via the "
-                            + "configured OpenID Provider. Defaulted from the connector's OAuthSpec "
-                            + "under the active IdP flavour (oidc / azure). See "
-                            + "GENERALIZED_OAUTH_CONNECTORS.md.", OAUTH_METHOD));
         }};
 
         // Lazy OAuth/OpenID consent descriptor. Google OAuth doesn't

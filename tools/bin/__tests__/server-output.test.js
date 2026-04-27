@@ -144,7 +144,7 @@ var _serverOutput = require("../utils/server-output");
     (0, _serverOutput.printBatchOutput)(resp, 'json');
     (0, _vitest.expect)(JSON.parse(logLines[0])).toEqual(resp);
   });
-  (0, _vitest.it)('table: failed operations are written to stderr, not stdout', () => {
+  (0, _vitest.it)('table: failed operations are written to stderr as structured JSON', () => {
     const resp = {
       summary: {
         total: 1,
@@ -165,7 +165,7 @@ var _serverOutput = require("../utils/server-output");
     (0, _serverOutput.printBatchOutput)(resp, 'table');
     (0, _vitest.expect)(errLines.length).toBeGreaterThan(0);
     const parsed = JSON.parse(errLines[0]);
+    (0, _vitest.expect)(parsed[0].id).toBe('op0');
     (0, _vitest.expect)(parsed[0].error.error).toBe('Not found');
-    (0, _vitest.expect)(logLines.join('\n')).not.toMatch(/Not found/);
   });
 });

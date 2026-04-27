@@ -170,5 +170,5 @@ async function initializeAdmeticaApp(addPath: boolean = true, parent: DG.FuncCal
   const app = new AdmeticaViewApp(parent);
   app.addPath = addPath;
   await app.init();
-  return grok.shell.addPreview(app.tableView!);
+  return app.tableView!;
 }

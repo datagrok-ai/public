@@ -8,6 +8,7 @@ import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.connectors_info.OAuthSpec;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
@@ -38,6 +39,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp", "privatelink"));
     private static final String RSA_METHOD = "Username/Private key";
     private static final String OAUTH_JWT = "OAuth (JWT)";
+    private static final String OAUTH_METHOD_NAME = "OAuth";
 
     public SnowflakeDataProvider() {
         init();
@@ -53,6 +55,11 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             String schema = conn.get(DbCredentials.SCHEMA);
             properties.setProperty(DbCredentials.SCHEMA, schema == null ? DEFAULT_SCHEMA : schema);
             setIfNotNull(properties, DbCredentials.ROLE, conn.get(DbCredentials.ROLE));
+        }
+        String method = (String) conn.credentials.parameters.get("#chosen-auth-method");
+        if (OAUTH_JWT.equals(method) || OAUTH_METHOD_NAME.equals(method)) {
+            properties.setProperty("authenticator", "oauth");
+            properties.setProperty("token", (String) conn.credentials.parameters.get(DbCredentials.TOKEN));
         }
         return properties;
     }
@@ -72,25 +79,11 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         if (conn.credentials == null)
             throw new GrokConnectException("Credentials can't be null");
         String method = (String) conn.credentials.parameters.get("#chosen-auth-method");
-        if (GrokConnectUtil.isNotEmpty(method) && method.equals(RSA_METHOD)) {
+        if (RSA_METHOD.equals(method)) {
             SnowflakeBasicDataSource ds = getDataSource(conn);
             return ConnectionPool.getConnection(ds, getDataSourceKey(conn, ds));
         }
-        else if (OAUTH_JWT.equals(method)) {
-            try {
-                Class.forName(driverClassName);
-            }
-            catch (ClassNotFoundException e) {
-                throw new GrokConnectException(e);
-            }
-            Properties properties = getProperties(conn);
-            String token = (String) conn.credentials.parameters.get("#token");
-            properties.setProperty("authenticator", "oauth");
-            properties.setProperty("token", token);
-            return java.sql.DriverManager.getConnection(getConnectionString(conn), properties);
-        }
-        else
-            return ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
+        return ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
 
     @Override
@@ -172,7 +165,13 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "passPhrase", "Passphrase for decrypting private key.", RSA_METHOD, new Prop("password")));
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "jwtSigningKey", "Private key for signing JWT tokens. The matching public key must be configured in Snowflake's External OAuth integration.", OAUTH_JWT, new Prop("rsa"), ".pem,.der"));
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "jwtAudience", "Audience claim for JWT tokens. Must match EXTERNAL_OAUTH_AUDIENCE_LIST in Snowflake.", OAUTH_JWT));
+        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.TOKEN, null, OAUTH_METHOD_NAME, new Prop("password")));
         descriptor.credentialsTemplate.stream().filter(p -> p.name.equals(DbCredentials.LOGIN)).forEach(p -> p.category = "Username/Password," + RSA_METHOD);
+
+        descriptor.oauth = new OAuthSpec()
+                .scopes("oidc", Arrays.asList("session:role-any", "offline_access"))
+                .tokenProperty("token");
+
         descriptor.nameBrackets = "\"";
 
         descriptor.typesMap = new HashMap<String, String>() {{
