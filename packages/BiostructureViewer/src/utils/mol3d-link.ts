@@ -24,33 +24,18 @@ const CHEM_SELECTION_EVENT = 'chem-interactive-selection-changed';
 /** Mirrors ChemTemps.SUBSTRUCT_PROVIDERS from @datagrok-libraries/chem-meta. */
 const SUBSTRUCT_PROVIDERS_KEY = 'substruct-providers';
 
-/** Reads the forward link from a SMILES column. Prefers persistent tags; falls back to temp. */
-function getLinkedMol3DColName(smilesCol: DG.Column): string | null {
-  const fromTags = smilesCol.tags[CHEM_ATOM_PICKER_LINKED_COL];
-  if (fromTags) return fromTags;
-  const fromTemp = smilesCol.temp?.[CHEM_ATOM_PICKER_LINKED_COL];
-  return typeof fromTemp === 'string' ? fromTemp : null;
-}
-
-/** Reads the reverse link from a Mol3D column. Prefers persistent tags; falls back to temp. */
-function getLinkedSmilesColName(mol3DCol: DG.Column): string | null {
-  const fromTags = mol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL];
-  if (fromTags) return fromTags;
-  const fromTemp = mol3DCol.temp?.[CHEM_ATOM_PICKER_LINKED_SMILES_COL];
-  return typeof fromTemp === 'string' ? fromTemp : null;
-}
-
 /** Returns the SMILES column name linked to the given Mol3D column, or null.
- *  O(1) via reciprocal tag; falls back to O(n) scan for pre-migration one-way links. */
+ *  O(1) via the reciprocal tag on the Mol3D column; falls back to O(n) scan
+ *  over forward tags. */
 export function findLinkedSmilesColName(
   df: DG.DataFrame, mol3DColName: string): string | null {
   const mol3DCol = df.col(mol3DColName);
   if (mol3DCol) {
-    const reciprocal = getLinkedSmilesColName(mol3DCol);
+    const reciprocal = mol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL];
     if (reciprocal && df.col(reciprocal)) return reciprocal;
   }
   const c = df.columns.toList().find(
-    (col) => getLinkedMol3DColName(col) === mol3DColName);
+    (col) => col.tags[CHEM_ATOM_PICKER_LINKED_COL] === mol3DColName);
   return c?.name ?? null;
 }
 
@@ -58,40 +43,26 @@ export function findLinkedSmilesColName(
 export function clearLinksToMol3D(
   df: DG.DataFrame, mol3DColName: string): void {
   for (const c of df.columns.toList()) {
-    if (getLinkedMol3DColName(c) === mol3DColName) {
-      if (c.tags[CHEM_ATOM_PICKER_LINKED_COL])
-        delete c.tags[CHEM_ATOM_PICKER_LINKED_COL];
-      if (c.temp?.[CHEM_ATOM_PICKER_LINKED_COL])
-        delete c.temp[CHEM_ATOM_PICKER_LINKED_COL];
+    if (c.tags[CHEM_ATOM_PICKER_LINKED_COL] === mol3DColName) {
+      delete c.tags[CHEM_ATOM_PICKER_LINKED_COL];
       clearAtomPickerHighlights(c);
     }
   }
-  // Clear the reciprocal tag on the Mol3D side too.
   const mol3DCol = df.col(mol3DColName);
-  if (mol3DCol) {
-    if (mol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL])
-      delete mol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL];
-    if (mol3DCol.temp?.[CHEM_ATOM_PICKER_LINKED_SMILES_COL])
-      delete mol3DCol.temp[CHEM_ATOM_PICKER_LINKED_SMILES_COL];
-  }
+  if (mol3DCol?.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL])
+    delete mol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL];
 }
 
 /** Writes or clears the reciprocal-tag link between `smilesCol` and `mol3DColName`.
  *  Pass null to unlink (clears both forward and reverse tags + highlights). */
 export function setSmilesColLink(
   smilesCol: DG.Column, mol3DColName: string | null): void {
-  if (smilesCol.temp?.[CHEM_ATOM_PICKER_LINKED_COL])
-    delete smilesCol.temp[CHEM_ATOM_PICKER_LINKED_COL];
-
   const df = smilesCol.dataFrame;
-  const prevMol3DName = getLinkedMol3DColName(smilesCol);
+  const prevMol3DName = smilesCol.tags[CHEM_ATOM_PICKER_LINKED_COL];
   const prevMol3DCol = prevMol3DName && df ? df.col(prevMol3DName) : null;
-  if (prevMol3DCol && prevMol3DCol.name !== mol3DColName) {
-    if (prevMol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL])
-      delete prevMol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL];
-    if (prevMol3DCol.temp?.[CHEM_ATOM_PICKER_LINKED_SMILES_COL])
-      delete prevMol3DCol.temp[CHEM_ATOM_PICKER_LINKED_SMILES_COL];
-  }
+  if (prevMol3DCol && prevMol3DCol.name !== mol3DColName &&
+      prevMol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL])
+    delete prevMol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL];
 
   if (!mol3DColName) {
     if (smilesCol.tags[CHEM_ATOM_PICKER_LINKED_COL])

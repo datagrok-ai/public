@@ -3,8 +3,6 @@
  * Extracted from molstar-viewer.ts; the selection cache lives on MolstarViewer.selectionCache.
  */
 
-import * as DG from 'datagrok-api/dg';
-
 import {Structure} from 'molstar/lib/mol-model/structure';
 
 import {_package} from '../../package';

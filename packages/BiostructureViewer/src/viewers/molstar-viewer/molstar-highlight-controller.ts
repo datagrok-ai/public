@@ -42,9 +42,6 @@ type LigandInfo = {rowIdx: number, structureRefs: string[] | null};
 type LigandHighlight = {serials: number[], isCurrent: boolean, dataRef: string | null};
 
 export class MolstarHighlightController {
-  /** Guards highlightLigandAtoms against concurrent async calls. */
-  private _highlightInProgress = false;
-
   /** Dedup guard for Molstar's per-pixel hover events. */
   private _lastHoverFired: {
     rowIdx: number, atomSerial: number | null, mode: string,
@@ -217,90 +214,6 @@ export class MolstarHighlightController {
           return StructureSelection.toLociWithSourceUnits(sel);
         },
       );
-    }
-  }
-
-  // -- Single-ligand highlight (external API) --------------------------------
-
-  /** Highlights specific atoms in the 3D Molstar view using overpaint.
-   *  @param atomIndices 0-based atom indices from the 2D picker.
-   *  @param mapping3D Optional pre-computed 2D→3D mapping.
-   *  @param precomputedSerials When `true`, `atomIndices` are already
-   *    1-based Molstar serials and the 2D→3D mapping step is skipped. */
-  async highlightLigandAtoms(
-    atomIndices: number[],
-    mapping3D?: AtomMapping3D | null,
-    precomputedSerials?: boolean,
-  ): Promise<void> {
-    const plugin = this.host.getPlugin();
-    if (!plugin) return;
-    if (this._highlightInProgress) return;
-    this._highlightInProgress = true;
-
-    try {
-      const structures = plugin.managers.structure.hierarchy.current.structures;
-      if (!structures || structures.length === 0) return;
-
-      const allComponents = structures.flatMap((s: any) => s.components ?? []);
-      if (allComponents.length === 0) return;
-
-      await clearStructureOverpaint(plugin, allComponents);
-
-      if (atomIndices.length === 0) return;
-
-      let mol3DSerials: number[];
-      if (precomputedSerials)
-        mol3DSerials = atomIndices;
-      else {
-        let structure: Structure | undefined;
-        const currentLigand = this.host.getLigands()?.current;
-        if (currentLigand?.structureRefs && currentLigand.structureRefs.length >= 4) {
-          const cell = plugin.state.data.cells.get(currentLigand.structureRefs[3]);
-          if (cell?.obj?.data) structure = cell.obj.data;
-        }
-        if (!structure && structures.length > 0)
-          structure = structures[0]?.cell?.obj?.data;
-
-        mol3DSerials = computeSerials(atomIndices, mapping3D, structure);
-      }
-      if (mol3DSerials.length === 0) return;
-
-      this.host.logger.debug(`[molstar-picker] overpaint serials [${mol3DSerials.slice(0, 10)}]`);
-
-      const serialSet = mol3DSerials;
-      await setStructureOverpaint(
-        plugin, allComponents, Color(0xFFFF00),
-        async (structureData: Structure) => {
-          const atomSet = MolScriptBuilder.set(...serialSet);
-          const query = MolScriptBuilder.struct.generator.atomGroups({
-            'atom-test': MolScriptBuilder.core.set.has([
-              atomSet, MolScriptBuilder.ammp('id'),
-            ]),
-          });
-          const sel = Script.getStructureSelection(query, structureData);
-          return StructureSelection.toLociWithSourceUnits(sel);
-        },
-      );
-    } catch (err: unknown) {
-      this.host.logger.error(
-        `highlightLigandAtoms failed: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      this._highlightInProgress = false;
-    }
-  }
-
-  /** Clears any atom-level overpaint applied by {@link highlightLigandAtoms}. */
-  async clearLigandAtomHighlight(): Promise<void> {
-    const plugin = this.host.getPlugin();
-    if (!plugin) return;
-    try {
-      const structures = plugin.managers.structure.hierarchy.current.structures;
-      if (!structures || structures.length === 0) return;
-      const allComponents = structures.flatMap((s: any) => s.components ?? []);
-      if (allComponents.length === 0) return;
-      await clearStructureOverpaint(plugin, allComponents);
-    } catch {
-      /* viewer may be disposed */
     }
   }
 

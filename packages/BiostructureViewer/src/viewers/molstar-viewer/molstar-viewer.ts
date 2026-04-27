@@ -64,7 +64,7 @@ import {createStructureRepresentationParams} from 'molstar/lib/mol-plugin-state/
 import {StructureRepresentationRegistry} from 'molstar/lib/mol-repr/structure/registry';
 import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
 import {StateElements} from 'molstar/lib/examples/proteopedia-wrapper/helpers';
-import {Bond, Structure, StructureElement, StructureProperties, StructureProperties as SP} from 'molstar/lib/mol-model/structure';
+import {Bond, Structure, StructureElement, StructureProperties as SP} from 'molstar/lib/mol-model/structure';
 import {InteractivityManager} from 'molstar/lib/mol-plugin-state/manager/interactivity';
 import {PluginUIContext} from 'molstar/lib/mol-plugin-ui/context';
 import {StructureRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
@@ -973,11 +973,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           const {rowIdx = -1, atoms = [], mapping3D = null, persistent} =
             (_args ?? {}) as ChemSelectionEventArgs;
           try {
-            if (atoms.length >= 0) {
-              this.logger.debug(
-                `[molstar-picker] live highlight atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${persistent}`);
-              this.highlightController.highlightAllLigandAtoms({rowIdx, atoms, mapping3D});
-            }
+            this.logger.debug(
+              `[molstar-picker] live highlight atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${persistent}`);
+            this.highlightController.highlightAllLigandAtoms({rowIdx, atoms, mapping3D});
           } catch (err: unknown) {
             this.logger.error(
               `${CHEM_SELECTION_EVENT} handler failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -992,16 +990,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           this._stateChangeTimer = setTimeout(() => {
             this._stateChangeTimer = null;
             this.highlightController.replayHighlightIfCached();
-          }, 500) as any;
+          }, 500);
         };
-        canvas.addEventListener('click', reapplyOnClick);
         canvas.addEventListener('contextmenu', reapplyOnClick);
         canvas.addEventListener('mouseup', reapplyOnClick);
         this.viewSubs.push({unsubscribe: () => {
-          canvas.removeEventListener('click', reapplyOnClick);
           canvas.removeEventListener('contextmenu', reapplyOnClick);
           canvas.removeEventListener('mouseup', reapplyOnClick);
-        }} as any);
+        }});
       }
 
       // Subscribe to Molstar's hover observable for the 3D→2D reverse bridge.
@@ -1037,11 +1033,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
               if (!loc) return;
               // Filter: ligand (non-polymer) heavy atoms only.
               try {
-                if (StructureProperties.entity.type(loc) !== 'non-polymer') return;
+                if (SP.entity.type(loc) !== 'non-polymer') return;
               } catch { return; /* entity lookup failed — skip */ }
-              if (StructureProperties.atom.type_symbol(loc) === 'H') return;
+              if (SP.atom.type_symbol(loc) === 'H') return;
 
-              const atomSerial = StructureProperties.atom.id(loc);
+              const atomSerial = SP.atom.id(loc);
               const {modifiers} = event;
               const mode: 'preview' | 'paint' | 'erase' =
                 modifiers.shift && modifiers.control ? 'erase' : (modifiers.shift ? 'paint' : 'preview');
