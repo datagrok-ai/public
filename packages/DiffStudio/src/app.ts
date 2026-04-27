@@ -37,7 +37,7 @@ import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTa
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
-import {showExportDialog} from './export/export-dialog';
+import {showExportDialog, Format} from './export/export-dialog';
 
 //@ts-ignore
 import '../css/app-styles.css';
@@ -557,8 +557,7 @@ export class DiffStudio {
   private saveBtn = this.getSaveBtn();
   private updateBtnFilePath: string | null = null;
   private updateBtn = this.getUpdateBtn();
-  private downLoadIcon = this.getDownLoadIcon();
-  private exportIcon = this.getExportIcon();
+  private downloadComboMenu = this.getDownloadComboMenu();
   private helpIcon = this.getHelpIcon();
   private openHelpInNewTabIcon = this.getHelpInNewTabIcon();
   private exportToJsWgt = this.getExportToJsWgt();
@@ -643,8 +642,8 @@ export class DiffStudio {
     return [
       [this.openComboMenu, this.addNewWgt],
       [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
-      [this.addToModelCatalogWgt, this.exportIcon, this.saveBtn,
-        this.downLoadIcon, this.appStateInputWgt, this.updateBtn],
+      [this.addToModelCatalogWgt, this.downloadComboMenu, this.saveBtn,
+        this.appStateInputWgt, this.updateBtn],
     ];
   } // getRibbonPanels
 
@@ -686,38 +685,73 @@ export class DiffStudio {
     return btn;
   }
 
-  /** Return the download model widget */
-  private getDownLoadIcon(): HTMLElement {
-    const icon = ui.iconFA('arrow-to-bottom', () => this.saveToLocalFile(), HINT.SAVE_LOC);
-    icon.classList.add('diff-studio-ribbon-download');
+  /** Return the combo-menu ribbon widget that consolidates the save/export actions:
+   *  raw `.ivp` download, plus LaTeX and Markdown export. */
+  private getDownloadComboMenu(): HTMLElement {
+    const widget = ui.div(ui.iconFA('arrow-to-bottom', () => {}, HINT.DOWNLOAD));
+    widget.classList.add('d4-combo-popup');
+    widget.classList.add('diff-studio-ribbon-widget');
+    ui.tooltip.bind(widget, HINT.DOWNLOAD);
+    widget.onclick = () => this.getDownloadMenu().show();
 
-    return icon;
+    return widget;
   }
 
-  private getExportIcon(): HTMLElement {
-    const icon = ui.iconFA('file-export', () => {
-      if (!this.editorView) {
-        grok.shell.info('No model loaded');
-        return;
-      }
-      const text = this.editorView.state.doc.toString();
-      if (!text.trim()) {
-        grok.shell.info('No model loaded');
-        return;
-      }
-      let name = 'diff-export';
-      try {
-        const ivp = getIVP(text);
-        if (ivp?.name) name = ivp.name;
-      } catch {
-        // parser failures are fine here — fall back to the default name
-      }
-      showExportDialog(text, name, 'latex');
-    }, 'Export model as LaTeX or Markdown');
-    icon.classList.add('diff-studio-ribbon-icon');
-
-    return icon;
+  /** Build the download/export popup with three actions; the empty-model guard
+   *  lives inside each handler so the menu structure is independent of editor state. */
+  private getDownloadMenu(): DG.Menu {
+    const menu = DG.Menu.popup();
+    menu.item(TITLE.SAVE_IVP, () => this.downloadAsIvp(),
+      undefined, {description: HINT.SAVE_IVP_ITEM});
+    menu.item(TITLE.EXPORT_LATEX, () => this.openExportDialog('latex'),
+      undefined, {description: HINT.EXPORT_LATEX_ITEM});
+    menu.item(TITLE.EXPORT_MARKDOWN, () => this.openExportDialog('markdown'),
+      undefined, {description: HINT.EXPORT_MARKDOWN_ITEM});
+    return menu;
   }
+
+  /** Save the current IVP text to a local `.ivp` file. Shows an info balloon and
+   *  exits early when the editor is empty or not yet mounted. */
+  private downloadAsIvp(): void {
+    if (!this.editorView) {
+      grok.shell.info(HINT.NO_MODEL_LOADED);
+      return;
+    }
+    const text = this.editorView.state.doc.toString();
+    if (!text.trim()) {
+      grok.shell.info(HINT.NO_MODEL_LOADED);
+      return;
+    }
+    const link = document.createElement('a');
+    const file = new Blob([text], {type: 'text/plain'});
+    link.href = URL.createObjectURL(file);
+    link.download = MISC.FILE_DEFAULT_NAME;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  } // downloadAsIvp
+
+  /** Open the LaTeX/Markdown export dialog with the given preset format. Skips
+   *  when the editor is empty; falls back to a default base name when the IVP
+   *  parser fails on the current text. */
+  private openExportDialog(format: Format): void {
+    if (!this.editorView) {
+      grok.shell.info(HINT.NO_MODEL_LOADED);
+      return;
+    }
+    const text = this.editorView.state.doc.toString();
+    if (!text.trim()) {
+      grok.shell.info(HINT.NO_MODEL_LOADED);
+      return;
+    }
+    let name = 'diff-export';
+    try {
+      const ivp = getIVP(text);
+      if (ivp?.name) name = ivp.name;
+    } catch {
+      // parser failures are fine here — fall back to the default name
+    }
+    showExportDialog(text, name, format);
+  } // openExportDialog
 
   /** Return the run fitting widget */
   private getFitWgt(): HTMLElement {
@@ -947,16 +981,6 @@ export class DiffStudio {
     dlg.add(fileInp);
     fileInp.click();
   }; // loadFn
-
-  /** Save the current IVP to local file */
-  private async saveToLocalFile(): Promise<void> {
-    const link = document.createElement('a');
-    const file = new Blob([this.editorView!.state.doc.toString()], {type: 'text/plain'});
-    link.href = URL.createObjectURL(file);
-    link.download = MISC.FILE_DEFAULT_NAME;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
 
   /** Save the current IVP to My files */
   private async saveToMyFiles(): Promise<void> {

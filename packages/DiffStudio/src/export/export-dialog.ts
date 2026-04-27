@@ -11,7 +11,7 @@ import {LINK} from '../ui-constants';
 //@ts-ignore
 import '../../css/app-styles.css';
 
-type Format = 'latex' | 'markdown';
+export type Format = 'latex' | 'markdown';
 
 /** Cached CodeMirror 6 modules; populated on first call to `getCM()` and reused for later dialogs. */
 let _cm: {
