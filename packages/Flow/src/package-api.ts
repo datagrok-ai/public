@@ -13,12 +13,20 @@ export namespace funcs {
   }
 
   /**
-  Interactive function chain designer
-  */
+   * Interactive function chain designer
+   * @param {string} path
+   *   meta.url: true
+   *   optional: true
+   * @returns {Promise<DG.View>}
+   */
   export async function funcflowApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('Flow:FuncflowApp', { path });
   }
 
+  /**
+   * @param {DG.FileInfo} file
+   * @returns {Promise<DG.View>}
+   */
   export async function viewFuncFlow(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('Flow:ViewFuncFlow', { file });
   }
