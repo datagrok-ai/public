@@ -3,6 +3,15 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 const workingInDartium = true; // when working in Dartium, set this to true
 
+const babelOptions = {
+  presets: [['@babel/preset-env', {
+    targets: {chrome: '50'}, // approximate Dartium's engine
+    useBuiltIns: 'usage',
+    corejs: 3,
+  }]],
+  sourceType: 'unambiguous',
+};
+
 module.exports = {
   cache: {
     type: 'filesystem',
@@ -17,23 +26,24 @@ module.exports = {
   },
   module: {
     rules: [
-      { test: /\.ts$/,
+      workingInDartium ? {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: [
+          {loader: 'babel-loader', options: babelOptions},
+          {loader: 'ts-loader'},
+        ],
+      } : {
+        test: /\.ts$/,
         loader: 'ts-loader',
         exclude: /node_modules/,
       },
       ...(workingInDartium ? [{
         test: /\.js$/,
-        // include: [
-        //   /node_modules[\\/]konva/,
-        //   /node_modules[\\/]@datagrok-libraries/,
-        // ],
+        exclude: /node_modules[\\/]core-js/,
         use: {
           loader: 'babel-loader',
-          options: {
-            presets: [['@babel/preset-env', {
-              targets: 'chrome 54'// approximate Dartium's engine
-            }]],
-          },
+          options: babelOptions,
         },
       }] : []),
     ],

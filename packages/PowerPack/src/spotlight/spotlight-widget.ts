@@ -4,7 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
 import {queries} from '../package-api';
 import {LearningWidget} from '../widgets/learning-widget';
-import {WorkspaceTab} from './workspace-tab';
+import {WorkspaceTab, isApp} from './workspace-tab';
+import {clearWorkspacePreview} from './preview-host';
 
 
 enum SpotlightTabNames {
@@ -99,6 +100,8 @@ export class SpotlightWidget extends DG.Widget {
     this.tabControl = ui.tabControl(tabs, true, 'spotlight-widget');
     this.subs.push(this.tabControl.onTabChanged.subscribe((tabPane: DG.TabPane) => {
       this.cleanLists();
+      if (tabPane.name !== 'Workspace')
+        clearWorkspacePreview();
       tabPane.name === 'Learn' ? tabPane.content.parentElement?.classList.add('power-pack-overflow-hidden') :
         tabPane.content.parentElement?.classList.remove('power-pack-overflow-hidden');
       for (const id of Array.from(this.markedReadIds)) {
@@ -830,10 +833,9 @@ export class SpotlightWidget extends DG.Widget {
       return false;
     if (ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
       ent instanceof DG.UserReport || ent.entityType === 'UserReport' || ent instanceof DG.TableInfo ||
-      (ent instanceof DG.Func && !(ent instanceof DG.Script || ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) ||
+      (ent instanceof DG.Func && !(ent instanceof DG.Script || ent instanceof DG.DataQuery || ent instanceof DG.DataJob || isApp(ent))) ||
       ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection ||
-      (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage ||
-        (ent.name.startsWith('Report') && ent.name.length > 6 && !isNaN(Number(ent.name.slice(6)))))) ||
+      (ent instanceof DG.Project && (ent.isPackage || (!ent.isDashboard && !ent.isSpace))) ||
       //@ts-ignore
         (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))
       return false;

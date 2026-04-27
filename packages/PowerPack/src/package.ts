@@ -24,7 +24,7 @@ import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {SpotlightWidget} from './spotlight/spotlight-widget';
-import {getAdminGroups, getMyGroupFavorites} from './spotlight/group-favorites';
+import {getAdminGroups, getMyGroupFavorites, pinEntityToGroup} from './spotlight/group-favorites';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
 export * from './package.g';
@@ -452,7 +452,7 @@ grok.events.onContextMenu.subscribe((args) => {
         grok.shell.info(`Unpinned "${entity.friendlyName}" from ${group.friendlyName}`);
       }
       else {
-        await DG.Favorites.add(entity, group);
+        await pinEntityToGroup(entity, group);
         grok.shell.info(`Pinned "${entity.friendlyName}" to ${group.friendlyName}`);
       }
     }, {

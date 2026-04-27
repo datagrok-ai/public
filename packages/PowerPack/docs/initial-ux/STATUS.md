@@ -1,38 +1,64 @@
-# Initial UX — Workspace Widget Status
+# Initial UX — Implementation Status
 
-## Date: 2026-04-15
+## Spotlight widget
 
-## What was built
+| Tab            | Status | Notes                                                         |
+|----------------|--------|---------------------------------------------------------------|
+| Spotlight      | Done   | Action required, Shared with me, Recent sections             |
+| Workspace      | Done   | See details below                                            |
+| Favorites      | Done   |                                                               |
+| Notifications  | Done   | Unread count badge                                           |
+| My Activity    | Done   | Deduplication of consecutive identical events                |
+| Learn          | Done   |                                                               |
 
-### New files
-- `src/spotlight/group-favorites.ts` — `pin()`, `unpin()`, `getMyGroupFavorites()`, `getAdminGroups()`. Storage: per-group projects named `Home: <GroupName>` using `DG.Project.addLink()` + `grok.dapi.permissions.grant()`.
-- `src/spotlight/workspace-tab.ts` — `WorkspaceTab` class: card-based layout with greeting, per-group pinned entity cards, "Continue where you left off" recent items, new-user fallback.
-- CSS appended to `css/power-pack.css` — card tiles with rounded borders, blue hover glow, flex-wrap layout (classes prefixed `pp-workspace-`).
+## Workspace tab
 
-### Modified files
-- `src/spotlight/spotlight-widget.ts` — Added `'Workspace'` as the first tab in `TabControl`.
-- `src/package.ts` — Added `onContextMenu` handler: right-click entity → "Add to group favorites" → submenu of groups user is admin of.
+### Left pane — pinned entity list
 
-## Current state
+| Feature                                   | Status | Notes                                           |
+|-------------------------------------------|--------|-------------------------------------------------|
+| "Myself only" section                     | Done   |                                                 |
+| Per-group sections                        | Done   | One section per group the user belongs to       |
+| "Continue where you left off" (recent)   | Done   | Up to 5 recent items with timestamps            |
+| Pencil icon → Manage Favorites dialog     | Done   | Admin-only; full search + add/remove            |
 
-- TypeScript compiles cleanly (`tsc --noEmit` passes).
-- Webpack builds successfully (all 3 new files bundled).
-- NOT yet published or visually tested against a running Datagrok instance.
+### Pinning entities
 
-## User modifications after initial implementation
+| Method                                                | Status   | Notes                                          |
+|-------------------------------------------------------|----------|------------------------------------------------|
+| Drag-and-drop to Workspace widget                     | Done     | Drop zones per group + "Myself only"           |
+| Right-click → "Group favorites" submenu               | Not done | No context menu integration yet                |
 
-1. **package.ts context menu handler** — user changed entity extraction to `DG.toJs(args?.args?.item?.value)` (tree view node value) instead of `args.args.context`. Added `getEntity()` helper, debug statements (`grok.shell.info`, `console.log`, `debugger`). The debug statements should be removed before shipping.
-2. **workspace-tab.ts** — user commented out `this.spotlight.initRecentData()` from the `Promise.all` call (line 114), likely during debugging. The recent data section won't populate until this is re-enabled or data is loaded another way.
+### Right pane — entity controls
 
-## What remains
+| Entity type    | Controls shown                        | Status   |
+|----------------|---------------------------------------|----------|
+| Query          | Parameter editor + Run button         | Done     |
+| Function       | Parameter editor + Run button         | Done     |
+| Project/Dashboard | Project card (via ObjectHandler)   | Done     |
+| App            | App header                            | Not done — shows generic "Open" hint |
+| File / Share   | Details (type, path, modified date)   | Done                                 |
+| DB Connection  | List of related queries               | Not done — shows generic "Open" hint |
 
-- Remove debug statements from `package.ts` (`grok.shell.info`, `console.log`, `debugger`).
-- Re-enable `initRecentData()` in workspace-tab.ts or confirm alternative data loading path.
-- Publish to a Datagrok instance and visually verify:
-  - Workspace tab renders as default first tab
-  - Cards display correctly for pinned entities
-  - "Add to group favorites" context menu works end-to-end
-  - Recent items section populates
-  - New user (<5 days) sees onboarding content
-  - Empty state shows hint text
-- Consider adding "Remove from group favorites" (unpin) — context menu on cards or a manage dialog.
+### Bottom preview area
+
+| Entity type    | Preview shown                         | Status   |
+|----------------|---------------------------------------|----------|
+| Query          | Results as grid (dynamically updated) | Done     |
+| Function       | Results (DataFrame or custom view)    | Done     |
+| Project        | Dashboard preview card                | Done     |
+| App            | App preview                           | Not done |
+| File / Share   | File/folder preview via ObjectHandler | Done     |
+| DB Connection  | (none planned)                        | N/A      |
+
+## Key source files
+
+| File                                             | Purpose                                  |
+|--------------------------------------------------|------------------------------------------|
+| `src/spotlight/spotlight-widget.ts`              | Main widget, all tabs                    |
+| `src/spotlight/workspace-tab.ts`                 | Workspace tab (list + controls + preview)|
+| `src/spotlight/group-favorites.ts`               | Favorites API wrappers                   |
+| `src/spotlight/manage-favorites-dialog.ts`       | Search & pin/unpin dialog                |
+| `src/spotlight/preview-host.ts`                  | Preview area below the Spotlight widget  |
+| `src/welcome-view.ts`                            | Integration with Welcome view            |
+| `css/power-pack.css` (lines 1083–1630)           | All workspace/spotlight styles           |
