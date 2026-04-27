@@ -153,7 +153,7 @@ export function previewMolstarUI(file: DG.FileInfo): { view: DG.View, loadingPro
     viewer.handleResize();
   }));
   subs.push(grok.events.onViewRemoved.subscribe((evtView) => {
-    const fallbackPreviewCheck = evtView.root.children[0].children[0].classList.contains('msp-plugin');
+    const fallbackPreviewCheck = evtView.root?.children[0]?.children[0]?.classList?.contains('msp-plugin') ?? false;
     if (evtView.id === view.id || fallbackPreviewCheck) {
       for (const sub of subs) sub.unsubscribe();
       disposeRcsbViewer(viewer, view.root).then(() => { });
