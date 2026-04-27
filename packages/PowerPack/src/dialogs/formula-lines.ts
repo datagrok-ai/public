@@ -442,7 +442,7 @@ export interface EditorOptions {
  * Scatter Plot viewer by default.
  */
 class Preview {
-  public viewer: DG.ScatterPlotViewer | DG.LineChartViewer;
+  public viewer: DG.Viewer;
   public dataFrame: DG.DataFrame;
   
   /** Original data frame (used for line chart to validate columns).*/
@@ -454,22 +454,45 @@ class Preview {
   public set height(h: number) {this.viewer.root.style.height = `${h}px`;}
   public get root(): HTMLElement {return this.viewer.root;}
 
-  /** Returns the current columns pair of the preview Scatter Plot */
+  /** Returns the current columns pair of the preview viewer. Single-axis hosts
+   *  (box plot, histogram, bar chart) report only their value axis; the other
+   *  side is `null`. */
   public get axisCols(): AxisColumns {
-    let yColName;
-    if (this.viewer instanceof DG.LineChartViewer) {
+    const t = this.viewer.type;
+    let yColName: string | undefined;
+    let xColName: string | undefined;
+    let xMap: string | undefined = this.viewer.props.xMap;
+    let yMap: string | undefined;
+
+    if (t === DG.VIEWER.LINE_CHART) {
       const yCols: string[] = this.viewer.props.yColumnNames;
       yColName = this.dataFrame.columns.toList().find((col) => yCols.some((n) => col.name.includes(n)))?.name;
+      xColName = this.viewer.props.xColumnName;
     }
-    else
-      yColName = (this.viewer as DG.ScatterPlotViewer).props.yColumnName;
+    else if (t === DG.VIEWER.BOX_PLOT) {
+      yColName = this.viewer.props.valueColumnName;
+      yMap = this.viewer.props.yMap;
+      xMap = undefined;
+    }
+    else if (t === DG.VIEWER.HISTOGRAM) {
+      xColName = this.viewer.props.valueColumnName;
+    }
+    else if (t === DG.VIEWER.BAR_CHART) {
+      const isVertical = barChartIsVertical(this.viewer);
+      if (isVertical) {
+        yColName = this.viewer.props.valueColumnName;
+        yMap = this.viewer.props.yMap;
+        xMap = undefined;
+      }
+      else
+        xColName = this.viewer.props.valueColumnName;
+    }
+    else {
+      yColName = this.viewer.props.yColumnName;
+      yMap = this.viewer.props.yMap;
+      xColName = this.viewer.props.xColumnName;
+    }
 
-    const xMap = this.viewer.props.xMap;
-    const yMap = this.viewer instanceof DG.ScatterPlotViewer
-      ? this.viewer.props.yMap
-      : undefined;
-
-    const xColName = this.viewer.props.xColumnName;
     return {
       y: yColName ? this.dataFrame.col(yColName) : null,
       x: xColName ? this.dataFrame.col(xColName) : null,
@@ -478,20 +501,55 @@ class Preview {
     };
   }
 
-  /** Sets the current axes of the preview Scatter Plot by column names */
+  /** Sets the current axes of the preview viewer by column names. Each viewer
+   *  type uses different look-property names for its data column(s); single-axis
+   *  hosts only honor the matching side. */
   private set axes(names: AxisNames) {
-    const options: {  [x: string]: any} = {};
-    if (names?.y && this.dataFrame.getCol(names.y))
-      if (this.viewer.type === DG.VIEWER.LINE_CHART)
-        options['yColumnNames'] = [names.y]
-      else {
+    const options: { [x: string]: any } = {};
+    const t = this.viewer.type;
+    const hasY = names?.y && this.dataFrame.getCol(names.y);
+    const hasX = names?.x && this.dataFrame.getCol(names.x);
+
+    if (t === DG.VIEWER.LINE_CHART) {
+      if (hasY)
+        options['yColumnNames'] = [names.y];
+      if (hasX) {
+        options['xColumnName'] = names.x;
+        options['xMap'] = names.xMap;
+      }
+    }
+    else if (t === DG.VIEWER.BOX_PLOT) {
+      if (hasY) {
+        options['valueColumnName'] = names.y;
+        options['yMap'] = names.yMap;
+      }
+    }
+    else if (t === DG.VIEWER.HISTOGRAM) {
+      if (hasX) {
+        options['valueColumnName'] = names.x;
+        options['xMap'] = names.xMap;
+      }
+    }
+    else if (t === DG.VIEWER.BAR_CHART) {
+      const isVertical = barChartIsVertical(this.viewer);
+      if (isVertical && hasY) {
+        options['valueColumnName'] = names.y;
+        options['yMap'] = names.yMap;
+      }
+      else if (!isVertical && hasX) {
+        options['valueColumnName'] = names.x;
+        options['xMap'] = names.xMap;
+      }
+    }
+    else {
+      if (hasY) {
         options['yColumnName'] = names.y;
         options['yMap'] = names.yMap;
       }
-
-    if (names?.x && this.dataFrame.getCol(names.x)) {
-      options['xColumnName'] = names.x;
-      options['xMap'] = names.xMap;
+      if (hasX) {
+        options['xColumnName'] = names.x;
+        options['xMap'] = names.xMap;
+      }
     }
 
     this.viewer.setOptions(options);
@@ -615,31 +673,75 @@ class Preview {
 
     const isViewer = src instanceof DG.Viewer;
     const isTrellis = isViewer && src.type === DG.VIEWER.TRELLIS_PLOT;
-    if (isViewer && (src.type === DG.VIEWER.LINE_CHART ||
-      src.type === DG.VIEWER.TRELLIS_PLOT && src.getOptions().look['viewerType'] === DG.VIEWER.LINE_CHART)) {
-        const look = isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look;
-        this.viewer = DG.Viewer.lineChart(this.dataFrame, {
-          yColumnNames: look.yColumnNames?.length ? [look.yColumnNames[0]] : [],
-          yAxisType: look.yAxisType,
-          xAxisType: look.xAxisType,
-          splitColumnNames: look.splitColumnNames,
-          invertXAxis: look.invertXAxis,
-          showLabels: 'Never',
-          showDataframeFormulaLines: false,
-          showViewerFormulaLines: true,
-          showDataframeAnnotationRegions: false,
-          showViewerAnnotationRegions: true,
-          showContextMenu: false,
-          axesFollowFilter: false,
-          axisFont: 'normal normal 11px "Arial"',
-          legendVisibility: DG.VisibilityMode.Never,
-          xAxisHeight: 25,
-        });
-      }
+    const trellisInnerType = isTrellis ? src.getOptions().look['viewerType'] : null;
+    const previewType = isViewer
+      ? (isTrellis ? trellisInnerType : src.type)
+      : DG.VIEWER.SCATTER_PLOT;
+    const look = isViewer ? (isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look) : null;
+    const sharedOptions = {
+      showDataframeFormulaLines: false,
+      showViewerFormulaLines: true,
+      showDataframeAnnotationRegions: false,
+      showViewerAnnotationRegions: true,
+      showContextMenu: false,
+      axesFollowFilter: false,
+      axisFont: 'normal normal 11px "Arial"',
+      legendVisibility: DG.VisibilityMode.Never,
+    };
+
+    if (previewType === DG.VIEWER.LINE_CHART) {
+      this.viewer = DG.Viewer.lineChart(this.dataFrame, {
+        ...sharedOptions,
+        yColumnNames: look.yColumnNames?.length ? [look.yColumnNames[0]] : [],
+        yAxisType: look.yAxisType,
+        xAxisType: look.xAxisType,
+        splitColumnNames: look.splitColumnNames,
+        invertXAxis: look.invertXAxis,
+        showLabels: 'Never',
+        xAxisHeight: 25,
+      });
+    }
+    else if (previewType === DG.VIEWER.DENSITY_PLOT) {
+      this.viewer = DG.Viewer.densityPlot(this.dataFrame, {
+        ...sharedOptions,
+        xColumnName: look.xColumnName,
+        yColumnName: look.yColumnName,
+        xAxisType: look.xAxisType,
+        yAxisType: look.yAxisType,
+        invertXAxis: look.invertXAxis,
+        invertYAxis: look.invertYAxis,
+      });
+    }
+    else if (previewType === DG.VIEWER.BOX_PLOT) {
+      this.viewer = DG.Viewer.boxPlot(this.dataFrame, {
+        ...sharedOptions,
+        valueColumnName: look.valueColumnName,
+        category1ColumnName: look.category1ColumnName,
+        axisType: look.axisType,
+        invertYAxis: look.invertYAxis,
+      });
+    }
+    else if (previewType === DG.VIEWER.HISTOGRAM) {
+      this.viewer = DG.Viewer.histogram(this.dataFrame, {
+        ...sharedOptions,
+        valueColumnName: look.valueColumnName,
+      });
+    }
+    else if (previewType === DG.VIEWER.BAR_CHART) {
+      this.viewer = DG.Viewer.barChart(this.dataFrame, {
+        ...sharedOptions,
+        valueColumnName: look.valueColumnName,
+        valueAggrType: look.valueAggrType,
+        splitColumnName: look.splitColumnName,
+        stackColumnName: look.stackColumnName,
+        orientation: look.orientation,
+        axisType: look.axisType,
+      });
+    }
     else {
-      const look = isViewer ? (isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look) : null;
       this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
         ...(look ?? {}),
+        ...sharedOptions,
         showXAxis: true,
         showYAxis: true,
         showXSelector: true,
@@ -648,20 +750,12 @@ class Preview {
         xAxisType: isViewer ? look.xAxisType : 'linear',
         invertXAxis: isViewer ? look.invertXAxis : false,
         invertYAxis: isViewer ? look.invertYAxis : false,
-        showDataframeFormulaLines: false,
-        showViewerFormulaLines: true,
-        showDataframeAnnotationRegions: false,
-        showViewerAnnotationRegions: true,
         showSizeSelector: false,
         showColorSelector: false,
-        showContextMenu: false,
-        axesFollowFilter: false,
         showMinMaxTickmarks: false,
         showMouseOverPoint: false,
         showCurrentPoint: false,
         zoomAndFilter: 'no action',
-        axisFont: 'normal normal 11px "Arial"',
-        legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });
     }
