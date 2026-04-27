@@ -1,6 +1,6 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
-import {BitSet, DataFrame} from "./dataframe.js";
+import {BitSet, Column, DataFrame} from "./dataframe.js";
 import {Property, IProperty} from "./entities";
 import {IWidgetStatus, IRectBounds, Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
 import {_toJson} from "./utils_convert";
@@ -686,6 +686,15 @@ export class BarChartViewer extends Viewer<interfaces.IBarChartSettings> {
 
   resetView(): void{
     api.grok_BarChartViewer_ResetView(this.dart);
+  }
+
+  /** The aggregated value column the chart is currently rendering — i.e.
+   *  `valueAggrType(valueColumnName)` grouped by `splitColumnName`. The bar
+   *  chart computes this internally on each refresh; expose it so callers can
+   *  read the displayed value-axis range without re-aggregating.
+   *  Returns `null` when the chart has not refreshed yet. */
+  getAggregatedValueColumn(): Column | null {
+    return toJs(api.grok_BarChartViewer_GetAggregatedValueColumn(this.dart));
   }
 
   get onCategoryClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-bar-chart-on-category-clicked'); }

@@ -430,6 +430,12 @@ interface AxisColumns {
   x: DG.Column | null,
   yMap?: string,
   xMap?: string,
+  /** Optional stats override. When set, default formula values (q1/q2/q3) come
+   *  from here instead of `y.stats` / `x.stats`. Aggregated hosts (bar chart)
+   *  use this so defaults reflect the displayed value-axis range, while `y` / `x`
+   *  still carry the raw column whose name is referenced in the formula. */
+  yStats?: DG.Stats,
+  xStats?: DG.Stats,
 }
 
 export interface EditorOptions {
@@ -459,9 +465,13 @@ class Preview {
    *  side is `null`. */
   public get axisCols(): AxisColumns {
     const t = this.viewer.type;
+    // Some viewers (e.g. density plot) don't declare xMap/yMap; the props proxy
+    // throws on unknown names, so check first.
+    const safeProp = (name: string): any =>
+      this.viewer.props.hasProperty(name) ? this.viewer.props[name] : undefined;
     let yColName: string | undefined;
     let xColName: string | undefined;
-    let xMap: string | undefined = this.viewer.props.xMap;
+    let xMap: string | undefined = safeProp('xMap');
     let yMap: string | undefined;
 
     if (t === DG.VIEWER.LINE_CHART) {
@@ -471,25 +481,33 @@ class Preview {
     }
     else if (t === DG.VIEWER.BOX_PLOT) {
       yColName = this.viewer.props.valueColumnName;
-      yMap = this.viewer.props.yMap;
+      yMap = safeProp('yMap');
       xMap = undefined;
     }
     else if (t === DG.VIEWER.HISTOGRAM) {
       xColName = this.viewer.props.valueColumnName;
     }
     else if (t === DG.VIEWER.BAR_CHART) {
+      // Bar chart's value axis renders aggregated values (count/sum/avg of
+      // valueColumnName grouped by splitColumnName), not the raw column. Carry
+      // the raw column for the formula's column reference (`${AGE} = …`) but
+      // override stats so defaults like q2 fall inside the displayed range.
+      const valueColName: string | undefined = this.viewer.props.valueColumnName;
+      const rawCol = valueColName ? this.dataFrame.col(valueColName) : null;
+      const aggStats = this.viewer instanceof DG.BarChartViewer
+        ? this.viewer.getAggregatedValueColumn()?.stats
+        : undefined;
       const isVertical = barChartIsVertical(this.viewer);
       if (isVertical) {
-        yColName = this.viewer.props.valueColumnName;
-        yMap = this.viewer.props.yMap;
+        yMap = safeProp('yMap');
         xMap = undefined;
+        return { y: rawCol, x: null, yMap, xMap, yStats: aggStats };
       }
-      else
-        xColName = this.viewer.props.valueColumnName;
+      return { x: rawCol, y: null, xMap, yMap, xStats: aggStats };
     }
     else {
       yColName = this.viewer.props.yColumnName;
-      yMap = this.viewer.props.yMap;
+      yMap = safeProp('yMap');
       xColName = this.viewer.props.xColumnName;
     }
 
@@ -1518,6 +1536,10 @@ class CreationControl {
         const cols: AxisColumns = getCols();
         const colY = cols.y;
         const colX = cols.x;
+        // Stats override (used by aggregated hosts like bar chart) — fall through
+        // to the column's own stats when not provided.
+        const yStats = cols.yStats ?? colY?.stats;
+        const xStats = cols.xStats ?? colX?.stats;
         // Two-axis items (LINE, VERT_*, FORMULA_REGION) require both columns; bail
         // when a single-axis host (box / histogram / bar) only exposes one.
         const needsX = [ITEM_CAPTION.LINE, ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND,
@@ -1529,8 +1551,8 @@ class CreationControl {
         if (itemCaption === ITEM_CAPTION.FORMULA_REGION) {
           const item: DG.FormulaAnnotationRegion = {
             type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
-            formula1: `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)} + ${colY!.stats.q2.toFixed(1)}`,
-            formula2: `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)} - ${colY!.stats.q2.toFixed(1)}`,
+            formula1: `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)} + ${yStats!.q2.toFixed(1)}`,
+            formula2: `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)} - ${yStats!.q2.toFixed(1)}`,
           };
 
           this.annotationRegionsJustCreatedItems.unshift(item);
@@ -1548,20 +1570,20 @@ class CreationControl {
             break;
 
           case ITEM_CAPTION.VERT_LINE:
-            const vertVal = (valX ?? colX!.stats.q2).toFixed(1);
+            const vertVal = (valX ?? xStats!.q2).toFixed(1);
             item.orientation = ITEM_ORIENTATION.VERTICAL;
             item.formula = `${wrapCol(colX!.name)} = ${vertVal}`;
             break;
 
           case ITEM_CAPTION.HORZ_LINE:
-            const horzVal = (valY ?? colY!.stats.q2).toFixed(1);
+            const horzVal = (valY ?? yStats!.q2).toFixed(1);
             item.orientation = ITEM_ORIENTATION.HORIZONTAL;
             item.formula = `${wrapCol(colY!.name)} = ${horzVal}`;
             break;
 
           case ITEM_CAPTION.VERT_BAND:
-            const left = colX!.stats.q1.toFixed(1);
-            const right = colX!.stats.q3.toFixed(1);
+            const left = xStats!.q1.toFixed(1);
+            const right = xStats!.q3.toFixed(1);
             item.formula = `${wrapCol(colX!.name)} in(${left}, ${right})`;
             item.orientation = ITEM_ORIENTATION.VERTICAL;
             // For single-axis hosts (no Y), fall back to the X column for `column2`.
@@ -1569,8 +1591,8 @@ class CreationControl {
             break;
 
           case ITEM_CAPTION.HORZ_BAND:
-            const bottom = colY!.stats.q1.toFixed(1);
-            const top = colY!.stats.q3.toFixed(1);
+            const bottom = yStats!.q1.toFixed(1);
+            const top = yStats!.q3.toFixed(1);
             item.formula = `${wrapCol(colY!.name)} in(${bottom}, ${top})`;
             item.orientation = ITEM_ORIENTATION.HORIZONTAL;
             // For single-axis hosts (no X), fall back to the Y column for `column2`.
@@ -1693,7 +1715,7 @@ export class FormulaLinesDialog {
   constructor(
     src: DG.DataFrame | DG.Viewer,
     private options: EditorOptions = DEFAULT_OPTIONS,
-    private showValueOnOpen?: { index?: number, isDataFrame?: boolean, isAnnotationArea?: boolean, selectId?: string })
+    private showValueOnOpen?: { index?: number, isDataFrame?: boolean, isAnnotationArea?: boolean })
   {
     /** Init Helpers */
     this.host = this.initHost(src);
@@ -1771,21 +1793,8 @@ export class FormulaLinesDialog {
         return;
 
       this.tabs.currentPane = this.tabs.getPane(this.showValueOnOpen.isDataFrame ? ITEM_SOURCE.DATAFRAME : ITEM_SOURCE.VIEWER);
-      if (this.showValueOnOpen.selectId) {
-        const id = this.showValueOnOpen.selectId;
-        let lineIdx = this.preview.formulaLineItems.findIndex((it) => it.id === id);
-        if (lineIdx >= 0) {
-          this.currentTable.update(lineIdx, true);
-          return;
-        }
-        let regionIdx = this.preview.annotationRegionItems.findIndex((it) => it.id === id);
-        if (regionIdx >= 0) {
-          this.currentTable.update(regionIdx, false);
-          return;
-        }
-      }
-      if (this.showValueOnOpen.index) {
-        const isFormulaLine = this.preview.formulaLineItems.length > 0 && this.showValueOnOpen.index < this.preview.formulaLineItems.length;
+      if (this.showValueOnOpen.index !== undefined) {
+        const isFormulaLine = !this.showValueOnOpen.isAnnotationArea;
         this.currentTable.update(this.showValueOnOpen.index, isFormulaLine);
       } else {
         this.currentTable.setFirstItemAsCurrent();
