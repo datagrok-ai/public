@@ -181,10 +181,21 @@ export function runSync(
     }
 
     // ---- (e) Max feasible step -------------------------------------
+    // stpMax ≤ 0 means the search direction immediately violates a
+    // bound (either x has drifted past the bound by FP rounding, or
+    // a degenerate Cauchy/subspace pipeline produced an outward d at
+    // a pinned coord). Fortran v3.0 routes this through dcsrch's
+    // stp ≤ stpmin → iback path back into RESTART_FROM_LNSRCH; we
+    // do the equivalent here directly. Treating it as `converged =
+    // true` (the previous behaviour) was a false success: pgnorm
+    // can be far above tolerance at this point.
     const stpMax = maxFeasibleStep(x, d, lower, upper, nbd);
     if (!(stpMax > 0)) {
-      converged = true;
-      break;
+      if (retriedMemReset || mat.col === 0) break;
+      x.set(xSave); g.set(gSave); fCur = fSave;
+      mat.reset();
+      retriedMemReset = true;
+      continue;
     }
 
     // ---- (f) Initial α ---------------------------------------------
@@ -436,10 +447,14 @@ export async function runAsync(
       continue;
     }
 
+    // See runSync's (e) — stpMax ≤ 0 routes through memory reset.
     const stpMax = maxFeasibleStep(x, d, lower, upper, nbd);
     if (!(stpMax > 0)) {
-      converged = true;
-      break;
+      if (retriedMemReset || mat.col === 0) break;
+      x.set(xSave); g.set(gSave); fCur = fSave;
+      mat.reset();
+      retriedMemReset = true;
+      continue;
     }
 
     // See note in runSync's (f).
