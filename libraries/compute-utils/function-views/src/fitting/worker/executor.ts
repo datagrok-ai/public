@@ -70,6 +70,13 @@ export class MainExecutor implements Executor {
     const tracker = new EarlyStopTracker(args.earlyStoppingSettings);
     const warnings: string[] = [];
     const failedInitPoint: Float64Array[] = [];
+    // Match WorkerExecutor: when early stopping is on, pass the threshold
+    // into each NM run so it short-circuits at cost ≤ threshold. Without
+    // this, the main arm refines past the threshold and the two arms
+    // produce divergent extremums for the same seed.
+    const nmThreshold = args.earlyStoppingSettings.useEarlyStopping ?
+      args.earlyStoppingSettings.costFuncThreshold :
+      undefined;
 
     let percentage = 0;
     const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
@@ -78,7 +85,7 @@ export class MainExecutor implements Executor {
       try {
         if ((pi as any).canceled) break;
 
-        const extremum = await optimizeNM(args.objectiveFunc, params[i], args.settings);
+        const extremum = await optimizeNM(args.objectiveFunc, params[i], args.settings, nmThreshold);
         if (tracker.accept(extremum)) break;
 
         percentage = Math.floor(100 * (i + 1) / args.samplesCount);
@@ -124,19 +131,35 @@ export class WorkerExecutor implements Executor {
     let percentage = 0;
     const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
 
-    const tracker = new EarlyStopTracker(args.earlyStoppingSettings);
-    const warnings: string[] = [];
-    const failedInitPoint: Float64Array[] = [];
+    const settings = args.earlyStoppingSettings;
+    const useES = settings.useEarlyStopping;
+    const threshold = useES ? settings.costFuncThreshold! : Infinity;
+    const stopAfter = settings.stopAfter;
+
+    // Per-index reply buffer. Replies land in `results[idx]` so finalization
+    // can walk in seed-index order (matching MainExecutor) regardless of
+    // worker completion order.
+    type Slot =
+      | {kind: 'pending'}
+      | {kind: 'success', extremum: Extremum}
+      | {kind: 'failure-warn', seed: Float64Array, message: string}
+      | {kind: 'failure-fatal'};
+    const PENDING: Slot = {kind: 'pending'};
+    const results: Slot[] = new Array(args.samplesCount).fill(PENDING);
+
     let inconsistentMessage: string | null = null;
+    // `stopRequested` halts new dispatches (no more seeds pulled from
+    // `nextIdx`). In-flight replies still land in `results[idx]` because
+    // each runSlot awaits its dispatchRun before exiting the loop, so
+    // `Promise.all(slots)` IS the drain.
     let stopRequested = false;
+    let validCount = 0;
     let completedCount = 0;
 
     const sessionId = nextSessionId++;
     const fn = args.func!;
     const {body, paramList, outputNames} = extractFnSource(fn);
     const {variedInputNames, fixedInputs} = getInputsData(args.inputsBounds);
-    const threshold = args.earlyStoppingSettings.useEarlyStopping ?
-      args.earlyStoppingSettings.costFuncThreshold : undefined;
     const built = buildSetup({
       sessionId,
       fnSource: body,
@@ -148,7 +171,7 @@ export class WorkerExecutor implements Executor {
       bounds: args.inputsBounds,
       outputTargets: args.outputTargets!,
       nmSettings: args.settings,
-      threshold,
+      threshold: useES ? threshold : undefined,
     });
 
     try {
@@ -162,7 +185,7 @@ export class WorkerExecutor implements Executor {
         throw e;
       }
 
-      const handleReply = (reply: RunReply): void => {
+      const handleReply = (idx: number, reply: RunReply): void => {
         ++completedCount;
         percentage = Math.floor(100 * completedCount / args.samplesCount);
         pi.update(percentage, `Fitting... (${percentage}%)`);
@@ -171,10 +194,10 @@ export class WorkerExecutor implements Executor {
           if (reply.failKind === 'inconsistent') {
             if (inconsistentMessage == null) inconsistentMessage = reply.message;
             stopRequested = true;
+            results[idx] = {kind: 'failure-fatal'};
             return;
           }
-          warnings.push(reply.message);
-          failedInitPoint.push(reply.seed);
+          results[idx] = {kind: 'failure-warn', seed: reply.seed, message: reply.message};
           return;
         }
 
@@ -184,22 +207,32 @@ export class WorkerExecutor implements Executor {
           iterCosts: reply.iterCosts,
           iterCount: reply.iterCount,
         };
-        if (tracker.accept(extremum)) stopRequested = true;
+        results[idx] = {kind: 'success', extremum};
+        // Stop dispatching once the global valid count crosses stopAfter.
+        // We don't act on contiguous-prefix valid count here — that would
+        // dispatch more seeds than necessary. Tracking the global count
+        // matches main-arm semantics: once enough valids exist anywhere,
+        // the eventual first-M-in-index-order winners are pinned down.
+        if (useES && extremum.cost <= threshold) {
+          ++validCount;
+          if (validCount >= stopAfter) stopRequested = true;
+        }
       };
 
       let nextIdx = 0;
       const runSlot = async (): Promise<void> => {
-        while (!stopRequested && nextIdx < args.samplesCount) {
+        while (nextIdx < args.samplesCount) {
           if ((pi as any).canceled) {
             stopRequested = true;
             break;
           }
+          if (stopRequested) break;
           const idx = nextIdx++;
           const seed = new Float64Array(params[idx]);
-          const dispatched = buildRunSeed({sessionId, taskId: 0, seed});
+          const dispatched = buildRunSeed({sessionId, taskId: 0, seedIndex: idx, seed});
           const reply = await this.pool.dispatchRun({
             run: dispatched.run, transferables: dispatched.transferables});
-          handleReply(reply);
+          handleReply(idx, reply);
         }
       };
 
@@ -210,6 +243,28 @@ export class WorkerExecutor implements Executor {
 
       if (inconsistentMessage)
         throw new Error(`Inconsistent dataframes: ${inconsistentMessage}`);
+
+      // Finalize: walk `results` in seed-index order, replaying replies
+      // through `EarlyStopTracker` so the selection rule stays shared with
+      // MainExecutor. The contiguous-prefix `break` on `pending` handles
+      // cancellation and the stop-with-gap case (where lower indices were
+      // never dispatched because stopRequested fired before the slots
+      // reached them).
+      const tracker = new EarlyStopTracker(settings);
+      const failedInitPoint: Float64Array[] = [];
+      const warnings: string[] = [];
+
+      for (let i = 0; i < args.samplesCount; ++i) {
+        const r = results[i];
+        if (r.kind === 'pending') break;
+        if (r.kind === 'failure-fatal') break;
+        if (r.kind === 'failure-warn') {
+          warnings.push(r.message);
+          failedInitPoint.push(r.seed);
+          continue;
+        }
+        if (tracker.accept(r.extremum)) break;
+      }
 
       return {
         extremums: tracker.finalize(),

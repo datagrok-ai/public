@@ -1,12 +1,10 @@
 // Bookkeeping for early-stopping logic shared by `MainExecutor` (sync loop)
-// and `WorkerExecutor` (async pool dispatch). Owns the valid/above-threshold
-// buckets and the count vs. `stopAfter`; each executor keeps its own loop
-// control and uses `accept()` as the stop signal.
-//
-// `accept()` returns `true` once the caller should stop dispatching seeds.
-// It stays correct under the worker-arm race where multiple in-flight seeds
-// complete after the stop has been signaled — the `validPointsCount`
-// guard short-circuits before pushing.
+// and `WorkerExecutor`'s finalize pass (replay of indexed results in seed
+// order). Owns the valid/above-threshold buckets and the count vs.
+// `stopAfter`; `accept()` returns `true` once the caller should stop
+// feeding extremums in. Keeps the selection rule (cost ≤ threshold push,
+// stop at stopAfter, spillover above-threshold when configured) in one
+// place so both arms always agree on which extremums make the cut.
 
 import {Extremum} from './optimizer-misc';
 import {EarlyStoppingSettings} from './constants';

@@ -208,6 +208,7 @@ async function handleRun(run: RunSeed): Promise<WorkerSuccess | WorkerFailure> {
     return {
       kind: 'failure',
       taskId: run.taskId,
+      seedIndex: run.seedIndex,
       message: `unknown session ${run.sessionId}`,
       failKind: 'other',
       seed: run.seed,
@@ -219,6 +220,7 @@ async function handleRun(run: RunSeed): Promise<WorkerSuccess | WorkerFailure> {
     return {
       kind: 'success',
       taskId: run.taskId,
+      seedIndex: run.seedIndex,
       point: ext.point,
       cost: ext.cost,
       iterCosts: ext.iterCosts,
@@ -230,6 +232,7 @@ async function handleRun(run: RunSeed): Promise<WorkerSuccess | WorkerFailure> {
     return {
       kind: 'failure',
       taskId: run.taskId,
+      seedIndex: run.seedIndex,
       message: msg,
       failKind,
       seed: run.seed,
@@ -267,9 +270,11 @@ function safePostMessage(msg: OutboundReply, transferables?: Transferable[]): vo
     else ctx.postMessage(msg);
   } catch (e) {
     const taskId = (msg.kind === 'success' || msg.kind === 'failure') ? msg.taskId : 0;
+    const seedIndex = (msg.kind === 'success' || msg.kind === 'failure') ? msg.seedIndex : -1;
     const fallback: WorkerFailure = {
       kind: 'failure',
       taskId,
+      seedIndex,
       message: `reply send failed: ${e instanceof Error ? e.message : String(e)}`,
       failKind: 'other',
       seed: new Float64Array(0),
@@ -292,7 +297,7 @@ ctx.onmessage = async (event: MessageEvent<WorkerOutbound>) => {
     } catch (e) {
       // handleRun has its own try/catch; this is belt-and-braces.
       reply = {
-        kind: 'failure', taskId: msg.taskId,
+        kind: 'failure', taskId: msg.taskId, seedIndex: msg.seedIndex,
         message: e instanceof Error ? e.message : String(e),
         failKind: 'other', seed: msg.seed,
       };

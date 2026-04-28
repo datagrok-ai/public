@@ -148,12 +148,14 @@ export function buildSetup(args: {
 export function buildRunSeed(args: {
   sessionId: SessionId;
   taskId: number;
+  seedIndex: number;
   seed: Float64Array;
 }): {run: RunSeed; transferables: Transferable[]} {
   const run: RunSeed = {
     kind: 'run-seed',
     taskId: args.taskId,
     sessionId: args.sessionId,
+    seedIndex: args.seedIndex,
     seed: args.seed,
   };
   return {run, transferables: [args.seed.buffer]};

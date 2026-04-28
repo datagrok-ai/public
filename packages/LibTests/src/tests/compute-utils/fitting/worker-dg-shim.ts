@@ -321,7 +321,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       });
       await pool.setupAll(setup, []);  // setup is fast — only compile, no run
       const {run, transferables} = buildRunSeed({
-        sessionId: 2, taskId: 0, seed: new Float64Array([1]),
+        sessionId: 2, taskId: 0, seedIndex: 0, seed: new Float64Array([1]),
       });
       const start = Date.now();
       const reply = await pool.dispatchRun({run, transferables});

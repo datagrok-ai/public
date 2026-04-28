@@ -31,13 +31,12 @@ function assertExtremumByteIdentical(a: Extremum, b: Extremum, label: string): v
 
 function assertResultParity(main: OptimizationResult, wkr: OptimizationResult, label: string): void {
   expect(main.extremums.length, wkr.extremums.length, `${label}: extremum count differs`);
-  // Sort by point lexicographically so we compare matching seed outcomes
-  // even if the worker reordered them (work-stealing changes order).
-  const sortKey = (e: Extremum) => Array.from(e.point).join(',');
-  const m = [...main.extremums].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
-  const w = [...wkr.extremums].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
-  for (let i = 0; i < m.length; ++i)
-    assertExtremumByteIdentical(m[i], w[i], `${label}[${i}]`);
+  // No reordering tolerance: WorkerExecutor records replies by seed index
+  // and finalizes in index order, matching MainExecutor exactly. The
+  // surrounding `runOptimizer` cost-sort is a stable sort on bit-identical
+  // costs, so the post-sort orders also match.
+  for (let i = 0; i < main.extremums.length; ++i)
+    assertExtremumByteIdentical(main.extremums[i], wkr.extremums[i], `${label}[${i}]`);
 }
 
 category('ComputeUtils: Fitting / Cross-executor parity', () => {
@@ -327,5 +326,131 @@ category('ComputeUtils: Fitting / Cross-executor parity', () => {
     const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
 
     assertResultParity(mainRes, wkrRes, 'multi_output');
+  });
+
+  test('parity_early_stop_index_order', async () => {
+    // Many candidate seeds, generous threshold so most/all converge to
+    // cost ≤ threshold. With early stopping and stopAfter=3, the main arm
+    // picks the *first 3 valid seeds in index order*; pre-fix the worker
+    // arm picked 3 in completion order, so the chosen extremum SET (and
+    // thus their costs) diverged. This is the canary for the index-ordered
+    // selection rule.
+    const func = makeExpDecayFunc();
+    const targetCall = func.prepare({a: 2.5, b: 0.7, N: 20});
+    await targetCall.call();
+    const targetDf = targetCall.getParamValue('simulation') as DG.DataFrame;
+
+    const inputBounds: OptimizerInputsConfig = {
+      a: rangeBound(0.5, 5, 'a'),
+      b: rangeBound(0.1, 2, 'b'),
+      N: {type: 'const', value: 20},
+    };
+    const outputTargets: OptimizerOutputsConfig = [{
+      propName: 'simulation',
+      type: DG.TYPE.DATA_FRAME,
+      target: targetDf,
+      argName: 't',
+      cols: [targetDf.col('y')!],
+    }];
+
+    const baseArgs = {
+      lossType: LOSS.RMSE,
+      func,
+      inputBounds,
+      outputTargets,
+      samplesCount: 10,
+      reproSettings: {reproducible: true, seed: 101},
+      // Threshold deliberately loose so all 10 seeds count as "valid".
+      earlyStoppingSettings: {useEarlyStopping: true, costFuncThreshold: 1.0,
+        stopAfter: 3, useAboveThresholdPoints: false},
+    };
+
+    const [mainRes] = await runOptimizer({...baseArgs, executor: 'main'});
+    const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
+
+    expect(mainRes.extremums.length, 3, 'early_stop_index_order: main should yield 3 extremums');
+    assertResultParity(mainRes, wkrRes, 'early_stop_index_order');
+  });
+
+  test('parity_early_stop_with_drain', async () => {
+    // stopAfter=2 fires while higher-index seeds may still be in flight.
+    // The worker arm must record those in-flight replies in their index
+    // slots (not drop them) and the finalize loop must select the first
+    // 2 valid by index. samplesCount=8 + small stopAfter forces the
+    // drain-and-pick path under load.
+    const func = makeExpDecayFunc();
+    const targetCall = func.prepare({a: 2.5, b: 0.7, N: 20});
+    await targetCall.call();
+    const targetDf = targetCall.getParamValue('simulation') as DG.DataFrame;
+
+    const inputBounds: OptimizerInputsConfig = {
+      a: rangeBound(0.5, 5, 'a'),
+      b: rangeBound(0.1, 2, 'b'),
+      N: {type: 'const', value: 20},
+    };
+    const outputTargets: OptimizerOutputsConfig = [{
+      propName: 'simulation',
+      type: DG.TYPE.DATA_FRAME,
+      target: targetDf,
+      argName: 't',
+      cols: [targetDf.col('y')!],
+    }];
+
+    const baseArgs = {
+      lossType: LOSS.RMSE,
+      func,
+      inputBounds,
+      outputTargets,
+      samplesCount: 8,
+      reproSettings: {reproducible: true, seed: 207},
+      earlyStoppingSettings: {useEarlyStopping: true, costFuncThreshold: 1.0,
+        stopAfter: 2, useAboveThresholdPoints: false},
+    };
+
+    const [mainRes] = await runOptimizer({...baseArgs, executor: 'main'});
+    const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
+
+    expect(mainRes.extremums.length, 2, 'early_stop_with_drain: main should yield 2 extremums');
+    assertResultParity(mainRes, wkrRes, 'early_stop_with_drain');
+  });
+
+  test('parity_above_threshold_spillover', async () => {
+    // Tight threshold + useAboveThresholdPoints=true exercises the
+    // spillover branch in finalize: the worker arm must concatenate
+    // valid + above-threshold the same way EarlyStopTracker.finalize does
+    // for the main arm.
+    const func = makeExpDecayFunc();
+    const targetCall = func.prepare({a: 2.5, b: 0.7, N: 20});
+    await targetCall.call();
+    const targetDf = targetCall.getParamValue('simulation') as DG.DataFrame;
+
+    const inputBounds: OptimizerInputsConfig = {
+      a: rangeBound(0.5, 5, 'a'),
+      b: rangeBound(0.1, 2, 'b'),
+      N: {type: 'const', value: 20},
+    };
+    const outputTargets: OptimizerOutputsConfig = [{
+      propName: 'simulation',
+      type: DG.TYPE.DATA_FRAME,
+      target: targetDf,
+      argName: 't',
+      cols: [targetDf.col('y')!],
+    }];
+
+    const baseArgs = {
+      lossType: LOSS.RMSE,
+      func,
+      inputBounds,
+      outputTargets,
+      samplesCount: 6,
+      reproSettings: {reproducible: true, seed: 313},
+      earlyStoppingSettings: {useEarlyStopping: true, costFuncThreshold: 1e-12,
+        stopAfter: 4, useAboveThresholdPoints: true},
+    };
+
+    const [mainRes] = await runOptimizer({...baseArgs, executor: 'main'});
+    const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
+
+    assertResultParity(mainRes, wkrRes, 'above_threshold_spillover');
   });
 });

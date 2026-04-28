@@ -113,6 +113,7 @@ export class WorkerPool {
       pending.resolve({
         kind: 'failure',
         taskId: pending.run.taskId,
+        seedIndex: pending.run.seedIndex,
         message: `worker error: ${ev.message ?? 'unknown'}`,
         failKind: 'other',
         seed: pending.run.seed,
@@ -155,6 +156,7 @@ export class WorkerPool {
         this.removeSlot(slot, 'run timed out');
         pending.resolve({
           kind: 'failure', taskId: pending.run.taskId,
+          seedIndex: pending.run.seedIndex,
           message: `run timed out after ${this.runTimeoutMs}ms`,
           failKind: 'other', seed: pending.run.seed,
         });
@@ -171,6 +173,7 @@ export class WorkerPool {
       for (const pending of stuck) {
         pending.resolve({
           kind: 'failure', taskId: pending.run.taskId,
+          seedIndex: pending.run.seedIndex,
           message: 'no workers available', failKind: 'other',
           seed: pending.run.seed,
         });
@@ -195,6 +198,7 @@ export class WorkerPool {
       slot.busy = false;
       cur.resolve({
         kind: 'failure', taskId: cur.run.taskId,
+        seedIndex: cur.run.seedIndex,
         message: `worker removed: ${reason}`,
         failKind: 'other', seed: cur.run.seed,
       });
@@ -286,6 +290,7 @@ export class WorkerPool {
       if (slot.current) {
         slot.current.resolve({
           kind: 'failure', taskId: slot.current.run.taskId,
+          seedIndex: slot.current.run.seedIndex,
           message: 'pool disposed mid-run', failKind: 'other',
           seed: slot.current.run.seed,
         });
@@ -299,6 +304,7 @@ export class WorkerPool {
       pending.resolve({
         kind: 'failure',
         taskId: pending.run.taskId,
+        seedIndex: pending.run.seedIndex,
         message: 'pool disposed before task ran',
         failKind: 'other',
         seed: pending.run.seed,

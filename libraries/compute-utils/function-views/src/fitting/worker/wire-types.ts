@@ -56,11 +56,15 @@ export type FitSessionSetup = {
   threshold?: number;
 };
 
-// Outbound — sent once per seed.
+// Outbound — sent once per seed. `seedIndex` is the position in the per-fit
+// `params` array; the worker echoes it on every reply so the executor can
+// place results in deterministic seed-index order regardless of completion
+// order across workers.
 export type RunSeed = {
   kind: 'run-seed';
   taskId: number;
   sessionId: SessionId;
+  seedIndex: number;
   seed: Float64Array;
 };
 
@@ -81,10 +85,12 @@ export type SetupAck =
   | { kind: 'setup-ack'; sessionId: SessionId; ok: true }
   | { kind: 'setup-ack'; sessionId: SessionId; ok: false; message: string };
 
-// Inbound — run results.
+// Inbound — run results. `seedIndex` echoes the dispatch's `RunSeed.seedIndex`
+// so the executor can record replies by index rather than completion order.
 export type WorkerSuccess = {
   kind: 'success';
   taskId: number;
+  seedIndex: number;
   point: Float64Array;
   cost: number;
   iterCosts: number[];
@@ -94,6 +100,7 @@ export type WorkerSuccess = {
 export type WorkerFailure = {
   kind: 'failure';
   taskId: number;
+  seedIndex: number;
   message: string;
   failKind: 'inconsistent' | 'other';
   seed: Float64Array;
