@@ -215,6 +215,8 @@ export class AtomPickerController {
       return;
 
     const hit = this._hitTestAtomInCell(gridCell, e);
+    if (hit)
+      e.preventDefault();
     const isErase = e.shiftKey && (e.ctrlKey || e.metaKey);
     const isPaint = e.shiftKey && !(e.ctrlKey || e.metaKey);
 
@@ -229,7 +231,6 @@ export class AtomPickerController {
       else
         this._addAtomToRow(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
       gridCell.render();
-      e.preventDefault();
       return;
     }
 
@@ -249,7 +250,6 @@ export class AtomPickerController {
 
     this._previewFrom3D = false; // 2D hover takes ownership
     this._setPreviewAtom(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
-    e.preventDefault();
     gridCell.render();
   }
 
