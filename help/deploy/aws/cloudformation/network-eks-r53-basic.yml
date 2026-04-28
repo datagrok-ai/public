@@ -25,6 +25,10 @@ Conditions:
     Fn::Equals:
     - Ref: EnableRdsIamAuth
     - 'true'
+  RegistryProxyEnabled:
+    Fn::Equals:
+    - Ref: EnableRegistryProxy
+    - 'true'
   RestoreFromSnapshot:
     Fn::Not:
     - Fn::Equals:
@@ -270,6 +274,15 @@ Parameters:
     Default: 'true'
     Description: Enable RDS IAM database authentication. Datagrok connects passwordlessly
       via IRSA when true.
+    Type: String
+  EnableRegistryProxy:
+    AllowedValues:
+    - 'true'
+    - 'false'
+    Default: 'false'
+    Description: Deploy grok_registry_proxy as a Docker registry backed by ECR with
+      Datagrok JWT authentication. On EKS the proxy is deployed via the Helm chart;
+      this parameter only controls the optional Route53 record.
     Type: String
   GrokConnectVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge

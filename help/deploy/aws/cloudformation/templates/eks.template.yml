@@ -150,6 +150,13 @@ Parameters:
     Type: String
     Default: datagrok
     Description: Kubernetes namespace for the Datagrok Helm release.
+  EnableRegistryProxy:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: "Deploy grok_registry_proxy as a Docker registry backed by ECR with Datagrok JWT authentication. On EKS the proxy is deployed via the Helm chart; this parameter only controls the optional Route53 record."
 
 Conditions:
   RestoreFromSnapshot:
@@ -170,6 +177,10 @@ Conditions:
       - Fn::Equals:
           - Ref: HelmChartVersion
           - ''
+  RegistryProxyEnabled:
+    Fn::Equals:
+      - Ref: EnableRegistryProxy
+      - 'true'
 
 Resources:
 
