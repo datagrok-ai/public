@@ -61,24 +61,26 @@ To track the latest unstable build (rebuilt after every merge to `master`), use
 
 ## Service versions
 
-Every service image tag defaults to the chart version. Override individual tags
-when you need to run a newer grok-connect against an older datagrok core, or
-to pin a specific service during a rollout:
+Every service image tag defaults to the chart version. Override individual tags when you need to
+run a newer `grok_connect` against an older `datagrok` core, or to pin a specific service during a
+rollout:
 
 ```bash
 helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
-  --version 1.27.0-helm \
-  --set datagrok.image.tag=1.27.0 \
-  --set grokPipe.image.tag=1.27.0 \
-  --set grokConnect.image.tag=1.27.1 \
-  --set spawner.image.tag=1.27.0 \
-  --set jkg.image.tag=1.27.0 \
+  --version 1.27.3-helm \
+  --set datagrok.image.tag=1.27.3 \
+  --set grokPipe.image.tag=1.18.0 \
+  --set grokConnect.image.tag=2.6.2 \
+  --set spawner.image.tag=2.15.0 \
+  --set jkg.image.tag=1.31.0 \
+  --set grokRegistryProxy.image.tag=1.18.0 \
   --set rabbitmq.image.tag=4.0.5-management \
   -n datagrok
 ```
 
-RabbitMQ follows its own upstream release cadence and is not tied to the Datagrok
-version.
+The defaults shown above are the versions that ship with the latest stable Datagrok release; the
+[AWS CloudFormation (EKS) template](../aws/deploy-amazon-eks.mdx#service-versions) uses the same
+set. RabbitMQ follows its own upstream release cadence and is not tied to the Datagrok version.
 
 ## Production install on AWS EKS
 
