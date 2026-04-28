@@ -85,9 +85,8 @@ export class WorkerPool {
     this.runTimeoutMs = opts.runTimeoutMs ?? 60_000;
   }
 
-  // Construct workers lazily, on first setup. Lets the pool be allocated
-  // cheaply (e.g. per-FittingView) without paying the worker spin-up cost
-  // until a fit actually runs.
+  // Lazy: workers spin up on the first setupAll so a pool can be allocated
+  // without paying the worker spin-up cost until a fit actually runs.
   private ensureWorkers(): void {
     if (this.slots.length > 0 || this.disposed) return;
     for (let i = 0; i < this.size; ++i)
@@ -161,9 +160,10 @@ export class WorkerPool {
 
   private pump(): void {
     if (this.disposed) return;
-    // Walk the queue and place each pending run on a slot that has the
-    // session primed AND is idle. Items that can't be placed yet stay in
-    // the queue; they'll be retried on the next pump (next reply).
+    // Place each pending run on an idle slot that has its session primed.
+    // Unplaceable items stay queued; pump runs again on every setup-ack ok
+    // and every run reply, so they get retried as soon as a slot is
+    // primed-and-idle for that session.
     let i = 0;
     while (i < this.queue.length) {
       const pending = this.queue[i];
@@ -279,10 +279,8 @@ export class WorkerPool {
 
   // Send `setup` to every slot; resolve when all acks come back ok, reject
   // on the first ok=false. Setup is sent without transferables — every slot
-  // receives a structured-clone copy. Transferring to one slot would detach
-  // the underlying buffer before sibling slots could clone it; copying is
-  // simpler and still avoids the per-seed re-encoding cost the split was
-  // designed to fix.
+  // gets a structured-clone copy. Transferring to one slot would detach the
+  // underlying buffer before sibling slots could clone it.
   //
   // Each ack is bounded by `setupTimeoutMs`; on timeout the slot is
   // terminated and removed from the pool, and setupAll fails.
