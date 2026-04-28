@@ -18,6 +18,8 @@ export class PanelLayersControl extends Control {
   layersGrid: DG.Grid;
   layersPanel: HTMLElement;
   ol: OpenLayers;
+  private subscribed = false;
+  private refreshing = false;
 
   constructor(parent: OpenLayers, opt: any | undefined, clkHandler: Function | null = null) {
     const options = opt || {};
@@ -121,6 +123,8 @@ export class PanelLayersControl extends Control {
   }
 
   cellVisibleClick(gc: DG.GridCell) {
+    if (this.refreshing)
+      return;
     if (gc.tableRowIndex !== null) {
       const col = gc.grid.table.columns.byName('layerid');
       if (col) {
@@ -131,7 +135,10 @@ export class PanelLayersControl extends Control {
         if (!layer)
           return;
 
-        layer.setVisible(gc.cell.value);
+        const target = gc.cell.value;
+        if (layer.getVisible() === target)
+          return;
+        layer.setVisible(target);
         this.updateLayersList();
       }
     }
@@ -163,8 +170,11 @@ export class PanelLayersControl extends Control {
       col.editable = false;
     }
 
-    this.layersGrid.onCellPrepare(this.cellPrepareFn.bind(this));
-    this.layersGrid.onCurrentCellChanged.subscribe(this.cellVisibleClick.bind(this));
+    if (!this.subscribed) {
+      this.layersGrid.onCellPrepare(this.cellPrepareFn.bind(this));
+      this.layersGrid.onCurrentCellChanged.subscribe(this.cellVisibleClick.bind(this));
+      this.subscribed = true;
+    }
   }
 
   updateLayersList() {
@@ -175,10 +185,15 @@ export class PanelLayersControl extends Control {
   refreshDF(df: DG.DataFrame | undefined) {
     if (!df)
       return;
-    this.dfLayersList = df;
-    this.layersGrid.dataFrame = this.dfLayersList;
-    this.setupGridControls();
-    this.layersGrid.invalidate();
+    this.refreshing = true;
+    try {
+      this.dfLayersList = df;
+      this.layersGrid.dataFrame = this.dfLayersList;
+      this.setupGridControls();
+      this.layersGrid.invalidate();
+    } finally {
+      this.refreshing = false;
+    }
   }
   setVisibility(visible: boolean) {
     if (visible)

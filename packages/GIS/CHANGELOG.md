@@ -3,6 +3,7 @@
 ## v.next
 
 * Fixed crash on closing Map viewer caused by pointer events firing after disposal
+* Layers panel: Fixed page freeze when toggling layer visibility (e.g. Markers GL) — caused by exponential re-subscription of `onCurrentCellChanged` on every layers list refresh
 
 ## 1.3.1 (2025-03-30)
 
