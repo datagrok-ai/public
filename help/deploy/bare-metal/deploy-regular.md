@@ -75,7 +75,7 @@ hosts without an orchestrator.
     ```
 
    Use the `--profile` flags from
-   [Local machine: advanced](../docker-compose/docker-compose-advanced.md#compose-profiles)
+   [Local machine: advanced](../docker-compose/docker-compose-advanced.mdx#compose-profiles)
    to skip optional services (e.g., drop server-side scripting).
 
 4. After about a minute the server is ready at
