@@ -2,9 +2,8 @@
 
 ## v.next
 
+* Tests: Added basic smoke tests covering app launch, opening Molecules/Batches tabs, and the main `getVaults` / `getMolecules` / `getBatches` / `getProtocolsAsync` / `getCollectionsAsync` / `getSavedSearches` / `cDDVaultSearch` functions.
 * Molecules search: Remember the last search per vault and restore it when reopening the tab.
-* Refactor: Extracted `runAsyncExport` / `runAsyncExportAsDf` helpers for the CDD async-export pattern; collapsed ~9 duplicated call sites across `getMoleculesAsync`, `getBatchesAsync`, `getProtocolsAsync`, `getCollectionsAsync`, `getSavedSearchResults`, `cDDVaultSearchAsync`, and `getVaultStats`.
-* Refactor: Extracted `createCddDfFromObjects` core; `createMoleculesDfFromObjects` and `createBatchesDfFromObjects` now share one pipeline with endpoint-specific post-processing.
 * Fix: `paramsStringFromObj` now URL-encodes values via `URLSearchParams`; previously unencoded values could silently malform requests.
 * Tab loading: Unified all tabs on a preview-then-"Load all" pattern. Initial open always shows the first 100 rows via the sync endpoint; if more exist, a ribbon appears with a "Load all" button that runs the async endpoint in the background and swaps the dataframe on completion. Removed the old `createCDDTableViewWithPreview` helper.
 * API: Added sync `queryCollections` and `queryBatches` wrappers to pair with their async counterparts.
