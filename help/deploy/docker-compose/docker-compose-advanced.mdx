@@ -45,7 +45,7 @@ save disk and RAM.
 | `grok_connect`                   | Grok Connect (external database connectors)                                                  |
 | `grok_spawner`                   | Grok Spawner (manages plugin containers)                                                     |
 | `rabbitmq`                       | RabbitMQ (AMQP queue, required for `scripting`)                                              |
-| `scripting` / `jkg`              | Jupyter Kernel Gateway, RabbitMQ, grok\_pipe — server-side script execution                  |
+| `scripting` / `jkg`              | Jupyter Kernel Gateway, RabbitMQ, `grok_pipe` — server-side script execution                 |
 | `cvm`                            | Convenience alias for `scripting` + everything it needs                                      |
 | `mlflow` / `ml`                  | MLflow tracking server and supporting Postgres                                               |
 | `demo`                           | Demo databases (`world`, `chembl`, `northwind`, `unichem`, `starbucks`) — used by tutorials  |
@@ -152,7 +152,7 @@ docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
 </TabItem>
 </Tabs>
 
-The `scripting` profile pulls in RabbitMQ, grok\_pipe, and the Jupyter Kernel Gateway —
+The `scripting` profile pulls in RabbitMQ, `grok_pipe`, and the Jupyter Kernel Gateway —
 everything needed for [server-side scripts](../../compute/scripting/scripting.mdx).
 
 ## Demo databases
@@ -277,7 +277,6 @@ Several alternative compose files cover specific cases:
 | `docker/localhost.bleeding-edge-separate-data.docker-compose.yaml` | Bleeding-edge with persistent data volumes detached     |
 | `docker/localhost.macos-silicon.docker-compose.yaml`     | Apple Silicon (ARM64); pulls `linux/arm64` image variants         |
 | `docker/localhost.js-api.debug.docker-compose.yaml`      | JS API debugging with source maps                                 |
-| `docker/swarm.docker-compose.yaml`                       | [Docker Swarm](../bare-metal/deploy-docker-swarm.md) cluster      |
 
 ## Shutting down Datagrok
 
