@@ -1,7 +1,6 @@
 ---
 title: "AWS CloudFormation (EKS)"
 sidebar_position: 1
-format: 'mdx'
 ---
 
 import Tabs from '@theme/Tabs';
@@ -28,7 +27,7 @@ More information about Datagrok design and components:
 
 :::tip Migrating from ECS?
 
-The EKS template is drop-in compatible with the legacy [ECS template](deploy-amazon-ecs.md):
+The EKS template is drop-in compatible with the legacy [ECS template](deploy-amazon-ecs.mdx):
 it reuses the same logical IDs for RDS, S3, and their subnet/security groups. Replacing an ECS
 stack's template with the EKS template preserves your database and bucket. See
 [Migrate from ECS](#migrate-from-ecs).
@@ -84,152 +83,152 @@ We prepared a specific template for every need of our customers. Answer the simp
 <Tabs groupId="net" queryString>
 <TabItem value="vpc" label="Yes">
 
-    Datagrok stand will be put in an existing VPC you choose upon creation.
+Datagrok stand will be put in an existing VPC you choose upon creation.
 
-    #### Do you use Route53 as your DNS provider?
+#### Do you use Route53 as your DNS provider?
 
-    <Tabs groupId="dns" queryString>
-    <TabItem value="r53" label="Yes" default>
+<Tabs groupId="dns" queryString>
+<TabItem value="r53" label="Yes" default>
 
-    ##### Requirements
+##### Requirements
 
-    1. Create a [Route53 public hosted zone](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html).
+1. Create a [Route53 public hosted zone](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html).
 
-    ##### How to deploy
+##### How to deploy
 
-    1. Use the [link](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=https%3A%2F%2Fdatagrok-data.s3.us-east-2.amazonaws.com%2Fdeployment%2Fvpc-eks-r53-basic.yml&stackName=datagrok)
-       to open the CloudFormation template and fill in all required parameters.
+1. Use the [link](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=https%3A%2F%2Fdatagrok-data.s3.us-east-2.amazonaws.com%2Fdeployment%2Fvpc-eks-r53-basic.yml&stackName=datagrok)
+   to open the CloudFormation template and fill in all required parameters.
 
-        1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html).
-           To meet AWS naming requirements, the name must be shorter than _10 symbols_ and correspond to
-           [S3 Bucket naming rules](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html).
-           We use 'datagrok' by default, but you may prefer to also specify the env in the stack name.
+    1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html).
+       To meet AWS naming requirements, the name must be shorter than _10 symbols_ and correspond to
+       [S3 Bucket naming rules](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html).
+       We use 'datagrok' by default, but you may prefer to also specify the env in the stack name.
 
-    2. Wait until AWS completes the deployment. The stack status will be `CREATE_COMPLETE`.
-       The script created a datagrok stand inside your existing VPC using the existing Route53 hosted zone.
-       Your Datagrok instance is now ready to use.
+2. Wait until AWS completes the deployment. The stack status will be `CREATE_COMPLETE`.
+   The script created a datagrok stand inside your existing VPC using the existing Route53 hosted zone.
+   Your Datagrok instance is now ready to use.
 
-       If you see one of the following statuses then something went wrong: `CREATE_FAILED`, `ROLLBACK_IN_PROGRESS`,
-       `ROLLBACK_COMPLETE`, `ROLLBACK_FAILED`. [Check the stack events](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#basic-ts-guide)
-       for more information about the error.
+   If you see one of the following statuses then something went wrong: `CREATE_FAILED`, `ROLLBACK_IN_PROGRESS`,
+   `ROLLBACK_COMPLETE`, `ROLLBACK_FAILED`. [Check the stack events](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#basic-ts-guide)
+   for more information about the error.
 
-    3. Enter the platform at `datagrok.<subdomain>` using the `admin` user. To get the password:
-        1. Go to stack Outputs. Find _DatagrokAdminPassword_ and click on the link to open AWS Secrets Manager.
-        2. Click _Retrieve secret value_ and copy _password_. It is a generated password for the first admin login.
-        3. To increase security, [change the password for the admin user](../complete-setup/configure-auth.md) on first login.
-           Datagrok will ignore the admin password from secrets on subsequent restarts.
+3. Enter the platform at `datagrok.<subdomain>` using the `admin` user. To get the password:
+    1. Go to stack Outputs. Find _DatagrokAdminPassword_ and click on the link to open AWS Secrets Manager.
+    2. Click _Retrieve secret value_ and copy _password_. It is a generated password for the first admin login.
+    3. To increase security, [change the password for the admin user](../complete-setup/configure-auth.md) on first login.
+       Datagrok will ignore the admin password from secrets on subsequent restarts.
 
-    4. Complete the initial setup in the platform and you are ready to use Datagrok.
+4. Complete the initial setup in the platform and you are ready to use Datagrok.
 
-    </TabItem>
-    <TabItem value="dns" label="No">
+</TabItem>
+<TabItem value="dns" label="No">
 
-    Our CloudFormation scripts support external DNS providers, however, it will require a few manual steps to configure the endpoint.
+Our CloudFormation scripts support external DNS providers, however, it will require a few manual steps to configure the endpoint.
 
-    ##### Requirements
+##### Requirements
 
-    1. Datagrok requires an endpoint: `DATAGROK_DNS`. Users will use it to access Datagrok's Web UI.
+1. Datagrok requires an endpoint: `DATAGROK_DNS`. Users will use it to access Datagrok's Web UI.
 
-    2. Create an RSA SSL certificate for `DATAGROK_DNS`.
+2. Create an RSA SSL certificate for `DATAGROK_DNS`.
 
-        * If you use AWS ACM for SSL certificates:
-            1. [Generate an ACM certificate](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html)
-               valid for `DATAGROK_DNS`.
-            2. Copy the AWS ARN for the certificate. It should look like
-               `arn:aws:acm:<region>:<account_id>:certificate/<certificate_id>`.
-        * If you don't use AWS ACM: create a certificate for `DATAGROK_DNS` any way you are already using.
-          A wildcard certificate also suffices.
-            1. [Upload the certificate to AWS ACM](https://docs.aws.amazon.com/acm/latest/userguide/import-certificate-api-cli.html).
-            2. Copy the AWS ARN for the imported certificate.
+    * If you use AWS ACM for SSL certificates:
+        1. [Generate an ACM certificate](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html)
+           valid for `DATAGROK_DNS`.
+        2. Copy the AWS ARN for the certificate. It should look like
+           `arn:aws:acm:<region>:<account_id>:certificate/<certificate_id>`.
+    * If you don't use AWS ACM: create a certificate for `DATAGROK_DNS` any way you are already using.
+      A wildcard certificate also suffices.
+        1. [Upload the certificate to AWS ACM](https://docs.aws.amazon.com/acm/latest/userguide/import-certificate-api-cli.html).
+        2. Copy the AWS ARN for the imported certificate.
 
-    ##### How to deploy
+##### How to deploy
 
-    1. Use the [link](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=https%3A%2F%2Fdatagrok-data.s3.us-east-2.amazonaws.com%2Fdeployment%2Fvpc-eks-dns-basic.yml&stackName=datagrok)
-       to open the CloudFormation template and fill in all required parameters.
+1. Use the [link](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=https%3A%2F%2Fdatagrok-data.s3.us-east-2.amazonaws.com%2Fdeployment%2Fvpc-eks-dns-basic.yml&stackName=datagrok)
+   to open the CloudFormation template and fill in all required parameters.
 
-        1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html).
-        2. `DatagrokArnSSLCertificate`: specify AWS ACM ARN for `DATAGROK_DNS` from the prerequisites.
+    1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html).
+    2. `DatagrokArnSSLCertificate`: specify AWS ACM ARN for `DATAGROK_DNS` from the prerequisites.
 
-    2. Wait until AWS completes the deployment. The stack status will be `CREATE_COMPLETE`.
+2. Wait until AWS completes the deployment. The stack status will be `CREATE_COMPLETE`.
 
-    3. As you chose the fulfillment option with external DNS, you need to create a CNAME record for Datagrok's Load Balancer.
-       To get the Load Balancer endpoint for the DNS record:
+3. As you chose the fulfillment option with external DNS, you need to create a CNAME record for Datagrok's Load Balancer.
+   To get the Load Balancer endpoint for the DNS record:
 
-        1. Go to stack Outputs. Copy the value for _DatagrokLoadBalancerDNSName_.
-        2. Use the copied DNS name to create a CNAME DNS record. For example:
-            * Host: `DATAGROK_DNS`, Target: _DatagrokLoadBalancerDNSName_.
+    1. Go to stack Outputs. Copy the value for _DatagrokLoadBalancerDNSName_.
+    2. Use the copied DNS name to create a CNAME DNS record. For example:
+        * Host: `DATAGROK_DNS`, Target: _DatagrokLoadBalancerDNSName_.
 
-    4. Enter the platform at `DATAGROK_DNS` using the `admin` user. Retrieve the password from _DatagrokAdminPassword_
-       in stack Outputs as described in the Route53 tab above.
+4. Enter the platform at `DATAGROK_DNS` using the `admin` user. Retrieve the password from _DatagrokAdminPassword_
+   in stack Outputs as described in the Route53 tab above.
 
-    5. Complete the initial setup in the platform and you are ready to use Datagrok.
+5. Complete the initial setup in the platform and you are ready to use Datagrok.
 
-    </TabItem>
-    </Tabs>
+</TabItem>
+</Tabs>
 
 </TabItem>
 <TabItem value="network" label="No" default>
 
-    The template will create a new VPC and all required network resources for you.
+The template will create a new VPC and all required network resources for you.
 
-    #### Do you use Route53 as your DNS provider?
+#### Do you use Route53 as your DNS provider?
 
-    <Tabs groupId="dns" queryString>
-    <TabItem value="r53" label="Yes" default>
+<Tabs groupId="dns" queryString>
+<TabItem value="r53" label="Yes" default>
 
-    ##### Requirements
+##### Requirements
 
-    1. Create a [Route53 public hosted zone](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html).
+1. Create a [Route53 public hosted zone](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html).
 
-    ##### How to deploy
+##### How to deploy
 
-    1. Use the [link](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=https%3A%2F%2Fdatagrok-data.s3.us-east-2.amazonaws.com%2Fdeployment%2Fnetwork-eks-r53-basic.yml&stackName=datagrok)
-       to open the CloudFormation template and fill in all required parameters.
+1. Use the [link](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=https%3A%2F%2Fdatagrok-data.s3.us-east-2.amazonaws.com%2Fdeployment%2Fnetwork-eks-r53-basic.yml&stackName=datagrok)
+   to open the CloudFormation template and fill in all required parameters.
 
-        1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html).
+    1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html).
 
-    2. Wait until AWS completes the deployment. The stack status will be `CREATE_COMPLETE`.
+2. Wait until AWS completes the deployment. The stack status will be `CREATE_COMPLETE`.
 
-    3. Enter the platform at `datagrok.<subdomain>` using the `admin` user. Retrieve the password from _DatagrokAdminPassword_
-       in stack Outputs.
+3. Enter the platform at `datagrok.<subdomain>` using the `admin` user. Retrieve the password from _DatagrokAdminPassword_
+   in stack Outputs.
 
-    4. Complete the initial setup in the platform and you are ready to use Datagrok.
+4. Complete the initial setup in the platform and you are ready to use Datagrok.
 
-    </TabItem>
-    <TabItem value="dns" label="No">
+</TabItem>
+<TabItem value="dns" label="No">
 
-    Our CloudFormation scripts support external DNS providers, however, it will require a few manual steps to configure the endpoint.
+Our CloudFormation scripts support external DNS providers, however, it will require a few manual steps to configure the endpoint.
 
-    ##### Requirements
+##### Requirements
 
-    1. Come up with an endpoint: `DATAGROK_DNS`. Users will use `DATAGROK_DNS` to access Datagrok's Web UI.
+1. Come up with an endpoint: `DATAGROK_DNS`. Users will use `DATAGROK_DNS` to access Datagrok's Web UI.
 
-    2. Create an RSA SSL certificate for `DATAGROK_DNS` (see the `Use existing VPC → External DNS` tab above for details).
+2. Create an RSA SSL certificate for `DATAGROK_DNS` (see the `Use existing VPC → External DNS` tab above for details).
 
-    ##### How to deploy
+##### How to deploy
 
-    1. Use the [link](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=https%3A%2F%2Fdatagrok-data.s3.us-east-2.amazonaws.com%2Fdeployment%2Fnetwork-eks-dns-basic.yml&stackName=datagrok)
-       to open the CloudFormation template and fill in all required parameters.
+1. Use the [link](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=https%3A%2F%2Fdatagrok-data.s3.us-east-2.amazonaws.com%2Fdeployment%2Fnetwork-eks-dns-basic.yml&stackName=datagrok)
+   to open the CloudFormation template and fill in all required parameters.
 
-        1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html).
-        2. `DatagrokArnSSLCertificate`: specify AWS ACM ARN for `DATAGROK_DNS`.
+    1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html).
+    2. `DatagrokArnSSLCertificate`: specify AWS ACM ARN for `DATAGROK_DNS`.
 
-    2. Wait until AWS completes the deployment. The stack status will be `CREATE_COMPLETE`.
+2. Wait until AWS completes the deployment. The stack status will be `CREATE_COMPLETE`.
 
-    3. As you chose the fulfillment option with external DNS, you need to create a CNAME record for Datagrok's Load Balancer.
-       To get the Load Balancer endpoint for the DNS record:
+3. As you chose the fulfillment option with external DNS, you need to create a CNAME record for Datagrok's Load Balancer.
+   To get the Load Balancer endpoint for the DNS record:
 
-        1. Go to stack Outputs. Copy the value for _DatagrokLoadBalancerDNSName_.
-        2. Use the copied DNS name to create a CNAME DNS record, for example:
-            * Host: `DATAGROK_DNS`, Target: _DatagrokLoadBalancerDNSName_.
+    1. Go to stack Outputs. Copy the value for _DatagrokLoadBalancerDNSName_.
+    2. Use the copied DNS name to create a CNAME DNS record, for example:
+        * Host: `DATAGROK_DNS`, Target: _DatagrokLoadBalancerDNSName_.
 
-    4. Enter the platform at `DATAGROK_DNS` using the `admin` user. Retrieve the password from _DatagrokAdminPassword_
-       in stack Outputs.
+4. Enter the platform at `DATAGROK_DNS` using the `admin` user. Retrieve the password from _DatagrokAdminPassword_
+   in stack Outputs.
 
-    5. Complete the initial setup in the platform and you are ready to use Datagrok.
+5. Complete the initial setup in the platform and you are ready to use Datagrok.
 
-    </TabItem>
-    </Tabs>
+</TabItem>
+</Tabs>
 
 </TabItem>
 </Tabs>
@@ -284,7 +283,7 @@ Use the same [deployment script](#deploy-datagrok-components) and an updated ver
 
 ## Migrate from ECS
 
-If you already run Datagrok on the legacy [ECS CloudFormation template](deploy-amazon-ecs.md), you can migrate to
+If you already run Datagrok on the legacy [ECS CloudFormation template](deploy-amazon-ecs.mdx), you can migrate to
 EKS without re-creating RDS or S3. The EKS template uses the same logical IDs (`DatagrokDB`, `DatagrokS3`,
 `DatagrokDBSubnetGroup`, `DatagrokDBSecurityGroup`) and retains the same `DeletionPolicy` settings
 (`Snapshot` for RDS, `Retain` for S3), so CloudFormation treats them as continuing resources on stack update.
@@ -303,5 +302,5 @@ If the change set shows RDS or S3 flagged for replacement, stop and contact
 ## See also
 
 * [Install Datagrok with Helm](../k8s/install-helm-chart.md) — manual Helm-only install for any Kubernetes cluster
-* [AWS CloudFormation (ECS)](deploy-amazon-ecs.md) — legacy deployment, deprecated
+* [AWS CloudFormation (ECS)](deploy-amazon-ecs.mdx) — legacy deployment, deprecated
 * [Terraform](deploy-amazon-terraform.md)

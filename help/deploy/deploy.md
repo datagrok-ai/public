@@ -43,7 +43,7 @@ scalable, fast container management service that makes it easy to manage applica
 We prepared three options for effortless and secure deployments to AWS:
 
 * [Marketplace](aws/deploy-marketplace.md). The easiest way to start with Datagrok on AWS. [Marketplace](https://aws.amazon.com/marketplace) deployment scripts create a separate infrastructure for Datagrok from scratch.
-* [CloudFormation (EKS)](aws/deploy-amazon-eks.md). Using the [CloudFormation template](https://aws.amazon.com/cloudformation/), you can customize the Datagrok infrastructure with an elaborate template that considers all standard security policies. The legacy [ECS variant](aws/deploy-amazon-ecs.md) is deprecated.
+* [CloudFormation (EKS)](aws/deploy-amazon-eks.mdx). Using the [CloudFormation template](https://aws.amazon.com/cloudformation/), you can customize the Datagrok infrastructure with an elaborate template that considers all standard security policies. The legacy [ECS variant](aws/deploy-amazon-ecs.mdx) is deprecated.
 * [Terraform](aws/deploy-amazon-terraform.md). It is the most flexible solution. You can integrate Datagrok into your existing infrastructure with consideration of your security policies. However, [Terraform](https://www.terraform.io/) is also an advanced option that requires additional knowledge in infrastructure as a code area.
 
 ## Kubernetes deployment

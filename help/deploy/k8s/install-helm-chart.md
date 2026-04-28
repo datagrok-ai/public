@@ -10,7 +10,7 @@ GKE.
 
 :::tip On AWS?
 
-For turnkey EKS deployments, use the [AWS CloudFormation (EKS)](../aws/deploy-amazon-eks.md)
+For turnkey EKS deployments, use the [AWS CloudFormation (EKS)](../aws/deploy-amazon-eks.mdx)
 template — it provisions the cluster, RDS, S3, and IAM, and installs this chart
 automatically. This page covers manual Helm installs for any Kubernetes cluster
 (on-prem, GKE, AKS, kind, k3s, MicroK8s).
@@ -82,7 +82,7 @@ version.
 
 ## Production install on AWS EKS
 
-The easiest path is the [AWS CloudFormation (EKS) template](../aws/deploy-amazon-eks.md),
+The easiest path is the [AWS CloudFormation (EKS) template](../aws/deploy-amazon-eks.mdx),
 which provisions EKS, RDS, S3, IAM with IRSA, and installs this Helm chart for
 you. The manual steps below are useful when you want to manage the cluster
 yourself or when deploying into a pre-existing EKS cluster.

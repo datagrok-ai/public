@@ -59,7 +59,7 @@ Parameters:
     Description: Enter Grok Spawner docker image version.
   GrokRegistryProxyVersion:
     Type: String
-    Default: 1.0.0
+    Default: 1.18.0
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Grok Registry Proxy docker image version.
   JKGVersion:
@@ -70,5 +70,3 @@ Parameters:
   Postfix:
     Type: String
     Description: URL postfix for backward compatibility. Leave blank for new installations
-  GrokRegistryProxyVersion:
-    Default: 1.18.0

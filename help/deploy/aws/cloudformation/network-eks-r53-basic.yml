@@ -1,0 +1,1475 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Conditions:
+  CreatePublicSubnets:
+    Fn::Or:
+    - Condition: InternetIngressAccess
+    - Condition: InternetEgressAccess
+  CreateVPC:
+    Fn::Equals:
+    - create
+    - create
+  FargateEnabled:
+    Fn::Equals:
+    - Ref: EnableFargate
+    - 'true'
+  InternetEgressAccess:
+    Fn::Equals:
+    - 'true'
+    - 'true'
+  InternetIngressAccess:
+    Fn::Equals:
+    - Ref: InternetIngressAccess
+    - 'true'
+  RdsIamAuthEnabled:
+    Fn::Equals:
+    - Ref: EnableRdsIamAuth
+    - 'true'
+  RestoreFromSnapshot:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: DBSnapshotIdentifier
+      - ''
+  UseChartVersionOverride:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: HelmChartVersion
+      - ''
+  UseVPCEndpoint:
+    Fn::Equals:
+    - 'true'
+    - 'true'
+Description: Datagrok template to deploy all components to ECS Fargate. Template also
+  creates ACM and DNS records.
+Mappings:
+  Images:
+    Datagrok:
+      domain: docker.io
+      repo: datagrok/datagrok
+    GrokConnect:
+      domain: docker.io
+      repo: datagrok/grok_connect
+    GrokPipe:
+      domain: docker.io
+      repo: datagrok/grok_pipe
+    GrokRegistryProxy:
+      domain: docker.io
+      repo: datagrok/grok_registry_proxy
+    GrokSpawner:
+      domain: docker.io
+      repo: datagrok/grok_spawner
+    JKG:
+      domain: docker.io
+      repo: datagrok/jupyter_kernel_gateway
+    Rabbitmq:
+      domain: docker.io
+      repo: rabbitmq
+    Searchdomain:
+      domain: docker.io
+      repo: docker/ecs-searchdomain-sidecar
+      version: '1.0'
+    Smtp:
+      domain: docker.io
+      repo: datagrok/smtp
+      version: 1.0.0
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Network configuration
+      Parameters:
+      - CIDR
+      - InternetIngressAccess
+    - Label:
+        default: EKS configuration
+      Parameters:
+      - KubernetesVersion
+      - NodeInstanceType
+      - NodeGroupMinSize
+      - NodeGroupMaxSize
+      - NodeGroupDesiredSize
+      - NodeDiskSize
+      - EnableFargate
+    - Label:
+        default: Database configuration
+      Parameters:
+      - DBInstanceClass
+      - DBAllocatedStorage
+      - EnableRdsIamAuth
+      - DBSnapshotIdentifier
+    - Label:
+        default: Client access
+      Parameters:
+      - InternetSubnetAllow
+      - InternetSubnetAllow2
+      - InternetSubnetAllow3
+    - Label:
+        default: Helm chart
+      Parameters:
+      - HelmChartVersion
+      - HelmNamespace
+    - Label:
+        default: Client Endpoint configuration
+      Parameters:
+      - DNSZoneId
+      - DNSDomain
+    - Label:
+        default: Service version
+      Parameters:
+      - DatagrokVersion
+      - GrokConnectVersion
+      - GrokPipeVersion
+      - RabbitmqVersion
+      - GrokSpawnerVersion
+      - GrokRegistryProxyVersion
+      - JKGVersion
+    - Label:
+        default: Advanced
+      Parameters:
+      - Postfix
+    ParameterLabels:
+      CIDR:
+        default: 'CIDR: VPC CIDR'
+      DBAllocatedStorage:
+        default: RDS storage (GiB)
+      DBInstanceClass:
+        default: RDS instance class
+      DBSnapshotIdentifier:
+        default: 'DBSnapshotIdentifier: Restore from snapshot'
+      DNSDomain:
+        default: 'DNSDomain: DNS domain'
+      DNSZoneId:
+        default: 'DNSZoneId: AWS Route53 Hosted Zone ID'
+      DatagrokVersion:
+        default: Datagrok Version
+      EnableRdsIamAuth:
+        default: Enable RDS IAM authentication
+      GrokConnectVersion:
+        default: Grok Connect Version
+      GrokPipeVersion:
+        default: Grok Pipe Version
+      GrokRegistryProxyVersion:
+        default: Grok Registry Proxy Version
+      GrokSpawnerVersion:
+        default: Grok Spawner Version
+      HelmChartVersion:
+        default: Helm chart version (defaults to Datagrok version)
+      HelmNamespace:
+        default: Kubernetes namespace for the Datagrok release
+      InternetIngressAccess:
+        default: 'InternetIngressAccess: Access from internet'
+      InternetSubnetAllow:
+        default: 'InternetSubnetAllow: Allow connect to Datagrok from CIDR'
+      InternetSubnetAllow2:
+        default: 'InternetSubnetAllow2: Allow connect to Datagrok from CIDR'
+      InternetSubnetAllow3:
+        default: 'InternetSubnetAllow3: Allow connect to Datagrok from CIDR'
+      JKGVersion:
+        default: Jupyter Kernel Gateway Version
+      KubernetesVersion:
+        default: Kubernetes version
+      NodeGroupDesiredSize:
+        default: Desired node count
+      NodeInstanceType:
+        default: EC2 instance type for EKS nodes
+      RabbitmqVersion:
+        default: RabbitMQ Version
+  cfn-lint:
+    config:
+      ignore_checks:
+      - W8001
+      - W8003
+      - W8001
+      - W8003
+Outputs:
+  DatagrokAdminPasswordSecret:
+    Description: AWS Secrets Manager URL for the Datagrok admin first-login password
+    Value:
+      Fn::Sub: https://console.aws.amazon.com/secretsmanager/secret?name=${DatagrokAdminPassword}&region=${AWS::Region}
+  DatagrokClusterName:
+    Description: EKS cluster name
+    Value:
+      Ref: EKSCluster
+  DatagrokEndpoint:
+    Description: Datagrok endpoint
+    Value:
+      Ref: DatagrokDNS
+  DatagrokRdsEndpoint:
+    Description: RDS endpoint
+    Value:
+      Fn::GetAtt:
+      - DatagrokDB
+      - Endpoint.Address
+  DatagrokS3BucketName:
+    Description: S3 bucket for Datagrok persistent storage
+    Value:
+      Ref: DatagrokS3
+  DatagrokServiceAccountRoleArn:
+    Description: IRSA role ARN for the Datagrok Helm service account
+    Value:
+      Fn::GetAtt:
+      - DatagrokServiceAccountRole
+      - Arn
+  RegistryEndpoint:
+    Condition: RegistryProxyEnabled
+    Description: Docker registry endpoint
+    Value:
+      Fn::Sub:
+      - registry.${AWS::StackName}${postfix}.${domain}
+      - domain:
+          Ref: DNSDomain
+        postfix:
+          Ref: Postfix
+Parameters:
+  CIDR:
+    AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
+    Default: 10.0.0.0/17
+    Description: CIDR block for the new Datagrok VPC
+    Type: String
+  DBAllocatedStorage:
+    Default: 50
+    Description: RDS storage in GiB (gp3).
+    MinValue: 20
+    Type: Number
+  DBInstanceClass:
+    Default: db.t3.large
+    Description: RDS instance class.
+    Type: String
+  DBSnapshotIdentifier:
+    Default: ''
+    Description: 'DBSnapshotIdentifier: Restore RDS from an existing snapshot. Leave
+      empty for a fresh database.'
+    Type: String
+  DNSDomain:
+    Description: Specify DNS domain for Datagrok endpoint. The domain should be based
+      on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId
+      XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com'
+      or 'domain.com'. The result endpoint will be 'StackName.subdomain.domain.com'.
+    MinLength: 3
+    Type: String
+  DNSZoneId:
+    Description: Select existing Route53 Hosted Zone ID for Datagrok endpoint.
+    Type: AWS::Route53::HostedZone::Id
+  DatagrokVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
+    Default: 1.27.3
+    Description: Enter Datagrok docker image version.
+    Type: String
+  EnableFargate:
+    AllowedValues:
+    - 'true'
+    - 'false'
+    Default: 'false'
+    Description: Create a Fargate profile for the Datagrok namespace. CoreDNS and
+      AWS LB Controller still run on EC2 nodes.
+    Type: String
+  EnableRdsIamAuth:
+    AllowedValues:
+    - 'true'
+    - 'false'
+    Default: 'true'
+    Description: Enable RDS IAM database authentication. Datagrok connects passwordlessly
+      via IRSA when true.
+    Type: String
+  GrokConnectVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 2.6.2
+    Description: Enter Grok Connect docker image version.
+    Type: String
+  GrokPipeVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 1.18.0
+    Description: Enter Grok Pipe docker image version.
+    Type: String
+  GrokRegistryProxyVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 1.18.0
+    Description: Enter Grok Registry Proxy docker image version.
+    Type: String
+  GrokSpawnerVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 2.15.0
+    Description: Enter Grok Spawner docker image version.
+    Type: String
+  HelmChartVersion:
+    Default: ''
+    Description: 'Datagrok Helm chart version published at oci://registry-1.docker.io/datagrok/datagrok
+      (tags suffixed with `-helm`, e.g. `1.26.5-helm`). Pass the base version only;
+      the `-helm` suffix is appended automatically by the install step. Leave empty
+      to use the same value as DatagrokVersion (chart releases mirror the app release).
+
+      '
+    Type: String
+  HelmNamespace:
+    Default: datagrok
+    Description: Kubernetes namespace for the Datagrok Helm release.
+    Type: String
+  InternetIngressAccess:
+    AllowedValues:
+    - 'true'
+    - 'false'
+    Default: 'true'
+    Description: 'Do you want Datagrok to be available from internet? The exact subnet
+      from which Datagrok will be available can be specified in ''InternetSubnetAllow:
+      Allow connect to Datagrok from CIDR'' parameter.'
+    Type: String
+  InternetSubnetAllow:
+    AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
+    Default: 0.0.0.0/0
+    Description: CIDR range allowed to reach Datagrok from the internet.
+    Type: String
+  InternetSubnetAllow2:
+    AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
+    Default: 0.0.0.0/0
+    Description: Additional CIDR range allowed to reach Datagrok from the internet.
+    Type: String
+  InternetSubnetAllow3:
+    AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
+    Default: 0.0.0.0/0
+    Description: Additional CIDR range allowed to reach Datagrok from the internet.
+    Type: String
+  JKGVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 1.31.0
+    Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
+    Type: String
+  KubernetesVersion:
+    AllowedValues:
+    - '1.30'
+    - '1.31'
+    - '1.32'
+    Default: '1.31'
+    Description: EKS control-plane Kubernetes version.
+    Type: String
+  NodeDiskSize:
+    Default: 50
+    Description: Root volume size in GiB for each EKS node.
+    Type: Number
+  NodeGroupDesiredSize:
+    Default: 2
+    MaxValue: 20
+    MinValue: 1
+    Type: Number
+  NodeGroupMaxSize:
+    Default: 4
+    MaxValue: 20
+    MinValue: 1
+    Type: Number
+  NodeGroupMinSize:
+    Default: 2
+    MaxValue: 20
+    MinValue: 1
+    Type: Number
+  NodeInstanceType:
+    Default: t3.large
+    Description: EC2 instance type for EKS managed node group. Minimum t3.large for
+      Jupyter Kernel Gateway workloads.
+    Type: String
+  Postfix:
+    Description: URL postfix for backward compatibility. Leave blank for new installations
+    Type: String
+  RabbitmqVersion:
+    Default: 4.0.5-management
+    Description: Enter rabbitmq docker image version.
+    Type: String
+Resources:
+  DatagrokAdminPassword:
+    Properties:
+      Description: Datagrok admin user first-login password
+      GenerateSecretString:
+        ExcludePunctuation: true
+        GenerateStringKey: password
+        PasswordLength: 24
+        RequireEachIncludedType: true
+        SecretStringTemplate: '{"user": "admin"}'
+      Name:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-datagrok-admin
+        - postfix:
+            Ref: Postfix
+    Type: AWS::SecretsManager::Secret
+  DatagrokArnSSLCertificate:
+    Properties:
+      DomainName:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}.${domain}
+        - domain:
+            Ref: DNSDomain
+          postfix:
+            Ref: Postfix
+      DomainValidationOptions:
+      - DomainName:
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}.${domain}
+          - domain:
+              Ref: DNSDomain
+            postfix:
+              Ref: Postfix
+        HostedZoneId:
+          Ref: DNSZoneId
+      - DomainName:
+          Fn::Sub:
+          - registry.${AWS::StackName}${postfix}.${domain}
+          - domain:
+              Ref: DNSDomain
+            postfix:
+              Ref: Postfix
+        HostedZoneId:
+          Ref: DNSZoneId
+      KeyAlgorithm: RSA_2048
+      SubjectAlternativeNames:
+      - Fn::Sub:
+        - registry.${AWS::StackName}${postfix}.${domain}
+        - domain:
+            Ref: DNSDomain
+          postfix:
+            Ref: Postfix
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}
+          - postfix:
+              Ref: Postfix
+      ValidationMethod: DNS
+    Type: AWS::CertificateManager::Certificate
+  DatagrokChartEffectiveVersion:
+    Metadata:
+      chart_version:
+        Fn::Sub:
+        - ${base}-helm
+        - base:
+            Fn::If:
+            - UseChartVersionOverride
+            - Ref: HelmChartVersion
+            - Ref: DatagrokVersion
+    Type: AWS::CloudFormation::WaitConditionHandle
+  DatagrokClusterOIDCProvider:
+    DependsOn: EKSCluster
+    Properties:
+      ClientIdList:
+      - sts.amazonaws.com
+      ThumbprintList:
+      - 9e99a48a9960b14926bb7f3b02e22da2b0ab7280
+      Url:
+        Fn::GetAtt:
+        - EKSCluster
+        - OpenIdConnectIssuerUrl
+    Type: AWS::IAM::OIDCProvider
+  DatagrokDB:
+    DeletionPolicy: Snapshot
+    Properties:
+      AllocatedStorage:
+        Ref: DBAllocatedStorage
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: true
+      BackupRetentionPeriod: 7
+      DBInstanceClass:
+        Ref: DBInstanceClass
+      DBInstanceIdentifier:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-rds
+        - postfix:
+            Ref: Postfix
+      DBName:
+        Fn::If:
+        - RestoreFromSnapshot
+        - Ref: AWS::NoValue
+        - datagrok
+      DBSnapshotIdentifier:
+        Fn::If:
+        - RestoreFromSnapshot
+        - Ref: DBSnapshotIdentifier
+        - Ref: AWS::NoValue
+      DBSubnetGroupName:
+        Ref: DatagrokDBSubnetGroup
+      DeleteAutomatedBackups: true
+      DeletionProtection: false
+      EnableIAMDatabaseAuthentication:
+        Fn::If:
+        - RdsIamAuthEnabled
+        - true
+        - false
+      Engine: postgres
+      EngineVersion: '17'
+      MasterUserPassword:
+        Fn::If:
+        - RestoreFromSnapshot
+        - Ref: AWS::NoValue
+        - Fn::Sub:
+          - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+          - secret:
+              Ref: DatagrokDbAdminUser
+      MasterUsername:
+        Fn::If:
+        - RestoreFromSnapshot
+        - Ref: AWS::NoValue
+        - superuser
+      MultiAZ: false
+      Port: '5432'
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      StorageType: gp3
+      Tags:
+      - Key: datagrok.component
+        Value: datagrok
+      VPCSecurityGroups:
+      - Ref: DatagrokDBSecurityGroup
+    Type: AWS::RDS::DBInstance
+    UpdateReplacePolicy: Delete
+  DatagrokDBSecurityGroup:
+    Properties:
+      GroupDescription:
+        Fn::Sub: ${AWS::StackName} Datagrok DB Security Group
+      SecurityGroupEgress: []
+      SecurityGroupIngress:
+      - Description:
+          Fn::Sub: ${AWS::StackName} Allow PostgreSQL from EKS nodes
+        FromPort: 5432
+        IpProtocol: TCP
+        SourceSecurityGroupId:
+          Ref: DatagrokSecurityGroup
+        ToPort: 5432
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}-rds
+          - postfix:
+              Ref: Postfix
+      - Key: datagrok.component
+        Value: datagrok
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::SecurityGroup
+  DatagrokDBSubnetGroup:
+    Properties:
+      DBSubnetGroupDescription:
+        Fn::Sub: ${AWS::StackName} Datagrok DatagrokDB Subnet Group
+      DBSubnetGroupName:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-rds-subnet
+        - postfix:
+            Ref: Postfix
+      SubnetIds:
+      - Ref: DatagrokDataSubnet1
+      - Ref: DatagrokDataSubnet2
+      Tags:
+      - Key: datagrok.component
+        Value: rds
+    Type: AWS::RDS::DBSubnetGroup
+  DatagrokDNS:
+    Properties:
+      AliasTarget:
+        DNSName:
+          Fn::GetAtt:
+          - DatagrokLoadBalancer
+          - DNSName
+        HostedZoneId:
+          Fn::GetAtt:
+          - DatagrokLoadBalancer
+          - CanonicalHostedZoneID
+      Comment:
+        Fn::Sub: ${AWS::StackName} Public Datagrok DNS
+      HostedZoneId:
+        Ref: DNSZoneId
+      Name:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}.${domain}.
+        - domain:
+            Ref: DNSDomain
+          postfix:
+            Ref: Postfix
+      Type: A
+    Type: AWS::Route53::RecordSet
+  DatagrokDataSubnet1:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs:
+            Ref: AWS::Region
+      CidrBlock:
+        Fn::Select:
+        - 4
+        - Fn::Cidr:
+          - Fn::GetAtt:
+            - DatagrokVPC
+            - CidrBlock
+          - 6
+          - 6
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Data Subnet 1
+      - Key: datagrok.component
+        Value: rds
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::Subnet
+  DatagrokDataSubnet2:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 1
+        - Fn::GetAZs:
+            Ref: AWS::Region
+      CidrBlock:
+        Fn::Select:
+        - 5
+        - Fn::Cidr:
+          - Fn::GetAtt:
+            - DatagrokVPC
+            - CidrBlock
+          - 6
+          - 6
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Data Subnet 2
+      - Key: datagrok.component
+        Value: rds
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::Subnet
+  DatagrokDataSubnetRouteAssos1:
+    Properties:
+      RouteTableId:
+        Ref: DatagrokDataSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokDataSubnet1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  DatagrokDataSubnetRouteAssos2:
+    Properties:
+      RouteTableId:
+        Ref: DatagrokDataSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokDataSubnet2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  DatagrokDataSubnetRouteTable:
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Data Subnet Route Table
+      - Key: datagrok.component
+        Value: rds
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::RouteTable
+  DatagrokDbAdminUser:
+    Properties:
+      Description: RDS PostgreSQL superuser password
+      GenerateSecretString:
+        ExcludePunctuation: true
+        GenerateStringKey: password
+        PasswordLength: 32
+        RequireEachIncludedType: true
+        SecretStringTemplate: '{"user": "superuser"}'
+      Name:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-rds-superuser
+        - postfix:
+            Ref: Postfix
+    Type: AWS::SecretsManager::Secret
+  DatagrokInternetGateway:
+    Condition: CreatePublicSubnets
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Internet Gateway
+      - Key: datagrok.component
+        Value: common
+    Type: AWS::EC2::InternetGateway
+  DatagrokInternetGatewayAttach:
+    Condition: CreatePublicSubnets
+    Properties:
+      InternetGatewayId:
+        Ref: DatagrokInternetGateway
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::VPCGatewayAttachment
+  DatagrokLoadBalancer:
+    DependsOn:
+    - EKSNodeGroup
+    - DatagrokLoadBalancerLookupLogGroup
+    Properties:
+      ClusterName:
+        Ref: EKSCluster
+      Namespace:
+        Ref: HelmNamespace
+      ServiceToken:
+        Fn::GetAtt:
+        - DatagrokLoadBalancerLookupFunction
+        - Arn
+    Type: AWS::CloudFormation::CustomResource
+  DatagrokLoadBalancerLookupFunction:
+    Properties:
+      Code:
+        ZipFile: "import time\nimport boto3\nimport cfnresponse\n\ndef handler(event,\
+          \ context):\n    data = {}\n    try:\n        if event['RequestType'] ==\
+          \ 'Delete':\n            cfnresponse.send(event, context, cfnresponse.SUCCESS,\
+          \ data)\n            return\n        cluster = event['ResourceProperties']['ClusterName']\n\
+          \        namespace = event['ResourceProperties']['Namespace']\n        elb\
+          \ = boto3.client('elbv2')\n        # LBC tags ALBs with kubernetes.io/cluster/<cluster>=owned\
+          \ and\n        # ingress.k8s.aws/stack=<namespace>/<ingress-name>.\n   \
+          \     deadline = time.time() + 840\n        while time.time() < deadline:\n\
+          \            paginator = elb.get_paginator('describe_load_balancers')\n\
+          \            for page in paginator.paginate():\n                for lb in\
+          \ page['LoadBalancers']:\n                    if lb['Type'] != 'application':\n\
+          \                        continue\n                    tags_resp = elb.describe_tags(ResourceArns=[lb['LoadBalancerArn']])\n\
+          \                    tags = {t['Key']: t['Value'] for t in tags_resp['TagDescriptions'][0]['Tags']}\n\
+          \                    cluster_tag = tags.get(f'elbv2.k8s.aws/cluster')\n\
+          \                    stack_tag = tags.get('ingress.k8s.aws/stack', '')\n\
+          \                    if cluster_tag == cluster and stack_tag.startswith(namespace\
+          \ + '/'):\n                        data['DNSName'] = lb['DNSName']\n   \
+          \                     data['CanonicalHostedZoneID'] = lb['CanonicalHostedZoneId']\n\
+          \                        cfnresponse.send(event, context, cfnresponse.SUCCESS,\
+          \ data)\n                        return\n            time.sleep(15)\n  \
+          \      cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': 'ALB\
+          \ not found within timeout'})\n    except Exception as e:\n        print(type(e).__name__,\
+          \ e)\n        cfnresponse.send(event, context, cfnresponse.FAILED, {'Error':\
+          \ str(e)})\n"
+      Description: Discovers the ALB provisioned by AWS LB Controller for the Datagrok
+        ingress
+      Handler: index.handler
+      MemorySize: 256
+      Role:
+        Fn::GetAtt:
+        - DatagrokLoadBalancerLookupRole
+        - Arn
+      Runtime: python3.12
+      Timeout: 900
+    Type: AWS::Lambda::Function
+  DatagrokLoadBalancerLookupLogGroup:
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub:
+        - /aws/lambda/${fn}
+        - fn:
+            Ref: DatagrokLoadBalancerLookupFunction
+      RetentionInDays: 7
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+  DatagrokLoadBalancerLookupRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+        Version: '2012-10-17'
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              Fn::Sub: arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*
+          - Action:
+            - elasticloadbalancing:DescribeLoadBalancers
+            - elasticloadbalancing:DescribeTags
+            Effect: Allow
+            Resource: '*'
+          Version: '2012-10-17'
+        PolicyName:
+          Fn::Sub: ${AWS::StackName}-alb-lookup
+    Type: AWS::IAM::Role
+  DatagrokNatGateway:
+    Condition: InternetEgressAccess
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - DatagrokNatGatewayEIP
+        - AllocationId
+      ConnectivityType: public
+      SubnetId:
+        Ref: DatagrokPublicSubnet1
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Nat Gateway
+      - Key: datagrok.component
+        Value: common
+    Type: AWS::EC2::NatGateway
+  DatagrokNatGatewayEIP:
+    Condition: InternetEgressAccess
+    Properties:
+      Domain: vpc
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Nat Gateway EIP
+      - Key: datagrok.component
+        Value: common
+    Type: AWS::EC2::EIP
+  DatagrokPrivateSubnet1:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs:
+            Ref: AWS::Region
+      CidrBlock:
+        Fn::Select:
+        - 2
+        - Fn::Cidr:
+          - Fn::GetAtt:
+            - DatagrokVPC
+            - CidrBlock
+          - 6
+          - 6
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Private Subnet 1
+      - Key: datagrok.component
+        Value: common
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::Subnet
+  DatagrokPrivateSubnet2:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 1
+        - Fn::GetAZs:
+            Ref: AWS::Region
+      CidrBlock:
+        Fn::Select:
+        - 3
+        - Fn::Cidr:
+          - Fn::GetAtt:
+            - DatagrokVPC
+            - CidrBlock
+          - 6
+          - 6
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Private Subnet 2
+      - Key: datagrok.component
+        Value: common
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::Subnet
+  DatagrokPrivateSubnetNatRoute:
+    Condition: InternetEgressAccess
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: DatagrokNatGateway
+      RouteTableId:
+        Ref: DatagrokPrivateSubnetRouteTable
+    Type: AWS::EC2::Route
+  DatagrokPrivateSubnetRouteAssos1:
+    Properties:
+      RouteTableId:
+        Ref: DatagrokPrivateSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokPrivateSubnet1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  DatagrokPrivateSubnetRouteAssos2:
+    Properties:
+      RouteTableId:
+        Ref: DatagrokPrivateSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokPrivateSubnet2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  DatagrokPrivateSubnetRouteTable:
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Private Subnet Route Table
+      - Key: datagrok.component
+        Value: common
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::RouteTable
+  DatagrokPublicSubnet1:
+    Condition: CreatePublicSubnets
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs:
+            Ref: AWS::Region
+      CidrBlock:
+        Fn::Select:
+        - 0
+        - Fn::Cidr:
+          - Fn::GetAtt:
+            - DatagrokVPC
+            - CidrBlock
+          - 6
+          - 6
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Public Subnet 1
+      - Key: datagrok.component
+        Value: common
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::Subnet
+  DatagrokPublicSubnet2:
+    Condition: CreatePublicSubnets
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 1
+        - Fn::GetAZs:
+            Ref: AWS::Region
+      CidrBlock:
+        Fn::Select:
+        - 1
+        - Fn::Cidr:
+          - Fn::GetAtt:
+            - DatagrokVPC
+            - CidrBlock
+          - 6
+          - 6
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Public Subnet 2
+      - Key: datagrok.component
+        Value: common
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::Subnet
+  DatagrokPublicSubnetPublicRoute:
+    Condition: CreatePublicSubnets
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: DatagrokInternetGateway
+      RouteTableId:
+        Ref: DatagrokPublicSubnetRouteTable
+    Type: AWS::EC2::Route
+  DatagrokPublicSubnetRouteAssos1:
+    Condition: CreatePublicSubnets
+    Properties:
+      RouteTableId:
+        Ref: DatagrokPublicSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokPublicSubnet1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  DatagrokPublicSubnetRouteAssos2:
+    Condition: CreatePublicSubnets
+    Properties:
+      RouteTableId:
+        Ref: DatagrokPublicSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokPublicSubnet2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  DatagrokPublicSubnetRouteTable:
+    Condition: CreatePublicSubnets
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok Public Subnet Route Table
+      - Key: datagrok.component
+        Value: common
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::RouteTable
+  DatagrokR53Cleanup:
+    DependsOn:
+    - DatagrokR53CleanupLambdaFunctionLogGroup
+    Properties:
+      DNSZone:
+        Ref: DNSZoneId
+      SSLCertificate:
+        Ref: DatagrokArnSSLCertificate
+      ServiceToken:
+        Fn::GetAtt:
+        - DatagrokR53CleanupLambdaFunction
+        - Arn
+    Type: AWS::CloudFormation::CustomResource
+  DatagrokR53CleanupLambdaFunction:
+    Properties:
+      Code:
+        ZipFile: "import boto3\nimport cfnresponse\n\n\ndef handler(event, context):\n\
+          \    responseData = {}\n    try:\n        zone_id = event['ResourceProperties']['DNSZone']\n\
+          \        certArn = event['ResourceProperties']['SSLCertificate']\n\n   \
+          \     if event['RequestType'] == 'Delete':\n            session = boto3.Session()\n\
+          \            acm = session.client('acm')\n            response = acm.describe_certificate(CertificateArn=certArn)\n\
+          \            records = []\n            for d in response['Certificate']['DomainValidationOptions']:\n\
+          \                records.append(d['ResourceRecord'])\n            r53 =\
+          \ session.client('route53')\n            for r in records:\n           \
+          \     response = r53.list_resource_record_sets(HostedZoneId=zone_id, StartRecordName=r['Name'],\
+          \ MaxItems='1')\n                if r['Name'] in response['ResourceRecordSets'][0]['Name']:\n\
+          \                    r53.change_resource_record_sets(\n                \
+          \        HostedZoneId=zone_id,\n                        ChangeBatch={\n\
+          \                            'Changes': [{\n                           \
+          \     'Action': 'DELETE',\n                                'ResourceRecordSet':\
+          \ response['ResourceRecordSets'][0]\n                            }]\n  \
+          \                      }\n                    )\n                    print(f'Deleted:\
+          \ {response[\"ResourceRecordSets\"][0]}')\n                else:\n     \
+          \               print(f'Record {r[\"Name\"]} does not exist')\n        \
+          \    responseData['Status'] = 200\n        cfnresponse.send(event, context,\
+          \ cfnresponse.SUCCESS, responseData)\n    except Exception as e:\n     \
+          \   print(type(e).__name__, e)\n        cfnresponse.send(event, context,\
+          \ cfnresponse.FAILED, responseData)\n"
+      Description: Removes obsolete validation records from AWS
+      Handler: index.handler
+      MemorySize: 128
+      Role:
+        Fn::GetAtt:
+        - DatagrokR53CleanupLambdaRole
+        - Arn
+      Runtime: python3.10
+      Timeout: 600
+    Type: AWS::Lambda::Function
+  DatagrokR53CleanupLambdaFunctionLogGroup:
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub:
+        - /aws/lambda/${function_name}
+        - function_name:
+            Ref: DatagrokR53CleanupLambdaFunction
+      RetentionInDays: 1
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+  DatagrokR53CleanupLambdaRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+        Version: '2012-10-17'
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              Fn::Sub: arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-R53CleanupLambdaFunction-*:*
+          - Action:
+            - acm:DescribeCertificate
+            Effect: Allow
+            Resource:
+              Ref: DatagrokArnSSLCertificate
+          - Action:
+            - route53:ListResourceRecordSets
+            - route53:ChangeResourceRecordSets
+            Effect: Allow
+            Resource:
+              Fn::Sub:
+              - arn:${AWS::Partition}:route53:::hostedzone/${zone}
+              - zone:
+                  Ref: DNSZoneId
+          Version: '2012-10-17'
+        PolicyName:
+          Fn::Sub: ${AWS::StackName}-r53-lambda
+    Type: AWS::IAM::Role
+  DatagrokS3:
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - BucketKeyEnabled: true
+          ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      BucketName:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-s3-${uuid}
+        - postfix:
+            Ref: Postfix
+          uuid:
+            Fn::Select:
+            - 2
+            - Fn::Split:
+              - /
+              - Ref: AWS::StackId
+      ObjectLockEnabled: false
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+      - Key: datagrok.component
+        Value: datagrok
+    Type: AWS::S3::Bucket
+    UpdateReplacePolicy: Retain
+  DatagrokS3Policy:
+    Properties:
+      Bucket:
+        Ref: DatagrokS3
+      PolicyDocument:
+        Statement:
+        - Action: '*'
+          Condition:
+            Bool:
+              aws:SecureTransport: 'false'
+          Effect: Deny
+          Principal: '*'
+          Resource:
+          - Fn::GetAtt:
+            - DatagrokS3
+            - Arn
+          - Fn::Sub:
+            - ${bucket}/*
+            - bucket:
+                Fn::GetAtt:
+                - DatagrokS3
+                - Arn
+        Version: '2012-10-17'
+    Type: AWS::S3::BucketPolicy
+  DatagrokS3VPCEndpoint:
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Action:
+          - s3:PutObject
+          - s3:GetObject
+          - s3:DeleteObject
+          - s3:ListBucket
+          Condition: {}
+          Effect: Allow
+          Principal: '*'
+          Resource:
+          - Fn::GetAtt:
+            - DatagrokS3
+            - Arn
+          - Fn::Sub:
+            - ${bucket}/*
+            - bucket:
+                Fn::GetAtt:
+                - DatagrokS3
+                - Arn
+          - Fn::Sub: arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com
+          - Fn::Sub: arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com/*
+          - Fn::Sub: arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}
+          - Fn::Sub: arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}/*
+          - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket
+          - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*
+          - arn:aws:s3:::docker-images-prod
+          - arn:aws:s3:::docker-images-prod/*
+          - arn:aws:s3:::datagrok-data
+          - arn:aws:s3:::datagrok-data/*
+          - Fn::Sub:
+            - arn:aws:s3:::cloudformation-custom-resource-response-${region}
+            - region:
+                Fn::Join:
+                - ''
+                - Fn::Split:
+                  - '-'
+                  - Ref: AWS::Region
+          - Fn::Sub:
+            - arn:aws:s3:::cloudformation-custom-resource-response-${region}/*
+            - region:
+                Fn::Join:
+                - ''
+                - Fn::Split:
+                  - '-'
+                  - Ref: AWS::Region
+        Version: '2012-10-17'
+      RouteTableIds:
+      - Ref: DatagrokPrivateSubnetRouteTable
+      ServiceName:
+        Fn::Sub: com.amazonaws.${AWS::Region}.s3
+      VpcEndpointType: Gateway
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::VPCEndpoint
+  DatagrokSecurityGroup:
+    Properties:
+      GroupDescription:
+        Fn::Sub: ${AWS::StackName} Datagrok cluster security group
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}-cluster-sg
+          - postfix:
+              Ref: Postfix
+      - Key: datagrok.component
+        Value: datagrok
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::SecurityGroup
+  DatagrokServiceAccountRole:
+    DependsOn: DatagrokClusterOIDCProvider
+    Properties:
+      AssumeRolePolicyDocument:
+        Fn::Sub:
+        - "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [{\n    \"Effect\"\
+          : \"Allow\",\n    \"Principal\": {\n      \"Federated\": \"arn:aws:iam::${AWS::AccountId}:oidc-provider/${issuer}\"\
+          \n    },\n    \"Action\": \"sts:AssumeRoleWithWebIdentity\",\n    \"Condition\"\
+          : {\n      \"StringEquals\": {\n        \"${issuer}:aud\": \"sts.amazonaws.com\"\
+          ,\n        \"${issuer}:sub\": \"system:serviceaccount:${namespace}:datagrok\"\
+          \n      }\n    }\n  }]\n}\n"
+        - issuer:
+            Fn::Select:
+            - 1
+            - Fn::Split:
+              - //
+              - Fn::GetAtt:
+                - EKSCluster
+                - OpenIdConnectIssuerUrl
+          namespace:
+            Ref: HelmNamespace
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - s3:ListBucket
+            - s3:GetBucketLocation
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+              - DatagrokS3
+              - Arn
+          - Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+            Effect: Allow
+            Resource:
+              Fn::Sub:
+              - ${bucket}/*
+              - bucket:
+                  Fn::GetAtt:
+                  - DatagrokS3
+                  - Arn
+          Version: '2012-10-17'
+        PolicyName: DatagrokS3Access
+      - Fn::If:
+        - RdsIamAuthEnabled
+        - PolicyDocument:
+            Statement:
+            - Action: rds-db:connect
+              Effect: Allow
+              Resource:
+              - Fn::Sub:
+                - arn:aws:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:${dbi}/datagrok_admin
+                - dbi:
+                    Fn::GetAtt:
+                    - DatagrokDB
+                    - DbiResourceId
+              - Fn::Sub:
+                - arn:aws:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:${dbi}/datagrok
+                - dbi:
+                    Fn::GetAtt:
+                    - DatagrokDB
+                    - DbiResourceId
+              - Fn::Sub:
+                - arn:aws:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:${dbi}/datagrok_reader
+                - dbi:
+                    Fn::GetAtt:
+                    - DatagrokDB
+                    - DbiResourceId
+            Version: '2012-10-17'
+          PolicyName: DatagrokRdsIamAccess
+        - Ref: AWS::NoValue
+      RoleName:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-sa-role
+        - postfix:
+            Ref: Postfix
+    Type: AWS::IAM::Role
+  DatagrokVPC:
+    Properties:
+      CidrBlock:
+        Ref: CIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName} Datagrok VPC
+      - Key: datagrok.component
+        Value: common
+    Type: AWS::EC2::VPC
+  EKSCluster:
+    Properties:
+      AccessConfig:
+        AuthenticationMode: API_AND_CONFIG_MAP
+      Name:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}
+        - postfix:
+            Ref: Postfix
+      ResourcesVpcConfig:
+        EndpointPrivateAccess: true
+        EndpointPublicAccess: true
+        SecurityGroupIds:
+        - Ref: DatagrokSecurityGroup
+        SubnetIds:
+        - Ref: DatagrokPrivateSubnet1
+        - Ref: DatagrokPrivateSubnet2
+        - Ref: DatagrokPublicSubnet1
+        - Ref: DatagrokPublicSubnet2
+      RoleArn:
+        Fn::GetAtt:
+        - EKSClusterRole
+        - Arn
+      Version:
+        Ref: KubernetesVersion
+    Type: AWS::EKS::Cluster
+  EKSClusterRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service: eks.amazonaws.com
+        Version: '2012-10-17'
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+      - arn:aws:iam::aws:policy/AmazonEKSVPCResourceController
+      RoleName:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-cluster-role
+        - postfix:
+            Ref: Postfix
+    Type: AWS::IAM::Role
+  EKSNodeGroup:
+    DependsOn: EKSCluster
+    Properties:
+      AmiType: AL2023_x86_64_STANDARD
+      ClusterName:
+        Ref: EKSCluster
+      DiskSize:
+        Ref: NodeDiskSize
+      InstanceTypes:
+      - Ref: NodeInstanceType
+      NodeRole:
+        Fn::GetAtt:
+        - EKSNodeRole
+        - Arn
+      NodegroupName:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-nodes
+        - postfix:
+            Ref: Postfix
+      ScalingConfig:
+        DesiredSize:
+          Ref: NodeGroupDesiredSize
+        MaxSize:
+          Ref: NodeGroupMaxSize
+        MinSize:
+          Ref: NodeGroupMinSize
+      Subnets:
+      - Ref: DatagrokPrivateSubnet1
+      - Ref: DatagrokPrivateSubnet2
+      Tags:
+        Name:
+          Fn::Sub:
+          - ${AWS::StackName}${postfix}-node
+          - postfix:
+              Ref: Postfix
+    Type: AWS::EKS::Nodegroup
+  EKSNodeRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+        Version: '2012-10-17'
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+      - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+      - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      RoleName:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-node-role
+        - postfix:
+            Ref: Postfix
+    Type: AWS::IAM::Role
+  GrokPipeApiKey:
+    Properties:
+      Description: API key used to authenticate with grok_pipe
+      GenerateSecretString:
+        ExcludePunctuation: true
+        GenerateStringKey: key
+        PasswordLength: 32
+        SecretStringTemplate: '{}'
+      Name:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-grok-pipe-api-key
+        - postfix:
+            Ref: Postfix
+    Type: AWS::SecretsManager::Secret
+  RabbitMQPassword:
+    Properties:
+      Description: RabbitMQ password shared by datlas and grok_spawner
+      GenerateSecretString:
+        ExcludePunctuation: true
+        GenerateStringKey: password
+        PasswordLength: 24
+        SecretStringTemplate: '{"user": "datagrok"}'
+      Name:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-rabbitmq
+        - postfix:
+            Ref: Postfix
+    Type: AWS::SecretsManager::Secret
+  RegistryDNS:
+    Condition: RegistryProxyEnabled
+    Properties:
+      AliasTarget:
+        DNSName:
+          Fn::GetAtt:
+          - DatagrokLoadBalancer
+          - DNSName
+        HostedZoneId:
+          Fn::GetAtt:
+          - DatagrokLoadBalancer
+          - CanonicalHostedZoneID
+      Comment:
+        Fn::Sub: ${AWS::StackName} Public Registry Proxy DNS
+      HostedZoneId:
+        Ref: DNSZoneId
+      Name:
+        Fn::Sub:
+        - registry.${AWS::StackName}${postfix}.${domain}.
+        - domain:
+            Ref: DNSDomain
+          postfix:
+            Ref: Postfix
+      Type: A
+    Type: AWS::Route53::RecordSet
+  SpawnerApiKey:
+    Properties:
+      Description: API key used by datlas to call grok_spawner
+      GenerateSecretString:
+        ExcludePunctuation: true
+        GenerateStringKey: key
+        PasswordLength: 32
+        SecretStringTemplate: '{}'
+      Name:
+        Fn::Sub:
+        - ${AWS::StackName}${postfix}-spawner-api-key
+        - postfix:
+            Ref: Postfix
+    Type: AWS::SecretsManager::Secret
