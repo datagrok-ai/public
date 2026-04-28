@@ -92,7 +92,7 @@ Key divergence from SciPy: `maxIterations` default is `1000` (consistent with `G
 | # | Test | Condition | Sets `converged`? |
 |---|---|---|---|
 | T1 | Projected-gradient | `‖P(x − g, l, u) − x‖∞ ≤ gradTolerance` | **true** |
-| T2 | Relative Δf | `|f_k − f_{k+1}| / max(|f_k|, |f_{k+1}|, 1) ≤ tolerance` | **true** |
+| T2 | Relative Δf | `\|f_k − f_{k+1}\| / max(\|f_k\|, \|f_{k+1}\|, 1) ≤ tolerance` | **true** |
 | T3 | Iteration cap | `iter ≥ maxIterations` | false |
 | T4 | Evaluation cap | `nfev ≥ maxFunctionEvaluations` | false |
 | T5 | Line-search failure + retry failure | §9 recovery exhausted | false |
