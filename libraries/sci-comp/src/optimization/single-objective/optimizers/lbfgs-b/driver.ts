@@ -11,7 +11,7 @@
  * line-search abnormal termination, callback abort) return
  * `converged = false` with best-so-far point/value.
  */
-import {BOUND_LOWER, BOUND_BOTH, BOUND_UPPER} from './types';
+import {BOUND_BOTH} from './types';
 import type {LBFGSBSettings} from './types';
 import type {ObjectiveFunction, AsyncObjectiveFunction, OptimizationResult} from '../../types';
 import type {IterationCallback} from '../../types';
@@ -163,23 +163,21 @@ export function runSync(
 
     // ---- (d) Search direction --------------------------------------
     for (let i = 0; i < n; i++) d[i] = endpoint[i] - x[i];
-    let slope = dot(g, d);
+    const slope = dot(g, d);
 
+    // Fortran v3.0 lnsrlb.f returns info = -4 (ascent direction in
+    // projection) on slope ≥ 0, which mainlb routes to memory reset
+    // — the same recovery path used elsewhere in the driver. Earlier
+    // versions of this code instead silently fell back to projected
+    // steepest descent, which masked any sign / sequencing error in
+    // Cauchy / subspace / W·M·z by turning the optimizer into a
+    // projected gradient method.
     if (!(slope < 0)) {
-      // Fall back to projected steepest descent.
-      for (let i = 0; i < n; i++) {
-        let di = -g[i];
-        if ((nbd[i] === BOUND_LOWER || nbd[i] === BOUND_BOTH) && x[i] <= lower[i] && di < 0) di = 0;
-        if ((nbd[i] === BOUND_UPPER || nbd[i] === BOUND_BOTH) && x[i] >= upper[i] && di > 0) di = 0;
-        d[i] = di;
-      }
-      slope = dot(g, d);
-      if (!(slope < 0)) {
-        // Even projected gradient gives no descent — at KKT point but
-        // pgNorm test didn't catch it. Mark converged and exit.
-        converged = true;
-        break;
-      }
+      if (retriedMemReset || mat.col === 0) break;
+      x.set(xSave); g.set(gSave); fCur = fSave;
+      mat.reset();
+      retriedMemReset = true;
+      continue;
     }
 
     // ---- (e) Max feasible step -------------------------------------
@@ -428,19 +426,14 @@ export async function runAsync(
 
 
     for (let i = 0; i < n; i++) d[i] = endpoint[i] - x[i];
-    let slope = dot(g, d);
+    const slope = dot(g, d);
+    // See runSync — slope ≥ 0 routes to memory reset, no SD fallback.
     if (!(slope < 0)) {
-      for (let i = 0; i < n; i++) {
-        let di = -g[i];
-        if ((nbd[i] === BOUND_LOWER || nbd[i] === BOUND_BOTH) && x[i] <= lower[i] && di < 0) di = 0;
-        if ((nbd[i] === BOUND_UPPER || nbd[i] === BOUND_BOTH) && x[i] >= upper[i] && di > 0) di = 0;
-        d[i] = di;
-      }
-      slope = dot(g, d);
-      if (!(slope < 0)) {
-        converged = true;
-        break;
-      }
+      if (retriedMemReset || mat.col === 0) break;
+      x.set(xSave); g.set(gSave); fCur = fSave;
+      mat.reset();
+      retriedMemReset = true;
+      continue;
     }
 
     const stpMax = maxFeasibleStep(x, d, lower, upper, nbd);
