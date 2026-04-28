@@ -17,14 +17,12 @@ Mappings:
     GrokSpawner:
       domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
       repo: "datagrok/grok_spawner"
+    GrokRegistryProxy:
+      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
+      repo: "datagrok/grok_registry_proxy"
     JKG:
       domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
       repo: "datagrok/jupyter_kernel_gateway"
-
-    Kaniko:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/kaniko"
-      version: "v1.12.1"
     Searchdomain:
       domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
       repo: "datagrok/ecs-searchdomain-sidecar"
