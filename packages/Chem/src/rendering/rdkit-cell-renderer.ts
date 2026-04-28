@@ -587,9 +587,6 @@ M  END
         molString, highlightInfo.scaffolds, false, false, cellStyle, highlightInfo.alighByFirstSubtruct, undefined, undefined, renderOpts);
     } else
       this.highlightByScaffoldCol(g, x, y, w, h, gridCell, cellStyle, colTemp, molString, highlightInfo.scaffolds, renderOpts);
-
-    // Atom-positions cache is prewarmed on `onMouseEnter` (per cell the user
-    // actually hovers) rather than on every render — keeps scrolling fast.
   }
 
   getHighlightTagInfo(colTemp: any, gridCell: DG.GridCell): IHighlightTagInfo {
@@ -699,17 +696,6 @@ M  END
   // -- Atom picker event hooks ----------------------------------------------
   // Slim shims that delegate to AtomPickerController. State and logic live
   // in `./atom-picker-controller.ts`; the renderer only proxies grid events.
-
-  override onMouseEnter(gridCell: DG.GridCell, _e: MouseEvent): void {
-    // Prewarm the atom-positions cache for this cell only (not every rendered
-    // cell). The user just moved the cursor in — they're likely about to click.
-    const col = gridCell?.cell?.column;
-    const molString = gridCell?.cell?.value;
-    if (!col || !molString) return;
-    const bounds = gridCell.bounds;
-    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return;
-    this.picker.warmCacheIfNeeded(col, molString, bounds.width, bounds.height);
-  }
 
   override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
     this.picker.onMouseLeave(gridCell, e);

@@ -161,21 +161,6 @@ export class AtomPickerController {
       (args: unknown) => this._onMol3DHoverEvent(args));
   }
 
-  /** Prewarms the atom-positions cache for one cell. Called from the
-   *  renderer's `onMouseEnter` (per cell the cursor actually enters), not
-   *  from `render()`, so scrolling 100s of rows doesn't queue 100s of
-   *  SVG-extraction tasks. The work is deferred via `setTimeout(0)` so the
-   *  current event handler returns before the heavy SVG generation runs. */
-  warmCacheIfNeeded(col: DG.Column, molString: string, cssW: number, cssH: number): void {
-    if (!this._isPickerActive(col)) return;
-    const dpr = window.devicePixelRatio || 1;
-    const cacheKey = molString + '|' + Math.round(cssW * dpr) + 'x' + Math.round(cssH * dpr);
-    if (this.atomPositionsCache.has(cacheKey)) return;
-    setTimeout(
-      () => {this.deps._getCellAtomPositions(molString, cssW, cssH);},
-    );
-  }
-
   // -- Hover-paint atom picker ----------------------------------------------
   // No-modifier click shows a transient preview of one atom under the cursor.
   // Ctrl/Cmd+click/drag paints atoms persistently; Ctrl+Shift / Cmd+Shift erases.
