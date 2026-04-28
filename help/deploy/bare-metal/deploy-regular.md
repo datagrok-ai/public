@@ -84,10 +84,10 @@ hosts without an orchestrator.
 
 ## Multi-host topologies
 
-For two-host or larger Docker setups (Datagrok services on one host, scripting / Jupyter
-Kernel Gateway on another), use [Docker Swarm](deploy-docker-swarm.md) — it gives you the
-same compose file but with cross-host service discovery and rolling updates. For larger
-multi-node clusters, prefer the [Helm chart](../k8s/install-helm-chart.md) on Kubernetes.
+For multi-host installs (Datagrok services on one host, scripting / Jupyter Kernel
+Gateway on another, or larger), use the [Helm chart](../k8s/install-helm-chart.md) on
+Kubernetes. A single-node K8s distribution like [k3s](https://k3s.io/) or
+[kind](https://kind.sigs.k8s.io/) is enough if you don't already run a cluster.
 
 ## On AWS EC2
 
@@ -103,5 +103,4 @@ fleet, RDS, S3, and ALBs end-to-end.
 
 * [Components](../deploy.md#components) — service list and roles
 * [Server configuration](../configuration.md) — full `GROK_PARAMETERS` reference
-* [Docker Swarm](deploy-docker-swarm.md) — multi-host deployments without Kubernetes
 * [Helm chart](../k8s/install-helm-chart.md) — single- or multi-node Kubernetes installs

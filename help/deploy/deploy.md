@@ -17,7 +17,7 @@ configuration.
 | **Datagrok**                | `datagrok/datagrok`                  | Core REST API, web client, authn/authz, metadata persistence, Nginx reverse proxy. |
 | **PostgreSQL**              | `pgvector/pgvector:pg17`             | Metadata store (users, projects, packages, queries, scripts, file index). RDS / Cloud SQL / in-cluster. |
 | **grok\_pipe**              | `datagrok/grok_pipe`                 | WebSocket multiplexer for streaming DataFrames and script results between clients and Jupyter workers. |
-| **grok\_spawner**           | `datagrok/grok_spawner`              | Manages plugin container lifecycle on Docker / Swarm / ECS / Kubernetes (selected per deployment). |
+| **grok\_spawner**           | `datagrok/grok_spawner`              | Manages plugin container lifecycle on Docker / ECS / Kubernetes (selected per deployment). |
 | **grok\_connect**           | `datagrok/grok_connect`              | JDBC bridge for 30+ external databases. |
 | **JupyterKernelGateway**    | `datagrok/jupyter_kernel_gateway`    | Server-side script execution (Python, R, Julia, JavaScript, Octave). |
 | **RabbitMQ**                | `rabbitmq:4.0.5-management`          | AMQP broker for the call queue (script and function execution). Independent release cadence. |
@@ -35,9 +35,9 @@ Datagrok stand will live.
 |------|----------|
 | [Local Docker Compose](docker-compose/docker-compose.mdx) | Single machine — laptop or VM — for evaluation, demos, or development. Self-contained PostgreSQL inside Compose. |
 | [Advanced Docker Compose](docker-compose/docker-compose-advanced.mdx) | Single-machine deployments that need separate data volumes, the JS-API debug stack, or other custom topology. |
-| [AWS CloudFormation (EKS)](aws/deploy-amazon-eks.mdx) | **Recommended for new AWS stands.** Provisions EKS, RDS, S3, IAM with IRSA, and installs the [Helm chart](k8s/install-helm-chart.md) automatically. |
-| [AWS CloudFormation (ECS)](aws/deploy-amazon-ecs.mdx) | Existing ECS stacks. Same RDS / S3 logical IDs as the EKS template, so an in-place stack-template swap migrates without re-creating data. Targeted for deprecation. |
 | [Kubernetes Helm chart](k8s/install-helm-chart.md) | Any Kubernetes cluster: on-prem, GKE, AKS, kind, k3s, MicroK8s, or a pre-existing EKS. The EKS CFN template uses the same chart. |
+| [AWS CloudFormation (EKS)](aws/deploy-amazon-eks.mdx) | **Recommended for new AWS stands.** Provisions EKS, RDS, S3, IAM with IRSA, and installs the Helm chart automatically. |
+| [AWS CloudFormation (ECS)](aws/deploy-amazon-ecs.mdx) | Existing ECS stacks. Same RDS / S3 logical IDs as the EKS template, so an in-place stack-template swap migrates without re-creating data. Targeted for deprecation. |
 
 The [AWS Marketplace](aws/deploy-marketplace.md) listing wraps the EKS template for one-click,
 infrastructure-isolated installs.
