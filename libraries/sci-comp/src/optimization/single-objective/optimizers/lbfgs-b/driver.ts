@@ -218,9 +218,30 @@ export function runSync(
     // inconsistency matches scipy / Fortran v3.0 behaviour.
     const fNew = lsResult.phi;
 
-    // ---- (i) Relative Δf test --------------------------------------
+    // ---- (i) Relative Δf and (m) projected-gradient tests ----------
+    // Both tests run BEFORE the BFGS update, matching Fortran v3.0
+    // mainlb.f. If either passes we accept the step but skip the
+    // (now redundant) memory update, keeping nskip / theta in sync
+    // with scipy at the converged iteration.
     const denom = Math.max(Math.abs(fCur), Math.abs(fNew), 1);
     const fChange = Math.abs(fCur - fNew) / denom;
+    pgNorm = projectedGradient(xNew, gNew, lower, upper, nbd, pg);
+
+    if (fChange <= ftol || pgNorm <= gradTol) {
+      x.set(xNew);
+      fCur = fNew;
+      g.set(gNew);
+      if (fCur < bestValue) {
+        bestValue = fCur;
+        bestX.set(x);
+      }
+      lastStepSize = stp;
+      lineSearchSteps = lsResult.nfev;
+      iteration++;
+      costHistory[costLen++] = bestValue;
+      converged = true;
+      break;
+    }
 
     // ---- (j, k) Memory update (curvature-gated) --------------------
     for (let i = 0; i < n; i++) {
@@ -241,18 +262,6 @@ export function runSync(
     lineSearchSteps = lsResult.nfev;
     iteration++;
     costHistory[costLen++] = bestValue;
-
-    if (fChange <= ftol) {
-      converged = true;
-      break;
-    }
-
-    // ---- (m) Projected-gradient test --------------------------------
-    pgNorm = projectedGradient(x, g, lower, upper, nbd, pg);
-    if (pgNorm <= gradTol) {
-      converged = true;
-      break;
-    }
 
     // ---- (n) Evaluation limit --------------------------------------
     if (fEvalCount >= maxFEval) break;
@@ -444,8 +453,27 @@ export async function runAsync(
     for (let i = 0; i < n; i++) xNew[i] = x[i] + stp * d[i];
     project(xNew, lower, upper, nbd, xNew);
     const fNew = lsResult.phi;
+
+    // Convergence tests run before the BFGS update; see runSync's (i)/(m).
     const denom = Math.max(Math.abs(fCur), Math.abs(fNew), 1);
     const fChange = Math.abs(fCur - fNew) / denom;
+    pgNorm = projectedGradient(xNew, gNew, lower, upper, nbd, pg);
+
+    if (fChange <= ftol || pgNorm <= gradTol) {
+      x.set(xNew);
+      fCur = fNew;
+      g.set(gNew);
+      if (fCur < bestValue) {
+        bestValue = fCur;
+        bestX.set(x);
+      }
+      lastStepSize = stp;
+      lineSearchSteps = lsResult.nfev;
+      iteration++;
+      costHistory[costLen++] = bestValue;
+      converged = true;
+      break;
+    }
 
     for (let i = 0; i < n; i++) {
       stepS[i] = xNew[i] - x[i];
@@ -465,15 +493,6 @@ export async function runAsync(
     iteration++;
     costHistory[costLen++] = bestValue;
 
-    if (fChange <= ftol) {
-      converged = true;
-      break;
-    }
-    pgNorm = projectedGradient(x, g, lower, upper, nbd, pg);
-    if (pgNorm <= gradTol) {
-      converged = true;
-      break;
-    }
     if (fEvalCount >= maxFEval) break;
     if (fireCallback(onIter, iteration, bestValue, bestX, {
       projGradInfNorm: pgNorm,
