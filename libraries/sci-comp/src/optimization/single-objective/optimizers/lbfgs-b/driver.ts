@@ -47,7 +47,17 @@ export function runSync(
   const gradFn = s.gradFn;
   const onIter = s.onIteration;
 
-  const {lower, upper, nbd} = normalizeBounds(s.bounds, n);
+  const {lower, upper, nbd, anyFinite} = normalizeBounds(s.bounds, n);
+
+  // `boxed` mirrors the Fortran v3.0 lnsrlb.f flag: true iff every
+  // variable has BOTH a finite lower and a finite upper bound. Used
+  // to decide whether the unit-step heuristic for α₀ is appropriate.
+  let boxed = anyFinite;
+  if (boxed) {
+    for (let i = 0; i < n; i++) {
+      if (nbd[i] !== BOUND_BOTH) {boxed = false; break;}
+    }
+  }
 
   const x = Float64Array.from(x0);
   const g = new Float64Array(n);
@@ -165,10 +175,17 @@ export function runSync(
     }
 
     // ---- (f) Initial α ---------------------------------------------
-    let alpha0 = iteration === 0 || retriedMemReset ?
-      Math.min(1, 1 / Math.max(infNorm(d), 1e-16)) :
-      1;
-    if (alpha0 > stpMax) alpha0 = stpMax;
+    // Match Fortran lnsrlb.f: on the very first iteration of an
+    // unboxed problem use stp = 1 / ‖d‖₂ (clamped to stpMax) to size
+    // the step to the magnitude of the search direction; otherwise
+    // start from the natural unit step. Once the BFGS approximation
+    // is informative the unit step scales d correctly.
+    let alpha0: number;
+    if (iteration === 0 && !boxed) {
+      const dNorm = Math.sqrt(dot(d, d));
+      alpha0 = Math.min(1 / Math.max(dNorm, 1e-16), stpMax);
+    } else
+      alpha0 = Math.min(1, stpMax);
 
     // ---- (g) Line search -------------------------------------------
     const lsResult = runLineSearch(
@@ -278,7 +295,15 @@ export async function runAsync(
   const gradFn = s.gradFn;
   const onIter = s.onIteration;
 
-  const {lower, upper, nbd} = normalizeBounds(s.bounds, n);
+  const {lower, upper, nbd, anyFinite} = normalizeBounds(s.bounds, n);
+
+  // See note in runSync: `boxed` controls the α₀ heuristic.
+  let boxed = anyFinite;
+  if (boxed) {
+    for (let i = 0; i < n; i++) {
+      if (nbd[i] !== BOUND_BOTH) {boxed = false; break;}
+    }
+  }
 
   const x = Float64Array.from(x0);
   const g = new Float64Array(n);
@@ -387,10 +412,13 @@ export async function runAsync(
       break;
     }
 
-    let alpha0 = iteration === 0 || retriedMemReset ?
-      Math.min(1, 1 / Math.max(infNorm(d), 1e-16)) :
-      1;
-    if (alpha0 > stpMax) alpha0 = stpMax;
+    // See note in runSync's (f).
+    let alpha0: number;
+    if (iteration === 0 && !boxed) {
+      const dNorm = Math.sqrt(dot(d, d));
+      alpha0 = Math.min(1 / Math.max(dNorm, 1e-16), stpMax);
+    } else
+      alpha0 = Math.min(1, stpMax);
 
     const lsResult = await runLineSearchAsync(
       async (alpha) => {
@@ -468,15 +496,6 @@ function dot(a: Float64Array, b: Float64Array): number {
   let s = 0;
   for (let i = 0; i < a.length; i++) s += a[i] * b[i];
   return s;
-}
-
-function infNorm(v: Float64Array): number {
-  let m = 0;
-  for (let i = 0; i < v.length; i++) {
-    const a = Math.abs(v[i]);
-    if (a > m) m = a;
-  }
-  return m;
 }
 
 function finaliseResult(
