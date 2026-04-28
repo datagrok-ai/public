@@ -2433,7 +2433,7 @@ export class DiffStudio {
   private openExternalModelSettings(modelPath: string, currentHelpUrl: string | undefined): void {
     const linkInput = ui.input.string('Help link', {
       value: currentHelpUrl ?? '',
-      nullable: false,
+      nullable: true,
       tooltipText: 'Set the link to the help page',
     });
 
@@ -2441,8 +2441,6 @@ export class DiffStudio {
       .add(linkInput)
       .addButton('Save', async () => {
         const value = linkInput.value?.trim();
-        if (!value)
-          return;
         try {
           const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
           const text = await grok.dapi.files.readAsText(manifestPath);
@@ -2462,12 +2460,6 @@ export class DiffStudio {
         }
       }, undefined, 'Save settings')
       .show();
-
-    const saveBtn = dlg.getButton('Save');
-    saveBtn.disabled = !linkInput.value?.trim();
-    linkInput.onChanged.subscribe(() => {
-      saveBtn.disabled = !linkInput.value?.trim();
-    });
   }
 
   /** Save model to recent models file */
