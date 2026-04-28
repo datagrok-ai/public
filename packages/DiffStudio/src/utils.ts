@@ -329,6 +329,97 @@ export async function getEquationsFromFile(path: string): Promise<string | null>
   }
 }
 
+// ---- Model content cache ----
+//
+// Maps a server-side .ivp path to its current text. Populated lazily by
+// `loadModelContent` / `readAndCacheModelContent`, eagerly during tree build
+// (Library + Recent + My Models prewarm), and updated on Save / Update so the
+// cached entry reflects the latest in-memory edit. Tree-click previews then
+// open the model from memory instead of paying a server round-trip.
+//
+// Known limitation: cross-tab / external edits to the same file (other tab,
+// other user, platform file browser) are NOT detected — entries become stale
+// until the user explicitly refreshes. Acceptable trade-off for instant
+// tree clicks.
+
+const modelContentCache = new Map<string, string>();
+
+/** Whether a path is a server-resident path that can serve as a cache key.
+ *  Drag-and-dropped files have no `:` separator and must bypass the cache. */
+function isCacheableModelPath(path: string | null | undefined): path is string {
+  return !!path && path.includes(':');
+}
+
+/** Read cached model content; `undefined` if the path is not cached */
+export function getCachedModelContent(path: string): string | undefined {
+  return modelContentCache.get(path);
+}
+
+/** Store model content for a path; overwrites any existing entry. No-op for non-server paths. */
+export function setCachedModelContent(path: string, content: string): void {
+  if (isCacheableModelPath(path))
+    modelContentCache.set(path, content);
+}
+
+/** Drop a single entry from the content cache */
+export function invalidateModelContent(path: string): void {
+  modelContentCache.delete(path);
+}
+
+/** Clear all entries from the content cache */
+export function clearModelContentCache(): void {
+  modelContentCache.clear();
+}
+
+/** Resolve model content for a path: cache → readAsText → cache. Returns `null` on read failure. */
+export async function loadModelContent(path: string): Promise<string | null> {
+  if (!isCacheableModelPath(path))
+    return null;
+  const cached = modelContentCache.get(path);
+  if (cached !== undefined)
+    return cached;
+  const text = await getEquationsFromFile(path);
+  if (text !== null)
+    modelContentCache.set(path, text);
+  return text;
+}
+
+/** Resolve content for a `FileInfo` via the cache, falling back to `file.readAsString()`.
+ *  Use this in entry-points that already hold a `FileInfo` (preview / full-view openers).
+ *  For drag-and-dropped files (no server path) the cache is bypassed entirely. */
+export async function readAndCacheModelContent(file: DG.FileInfo): Promise<string> {
+  const path = file.fullPath;
+  if (isCacheableModelPath(path)) {
+    const cached = modelContentCache.get(path);
+    if (cached !== undefined)
+      return cached;
+  }
+  const text = await file.readAsString();
+  if (isCacheableModelPath(path))
+    modelContentCache.set(path, text);
+  return text;
+} // readAndCacheModelContent
+
+let myModelContentPrewarmPromise: Promise<void> | null = null;
+
+/** Kick off a background prewarm of the content cache for every file in My Models.
+ *  Idempotent: subsequent calls reuse the in-flight promise so listing + content reads
+ *  are issued at most once per session. Failures are swallowed so the prewarm cannot
+ *  block or break the caller. */
+export function prefetchMyModelFilesContent(): void {
+  if (myModelContentPrewarmPromise !== null)
+    return;
+  myModelContentPrewarmPromise = (async () => {
+    try {
+      const files = await getCachedMyModelFiles();
+      await Promise.all(files.map((f) => loadModelContent(f.fullPath).catch(() => null)));
+    } catch {
+      // listing failed — drop the latch so a later call can retry
+      myModelContentPrewarmPromise = null;
+    }
+  })();
+}
+
 const folderListingCache = new Map<string, Promise<DG.FileInfo[]>>();
 
 /** Get memoized non-recursive listing of a folder; deduplicates concurrent callers */
@@ -400,6 +491,8 @@ export async function getExternalLibraryEntries(webRoot: string): Promise<Extern
       const content = await getEquationsFromFile(modelPath);
       if (content === null)
         continue;
+      // Free prewarm: we already paid for the read to extract name + description
+      setCachedModelContent(modelPath, content);
 
       const {name, description} = extractIvpNameAndDescription(content);
       const fallbackName = modelPath.slice(modelPath.lastIndexOf('/') + 1);

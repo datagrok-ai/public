@@ -27,12 +27,13 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
 import {CallbackAction} from './solver-tools';
 
 import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
-  getCategoryWidget, getReducedTable, closeWindows, getEquationsFromFile,
+  getCategoryWidget, getReducedTable, closeWindows,
   getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions,
   prefetchRecentModelsTable, getCachedRecentModelsTable, invalidateRecentCache,
   prefetchMyModelFiles, getCachedMyModelFiles, invalidateMyModelFilesCache,
   prefetchExternalLibraryEntries, getCachedExternalLibraryEntries,
   prefetchFolderListing, getCachedFileInfo, invalidateFolderListing,
+  loadModelContent, setCachedModelContent, readAndCacheModelContent, prefetchMyModelFilesContent,
   ExternalLibraryEntry} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
@@ -386,7 +387,7 @@ export class DiffStudio {
    *  do not pollute Recent — that slot is reserved for intentional opens. */
   public async getFilePreview(file: DG.FileInfo, path: string, addToRecent = true): Promise<DG.View> {
     closeWindows();
-    const equations = await file.readAsString();
+    const equations = await readAndCacheModelContent(file);
 
     if (addToRecent && file.fullPath.includes(PATH.SLASH)) // Skip drag-n-dropped files (no platform path)
       await this.saveModelToRecent(file.fullPath, true);
@@ -508,7 +509,7 @@ export class DiffStudio {
       return this.getFilePreview(file, path, addToRecent);
 
     closeWindows();
-    const equations = await file.readAsString();
+    const equations = await readAndCacheModelContent(file);
 
     if (addToRecent && file.fullPath.includes(PATH.SLASH))
       await this.saveModelToRecent(file.fullPath, true);
@@ -723,6 +724,7 @@ export class DiffStudio {
     browsing?: Browsing, dockOptions?: UiOptions) {
     prefetchRecentModelsTable();
     prefetchMyModelFiles();
+    prefetchMyModelFilesContent();
     prefetchExternalLibraryEntries(_package.webRoot);
     this.solverView = DG.TableView.create(this.solutionTable, false);
     if (toAddTableView) {
@@ -821,7 +823,11 @@ export class DiffStudio {
       if (!this.updateBtnFilePath || !this.editorView)
         return;
       try {
-        await grok.dapi.files.writeAsText(this.updateBtnFilePath, this.editorView.state.doc.toString());
+        const doc = this.editorView.state.doc.toString();
+        await grok.dapi.files.writeAsText(this.updateBtnFilePath, doc);
+        // Keep the content cache coherent regardless of how the file was opened
+        // (tree click, file handler, deep link, etc.) — the path is the single source of truth.
+        setCachedModelContent(this.updateBtnFilePath, doc);
         btn.hidden = true;
       } catch {
         grok.shell.error(ERROR_MSG.FAILED_TO_SAVE);
@@ -1157,6 +1163,7 @@ export class DiffStudio {
 
       try {
         await grok.dapi.files.writeAsText(path, modelCode);
+        setCachedModelContent(path, modelCode);
         invalidateMyModelFilesCache();
         prefetchMyModelFiles();
         invalidateFolderListing(folder);
@@ -1322,6 +1329,7 @@ export class DiffStudio {
         createdFileName = `${freeName}.${MISC.MODEL_FILE_EXT}`;
         targetPath = `${folder}/${createdFileName}`;
         await grok.dapi.files.writeAsText(targetPath, model);
+        setCachedModelContent(targetPath, model);
       }
 
       const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
@@ -1345,9 +1353,19 @@ export class DiffStudio {
       await grok.dapi.files.writeAsText(manifestPath, JSON.stringify(manifest, null, 2));
       invalidateFolderListing(`${PATH.LIBRARY_FOLDER}/`);
 
-      if (createdFileName !== null)
+      // A new file was created — rebind the editor to work with it (mirrors saveToMyFiles):
+      // Update button writes back to this path, the URL points at the new file, and a
+      // Recent entry is added so subsequent reopens are one click away.
+      if (createdFileName !== null) {
+        await this.saveModelToRecent(targetPath, true);
+        this.mainPath = `${PATH.FILE}/${targetPath.replace(':', '.')}`;
+        this.entityPath = '';
+        this.toChangePath = true;
+        this.solverView.path = `${this.mainPath}${this.entityPath}`;
+        this.updateBtnFilePath = targetPath;
+        this.updateBtn.hidden = true;
         grok.shell.info(`Saved to Library as ${createdFileName}`);
-      else if (!alreadyListed)
+      } else if (!alreadyListed)
         grok.shell.info('Registered in Library');
       else
         grok.shell.info('Already in Library');
@@ -2089,6 +2107,12 @@ export class DiffStudio {
           for (const f of uniqueFolders)
             prefetchFolderListing(f);
 
+          // Prewarm content cache for custom recent paths so tree-clicks open instantly
+          for (let i = 0; i < size; ++i) {
+            if (isCustomCol.get(i))
+              void loadModelContent(infoCol.get(i));
+          }
+
           for (let i = 0; i < size; ++i) {
             if (isCustomCol.get(i))
               await this.putCustomModelToRecents(infoCol.get(i));
@@ -2326,7 +2350,7 @@ export class DiffStudio {
         e.preventDefault();
         this.cancelPendingItemPreview();
 
-        const equations = await file.readAsString();
+        const equations = await readAndCacheModelContent(file);
         const solver = new DiffStudio();
         await solver.runSolverApp(equations);
       });
@@ -2913,7 +2937,7 @@ export class DiffStudio {
       for (const entry of entries) {
         menu.item(entry.displayName, async () => {
           try {
-            const equations = await getEquationsFromFile(entry.modelPath);
+            const equations = await loadModelContent(entry.modelPath);
             if (equations === null) {
               grok.shell.warning(`Failed to read model: ${entry.modelPath}`);
               return;
@@ -3005,7 +3029,7 @@ export class DiffStudio {
     const path = file.fullPath;
     menu.item(file.name, async () => {
       try {
-        const equations = await file.readAsString();
+        const equations = await readAndCacheModelContent(file);
         this.mainPath = `${PATH.FILE}/${path}`;
         this.entityPath = '';
         await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
@@ -3038,7 +3062,7 @@ export class DiffStudio {
     const lastModel = await this.getLastCalledModel();
 
     if (lastModel.isCustom) {
-      const equations = await getEquationsFromFile(lastModel.info);
+      const equations = await loadModelContent(lastModel.info);
 
       if (equations !== null) {
         const {basicSetup, EditorState, python, autocompletion} = await getCM();
