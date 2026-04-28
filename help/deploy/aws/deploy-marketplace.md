@@ -3,7 +3,7 @@ title: "AWS Marketplace"
 sidebar_position: 0
 ---
 
-To provide our users with the easiest way to deploy Datagrok to AWS, we integrated Datagrok with [AWS Marketplace](https://aws.amazon.com/marketplace). Using AWS Marketplace, you can deploy all [Datagrok components](../../develop/under-the-hood/infrastructure.md) and the required AWS infrastructure from scratch with just a few clicks. If you want to customize the deployment or use your existing infrastructure, we suggest using [CloudFormation](deploy-amazon-cloudformation.mdx) or [Terraform](deploy-amazon-terraform.md) options instead.
+To provide our users with the easiest way to deploy Datagrok to AWS, we integrated Datagrok with [AWS Marketplace](https://aws.amazon.com/marketplace). Using AWS Marketplace, you can deploy all [Datagrok components](../../develop/under-the-hood/infrastructure.md) and the required AWS infrastructure from scratch with just a few clicks. If you want to customize the deployment or use your existing infrastructure, we suggest using [CloudFormation (EKS)](deploy-amazon-eks.mdx) or [Terraform](deploy-amazon-terraform.md) options instead.
 
 <!-- markdownlint-disable no-bare-urls -->
 :::note
