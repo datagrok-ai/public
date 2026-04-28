@@ -1,7 +1,7 @@
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 
-import {CHEM_INTERACTIVE_SELECTION_EVENT} from '../constants';
+import {CHEM_ATOM_SELECTION_EVENT} from '@datagrok-libraries/chem-meta/src/types';
 
 category('atom picker', () => {
   /** Subscribes to the chem interactive-selection event, fires `payload`,
@@ -9,11 +9,14 @@ category('atom picker', () => {
    *  unsubscribes, even on error. */
   async function fireAndCaptureSelection(payload: unknown): Promise<any> {
     let received: any = null;
-    const sub = grok.events.onCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT)
-      .subscribe((args: any) => {received = args;});
+    let resolverFunction: ((_: any) => void) | null = null;
+    const sub = grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
+      .subscribe((args: any) => {received = args; resolverFunction?.(args);});
     try {
-      grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, payload);
-      await new Promise((r) => setTimeout(r, 50));
+      await new Promise((r) => {
+        resolverFunction = r;
+        grok.events.fireCustomEvent(CHEM_ATOM_SELECTION_EVENT, payload);
+      });
     } finally {
       sub.unsubscribe();
     }

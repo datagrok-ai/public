@@ -39,7 +39,6 @@ export interface Mol3DHoverRendererDeps {
     bondAtoms: Map<number, [number, number]>): void;
   _getCellAtomPositions(molString: string, cssWidth: number,
     cssHeight: number): CellTopology | null;
-  _clearRendersCache(): void;
 }
 
 /** Parses and validates a raw CHEM_MOL3D_HOVER_EVENT payload. */
@@ -125,7 +124,5 @@ export function handleMol3DHoverEvent(
     renderer._previewFrom3D = true;
     renderer._setPreviewAtom(smilesCol, rowIdx, idx2D, bondAtoms);
   }
-
-  renderer._clearRendersCache();
   grid.invalidate();
 }

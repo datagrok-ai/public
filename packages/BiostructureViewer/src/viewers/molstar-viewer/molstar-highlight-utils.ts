@@ -1,49 +1,17 @@
+/* eslint-disable max-len */
 /**
  * Types, constants, and pure helpers for the 2D↔3D atom-highlighting bridge.
  * Extracted from molstar-viewer.ts; the selection cache lives on MolstarViewer.selectionCache.
  */
 
 import {Structure} from 'molstar/lib/mol-model/structure';
+import {AtomMapping3D} from '@datagrok-libraries/chem-meta/src/types';
 
 import {_package} from '../../package';
 
 // -- Constants ---------------------------------------------------------------
 
-/** Mirrors CHEM_INTERACTIVE_SELECTION_EVENT from Chem's constants.ts. */
-export const CHEM_SELECTION_EVENT = 'chem-interactive-selection-changed';
-
-/** Mirrors CHEM_MOL3D_HOVER_EVENT from Chem's constants.ts. Fired by this
- *  viewer on 3D atom hover; Chem's renderer listens (reverse bridge). */
-export const CHEM_MOL3D_HOVER_EVENT = 'chem-mol3d-hover-changed';
-
 /** Payload for CHEM_MOL3D_HOVER_EVENT. `atom3DSerial: null` = cursor left the atom. */
-export interface Mol3DHoverEventArgs {
-  mol3DColumnName: string;
-  rowIdx: number;
-  atom3DSerial: number | null;
-  mode: 'preview' | 'paint' | 'erase';
-}
-
-// -- Types -------------------------------------------------------------------
-
-/** Mirrors AtomIndexMapping from atom-index-mapper.ts (no cross-package import). */
-export interface AtomMapping3D {
-  mapping: number[];
-  method: string;
-  mappedCount: number;
-  pdbSerials?: number[];
-}
-
-/** Shape of the cross-package `chem-interactive-selection-changed` event. */
-export interface ChemSelectionEventArgs {
-  column?: unknown;
-  rowIdx: number;
-  atoms: number[];
-  mapping3D?: AtomMapping3D | null;
-  persistent?: boolean;
-  clearAll?: boolean;
-  mol3DColumnName?: string;
-}
 
 /** Cached entry for atom selection events. */
 export interface SelectionCacheEntry {

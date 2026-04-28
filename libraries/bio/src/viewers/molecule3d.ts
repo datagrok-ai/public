@@ -7,16 +7,6 @@ export type Molecule3DData = {
   /** File extension, data format */ ext: string;
 };
 
-/** Persistent column tag used to link a SMILES (Molecule) column to a
- *  specific Molecule3D column for the Chem atom-picker bridge. The tag
- *  is set on the SMILES column; its value is the linked Molecule3D column
- *  name. Canonical constant owned by Chem's `constants.ts`; re-exported
- *  from the bio library so BiostructureViewer, Docking and other packages
- *  that already depend on `@datagrok-libraries/bio` can reference it
- *  without introducing a hard dependency on `@datagrok/chem`. Keep the
- *  string value in sync with Chem's `CHEM_ATOM_PICKER_LINKED_COL`. */
-export const CHEM_ATOM_PICKER_LINKED_COL = '%chem-atom-picker-linked-col';
-
 export enum DockingTags {
   dockingRole = 'docking.role',
   dockingTarget = 'docking.target',

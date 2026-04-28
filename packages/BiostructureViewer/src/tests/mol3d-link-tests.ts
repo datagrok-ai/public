@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /**
  * Unit tests for `utils/mol3d-link.ts` helpers.
  *
@@ -11,13 +12,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  CHEM_ATOM_PICKER_LINKED_COL,
-  CHEM_ATOM_PICKER_LINKED_SMILES_COL,
   setSmilesColLink,
   clearLinksToMol3D,
   findLinkedSmilesColName,
   clearAtomPickerHighlights,
 } from '../utils/mol3d-link';
+
+import {CHEM_ATOM_PICKER_LINKED_3D_COL_TAG,
+  CHEM_ATOM_PICKER_LINKED_SMILES_COL,} from '@datagrok-libraries/chem-meta/src/types';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -48,7 +50,7 @@ category('Mol3DLink', () => {
   test('setSmilesColLink — writes tag', async () => {
     const {smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
-    const tag = smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL);
+    const tag = smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG);
     expect(tag, mol3DCol.name);
   });
 
@@ -56,10 +58,10 @@ category('Mol3DLink', () => {
     const {smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
     // Sanity: tag was set.
-    expect(smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL) !== null, true);
+    expect(smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG) !== null, true);
 
     setSmilesColLink(smilesCol, null);
-    const tagAfter = smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL);
+    const tagAfter = smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG);
     // Tag must be absent (null or empty string) after clearing.
     expect(!tagAfter, true);
   });
@@ -68,7 +70,7 @@ category('Mol3DLink', () => {
     const {smilesCol} = makeDF();
     setSmilesColLink(smilesCol, 'pose_A');
     setSmilesColLink(smilesCol, 'pose_B');
-    expect(smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL), 'pose_B');
+    expect(smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG), 'pose_B');
   });
 
   // -------------------------------------------------------------------------
@@ -79,7 +81,7 @@ category('Mol3DLink', () => {
     const {smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
     // Forward tag on SMILES col.
-    expect(smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL), mol3DCol.name);
+    expect(smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG), mol3DCol.name);
     // Reciprocal tag on Mol3D col.
     expect(mol3DCol.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), smilesCol.name);
   });
@@ -88,7 +90,7 @@ category('Mol3DLink', () => {
     const {smilesCol, mol3DCol} = makeDF();
     setSmilesColLink(smilesCol, mol3DCol.name);
     setSmilesColLink(smilesCol, null);
-    expect(!smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL), true);
+    expect(!smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG), true);
     expect(!mol3DCol.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), true);
   });
 
@@ -121,7 +123,7 @@ category('Mol3DLink', () => {
     clearLinksToMol3D(df, mol3DCol.name);
 
     // Both forward + reciprocal tags must be gone after clearing.
-    expect(!smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_COL), true);
+    expect(!smilesCol.getTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG), true);
     expect(!mol3DCol.getTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL), true);
   });
 
@@ -143,9 +145,9 @@ category('Mol3DLink', () => {
     clearLinksToMol3D(df, mol3DA.name); // clear only 'pose3D' links
 
     // smilesA tag must be gone.
-    expect(!smilesA.getTag(CHEM_ATOM_PICKER_LINKED_COL), true);
+    expect(!smilesA.getTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG), true);
     // smilesB tag for 'poseX' must be untouched.
-    expect(smilesB.getTag(CHEM_ATOM_PICKER_LINKED_COL), mol3DB.name);
+    expect(smilesB.getTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG), mol3DB.name);
   });
 
   // -------------------------------------------------------------------------

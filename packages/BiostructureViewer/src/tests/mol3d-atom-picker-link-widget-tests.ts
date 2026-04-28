@@ -13,7 +13,7 @@ import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {CHEM_ATOM_PICKER_LINKED_COL} from '../utils/mol3d-link';
+import {CHEM_ATOM_PICKER_LINKED_3D_COL_TAG} from '@datagrok-libraries/chem-meta/src/types';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -110,7 +110,7 @@ category('Mol3DAtomPickerLinkWidget', () => {
   test('initial state — with link, checkbox prechecked', async () => {
     const {smilesCol, mol3DCol} = makeDF();
     // Pre-set a link so the widget opens with checkbox checked.
-    smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_COL, mol3DCol.name);
+    smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG, mol3DCol.name);
 
     const widget = await callWidget(mol3DCol);
     await delay(50);
@@ -135,7 +135,7 @@ category('Mol3DAtomPickerLinkWidget', () => {
 
     // Pre-link smilesB (not smilesA) so we can verify the dropdown reflects
     // the linked col rather than the first one.
-    smilesB.setTag(CHEM_ATOM_PICKER_LINKED_COL, mol3DCol.name);
+    smilesB.setTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG, mol3DCol.name);
 
     const widget = await callWidget(mol3DCol);
     await delay(50);
@@ -167,7 +167,7 @@ category('Mol3DAtomPickerLinkWidget', () => {
 
   test('initial state — dropdown visible when link exists', async () => {
     const {smilesCol, mol3DCol} = makeDF();
-    smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_COL, mol3DCol.name);
+    smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG, mol3DCol.name);
 
     const widget = await callWidget(mol3DCol);
     await delay(50);

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {Fingerprint} from './utils/chem-common';
 
 export const V2000_ATOM_NAME_POS = 30;
@@ -41,22 +42,7 @@ export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove thi
 export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
 export const FIXED_SCALE_TAG = '.%chem-fixed-scale';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
-/** Fired by the 2D atom picker on every selection change. 3D viewers listen
- *  to apply/clear atom highlights. Args: `{column, rowIdx, atoms, persistent, clearAll}`. */
-export const CHEM_INTERACTIVE_SELECTION_EVENT = 'chem-interactive-selection-changed';
 
-/** Tag on a Molecule (SMILES) column linking it to a Molecule3D column.
- *  Value = Mol3D column name. Mirrored in `BiostructureViewer/src/utils/mol3d-link.ts`. */
-export const CHEM_ATOM_PICKER_LINKED_COL = '%chem-atom-picker-linked-col';
-
-/** Reciprocal tag on the Mol3D column pointing back to the linked SMILES column.
- *  Mirrored in `BiostructureViewer/src/utils/mol3d-link.ts`. */
-export const CHEM_ATOM_PICKER_LINKED_SMILES_COL = '%chem-atom-picker-linked-smiles-col';
-
-/** Fired by BiostructureViewer's Molstar viewer on 3D atom hover (reverse bridge).
- *  Args: `{mol3DColumnName, rowIdx, atom3DSerial: number|null, mode: 'preview'|'paint'|'erase'}`.
- *  `atom3DSerial: null` = cursor left the atom; clear the 2D preview. */
-export const CHEM_MOL3D_HOVER_EVENT = 'chem-mol3d-hover-changed';
 export const SCAFFOLD_COL = 'scaffold-col';
 export const SCAFFOLD_COL_SYNC = '%scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';

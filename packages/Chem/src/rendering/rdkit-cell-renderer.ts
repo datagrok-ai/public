@@ -178,24 +178,7 @@ M  END
     this.picker = new AtomPickerController({
       rdKitModule: this.rdKitModule,
       _getCellAtomPositions: this._getCellAtomPositions.bind(this),
-      _clearRendersCache: this._clearRendersCache.bind(this),
     });
-  }
-
-  /** Clears the render cache so the 2D cell fully redraws.
-   *  DG.LruCache has no public `.clear()`, so we zero the backing arrays
-   *  via a narrow cast to unblock GC of canvas-backed ImageData entries. */
-  private _clearRendersCache(): void {
-    const old = this.rendersCache as unknown as {
-      K?: unknown[]; V?: unknown[]; items?: Record<string, number>;
-      size?: number; head?: number; tail?: number;
-    };
-    old.K?.fill(undefined);
-    old.V?.fill(undefined);
-    old.items = {};
-    old.size = 0;
-    this.rendersCache.onItemEvicted = null;
-    this.rendersCache = new DG.LruCache<String, ImageData>();
   }
 
   // -- Test/external accessors for picker state -----------------------------
@@ -214,14 +197,14 @@ M  END
     this.picker._lastHoveredAtom = v;
   }
 
-  private get _previewAtomIdx(): number | null { return this.picker._previewAtomIdx; }
-  private set _previewAtomIdx(v: number | null) { this.picker._previewAtomIdx = v; }
+  private get _previewAtomIdx(): number | null {return this.picker._previewAtomIdx;}
+  private set _previewAtomIdx(v: number | null) {this.picker._previewAtomIdx = v;}
 
-  private get _previewRowIdx(): number { return this.picker._previewRowIdx; }
-  private set _previewRowIdx(v: number) { this.picker._previewRowIdx = v; }
+  private get _previewRowIdx(): number {return this.picker._previewRowIdx;}
+  private set _previewRowIdx(v: number) {this.picker._previewRowIdx = v;}
 
-  private get _previewFrom3D(): boolean { return this.picker._previewFrom3D; }
-  private set _previewFrom3D(v: boolean) { this.picker._previewFrom3D = v; }
+  private get _previewFrom3D(): boolean {return this.picker._previewFrom3D;}
+  private set _previewFrom3D(v: boolean) {this.picker._previewFrom3D = v;}
 
   private _trackHoveredAtom(colName: string, rowIdx: number, atomIdx: number,
     erase?: boolean): boolean {
@@ -468,7 +451,6 @@ M  END
       molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' +
       ((details as any).haveReferenceSmarts || false).toString() + ' || ' + JSON.stringify(substructureObj) + ' || ' + JSON.stringify(renderOptions);
-
     return this.rendersCache.getOrCreate(name, (_: any) => this._rendererGetOrCreate(width, height,
       molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords,
       alignByFirstSubstructure, details, substructureObj, renderOptions));
@@ -561,8 +543,6 @@ M  END
   render(g: any, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
     this.picker.ensureGlobalListeners();
-    // Wire shift-drag once per canvas instance (idempotent via _wiredCanvases).
-    this.picker._attachGridCanvasShiftListener(gridCell);
 
     const molString = gridCell.cell.value;
     if (molString == null || molString === '')
@@ -609,7 +589,8 @@ M  END
       this.highlightByScaffoldCol(g, x, y, w, h, gridCell, cellStyle, colTemp, molString, highlightInfo.scaffolds, renderOpts);
 
     // Pre-warm the atom-positions cache on idle so hover responds instantly.
-    this.picker.warmCacheIfNeeded(gridCell.cell.column, molString, w / r, h / r);
+    if (gridCell.cell && gridCell.cell.dart && gridCell.cell.column)
+      this.picker.warmCacheIfNeeded(gridCell.cell.column, molString, w / r, h / r);
   }
 
   getHighlightTagInfo(colTemp: any, gridCell: DG.GridCell): IHighlightTagInfo {
@@ -720,16 +701,29 @@ M  END
   // Slim shims that delegate to AtomPickerController. State and logic live
   // in `./atom-picker-controller.ts`; the renderer only proxies grid events.
 
-  override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    this.picker.onMouseMove(gridCell, e);
-  }
-
   override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
     this.picker.onMouseLeave(gridCell, e);
   }
 
   override onKeyDown(gridCell: DG.GridCell, e: KeyboardEvent): void {
     this.picker.onKeyDown(gridCell, e);
+  }
+
+  override onClick(gridCell: DG.GridCell<any>, e: MouseEvent): void {
+    this.onMouseDown(gridCell, e);
+  }
+
+  override onMouseDown(gridCell: DG.GridCell<any>, e: MouseEvent): void {
+    this.picker.onMouseDown(gridCell, e);
+  }
+
+  override onMouseUp(gridCell: DG.GridCell<any>, e: MouseEvent): void {
+    e.preventDefault();
+  }
+
+  override onMouseMove(gridCell: DG.GridCell<any>, e: MouseEvent): void {
+    if (e.shiftKey || e.ctrlKey || e.metaKey)
+      this.onMouseDown(gridCell, e);
   }
 
   /**

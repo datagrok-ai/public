@@ -18,9 +18,9 @@ import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {
-  CHEM_INTERACTIVE_SELECTION_EVENT, CHEM_ATOM_PICKER_LINKED_COL,
-  CHEM_MOL3D_HOVER_EVENT,
-} from '../constants';
+  CHEM_ATOM_SELECTION_EVENT, CHEM_ATOM_PICKER_LINKED_3D_COL_TAG,
+  CHEM_MOL3D_SELECTION_EVENT,
+} from '@datagrok-libraries/chem-meta/src/types';
 import {mapAtomIndices2Dto3D, AtomIndexMapping} from '../utils/atom-index-mapper';
 import {findNearestAtom, computeSelectedBonds} from '../utils/chem-atom-picker-utils';
 import {handleMol3DHoverEvent, Mol3DHoverRendererDeps} from './mol3d-hover-handler';
@@ -59,8 +59,6 @@ export interface AtomPickerRendererDeps {
   /** Returns positions/bondAtoms for the cell, populating the cache. */
   _getCellAtomPositions(molString: string, cssWidth: number,
     cssHeight: number): CellInteractiveInfo | null;
-  /** Drops the cached raster so the cell fully repaints with new highlights. */
-  _clearRendersCache(): void;
 }
 
 export class AtomPickerController {
@@ -147,9 +145,9 @@ export class AtomPickerController {
 
   /** Returns the linked Mol3D column name, preferring persistent tags over session temp. */
   _getLinkedMol3DColName(col: DG.Column): string | null {
-    const fromTags = col.tags[CHEM_ATOM_PICKER_LINKED_COL];
+    const fromTags = col.tags[CHEM_ATOM_PICKER_LINKED_3D_COL_TAG];
     if (fromTags) return fromTags;
-    const fromTemp = col.temp?.[CHEM_ATOM_PICKER_LINKED_COL];
+    const fromTemp = col.temp?.[CHEM_ATOM_PICKER_LINKED_3D_COL_TAG];
     return typeof fromTemp === 'string' ? fromTemp : null;
   }
 
@@ -159,7 +157,7 @@ export class AtomPickerController {
   ensureGlobalListeners(): void {
     if (this._globalListenersAttached) return;
     this._globalListenersAttached = true;
-    grok.events.onCustomEvent(CHEM_MOL3D_HOVER_EVENT).subscribe(
+    grok.events.onCustomEvent(CHEM_MOL3D_SELECTION_EVENT).subscribe(
       (args: unknown) => this._onMol3DHoverEvent(args));
   }
 
@@ -169,8 +167,8 @@ export class AtomPickerController {
     const dpr = window.devicePixelRatio || 1;
     const cacheKey = molString + '|' + Math.round(cssW * dpr) + 'x' + Math.round(cssH * dpr);
     if (this.atomPositionsCache.has(cacheKey)) return;
-    (typeof requestIdleCallback === 'function' ? requestIdleCallback : setTimeout)(
-      () => { this.deps._getCellAtomPositions(molString, cssW, cssH); },
+    setTimeout(
+      () => {this.deps._getCellAtomPositions(molString, cssW, cssH);},
     );
   }
 
@@ -211,14 +209,14 @@ export class AtomPickerController {
    * `onMouseLeave` handles preview-clear when the cursor leaves the cell
    * toward a non-molecule column.
    */
-  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+  onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void {
     const col = gridCell.tableColumn;
     if (!col || col.semType !== DG.SEMTYPE.MOLECULE || !this._isPickerActive(col))
       return;
 
     const hit = this._hitTestAtomInCell(gridCell, e);
-    const isErase = e.shiftKey && e.ctrlKey;
-    const isPaint = e.shiftKey && !e.ctrlKey;
+    const isErase = e.shiftKey && (e.ctrlKey || e.metaKey);
+    const isPaint = e.shiftKey && !(e.ctrlKey || e.metaKey);
 
     // -- Shift / Ctrl+Shift: persistent paint/erase mode --
     if (isPaint || isErase) {
@@ -230,8 +228,8 @@ export class AtomPickerController {
         this._removeAtomFromRow(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
       else
         this._addAtomToRow(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
-      this.deps._clearRendersCache();
-      gridCell.grid.invalidate();
+      gridCell.render();
+      e.preventDefault();
       return;
     }
 
@@ -246,11 +244,13 @@ export class AtomPickerController {
     }
 
     const rowIdx = gridCell.tableRowIndex!;
-    if (this._trackHoveredAtom(col.name, rowIdx, hit.nearest)) return;
+    if (this._trackHoveredAtom(col.name, rowIdx, hit.nearest))
+      return;
 
     this._previewFrom3D = false; // 2D hover takes ownership
     this._setPreviewAtom(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
-    gridCell.grid.invalidate();
+    e.preventDefault();
+    gridCell.render();
   }
 
   /** Clears the 2D-sourced preview when the cursor leaves a molecule cell. */
@@ -264,38 +264,10 @@ export class AtomPickerController {
   }
 
   // Cast is safe: Mol3DHoverRendererDeps mirrors this controller's members by
-  // name, plus `_getCellAtomPositions` / `_clearRendersCache` / `rdKitModule`
+  // name, plus `_getCellAtomPositions` / `rdKitModule`
   // exposed via the renderer's shims (the controller's `deps` proxies them).
   _onMol3DHoverEvent(args: unknown): void {
     handleMol3DHoverEvent(this as unknown as Mol3DHoverRendererDeps, args);
-  }
-
-  /**
-   * Attaches capture-phase listeners scoped to the grid's own DOM, idempotent
-   * per canvas instance (tracked via `_wiredCanvases`):
-   * - mousemove on the canvas (gated on `e.shiftKey`): handles shift-drag
-   *   paint/erase — Datagrok captures native row-selection at Dart level and
-   *   bypasses the renderer's `onMouseMove` for shift-moves.
-   * - keydown on `grid.root` (Escape): keyboard events go to the focused
-   *   element and bubble up; `grid.root` catches Escape from any descendant,
-   *   while the renderer's `onKeyDown` only fires when a molecule cell is focused.
-   */
-  _attachGridCanvasShiftListener(gridCell: DG.GridCell): void {
-    let canvas: HTMLCanvasElement | undefined;
-    try { canvas = gridCell.grid.overlay ?? gridCell.grid.canvas; } catch { return; }
-    if (!canvas || this._wiredCanvases.has(canvas)) return;
-    this._wiredCanvases.add(canvas);
-    const grid = gridCell.grid;
-    canvas.addEventListener('mousemove', (e: MouseEvent) => {
-      if (e.shiftKey) this._onShiftDragMouseMove(e);
-    }, true);
-    let gridRoot: HTMLElement | null = null;
-    try { gridRoot = grid.root; } catch { /* fall through */ }
-    if (gridRoot) {
-      gridRoot.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Escape') this._clearPickerSelection(grid);
-      }, true);
-    }
   }
 
   /** Escape when a molecule cell is focused — Datagrok routes the keydown here
@@ -317,14 +289,13 @@ export class AtomPickerController {
     for (const col of molCols) {
       col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = this._getProviders(col)
         .filter((p) => !p.__atomPicker);
-      grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
+      grok.events.fireCustomEvent(CHEM_ATOM_SELECTION_EVENT, {
         column: col, rowIdx: -1, atoms: [], persistent: true, clearAll: true,
       });
     }
     this._lastHoveredAtom = null;
     this._previewAtomIdx = null;
     this._previewFrom3D = false;
-    this.deps._clearRendersCache();
     grid.invalidate();
   }
 
@@ -339,7 +310,7 @@ export class AtomPickerController {
     const grid = grok.shell.tv?.grid;
     if (!grid) return;
     let gridRoot: HTMLElement | null = null;
-    try { gridRoot = grid.root; } catch { return; }
+    try {gridRoot = grid.root;} catch {return;}
     if (!gridRoot) return;
 
     const gridRect = gridRoot.getBoundingClientRect();
@@ -348,7 +319,7 @@ export class AtomPickerController {
     if (localX < 0 || localY < 0 || localX > gridRect.width || localY > gridRect.height) return;
 
     let gridCell: DG.GridCell | null = null;
-    try { gridCell = grid.hitTest(localX, localY); } catch { return; }
+    try {gridCell = grid.hitTest(localX, localY);} catch {return;}
     const col = gridCell?.tableColumn;
     if (!gridCell || !col || col.semType !== DG.SEMTYPE.MOLECULE) return;
     if (!this._isPickerActive(col)) return;
@@ -377,7 +348,6 @@ export class AtomPickerController {
     else
       this._addAtomToRow(col, rowIdx, nearest, cellInfo.bondAtoms);
 
-    this.deps._clearRendersCache();
     grid.invalidate();
   }
 
@@ -420,9 +390,8 @@ export class AtomPickerController {
       };
     }
 
-    this.deps._clearRendersCache();
     const atoms = prov.__atoms.size > 0 ? [...prov.__atoms] : [];
-    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT,
+    grok.events.fireCustomEvent(CHEM_ATOM_SELECTION_EVENT,
       this._buildSelectionEvent(col, rowIdx, atoms));
   }
 
@@ -470,7 +439,7 @@ export class AtomPickerController {
       molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = this._getProviders(molCol)
         .filter((p) => !p.__atomPicker || p.__rowIdx !== prevRow);
       // Fire event to clear 3D highlights too (non-persistent).
-      grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
+      grok.events.fireCustomEvent(CHEM_ATOM_SELECTION_EVENT, {
         column: molCol, rowIdx: prevRow, atoms: [], persistent: false,
       });
     }
@@ -518,7 +487,7 @@ export class AtomPickerController {
     addSubstructProvider(col.temp, provider);
 
     if (fire3DEvent) {
-      grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT,
+      grok.events.fireCustomEvent(CHEM_ATOM_SELECTION_EVENT,
         this._buildSelectionEvent(col, rowIdx, atomsArr, persistent));
     }
   }
@@ -528,12 +497,10 @@ export class AtomPickerController {
   // three renderer-owned hooks below; we proxy them so `this as unknown as
   // Mol3DHoverRendererDeps` is sound without forcing a wider deps interface.
 
-  get rdKitModule(): RDModule { return this.deps.rdKitModule; }
+  get rdKitModule(): RDModule {return this.deps.rdKitModule;}
 
   _getCellAtomPositions(molString: string, cssWidth: number, cssHeight: number):
       CellInteractiveInfo | null {
     return this.deps._getCellAtomPositions(molString, cssWidth, cssHeight);
   }
-
-  _clearRendersCache(): void { this.deps._clearRendersCache(); }
 }

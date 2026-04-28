@@ -24,7 +24,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 
-import {CHEM_MOL3D_HOVER_EVENT, CHEM_ATOM_PICKER_LINKED_COL} from '../constants';
+import {CHEM_MOL3D_SELECTION_EVENT, CHEM_ATOM_PICKER_LINKED_3D_COL_TAG} from '@datagrok-libraries/chem-meta/src/types';
 import {awaitGrid} from './utils';
 
 // ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ category('atom picker: 3D hover', () => {
     df.name = 'atom-picker-3d-hover-test';
 
     // Activate the picker by setting the link tag on the SMILES column.
-    smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_COL, mol3DCol.name);
+    smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG, mol3DCol.name);
 
     view = grok.shell.addTableView(df);
     df.currentRowIdx = 0;
@@ -99,7 +99,7 @@ category('atom picker: 3D hover', () => {
     mol3DColumnName?: string, rowIdx?: number,
     atom3DSerial?: number | null, mode?: 'preview' | 'paint' | 'erase',
   }): Promise<void> {
-    grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, {
+    grok.events.fireCustomEvent(CHEM_MOL3D_SELECTION_EVENT, {
       mol3DColumnName: mol3DCol.name,
       rowIdx: 0,
       mode: 'preview',

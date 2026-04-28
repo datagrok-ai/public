@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /**
  * SMILES↔Molecule3D column link helpers for the Chem atom-picker bridge.
  * The link is a reciprocal pair of persistent column tags:
@@ -8,21 +9,9 @@
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-
+import {CHEM_ATOM_PICKER_LINKED_3D_COL_TAG, CHEM_ATOM_PICKER_LINKED_SMILES_COL, CHEM_ATOM_SELECTION_EVENT} from '@datagrok-libraries/chem-meta/src/types';
+import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {_package} from '../package';
-
-/** Mirrors CHEM_ATOM_PICKER_LINKED_COL from Chem's constants.ts.
- *  Duplicated to avoid a cross-package import; keep string values in sync. */
-export const CHEM_ATOM_PICKER_LINKED_COL = '%chem-atom-picker-linked-col';
-
-/** Mirrors CHEM_ATOM_PICKER_LINKED_SMILES_COL from Chem's constants.ts. */
-export const CHEM_ATOM_PICKER_LINKED_SMILES_COL = '%chem-atom-picker-linked-smiles-col';
-
-/** Mirrors CHEM_INTERACTIVE_SELECTION_EVENT from Chem's constants.ts. */
-const CHEM_SELECTION_EVENT = 'chem-interactive-selection-changed';
-
-/** Mirrors ChemTemps.SUBSTRUCT_PROVIDERS from @datagrok-libraries/chem-meta. */
-const SUBSTRUCT_PROVIDERS_KEY = 'substruct-providers';
 
 /** Returns the SMILES column name linked to the given Mol3D column, or null.
  *  O(1) via the reciprocal tag on the Mol3D column; falls back to O(n) scan
@@ -35,7 +24,7 @@ export function findLinkedSmilesColName(
     if (reciprocal && df.col(reciprocal)) return reciprocal;
   }
   const c = df.columns.toList().find(
-    (col) => col.tags[CHEM_ATOM_PICKER_LINKED_COL] === mol3DColName);
+    (col) => col.tags[CHEM_ATOM_PICKER_LINKED_3D_COL_TAG] === mol3DColName);
   return c?.name ?? null;
 }
 
@@ -43,8 +32,8 @@ export function findLinkedSmilesColName(
 export function clearLinksToMol3D(
   df: DG.DataFrame, mol3DColName: string): void {
   for (const c of df.columns.toList()) {
-    if (c.tags[CHEM_ATOM_PICKER_LINKED_COL] === mol3DColName) {
-      delete c.tags[CHEM_ATOM_PICKER_LINKED_COL];
+    if (c.tags[CHEM_ATOM_PICKER_LINKED_3D_COL_TAG] === mol3DColName) {
+      delete c.tags[CHEM_ATOM_PICKER_LINKED_3D_COL_TAG];
       clearAtomPickerHighlights(c);
     }
   }
@@ -58,20 +47,20 @@ export function clearLinksToMol3D(
 export function setSmilesColLink(
   smilesCol: DG.Column, mol3DColName: string | null): void {
   const df = smilesCol.dataFrame;
-  const prevMol3DName = smilesCol.tags[CHEM_ATOM_PICKER_LINKED_COL];
+  const prevMol3DName = smilesCol.tags[CHEM_ATOM_PICKER_LINKED_3D_COL_TAG];
   const prevMol3DCol = prevMol3DName && df ? df.col(prevMol3DName) : null;
   if (prevMol3DCol && prevMol3DCol.name !== mol3DColName &&
       prevMol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL])
     delete prevMol3DCol.tags[CHEM_ATOM_PICKER_LINKED_SMILES_COL];
 
   if (!mol3DColName) {
-    if (smilesCol.tags[CHEM_ATOM_PICKER_LINKED_COL])
-      delete smilesCol.tags[CHEM_ATOM_PICKER_LINKED_COL];
+    if (smilesCol.tags[CHEM_ATOM_PICKER_LINKED_3D_COL_TAG])
+      delete smilesCol.tags[CHEM_ATOM_PICKER_LINKED_3D_COL_TAG];
     clearAtomPickerHighlights(smilesCol);
     return;
   }
 
-  smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_COL, mol3DColName);
+  smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG, mol3DColName);
   const mol3DCol = df?.col(mol3DColName);
   if (mol3DCol)
     mol3DCol.setTag(CHEM_ATOM_PICKER_LINKED_SMILES_COL, smilesCol.name);
@@ -80,13 +69,13 @@ export function setSmilesColLink(
 /** Strips picker providers, fires clear-all event, and invalidates the grid. */
 export function clearAtomPickerHighlights(smilesCol: DG.Column): void {
   try {
-    const providers = (smilesCol.temp?.[SUBSTRUCT_PROVIDERS_KEY] ?? []) as
+    const providers = (smilesCol.temp?.[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as
       Array<{__atomPicker?: boolean}>;
     if (providers.length > 0) {
-      smilesCol.temp[SUBSTRUCT_PROVIDERS_KEY] = providers.filter(
+      smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = providers.filter(
         (p) => !p.__atomPicker);
     }
-    grok.events.fireCustomEvent(CHEM_SELECTION_EVENT, {
+    grok.events.fireCustomEvent(CHEM_ATOM_SELECTION_EVENT, {
       column: smilesCol, rowIdx: -1, atoms: [],
       persistent: true, clearAll: true,
     });

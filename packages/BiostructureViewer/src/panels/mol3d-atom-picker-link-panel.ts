@@ -31,8 +31,8 @@ export function getMol3DAtomPickerLinkWidget(mol3DCol: DG.Column): DG.Widget {
     value: currentLinkedSmiles ?? null,
     items: smilesNames,
     nullable: true,
+    tooltipText: 'Enable interactive atom highlighting between this 3D pose column and a 2D SMILES column.',
     onValueChanged: (newName) => {
-      if (!enableInput.value) return;
       if (!newName) {
         clearLinksToMol3D(df, mol3DCol.name);
         df.fireValuesChanged();
@@ -46,23 +46,7 @@ export function getMol3DAtomPickerLinkWidget(mol3DCol: DG.Column): DG.Widget {
     },
   });
   const choiceWrap = ui.div([choiceInput.root]);
-  choiceWrap.style.display = currentLinkedSmiles ? '' : 'none';
+  // choiceWrap.style.display = currentLinkedSmiles ? '' : 'none';
 
-  const enableInput = ui.input.bool('Link SMILES column', {
-    value: currentLinkedSmiles !== null,
-    onValueChanged: (checked) => {
-      if (checked) {
-        choiceWrap.style.display = '';
-      } else {
-        clearLinksToMol3D(df, mol3DCol.name);
-        choiceInput.value = null;
-        choiceWrap.style.display = 'none';
-        df.fireValuesChanged();
-      }
-    },
-  });
-  enableInput.setTooltip(
-    'Enable interactive atom highlighting between this 3D pose column and a 2D SMILES column.');
-
-  return new DG.Widget(ui.divV([enableInput.root, choiceWrap]));
+  return new DG.Widget(ui.divV([choiceWrap]));
 }

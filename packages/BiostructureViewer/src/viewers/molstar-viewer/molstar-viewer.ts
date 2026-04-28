@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -40,9 +41,10 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData} from './molstar-viewer-open';
 import {
-  CHEM_MOL3D_HOVER_EVENT, CHEM_SELECTION_EVENT, ChemSelectionEventArgs,
   SelectionCacheEntry, selectionCacheKey,
 } from './molstar-highlight-utils';
+import {CHEM_MOL3D_SELECTION_EVENT, CHEM_ATOM_SELECTION_EVENT, ChemSelectionEventArgs,}
+  from '@datagrok-libraries/chem-meta/src/types';
 import {MolstarHighlightController} from './molstar-highlight-controller';
 import {defaults, molecule3dFileExtensions} from './consts';
 import {createRcsbViewer, disposeRcsbViewer} from './utils';
@@ -357,8 +359,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private static _initSelectionCache(): void {
     if (MolstarViewer._selectionSubscribed) return;
     MolstarViewer._selectionSubscribed = true;
-    grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
-      .subscribe((_args: unknown) => {
+    grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
+      .subscribe((_args: ChemSelectionEventArgs) => {
         const {
           rowIdx = -1, atoms = [], persistent, clearAll, mapping3D, column,
         } = (_args as ChemSelectionEventArgs) ?? {};
@@ -369,9 +371,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         const colName = col?.name ?? '';
         _package.logger.debug(
           `[molstar-picker] caching selection event atomsLen=${atoms.length} rowIdx=${rowIdx}`);
-        if (clearAll) {
+        if (clearAll)
           MolstarViewer.selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
-        } else {
+        else {
           const key = selectionCacheKey(dfId, dfName, colName, rowIdx);
           MolstarViewer.selectionCache.set(key, {
             atoms, mapping3D: atoms.length > 0 ? (mapping3D ?? null) : null,
@@ -968,17 +970,17 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
       // Instance-level subscription: apply highlights in real-time while the viewer is alive.
       // _initSelectionCache handles caching for replay (fires once per process).
-      this.viewSubs.push(grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
-        .subscribe((_args: unknown) => {
+      this.viewSubs.push(grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
+        .subscribe((_args: ChemSelectionEventArgs) => {
           const {rowIdx = -1, atoms = [], mapping3D = null, persistent} =
-            (_args ?? {}) as ChemSelectionEventArgs;
+            (_args ?? {});
           try {
             this.logger.debug(
               `[molstar-picker] live highlight atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${persistent}`);
             this.highlightController.highlightAllLigandAtoms({rowIdx, atoms, mapping3D});
           } catch (err: unknown) {
             this.logger.error(
-              `${CHEM_SELECTION_EVENT} handler failed: ${err instanceof Error ? err.message : String(err)}`);
+              `${CHEM_ATOM_SELECTION_EVENT} handler failed: ${err instanceof Error ? err.message : String(err)}`);
           }
         }));
 
@@ -1044,7 +1046,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
               this.highlightController.fireMol3DHover(rowIdx, atomSerial, mode);
             } catch (err: unknown) {
               this.logger.error(
-                `${CHEM_MOL3D_HOVER_EVENT} emit failed: ${err instanceof Error ? err.message : String(err)}`);
+                `${CHEM_MOL3D_SELECTION_EVENT} emit failed: ${err instanceof Error ? err.message : String(err)}`);
             }
           },
         ));
@@ -1631,7 +1633,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   showStructure(data: Molecule3DData) {
     throw new Error('Not implemented');
   }
-
 }
 
 /** margin indent */

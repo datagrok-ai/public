@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 
-import {CHEM_INTERACTIVE_SELECTION_EVENT, CHEM_ATOM_PICKER_LINKED_COL} from '../constants';
+import {CHEM_ATOM_SELECTION_EVENT, CHEM_ATOM_PICKER_LINKED_3D_COL_TAG} from '@datagrok-libraries/chem-meta/src/types';
 import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
 import {awaitGrid} from './utils';
 
@@ -37,7 +37,7 @@ function makeLinkedDF(): {df: DG.DataFrame; smilesCol: DG.Column; mol3DCol: DG.C
   const mol3DCol = DG.Column.fromStrings('pose3D', ['', '']);
   mol3DCol.semType = DG.SEMTYPE.MOLECULE3D;
   const df = DG.DataFrame.fromColumns([smilesCol, mol3DCol]);
-  smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_COL, mol3DCol.name);
+  smilesCol.setTag(CHEM_ATOM_PICKER_LINKED_3D_COL_TAG, mol3DCol.name);
   return {df, smilesCol, mol3DCol};
 }
 
@@ -112,7 +112,7 @@ category('atom picker: escape', () => {
     const renderer = new RDKitCellRenderer(rdkitModule) as unknown as RDKitCellRendererInternals;
 
     let received: any = null;
-    const sub = grok.events.onCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT)
+    const sub = grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
       .subscribe((args: any) => {received = args;});
 
     const view = grok.shell.addTableView(df);

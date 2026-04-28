@@ -1,3 +1,4 @@
+/* eslint-disable new-cap */
 /**
  * Controller for the 2D↔3D atom-highlighting bridge, extracted from molstar-viewer.ts.
  * Reads viewer state through the narrow HighlightHost interface to avoid a
@@ -20,9 +21,9 @@ import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {
-  AtomMapping3D, CHEM_MOL3D_HOVER_EVENT, Mol3DHoverEventArgs,
   computeSerials, selectionCacheKey,
 } from './molstar-highlight-utils';
+import {AtomMapping3D, CHEM_MOL3D_SELECTION_EVENT, Mol3DHoverEventArgs} from '@datagrok-libraries/chem-meta/src/types';
 import {MolstarViewer, type LigandMap} from './molstar-viewer';
 
 /** Narrow view of `MolstarViewer` that the highlight controller needs. */
@@ -70,7 +71,7 @@ export class MolstarHighlightController {
       mol3DColumnName: this.host.getLigandColumnName()!,
       rowIdx, atom3DSerial: atomSerial, mode,
     };
-    grok.events.fireCustomEvent(CHEM_MOL3D_HOVER_EVENT, args);
+    grok.events.fireCustomEvent(CHEM_MOL3D_SELECTION_EVENT, args);
   }
 
   // -- Replay after viewer rebuilds ------------------------------------------

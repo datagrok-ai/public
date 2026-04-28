@@ -2,7 +2,7 @@ import {before, category, expect, test} from '@datagrok-libraries/test/src/test'
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {CHEM_ATOM_PICKER_LINKED_COL} from '../constants';
+import {CHEM_ATOM_PICKER_LINKED_3D_COL_TAG} from '@datagrok-libraries/chem-meta/src/types';
 import {GridCellRendererProxy, RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
 
 /** Test-only structural alias for private hover state on RDKitCellRenderer.
@@ -94,7 +94,7 @@ category('renderer hover', () => {
 
     const col = DG.Column.fromStrings('smiles', ['CCO']);
     col.semType = DG.SEMTYPE.MOLECULE;
-    col.tags[CHEM_ATOM_PICKER_LINKED_COL] = 'pose3D';
+    col.tags[CHEM_ATOM_PICKER_LINKED_3D_COL_TAG] = 'pose3D';
 
     const fakeGc = {tableColumn: col} as unknown as DG.GridCell;
     const fakeMe = {} as MouseEvent;
