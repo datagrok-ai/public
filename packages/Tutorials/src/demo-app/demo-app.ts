@@ -54,8 +54,10 @@ export class DemoView extends DG.ViewBase {
       node.container.containerElement.getElementsByClassName('document-manager').length > 0)[0];
     const updateIndicatorRoot = dockNode.container.containerElement.getElementsByClassName('tab-content')[0] as HTMLElement;
 
-    this.currentView?.close();
+    this._closePrevDemoViews();
     this.currentView = null;
+
+    const viewsBefore = new Set<DG.View>(Array.from(grok.shell.views));
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
@@ -80,6 +82,7 @@ export class DemoView extends DG.ViewBase {
         this.currentView = v;
         v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
       } finally {
+        this._tagNewDemoViews(viewsBefore, func.name);
         ui.setUpdateIndicator(updateIndicatorRoot, false);
       }
     } else {
@@ -94,6 +97,7 @@ export class DemoView extends DG.ViewBase {
           await grok.data.detectSemanticTypes(grok.shell.tv.dataFrame);
         this._initWindowOptions();
       } finally {
+        this._tagNewDemoViews(viewsBefore, func.name);
         grok.shell.windows.autoShowToolbox = prevAutoShowToolbox;
         ui.setUpdateIndicator(updateIndicatorRoot, false);
       }
@@ -103,6 +107,25 @@ export class DemoView extends DG.ViewBase {
         grok.shell.v.name = splitViewPath[splitViewPath.length - 1].trim();
         grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
         this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
+      }
+    }
+  }
+
+  private _closePrevDemoViews(): void {
+    const toClose = Array.from(grok.shell.views).filter((v) => v.temp?.['demoApp']);
+    for (const v of toClose) {
+      try {
+        v.close();
+      } catch (_) {}
+    }
+  }
+
+  private _tagNewDemoViews(viewsBefore: Set<DG.View>, funcName: string): void {
+    for (const v of grok.shell.views) {
+      if (!viewsBefore.has(v)) {
+        try {
+          v.temp['demoApp'] = funcName;
+        } catch (_) {}
       }
     }
   }

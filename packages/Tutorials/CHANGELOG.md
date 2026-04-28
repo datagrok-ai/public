@@ -3,6 +3,7 @@
 ## v.next
 
 * Demo app: Always clear the "Updating..." overlay when a demo finishes — moved `setUpdateIndicator(false)` into a `finally` so a failing demo no longer leaves the indicator covering the home page
+* Demo app: Fixed view leak when reopening a multi-table demo (e.g. Table Linking) — newly opened views are tagged via `view.temp['demoApp']` and all of them are closed on the next demo switch, instead of only `currentView`
 
 ## 1.11.2 (2026-04-10)
 
