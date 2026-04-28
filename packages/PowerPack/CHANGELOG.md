@@ -1,20 +1,10 @@
 # Power Pack changelog
 
-## v.next
-
-* GROK-20036: Formula Lines dialog: Added `selectId` parameter to focus the dialog on a specific item by id when opened
-* GROK-20036: Formula Lines dialog: Added density plot host support (preview reads `xColumnName`/`yColumnName` from the source viewer)
-* GROK-20036: Formula Lines dialog: Added box plot host support (single-axis preview, popup limited to horizontal lines/bands, validator allows constant-RHS formulas, column picker restricted to the value column)
-* GROK-20036: Formula Lines dialog: Added histogram host support (single-axis preview on X, popup limited to vertical lines/bands, column picker restricted to the value column)
-* GROK-20036: Formula Lines dialog: Added bar chart host support (orientation-aware preview and popup — vertical bars get horizontal lines/bands, horizontal bars get vertical lines/bands)
-* GROK-20036: Fixed empty scatter preview in formula-lines dialog for box plot, histogram, and bar chart hosts
-* GROK-20036: Formula Lines dialog now uses the matching host viewer type (box plot / histogram / bar chart / density plot) as the preview, instead of always falling back to scatter plot
-* GROK-20036: Hid range slider / split selector and disabled filtering on the histogram preview, hid color scale and bin selector on density plot, hid color selector on box plot, hid stack selector on bar chart
-
 ## 1.8.1 ()
 
 * Activity Dashboard: Reduced Spotlight tab load time by fetching entities server-side in parallel with SQL, and progressively rendering the Recent section
 * GROK-19613: Add New Column dialog: Fixed duplicate scrollbars appearing on the column and function list panels when the dialog is resized
+* GROK-20036: Formula Lines dialog: Added host support for box plot, histogram, bar chart, and density plot (matching preview viewer type, orientation-aware popup items, restricted column pickers) and fixed assorted preview, axis-context-menu, and band/region defaults issues
 
 ## 1.8.0 (2026-03-13)
 
