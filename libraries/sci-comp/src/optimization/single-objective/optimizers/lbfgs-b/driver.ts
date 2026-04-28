@@ -68,6 +68,13 @@ export function runSync(
   const stepS = new Float64Array(n);
   const stepY = new Float64Array(n);
   const bestX = new Float64Array(n);
+  // Snapshot of (x, f, g) at the start of each iteration; restored
+  // before a memory-reset retry so recovery starts from the same
+  // point that produced the failed step. Mirrors Fortran v3.0
+  // RESTART_FROM_LNSRCH semantics.
+  const xSave = new Float64Array(n);
+  const gSave = new Float64Array(n);
+  let fSave = 0;
 
   project(x, lower, upper, nbd, x);
 
@@ -127,10 +134,18 @@ export function runSync(
   while (iteration < maxIter) {
     if (fEvalCount >= maxFEval) break;
 
+    // Snapshot (x, f, g) for memory-reset retry. Cauchy itself does
+    // not write into x/g, but keeping the snapshot here makes the
+    // retry contract uniform across all recovery points.
+    xSave.set(x);
+    gSave.set(g);
+    fSave = fCur;
+
     // ---- (a) Cauchy ------------------------------------------------
     const cr = cauchyPoint(x, g, lower, upper, nbd, mat, cauchy);
     if (!cr.ok) {
       if (mat.col === 0) break;
+      x.set(xSave); g.set(gSave); fCur = fSave;
       mat.reset();
       continue;
     }
@@ -202,6 +217,7 @@ export function runSync(
 
     if (!lsResult.ok) {
       if (retriedMemReset || mat.col === 0) break;
+      x.set(xSave); g.set(gSave); fCur = fSave;
       mat.reset();
       retriedMemReset = true;
       continue;
@@ -325,6 +341,10 @@ export async function runAsync(
   const stepS = new Float64Array(n);
   const stepY = new Float64Array(n);
   const bestX = new Float64Array(n);
+  // Snapshot — see runSync comment.
+  const xSave = new Float64Array(n);
+  const gSave = new Float64Array(n);
+  let fSave = 0;
 
   project(x, lower, upper, nbd, x);
 
@@ -384,9 +404,15 @@ export async function runAsync(
   while (iteration < maxIter) {
     if (fEvalCount >= maxFEval) break;
 
+    // Snapshot — see runSync.
+    xSave.set(x);
+    gSave.set(g);
+    fSave = fCur;
+
     const cr = cauchyPoint(x, g, lower, upper, nbd, mat, cauchy);
     if (!cr.ok) {
       if (mat.col === 0) break;
+      x.set(xSave); g.set(gSave); fCur = fSave;
       mat.reset();
       continue;
     }
@@ -445,6 +471,7 @@ export async function runAsync(
 
     if (!lsResult.ok) {
       if (retriedMemReset || mat.col === 0) break;
+      x.set(xSave); g.set(gSave); fCur = fSave;
       mat.reset();
       retriedMemReset = true;
       continue;
