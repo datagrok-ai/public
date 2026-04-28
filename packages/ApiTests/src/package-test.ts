@@ -57,6 +57,7 @@ import './valuematcher/valuematcher';
 import './property/property';
 import './widgets/input-form';
 import './utils/progressIndicator';
+import './ai/ai-tests';
 
 import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 
