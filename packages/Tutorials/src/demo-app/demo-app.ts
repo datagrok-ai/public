@@ -59,26 +59,29 @@ export class DemoView extends DG.ViewBase {
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
-      const pathElements = viewPath.split('|').map((s) => s.trim());
-      const v = DG.View.create('demo-app-script-view');
-      v.name = pathElements[pathElements.length - 1];
-      v.appendAll([ui.panel([
-        ui.h1(pathElements[pathElements.length - 1]),
-        ui.divText(func.description),
-        ui.bigButton('Start', async () => {
-          try {
-            await func.apply();
-          } catch (e) {
-            console.error(e);
-          } finally {
-            this.tree.rootNode.root.focus();
-          }
-        })
-      ])]);
-      grok.shell.addView(v);
-      this.currentView = v;
-      v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
-      ui.setUpdateIndicator(updateIndicatorRoot, false);
+      try {
+        const pathElements = viewPath.split('|').map((s) => s.trim());
+        const v = DG.View.create('demo-app-script-view');
+        v.name = pathElements[pathElements.length - 1];
+        v.appendAll([ui.panel([
+          ui.h1(pathElements[pathElements.length - 1]),
+          ui.divText(func.description),
+          ui.bigButton('Start', async () => {
+            try {
+              await func.apply();
+            } catch (e) {
+              console.error(e);
+            } finally {
+              this.tree.rootNode.root.focus();
+            }
+          })
+        ])]);
+        grok.shell.addView(v);
+        this.currentView = v;
+        v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
+      } finally {
+        ui.setUpdateIndicator(updateIndicatorRoot, false);
+      }
     } else {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
       const prevAutoShowToolbox = grok.shell.windows.autoShowToolbox;
@@ -92,10 +95,10 @@ export class DemoView extends DG.ViewBase {
         this._initWindowOptions();
       } finally {
         grok.shell.windows.autoShowToolbox = prevAutoShowToolbox;
+        ui.setUpdateIndicator(updateIndicatorRoot, false);
       }
       this.tree.rootNode.root.focus();
       this._guardTreeFocus();
-      ui.setUpdateIndicator(updateIndicatorRoot, false);
       if (grok.shell.v !== viewBeforeApply) {
         grok.shell.v.name = splitViewPath[splitViewPath.length - 1].trim();
         grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;

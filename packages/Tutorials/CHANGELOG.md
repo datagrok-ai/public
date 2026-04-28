@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## v.next
+
+* Demo app: Always clear the "Updating..." overlay when a demo finishes — moved `setUpdateIndicator(false)` into a `finally` so a failing demo no longer leaves the indicator covering the home page
+
 ## 1.11.2 (2026-04-10)
 
 * Added demo image for Retrosynthesis
