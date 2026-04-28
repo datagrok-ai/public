@@ -30,7 +30,7 @@ src/optimization/
         bfgs-mat.ts               # BFGSMat compact representation (ring buffer, W-products, block Cholesky, solveM)
         bounds.ts                 # normalizeBounds, classifyBounds, project, projectedGradient, maxFeasibleStep
         cauchy.ts                 # Generalized Cauchy point + binary min-heap
-        subspace.ts               # Subspace minimisation (SMW direct primal) + Morales–Nocedal 2011 project+backtrack
+        subspace.ts               # Subspace minimisation (SMW direct primal) + Morales–Nocedal 2011 project + angle-test endpoint, 1997 truncation as fallback
     __tests__/                    # Jest tests per optimizer + registry (sync & async)
       helpers.ts                  # Test utilities: rosenbrock, sphere, gaussian, quadratic3d, etc.
       lbfgs-b.test.ts             # Scaffold + settings validation

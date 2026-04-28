@@ -1,6 +1,6 @@
 /**
- * Subspace minimisation for L-BFGS-B, with the Morales–Nocedal (2011)
- * project-and-backtrack refinement.
+ * Subspace minimisation for L-BFGS-B with the Morales–Nocedal (2011)
+ * project-and-angle-test refinement.
  *
  * Given the Cauchy point `xᶜ` and free set `F = {i : lᵢ < xᶜᵢ < uᵢ}`,
  * we approximately solve
@@ -21,17 +21,41 @@
  * The 2m×2m middle matrix is factored by LU with partial pivoting
  * (it is not generally SPD).
  *
- * Morales–Nocedal 2011 fix: if `xᶜ + Z d̄ᵘ` violates a bound, instead
- * of truncating along the straight line (the 1997 code) we project
- * and backtrack in λ ∈ {1, ½, ¼, …} until the quadratic model
- * strictly decreases. If no backtrack succeeds we fall back to `xᶜ`.
+ * Endpoint selection (Morales–Nocedal 2011, `c-jlm-jn` block in
+ * `subsm.f`):
+ *   1. Form the unconstrained Newton-like point `x̂ = xᶜ + Z d̄ᵘ`.
+ *   2. Project once onto the box: `x̄ = P_{[l, u]}(x̂)`.
+ *   3. Form the direction back to the iterate: `d_k = x̄ − x_k`.
+ *   4. **Angle test** on the true gradient:
+ *         `gₖᵀ d_k ≤ −η · ‖d_k‖ · ‖gₖ‖`.
+ *      If passing, return `xHat = x̄`; the outer-loop line search
+ *      then operates on `d = xHat − x_k`.
+ *   5. **Truncation fallback** (1997 scheme): otherwise find the
+ *      maximum `α ∈ (0, 1]` such that `x_k + α(x̂ − x_k)` stays
+ *      feasible, and return that point. If `α = 0`, fall back to xᶜ.
+ *
+ * The 1997 code truncated unconditionally and the 2011 paper showed
+ * that path can produce a search direction `d` that is nearly
+ * orthogonal to `−g`, stalling the outer line search. The angle
+ * test prefers the projected point whenever it is meaningfully
+ * descending and only falls back to truncation when it is not.
  *
  * References:
  *  - Byrd, Lu, Nocedal, Zhu (1995) §5.
- *  - Morales, Nocedal (2011) — the `c-jlm-jn` fix in `subsm.f`.
+ *  - Zhu, Byrd, Lu, Nocedal (1997) — Algorithm 778.
+ *  - Morales, Nocedal (2011) — Remark on Algorithm 778 (the
+ *    `c-jlm-jn` fix in `subsm.f`).
  */
 import {BOUND_LOWER, BOUND_BOTH, BOUND_UPPER} from './types';
 import type {BFGSMat} from './bfgs-mat';
+
+/**
+ * Strong-descent / angle-test threshold from `subsm.f`. The
+ * projected endpoint is preferred when its direction back to xₖ
+ * makes an angle with `−gₖ` whose cosine is at least η. Calibrated
+ * against bounded-benchmarks; see specs-n-plans/lbfgs-b-baseline.
+ */
+const ETA = 1e-2;
 
 /* ================================================================== */
 /*  Workspace                                                          */
@@ -156,46 +180,18 @@ function luSolveInPlace(
 }
 
 /* ================================================================== */
-/*  Model evaluation helper                                            */
-/* ================================================================== */
-
-/**
- * Compute `Δm = m_k(point) − m_k(ref)` using
- *   Δm = δᵀ(g + B z) + ½ δᵀ B δ,
- *   δ = point − ref,   z = ref − xₖ.
- *
- * `bz = B z` and `h = g + B z` must be precomputed by the caller.
- */
-function modelDelta(
-  point: Float64Array,
-  ref: Float64Array,
-  h: Float64Array,
-  mat: BFGSMat,
-  ws: SubspaceWorkspace,
-): number {
-  const n = point.length;
-  const {delta, bDelta, scratch2m, scratchN} = ws;
-  for (let i = 0; i < n; i++) delta[i] = point[i] - ref[i];
-  mat.applyB(delta, bDelta, scratch2m, scratchN);
-  let dot1 = 0;
-  let dot2 = 0;
-  for (let i = 0; i < n; i++) {
-    dot1 += delta[i] * h[i];
-    dot2 += delta[i] * bDelta[i];
-  }
-  return dot1 + 0.5 * dot2;
-}
-
-/* ================================================================== */
 /*  Subspace minimisation                                              */
 /* ================================================================== */
 
 /**
  * Run subspace minimisation from `(xᶜ, c)` produced by the Cauchy sweep.
  *
- * On success writes the refined candidate into `ws.xHat`. If the
- * unconstrained subspace minimiser is infeasible and no backtrack
- * produces descent, `xHat` is set to `xᶜ` and `improved = false`.
+ * On success writes the refined candidate into `ws.xHat`. The
+ * endpoint selection follows Morales–Nocedal 2011: project the
+ * unconstrained Newton-like point onto the box and prefer it as
+ * long as the angle test on the true gradient passes; otherwise
+ * fall back to the 1997 line-truncation scheme along `xₖ → x̂`. If
+ * truncation gives `α = 0`, `xHat` is set to `xᶜ` and `improved = false`.
  */
 export function subspaceMin(
   x: Float64Array,
@@ -209,7 +205,6 @@ export function subspaceMin(
   freeCount: number,
   mat: BFGSMat,
   ws: SubspaceWorkspace,
-  maxBacktrack = 20,
 ): SubspaceResult {
   const n = x.length;
   const col = mat.col;
@@ -223,8 +218,12 @@ export function subspaceMin(
   // Nothing to refine: no free variables or no stored pairs.
   if (t === 0 || col === 0) return {improved: false};
 
-  const {r, du, xHat, mc, nr, mnr, v, nntCol, kmat, piv, wMc, h, bz,
-    scratch2m: sm2, scratchN: smN} = ws;
+  const {r, du, xHat, mc, nr, mnr, v, nntCol, kmat, piv, wMc} = ws;
+  // Reuse existing n-sized scratches (delta, bDelta) for the new
+  // endpoint-selection logic; the old Morales–Nocedal backtrack
+  // helpers are no longer used.
+  const xHatFull = ws.delta;
+  const xBar = ws.bDelta;
 
   // ---- (1) Reduced gradient r̄ᶜ on free coords ---------------------
   for (let k = 0; k < twoCol; k++) mc[k] = c[k];
@@ -293,49 +292,61 @@ export function subspaceMin(
     du[i] = -r[k] / theta - nTv / (theta * theta);
   }
 
-  // ---- (7) Try the unconstrained subspace step ---------------------
-  let feasible = true;
+  // ---- (7) Form the unconstrained Newton-like point xHatFull = xc + du.
+  //          On non-free coords du is zero, so xHatFull[i] = xc[i] there.
+  for (let i = 0; i < n; i++) xHatFull[i] = xc[i] + du[i];
+
+  // ---- (8) Project once onto [l, u].
   for (let i = 0; i < n; i++) {
-    xHat[i] = xc[i] + du[i];
+    let xi = xHatFull[i];
     const code = nbd[i];
-    if (code === BOUND_LOWER || code === BOUND_BOTH)
-      if (xHat[i] < lower[i]) {feasible = false; break;}
-
-    if (code === BOUND_UPPER || code === BOUND_BOTH)
-      if (xHat[i] > upper[i]) {feasible = false; break;}
+    if ((code === BOUND_LOWER || code === BOUND_BOTH) && xi < lower[i]) xi = lower[i];
+    if ((code === BOUND_UPPER || code === BOUND_BOTH) && xi > upper[i]) xi = upper[i];
+    xBar[i] = xi;
   }
-  if (feasible) return {improved: true};
 
-  // ---- (8) Morales–Nocedal backtrack -------------------------------
-  // Precompute h = g + B·z where z = xc − x_k.
-  for (let i = 0; i < n; i++) smN[i] = xc[i] - x[i];
-  mat.applyB(smN, bz, sm2, h); // h is a scratch for applyB's inner use
-  // h gets used as applyB's scratchN above — overwrite it with g + bz.
-  for (let i = 0; i < n; i++) h[i] = g[i] + bz[i];
+  // ---- (9) Angle test on the true gradient: is x̄ − xₖ a direction
+  //          of strong descent on the original problem?
+  let gd = 0;
+  let dd = 0;
+  let gg = 0;
+  for (let i = 0; i < n; i++) {
+    const di = xBar[i] - x[i];
+    gd += g[i] * di;
+    dd += di * di;
+    gg += g[i] * g[i];
+  }
+  const dNorm = Math.sqrt(dd);
+  const gNorm = Math.sqrt(gg);
 
-  let lambda = 1;
-  for (let step = 0; step < maxBacktrack; step++) {
-    // x̂ = project(xc + λ · du, l, u). Non-free coords have du=0, so they
-    // stay at xc (which is already feasible).
-    for (let i = 0; i < n; i++) {
-      let xi = xc[i] + lambda * du[i];
-      const code = nbd[i];
-      if (code === BOUND_LOWER || code === BOUND_BOTH) {
-        const lo = lower[i];
-        if (xi < lo) xi = lo;
-      }
-      if (code === BOUND_UPPER || code === BOUND_BOTH) {
-        const hi = upper[i];
-        if (xi > hi) xi = hi;
-      }
-      xHat[i] = xi;
+  if (dNorm > 0 && gNorm > 0 && gd <= -ETA * dNorm * gNorm) {
+    // Strong descent on the original f → endpoint = x̄.
+    for (let i = 0; i < n; i++) xHat[i] = xBar[i];
+    return {improved: true};
+  }
+
+  // ---- (10) Truncation fallback (1997): largest α ∈ (0, 1] keeping
+  //          xₖ + α · (x̂ − xₖ) feasible. The model-improving direction
+  //          is x̂ − xₖ; we just stop at the first hitting bound.
+  let alpha = 1;
+  for (let i = 0; i < n; i++) {
+    const stepDir = xHatFull[i] - x[i];
+    if (stepDir > 0 && (nbd[i] === BOUND_UPPER || nbd[i] === BOUND_BOTH)) {
+      const cap = (upper[i] - x[i]) / stepDir;
+      if (cap < alpha) alpha = Math.max(0, cap);
+    } else if (stepDir < 0 && (nbd[i] === BOUND_LOWER || nbd[i] === BOUND_BOTH)) {
+      const cap = (lower[i] - x[i]) / stepDir;
+      if (cap < alpha) alpha = Math.max(0, cap);
     }
-    const dm = modelDelta(xHat, xc, h, mat, ws);
-    if (dm < 0) return {improved: true};
-    lambda *= 0.5;
   }
 
-  // Exhausted backtracks → fall back to xᶜ.
+  if (alpha > 0) {
+    for (let i = 0; i < n; i++)
+      xHat[i] = x[i] + alpha * (xHatFull[i] - x[i]);
+    return {improved: true};
+  }
+
+  // ---- (11) α = 0 → fall back to xᶜ.
   for (let i = 0; i < n; i++) xHat[i] = xc[i];
   return {improved: false};
 }

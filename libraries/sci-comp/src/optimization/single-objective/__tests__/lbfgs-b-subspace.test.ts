@@ -239,11 +239,11 @@ describe('subspaceMin — B·(xHat−xᶜ) ≈ −r̄ᶜ for t=n', () => {
 });
 
 /* ================================================================== */
-/*  Backtrack path                                                     */
+/*  Bounded endpoint selection (Morales–Nocedal 2011)                  */
 /* ================================================================== */
 
-describe('subspaceMin — Morales–Nocedal backtrack path', () => {
-  it('projects and backtracks when unconstrained step is infeasible', () => {
+describe('subspaceMin — bounded endpoint selection', () => {
+  it('produces a feasible xHat when the unconstrained step would violate a bound', () => {
     const n = 2;
     const mat = new BFGSMat(n, 5);
     mat.update(
@@ -254,7 +254,10 @@ describe('subspaceMin — Morales–Nocedal backtrack path', () => {
     );
 
     // Contrived: x near upper bound, gradient large → unconstrained subspace
-    // step would push past the upper bound, forcing projection + backtrack.
+    // step would push past the upper bound. Under M-N 2011 the endpoint is
+    // either the projected x̄ (if its direction back to x_k passes the
+    // angle test) or the 1997 truncation point along x_k → x̂; both are
+    // by construction feasible.
     const x = new Float64Array([0.8, 0.8]);
     const g = new Float64Array([-5, -4]);
     const lower = new Float64Array([0, 0]);
@@ -271,16 +274,48 @@ describe('subspaceMin — Morales–Nocedal backtrack path', () => {
       cauchyWs.freeSet, cr.freeCount, mat, ws,
     );
 
-    // Either improved (found a feasible backtrack with decrease) or
-    // fell back to xᶜ. Both are valid outcomes.
+    // xHat is always feasible under M-N 2011 — projection clips at step
+    // 8, truncation never overshoots a bound at step 10.
     for (let i = 0; i < n; i++) {
       expect(ws.xHat[i]).toBeGreaterThanOrEqual(lower[i]);
       expect(ws.xHat[i]).toBeLessThanOrEqual(upper[i]);
     }
-    if (sr.improved) {
-      const dm = modelDelta(ws.xHat, cauchyWs.xc, x, g, mat);
-      expect(dm).toBeLessThan(0);
-    } else
+    if (!sr.improved)
       for (let i = 0; i < n; i++) expect(ws.xHat[i]).toBe(cauchyWs.xc[i]);
+  });
+
+  it('uses the projected unconstrained Newton step when the angle test passes (unconstrained-equivalent setup)', () => {
+    // Bounds wide enough that x̂ stays interior → projection is identity,
+    // angle test is exactly Newton-step descent. xHat must equal xc + du.
+    const n = 3;
+    const mat = new BFGSMat(n, 5);
+    mat.update(
+      new Float64Array([0.1, 0.2, 0.1]),
+      new Float64Array([0.5, 0.3, 0.4]),
+      0,
+      0,
+    );
+
+    const x = new Float64Array([0, 0, 0]);
+    const g = new Float64Array([1.0, -0.5, 0.7]);
+    const lower = new Float64Array([-100, -100, -100]);
+    const upper = new Float64Array([100, 100, 100]);
+    const nbd = classifyBounds(lower, upper);
+
+    const cauchyWs = makeCauchyWorkspace(n, 5);
+    const cr = cauchyPoint(x, g, lower, upper, nbd, mat, cauchyWs);
+    expect(cr.ok).toBe(true);
+
+    const ws = makeSubspaceWorkspace(n, 5);
+    const sr = subspaceMin(
+      x, g, lower, upper, nbd, cauchyWs.xc, cauchyWs.c,
+      cauchyWs.freeSet, cr.freeCount, mat, ws,
+    );
+    expect(sr.improved).toBe(true);
+    // Strong-descent angle test passes → endpoint = xc + du, no truncation.
+    for (let i = 0; i < n; i++) {
+      const expected = cauchyWs.xc[i] + ws.du[i];
+      expect(ws.xHat[i]).toBeCloseTo(expected, 12);
+    }
   });
 });

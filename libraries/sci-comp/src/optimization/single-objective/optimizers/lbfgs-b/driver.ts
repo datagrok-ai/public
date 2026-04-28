@@ -54,9 +54,8 @@ export function runSync(
   // to decide whether the unit-step heuristic for α₀ is appropriate.
   let boxed = anyFinite;
   if (boxed) {
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < n; i++)
       if (nbd[i] !== BOUND_BOTH) {boxed = false; break;}
-    }
   }
 
   const x = Float64Array.from(x0);
@@ -336,9 +335,8 @@ export async function runAsync(
   // See note in runSync: `boxed` controls the α₀ heuristic.
   let boxed = anyFinite;
   if (boxed) {
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < n; i++)
       if (nbd[i] !== BOUND_BOTH) {boxed = false; break;}
-    }
   }
 
   const x = Float64Array.from(x0);
