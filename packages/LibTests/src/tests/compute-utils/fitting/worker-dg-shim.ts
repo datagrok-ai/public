@@ -10,9 +10,10 @@ import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame} from
 import {toFeather} from '@datagrok-libraries/arrow';
 import {getErrors} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/fitting-utils';
-import {buildSetup, LOSS} from './imports';
+import {buildSetup, buildRunSeed, LOSS, WorkerPool} from './imports';
 import type {OutputTargetItem, ValueBoundsData} from './imports';
 import {rangeBound, formulaBound} from './utils';
+import {makeWedgedFunc} from './script-fixtures';
 import {_package} from '../../../package-test';
 
 function makeBuildSetupArgs(
@@ -233,6 +234,105 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     expect(out.df != null, true, 'df output captured');
     expect(out.df.rowCount, 101, 'iterations + 1 rows');
     expect(out.df.columns.names().join(','), 'X,Y,Z');
+  });
+
+  test('pool_dispose_drains_pending_setups', async () => {
+    // White-box: dispose's job is to resolve any pendingSetups it finds.
+    // Inject one directly so the assertion doesn't depend on Worker
+    // round-trip timing (which would only happen to be deterministic
+    // because of JS's single-threaded event loop, but is brittle to read).
+    type SlotInternal = {
+      pendingSetups: Map<number, {sessionId: number; resolve: (ack: SetupAckLike) => void}>;
+    };
+    type SetupAckLike = {kind: 'setup-ack'; sessionId: number; ok: boolean; message?: string};
+    const pool = new WorkerPool(1);
+    const internal = pool as unknown as {
+      ensureWorkers: () => void;
+      slots: SlotInternal[];
+    };
+    internal.ensureWorkers();
+    let resolved = false;
+    let ack: SetupAckLike | null = null;
+    internal.slots[0].pendingSetups.set(7, {
+      sessionId: 7,
+      resolve: (a) => { resolved = true; ack = a; },
+    });
+    pool.dispose();
+    expect(resolved, true, 'dispose must call pendingSetups[*].resolve');
+    expect(ack !== null, true);
+    expect(ack!.kind, 'setup-ack');
+    expect(ack!.ok, false, 'drained ack must signal failure');
+    expect(/disposed/i.test(ack!.message ?? ''), true,
+      `expected disposed-flavor message, got: ${ack!.message}`);
+  });
+
+  test('pool_dispose_drains_inflight_run', async () => {
+    // White-box: dispose's job is to resolve slot.current as a failure.
+    // Inject a fake in-flight run so the test doesn't hinge on the
+    // dispatchRun → worker → reply round-trip.
+    type RunReplyLike = {kind: string; taskId: number; message?: string};
+    type SlotInternal = {
+      busy: boolean;
+      current: {
+        run: {taskId: number; sessionId: number; kind: string; seed: Float64Array};
+        transferables: Transferable[];
+        resolve: (r: RunReplyLike) => void;
+      } | null;
+    };
+    const pool = new WorkerPool(1);
+    const internal = pool as unknown as {
+      ensureWorkers: () => void;
+      slots: SlotInternal[];
+    };
+    internal.ensureWorkers();
+    let resolved = false;
+    let reply: RunReplyLike | null = null;
+    internal.slots[0].busy = true;
+    internal.slots[0].current = {
+      run: {taskId: 42, sessionId: 9, kind: 'run-seed', seed: new Float64Array([1, 2])},
+      transferables: [],
+      resolve: (r) => { resolved = true; reply = r; },
+    };
+    pool.dispose();
+    expect(resolved, true, 'dispose must call slot.current.resolve');
+    expect(reply !== null, true);
+    expect(reply!.kind, 'failure');
+    expect(reply!.taskId, 42);
+    expect(/disposed/i.test(reply!.message ?? ''), true,
+      `expected disposed-flavor message, got: ${reply!.message}`);
+  });
+
+  test('pool_run_timeout_unblocks_wedged_worker', async () => {
+    // Worker body is `while (true)` — the cost-function call never returns.
+    // Without runTimeoutMs the dispatchRun promise hangs forever; with it,
+    // the slot is terminated and the run resolves as a timed-out failure.
+    const pool = new WorkerPool(1, {runTimeoutMs: 500});
+    try {
+      const func = makeWedgedFunc();
+      const targets: OutputTargetItem[] = [{
+        propName: 'y', type: DG.TYPE.FLOAT, target: 0,
+      }];
+      const inputBounds: Record<string, ValueBoundsData> = {a: rangeBound(0, 5, 'a')};
+      const {setup} = buildSetup({
+        sessionId: 2, fnSource: (func as DG.Script).script,
+        paramList: ['a'], outputParamNames: ['y'],
+        lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
+        bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
+      });
+      await pool.setupAll(setup, []);  // setup is fast — only compile, no run
+      const {run, transferables} = buildRunSeed({
+        sessionId: 2, taskId: 0, seed: new Float64Array([1]),
+      });
+      const start = Date.now();
+      const reply = await pool.dispatchRun({run, transferables});
+      const elapsed = Date.now() - start;
+      expect(reply.kind, 'failure', 'wedged run must resolve as failure');
+      expect(/timed? ?out/i.test((reply as any).message), true,
+        `expected timeout-flavor message, got: ${(reply as any).message}`);
+      expect(elapsed < 2000, true, `expected ~500ms, got ${elapsed}ms`);
+    } finally {
+      pool.dispose();
+    }
   });
 
   test('bounds_const_dataframe_strips_for_postmessage', async () => {

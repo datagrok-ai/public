@@ -186,6 +186,22 @@ export function makeDateGetTimeFunc(): DG.Func {
 }
 
 /**
+ * Wedged JS body — never returns. Used to verify that the worker pool's
+ * runTimeoutMs aborts a hung worker so the dispatchRun promise resolves
+ * instead of hanging forever.
+ */
+export function makeWedgedFunc(): DG.Func {
+  return buildScript([
+    '//name: Wedged',
+    '//language: javascript',
+    '//input: double a',
+    '//output: double y',
+    '',
+    'while (true) { y = a; }',
+  ]);
+}
+
+/**
  * Throws on inputs satisfying a predicate (e.g. negative `a`). Used to test
  * fault tolerance in NM (failed seeds → fails DF, others continue).
  */

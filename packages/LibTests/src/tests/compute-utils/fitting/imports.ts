@@ -21,7 +21,11 @@ export {runOptimizer} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 export type {ExecutorChoice} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/executor';
-export {buildSetup} from
+export {buildSetup, buildRunSeed} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/serialize';
 export type {FitSessionSetup, FixedInputKind} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/wire-types';
+export {WorkerPool} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/pool';
+export type {WorkerPoolOptions, RunReply} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/pool';
