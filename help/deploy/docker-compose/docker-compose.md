@@ -9,12 +9,18 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 This article provides step-by-step instructions for running Datagrok on your local machine
-using [Docker Compose](https://docs.docker.com/compose/). By following these instructions, you can quickly set up and
-run the necessary Docker images to get started with Datagrok.
+using [Docker Compose](https://docs.docker.com/compose/). The install script downloads the
+canonical compose file (`docker/localhost.docker-compose.yaml`), pulls the
+[Datagrok services](../deploy.md#components) listed there, and brings them up under a single
+project — including in-cluster PostgreSQL, RabbitMQ, grok\_pipe, grok\_spawner, grok\_connect,
+and the Jupyter Kernel Gateway.
 
 :::info Hardware requirements
 
 Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
+
+For [server-side scripting](../../compute/scripting/scripting.mdx) and the Jupyter Kernel
+Gateway, we recommend 60 GB of free disk space, 4 CPUs, 8 GB RAM.
 
 :::
 
