@@ -28,7 +28,7 @@ automatically. This page covers manual Helm installs for any Kubernetes cluster
 
 The chart is published as an OCI artifact in the shared `datagrok/datagrok` Docker Hub
 repo under tags suffixed with `-helm` to keep the chart and image tag namespaces
-disjoint. `--version 1.27.0-helm` pulls a chart that deploys Datagrok `1.27.0`, and
+disjoint. `--version 1.27.3-helm` pulls a chart that deploys Datagrok `1.27.3`, and
 every sub-service (grok-pipe, grok-spawner, grok-connect, Jupyter Kernel Gateway)
 defaults to the same app tag. Override individual service image tags via
 `--set <service>.image.tag=...` — see [Service versions](#service-versions) below.
@@ -37,15 +37,15 @@ Available chart versions:
 
 | Version                            | Published from               | Use for           |
 |------------------------------------|------------------------------|-------------------|
-| `1.27.0-helm`, `1.26.5-helm`, ...  | release tags                 | Production        |
-| `1.27.0-rc-helm`, ...              | `release/*` branches         | Release candidates|
+| `1.27.3-helm`, `1.27.2-helm`, ...  | release tags                 | Production        |
+| `1.27.3-rc-helm`, ...              | `release/*` branches         | Release candidates|
 | `bleeding-edge-helm`               | `master`, nightly            | Dev / evaluation  |
 
 ## Quick install (in-cluster Postgres + local storage)
 
 ```bash
 helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
-  --version 1.26.5-helm \
+  --version 1.27.3-helm \
   --namespace datagrok --create-namespace \
   --set postgres.password=$(openssl rand -base64 24) \
   --set postgres.adminPassword=$(openssl rand -base64 24) \
@@ -149,7 +149,7 @@ variants; you can deploy it directly if you prefer a single-file template.
 5. Install:
    ```bash
    helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
-     --version 1.26.5-helm \
+     --version 1.27.3-helm \
      -f values-prod.yaml \
      -n datagrok --create-namespace
    ```
@@ -212,10 +212,13 @@ Workload Identity).
 
 ```bash
 helm upgrade datagrok oci://registry-1.docker.io/datagrok/datagrok \
-  --version 1.26.6-helm \
+  --version 1.27.4-helm \
   -f values-prod.yaml \
   -n datagrok
 ```
+
+Always upgrade through consecutive minor versions for production stands; database schema
+migrations run automatically on the first start of each new app version.
 
 The chart's PostgreSQL StatefulSet, datagrok-data, and datagrok-cfg PVCs are
 preserved across upgrades. Database schema migrations run automatically on the
