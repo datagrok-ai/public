@@ -1041,8 +1041,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
               const atomSerial = SP.atom.id(loc);
               const {modifiers} = event;
+              // Ctrl/Cmd hover = paint (add). Ctrl+Shift / Cmd+Shift = erase.
+              // No modifier = preview. Mirrors the 2D-side picker modifiers
+              // so paint/erase keys are identical in both directions.
               const mode: 'preview' | 'paint' | 'erase' =
-                modifiers.shift && modifiers.control ? 'erase' : (modifiers.shift ? 'paint' : 'preview');
+                (modifiers.control || modifiers.meta) && modifiers.shift ? 'erase' :
+                  ((modifiers.control || modifiers.meta) ? 'paint' : 'preview');
               this.highlightController.fireMol3DHover(rowIdx, atomSerial, mode);
             } catch (err: unknown) {
               this.logger.error(
