@@ -482,6 +482,10 @@ export class DiffStudio {
 
     this.editorState = state;
     this.solverView.helpUrl = getLink(state);
+    // Reset main path: a previous file preview may have set it to `file/...`,
+    // and the cold-path equivalent (`getStatePreview`) only works because a fresh
+    // instance starts with the default `PATH.APPS_DS` — warm reuse needs this explicit.
+    this.mainPath = PATH.APPS_DS;
     this.entityPath = stateToPath(state);
     this.toChangePath = true;
 
