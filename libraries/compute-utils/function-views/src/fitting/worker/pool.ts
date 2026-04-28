@@ -55,9 +55,26 @@ export interface WorkerPoolOptions {
   runTimeoutMs?: number;
 }
 
+interface ActiveSetup {
+  setup: FitSessionSetup;
+  // Per-session re-prime budget: incremented every time a replacement slot
+  // is primed for this session in `removeSlot`. Capped so a script body
+  // that fails every worker can't put the pool into a respawn-and-retry
+  // loop. Once exhausted, slot replacements still spawn but skip
+  // re-priming for this session — the in-flight fit runs at degraded
+  // parallelism for the rest of its life.
+  replacementAttempts: number;
+}
+
 export class WorkerPool {
+  private static readonly MAX_REPLACEMENT_REPRIMES = 1;
+
   private slots: Slot[] = [];
   private queue: PendingRun[] = [];
+  // Setups for sessions that have completed `setupAll` and not yet been
+  // dropped. Used to re-prime replacement slots so an active fit can
+  // keep using full pool parallelism after a worker dies.
+  private activeSetups: Map<SessionId, ActiveSetup> = new Map();
   private disposed = false;
   private nextTaskId = 1;
   private readonly setupTimeoutMs: number;
@@ -73,19 +90,22 @@ export class WorkerPool {
   // until a fit actually runs.
   private ensureWorkers(): void {
     if (this.slots.length > 0 || this.disposed) return;
-    for (let i = 0; i < this.size; ++i) {
-      const w = new Worker(new URL('./fitting.worker.ts', import.meta.url));
-      const slot: Slot = {
-        worker: w,
-        busy: false,
-        current: null,
-        sessions: new Set(),
-        pendingSetups: new Map(),
-      };
-      w.onmessage = (ev: MessageEvent<WorkerInbound>) => this.onMessage(slot, ev.data);
-      w.onerror = (ev: ErrorEvent) => this.onError(slot, ev);
-      this.slots.push(slot);
-    }
+    for (let i = 0; i < this.size; ++i)
+      this.slots.push(this.spawnSlot());
+  }
+
+  private spawnSlot(): Slot {
+    const w = new Worker(new URL('./fitting.worker.ts', import.meta.url));
+    const slot: Slot = {
+      worker: w,
+      busy: false,
+      current: null,
+      sessions: new Set(),
+      pendingSetups: new Map(),
+    };
+    w.onmessage = (ev: MessageEvent<WorkerInbound>) => this.onMessage(slot, ev.data);
+    w.onerror = (ev: ErrorEvent) => this.onError(slot, ev);
+    return slot;
   }
 
   private onMessage(slot: Slot, msg: WorkerInbound): void {
@@ -93,7 +113,14 @@ export class WorkerPool {
       const pending = slot.pendingSetups.get(msg.sessionId);
       if (!pending) return;
       slot.pendingSetups.delete(msg.sessionId);
-      if (msg.ok) slot.sessions.add(msg.sessionId);
+      if (msg.ok) {
+        slot.sessions.add(msg.sessionId);
+        // Pump in case runs were queued while this slot was being primed
+        // (e.g., a replacement re-prime mid-fit) — without this, queued
+        // runs would only retry on the next reply, which may never come
+        // if the new slot is the only one able to serve the session.
+        this.pump();
+      }
       pending.resolve(msg);
       return;
     }
@@ -204,7 +231,50 @@ export class WorkerPool {
       });
     }
     try { slot.worker.terminate(); } catch { /* ignore */ }
+    if (!this.disposed) {
+      // Spawn a fresh replacement so a long-lived pool doesn't drift toward
+      // zero workers under repeated errors/timeouts.
+      const fresh = this.spawnSlot();
+      this.slots.push(fresh);
+      // Re-prime the replacement for every active session so the in-flight
+      // fit can keep using full pool parallelism. Capped per session at
+      // MAX_REPLACEMENT_REPRIMES to break a pathological respawn loop on
+      // a script body that breaks every worker — once the budget is
+      // exhausted, replacements still spawn but skip re-priming for that
+      // session and the fit runs at degraded parallelism.
+      for (const entry of this.activeSetups.values()) {
+        if (entry.replacementAttempts >= WorkerPool.MAX_REPLACEMENT_REPRIMES) continue;
+        ++entry.replacementAttempts;
+        // Fire-and-forget — primeSlot's own timeout path handles failure
+        // (calls removeSlot, which respects the cap).
+        void this.primeSlot(fresh, entry.setup);
+      }
+    }
     this.pump();
+  }
+
+  // Post a setup to one slot and resolve when its ack arrives or the
+  // setup timeout fires. Shared by `setupAll` (initial priming of every
+  // slot) and `removeSlot` (re-priming a freshly spawned replacement).
+  // On timeout we remove the slot, which itself may spawn another
+  // replacement — bounded by `MAX_REPLACEMENT_REPRIMES` per session.
+  private primeSlot(slot: Slot, setup: FitSessionSetup): Promise<SetupAck> {
+    return new Promise<SetupAck>((resolve) => {
+      const timer = setTimeout(() => {
+        if (!slot.pendingSetups.has(setup.sessionId)) return;
+        slot.pendingSetups.delete(setup.sessionId);
+        this.removeSlot(slot, 'setup timed out');
+        resolve({
+          kind: 'setup-ack', sessionId: setup.sessionId, ok: false,
+          message: `setup timed out after ${this.setupTimeoutMs}ms`,
+        });
+      }, this.setupTimeoutMs);
+      slot.pendingSetups.set(setup.sessionId, {
+        sessionId: setup.sessionId,
+        resolve: (ack) => { clearTimeout(timer); resolve(ack); },
+      });
+      slot.worker.postMessage(setup);
+    });
   }
 
   // Send `setup` to every slot; resolve when all acks come back ok, reject
@@ -219,29 +289,14 @@ export class WorkerPool {
   async setupAll(setup: FitSessionSetup, _transferables: Transferable[]): Promise<void> {
     if (this.disposed) throw new Error('pool disposed');
     this.ensureWorkers();
-    const acks: Promise<SetupAck>[] = [];
-    for (const slot of [...this.slots]) {
-      acks.push(new Promise<SetupAck>((resolve) => {
-        const timer = setTimeout(() => {
-          if (!slot.pendingSetups.has(setup.sessionId)) return;
-          slot.pendingSetups.delete(setup.sessionId);
-          this.removeSlot(slot, 'setup timed out');
-          resolve({
-            kind: 'setup-ack', sessionId: setup.sessionId, ok: false,
-            message: `setup timed out after ${this.setupTimeoutMs}ms`,
-          });
-        }, this.setupTimeoutMs);
-        slot.pendingSetups.set(setup.sessionId, {
-          sessionId: setup.sessionId,
-          resolve: (ack) => { clearTimeout(timer); resolve(ack); },
-        });
-        slot.worker.postMessage(setup);
-      }));
-    }
-    const results = await Promise.all(acks);
+    const results = await Promise.all(
+      [...this.slots].map((slot) => this.primeSlot(slot, setup)));
     const failed = results.find((a) => !a.ok);
     if (failed && !failed.ok)
       throw new Error(`worker setup failed: ${failed.message}`);
+    // Remember the setup so a slot replacement (after onerror / timeout)
+    // can re-prime a fresh worker without involving the executor layer.
+    this.activeSetups.set(setup.sessionId, {setup, replacementAttempts: 0});
   }
 
   // Fire-and-forget: tell each slot that has the session loaded to drop it.
@@ -249,6 +304,7 @@ export class WorkerPool {
   // session has already been replied to before drop is observed.
   dropSession(sessionId: SessionId): void {
     if (this.disposed) return;
+    this.activeSetups.delete(sessionId);
     const drop: DropSession = {kind: 'drop-session', sessionId};
     for (const slot of this.slots) {
       if (!slot.sessions.has(sessionId)) continue;
@@ -262,7 +318,12 @@ export class WorkerPool {
     transferables: Transferable[];
   }): Promise<RunReply> {
     if (this.disposed) return Promise.reject(new Error('pool disposed'));
-    if (!this.slots.some((s) => s.sessions.has(args.run.sessionId))) {
+    // Reject only if the session was never set up. If it WAS set up but
+    // no slot currently has it primed (e.g. a replacement re-prime is in
+    // flight), let the run sit in the queue — `pump` is called on every
+    // setup-ack ok and on every run reply, so the run will dispatch
+    // when a primed slot is available again.
+    if (!this.activeSetups.has(args.run.sessionId)) {
       return Promise.reject(new Error(
         `no slot is primed for session ${args.run.sessionId}; call setupAll first`));
     }
@@ -277,6 +338,7 @@ export class WorkerPool {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.activeSetups.clear();
     for (const slot of this.slots) {
       // Drain in-flight setup acks so setupAll's Promise.all can settle.
       for (const ps of slot.pendingSetups.values()) {
@@ -311,6 +373,11 @@ export class WorkerPool {
       });
     }
     this.queue = [];
+  }
+
+  // Test-only: read live slot count without exposing the array.
+  _slotsForTest(): number {
+    return this.slots.length;
   }
 }
 

@@ -162,8 +162,9 @@ export function buildRunSeed(args: {
 }
 
 // Cap on accepted body size — guards against pasted blobs and runaway
-// parse time.
-export const MAX_FN_SOURCE_BYTES = 64 * 1024;
+// parse time. 1 MB covers Diff Studio bodies and multi-equation models;
+// raise again only with measured workloads.
+export const MAX_FN_SOURCE_BYTES = 1024 * 1024;
 
 export function checkSourceSize(source: string): void {
   if (source.length > MAX_FN_SOURCE_BYTES)

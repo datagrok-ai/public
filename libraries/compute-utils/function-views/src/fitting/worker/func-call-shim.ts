@@ -9,14 +9,20 @@
 //
 // Compile cache is module-level so it hits across NM iterations within a task
 // AND across tasks within a long-lived worker — pays the body's parse cost
-// exactly once per source.
+// exactly once per source. Bounded LRU so accidental script churn over a
+// tab-lifetime worker can't grow memory without bound. Active sessions hold
+// strong references to their compiled function via `createWorkerFuncCall`'s
+// closure, so cache eviction never invalidates an in-flight fit.
 
+import {LRUCache} from 'lru-cache';
 import {createWorkerDG, WorkerDG} from './dg-shim';
 
 // Mirror of serialize.MAX_FN_SOURCE_BYTES — duplicated here so the worker
 // entry doesn't pull serialize.ts (which transitively imports
 // @datagrok-libraries/arrow → datagrok-api/dg) into the worker bundle.
-const MAX_FN_SOURCE_BYTES = 64 * 1024;
+// 1 MB covers Diff Studio bodies and multi-equation models; raise again
+// only with measured workloads.
+const MAX_FN_SOURCE_BYTES = 1024 * 1024;
 
 function checkSourceSize(source: string): void {
   if (source.length > MAX_FN_SOURCE_BYTES)
@@ -25,10 +31,29 @@ function checkSourceSize(source: string): void {
 
 type CompiledFn = (...args: any[]) => any;
 
-const compileCache = new Map<string, CompiledFn>();
+const DEFAULT_COMPILE_CACHE_CAP = 32;
+let compileCache = new LRUCache<string, CompiledFn>({max: DEFAULT_COMPILE_CACHE_CAP});
+
+let compileHits = 0;
+let compileMisses = 0;
 
 export function clearCompileCache(): void {
   compileCache.clear();
+  compileHits = 0;
+  compileMisses = 0;
+}
+
+// Test-only: read hit/miss counters to assert cache behavior.
+export function _getCompileStats(): {hits: number; misses: number} {
+  return {hits: compileHits, misses: compileMisses};
+}
+
+// Test-only: rebuild cache with a smaller cap so eviction can be observed
+// without compiling 33+ bodies. Resets counters too.
+export function _setCompileCacheCap(cap: number): void {
+  compileCache = new LRUCache<string, CompiledFn>({max: cap});
+  compileHits = 0;
+  compileMisses = 0;
 }
 
 // Compile a JS body that reads named inputs and writes named outputs. The body
@@ -47,7 +72,11 @@ export function compileBody(source: string, paramList: string[], outputNames: st
   checkSourceSize(source);
   const key = `${paramList.join(',')}|${outputNames.join(',')}|${source}`;
   let fn = compileCache.get(key);
-  if (fn) return fn;
+  if (fn) {
+    ++compileHits;
+    return fn;
+  }
+  ++compileMisses;
   const declOutputs = outputNames.map((n) => `let ${n} = undefined;`).join('');
   const returnLine = `return { ${outputNames.join(', ')} };`;
   const wrapped = `${declOutputs}\n${source}\n${returnLine}`;

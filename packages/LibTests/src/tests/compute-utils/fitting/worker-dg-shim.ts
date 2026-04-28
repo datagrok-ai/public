@@ -5,7 +5,8 @@
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
-import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame} from
+import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame, compileBody,
+  clearCompileCache, _getCompileStats, _setCompileCacheCap} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker';
 import {toFeather} from '@datagrok-libraries/arrow';
 import {getErrors} from
@@ -300,6 +301,117 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     expect(reply!.taskId, 42);
     expect(/disposed/i.test(reply!.message ?? ''), true,
       `expected disposed-flavor message, got: ${reply!.message}`);
+  });
+
+  test('compile_cache_hits_across_compiles', async () => {
+    // Module-level compile cache must hit when the same body+param+output
+    // signature recompiles, so a long-lived worker pays parse cost once
+    // per source. Drive compileBody directly on the main thread — same
+    // module instance, same cache.
+    clearCompileCache();
+    const bodyA = 'y = a + 1;';
+    const bodyB = 'y = a * 2;';
+    compileBody(bodyA, ['a'], ['y']);
+    let s = _getCompileStats();
+    expect(s.misses, 1, 'first compile is a miss');
+    expect(s.hits, 0);
+    compileBody(bodyA, ['a'], ['y']);
+    compileBody(bodyA, ['a'], ['y']);
+    s = _getCompileStats();
+    expect(s.misses, 1, 'identical body should not recompile');
+    expect(s.hits, 2);
+    compileBody(bodyB, ['a'], ['y']);
+    s = _getCompileStats();
+    expect(s.misses, 2, 'different body should compile fresh');
+    compileBody(bodyA, ['a'], ['y']);
+    s = _getCompileStats();
+    expect(s.hits, 3, 'A still cached after B was added');
+    expect(s.misses, 2);
+  });
+
+  test('compile_cache_evicts_lru', async () => {
+    // Cap the cache at 1 so adding B evicts A; the next A re-compile
+    // proves LRU eviction is wired and observable.
+    _setCompileCacheCap(1);
+    const bodyA = 'y = a + 10;';
+    const bodyB = 'y = a + 20;';
+    compileBody(bodyA, ['a'], ['y']);
+    compileBody(bodyB, ['a'], ['y']);  // evicts A
+    compileBody(bodyA, ['a'], ['y']);  // miss → recompile
+    const s = _getCompileStats();
+    expect(s.misses, 3, 'A→B→A with cap=1 must produce 3 misses');
+    expect(s.hits, 0);
+    // Restore cap to default for downstream tests.
+    _setCompileCacheCap(32);
+  });
+
+  test('pool_replacement_reprimes_active_session', async () => {
+    // After removeSlot replaces a worker mid-fit, the new slot must be
+    // re-primed for any session whose `setupAll` already succeeded so
+    // that a subsequent dispatchRun on that session reaches the
+    // replacement instead of rejecting with "no slot primed".
+    const pool = new WorkerPool(1);
+    try {
+      const targets: OutputTargetItem[] = [{
+        propName: 'y', type: DG.TYPE.FLOAT, target: 0,
+      }];
+      const inputBounds: Record<string, ValueBoundsData> = {a: rangeBound(0, 5, 'a')};
+      const {setup} = buildSetup({
+        sessionId: 99, fnSource: 'y = a + 1;',
+        paramList: ['a'], outputParamNames: ['y'],
+        lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
+        bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
+      });
+      await pool.setupAll(setup, []);
+      expect(pool._slotsForTest(), 1);
+
+      // Force the only slot out; pool spawns a fresh replacement and
+      // re-primes it for session 99.
+      const internal = pool as unknown as {
+        removeSlot: (slot: any, reason: string) => void;
+        slots: any[];
+      };
+      internal.removeSlot(internal.slots[0], 'test forced remove');
+      expect(pool._slotsForTest(), 1, 'replacement must be spawned');
+
+      // dispatchRun on the (now-replaced) session must succeed via the
+      // re-primed slot. Pre-fix this would reject synchronously with
+      // "no slot is primed" because the replacement has empty sessions.
+      const {run, transferables} = buildRunSeed({
+        sessionId: 99, taskId: 0, seedIndex: 0, seed: new Float64Array([1]),
+      });
+      const reply = await pool.dispatchRun({run, transferables});
+      expect(reply.kind, 'success', 'replacement must serve the active session');
+    } finally {
+      pool.dispose();
+    }
+  });
+
+  test('pool_replaces_slot_on_remove', async () => {
+    // White-box: removeSlot must spawn a fresh slot so a long-lived pool
+    // doesn't drift toward zero workers under repeated errors/timeouts.
+    type SlotInternal = {worker: Worker};
+    const pool = new WorkerPool(2);
+    const internal = pool as unknown as {
+      ensureWorkers: () => void;
+      removeSlot: (slot: SlotInternal, reason: string) => void;
+      slots: SlotInternal[];
+    };
+    try {
+      internal.ensureWorkers();
+      expect(pool._slotsForTest(), 2);
+      const originalWorker0 = internal.slots[0].worker;
+      internal.removeSlot(internal.slots[0], 'test forced remove');
+      expect(pool._slotsForTest(), 2, 'removeSlot must spawn a replacement');
+      // The replacement is appended at the end; the surviving original
+      // (was at index 1) is now at index 0. Either way, the freshly
+      // spawned worker must not be the one we terminated.
+      for (const slot of internal.slots)
+        expect(slot.worker !== originalWorker0, true,
+          'replacement must be a fresh Worker');
+    } finally {
+      pool.dispose();
+    }
   });
 
   test('pool_run_timeout_unblocks_wedged_worker', async () => {

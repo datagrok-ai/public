@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {OptimizationResult, OutputTargetItem, ValueBoundsData} from './optimizer-misc';
 import {LOSS, ReproSettings, EarlyStoppingSettings} from './constants';
-import {ExecutorChoice, MainExecutor, canHandle, runWithEphemeralPool}
+import {ExecutorChoice, MainExecutor, canHandle, runWithSharedPool}
   from './worker/executor';
 
 export async function performNelderMeadOptimization(
@@ -51,7 +51,7 @@ export async function performNelderMeadOptimization(
     (executor === 'auto' && canHandle(execArgs));
 
   if (useWorker)
-    return runWithEphemeralPool(execArgs);
+    return runWithSharedPool(execArgs);
 
   return new MainExecutor().run(execArgs);
 }

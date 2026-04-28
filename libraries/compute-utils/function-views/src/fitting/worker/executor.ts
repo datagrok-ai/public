@@ -19,6 +19,7 @@ import {ReproSettings, EarlyStoppingSettings, LOSS} from '../constants';
 import {buildFailsDataFrame, getInputsData, sampleSeeds} from '../fitting-utils';
 import {EarlyStopTracker} from '../early-stop-tracker';
 import {WorkerPool, defaultPoolSize, RunReply} from './pool';
+import {getSharedFittingPool} from './shared-pool';
 import {buildSetup, buildRunSeed} from './serialize';
 import type {SessionId} from './wire-types';
 
@@ -279,12 +280,10 @@ export class WorkerExecutor implements Executor {
   }
 }
 
-// ---- Pool lifecycle (per-call default) ------------------------------------
+// ---- Pool lifecycle -------------------------------------------------------
 
 // Short-lived pool: created on demand, terminated when the fit returns.
-// Long-lived callers can construct their own WorkerPool and pass it to
-// WorkerExecutor directly; `dropSession` (called inside `run`) keeps
-// per-session state from accumulating across fits.
+// Used by tests and ephemeral callers that don't want a tab-lifetime pool.
 export async function runWithEphemeralPool(args: ExecutorArgs): Promise<OptimizationResult> {
   const pool = new WorkerPool(defaultPoolSize());
   try {
@@ -292,4 +291,15 @@ export async function runWithEphemeralPool(args: ExecutorArgs): Promise<Optimiza
   } finally {
     pool.dispose();
   }
+}
+
+// Long-lived pool: reuses the singleton from shared-pool.ts so worker
+// spin-up + per-slot compile amortize across fits. Each fit calls
+// `dropSession` on completion (inside WorkerExecutor.run's finally), so
+// per-session state in the workers doesn't accumulate. The compile
+// cache inside each worker (LRU, see func-call-shim.ts) is what makes
+// repeated fits of the same body cheap.
+export async function runWithSharedPool(args: ExecutorArgs): Promise<OptimizationResult> {
+  const pool = getSharedFittingPool();
+  return new WorkerExecutor(pool).run(args);
 }
