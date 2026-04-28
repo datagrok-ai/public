@@ -2070,7 +2070,9 @@ Resources:
       RequiresCompatibilities:
         - "FARGATE"
       TaskRoleArn:
-        Ref: DatagrokTaskRole
+        Fn::GetAtt:
+          - DatagrokTaskRole
+          - Arn
     Type: AWS::ECS::TaskDefinition
   DatagrokPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -2722,7 +2724,9 @@ Resources:
       RequiresCompatibilities:
         - "FARGATE"
       TaskRoleArn:
-        Ref: GrokSpawnerTaskRole
+        Fn::GetAtt:
+          - GrokSpawnerTaskRole
+          - Arn
     Type: AWS::ECS::TaskDefinition
   GrokSpawnerPrivateDNS:
     Type: AWS::Route53::RecordSet
@@ -2910,7 +2914,9 @@ Resources:
       RequiresCompatibilities:
         - "FARGATE"
       TaskRoleArn:
-        Ref: GrokRegistryProxyTaskRole
+        Fn::GetAtt:
+          - GrokRegistryProxyTaskRole
+          - Arn
   GrokRegistryProxyService:
     Condition: RegistryProxyEnabled
     Type: AWS::ECS::Service

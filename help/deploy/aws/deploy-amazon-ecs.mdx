@@ -6,11 +6,13 @@ sidebar_position: 2
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-:::danger Deprecated
+:::caution Avoid for new installations
 
-The ECS deployment path is deprecated and will be removed in a future release. For new stands, use the
-[AWS CloudFormation (EKS)](deploy-amazon-eks.mdx) deployment. If you operate an existing ECS stand, plan a
-migration — the EKS CFN template preserves your RDS database and S3 bucket on stack replacement.
+The ECS path is stable and supported, but is targeted for deprecation in a future release. For new stands, prefer the
+[AWS CloudFormation (EKS)](deploy-amazon-eks.mdx) template — it provisions the same RDS + S3 logical resources
+and installs the [Helm chart](../k8s/install-helm-chart.md) on EKS. The two templates share resource IDs, so an
+existing ECS stack can be migrated to EKS in place via *Update stack → Replace current template* without
+re-creating the database or bucket.
 
 :::
 
@@ -267,28 +269,46 @@ the [prerequisites](#ec2-prerequisites) and [parameters](#ec2-parameters).
 
 -->
 
+## Service versions
+
+Every service has a dedicated CloudFormation parameter for picking the container image tag. The
+defaults track the most recent Datagrok release on Docker Hub and match the
+[EKS template defaults](deploy-amazon-eks.mdx#service-versions) — both templates ship the same
+images:
+
+| Parameter                     | Default              | Image                              |
+|-------------------------------|----------------------|------------------------------------|
+| `DatagrokVersion`             | `1.27.3`             | `datagrok/datagrok`                |
+| `GrokPipeVersion`             | `1.18.0`             | `datagrok/grok_pipe`               |
+| `GrokSpawnerVersion`          | `2.15.0`             | `datagrok/grok_spawner`            |
+| `GrokConnectVersion`          | `2.6.2`              | `datagrok/grok_connect`            |
+| `JKGVersion`                  | `1.31.0`             | `datagrok/jupyter_kernel_gateway`  |
+| `GrokRegistryProxyVersion`    | `1.18.0`             | `datagrok/grok_registry_proxy`     |
+| `RabbitmqVersion`             | `4.0.5-management`   | `rabbitmq` (independent cadence)   |
+
+[Release history](../releases/release-history.md) lists all available tags.
+
 ## Update Datagrok components
 
-You can update your Datagrok deployment without re-creating infrastructure. Before updating, we recommend backing
-up the database and persistent storage. Refer to your internal backup procedures.
+You can update your Datagrok deployment without re-creating infrastructure. Before updating, back up
+the database and persistent storage.
 
 ### How to update
 
-Use the same [deployment script](#deploy-datagrok-components) and an updated version of the
-deployment profile:
-
-1. Click **Update** > **Replace current template**, and provide the new template URL corresponding to your deployment
-  configuration.
-1. Specify new versions of image tags (see the [latest version](../releases/release-history.md)).
+1. Click **Update** > **Replace current template**, and provide the new template URL corresponding
+   to your deployment configuration.
+1. Specify new image tag versions (see [Release history](../releases/release-history.md)).
 1. Click **Next**, skip optional settings, and proceed to **Review**.
-1. If the stack enters a failed state (e.g., `UPDATE_ROLLBACK_IN_PROGRESS`), [check events](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#basic-ts-guide) for details.
+1. If the stack enters a failed state (e.g., `UPDATE_ROLLBACK_IN_PROGRESS`),
+   [check events](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#basic-ts-guide)
+   for details.
 
 :::note
 
-- CloudFormation will not replace database or file storage during update.
-- Your platform URL, admin credentials, and uploaded files will remain unchanged.
-- If you previously customized your deployment with environment variables, they will persist unless explicitly
-  modified in parameters.
+- CloudFormation does not replace the RDS database or S3 bucket on update.
+- Your platform URL, admin credentials, and uploaded files remain unchanged.
+- Customisations applied via stack parameters persist; environment-variable overrides applied
+  outside the stack do not.
 
 :::
 

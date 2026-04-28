@@ -2,127 +2,69 @@
 title: "Deployment"
 ---
 
-To deploy Datagrok services, you can use [Docker containers](https://www.docker.com/resources/what-container/#:~:text=A%20Docker%20container%20image%20is,tools%2C%20system%20libraries%20and%20settings.). Datagrok consists of [core](../develop/under-the-hood/infrastructure.md#1-core-components) containers, compute containers, a PostgreSQL database to store metadata, and [persistent file storage](../develop/under-the-hood/infrastructure.md#1-core-components) to store files.
+Datagrok runs as a set of Docker containers on top of a PostgreSQL metadata database and
+persistent file storage. The same containers ship across every deployment path; what changes is
+where they run and what manages their lifecycle.
 
-Using Docker containers, you can deploy Datagrok on many environments, such as container services in the cloud providers, for example, [AWS ECS](#aws-deployment), [Kubernetes](#kubernetes-deployment), [bare-metal machines](#regular-machine-deployment), [virtual machines](#regular-machine-deployment), and so on.
+## Components
 
-To store data for Datagrok, we recommend using scalable and highly reliable solutions such as [AWS S3](https://aws.amazon.com/s3/) for persistent file storage and [AWS RDS](https://aws.amazon.com/rds/) as a PostgreSQL database.
+Every Datagrok stand runs the following services. The same images are used on every deployment
+path; the [Helm chart](k8s/install-helm-chart.md) is the canonical reference for service
+configuration.
 
-## Local deployment
+| Service                     | Image                                | Role |
+|-----------------------------|--------------------------------------|------|
+| **Datagrok**                | `datagrok/datagrok`                  | Core REST API, web client, authn/authz, metadata persistence, Nginx reverse proxy. |
+| **PostgreSQL**              | `pgvector/pgvector:pg17`             | Metadata store (users, projects, packages, queries, scripts, file index). RDS / Cloud SQL / in-cluster. |
+| **grok\_pipe**              | `datagrok/grok_pipe`                 | WebSocket multiplexer for streaming DataFrames and script results between clients and Jupyter workers. |
+| **grok\_spawner**           | `datagrok/grok_spawner`              | Manages plugin container lifecycle on Docker / Swarm / ECS / Kubernetes (selected per deployment). |
+| **grok\_connect**           | `datagrok/grok_connect`              | JDBC bridge for 30+ external databases. |
+| **JupyterKernelGateway**    | `datagrok/jupyter_kernel_gateway`    | Server-side script execution (Python, R, Julia, JavaScript, Octave). |
+| **RabbitMQ**                | `rabbitmq:4.0.5-management`          | AMQP broker for the call queue (script and function execution). Independent release cadence. |
+| **grok\_registry\_proxy**   | `datagrok/grok_registry_proxy`       | Optional. Proxies plugin image pulls from a backing registry (ECR, Docker Hub) using Datagrok JWT auth, so users never see registry credentials. |
 
-[Local deployment](docker-compose/docker-compose.md) is a quick way to see Datagrok in action using [Docker Compose](https://docs.docker.com/compose/). You can use it for local evaluation and development.
+For object storage, use AWS S3, Google Cloud Storage, Azure Blob, or a local volume — see the
+chart's `storage.type` value or [File storage](../develop/under-the-hood/architecture.md).
 
-<!-- ### Deploy script
+## Deployment paths
 
-The interactive way to deploy the platform is to use
-our [deployment script](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/deploy.sh)
+Five paths are supported. They share images and configuration parameters; pick by where the
+Datagrok stand will live.
 
-1. Download the script from
-   repository: [deploy.sh](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/admin/deploy/deploy.sh)
-2. For AWS deployment, check that you have
-   all [required permissions](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/iam.list)
-   on AWS account and installed [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) with your credentials
-3. Run the script. It will ask questions and deploy a Datagrok stand based on your answers. The supported deployment
-   platform:
-   ECS, Kubernetes, Virtual Machine.
+| Path | Use when |
+|------|----------|
+| [Local Docker Compose](docker-compose/docker-compose.md) | Single machine — laptop or VM — for evaluation, demos, or development. Self-contained PostgreSQL inside Compose. |
+| [Advanced Docker Compose](docker-compose/docker-compose-advanced.md) | Single-machine deployments that need separate data volumes, the JS-API debug stack, or other custom topology. |
+| [AWS CloudFormation (EKS)](aws/deploy-amazon-eks.mdx) | **Recommended for new AWS stands.** Provisions EKS, RDS, S3, IAM with IRSA, and installs the [Helm chart](k8s/install-helm-chart.md) automatically. |
+| [AWS CloudFormation (ECS)](aws/deploy-amazon-ecs.mdx) | Existing ECS stacks. Same RDS / S3 logical IDs as the EKS template, so an in-place stack-template swap migrates without re-creating data. Targeted for deprecation. |
+| [Kubernetes Helm chart](k8s/install-helm-chart.md) | Any Kubernetes cluster: on-prem, GKE, AKS, kind, k3s, MicroK8s, or a pre-existing EKS. The EKS CFN template uses the same chart. |
 
-   * EC2 instance should be treated like Virtual Machine. It is required to create EC2 instances before the script run.
-     You can check how to create instances
-     in [regular machine example preparations steps](bare-metal/deploy-regular.md#preparations)
+The [AWS Marketplace](aws/deploy-marketplace.md) listing wraps the EKS template for one-click,
+infrastructure-isolated installs.
 
-```bash
-sh deploy.sh
-```
---->
+[Terraform on AWS](aws/deploy-amazon-terraform.md) and [Terraform on GCP](GCP/deploy-gcp-gke-terraform.md)
+are available for teams that integrate Datagrok into existing infrastructure-as-code pipelines.
 
-## AWS deployment
+[Bare-metal / VM](bare-metal/deploy-regular.md) is the manual Docker-on-host path for environments
+without container orchestration.
 
-We strongly recommend using [AWS ECS](https://aws.amazon.com/ecs/) for the Datagrok deployment. It provides a highly
-scalable, fast container management service that makes it easy to manage application components.
+## EKS or Helm directly?
 
-We prepared three options for effortless and secure deployments to AWS:
+The EKS CloudFormation template **calls** the Helm chart — it is not a separate deployment. Pick
+based on what infrastructure you already manage:
 
-* [Marketplace](aws/deploy-marketplace.md). The easiest way to start with Datagrok on AWS. [Marketplace](https://aws.amazon.com/marketplace) deployment scripts create a separate infrastructure for Datagrok from scratch.
-* [CloudFormation (EKS)](aws/deploy-amazon-eks.mdx). Using the [CloudFormation template](https://aws.amazon.com/cloudformation/), you can customize the Datagrok infrastructure with an elaborate template that considers all standard security policies. The legacy [ECS variant](aws/deploy-amazon-ecs.mdx) is deprecated.
-* [Terraform](aws/deploy-amazon-terraform.md). It is the most flexible solution. You can integrate Datagrok into your existing infrastructure with consideration of your security policies. However, [Terraform](https://www.terraform.io/) is also an advanced option that requires additional knowledge in infrastructure as a code area.
-
-## Kubernetes deployment
-
-Deploy Datagrok to any [Kubernetes](https://kubernetes.io/) cluster using the unified Helm chart. The
-chart supports two deployment profiles:
-
-* **Internal**: self-contained deployment where PostgreSQL and file storage run inside the cluster.
-  Suitable for on-premises, MicroK8s, kind, or any Kubernetes cluster without managed cloud services.
-* **Cloud**: PostgreSQL and file storage are offloaded to managed services (AWS RDS + S3, or GCP
-  Cloud SQL + GCS). The chart includes value overlays for
-  [EKS](https://aws.amazon.com/eks/) and [GKE](https://cloud.google.com/kubernetes-engine).
-
-Any combination is possible (for example, internal database with S3 storage).
-
-### Quick start (internal)
-
-```bash
-helm install datagrok ./deploy/k8s/datagrok/ \
-  --set postgres.adminPassword=<ADMIN_PASS> \
-  --set postgres.password=<DB_PASS> \
-  --set ingress.host=datagrok.example.com \
-  -n datagrok --create-namespace
-```
-
-This deploys all Datagrok services, an in-cluster PostgreSQL instance with persistent storage, and
-local PVCs for file storage. RabbitMQ, Grok Connect, Grok Pipe, Jupyter Kernel Gateway, and
-Grok Spawner (Kubernetes mode) are included.
-
-### Cloud deployment (EKS)
-
-```bash
-helm install datagrok ./deploy/k8s/datagrok/ \
-  -f ./deploy/k8s/datagrok/values-eks.yaml \
-  --set postgres.external.host=<RDS_ENDPOINT> \
-  --set postgres.password=<DB_PASS> \
-  --set storage.s3.bucket=<BUCKET_NAME> \
-  --set ingress.host=datagrok.example.com \
-  -n datagrok --create-namespace
-```
-
-The EKS overlay (`values-eks.yaml`) configures external RDS, S3 storage, ALB ingress, IRSA service
-accounts, and External Secrets Operator integration. A similar overlay exists for GKE
-(`values-gke.yaml`) with Cloud SQL and GCS.
-
-### Container registry
-
-The chart supports three registry modes for plugin container images:
-
-* **Internal** (`registry.type: internal`): a shared Docker Distribution registry for all instances
-  in the cluster. Needs an ingress for `grok publish` from outside the cluster.
-* **Proxy** (`registry.type: proxy`): deploys `grok_registry_proxy` that translates Datagrok JWT
-  authentication to ECR or Google Artifact Registry credentials. Used for cloud deployments.
-* **External** (`registry.type: external`): references an existing registry by URL without deploying
-  anything.
-
-### Grok Spawner
-
-Grok Spawner runs in Kubernetes mode by default. The chart creates a dedicated ServiceAccount with
-RBAC permissions to manage Deployments and Services in its namespace. Plugin containers are spawned
-as Kubernetes pods on the same cluster.
-
-### Configuration
-
-All services are configured through a single `values.yaml`. The chart builds the `GROK_PARAMETERS`
-JSON automatically from structured Helm values. See
-[Server configuration](configuration.md) for the full list of configuration options.
-
-For existing deployments, set `postgres.existingClaim`, `storage.local.existingDataClaim`, and
-`storage.local.existingCfgClaim` to reuse existing PersistentVolumeClaims during migration.
-
-## Regular machine deployment
-
-You can deploy Datagrok to a [regular machine](bare-metal/deploy-regular.md): bare-metal servers or virtual machines, including [EC2 instances](https://aws.amazon.com/ec2/). However, this method is less reliable, scalable, and maintainable than others. You need to set up hosts manually and manage the data storage. Consider using other options if possible.
+* Use **CloudFormation (EKS)** if you want one stack to provision the cluster, RDS, S3, IAM, and the
+  application together. The template can also target a pre-existing EKS cluster
+  (`UseExistingCluster=true`).
+* Use the **Helm chart directly** if your cluster, database, and object storage already exist, or
+  if the cluster is not on AWS (GKE, AKS, on-prem). The chart ships ready-made overlays for EKS
+  (`values-eks.yaml`) and GKE (`values-gke.yaml`).
 
 ## Complete the setup
 
-After the deployment, open the platform to complete the setup:  
+After the platform is reachable, configure cross-cutting concerns:
 
-1. [Configure authentication](complete-setup/configure-auth.md)
-2. [Configure SMTP](complete-setup/configure-smtp.md)
+1. [Authentication](complete-setup/configure-auth.md) (LDAP, OAuth, SAML, IAP, etc.)
+2. [SMTP](complete-setup/configure-smtp.md)
 3. [Install packages](complete-setup/install-packages.md)
+4. [S3 backups](complete-setup/configure-s3-backup.md) (cloud deployments)

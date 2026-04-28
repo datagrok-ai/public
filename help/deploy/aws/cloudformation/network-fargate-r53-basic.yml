@@ -2376,7 +2376,9 @@ Resources:
       RequiresCompatibilities:
       - FARGATE
       TaskRoleArn:
-        Ref: DatagrokTaskRole
+        Fn::GetAtt:
+        - DatagrokTaskRole
+        - Arn
     Type: AWS::ECS::TaskDefinition
   DatagrokTaskExecutionRole:
     Properties:
@@ -3118,7 +3120,9 @@ Resources:
       RequiresCompatibilities:
       - FARGATE
       TaskRoleArn:
-        Ref: GrokRegistryProxyTaskRole
+        Fn::GetAtt:
+        - GrokRegistryProxyTaskRole
+        - Arn
     Type: AWS::ECS::TaskDefinition
   GrokRegistryProxyTaskRole:
     Condition: RegistryProxyEnabled
@@ -3568,7 +3572,9 @@ Resources:
       RequiresCompatibilities:
       - FARGATE
       TaskRoleArn:
-        Ref: GrokSpawnerTaskRole
+        Fn::GetAtt:
+        - GrokSpawnerTaskRole
+        - Arn
     Type: AWS::ECS::TaskDefinition
   GrokSpawnerTaskRole:
     Properties:
