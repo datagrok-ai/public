@@ -241,19 +241,66 @@ function handleDrop(drop: DropSession): void {
   sessions.delete(drop.sessionId);
 }
 
-(self as any).onmessage = async (event: MessageEvent<WorkerOutbound>) => {
+// `self` is typed as `Window` here because compute-utils' tsconfig
+// lib is ["es2023", "dom"] (no webworker). The worker scope's
+// postMessage signature differs from Window's (no targetOrigin, transfer
+// is the second arg, not third). Cast through a small typed shim so the
+// rest of this file stays type-safe instead of using `(self as any)`.
+type OutboundReply = SetupAck | WorkerSuccess | WorkerFailure;
+
+interface FittingWorkerScope {
+  onmessage: ((ev: MessageEvent<WorkerOutbound>) => unknown) | null;
+  postMessage(message: OutboundReply, transfer?: Transferable[]): void;
+}
+
+const ctx = self as unknown as FittingWorkerScope;
+
+// Wrap the outbound postMessage so that a structured-clone failure on the
+// reply (detached transferable, exotic value past the type system, etc.)
+// turns into a non-transferable failure reply instead of an unhandled
+// rejection in this async handler — the parent's pending dispatchRun would
+// otherwise hang because worker `unhandledrejection` doesn't reliably
+// propagate to `worker.onerror`.
+function safePostMessage(msg: OutboundReply, transferables?: Transferable[]): void {
+  try {
+    if (transferables && transferables.length) ctx.postMessage(msg, transferables);
+    else ctx.postMessage(msg);
+  } catch (e) {
+    const taskId = (msg.kind === 'success' || msg.kind === 'failure') ? msg.taskId : 0;
+    const fallback: WorkerFailure = {
+      kind: 'failure',
+      taskId,
+      message: `reply send failed: ${e instanceof Error ? e.message : String(e)}`,
+      failKind: 'other',
+      seed: new Float64Array(0),
+    };
+    try { ctx.postMessage(fallback); } catch { /* unrecoverable */ }
+  }
+}
+
+ctx.onmessage = async (event: MessageEvent<WorkerOutbound>) => {
   const msg = event.data;
   if (msg.kind === 'setup-fit') {
     const ack = handleSetup(msg);
-    (self as any).postMessage(ack);
+    safePostMessage(ack);
     return;
   }
   if (msg.kind === 'run-seed') {
-    const reply = await handleRun(msg);
+    let reply: WorkerSuccess | WorkerFailure;
+    try {
+      reply = await handleRun(msg);
+    } catch (e) {
+      // handleRun has its own try/catch; this is belt-and-braces.
+      reply = {
+        kind: 'failure', taskId: msg.taskId,
+        message: e instanceof Error ? e.message : String(e),
+        failKind: 'other', seed: msg.seed,
+      };
+    }
     const transferables: Transferable[] = [];
     if (reply.kind === 'success') transferables.push(reply.point.buffer);
     else transferables.push(reply.seed.buffer);
-    (self as any).postMessage(reply, transferables);
+    safePostMessage(reply, transferables);
     return;
   }
   if (msg.kind === 'drop-session') {

@@ -44,13 +44,29 @@ type Slot = {
   pendingSetups: Map<SessionId, PendingSetup>;
 };
 
+/** Bounds on every promise returned from the pool, so that a worker that
+ *  silently wedges (infinite loop in user JS, dead under structured-clone
+ *  errors, etc.) can't hang a fit indefinitely. */
+export interface WorkerPoolOptions {
+  /** Reject setupAll's per-slot ack after this duration. Default: 20000. */
+  setupTimeoutMs?: number;
+  /** Reject a single dispatched seed (one Nelder-Mead run from one
+   *  starting point) after this duration. Default: 60000 (1 min). */
+  runTimeoutMs?: number;
+}
+
 export class WorkerPool {
   private slots: Slot[] = [];
   private queue: PendingRun[] = [];
   private disposed = false;
   private nextTaskId = 1;
+  private readonly setupTimeoutMs: number;
+  private readonly runTimeoutMs: number;
 
-  constructor(private readonly size: number) {}
+  constructor(private readonly size: number, opts: WorkerPoolOptions = {}) {
+    this.setupTimeoutMs = opts.setupTimeoutMs ?? 20_000;
+    this.runTimeoutMs = opts.runTimeoutMs ?? 60_000;
+  }
 
   // Construct workers lazily, on first setup. Lets the pool be allocated
   // cheaply (e.g. per-FittingView) without paying the worker spin-up cost
@@ -129,8 +145,62 @@ export class WorkerPool {
       this.queue.splice(i, 1);
       slot.busy = true;
       slot.current = pending;
+      // Per-run timeout: terminates the slot if the worker wedges (e.g.
+      // infinite loop in user JS body) so the dispatchRun promise resolves
+      // instead of hanging forever.
+      const timer = setTimeout(() => {
+        if (slot.current !== pending) return;
+        slot.current = null;
+        slot.busy = false;
+        this.removeSlot(slot, 'run timed out');
+        pending.resolve({
+          kind: 'failure', taskId: pending.run.taskId,
+          message: `run timed out after ${this.runTimeoutMs}ms`,
+          failKind: 'other', seed: pending.run.seed,
+        });
+      }, this.runTimeoutMs);
+      const originalResolve = pending.resolve;
+      pending.resolve = (r) => { clearTimeout(timer); originalResolve(r); };
       slot.worker.postMessage(pending.run, pending.transferables);
     }
+    // If the pool has lost all workers (timeouts or onerror) and there's
+    // still queued work, callers would otherwise wait forever. Drain.
+    if (this.slots.length === 0 && this.queue.length > 0) {
+      const stuck = this.queue;
+      this.queue = [];
+      for (const pending of stuck) {
+        pending.resolve({
+          kind: 'failure', taskId: pending.run.taskId,
+          message: 'no workers available', failKind: 'other',
+          seed: pending.run.seed,
+        });
+      }
+    }
+  }
+
+  private removeSlot(slot: Slot, reason: string): void {
+    const idx = this.slots.indexOf(slot);
+    if (idx < 0) return;
+    this.slots.splice(idx, 1);
+    for (const ps of slot.pendingSetups.values()) {
+      ps.resolve({
+        kind: 'setup-ack', sessionId: ps.sessionId, ok: false,
+        message: `worker removed: ${reason}`,
+      });
+    }
+    slot.pendingSetups.clear();
+    if (slot.current) {
+      const cur = slot.current;
+      slot.current = null;
+      slot.busy = false;
+      cur.resolve({
+        kind: 'failure', taskId: cur.run.taskId,
+        message: `worker removed: ${reason}`,
+        failKind: 'other', seed: cur.run.seed,
+      });
+    }
+    try { slot.worker.terminate(); } catch { /* ignore */ }
+    this.pump();
   }
 
   // Send `setup` to every slot; resolve when all acks come back ok, reject
@@ -139,13 +209,28 @@ export class WorkerPool {
   // the underlying buffer before sibling slots could clone it; copying is
   // simpler and still avoids the per-seed re-encoding cost the split was
   // designed to fix.
+  //
+  // Each ack is bounded by `setupTimeoutMs`; on timeout the slot is
+  // terminated and removed from the pool, and setupAll fails.
   async setupAll(setup: FitSessionSetup, _transferables: Transferable[]): Promise<void> {
     if (this.disposed) throw new Error('pool disposed');
     this.ensureWorkers();
     const acks: Promise<SetupAck>[] = [];
-    for (const slot of this.slots) {
+    for (const slot of [...this.slots]) {
       acks.push(new Promise<SetupAck>((resolve) => {
-        slot.pendingSetups.set(setup.sessionId, {sessionId: setup.sessionId, resolve});
+        const timer = setTimeout(() => {
+          if (!slot.pendingSetups.has(setup.sessionId)) return;
+          slot.pendingSetups.delete(setup.sessionId);
+          this.removeSlot(slot, 'setup timed out');
+          resolve({
+            kind: 'setup-ack', sessionId: setup.sessionId, ok: false,
+            message: `setup timed out after ${this.setupTimeoutMs}ms`,
+          });
+        }, this.setupTimeoutMs);
+        slot.pendingSetups.set(setup.sessionId, {
+          sessionId: setup.sessionId,
+          resolve: (ack) => { clearTimeout(timer); resolve(ack); },
+        });
         slot.worker.postMessage(setup);
       }));
     }
@@ -189,10 +274,27 @@ export class WorkerPool {
     if (this.disposed) return;
     this.disposed = true;
     for (const slot of this.slots) {
+      // Drain in-flight setup acks so setupAll's Promise.all can settle.
+      for (const ps of slot.pendingSetups.values()) {
+        ps.resolve({
+          kind: 'setup-ack', sessionId: ps.sessionId, ok: false,
+          message: 'pool disposed before setup completed',
+        });
+      }
+      slot.pendingSetups.clear();
+      // Drain a run already dispatched but not yet replied.
+      if (slot.current) {
+        slot.current.resolve({
+          kind: 'failure', taskId: slot.current.run.taskId,
+          message: 'pool disposed mid-run', failKind: 'other',
+          seed: slot.current.run.seed,
+        });
+        slot.current = null;
+      }
       try { slot.worker.terminate(); } catch { /* ignore */ }
     }
     this.slots = [];
-    // Drain pending — resolve as failures so callers don't hang.
+    // Drain queued runs that were never dispatched.
     for (const pending of this.queue) {
       pending.resolve({
         kind: 'failure',
