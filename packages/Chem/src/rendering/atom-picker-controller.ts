@@ -161,7 +161,11 @@ export class AtomPickerController {
       (args: unknown) => this._onMol3DHoverEvent(args));
   }
 
-  /** Pre-warms the atom-positions cache on idle so hover responds instantly. */
+  /** Prewarms the atom-positions cache for one cell. Called from the
+   *  renderer's `onMouseEnter` (per cell the cursor actually enters), not
+   *  from `render()`, so scrolling 100s of rows doesn't queue 100s of
+   *  SVG-extraction tasks. The work is deferred via `setTimeout(0)` so the
+   *  current event handler returns before the heavy SVG generation runs. */
   warmCacheIfNeeded(col: DG.Column, molString: string, cssW: number, cssH: number): void {
     if (!this._isPickerActive(col)) return;
     const dpr = window.devicePixelRatio || 1;
@@ -173,8 +177,10 @@ export class AtomPickerController {
   }
 
   // -- Hover-paint atom picker ----------------------------------------------
-  // Shift+hover paints atoms; Ctrl+Shift erases. No click needed — grid focus
-  // stays on the current cell so the context panel remains open. Escape clears.
+  // No-modifier click shows a transient preview of one atom under the cursor.
+  // Shift+click/drag paints atoms persistently; Shift+Ctrl/Cmd erases.
+  // Mirrors the 3D Molstar-side modifier scheme so paint/erase keys match.
+  // Escape clears all picker selections in the grid's DataFrame.
   // Wired via DG.GridCellRenderer overrides (no document-wide listeners).
 
   /** Resolves the atom under the cursor. Coordinates are grid-canvas-relative
@@ -220,7 +226,7 @@ export class AtomPickerController {
     const isErase = e.shiftKey && (e.ctrlKey || e.metaKey);
     const isPaint = e.shiftKey && !(e.ctrlKey || e.metaKey);
 
-    // -- Shift / Ctrl+Shift: persistent paint/erase mode --
+    // -- Shift: paint. Shift+Ctrl / Shift+Cmd: erase. No-modifier: preview. --
     if (isPaint || isErase) {
       this._previewAtomIdx = null;
       if (!hit) return;
@@ -303,8 +309,8 @@ export class AtomPickerController {
    *  hit-test from page coords because Datagrok captures shift-mousemove
    *  at the Dart level and does not forward it to the renderer's onMouseMove. */
   _onShiftDragMouseMove(e: MouseEvent): void {
-    const isErase = e.shiftKey && e.ctrlKey;
-    const isPaint = e.shiftKey && !e.ctrlKey;
+    const isErase = e.shiftKey && (e.ctrlKey || e.metaKey);
+    const isPaint = e.shiftKey && !(e.ctrlKey || e.metaKey);
     if (!isPaint && !isErase) return;
 
     const grid = grok.shell.tv?.grid;
@@ -369,35 +375,33 @@ export class AtomPickerController {
     const prov = this._getProviderForRow(col, rowIdx);
     if (!prov?.__atoms?.has(atomIdx)) return;
 
-    prov.__atoms.delete(atomIdx);
+    // Compute the reduced set on a copy — `prov` is a snapshot from
+    // `col.temp`, so in-place `Set.delete` would not survive the next read.
+    const reduced = new Set(prov.__atoms);
+    reduced.delete(atomIdx);
 
-    if (prov.__atoms.size === 0) {
+    if (reduced.size === 0) {
+      // Last atom removed — drop the picker provider and broadcast empty.
       col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = this._getProviders(col).filter(
         (p) => !p.__atomPicker || p.__rowIdx !== rowIdx);
+      grok.events.fireCustomEvent(CHEM_ATOM_SELECTION_EVENT,
+        this._buildSelectionEvent(col, rowIdx, []));
     } else {
-      // Rebuild the provider with the reduced atom set.
-      const pickColor: number[] = [1.0, 1.0, 0.0, 1.0];
-      const atomsArr = [...prov.__atoms];
-      const highlightAtomColors: {[k: number]: number[]} = {};
-      for (const a of atomsArr) highlightAtomColors[a] = pickColor;
-      const {bondsArr, highlightBondColors} =
-        computeSelectedBonds(prov.__atoms, bondAtoms, pickColor);
-
-      prov.getSubstruct = (ridx) => {
-        if (!this._isPickerActive(col)) return undefined;
-        if (ridx !== rowIdx) return undefined;
-        return {atoms: atomsArr, bonds: bondsArr, highlightAtomColors, highlightBondColors};
-      };
+      // Replace the provider via the canonical write path — this re-builds
+      // the closure-captured atomsArr/bonds so 2D renders the reduced set,
+      // and pushes the new providers array through the col.temp proxy in
+      // one atomic write. (`add: false` clears prior and uses boxed.)
+      this._updateRowSelection(col, rowIdx, [...reduced], {add: false},
+        bondAtoms, true, true);
     }
-
-    const atoms = prov.__atoms.size > 0 ? [...prov.__atoms] : [];
-    grok.events.fireCustomEvent(CHEM_ATOM_SELECTION_EVENT,
-      this._buildSelectionEvent(col, rowIdx, atoms));
   }
 
-  /** Shows persistent atoms + the hovered atom as a non-persistent preview.
-   *  Restores `__atoms` to the persistent-only set afterward so the preview
-   *  atom doesn't leak into storage. */
+  /** Renders persistent atoms + the hovered atom as a non-persistent preview,
+   *  but stores ONLY the persistent set in `__atoms` so the preview atom
+   *  doesn't leak into the canonical state. (`col.temp` is a Datagrok proxy
+   *  that returns fresh snapshots on each read; post-hoc mutation of an
+   *  accessed object would be lost — so we let `_updateRowSelection` write
+   *  the correct `__atoms` on its first pass via `storeAtoms`.) */
   _setPreviewAtom(col: DG.Column, rowIdx: number, atomIdx: number,
     bondAtoms: Map<number, [number, number]>): void {
     this._previewAtomIdx = atomIdx;
@@ -405,9 +409,8 @@ export class AtomPickerController {
     const persistent = this._getPersistentAtoms(col, rowIdx);
     const combined = new Set(persistent);
     combined.add(atomIdx);
-    this._updateRowSelection(col, rowIdx, [...combined], {add: true}, bondAtoms, true, false);
-    const prov = this._getProviderForRow(col, rowIdx);
-    if (prov) prov.__atoms = persistent;
+    this._updateRowSelection(col, rowIdx, [...combined], {add: true},
+      bondAtoms, true, false, [...persistent]);
   }
 
   /** Restores display to the persistent selection, dropping the preview atom. */
@@ -450,10 +453,19 @@ export class AtomPickerController {
   /**
    * Writes an atom-picker ISubstructProvider for `rowIdx`, replacing the
    * previous one for that row. Other rows' providers are preserved.
+   *
+   * `storeAtoms` (optional) overrides what's written to `provider.__atoms`.
+   * `boxed` controls what's RENDERED (via the closure-captured `atomsArr`);
+   * `__atoms` is the canonical persistent set used by callers that read
+   * the picker state. They differ only for previews — `_setPreviewAtom`
+   * passes a wider `boxed` (persistent + preview atom) and a narrower
+   * `storeAtoms` (persistent-only) so the transient atom is shown but not
+   * stored. When omitted, `__atoms` defaults to the rendered set.
    */
   _updateRowSelection(col: DG.Column, rowIdx: number, boxed: number[],
     modifiers: {add: boolean}, bondAtoms: Map<number, [number, number]>,
-    fire3DEvent: boolean = true, persistent: boolean = true): void {
+    fire3DEvent: boolean = true, persistent: boolean = true,
+    storeAtoms?: number[]): void {
     const prior = this._getProviderForRow(col, rowIdx);
     const current = new Set<number>(prior?.__atoms ?? []);
 
@@ -479,7 +491,7 @@ export class AtomPickerController {
     };
     provider.__atomPicker = true;
     provider.__rowIdx = rowIdx;
-    provider.__atoms = current;
+    provider.__atoms = storeAtoms !== undefined ? new Set(storeAtoms) : current;
 
     // Replace only the prior provider for this row; keep picks on other rows.
     col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = this._getProviders(col).filter(
