@@ -297,6 +297,9 @@ type ItemPreviewMeta =
 export class DiffStudio {
   /** Run Diff Studio application */
   public async runSolverApp(content?: string, state?: EDITOR_STATE, path?: string): Promise<DG.ViewBase> {
+    // Full-view supersedes any reusable tree preview — release it so the platform's
+    // preview slot frees up and the static reference does not pin a stale instance.
+    DiffStudio.releaseSharedPreview();
     closeWindows();
     await this.createEditorView(content);
     this.solverView.setRibbonPanels(this.getRibbonPanels());
@@ -423,7 +426,10 @@ export class DiffStudio {
 
   /** Dock the inputs tab on the left and kick off solving — shared by previews */
   private schedulePreviewDock(): void {
-    setTimeout(() => {
+    if (this.previewDockTimer !== null)
+      clearTimeout(this.previewDockTimer);
+    this.previewDockTimer = window.setTimeout(() => {
+      this.previewDockTimer = null;
       const node = this.solverView.dockManager.dock(
         this.tabControl.root,
         DG.DOCK_TYPE.LEFT,
@@ -458,6 +464,124 @@ export class DiffStudio {
 
     return this.solverView;
   } // getStatePreview
+
+  /** Public entry for showing a built-in template/example in the shared preview.
+   *  First call (no editor yet) goes through the cold path — full setup with
+   *  dock and ribbon. Subsequent calls reuse the existing view: drain stale
+   *  state, swap the editor doc via `EditorState.create`, and re-solve directly
+   *  without the docking setTimeout. */
+  public async applyState(state: EDITOR_STATE): Promise<DG.View> {
+    if (!this.editorView)
+      return this.getStatePreview(state);
+
+    closeWindows();
+    this.resetForReuse();
+
+    const equations = MODEL_BY_STATE.get(state) as string;
+    await this.swapEditorDoc(equations);
+
+    this.editorState = state;
+    this.solverView.helpUrl = getLink(state);
+    this.entityPath = stateToPath(state);
+    this.toChangePath = true;
+
+    this.updateRibbonWgts();
+
+    this.toRunWhenFormCreated = true;
+    await this.runSolving();
+
+    return this.solverView;
+  } // applyState
+
+  /** Public entry for showing a file in the shared preview. See `applyState` for
+   *  the cold/warm split. The warm path additionally re-reads the file, refreshes
+   *  recent-models, re-wires the Update button, and re-parses URL params. */
+  public async applyFile(file: DG.FileInfo, path: string): Promise<DG.View> {
+    if (!this.editorView)
+      return this.getFilePreview(file, path);
+
+    closeWindows();
+    const equations = await file.readAsString();
+
+    if (file.fullPath.includes(PATH.SLASH))
+      await this.saveModelToRecent(file.fullPath, true);
+
+    this.resetForReuse();
+
+    await this.swapEditorDoc(equations);
+
+    this.mainPath = `${PATH.FILE}/${file.fullPath.replace(':', '.')}`;
+    this.entityPath = '';
+    this.toChangePath = true;
+
+    this.updateBtnFilePath = file.fullPath;
+    this.updateBtn.hidden = true;
+
+    this.updateRibbonWgts();
+
+    const paramsIdx = path.indexOf(PATH.PARAM);
+    if (paramsIdx > -1) {
+      try {
+        this.startingInputs = new Map<string, number>();
+        path.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
+          const eqIdx = equality.indexOf(PATH.EQ);
+          this.startingInputs!.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
+        });
+      } catch (error) {
+        this.startingInputs = null;
+      }
+    }
+
+    this.toRunWhenFormCreated = true;
+    await this.runSolving();
+
+    return this.solverView;
+  } // applyFile
+
+  /** Replace the CodeMirror document in-place without recreating EditorView.
+   *  Cheaper than `createEditorView` (no DOM mount, no event-handler wiring) and
+   *  preserves the editor's parent in the layout. */
+  private async swapEditorDoc(content: string): Promise<void> {
+    const {basicSetup, EditorState, python, autocompletion} = await getCM();
+    const newState = EditorState.create({
+      doc: content,
+      extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
+    });
+    this.editorView!.setState(newState);
+  }
+
+  /** Drain transient per-model state so the instance can be safely reused for a
+   *  different model. Cancels pending dock/facet timers from the previous solve,
+   *  clears the solution table, hides the update button, and switches the user
+   *  back to the solve pane (in case they were editing the previous model). */
+  private resetForReuse(): void {
+    if (this.previewDockTimer !== null) {
+      clearTimeout(this.previewDockTimer);
+      this.previewDockTimer = null;
+    }
+    if (this.facetDockTimer !== null) {
+      clearTimeout(this.facetDockTimer);
+      this.facetDockTimer = null;
+    }
+
+    this.removeFacetGrid();
+
+    this.solutionTable = DG.DataFrame.create();
+    this.solverView.dataFrame = this.solutionTable;
+
+    this.startingInputs = null;
+    this.updateBtnFilePath = null;
+    this.updateBtn.hidden = true;
+
+    this.isModelChanged = false;
+    this.isSolvingSuccess = false;
+    this.toChangeSolutionViewerProps = true;
+    this.toSwitchToModelTab = false;
+    this.toChangeInputs = true;
+
+    if (this.tabControl.currentPane !== this.solvePane)
+      this.tabControl.currentPane = this.solvePane;
+  } // resetForReuse
 
   /** Run Diff Studio with the specified content */
   public async handleContent(content: string): Promise<void> {
@@ -499,8 +623,17 @@ export class DiffStudio {
   private startingInputs: Map<string, number> | null = null;
   private solverView: DG.TableView;
 
-  /** Close all tracked DiffStudio previews. */
-  private static closeOpenPreviews(): void {
+  /** Single reusable preview instance shared across consecutive tree clicks.
+   *  Owned by `openItemPreview` — created on first click, reused on the rest, and
+   *  released by `releaseSharedPreview()` whenever the platform's preview slot
+   *  goes away (full-view opened, navigation, etc.). */
+  private static sharedPreview: DiffStudio | null = null;
+
+  /** Drop the shared preview reference and detach the platform's preview view.
+   *  Safe to call when there is no shared preview — used as the canonical reset
+   *  before any path that would conflict with a live shared instance. */
+  private static releaseSharedPreview(): void {
+    DiffStudio.sharedPreview = null;
     grok.shell.preview = null;
   }
 
@@ -570,6 +703,12 @@ export class DiffStudio {
   private facetGridDiv: HTMLDivElement | null = null;
   private facetGridNode: DG.DockNode | null = null;
   private facetPlots: DG.Viewer[] = [];
+
+  /** Tracked setTimeout ids so a fast tree click can cancel pending work scheduled
+   *  by the previous model — otherwise stale dock/facet operations would fire after
+   *  the new model has already taken over. */
+  private previewDockTimer: number | null = null;
+  private facetDockTimer: number | null = null;
 
   private uiOpts: UiOptions;
 
@@ -1342,7 +1481,10 @@ export class DiffStudio {
         if (!this.facetGridDiv && this.solutionViewer) {
           this.facetGridDiv = this.getFacetPlot();
 
-          setTimeout( () => {
+          if (this.facetDockTimer !== null)
+            clearTimeout(this.facetDockTimer);
+          this.facetDockTimer = window.setTimeout( () => {
+            this.facetDockTimer = null;
             try {
               if (!this.isSolutionViewerPositionValid()) {
                 this.solutionViewer.close();
@@ -2007,28 +2149,40 @@ export class DiffStudio {
   /** Open the preview for a tree item based on its `value` metadata. Focus restore
    *  is armed by the caller in `setupTreeItemSelection`, so no focus handling here. */
   private async openItemPreview(meta: ItemPreviewMeta): Promise<void> {
-    if (meta.kind === 'builtin') {
-      DiffStudio.closeOpenPreviews();
+    // For file kinds, fetch the FileInfo before deciding cold/warm — both paths need it.
+    let file: DG.FileInfo | null = null;
+    if (meta.kind !== 'builtin') {
+      file = await getCachedFileInfo(meta.path);
+      if (!file)
+        return;
+    }
+
+    // Reuse the shared preview if it's still attached to the DOM. A disconnected
+    // root means the platform reclaimed the preview slot (e.g. full-view took over),
+    // and we must rebuild from scratch.
+    const existing = DiffStudio.sharedPreview;
+    const isWarm = existing !== null && existing.solverView.root.isConnected;
+
+    if (isWarm) {
+      if (meta.kind === 'builtin')
+        await existing!.applyState(meta.state);
+      else
+        await existing!.applyFile(file!, meta.path);
+    } else {
+      DiffStudio.releaseSharedPreview();
       const solver = new DiffStudio(false, true, true);
-      const preview = await solver.getStatePreview(meta.state);
+      const preview = meta.kind === 'builtin' ?
+        await solver.applyState(meta.state) :
+        await solver.applyFile(file!, meta.path);
       grok.shell.windows.showToolbox = false;
       grok.shell.windows.showBrowse = true;
       grok.shell.addPreview(preview);
-      return;
+      DiffStudio.sharedPreview = solver;
     }
 
-    const file = await getCachedFileInfo(meta.path);
-    if (!file)
-      return;
-    DiffStudio.closeOpenPreviews();
-    const solver = new DiffStudio(false, true, true);
-    const preview = await solver.getFilePreview(file, meta.path);
-    grok.shell.windows.showToolbox = false;
-    grok.shell.windows.showBrowse = true;
-    grok.shell.addPreview(preview);
     if (meta.kind === 'custom')
       await this.saveModelToRecent(meta.path, true);
-  }
+  } // openItemPreview
 
   /** Return focus to the browse tree once the preview view takes over, and keep it
    *  there while the preview grid/renderer finishes loading (otherwise arrow keys
@@ -2146,7 +2300,7 @@ export class DiffStudio {
         ev.stopPropagation();
         DG.Menu.popup()
           .item('Run', async () => {
-            DiffStudio.closeOpenPreviews();
+            DiffStudio.releaseSharedPreview();
             const solver = new DiffStudio(false, true, true);
             const preview = await solver.getFilePreview(file, path);
             grok.shell.windows.showToolbox = false;
@@ -2382,7 +2536,7 @@ export class DiffStudio {
         return;
       previewTimer = window.setTimeout(() => {
         previewTimer = null;
-        DiffStudio.closeOpenPreviews();
+        DiffStudio.releaseSharedPreview();
         grok.shell.windows.showToolbox = false;
         grok.shell.windows.showBrowse = true;
         grok.shell.addPreview(buildView());
@@ -2433,7 +2587,7 @@ export class DiffStudio {
         return;
       previewTimer = window.setTimeout(async () => {
         previewTimer = null;
-        DiffStudio.closeOpenPreviews();
+        DiffStudio.releaseSharedPreview();
         grok.shell.windows.showToolbox = false;
         grok.shell.windows.showBrowse = true;
         grok.shell.addPreview(await buildView());
@@ -2517,7 +2671,7 @@ export class DiffStudio {
         return;
       previewTimer = window.setTimeout(async () => {
         previewTimer = null;
-        DiffStudio.closeOpenPreviews();
+        DiffStudio.releaseSharedPreview();
         grok.shell.windows.showToolbox = false;
         grok.shell.windows.showBrowse = true;
         grok.shell.addPreview(await buildView());

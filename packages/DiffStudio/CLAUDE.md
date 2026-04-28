@@ -242,6 +242,8 @@ ROS34PRw is the default method. CVODE and LSODA are recommended as general-purpo
 - The package uses Datagrok's `@grok.decorators` for function registration (not plain JSDoc comments)
 - Models can be saved to "Model Hub" for sharing and reuse
 - Sensitivity analysis and parameter fitting are integrated via `@datagrok-libraries/compute-utils`
+- Tree-click previews reuse a single `DiffStudio` instance via the static `sharedPreview` slot. The first click runs a cold path (`getStatePreview`/`getFilePreview`); subsequent clicks call `applyState`/`applyFile`, which swap the CodeMirror doc via `EditorState.create` and re-solve without remounting. **Any new transient per-model field on `DiffStudio` must also be drained in `resetForReuse()`** — otherwise it leaks between consecutive previews.
+- Any path that opens a full-view (creates a `DiffStudio` and calls `grok.shell.addView` on its `solverView`) must call `DiffStudio.releaseSharedPreview()` first, so the static slot does not pin a stale preview after the user navigates away. `runSolverApp` already does this; new entry points should follow the same pattern.
 
 ## Styling conventions
 
