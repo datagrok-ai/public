@@ -33,8 +33,8 @@ Datagrok stand will live.
 
 | Path | Use when |
 |------|----------|
-| [Local Docker Compose](docker-compose/docker-compose.md) | Single machine — laptop or VM — for evaluation, demos, or development. Self-contained PostgreSQL inside Compose. |
-| [Advanced Docker Compose](docker-compose/docker-compose-advanced.md) | Single-machine deployments that need separate data volumes, the JS-API debug stack, or other custom topology. |
+| [Local Docker Compose](docker-compose/docker-compose.mdx) | Single machine — laptop or VM — for evaluation, demos, or development. Self-contained PostgreSQL inside Compose. |
+| [Advanced Docker Compose](docker-compose/docker-compose-advanced.mdx) | Single-machine deployments that need separate data volumes, the JS-API debug stack, or other custom topology. |
 | [AWS CloudFormation (EKS)](aws/deploy-amazon-eks.mdx) | **Recommended for new AWS stands.** Provisions EKS, RDS, S3, IAM with IRSA, and installs the [Helm chart](k8s/install-helm-chart.md) automatically. |
 | [AWS CloudFormation (ECS)](aws/deploy-amazon-ecs.mdx) | Existing ECS stacks. Same RDS / S3 logical IDs as the EKS template, so an in-place stack-template swap migrates without re-creating data. Targeted for deprecation. |
 | [Kubernetes Helm chart](k8s/install-helm-chart.md) | Any Kubernetes cluster: on-prem, GKE, AKS, kind, k3s, MicroK8s, or a pre-existing EKS. The EKS CFN template uses the same chart. |
