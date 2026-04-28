@@ -66,11 +66,11 @@ specific service during a rollout:
 helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
   --version 1.27.3-helm \
   --set datagrok.image.tag=1.27.3 \
-  --set grokPipe.image.tag=1.18.0 \
+  --set grokPipe.image.tag=1.19.0 \
   --set grokConnect.image.tag=2.6.2 \
-  --set spawner.image.tag=2.15.0 \
+  --set spawner.image.tag=2.16.0 \
   --set jkg.image.tag=1.31.0 \
-  --set grokRegistryProxy.image.tag=1.18.0 \
+  --set grokRegistryProxy.image.tag=1.27.1 \
   -n datagrok
 ```
 
