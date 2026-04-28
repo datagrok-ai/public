@@ -178,7 +178,7 @@ export class AtomPickerController {
 
   // -- Hover-paint atom picker ----------------------------------------------
   // No-modifier click shows a transient preview of one atom under the cursor.
-  // Shift+click/drag paints atoms persistently; Shift+Ctrl/Cmd erases.
+  // Ctrl/Cmd+click/drag paints atoms persistently; Ctrl+Shift / Cmd+Shift erases.
   // Mirrors the 3D Molstar-side modifier scheme so paint/erase keys match.
   // Escape clears all picker selections in the grid's DataFrame.
   // Wired via DG.GridCellRenderer overrides (no document-wide listeners).
@@ -223,10 +223,10 @@ export class AtomPickerController {
     const hit = this._hitTestAtomInCell(gridCell, e);
     if (hit)
       e.preventDefault();
-    const isErase = e.shiftKey && (e.ctrlKey || e.metaKey);
-    const isPaint = e.shiftKey && !(e.ctrlKey || e.metaKey);
+    const isErase = (e.ctrlKey || e.metaKey) && e.shiftKey;
+    const isPaint = (e.ctrlKey || e.metaKey) && !e.shiftKey;
 
-    // -- Shift: paint. Shift+Ctrl / Shift+Cmd: erase. No-modifier: preview. --
+    // -- Ctrl/Cmd: paint. Ctrl+Shift / Cmd+Shift: erase. No-modifier: preview. --
     if (isPaint || isErase) {
       this._previewAtomIdx = null;
       if (!hit) return;
@@ -309,8 +309,8 @@ export class AtomPickerController {
    *  hit-test from page coords because Datagrok captures shift-mousemove
    *  at the Dart level and does not forward it to the renderer's onMouseMove. */
   _onShiftDragMouseMove(e: MouseEvent): void {
-    const isErase = e.shiftKey && (e.ctrlKey || e.metaKey);
-    const isPaint = e.shiftKey && !(e.ctrlKey || e.metaKey);
+    const isErase = (e.ctrlKey || e.metaKey) && e.shiftKey;
+    const isPaint = (e.ctrlKey || e.metaKey) && !e.shiftKey;
     if (!isPaint && !isErase) return;
 
     const grid = grok.shell.tv?.grid;
