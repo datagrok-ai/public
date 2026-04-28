@@ -190,16 +190,13 @@ stand a different project name and override the host ports it binds.
 
 2. Pin image versions for the second stand. Any tag from
    [Docker Hub](https://hub.docker.com/r/datagrok/) is valid — see
-   [release history](../releases/release-history.md) for stable releases.
+   [Images and versions](../images.md) for the latest pinned set, or
+   [release history](../releases/release-history.md) for older releases.
 
-   | Environment variable          | Default          |
-   |-------------------------------|------------------|
-   | `DATAGROK_VERSION`            | `bleeding-edge`  |
-   | `GROK_PIPE_VERSION`           | `bleeding-edge`  |
-   | `GROK_SPAWNER_VERSION`        | `bleeding-edge`  |
-   | `GROK_CONNECT_VERSION`        | `bleeding-edge`  |
-   | `JKG_VERSION`                 | `bleeding-edge`  |
-   | `GROK_REGISTRY_PROXY_VERSION` | `bleeding-edge`  |
+   Each service has its own environment variable: `DATAGROK_VERSION`,
+   `GROK_PIPE_VERSION`, `GROK_SPAWNER_VERSION`, `GROK_CONNECT_VERSION`,
+   `JKG_VERSION`, `GROK_REGISTRY_PROXY_VERSION`. They all default to
+   `bleeding-edge`. To pin a stand to the latest stable release:
 
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>

@@ -33,13 +33,8 @@ every sub-service (grok-pipe, grok-spawner, grok-connect, Jupyter Kernel Gateway
 defaults to the same app tag. Override individual service image tags via
 `--set <service>.image.tag=...` — see [Service versions](#service-versions) below.
 
-Available chart versions:
-
-| Version                            | Published from               | Use for           |
-|------------------------------------|------------------------------|-------------------|
-| `1.27.3-helm`, `1.27.2-helm`, ...  | release tags                 | Production        |
-| `1.27.3-rc-helm`, ...              | `release/*` branches         | Release candidates|
-| `bleeding-edge-helm`               | `master`, nightly            | Dev / evaluation  |
+Chart tags follow the same scheme as the Datagrok image tags with a `-helm` suffix; see
+[Images and versions](../images.md#tag-conventions) for the full convention.
 
 ## Quick install (in-cluster Postgres + local storage)
 
@@ -61,9 +56,11 @@ To track the latest unstable build (rebuilt after every merge to `master`), use
 
 ## Service versions
 
-Every service image tag defaults to the chart version. Override individual tags when you need to
-run a newer `grok_connect` against an older `datagrok` core, or to pin a specific service during a
-rollout:
+Every service image tag defaults to the chart version. The default set is documented on
+[Images and versions](../images.md) and matches the
+[AWS CloudFormation templates](../aws/deploy-amazon-eks.mdx). Override individual tags when
+you need to run a newer `grok_connect` against an older `datagrok` core, or to pin a
+specific service during a rollout:
 
 ```bash
 helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
@@ -74,13 +71,10 @@ helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
   --set spawner.image.tag=2.15.0 \
   --set jkg.image.tag=1.31.0 \
   --set grokRegistryProxy.image.tag=1.18.0 \
-  --set rabbitmq.image.tag=4.0.5-management \
   -n datagrok
 ```
 
-The defaults shown above are the versions that ship with the latest stable Datagrok release; the
-[AWS CloudFormation (EKS) template](../aws/deploy-amazon-eks.mdx#service-versions) uses the same
-set. RabbitMQ follows its own upstream release cadence and is not tied to the Datagrok version.
+RabbitMQ follows its own upstream release cadence and is not pinned to the Datagrok version.
 
 ## Production install on AWS EKS
 

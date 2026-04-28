@@ -235,26 +235,13 @@ Our CloudFormation scripts support external DNS providers, however, it will requ
 
 ## Service versions
 
-Every service has a dedicated CloudFormation parameter for picking the container image tag. The
-defaults track the most recent Datagrok release on Docker Hub and are tested together; override
-only when you need to pin a specific release or test a candidate.
-
-| Parameter                     | Default              | Image                              |
-|-------------------------------|----------------------|------------------------------------|
-| `DatagrokVersion`             | `1.27.3`             | `datagrok/datagrok`                |
-| `GrokPipeVersion`             | `1.18.0`             | `datagrok/grok_pipe`               |
-| `GrokSpawnerVersion`          | `2.15.0`             | `datagrok/grok_spawner`            |
-| `GrokConnectVersion`          | `2.6.2`              | `datagrok/grok_connect`            |
-| `JKGVersion`                  | `1.31.0`             | `datagrok/jupyter_kernel_gateway`  |
-| `GrokRegistryProxyVersion`    | `1.18.0`             | `datagrok/grok_registry_proxy`     |
-| `RabbitmqVersion`             | `4.0.5-management`   | `rabbitmq` (independent cadence)   |
-| `HelmChartVersion`            | same as `DatagrokVersion` | Chart tag suffix `-helm` appended automatically (e.g. `1.27.3` → `1.27.3-helm`) pulled from `oci://registry-1.docker.io/datagrok/datagrok` |
-
-For production, leave defaults or pin `DatagrokVersion` to a specific stable release; this also
-fixes the chart version. Use `bleeding-edge` for dev / staging stands that track `master`.
-[Release history](../releases/release-history.md) lists available tags. The
-[Helm chart docs](../k8s/install-helm-chart.md#service-versions) describe the equivalent
-overrides for direct chart installs.
+Every service has a dedicated CloudFormation parameter (`DatagrokVersion`, `GrokPipeVersion`,
+`GrokSpawnerVersion`, `GrokConnectVersion`, `JKGVersion`, `GrokRegistryProxyVersion`,
+`RabbitmqVersion`) for picking the container image tag. Defaults track the most recent
+Datagrok release and are tested together — see [Images and versions](../images.md) for the
+current set and pinning conventions across deployment paths. `HelmChartVersion` defaults to
+`DatagrokVersion`; the template appends `-helm` automatically (e.g. `1.27.3` → chart tag
+`1.27.3-helm`).
 
 ## Update Datagrok components
 
