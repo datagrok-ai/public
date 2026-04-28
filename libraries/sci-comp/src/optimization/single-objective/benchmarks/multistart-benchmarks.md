@@ -317,7 +317,8 @@ PSO's sampling wins in aggregate — global by construction, at the cost of 40�
 more function evaluations. L-BFGS and L-BFGS-B are tied for second place at 31/45;
 their failure modes differ slightly because L-BFGS-B uses native bound projection
 (active here only as projection of `du` onto the unbounded box, which still
-matters via the angle test of Morales–Nocedal 2011). Both quasi-Newton methods
+matters via the directional-derivative endpoint test of Morales–Nocedal 2011).
+Both quasi-Newton methods
 depend heavily on x₀ — the "1-iteration wins" on Rastrigin / Lévi N.13 at
 integer x₀ flip to failures under a 0.1 perturbation (as the B columns show).
 The takeaway is not that one optimizer is universally best, but that **x₀

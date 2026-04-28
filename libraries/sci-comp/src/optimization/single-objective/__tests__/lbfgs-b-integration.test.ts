@@ -99,6 +99,23 @@ describe('LBFGSB minimize Rosenbrock 2D on [-1.5, 0.5]²', () => {
     expect(r.point[0]).toBeCloseTo(0.5, 4);
     expect(r.point[1]).toBeCloseTo(0.25, 3);
   });
+
+  // N5: regression canary for the Morales–Nocedal 2011 endpoint-selection
+  // fix in subspace.ts (directional-derivative test + xc-anchored
+  // truncation + bound snap). Pre-fix iteration count was 6; post-fix
+  // is 5. Locking the upper bound at 5 catches a regression that
+  // restores either (a) the η-angle test, or (b) the x_k truncation
+  // reference, or (c) loses the bound snap. If the count drops below
+  // 5 in a future numerical improvement, tighten this expectation.
+  it('reaches optimum in ≤ 5 iterations (Morales–Nocedal endpoint-selection canary)', () => {
+    let iters = 0;
+    const r = opt.minimize(rosenbrock, x0, {
+      ...settings,
+      onIteration: ({iteration}) => {iters = iteration; return false;},
+    });
+    expect(r.converged).toBe(true);
+    expect(iters).toBeLessThanOrEqual(5);
+  });
 });
 
 describe('LBFGSB minimize Sphere with fixed variable (l == u)', () => {

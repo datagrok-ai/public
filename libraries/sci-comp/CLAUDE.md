@@ -30,7 +30,7 @@ src/optimization/
         bfgs-mat.ts               # BFGSMat compact representation (ring buffer, W-products, block Cholesky, solveM)
         bounds.ts                 # normalizeBounds, classifyBounds, project, projectedGradient, maxFeasibleStep
         cauchy.ts                 # Generalized Cauchy point + binary min-heap
-        subspace.ts               # Subspace minimisation (SMW direct primal) + Morales–Nocedal 2011 project + angle-test endpoint, 1997 truncation as fallback
+        subspace.ts               # Subspace minimisation (SMW direct primal) + Morales–Nocedal 2011 endpoint selection (directional-derivative test) + xc-anchored 1997 truncation with bound snap
     __tests__/                    # Jest tests per optimizer + registry (sync & async)
       helpers.ts                  # Test utilities: rosenbrock, sphere, gaussian, quadratic3d, etc.
       lbfgs-b.test.ts             # Scaffold + settings validation
@@ -38,7 +38,7 @@ src/optimization/
       lbfgs-b-bfgs-mat.test.ts    # Compact rep: single-pair vs closed form, secant equation, K·M·z round-trip
       lbfgs-b-bounds.test.ts      # Bounds helpers unit tests
       lbfgs-b-cauchy.test.ts      # Cauchy sweep: unconstrained, 1-D snap, feasibility, c = Wᵀ(xc-x) invariant
-      lbfgs-b-subspace.test.ts    # Subspace min: early exits, Newton-like property, M-N 2011 endpoint selection (angle test + 1997 truncation)
+      lbfgs-b-subspace.test.ts    # Subspace min: early exits, Newton-like property, M-N 2011 endpoint selection (directional-derivative test, xc-anchored truncation, bound snap)
       lbfgs-b-integration.test.ts # End-to-end: Rosenbrock / Sphere / bounded / fixed / half-bounded / maximize
     examples/                     # Runnable examples (npx tsx src/optimization/single-objective/examples/*.ts)
       unconstrained.ts            # Rosenbrock, Sphere, Gaussian examples

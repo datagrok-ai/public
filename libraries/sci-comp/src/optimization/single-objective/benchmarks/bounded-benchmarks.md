@@ -82,7 +82,7 @@ methods get stuck in local minima of Ackley's rugged surface.
 
 |   | Method | Mode | Found Value | \|Error\| | Dist to Opt | Feas Vio | Conv | Iters | Fn Evals |
 |---|--------|------|------------:|----------:|------------:|---------:|------|------:|---------:|
-| ✅ | L-BFGS-B | native | 0.2500 | 0 | 6.27e-13 | **0** | yes | 7 | 55 |
+| ✅ | L-BFGS-B | native | 0.2500 | 0 | 1.00e-13 | **0** | yes | 6 | 50 |
 | ❌ | L-BFGS | penalty | 0.2498 | 2.50e-4 | 7.07e-4 | 5.00e-4 | yes | 19 | 113 |
 | ❌ | Adam | penalty | 0.2500 | 7.92e-6 | 9.46e-4 | 7.93e-4 | yes | 125 | 626 |
 | ❌ | GradientDescent | penalty | 0.2498 | 2.50e-4 | 7.07e-4 | 5.00e-4 | yes | 227 | 1136 |

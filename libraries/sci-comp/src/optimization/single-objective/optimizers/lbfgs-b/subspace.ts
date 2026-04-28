@@ -1,6 +1,6 @@
 /**
  * Subspace minimisation for L-BFGS-B with the Morales–Nocedal (2011)
- * project-and-angle-test refinement.
+ * endpoint-selection refinement.
  *
  * Given the Cauchy point `xᶜ` and free set `F = {i : lᵢ < xᶜᵢ < uᵢ}`,
  * we approximately solve
@@ -22,23 +22,31 @@
  * (it is not generally SPD).
  *
  * Endpoint selection (Morales–Nocedal 2011, `c-jlm-jn` block in
- * `subsm.f`):
+ * `subsm.f` lines 51–80):
  *   1. Form the unconstrained Newton-like point `x̂ = xᶜ + Z d̄ᵘ`.
  *   2. Project once onto the box: `x̄ = P_{[l, u]}(x̂)`.
- *   3. Form the direction back to the iterate: `d_k = x̄ − x_k`.
- *   4. **Angle test** on the true gradient:
- *         `gₖᵀ d_k ≤ −η · ‖d_k‖ · ‖gₖ‖`.
- *      If passing, return `xHat = x̄`; the outer-loop line search
- *      then operates on `d = xHat − x_k`.
- *   5. **Truncation fallback** (1997 scheme): otherwise find the
- *      maximum `α ∈ (0, 1]` such that `x_k + α(x̂ − x_k)` stays
- *      feasible, and return that point. If `α = 0`, fall back to xᶜ.
+ *   3. **Directional-derivative test** on the original gradient at
+ *      `xₖ`: accept `x̄` iff `gₖ · (x̄ − xₖ) < 0` and `‖x̄ − xₖ‖² > 0`.
+ *      No angle threshold or normalisation; the outer-loop line
+ *      search handles step sizing. The `dd > 0` clause is a TS-only
+ *      guard against an FP-cancelled `gd < 0` with `x̄ ≡ xₖ`; it is a
+ *      strict subset of the canonical Fortran condition (Fortran's
+ *      `dcsrch` absorbs the same case at higher cost).
+ *   4. **Truncation fallback** (1997 scheme): back-track from `xᶜ`
+ *      along `d̄ᵘ`, only on free coordinates. The maximum `α ∈ [0, 1]`
+ *      that keeps `xᶜ + α · d̄ᵘ` feasible is the truncation factor.
+ *      On `α < 1` the binding coordinate is snapped to its bound to
+ *      absorb ε-drift from `room / dk`.
+ *   5. If `α = 0`, fall back to `xᶜ`.
  *
- * The 1997 code truncated unconditionally and the 2011 paper showed
+ * The 1997 code truncated unconditionally; the 2011 paper showed
  * that path can produce a search direction `d` that is nearly
- * orthogonal to `−g`, stalling the outer line search. The angle
- * test prefers the projected point whenever it is meaningfully
- * descending and only falls back to truncation when it is not.
+ * orthogonal to `−g`, stalling the outer line search. The
+ * directional-derivative test prefers the projected point whenever
+ * it is descending and only falls back to truncation when it is
+ * not. Crucially the truncation reference is `xᶜ`, not `xₖ` — when
+ * the Cauchy phase has moved several variables to bounds the two
+ * differ and only the former matches Fortran v3.0.
  *
  * References:
  *  - Byrd, Lu, Nocedal, Zhu (1995) §5.
@@ -46,16 +54,8 @@
  *  - Morales, Nocedal (2011) — Remark on Algorithm 778 (the
  *    `c-jlm-jn` fix in `subsm.f`).
  */
-import {BOUND_LOWER, BOUND_BOTH, BOUND_UPPER} from './types';
+import {BOUND_FREE, BOUND_LOWER, BOUND_BOTH, BOUND_UPPER} from './types';
 import type {BFGSMat} from './bfgs-mat';
-
-/**
- * Strong-descent / angle-test threshold from `subsm.f`. The
- * projected endpoint is preferred when its direction back to xₖ
- * makes an angle with `−gₖ` whose cosine is at least η. Calibrated
- * against bounded-benchmarks; see specs-n-plans/lbfgs-b-baseline.
- */
-const ETA = 1e-2;
 
 /* ================================================================== */
 /*  Workspace                                                          */
@@ -188,10 +188,11 @@ function luSolveInPlace(
  *
  * On success writes the refined candidate into `ws.xHat`. The
  * endpoint selection follows Morales–Nocedal 2011: project the
- * unconstrained Newton-like point onto the box and prefer it as
- * long as the angle test on the true gradient passes; otherwise
- * fall back to the 1997 line-truncation scheme along `xₖ → x̂`. If
- * truncation gives `α = 0`, `xHat` is set to `xᶜ` and `improved = false`.
+ * unconstrained Newton-like point onto the box and prefer it when
+ * the directional-derivative test `gₖ · (x̄ − xₖ) < 0` holds;
+ * otherwise fall back to the 1997 line-truncation scheme along
+ * `xᶜ → xᶜ + d̄ᵘ` on free coordinates. If truncation gives `α = 0`,
+ * `xHat` is set to `xᶜ` and `improved = false`.
  */
 export function subspaceMin(
   x: Float64Array,
@@ -305,48 +306,76 @@ export function subspaceMin(
     xBar[i] = xi;
   }
 
-  // ---- (9) Angle test on the true gradient: is x̄ − xₖ a direction
-  //          of strong descent on the original problem?
+  // ---- (9) Directional-derivative test on the original gradient
+  //          (subsm.f c-jlm-jn lines 51–62): accept x̄ iff
+  //          gₖ · (x̄ − xₖ) < 0. No angle/normalisation; the outer
+  //          line search handles step sizing. The `dd > 0` clause
+  //          guards against an FP-cancelled gd < 0 with x̄ ≡ xₖ.
   let gd = 0;
   let dd = 0;
-  let gg = 0;
   for (let i = 0; i < n; i++) {
     const di = xBar[i] - x[i];
     gd += g[i] * di;
     dd += di * di;
-    gg += g[i] * g[i];
   }
-  const dNorm = Math.sqrt(dd);
-  const gNorm = Math.sqrt(gg);
 
-  if (dNorm > 0 && gNorm > 0 && gd <= -ETA * dNorm * gNorm) {
-    // Strong descent on the original f → endpoint = x̄.
+  if (gd < 0 && dd > 0) {
     for (let i = 0; i < n; i++) xHat[i] = xBar[i];
     return {improved: true};
   }
 
-  // ---- (10) Truncation fallback (1997): largest α ∈ (0, 1] keeping
-  //          xₖ + α · (x̂ − xₖ) feasible. The model-improving direction
-  //          is x̂ − xₖ; we just stop at the first hitting bound.
+  // ---- (10) 1997 truncation fallback (subsm.f c-jlm-jn lines 56–80).
+  //          Back-track from xᶜ along d̄ᵘ, only on free coordinates. The
+  //          maximum α ∈ [0, 1] that keeps xᶜ + α·d̄ᵘ feasible is the
+  //          truncation factor. On α < 1 the first-hitting coordinate
+  //          is snapped to its bound to absorb the ε-rounding from
+  //          `room / dk`.
   let alpha = 1;
-  for (let i = 0; i < n; i++) {
-    const stepDir = xHatFull[i] - x[i];
-    if (stepDir > 0 && (nbd[i] === BOUND_UPPER || nbd[i] === BOUND_BOTH)) {
-      const cap = (upper[i] - x[i]) / stepDir;
-      if (cap < alpha) alpha = Math.max(0, cap);
-    } else if (stepDir < 0 && (nbd[i] === BOUND_LOWER || nbd[i] === BOUND_BOTH)) {
-      const cap = (lower[i] - x[i]) / stepDir;
-      if (cap < alpha) alpha = Math.max(0, cap);
+  let iexit = -1;
+  let iexitDir = 0;
+  for (let kk = 0; kk < t; kk++) {
+    const i = freeSet[kk];
+    const code = nbd[i];
+    if (code === BOUND_FREE) continue;
+    const dk = du[i];
+    if (dk === 0) continue;
+
+    let cap = alpha;
+    if (dk < 0 && (code === BOUND_LOWER || code === BOUND_BOTH)) {
+      const room = lower[i] - xc[i]; // ≤ 0 on feasible xᶜ
+      if (room >= 0) cap = 0;
+      else if (dk * alpha < room) cap = room / dk;
+    } else if (dk > 0 && (code === BOUND_UPPER || code === BOUND_BOTH)) {
+      const room = upper[i] - xc[i]; // ≥ 0 on feasible xᶜ
+      if (room <= 0) cap = 0;
+      else if (dk * alpha > room) cap = room / dk;
+    }
+    if (cap < alpha) {
+      alpha = cap;
+      iexit = i;
+      iexitDir = dk;
     }
   }
 
-  if (alpha > 0) {
-    for (let i = 0; i < n; i++)
-      xHat[i] = x[i] + alpha * (xHatFull[i] - x[i]);
-    return {improved: true};
+  if (alpha === 0) {
+    // ---- (11) Truncation degenerate → fall back to xᶜ.
+    for (let i = 0; i < n; i++) xHat[i] = xc[i];
+    return {improved: false};
   }
 
-  // ---- (11) α = 0 → fall back to xᶜ.
+  // Build xHat: non-free coords stay at xᶜ; free coords advance by
+  // α·d̄ᵘ, except the binding coord `iexit` which is snapped to its
+  // bound (mirrors subsm.f's `if (alpha .lt. one)` block: x(iexit)
+  // is set to the bound, d(iexit) is zeroed; we achieve the same by
+  // writing the bound into xHat directly and skipping the standard
+  // `xc + α·du` formula on that coord).
   for (let i = 0; i < n; i++) xHat[i] = xc[i];
-  return {improved: false};
+  for (let kk = 0; kk < t; kk++) {
+    const i = freeSet[kk];
+    if (i === iexit && alpha < 1)
+      xHat[i] = iexitDir > 0 ? upper[i] : lower[i];
+    else
+      xHat[i] = xc[i] + alpha * du[i];
+  }
+  return {improved: true};
 }

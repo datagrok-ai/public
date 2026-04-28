@@ -6,11 +6,13 @@
  *   - model-decrease invariant: `m_k(xHat) ≤ m_k(xᶜ)` whenever
  *     `improved === true`;
  *   - feasibility invariant on `xHat`;
- *   - when the unconstrained subspace step violates bounds, the
- *     Morales–Nocedal backtrack engages and `xHat ≠ xᶜ` or falls back;
  *   - for t = n (all free) and valid stored pairs, the unconstrained
  *     subspace step is the Newton-like step: `B · (xHat − xᶜ) ≈ −r̄ᶜ`
- *     on the free subspace.
+ *     on the free subspace;
+ *   - Morales–Nocedal 2011 endpoint selection (`c-jlm-jn` block in
+ *     `subsm.f`): directional-derivative test `g · (x̄ − xₖ) < 0` plus
+ *     `dd > 0` accepts the projected point; otherwise truncation
+ *     back-tracks from `xᶜ` along `d̄ᵘ` on free coords with bound snap.
  */
 import {
   subspaceMin,
@@ -243,50 +245,10 @@ describe('subspaceMin — B·(xHat−xᶜ) ≈ −r̄ᶜ for t=n', () => {
 /* ================================================================== */
 
 describe('subspaceMin — bounded endpoint selection', () => {
-  it('produces a feasible xHat when the unconstrained step would violate a bound', () => {
-    const n = 2;
-    const mat = new BFGSMat(n, 5);
-    mat.update(
-      new Float64Array([0.5, 0.1]),
-      new Float64Array([0.2, 0.05]),
-      0,
-      0,
-    );
-
-    // Contrived: x near upper bound, gradient large → unconstrained subspace
-    // step would push past the upper bound. Under M-N 2011 the endpoint is
-    // either the projected x̄ (if its direction back to x_k passes the
-    // angle test) or the 1997 truncation point along x_k → x̂; both are
-    // by construction feasible.
-    const x = new Float64Array([0.8, 0.8]);
-    const g = new Float64Array([-5, -4]);
-    const lower = new Float64Array([0, 0]);
-    const upper = new Float64Array([1, 1]);
-    const nbd = classifyBounds(lower, upper);
-
-    const cauchyWs = makeCauchyWorkspace(n, 5);
-    const cr = cauchyPoint(x, g, lower, upper, nbd, mat, cauchyWs);
-    expect(cr.ok).toBe(true);
-
-    const ws = makeSubspaceWorkspace(n, 5);
-    const sr = subspaceMin(
-      x, g, lower, upper, nbd, cauchyWs.xc, cauchyWs.c,
-      cauchyWs.freeSet, cr.freeCount, mat, ws,
-    );
-
-    // xHat is always feasible under M-N 2011 — projection clips at step
-    // 8, truncation never overshoots a bound at step 10.
-    for (let i = 0; i < n; i++) {
-      expect(ws.xHat[i]).toBeGreaterThanOrEqual(lower[i]);
-      expect(ws.xHat[i]).toBeLessThanOrEqual(upper[i]);
-    }
-    if (!sr.improved)
-      for (let i = 0; i < n; i++) expect(ws.xHat[i]).toBe(cauchyWs.xc[i]);
-  });
-
-  it('uses the projected unconstrained Newton step when the angle test passes (unconstrained-equivalent setup)', () => {
+  // ---- N3: directional-derivative test accepts xBar -----------------
+  it('accepts the projected point when g · (xBar − x) < 0', () => {
     // Bounds wide enough that x̂ stays interior → projection is identity,
-    // angle test is exactly Newton-step descent. xHat must equal xc + du.
+    // dd-test reduces to plain Newton-step descent. xHat must equal xc+du.
     const n = 3;
     const mat = new BFGSMat(n, 5);
     mat.update(
@@ -312,10 +274,182 @@ describe('subspaceMin — bounded endpoint selection', () => {
       cauchyWs.freeSet, cr.freeCount, mat, ws,
     );
     expect(sr.improved).toBe(true);
-    // Strong-descent angle test passes → endpoint = xc + du, no truncation.
+    // Endpoint = xc + du (no projection, no truncation).
+    for (let i = 0; i < n; i++)
+      expect(ws.xHat[i]).toBeCloseTo(cauchyWs.xc[i] + ws.du[i], 12);
+
+    // Directional-derivative test is satisfied at the returned xHat.
+    let gd = 0;
+    for (let i = 0; i < n; i++) gd += g[i] * (ws.xHat[i] - x[i]);
+    expect(gd).toBeLessThan(0);
+  });
+
+  // ---- N4: truncation fallback invariant ---------------------------
+  it('on truncation fallback xHat lies on the segment xc → xc + du (per coord)', () => {
+    // Setup: x near upper bound, large gradient → projected unconstrained
+    // step lands at the upper bound for both coords; depending on the
+    // resulting du sign, either the dd-test passes (xHat = xBar) or
+    // truncation engages (xHat = xc + α·du). In both cases xHat must
+    // sit on the per-coord segment between xc and xc+du.
+    const n = 2;
+    const mat = new BFGSMat(n, 5);
+    mat.update(
+      new Float64Array([0.5, 0.1]),
+      new Float64Array([0.2, 0.05]),
+      0,
+      0,
+    );
+
+    const x = new Float64Array([0.8, 0.8]);
+    const g = new Float64Array([-5, -4]);
+    const lower = new Float64Array([0, 0]);
+    const upper = new Float64Array([1, 1]);
+    const nbd = classifyBounds(lower, upper);
+
+    const cauchyWs = makeCauchyWorkspace(n, 5);
+    const cr = cauchyPoint(x, g, lower, upper, nbd, mat, cauchyWs);
+    expect(cr.ok).toBe(true);
+
+    const ws = makeSubspaceWorkspace(n, 5);
+    const sr = subspaceMin(
+      x, g, lower, upper, nbd, cauchyWs.xc, cauchyWs.c,
+      cauchyWs.freeSet, cr.freeCount, mat, ws,
+    );
+
+    // Always feasible.
     for (let i = 0; i < n; i++) {
-      const expected = cauchyWs.xc[i] + ws.du[i];
-      expect(ws.xHat[i]).toBeCloseTo(expected, 12);
+      expect(ws.xHat[i]).toBeGreaterThanOrEqual(lower[i]);
+      expect(ws.xHat[i]).toBeLessThanOrEqual(upper[i]);
+    }
+    if (!sr.improved) {
+      for (let i = 0; i < n; i++) expect(ws.xHat[i]).toBe(cauchyWs.xc[i]);
+      return;
+    }
+    // Per-coord invariant: xHat[i] ∈ [min(xc[i], xc[i]+du[i]),
+    // max(xc[i], xc[i]+du[i])] for both projection (xHat = xBar, which
+    // is xc+du clipped to box, hence between xc and xc+du in the worst
+    // case) and truncation (xHat = xc + α·du, α ∈ [0, 1]).
+    const eps = 1e-12;
+    for (let i = 0; i < n; i++) {
+      const a = cauchyWs.xc[i];
+      const b = cauchyWs.xc[i] + ws.du[i];
+      const lo = Math.min(a, b);
+      const hi = Math.max(a, b);
+      expect(ws.xHat[i]).toBeGreaterThanOrEqual(lo - eps);
+      expect(ws.xHat[i]).toBeLessThanOrEqual(hi + eps);
+    }
+  });
+
+  // ---- N6: bound snap on truncation --------------------------------
+  it('snaps the binding coordinate exactly to its bound on truncation', () => {
+    // Goal: trigger the truncation branch with α < 1 and verify that
+    // the first-hitting coordinate equals its bound bit-exactly (no
+    // ε-drift from the `room / dk` division). We construct the inputs
+    // for `subspaceMin` directly: it accepts xc, c, freeSet, freeCount
+    // as parameters and never recomputes the Cauchy phase, so we can
+    // hand it a synthetic xc that is interior on both coords and let
+    // it form du via the BFGSMat closed-form.
+    const n = 2;
+    const mat = new BFGSMat(n, 5);
+    // A pair giving a moderate θ ≈ y·y / s·y ≈ (4 + 1) / (1 + 0.5) = 10/3.
+    mat.update(
+      new Float64Array([1.0, 0.5]),
+      new Float64Array([2.0, 1.0]),
+      0,
+      0,
+    );
+
+    // x_k far from both bounds; xc clearly interior; gradient pushes
+    // towards (-, -) so the resulting Newton-like du is along (-, -).
+    // Whether dd-test passes or fails, the truncation-vs-projection
+    // path must respect both feasibility and the bound-snap invariant
+    // when α < 1.
+    const x = new Float64Array([0.4, 0.4]);
+    const g = new Float64Array([8, 5]);
+    const lower = new Float64Array([0, 0]);
+    const upper = new Float64Array([1, 1]);
+    const nbd = classifyBounds(lower, upper);
+
+    // Use Cauchy to get a consistent (xc, c, freeSet) for this mat.
+    const cauchyWs = makeCauchyWorkspace(n, 5);
+    const cr = cauchyPoint(x, g, lower, upper, nbd, mat, cauchyWs);
+    expect(cr.ok).toBe(true);
+
+    const ws = makeSubspaceWorkspace(n, 5);
+    const sr = subspaceMin(
+      x, g, lower, upper, nbd, cauchyWs.xc, cauchyWs.c,
+      cauchyWs.freeSet, cr.freeCount, mat, ws,
+    );
+
+    // Always feasible.
+    for (let i = 0; i < n; i++) {
+      expect(ws.xHat[i]).toBeGreaterThanOrEqual(lower[i]);
+      expect(ws.xHat[i]).toBeLessThanOrEqual(upper[i]);
+    }
+
+    if (!sr.improved) return; // truncation degenerate, nothing to snap.
+
+    // For each coord, if xHat[i] hit a bound, the value must equal
+    // that bound bit-exactly (no FP drift). This is the snap invariant.
+    for (let i = 0; i < n; i++) {
+      const v = ws.xHat[i];
+      const onLower = Math.abs(v - lower[i]) < 1e-12;
+      const onUpper = Math.abs(v - upper[i]) < 1e-12;
+      if (onLower) expect(v).toBe(lower[i]);
+      if (onUpper) expect(v).toBe(upper[i]);
+    }
+  });
+});
+
+/* ================================================================== */
+/*  Truncation reference is xᶜ, not xₖ (regression for c-jlm-jn fix)   */
+/* ================================================================== */
+
+describe('subspaceMin — truncation reference is xc, not x_k', () => {
+  // ---- N5b: per-coord segment invariant on synthetic infeasible du --
+  // The pre-fix code truncated xₖ → xc + du; the post-fix code truncates
+  // xc → xc + du. The two diverge whenever xc differs from xₖ. The unit
+  // test below relies only on the post-fix invariant: xHat[i] sits on
+  // [xc[i], xc[i] + du[i]] (componentwise).
+  it('xHat is bounded by the xc-relative segment when truncation engages', () => {
+    const n = 4;
+    const mat = new BFGSMat(n, 5);
+    mat.update(
+      new Float64Array([0.05, 0.05, 0.05, 0.05]),
+      new Float64Array([0.3, 0.2, 0.4, 0.1]),
+      0,
+      0,
+    );
+
+    const x = new Float64Array([0.5, 0.5, 0.5, 0.5]);
+    const g = new Float64Array([2, -1.5, 3, -2.5]);
+    const lower = new Float64Array([0, 0, 0, 0]);
+    const upper = new Float64Array([1, 1, 1, 1]);
+    const nbd = classifyBounds(lower, upper);
+
+    const cauchyWs = makeCauchyWorkspace(n, 5);
+    const cr = cauchyPoint(x, g, lower, upper, nbd, mat, cauchyWs);
+    expect(cr.ok).toBe(true);
+
+    const ws = makeSubspaceWorkspace(n, 5);
+    const sr = subspaceMin(
+      x, g, lower, upper, nbd, cauchyWs.xc, cauchyWs.c,
+      cauchyWs.freeSet, cr.freeCount, mat, ws,
+    );
+
+    if (!sr.improved) {
+      for (let i = 0; i < n; i++) expect(ws.xHat[i]).toBe(cauchyWs.xc[i]);
+      return;
+    }
+    // Post-fix invariant: xHat lives on the xc-anchored segment.
+    const eps = 1e-12;
+    for (let i = 0; i < n; i++) {
+      const a = cauchyWs.xc[i];
+      const b = cauchyWs.xc[i] + ws.du[i];
+      const lo = Math.min(a, b);
+      const hi = Math.max(a, b);
+      expect(ws.xHat[i]).toBeGreaterThanOrEqual(lo - eps);
+      expect(ws.xHat[i]).toBeLessThanOrEqual(hi + eps);
     }
   });
 });
