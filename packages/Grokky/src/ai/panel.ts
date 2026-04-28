@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
+import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMarkdown} from '../utils';
 import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
@@ -339,27 +339,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected createStyledMarkdown(content: string): HTMLElement {
-    const markDown = ui.markdown(content);
-    markDown.style.position = 'relative';
-    dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
-    if (markDown.querySelector('pre > code')) {
-      const copyButton = ui.icons.copy(() => {}, 'Copy Code');
-      copyButton.classList.add('d4-ai-copy-code-button');
-      markDown.appendChild(copyButton);
-      copyButton.addEventListener('click', () => {
-        const codeElement = markDown.querySelector('pre > code');
-        if (codeElement) {
-          const header = markDown.children[0];
-          if (header && header.tagName?.toLowerCase() !== 'pre')
-            (header as HTMLElement).style.marginRight = '16px';
-          navigator.clipboard.writeText(codeElement.textContent || '').then(() => {
-            copyButton.classList.add('d4-ai-copy-code-button-copied');
-            setTimeout(() => copyButton.classList.remove('d4-ai-copy-code-button-copied'), 600);
-          }).catch(() => grok.shell.error('Failed to copy code to clipboard.'));
-        }
-      });
-    }
-    return markDown;
+    return createStyledMarkdown(content);
   }
 
   protected appendFeedbackButtons(markDown: HTMLElement, onFeedback?: (helpful: boolean) => void): void {

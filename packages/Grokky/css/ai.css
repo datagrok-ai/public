@@ -290,3 +290,19 @@
   background: #333;
   border-radius: 3px;
 }
+
+.grokky-execute-activity {
+  border-left: 2px solid var(--grey-2);
+  padding-left: 12px;
+}
+
+.grokky-execute-activity-line {
+  color: var(--text-color-light);
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 3px 0;
+}
+
+.grokky-execute .d4-ai-copy-code-button {
+  display: flex;
+}
