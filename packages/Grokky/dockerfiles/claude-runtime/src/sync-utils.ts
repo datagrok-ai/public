@@ -286,7 +286,7 @@ export async function generatePackageIndex(): Promise<string | null> {
   md += '| Package | Description | Keywords |\n';
   md += '|---------|-------------|----------|\n';
   for (const pkg of packages)
-    md += `| ${pkg.packageName} | ${pkg.description} | ${pkg.keywords.slice(0, 8).join(', ')} |\n`;
+    md += `| ${pkg.packageName} | ${pkg.description} | ${pkg.keywords.join(', ')} |\n`;
 
   cachedPackageIndex = md;
   console.log(`package-index: generated index with ${packages.length} package(s)`);

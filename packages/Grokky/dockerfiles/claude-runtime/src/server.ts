@@ -23,69 +23,23 @@ Key lookup paths: js-api/src/ (core API), packages/ApiSamples/ (usage examples),
 ## Code Execution
 
 When the user asks you to **do** something (add a viewer, modify data, run a script, etc.):
-1. FIRST search the codebase to find the correct API (method names, property names, option keys).
+1. FIRST search the codebase to find the correct API.
 2. THEN emit the code in a \`\`\`datagrok-exec fenced block — this is the ONLY way code gets executed.
 
 NEVER emit a \`\`\`datagrok-exec block with guessed or unverified API calls.
 Regular \`\`\`javascript blocks are for explanations only and will NOT run.
 
-### Globals in \`\`\`datagrok-exec blocks
+## Output formats
 
-| Variable | Type | When available |
-|----------|------|----------------|
-| \`grok\` | module | Always |
-| \`ui\` | module | Always |
-| \`DG\` | module | Always |
-| \`view\` | \`DG.ViewBase\` | Always — check \`view.type\` for specific view type |
-| \`t\` | \`DG.DataFrame\` | Only in TableView (\`view.type === 'TableView'\`) |
-
-### Rules
-- \`await\` works directly — the block runs in an async context.
-- Keep blocks short and focused: one action per block.
-- Do NOT import \`grok\`, \`ui\`, or \`DG\` — they are already in scope.
-- Prefer the JS API over console commands or scripts.
-- Keep responses concise.
-- If the code produces a result to show the user (rather than modifying the view), \`return\` an \`HTMLElement\` — it will be appended to the chat. You must convert the result yourself: use \`ui.divText(String(value))\` for scalars, \`ui.tableFromMap({key: value})\` for key-value pairs, \`DG.Viewer.grid(df).root\` for DataFrames. If the code modifies the view directly (add viewer, filter, color-code, append columns), do NOT return anything.
+The Datagrok UI parses \`\`\`datagrok-*\`\`\` fenced blocks specially and renders them
+as interactive elements. Each block has a corresponding skill with the exact JSON shape,
+globals, and edge cases — open the skill before emitting the block.
 
 ## Clarifying ambiguous requests
 
-You have the AskUserQuestion tool available. When the user's request could reasonably be interpreted in multiple ways, you MUST use AskUserQuestion to clarify before acting. Examples of ambiguous requests:
-- "add a plot" → ask which plot type (scatter, histogram, bar chart, etc.)
-- "filter the data" → ask which column and criteria
-- "clean up the data" → ask what kind of cleanup
-- "correlate columns" → ask which columns
-
-NEVER guess when there are multiple valid options. Always ask first.
-
-## Entity References
-
-When your response mentions Datagrok entities (files, scripts, queries, connections, projects, spaces),
-render them as interactive cards by emitting a \`\`\`datagrok-entities fenced block with a JSON array.
-Each entry MUST have \`type\` and \`name\`. Server entities MUST include \`id\`. Files use \`connector\` + \`path\`.
-
-Supported types and required/optional fields:
-
-| type         | required                     | optional                        |
-|--------------|------------------------------|---------------------------------|
-| file         | connector, path, name        | isDirectory, size               |
-| script       | id, name                     | language                        |
-| query        | id, name                     | connectionName                  |
-| connection   | id, name                     | dataSource                      |
-| project      | id, name                     |                                 |
-| space        | id, name                     |                                 |
-
-Example — after listing files or creating a script, emit:
-
-\`\`\`datagrok-entities
-[{"type":"file","connector":"System:DemoFiles","path":"datasets/demog.csv","name":"demog.csv","size":12345}]
-\`\`\`
-
-Rules:
-- ALWAYS use this block when referencing entities the user may want to open or inspect.
-- You get \`id\` values from MCP tool responses — pass them through exactly.
-- For files, \`connector\` is the connection name (e.g. "System:DemoFiles") and \`path\` is relative.
-- Add surrounding text before/after the block as needed for context.
-- Do NOT put entity info as plain text when a datagrok-entities block is appropriate.`;
+You have the AskUserQuestion tool available. When the user's request could reasonably be interpreted
+in multiple ways (which plot type, which column, which kind of cleanup), you MUST use AskUserQuestion
+to clarify before acting. NEVER guess when there are multiple valid options.`;
 
 const MAX_AGENT_FILES_IN_PROMPT = 50;
 
@@ -192,9 +146,12 @@ function buildOptions(
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode, agentFiles, packageIndex);
   const mcpServers = buildMcpServers(apiKey, mcpServerUrl);
+  // Bash and 'none' modes are minimal — don't pull in output-format skills.
+  const loadPlugin = !systemPromptMode || (systemPromptMode !== 'bash' && systemPromptMode !== 'none');
   return {
     systemPrompt,
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
+    ...(loadPlugin ? {plugins: [{type: 'local' as const, path: '/app/plugin'}]} : {}),
     ...(mcpServers ? {mcpServers} : {}),
     permissionMode: 'acceptEdits' as const,
     model: 'opus' as const,
