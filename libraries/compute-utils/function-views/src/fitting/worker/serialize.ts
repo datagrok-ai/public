@@ -31,9 +31,15 @@ export type {
 
 function serializeFixedInputs(
   fixedInputs: Record<string, any>,
-): {scalars: Record<string, any>; dataFrames: Record<string, Uint8Array>; transferables: ArrayBuffer[]} {
+): {
+  scalars: Record<string, any>;
+  dataFrames: Record<string, Uint8Array>;
+  types: Record<string, 'dayjs' | 'date'>;
+  transferables: ArrayBuffer[];
+} {
   const scalars: Record<string, any> = {};
   const dataFrames: Record<string, Uint8Array> = {};
+  const types: Record<string, 'dayjs' | 'date'> = {};
   const transferables: ArrayBuffer[] = [];
   for (const [name, value] of Object.entries(fixedInputs)) {
     if (value instanceof DG.DataFrame) {
@@ -45,15 +51,34 @@ function serializeFixedInputs(
     }
     if (dayjs.isDayjs(value)) {
       scalars[name] = value.toISOString();
+      types[name] = 'dayjs';
       continue;
     }
     if (value instanceof Date) {
       scalars[name] = value.toISOString();
+      types[name] = 'date';
       continue;
     }
     scalars[name] = value;
   }
-  return {scalars, dataFrames, transferables};
+  return {scalars, dataFrames, types, transferables};
+}
+
+// Const VALUES live in fixedInputs/fixedDataFrames; setup.bounds keeps the
+// structural shape (which entries are const vs varying, formula bound
+// strings) only. Replacing const value with `null` keeps `getAccData`'s
+// constValues count and ordering intact while making the wire safe.
+function stripBoundsConstValues(
+  bounds: Record<string, ValueBoundsData>,
+): Record<string, ValueBoundsData> {
+  const out: Record<string, ValueBoundsData> = {};
+  for (const [name, entry] of Object.entries(bounds)) {
+    if (entry.type === 'const')
+      out[name] = {type: 'const', value: null};
+    else
+      out[name] = entry;
+  }
+  return out;
 }
 
 function serializeOutputTargets(
@@ -106,9 +131,10 @@ export function buildSetup(args: {
     outputParamNames: args.outputParamNames,
     lossType: args.lossType,
     fixedInputs: fixed.scalars,
+    fixedInputTypes: fixed.types,
     fixedDataFrames: fixed.dataFrames,
     variedInputNames: args.variedInputNames,
-    bounds: args.bounds,
+    bounds: stripBoundsConstValues(args.bounds),
     outputTargets: targets.targets,
     nmSettings: Array.from(args.nmSettings.entries()),
     threshold: args.threshold,

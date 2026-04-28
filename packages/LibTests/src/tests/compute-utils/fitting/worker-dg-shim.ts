@@ -3,13 +3,41 @@
 // real DG.DataFrame built from identical input data.
 
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
 import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker';
 import {toFeather} from '@datagrok-libraries/arrow';
 import {getErrors} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/fitting-utils';
+import {buildSetup, LOSS} from './imports';
+import type {OutputTargetItem, ValueBoundsData} from './imports';
+import {rangeBound, formulaBound} from './utils';
 import {_package} from '../../../package-test';
+
+function makeBuildSetupArgs(
+  inputBounds: Record<string, ValueBoundsData>,
+  variedInputNames: string[],
+  fixedInputs: Record<string, any>,
+) {
+  const outputTargets: OutputTargetItem[] = [{
+    propName: 'y',
+    type: DG.TYPE.FLOAT,
+    target: 0,
+  }];
+  return {
+    sessionId: 1,
+    fnSource: 'y = a;',
+    paramList: ['a', ...Object.keys(fixedInputs)],
+    outputParamNames: ['y'],
+    lossType: LOSS.RMSE,
+    fixedInputs,
+    variedInputNames,
+    bounds: inputBounds,
+    outputTargets,
+    nmSettings: new Map<string, number>(),
+  };
+}
 
 const shim = createWorkerDG();
 
@@ -205,6 +233,79 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     expect(out.df != null, true, 'df output captured');
     expect(out.df.rowCount, 101, 'iterations + 1 rows');
     expect(out.df.columns.names().join(','), 'X,Y,Z');
+  });
+
+  test('bounds_const_dataframe_strips_for_postmessage', async () => {
+    // A const DG.DataFrame in inputBounds.value would crash structuredClone
+    // before any worker code runs. After buildSetup the value is null;
+    // the DataFrame travels via setup.fixedDataFrames as Arrow IPC bytes.
+    const refDf = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'k', [1, 2, 3])]);
+    const inputBounds: Record<string, ValueBoundsData> = {
+      refDf: {type: 'const', value: refDf},
+      a: rangeBound(0, 5, 'a'),
+    };
+    const fixedInputs = {refDf};
+    const {setup} = buildSetup(makeBuildSetupArgs(inputBounds, ['a'], fixedInputs));
+    expect((setup.bounds.refDf as any).type, 'const');
+    expect((setup.bounds.refDf as any).value, null);
+    expect(setup.fixedDataFrames.refDf instanceof Uint8Array, true, 'DataFrame in fixedDataFrames');
+    // The acid test: structured-cloning the setup must not throw.
+    structuredClone(setup);
+  });
+
+  test('bounds_const_dayjs_strips_for_postmessage', async () => {
+    const t0 = dayjs('2024-01-01T00:00:00Z');
+    const inputBounds: Record<string, ValueBoundsData> = {
+      t0: {type: 'const', value: t0},
+      a: rangeBound(0, 5, 'a'),
+    };
+    const fixedInputs = {t0};
+    const {setup} = buildSetup(makeBuildSetupArgs(inputBounds, ['a'], fixedInputs));
+    expect((setup.bounds.t0 as any).type, 'const');
+    expect((setup.bounds.t0 as any).value, null);
+    expect(setup.fixedInputTypes.t0, 'dayjs');
+    expect(setup.fixedInputs.t0 as any, t0.toISOString());
+    structuredClone(setup);
+  });
+
+  test('bounds_const_date_strips_for_postmessage', async () => {
+    const t0 = new Date('2024-01-01T00:00:00Z');
+    const inputBounds: Record<string, ValueBoundsData> = {
+      t0: {type: 'const', value: t0},
+      a: rangeBound(0, 5, 'a'),
+    };
+    const fixedInputs = {t0};
+    const {setup} = buildSetup(makeBuildSetupArgs(inputBounds, ['a'], fixedInputs));
+    expect((setup.bounds.t0 as any).type, 'const');
+    expect((setup.bounds.t0 as any).value, null);
+    expect(setup.fixedInputTypes.t0, 'date');
+    expect(setup.fixedInputs.t0 as any, t0.toISOString());
+    structuredClone(setup);
+  });
+
+  test('bounds_changing_entries_passthrough_unchanged', async () => {
+    // Sanity: `changing` bounds (numeric or formula) round-trip through
+    // buildSetup with all fields intact. Only `const` entries get stripped.
+    const inputBounds: Record<string, ValueBoundsData> = {
+      a: {type: 'const', value: 5},
+      x: formulaBound('a-1', 'a+1', 'x'),
+      y: rangeBound(-10, 10, 'y'),
+    };
+    const {setup} = buildSetup(makeBuildSetupArgs(inputBounds, ['x', 'y'], {a: 5}));
+    expect((setup.bounds.a as any).value, null, 'const value stripped');
+    const xb = setup.bounds.x as any;
+    expect(xb.type, 'changing', 'formula bound type preserved');
+    expect(xb.bottom.type, 'formula');
+    expect(xb.bottom.formula, 'a-1');
+    expect(xb.top.type, 'formula');
+    expect(xb.top.formula, 'a+1');
+    const yb = setup.bounds.y as any;
+    expect(yb.type, 'changing', 'value bound type preserved');
+    expect(yb.bottom.type, 'value');
+    expect(yb.bottom.value, -10);
+    expect(yb.top.type, 'value');
+    expect(yb.top.value, 10);
+    structuredClone(setup);
   });
 
   // Note: smoke tests for object-cooling, heat-exchange, and lotka-volterra

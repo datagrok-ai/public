@@ -6,9 +6,11 @@
 // trips the test instead of shipping unnoticed.
 
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {LOSS, runOptimizer, OptimizerInputsConfig, OptimizerOutputsConfig} from './imports';
-import {makeExpDecayFunc, makeMultiOutputFunc} from './script-fixtures';
+import {makeExpDecayFunc, makeMultiOutputFunc, makeRefDfPassthroughFunc,
+  makeDayjsFormatFunc, makeDateGetTimeFunc} from './script-fixtures';
 import {rangeBound, formulaBound} from './utils';
 import type {Extremum, OptimizationResult} from './imports';
 
@@ -112,6 +114,185 @@ category('ComputeUtils: Fitting / Cross-executor parity', () => {
     const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
 
     assertResultParity(mainRes, wkrRes, 'formula_bound_clips');
+  });
+
+  test('parity_const_dataframe_input', async () => {
+    // Const DataFrame in inputBounds: the script body folds refDf.rowCount
+    // into the simulation, so a worker that loses the DataFrame produces
+    // a different cost. Pre-fix this also throws DataCloneError before
+    // the worker runs at all.
+    const func = makeRefDfPassthroughFunc();
+    const refDf = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'k', [1, 2, 3, 4, 5, 6, 7]),
+    ]);
+    const targetCall = func.prepare({refDf, a: 0.4, N: 10});
+    await targetCall.call();
+    const targetDf = targetCall.getParamValue('simulation') as DG.DataFrame;
+
+    const inputBounds: OptimizerInputsConfig = {
+      refDf: {type: 'const', value: refDf},
+      a: rangeBound(0.05, 1, 'a'),
+      N: {type: 'const', value: 10},
+    };
+    const outputTargets: OptimizerOutputsConfig = [{
+      propName: 'simulation',
+      type: DG.TYPE.DATA_FRAME,
+      target: targetDf,
+      argName: 't',
+      cols: [targetDf.col('y')!],
+    }];
+
+    const baseArgs = {
+      lossType: LOSS.RMSE,
+      func,
+      inputBounds,
+      outputTargets,
+      samplesCount: 4,
+      reproSettings: {reproducible: true, seed: 31},
+    };
+    const [mainRes] = await runOptimizer({...baseArgs, executor: 'main'});
+    const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
+    assertResultParity(mainRes, wkrRes, 'const_dataframe_input');
+  });
+
+  test('parity_const_dayjs_format', async () => {
+    // Const Dayjs in inputBounds: body calls t0.year() — a method that only
+    // exists on Dayjs, not on the ISO string the worker would see pre-fix.
+    const func = makeDayjsFormatFunc();
+    const t0 = dayjs('2024-06-15T00:00:00Z');
+    const targetCall = func.prepare({t0, a: 1.5});
+    await targetCall.call();
+    const target = targetCall.getParamValue('y') as number;
+
+    const inputBounds: OptimizerInputsConfig = {
+      t0: {type: 'const', value: t0},
+      a: rangeBound(0, 5, 'a'),
+    };
+    const outputTargets: OptimizerOutputsConfig = [{
+      propName: 'y',
+      type: DG.TYPE.FLOAT,
+      target,
+    }];
+
+    const baseArgs = {
+      lossType: LOSS.RMSE,
+      func,
+      inputBounds,
+      outputTargets,
+      samplesCount: 4,
+      reproSettings: {reproducible: true, seed: 41},
+    };
+    const [mainRes] = await runOptimizer({...baseArgs, executor: 'main'});
+    const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
+    assertResultParity(mainRes, wkrRes, 'const_dayjs_format');
+  });
+
+  test('parity_const_date_gettime', async () => {
+    // Const raw JS Date in inputBounds: body calls t0.getTime(), which only
+    // works on Date (not Dayjs, not ISO string). Exercises the 'date'
+    // reification branch.
+    const func = makeDateGetTimeFunc();
+    const t0 = new Date('2024-06-15T00:00:00Z');
+    const targetCall = func.prepare({t0, a: 1.5});
+    await targetCall.call();
+    const target = targetCall.getParamValue('y') as number;
+
+    const inputBounds: OptimizerInputsConfig = {
+      t0: {type: 'const', value: t0},
+      a: rangeBound(0, 5, 'a'),
+    };
+    const outputTargets: OptimizerOutputsConfig = [{
+      propName: 'y',
+      type: DG.TYPE.FLOAT,
+      target,
+    }];
+
+    const baseArgs = {
+      lossType: LOSS.RMSE,
+      func,
+      inputBounds,
+      outputTargets,
+      samplesCount: 4,
+      reproSettings: {reproducible: true, seed: 53},
+    };
+    const [mainRes] = await runOptimizer({...baseArgs, executor: 'main'});
+    const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
+    assertResultParity(mainRes, wkrRes, 'const_date_gettime');
+  });
+
+  test('parity_formula_bound_references_dataframe', async () => {
+    // Formula bound that calls a method on a const DataFrame: the upper
+    // bound for `b` is `refDf.rowCount * 0.1`. Both arms must evaluate
+    // the formula identically.
+    const func = makeExpDecayFunc();
+    const refDf = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'k', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+    ]);
+    const targetCall = func.prepare({a: 2.5, b: 0.7, N: 20});
+    await targetCall.call();
+    const targetDf = targetCall.getParamValue('simulation') as DG.DataFrame;
+
+    const inputBounds: OptimizerInputsConfig = {
+      refDf: {type: 'const', value: refDf},
+      a: rangeBound(0.5, 5, 'a'),
+      b: formulaBound('0.1', 'refDf.rowCount * 0.1', 'b'),
+      N: {type: 'const', value: 20},
+    };
+    const outputTargets: OptimizerOutputsConfig = [{
+      propName: 'simulation',
+      type: DG.TYPE.DATA_FRAME,
+      target: targetDf,
+      argName: 't',
+      cols: [targetDf.col('y')!],
+    }];
+
+    const baseArgs = {
+      lossType: LOSS.RMSE,
+      func,
+      inputBounds,
+      outputTargets,
+      samplesCount: 4,
+      reproSettings: {reproducible: true, seed: 67},
+    };
+    const [mainRes] = await runOptimizer({...baseArgs, executor: 'main'});
+    const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
+    assertResultParity(mainRes, wkrRes, 'formula_bound_dataframe');
+  });
+
+  test('parity_formula_bound_references_dayjs', async () => {
+    // Formula bound that calls a method on a const Dayjs: upper bound for
+    // `b` is `t0.year() / 10000` ≈ 0.2024. Both arms must agree.
+    const func = makeExpDecayFunc();
+    const t0 = dayjs('2024-06-15T00:00:00Z');
+    const targetCall = func.prepare({a: 2.5, b: 0.15, N: 20});
+    await targetCall.call();
+    const targetDf = targetCall.getParamValue('simulation') as DG.DataFrame;
+
+    const inputBounds: OptimizerInputsConfig = {
+      t0: {type: 'const', value: t0},
+      a: rangeBound(0.5, 5, 'a'),
+      b: formulaBound('0.1', 't0.year() / 10000', 'b'),
+      N: {type: 'const', value: 20},
+    };
+    const outputTargets: OptimizerOutputsConfig = [{
+      propName: 'simulation',
+      type: DG.TYPE.DATA_FRAME,
+      target: targetDf,
+      argName: 't',
+      cols: [targetDf.col('y')!],
+    }];
+
+    const baseArgs = {
+      lossType: LOSS.RMSE,
+      func,
+      inputBounds,
+      outputTargets,
+      samplesCount: 4,
+      reproSettings: {reproducible: true, seed: 71},
+    };
+    const [mainRes] = await runOptimizer({...baseArgs, executor: 'main'});
+    const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
+    assertResultParity(mainRes, wkrRes, 'formula_bound_dayjs');
   });
 
   test('parity_multi_output', async () => {

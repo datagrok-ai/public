@@ -21,3 +21,7 @@ export {runOptimizer} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 export type {ExecutorChoice} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/executor';
+export {buildSetup} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/serialize';
+export type {FitSessionSetup, FixedInputKind} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/wire-types';

@@ -8,6 +8,9 @@
 //   - `bounds-checker` is the shared (with the main-arm sampler) bounds
 //     checker; it imports only `formulas-resolver` (also DG-free) and uses
 //     `import type` for the bound shapes.
+//   - `dayjs` is pulled in to reify ISO-string-encoded Dayjs inputs back to
+//     Dayjs objects on this side, matching what the main arm's FuncCall and
+//     formula context see.
 //   - `dg-shim`, `arrow-to-lite`, `cost-math`, `func-call-shim` are pure
 //     TypeScript with no datagrok-api/* runtime imports.
 //
@@ -15,6 +18,7 @@
 // cost-functions.ts) is intentionally NOT imported here — it would crash a
 // worker the moment the bundle loaded.
 
+import dayjs from 'dayjs';
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {LOSS} from '../constants';
 import {makeBoundsChecker} from '../bounds-checker';
@@ -33,6 +37,7 @@ import type {
   SerializedOutputTarget,
   SerializedDataFrameTarget,
   SessionId,
+  FixedInputKind,
 } from './wire-types';
 
 type TargetEntry = {
@@ -84,6 +89,25 @@ function reifyFixedDataFrames(blobs: Record<string, Uint8Array>): Record<string,
   return out;
 }
 
+// Mirror of serialize.serializeFixedInputs's tagging logic: turn ISO
+// strings tagged `'dayjs'` back into Dayjs objects and `'date'` back into
+// Date objects. Plain scalars pass through. The result is what
+// formulas + script bodies see — keeping observable behavior identical
+// to the main arm.
+function reifyFixedInputs(
+  scalars: Record<string, any>,
+  types: Record<string, FixedInputKind>,
+): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const [name, value] of Object.entries(scalars)) {
+    const kind = types[name];
+    if (kind === 'dayjs') out[name] = dayjs(value as string);
+    else if (kind === 'date') out[name] = new Date(value as string);
+    else out[name] = value;
+  }
+  return out;
+}
+
 // Per-fit state, primed once on `setup-fit` and reused across all
 // `run-seed` calls for that session.
 type Session = {
@@ -102,16 +126,21 @@ function buildCostFunc(setup: FitSessionSetup): {
   fc: WorkerFuncCall;
 } {
   const targets = buildTargetEntries(setup.outputTargets);
-  const fixedDfs = reifyFixedDataFrames(setup.fixedDataFrames);
+  // One reified map feeds two consumers (FuncCall body + bounds-checker
+  // formula context). Built once so both arms see equivalent values.
+  const merged: Record<string, any> = {
+    ...reifyFixedInputs(setup.fixedInputs, setup.fixedInputTypes),
+    ...reifyFixedDataFrames(setup.fixedDataFrames),
+  };
   const fc = createWorkerFuncCall({
     source: setup.fnSource,
     paramList: setup.paramList,
     outputNames: setup.outputParamNames,
-    fixedInputs: {...setup.fixedInputs, ...fixedDfs},
+    fixedInputs: merged,
     variedInputNames: setup.variedInputNames,
   });
   const variedNames = setup.variedInputNames;
-  const checker = makeBoundsChecker(setup.bounds, variedNames);
+  const checker = makeBoundsChecker(setup.bounds, variedNames, merged);
   const useRmse = setup.lossType === LOSS.RMSE;
 
   const cost = (x: Float64Array): number | undefined => {

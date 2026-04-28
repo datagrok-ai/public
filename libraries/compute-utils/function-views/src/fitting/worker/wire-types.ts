@@ -15,6 +15,12 @@ import type {ValueBoundsData} from '../optimizer-misc';
 
 export type SessionId = number;
 
+// Sparse type tag for non-scalar fixedInputs that need worker-side
+// reification. Plain scalars (number, string, boolean, null) omit
+// themselves from the map entirely — only Dayjs and Date get tagged so
+// the worker knows to wrap the ISO string back into the original object.
+export type FixedInputKind = 'dayjs' | 'date';
+
 export type SerializedScalarTarget = {
   kind: 'scalar';
   propName: string;
@@ -41,6 +47,7 @@ export type FitSessionSetup = {
   outputParamNames: string[];
   lossType: LOSS;
   fixedInputs: Record<string, number | string | boolean | null>;
+  fixedInputTypes: Record<string, FixedInputKind>;
   fixedDataFrames: Record<string, Uint8Array>;
   variedInputNames: string[];
   bounds: Record<string, ValueBoundsData>;

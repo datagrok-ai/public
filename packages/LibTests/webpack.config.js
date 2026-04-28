@@ -40,19 +40,30 @@ module.exports = {
     ],
   },
   devtool: 'source-map',
-  externals: {
-    'datagrok-api/dg': 'DG',
-    'DG': 'DG',
-    'datagrok-api/grok': 'grok',
-    'datagrok-api/ui': 'ui',
-    'openchemlib/full.js': 'OCL',
-    'cash-dom': '$',
-    'dayjs': 'dayjs',
-    'wu': 'wu',
-    'exceljs': 'ExcelJS',
-    'html2canvas': 'html2canvas',
-    'vue': 'Vue',
-  },
+  externals: [
+    // Workers don't get the platform's globals (no `window.dayjs`), so the
+    // fitting worker bundle imports `dayjs` and webpack must bundle it.
+    // The main bundle still externalizes dayjs to the platform global.
+    ({context, request}, cb) => {
+      if (request === 'dayjs' && context && /[\\/]fitting[\\/]worker(?:[\\/]|$)/.test(context))
+        return cb();
+      const platformExternals = {
+        'datagrok-api/dg': 'DG',
+        'DG': 'DG',
+        'datagrok-api/grok': 'grok',
+        'datagrok-api/ui': 'ui',
+        'openchemlib/full.js': 'OCL',
+        'cash-dom': '$',
+        'dayjs': 'dayjs',
+        'wu': 'wu',
+        'exceljs': 'ExcelJS',
+        'html2canvas': 'html2canvas',
+        'vue': 'Vue',
+      };
+      if (request in platformExternals) return cb(null, platformExternals[request]);
+      cb();
+    },
+  ],
   output: {
     filename: '[name].js',
     library: packageName,

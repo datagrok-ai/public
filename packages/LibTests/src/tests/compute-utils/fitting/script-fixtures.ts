@@ -124,6 +124,68 @@ export function makeMultiOutputFunc(): DG.Func {
 }
 
 /**
+ * Const-DataFrame fixture: takes a `refDf` input and folds its `rowCount`
+ * into the simulation, so a worker that loses the DataFrame (vs reifies
+ * it as a LiteDataFrame) produces a different cost. f(t) = a * t * refDf.rowCount.
+ */
+export function makeRefDfPassthroughFunc(): DG.Func {
+  return buildScript([
+    '//name: RefDfPassthrough',
+    '//language: javascript',
+    '//input: dataframe refDf',
+    '//input: double a',
+    '//input: int N = 10',
+    '//output: dataframe simulation',
+    '',
+    'const rows = refDf.rowCount;',
+    'const tArr = new Float32Array(N);',
+    'const yArr = new Float32Array(N);',
+    'for (let i = 0; i < N; i++) {',
+    '  tArr[i] = i / (N - 1);',
+    '  yArr[i] = a * tArr[i] * rows;',
+    '}',
+    'simulation = DG.DataFrame.fromColumns([',
+    "  DG.Column.fromFloat32Array('t', tArr),",
+    "  DG.Column.fromFloat32Array('y', yArr),",
+    ']);',
+  ]);
+}
+
+/**
+ * Const-Dayjs fixture: y = a + (t0.year() - 2024) * 100. A worker that sees
+ * an ISO string instead of a Dayjs throws on `t0.year()`, every seed lands
+ * in the fails DF, and parity comparison detects it loudly.
+ */
+export function makeDayjsFormatFunc(): DG.Func {
+  return buildScript([
+    '//name: DayjsFormat',
+    '//language: javascript',
+    '//input: datetime t0',
+    '//input: double a',
+    '//output: double y',
+    '',
+    'y = a + (t0.year() - 2024) * 100;',
+  ]);
+}
+
+/**
+ * Const-Date fixture: y = a + t0.getTime() / 1e12. A worker that sees a
+ * string fails on `.getTime()`. Uses a raw JS Date (not Dayjs) to exercise
+ * the `'date'` reification branch.
+ */
+export function makeDateGetTimeFunc(): DG.Func {
+  return buildScript([
+    '//name: DateGetTime',
+    '//language: javascript',
+    '//input: datetime t0',
+    '//input: double a',
+    '//output: double y',
+    '',
+    'y = a + t0.getTime() / 1e12;',
+  ]);
+}
+
+/**
  * Throws on inputs satisfying a predicate (e.g. negative `a`). Used to test
  * fault tolerance in NM (failed seeds → fails DF, others continue).
  */

@@ -45,10 +45,15 @@ export function evalBoundFormula(bound: BoundFormula, context: Record<string, an
 export function makeBoundsChecker(
   inputs: Record<string, ValueBoundsData>,
   variedInputNames: string[],
+  fixedContextOverride?: Record<string, any>,
 ): (point: Float64Array) => boolean {
   const variedNameToPosition = new Map(variedInputNames.map((name, pos) => [name, pos]));
   const {constValues, nonFormulaBounds, formulaBounds} = getAccData(inputs);
-  const contextFixed = getFixedContext(constValues);
+  // Worker arm passes a pre-reified fixed context built from
+  // setup.fixedInputs + setup.fixedDataFrames so const Dayjs/Date/DataFrame
+  // values seen by formulas match the main arm's. Main arm omits the
+  // override and falls back to the values stored in `inputs` const entries.
+  const contextFixed = fixedContextOverride ?? getFixedContext(constValues);
 
   return function isInsideBounds(point: Float64Array): boolean {
     const context = {...contextFixed};
