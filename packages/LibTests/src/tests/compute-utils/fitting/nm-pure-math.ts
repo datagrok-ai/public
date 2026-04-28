@@ -150,6 +150,38 @@ for (const executor of ALL_EXECUTORS) {
       expectFloat(best.point[0], 5, 1e-3);
     });
 
+    test('nm_formula_bounds_clips_optimum', async () => {
+      // Constrained-vs-unconstrained mismatch: f(x) = (x - 10)^2 has its
+      // unconstrained minimum at x=10, but the formula bound 0 <= x <= a-1
+      // (a fixed at 5) clips x to [0, 4]. The constrained minimum is x=4
+      // with cost 36. Closure-based tests don't gate bounds inside the
+      // executor (see nm_with_bounds_clip), so we wrap the objective with
+      // the shared `makeBoundsChecker` — directly exercising the formula
+      // path of the bounds checker.
+      const bounds: Record<string, ValueBoundsData> = {
+        a: {type: 'const', value: 5},
+        x: formulaBound('0', 'a - 1', 'x'),
+      };
+      const checker = makeBoundsChecker(bounds, ['x']);
+      const objective = async (x: Float64Array): Promise<number | undefined> => {
+        if (!checker(x)) return;
+        return (x[0] - 10) ** 2;
+      };
+      const result = await runFitting(executor, {
+        objectiveFunc: objective,
+        inputsBounds: bounds,
+        samplesCount: 8,
+        settings: defaultNmSettings({maxIter: 200}),
+        reproSettings: reproSettings(17),
+        earlyStoppingSettings: noEarlyStopping(),
+      });
+      for (const e of result.extremums)
+        expect(checker(e.point), true, `reported point ${Array.from(e.point)} fails boundsChecker`);
+      const best = result.extremums.reduce((a, b) => (a.cost < b.cost ? a : b));
+      expectFloat(best.point[0], 4, 1e-3);
+      expectFloat(best.cost, 36, 1e-2);
+    });
+
     test('nm_seeded_reproducibility', async () => {
       // Two runs with the same seed must produce byte-identical Extremum.point
       // and iterCosts. This is the load-bearing invariant for dual-executor

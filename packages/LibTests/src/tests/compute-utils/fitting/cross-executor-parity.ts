@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {LOSS, runOptimizer, OptimizerInputsConfig, OptimizerOutputsConfig} from './imports';
 import {makeExpDecayFunc, makeMultiOutputFunc} from './script-fixtures';
-import {rangeBound} from './utils';
+import {rangeBound, formulaBound} from './utils';
 import type {Extremum, OptimizationResult} from './imports';
 
 function assertExtremumByteIdentical(a: Extremum, b: Extremum, label: string): void {
@@ -72,6 +72,46 @@ category('ComputeUtils: Fitting / Cross-executor parity', () => {
     const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
 
     assertResultParity(mainRes, wkrRes, 'exp_decay');
+  });
+
+  test('parity_formula_bound_clips', async () => {
+    // Formula bound that strictly clips the unconstrained optimum: target
+    // params are (a=2.5, b=0.7), but `b` is bounded to [0.05*a, 0.1*a],
+    // i.e. at most 0.5 across the whole feasible `a` range. The
+    // constrained optimum lives somewhere on the upper b-edge; both arms
+    // must converge to byte-identical points. A worker that ignores the
+    // formula bound walks toward (2.5, 0.7) and trips assertResultParity.
+    const func = makeExpDecayFunc();
+    const targetCall = func.prepare({a: 2.5, b: 0.7, N: 20});
+    await targetCall.call();
+    const targetDf = targetCall.getParamValue('simulation') as DG.DataFrame;
+
+    const inputBounds: OptimizerInputsConfig = {
+      a: rangeBound(0.5, 5, 'a'),
+      b: formulaBound('0.05 * a', '0.1 * a', 'b'),
+      N: {type: 'const', value: 20},
+    };
+    const outputTargets: OptimizerOutputsConfig = [{
+      propName: 'simulation',
+      type: DG.TYPE.DATA_FRAME,
+      target: targetDf,
+      argName: 't',
+      cols: [targetDf.col('y')!],
+    }];
+
+    const baseArgs = {
+      lossType: LOSS.RMSE,
+      func,
+      inputBounds,
+      outputTargets,
+      samplesCount: 4,
+      reproSettings: {reproducible: true, seed: 23},
+    };
+
+    const [mainRes] = await runOptimizer({...baseArgs, executor: 'main'});
+    const [wkrRes] = await runOptimizer({...baseArgs, executor: 'worker'});
+
+    assertResultParity(mainRes, wkrRes, 'formula_bound_clips');
   });
 
   test('parity_multi_output', async () => {

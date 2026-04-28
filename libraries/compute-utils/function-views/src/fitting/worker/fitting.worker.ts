@@ -5,6 +5,9 @@
 // Imports are deliberately DG-free:
 //   - `optimizer-nelder-mead` exports only `optimizeNM`; its type-only import
 //     of optimizer-misc is erased by tsc, so the compiled JS has no DG ref.
+//   - `bounds-checker` is the shared (with the main-arm sampler) bounds
+//     checker; it imports only `formulas-resolver` (also DG-free) and uses
+//     `import type` for the bound shapes.
 //   - `dg-shim`, `arrow-to-lite`, `cost-math`, `func-call-shim` are pure
 //     TypeScript with no datagrok-api/* runtime imports.
 //
@@ -14,6 +17,7 @@
 
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {LOSS} from '../constants';
+import {makeBoundsChecker} from '../bounds-checker';
 import {arrowIpcToLite} from './arrow-to-lite';
 import type {LiteDataFrame} from './types';
 import {ColLike, DfLike, getErrors, InconsistentTablesError} from './cost-math';
@@ -30,33 +34,6 @@ import type {
   SerializedDataFrameTarget,
   SessionId,
 } from './wire-types';
-
-// Mirror of the makeBoundsChecker logic from optimizer-sampler.ts, inlined to
-// avoid pulling in formulas-resolver. Worker bodies that contain formula
-// bounds would not pass canHandle() on the main thread, so in practice only
-// value bounds reach this path.
-function makeWorkerBoundsChecker(
-  bounds: Record<string, any>,
-  variedInputNames: string[],
-): (point: Float64Array) => boolean {
-  const ranges: Array<{idx: number; min: number; max: number}> = [];
-  variedInputNames.forEach((name, idx) => {
-    const b = bounds[name];
-    if (!b || b.type !== 'changing') return;
-    if (b.bottom?.type !== 'value' || b.top?.type !== 'value') {
-      ranges.push({idx, min: -Infinity, max: Infinity});
-      return;
-    }
-    ranges.push({idx, min: b.bottom.value, max: b.top.value});
-  });
-  return (point: Float64Array) => {
-    for (const {idx, min, max} of ranges) {
-      const v = point[idx];
-      if (v == null || v < min || v > max) return false;
-    }
-    return true;
-  };
-}
 
 type TargetEntry = {
   propName: string;
@@ -134,7 +111,7 @@ function buildCostFunc(setup: FitSessionSetup): {
     variedInputNames: setup.variedInputNames,
   });
   const variedNames = setup.variedInputNames;
-  const checker = makeWorkerBoundsChecker(setup.bounds, variedNames);
+  const checker = makeBoundsChecker(setup.bounds, variedNames);
   const useRmse = setup.lossType === LOSS.RMSE;
 
   const cost = (x: Float64Array): number | undefined => {
