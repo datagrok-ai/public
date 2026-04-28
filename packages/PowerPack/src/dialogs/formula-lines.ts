@@ -1206,6 +1206,16 @@ class Editor {
       const lhsColumn = refs[0];
       const rhsColumns = refs.slice(1);
 
+      // Single-axis viewers (box plot, histogram, bar chart) only support
+      // `${valueColumn} = const` formulas — the LHS must reference the value column,
+      // and the RHS must be a constant (no column references or operations between them).
+      if (this.singleAxisColumnName) {
+        if (lhsColumn !== this.singleAxisColumnName)
+          return `Left side must reference the value column \${${this.singleAxisColumnName}}`;
+        if (rhsColumns.length > 0)
+          return 'Right side must be a constant value — column references are not allowed on single-axis viewers';
+      }
+
       // If RHS references the same column → invalid. Constant-only RHS (zero column refs)
       // is valid — single-axis viewers (box plot, histogram, bar chart) only produce those.
       if (rhsColumns.length > 0 && rhsColumns.includes(lhsColumn))
