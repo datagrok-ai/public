@@ -1884,9 +1884,10 @@ export class FormulaLinesDialog {
           || previewViewer instanceof DG.LineChartViewer
           || previewViewer instanceof DG.HistogramViewer
           || previewViewer instanceof DG.BarChartViewer
-          || previewViewer instanceof DG.BoxPlot;
+          || previewViewer instanceof DG.BoxPlot
+          || previewViewer instanceof DG.DensityPlotViewer;
         if (supportsDrawing) {
-          const drawHost = previewViewer as DG.ScatterPlotViewer | DG.LineChartViewer | DG.HistogramViewer | DG.BarChartViewer | DG.BoxPlot;
+          const drawHost = previewViewer as DG.ScatterPlotViewer | DG.LineChartViewer | DG.HistogramViewer | DG.BarChartViewer | DG.BoxPlot | DG.DensityPlotViewer;
           drawHost.disableAnnotationRegionDrawing();
           previewViewer.setOptions({ annotationRegions: '[]', formulaLines: '[]' });
           this.editor.update(-1, false);

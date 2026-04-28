@@ -256,8 +256,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <Viewer>Viewer.fromType(VIEWER.CORR_PLOT, t, options);
   }
 
-  static densityPlot(t: DataFrame, options?: Partial<interfaces.IDensityPlotSettings>): Viewer<interfaces.IDensityPlotSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.DENSITY_PLOT, t, options);
+  static densityPlot(t: DataFrame, options?: Partial<interfaces.IDensityPlotSettings>): DensityPlotViewer {
+    return <DensityPlotViewer>Viewer.fromType(VIEWER.DENSITY_PLOT, t, options);
   }
 
   static form(t: DataFrame, options?: Partial<interfaces.IFormSettings>): Viewer<interfaces.IFormSettings> {
@@ -666,6 +666,19 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onPointClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-click'); }
   get onPointDoubleClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-double-click'); }
+}
+
+export class DensityPlotViewer extends Viewer<interfaces.IDensityPlotSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_DensityPlotViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+
+  disableAnnotationRegionDrawing(): void { api.grok_DensityPlotViewer_DisableAnnotationRegionDrawing(this.dart); }
 }
 
 export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
