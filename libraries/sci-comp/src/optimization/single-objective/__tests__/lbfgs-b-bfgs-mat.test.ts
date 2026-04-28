@@ -160,6 +160,7 @@ describe('BFGSMat construction and reset', () => {
       new Float64Array([1, 0, 0]),
       new Float64Array([2, 0, 0]),
       Number.EPSILON,
+      1,
     );
     expect(mat.col).toBe(1);
     mat.reset();
@@ -182,7 +183,7 @@ describe('BFGSMat single-pair agrees with explicit BFGS rank-2 update', () => {
     const v = new Float64Array([-0.3, 0.8, 0.1, -0.9, 0.5]);
 
     const mat = new BFGSMat(n, 5);
-    const ok = mat.update(s, y, 0);
+    const ok = mat.update(s, y, 0, 0);
     expect(ok).toBe(true);
     expect(mat.col).toBe(1);
 
@@ -208,7 +209,7 @@ describe('BFGSMat secant equation', () => {
     const s = new Float64Array([1, -0.5, 0.3, 0.8]);
     const y = new Float64Array([2, 0.7, -0.4, 1.1]);
     const mat = new BFGSMat(n, 5);
-    mat.update(s, y, 0);
+    mat.update(s, y, 0, 0);
 
     const out = new Float64Array(n);
     const s2m = new Float64Array(10);
@@ -226,7 +227,7 @@ describe('BFGSMat secant equation', () => {
     ];
     const mat = new BFGSMat(n, 5);
     for (const [s, y] of pairs)
-      expect(mat.update(s, y, 0)).toBe(true);
+      expect(mat.update(s, y, 0, 0)).toBe(true);
 
     const last = pairs[pairs.length - 1];
     const out = new Float64Array(n);
@@ -256,7 +257,7 @@ describe('BFGSMat.solveM inverts K', () => {
     for (const s of ss) {
       const y = new Float64Array(n);
       for (let i = 0; i < n; i++) y[i] = Hdiag[i] * s[i];
-      expect(mat.update(s, y, 0)).toBe(true);
+      expect(mat.update(s, y, 0, 0)).toBe(true);
     }
     const col = mat.col;
     expect(col).toBe(m);
@@ -290,7 +291,7 @@ describe('BFGSMat applyW / applyWt', () => {
     for (const s of ss) {
       const y = new Float64Array(n);
       for (let i = 0; i < n; i++) y[i] = 2 * s[i] + 0.1;
-      mat.update(s, y, 0);
+      mat.update(s, y, 0, 0);
     }
 
     // W = [Y | θS].  W e_0 = Y column 0 (logical).
@@ -321,7 +322,7 @@ describe('BFGSMat applyW / applyWt', () => {
         s[i] = Math.sin(k + i);
         y[i] = Math.cos(k + i) + 1.5 * s[i];
       }
-      mat.update(s, y, 0);
+      mat.update(s, y, 0, 0);
     }
     const v = new Float64Array([0.5, -0.3, 1.1, 0.2, -0.7]);
 
@@ -357,7 +358,7 @@ describe('BFGSMat ring-buffer semantics', () => {
     for (let k = 0; k < m + 2; k++) {
       const s = new Float64Array([1 + k, 0, 0]);
       const y = new Float64Array([2 + k, 0, 0]);
-      mat.update(s, y, 0);
+      mat.update(s, y, 0, 0);
     }
     expect(mat.col).toBe(m);
     expect(mat.head).toBe(2 % m);
@@ -383,29 +384,39 @@ describe('BFGSMat ring-buffer semantics', () => {
 /* ================================================================== */
 
 describe('BFGSMat curvature gate', () => {
+  // Gate: sᵀy > curvatureEps · max(0, negGTs).
+  //   negGTs = -gₖᵀ sₖ ≥ 0 along a descent direction.
+
   it('rejects pair with sᵀy ≤ 0', () => {
     const mat = new BFGSMat(3, 5);
     const s = new Float64Array([1, 0, 0]);
     const y = new Float64Array([-1, 0, 0]); // sᵀy = -1
-    const ok = mat.update(s, y, 1e-12);
+    const ok = mat.update(s, y, 1e-12, 1);
     expect(ok).toBe(false);
     expect(mat.col).toBe(0);
   });
 
-  it('rejects pair with sᵀy too small relative to yᵀy', () => {
+  it('rejects pair when sᵀy ≤ eps · (−gᵀs)', () => {
     const mat = new BFGSMat(3, 5);
     const s = new Float64Array([1e-10, 0, 0]);
     const y = new Float64Array([1, 0, 0]);
-    // sᵀy = 1e-10, yᵀy = 1. curvatureEps = 1e-8 → threshold = 1e-8.
-    // sᵀy = 1e-10 ≤ 1e-8 · 1 ✓ rejected.
-    const ok = mat.update(s, y, 1e-8);
+    // sᵀy = 1e-10, negGTs = 1, eps = 1e-8 → threshold = 1e-8 → reject.
+    const ok = mat.update(s, y, 1e-8, 1);
     expect(ok).toBe(false);
   });
 
-  it('accepts pair at the threshold +ε', () => {
+  it('accepts pair well above threshold', () => {
     const mat = new BFGSMat(3, 5);
     const s = new Float64Array([1, 0, 0]);
-    const y = new Float64Array([1, 0, 0]); // sᵀy = 1, yᵀy = 1
-    expect(mat.update(s, y, 1e-12)).toBe(true);
+    const y = new Float64Array([1, 0, 0]);
+    // sᵀy = 1, negGTs = 0.5, eps = 1e-8 → threshold = 5e-9 → accept.
+    expect(mat.update(s, y, 1e-8, 0.5)).toBe(true);
+  });
+
+  it('with curvatureEps = 0 accepts any positive sᵀy regardless of negGTs', () => {
+    const mat = new BFGSMat(3, 5);
+    const s = new Float64Array([1e-20, 0, 0]);
+    const y = new Float64Array([1, 0, 0]);
+    expect(mat.update(s, y, 0, 0)).toBe(true);
   });
 });

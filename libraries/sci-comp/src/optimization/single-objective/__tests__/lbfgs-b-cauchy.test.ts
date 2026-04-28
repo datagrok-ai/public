@@ -86,7 +86,7 @@ describe('cauchyPoint — unconstrained (all Free)', () => {
     // Push a pair with positive curvature.
     const s0 = new Float64Array([0.3, 0.4, 0.1]);
     const y0 = new Float64Array([0.6, 0.5, 0.2]);
-    mat.update(s0, y0, 0);
+    mat.update(s0, y0, 0, 0);
 
     const x = new Float64Array([0, 0, 0]);
     const g = new Float64Array([0.5, -0.3, 0.2]);
@@ -142,7 +142,7 @@ describe('cauchyPoint — 1-D bounded', () => {
     const mat = new BFGSMat(n, 5);
     // Force θ > 1 by seeding a pair: θ = yᵀy / sᵀy.
     // With s=[1], y=[4]: θ = 16/4 = 4.
-    mat.update(new Float64Array([1]), new Float64Array([4]), 0);
+    mat.update(new Float64Array([1]), new Float64Array([4]), 0, 0);
 
     const x = new Float64Array([0.5]);
     const g = new Float64Array([1]);
@@ -203,10 +203,12 @@ describe('cauchyPoint — feasibility invariant', () => {
       new Float64Array([0.1, 0.2, -0.1, 0.3, 0.05, -0.2]),
       new Float64Array([0.4, 0.1, 0.3, 0.2, 0.1, 0.1]),
       0,
+      0,
     );
     mat.update(
       new Float64Array([0.05, -0.1, 0.2, 0.1, -0.05, 0.3]),
       new Float64Array([0.1, 0.3, 0.1, 0.4, 0.2, 0.15]),
+      0,
       0,
     );
 
@@ -237,6 +239,7 @@ describe('cauchyPoint — c = Wᵀ(xᶜ − x) invariant', () => {
     mat.update(
       new Float64Array([0.2, 0.3, -0.1, 0.4]),
       new Float64Array([0.5, 0.2, 0.3, 0.1]),
+      0,
       0,
     );
 

@@ -101,12 +101,23 @@ export class BFGSMat {
 
   /**
    * Try to push a new curvature pair `(sNew, yNew)`.
-   * Curvature gate: accept iff `sᵀy > curvatureEps · max(1, yᵀy)`.
+   *
+   * Curvature gate (Zhu 1997 eq. 3.2, also Fortran v3.0 mainlb.f):
+   *   accept iff `sᵀy > curvatureEps · max(0, negGTs)`,
+   * where `negGTs = −gₖᵀ sₖ = −gₖᵀ d · stp ≥ 0` along a descent
+   * direction. With `curvatureEps = 0` the gate degrades to plain
+   * `sᵀy > 0`, so callers that don't track the slope can pass `0`
+   * for both `curvatureEps` and `negGTs`.
    *
    * On accept: updates `θ`, `G`, `SᵀS`, rebuilds Cholesky. Returns true.
    * On reject: memory unchanged. Returns false.
    */
-  update(sNew: Float64Array, yNew: Float64Array, curvatureEps: number): boolean {
+  update(
+    sNew: Float64Array,
+    yNew: Float64Array,
+    curvatureEps: number,
+    negGTs: number,
+  ): boolean {
     const n = this.n;
     const m = this.m;
 
@@ -123,7 +134,7 @@ export class BFGSMat {
       yy += yi * yi;
       ssNew += si * si;
     }
-    if (!(yy > 0) || !(ys > curvatureEps * Math.max(1, yy)))
+    if (!(yy > 0) || !(ys > curvatureEps * Math.max(0, negGTs)))
       return false;
 
     const newP = this.col < m ? (this.head + this.col) % m : this.head;

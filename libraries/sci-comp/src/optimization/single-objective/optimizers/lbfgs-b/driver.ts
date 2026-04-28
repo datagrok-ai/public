@@ -248,7 +248,9 @@ export function runSync(
       stepS[i] = xNew[i] - x[i];
       stepY[i] = gNew[i] - g[i];
     }
-    mat.update(stepS, stepY, CURVATURE_EPS);
+    // negGTs = −gₖᵀ d · stp ≥ 0 along a descent direction. Matches
+    // Fortran v3.0 ddum = -gdold * stp in mainlb.f.
+    mat.update(stepS, stepY, CURVATURE_EPS, -slope * stp);
 
     // ---- (l) Advance state -----------------------------------------
     x.set(xNew);
@@ -479,7 +481,9 @@ export async function runAsync(
       stepS[i] = xNew[i] - x[i];
       stepY[i] = gNew[i] - g[i];
     }
-    mat.update(stepS, stepY, CURVATURE_EPS);
+    // negGTs = −gₖᵀ d · stp ≥ 0 along a descent direction. Matches
+    // Fortran v3.0 ddum = -gdold * stp in mainlb.f.
+    mat.update(stepS, stepY, CURVATURE_EPS, -slope * stp);
 
     x.set(xNew);
     fCur = fNew;

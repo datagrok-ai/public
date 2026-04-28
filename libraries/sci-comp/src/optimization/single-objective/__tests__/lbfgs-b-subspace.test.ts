@@ -84,6 +84,7 @@ describe('subspaceMin — early exits', () => {
       new Float64Array([0.2, 0.1, 0.3]),
       new Float64Array([0.5, 0.2, 0.6]),
       0,
+      0,
     );
     const x = new Float64Array([1, 1, 1]);
     const g = new Float64Array([1, 1, 1]);
@@ -112,6 +113,7 @@ describe('subspaceMin — model decrease and feasibility', () => {
     mat.update(
       new Float64Array([0.1, 0.2, 0.1]),
       new Float64Array([0.5, 0.3, 0.4]),
+      0,
       0,
     );
 
@@ -146,6 +148,7 @@ describe('subspaceMin — model decrease and feasibility', () => {
     mat.update(
       new Float64Array([0.05, 0.05, 0.05, 0.05]),
       new Float64Array([0.3, 0.2, 0.4, 0.1]),
+      0,
       0,
     );
 
@@ -184,10 +187,12 @@ describe('subspaceMin — B·(xHat−xᶜ) ≈ −r̄ᶜ for t=n', () => {
       new Float64Array([0.1, 0.2, -0.1, 0.3]),
       new Float64Array([0.4, 0.1, 0.3, 0.2]),
       0,
+      0,
     );
     mat.update(
       new Float64Array([0.05, -0.1, 0.2, 0.1]),
       new Float64Array([0.1, 0.3, 0.1, 0.4]),
+      0,
       0,
     );
 
@@ -244,6 +249,7 @@ describe('subspaceMin — Morales–Nocedal backtrack path', () => {
     mat.update(
       new Float64Array([0.5, 0.1]),
       new Float64Array([0.2, 0.05]),
+      0,
       0,
     );
 
