@@ -84,37 +84,32 @@ set. RabbitMQ follows its own upstream release cadence and is not tied to the Da
 
 ## Production install on AWS EKS
 
-The easiest path is the [AWS CloudFormation (EKS) template](../aws/deploy-amazon-eks.mdx),
-which provisions EKS, RDS, S3, IAM with IRSA, and installs this Helm chart for
-you. The manual steps below are useful when you want to manage the cluster
-yourself or when deploying into a pre-existing EKS cluster.
+For new AWS stands use the [AWS CloudFormation (EKS) template](../aws/deploy-amazon-eks.mdx) —
+it provisions EKS, RDS, S3, IAM with IRSA, and installs this chart for you. The steps
+below are for installing the chart directly into an EKS cluster you already manage.
 
-The `datagrok-eks-cfn.yaml` CloudFormation template (in the chart repo under
-`deploy/k8s/`) is the same source-of-truth template used by the shipped CFN
-variants; you can deploy it directly if you prefer a single-file template.
-
-1. Deploy the CFN stack and capture its outputs (RDS endpoint, bucket name, IAM
-   role ARN, ACM cert ARN).
-2. Configure kubectl:
+1. Configure kubectl:
    ```bash
    aws eks update-kubeconfig --name <cluster-name>
    ```
-3. Install the AWS Load Balancer Controller (the CFN stack's `PostDeployCommands`
-   output prints the exact `helm install` commands).
+2. Install the [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
+   in the cluster — the chart's `ingress.className: alb` annotations require it.
+3. Provision RDS, S3, and the IRSA role for the Datagrok ServiceAccount yourself
+   (`rds-db:connect`, `s3:Get/Put/List` on the bucket, optionally Secrets Manager read).
 4. Save the EKS overlay below as `values-prod.yaml`, filling in the SET fields:
 
    ```yaml
    postgres:
      internal: false
      external:
-       host: your-db.xxxxx.us-east-1.rds.amazonaws.com   # from CFN
+       host: your-db.xxxxx.us-east-1.rds.amazonaws.com
        port: 5432
        ssl: true
 
    storage:
      type: s3
      s3:
-       bucket: your-datagrok-bucket                       # from CFN
+       bucket: your-datagrok-bucket
        region: us-east-1
 
    ingress:
@@ -132,7 +127,7 @@ variants; you can deploy it directly if you prefer a single-file template.
    serviceAccount:
      create: true
      annotations:
-       eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/datagrok-role  # from CFN
+       eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/datagrok-role
 
    registry:
      type: proxy
@@ -155,53 +150,6 @@ variants; you can deploy it directly if you prefer a single-file template.
    ```
 
 The chart repo also ships a ready-made `values-eks.yaml` skeleton you can copy.
-
-### CFN profiles
-
-The `datagrok-eks-cfn.yaml` template supports two deployment profiles:
-
-| Profile | `UseExistingCluster` | Creates | Use when |
-|---------|---------------------|---------|----------|
-| **Full stack** (default) | `false` | EKS cluster, node group, RDS, S3, IAM, secrets | Starting from scratch |
-| **Existing cluster** | `true` | RDS, S3, IAM/IRSA, secrets only | You already have an EKS cluster |
-
-#### Using an existing EKS cluster
-
-If your organization already manages an EKS cluster, you can deploy only the
-Datagrok-specific infrastructure (database, storage, IAM roles) into it:
-
-1. Gather your cluster details:
-   ```bash
-   CLUSTER=my-cluster
-   aws eks describe-cluster --name $CLUSTER --query '{
-     OIDCIssuerUrl: cluster.identity.oidc.issuer,
-     SecurityGroupId: cluster.resourcesVpcConfig.clusterSecurityGroupId
-   }'
-   ```
-
-2. Deploy the CFN stack with `UseExistingCluster=true`:
-   ```bash
-   aws cloudformation create-stack --stack-name datagrok \
-     --template-body file://datagrok-eks-cfn.yaml \
-     --capabilities CAPABILITY_NAMED_IAM \
-     --parameters \
-       ParameterKey=UseExistingCluster,ParameterValue=true \
-       ParameterKey=ExistingClusterName,ParameterValue=$CLUSTER \
-       ParameterKey=ExistingClusterOIDCIssuerUrl,ParameterValue=<oidc-url> \
-       ParameterKey=ExistingClusterSecurityGroupId,ParameterValue=<sg-id> \
-       ParameterKey=VpcId,ParameterValue=<vpc-id> \
-       ParameterKey=PrivateSubnets,ParameterValue='<subnet-1>,<subnet-2>' \
-       ParameterKey=PublicSubnets,ParameterValue='<subnet-1>,<subnet-2>' \
-       ParameterKey=DBSubnets,ParameterValue='<subnet-1>,<subnet-2>'
-   ```
-
-3. Install the Helm chart using the stack outputs (same as the full-stack flow,
-   step 4 onward).
-
-> The stack does **not** create an EKS cluster, node group, or Fargate profile.
-> Ensure your existing cluster has nodes (or Fargate profiles) capable of
-> scheduling the Datagrok pods and that the AWS Load Balancer Controller is
-> already installed.
 
 ## Production install on GCP GKE
 
