@@ -381,12 +381,14 @@ export class DiffStudio {
     await this.runSolving();
   } // runSolverDemoApp
 
-  /** Return file preview view */
-  public async getFilePreview(file: DG.FileInfo, path: string): Promise<DG.View> {
+  /** Return file preview view. When `addToRecent` is true (default), the file is
+   *  recorded in the Recent folder; tree-click hover-previews pass `false` so they
+   *  do not pollute Recent — that slot is reserved for intentional opens. */
+  public async getFilePreview(file: DG.FileInfo, path: string, addToRecent = true): Promise<DG.View> {
     closeWindows();
     const equations = await file.readAsString();
 
-    if (file.fullPath.includes(PATH.SLASH)) // Check that current file is from platform files, not drag-n-dropped
+    if (addToRecent && file.fullPath.includes(PATH.SLASH)) // Skip drag-n-dropped files (no platform path)
       await this.saveModelToRecent(file.fullPath, true);
 
     await this.createEditorView(equations);
@@ -499,15 +501,16 @@ export class DiffStudio {
 
   /** Public entry for showing a file in the shared preview. See `applyState` for
    *  the cold/warm split. The warm path additionally re-reads the file, refreshes
-   *  recent-models, re-wires the Update button, and re-parses URL params. */
-  public async applyFile(file: DG.FileInfo, path: string): Promise<DG.View> {
+   *  recent-models (when `addToRecent` is true), re-wires the Update button, and
+   *  re-parses URL params. */
+  public async applyFile(file: DG.FileInfo, path: string, addToRecent = true): Promise<DG.View> {
     if (!this.editorView)
-      return this.getFilePreview(file, path);
+      return this.getFilePreview(file, path, addToRecent);
 
     closeWindows();
     const equations = await file.readAsString();
 
-    if (file.fullPath.includes(PATH.SLASH))
+    if (addToRecent && file.fullPath.includes(PATH.SLASH))
       await this.saveModelToRecent(file.fullPath, true);
 
     this.resetForReuse();
@@ -2167,25 +2170,24 @@ export class DiffStudio {
     const existing = DiffStudio.sharedPreview;
     const isWarm = existing !== null && existing.solverView.root.isConnected;
 
+    // Tree-click previews never write to Recent — that slot is reserved for
+    // intentional opens (dblclick, Run, deep-link). Pass `addToRecent: false`.
     if (isWarm) {
       if (meta.kind === 'builtin')
         await existing!.applyState(meta.state);
       else
-        await existing!.applyFile(file!, meta.path);
+        await existing!.applyFile(file!, meta.path, false);
     } else {
       DiffStudio.releaseSharedPreview();
       const solver = new DiffStudio(false, true, true);
       const preview = meta.kind === 'builtin' ?
         await solver.applyState(meta.state) :
-        await solver.applyFile(file!, meta.path);
+        await solver.applyFile(file!, meta.path, false);
       grok.shell.windows.showToolbox = false;
       grok.shell.windows.showBrowse = true;
       grok.shell.addPreview(preview);
       DiffStudio.sharedPreview = solver;
     }
-
-    if (meta.kind === 'custom')
-      await this.saveModelToRecent(meta.path, true);
   } // openItemPreview
 
   /** Return focus to the browse tree once the preview view takes over, and keep it
