@@ -10,7 +10,7 @@ where they run and what manages their lifecycle.
 
 Every Datagrok stand runs the following services. The same images are used on every deployment
 path; the [Helm chart](k8s/install-helm-chart.md) is the canonical reference for service
-configuration.
+configuration, and [Images and versions](images.md) tracks the latest pinned tags.
 
 | Service                     | Image                                | Role |
 |-----------------------------|--------------------------------------|------|
@@ -20,7 +20,7 @@ configuration.
 | **grok\_spawner**           | `datagrok/grok_spawner`              | Manages plugin container lifecycle on Docker / ECS / Kubernetes (selected per deployment). |
 | **grok\_connect**           | `datagrok/grok_connect`              | JDBC bridge for 30+ external databases. |
 | **JupyterKernelGateway**    | `datagrok/jupyter_kernel_gateway`    | Server-side script execution (Python, R, Julia, JavaScript, Octave). |
-| **RabbitMQ**                | `rabbitmq:4.0.5-management`          | AMQP broker for the call queue (script and function execution). Independent release cadence. |
+| **RabbitMQ**                | `rabbitmq`                           | AMQP broker for the call queue (script and function execution). Independent release cadence. |
 | **grok\_registry\_proxy**   | `datagrok/grok_registry_proxy`       | Optional. Proxies plugin image pulls from a backing registry (ECR, Docker Hub) using Datagrok JWT auth, so users never see registry credentials. |
 
 For object storage, use AWS S3, Google Cloud Storage, Azure Blob, or a local volume — see the

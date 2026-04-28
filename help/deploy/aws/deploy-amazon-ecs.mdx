@@ -271,22 +271,12 @@ the [prerequisites](#ec2-prerequisites) and [parameters](#ec2-parameters).
 
 ## Service versions
 
-Every service has a dedicated CloudFormation parameter for picking the container image tag. The
-defaults track the most recent Datagrok release on Docker Hub and match the
-[EKS template defaults](deploy-amazon-eks.mdx#service-versions) — both templates ship the same
-images:
-
-| Parameter                     | Default              | Image                              |
-|-------------------------------|----------------------|------------------------------------|
-| `DatagrokVersion`             | `1.27.3`             | `datagrok/datagrok`                |
-| `GrokPipeVersion`             | `1.18.0`             | `datagrok/grok_pipe`               |
-| `GrokSpawnerVersion`          | `2.15.0`             | `datagrok/grok_spawner`            |
-| `GrokConnectVersion`          | `2.6.2`              | `datagrok/grok_connect`            |
-| `JKGVersion`                  | `1.31.0`             | `datagrok/jupyter_kernel_gateway`  |
-| `GrokRegistryProxyVersion`    | `1.18.0`             | `datagrok/grok_registry_proxy`     |
-| `RabbitmqVersion`             | `4.0.5-management`   | `rabbitmq` (independent cadence)   |
-
-[Release history](../releases/release-history.md) lists all available tags.
+Every service has a dedicated CloudFormation parameter (`DatagrokVersion`, `GrokPipeVersion`,
+`GrokSpawnerVersion`, `GrokConnectVersion`, `JKGVersion`, `GrokRegistryProxyVersion`,
+`RabbitmqVersion`) for picking the container image tag. The defaults match the
+[EKS template](deploy-amazon-eks.mdx) — both templates ship the same images. See
+[Images and versions](../images.md) for the canonical set and pinning conventions across
+deployment paths.
 
 ## Update Datagrok components
 
