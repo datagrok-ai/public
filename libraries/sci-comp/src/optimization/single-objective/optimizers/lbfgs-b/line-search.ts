@@ -108,6 +108,16 @@ const XTRAPU = 4.0;
 const P5 = 0.5;
 const P66 = 0.66;
 
+/**
+ * Cap on consecutive non-finite φ/φ' evaluations within a single
+ * NaN-bisection episode. Mirrors the Fortran v3.0 `iback ≥ 20`
+ * threshold inside one line-search call (see `lnsrlb.f`); past this
+ * count the line search returns `'error'` instead of bisecting the
+ * interval to zero, which would otherwise be reported as silent
+ * convergence at `state.stx`.
+ */
+const NAN_CAP = 20;
+
 /* ================================================================== */
 /*  dcstep — safeguarded cubic/quadratic step                          */
 /* ================================================================== */
@@ -407,9 +417,16 @@ export function runLineSearch(
     // NaN/Inf trials until a finite evaluation is obtained. This keeps
     // +Infinity out of dcstep arithmetic (the paper spec §9 glosses
     // over the cancellation that +Inf causes in the cubic formula).
+    // `nanCount` accumulates within a single bisection episode and
+    // resets once a finite value is obtained — matches the Fortran
+    // `iback` semantics scoped to one line-search call.
     let ev = evalFn(stp);
     nfev++;
+    let nanCount = 0;
     while (!Number.isFinite(ev.phi) || !Number.isFinite(ev.phiPrime)) {
+      nanCount++;
+      if (nanCount >= NAN_CAP)
+        return finalise('error', state.stx, state.fx, state.gx, nfev, evalFn);
       if (nfev >= params.maxSteps)
         return finalise('max_steps_reached', stp, phi, phiPrime, nfev, evalFn);
       const shrunk = state.stx + 0.5 * (stp - state.stx);
@@ -459,10 +476,15 @@ export async function runLineSearchAsync(
     if (nfev >= params.maxSteps)
       return finaliseAsync('max_steps_reached', stp, phi, phiPrime, nfev, evalFn);
 
-    // Same NaN/Inf bisection protocol as the sync path.
+    // Same NaN/Inf bisection protocol as the sync path; see comment
+    // above for `nanCount` semantics.
     let ev = await evalFn(stp);
     nfev++;
+    let nanCount = 0;
     while (!Number.isFinite(ev.phi) || !Number.isFinite(ev.phiPrime)) {
+      nanCount++;
+      if (nanCount >= NAN_CAP)
+        return finaliseAsync('error', state.stx, state.fx, state.gx, nfev, evalFn);
       if (nfev >= params.maxSteps)
         return finaliseAsync('max_steps_reached', stp, phi, phiPrime, nfev, evalFn);
       const shrunk = state.stx + 0.5 * (stp - state.stx);

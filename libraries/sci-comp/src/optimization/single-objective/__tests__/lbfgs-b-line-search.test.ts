@@ -281,6 +281,27 @@ describe('runLineSearch — saturation and degenerate paths', () => {
     const r = runLineSearch(phi, 0, -1e-14, 1, {...DEFAULT_PARAMS, maxSteps: 10});
     expect(r.nfev).toBeLessThanOrEqual(15);
   });
+
+  it('returns error after NAN_CAP consecutive non-finite evaluations (sync)', () => {
+    // Evaluator never produces a finite value → bisection cannot recover.
+    // Without the cap the wrapper would silently shrink stp to 0 and report
+    // success at the starting point; with the cap, 'error' is returned and
+    // the caller can drop to memory-reset recovery.
+    const phi: PhiEval = () => ({phi: NaN, phiPrime: NaN});
+    const r = runLineSearch(phi, 0, -1, 1, {...DEFAULT_PARAMS, maxSteps: 100});
+    expect(r.status).toBe('error');
+    expect(r.ok).toBe(false);
+    // Cap is 20, so we must terminate well before maxSteps.
+    expect(r.nfev).toBeLessThan(50);
+  });
+
+  it('returns error after NAN_CAP consecutive non-finite evaluations (async)', async () => {
+    const phi: PhiEvalAsync = async () => ({phi: NaN, phiPrime: NaN});
+    const r = await runLineSearchAsync(phi, 0, -1, 1, {...DEFAULT_PARAMS, maxSteps: 100});
+    expect(r.status).toBe('error');
+    expect(r.ok).toBe(false);
+    expect(r.nfev).toBeLessThan(50);
+  });
 });
 
 /* ================================================================== */
