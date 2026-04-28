@@ -34,7 +34,7 @@ Known min: f(0, 0) = 0. x₀A = (5, −3); x₀B = (−10, 10); x₀C = (100, 10
 | GradientDescent | ✅ 1.30e-8 (419 it, 2096 fn) | ✅ 1.30e-8 (452 it, 2261 fn) | ✅ 1.29e-8 (538 it, 2691 fn) |
 | Adam | ✅ 1.37e-10 (243 it, 1216 fn) | ✅ 1.86e-14 (383 it, 1916 fn) | ✅ 2.76e-7 (3573 it, 17866 fn) |
 | L-BFGS | ✅ 5.25e-16 (1 it, 11 fn) | ✅ 1.27e-15 (1 it, 11 fn) | ✅ 1.28e-11 (1 it, 11 fn) |
-| L-BFGS-B | ✅ 1.27e-15 (2 it, 15 fn) | ✅ 4.04e-14 (2 it, 15 fn) | ✅ 1.27e-25 (3 it, 30 fn) |
+| L-BFGS-B | ✅ 2.29e-15 (2 it, 15 fn) | ✅ 2.59e-14 (2 it, 20 fn) | ✅ 1.84e-23 (3 it, 30 fn) |
 
 All optimizers are robust on the sphere; L-BFGS converges in one iteration from any
 x₀ (isotropic quadratic).
@@ -52,7 +52,7 @@ Known min: f(1, 1) = 0. x₀A = (−1.2, 1.0); x₀B = (0, 0); x₀C = (2, −2)
 | GradientDescent | ⚠️ 7.90e-7 (1414 it, 7071 fn) | ⚠️ 7.89e-7 (1390 it, 6951 fn) | ⚠️ 79.45 (11 it, 60 fn) |
 | Adam | ✅ 1.85e-7 (1223 it, 6116 fn) | ⚠️ 1.65e-5 (308 it, 1541 fn) | ⚠️ 0.615 (78 it, 391 fn) |
 | L-BFGS | ✅ 2.39e-12 (671 it, 3387 fn) | ✅ 3.73e-16 (26 it, 142 fn) | ✅ 5.38e-15 (28 it, 156 fn) |
-| L-BFGS-B | ✅ 1.68e-15 (37 it, 220 fn) | ✅ 1.04e-13 (21 it, 125 fn) | ✅ 1.12e-12 (29 it, 175 fn) |
+| L-BFGS-B | ✅ 2.83e-12 (36 it, 220 fn) | ✅ 1.04e-13 (21 it, 125 fn) | ✅ 2.12e-15 (28 it, 160 fn) |
 
 Starting at the origin (B) is easier than the classic (A) for L-BFGS — only 26
 iterations. GD is sensitive to x₀ in the narrow valley; past-optimum (C) sends it
@@ -71,7 +71,7 @@ Known min: f(3, 0.5) = 0. x₀A = (0, 0); x₀B = (−2, −2); x₀C = (4, 0.4)
 | GradientDescent | ⚠️ 1.17e-6 (1536 it, 7681 fn) | ⚠️ 3.77 (11 it, 60 fn) | ⚠️ 1.19e-6 (2392 it, 11961 fn) |
 | Adam | ✅ 1.55e-8 (399 it, 1996 fn) | ⚠️ 7.60e-7 (2464 it, 12321 fn) | ✅ 3.00e-9 (177 it, 886 fn) |
 | L-BFGS | ✅ 1.96e-11 (9 it, 54 fn) | ⚠️ 0.453 (224 it, 1233 fn) | ✅ 2.88e-15 (16 it, 91 fn) |
-| L-BFGS-B | ✅ 4.95e-16 (13 it, 70 fn) | ✅ 7.53e-13 (19 it, 110 fn) | ✅ 3.54e-12 (17 it, 105 fn) |
+| L-BFGS-B | ✅ 4.95e-16 (13 it, 70 fn) | ✅ 2.99e-15 (17 it, 95 fn) | ✅ 1.11e-12 (17 it, 100 fn) |
 
 Opposite quadrant (B) is a different basin — all **local** methods (NM, GD, L-BFGS)
 fail there; only PSO's sampling finds the global.
@@ -89,7 +89,7 @@ Known min: f(1, 3) = 0. x₀A = (0, 0); x₀B = (−5, −5); x₀C = (10, 10).
 | GradientDescent | ✅ 1.25e-8 (367 it, 1836 fn) | ✅ 1.25e-8 (367 it, 1836 fn) | ✅ 1.25e-8 (367 it, 1836 fn) |
 | Adam | ✅ 1.40e-10 (297 it, 1486 fn) | ✅ 8.07e-8 (1020 it, 5101 fn) | ✅ 1.08e-7 (1149 it, 5746 fn) |
 | L-BFGS | ✅ 9.89e-14 (8 it, 49 fn) | ✅ 6.00e-17 (6 it, 39 fn) | ✅ 3.19e-12 (5 it, 34 fn) |
-| L-BFGS-B | ✅ 2.10e-17 (6 it, 35 fn) | ✅ 1.83e-12 (4 it, 25 fn) | ✅ 3.90e-13 (4 it, 25 fn) |
+| L-BFGS-B | ✅ 1.14e-12 (5 it, 30 fn) | ✅ 1.14e-12 (4 it, 25 fn) | ✅ 7.79e-22 (5 it, 35 fn) |
 
 Everyone finds the global (convex); only NM at B gets stuck with its noImprovementLimit
 trigger before reaching full precision.
@@ -107,7 +107,7 @@ Known min: f(0, 0) = 0. x₀A = (5, −5); x₀B = (−8, 8); x₀C = (0.1, 0.1)
 | GradientDescent | ✅ 1.46e-7 (858 it, 4291 fn) | ✅ 1.46e-7 (900 it, 4501 fn) | ⚠️ 1.20e-5 (4379 it, 21896 fn) |
 | Adam | ⚠️ 3.37e-6 (137 it, 686 fn) | ✅ 8.36e-10 (268 it, 1341 fn) | ✅ 2.50e-15 (51 it, 256 fn) |
 | L-BFGS | ✅ 2.00e-16 (1 it, 10 fn) | ✅ 5.03e-16 (1 it, 10 fn) | ✅ 1.64e-19 (2 it, 15 fn) |
-| L-BFGS-B | ✅ 1.07e-16 (2 it, 15 fn) | ✅ 5.05e-15 (2 it, 15 fn) | ✅ 3.55e-20 (2 it, 20 fn) |
+| L-BFGS-B | ✅ 5.32e-16 (2 it, 15 fn) | ✅ 1.70e-16 (2 it, 20 fn) | ✅ 1.59e-20 (1 it, 15 fn) |
 
 ---
 
@@ -124,7 +124,7 @@ the **nearest** of the 4 equivalent global minima, so ✅ is expected everywhere
 | GradientDescent | ✅ 1.03e-12 (260 it, 1301 fn) | ✅ 1.13e-6 (138 it, 691 fn) | ✅ 2.84e-10 (235 it, 1176 fn) |
 | Adam | ✅ 3.76e-9 (232 it, 1161 fn) | ✅ 5.41e-11 (211 it, 1056 fn) | ✅ 1.57e-10 (226 it, 1131 fn) |
 | L-BFGS | ✅ 6.19e-12 (9 it, 57 fn) | ✅ 1.05e-15 (7 it, 46 fn) | ✅ 1.30e-12 (8 it, 51 fn) |
-| L-BFGS-B | ✅ 5.47e-20 (9 it, 75 fn) | ✅ 2.24e-14 (6 it, 35 fn) | ✅ 2.03e-11 (7 it, 40 fn) |
+| L-BFGS-B | ✅ 1.13e-14 (10 it, 80 fn) | ✅ 1.26e-14 (6 it, 35 fn) | ✅ 7.95e-12 (7 it, 40 fn) |
 
 ---
 
@@ -139,7 +139,7 @@ Known global min: f(0, 0) = 0. x₀A = (2, −1); x₀B = (−2, 1); x₀C = (0.
 | GradientDescent | ⚠️ 0.299 (289 it, 1446 fn) | ⚠️ 0.299 (289 it, 1446 fn) | ✅ 3.71e-8 (430 it, 2151 fn) |
 | Adam | ⚠️ 0.299 (169 it, 846 fn) | ⚠️ 0.299 (169 it, 846 fn) | ✅ 3.26e-10 (167 it, 836 fn) |
 | L-BFGS | ⚠️ 0.299 (9 it, 55 fn) | ⚠️ 0.299 (9 it, 55 fn) | ✅ 2.06e-11 (5 it, 31 fn) |
-| L-BFGS-B | ⚠️ 0.299 (7 it, 45 fn) | ⚠️ 0.299 (7 it, 45 fn) | ✅ 2.32e-15 (5 it, 35 fn) |
+| L-BFGS-B | ⚠️ 0.299 (7 it, 45 fn) | ⚠️ 0.299 (7 it, 45 fn) | ✅ 7.48e-12 (5 it, 35 fn) |
 
 All gradient/simplex methods trap in the local basin near (1.75, −0.87) from A and B;
 only PSO escapes.
@@ -158,7 +158,7 @@ Known global min: f(0, 0) = 0. x₀A = (2.5, −3.5) *half-integer*; x₀B = (2.
 | GradientDescent | ⚠️ 12.93 (223 it, 1116 fn) | ⚠️ 17.91 (224 it, 1121 fn) | ✅ 9.52e-11 (242 it, 1211 fn) |
 | Adam | ⚠️ 12.93 (243 it, 1216 fn) | ⚠️ 17.91 (228 it, 1141 fn) | ✅ 4.76e-11 (239 it, 1196 fn) |
 | L-BFGS | ✅ 3.73e-14 (1 it, 11 fn) | ⚠️ 19.90 (8 it, 56 fn) | ⚠️ 4.97 (9 it, 61 fn) |
-| L-BFGS-B | ⚠️ 12.93 (6 it, 60 fn) | ⚠️ 9.950 (9 it, 70 fn) | ⚠️ 0.995 (11 it, 70 fn) |
+| L-BFGS-B | ⚠️ 12.93 (7 it, 70 fn) | ⚠️ 17.91 (7 it, 55 fn) | ⚠️ 0.995 (10 it, 65 fn) |
 
 > **This is the key finding.** L-BFGS solves A in one iteration (global optimum,
 > error 4e-14) because at half-integer xᵢ, `sin(2πxᵢ) = 0` and the cosine term drops
@@ -181,7 +181,7 @@ Known global min: f(0, 0) = 0. x₀A = (2, −2); x₀B = (3.5, 3.5); x₀C = (0
 | GradientDescent | ⚠️ 6.56 (127 it, 636 fn) | ⚠️ 9.00 (184 it, 921 fn) | ⚠️ 0.002 (124 it, 621 fn) |
 | Adam | ⚠️ 6.56 (137 it, 686 fn) | ⚠️ 9.00 (147 it, 736 fn) | ⚠️ 0.0015 (88 it, 441 fn) |
 | L-BFGS | ✅ 8.39e-12 (18 it, 107 fn) | ✅ 5.47e-13 (19 it, 111 fn) | ✅ 1.91e-10 (17 it, 100 fn) |
-| L-BFGS-B | ✅ 1.77e-10 (7 it, 155 fn) | ⚠️ 3.575 (6 it, 70 fn) | ✅ 7.77e-12 (7 it, 185 fn) |
+| L-BFGS-B | ✅ 8.88e-14 (6 it, 180 fn) | ⚠️ 9.001 (4 it, 55 fn) | ✅ 7.83e-12 (6 it, 175 fn) |
 
 Ackley is L-BFGS-friendly *even off-integer*: the ripple amplitude decays with `exp(−0.2·r)`, so
 a big Armijo step blows through the ripples into the smooth bowl near origin.
@@ -200,7 +200,7 @@ x₀C = (1.5, 1.5) *near global*.
 | GradientDescent | ⚠️ 0.110 (284 it, 1421 fn) | ⚠️ 0.632 (287 it, 1436 fn) | ⚠️ 0.110 (267 it, 1336 fn) |
 | Adam | ⚠️ 16.97 (253 it, 1266 fn) | ⚠️ 16.97 (263 it, 1316 fn) | ⚠️ 0.110 (211 it, 1056 fn) |
 | L-BFGS | ✅ 1.44e-14 (1 it, 11 fn) | ⚠️ 22.50 (9 it, 61 fn) | ⚠️ 0.110 (8 it, 47 fn) |
-| L-BFGS-B | ⚠️ 15.97 (15 it, 165 fn) | ⚠️ 0.110 (15 it, 130 fn) | ⚠️ 0.110 (6 it, 65 fn) |
+| L-BFGS-B | ✅ 6.84e-16 (12 it, 105 fn) | ⚠️ 18.55 (11 it, 85 fn) | ⚠️ 0.110 (12 it, 100 fn) |
 
 Same pattern as Rastrigin: at integer x₀, all `sin(kπxᵢ)` terms vanish, L-BFGS solves
 in one iteration. +0.1 perturbation destroys the effect.
@@ -218,7 +218,7 @@ Known global min: f(0, 0) = 0. x₀A = (100, −200); x₀B = (5, 5); x₀C = (0
 | GradientDescent | ⚠️ 12.35 (978 it, 4891 fn) | ⚠️ 0.0074 (1257 it, 6286 fn) | ⚠️ 5.58e-7 (1123 it, 5616 fn) |
 | Adam | ⚠️ 12.35 (228 it, 1141 fn) | ⚠️ 0.0074 (200 it, 1001 fn) | ✅ 3.05e-10 (170 it, 851 fn) |
 | L-BFGS | ⚠️ 12.35 (7 it, 40 fn) | ⚠️ 0.0074 (8 it, 46 fn) | ✅ 1.62e-11 (4 it, 25 fn) |
-| L-BFGS-B | ⚠️ 12.35 (5 it, 40 fn) | ⚠️ 0.0074 (7 it, 45 fn) | ✅ 1.62e-11 (4 it, 25 fn) |
+| L-BFGS-B | ⚠️ 12.35 (5 it, 45 fn) | ⚠️ 0.0074 (6 it, 40 fn) | ✅ 1.00e-12 (5 it, 30 fn) |
 
 ---
 
@@ -234,7 +234,7 @@ x₀A = (0, 0); x₀B = (3, 3); x₀C = (−2, −2).
 | GradientDescent | ✅ −78.33 (227 it, 1136 fn) | ⚠️ −50.06 (154 it, 771 fn) | ✅ −78.33 (199 it, 996 fn) |
 | Adam | ⚠️ −78.33 (78 it, 391 fn) | ⚠️ −50.06 (80 it, 401 fn) | ✅ −78.33 (197 it, 986 fn) |
 | L-BFGS | ✅ −78.33 (7 it, 44 fn) | ⚠️ −50.06 (6 it, 39 fn) | ✅ −78.33 (6 it, 39 fn) |
-| L-BFGS-B | ✅ −78.33 (4 it, 50 fn) | ⚠️ −50.06 (4 it, 30 fn) | ✅ −78.33 (5 it, 30 fn) |
+| L-BFGS-B | ✅ −78.33 (4 it, 45 fn) | ⚠️ −50.06 (3 it, 25 fn) | ✅ −78.33 (5 it, 35 fn) |
 
 x₀B lies in the opposite basin (minimum at (+2.75, +2.75), value −50.06) — all local
 methods are trapped; only PSO escapes.
@@ -252,7 +252,7 @@ Known global min: f(π, π) = −1. x₀A = (1, 1); x₀B = (2.5, 2.5); x₀C = 
 | GradientDescent | ⚠️ −3.0e-5 (50 it, 251 fn) | ✅ −1.000 (245 it, 1226 fn) | ✅ −1.000 (181 it, 906 fn) |
 | Adam | ⚠️ −8.1e-5 (58 it, 291 fn) | ✅ −1.000 (187 it, 936 fn) | ✅ −1.000 (128 it, 641 fn) |
 | L-BFGS | ❌ −4.8e-5 (1000 it, 5005 fn) | ✅ −1.000 (4 it, 27 fn) | ✅ −1.000 (4 it, 26 fn) |
-| L-BFGS-B | ⚠️ −8.11e-5 (2 it, 55 fn) | ✅ −1.000 (4 it, 30 fn) | ✅ −1.000 (3 it, 25 fn) |
+| L-BFGS-B | ✅ −1.000 (2 it, 55 fn) | ✅ −1.000 (4 it, 30 fn) | ✅ −1.000 (3 it, 25 fn) |
 
 At x₀A, the gradient is ~1e-9 everywhere — **L-BFGS burns 1000 iterations and
 doesn't converge** because the finite-difference gradient is below numerical noise.
@@ -272,7 +272,7 @@ Known global min: f(0, −1) = 3. x₀A = (0, 0); x₀B = (1, 1); x₀C = (−0.
 | GradientDescent | ⚠️ 334.33 (5 it, 30 fn) | ⚠️ 1876.00 (3 it, 20 fn) | ⚠️ 279.13 (3 it, 20 fn) |
 | Adam | ⚠️ 30.00 (255 it, 1276 fn) | ⚠️ 84.00 (257 it, 1286 fn) | ⚠️ 3.017 (61 it, 306 fn) |
 | L-BFGS | ⚠️ 30.00 (11 it, 71 fn) | ⚠️ 84.00 (14 it, 89 fn) | ✅ 3.000 (12 it, 76 fn) |
-| L-BFGS-B | ⚠️ 30.00 (11 it, 70 fn) | ⚠️ 84.00 (13 it, 75 fn) | ✅ 3.000 (11 it, 65 fn) |
+| L-BFGS-B | ⚠️ 30.00 (8 it, 55 fn) | ⚠️ 84.00 (11 it, 80 fn) | ✅ 3.000 (13 it, 70 fn) |
 
 GP has high-curvature plateaus that trap momentum-based methods early; GD's
 `noImprovementLimit=50` triggers within a handful of iterations because the
@@ -292,7 +292,7 @@ x₀A = (0, 0); x₀B = (−1, −2); x₀C = (2, 2).
 | GradientDescent | ✅ −1.913 (417 it, 2086 fn) | ✅ −1.913 (419 it, 2096 fn) | ⚠️ 1.228 (322 it, 1611 fn) |
 | Adam | ✅ −1.913 (193 it, 966 fn) | ✅ −1.913 (156 it, 781 fn) | ⚠️ 1.228 (190 it, 951 fn) |
 | L-BFGS | ✅ −1.913 (7 it, 41 fn) | ✅ −1.913 (4 it, 25 fn) | ⚠️ 1.228 (5 it, 31 fn) |
-| L-BFGS-B | ✅ −1.913 (6 it, 35 fn) | ✅ −1.913 (4 it, 25 fn) | ⚠️ 1.228 (5 it, 30 fn) |
+| L-BFGS-B | ✅ −1.913 (6 it, 35 fn) | ✅ −1.913 (5 it, 35 fn) | ⚠️ 1.228 (5 it, 30 fn) |
 
 **PSO diverges from every x₀** because McCormick is unbounded along certain directions
 and the algorithm needs explicit box bounds. All local methods find the global from
@@ -308,18 +308,22 @@ A and B; x₀C sits on the wrong side of the `(x − y)²` trough and traps them
 |-----------|---------------------|--------------|
 | **PSO** | **42 / 45** | **93.3%** |
 | L-BFGS | 31 / 45 | 68.9% |
-| L-BFGS-B | 29 / 45 | 64.4% |
+| L-BFGS-B | 31 / 45 | 68.9% |
 | Nelder-Mead | 24 / 45 | 53.3% |
 | Adam | 22 / 45 | 48.9% |
 | GradientDescent | 19 / 45 | 42.2% |
 
 PSO's sampling wins in aggregate — global by construction, at the cost of 40–700×
-more function evaluations. L-BFGS is second overall but its results depend heavily
-on x₀ — the "1-iteration wins" on Rastrigin / Lévi N.13 at integer x₀ flip to
-failures under a 0.1 perturbation (as the B columns show). The takeaway is not that
-one optimizer is universally best, but that **x₀ sensitivity must be considered**
-when choosing a local method for a multimodal problem; for such problems either use
-PSO directly or wrap a local optimizer in a multi-start strategy.
+more function evaluations. L-BFGS and L-BFGS-B are tied for second place at 31/45;
+their failure modes differ slightly because L-BFGS-B uses native bound projection
+(active here only as projection of `du` onto the unbounded box, which still
+matters via the angle test of Morales–Nocedal 2011). Both quasi-Newton methods
+depend heavily on x₀ — the "1-iteration wins" on Rastrigin / Lévi N.13 at
+integer x₀ flip to failures under a 0.1 perturbation (as the B columns show).
+The takeaway is not that one optimizer is universally best, but that **x₀
+sensitivity must be considered** when choosing a local method for a multimodal
+problem; for such problems either use PSO directly or wrap a local optimizer in
+a multi-start strategy.
 
 PSO's single blind spot is unbounded multimodal objectives (McCormick) — use box
 constraints when the domain is not naturally bounded.

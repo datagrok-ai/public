@@ -44,7 +44,7 @@ L-BFGS-B is mishandling a scenario that is effectively unconstrained.
 
 |   | Method | Mode | Found Value | \|Error\| | Dist to Opt | Feas Vio | Conv | Iters | Fn Evals |
 |---|--------|------|------------:|----------:|------------:|---------:|------|------:|---------:|
-| ✅ | L-BFGS-B | native | 2.16e-14 | 2.16e-14 | 3.72e-8 | 0 | yes | 7 | 65 |
+| ✅ | L-BFGS-B | native | 4.63e-12 | 4.63e-12 | 6.00e-7 | 0 | yes | 8 | 65 |
 | ✅ | L-BFGS | penalty | 6.19e-12 | 6.19e-12 | 3.88e-7 | 0 | yes | 9 | 57 |
 | ✅ | Adam | penalty | 3.76e-9 | 3.76e-9 | 1.65e-5 | 0 | yes | 232 | 1161 |
 | ✅ | GradientDescent | penalty | 1.03e-12 | 1.03e-12 | 1.72e-7 | 0 | yes | 260 | 1301 |
@@ -63,7 +63,7 @@ passes: L-BFGS-B does not degrade on effectively-unconstrained problems.
 
 |   | Method | Mode | Found Value | \|Error\| | Dist to Opt | Feas Vio | Conv | Iters | Fn Evals |
 |---|--------|------|------------:|----------:|------------:|---------:|------|------:|---------:|
-| ✅ | L-BFGS-B | native | 2.55e-11 | 2.55e-11 | 9.03e-12 | 0 | yes | 8 | 140 |
+| ✅ | L-BFGS-B | native | 1.09e-10 | 1.09e-10 | 3.84e-11 | 0 | yes | 7 | 145 |
 | ✅ | L-BFGS | penalty | 1.55e-10 | 1.55e-10 | 5.48e-11 | 0 | yes | 10 | 73 |
 | ⚠️ | Adam | penalty | 3.5745 | 3.5745 | 1.3697 | 0 | yes | 117 | 586 |
 | ⚠️ | GradientDescent | penalty | 3.5745 | 3.5745 | 1.3696 | 0 | yes | 198 | 991 |
@@ -82,7 +82,7 @@ methods get stuck in local minima of Ackley's rugged surface.
 
 |   | Method | Mode | Found Value | \|Error\| | Dist to Opt | Feas Vio | Conv | Iters | Fn Evals |
 |---|--------|------|------------:|----------:|------------:|---------:|------|------:|---------:|
-| ✅ | L-BFGS-B | native | 0.2500 | 0 | 1.50e-12 | **0** | yes | 7 | 55 |
+| ✅ | L-BFGS-B | native | 0.2500 | 0 | 6.27e-13 | **0** | yes | 7 | 55 |
 | ❌ | L-BFGS | penalty | 0.2498 | 2.50e-4 | 7.07e-4 | 5.00e-4 | yes | 19 | 113 |
 | ❌ | Adam | penalty | 0.2500 | 7.92e-6 | 9.46e-4 | 7.93e-4 | yes | 125 | 626 |
 | ❌ | GradientDescent | penalty | 0.2498 | 2.50e-4 | 7.07e-4 | 5.00e-4 | yes | 227 | 1136 |
@@ -121,7 +121,7 @@ boundary so the quadratic penalty barely activates.
 
 |   | Method | Mode | Found Value | \|Error\| | Dist to Opt | Feas Vio | Conv | Iters | Fn Evals |
 |---|--------|------|------------:|----------:|------------:|---------:|------|------:|---------:|
-| ✅ | L-BFGS-B | native | 5.0000 | 4.53e-14 | 2.15e-7 | **0** | yes | 2 | 33 |
+| ✅ | L-BFGS-B | native | 5.0000 | 6.04e-14 | 2.48e-7 | **0** | yes | 2 | 33 |
 | ❌ | L-BFGS | penalty | 4.9950 | 0.0050 | 0.0022 | 0.0020 | yes | 11 | 138 |
 | ❌ | Adam | penalty | 4.9950 | 0.0050 | 0.0022 | 0.0020 | yes | 245 | 2696 |
 | ❌ | GradientDescent | penalty | 4.9950 | 0.0050 | 0.0022 | 0.0020 | yes | 434 | 4775 |
