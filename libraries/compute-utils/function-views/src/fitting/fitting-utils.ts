@@ -6,6 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Extremum, ValueBoundsData} from './optimizer-misc';
+import {sampleParamsWithFormulaBounds} from './optimizer-sampler';
 
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
@@ -45,6 +46,35 @@ export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>
   };
 } // makeGetCalledFuncCall
 
+
+/** Sample initial seeds for the fitting loop.
+ *  Honors `reproSettings`: when reproducible, uses `seededRandom(seed)`,
+ *  otherwise uses `Math.random`. */
+export function sampleSeeds(
+  samplesCount: number,
+  inputsBounds: Record<string, ValueBoundsData>,
+  reproSettings: ReproSettings,
+): Float64Array[] {
+  const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
+  return sampleParamsWithFormulaBounds(samplesCount, inputsBounds, rand);
+}
+
+/** Build the failures dataframe from per-seed initial points and warning
+ *  messages. Returns `null` when there are no failures. */
+export function buildFailsDataFrame(
+  failedInitPoint: Float64Array[],
+  warnings: string[],
+): DG.DataFrame | null {
+  if (failedInitPoint.length === 0) return null;
+  const dim = failedInitPoint[0]?.length ?? 0;
+  const raw = new Array<Float64Array>(dim);
+  for (let i = 0; i < dim; ++i) raw[i] = new Float64Array(failedInitPoint.length);
+  failedInitPoint.forEach((point, idx) => point.forEach((val, jdx) => raw[jdx][idx] = val));
+  const df = DG.DataFrame.fromColumns(raw.map((arr, idx) =>
+    DG.Column.fromFloat64Array(`arg${idx}`, arr)));
+  df.columns.add(DG.Column.fromStrings('Issue', warnings));
+  return df;
+}
 
 /** Convert bounds data to inputs */
 export function getInputsData(inputBounds: Record<string, ValueBoundsData>) {

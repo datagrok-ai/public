@@ -1,9 +1,11 @@
 // Executor — the dispatch layer optimizer.ts branches into.
 //
-// MainExecutor wraps the existing seed loop verbatim. WorkerExecutor primes
-// a per-fit session in every pool slot via `setupAll`, then dispatches one
-// `RunSeed` per starting point so a slow seed doesn't bottleneck the whole
-// fit.
+// MainExecutor is the synchronous in-process seed loop. WorkerExecutor
+// primes a per-fit session in every pool slot via `setupAll`, then
+// dispatches one `RunSeed` per starting point so a slow seed doesn't
+// bottleneck the whole fit. Both arms share `EarlyStopTracker` for the
+// valid/above-threshold bookkeeping and `buildFailsDataFrame` /
+// `sampleSeeds` for the surrounding scaffolding.
 //
 // canHandle() is the canary that decides whether a fit can run on the worker
 // arm at all: requires a JS-language DG.Script whose body doesn't reach for
@@ -13,10 +15,9 @@ import * as DG from 'datagrok-api/dg';
 import {Extremum, OptimizationResult, ValueBoundsData, OutputTargetItem}
   from '../optimizer-misc';
 import {optimizeNM} from '../optimizer-nelder-mead';
-import {sampleParamsWithFormulaBounds} from '../optimizer-sampler';
-import {seededRandom} from '../fitting-utils';
 import {ReproSettings, EarlyStoppingSettings, LOSS} from '../constants';
-import {getInputsData} from '../fitting-utils';
+import {buildFailsDataFrame, getInputsData, sampleSeeds} from '../fitting-utils';
+import {EarlyStopTracker} from '../early-stop-tracker';
 import {WorkerPool, defaultPoolSize, RunReply} from './pool';
 import {buildSetup, buildRunSeed} from './serialize';
 import type {SessionId} from './wire-types';
@@ -64,41 +65,21 @@ export function canHandle(args: ExecutorArgs): boolean {
 
 export class MainExecutor implements Executor {
   async run(args: ExecutorArgs): Promise<OptimizationResult> {
-    const rand = args.reproSettings.reproducible ?
-      seededRandom(args.reproSettings.seed) : Math.random;
-    const params = sampleParamsWithFormulaBounds(args.samplesCount, args.inputsBounds, rand);
+    const params = sampleSeeds(args.samplesCount, args.inputsBounds, args.reproSettings);
 
-    const validExtremums: Extremum[] = [];
-    const allExtremums: Extremum[] = [];
+    const tracker = new EarlyStopTracker(args.earlyStoppingSettings);
     const warnings: string[] = [];
     const failedInitPoint: Float64Array[] = [];
-    let failsCount = 0;
-    let failsDF: DG.DataFrame | null = null;
 
     let percentage = 0;
     const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
-
-    const useEarlyStopping = args.earlyStoppingSettings.useEarlyStopping;
-    const useAboveThresholdPoints = args.earlyStoppingSettings.useAboveThresholdPoints;
-    const threshold = useEarlyStopping ? args.earlyStoppingSettings.costFuncThreshold : undefined;
-    const maxValidPoints = args.earlyStoppingSettings.stopAfter;
-    let validPointsCount = 0;
 
     for (let i = 0; i < args.samplesCount; ++i) {
       try {
         if ((pi as any).canceled) break;
 
         const extremum = await optimizeNM(args.objectiveFunc, params[i], args.settings);
-
-        if (useEarlyStopping) {
-          if (extremum.cost <= threshold!) {
-            validExtremums.push(extremum);
-            ++validPointsCount;
-          } else
-            allExtremums.push(extremum);
-          if (validPointsCount >= maxValidPoints) break;
-        } else
-          validExtremums.push(extremum);
+        if (tracker.accept(extremum)) break;
 
         percentage = Math.floor(100 * (i + 1) / args.samplesCount);
         pi.update(percentage, `Fitting... (${percentage}%)`);
@@ -111,7 +92,6 @@ export class MainExecutor implements Executor {
           pi.close();
           throw new Error(`Inconsistent dataframes: ${e.message}`);
         }
-        ++failsCount;
         warnings.push((e instanceof Error) ? e.message : 'Platform issue');
         failedInitPoint.push(params[i]);
       }
@@ -119,20 +99,7 @@ export class MainExecutor implements Executor {
 
     pi.close();
 
-    if (failsCount > 0) {
-      const dim = params[0]?.length ?? 0;
-      const raw = new Array<Float64Array>(dim);
-      for (let i = 0; i < dim; ++i) raw[i] = new Float64Array(failsCount);
-      failedInitPoint.forEach((point, idx) => point.forEach((val, jdx) => raw[jdx][idx] = val));
-      failsDF = DG.DataFrame.fromColumns(raw.map((arr, idx) =>
-        DG.Column.fromFloat64Array(`arg${idx}`, arr)));
-      failsDF.columns.add(DG.Column.fromStrings('Issue', warnings));
-    }
-
-    if (useEarlyStopping && useAboveThresholdPoints && maxValidPoints > validExtremums.length)
-      validExtremums.push(...allExtremums);
-
-    return {extremums: validExtremums, fails: failsDF};
+    return {extremums: tracker.finalize(), fails: buildFailsDataFrame(failedInitPoint, warnings)};
   }
 }
 
@@ -152,25 +119,14 @@ export class WorkerExecutor implements Executor {
   constructor(private readonly pool: WorkerPool) {}
 
   async run(args: ExecutorArgs): Promise<OptimizationResult> {
-    const rand = args.reproSettings.reproducible ?
-      seededRandom(args.reproSettings.seed) : Math.random;
-    const params = sampleParamsWithFormulaBounds(args.samplesCount, args.inputsBounds, rand);
-
-    const useEarlyStopping = args.earlyStoppingSettings.useEarlyStopping;
-    const useAboveThresholdPoints = args.earlyStoppingSettings.useAboveThresholdPoints;
-    const threshold = useEarlyStopping ? args.earlyStoppingSettings.costFuncThreshold : undefined;
-    const maxValidPoints = args.earlyStoppingSettings.stopAfter;
+    const params = sampleSeeds(args.samplesCount, args.inputsBounds, args.reproSettings);
 
     let percentage = 0;
     const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
 
-    const validExtremums: Extremum[] = [];
-    const allExtremums: Extremum[] = [];
+    const tracker = new EarlyStopTracker(args.earlyStoppingSettings);
     const warnings: string[] = [];
     const failedInitPoint: Float64Array[] = [];
-    let failsCount = 0;
-    let failsDF: DG.DataFrame | null = null;
-    let validPointsCount = 0;
     let inconsistentMessage: string | null = null;
     let stopRequested = false;
     let completedCount = 0;
@@ -179,6 +135,8 @@ export class WorkerExecutor implements Executor {
     const fn = args.func!;
     const {body, paramList, outputNames} = extractFnSource(fn);
     const {variedInputNames, fixedInputs} = getInputsData(args.inputsBounds);
+    const threshold = args.earlyStoppingSettings.useEarlyStopping ?
+      args.earlyStoppingSettings.costFuncThreshold : undefined;
     const built = buildSetup({
       sessionId,
       fnSource: body,
@@ -215,7 +173,6 @@ export class WorkerExecutor implements Executor {
             stopRequested = true;
             return;
           }
-          ++failsCount;
           warnings.push(reply.message);
           failedInitPoint.push(reply.seed);
           return;
@@ -227,17 +184,7 @@ export class WorkerExecutor implements Executor {
           iterCosts: reply.iterCosts,
           iterCount: reply.iterCount,
         };
-        if (!useEarlyStopping) {
-          validExtremums.push(extremum);
-          return;
-        }
-        if (extremum.cost <= threshold!) {
-          if (validPointsCount >= maxValidPoints) return;
-          validExtremums.push(extremum);
-          ++validPointsCount;
-          if (validPointsCount >= maxValidPoints) stopRequested = true;
-        } else
-          allExtremums.push(extremum);
+        if (tracker.accept(extremum)) stopRequested = true;
       };
 
       let nextIdx = 0;
@@ -264,20 +211,10 @@ export class WorkerExecutor implements Executor {
       if (inconsistentMessage)
         throw new Error(`Inconsistent dataframes: ${inconsistentMessage}`);
 
-      if (failsCount > 0) {
-        const dim = params[0]?.length ?? 0;
-        const raw = new Array<Float64Array>(dim);
-        for (let i = 0; i < dim; ++i) raw[i] = new Float64Array(failsCount);
-        failedInitPoint.forEach((point, idx) => point.forEach((val, jdx) => raw[jdx][idx] = val));
-        failsDF = DG.DataFrame.fromColumns(raw.map((arr, idx) =>
-          DG.Column.fromFloat64Array(`arg${idx}`, arr)));
-        failsDF.columns.add(DG.Column.fromStrings('Issue', warnings));
-      }
-
-      if (useEarlyStopping && useAboveThresholdPoints && maxValidPoints > validExtremums.length)
-        validExtremums.push(...allExtremums);
-
-      return {extremums: validExtremums, fails: failsDF};
+      return {
+        extremums: tracker.finalize(),
+        fails: buildFailsDataFrame(failedInitPoint, warnings),
+      };
     } finally {
       // Always release session state in workers, regardless of whether the
       // pool is ephemeral (we're about to dispose it anyway) or long-lived
