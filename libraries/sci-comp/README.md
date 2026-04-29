@@ -18,6 +18,16 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
 * **[Time Series:](https://en.wikipedia.org/wiki/Time_series)**
   * extraction of 45 features per value column (statistics, trend, complexity, threshold-based metrics)
 
+* **Statistics** ([detailed docs](./src/stats/README.md)):
+  * two-group comparison: [Welch's t-test](https://doi.org/10.1093/biomet/34.1-2.28), [Mann-Whitney U](https://doi.org/10.1214/aoms/1177730491) (exact + asymptotic), [Hedges' g](https://doi.org/10.3102/10769986006002107) effect size
+  * rank correlation: [Spearman ρ](https://doi.org/10.2307/1412159), severity-trend wrapper
+  * multi-group vs control: Welch pairwise + [Bonferroni](https://en.wikipedia.org/wiki/Bonferroni_correction), [Dunnett's many-to-one](https://doi.org/10.1080/01621459.1955.10501294)
+  * trend tests: [Jonckheere-Terpstra](https://doi.org/10.1093/biomet/41.1-2.133) (continuous), [Cochran-Armitage](https://doi.org/10.2307/3001775) (incidence, with Buonaccorsi-modified variant)
+  * sequential threshold test for proportions ([Young 1985](https://www.sra.org/))
+  * categorical: [Fisher 2×2 exact](https://en.wikipedia.org/wiki/Fisher%27s_exact_test) (two-sided minlike + one-sided + odds ratio)
+  * dose-response: [PAVA isotonic regression](https://en.wikipedia.org/wiki/Isotonic_regression), [Williams step-down](https://doi.org/10.2307/2528930) with 1971/1972 critical-value tables
+  * covariate-adjusted analysis: ANCOVA (LS means, slope homogeneity, effect decomposition)
+
 ## Installation
 
 ```bash
@@ -88,3 +98,38 @@ See [feature extraction docs](./src/time-series/feature-extraction/README.md) fo
 * validation
 * naming convention
 * examples
+
+### Statistics
+
+Run Welch's t-test on two samples with NaN handling:
+
+```typescript
+import {stats} from '@datagrok-libraries/sci-comp';
+
+const a = [69, 70, 66, 63, 68, 70, 69, 67, 62, 63];
+const b = [68, 62, 67, 68, 69, 67, 61, 59, 62, 61];
+
+const r = stats.welchTTest(a, b);
+// r.statistic ≈ 1.511, r.pValue ≈ 0.149
+```
+
+Or compare each treated group to a control with Dunnett's family-wise-error-controlled test:
+
+```typescript
+const control = [7.40, 8.50, 7.20, 8.24, 9.84, 8.32];
+const treated = [
+  {doseLevel: 1, values: [9.76, 8.80, 7.68, 9.36]},
+  {doseLevel: 2, values: [12.80, 9.68, 12.16, 9.20, 10.55]},
+];
+
+const dun = stats.dunnettPairwise(control, treated);
+// dun[1].pValueAdj ≈ 0.0058  → drug B differs from control at α = 0.05
+```
+
+See [statistics docs](./src/stats/README.md) for
+
+* full method list (14 tests across 8 domains)
+* input types (`number[]`, `Float32Array`, `Float64Array`, `Int32Array`, …)
+* NaN handling (NaN as missing-value sentinel, stripped per-method)
+* worked examples reproducing published references (Dunnett 1955, NIST Iris, Williams 1971/1972, Young 1985, Montgomery 15.10 vs SAS PROC GLM)
+* validation against scipy via JSON fixtures (179 cases, 14 fixture files)
