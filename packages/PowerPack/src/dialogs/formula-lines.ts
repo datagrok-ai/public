@@ -806,7 +806,12 @@ class Preview {
       if (this.viewer instanceof DG.ScatterPlotViewer || this.viewer instanceof DG.LineChartViewer) {
         const worldPoint = this.viewer.screenToWorld(event.offsetX, event.offsetY);
         onContextMenu(worldPoint.y, worldPoint.x);
-      } 
+      }
+      else if (this.viewer instanceof DG.HistogramViewer
+        || this.viewer instanceof DG.BarChartViewer
+        || this.viewer instanceof DG.BoxPlot
+        || this.viewer instanceof DG.DensityPlotViewer)
+        onContextMenu();
     });
   }
 
