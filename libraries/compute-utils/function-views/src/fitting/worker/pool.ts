@@ -34,10 +34,20 @@ interface PendingSetup {
   resolve: (ack: SetupAck) => void;
 }
 
+// Slot run-state as a discriminated union. The previous encoding was a
+// (busy: boolean, current: PendingRun | null, manualTimer) triple with the
+// invariant `busy === (current !== null)` maintained by hand at each
+// transition site. This makes that invariant structural, and binds the
+// run-timeout `setTimeout` handle to the same state object, so exiting
+// `running` requires producing the timer to clear — orphan timers become
+// unrepresentable.
+type SlotRunState =
+  | {phase: 'idle'}
+  | {phase: 'running'; run: PendingRun; runTimer: ReturnType<typeof setTimeout>};
+
 type Slot = {
   worker: Worker;
-  busy: boolean;
-  current: PendingRun | null;
+  runState: SlotRunState;
   sessions: Set<SessionId>;
   // Per-slot pending setup ack indexed by sessionId — at most one per
   // session per slot in flight.
@@ -97,8 +107,7 @@ export class WorkerPool {
     const w = new Worker(new URL('./fitting.worker.ts', import.meta.url));
     const slot: Slot = {
       worker: w,
-      busy: false,
-      current: null,
+      runState: {phase: 'idle'},
       sessions: new Set(),
       pendingSetups: new Map(),
     };
@@ -124,18 +133,23 @@ export class WorkerPool {
       return;
     }
     // success / failure for a run-seed
-    const pending = slot.current;
-    slot.current = null;
-    slot.busy = false;
-    pending?.resolve(msg);
+    if (slot.runState.phase !== 'running') {
+      // Stray reply (worker double-posted, or a reply arrived after the
+      // timeout already fired and removed the slot). Drop it.
+      return;
+    }
+    const {run: pending, runTimer} = slot.runState;
+    clearTimeout(runTimer);
+    slot.runState = {phase: 'idle'};
+    pending.resolve(msg);
     this.pump();
   }
 
   private onError(slot: Slot, ev: ErrorEvent): void {
-    const pending = slot.current;
-    slot.current = null;
-    slot.busy = false;
-    if (pending) {
+    if (slot.runState.phase === 'running') {
+      const {run: pending, runTimer} = slot.runState;
+      clearTimeout(runTimer);
+      slot.runState = {phase: 'idle'};
       pending.resolve({
         kind: 'failure',
         taskId: pending.run.taskId,
@@ -168,18 +182,19 @@ export class WorkerPool {
     while (i < this.queue.length) {
       const pending = this.queue[i];
       const slot = this.slots.find(
-        (s) => !s.busy && s.sessions.has(pending.run.sessionId));
+        (s) => s.runState.phase === 'idle' && s.sessions.has(pending.run.sessionId));
       if (!slot) { ++i; continue; }
       this.queue.splice(i, 1);
-      slot.busy = true;
-      slot.current = pending;
       // Per-run timeout: terminates the slot if the worker wedges (e.g.
       // infinite loop in user JS body) so the dispatchRun promise resolves
-      // instead of hanging forever.
-      const timer = setTimeout(() => {
-        if (slot.current !== pending) return;
-        slot.current = null;
-        slot.busy = false;
+      // instead of hanging forever. Bound the timer to this run via
+      // slot.runState — if the slot transitions out of running for any
+      // other reason (reply, error, removeSlot, dispose), those paths
+      // clearTimeout it; the callback's identity check is a defensive
+      // guard against a fired-then-cancelled race.
+      const runTimer = setTimeout(() => {
+        if (slot.runState.phase !== 'running' || slot.runState.run !== pending) return;
+        slot.runState = {phase: 'idle'};
         this.removeSlot(slot, 'run timed out');
         pending.resolve({
           kind: 'failure', taskId: pending.run.taskId,
@@ -188,8 +203,7 @@ export class WorkerPool {
           failKind: 'other', seed: pending.run.seed,
         });
       }, this.runTimeoutMs);
-      const originalResolve = pending.resolve;
-      pending.resolve = (r) => { clearTimeout(timer); originalResolve(r); };
+      slot.runState = {phase: 'running', run: pending, runTimer};
       slot.worker.postMessage(pending.run, pending.transferables);
     }
     // If the pool has lost all workers (timeouts or onerror) and there's
@@ -219,10 +233,10 @@ export class WorkerPool {
       });
     }
     slot.pendingSetups.clear();
-    if (slot.current) {
-      const cur = slot.current;
-      slot.current = null;
-      slot.busy = false;
+    if (slot.runState.phase === 'running') {
+      const {run: cur, runTimer} = slot.runState;
+      clearTimeout(runTimer);
+      slot.runState = {phase: 'idle'};
       cur.resolve({
         kind: 'failure', taskId: cur.run.taskId,
         seedIndex: cur.run.seedIndex,
@@ -347,14 +361,16 @@ export class WorkerPool {
       }
       slot.pendingSetups.clear();
       // Drain a run already dispatched but not yet replied.
-      if (slot.current) {
-        slot.current.resolve({
-          kind: 'failure', taskId: slot.current.run.taskId,
-          seedIndex: slot.current.run.seedIndex,
+      if (slot.runState.phase === 'running') {
+        const {run: cur, runTimer} = slot.runState;
+        clearTimeout(runTimer);
+        cur.resolve({
+          kind: 'failure', taskId: cur.run.taskId,
+          seedIndex: cur.run.seedIndex,
           message: 'pool disposed mid-run', failKind: 'other',
-          seed: slot.current.run.seed,
+          seed: cur.run.seed,
         });
-        slot.current = null;
+        slot.runState = {phase: 'idle'};
       }
       try { slot.worker.terminate(); } catch { /* ignore */ }
     }

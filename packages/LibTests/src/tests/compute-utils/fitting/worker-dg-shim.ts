@@ -382,17 +382,22 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
   });
 
   test('pool_dispose_drains_inflight_run', async () => {
-    // White-box: dispose's job is to resolve slot.current as a failure.
-    // Inject a fake in-flight run so the test doesn't hinge on the
+    // White-box: dispose's job is to resolve the in-flight run as a failure.
+    // Inject a fake `running` slot state so the test doesn't hinge on the
     // dispatchRun → worker → reply round-trip.
     type RunReplyLike = {kind: string; taskId: number; message?: string};
     type SlotInternal = {
-      busy: boolean;
-      current: {
-        run: {taskId: number; sessionId: number; kind: string; seed: Float64Array};
-        transferables: Transferable[];
-        resolve: (r: RunReplyLike) => void;
-      } | null;
+      runState:
+        | {phase: 'idle'}
+        | {
+            phase: 'running';
+            run: {
+              run: {taskId: number; sessionId: number; kind: string; seed: Float64Array};
+              transferables: Transferable[];
+              resolve: (r: RunReplyLike) => void;
+            };
+            runTimer: ReturnType<typeof setTimeout>;
+          };
     };
     const pool = new WorkerPool(1);
     const internal = pool as unknown as {
@@ -402,14 +407,20 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     internal.ensureWorkers();
     let resolved = false;
     let reply: RunReplyLike | null = null;
-    internal.slots[0].busy = true;
-    internal.slots[0].current = {
-      run: {taskId: 42, sessionId: 9, kind: 'run-seed', seed: new Float64Array([1, 2])},
-      transferables: [],
-      resolve: (r) => { resolved = true; reply = r; },
+    // Long-lived noop timer — dispose() will clearTimeout it as part of
+    // the running→idle transition.
+    const noopTimer = setTimeout(() => {}, 60_000);
+    internal.slots[0].runState = {
+      phase: 'running',
+      run: {
+        run: {taskId: 42, sessionId: 9, kind: 'run-seed', seed: new Float64Array([1, 2])},
+        transferables: [],
+        resolve: (r) => { resolved = true; reply = r; },
+      },
+      runTimer: noopTimer,
     };
     pool.dispose();
-    expect(resolved, true, 'dispose must call slot.current.resolve');
+    expect(resolved, true, 'dispose must resolve the running slot\'s run');
     expect(reply !== null, true);
     expect(reply!.kind, 'failure');
     expect(reply!.taskId, 42);
