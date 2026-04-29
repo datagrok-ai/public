@@ -324,7 +324,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.logger = _package.logger;
     this.viewSyncer = new PromiseSyncer(this.logger);
 
-    MolstarViewer._initSelectionCache();
     this.highlightController = new MolstarHighlightController({
       getPlugin: () => this.viewer?.plugin,
       getLigands: () => this.ligands,
@@ -333,6 +332,32 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       viewSyncer: this.viewSyncer,
       logger: this.logger,
     });
+
+    // Populates the class-static `selectionCache` from `CHEM_ATOM_SELECTION_EVENT`
+    // for replay on later viewer opens. Subscription is per-instance (tracked in
+    // `this.subs`) so it gets disposed with the viewer; multiple viewers writing
+    // the same cache entry is harmless because writes are idempotent.
+    this.subs.push(grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
+      .subscribe((args: ChemSelectionEventArgs) => {
+        const {
+          rowIdx = -1, atoms = [], persistent, clearAll, mapping3D, column,
+        } = args ?? {};
+        if (persistent === false) return;
+        const col = column as DG.Column | undefined;
+        const dfId = col?.dataFrame?.id ?? '';
+        const dfName = col?.dataFrame?.name ?? '';
+        const colName = col?.name ?? '';
+        this.logger.debug(
+          `[molstar-picker] caching selection event atomsLen=${atoms.length} rowIdx=${rowIdx}`);
+        if (clearAll)
+          MolstarViewer.selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
+        else {
+          const key = selectionCacheKey(dfId, dfName, colName, rowIdx);
+          MolstarViewer.selectionCache.set(key, {
+            atoms, mapping3D: atoms.length > 0 ? (mapping3D ?? null) : null,
+          });
+        }
+      }));
 
     this.setDataRequest = new Subject<void>();
     this.subs.push(DG.debounce(this.setDataRequest, DebounceIntervals.setData)
@@ -346,41 +371,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private readonly viewerId: number = ++MolstarViewer.viewerCounter;
 
   // -- Class-static selection cache (shared across all instances) ---------------
-  // Populated from CHEM_SELECTION_EVENT; replays highlights when a viewer opens
+  // Populated from CHEM_ATOM_SELECTION_EVENT by each viewer's per-instance
+  // subscription (see constructor). Replays highlights when a viewer opens
   // after a selection was already made.
 
   /** Composite-key LRU cache of persistent atom selections. */
   public static selectionCache: DG.LruCache<string, SelectionCacheEntry> =
     new DG.LruCache<string, SelectionCacheEntry>();
-
-  private static _selectionSubscribed = false;
-
-  /** Subscribes once to CHEM_SELECTION_EVENT per process lifetime. */
-  private static _initSelectionCache(): void {
-    if (MolstarViewer._selectionSubscribed) return;
-    MolstarViewer._selectionSubscribed = true;
-    grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
-      .subscribe((args: ChemSelectionEventArgs) => {
-        const {
-          rowIdx = -1, atoms = [], persistent, clearAll, mapping3D, column,
-        } = args ?? {};
-        if (persistent === false) return;
-        const col = column as DG.Column | undefined;
-        const dfId = col?.dataFrame?.id ?? '';
-        const dfName = col?.dataFrame?.name ?? '';
-        const colName = col?.name ?? '';
-        _package.logger.debug(
-          `[molstar-picker] caching selection event atomsLen=${atoms.length} rowIdx=${rowIdx}`);
-        if (clearAll)
-          MolstarViewer.selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
-        else {
-          const key = selectionCacheKey(dfId, dfName, colName, rowIdx);
-          MolstarViewer.selectionCache.set(key, {
-            atoms, mapping3D: atoms.length > 0 ? (mapping3D ?? null) : null,
-          });
-        }
-      });
-  }
 
   private _initButtonExpand() {
     const button = $('.msp-btn.msp-btn-icon.msp-btn-link-toggle-off');
