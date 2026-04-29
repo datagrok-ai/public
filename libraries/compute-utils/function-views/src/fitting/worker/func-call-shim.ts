@@ -1,11 +1,11 @@
 // In-worker FuncCall shim.
 //
-// Compiled JS bodies of fittable scripts read `funcCall.inputs.X` and assign
-// to `funcCall.outputs.Y` (or to bare locals declared in the //output block —
-// `grok api` rewrites those to `funcCall.outputs.Y` at registration time, but
-// here we hand the body the *names* directly via `new Function(...names, body)`
-// and recover assignments via the returned context). The shim covers only the
-// surface cost-functions.ts:42,45,75,79 actually reads.
+// Compiled JS bodies of fittable scripts read named inputs and write named
+// outputs. The body is handed the *names* directly via `new Function(...names,
+// body)` and assignments are recovered via a typeof-guarded `return { … }`
+// trailer that mirrors the platform's own JS script wrap (see
+// grok_shared.dart.js:121177 — `runScript(...) { <body>; return [outputs] }`).
+// The shim covers only the surface cost-functions.ts:42,45,75,79 actually reads.
 //
 // Compile cache is module-level so it hits across NM iterations within a task
 // AND across tasks within a long-lived worker — pays the body's parse cost
@@ -57,14 +57,19 @@ export function _setCompileCacheCap(cap: number): void {
 }
 
 // Compile a JS body that reads named inputs and writes named outputs. The body
-// runs as the script body of a function with signature `(_DG, ...inputs)` and
+// runs as the script body of a function with signature `(DG, ...inputs)` and
 // returns an object whose keys are the //output param names.
 //
-// We rewrite the body to:
-//   1. Hoist `let <output> = undefined;` per output param so the body's bare
-//      assignments (`y = ...`, `simulation = DG.DataFrame...`) succeed without
-//      ReferenceError.
-//   2. Append `return { <outputs> };` to capture them.
+// We append `return { <out>: typeof <out> !== 'undefined' ? <out> : undefined,
+// ... };` and rely on JS engine scope resolution at the return site:
+//   - `const X = ...` / `let X = ...` in the body resolve as same-scope
+//     lexical bindings.
+//   - bare `X = ...` becomes an implicit global (non-strict `new Function`),
+//     resolved via global lookup.
+//   - outputs the body never sets resolve as `undefined` via the typeof guard,
+//     instead of throwing ReferenceError.
+// No predeclaration → no `let X` vs `const X` SyntaxError when a body declares
+// an output as `const` (e.g. `const tempDiff` in object-cooling.js).
 //
 // `DG` is bound to the worker shim (`createWorkerDG()`) — fittable bodies
 // touch DG.DataFrame.fromColumns and DG.Column.from*Array, all covered.
@@ -77,9 +82,10 @@ export function compileBody(source: string, paramList: string[], outputNames: st
     return fn;
   }
   ++compileMisses;
-  const declOutputs = outputNames.map((n) => `let ${n} = undefined;`).join('');
-  const returnLine = `return { ${outputNames.join(', ')} };`;
-  const wrapped = `${declOutputs}\n${source}\n${returnLine}`;
+  const captures = outputNames
+    .map((n) => `${n}: typeof ${n} !== 'undefined' ? ${n} : undefined`)
+    .join(', ');
+  const wrapped = `${source}\nreturn { ${captures} };`;
   fn = new Function('DG', ...paramList, wrapped) as CompiledFn;
   compileCache.set(key, fn);
   return fn;

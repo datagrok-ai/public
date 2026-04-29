@@ -222,19 +222,66 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
 
   test('shim_realscript_lorenz_smoke', async () => {
     // Load the real production script body, parse the //input: header,
-    // compile via new Function with the shim, and assert the output is a
-    // LiteDataFrame with the expected columns. This is the sentinel for shim
-    // coverage gaps — if a real script uses a DG.* surface the shim doesn't
-    // expose, this test fails immediately.
+    // compile via the production compileBody with the shim, and assert the
+    // output is a LiteDataFrame with the expected columns. This is the
+    // sentinel for shim coverage gaps — if a real script uses a DG.* surface
+    // the shim doesn't expose, this test fails immediately.
     const src = await _package.files.readAsText('shim-fixtures/lorenz-attractor.js');
     const {body, inputNames, outputNames} = parseScript(src);
-    const wrapped = `var ${outputNames.join(', ')}; ${body}\nreturn {${outputNames.join(', ')}};`;
-    const fn = new Function('DG', ...inputNames, wrapped) as (...args: any[]) => Record<string, LiteDataFrame>;
+    const fn = compileBody(body, inputNames, outputNames);
     const inputs = {iterations: 100, dt: 0.01, x0: 0, y0: 1, z0: 1.05};
-    const out = fn(shim, ...inputNames.map((n) => (inputs as any)[n]));
+    const out = fn(shim, ...inputNames.map((n) => (inputs as any)[n])) as Record<string, LiteDataFrame>;
     expect(out.df != null, true, 'df output captured');
     expect(out.df.rowCount, 101, 'iterations + 1 rows');
     expect(out.df.columns.names().join(','), 'X,Y,Z');
+  });
+
+  test('shim_realscript_object_cooling_smoke', async () => {
+    // Regression: object-cooling.js declares `const tempDiff` and
+    // `const coolingFactor` whose names also appear in //output headers.
+    // Predeclaring outputs as `let X` would SyntaxError; the wrap relies on
+    // JS scope resolution at the return site instead.
+    const src = await _package.files.readAsText('shim-fixtures/object-cooling.js');
+    const {body, inputNames, outputNames} = parseScript(src);
+    const fn = compileBody(body, inputNames, outputNames);
+    // simTime large enough for the cube to actually cool past desiredTemp
+    // (~19280s for these defaults), so `timeToCool` gets assigned.
+    const inputs = {ambTemp: 22, initTemp: 100, desiredTemp: 30,
+      area: 0.06, heatCap: 4200, heatTransferCoeff: 8.3,
+      previousRun: null, simTime: 25000};
+    const out = fn(shim, ...inputNames.map((n) => (inputs as any)[n])) as Record<string, any>;
+    expect(out.simulation != null, true, 'simulation output captured');
+    expect(out.simulation.rowCount, 25000);
+    expect(out.simulation.columns.names().join(','), 'Time,Temperature');
+    expectFloat(out.tempDiff, 78, 1e-12, 'tempDiff = initTemp - ambTemp');
+    expectFloat(out.coolingFactor, 8.3 * 0.06 / 4200, 1e-12, 'coolingFactor');
+    expect(typeof out.timeToCool, 'number', 'timeToCool was assigned');
+  });
+
+  test('shim_realscript_heat_exchange_smoke', async () => {
+    const src = await _package.files.readAsText('shim-fixtures/heat-exchange.js');
+    const {body, inputNames, outputNames} = parseScript(src);
+    const fn = compileBody(body, inputNames, outputNames);
+    const inputs = {len: 100, k: 1.2};
+    const out = fn(shim, ...inputNames.map((n) => (inputs as any)[n])) as Record<string, any>;
+    expect(out.simulation != null, true, 'simulation output captured');
+    expect(out.simulation.rowCount, 100);
+    expect(out.simulation.columns.names().join(','), 'time,concentration,temp,saturation');
+    expect(typeof out.finalTemperature, 'number');
+    expect(typeof out.finalSaturation, 'number');
+    expect(typeof out.finalConcentration, 'number');
+  });
+
+  test('shim_realscript_lotka_volterra_smoke', async () => {
+    const src = await _package.files.readAsText('shim-fixtures/lotka-volterra.js');
+    const {body, inputNames, outputNames} = parseScript(src);
+    const fn = compileBody(body, inputNames, outputNames);
+    const inputs = {x0: 0.5, y0: 2, alpha: 0.9, beta: 0.8,
+      gamma: 0.9, sigma: 0.7, h: 0.01, timeStart: 0, timeStop: 18};
+    const out = fn(shim, ...inputNames.map((n) => (inputs as any)[n])) as Record<string, LiteDataFrame>;
+    expect(out.df != null, true, 'df output captured');
+    expect(out.df.columns.names().join(','), 'Time,Number of preys,Number of predators');
+    expect(out.df.rowCount > 0, true, 'integration produced rows');
   });
 
   test('pool_dispose_drains_pending_setups', async () => {
@@ -520,15 +567,6 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     structuredClone(setup);
   });
 
-  // Note: smoke tests for object-cooling, heat-exchange, and lotka-volterra
-  // are intentionally NOT included here. Those production scripts use inner
-  // `const` declarations whose names collide with declared output variables
-  // (e.g. `const tempDiff` in object-cooling.js, where `tempDiff` is also
-  // a //output: header). The `var X` body-wrap conflicts with `const X` as a
-  // SyntaxError. That's a body-wrapping concern (deciding whether to use
-  // `with(...)`, globalThis sloppy-mode capture, or source rewriting), not
-  // a shim concern. lorenz-attractor.js works because its outputs (`df`)
-  // are not redeclared inside the body.
 });
 
 /** Minimal Datagrok-script header parser: extracts input names and output names. */
