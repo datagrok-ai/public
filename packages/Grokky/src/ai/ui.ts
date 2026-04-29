@@ -39,13 +39,20 @@ const executionPlanSchema = {
 
 const MAX_ACTIVITY_LINES = 5;
 
-export async function smartExecution(prompt: string): Promise<DG.Widget> {
+interface StreamingOpts {
+  sessionPrefix?: string;
+  outputSchema?: object;
+  onFinal: (evt: FinalEvent, host: HTMLElement) => void;
+}
+
+async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.Widget> {
   const client = ClaudeRuntimeClient.getInstance();
   await client.ensureConnected();
-  const sessionId = `execute-${crypto.randomUUID()}`;
+  const sessionId = `${opts.sessionPrefix ?? 'stream'}-${crypto.randomUUID()}`;
 
-  const activityHost = ui.divV([], 'grokky-execute-activity');
-  const container = ui.divV([activityHost], 'grokky-execute');
+  const activityHost = ui.divV([], 'grokky-stream-activity');
+  const contentHost = ui.div([], 'grokky-stream-content');
+  const container = ui.divV([activityHost, contentHost], 'grokky-stream');
 
   let onFirstEvent: () => void = () => {};
   const firstEvent = new Promise<void>((res) => { onFirstEvent = res; });
@@ -63,62 +70,69 @@ export async function smartExecution(prompt: string): Promise<DG.Widget> {
     }));
 
   forSession<ToolActivityEvent>(client.onToolActivity, (evt) => {
-    activityHost.appendChild(ui.divText(evt.summary, 'grokky-execute-activity-line'));
+    activityHost.appendChild(ui.divText(evt.summary, 'grokky-stream-activity-line'));
     while (activityHost.children.length > MAX_ACTIVITY_LINES)
       activityHost.removeChild(activityHost.firstChild!);
     onFirstEvent();
   });
 
-  forSession<FinalEvent>(client.onFinal, async (evt) => {
+  forSession<FinalEvent>(client.onFinal, (evt) => {
     activityHost.remove();
     onFirstEvent();
-    const result = evt.structured_output as ExecutionPlan | undefined;
-    if (!result) {
-      container.appendChild(ui.divText(evt.content || 'No plan returned.'));
-      return;
-    }
-
-    container.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
-    if (!result.code)
-      return;
-
-    const codeAcc = ui.accordion();
-    const code = '```datagrok-exec\n' + result.code + '\n```';
-    codeAcc.addPane('Code', () => createStyledMarkdown(code), false);
-    container.appendChild(codeAcc.root);
-
-    const spinner = ui.loader();
-    container.appendChild(spinner);
-    try {
-      const execResults = await executeDatagrokBlocks(code, grok.shell.v);
-      container.append(...execResults);
-    } catch (e: any) {
-      container.appendChild(ui.info(`Execution error: ${e?.message ?? e}`));
-    } finally {
-      spinner.remove();
-    }
+    opts.onFinal(evt, contentHost);
   });
 
   forSession<ErrorEvent>(client.onError, (evt) => {
     activityHost.remove();
-    container.appendChild(ui.info(`Error: ${evt.message}`));
+    contentHost.appendChild(ui.info(`Error: ${evt.message}`));
     onFirstEvent();
   });
 
-  client.send(sessionId, prompt, {outputSchema: executionPlanSchema});
+  client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
   return widget;
 }
 
-export async function askWiki(question: string) {
-  try {
-    const res = await ClaudeRuntimeClient.getInstance().query(question);
-    const markdown = ui.markdown(res);
-    markdown.style.userSelect = 'text';
-    return DG.Widget.fromRoot(markdown);
-  } catch (error: any) {
-    console.error('Error during AI help:', error);
-    return DG.Widget.fromRoot(ui.divText(`Error during AI help: ${error.message}`));
-  }
+export async function smartExecution(prompt: string): Promise<DG.Widget> {
+  return streamingWidget(prompt, {
+    sessionPrefix: 'execute',
+    outputSchema: executionPlanSchema,
+    onFinal: (evt, host) => {
+      const result = evt.structured_output as ExecutionPlan | undefined;
+      if (!result) {
+        host.appendChild(ui.divText(evt.content || 'No plan returned.'));
+        return;
+      }
+
+      host.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+      if (!result.code)
+        return;
+
+      const codeAcc = ui.accordion();
+      const code = '```datagrok-exec\n' + result.code + '\n```';
+      codeAcc.addPane('Code', () => createStyledMarkdown(code), false);
+      host.appendChild(codeAcc.root);
+
+      host.appendChild(ui.wait(async () => {
+        try {
+          const execResults = await executeDatagrokBlocks(code, grok.shell.v);
+          return ui.divV(execResults);
+        } catch (e: any) {
+          return ui.info(`Execution error: ${e?.message ?? e}`);
+        }
+      }));
+    },
+  });
+}
+
+export async function askWiki(question: string): Promise<DG.Widget> {
+  return streamingWidget(question, {
+    sessionPrefix: 'help',
+    onFinal: (evt, host) => {
+      const md = ui.markdown(evt.content || '');
+      md.style.userSelect = 'text';
+      host.appendChild(md);
+    },
+  });
 }
 
 // sets up the ui button for the input
