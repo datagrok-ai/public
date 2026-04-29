@@ -23,6 +23,11 @@ export type OptimizerParams = {
   settings?: Map<string, number>;
   reproSettings?: Partial<ReproSettings>;
   earlyStoppingSettings?: Partial<EarlyStoppingSettings>;
+  /**
+   * Default 'auto' — canHandle routes JS-language scripts annotated with
+   * `//meta.workerSafe: true` to the worker arm; everything else falls back
+   * to MainExecutor. Pass 'main' or 'worker' to force a specific arm.
+   */
   executor?: ExecutorChoice;
 };
 
@@ -37,7 +42,7 @@ export async function runOptimizer(
     settings,
     reproSettings,
     earlyStoppingSettings,
-    executor,
+    executor = 'auto',
   }: OptimizerParams,
 ): Promise<[OptimizationResult, DG.FuncCall[]]> {
   const {variedInputNames, fixedInputs} = getInputsData(inputBounds);

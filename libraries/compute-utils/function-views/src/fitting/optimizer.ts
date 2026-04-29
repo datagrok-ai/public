@@ -14,11 +14,15 @@ export async function performNelderMeadOptimization(
     settings,
     reproSettings,
     earlyStoppingSettings,
-    // Default 'main' — worker dispatch is opt-in. Flipping to 'auto' would
-    // route any JS-language DG.Script through the worker by default, which
-    // can break callers (e.g. DiffStudio's fallback path) whose script
-    // bodies depend on platform globals not available in workers.
-    executor = 'main',
+    // Default 'auto' — canHandle decides per call. A script is routed to a
+    // worker only when it carries `//meta.workerSafe: true` (the explicit
+    // author opt-in), is JS-language, has outputTargets + lossType, and the
+    // runtime has hardwareConcurrency ≥ 2. Anything else falls back to
+    // MainExecutor — non-annotated scripts, non-Script Funcs, callers with
+    // a closure-only objectiveFunc — so the UI and RunOptimizer paths get
+    // worker speedup for free on annotated bodies without breaking anything
+    // that isn't.
+    executor = 'auto',
     func,
     outputTargets,
     lossType,
