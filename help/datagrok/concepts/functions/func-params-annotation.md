@@ -456,10 +456,15 @@ value of the parameter the expression applied to, but on other parameters as wel
 
 
 The second option involves using a custom validation function and referencing it.
-Usually it's a JavaScript function that gets executed right in the browser, but you can use other languages as well.
 A validation function accepts one parameter
 (a string that user enters), and returns null if the string is valid, or the reason for being invalid,
 otherwise.
+
+:::important
+Validators must be synchronous. Only `package.ts` exports and `grok.functions.register({...})`
+qualify. Scripts (UI-saved or shipped under `scripts/`, any language) don't — they're async and
+will throw at dialog open. For server-side validation, validate inside the function body and `throw`.
+:::
 
 <details>
 <summary> Example: Functions as validators </summary>
