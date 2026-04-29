@@ -214,6 +214,7 @@ export enum WARNING {
   CHECK = 'Show this warning',
   OVERWRITE_MODEL = 'Overwrite the current model?',
   OVERWRITE_FILE = 'Overwrite existing file?',
+  MODEL_IN_LIBRARY = 'Model is already in Library. Save a duplicate?',
   CONTINUE = 'Continue?',
   CHECK_PERF = 'Check time',
   TIME_LIM = 'Time limit',

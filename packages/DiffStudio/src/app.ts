@@ -1313,15 +1313,56 @@ export class DiffStudio {
     }
   }; // exportToJS
 
+  /** True if `path` is registered in the Library manifest. A missing or
+   *  unparseable manifest is treated as "not listed" so callers fall back to
+   *  the regular save flow. */
+  private async isPathInLibraryManifest(path: string): Promise<boolean> {
+    const manifestPath = `${PATH.LIBRARY_FOLDER}/${PATH.EXTERNAL_MODELS_JSON}`;
+    if (!(await grok.dapi.files.exists(manifestPath)))
+      return false;
+    try {
+      const text = await grok.dapi.files.readAsText(manifestPath);
+      const parsed = JSON.parse(text);
+      return Array.isArray(parsed?.models) && parsed.models.some((m: any) => m?.path === path);
+    } catch {
+      return false;
+    }
+  }
+
+  /** Ask the user whether to save a duplicate copy of a model already in the
+   *  Library. Resolves to true on OK and false on Cancel/dismiss. */
+  private confirmSaveDuplicateInLibrary(): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      let decided = false;
+      ui.dialog({title: WARNING.TITLE})
+        .add(ui.label(WARNING.MODEL_IN_LIBRARY))
+        .onOK(() => {
+          decided = true;
+          resolve(true);
+        })
+        .onCancel(() => {
+          if (!decided) resolve(false);
+        })
+        .show();
+    });
+  }
+
   /** Save the current model to the Library folder and register it in
    *  external-models.json. Guarded against re-entry: rapid double-clicks while
    *  the previous save is still awaiting `writeAsText` would otherwise create
    *  multiple `Name(N).ivp` copies and emit a balloon flow. After a successful
-   *  save the icon is disabled until the user makes further edits. */
+   *  save the icon is disabled until the user makes further edits. When the
+   *  current model is already registered in the Library, the user is asked
+   *  whether to save a duplicate copy under a fresh `Name(N).ivp` name. */
   private async saveModelToLibrary(): Promise<void> {
     if (this.isSavingToLibrary)
       return;
     this.isSavingToLibrary = true;
+    // Disable the icon as immediate feedback that the click was registered.
+    // Re-enabled below only on the dialog-cancel path; success keeps it disabled
+    // until the user makes new edits, errors are handled by `processError`.
+    this.updateSaveToModelCatalogWidget(false);
+    let progress: DG.TaskBarProgressIndicator | null = null;
     try {
       const model = this.editorView!.state.doc.toString();
       const ivp = getIVP(model);
@@ -1330,14 +1371,30 @@ export class DiffStudio {
       const lowerMain = this.mainPath.toLowerCase();
       const fromFile = this.mainPath.includes(PATH.FILE) && lowerMain.includes(PATH.APP_DATA_MATCH);
 
-      let targetPath: string;
+      let targetPath!: string;
       let createdFileName: string | null = null;
+      let createNewFile = !fromFile;
 
       if (fromFile) {
         const rel = this.mainPath.slice(PATH.FILE.length + 1);
         const firstDot = rel.indexOf('.');
-        targetPath = (firstDot > 0) ? `${rel.slice(0, firstDot)}:${rel.slice(firstDot + 1)}` : rel;
-      } else {
+        const existingTarget = (firstDot > 0) ? `${rel.slice(0, firstDot)}:${rel.slice(firstDot + 1)}` : rel;
+        if (await this.isPathInLibraryManifest(existingTarget)) {
+          if (!(await this.confirmSaveDuplicateInLibrary())) {
+            this.updateSaveToModelCatalogWidget(true);
+            return;
+          }
+          createNewFile = true;
+        } else
+          targetPath = existingTarget;
+      }
+
+      // Visible "I'm working" feedback starts only after the optional confirm
+      // dialog is resolved — we don't want the top-bar progress running while
+      // we wait on the user to click Yes/Cancel.
+      progress = DG.TaskBarProgressIndicator.create('Saving to Library...');
+
+      if (createNewFile) {
         const folder = PATH.LIBRARY_FOLDER;
         const baseName = sanitizeModelFileName(ivp.name ?? '');
         let existingNames: string[] = [];
@@ -1387,16 +1444,14 @@ export class DiffStudio {
         this.updateBtnFilePath = targetPath;
         this.updateBtn.hidden = true;
         grok.shell.info(`Saved to Library as ${createdFileName}`);
-      } else if (!alreadyListed)
+      } else
         grok.shell.info('Registered in Library');
-      else
-        grok.shell.info('Already in Library');
 
       grok.events.fireCustomEvent(LIBRARY_CHANGED_EVENT, null);
-      this.updateSaveToModelCatalogWidget(false);
     } catch (err) {
       this.processError(err);
     } finally {
+      progress?.close();
       this.isSavingToLibrary = false;
     }
   } // saveModelToLibrary
