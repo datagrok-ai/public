@@ -21,7 +21,7 @@ export {runOptimizer} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 export type {ExecutorChoice, ExecutorArgs} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/executor';
-export {canHandle} from
+export {canHandle, WorkerExecutor, runWithEphemeralPool} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/executor';
 export {buildSetup, buildRunSeed} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/serialize';

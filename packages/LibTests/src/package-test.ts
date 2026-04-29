@@ -37,6 +37,7 @@ import './tests/compute-utils/fitting/cost-functions';
 import './tests/compute-utils/fitting/end-to-end';
 import './tests/compute-utils/fitting/cross-executor-parity';
 import './tests/compute-utils/fitting/can-handle';
+import './tests/compute-utils/fitting/pool-multi-session';
 import './tests/compute-utils/fitting/formula-resolver';
 import './tests/arrow/roundtrip';
 import './tests/arrow/titanic';
