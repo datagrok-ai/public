@@ -38,7 +38,18 @@ NOT render; convert via the table below:
 | `DG.DataFrame`                    | `DG.Viewer.grid(df).root`                      |
 | `DG.Viewer` / `DG.Widget`         | `obj.root`                                     |
 | molecule (SMILES / molblock)      | `grok.chem.drawMolecule(smiles, 300, 200)`     |
+| macromolecule (HELM)              | see [HELM output](#helm-output) below          |
 | graphics                          | see [Graphics output](#graphics-output) below  |
+
+## HELM output
+
+For HELM macromolecule notation, render via the async HELM input.
+
+```datagrok-exec
+const helmInput = await ui.input.helmAsync('', { editable: false });
+helmInput.stringValue = helmString;
+return helmInput.getInput();
+```
 
 ## Graphics output
 

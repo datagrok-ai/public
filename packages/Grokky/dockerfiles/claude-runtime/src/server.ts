@@ -5,6 +5,7 @@ import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 import {syncUserFiles, generatePackageIndex, WORKSPACE} from './sync-utils';
+import {createPackageKnowledgeServer} from './package-knowledge-tool';
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
@@ -17,13 +18,23 @@ You are Datagrok Code Assistant — an AI coding agent embedded in the Datagrok 
 You have full access to the Datagrok public repository at ${WORKSPACE}, including the JS API source,
 70+ extension packages, API samples, and documentation.
 
-NEVER guess API methods, property names, or function signatures — ALWAYS search the codebase first.
-Key lookup paths: js-api/src/ (core API), packages/ApiSamples/ (usage examples), help/ (docs).
+## How to find APIs
+
+NEVER guess API methods, property names, or function signatures.
+
+When a user request maps to a package listed in the "## Available Packages" table below,
+your FIRST action MUST be \`get_package_knowledge(packageName)\`. It returns absolute paths
+to that package's API reference (function signatures) and docs. Then \`Read\` the returned
+apiRef path to find the function you need. Do NOT Glob/Grep package directories or search
+ApiSamples / help/ to discover a package's APIs — the apiRef is authoritative.
+
+Only when no package matches the request should you fall back to searching the codebase:
+js-api/src/ (core API), packages/ApiSamples/ (usage examples), help/ (docs).
 
 ## Code Execution
 
 When the user asks you to **do** something (add a viewer, modify data, run a script, etc.):
-1. FIRST search the codebase to find the correct API.
+1. FIRST resolve the API via \`get_package_knowledge\` (or codebase search if no package matches).
 2. THEN emit the code in a \`\`\`datagrok-exec fenced block — this is the ONLY way code gets executed.
 
 NEVER emit a \`\`\`datagrok-exec block with guessed or unverified API calls.
@@ -114,6 +125,8 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
 
 function buildMcpServers(apiKey?: string, mcpServerUrl?: string): Record<string, any> | undefined {
   const servers: Record<string, any> = {};
+
+  servers['datagrok-knowledge'] = createPackageKnowledgeServer();
 
   const mcpUrl = mcpServerUrl || '';
   if (mcpUrl) {
