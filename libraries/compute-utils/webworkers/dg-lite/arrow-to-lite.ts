@@ -100,18 +100,21 @@ function arrowVectorToLiteColumn(name: string, vector: arrow.Vector, rowCount: n
   }
   case arrow.Type.Date:
   case arrow.Type.Timestamp: {
+    // Build directly in DG raw layout (microseconds since epoch) and hand to
+    // the dt factory — bypasses fromList's ms→μs conversion so we don't
+    // have to round-trip through milliseconds. Preserves FLOAT_NULL too.
     const buf = new Float64Array(rowCount);
     if (values instanceof BigInt64Array)
       for (let i = 0; i < rowCount; ++i) buf[i] = timestampBigIntToMs(values[i], (type as any).unit) * 1000;
     else {
-      // values are dates / numbers; coerce.
       for (let i = 0; i < rowCount; ++i) {
         const v = (values as any)[i];
-        const ms = v == null ? FLOAT_NULL : (typeof v === 'number' ? v : Number(v?.valueOf?.() ?? v));
-        buf[i] = ms === FLOAT_NULL ? FLOAT_NULL : ms * 1000;
+        if (v == null) {buf[i] = FLOAT_NULL; continue;}
+        const ms = typeof v === 'number' ? v : Number(v?.valueOf?.() ?? v);
+        buf[i] = ms * 1000;
       }
     }
-    return dg.Column.fromList('datetime', name, Array.from(buf));
+    return dg.Column.fromDateTimeMicros(name, buf);
   }
   case arrow.Type.Time:
     if ((type as any)?.bitWidth < 64)

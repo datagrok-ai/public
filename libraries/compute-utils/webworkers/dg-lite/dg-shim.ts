@@ -9,6 +9,7 @@
  * Pure TypeScript, no `datagrok-api` imports — safe to use inside a worker.
  */
 
+import dayjs from 'dayjs';
 import {LiteColumn, LiteColumnList, LiteColumnStats, LiteColumnType, LiteDataFrame}
   from './types';
 
@@ -87,6 +88,42 @@ function makeBigIntColumn(name: string, raw: BigInt64Array): LiteColumn {
   };
 }
 
+// Datetime values are stored as microseconds since epoch (matches DG raw
+// layout). `get(i)` returns a dayjs object — same as `DG.Column.get(i)` on
+// the main side (js-api/src/wrappers_impl.ts:82-83 wraps datetime returns
+// via `dayjs(dart)`). dayjs accepts ms, so divide raw by 1000.
+function makeDateTimeColumn(name: string, raw: Float64Array): LiteColumn {
+  let cached: LiteColumnStats | null = null;
+  const wrap = (v: number) => v === FLOAT_NULL ? null : dayjs(v / 1000);
+  return {
+    name,
+    type: COLUMN_TYPE.DATE_TIME,
+    length: raw.length,
+    getRawData: () => raw,
+    toList: () => {
+      const out = new Array<dayjs.Dayjs | null>(raw.length);
+      for (let i = 0; i < raw.length; ++i) out[i] = wrap(raw[i]);
+      return out;
+    },
+    get: (i) => wrap(raw[i]),
+    get stats() {
+      if (cached) return cached;
+      let min = Number.POSITIVE_INFINITY;
+      let max = Number.NEGATIVE_INFINITY;
+      for (let i = 0; i < raw.length; ++i) {
+        const v = raw[i];
+        if (v === FLOAT_NULL) continue;
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+      if (min === Number.POSITIVE_INFINITY) min = 0;
+      if (max === Number.NEGATIVE_INFINITY) max = 0;
+      cached = {min, max};
+      return cached;
+    },
+  };
+}
+
 function makeStringColumn(name: string, values: string[]): LiteColumn {
   // Stats are not meaningful for strings; expose 0/0 to match DG behaviour.
   const cached: LiteColumnStats = {min: 0, max: 0};
@@ -150,6 +187,10 @@ export interface WorkerDG {
     fromFloat32Array(name: string, arr: Float32Array): LiteColumn;
     fromInt32Array(name: string, arr: Int32Array): LiteColumn;
     fromBigInt64Array(name: string, arr: BigInt64Array): LiteColumn;
+    // Wraps a microsecond-since-epoch buffer (DG raw datetime layout) — `get`
+    // returns dayjs (or null for FLOAT_NULL). For callers that already have
+    // microseconds; `fromList('datetime', [ms])` does the ms→μs conversion.
+    fromDateTimeMicros(name: string, microseconds: Float64Array): LiteColumn;
     fromList(type: LiteColumnType, name: string, values: unknown[]): LiteColumn;
     fromStrings(name: string, values: string[]): LiteColumn;
   };
@@ -170,6 +211,7 @@ export function createWorkerDG(): WorkerDG {
       fromFloat32Array: (name, arr) => makeNumericColumn(name, 'float', arr, FLOAT_NULL),
       fromInt32Array: (name, arr) => makeNumericColumn(name, COLUMN_TYPE.INT, arr, INT_NULL),
       fromBigInt64Array: (name, arr) => makeBigIntColumn(name, arr),
+      fromDateTimeMicros: (name, microseconds) => makeDateTimeColumn(name, microseconds),
       fromStrings: (name, values) => makeStringColumn(name, values),
       fromList: (type, name, values) => {
         switch (type) {
@@ -203,7 +245,7 @@ export function createWorkerDG(): WorkerDG {
               (typeof v.valueOf === 'function' ? Number(v.valueOf()) : Number(v));
             buf[i] = ms * 1000;
           }
-          return makeNumericColumn(name, COLUMN_TYPE.DATE_TIME, buf, FLOAT_NULL);
+          return makeDateTimeColumn(name, buf);
         }
         case COLUMN_TYPE.BIG_INT: {
           const buf = new BigInt64Array(values.length);

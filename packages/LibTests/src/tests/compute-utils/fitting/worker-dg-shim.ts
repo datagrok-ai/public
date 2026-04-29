@@ -103,6 +103,44 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       expect(String(liteRaw[i]), String(arr[i]), `row ${i}`);
   });
 
+  test('shim_lite_vs_dg_datetime_column', async () => {
+    // Pin parity for datetime columns: get(i) must return a dayjs-like value
+    // matching DG's `dayjs(dart)` wrap (js-api/src/wrappers_impl.ts:82-83);
+    // getRawData() must be the microsecond Float64Array DG uses; toList()
+    // must contain dayjs-like values. Compare via .valueOf() (ms epoch) so
+    // the assertion is independent of cross-realm dayjs identity.
+    const vals = [
+      dayjs('2024-01-01T00:00:00Z'),
+      dayjs('2024-06-15T12:30:00Z'),
+      dayjs('1970-01-01T00:00:00Z'),
+    ];
+    const lite = shim.Column.fromList(shim.COLUMN_TYPE.DATE_TIME, 't', vals);
+    const dg = DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 't', vals);
+    expect(lite.length, dg.length, 'length differs');
+    expect(lite.type, dg.type as any, 'type differs');
+    const liteRaw = lite.getRawData() as Float64Array;
+    const dgRaw = dg.getRawData() as Float64Array;
+    expect(liteRaw.length, dgRaw.length, 'raw length differs');
+    for (let i = 0; i < liteRaw.length; ++i)
+      expectFloat(liteRaw[i], dgRaw[i], 1e-12, `raw[${i}]`);
+    for (let i = 0; i < lite.length; ++i) {
+      const a = lite.get(i) as any; const b = dg.get(i) as any;
+      expectFloat(Number(a?.valueOf?.()), Number(b?.valueOf?.()), 1e-9,
+        `get(${i}) ms epoch`);
+      expect(typeof a?.format, 'function', `lite get(${i}) lacks dayjs.format`);
+      expect(typeof b?.format, 'function', `dg get(${i}) lacks dayjs.format`);
+    }
+    // Lite's toList must be self-consistent with its get(i). DG's
+    // Column.toList() for datetime returns nulls (separate DG quirk that
+    // doesn't agree with DG.Column.get); we don't assert against it.
+    const liteList = lite.toList();
+    expect(liteList.length, lite.length, 'toList length');
+    for (let i = 0; i < liteList.length; ++i)
+      expectFloat(Number((liteList[i] as any)?.valueOf?.()),
+        Number((lite.get(i) as any)?.valueOf?.()), 1e-9,
+        `toList[${i}] vs get(${i})`);
+  });
+
   test('shim_dataframe_fromcolumns_parity', async () => {
     const ids = new Int32Array([10, 20, 30]);
     const vals = new Float64Array([1.1, 2.2, 3.3]);
@@ -188,6 +226,35 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     expect(c.length, values.length);
     for (let i = 0; i < values.length; ++i)
       expect(c.get(i) as string, values[i], `row ${i}`);
+  });
+
+  test('arrow_to_lite_roundtrip_datetime', async () => {
+    // Catches the arrow-to-lite double-×1000 regression: if the Arrow path
+    // doesn't store microseconds, get(i) values come back ~10⁶× off.
+    const vals = [
+      dayjs('2024-01-01T00:00:00Z'),
+      dayjs('2024-06-15T12:30:00Z'),
+      dayjs('1970-01-01T00:00:00Z'),
+    ];
+    const dgDf = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 't', vals),
+    ]);
+    const bytes = toFeather(dgDf, true)!;
+    const lite = arrowIpcToLite(bytes);
+    const liteCol = lite.col('t')!;
+    const dgCol = dgDf.col('t')!;
+    expect(liteCol.length, dgCol.length, 'length differs');
+    expect(liteCol.type, dgCol.type as any, 'type differs');
+    const liteRaw = liteCol.getRawData() as Float64Array;
+    const dgRaw = dgCol.getRawData() as Float64Array;
+    for (let i = 0; i < liteRaw.length; ++i)
+      expectFloat(liteRaw[i], dgRaw[i], 1e-12, `raw[${i}]`);
+    for (let i = 0; i < liteCol.length; ++i) {
+      const a = liteCol.get(i) as any; const b = dgCol.get(i) as any;
+      expectFloat(Number(a?.valueOf?.()), Number(b?.valueOf?.()), 1e-9,
+        `roundtrip get(${i}) ms epoch`);
+      expect(typeof a?.format, 'function', `lite get(${i}) lacks dayjs.format`);
+    }
   });
 
   test('shim_stats_lazy_caching', async () => {

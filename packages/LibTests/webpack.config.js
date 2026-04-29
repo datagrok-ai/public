@@ -42,10 +42,12 @@ module.exports = {
   devtool: 'source-map',
   externals: [
     // Workers don't get the platform's globals (no `window.dayjs`), so the
-    // fitting worker bundle imports `dayjs` and webpack must bundle it.
-    // The main bundle still externalizes dayjs to the platform global.
+    // fitting worker bundle (and the worker-safe `webworkers/` modules it
+    // pulls in) imports `dayjs` and webpack must bundle it. The main
+    // bundle still externalizes dayjs to the platform global.
     ({context, request}, cb) => {
-      if (request === 'dayjs' && context && /[\\/]fitting[\\/]worker(?:[\\/]|$)/.test(context))
+      if (request === 'dayjs' && context &&
+          /[\\/](?:fitting[\\/]worker|webworkers)(?:[\\/]|$)/.test(context))
         return cb();
       const platformExternals = {
         'datagrok-api/dg': 'DG',

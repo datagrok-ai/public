@@ -21,6 +21,10 @@
 // worker the moment the bundle loaded.
 
 import dayjs from 'dayjs';
+// Mirror `window.dayjs` (the main-thread platform global, see
+// packages/LibTests/webpack.config.js externals) so script bodies that read
+// dayjs by bare name resolve via worker globalThis instead of ReferenceError.
+(globalThis as any).dayjs = dayjs;
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {LOSS} from '../constants';
 import {makeBoundsChecker} from '../bounds-checker';
