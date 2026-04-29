@@ -49,6 +49,7 @@ export enum HINT {
   NO_RECENT_MODELS = 'No recent models',
   FAILED_TO_LOAD_RECENT_MODELS = 'Failed to load recent models: file system error',
   CORRUPTED_DATA_FILE = 'Failed to load recent models: corrupted data file',
+  LOADING = 'Loading…',
   EDIT = 'Edit',
   UPDATE = 'Apply all changes to the current file',
   SAVE_TO_LIB = 'Save model to Library',

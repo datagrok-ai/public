@@ -30,9 +30,13 @@ import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTa
   getCategoryWidget, getReducedTable, closeWindows,
   getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions,
   prefetchRecentModelsTable, getCachedRecentModelsTable, invalidateRecentCache,
-  prefetchMyModelFiles, getCachedMyModelFiles, invalidateMyModelFilesCache,
+  getCachedRecentModelsTableSync, isCachedRecentModelsFailed,
+  prefetchMyModelFiles, invalidateMyModelFilesCache,
+  getCachedMyModelFilesSync, isCachedMyModelFilesFailed,
   prefetchExternalLibraryEntries, getCachedExternalLibraryEntries,
+  getCachedExternalLibraryEntriesSync,
   prefetchFolderListing, getCachedFileInfo, invalidateFolderListing,
+  getCachedFileInfoSync,
   loadModelContent, setCachedModelContent, readAndCacheModelContent, prefetchMyModelFilesContent,
   ExternalLibraryEntry} from './utils';
 
@@ -840,29 +844,24 @@ export class DiffStudio {
     return btn;
   }
 
-  /** Return the combo-menu ribbon widget that consolidates the save/export actions:
-   *  raw `.ivp` download, plus LaTeX and Markdown export. */
+  /** Build the Save/Export combo as a ui.dropDown. The menu is rebuilt on every
+   *  click via the builder, so per-item empty-model guards stay inside each
+   *  handler (downloadAsIvp / openExportDialog). */
   private getDownloadComboMenu(): HTMLElement {
-    const widget = ui.div(ui.iconFA('arrow-to-bottom', () => {}, HINT.DOWNLOAD));
-    widget.classList.add('d4-combo-popup');
-    widget.classList.add('diff-studio-ribbon-widget');
-    ui.tooltip.bind(widget, HINT.DOWNLOAD);
-    widget.onclick = () => this.getDownloadMenu().show();
-
-    return widget;
-  }
-
-  /** Build the download/export popup with three actions; the empty-model guard
-   *  lives inside each handler so the menu structure is independent of editor state. */
-  private getDownloadMenu(): DG.Menu {
-    const menu = DG.Menu.popup();
-    menu.item(TITLE.SAVE_IVP, () => this.downloadAsIvp(),
-      undefined, {description: HINT.SAVE_IVP_ITEM});
-    menu.item(TITLE.EXPORT_LATEX, () => this.openExportDialog('latex'),
-      undefined, {description: HINT.EXPORT_LATEX_ITEM});
-    menu.item(TITLE.EXPORT_MARKDOWN, () => this.openExportDialog('markdown'),
-      undefined, {description: HINT.EXPORT_MARKDOWN_ITEM});
-    return menu;
+    const dd = ui.dropDown(
+      ui.iconFA('arrow-to-bottom', () => {}, HINT.DOWNLOAD),
+      (menu) => {
+        menu.item(TITLE.SAVE_IVP, () => this.downloadAsIvp(),
+          undefined, {description: HINT.SAVE_IVP_ITEM});
+        menu.item(TITLE.EXPORT_LATEX, () => this.openExportDialog('latex'),
+          undefined, {description: HINT.EXPORT_LATEX_ITEM});
+        menu.item(TITLE.EXPORT_MARKDOWN, () => this.openExportDialog('markdown'),
+          undefined, {description: HINT.EXPORT_MARKDOWN_ITEM});
+      },
+    );
+    dd.root.classList.add('diff-studio-ribbon-widget');
+    ui.tooltip.bind(dd.root, HINT.DOWNLOAD);
+    return dd.root;
   }
 
   /** Save the current IVP text to a local `.ivp` file. Shows an info balloon and
@@ -2971,26 +2970,36 @@ export class DiffStudio {
     return lastModel;
   }
 
-  /** Return the Open model combo menu */
+  /** Build the Open model combo as a ui.dropDown. The builder runs on every
+   *  click and reads from sync cache snapshots (see utils.ts), so the popup is
+   *  always rebuilt from the latest resolved state without an async wait. */
   private getOpenComboMenu(): HTMLElement {
-    const menu = ui.div(ui.iconFA('folder-open', () => {}, HINT.OPEN));
-    menu.classList.add('d4-combo-popup');
-    menu.classList.add('diff-studio-ribbon-widget');
-    ui.tooltip.bind(menu, HINT.OPEN);
-    menu.onclick = async () => (await this.getOpenModelMenu()).show();
-
-    return menu;
+    const dd = ui.dropDown(
+      ui.iconFA('folder-open', () => {}, HINT.OPEN),
+      (menu) => this.populateOpenMenu(menu),
+    );
+    dd.root.classList.add('diff-studio-ribbon-widget');
+    ui.tooltip.bind(dd.root, HINT.OPEN);
+    return dd.root;
   }
 
-  /** Return open menu */
-  private async getOpenModelMenu(): Promise<DG.Menu> {
-    const menu = DG.Menu.popup();
-    menu.item(TITLE.IMPORT, async () => await this.overwrite(), undefined, {description: HINT.LOAD}).separator();
+  /** Synchronously populate the Open model menu from cache snapshots.
+   *  Each section degrades to a disabled placeholder when its snapshot is
+   *  pending (Loading…), missing (No …), or failed (Failed to load …). */
+  private populateOpenMenu(menu: DG.Menu): void {
+    menu.item(TITLE.IMPORT, () => void this.overwrite(),
+      undefined, {description: HINT.LOAD}).separator();
 
-    await this.appendMenuWithMyModels(menu);
-    await this.appendMenuWithRecentModels(menu);
+    this.appendMyModelsSync(menu);
+    this.appendRecentModelsSync(menu);
     menu.separator();
 
+    this.appendTemplatesGroup(menu);
+    this.appendLibraryGroup(menu);
+  } // populateOpenMenu
+
+  /** Append the Templates submenu (Basic / Advanced / Extended). */
+  private appendTemplatesGroup(menu: DG.Menu): void {
     menu.group(TITLE.TEMPL)
       .item(TITLE.BASIC, async () =>
         await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
@@ -3001,7 +3010,12 @@ export class DiffStudio {
       .item(TITLE.EXT, async () =>
         await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
       .endGroup();
+  }
 
+  /** Append the Library submenu: built-in examples plus any external models
+   *  registered via external-models.json (eventually consistent — new entries
+   *  appear after LIBRARY_CHANGED_EVENT triggers a fresh prefetch). */
+  private appendLibraryGroup(menu: DG.Menu): void {
     const libraryGroup = menu.group(TITLE.LIBRARY)
       .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
       .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
@@ -3013,85 +3027,87 @@ export class DiffStudio {
       .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
       .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL});
 
-    await this.appendMenuWithExternalLibraryModels(libraryGroup);
+    this.appendExternalLibraryModelsSync(libraryGroup);
     libraryGroup.endGroup();
+  } // appendLibraryGroup
 
-    return menu;
-  } // getOpenMenu
-
-  /** Append external (manifest-registered) library models to the Library menu group */
-  private async appendMenuWithExternalLibraryModels(menu: DG.Menu): Promise<void> {
-    try {
-      const entries = await getCachedExternalLibraryEntries(_package.webRoot);
-      for (const entry of entries) {
-        menu.item(entry.displayName, async () => {
-          try {
-            const equations = await loadModelContent(entry.modelPath);
-            if (equations === null) {
-              grok.shell.warning(`Failed to read model: ${entry.modelPath}`);
-              return;
-            }
-            this.mainPath = `${PATH.FILE}/${entry.modelPath}`;
-            this.entityPath = '';
-            await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
-            await this.saveModelToRecent(entry.modelPath, true);
-          } catch (err) {
-            grok.shell.warning(`Failed to open model: ${entry.modelPath}`);
+  /** Append external (manifest-registered) library models to the Library menu group.
+   *  Reads from the sync snapshot — if the prefetch has not resolved yet, only
+   *  built-in examples are shown until the next click. */
+  private appendExternalLibraryModelsSync(menu: DG.Menu): void {
+    const entries = getCachedExternalLibraryEntriesSync();
+    if (entries === null)
+      return;
+    for (const entry of entries) {
+      menu.item(entry.displayName, async () => {
+        try {
+          const equations = await loadModelContent(entry.modelPath);
+          if (equations === null) {
+            grok.shell.warning(`Failed to read model: ${entry.modelPath}`);
+            return;
           }
-        }, null, {description: entry.description || entry.modelPath});
-      }
-    } catch {
-      // silently skip if manifest is missing or malformed
+          this.mainPath = `${PATH.FILE}/${entry.modelPath}`;
+          this.entityPath = '';
+          await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
+          await this.saveModelToRecent(entry.modelPath, true);
+        } catch (err) {
+          grok.shell.warning(`Failed to open model: ${entry.modelPath}`);
+        }
+      }, null, {description: entry.description || entry.modelPath});
     }
-  }
+  } // appendExternalLibraryModelsSync
 
-  /** Append menu with my and recent models */
-  private async appendMenuWithRecentModels(menu: DG.Menu) {
-    try {
-      const recentDf = await getCachedRecentModelsTable();
-      const size = recentDf.rowCount;
-      const infoCol = recentDf.col(TITLE.INFO);
-      const isCustomCol = recentDf.col(TITLE.IS_CUST);
-
-      if (size > 0) { // the list of recent models is not empty
-        if ((infoCol === null) || (isCustomCol === null)) { // incorrect dataframe with recent models
-          menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.CORRUPTED_DATA_FILE});
-          return;
-        }
-
-        const uniqueFolders = new Set<string>();
-        for (let i = 0; i < size; ++i) {
-          if (isCustomCol.get(i)) {
-            const p: string = infoCol.get(i);
-            const idx = p.lastIndexOf('/');
-            if (idx >= 0)
-              uniqueFolders.add(p.slice(0, idx + 1));
-          }
-        }
-        for (const f of uniqueFolders)
-          prefetchFolderListing(f);
-
-        const submenu = menu.group(TITLE.RECENT);
-
-        for (let i = 0; i < size; ++i) {
-          const name = infoCol.get(i);
-
-          if (isCustomCol.get(i))
-            await this.appendMenuWithCustomModel(submenu, name);
-          else
-            this.appendMenuWithBuiltInModel(submenu, name);
-        }
-
-        submenu.endGroup();
-      } else // empty list of recent models
-        menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.NO_RECENT_MODELS});
-    } catch (err) { // file system error
+  /** Append the Recent submenu using the sync snapshot of the recent-models
+   *  dataframe. Also kicks off folder-listing prefetches for any custom-model
+   *  paths so subsequent clicks can resolve FileInfos synchronously via
+   *  getCachedFileInfoSync. */
+  private appendRecentModelsSync(menu: DG.Menu): void {
+    if (isCachedRecentModelsFailed()) {
       menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.FAILED_TO_LOAD_RECENT_MODELS});
-    };
-  } // appendMenuWithRecentModels
+      return;
+    }
+    const recentDf = getCachedRecentModelsTableSync();
+    if (recentDf === null) {
+      menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.LOADING});
+      return;
+    }
+    const size = recentDf.rowCount;
+    if (size === 0) {
+      menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.NO_RECENT_MODELS});
+      return;
+    }
+    const infoCol = recentDf.col(TITLE.INFO);
+    const isCustomCol = recentDf.col(TITLE.IS_CUST);
+    if ((infoCol === null) || (isCustomCol === null)) {
+      menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.CORRUPTED_DATA_FILE});
+      return;
+    }
 
-  /** Append menu with built-in model model */
-  private appendMenuWithBuiltInModel(menu: DG.Menu, name: TITLE) {
+    const uniqueFolders = new Set<string>();
+    for (let i = 0; i < size; ++i) {
+      if (isCustomCol.get(i)) {
+        const p: string = infoCol.get(i);
+        const idx = p.lastIndexOf('/');
+        if (idx >= 0)
+          uniqueFolders.add(p.slice(0, idx + 1));
+      }
+    }
+    for (const f of uniqueFolders)
+      prefetchFolderListing(f);
+
+    const submenu = menu.group(TITLE.RECENT);
+    for (let i = 0; i < size; ++i) {
+      const name = infoCol.get(i);
+      if (isCustomCol.get(i))
+        this.appendCustomModelSync(submenu, name);
+      else
+        this.appendBuiltInModel(submenu, name);
+    }
+    submenu.endGroup();
+  } // appendRecentModelsSync
+
+  /** Append a built-in model entry that opens it in a fresh DiffStudio view. */
+  private appendBuiltInModel(menu: DG.Menu, name: TITLE) {
     menu.item(name, async () => {
       const solver = new DiffStudio();
       await solver.runSolverApp(
@@ -3101,20 +3117,20 @@ export class DiffStudio {
     }, null, {description: MODEL_HINT.get(name) ?? ''});
   }
 
-  /** Append menu item for a custom model by path (checks existence via cached folder listing) */
-  private async appendMenuWithCustomModel(menu: DG.Menu, path: TITLE) {
-    try {
-      const file = await getCachedFileInfo(path);
-      if (!file)
-        return;
-      this.appendMenuWithCustomModelByFile(menu, file);
-    } catch (e) {
-      grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
-    }
-  } // appendMenuWithCustomModel
+  /** Sync variant of the custom-model appender: looks the FileInfo up in the
+   *  pre-snapshotted folder listing. If the folder hasn't been listed yet OR
+   *  the file is genuinely missing, the entry is silently skipped — the next
+   *  click will see it once the prefetch resolves. */
+  private appendCustomModelSync(menu: DG.Menu, path: TITLE) {
+    const file = getCachedFileInfoSync(path);
+    if (!file)
+      return;
+    this.appendCustomModelByFile(menu, file);
+  }
 
-  /** Append menu item for a custom model using an already-resolved FileInfo (no extra I/O at build time) */
-  private appendMenuWithCustomModelByFile(menu: DG.Menu, file: DG.FileInfo) {
+  /** Append a menu item for a custom model using an already-resolved FileInfo
+   *  (no extra I/O at build time). */
+  private appendCustomModelByFile(menu: DG.Menu, file: DG.FileInfo) {
     const path = file.fullPath;
     menu.item(file.name, async () => {
       try {
@@ -3129,22 +3145,28 @@ export class DiffStudio {
     }, null, {description: path});
   }
 
-  /** Append menu with models from user's files */
-  private async appendMenuWithMyModels(menu: DG.Menu) {
-    try {
-      const myModelFiles = await getCachedMyModelFiles();
-      if (myModelFiles.length < 1)
-        menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.NO_MY_MODELS});
-      else {
-        const submenu = menu.group(TITLE.MY_MODELS);
-        for (const file of myModelFiles)
-          this.appendMenuWithCustomModelByFile(submenu, file);
-        submenu.endGroup();
-      }
-    } catch (err) {
-      menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.FAILED_TO_LOAD_RECENT_MODELS});
-    };
-  }
+  /** Append the My Models submenu using the sync snapshot of the user's
+   *  model-files listing. Same three-state pattern as Recent: failed / pending
+   *  / empty / non-empty. */
+  private appendMyModelsSync(menu: DG.Menu): void {
+    if (isCachedMyModelFilesFailed()) {
+      menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.FAILED_TO_LOAD_MY_MODELS});
+      return;
+    }
+    const myModelFiles = getCachedMyModelFilesSync();
+    if (myModelFiles === null) {
+      menu.item(TITLE.MY_MODELS, () => {}, null, {isEnabled: () => HINT.LOADING});
+      return;
+    }
+    if (myModelFiles.length < 1) {
+      menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.NO_MY_MODELS});
+      return;
+    }
+    const submenu = menu.group(TITLE.MY_MODELS);
+    for (const file of myModelFiles)
+      this.appendCustomModelByFile(submenu, file);
+    submenu.endGroup();
+  } // appendMyModelsSync
 
   /** Run last called model */
   private async runLastCalledModel() {

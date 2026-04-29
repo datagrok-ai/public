@@ -267,15 +267,20 @@ export async function getRecentModelsTable(): Promise<DG.DataFrame> {
 }
 
 let recentDfPromise: Promise<DG.DataFrame> | null = null;
+let recentDfSnapshot: DG.DataFrame | null = null;
+let recentDfFailed = false;
 
 /** Kick off (or reuse) a background read of the recent-models dataframe */
 export function prefetchRecentModelsTable(): void {
   if (recentDfPromise !== null)
     return;
-  recentDfPromise = getRecentModelsTable().catch((e) => {
-    recentDfPromise = null;
-    throw e;
-  });
+  recentDfPromise = getRecentModelsTable()
+    .then((v) => { recentDfSnapshot = v; recentDfFailed = false; return v; })
+    .catch((e) => {
+      recentDfFailed = true;
+      recentDfPromise = null;
+      throw e;
+    });
 }
 
 /** Get memoized recent-models dataframe; deduplicates concurrent callers */
@@ -285,7 +290,22 @@ export function getCachedRecentModelsTable(): Promise<DG.DataFrame> {
   return recentDfPromise!;
 }
 
-/** Drop cached recent-models promise so the next read re-hits storage */
+/** Synchronously read the last successfully-resolved recent-models dataframe.
+ *  Returns null if the prefetch has not completed yet. The snapshot is
+ *  intentionally preserved across invalidations so dropdown menus do not
+ *  flicker between «old data» and «Loading…» on refresh — they show stale
+ *  data briefly until the next prefetch resolves. */
+export function getCachedRecentModelsTableSync(): DG.DataFrame | null {
+  return recentDfSnapshot;
+}
+
+/** True if the most recent prefetch attempt rejected (e.g. filesystem error). */
+export function isCachedRecentModelsFailed(): boolean {
+  return recentDfFailed;
+}
+
+/** Drop cached recent-models promise so the next read re-hits storage.
+ *  The sync snapshot is left untouched (see getCachedRecentModelsTableSync). */
 export function invalidateRecentCache(): void {
   recentDfPromise = null;
 }
@@ -297,15 +317,20 @@ export async function getMyModelFiles(): Promise<DG.FileInfo[]> {
 }
 
 let myModelFilesPromise: Promise<DG.FileInfo[]> | null = null;
+let myModelFilesSnapshot: DG.FileInfo[] | null = null;
+let myModelFilesFailed = false;
 
 /** Kick off (or reuse) a background read of the user's model files */
 export function prefetchMyModelFiles(): void {
   if (myModelFilesPromise !== null)
     return;
-  myModelFilesPromise = getMyModelFiles().catch((e) => {
-    myModelFilesPromise = null;
-    throw e;
-  });
+  myModelFilesPromise = getMyModelFiles()
+    .then((v) => { myModelFilesSnapshot = v; myModelFilesFailed = false; return v; })
+    .catch((e) => {
+      myModelFilesFailed = true;
+      myModelFilesPromise = null;
+      throw e;
+    });
 }
 
 /** Get memoized user's model files; deduplicates concurrent callers */
@@ -315,7 +340,20 @@ export function getCachedMyModelFiles(): Promise<DG.FileInfo[]> {
   return myModelFilesPromise!;
 }
 
-/** Drop cached my-models promise so the next read re-hits storage */
+/** Synchronously read the last successfully-resolved my-models listing.
+ *  Returns null if the prefetch has not completed yet. Snapshot survives
+ *  invalidations to avoid dropdown flicker on refresh. */
+export function getCachedMyModelFilesSync(): DG.FileInfo[] | null {
+  return myModelFilesSnapshot;
+}
+
+/** True if the most recent my-models prefetch attempt rejected. */
+export function isCachedMyModelFilesFailed(): boolean {
+  return myModelFilesFailed;
+}
+
+/** Drop cached my-models promise so the next read re-hits storage.
+ *  The sync snapshot is left untouched (see getCachedMyModelFilesSync). */
 export function invalidateMyModelFilesCache(): void {
   myModelFilesPromise = null;
 }
@@ -421,15 +459,18 @@ export function prefetchMyModelFilesContent(): void {
 }
 
 const folderListingCache = new Map<string, Promise<DG.FileInfo[]>>();
+const folderListingSnapshots = new Map<string, DG.FileInfo[]>();
 
 /** Get memoized non-recursive listing of a folder; deduplicates concurrent callers */
 export function getCachedFolderListing(folderPath: string): Promise<DG.FileInfo[]> {
   let p = folderListingCache.get(folderPath);
   if (!p) {
-    p = grok.dapi.files.list(folderPath).catch((e) => {
-      folderListingCache.delete(folderPath);
-      throw e;
-    });
+    p = grok.dapi.files.list(folderPath)
+      .then((v) => { folderListingSnapshots.set(folderPath, v); return v; })
+      .catch((e) => {
+        folderListingCache.delete(folderPath);
+        throw e;
+      });
     folderListingCache.set(folderPath, p);
   }
   return p;
@@ -440,7 +481,8 @@ export function prefetchFolderListing(folderPath: string): void {
   void getCachedFolderListing(folderPath);
 }
 
-/** Drop cached listing for a folder so the next read re-hits storage */
+/** Drop cached listing for a folder so the next read re-hits storage.
+ *  The sync snapshot is left in place — eventual consistency for dropdowns. */
 export function invalidateFolderListing(folderPath: string): void {
   folderListingCache.delete(folderPath);
 }
@@ -457,6 +499,26 @@ export async function getCachedFileInfo(path: string): Promise<DG.FileInfo | nul
   } catch {
     return null;
   }
+}
+
+/** Synchronously read a previously-resolved folder listing; null if no snapshot. */
+export function getCachedFolderListingSync(folderPath: string): DG.FileInfo[] | null {
+  return folderListingSnapshots.get(folderPath) ?? null;
+}
+
+/** Sync variant of getCachedFileInfo: looks up a FileInfo in already-prefetched
+ *  folder listings without touching the network. Returns null when the parent
+ *  folder has not been listed yet (caller should kick prefetchFolderListing
+ *  beforehand) or the path is missing from the listing. */
+export function getCachedFileInfoSync(path: string): DG.FileInfo | null {
+  const idx = path.lastIndexOf('/');
+  if (idx < 0)
+    return null;
+  const folder = path.slice(0, idx + 1);
+  const listing = folderListingSnapshots.get(folder);
+  if (!listing)
+    return null;
+  return listing.find((f) => f.nqName === path) ?? null;
 }
 
 /** External (custom) Library model entry resolved from external-models.json */
@@ -508,6 +570,8 @@ export async function getExternalLibraryEntries(webRoot: string): Promise<Extern
 }
 
 let externalEntriesPromise: Promise<ExternalLibraryEntry[]> | null = null;
+let externalEntriesSnapshot: ExternalLibraryEntry[] | null = null;
+let externalEntriesFailed = false;
 let externalEntriesWebRoot: string | null = null;
 
 /** Kick off (or reuse) a background resolution of external library entries */
@@ -515,10 +579,13 @@ export function prefetchExternalLibraryEntries(webRoot: string): void {
   externalEntriesWebRoot = webRoot;
   if (externalEntriesPromise !== null)
     return;
-  externalEntriesPromise = getExternalLibraryEntries(webRoot).catch((e) => {
-    externalEntriesPromise = null;
-    throw e;
-  });
+  externalEntriesPromise = getExternalLibraryEntries(webRoot)
+    .then((v) => { externalEntriesSnapshot = v; externalEntriesFailed = false; return v; })
+    .catch((e) => {
+      externalEntriesFailed = true;
+      externalEntriesPromise = null;
+      throw e;
+    });
 }
 
 /** Get memoized external library entries; deduplicates concurrent callers */
@@ -528,7 +595,21 @@ export function getCachedExternalLibraryEntries(webRoot: string): Promise<Extern
   return externalEntriesPromise!;
 }
 
-/** Drop cached external entries promise so the next read re-hits storage */
+/** Synchronously read the last successfully-resolved external library entries.
+ *  Returns null if the prefetch has not completed yet. Snapshot survives
+ *  invalidations triggered by LIBRARY_CHANGED_EVENT so dropdown menus show
+ *  stale entries briefly until the new prefetch resolves, instead of flicker. */
+export function getCachedExternalLibraryEntriesSync(): ExternalLibraryEntry[] | null {
+  return externalEntriesSnapshot;
+}
+
+/** True if the most recent external-entries prefetch attempt rejected. */
+export function isCachedExternalLibraryEntriesFailed(): boolean {
+  return externalEntriesFailed;
+}
+
+/** Drop cached external entries promise so the next read re-hits storage.
+ *  The sync snapshot is left untouched (see getCachedExternalLibraryEntriesSync). */
 export function invalidateExternalLibraryEntriesCache(): void {
   externalEntriesPromise = null;
 }
