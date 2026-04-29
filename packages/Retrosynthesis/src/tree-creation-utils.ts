@@ -9,7 +9,8 @@ import '../css/aizynthfinder.css';
 
 export const TAB_ID = 'tab_id';
 
-export function createPathsTreeTabs(paths: Tree[], pathsObjects: {[key: string]:{smiles: string, type: string}[]},
+export function createPathsTreeTabs(paths: Tree[],
+  pathsObjects: {[key: string]: {smiles: string, type: string, depth: number}[]},
   isHorizontal: boolean = true): DG.TabControl {
   const tabControl = ui.tabControl();
 
@@ -27,12 +28,11 @@ export function createPathsTreeTabs(paths: Tree[], pathsObjects: {[key: string]:
     const pane = tabControl.addPane(tabName,
       () => {
         const pathObject = buildNestedStructure(paths[i]);
-        pathsObjects[`${i}`] = processNestedStructure(pathObject, [], 0);
+        pathsObjects[`${i}`] = processNestedStructure(pathObject, 0);
         const container = ui.div([], {classes: 'retrosynthesis-reaction-container'});
         const svgTree = createReactionTreeSVG(pathObject, isHorizontal);
         container.setAttribute(TAB_ID, `${i}`);
         container.appendChild(svgTree);
-        //this.rotate !== 'None' && this.rotateCanvas90Degrees(c, this.rotate === 'Clockwise');
         return container;
       });
     ui.tooltip.bind(pane.header, 'Path score based on number of precursors in stock and the length of the route');
@@ -41,8 +41,8 @@ export function createPathsTreeTabs(paths: Tree[], pathsObjects: {[key: string]:
 }
 
 
-export function buildNestedStructure(node: TreeNode | Tree): { [key: string]: any } {
-  const result: { [key: string]: any } = {};
+export function buildNestedStructure(node: TreeNode | Tree): NestedMolecules {
+  const result: NestedMolecules = {};
 
   // If the current node is of type 'mol', add it to the result
   if (node.type === 'mol') {
@@ -50,7 +50,7 @@ export function buildNestedStructure(node: TreeNode | Tree): { [key: string]: an
     const children = node.children || [];
 
     // Recursively process children
-    const nestedChildren: { [key: string]: any } = {};
+    const nestedChildren: NestedMolecules = {};
     children.forEach((child) => {
       const childResult = buildNestedStructure(child);
       Object.assign(nestedChildren, childResult);
@@ -70,22 +70,18 @@ export function buildNestedStructure(node: TreeNode | Tree): { [key: string]: an
 }
 
 
-export function processNestedStructure(paths: { [key: string]: any },
-  result: {smiles: string, type: string, depth: number}[], depth: number):
-  {smiles: string, type: string, depth: number}[] {
+export function processNestedStructure(paths: NestedMolecules, depth: number):
+  {smiles: string, type: StructureType, depth: number}[] {
+  const result: {smiles: string, type: StructureType, depth: number}[] = [];
   for (const [smiles, children] of Object.entries(paths)) {
-    let type;
-    if (depth === 0 && Object.keys(children).length > 0)
-      type = StructureType.Root;
-    else if (Object.keys(children).length > 0)
-      type = StructureType.Interim;
-    else
-      type = StructureType.Leaf;
+    const hasChildren = Object.keys(children).length > 0;
+    const type = !hasChildren ? StructureType.Leaf :
+      depth === 0 ? StructureType.Root : StructureType.Interim;
 
     result.push({smiles, type, depth});
 
-    if (Object.keys(children).length > 0)
-      processNestedStructure(children, result, depth + 1);
+    if (hasChildren)
+      result.push(...processNestedStructure(children, depth + 1));
   }
   return result;
 }
@@ -93,12 +89,9 @@ export function processNestedStructure(paths: { [key: string]: any },
 function stringToColor(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  let color = '#';
-  for (let i = 0; i < 3; i++) {
-    const value = (hash >> (i * 8)) & 0xff;
-    color += ('00' + value.toString(16)).substr(-2);
-  }
-  return color;
+  // HSL with fixed saturation/lightness keeps colors distinguishable and never near-black.
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 65%, 55%)`;
 }
 
 
@@ -110,11 +103,15 @@ export function isFragment(molString: string) {
 }
 
 
-export function createReactionTreeSVG(reactionData: any, isHorizontal: boolean = true): SVGElement {
-  const moleculesPerLevel: any = {};
+interface NestedMolecules {
+  [smiles: string]: NestedMolecules;
+}
+
+export function createReactionTreeSVG(reactionData: NestedMolecules, isHorizontal: boolean = true): SVGElement {
+  const moleculesPerLevel: string[][] = [];
 
   // Traverse the reaction data to determine the number of molecules per level
-  function traverseLevels(data: any, level = 0) {
+  function traverseLevels(data: NestedMolecules, level = 0) {
     Object.keys(data).forEach((product) => {
       moleculesPerLevel[level] ??= [];
       moleculesPerLevel[level].push(product);
@@ -123,23 +120,23 @@ export function createReactionTreeSVG(reactionData: any, isHorizontal: boolean =
   }
   traverseLevels(reactionData);
 
-  const maxLevel = Object.keys(moleculesPerLevel).length - 1;
+  const maxLevel = moleculesPerLevel.length - 1;
   const levelHeights = new Array(maxLevel + 1).fill(0);
   const levelWidths = new Array(maxLevel + 1).fill(0);
 
   // Calculate the height and width for each level
-  Object.entries(moleculesPerLevel).forEach(([level, molecules]) => {
-    const numMolecules = (molecules as string[]).length;
+  for (let level = 0; level <= maxLevel; level++) {
+    const numMolecules = moleculesPerLevel[level].length;
     if (isHorizontal) {
-      levelHeights[Number(level)] =
+      levelHeights[level] =
         numMolecules * (MOL_HEIGHT + PADDING) + (numMolecules - 1) * VERTICAL_SPACING + PADDING * 2;
-      levelWidths[Number(level)] = MOL_WIDTH + PADDING * 2;
+      levelWidths[level] = MOL_WIDTH + PADDING * 2;
     } else {
-      levelWidths[Number(level)] =
+      levelWidths[level] =
         numMolecules * (MOL_WIDTH + PADDING) + (numMolecules - 1) * HORIZONTAL_SPACING + PADDING * 2;
-      levelHeights[Number(level)] = MOL_HEIGHT + PADDING * 2;
+      levelHeights[level] = MOL_HEIGHT + PADDING * 2;
     }
-  });
+  }
 
   // Calculate the total SVG size
   const neededHeight = isHorizontal ?
@@ -176,7 +173,7 @@ function drawTreeSVG(
   reagentStartWidths: number[],
   neededHeight: number,
   neededWidth: number,
-  data: any,
+  data: NestedMolecules,
   startX: number,
   startY: number,
   level: number,

@@ -1,0 +1,28 @@
+packageName: Biologics
+description: Demo PostgreSQL schema and DB Explorer for biologics R&D data — antibody sequences with CDR regions, peptides (HELM), drugs, linkers, ADCs, expression and purification batches, targets and target organisms, sequence properties and liabilities, and assay results
+keywords:
+  - biologics
+  - demo
+  - db explorer
+  - postgres
+  - antibody
+  - sequence
+  - peptide
+  - helm
+  - drug
+  - linker
+  - adc
+  - antibody-drug conjugate
+  - cdr
+  - sequence regions
+  - sequence properties
+  - sequence liabilities
+  - expression batches
+  - purification batches
+  - target
+  - target organism
+  - assay
+  - assay results
+  - IC50
+apiRef: src/package-api.ts
+docsRef: README.md

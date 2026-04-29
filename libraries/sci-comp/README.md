@@ -11,6 +11,7 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
     - [Gradient Descent](https://en.wikipedia.org/wiki/Gradient_descent) - first-order method with numerical gradients, momentum, and learning rate decay
     - [Adam](https://arxiv.org/abs/1412.6980) - adaptive moment estimation with per-parameter learning rates
     - [L-BFGS](https://en.wikipedia.org/wiki/Limited-memory_BFGS) - limited-memory quasi-Newton method with two-loop recursion and Armijo line search
+    - [L-BFGS-B](https://doi.org/10.1137/0916069) - limited-memory BFGS with native box constraints, Moré–Thuente strong-Wolfe line search, compact representation, and Morales–Nocedal 2011 subspace refinement
   * multi-objective:
     - [MOEA/D](https://ieeexplore.ieee.org/document/4358754)
 

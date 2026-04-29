@@ -25,6 +25,10 @@ export async function report(args: ReportArgs): Promise<boolean> {
     return await handleResolve(args);
   case 'ticket':
     return await handleTicket(args);
+  case 'comment':
+    return await handleComment(args);
+  case 'label':
+    return await handleLabel(args);
   default:
     return false;
   }
@@ -115,7 +119,17 @@ interface LoadedReport {
 }
 
 function looksLikePath(s: string): boolean {
-  return s.includes('/') || s.includes('\\') || /\.(zip|json)$/i.test(s) || fs.existsSync(s);
+  if (s.includes('/') || s.includes('\\')) return true;
+  if (/\.(zip|json)$/i.test(s)) return true;
+  // Only treat a bare name as a path if it's an actual file. A *directory*
+  // collision (e.g. running `grok report read public 2147` from a checkout
+  // that has a `public/` submodule next to it) must not flip into the
+  // single-arg path branch — that would EISDIR on `readFileSync(p)`.
+  if (fs.existsSync(s)) {
+    try { return fs.statSync(s).isFile(); }
+    catch { return false; }
+  }
+  return false;
 }
 
 function loadFromZip(z: any): LoadedReport {
@@ -207,7 +221,7 @@ function extractD42(zip: any, names: string[], outDir: string): string[] {
   if (zip == null || names.length === 0) return [];
   fs.mkdirSync(outDir, {recursive: true});
   const written: string[] = [];
-  for (var name of names) {
+  for (const name of names) {
     const entry = zip.getEntry(name);
     if (entry == null) continue;
     const out = path.join(outDir, path.basename(name));
@@ -392,6 +406,130 @@ async function handleTicket(args: ReportArgs): Promise<boolean> {
 
     color.success(`Created ticket: ${ticketKey}`);
     console.log(ticketKey);
+    return true;
+  }
+  catch (err: any) {
+    color.error(`Error: ${err.message}`);
+    return false;
+  }
+}
+
+// ─── JIRA REST helpers (used by `grok report comment` / `grok report label`) ─
+//
+// These talk DIRECTLY to Atlassian Cloud REST v2 (not Datagrok). Auth is HTTP
+// Basic with `JIRA_USER` (Atlassian email) + `JIRA_TOKEN` (API token from
+// id.atlassian.com/manage-profile/security/api-tokens). Base URL defaults to
+// the Datagrok org instance; override via --jira-url or $JIRA_URL.
+//
+// Why v2 and not v3: v3 requires comment bodies in ADF (Atlassian Document
+// Format) JSON; v2 accepts plain text / wiki-markup. The handoff prompt emits
+// markdown, which JIRA's plain-text path renders acceptably.
+
+function resolveJiraBase(args: ReportArgs): string {
+  const cli = (args['jira-url'] as string | undefined) || '';
+  const env = process.env.JIRA_URL || '';
+  return (cli || env || 'https://reddata.atlassian.net').replace(/\/+$/, '');
+}
+
+function jiraAuthHeader(): string | null {
+  const user = process.env.JIRA_USER;
+  const token = process.env.JIRA_TOKEN;
+  if (!user || !token) return null;
+  return 'Basic ' + Buffer.from(`${user}:${token}`).toString('base64');
+}
+
+async function handleComment(args: ReportArgs): Promise<boolean> {
+  const ticket = args._[2];
+  if (!ticket) {
+    color.error('Usage: grok report comment <ticket-key> [--body <text> | --body-file <path>] [--jira-url <url>]');
+    return false;
+  }
+
+  const auth = jiraAuthHeader();
+  if (auth == null) {
+    color.error('JIRA_USER and JIRA_TOKEN env vars are required for `grok report comment`.');
+    return false;
+  }
+
+  let body: string;
+  if (typeof args['body-file'] === 'string') {
+    const p = args['body-file'] as string;
+    try { body = fs.readFileSync(p, 'utf-8'); }
+    catch (e: any) {
+      color.error(`Failed to read --body-file ${p}: ${e.message}`);
+      return false;
+    }
+  }
+  else if (typeof args['body'] === 'string') {
+    body = args['body'] as string;
+  }
+  else {
+    // Read from stdin if neither --body nor --body-file is provided.
+    body = fs.readFileSync(0, 'utf-8');
+  }
+  if (!body || body.trim().length === 0) {
+    color.error('Comment body is empty (use --body, --body-file, or pipe to stdin).');
+    return false;
+  }
+
+  const base = resolveJiraBase(args);
+  const url = `${base}/rest/api/2/issue/${encodeURIComponent(ticket)}/comment`;
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {Authorization: auth, 'Content-Type': 'application/json', Accept: 'application/json'},
+      body: JSON.stringify({body}),
+    });
+    if (resp.status !== 200 && resp.status !== 201) {
+      const text = await resp.text();
+      color.error(`JIRA comment POST failed (HTTP ${resp.status}): ${text.slice(0, 400)}`);
+      return false;
+    }
+    const result = await resp.json();
+    const id = result && (result.id || result.Id);
+    if (!id) {
+      color.error(`JIRA returned no comment id: ${JSON.stringify(result).slice(0, 200)}`);
+      return false;
+    }
+    color.success(`Posted comment ${id} on ${ticket}`);
+    console.log(id);
+    return true;
+  }
+  catch (err: any) {
+    color.error(`Error: ${err.message}`);
+    return false;
+  }
+}
+
+async function handleLabel(args: ReportArgs): Promise<boolean> {
+  const ticket = args._[2];
+  const labels = args._.slice(3).filter((s): s is string => s.length > 0);
+  if (!ticket || labels.length === 0) {
+    color.error('Usage: grok report label <ticket-key> <label> [<label2> ...] [--jira-url <url>]');
+    return false;
+  }
+
+  const auth = jiraAuthHeader();
+  if (auth == null) {
+    color.error('JIRA_USER and JIRA_TOKEN env vars are required for `grok report label`.');
+    return false;
+  }
+
+  const base = resolveJiraBase(args);
+  const url = `${base}/rest/api/2/issue/${encodeURIComponent(ticket)}`;
+  const update = {labels: labels.map((l) => ({add: l}))};
+  try {
+    const resp = await fetch(url, {
+      method: 'PUT',
+      headers: {Authorization: auth, 'Content-Type': 'application/json'},
+      body: JSON.stringify({update}),
+    });
+    if (resp.status !== 204 && resp.status !== 200) {
+      const text = await resp.text();
+      color.error(`JIRA label PUT failed (HTTP ${resp.status}): ${text.slice(0, 400)}`);
+      return false;
+    }
+    color.success(`Applied labels to ${ticket}: ${labels.join(', ')}`);
     return true;
   }
   catch (err: any) {

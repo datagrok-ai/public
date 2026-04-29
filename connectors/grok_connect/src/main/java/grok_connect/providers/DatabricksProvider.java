@@ -70,7 +70,7 @@ public class DatabricksProvider extends JdbcDataProvider {
                 .scopes("azure", Arrays.asList(
                         AZURE_DATABRICKS_APP_ID + "/user_impersonation",
                         "offline_access"))
-                .scopes("oidc", Collections.singletonList("offline_access"))
+                .scopes("oidc", Arrays.asList("openid", "offline_access"))
                 .tokenProperty("Auth_AccessToken");
 
         descriptor.nameBrackets = "`";

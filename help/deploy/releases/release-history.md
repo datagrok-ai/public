@@ -19,7 +19,7 @@ unlisted: true
 
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
-- [Docker-Compose](../docker-compose/docker-compose.md)
+- [Docker-Compose](../docker-compose/docker-compose.mdx)
 
 ## 2026-03-26 Datagrok 1.27.2 release
 

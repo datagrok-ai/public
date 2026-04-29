@@ -1,6 +1,6 @@
 # Unconstrained Optimization Benchmarks
 
-5 optimizers, 15 problems, default hyperparameters.
+6 optimizers, 15 problems, default hyperparameters.
 
 Legend:
 
@@ -34,6 +34,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ✅ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 1.30e-8 | (9.78e-5, −5.87e-5) | 1.30e-8 | 1.14e-4 | yes | 419 | 2096 | 0.6 |
 | ✅ | Adam | maxIterations=10000, learningRate=0.1 | 1.37e-10 | (9.31e-8, 1.17e-5) | 1.37e-10 | 1.17e-5 | yes | 243 | 1216 | 0.4 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | 5.25e-16 | (−2.29e-8, −4.69e-10) | 5.25e-16 | 2.29e-8 | yes | 1 | 11 | 0.2 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | 2.29e-15 | (4.76e-8, 5.17e-9) | 2.29e-15 | 4.79e-8 | yes | 2 | 15 | 1.9 |
 
 ---
 
@@ -50,6 +51,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ⚠️ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 7.90e-7 | (0.9991, 0.9982) | 7.90e-7 | 0.00199 | yes | 1414 | 7071 | 0.6 |
 | ✅ | Adam | maxIterations=10000, learningRate=0.1 | 1.85e-7 | (0.9996, 0.9991) | 1.85e-7 | 9.62e-4 | yes | 1223 | 6116 | 0.6 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | 2.39e-12 | (1.0000, 1.0000) | 2.39e-12 | 2.23e-6 | yes | 671 | 3387 | 1.3 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | 2.83e-12 | (1.0000, 1.0000) | 2.83e-12 | 2.25e-6 | yes | 36 | 220 | 4.1 |
 
 ---
 
@@ -66,6 +68,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ⚠️ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 1.17e-6 | (2.9973, 0.4993) | 1.17e-6 | 0.00279 | yes | 1536 | 7681 | 0.2 |
 | ✅ | Adam | maxIterations=10000, learningRate=0.1 | 1.55e-8 | (2.9997, 0.4999) | 1.55e-8 | 3.20e-4 | yes | 399 | 1996 | 0.1 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | 1.96e-11 | (3.0000, 0.5000) | 1.96e-11 | 3.43e-6 | yes | 9 | 54 | 0.1 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | 4.95e-16 | (3.0000, 0.5000) | 4.95e-16 | 1.70e-8 | yes | 13 | 70 | 0.5 |
 
 ---
 
@@ -82,6 +85,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ✅ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 1.25e-8 | (1.0001, 2.9999) | 1.25e-8 | 1.12e-4 | yes | 367 | 1836 | 0.1 |
 | ✅ | Adam | maxIterations=10000, learningRate=0.1 | 1.40e-10 | (1.0000, 3.0000) | 1.40e-10 | 3.97e-6 | yes | 297 | 1486 | 0.1 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | 9.89e-14 | (1.0000, 3.0000) | 9.89e-14 | 2.27e-7 | yes | 8 | 49 | 0.0 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | 1.14e-12 | (1.0000, 3.0000) | 1.14e-12 | 3.59e-7 | yes | 5 | 30 | 0.2 |
 
 ---
 
@@ -98,6 +102,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ✅ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 1.46e-7 | (3.82e-4, −3.82e-4) | 1.46e-7 | 5.40e-4 | yes | 858 | 4291 | 0.1 |
 | ⚠️ | Adam | maxIterations=10000, learningRate=0.1 | 3.37e-6 | (−0.0018, 0.0018) | 3.37e-6 | 0.00260 | yes | 137 | 686 | 0.3 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | 2.00e-16 | (−5.14e-9, 2.29e-8) | 2.00e-16 | 2.35e-8 | yes | 1 | 10 | 0.0 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | 5.32e-16 | (−1.16e-7, −9.97e-8) | 5.32e-16 | 1.53e-7 | yes | 2 | 15 | 0.1 |
 
 ---
 
@@ -114,6 +119,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ✅ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 1.03e-12 | (3.0000, 2.0000) | 1.03e-12 | 1.72e-7 | yes | 260 | 1301 | 0.1 |
 | ✅ | Adam | maxIterations=10000, learningRate=0.1 | 3.76e-9 | (3.0000, 2.0000) | 3.76e-9 | 1.65e-5 | yes | 232 | 1161 | 0.1 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | 6.19e-12 | (3.0000, 2.0000) | 6.19e-12 | 3.88e-7 | yes | 9 | 57 | 0.0 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | 1.13e-14 | (3.0000, 2.0000) | 1.13e-14 | 2.39e-8 | yes | 10 | 80 | 0.2 |
 
 ---
 
@@ -130,6 +136,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ⚠️ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 0.298638 | (1.7476, −0.8739) | 0.298638 | 1.95389 | yes | 289 | 1446 | 0.1 |
 | ⚠️ | Adam | maxIterations=10000, learningRate=0.1 | 0.298638 | (1.7476, −0.8738) | 0.298638 | 1.95382 | yes | 169 | 846 | 0.1 |
 | ⚠️ | L-BFGS | maxIterations=1000, historySize=10 | 0.298638 | (1.7476, −0.8738) | 0.298638 | 1.95382 | yes | 9 | 55 | 0.0 |
+| ⚠️ | L-BFGS-B | maxIterations=1000, historySize=10 | 0.298638 | (1.7476, −0.8738) | 0.298638 | 1.95382 | yes | 7 | 45 | 0.1 |
 
 ---
 
@@ -146,6 +153,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ⚠️ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 12.934432 | (1.9899, −2.9849) | 12.934432 | 3.58736 | yes | 223 | 1116 | 0.2 |
 | ⚠️ | Adam | maxIterations=10000, learningRate=0.1 | 12.934432 | (1.9899, −2.9849) | 12.934432 | 3.58736 | yes | 243 | 1216 | 0.1 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | 3.73e-14 | (6.31e-9, −1.24e-8) | 3.73e-14 | 1.39e-8 | yes | 1 | 11 | 0.0 |
+| ⚠️ | L-BFGS-B | maxIterations=1000, historySize=10 | 12.934432 | (1.9899, −2.9849) | 12.934432 | 3.58736 | yes | 7 | 70 | 0.1 |
 
 ---
 
@@ -162,6 +170,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ⚠️ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 6.559645 | (1.9745, −1.9745) | 6.559645 | 2.79230 | yes | 127 | 636 | 0.1 |
 | ⚠️ | Adam | maxIterations=10000, learningRate=0.1 | 6.559645 | (1.9745, −1.9745) | 6.559645 | 2.79230 | yes | 137 | 686 | 0.1 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | 8.39e-12 | (2.10e-12, −2.10e-12) | 8.39e-12 | 2.97e-12 | yes | 18 | 107 | 0.0 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | 8.88e-14 | (−2.23e-14, 2.23e-14) | 8.88e-14 | 3.15e-14 | yes | 6 | 180 | 0.1 |
 
 ---
 
@@ -178,6 +187,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ⚠️ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 0.109874 | (0.6704, 1.0000) | 0.109874 | 0.32962 | yes | 284 | 1421 | 0.1 |
 | ⚠️ | Adam | maxIterations=10000, learningRate=0.1 | 16.966524 | (0.0112, 4.9944) | 16.966524 | 4.11497 | yes | 253 | 1266 | 0.1 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | 1.44e-14 | (1.0000, 1.0000) | 1.44e-14 | 1.69e-8 | yes | 1 | 11 | 0.0 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | 6.84e-16 | (1.0000, 1.0000) | 6.84e-16 | 2.23e-8 | yes | 12 | 105 | 0.2 |
 
 ---
 
@@ -194,6 +204,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ⚠️ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 12.352951 | (97.3404, −199.7305) | 12.352951 | 222.188 | yes | 978 | 4891 | 0.2 |
 | ⚠️ | Adam | maxIterations=10000, learningRate=0.1 | 12.352950 | (97.3402, −199.7291) | 12.352950 | 222.186 | yes | 228 | 1141 | 0.1 |
 | ⚠️ | L-BFGS | maxIterations=1000, historySize=10 | 12.352950 | (97.3402, −199.7291) | 12.352950 | 222.186 | yes | 7 | 40 | 0.0 |
+| ⚠️ | L-BFGS-B | maxIterations=1000, historySize=10 | 12.352950 | (97.3402, −199.7291) | 12.352950 | 222.186 | yes | 5 | 45 | 0.1 |
 
 ---
 
@@ -210,6 +221,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ✅ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | −78.332331 | (−2.9035, −2.9035) | 8.59e-6 | 4.05e-7 | yes | 227 | 1136 | 0.3 |
 | ⚠️ | Adam | maxIterations=10000, learningRate=0.1 | −78.332150 | (−2.9058, −2.9058) | 1.90e-4 | 0.00324 | yes | 78 | 391 | 0.1 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | −78.332331 | (−2.9035, −2.9035) | 8.59e-6 | 4.08e-8 | yes | 7 | 44 | 0.0 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | −78.332331 | (−2.9035, −2.9035) | 8.59e-6 | 2.18e-8 | yes | 4 | 45 | 0.1 |
 
 ---
 
@@ -226,6 +238,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ⚠️ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | −3.03e-5 | (1.0000, 1.0000) | 0.999970 | 3.02862 | yes | 50 | 251 | 0.0 |
 | ⚠️ | Adam | maxIterations=10000, learningRate=0.1 | −8.11e-5 | (1.3047, 1.3047) | 0.999919 | 2.59769 | yes | 58 | 291 | 0.0 |
 | ❌ | L-BFGS | maxIterations=1000, historySize=10 | −4.81e-5 | (1.0940, 1.0940) | 0.999952 | 2.89571 | no | 1000 | 5005 | 0.8 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | −1.000000 | (3.1416, 3.1416) | 1.99e-13 | 3.64e-7 | yes | 2 | 55 | 0.1 |
 
 ---
 
@@ -242,6 +255,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ⚠️ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | 334.333604 | (−0.7200, −0.7200) | 331.333604 | 0.77253 | yes | 5 | 30 | 0.0 |
 | ⚠️ | Adam | maxIterations=10000, learningRate=0.1 | 30.000000 | (−0.6000, −0.4000) | 27.000000 | 0.84853 | yes | 255 | 1276 | 0.1 |
 | ⚠️ | L-BFGS | maxIterations=1000, historySize=10 | 30.000000 | (−0.6000, −0.4000) | 27.000000 | 0.84853 | yes | 11 | 71 | 0.0 |
+| ⚠️ | L-BFGS-B | maxIterations=1000, historySize=10 | 30.000000 | (−0.6000, −0.4000) | 27.000000 | 0.84853 | yes | 8 | 55 | 0.1 |
 
 ---
 
@@ -258,6 +272,7 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 | ✅ | GradientDescent | maxIterations=10000, learningRate=0.001, momentum=0.9 | −1.913223 | (−0.5471, −1.5471) | 7.71e-5 | 1.62e-4 | yes | 417 | 2086 | 0.1 |
 | ✅ | Adam | maxIterations=10000, learningRate=0.1 | −1.913223 | (−0.5472, −1.5472) | 7.70e-5 | 1.42e-5 | yes | 193 | 966 | 0.1 |
 | ✅ | L-BFGS | maxIterations=1000, historySize=10 | −1.913223 | (−0.5472, −1.5472) | 7.70e-5 | 1.07e-5 | yes | 7 | 41 | 0.0 |
+| ✅ | L-BFGS-B | maxIterations=1000, historySize=10 | −1.913223 | (−0.5472, −1.5472) | 7.70e-5 | 1.05e-5 | yes | 6 | 35 | 0.1 |
 
 ---
 
@@ -270,9 +285,11 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
 - PSO uses seed=42 for reproducibility
 - Himmelblau: Dist to Opt uses nearest of 4 known minima
 - McCormick: PSO diverges without box constraints (unbounded domain)
-- L-BFGS dominates smooth unimodal problems (Sphere, Matyas, Rosenbrock, Beale, Booth)
-  with very few iterations; struggles on Easom (nearly-flat landscape starves the
-  finite-difference gradient)
+- L-BFGS / L-BFGS-B dominate smooth unimodal problems (Sphere, Matyas, Rosenbrock,
+  Beale, Booth) with very few iterations; L-BFGS struggles on Easom (nearly-flat
+  landscape starves the finite-difference gradient and burns 1000 iterations
+  without converging), while L-BFGS-B's Cauchy-point fallback escapes that flat
+  region from the chosen x₀ (2 iterations to the global).
 - **L-BFGS on Rastrigin / Lévi N.13 — caveat.** The global-minimum result (1 iteration,
   error ~10⁻¹⁴) is an artefact of the starting point, not a general property of the
   algorithm. At x₀ = (2.5, −3.5) for Rastrigin and x₀ = (−4, 5) for Lévi N.13, every
@@ -280,4 +297,6 @@ Problems specification: [link](unconstrained-benchmark-functions.md)
   pointing at the origin; Armijo backtracking halves a unit step to land exactly at the
   global optimum. Perturb x₀ by a non-integer offset (e.g. (2.6, −3.4)) and L-BFGS will
   fall into the nearest local well just like GD / Adam — it is a local optimizer. For
-  multimodal problems use PSO or a multi-start wrapper.
+  multimodal problems use PSO or a multi-start wrapper. L-BFGS-B reaches the Lévi N.13
+  global from the same x₀ via the Cauchy → subspace pipeline (12 iterations) rather
+  than the integer trick.

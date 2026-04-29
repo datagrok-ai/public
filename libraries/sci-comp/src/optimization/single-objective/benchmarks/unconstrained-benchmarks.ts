@@ -3,6 +3,7 @@ import {PSO} from '../optimizers/pso';
 import {GradientDescent} from '../optimizers/gradient-descent';
 import {Adam} from '../optimizers/adam';
 import {LBFGS} from '../optimizers/lbfgs';
+import {LBFGSB} from '../optimizers/lbfgs-b';
 import type {ObjectiveFunction, OptimizationResult} from '../types';
 import type {Optimizer} from '../optimizer';
 import {
@@ -220,6 +221,11 @@ const optimizers: OptimizerConfig[] = [
   {
     name: 'L-BFGS',
     optimizer: new LBFGS(),
+    settings: {maxIterations: 1_000, historySize: 10},
+  },
+  {
+    name: 'L-BFGS-B',
+    optimizer: new LBFGSB(),
     settings: {maxIterations: 1_000, historySize: 10},
   },
 ];

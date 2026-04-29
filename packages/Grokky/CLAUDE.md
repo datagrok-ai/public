@@ -135,6 +135,10 @@ Processes two types of fenced blocks in Claude responses:
 - `` ```datagrok-exec `` — runs JS with `grok`/`ui`/`DG`/`view`/`t` globals
 - `` ```datagrok-entities `` — renders interactive entity cards (files, scripts, queries, connections, projects, spaces)
 
+The block formats (globals, JSON shapes, return-value rendering) are documented as Claude Code
+skills under `dockerfiles/claude-runtime/plugin/skills/` and loaded into the runtime as a local
+plugin. The inline system prompt only points Claude at these skills, keeping the prompt small.
+
 Also provides `buildViewContext()` — serializes the current view (table columns, script code) for Claude prompts.
 
 ### SQL Tools (`src/db/sql-tools.ts`)
@@ -149,7 +153,7 @@ Also provides `genDBConnectionMeta()` for generating and persisting LLM-friendly
 
 ### Docker Containers (`dockerfiles/`)
 
-- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `tool_result`, `final`, `error`, `aborted`, `input_request`. Includes the skills & knowledge sync system (`src/user-files.ts`) — see [docs/VISION.md](docs/VISION.md) for the full spec.
+- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `tool_result`, `final`, `error`, `aborted`, `input_request`. Includes the skills & knowledge sync system (`src/user-files.ts`) — see [docs/VISION.md](docs/VISION.md) for the full spec. Ships a local Claude Code plugin (`plugin/`) with `datagrok-exec` and `datagrok-entities` skills describing the fenced-block formats; the plugin is attached for full-prompt sessions and skipped for `bash` / `none` modes.
 - `mcp-server/` — MCP server (`@modelcontextprotocol/sdk`, HTTP transport) exposing Datagrok operations as tools: functions (list/get/call/create), files (list/download/upload), projects, spaces, and user info. Auth via per-request `x-user-api-key` / `x-datagrok-api-url` headers.
 
 ### Deprecated Code (`src/depr/`)

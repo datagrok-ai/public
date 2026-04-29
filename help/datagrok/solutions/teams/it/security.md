@@ -103,7 +103,7 @@ company policies.
 #### CloudFormation deployment
 
 To simplify deployment with all security policies taken into consideration, we created
-an [ECS CloudFormation deployment template](../../../../deploy/aws/deploy-amazon-cloudformation.mdx).
+an [EKS CloudFormation deployment template](../../../../deploy/aws/deploy-amazon-eks.mdx).
 
 CloudFormation Template is tested by [Snyk](https://snyk.io/) on every change. The results
 are [available publicly](https://github.com/datagrok-ai/public/actions/workflows/iaac.yaml).
@@ -116,5 +116,5 @@ go through the Application Load Balancer.
 
 * [Architecture](../../../../develop/under-the-hood/architecture.md)
 * [Infrastructure](../../../../develop/under-the-hood/infrastructure.md)
-* [CloudFormation deployment](../../../../deploy/aws/deploy-amazon-cloudformation.mdx)
+* [CloudFormation deployment](../../../../deploy/aws/deploy-amazon-eks.mdx)
 * [Security](../../../../govern/access-control/access-control.md#credentials-management-system)

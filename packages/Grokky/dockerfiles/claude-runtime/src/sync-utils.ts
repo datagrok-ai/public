@@ -1,10 +1,10 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import * as YAML from 'yaml';
 import {runWithContext, request} from './shared-api-client';
 import {resolveHomeConnection, syncHomeFiles} from './sync-home-files';
 import {syncPackages} from './sync-packages';
 import {syncSharedConnections} from './sync-shared-connections';
+import {loadPackageKnowledge} from './package-knowledge-tool';
 
 
 const USERS_DIR = '/users';
@@ -233,62 +233,17 @@ async function doSync(
 
 // ── Package index generation ──────────────────────────────────────────
 
-const KNOWLEDGE_FILE = 'package-knowledge.yaml';
-
-interface PackageKnowledge {
-  packageName: string;
-  description: string;
-  keywords: string[];
-  overview?: string;
-  apiRef?: string;
-  docsRef?: string;
-}
-
-let cachedPackageIndex: string | null | undefined;
-
 export async function generatePackageIndex(): Promise<string | null> {
-  if (cachedPackageIndex !== undefined)
-    return cachedPackageIndex;
-
-  const packages: PackageKnowledge[] = [];
-  const packagesDir = path.join(WORKSPACE, 'packages');
-  try {
-    const pkgDirs = await fs.readdir(packagesDir, {withFileTypes: true});
-    for (const entry of pkgDirs) {
-      if (!entry.isDirectory())
-        continue;
-      const knowledgePath = path.join(packagesDir, entry.name, 'agents', KNOWLEDGE_FILE);
-      try {
-        const raw = await fs.readFile(knowledgePath, 'utf-8');
-        const parsed = YAML.parse(raw) as PackageKnowledge;
-        if (parsed.packageName && parsed.description)
-          packages.push(parsed);
-        else
-          console.warn(`package-index: ${entry.name}/${KNOWLEDGE_FILE} missing required fields, skipping`);
-      } catch {
-        // No knowledge file for this package — skip
-      }
-    }
-  } catch (e: any) {
-    console.warn(`package-index: failed to scan workspace packages: ${e.message}`);
-  }
-
-  if (packages.length === 0) {
-    cachedPackageIndex = null;
+  const map = await loadPackageKnowledge();
+  if (map.size === 0)
     return null;
-  }
 
-  packages.sort((a, b) => a.packageName.localeCompare(b.packageName));
+  const packages = [...map.values()].sort((a, b) => a.packageName.localeCompare(b.packageName));
 
-  let md = 'IMPORTANT: Before searching or grepping the codebase, ALWAYS check this table first.\n' +
-    'If a package looks relevant, read its `agents/package-knowledge.yaml` for full details.\n' +
-    'Only fall back to code search if no package here matches the user\'s question.\n\n';
-  md += '| Package | Description | Keywords |\n';
+  let md = '| Package | Description | Keywords |\n';
   md += '|---------|-------------|----------|\n';
   for (const pkg of packages)
-    md += `| ${pkg.packageName} | ${pkg.description} | ${pkg.keywords.slice(0, 8).join(', ')} |\n`;
+    md += `| ${pkg.packageName} | ${pkg.description} | ${pkg.keywords.join(', ')} |\n`;
 
-  cachedPackageIndex = md;
-  console.log(`package-index: generated index with ${packages.length} package(s)`);
   return md;
 }

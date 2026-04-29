@@ -24,6 +24,7 @@ import {addNodeWithEmptyResults, CDDVaultStats, createBatchesDfFromObjects,
   createNestedCDDNode, createObjectViewer, createVaultNode,
   handleInitialURL, prepareDataForDf, PREVIEW_ROW_NUM, reorderColumns,
   runAsyncExport, runAsyncExportAsDf} from './utils';
+import {funcs} from './package-api';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -119,7 +120,7 @@ export class PackageFunctions {
   @grok.decorators.appTreeBrowser({app: 'CDD Vault'})
   static async cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     try {
-      const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+      const vaults = JSON.parse(await funcs.getVaults()) as Vault[];
 
       for (const vault of vaults) {
         //vault node
@@ -211,7 +212,7 @@ export class PackageFunctions {
     @grok.decorators.param({'name': 'mol', 'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {
     return DG.Widget.fromRoot(ui.wait(async () => {
       try {
-        const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+        const vaults = JSON.parse(await funcs.getVaults()) as Vault[];
         if (!vaults.length)
           return ui.divText('No CDD vaults available');
         //looking for molecule in the first vault
@@ -234,7 +235,7 @@ export class PackageFunctions {
   static async CDDVaultSearchEditor(
     _call: DG.FuncCall): Promise<void> { //is not used at the moment
     try {
-      const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+      const vaults = JSON.parse(await funcs.getVaults()) as Vault[];
       const vaultId = vaults[0].id;
       const funcEditor = new SearchEditor(vaultId);
       const dialog = ui.dialog({title: 'CDD search'})

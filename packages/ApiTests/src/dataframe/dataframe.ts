@@ -528,6 +528,33 @@ category('DataFrame: ColumnList', () => {
     expect(typeof(df.get('newColumnQnum', 1)), 'number');
   });
 
+  test('addNewQnum from qualifier+value columns', async () => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('q', ['<', '', '>', '=']),
+      DG.Column.fromList(DG.TYPE.FLOAT, 'v', [10, 20, 30, 40]),
+    ]);
+
+    const qnum = df.columns.addNewQnum('result', {
+      qualifierColumn: 'q',
+      valueColumn: df.col('v')!,
+    });
+
+    expect(qnum.type, DG.TYPE.QNUM);
+    expect(qnum.length, 4);
+
+    expect(DG.Qnum.getQ(qnum.get(0)!), DG.QNUM_LESS);
+    expectFloat(DG.Qnum.getValue(qnum.get(0)!), 10);
+
+    expect(DG.Qnum.getQ(qnum.get(1)!), DG.QNUM_EXACT);
+    expectFloat(DG.Qnum.getValue(qnum.get(1)!), 20);
+
+    expect(DG.Qnum.getQ(qnum.get(2)!), DG.QNUM_GREATER);
+    expectFloat(DG.Qnum.getValue(qnum.get(2)!), 30);
+
+    expect(DG.Qnum.getQ(qnum.get(3)!), DG.QNUM_EXACT);
+    expectFloat(DG.Qnum.getValue(qnum.get(3)!), 40);
+  });
+
   test('addNewString', async () => {
     const df = createDf2();
     df.columns.addNewString('newColumnString');

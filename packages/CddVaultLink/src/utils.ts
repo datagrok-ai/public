@@ -9,6 +9,7 @@ import {ALL_TABS, BATCHES_TAB, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_T
   MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB} from './constants';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {SearchEditor} from './search-function-editor';
+import {funcs} from './package-api';
 
 export const PREVIEW_ROW_NUM = 100;
 const CDD_VAULT_APP_PATH: string = 'apps/Cddvaultlink';
@@ -570,11 +571,9 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
     funcEditor.saveLastSearch();
     const params = funcEditor.getParams();
     try {
-      const df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
-        {
-          vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
-          structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run,
-        });
+      const df = await funcs.cDDVaultSearchAsync(vault.id, params.structure ?? null,
+        params.structure_search_type ?? null, params.structure_similarity_threshold ?? null,
+        params.protocol ?? null, params.run ?? null);
       if (df) {
         const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
         const run = params.run ? `, run: ${params.run}` : '';
@@ -600,8 +599,7 @@ export async function initializeFilters(tv: DG.TableView, vault: Vault) {
     await funcEditor.reset();
     ui.setUpdateIndicator(tv.grid.root, true);
     try {
-      const df: DG.DataFrame = await grok.functions.call('CDDVaultLink:getMolecules',
-        {vaultId: vault.id, moleculesIds: ''});
+      const df: DG.DataFrame = await funcs.getMolecules(vault.id, '');
       if (df) {
         df.name = `Vault: ${vault.id}`;
         tv.dataFrame = df;
@@ -727,14 +725,14 @@ export function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): 
 
 
 export function createInitialStatistics(statsDiv: HTMLDivElement) {
-  grok.functions.call('CDDVaultLink:getVaults').then(async (res: string) => {
+  funcs.getVaults().then(async (res: string) => {
     const stats: CDDVaultStats[] = [];
     if (!res)
       return;
     const vaults = JSON.parse(res) as Vault[];
     for (const vault of vaults) {
       try {
-        const resStr = await grok.functions.call('CDDVaultLink:getVaultStats', {vaultId: vault.id, vaultName: vault.name});
+        const resStr = await funcs.getVaultStats(vault.id, vault.name);
         stats.push(JSON.parse(resStr));
       } catch (e: any) {
         grok.shell.error(`Cannot get statistics for vault ${vault.name}: ${e?.message ?? e}`);

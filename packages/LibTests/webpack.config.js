@@ -40,6 +40,13 @@ module.exports = {
     ],
   },
   devtool: 'source-map',
+  // Plain externals object — dayjs is externalized to the platform global
+  // for main-thread imports. Worker-tree code in compute-utils imports
+  // dayjs via the deep path 'dayjs/esm/index.js' which doesn't match this
+  // exact-string lookup, so webpack bundles dayjs into the worker chunk
+  // automatically. Keeping LibTests' externals shape aligned with packages
+  // like Compute2 means fitting tests here surface any regression where a
+  // worker-bundled file slips back to importing bare 'dayjs'.
   externals: {
     'datagrok-api/dg': 'DG',
     'DG': 'DG',

@@ -3,12 +3,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as rxjs from 'rxjs';
+
 import {CombinedAISearchAssistant} from './search/combined-search';
-import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription,
-  fireBeforeUserPromptEvent, fireAfterUserPromptEvent, UserPromptEventArgs} from '../utils';
+import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
-import {ClaudeRuntimeClient} from '../claude/runtime-client';
+import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeDatagrokBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
@@ -24,7 +26,7 @@ const executionPlanSchema = {
     plan: {
       type: 'array',
       items: {type: 'string'},
-      description: 'Numbered list of steps to achieve the goal',
+      description: 'Steps to achieve the goal. Each item is a single step, plain text, without any leading number, bullet, or punctuation prefix.',
     },
     code: {
       type: 'string',
@@ -35,39 +37,102 @@ const executionPlanSchema = {
   additionalProperties: false,
 } as const;
 
-export async function smartExecution(prompt: string): Promise<DG.Widget> {
-  const waitDiv = ui.wait(async () => {
-    try {
-      const result: ExecutionPlan = await ClaudeRuntimeClient.getInstance().query(prompt, {outputSchema: executionPlanSchema});
-      const container = ui.divV([]);
-      container.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+const MAX_ACTIVITY_LINES = 5;
 
-      if (result.code) {
-        const wrappedCode = '```datagrok-exec\n' + result.code + '\n```';
-        const execResults = await executeDatagrokBlocks(wrappedCode, grok.shell.v);
-        for (const el of execResults)
-          container.appendChild(el);
-      }
-
-      return container;
-    } catch (error: any) {
-      console.error('Error during AI execution:', error);
-      return ui.divText(`Error during AI execution: ${error.message}`);
-    }
-  });
-  return DG.Widget.fromRoot(waitDiv);
+interface StreamingOpts {
+  sessionPrefix?: string;
+  outputSchema?: object;
+  onFinal: (evt: FinalEvent, host: HTMLElement) => void;
 }
 
-export async function askWiki(question: string) {
-  try {
-    const res = await ClaudeRuntimeClient.getInstance().query(question);
-    const markdown = ui.markdown(res);
-    markdown.style.userSelect = 'text';
-    return DG.Widget.fromRoot(markdown);
-  } catch (error: any) {
-    console.error('Error during AI help:', error);
-    return DG.Widget.fromRoot(ui.divText(`Error during AI help: ${error.message}`));
-  }
+async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.Widget> {
+  const client = ClaudeRuntimeClient.getInstance();
+  await client.ensureConnected();
+  const sessionId = `${opts.sessionPrefix ?? 'stream'}-${crypto.randomUUID()}`;
+
+  const activityHost = ui.divV([], 'grokky-stream-activity');
+  const contentHost = ui.div([], 'grokky-stream-content');
+  const container = ui.divV([activityHost, contentHost], 'grokky-stream');
+
+  let onFirstEvent: () => void = () => {};
+  const firstEvent = new Promise<void>((res) => { onFirstEvent = res; });
+
+  const widget = DG.Widget.fromRoot(ui.wait(async () => {
+    await firstEvent;
+    return container;
+  }));
+
+  const forSession = <T extends {sessionId: string}>(
+    src: rxjs.Observable<T>, handler: (evt: T) => void,
+  ) => widget.subs.push(src.subscribe((evt) => {
+      if (evt.sessionId === sessionId)
+        handler(evt);
+    }));
+
+  forSession<ToolActivityEvent>(client.onToolActivity, (evt) => {
+    activityHost.appendChild(ui.divText(evt.summary, 'grokky-stream-activity-line'));
+    while (activityHost.children.length > MAX_ACTIVITY_LINES)
+      activityHost.removeChild(activityHost.firstChild!);
+    onFirstEvent();
+  });
+
+  forSession<FinalEvent>(client.onFinal, (evt) => {
+    activityHost.remove();
+    onFirstEvent();
+    opts.onFinal(evt, contentHost);
+  });
+
+  forSession<ErrorEvent>(client.onError, (evt) => {
+    activityHost.remove();
+    contentHost.appendChild(ui.info(`Error: ${evt.message}`));
+    onFirstEvent();
+  });
+
+  client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
+  return widget;
+}
+
+export async function smartExecution(prompt: string): Promise<DG.Widget> {
+  return streamingWidget(prompt, {
+    sessionPrefix: 'execute',
+    outputSchema: executionPlanSchema,
+    onFinal: (evt, host) => {
+      const result = evt.structured_output as ExecutionPlan | undefined;
+      if (!result) {
+        host.appendChild(ui.divText(evt.content || 'No plan returned.'));
+        return;
+      }
+
+      host.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+      if (!result.code)
+        return;
+
+      const codeAcc = ui.accordion();
+      const code = '```datagrok-exec\n' + result.code + '\n```';
+      codeAcc.addPane('Code', () => createStyledMarkdown(code), false);
+      host.appendChild(codeAcc.root);
+
+      host.appendChild(ui.wait(async () => {
+        try {
+          const execResults = await executeDatagrokBlocks(code, grok.shell.v);
+          return ui.divV(execResults);
+        } catch (e: any) {
+          return ui.info(`Execution error: ${e?.message ?? e}`);
+        }
+      }));
+    },
+  });
+}
+
+export async function askWiki(question: string): Promise<DG.Widget> {
+  return streamingWidget(question, {
+    sessionPrefix: 'help',
+    onFinal: (evt, host) => {
+      const md = ui.markdown(evt.content || '');
+      md.style.userSelect = 'text';
+      host.appendChild(md);
+    },
+  });
 }
 
 // sets up the ui button for the input
@@ -82,8 +147,7 @@ export function setupSearchUI() {
     const searchBoxContainer = document.getElementsByClassName('power-pack-welcome-view')[0];
     if (!searchBoxContainer)
       return null;
-    const searchInput = Array.from(searchBoxContainer.getElementsByClassName('power-search-search-everywhere-input'))[0] as HTMLInputElement;
-    return searchInput;
+    return Array.from(searchBoxContainer.getElementsByClassName('power-search-search-everywhere-input'))[0] as HTMLInputElement;
   }
 
   function initInput(searchInput: HTMLInputElement) {
@@ -173,31 +237,45 @@ async function runPromptWithLifecycle(
   quotaCategory: string,
   clientToolHandler?: (toolName: string, input: any) => Promise<string>,
 ): Promise<void> {
-  if (prompt.startsWith('!!')) {
+  if (prompt.startsWith('!!'))
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
-  } else if (prompt.startsWith('!')) {
+  else if (prompt.startsWith('!')) {
     const command = prompt.slice(1).trimStart();
     if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, command))
       return;
     await runClaudeStreaming(panel, command, view, clientToolHandler, 'bash');
     return;
   }
+  let echoed = false;
   if (!panel.rawRender) {
     const args: UserPromptEventArgs = {prompt, context: view, handled: false};
     fireBeforeUserPromptEvent(args);
     if (args.handled)
       return;
-    if (await grok.ai.processPrompt(prompt))
+
+    // Echo the user message before routing so it never disappears, even when
+    // grok.ai.processPrompt's built-in handler claims the prompt.
+    const probe = panel.startChatSession();
+    probe.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
+    echoed = true;
+
+    if (await grok.ai.processPrompt(prompt)) {
+      probe.session.addUiMessage(
+        'Handled by Datagrok\'s built-in handler — see the current view for the result.',
+        false);
+      probe.endSession();
       return;
+    }
+    probe.endSession();
   }
   if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt))
     return;
-  await runClaudeStreaming(panel, prompt, view, clientToolHandler);
+  await runClaudeStreaming(panel, prompt, view, clientToolHandler, undefined, echoed);
   if (!panel.rawRender)
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string) {
+async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string, skipUserEcho = false) {
   const chatSession = panel.startChatSession();
   const sessionId = panel.sessionId;
   let accumulated = '';
@@ -226,7 +304,8 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
     await client.ensureConnected();
 
-    chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
+    if (!skipUserEcho)
+      chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
 
     forSession(client.onChunk, (evt) => {
       accumulated += evt.content;

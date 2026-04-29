@@ -5,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import '../css/aizynthfinder.css';
 import {createPathsTreeTabs, isFragment, TAB_ID} from './tree-creation-utils';
 import {Tree} from './aizynth-api';
-import {DEMO_DATA, SAMPLE_TREE} from './mock-data';
-import {configIcon, currentUserConfig, DEFAULT_CONFIG_NAME, KEY, setValidUserConfig, STORAGE_NAME} from './config-utils';
+import {DEMO_DATA} from './mock-data';
+import {configIcon, currentUserConfig, DEFAULT_CONFIG_NAME, setValidUserConfig} from './config-utils';
 import {DEMO_MOLECULE} from './const';
 
 const activeFuncCalls: {[key: string]: DG.FuncCall} = {};
@@ -25,7 +25,7 @@ export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget)
       return;
     }
     if (DG.chem.isSmarts(molecule) || isFragment(molecule)) {
-      updateWidgetRoot(ui.divText('Not applicable for smarts or moleculer fragments'));
+      updateWidgetRoot(ui.divText('Not applicable for smarts or molecular fragments'));
       return;
     }
 
@@ -41,7 +41,7 @@ export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget)
 
   let paths: Tree[] = [];
   if (molecule !== DEMO_MOLECULE) {
-    let funcId = '';
+    let funcId: string | null = null;
     try {
       if (!currentUserConfig)
         await setValidUserConfig();
@@ -49,12 +49,10 @@ export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget)
       if (!func.length)
         throw new Error(`run_aizynthfind function not found`);
       //if previous function is still runing - cancel
-      if (Object.keys(activeFuncCalls)) {
-        if (activeFuncCalls[currentFuncCallId]) {
-          console.log(`Cancelling function: ${currentFuncCallId}`);
-          await activeFuncCalls[currentFuncCallId].cancel();
-          delete activeFuncCalls[currentFuncCallId];
-        }
+      if (activeFuncCalls[currentFuncCallId]) {
+        console.log(`Cancelling function: ${currentFuncCallId}`);
+        await activeFuncCalls[currentFuncCallId].cancel();
+        delete activeFuncCalls[currentFuncCallId];
       }
       const fc = func[0].prepare({
         molecule: molecule,
@@ -68,23 +66,27 @@ export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget)
       activeFuncCalls[currentFuncCallId] = fc;
       console.log(`Running function: ${fc.id}`);
       await fc.call(true);
-      const res = fc.getOutputParamValue();
-      paths = JSON.parse(res);
       if (!activeFuncCalls[funcId])
         return;
+      const res = fc.getOutputParamValue();
+      paths = JSON.parse(res);
     } catch (e: any) {
-      if (activeFuncCalls[funcId])
+      // funcId === null → pre-call setup error (always show)
+      // funcId in map     → our call failed (show)
+      // funcId not in map → superseded by a newer call (swallow)
+      if (funcId === null || activeFuncCalls[funcId])
         updateWidgetRoot(ui.divText(e?.message ?? e));
       return;
     } finally {
-      delete activeFuncCalls[funcId];
+      if (funcId !== null)
+        delete activeFuncCalls[funcId];
     }
   } else
     paths = DEMO_DATA;
 
   try {
     if (paths.length) {
-      const pathsObjects: {[key: string]:{smiles: string, type: string}[]} = {};
+      const pathsObjects: {[key: string]: {smiles: string, type: string, depth: number}[]} = {};
       let currentTreeObjId: string | null = null;
       const tabControl = createPathsTreeTabs(paths, pathsObjects, false);
       const settings = configIcon(molecule, w);

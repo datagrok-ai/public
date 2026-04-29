@@ -1,5 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {EarlyStoppingSettings, LOSS, ReproSettings} from './constants';
 import {makeConstFunction} from './cost-functions';
@@ -10,6 +8,7 @@ import {nelderMeadSettingsOpts} from './optimizer-nelder-mead';
 import {defaultEarlyStoppingSettings, defaultRandomSeedSettings, getInputsData,
   makeGetCalledFuncCall} from './fitting-utils';
 import {getNonSimilar} from './similarity-utils';
+import type {ExecutorChoice} from './worker/executor';
 
 
 // Public API for Compute2 to expose as a platform function
@@ -24,6 +23,12 @@ export type OptimizerParams = {
   settings?: Map<string, number>;
   reproSettings?: Partial<ReproSettings>;
   earlyStoppingSettings?: Partial<EarlyStoppingSettings>;
+  /**
+   * Default 'auto' — canHandle routes JS-language scripts annotated with
+   * `//meta.workerSafe: true` to the worker arm; everything else falls back
+   * to MainExecutor. Pass 'main' or 'worker' to force a specific arm.
+   */
+  executor?: ExecutorChoice;
 };
 
 export async function runOptimizer(
@@ -37,6 +42,7 @@ export async function runOptimizer(
     settings,
     reproSettings,
     earlyStoppingSettings,
+    executor = 'auto',
   }: OptimizerParams,
 ): Promise<[OptimizationResult, DG.FuncCall[]]> {
   const {variedInputNames, fixedInputs} = getInputsData(inputBounds);
@@ -65,6 +71,10 @@ export async function runOptimizer(
     samplesCount: samplesCount!,
     reproSettings: reproSettingsFull,
     earlyStoppingSettings: earlyStoppingSettingsFull,
+    executor,
+    func,
+    outputTargets,
+    lossType,
   });
   const extrema = optResult.extremums;
   extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);

@@ -27,7 +27,7 @@ data science languages like Python or R. JavaScript script executes right in you
 ## Prerequisites
 
 * Sign up and log in to [public server of Datagrok](https://public.datagrok.ai/).
-* Alternatively, set up a [local Datagrok environment](../../deploy/docker-compose/docker-compose.md).
+* Alternatively, set up a [local Datagrok environment](../../deploy/docker-compose/docker-compose.mdx).
 
 ## Create a script
 

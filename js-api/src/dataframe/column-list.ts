@@ -15,6 +15,14 @@ import type {IndexSetter} from "./types";
 declare let DG: any;
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
+/** Options for {@link ColumnList.addNewQnum}. */
+export interface QnumColumnCreationOptions {
+  /** Source column (or its name) with qualifier strings: '<', '>', '', or '='. */
+  qualifierColumn: Column<string> | string;
+  /** Source column (or its name) with numeric values. */
+  valueColumn: Column<number> | string;
+}
+
 /** Columns in a [DataFrame]. */
 export class ColumnList {
   private readonly dart: any;
@@ -187,10 +195,20 @@ export class ColumnList {
   /** Creates and adds a float column */
   addNewFloat(name: string): Column<number> { return this.addNew(name, TYPE.FLOAT); }
 
-  /** Creates and adds a qualified number column
+  /** Creates and adds a qualified number column.
+   * If [options] is provided, populates the column by combining a qualifier column
+   * (string values: '<', '>', '', '=') with a numeric value column at each row.
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
-  addNewQnum(name: string): Column<number> { return this.addNew(name, TYPE.QNUM); }
+  addNewQnum(name: string, options?: QnumColumnCreationOptions): Column<number> {
+    const col = this.addNew(name, TYPE.QNUM);
+    if (options != null) {
+      const q = typeof options.qualifierColumn === 'string' ? this.byName(options.qualifierColumn) : options.qualifierColumn;
+      const v = typeof options.valueColumn === 'string' ? this.byName(options.valueColumn) : options.valueColumn;
+      api.grok_Column_InitQnumFromColumns(col.dart, q.dart, v.dart);
+    }
+    return col;
+  }
 
   /** Creates and adds a datetime column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
