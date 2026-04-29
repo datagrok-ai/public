@@ -227,6 +227,11 @@
     margin-right: 8px;
 }
 
+.diff-studio-ribbon-icon-disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
 /* Diff Studio Hub */
 
 .diff-studio-hub-grid {

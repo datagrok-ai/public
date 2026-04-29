@@ -580,6 +580,7 @@ export class DiffStudio {
     this.startingInputs = null;
     this.updateBtnFilePath = null;
     this.updateBtn.hidden = true;
+    this.updateSaveToModelCatalogWidget(true);
 
     this.isModelChanged = false;
     this.isSolvingSuccess = false;
@@ -707,6 +708,8 @@ export class DiffStudio {
   private fittingWgt = this.getFitWgt();
 
   private addToModelCatalogWgt = this.getAddToModelHubWgt();
+  private isSavingToLibrary = false;
+  private canSaveToLibrary = true;
 
   private facetGridDiv: HTMLDivElement | null = null;
   private facetGridNode: DG.DockNode | null = null;
@@ -1008,11 +1011,18 @@ export class DiffStudio {
     return wgt;
   }
 
-  /** Return the save-to-Library widget */
+  /** Return the save-to-Library widget. The click handler is a no-op when there
+   *  is nothing new to save (toggled by `updateSaveToModelCatalogWidget`) or
+   *  when a previous save is still in flight, preventing duplicate Library
+   *  entries from rapid double-clicks. */
   private getAddToModelHubWgt(): HTMLElement {
     const icon = ui.iconFA(
       'layer-plus',
-      () => this.saveModelToLibrary(),
+      () => {
+        if (!this.canSaveToLibrary || this.isSavingToLibrary)
+          return;
+        this.saveModelToLibrary();
+      },
       HINT.SAVE_TO_LIB,
     );
 
@@ -1062,10 +1072,14 @@ export class DiffStudio {
     this.exportToJsWgt.style.color = color;
   }
 
-  /** Update state of the save to Model Hub widget */
+  /** Update state of the save-to-Library widget. Tracks whether a save would do
+   *  anything new (`canSaveToLibrary`) and applies a disabled visual via the
+   *  shared `diff-studio-ribbon-icon-disabled` class — the click handler in
+   *  `getAddToModelHubWgt` reads `canSaveToLibrary` to short-circuit. */
   private updateSaveToModelCatalogWidget(enabled: boolean) {
-    const color = this.getColor(enabled);
-    this.addToModelCatalogWgt.style.color = color;
+    this.canSaveToLibrary = enabled;
+    this.addToModelCatalogWgt.style.color = this.getColor(enabled);
+    this.addToModelCatalogWgt.classList.toggle('diff-studio-ribbon-icon-disabled', !enabled);
   }
 
   /** Create model editor */
@@ -1206,6 +1220,7 @@ export class DiffStudio {
     this.editorState = state;
     this.updateBtnFilePath = null;
     this.updateBtn.hidden = true;
+    this.updateSaveToModelCatalogWidget(true);
     this.solutionTable = DG.DataFrame.create();
     this.solverView.dataFrame = this.solutionTable;
     this.solverView.helpUrl = getLink(state);
@@ -1298,8 +1313,15 @@ export class DiffStudio {
     }
   }; // exportToJS
 
-  /** Save the current model to the Library folder and register it in external-models.json */
+  /** Save the current model to the Library folder and register it in
+   *  external-models.json. Guarded against re-entry: rapid double-clicks while
+   *  the previous save is still awaiting `writeAsText` would otherwise create
+   *  multiple `Name(N).ivp` copies and emit a balloon flow. After a successful
+   *  save the icon is disabled until the user makes further edits. */
   private async saveModelToLibrary(): Promise<void> {
+    if (this.isSavingToLibrary)
+      return;
+    this.isSavingToLibrary = true;
     try {
       const model = this.editorView!.state.doc.toString();
       const ivp = getIVP(model);
@@ -1371,8 +1393,11 @@ export class DiffStudio {
         grok.shell.info('Already in Library');
 
       grok.events.fireCustomEvent(LIBRARY_CHANGED_EVENT, null);
+      this.updateSaveToModelCatalogWidget(false);
     } catch (err) {
       this.processError(err);
+    } finally {
+      this.isSavingToLibrary = false;
     }
   } // saveModelToLibrary
 
