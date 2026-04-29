@@ -63,22 +63,46 @@ export interface WorkerPoolOptions {
   /** Reject a single dispatched seed (one Nelder-Mead run from one
    *  starting point) after this duration. Default: 60000 (1 min). */
   runTimeoutMs?: number;
+  /** Per-session cap on replacement re-primes. Each setupAll'd session
+   *  starts at 0 and increments every time `removeSlot` re-primes a
+   *  fresh replacement slot for it. Once the cap is hit, further slot
+   *  replacements still spawn but skip re-priming for this session,
+   *  trading parallelism for safety against a script body that breaks
+   *  every worker. Default 3 — covers a few transient deaths (browser
+   *  process eviction, OOM hiccup, GC pause crossing setupTimeoutMs)
+   *  without enabling a runaway respawn loop, since each failed
+   *  reprime takes ≤ setupTimeoutMs to surface. */
+  maxReplacementReprimes?: number;
 }
 
 interface ActiveSetup {
   setup: FitSessionSetup;
   // Per-session re-prime budget: incremented every time a replacement slot
-  // is primed for this session in `removeSlot`. Capped so a script body
-  // that fails every worker can't put the pool into a respawn-and-retry
-  // loop. Once exhausted, slot replacements still spawn but skip
-  // re-priming for this session — the in-flight fit runs at degraded
-  // parallelism for the rest of its life.
+  // is primed for this session in `removeSlot`. Capped by
+  // maxReplacementReprimes so a script body that fails every worker
+  // can't put the pool into a respawn-and-retry loop.
   replacementAttempts: number;
 }
 
-export class WorkerPool {
-  private static readonly MAX_REPLACEMENT_REPRIMES = 1;
+// Failure builders — every site that fails a PendingRun or PendingSetup
+// produces the same shape; centralizing it keeps the wire-types contract
+// in one place and makes "forgot a field" a type error.
+function makeRunFailure(pending: PendingRun, message: string): WorkerFailure {
+  return {
+    kind: 'failure',
+    taskId: pending.run.taskId,
+    seedIndex: pending.run.seedIndex,
+    message,
+    failKind: 'other',
+    seed: pending.run.seed,
+  };
+}
 
+function makeSetupFailure(sessionId: SessionId, message: string): SetupAck {
+  return {kind: 'setup-ack', sessionId, ok: false, message};
+}
+
+export class WorkerPool {
   private slots: Slot[] = [];
   private queue: PendingRun[] = [];
   // Setups for sessions that have completed `setupAll` and not yet been
@@ -89,10 +113,12 @@ export class WorkerPool {
   private nextTaskId = 1;
   private readonly setupTimeoutMs: number;
   private readonly runTimeoutMs: number;
+  private readonly maxReplacementReprimes: number;
 
   constructor(private readonly size: number, opts: WorkerPoolOptions = {}) {
     this.setupTimeoutMs = opts.setupTimeoutMs ?? 20_000;
     this.runTimeoutMs = opts.runTimeoutMs ?? 60_000;
+    this.maxReplacementReprimes = opts.maxReplacementReprimes ?? 3;
   }
 
   // Lazy: workers spin up on the first setupAll so a pool can be allocated
@@ -146,28 +172,16 @@ export class WorkerPool {
   }
 
   private onError(slot: Slot, ev: ErrorEvent): void {
+    const message = `worker error: ${ev.message ?? 'unknown'}`;
     if (slot.runState.phase === 'running') {
       const {run: pending, runTimer} = slot.runState;
       clearTimeout(runTimer);
       slot.runState = {phase: 'idle'};
-      pending.resolve({
-        kind: 'failure',
-        taskId: pending.run.taskId,
-        seedIndex: pending.run.seedIndex,
-        message: `worker error: ${ev.message ?? 'unknown'}`,
-        failKind: 'other',
-        seed: pending.run.seed,
-      });
+      pending.resolve(makeRunFailure(pending, message));
     }
     // Reject any in-flight setup acks for this slot too.
-    for (const ps of slot.pendingSetups.values()) {
-      ps.resolve({
-        kind: 'setup-ack',
-        sessionId: ps.sessionId,
-        ok: false,
-        message: `worker error: ${ev.message ?? 'unknown'}`,
-      });
-    }
+    for (const ps of slot.pendingSetups.values())
+      ps.resolve(makeSetupFailure(ps.sessionId, message));
     slot.pendingSetups.clear();
     this.pump();
   }
@@ -185,59 +199,38 @@ export class WorkerPool {
         (s) => s.runState.phase === 'idle' && s.sessions.has(pending.run.sessionId));
       if (!slot) { ++i; continue; }
       this.queue.splice(i, 1);
-      // Per-run timeout: terminates the slot if the worker wedges (e.g.
-      // infinite loop in user JS body) so the dispatchRun promise resolves
-      // instead of hanging forever. Bound the timer to this run via
-      // slot.runState — if the slot transitions out of running for any
-      // other reason (reply, error, removeSlot, dispose), those paths
-      // clearTimeout it; the callback's identity check is a defensive
-      // guard against a fired-then-cancelled race.
+      // Per-run timeout: terminates the slot if the worker wedges so the
+      // dispatchRun promise resolves instead of hanging. The identity
+      // check guards against a fired-then-cancelled race; every transition
+      // out of `running` clearTimeouts the timer.
       const runTimer = setTimeout(() => {
         if (slot.runState.phase !== 'running' || slot.runState.run !== pending) return;
         slot.runState = {phase: 'idle'};
         this.removeSlot(slot, 'run timed out');
-        pending.resolve({
-          kind: 'failure', taskId: pending.run.taskId,
-          seedIndex: pending.run.seedIndex,
-          message: `run timed out after ${this.runTimeoutMs}ms`,
-          failKind: 'other', seed: pending.run.seed,
-        });
+        pending.resolve(makeRunFailure(pending, `run timed out after ${this.runTimeoutMs}ms`));
       }, this.runTimeoutMs);
       slot.runState = {phase: 'running', run: pending, runTimer};
       slot.worker.postMessage(pending.run, pending.transferables);
     }
-    // Per-session stall drain: if a session has lost every primed slot
-    // AND its replacement-reprime budget is exhausted AND no setup-ack
-    // is in flight for it on any slot, no setup-ack-ok or run-reply will
-    // ever arrive to retrigger pump for it. Without this branch, queued
-    // runs for the session would sit forever — the executor's
-    // `Promise.all(runSlot)` would hang. The hasInFlightSetup guard is
-    // load-bearing: removeSlot increments replacementAttempts BEFORE
-    // primeSlot's ack arrives, so the predicate would otherwise fire
-    // during a recoverable transient state.
+    // Drain sessions whose queues can't make progress. pump only retries
+    // on setup-ack-ok and run-reply, neither of which can arrive when no
+    // slot is primed and the reprime budget is exhausted. hasInFlightSetup
+    // is load-bearing — replacementAttempts increments synchronously
+    // before primeSlot's ack returns.
     if (this.queue.length > 0) {
       for (const [sessionId, entry] of this.activeSetups) {
-        if (entry.replacementAttempts >= WorkerPool.MAX_REPLACEMENT_REPRIMES &&
+        if (entry.replacementAttempts >= this.maxReplacementReprimes &&
             this.primedSlotCount(sessionId) === 0 &&
             !this.hasInFlightSetup(sessionId)) {
-          this.drainSessionQueue(sessionId, 'session lost all primed slots');
+          this.drainQueue('session lost all primed slots',
+            (p) => p.run.sessionId === sessionId);
         }
       }
     }
     // If the pool has lost all workers (timeouts or onerror) and there's
     // still queued work, callers would otherwise wait forever. Drain.
-    if (this.slots.length === 0 && this.queue.length > 0) {
-      const stuck = this.queue;
-      this.queue = [];
-      for (const pending of stuck) {
-        pending.resolve({
-          kind: 'failure', taskId: pending.run.taskId,
-          seedIndex: pending.run.seedIndex,
-          message: 'no workers available', failKind: 'other',
-          seed: pending.run.seed,
-        });
-      }
-    }
+    if (this.slots.length === 0 && this.queue.length > 0)
+      this.drainQueue('no workers available', () => true);
   }
 
   // Number of live slots whose `slot.sessions` Set contains the given
@@ -259,24 +252,14 @@ export class WorkerPool {
     return false;
   }
 
-  // Resolve every queued run for the given session as a failure with the
-  // supplied reason. Used by the per-session stall drain in `pump` and
-  // available for future use cases (e.g. session abort).
-  private drainSessionQueue(sessionId: SessionId, reason: string): void {
+  // Resolve every queued run that matches `match` as a failure with the
+  // supplied reason. Used by pump's per-session stall drain and the
+  // total-pool drain, and by dispose to clear the queue at teardown.
+  private drainQueue(reason: string, match: (p: PendingRun) => boolean): void {
     const remaining: PendingRun[] = [];
     for (const pending of this.queue) {
-      if (pending.run.sessionId !== sessionId) {
-        remaining.push(pending);
-        continue;
-      }
-      pending.resolve({
-        kind: 'failure',
-        taskId: pending.run.taskId,
-        seedIndex: pending.run.seedIndex,
-        message: reason,
-        failKind: 'other',
-        seed: pending.run.seed,
-      });
+      if (!match(pending)) { remaining.push(pending); continue; }
+      pending.resolve(makeRunFailure(pending, reason));
     }
     this.queue = remaining;
   }
@@ -285,23 +268,15 @@ export class WorkerPool {
     const idx = this.slots.indexOf(slot);
     if (idx < 0) return;
     this.slots.splice(idx, 1);
-    for (const ps of slot.pendingSetups.values()) {
-      ps.resolve({
-        kind: 'setup-ack', sessionId: ps.sessionId, ok: false,
-        message: `worker removed: ${reason}`,
-      });
-    }
+    const message = `worker removed: ${reason}`;
+    for (const ps of slot.pendingSetups.values())
+      ps.resolve(makeSetupFailure(ps.sessionId, message));
     slot.pendingSetups.clear();
     if (slot.runState.phase === 'running') {
       const {run: cur, runTimer} = slot.runState;
       clearTimeout(runTimer);
       slot.runState = {phase: 'idle'};
-      cur.resolve({
-        kind: 'failure', taskId: cur.run.taskId,
-        seedIndex: cur.run.seedIndex,
-        message: `worker removed: ${reason}`,
-        failKind: 'other', seed: cur.run.seed,
-      });
+      cur.resolve(makeRunFailure(cur, message));
     }
     try { slot.worker.terminate(); } catch { /* ignore */ }
     if (!this.disposed) {
@@ -310,13 +285,13 @@ export class WorkerPool {
       const fresh = this.spawnSlot();
       this.slots.push(fresh);
       // Re-prime the replacement for every active session so the in-flight
-      // fit can keep using full pool parallelism. Capped per session at
-      // MAX_REPLACEMENT_REPRIMES to break a pathological respawn loop on
-      // a script body that breaks every worker — once the budget is
-      // exhausted, replacements still spawn but skip re-priming for that
-      // session and the fit runs at degraded parallelism.
+      // fit can keep using full pool parallelism. Capped per session by
+      // maxReplacementReprimes — once exhausted, replacements still spawn
+      // but skip re-priming for that session and the fit runs at degraded
+      // parallelism (and pump's stall-drain branch fails any queued runs
+      // for it to keep the executor from hanging).
       for (const entry of this.activeSetups.values()) {
-        if (entry.replacementAttempts >= WorkerPool.MAX_REPLACEMENT_REPRIMES) continue;
+        if (entry.replacementAttempts >= this.maxReplacementReprimes) continue;
         ++entry.replacementAttempts;
         // Fire-and-forget — primeSlot's own timeout path handles failure
         // (calls removeSlot, which respects the cap).
@@ -337,10 +312,8 @@ export class WorkerPool {
         if (!slot.pendingSetups.has(setup.sessionId)) return;
         slot.pendingSetups.delete(setup.sessionId);
         this.removeSlot(slot, 'setup timed out');
-        resolve({
-          kind: 'setup-ack', sessionId: setup.sessionId, ok: false,
-          message: `setup timed out after ${this.setupTimeoutMs}ms`,
-        });
+        resolve(makeSetupFailure(setup.sessionId,
+          `setup timed out after ${this.setupTimeoutMs}ms`));
       }, this.setupTimeoutMs);
       slot.pendingSetups.set(setup.sessionId, {
         sessionId: setup.sessionId,
@@ -413,39 +386,22 @@ export class WorkerPool {
     for (const slot of this.slots) {
       // Drain in-flight setup acks so setupAll's Promise.all can settle.
       for (const ps of slot.pendingSetups.values()) {
-        ps.resolve({
-          kind: 'setup-ack', sessionId: ps.sessionId, ok: false,
-          message: 'pool disposed before setup completed',
-        });
+        ps.resolve(makeSetupFailure(ps.sessionId,
+          'pool disposed before setup completed'));
       }
       slot.pendingSetups.clear();
       // Drain a run already dispatched but not yet replied.
       if (slot.runState.phase === 'running') {
         const {run: cur, runTimer} = slot.runState;
         clearTimeout(runTimer);
-        cur.resolve({
-          kind: 'failure', taskId: cur.run.taskId,
-          seedIndex: cur.run.seedIndex,
-          message: 'pool disposed mid-run', failKind: 'other',
-          seed: cur.run.seed,
-        });
+        cur.resolve(makeRunFailure(cur, 'pool disposed mid-run'));
         slot.runState = {phase: 'idle'};
       }
       try { slot.worker.terminate(); } catch { /* ignore */ }
     }
     this.slots = [];
     // Drain queued runs that were never dispatched.
-    for (const pending of this.queue) {
-      pending.resolve({
-        kind: 'failure',
-        taskId: pending.run.taskId,
-        seedIndex: pending.run.seedIndex,
-        message: 'pool disposed before task ran',
-        failKind: 'other',
-        seed: pending.run.seed,
-      });
-    }
-    this.queue = [];
+    this.drainQueue('pool disposed before task ran', () => true);
   }
 
   // Test-only: read live slot count without exposing the array.

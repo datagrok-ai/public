@@ -522,7 +522,10 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     // Pre-fix this dispatchRun call would hang indefinitely (only the
     // `slots.length === 0` drain branch fires today, and slots.length
     // stays at pool size because removeSlot always spawns a replacement).
-    const pool = new WorkerPool(2);
+    // Pin maxReplacementReprimes=1 so the test's three removeSlot calls
+    // suffice to exhaust the budget regardless of the default (which is
+    // 3 to absorb transient worker deaths in production).
+    const pool = new WorkerPool(2, {maxReplacementReprimes: 1});
     try {
       const targets: OutputTargetItem[] = [{
         propName: 'y', type: DG.TYPE.FLOAT, target: 0,
