@@ -1,0 +1,609 @@
+{
+  "metadata": {
+    "source": "validate_fixed_williams.py",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "[1971] §2 p.106 PAVA increasing on all 7 groups",
+      "category": "pava",
+      "inputs": {
+        "values": [
+          10.4,
+          9.9,
+          10.0,
+          10.6,
+          11.4,
+          11.9,
+          11.7
+        ],
+        "weights": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "direction": "increase"
+      },
+      "expected": [
+        10.1,
+        10.1,
+        10.1,
+        10.6,
+        11.4,
+        11.8,
+        11.8
+      ],
+      "tolerance": 0.05
+    },
+    {
+      "name": "[1972] §7 p.530 PAVA decreasing on dose groups",
+      "category": "pava",
+      "inputs": {
+        "values": [
+          52.7,
+          45.2,
+          47.1,
+          44.8,
+          46.6
+        ],
+        "weights": [
+          10,
+          9,
+          10,
+          10,
+          8
+        ],
+        "direction": "decrease"
+      },
+      "expected": [
+        52.7,
+        46.2,
+        46.2,
+        45.6,
+        45.6
+      ],
+      "tolerance": 0.05
+    },
+    {
+      "name": "PAVA monotone input → unchanged",
+      "category": "pava",
+      "inputs": {
+        "values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ],
+        "weights": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "direction": "increase"
+      },
+      "expected": [
+        1.0,
+        2.0,
+        3.0,
+        4.0
+      ]
+    },
+    {
+      "name": "PAVA constant input → unchanged",
+      "category": "pava",
+      "inputs": {
+        "values": [
+          5.0,
+          5.0,
+          5.0
+        ],
+        "weights": [
+          1,
+          1,
+          1
+        ],
+        "direction": "increase"
+      },
+      "expected": [
+        5.0,
+        5.0,
+        5.0
+      ]
+    },
+    {
+      "name": "PAVA fully reversed → global mean",
+      "category": "pava",
+      "inputs": {
+        "values": [
+          4.0,
+          3.0,
+          2.0,
+          1.0
+        ],
+        "weights": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "direction": "increase"
+      },
+      "expected": [
+        2.5,
+        2.5,
+        2.5,
+        2.5
+      ]
+    },
+    {
+      "name": "[1971] k=6, v=42, α=0.05",
+      "category": "lookup_1971",
+      "inputs": {
+        "k": 6,
+        "v": 42,
+        "alpha": 0.05
+      },
+      "expected": 1.81
+    },
+    {
+      "name": "[1971] k=6, v=42, α=0.01",
+      "category": "lookup_1971",
+      "inputs": {
+        "k": 6,
+        "v": 42,
+        "alpha": 0.01
+      },
+      "expected": 2.5
+    },
+    {
+      "name": "[1971] k=5, v=42, α=0.05",
+      "category": "lookup_1971",
+      "inputs": {
+        "k": 5,
+        "v": 42,
+        "alpha": 0.05
+      },
+      "expected": 1.8
+    },
+    {
+      "name": "[1971] k=4, v=42, α=0.05",
+      "category": "lookup_1971",
+      "inputs": {
+        "k": 4,
+        "v": 42,
+        "alpha": 0.05
+      },
+      "expected": 1.8
+    },
+    {
+      "name": "[1971] k=3, v=42, α=0.05",
+      "category": "lookup_1971",
+      "inputs": {
+        "k": 3,
+        "v": 42,
+        "alpha": 0.05
+      },
+      "expected": 1.79
+    },
+    {
+      "name": "[1971] k=1, v=∞, α=0.05",
+      "category": "lookup_1971",
+      "inputs": {
+        "k": 1,
+        "v": "inf",
+        "alpha": 0.05
+      },
+      "expected": 1.645
+    },
+    {
+      "name": "[1971] k=10, v=5, α=0.05",
+      "category": "lookup_1971",
+      "inputs": {
+        "k": 10,
+        "v": 5,
+        "alpha": 0.05
+      },
+      "expected": 2.25
+    },
+    {
+      "name": "[1971] k=1, v=5, α=0.05",
+      "category": "lookup_1971",
+      "inputs": {
+        "k": 1,
+        "v": 5,
+        "alpha": 0.05
+      },
+      "expected": 2.02
+    },
+    {
+      "name": "[1971] k=1, v=∞, α=0.01",
+      "category": "lookup_1971",
+      "inputs": {
+        "k": 1,
+        "v": "inf",
+        "alpha": 0.01
+      },
+      "expected": 2.326
+    },
+    {
+      "name": "[1971] k=2, v=5, α=0.01",
+      "category": "lookup_1971",
+      "inputs": {
+        "k": 2,
+        "v": 5,
+        "alpha": 0.01
+      },
+      "expected": 3.5
+    },
+    {
+      "name": "[1972] i=2, v=60, α=0.025, w=2",
+      "category": "lookup_1972",
+      "inputs": {
+        "i": 2,
+        "v": 60,
+        "alpha": 0.025,
+        "w": 2.0
+      },
+      "expected": 2.05,
+      "tolerance": 0.02
+    },
+    {
+      "name": "[1972] i=3, v=60, α=0.025, w=1.8",
+      "category": "lookup_1972",
+      "inputs": {
+        "i": 3,
+        "v": 60,
+        "alpha": 0.025,
+        "w": 1.8
+      },
+      "expected": 2.06,
+      "tolerance": 0.02
+    },
+    {
+      "name": "[1972] i=4, v=60, α=0.025, w=1.8",
+      "category": "lookup_1972",
+      "inputs": {
+        "i": 4,
+        "v": 60,
+        "alpha": 0.025,
+        "w": 1.8
+      },
+      "expected": 2.07,
+      "tolerance": 0.02
+    },
+    {
+      "name": "[1972] i=5, v=60, α=0.025, w=2.25",
+      "category": "lookup_1972",
+      "inputs": {
+        "i": 5,
+        "v": 60,
+        "alpha": 0.025,
+        "w": 2.25
+      },
+      "expected": 2.06,
+      "tolerance": 0.02
+    },
+    {
+      "name": "[1972] i=6, v=∞, α=0.050, w=1",
+      "category": "lookup_1972",
+      "inputs": {
+        "i": 6,
+        "v": "inf",
+        "alpha": 0.05,
+        "w": 1.0
+      },
+      "expected": 1.76,
+      "tolerance": 0.0001
+    },
+    {
+      "name": "[1972] i=2, v=5, α=0.010, w=1",
+      "category": "lookup_1972",
+      "inputs": {
+        "i": 2,
+        "v": 5,
+        "alpha": 0.01,
+        "w": 1.0
+      },
+      "expected": 3.501,
+      "tolerance": 0.0001
+    },
+    {
+      "name": "[1972] i=10, v=∞, α=0.005, w=1",
+      "category": "lookup_1972",
+      "inputs": {
+        "i": 10,
+        "v": "inf",
+        "alpha": 0.005,
+        "w": 1.0
+      },
+      "expected": 2.623,
+      "tolerance": 0.0001
+    },
+    {
+      "name": "[1971] §5 p.117 full step-down (k=6, r=8, s²=1.16)",
+      "category": "integration",
+      "inputs": {
+        "means": [
+          10.4,
+          9.9,
+          10.0,
+          10.6,
+          11.4,
+          11.9,
+          11.7
+        ],
+        "sds": [
+          1.0770329614269007,
+          1.0770329614269007,
+          1.0770329614269007,
+          1.0770329614269007,
+          1.0770329614269007,
+          1.0770329614269007,
+          1.0770329614269007
+        ],
+        "ns": [
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8
+        ],
+        "dose_labels": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6"
+        ],
+        "direction": "increase",
+        "alpha": 0.05
+      },
+      "expected": {
+        "minimum_effective_dose": "4",
+        "n_step_down_results": 4,
+        "first_three_significant": true,
+        "fourth_significant": false,
+        "t_dose6": 2.6,
+        "t_dose3": 0.37,
+        "tol": 0.01
+      }
+    },
+    {
+      "name": "[1972] §7 p.530 full step-down (k=5, decrease, α=0.025)",
+      "category": "integration",
+      "inputs": {
+        "means": [
+          50.1,
+          52.7,
+          45.2,
+          47.1,
+          44.8,
+          46.6
+        ],
+        "sds": [
+          4.720169488482378,
+          4.720169488482378,
+          4.720169488482378,
+          4.720169488482378,
+          4.720169488482378,
+          4.720169488482378
+        ],
+        "ns": [
+          18,
+          10,
+          9,
+          10,
+          10,
+          8
+        ],
+        "dose_labels": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "direction": "decrease",
+        "alpha": 0.025
+      },
+      "expected": {
+        "constrained_means": [
+          50.1,
+          52.7,
+          46.2,
+          46.2,
+          45.6,
+          45.6
+        ],
+        "minimum_effective_dose": "3",
+        "stats_by_dose_index": {
+          "5": 2.24,
+          "4": 2.42,
+          "3": 2.09,
+          "2": 2.02
+        },
+        "dose2_significant": false,
+        "tol_means": 0.05,
+        "tol_stats": 0.02
+      }
+    },
+    {
+      "name": "k=1 reduces to Student's t",
+      "category": "integration_edge",
+      "inputs": {
+        "means": [
+          10.0,
+          12.0
+        ],
+        "sds": [
+          1.0,
+          1.0
+        ],
+        "ns": [
+          10,
+          10
+        ],
+        "dose_labels": [
+          "0",
+          "1"
+        ],
+        "direction": "increase",
+        "alpha": 0.05
+      },
+      "expected": {
+        "critical_value_step1": 1.7340636066175386,
+        "tol_cv": 0.001
+      }
+    },
+    {
+      "name": "no effect: all means equal → MED = None",
+      "category": "integration_edge",
+      "inputs": {
+        "means": [
+          10.0,
+          10.0,
+          10.0,
+          10.0
+        ],
+        "sds": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "ns": [
+          10,
+          10,
+          10,
+          10
+        ],
+        "dose_labels": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "direction": "increase",
+        "alpha": 0.05
+      },
+      "expected": {
+        "minimum_effective_dose": null
+      }
+    },
+    {
+      "name": "strong effect: all doses significant → MED = 1",
+      "category": "integration_edge",
+      "inputs": {
+        "means": [
+          0.0,
+          5.0,
+          10.0,
+          15.0
+        ],
+        "sds": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "ns": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "dose_labels": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "direction": "increase",
+        "alpha": 0.05
+      },
+      "expected": {
+        "minimum_effective_dose": "1",
+        "all_groups_tested": true
+      }
+    },
+    {
+      "name": "auto-detect direction: highest < control → 'decrease'",
+      "category": "integration_edge",
+      "inputs": {
+        "means": [
+          50.0,
+          45.0,
+          40.0
+        ],
+        "sds": [
+          2.0,
+          2.0,
+          2.0
+        ],
+        "ns": [
+          10,
+          10,
+          10
+        ],
+        "dose_labels": [
+          "0",
+          "1",
+          "2"
+        ],
+        "direction": "auto",
+        "alpha": 0.05
+      },
+      "expected": {
+        "direction": "decrease"
+      }
+    },
+    {
+      "name": "auto-detect direction: highest > control → 'increase'",
+      "category": "integration_edge",
+      "inputs": {
+        "means": [
+          10.0,
+          12.0,
+          15.0
+        ],
+        "sds": [
+          2.0,
+          2.0,
+          2.0
+        ],
+        "ns": [
+          10,
+          10,
+          10
+        ],
+        "dose_labels": [
+          "0",
+          "1",
+          "2"
+        ],
+        "direction": "auto",
+        "alpha": 0.05
+      },
+      "expected": {
+        "direction": "increase"
+      }
+    }
+  ]
+}

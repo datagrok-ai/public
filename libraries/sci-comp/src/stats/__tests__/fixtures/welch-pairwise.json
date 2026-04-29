@@ -1,0 +1,291 @@
+{
+  "metadata": {
+    "source": "validate_rest_statistics.py — welch_pairwise",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "two treated groups, Rosetta-derived",
+      "category": "basic",
+      "inputs": {
+        "control": [
+          27.5,
+          21.0,
+          19.0,
+          23.6,
+          17.0,
+          17.9,
+          16.9,
+          20.1,
+          21.9,
+          22.6,
+          23.1,
+          19.6,
+          19.0,
+          21.7,
+          21.4
+        ],
+        "treated": [
+          {
+            "dose_level": 10,
+            "values": [
+              27.1,
+              22.0,
+              20.8,
+              23.4,
+              23.4,
+              23.5,
+              25.8,
+              22.0,
+              24.8,
+              20.2,
+              21.9,
+              22.1,
+              22.9,
+              20.5,
+              24.4
+            ]
+          },
+          {
+            "dose_level": 50,
+            "values": [
+              30.02,
+              29.99,
+              30.11,
+              29.97,
+              30.01
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "dose_level": 10,
+          "p_value_welch": 0.021378
+        },
+        {
+          "dose_level": 50,
+          "p_value_welch": 0.0
+        }
+      ]
+    },
+    {
+      "name": "three treated groups",
+      "category": "basic",
+      "inputs": {
+        "control": [
+          2.0,
+          3.0,
+          4.0,
+          5.0
+        ],
+        "treated": [
+          {
+            "dose_level": 10,
+            "values": [
+              3.0,
+              4.0,
+              5.0,
+              6.0
+            ]
+          },
+          {
+            "dose_level": 50,
+            "values": [
+              7.0,
+              8.0,
+              9.0,
+              10.0
+            ]
+          },
+          {
+            "dose_level": 100,
+            "values": [
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "dose_level": 10,
+          "p_value_welch": 0.315334
+        },
+        {
+          "dose_level": 50,
+          "p_value_welch": 0.001547
+        },
+        {
+          "dose_level": 100,
+          "p_value_welch": 3.4e-05
+        }
+      ]
+    },
+    {
+      "name": "raw p-values (not multiplied by # tests)",
+      "category": "basic",
+      "inputs": {
+        "control": [
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ],
+        "treated": [
+          {
+            "dose_level": 10,
+            "values": [
+              3.0,
+              4.0,
+              5.0,
+              6.0
+            ]
+          },
+          {
+            "dose_level": 50,
+            "values": [
+              3.0,
+              4.0,
+              5.0,
+              6.0
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "dose_level": 10,
+          "p_value_welch": 0.070988
+        },
+        {
+          "dose_level": 50,
+          "p_value_welch": 0.070988
+        }
+      ]
+    },
+    {
+      "name": "NaN in control stripped",
+      "category": "nan_handling",
+      "inputs": {
+        "control": [
+          null,
+          1.0,
+          2.0,
+          3.0
+        ],
+        "treated": [
+          {
+            "dose_level": 10,
+            "values": [
+              10.0,
+              11.0,
+              12.0
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "dose_level": 10,
+          "p_value_welch": 0.000385
+        }
+      ]
+    },
+    {
+      "name": "NaN in treated stripped",
+      "category": "nan_handling",
+      "inputs": {
+        "control": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "treated": [
+          {
+            "dose_level": 10,
+            "values": [
+              null,
+              10.0,
+              11.0,
+              12.0
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "dose_level": 10,
+          "p_value_welch": 0.000385
+        }
+      ]
+    },
+    {
+      "name": "control < 2 elements → empty list",
+      "category": "edge_empty",
+      "inputs": {
+        "control": [
+          1.0
+        ],
+        "treated": [
+          {
+            "dose_level": 10,
+            "values": [
+              5.0,
+              6.0,
+              7.0
+            ]
+          }
+        ]
+      },
+      "expected": []
+    },
+    {
+      "name": "no treated groups → empty list",
+      "category": "edge_empty",
+      "inputs": {
+        "control": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "treated": []
+      },
+      "expected": []
+    },
+    {
+      "name": "treated n=1 → p_value is None",
+      "category": "edge_none",
+      "inputs": {
+        "control": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "treated": [
+          {
+            "dose_level": 10,
+            "values": [
+              5.0
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "dose_level": 10,
+          "p_value_welch": null
+        }
+      ]
+    }
+  ]
+}

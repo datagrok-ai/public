@@ -1,0 +1,1601 @@
+{
+  "metadata": {
+    "source": "validate_fisher_boschloo.py — Fisher portion",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "[Fisher35] Lady Tea [[3,1],[1,3]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            3,
+            1
+          ],
+          [
+            1,
+            3
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 0.4857142857142857,
+        "p_greater": 0.24285714285714285,
+        "p_less": 0.9857142857142857,
+        "odds_ratio": 9.0
+      },
+      "published": {
+        "p_two_exact": 0.4857142857142857,
+        "p_gt_exact": 0.24285714285714285,
+        "or_expected": 9.0
+      }
+    },
+    {
+      "name": "[Agresti02] [[6,2],[1,4]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            6,
+            2
+          ],
+          [
+            1,
+            4
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 0.10256410256410256,
+        "p_greater": 0.08624708624708624,
+        "p_less": 0.9953379953379954,
+        "odds_ratio": 12.0
+      },
+      "published": {
+        "p_two_exact": 0.10256410256410256,
+        "p_gt_exact": 0.08624708624708624,
+        "or_expected": 12.0
+      }
+    },
+    {
+      "name": "Toxicology [[8,2],[2,8]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            8,
+            2
+          ],
+          [
+            2,
+            8
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 0.02301413756522116,
+        "p_greater": 0.01150706878261058,
+        "p_less": 0.9994533330446643,
+        "odds_ratio": 16.0
+      },
+      "published": {
+        "or_expected": 16.0
+      }
+    },
+    {
+      "name": "Null [[5,5],[5,5]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            5,
+            5
+          ],
+          [
+            5,
+            5
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 1.0,
+        "p_greater": 0.6718591006516703,
+        "p_less": 0.6718591006516703,
+        "odds_ratio": 1.0
+      },
+      "published": {
+        "or_expected": 1.0
+      }
+    },
+    {
+      "name": "[Saari04] [[74,31],[43,32]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            74,
+            31
+          ],
+          [
+            43,
+            32
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 0.08179467495499858,
+        "p_greater": 0.04831221008691221,
+        "p_less": 0.9759961281714722,
+        "odds_ratio": 1.776444111027757
+      },
+      "published": {
+        "or_expected": 1.776444111027757
+      }
+    },
+    {
+      "name": "[Rosner06] [[3,17],[1,19]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            3,
+            17
+          ],
+          [
+            1,
+            19
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 0.6049896049896051,
+        "p_greater": 0.30249480249480254,
+        "p_less": 0.9469854469854471,
+        "odds_ratio": 3.3529411764705883
+      },
+      "published": {
+        "or_expected": 3.3529411764705883
+      }
+    },
+    {
+      "name": "Perfect [[5,0],[0,5]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            5,
+            0
+          ],
+          [
+            0,
+            5
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 0.007936507936507936,
+        "p_greater": 0.003968253968253968,
+        "p_less": 1.0,
+        "odds_ratio": "Infinity"
+      },
+      "published": {
+        "p_two_exact": 0.007936507936507936
+      }
+    },
+    {
+      "name": "Inverse [[0,5],[5,0]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            0,
+            5
+          ],
+          [
+            5,
+            0
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 0.007936507936507936,
+        "p_greater": 1.0,
+        "p_less": 0.003968253968253968,
+        "odds_ratio": 0.0
+      }
+    },
+    {
+      "name": "Extreme [[10,0],[0,10]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            10,
+            0
+          ],
+          [
+            0,
+            10
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 1.082508822446903e-05,
+        "p_greater": 5.412544112234515e-06,
+        "p_less": 1.0,
+        "odds_ratio": "Infinity"
+      },
+      "published": {
+        "p_two_exact": 1.082508822446903e-05
+      }
+    },
+    {
+      "name": "Weak [[4,3],[2,5]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            4,
+            3
+          ],
+          [
+            2,
+            5
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 0.5920745920745921,
+        "p_greater": 0.29603729603729606,
+        "p_less": 0.9487179487179488,
+        "odds_ratio": 3.3333333333333335
+      }
+    },
+    {
+      "name": "Large balanced [[30,10],[10,30]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            30,
+            10
+          ],
+          [
+            10,
+            30
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 1.4874803071085417e-05,
+        "p_greater": 7.437401535542709e-06,
+        "p_less": 0.9999992461351239,
+        "odds_ratio": 9.0
+      }
+    },
+    {
+      "name": "Unequal margins [[1,9],[5,5]]",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            1,
+            9
+          ],
+          [
+            5,
+            5
+          ]
+        ]
+      },
+      "expected": {
+        "p_two_sided": 0.1408668730650155,
+        "p_greater": 0.9945820433436533,
+        "p_less": 0.07043343653250775,
+        "odds_ratio": 0.1111111111111111
+      }
+    },
+    {
+      "name": "random 99 valid 2×2 tables (seeded)",
+      "category": "randomized_property",
+      "data_origin": "np.random.seed(42); randint(0,25,(2,2)) × 100, dropping degenerate",
+      "tables": [
+        {
+          "table": [
+            [
+              6,
+              19
+            ],
+            [
+              14,
+              10
+            ]
+          ],
+          "expected_p_two_sided": 0.020861705098540125
+        },
+        {
+          "table": [
+            [
+              7,
+              20
+            ],
+            [
+              6,
+              18
+            ]
+          ],
+          "expected_p_two_sided": 1.0
+        },
+        {
+          "table": [
+            [
+              22,
+              10
+            ],
+            [
+              10,
+              23
+            ]
+          ],
+          "expected_p_two_sided": 0.00284434490730789
+        },
+        {
+          "table": [
+            [
+              20,
+              3
+            ],
+            [
+              7,
+              23
+            ]
+          ],
+          "expected_p_two_sided": 4.979298043015826e-06
+        },
+        {
+          "table": [
+            [
+              2,
+              21
+            ],
+            [
+              20,
+              1
+            ]
+          ],
+          "expected_p_two_sided": 5.072004779248664e-09
+        },
+        {
+          "table": [
+            [
+              23,
+              11
+            ],
+            [
+              5,
+              1
+            ]
+          ],
+          "expected_p_two_sided": 0.6479374110953059
+        },
+        {
+          "table": [
+            [
+              20,
+              0
+            ],
+            [
+              11,
+              21
+            ]
+          ],
+          "expected_p_two_sided": 8.905131343716827e-07
+        },
+        {
+          "table": [
+            [
+              11,
+              24
+            ],
+            [
+              16,
+              9
+            ]
+          ],
+          "expected_p_two_sided": 0.018070601044406005
+        },
+        {
+          "table": [
+            [
+              15,
+              14
+            ],
+            [
+              14,
+              18
+            ]
+          ],
+          "expected_p_two_sided": 0.611914564545522
+        },
+        {
+          "table": [
+            [
+              11,
+              22
+            ],
+            [
+              19,
+              24
+            ]
+          ],
+          "expected_p_two_sided": 0.3562825462387544
+        },
+        {
+          "table": [
+            [
+              2,
+              4
+            ],
+            [
+              18,
+              6
+            ]
+          ],
+          "expected_p_two_sided": 0.14131615510925855
+        },
+        {
+          "table": [
+            [
+              20,
+              8
+            ],
+            [
+              6,
+              17
+            ]
+          ],
+          "expected_p_two_sided": 0.0019070584920103575
+        },
+        {
+          "table": [
+            [
+              3,
+              24
+            ],
+            [
+              13,
+              17
+            ]
+          ],
+          "expected_p_two_sided": 0.008572577839998008
+        },
+        {
+          "table": [
+            [
+              8,
+              20
+            ],
+            [
+              1,
+              19
+            ]
+          ],
+          "expected_p_two_sided": 0.060858789516211084
+        },
+        {
+          "table": [
+            [
+              14,
+              6
+            ],
+            [
+              11,
+              7
+            ]
+          ],
+          "expected_p_two_sided": 0.7342392448065418
+        },
+        {
+          "table": [
+            [
+              14,
+              2
+            ],
+            [
+              13,
+              16
+            ]
+          ],
+          "expected_p_two_sided": 0.009767578953842145
+        },
+        {
+          "table": [
+            [
+              3,
+              17
+            ],
+            [
+              7,
+              3
+            ]
+          ],
+          "expected_p_two_sided": 0.0048444309313874535
+        },
+        {
+          "table": [
+            [
+              1,
+              5
+            ],
+            [
+              21,
+              9
+            ]
+          ],
+          "expected_p_two_sided": 0.024154016445287793
+        },
+        {
+          "table": [
+            [
+              3,
+              21
+            ],
+            [
+              17,
+              11
+            ]
+          ],
+          "expected_p_two_sided": 0.0005039839944077161
+        },
+        {
+          "table": [
+            [
+              1,
+              9
+            ],
+            [
+              3,
+              13
+            ]
+          ],
+          "expected_p_two_sided": 1.0
+        },
+        {
+          "table": [
+            [
+              15,
+              14
+            ],
+            [
+              7,
+              13
+            ]
+          ],
+          "expected_p_two_sided": 0.3811539326315001
+        },
+        {
+          "table": [
+            [
+              22,
+              24
+            ],
+            [
+              7,
+              20
+            ]
+          ],
+          "expected_p_two_sided": 0.08475118757457367
+        },
+        {
+          "table": [
+            [
+              15,
+              12
+            ],
+            [
+              17,
+              14
+            ]
+          ],
+          "expected_p_two_sided": 1.0
+        },
+        {
+          "table": [
+            [
+              20,
+              23
+            ],
+            [
+              24,
+              12
+            ]
+          ],
+          "expected_p_two_sided": 0.11095151460813536
+        },
+        {
+          "table": [
+            [
+              8,
+              14
+            ],
+            [
+              12,
+              0
+            ]
+          ],
+          "expected_p_two_sided": 0.00024316589333416784
+        },
+        {
+          "table": [
+            [
+              24,
+              6
+            ],
+            [
+              8,
+              23
+            ]
+          ],
+          "expected_p_two_sided": 3.0637448875117094e-05
+        },
+        {
+          "table": [
+            [
+              0,
+              11
+            ],
+            [
+              7,
+              23
+            ]
+          ],
+          "expected_p_two_sided": 0.1597175332733741
+        },
+        {
+          "table": [
+            [
+              10,
+              18
+            ],
+            [
+              16,
+              7
+            ]
+          ],
+          "expected_p_two_sided": 0.02452257948306325
+        },
+        {
+          "table": [
+            [
+              2,
+              2
+            ],
+            [
+              0,
+              4
+            ]
+          ],
+          "expected_p_two_sided": 0.42857142857142855
+        },
+        {
+          "table": [
+            [
+              9,
+              6
+            ],
+            [
+              8,
+              6
+            ]
+          ],
+          "expected_p_two_sided": 1.0
+        },
+        {
+          "table": [
+            [
+              8,
+              7
+            ],
+            [
+              11,
+              1
+            ]
+          ],
+          "expected_p_two_sided": 0.043255295429208473
+        },
+        {
+          "table": [
+            [
+              0,
+              15
+            ],
+            [
+              22,
+              22
+            ]
+          ],
+          "expected_p_two_sided": 0.000369262153184648
+        },
+        {
+          "table": [
+            [
+              23,
+              4
+            ],
+            [
+              2,
+              11
+            ]
+          ],
+          "expected_p_two_sided": 3.498480865834341e-05
+        },
+        {
+          "table": [
+            [
+              7,
+              21
+            ],
+            [
+              2,
+              0
+            ]
+          ],
+          "expected_p_two_sided": 0.08275862068965517
+        },
+        {
+          "table": [
+            [
+              2,
+              4
+            ],
+            [
+              14,
+              13
+            ]
+          ],
+          "expected_p_two_sided": 0.6561836383860855
+        },
+        {
+          "table": [
+            [
+              2,
+              0
+            ],
+            [
+              4,
+              22
+            ]
+          ],
+          "expected_p_two_sided": 0.03968253968253968
+        },
+        {
+          "table": [
+            [
+              13,
+              6
+            ],
+            [
+              8,
+              14
+            ]
+          ],
+          "expected_p_two_sided": 0.06160359333804083
+        },
+        {
+          "table": [
+            [
+              14,
+              9
+            ],
+            [
+              12,
+              18
+            ]
+          ],
+          "expected_p_two_sided": 0.17038338470698156
+        },
+        {
+          "table": [
+            [
+              6,
+              16
+            ],
+            [
+              19,
+              3
+            ]
+          ],
+          "expected_p_two_sided": 0.00017198599792103507
+        },
+        {
+          "table": [
+            [
+              4,
+              22
+            ],
+            [
+              6,
+              12
+            ]
+          ],
+          "expected_p_two_sided": 0.2725977996300712
+        },
+        {
+          "table": [
+            [
+              14,
+              10
+            ],
+            [
+              3,
+              12
+            ]
+          ],
+          "expected_p_two_sided": 0.024406497710168455
+        },
+        {
+          "table": [
+            [
+              6,
+              18
+            ],
+            [
+              21,
+              1
+            ]
+          ],
+          "expected_p_two_sided": 7.656541007708909e-07
+        },
+        {
+          "table": [
+            [
+              9,
+              12
+            ],
+            [
+              24,
+              20
+            ]
+          ],
+          "expected_p_two_sided": 0.43386107822479986
+        },
+        {
+          "table": [
+            [
+              5,
+              11
+            ],
+            [
+              11,
+              19
+            ]
+          ],
+          "expected_p_two_sided": 0.757335377853435
+        },
+        {
+          "table": [
+            [
+              10,
+              22
+            ],
+            [
+              24,
+              6
+            ]
+          ],
+          "expected_p_two_sided": 0.00013826925604704885
+        },
+        {
+          "table": [
+            [
+              19,
+              12
+            ],
+            [
+              8,
+              2
+            ]
+          ],
+          "expected_p_two_sided": 0.447373778293887
+        },
+        {
+          "table": [
+            [
+              6,
+              5
+            ],
+            [
+              7,
+              8
+            ]
+          ],
+          "expected_p_two_sided": 1.0
+        },
+        {
+          "table": [
+            [
+              4,
+              0
+            ],
+            [
+              18,
+              9
+            ]
+          ],
+          "expected_p_two_sided": 0.29521690767519465
+        },
+        {
+          "table": [
+            [
+              11,
+              23
+            ],
+            [
+              14,
+              21
+            ]
+          ],
+          "expected_p_two_sided": 0.6183462840017779
+        },
+        {
+          "table": [
+            [
+              23,
+              8
+            ],
+            [
+              19,
+              16
+            ]
+          ],
+          "expected_p_two_sided": 0.12581848644369234
+        },
+        {
+          "table": [
+            [
+              16,
+              19
+            ],
+            [
+              11,
+              6
+            ]
+          ],
+          "expected_p_two_sided": 0.2452793087591123
+        },
+        {
+          "table": [
+            [
+              1,
+              2
+            ],
+            [
+              16,
+              4
+            ]
+          ],
+          "expected_p_two_sided": 0.15527950310559008
+        },
+        {
+          "table": [
+            [
+              16,
+              23
+            ],
+            [
+              16,
+              16
+            ]
+          ],
+          "expected_p_two_sided": 0.48121465076602415
+        },
+        {
+          "table": [
+            [
+              1,
+              1
+            ],
+            [
+              21,
+              22
+            ]
+          ],
+          "expected_p_two_sided": 1.0
+        },
+        {
+          "table": [
+            [
+              4,
+              0
+            ],
+            [
+              0,
+              18
+            ]
+          ],
+          "expected_p_two_sided": 0.0001367053998632946
+        },
+        {
+          "table": [
+            [
+              1,
+              20
+            ],
+            [
+              11,
+              5
+            ]
+          ],
+          "expected_p_two_sided": 5.049870913902845e-05
+        },
+        {
+          "table": [
+            [
+              22,
+              3
+            ],
+            [
+              22,
+              10
+            ]
+          ],
+          "expected_p_two_sided": 0.11646410273773071
+        },
+        {
+          "table": [
+            [
+              23,
+              16
+            ],
+            [
+              5,
+              23
+            ]
+          ],
+          "expected_p_two_sided": 0.0010142596806721857
+        },
+        {
+          "table": [
+            [
+              4,
+              19
+            ],
+            [
+              1,
+              5
+            ]
+          ],
+          "expected_p_two_sided": 1.0
+        },
+        {
+          "table": [
+            [
+              21,
+              10
+            ],
+            [
+              15,
+              15
+            ]
+          ],
+          "expected_p_two_sided": 0.19778304484419662
+        },
+        {
+          "table": [
+            [
+              0,
+              8
+            ],
+            [
+              5,
+              15
+            ]
+          ],
+          "expected_p_two_sided": 0.28083028083028083
+        },
+        {
+          "table": [
+            [
+              2,
+              19
+            ],
+            [
+              3,
+              18
+            ]
+          ],
+          "expected_p_two_sided": 1.0
+        },
+        {
+          "table": [
+            [
+              2,
+              18
+            ],
+            [
+              19,
+              6
+            ]
+          ],
+          "expected_p_two_sided": 1.3140646175271525e-05
+        },
+        {
+          "table": [
+            [
+              19,
+              8
+            ],
+            [
+              0,
+              7
+            ]
+          ],
+          "expected_p_two_sided": 0.0011961820323234966
+        },
+        {
+          "table": [
+            [
+              6,
+              17
+            ],
+            [
+              7,
+              0
+            ]
+          ],
+          "expected_p_two_sided": 0.000842911877394636
+        },
+        {
+          "table": [
+            [
+              10,
+              24
+            ],
+            [
+              24,
+              17
+            ]
+          ],
+          "expected_p_two_sided": 0.019269336816108106
+        },
+        {
+          "table": [
+            [
+              22,
+              9
+            ],
+            [
+              2,
+              6
+            ]
+          ],
+          "expected_p_two_sided": 0.03702189925100142
+        },
+        {
+          "table": [
+            [
+              15,
+              15
+            ],
+            [
+              24,
+              19
+            ]
+          ],
+          "expected_p_two_sided": 0.6420748194966547
+        },
+        {
+          "table": [
+            [
+              16,
+              1
+            ],
+            [
+              0,
+              15
+            ]
+          ],
+          "expected_p_two_sided": 5.656481323571378e-08
+        },
+        {
+          "table": [
+            [
+              11,
+              4
+            ],
+            [
+              4,
+              22
+            ]
+          ],
+          "expected_p_two_sided": 0.000462704925026279
+        },
+        {
+          "table": [
+            [
+              8,
+              8
+            ],
+            [
+              2,
+              18
+            ]
+          ],
+          "expected_p_two_sided": 0.011278569022467473
+        },
+        {
+          "table": [
+            [
+              15,
+              15
+            ],
+            [
+              2,
+              19
+            ]
+          ],
+          "expected_p_two_sided": 0.0028312965381487153
+        },
+        {
+          "table": [
+            [
+              23,
+              21
+            ],
+            [
+              23,
+              0
+            ]
+          ],
+          "expected_p_two_sided": 1.76755043645948e-05
+        },
+        {
+          "table": [
+            [
+              23,
+              19
+            ],
+            [
+              10,
+              16
+            ]
+          ],
+          "expected_p_two_sided": 0.22000084291418803
+        },
+        {
+          "table": [
+            [
+              7,
+              3
+            ],
+            [
+              5,
+              7
+            ]
+          ],
+          "expected_p_two_sided": 0.23053107882829246
+        },
+        {
+          "table": [
+            [
+              19,
+              2
+            ],
+            [
+              15,
+              24
+            ]
+          ],
+          "expected_p_two_sided": 9.956063756110257e-05
+        },
+        {
+          "table": [
+            [
+              2,
+              24
+            ],
+            [
+              17,
+              13
+            ]
+          ],
+          "expected_p_two_sided": 0.00015117590447769448
+        },
+        {
+          "table": [
+            [
+              17,
+              1
+            ],
+            [
+              21,
+              2
+            ]
+          ],
+          "expected_p_two_sided": 1.0
+        },
+        {
+          "table": [
+            [
+              15,
+              8
+            ],
+            [
+              3,
+              0
+            ]
+          ],
+          "expected_p_two_sided": 0.5292307692307692
+        },
+        {
+          "table": [
+            [
+              3,
+              0
+            ],
+            [
+              13,
+              20
+            ]
+          ],
+          "expected_p_two_sided": 0.0784313725490196
+        },
+        {
+          "table": [
+            [
+              15,
+              19
+            ],
+            [
+              23,
+              7
+            ]
+          ],
+          "expected_p_two_sided": 0.011075119816337011
+        },
+        {
+          "table": [
+            [
+              6,
+              2
+            ],
+            [
+              16,
+              0
+            ]
+          ],
+          "expected_p_two_sided": 0.10144927536231885
+        },
+        {
+          "table": [
+            [
+              15,
+              11
+            ],
+            [
+              18,
+              21
+            ]
+          ],
+          "expected_p_two_sided": 0.45016993032973546
+        },
+        {
+          "table": [
+            [
+              22,
+              21
+            ],
+            [
+              13,
+              5
+            ]
+          ],
+          "expected_p_two_sided": 0.1625070896438431
+        },
+        {
+          "table": [
+            [
+              5,
+              12
+            ],
+            [
+              18,
+              21
+            ]
+          ],
+          "expected_p_two_sided": 0.3761176950880579
+        },
+        {
+          "table": [
+            [
+              7,
+              1
+            ],
+            [
+              20,
+              0
+            ]
+          ],
+          "expected_p_two_sided": 0.2857142857142857
+        },
+        {
+          "table": [
+            [
+              14,
+              0
+            ],
+            [
+              4,
+              15
+            ]
+          ],
+          "expected_p_two_sided": 6.063683700671658e-06
+        },
+        {
+          "table": [
+            [
+              18,
+              3
+            ],
+            [
+              2,
+              16
+            ]
+          ],
+          "expected_p_two_sided": 3.3579518030840757e-06
+        },
+        {
+          "table": [
+            [
+              16,
+              11
+            ],
+            [
+              13,
+              20
+            ]
+          ],
+          "expected_p_two_sided": 0.19398852231299404
+        },
+        {
+          "table": [
+            [
+              5,
+              2
+            ],
+            [
+              8,
+              4
+            ]
+          ],
+          "expected_p_two_sided": 1.0
+        },
+        {
+          "table": [
+            [
+              23,
+              16
+            ],
+            [
+              13,
+              20
+            ]
+          ],
+          "expected_p_two_sided": 0.15540135959785148
+        },
+        {
+          "table": [
+            [
+              2,
+              0
+            ],
+            [
+              19,
+              20
+            ]
+          ],
+          "expected_p_two_sided": 0.4878048780487805
+        },
+        {
+          "table": [
+            [
+              22,
+              0
+            ],
+            [
+              2,
+              17
+            ]
+          ],
+          "expected_p_two_sided": 1.128083821591513e-09
+        },
+        {
+          "table": [
+            [
+              24,
+              9
+            ],
+            [
+              21,
+              2
+            ]
+          ],
+          "expected_p_two_sided": 0.10225269430256122
+        },
+        {
+          "table": [
+            [
+              7,
+              13
+            ],
+            [
+              23,
+              17
+            ]
+          ],
+          "expected_p_two_sided": 0.17022170316928473
+        },
+        {
+          "table": [
+            [
+              14,
+              21
+            ],
+            [
+              22,
+              1
+            ]
+          ],
+          "expected_p_two_sided": 1.5907369990367207e-05
+        },
+        {
+          "table": [
+            [
+              9,
+              1
+            ],
+            [
+              16,
+              7
+            ]
+          ],
+          "expected_p_two_sided": 0.38199376325071543
+        },
+        {
+          "table": [
+            [
+              0,
+              8
+            ],
+            [
+              10,
+              21
+            ]
+          ],
+          "expected_p_two_sided": 0.08617384623576575
+        },
+        {
+          "table": [
+            [
+              15,
+              6
+            ],
+            [
+              9,
+              22
+            ]
+          ],
+          "expected_p_two_sided": 0.004318636331887439
+        }
+      ]
+    }
+  ]
+}

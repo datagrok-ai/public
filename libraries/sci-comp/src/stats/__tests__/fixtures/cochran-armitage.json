@@ -1,0 +1,512 @@
+{
+  "metadata": {
+    "source": "validate_trend_test_incidence.py",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "[Young] Table 1(a) 0/50, 0/50, 10/50",
+      "category": "young_table_1_default_scores",
+      "inputs": {
+        "counts": [
+          0,
+          0,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": 4.0089186286863665,
+        "p_value": 6.0997428896536476e-05
+      }
+    },
+    {
+      "name": "[Young] Table 1(b) 0/50, 5/50, 10/50",
+      "category": "young_table_1_default_scores",
+      "inputs": {
+        "counts": [
+          0,
+          5,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": 3.333333333333333,
+        "p_value": 0.0008581206663935692
+      }
+    },
+    {
+      "name": "[Young] Table 1(c) 0/50, 10/50, 10/50",
+      "category": "young_table_1_default_scores",
+      "inputs": {
+        "counts": [
+          0,
+          10,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": 2.9417420270727606,
+        "p_value": 0.003263716901670266
+      }
+    },
+    {
+      "name": "[Tang 2006] 90-day neurotoxicity rats",
+      "category": "published",
+      "inputs": {
+        "counts": [
+          0,
+          0,
+          1,
+          3
+        ],
+        "totals": [
+          12,
+          12,
+          12,
+          12
+        ]
+      },
+      "expected": {
+        "statistic": 2.335496832484569,
+        "p_value": 0.019517481182177665
+      }
+    },
+    {
+      "name": "[Young] Table 5c DDT 4-group",
+      "category": "published",
+      "inputs": {
+        "counts": [
+          4,
+          1,
+          1,
+          7
+        ],
+        "totals": [
+          56,
+          49,
+          48,
+          41
+        ]
+      },
+      "expected": {
+        "statistic": 1.560329545548641,
+        "p_value": 0.11868202478409828
+      }
+    },
+    {
+      "name": "[Young] Table 3b Lilly Study 2 males",
+      "category": "published",
+      "inputs": {
+        "counts": [
+          10,
+          6,
+          7,
+          18
+        ],
+        "totals": [
+          120,
+          80,
+          80,
+          80
+        ]
+      },
+      "expected": {
+        "statistic": 2.7778024142785283,
+        "p_value": 0.005472788632405301
+      },
+      "published": {
+        "approx_z": 2.78,
+        "tol": 0.01
+      }
+    },
+    {
+      "name": "balanced 3-group",
+      "category": "synthetic",
+      "inputs": {
+        "counts": [
+          5,
+          10,
+          20
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": 3.546496828075953,
+        "p_value": 0.00039038944200298076
+      }
+    },
+    {
+      "name": "balanced reversed",
+      "category": "synthetic",
+      "inputs": {
+        "counts": [
+          20,
+          10,
+          5
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": -3.546496828075953,
+        "p_value": 0.00039038944200298076
+      }
+    },
+    {
+      "name": "flat 3-group",
+      "category": "synthetic",
+      "inputs": {
+        "counts": [
+          10,
+          10,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": 0.0,
+        "p_value": 1.0
+      }
+    },
+    {
+      "name": "4-group balanced",
+      "category": "synthetic",
+      "inputs": {
+        "counts": [
+          10,
+          15,
+          20,
+          30
+        ],
+        "totals": [
+          100,
+          100,
+          100,
+          100
+        ]
+      },
+      "expected": {
+        "statistic": 3.723797345005051,
+        "p_value": 0.00019624847733701323
+      }
+    },
+    {
+      "name": "4-group unbalanced",
+      "category": "synthetic",
+      "inputs": {
+        "counts": [
+          3,
+          8,
+          15,
+          25
+        ],
+        "totals": [
+          40,
+          60,
+          80,
+          100
+        ]
+      },
+      "expected": {
+        "statistic": 2.6724206034270224,
+        "p_value": 0.007530619280873063
+      }
+    },
+    {
+      "name": "strong trend large N",
+      "category": "synthetic",
+      "inputs": {
+        "counts": [
+          10,
+          50,
+          100,
+          200
+        ],
+        "totals": [
+          1000,
+          1000,
+          1000,
+          1000
+        ]
+      },
+      "expected": {
+        "statistic": 15.319152544329425,
+        "p_value": 0.0
+      }
+    },
+    {
+      "name": "no trend, large N (flat 0.15 across 4 groups of 500)",
+      "category": "synthetic",
+      "inputs": {
+        "counts": [
+          75,
+          75,
+          75,
+          75
+        ],
+        "totals": [
+          500,
+          500,
+          500,
+          500
+        ]
+      },
+      "expected": {
+        "statistic": 0.0,
+        "p_value": 1.0
+      }
+    },
+    {
+      "name": "seeded k=2",
+      "category": "seeded_synthetic",
+      "data_origin": "np.random.seed(2); randint(0,20,2); cc[0]=1, cc[-1]=min(cc[-1],49)",
+      "inputs": {
+        "counts": [
+          1,
+          15
+        ],
+        "totals": [
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": 3.8188130791298667,
+        "p_value": 0.0001340953203230466
+      }
+    },
+    {
+      "name": "seeded k=3",
+      "category": "seeded_synthetic",
+      "data_origin": "np.random.seed(3); randint(0,20,3); cc[0]=1, cc[-1]=min(cc[-1],49)",
+      "inputs": {
+        "counts": [
+          1,
+          3,
+          8
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": 2.5802342327107,
+        "p_value": 0.009873332091192788
+      }
+    },
+    {
+      "name": "seeded k=4",
+      "category": "seeded_synthetic",
+      "data_origin": "np.random.seed(4); randint(0,20,4); cc[0]=1, cc[-1]=min(cc[-1],49)",
+      "inputs": {
+        "counts": [
+          1,
+          5,
+          1,
+          8
+        ],
+        "totals": [
+          50,
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": 2.0410207656380583,
+        "p_value": 0.041248763094905216
+      }
+    },
+    {
+      "name": "seeded k=5",
+      "category": "seeded_synthetic",
+      "data_origin": "np.random.seed(5); randint(0,20,5); cc[0]=1, cc[-1]=min(cc[-1],49)",
+      "inputs": {
+        "counts": [
+          1,
+          14,
+          15,
+          6,
+          16
+        ],
+        "totals": [
+          50,
+          50,
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": 2.4240603078447482,
+        "p_value": 0.015348056464596915
+      }
+    },
+    {
+      "name": "seeded k=6",
+      "category": "seeded_synthetic",
+      "data_origin": "np.random.seed(6); randint(0,20,6); cc[0]=1, cc[-1]=min(cc[-1],49)",
+      "inputs": {
+        "counts": [
+          1,
+          9,
+          3,
+          10,
+          13,
+          15
+        ],
+        "totals": [
+          50,
+          50,
+          50,
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": 4.004907387587479,
+        "p_value": 6.204178318292008e-05
+      }
+    },
+    {
+      "name": "p̄ = 0",
+      "category": "edge_none",
+      "inputs": {
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "p̄ = 1",
+      "category": "edge_none",
+      "inputs": {
+        "counts": [
+          50,
+          50,
+          50
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "k = 1",
+      "category": "edge_none",
+      "inputs": {
+        "counts": [
+          5
+        ],
+        "totals": [
+          50
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "k = 0",
+      "category": "edge_none",
+      "inputs": {
+        "counts": [],
+        "totals": []
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "N = 0",
+      "category": "edge_none",
+      "inputs": {
+        "counts": [
+          0,
+          0
+        ],
+        "totals": [
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "single non-zero group (Sxx=0)",
+      "category": "edge_none",
+      "inputs": {
+        "counts": [
+          0,
+          10
+        ],
+        "totals": [
+          0,
+          50
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    }
+  ]
+}

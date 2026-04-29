@@ -1,0 +1,1044 @@
+{
+  "metadata": {
+    "source": "validate_trend_test_incidence_modified.py",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "[Young] (a) [0,0,1]",
+      "category": "young_score_sensitivity",
+      "inputs": {
+        "counts": [
+          0,
+          0,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          0,
+          0,
+          1
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 4.629100498862757,
+        "p_value": 1.8362875571328164e-06
+      }
+    },
+    {
+      "name": "[Young] (a) [0,1,2]",
+      "category": "young_score_sensitivity",
+      "inputs": {
+        "counts": [
+          0,
+          0,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          0,
+          1,
+          2
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 4.0089186286863665,
+        "p_value": 3.0498714448247482e-05
+      }
+    },
+    {
+      "name": "[Young] (a) [0,1,1]",
+      "category": "young_score_sensitivity",
+      "inputs": {
+        "counts": [
+          0,
+          0,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          0,
+          1,
+          1
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 2.3145502494313783,
+        "p_value": 0.0103187791219861
+      }
+    },
+    {
+      "name": "[Young] (b) [0,0,1]",
+      "category": "young_score_sensitivity",
+      "inputs": {
+        "counts": [
+          0,
+          5,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          0,
+          0,
+          1
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 2.8867513459481287,
+        "p_value": 0.001946208561389314
+      }
+    },
+    {
+      "name": "[Young] (b) [0,1,2]",
+      "category": "young_score_sensitivity",
+      "inputs": {
+        "counts": [
+          0,
+          5,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          0,
+          1,
+          2
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 3.333333333333333,
+        "p_value": 0.0004290603331968372
+      }
+    },
+    {
+      "name": "[Young] (b) [0,1,1]",
+      "category": "young_score_sensitivity",
+      "inputs": {
+        "counts": [
+          0,
+          5,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          0,
+          1,
+          1
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 2.8867513459481287,
+        "p_value": 0.001946208561389314
+      }
+    },
+    {
+      "name": "[Young] (c) [0,0,1]",
+      "category": "young_score_sensitivity",
+      "inputs": {
+        "counts": [
+          0,
+          10,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          0,
+          0,
+          1
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 1.6984155512168935,
+        "p_value": 0.0447146795144968
+      }
+    },
+    {
+      "name": "[Young] (c) [0,1,2]",
+      "category": "young_score_sensitivity",
+      "inputs": {
+        "counts": [
+          0,
+          10,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          0,
+          1,
+          2
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 2.9417420270727606,
+        "p_value": 0.0016318584508351144
+      }
+    },
+    {
+      "name": "[Young] (c) [0,1,1]",
+      "category": "young_score_sensitivity",
+      "inputs": {
+        "counts": [
+          0,
+          10,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          0,
+          1,
+          1
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 3.396831102433787,
+        "p_value": 0.00034085514668541977
+      }
+    },
+    {
+      "name": "[Young] Table 5b DDT scores=[0, 1, 1, 1, 1, 1, 1]",
+      "category": "published_dose_response",
+      "inputs": {
+        "counts": [
+          4,
+          1,
+          1,
+          7,
+          17,
+          12,
+          15
+        ],
+        "totals": [
+          56,
+          49,
+          48,
+          41,
+          47,
+          44,
+          50
+        ],
+        "scores": [
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 2.154306267461459,
+        "p_value": 0.015608080848659441
+      },
+      "published": {
+        "approx_z": 2.22,
+        "tol": 0.2,
+        "note": "1985 publication rounding"
+      }
+    },
+    {
+      "name": "[Young] Table 5b DDT scores=[0, 1, 2, 3, 4, 5, 6]",
+      "category": "published_dose_response",
+      "inputs": {
+        "counts": [
+          4,
+          1,
+          1,
+          7,
+          17,
+          12,
+          15
+        ],
+        "totals": [
+          56,
+          49,
+          48,
+          41,
+          47,
+          44,
+          50
+        ],
+        "scores": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 5.365498360476257,
+        "p_value": 4.036300678856188e-08
+      },
+      "published": {
+        "approx_z": 5.25,
+        "tol": 0.2,
+        "note": "1985 publication rounding"
+      }
+    },
+    {
+      "name": "[Young] Table 5b DDT scores=[0, 0, 0, 1, 2, 2, 2]",
+      "category": "published_dose_response",
+      "inputs": {
+        "counts": [
+          4,
+          1,
+          1,
+          7,
+          17,
+          12,
+          15
+        ],
+        "totals": [
+          56,
+          49,
+          48,
+          41,
+          47,
+          44,
+          50
+        ],
+        "scores": [
+          0,
+          0,
+          0,
+          1,
+          2,
+          2,
+          2
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 6.2193146503612615,
+        "p_value": 2.496655410487218e-10
+      },
+      "published": {
+        "approx_z": 6.06,
+        "tol": 0.2,
+        "note": "1985 publication rounding"
+      }
+    },
+    {
+      "name": "balanced 4-group variance=binomial",
+      "category": "variance_comparison",
+      "inputs": {
+        "counts": [
+          10,
+          15,
+          20,
+          30
+        ],
+        "totals": [
+          100,
+          100,
+          100,
+          100
+        ],
+        "alternative": "two-sided",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 3.723797345005051,
+        "p_value": 0.0001962484773369475
+      }
+    },
+    {
+      "name": "balanced 4-group variance=hypergeometric",
+      "category": "variance_comparison",
+      "inputs": {
+        "counts": [
+          10,
+          15,
+          20,
+          30
+        ],
+        "totals": [
+          100,
+          100,
+          100,
+          100
+        ],
+        "alternative": "two-sided",
+        "variance": "hypergeometric"
+      },
+      "expected": {
+        "z_statistic": 3.7191396854649064,
+        "p_value": 0.00019990248539539904
+      }
+    },
+    {
+      "name": "affine invariance scores=[0, 1, 2]",
+      "category": "affine_invariance",
+      "inputs": {
+        "counts": [
+          5,
+          10,
+          20
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          0,
+          1,
+          2
+        ],
+        "alternative": "two-sided",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 3.546496828075953,
+        "p_value": 0.00039038944200288806
+      }
+    },
+    {
+      "name": "affine invariance scores=[1, 2, 3]",
+      "category": "affine_invariance",
+      "inputs": {
+        "counts": [
+          5,
+          10,
+          20
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          1,
+          2,
+          3
+        ],
+        "alternative": "two-sided",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 3.546496828075953,
+        "p_value": 0.00039038944200288806
+      }
+    },
+    {
+      "name": "affine invariance scores=[10, 30, 50]",
+      "category": "affine_invariance",
+      "inputs": {
+        "counts": [
+          5,
+          10,
+          20
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          10,
+          30,
+          50
+        ],
+        "alternative": "two-sided",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 3.546496828075953,
+        "p_value": 0.00039038944200288806
+      }
+    },
+    {
+      "name": "modified: uniform p̂",
+      "category": "modified_buonaccorsi",
+      "inputs": {
+        "counts": [
+          10,
+          10,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "alternative": "increasing",
+        "modified": true
+      },
+      "expected": {
+        "z_statistic": 0.0,
+        "p_value": 0.5,
+        "z_modified": 0.0,
+        "p_value_modified": 0.5
+      }
+    },
+    {
+      "name": "modified: heterogeneous p̂",
+      "category": "modified_buonaccorsi",
+      "inputs": {
+        "counts": [
+          2,
+          10,
+          40
+        ],
+        "totals": [
+          100,
+          100,
+          100
+        ],
+        "alternative": "increasing",
+        "modified": true
+      },
+      "expected": {
+        "z_statistic": 7.0984306097607295,
+        "p_value": 6.309075663995694e-13,
+        "z_modified": 7.458152383799166,
+        "p_value_modified": 4.3872078849537055e-14
+      }
+    },
+    {
+      "name": "modified: clear trend [5,15,30]",
+      "category": "modified_buonaccorsi",
+      "inputs": {
+        "counts": [
+          5,
+          15,
+          30
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "alternative": "increasing",
+        "modified": true
+      },
+      "expected": {
+        "z_statistic": 5.303300858899107,
+        "p_value": 5.6863628284898115e-08,
+        "z_modified": 6.154574548966636,
+        "p_value_modified": 3.7639653756087015e-10
+      }
+    },
+    {
+      "name": "alternative=two-sided",
+      "category": "alternative_directions",
+      "inputs": {
+        "counts": [
+          5,
+          10,
+          20
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "alternative": "two-sided",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 3.546496828075953,
+        "p_value": 0.00039038944200288806
+      }
+    },
+    {
+      "name": "alternative=increasing",
+      "category": "alternative_directions",
+      "inputs": {
+        "counts": [
+          5,
+          10,
+          20
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "alternative": "increasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 3.546496828075953,
+        "p_value": 0.00019519472100144403
+      }
+    },
+    {
+      "name": "alternative=decreasing",
+      "category": "alternative_directions",
+      "inputs": {
+        "counts": [
+          5,
+          10,
+          20
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "alternative": "decreasing",
+        "variance": "binomial"
+      },
+      "expected": {
+        "z_statistic": 3.546496828075953,
+        "p_value": 0.9998048052789985
+      }
+    },
+    {
+      "name": "p̄ = 0 → degenerate (Z=0, p=1)",
+      "category": "degenerate",
+      "inputs": {
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "z_statistic": 0.0,
+        "p_value": 1.0
+      }
+    },
+    {
+      "name": "p̄ = 1 → degenerate (Z=0, p=1)",
+      "category": "degenerate",
+      "inputs": {
+        "counts": [
+          50,
+          50,
+          50
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "z_statistic": 0.0,
+        "p_value": 1.0
+      }
+    },
+    {
+      "name": "identical scores → degenerate",
+      "category": "degenerate",
+      "inputs": {
+        "counts": [
+          5,
+          10,
+          20
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ],
+        "scores": [
+          1,
+          1,
+          1
+        ]
+      },
+      "expected": {
+        "z_statistic": 0.0,
+        "p_value": 1.0
+      }
+    },
+    {
+      "name": "raises ValueError: k < 2",
+      "category": "validation_error",
+      "inputs": {
+        "counts": [
+          5
+        ],
+        "totals": [
+          50
+        ]
+      },
+      "expected_error": "ValueError"
+    },
+    {
+      "name": "raises ValueError: count > total",
+      "category": "validation_error",
+      "inputs": {
+        "counts": [
+          60,
+          10
+        ],
+        "totals": [
+          50,
+          50
+        ]
+      },
+      "expected_error": "ValueError"
+    },
+    {
+      "name": "raises ValueError: negative count",
+      "category": "validation_error",
+      "inputs": {
+        "counts": [
+          -1,
+          10
+        ],
+        "totals": [
+          50,
+          50
+        ]
+      },
+      "expected_error": "ValueError"
+    },
+    {
+      "name": "raises ValueError: mismatched lengths",
+      "category": "validation_error",
+      "inputs": {
+        "counts": [
+          5,
+          10
+        ],
+        "totals": [
+          50,
+          50,
+          50
+        ]
+      },
+      "expected_error": "ValueError"
+    },
+    {
+      "name": "raises ValueError: all totals 0",
+      "category": "validation_error",
+      "inputs": {
+        "counts": [
+          0,
+          0
+        ],
+        "totals": [
+          0,
+          0
+        ]
+      },
+      "expected_error": "ValueError"
+    },
+    {
+      "name": "raises ValueError: invalid variance",
+      "category": "validation_error",
+      "inputs": {
+        "counts": [
+          5,
+          10
+        ],
+        "totals": [
+          50,
+          50
+        ],
+        "variance": "invalid"
+      },
+      "expected_error": "ValueError"
+    },
+    {
+      "name": "raises ValueError: invalid alternative",
+      "category": "validation_error",
+      "inputs": {
+        "counts": [
+          5,
+          10
+        ],
+        "totals": [
+          50,
+          50
+        ],
+        "alternative": "wrong"
+      },
+      "expected_error": "ValueError"
+    }
+  ],
+  "threshold_cases": [
+    {
+      "name": "[Young] Table 5c DDT 4-group, alpha=0.05, no Šidák",
+      "category": "published",
+      "inputs": {
+        "counts": [
+          4,
+          1,
+          1,
+          7
+        ],
+        "totals": [
+          56,
+          49,
+          48,
+          41
+        ],
+        "alpha": 0.05,
+        "adjust_alpha": false
+      },
+      "expected": [
+        {
+          "test": "groups [0] vs group 1",
+          "control_count": 4,
+          "control_total": 56,
+          "control_pct": 7.142857142857142,
+          "treated_count": 1,
+          "treated_total": 49,
+          "treated_pct": 2.0408163265306123,
+          "z": -1.224744871391589,
+          "p": 0.8896643190400766,
+          "alpha_adj": 0.05,
+          "significant": false
+        },
+        {
+          "test": "groups [0, 1] vs group 2",
+          "control_count": 5,
+          "control_total": 105,
+          "control_pct": 4.761904761904762,
+          "treated_count": 1,
+          "treated_total": 48,
+          "treated_pct": 2.083333333333333,
+          "z": -0.7920086469180768,
+          "p": 0.7858221828163044,
+          "alpha_adj": 0.05,
+          "significant": false
+        },
+        {
+          "test": "groups [0, 1, 2] vs group 3",
+          "control_count": 6,
+          "control_total": 153,
+          "control_pct": 3.9215686274509802,
+          "treated_count": 7,
+          "treated_total": 41,
+          "treated_pct": 17.073170731707318,
+          "z": 2.9909297057652227,
+          "p": 0.0013906475466117982,
+          "alpha_adj": 0.05,
+          "significant": true,
+          "effect_group": 3,
+          "noel_groups": [
+            0,
+            1,
+            2
+          ]
+        }
+      ],
+      "published_zs": [
+        -1.22,
+        -0.79,
+        2.99
+      ],
+      "published_effect_group": 3,
+      "published_noel_groups": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "[Young] DDT 4-group, alpha=0.05, with Šidák correction",
+      "category": "published",
+      "inputs": {
+        "counts": [
+          4,
+          1,
+          1,
+          7
+        ],
+        "totals": [
+          56,
+          49,
+          48,
+          41
+        ],
+        "alpha": 0.05,
+        "adjust_alpha": true
+      },
+      "expected": [
+        {
+          "test": "groups [0] vs group 1",
+          "control_count": 4,
+          "control_total": 56,
+          "control_pct": 7.142857142857142,
+          "treated_count": 1,
+          "treated_total": 49,
+          "treated_pct": 2.0408163265306123,
+          "z": -1.224744871391589,
+          "p": 0.8896643190400766,
+          "alpha_adj": 0.016952427508441503,
+          "significant": false
+        },
+        {
+          "test": "groups [0, 1] vs group 2",
+          "control_count": 5,
+          "control_total": 105,
+          "control_pct": 4.761904761904762,
+          "treated_count": 1,
+          "treated_total": 48,
+          "treated_pct": 2.083333333333333,
+          "z": -0.7920086469180768,
+          "p": 0.7858221828163044,
+          "alpha_adj": 0.016952427508441503,
+          "significant": false
+        },
+        {
+          "test": "groups [0, 1, 2] vs group 3",
+          "control_count": 6,
+          "control_total": 153,
+          "control_pct": 3.9215686274509802,
+          "treated_count": 7,
+          "treated_total": 41,
+          "treated_pct": 17.073170731707318,
+          "z": 2.9909297057652227,
+          "p": 0.0013906475466117982,
+          "alpha_adj": 0.016952427508441503,
+          "significant": true,
+          "effect_group": 3,
+          "noel_groups": [
+            0,
+            1,
+            2
+          ]
+        }
+      ],
+      "expected_alpha_adj": 0.016952427508441503
+    },
+    {
+      "name": "no trend → effect_group = None",
+      "category": "no_effect",
+      "inputs": {
+        "counts": [
+          5,
+          5,
+          5,
+          5
+        ],
+        "totals": [
+          50,
+          50,
+          50,
+          50
+        ],
+        "alpha": 0.05,
+        "adjust_alpha": false
+      },
+      "expected": [
+        {
+          "test": "groups [0] vs group 1",
+          "control_count": 5,
+          "control_total": 50,
+          "control_pct": 10.0,
+          "treated_count": 5,
+          "treated_total": 50,
+          "treated_pct": 10.0,
+          "z": 0.0,
+          "p": 0.5,
+          "alpha_adj": 0.05,
+          "significant": false
+        },
+        {
+          "test": "groups [0, 1] vs group 2",
+          "control_count": 10,
+          "control_total": 100,
+          "control_pct": 10.0,
+          "treated_count": 5,
+          "treated_total": 50,
+          "treated_pct": 10.0,
+          "z": 0.0,
+          "p": 0.5,
+          "alpha_adj": 0.05,
+          "significant": false
+        },
+        {
+          "test": "groups [0, 1, 2] vs group 3",
+          "control_count": 15,
+          "control_total": 150,
+          "control_pct": 10.0,
+          "treated_count": 5,
+          "treated_total": 50,
+          "treated_pct": 10.0,
+          "z": 0.0,
+          "p": 0.5,
+          "alpha_adj": 0.05,
+          "significant": false,
+          "noel_groups": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "effect_group": null
+        }
+      ]
+    }
+  ]
+}

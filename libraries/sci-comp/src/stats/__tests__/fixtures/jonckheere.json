@@ -1,0 +1,204 @@
+{
+  "metadata": {
+    "source": "validate_trend_test.py",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "[seed=42] 3 normal groups (5,6,7), n=(10,12,8)",
+      "category": "seeded_synthetic",
+      "data_origin": "np.random.seed(42); normal(5,1,10), normal(6,1,12), normal(7,1,8)",
+      "inputs": {
+        "groups": [
+          [
+            5.496714153011233,
+            4.861735698828816,
+            5.6476885381006925,
+            6.523029856408026,
+            4.765846625276664,
+            4.765863043050819,
+            6.5792128155073915,
+            5.7674347291529084,
+            4.530525614065048,
+            5.542560043585965
+          ],
+          [
+            5.536582307187538,
+            5.5342702464297435,
+            6.241962271566035,
+            4.086719755342202,
+            4.275082167486968,
+            5.437712470759028,
+            4.987168879665576,
+            6.314247332595274,
+            5.091975924478789,
+            4.587696298664708,
+            7.465648768921554,
+            5.774223699513464
+          ],
+          [
+            7.067528204687924,
+            5.575251813786544,
+            6.455617275474817,
+            7.110922589709866,
+            5.849006422577697,
+            7.3756980183456715,
+            6.399361310081195,
+            6.708306250206723
+          ]
+        ]
+      },
+      "expected": {
+        "statistic": 2.3694748163992263,
+        "p_value": 0.017813368177052258
+      }
+    },
+    {
+      "name": "perfect monotone",
+      "category": "deterministic",
+      "inputs": {
+        "groups": [
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            4,
+            5,
+            6
+          ],
+          [
+            7,
+            8,
+            9
+          ]
+        ]
+      },
+      "expected": {
+        "statistic": 3.0,
+        "p_value": 0.002699796063260207
+      }
+    },
+    {
+      "name": "identical groups",
+      "category": "deterministic",
+      "inputs": {
+        "groups": [
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "expected": {
+        "statistic": 0.0,
+        "p_value": 1.0
+      }
+    },
+    {
+      "name": "reversed",
+      "category": "deterministic",
+      "inputs": {
+        "groups": [
+          [
+            7,
+            8,
+            9
+          ],
+          [
+            4,
+            5,
+            6
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "expected": {
+        "statistic": -3.0,
+        "p_value": 0.002699796063260207
+      }
+    },
+    {
+      "name": "two groups",
+      "category": "deterministic",
+      "inputs": {
+        "groups": [
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            5,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      "expected": {
+        "statistic": 2.3094010767585034,
+        "p_value": 0.020921335337793945
+      }
+    },
+    {
+      "name": "k < 2 → None",
+      "category": "edge_none",
+      "inputs": {
+        "groups": [
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "N < 4 → None",
+      "category": "edge_none",
+      "inputs": {
+        "groups": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    }
+  ]
+}
