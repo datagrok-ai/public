@@ -11,7 +11,7 @@ import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame, compileBody,
 import {toFeather} from '@datagrok-libraries/arrow';
 import {getErrors} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/fitting-utils';
-import {buildSetup, buildRunSeed, LOSS, WorkerPool} from './imports';
+import {buildSetup, buildRunSeed, LOSS, WorkerPool, Query} from './imports';
 import type {OutputTargetItem, ValueBoundsData} from './imports';
 import {rangeBound, formulaBound} from './utils';
 import {makeWedgedFunc} from './script-fixtures';
@@ -383,21 +383,11 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
 
   test('pool_dispose_drains_inflight_run', async () => {
     // White-box: dispose's job is to resolve the in-flight run as a failure.
-    // Inject a fake `running` slot state so the test doesn't hinge on the
-    // dispatchRun → worker → reply round-trip.
+    // Inject a Query into the slot's runState so the test doesn't hinge on
+    // the dispatchRun → worker → reply round-trip.
     type RunReplyLike = {kind: string; taskId: number; message?: string};
     type SlotInternal = {
-      runState:
-        | {phase: 'idle'}
-        | {
-            phase: 'running';
-            run: {
-              run: {taskId: number; sessionId: number; kind: string; seed: Float64Array};
-              transferables: Transferable[];
-              resolve: (r: RunReplyLike) => void;
-            };
-            runTimer: ReturnType<typeof setTimeout>;
-          };
+      runState: {phase: 'idle'} | {phase: 'running'; query: Query};
     };
     const pool = new WorkerPool(1);
     const internal = pool as unknown as {
@@ -407,18 +397,15 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     internal.ensureWorkers();
     let resolved = false;
     let reply: RunReplyLike | null = null;
-    // Long-lived noop timer — dispose() will clearTimeout it as part of
-    // the running→idle transition.
-    const noopTimer = setTimeout(() => {}, 60_000);
-    internal.slots[0].runState = {
-      phase: 'running',
-      run: {
-        run: {taskId: 42, sessionId: 9, kind: 'run-seed', seed: new Float64Array([1, 2])},
-        transferables: [],
-        resolve: (r) => { resolved = true; reply = r; },
-      },
-      runTimer: noopTimer,
-    };
+    const query = new Query(
+      {taskId: 42, sessionId: 9, kind: 'run-seed', seed: new Float64Array([1, 2])} as any,
+      [],
+      (r) => { resolved = true; reply = r as RunReplyLike; },
+    );
+    // Long-lived noop timer — Query.settle clearTimeouts it on dispose's
+    // running→idle transition.
+    query.startRunning(setTimeout(() => {}, 60_000));
+    internal.slots[0].runState = {phase: 'running', query};
     pool.dispose();
     expect(resolved, true, 'dispose must resolve the running slot\'s run');
     expect(reply !== null, true);

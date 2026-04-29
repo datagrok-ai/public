@@ -20,30 +20,24 @@ import type {
   WorkerFailure,
   SessionId,
 } from './wire-types';
+import {Query} from './query';
+import {makeSetupFailure} from './failures';
 
 export type RunReply = WorkerSuccess | WorkerFailure;
-
-interface PendingRun {
-  run: RunSeed;
-  resolve: (r: RunReply) => void;
-  transferables: Transferable[];
-}
+export {Query} from './query';
 
 interface PendingSetup {
   sessionId: SessionId;
   resolve: (ack: SetupAck) => void;
 }
 
-// Slot run-state as a discriminated union. The previous encoding was a
-// (busy: boolean, current: PendingRun | null, manualTimer) triple with the
-// invariant `busy === (current !== null)` maintained by hand at each
-// transition site. This makes that invariant structural, and binds the
-// run-timeout `setTimeout` handle to the same state object, so exiting
-// `running` requires producing the timer to clear — orphan timers become
-// unrepresentable.
+// Slot run-state as a discriminated union. The running variant holds a
+// reference to the in-flight Query, which owns its own run-timeout timer;
+// transitioning out of `running` happens via takeRunningQuery() and lets
+// the caller settle the query (which clears the timer idempotently).
 type SlotRunState =
   | {phase: 'idle'}
-  | {phase: 'running'; run: PendingRun; runTimer: ReturnType<typeof setTimeout>};
+  | {phase: 'running'; query: Query};
 
 type Slot = {
   worker: Worker;
@@ -84,27 +78,9 @@ interface ActiveSetup {
   replacementAttempts: number;
 }
 
-// Failure builders — every site that fails a PendingRun or PendingSetup
-// produces the same shape; centralizing it keeps the wire-types contract
-// in one place and makes "forgot a field" a type error.
-function makeRunFailure(pending: PendingRun, message: string): WorkerFailure {
-  return {
-    kind: 'failure',
-    taskId: pending.run.taskId,
-    seedIndex: pending.run.seedIndex,
-    message,
-    failKind: 'other',
-    seed: pending.run.seed,
-  };
-}
-
-function makeSetupFailure(sessionId: SessionId, message: string): SetupAck {
-  return {kind: 'setup-ack', sessionId, ok: false, message};
-}
-
 export class WorkerPool {
   private slots: Slot[] = [];
-  private queue: PendingRun[] = [];
+  private queue: Query[] = [];
   // Setups for sessions that have completed `setupAll` and not yet been
   // dropped. Used to re-prime replacement slots so an active fit can
   // keep using full pool parallelism after a worker dies.
@@ -164,20 +140,18 @@ export class WorkerPool {
       // timeout already fired and removed the slot). Drop it.
       return;
     }
-    const {run: pending, runTimer} = slot.runState;
-    clearTimeout(runTimer);
+    const {query} = slot.runState;
     slot.runState = {phase: 'idle'};
-    pending.resolve(msg);
+    query.settle(msg);
     this.pump();
   }
 
   private onError(slot: Slot, ev: ErrorEvent): void {
     const message = `worker error: ${ev.message ?? 'unknown'}`;
     if (slot.runState.phase === 'running') {
-      const {run: pending, runTimer} = slot.runState;
-      clearTimeout(runTimer);
+      const {query} = slot.runState;
       slot.runState = {phase: 'idle'};
-      pending.resolve(makeRunFailure(pending, message));
+      query.fail(message);
     }
     // Reject any in-flight setup acks for this slot too.
     for (const ps of slot.pendingSetups.values())
@@ -194,23 +168,25 @@ export class WorkerPool {
     // primed-and-idle for that session.
     let i = 0;
     while (i < this.queue.length) {
-      const pending = this.queue[i];
+      const query = this.queue[i];
       const slot = this.slots.find(
-        (s) => s.runState.phase === 'idle' && s.sessions.has(pending.run.sessionId));
+        (s) => s.runState.phase === 'idle' && s.sessions.has(query.sessionId));
       if (!slot) { ++i; continue; }
       this.queue.splice(i, 1);
       // Per-run timeout: terminates the slot if the worker wedges so the
-      // dispatchRun promise resolves instead of hanging. The identity
-      // check guards against a fired-then-cancelled race; every transition
-      // out of `running` clearTimeouts the timer.
+      // caller's promise resolves instead of hanging. Query.settle is
+      // idempotent, so a reply arriving after the timeout fires is
+      // harmless (and vice versa) — no defensive identity check needed.
       const runTimer = setTimeout(() => {
-        if (slot.runState.phase !== 'running' || slot.runState.run !== pending) return;
-        slot.runState = {phase: 'idle'};
+        if (query.phase !== 'running') return;
+        if (slot.runState.phase === 'running' && slot.runState.query === query)
+          slot.runState = {phase: 'idle'};
         this.removeSlot(slot, 'run timed out');
-        pending.resolve(makeRunFailure(pending, `run timed out after ${this.runTimeoutMs}ms`));
+        query.fail(`run timed out after ${this.runTimeoutMs}ms`);
       }, this.runTimeoutMs);
-      slot.runState = {phase: 'running', run: pending, runTimer};
-      slot.worker.postMessage(pending.run, pending.transferables);
+      query.startRunning(runTimer);
+      slot.runState = {phase: 'running', query};
+      slot.worker.postMessage(query.run, query.transferables);
     }
     // Drain sessions whose queues can't make progress. pump only retries
     // on setup-ack-ok and run-reply, neither of which can arrive when no
@@ -223,7 +199,7 @@ export class WorkerPool {
             this.primedSlotCount(sessionId) === 0 &&
             !this.hasInFlightSetup(sessionId)) {
           this.drainQueue('session lost all primed slots',
-            (p) => p.run.sessionId === sessionId);
+            (q) => q.sessionId === sessionId);
         }
       }
     }
@@ -255,11 +231,11 @@ export class WorkerPool {
   // Resolve every queued run that matches `match` as a failure with the
   // supplied reason. Used by pump's per-session stall drain and the
   // total-pool drain, and by dispose to clear the queue at teardown.
-  private drainQueue(reason: string, match: (p: PendingRun) => boolean): void {
-    const remaining: PendingRun[] = [];
-    for (const pending of this.queue) {
-      if (!match(pending)) { remaining.push(pending); continue; }
-      pending.resolve(makeRunFailure(pending, reason));
+  private drainQueue(reason: string, match: (q: Query) => boolean): void {
+    const remaining: Query[] = [];
+    for (const query of this.queue) {
+      if (!match(query)) { remaining.push(query); continue; }
+      query.fail(reason);
     }
     this.queue = remaining;
   }
@@ -273,10 +249,9 @@ export class WorkerPool {
       ps.resolve(makeSetupFailure(ps.sessionId, message));
     slot.pendingSetups.clear();
     if (slot.runState.phase === 'running') {
-      const {run: cur, runTimer} = slot.runState;
-      clearTimeout(runTimer);
+      const {query} = slot.runState;
       slot.runState = {phase: 'idle'};
-      cur.resolve(makeRunFailure(cur, message));
+      query.fail(message);
     }
     try { slot.worker.terminate(); } catch { /* ignore */ }
     if (!this.disposed) {
@@ -374,7 +349,7 @@ export class WorkerPool {
     const taskId = this.nextTaskId++;
     const run: RunSeed = {...args.run, taskId} as RunSeed;
     return new Promise<RunReply>((resolve) => {
-      this.queue.push({run, resolve, transferables: args.transferables});
+      this.queue.push(new Query(run, args.transferables, resolve));
       this.pump();
     });
   }
@@ -392,10 +367,9 @@ export class WorkerPool {
       slot.pendingSetups.clear();
       // Drain a run already dispatched but not yet replied.
       if (slot.runState.phase === 'running') {
-        const {run: cur, runTimer} = slot.runState;
-        clearTimeout(runTimer);
-        cur.resolve(makeRunFailure(cur, 'pool disposed mid-run'));
+        const {query} = slot.runState;
         slot.runState = {phase: 'idle'};
+        query.fail('pool disposed mid-run');
       }
       try { slot.worker.terminate(); } catch { /* ignore */ }
     }
