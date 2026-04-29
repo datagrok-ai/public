@@ -17,6 +17,7 @@ import {
   setStructureOverpaint, clearStructureOverpaint,
 } from 'molstar/lib/mol-plugin-state/helpers/structure-overpaint';
 import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
+import {StateObjectCell} from 'molstar/lib/mol-state';
 
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
@@ -269,11 +270,11 @@ export class MolstarHighlightController {
     try {
       for (const [, cell] of plugin.state.data.cells) {
         if (cell.obj?.data !== structureData) continue;
-        let cur: any = cell;
+        let cur: StateObjectCell | undefined = cell;
         for (let d = 0; cur && d < 6; d++) {
           if (cur.transform?.ref === dataRef) return true;
-          const pRef = cur.transform?.parent;
-          cur = pRef ? plugin.state.data.cells.get(pRef) : null;
+          const pRef: string | undefined = cur.transform?.parent;
+          cur = pRef ? plugin.state.data.cells.get(pRef) : undefined;
         }
         return false;
       }

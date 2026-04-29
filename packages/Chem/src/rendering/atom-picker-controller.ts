@@ -71,7 +71,6 @@ export class AtomPickerController {
 
   /** Registered once on first render; grid rebuilds get re-attached automatically. */
   _globalListenersAttached = false;
-  _wiredCanvases: WeakSet<HTMLCanvasElement> = new WeakSet();
 
   constructor(private readonly deps: AtomPickerRendererDeps) {}
 
@@ -255,8 +254,7 @@ export class AtomPickerController {
   }
 
   /** Escape when a molecule cell is focused — Datagrok routes the keydown here
-   *  at Dart level and it does NOT bubble to grid.root. The grid-root listener
-   *  in `_attachGridCanvasShiftListener` covers non-molecule focused cells. */
+   *  at Dart level and it does NOT bubble to grid.root. */
   onKeyDown(gridCell: DG.GridCell, e: KeyboardEvent): void {
     if (e.key === 'Escape')
       this._clearPickerSelection(gridCell.grid);
@@ -280,58 +278,6 @@ export class AtomPickerController {
     this._lastHoveredAtom = null;
     this._previewAtomIdx = null;
     this._previewFrom3D = false;
-    grid.invalidate();
-  }
-
-  /** Shift-drag handler from the canvas capture listener. Re-does the grid
-   *  hit-test from page coords because Datagrok captures shift-mousemove
-   *  at the Dart level and does not forward it to the renderer's onMouseMove. */
-  _onShiftDragMouseMove(e: MouseEvent): void {
-    const isErase = (e.ctrlKey || e.metaKey) && e.shiftKey;
-    const isPaint = (e.ctrlKey || e.metaKey) && !e.shiftKey;
-    if (!isPaint && !isErase) return;
-
-    const grid = grok.shell.tv?.grid;
-    if (!grid) return;
-    let gridRoot: HTMLElement | null = null;
-    try {gridRoot = grid.root;} catch {return;}
-    if (!gridRoot) return;
-
-    const gridRect = gridRoot.getBoundingClientRect();
-    const localX = e.clientX - gridRect.left;
-    const localY = e.clientY - gridRect.top;
-    if (localX < 0 || localY < 0 || localX > gridRect.width || localY > gridRect.height) return;
-
-    let gridCell: DG.GridCell | null = null;
-    try {gridCell = grid.hitTest(localX, localY);} catch {return;}
-    const col = gridCell?.tableColumn;
-    if (!gridCell || !col || col.semType !== DG.SEMTYPE.MOLECULE) return;
-    if (!this._isPickerActive(col)) return;
-
-    const molString: string = gridCell.cell.value;
-    if (!molString || DG.chem.Sketcher.isEmptyMolfile(molString)) return;
-
-    const bounds = gridCell.bounds;
-    const pointerCellX = e.clientX - (gridRect.left + bounds.left);
-    const pointerCellY = e.clientY - (gridRect.top + bounds.top);
-    if (pointerCellX < 0 || pointerCellY < 0 ||
-        pointerCellX > bounds.width || pointerCellY > bounds.height) return;
-
-    const cellInfo = this.deps._getCellAtomPositions(molString, bounds.width, bounds.height);
-    if (!cellInfo || cellInfo.positions.size === 0) return;
-
-    const nearest = findNearestAtom(cellInfo.positions, pointerCellX, pointerCellY);
-    if (nearest === null) return;
-
-    this._previewAtomIdx = null;
-    const rowIdx = gridCell.tableRowIndex!;
-    if (this._trackHoveredAtom(col.name, rowIdx, nearest, isErase)) return;
-
-    if (isErase)
-      this._removeAtomFromRow(col, rowIdx, nearest, cellInfo.bondAtoms);
-    else
-      this._addAtomToRow(col, rowIdx, nearest, cellInfo.bondAtoms);
-
     grid.invalidate();
   }
 
@@ -410,7 +356,7 @@ export class AtomPickerController {
     const persistent = this._getPersistentAtoms(molCol, prevRow);
     if (persistent.size > 0) {
       // Restore just the persistent atoms in 2D and 3D.
-      // Fire event as non-persistent so the cache keeps the stable Shift-paint set.
+      // Fire event as non-persistent so the cache keeps the stable persistent set.
       const cellInfo = this.deps._getCellAtomPositions(
         molCol.get(prevRow), 100, 100);
       const bondAtoms = cellInfo?.bondAtoms ?? new Map();
@@ -448,7 +394,7 @@ export class AtomPickerController {
     const current = new Set<number>(prior?.__atoms ?? []);
 
     // No modifier → replace existing selection with boxed atoms.
-    // Shift (add) → keep existing and union with boxed atoms.
+    // Modifier (add) → keep existing and union with boxed atoms.
     if (!modifiers.add) current.clear();
     for (const a of boxed) current.add(a);
 

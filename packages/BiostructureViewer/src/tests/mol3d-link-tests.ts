@@ -29,10 +29,10 @@ import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 
 const PROVIDERS_KEY = ChemTemps.SUBSTRUCT_PROVIDERS;
 
-/** `AtomPickerProvider` plus test-only marker fields used to verify which
+/** `AtomPickerProvider` plus a test-only marker used to verify which
  *  providers survive `clearAtomPickerHighlights` (the canonical shape lives
- *  in chem-meta; the markers are local test fixtures). */
-type TestProvider = AtomPickerProvider & {__scaffold?: boolean; __ordinaryMarker?: boolean};
+ *  in chem-meta; the marker is a local test fixture). */
+type TestProvider = AtomPickerProvider & {__ordinaryMarker?: boolean};
 
 // Builds a minimal DataFrame with one SMILES col and one Molecule3D col.
 function makeDF(): {df: DG.DataFrame; smilesCol: DG.Column; mol3DCol: DG.Column} {

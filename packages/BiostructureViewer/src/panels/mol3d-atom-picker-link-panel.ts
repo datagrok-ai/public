@@ -45,8 +45,5 @@ export function getMol3DAtomPickerLinkWidget(mol3DCol: DG.Column): DG.Widget {
       df.fireValuesChanged();
     },
   });
-  const choiceWrap = ui.div([choiceInput.root]);
-  // choiceWrap.style.display = currentLinkedSmiles ? '' : 'none';
-
-  return new DG.Widget(ui.divV([choiceWrap]));
+  return new DG.Widget(ui.divV([choiceInput.root]));
 }

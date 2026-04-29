@@ -360,10 +360,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (MolstarViewer._selectionSubscribed) return;
     MolstarViewer._selectionSubscribed = true;
     grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
-      .subscribe((_args: ChemSelectionEventArgs) => {
+      .subscribe((args: ChemSelectionEventArgs) => {
         const {
           rowIdx = -1, atoms = [], persistent, clearAll, mapping3D, column,
-        } = (_args as ChemSelectionEventArgs) ?? {};
+        } = args ?? {};
         if (persistent === false) return;
         const col = column as DG.Column | undefined;
         const dfId = col?.dataFrame?.id ?? '';
@@ -971,9 +971,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       // Instance-level subscription: apply highlights in real-time while the viewer is alive.
       // _initSelectionCache handles caching for replay (fires once per process).
       this.viewSubs.push(grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
-        .subscribe((_args: ChemSelectionEventArgs) => {
-          const {rowIdx = -1, atoms = [], mapping3D = null, persistent} =
-            (_args ?? {});
+        .subscribe((args: ChemSelectionEventArgs) => {
+          const {rowIdx = -1, atoms = [], mapping3D = null, persistent} = args ?? {};
           try {
             this.logger.debug(
               `[molstar-picker] live highlight atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${persistent}`);

@@ -116,7 +116,7 @@ category('atom picker: 3D hover', () => {
     const substruct = prov!.getSubstruct(0);
     expect(substruct !== undefined, true);
     expect(Array.isArray(substruct!.atoms), true);
-    expect((substruct!.atoms as number[]).includes(2), true);
+    expect(substruct!.atoms!.includes(2), true);
   }, {timeout: 15000});
 
   // -------------------------------------------------------------------------
