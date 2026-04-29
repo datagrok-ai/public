@@ -16,10 +16,6 @@ export namespace funcs {
     return await grok.functions.call(':RetroSynthesisPath', { smiles });
   }
 
-  export async function retrosynthesisTopMenu(): Promise<void> {
-    return await grok.functions.call(':RetrosynthesisTopMenu', {});
-  }
-
   /**
    * Generate retrosynthesis paths
    */
