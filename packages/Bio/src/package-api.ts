@@ -13,21 +13,15 @@ export namespace scripts {
   }
 
   /**
-   * Converts molecules to HELM notation based on monomer library
-   * @param {DG.Column} moleculesColumn
-   *   semType: Molecule
-   */
+  Converts molecules to HELM notation based on monomer library
+  */
   export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryFile: DG.FileInfo ): Promise<DG.DataFrame> {
     return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryFile });
   }
 
   /**
-   * Create the model peptides/DNA sequences with peptides data
-   * @param {string} alphabet_key
-   *   choices: ["Protein", "DNA", "RNA", "Protein_EXT"]
-   * @param {string} helm_connection_mode
-   *   choices: ["linear", "cyclic", "mixed"]
-   */
+  Create the model peptides/DNA sequences with peptides data
+  */
   export async function sequenceGenerator(clusters: number , num_sequences: number , alphabet_key: string , motif_length: number , max_variants_position: number , random_length: number , dispersion: number , activity_range: number , cliff_probability: number , cliff_strength: number , cliff_strength_dispersion: number , assay_noise_levels: string , assay_scales: string , disable_negatives: boolean , fasta_separator: string | null, helm_library_file: DG.FileInfo | null, helm_connection_mode: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Bio:SequenceGenerator', { clusters, num_sequences, alphabet_key, motif_length, max_variants_position, random_length, dispersion, activity_range, cliff_probability, cliff_strength, cliff_strength_dispersion, assay_noise_levels, assay_scales, disable_negatives, fasta_separator, helm_library_file, helm_connection_mode });
   }
@@ -39,8 +33,8 @@ export namespace funcs {
   }
 
   /**
-   * Returns an instance of the monomer library helper
-   */
+  Returns an instance of the monomer library helper
+  */
   export async function getMonomerLibHelper(): Promise<any> {
     return await grok.functions.call('Bio:GetMonomerLibHelper', {});
   }
@@ -49,10 +43,6 @@ export namespace funcs {
     return await grok.functions.call('Bio:InitBio', {});
   }
 
-  /**
-   * @param {DG.Column} col
-   *   semType: Macromolecule
-   */
   export async function sequenceTooltip(col: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:SequenceTooltip', { col });
   }
@@ -62,12 +52,8 @@ export namespace funcs {
   }
 
   /**
-   * Matches molecules in a column with monomers from the selected library(s)
-   * @param {DG.Column} molecules
-   *   semType: Molecule
-   * @param {string} polymerType
-   *   choices: ["PEPTIDE","RNA","CHEM"]
-   */
+  Matches molecules in a column with monomers from the selected library(s)
+  */
   export async function matchWithMonomerLibrary(table: DG.DataFrame , molecules: DG.Column , polymerType: string ): Promise<void> {
     return await grok.functions.call('Bio:MatchWithMonomerLibrary', { table, molecules, polymerType });
   }
@@ -76,27 +62,17 @@ export namespace funcs {
     return await grok.functions.call('Bio:GetBioLib', {});
   }
 
-  /**
-   * @param {DG.Column} sequence
-   *   semType: Macromolecule
-   */
   export async function getSeqHandler(sequence: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:GetSeqHandler', { sequence });
   }
 
   /**
-   * Creates a new column with sequences of the region between start and end
-   * @param {DG.Column} seqCol
-   *   semType: Macromolecule
-   */
+  Creates a new column with sequences of the region between start and end
+  */
   export async function getRegionPanel(seqCol: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:GetRegionPanel', { seqCol });
   }
 
-  /**
-   * @param {DG.Column} seqColumn
-   *   semType: Macromolecule
-   */
   export async function libraryPanel(seqColumn: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:LibraryPanel', { seqColumn });
   }
@@ -137,26 +113,14 @@ export namespace funcs {
     return await grok.functions.call('Bio:RefineNotationProviderForBiln', { col, stats, separator });
   }
 
-  /**
-   * @param {DG.Column} molColumn
-   *   semType: Macromolecule
-   */
   export async function macroMolColumnPropertyPanel(molColumn: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:MacroMolColumnPropertyPanel', { molColumn });
   }
 
-  /**
-   * @param {any} sequence
-   *   semType: Macromolecule
-   */
   export async function compositionAnalysisWidget(sequence: any ): Promise<any> {
     return await grok.functions.call('Bio:CompositionAnalysisWidget', { sequence });
   }
 
-  /**
-   * @param {any} monomerSv
-   *   semType: Monomer
-   */
   export async function monomerInfoPanel(monomerSv: any ): Promise<any> {
     return await grok.functions.call('Bio:MonomerInfoPanel', { monomerSv });
   }
@@ -165,90 +129,69 @@ export namespace funcs {
     return await grok.functions.call('Bio:MacromoleculeDifferenceCellRenderer', {});
   }
 
-  /**
-   * @param {string} alignType
-   *   choices: ["Local alignment","Global alignment"]
-   * @param {string} alignTable
-   *   choices: ["AUTO","NUCLEOTIDES","BLOSUM45","BLOSUM50","BLOSUM62","BLOSUM80","BLOSUM90","PAM30","PAM70","PAM250","SCHNEIDER","TRANS"]
-   */
   export async function sequenceAlignment(alignType: string , alignTable: string , gap: number , seq1: string , seq2: string ): Promise<any> {
     return await grok.functions.call('Bio:SequenceAlignment', { alignType, alignTable, gap, seq1, seq2 });
   }
 
   /**
-   * WebLogo
-   */
+  WebLogo
+  */
   export async function webLogoViewer(): Promise<any> {
     return await grok.functions.call('Bio:WebLogoViewer', {});
   }
 
   /**
-   * V-Domain regions viewer
-   */
+  V-Domain regions viewer
+  */
   export async function vdRegionsViewer(): Promise<any> {
     return await grok.functions.call('Bio:VdRegionsViewer', {});
   }
 
   /**
-   * Gets a new column with sequences of the region between start and end
-   * @param {string} name - Name of the column to be created
-   */
+  Gets a new column with sequences of the region between start and end
+  */
   export async function getRegion(sequence: DG.Column , start?: string , end?: string , name?: string ): Promise<DG.Column> {
     return await grok.functions.call('Bio:GetRegion', { sequence, start, end, name });
   }
 
   /**
-   * Get sequences for a region specified from a Macromolecule
-   * @param {DG.DataFrame} table - Input data table
-   * @param {DG.Column} sequence - Sequence column
-   *   semType: Macromolecule
-   * @param {string} start - Region start position name
-   * @param {string} end - Region end position name
-   * @param {string} name - Region column name
-   */
+  Get sequences for a region specified from a Macromolecule
+  */
   export async function getRegionTopMenu(table: DG.DataFrame , sequence: DG.Column , start?: string , end?: string , name?: string ): Promise<void> {
     return await grok.functions.call('Bio:GetRegionTopMenu', { table, sequence, start, end, name });
   }
 
   /**
-   * Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)
-   */
+  Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)
+  */
   export async function applyNumberingScheme(): Promise<void> {
     return await grok.functions.call('Bio:ApplyNumberingScheme', {});
   }
 
   /**
-   * Scans macromolecule sequences for deamidation, oxidation, and other liabilities
-   */
+  Scans macromolecule sequences for deamidation, oxidation, and other liabilities
+  */
   export async function scanLiabilities(): Promise<void> {
     return await grok.functions.call('Bio:ScanLiabilities', {});
   }
 
   /**
-   * View and manage sequence annotations on macromolecule columns
-   */
+  View and manage sequence annotations on macromolecule columns
+  */
   export async function manageAnnotations(): Promise<void> {
     return await grok.functions.call('Bio:ManageAnnotations', {});
   }
 
   /**
-   * Creates a new input for sequence columns with ability to extract a region
-   */
+  Creates a new input for sequence columns with ability to extract a region
+  */
   export async function sequenceColumnInput(name: string , options: any ): Promise<any> {
     return await grok.functions.call('Bio:SequenceColumnInput', { name, options });
   }
 
   /**
-   * Detects pairs of molecules with similar structure and significant difference in any given property
-   * @param {DG.DataFrame} table - Input data table
-   * @param {string} molecules - Input data table
-   *   semType: Macromolecule
-   * @param {number} similarity - Similarity cutoff
-   * @param {string} methodName
-   *   choices: ["UMAP","t-SNE"]
-   * @param {string} similarityMetric
-   *   choices: ["Hamming","Levenshtein","Monomer chemical distance"]
-   */
+  Detects pairs of molecules with similar structure and significant difference in any given property
+  */
   export async function activityCliffs(table: DG.DataFrame , molecules: string , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<void> {
     return await grok.functions.call('Bio:ActivityCliffs', { table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, demo });
   }
@@ -257,181 +200,121 @@ export namespace funcs {
     return await grok.functions.call('Bio:SeqActivityCliffsInitFunction', { sp });
   }
 
-  /**
-   * @param {DG.DataFrame} table - Input data table
-   * @param {DG.Column} molecules
-   *   semType: Macromolecule
-   * @param {number} similarity - Similarity cutoff
-   */
   export async function seqActivityCliffsTransform(table: DG.DataFrame , molecules: DG.Column , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , options?: string , isDemo?: boolean , axesNames?: any ): Promise<void> {
     return await grok.functions.call('Bio:SeqActivityCliffsTransform', { table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo, axesNames });
   }
 
-  /**
-   * @param {DG.Column} col
-   *   semType: Macromolecule
-   * @param {string} fingerprintType
-   *   choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"]
-   */
   export async function macromoleculePreprocessingFunction(col: DG.Column , metric: string , gapOpen?: number , gapExtend?: number , fingerprintType?: string ): Promise<any> {
     return await grok.functions.call('Bio:MacromoleculePreprocessingFunction', { col, metric, gapOpen, gapExtend, fingerprintType });
   }
 
-  /**
-   * @param {DG.Column} col
-   *   semType: Macromolecule
-   */
   export async function helmPreprocessingFunction(col: DG.Column , _metric: string ): Promise<any> {
     return await grok.functions.call('Bio:HelmPreprocessingFunction', { col, _metric });
   }
 
   /**
-   * Creates 2D sequence space with projected sequences by pairwise distance
-   * @param {DG.Column} molecules
-   *   semType: Macromolecule
-   * @param {string} methodName
-   *   choices: ["UMAP","t-SNE"]
-   * @param {string} similarityMetric
-   *   choices: ["Hamming","Levenshtein","Monomer chemical distance"]
-   */
+  Creates 2D sequence space with projected sequences by pairwise distance
+  */
   export async function sequenceSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , preprocessingFunction?: any , options?: any , clusterEmbeddings?: boolean , isDemo?: boolean ): Promise<any> {
     return await grok.functions.call('Bio:SequenceSpaceTopMenu', { table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo });
   }
 
-  /**
-   * @param {DG.Column} molecules
-   *   semType: Macromolecule
-   */
   export async function sequenceSpaceTransform(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean , embedColsNames?: any , clusterColName?: string ): Promise<any> {
     return await grok.functions.call('Bio:SequenceSpaceTransform', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName });
   }
 
   /**
-   * Converts Peptide molecules to HELM notation by matching with monomer library
-   * @param {DG.DataFrame} table - Input data table
-   * @param {DG.Column} molecules - Molecule column
-   *   semType: Molecule
-   */
+  Converts Peptide molecules to HELM notation by matching with monomer library
+  */
   export async function moleculesToHelmTopMenu(table: DG.DataFrame , molecules: DG.Column ): Promise<void> {
     return await grok.functions.call('Bio:MoleculesToHelmTopMenu', { table, molecules });
   }
 
   /**
-   * Converts a single molecule to HELM notation without requiring a table or column
-   * @param {string} molecule - Input molecule
-   *   semType: Molecule
-   */
+  Converts a single molecule to HELM notation without requiring a table or column
+  */
   export async function moleculeToHelmSingle(molecule: string ): Promise<string> {
     return await grok.functions.call('Bio:MoleculeToHelmSingle', { molecule });
   }
 
   /**
-   * Converts sequences to molblocks
-   * @param {DG.DataFrame} table - Input data table
-   * @param {DG.Column} seqCol
-   *   semType: Macromolecule
-   * @param {boolean} nonlinear - Slower mode for cycling/branching HELM structures
-   * @param {boolean} highlight - Highlight monomers' substructures of the molecule
-   */
+  Converts sequences to molblocks
+  */
   export async function toAtomicLevel(table: DG.DataFrame , seqCol: DG.Column , nonlinear: boolean , highlight: boolean ): Promise<void> {
     return await grok.functions.call('Bio:ToAtomicLevel', { table, seqCol, nonlinear, highlight });
   }
 
-  /**
-   * @param {DG.Column} seqCol
-   *   semType: Macromolecule
-   */
   export async function toAtomicLevelAction(seqCol: DG.Column ): Promise<void> {
     return await grok.functions.call('Bio:ToAtomicLevelAction', { seqCol });
   }
 
-  /**
-   * @param {any} sequence
-   *   semType: Macromolecule
-   */
   export async function toAtomicLevelPanel(sequence: any ): Promise<any> {
     return await grok.functions.call('Bio:ToAtomicLevelPanel', { sequence });
   }
 
   /**
-   * Converts a single sequence to molblock
-   * @param {string} sequence
-   *   semType: Macromolecule
-   */
+  Converts a single sequence to molblock
+  */
   export async function toAtomicLevelSingleSeq(sequence: string ): Promise<string> {
     return await grok.functions.call('Bio:ToAtomicLevelSingleSeq', { sequence });
   }
 
-  /**
-   * @param {any} sequence
-   *   semType: Macromolecule
-   */
   export async function sequence3dStructureWidget(sequence: any ): Promise<any> {
     return await grok.functions.call('Bio:Sequence3dStructureWidget', { sequence });
   }
 
   /**
-   * Performs multiple sequence alignment
-   */
+  Performs multiple sequence alignment
+  */
   export async function multipleSequenceAlignmentDialog(): Promise<void> {
     return await grok.functions.call('Bio:MultipleSequenceAlignmentDialog', {});
   }
 
   /**
-   * Multiple sequence alignment
-   * @param {DG.Column} sequenceCol
-   *   semType: Macromolecule
-   */
+  Multiple sequence alignment
+  */
   export async function alignSequences(sequenceCol: DG.Column , clustersCol: DG.Column , options?: any ): Promise<DG.Column> {
     return await grok.functions.call('Bio:AlignSequences', { sequenceCol, clustersCol, options });
   }
 
   /**
-   * Aligns non-canonical peptide sequences using PepSeA Docker container (MAFFT)
-   * @param {DG.Column} sequenceCol
-   *   semType: Macromolecule
-   * @param {string} method
-   *   choices: ["mafft --auto","mafft","linsi","ginsi","einsi","fftns","fftnsi","nwns","nwnsi"]
-   */
+  Aligns non-canonical peptide sequences using PepSeA Docker container (MAFFT)
+  */
   export async function pepseaMsa(sequenceCol: DG.Column , method: string , gapOpen: number , gapExtend: number ): Promise<DG.Column> {
     return await grok.functions.call('Bio:PepseaMsa', { sequenceCol, method, gapOpen, gapExtend });
   }
 
   /**
-   * Assigns antibody numbering (IMGT/Kabat) using the immunum WASM library
-   * @param {DG.Column} seqCol
-   *   semType: Macromolecule
-   * @param {string} scheme
-   *   choices: ["imgt","kabat"]
-   */
+  Assigns antibody numbering (IMGT/Kabat) using the immunum WASM library
+  */
   export async function immunumAntibodyNumbering(df: DG.DataFrame , seqCol: DG.Column , scheme: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Bio:ImmunumAntibodyNumbering', { df, seqCol, scheme });
   }
 
   /**
-   * Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)
-   */
+  Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)
+  */
   export async function compareSequences(): Promise<void> {
     return await grok.functions.call('Bio:CompareSequences', {});
   }
 
   /**
-   * Visualizes sequence composition on a WebLogo plot
-   */
+  Visualizes sequence composition on a WebLogo plot
+  */
   export async function compositionAnalysis(): Promise<any> {
     return await grok.functions.call('Bio:CompositionAnalysis', {});
   }
 
   /**
-   * Opens FASTA file
-   */
+  Opens FASTA file
+  */
   export async function importFasta(fileContent: string ): Promise<any> {
     return await grok.functions.call('Bio:ImportFasta', { fileContent });
   }
 
   /**
-   * Opens Bam file
-   */
+  Opens Bam file
+  */
   export async function importBam(fileContent: string ): Promise<any> {
     return await grok.functions.call('Bio:ImportBam', { fileContent });
   }
@@ -440,10 +323,6 @@ export namespace funcs {
     return await grok.functions.call('Bio:ConvertDialog', {});
   }
 
-  /**
-   * @param {DG.Column} col
-   *   semType: Macromolecule
-   */
   export async function convertColumnAction(col: DG.Column ): Promise<void> {
     return await grok.functions.call('Bio:ConvertColumnAction', { col });
   }
@@ -452,26 +331,14 @@ export namespace funcs {
     return await grok.functions.call('Bio:MonomerCellRenderer', {});
   }
 
-  /**
-   * @param {string} path
-   *   choices: ["Demo:Files/","System:AppData/"]
-   */
   export async function testDetectMacromolecule(path: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Bio:TestDetectMacromolecule', { path });
   }
 
-  /**
-   * @param {DG.Column} sequence
-   *   semType: Macromolecule
-   */
   export async function splitToMonomersTopMenu(table: DG.DataFrame , sequence: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('Bio:SplitToMonomersTopMenu', { table, sequence });
   }
 
-  /**
-   * @param {DG.Column} sequence
-   *   semType: Macromolecule
-   */
   export async function getHelmMonomers(sequence: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:GetHelmMonomers', { sequence });
   }
@@ -481,8 +348,8 @@ export namespace funcs {
   }
 
   /**
-   * Finds similar sequences
-   */
+  Finds similar sequences
+  */
   export async function similaritySearchTopMenu(): Promise<any> {
     return await grok.functions.call('Bio:SimilaritySearchTopMenu', {});
   }
@@ -492,8 +359,8 @@ export namespace funcs {
   }
 
   /**
-   * Finds the most diverse sequences
-   */
+  Finds the most diverse sequences
+  */
   export async function diversitySearchTopMenu(): Promise<any> {
     return await grok.functions.call('Bio:DiversitySearchTopMenu', {});
   }
@@ -507,30 +374,22 @@ export namespace funcs {
   }
 
   /**
-   * Adds a column with fraction of matching monomers
-   * @param {DG.DataFrame} table - Table containing Macromolecule column
-   * @param {DG.Column} macromolecule - Sequences to score
-   *   semType: Macromolecule
-   * @param {string} reference - Sequence,matching column format
-   */
+  Adds a column with fraction of matching monomers
+  */
   export async function sequenceIdentityScoring(table: DG.DataFrame , macromolecule: DG.Column , reference: string ): Promise<DG.Column> {
     return await grok.functions.call('Bio:SequenceIdentityScoring', { table, macromolecule, reference });
   }
 
   /**
-   * Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities
-   * @param {DG.DataFrame} table - Table containing Macromolecule column
-   * @param {DG.Column} macromolecule - Sequences to score
-   *   semType: Macromolecule
-   * @param {string} reference - Sequence,matching column format
-   */
+  Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities
+  */
   export async function sequenceSimilarityScoring(table: DG.DataFrame , macromolecule: DG.Column , reference: string ): Promise<DG.Column> {
     return await grok.functions.call('Bio:SequenceSimilarityScoring', { table, macromolecule, reference });
   }
 
   /**
-   * Manage HELM monomer libraries
-   */
+  Manage HELM monomer libraries
+  */
   export async function manageMonomerLibraries(): Promise<void> {
     return await grok.functions.call('Bio:ManageMonomerLibraries', {});
   }
@@ -540,8 +399,8 @@ export namespace funcs {
   }
 
   /**
-   * Edit and create monomers
-   */
+  Edit and create monomers
+  */
   export async function manageMonomersView(): Promise<void> {
     return await grok.functions.call('Bio:ManageMonomersView', {});
   }
@@ -559,22 +418,22 @@ export namespace funcs {
   }
 
   /**
-   * As FASTA...
-   */
+  As FASTA...
+  */
   export async function saveAsFasta(): Promise<void> {
     return await grok.functions.call('Bio:SaveAsFasta', {});
   }
 
   /**
-   * Substructure filter for macromolecules
-   */
+  Substructure filter for macromolecules
+  */
   export async function bioSubstructureFilter(): Promise<any> {
     return await grok.functions.call('Bio:BioSubstructureFilter', {});
   }
 
   /**
-   * Substructure filter for Helm package tests
-   */
+  Substructure filter for Helm package tests
+  */
   export async function bioSubstructureFilterTest(): Promise<any> {
     return await grok.functions.call('Bio:BioSubstructureFilterTest', {});
   }
@@ -612,29 +471,29 @@ export namespace funcs {
   }
 
   /**
-   * Sequence similarity tracking and evaluation dataset diversity
-   */
+  Sequence similarity tracking and evaluation dataset diversity
+  */
   export async function demoBioSimilarityDiversity(): Promise<void> {
     return await grok.functions.call('Bio:DemoBioSimilarityDiversity', {});
   }
 
   /**
-   * Exploring sequence space of Macromolecules, comparison with hierarchical clustering results
-   */
+  Exploring sequence space of Macromolecules, comparison with hierarchical clustering results
+  */
   export async function demoBioSequenceSpace(): Promise<void> {
     return await grok.functions.call('Bio:DemoBioSequenceSpace', {});
   }
 
   /**
-   * Activity Cliffs analysis on Macromolecules data
-   */
+  Activity Cliffs analysis on Macromolecules data
+  */
   export async function demoBioActivityCliffs(): Promise<void> {
     return await grok.functions.call('Bio:DemoBioActivityCliffs', {});
   }
 
   /**
-   * Atomic level structure of Macromolecules
-   */
+  Atomic level structure of Macromolecules
+  */
   export async function demoBioAtomicLevel(): Promise<void> {
     return await grok.functions.call('Bio:DemoBioAtomicLevel', {});
   }
@@ -644,21 +503,15 @@ export namespace funcs {
   }
 
   /**
-   * Converts a `Macromolecule` sequence to its atomic level `Molecule` representation
-   * @param {string} seq
-   *   semType: Macromolecule
-   */
+  Converts a `Macromolecule` sequence to its atomic level `Molecule` representation
+  */
   export async function seq2atomic(seq: string , nonlinear: boolean ): Promise<string> {
     return await grok.functions.call('Bio:Seq2atomic', { seq, nonlinear });
   }
 
   /**
-   * Gets identity to a reference sequence
-   * @param {string} seq
-   *   semType: Macromolecule
-   * @param {string} ref
-   *   semType: Macromolecule
-   */
+  Gets identity to a reference sequence
+  */
   export async function seqIdentity(seq: string , ref: string ): Promise<number> {
     return await grok.functions.call('Bio:SeqIdentity', { seq, ref });
   }

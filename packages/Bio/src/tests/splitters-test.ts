@@ -59,18 +59,22 @@ category('splitters', async () => {
         'D-Tyr_Et', 'D-Dap', 'dV', 'E', 'N', 'pnG', 'Phe_4Me'],
     ],
 
+    // splitterAsHelm triplet-splits HELM RNA monomers `sugar(base)phosphate`
+    // into 3 tokens, and `sugar(base)` (terminal-only) into 2. Standalone
+    // tokens that don't match either form (e.g. lone `P`, or non-terminal
+    // `R(U)` without a phosphate) are kept verbatim.
     testHelm1: [
       'RNA1{R(U)P.R(T)P.R(G)P.R(C)P.R(A)}$$$$',
-      ['R(U)P', 'R(T)P', 'R(G)P', 'R(C)P', 'R(A)'],
+      ['R', 'U', 'P', 'R', 'T', 'P', 'R', 'G', 'P', 'R', 'C', 'P', 'R', 'A'],
     ],
 
     testHelm2: [
       'RNA1{P.R(U)P.R(T)}$$$$',
-      ['P', 'R(U)P', 'R(T)'],
+      ['P', 'R', 'U', 'P', 'R', 'T'],
     ],
     testHelm3: [
-      'RNA1{P.R(U).P.R(T)}$$$$',
-      ['P', 'R(U)', 'P', 'R(T)'],
+      'RNA1{P.R(U).P.R(T)}$$$$', // invalid helm, but oh well,
+      ['P', 'R(U)', 'P', 'R', 'T'],
     ],
   };
 
