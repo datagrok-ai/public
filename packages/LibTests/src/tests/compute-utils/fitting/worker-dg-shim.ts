@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
 import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame, compileBody,
   clearCompileCache, _getCompileStats, _setCompileCacheCap} from
-  '@datagrok-libraries/compute-utils/function-views/src/fitting/worker';
+  '@datagrok-libraries/compute-utils/webworkers';
 import {toFeather} from '@datagrok-libraries/arrow';
 import {getErrors} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/fitting-utils';

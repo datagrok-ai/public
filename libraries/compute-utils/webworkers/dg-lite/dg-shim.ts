@@ -1,11 +1,10 @@
 /**
  * Worker-side `DG` shim.
  *
- * Compiled JS bodies of fittable scripts construct outputs by calling
- * `DG.DataFrame.fromColumns([DG.Column.from*Array(...)])`. Inside a web
- * worker there is no Dart-bridge `DG`; this module supplies the minimum
- * factory surface those bodies use, returning LiteDataFrame / LiteColumn
- * objects backed directly by typed arrays.
+ * Inside a web worker there is no Dart-bridge `DG`. This module supplies the
+ * minimum factory surface that compiled JS-script bodies use —
+ * `DG.DataFrame.fromColumns([DG.Column.from*Array(...)])` — returning
+ * LiteDataFrame / LiteColumn objects backed directly by typed arrays.
  *
  * Pure TypeScript, no `datagrok-api` imports — safe to use inside a worker.
  */

@@ -1,27 +1,25 @@
-// In-worker FuncCall shim.
+// In-worker Datagrok JS-script body runner.
 //
-// Compiled JS bodies of fittable scripts read named inputs and write named
-// outputs. The body is handed the *names* directly via `new Function(...names,
-// body)` and assignments are recovered via a typeof-guarded `return { … }`
-// trailer that mirrors the platform's own JS script wrap (see
-// grok_shared.dart.js:121177 — `runScript(...) { <body>; return [outputs] }`).
-// The shim covers only the surface cost-functions.ts:42,45,75,79 actually reads.
+// Compiles JS bodies that read named inputs and write named outputs (the
+// `//input:` / `//output:` script header convention) into a `(DG, ...inputs)`
+// function whose return is `{ <output>: ... }`. The body is handed the names
+// directly via `new Function(...names, body)` and outputs are recovered via a
+// typeof-guarded `return { … }` trailer that mirrors the platform's own JS
+// script wrap (see grok_shared.dart.js:121177 — `runScript(...) { <body>;
+// return [outputs] }`).
 //
-// Compile cache is module-level so it hits across NM iterations within a task
-// AND across tasks within a long-lived worker — pays the body's parse cost
-// exactly once per source. Bounded LRU so accidental script churn over a
-// tab-lifetime worker can't grow memory without bound. Active sessions hold
-// strong references to their compiled function via `createWorkerFuncCall`'s
-// closure, so cache eviction never invalidates an in-flight fit.
+// Compile cache is module-level so it hits across repeated invocations within
+// a long-lived worker — pays the body's parse cost exactly once per source.
+// Bounded LRU so accidental script churn over a tab-lifetime worker can't
+// grow memory without bound. Live consumers (e.g. an in-flight fit holding a
+// `WorkerFuncCall`) keep their compiled function alive via closure, so cache
+// eviction never invalidates work in progress.
 
 import {LRUCache} from 'lru-cache';
-import {createWorkerDG, WorkerDG} from './dg-shim';
+import {createWorkerDG, WorkerDG} from '../dg-lite/dg-shim';
 
-// Mirror of serialize.MAX_FN_SOURCE_BYTES — duplicated here so the worker
-// entry doesn't pull serialize.ts (which transitively imports
-// @datagrok-libraries/arrow → datagrok-api/dg) into the worker bundle.
-// 1 MB covers Diff Studio bodies and multi-equation models; raise again
-// only with measured workloads.
+// 1 MB covers Diff Studio bodies and multi-equation models; raise only with
+// measured workloads.
 const MAX_FN_SOURCE_BYTES = 1024 * 1024;
 
 function checkSourceSize(source: string): void {

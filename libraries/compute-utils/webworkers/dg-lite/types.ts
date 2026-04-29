@@ -1,10 +1,10 @@
 /**
  * Worker-safe DataFrame and Column shapes.
  *
- * Mirrors the subset of DG.DataFrame / DG.Column the cost function reads.
- * Built so a LiteColumn is drop-in compatible with DG.Column for the
- * surface fitting-utils.ts:getErrors uses (`.col(name)`, `.getRawData()`,
- * `.stats.{min, max}`).
+ * A minimal structural subset of DG.DataFrame / DG.Column — `.col(name)`,
+ * `.getRawData()`, `.stats.{min, max}`, etc. — small enough for a worker
+ * to construct and consume without `datagrok-api` and structurally
+ * compatible with DG.Column for code that operates on either.
  */
 
 export type LiteColumnType =

@@ -11,8 +11,10 @@
 //   - `dayjs` is pulled in to reify ISO-string-encoded Dayjs inputs back to
 //     Dayjs objects on this side, matching what the main arm's FuncCall and
 //     formula context see.
-//   - `dg-shim`, `arrow-to-lite`, `cost-math`, `func-call-shim` are pure
-//     TypeScript with no datagrok-api/* runtime imports.
+//   - `cost-math` is pure TypeScript with no datagrok-api/* runtime imports.
+//   - `webworkers/dg-lite/*` and `webworkers/script-runner/*` (the Lite DG
+//     shim, Arrow→Lite deserializer, and JS-script body compiler) are also
+//     pure TypeScript with no datagrok-api/* runtime imports.
 //
 // Anything that touches DG.* (fitting-utils.ts, optimizer-misc.ts runtime,
 // cost-functions.ts) is intentionally NOT imported here — it would crash a
@@ -22,10 +24,11 @@ import dayjs from 'dayjs';
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {LOSS} from '../constants';
 import {makeBoundsChecker} from '../bounds-checker';
-import {arrowIpcToLite} from './arrow-to-lite';
-import type {LiteDataFrame} from './types';
+import {arrowIpcToLite} from '../../../../webworkers/dg-lite/arrow-to-lite';
+import type {LiteDataFrame} from '../../../../webworkers/dg-lite/types';
 import {ColLike, DfLike, getErrors, InconsistentTablesError} from './cost-math';
-import {createWorkerFuncCall, WorkerFuncCall} from './func-call-shim';
+import {createWorkerFuncCall, WorkerFuncCall}
+  from '../../../../webworkers/script-runner/func-call-shim';
 import type {
   FitSessionSetup,
   RunSeed,
