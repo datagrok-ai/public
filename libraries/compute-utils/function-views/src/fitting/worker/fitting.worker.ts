@@ -20,10 +20,18 @@
 // cost-functions.ts) is intentionally NOT imported here — it would crash a
 // worker the moment the bundle loaded.
 
-import dayjs from 'dayjs';
-// Mirror `window.dayjs` (the main-thread platform global, see
-// packages/LibTests/webpack.config.js externals) so script bodies that read
-// dayjs by bare name resolve via worker globalThis instead of ReferenceError.
+// Workers can't reach window.dayjs, so the worker bundle must include
+// dayjs source. Consuming packages typically externalize the bare
+// specifier 'dayjs' to the platform global — that lookup matches by
+// exact request string, so importing via the deep path 'dayjs/esm/index'
+// sidesteps the externals matcher and forces webpack to bundle dayjs into
+// the worker chunk regardless of the consuming package's webpack config.
+//
+// The mirroring onto globalThis preserves the main-thread contract:
+// user-supplied script bodies that write `dayjs(...)` as a bare name
+// resolve through the worker's globalThis instead of throwing
+// ReferenceError.
+import dayjs from 'dayjs/esm/index.js';
 (globalThis as any).dayjs = dayjs;
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {LOSS} from '../constants';

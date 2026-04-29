@@ -40,32 +40,26 @@ module.exports = {
     ],
   },
   devtool: 'source-map',
-  externals: [
-    // Workers don't get the platform's globals (no `window.dayjs`), so the
-    // fitting worker bundle (and the worker-safe `webworkers/` modules it
-    // pulls in) imports `dayjs` and webpack must bundle it. The main
-    // bundle still externalizes dayjs to the platform global.
-    ({context, request}, cb) => {
-      if (request === 'dayjs' && context &&
-          /[\\/](?:fitting[\\/]worker|webworkers)(?:[\\/]|$)/.test(context))
-        return cb();
-      const platformExternals = {
-        'datagrok-api/dg': 'DG',
-        'DG': 'DG',
-        'datagrok-api/grok': 'grok',
-        'datagrok-api/ui': 'ui',
-        'openchemlib/full.js': 'OCL',
-        'cash-dom': '$',
-        'dayjs': 'dayjs',
-        'wu': 'wu',
-        'exceljs': 'ExcelJS',
-        'html2canvas': 'html2canvas',
-        'vue': 'Vue',
-      };
-      if (request in platformExternals) return cb(null, platformExternals[request]);
-      cb();
-    },
-  ],
+  // Plain externals object — dayjs is externalized to the platform global
+  // for main-thread imports. Worker-tree code in compute-utils imports
+  // dayjs via the deep path 'dayjs/esm/index.js' which doesn't match this
+  // exact-string lookup, so webpack bundles dayjs into the worker chunk
+  // automatically. Keeping LibTests' externals shape aligned with packages
+  // like Compute2 means fitting tests here surface any regression where a
+  // worker-bundled file slips back to importing bare 'dayjs'.
+  externals: {
+    'datagrok-api/dg': 'DG',
+    'DG': 'DG',
+    'datagrok-api/grok': 'grok',
+    'datagrok-api/ui': 'ui',
+    'openchemlib/full.js': 'OCL',
+    'cash-dom': '$',
+    'dayjs': 'dayjs',
+    'wu': 'wu',
+    'exceljs': 'ExcelJS',
+    'html2canvas': 'html2canvas',
+    'vue': 'Vue',
+  },
   output: {
     filename: '[name].js',
     library: packageName,

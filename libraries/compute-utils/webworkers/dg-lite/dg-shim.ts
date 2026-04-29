@@ -9,7 +9,12 @@
  * Pure TypeScript, no `datagrok-api` imports — safe to use inside a worker.
  */
 
-import dayjs from 'dayjs';
+// Deep import path so consuming packages whose webpack externals match
+// the bare specifier 'dayjs' (mapping it to the main-thread platform
+// global) don't intercept this lookup. Workers can't reach window.dayjs,
+// so dayjs source must be bundled into any chunk that pulls this shim
+// transitively.
+import dayjs from 'dayjs/esm/index.js';
 import {LiteColumn, LiteColumnList, LiteColumnStats, LiteColumnType, LiteDataFrame}
   from './types';
 
