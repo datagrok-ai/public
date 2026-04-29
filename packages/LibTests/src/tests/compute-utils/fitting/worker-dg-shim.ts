@@ -512,6 +512,84 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     }
   });
 
+  test('pool_drains_when_session_loses_all_primed_slots', async () => {
+    // Stall guard: when every primed slot for a session dies AND the
+    // per-session re-prime budget (MAX_REPLACEMENT_REPRIMES = 1) is
+    // exhausted, dispatched runs must resolve as failures rather than
+    // sit in the queue forever waiting for a setup-ack-ok or run-reply
+    // that will never come.
+    //
+    // Pre-fix this dispatchRun call would hang indefinitely (only the
+    // `slots.length === 0` drain branch fires today, and slots.length
+    // stays at pool size because removeSlot always spawns a replacement).
+    const pool = new WorkerPool(2);
+    try {
+      const targets: OutputTargetItem[] = [{
+        propName: 'y', type: DG.TYPE.FLOAT, target: 0,
+      }];
+      const inputBounds: Record<string, ValueBoundsData> = {a: rangeBound(0, 5, 'a')};
+      const {setup} = buildSetup({
+        sessionId: 77, fnSource: 'y = a + 1;',
+        paramList: ['a'], outputParamNames: ['y'],
+        lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
+        bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
+      });
+      await pool.setupAll(setup, []);
+
+      const internal = pool as unknown as {
+        removeSlot: (slot: any, reason: string) => void;
+        slots: any[];
+        activeSetups: Map<number, {replacementAttempts: number}>;
+      };
+
+      // Initial state: both slots primed.
+      expect(pool._primedSlotCountForTest(77), 2, 'both slots primed');
+      expect(internal.activeSetups.get(77)!.replacementAttempts, 0);
+
+      // Remove slot 0. Replacement is spawned and re-primed; budget hits 1.
+      // Re-prime is async; wait for it to land by polling.
+      internal.removeSlot(internal.slots[0], 'test forced remove 1');
+      const start = Date.now();
+      while (pool._primedSlotCountForTest(77) < 2 && Date.now() - start < 2000)
+        await new Promise((r) => setTimeout(r, 10));
+      expect(pool._primedSlotCountForTest(77), 2, 'replacement should re-prime within budget');
+      expect(internal.activeSetups.get(77)!.replacementAttempts, 1, 'budget consumed');
+
+      // Remove a second slot. Budget exhausted: replacement spawns but is
+      // NOT re-primed for session 77. The count drops to 1 (the surviving
+      // previously-primed slot).
+      internal.removeSlot(internal.slots[0], 'test forced remove 2');
+      await new Promise((r) => setTimeout(r, 50));
+      expect(pool._primedSlotCountForTest(77), 1,
+        'budget exhausted: replacement should not re-prime');
+
+      // Remove the last primed slot. Now no live slot has session 77.
+      internal.removeSlot(internal.slots.find((s) => s.sessions.has(77)), 'test forced remove 3');
+      await new Promise((r) => setTimeout(r, 50));
+      expect(pool._primedSlotCountForTest(77), 0,
+        'no slot should remain primed for the session');
+
+      // The drain branch in pump fires on the next dispatchRun. The
+      // promise must settle as a failure within a bounded window — if the
+      // drain regresses, this would hang indefinitely, so race it against
+      // a 2-second hard timeout.
+      const {run, transferables} = buildRunSeed({
+        sessionId: 77, taskId: 0, seedIndex: 0, seed: new Float64Array([1]),
+      });
+      const dispatch = pool.dispatchRun({run, transferables});
+      const reply = await Promise.race([
+        dispatch,
+        new Promise<never>((_, rej) =>
+          setTimeout(() => rej(new Error('dispatchRun stalled — drain regression')), 2000)),
+      ]);
+      expect(reply.kind, 'failure', 'queued run must resolve as failure');
+      expect(reply.kind === 'failure' && /lost all primed slots/i.test(reply.message),
+        true, `expected lost-all-primed-slots message, got: ${(reply as any).message}`);
+    } finally {
+      pool.dispose();
+    }
+  });
+
   test('pool_replaces_slot_on_remove', async () => {
     // White-box: removeSlot must spawn a fresh slot so a long-lived pool
     // doesn't drift toward zero workers under repeated errors/timeouts.

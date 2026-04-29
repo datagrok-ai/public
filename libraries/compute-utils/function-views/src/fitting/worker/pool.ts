@@ -206,6 +206,24 @@ export class WorkerPool {
       slot.runState = {phase: 'running', run: pending, runTimer};
       slot.worker.postMessage(pending.run, pending.transferables);
     }
+    // Per-session stall drain: if a session has lost every primed slot
+    // AND its replacement-reprime budget is exhausted AND no setup-ack
+    // is in flight for it on any slot, no setup-ack-ok or run-reply will
+    // ever arrive to retrigger pump for it. Without this branch, queued
+    // runs for the session would sit forever — the executor's
+    // `Promise.all(runSlot)` would hang. The hasInFlightSetup guard is
+    // load-bearing: removeSlot increments replacementAttempts BEFORE
+    // primeSlot's ack arrives, so the predicate would otherwise fire
+    // during a recoverable transient state.
+    if (this.queue.length > 0) {
+      for (const [sessionId, entry] of this.activeSetups) {
+        if (entry.replacementAttempts >= WorkerPool.MAX_REPLACEMENT_REPRIMES &&
+            this.primedSlotCount(sessionId) === 0 &&
+            !this.hasInFlightSetup(sessionId)) {
+          this.drainSessionQueue(sessionId, 'session lost all primed slots');
+        }
+      }
+    }
     // If the pool has lost all workers (timeouts or onerror) and there's
     // still queued work, callers would otherwise wait forever. Drain.
     if (this.slots.length === 0 && this.queue.length > 0) {
@@ -220,6 +238,47 @@ export class WorkerPool {
         });
       }
     }
+  }
+
+  // Number of live slots whose `slot.sessions` Set contains the given
+  // sessionId. Derived state — slot count is bounded (≤ pool size,
+  // typically 2–8) and Set.has is O(1), so the linear scan is cheap.
+  private primedSlotCount(sessionId: SessionId): number {
+    let n = 0;
+    for (const slot of this.slots) if (slot.sessions.has(sessionId)) ++n;
+    return n;
+  }
+
+  // True iff any slot has a pending setup-ack for this session. Used by
+  // the stall-drain predicate to avoid firing during a transient state
+  // where a replacement re-prime is in flight.
+  private hasInFlightSetup(sessionId: SessionId): boolean {
+    for (const slot of this.slots) {
+      if (slot.pendingSetups.has(sessionId)) return true;
+    }
+    return false;
+  }
+
+  // Resolve every queued run for the given session as a failure with the
+  // supplied reason. Used by the per-session stall drain in `pump` and
+  // available for future use cases (e.g. session abort).
+  private drainSessionQueue(sessionId: SessionId, reason: string): void {
+    const remaining: PendingRun[] = [];
+    for (const pending of this.queue) {
+      if (pending.run.sessionId !== sessionId) {
+        remaining.push(pending);
+        continue;
+      }
+      pending.resolve({
+        kind: 'failure',
+        taskId: pending.run.taskId,
+        seedIndex: pending.run.seedIndex,
+        message: reason,
+        failKind: 'other',
+        seed: pending.run.seed,
+      });
+    }
+    this.queue = remaining;
   }
 
   private removeSlot(slot: Slot, reason: string): void {
@@ -392,6 +451,13 @@ export class WorkerPool {
   // Test-only: read live slot count without exposing the array.
   _slotsForTest(): number {
     return this.slots.length;
+  }
+
+  // Test-only: how many slots currently have the session in their primed
+  // set. Used by white-box stall tests to observe progress through the
+  // remove → reprime cycle without reaching into the internals via casts.
+  _primedSlotCountForTest(sessionId: SessionId): number {
+    return this.primedSlotCount(sessionId);
   }
 }
 
