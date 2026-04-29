@@ -71,9 +71,16 @@ export function _setCompileCacheCap(cap: number): void {
 //
 // `DG` is bound to the worker shim (`createWorkerDG()`) — fittable bodies
 // touch DG.DataFrame.fromColumns and DG.Column.from*Array, all covered.
+//
+// Cache key is a 128-bit FNV-1a fingerprint over (paramList, outputNames,
+// source) — four parallel 32-bit passes with different seeds, length-prefixed
+// per part so ['foo','bar'] and ['fooba','r'] hash differently. Avoids
+// per-call ~1 MB ConsString allocation + flatten + memcmp inside lru-cache's
+// underlying Map; collision probability for cap-32 cache is ~5×10⁻³⁵ per
+// pair — operationally zero.
 export function compileBody(source: string, paramList: string[], outputNames: string[]): CompiledFn {
   checkSourceSize(source);
-  const key = `${paramList.join(',')}|${outputNames.join(',')}|${source}`;
+  const key = fnv1a128([paramList.join(','), outputNames.join(','), source]);
   let fn = compileCache.get(key);
   if (fn) {
     ++compileHits;
@@ -87,6 +94,35 @@ export function compileBody(source: string, paramList: string[], outputNames: st
   fn = new Function('DG', ...paramList, wrapped) as CompiledFn;
   compileCache.set(key, fn);
   return fn;
+}
+
+// Four parallel 32-bit FNV-1a passes with different seeds, each fed every
+// part length-prefixed (4 little-endian bytes) so adjacent parts can't be
+// re-sliced into the same byte stream. Packed as four base36 digits joined
+// by `-` (~26 chars total). Math.imul is the JIT-friendly 32-bit signed
+// multiply primitive; `>>> 0` re-interprets the result as unsigned.
+function fnv1a128(parts: string[]): string {
+  const PRIME = 0x01000193;
+  let a = 0x811c9dc5, b = 0xdeadbeef, c = 0xcafebabe, d = 0x12345678;
+  for (const s of parts) {
+    const len = s.length;
+    for (let lb = 0; lb < 4; ++lb) {
+      const ch = (len >>> (lb * 8)) & 0xff;
+      a = Math.imul(a ^ ch, PRIME);
+      b = Math.imul(b ^ ch, PRIME);
+      c = Math.imul(c ^ ch, PRIME);
+      d = Math.imul(d ^ ch, PRIME);
+    }
+    for (let i = 0; i < len; ++i) {
+      const ch = s.charCodeAt(i);
+      a = Math.imul(a ^ ch, PRIME);
+      b = Math.imul(b ^ ch, PRIME);
+      c = Math.imul(c ^ ch, PRIME);
+      d = Math.imul(d ^ ch, PRIME);
+    }
+  }
+  return `${(a >>> 0).toString(36)}-${(b >>> 0).toString(36)}-` +
+    `${(c >>> 0).toString(36)}-${(d >>> 0).toString(36)}`;
 }
 
 export interface WorkerFuncCall {
