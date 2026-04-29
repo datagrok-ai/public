@@ -674,7 +674,7 @@ export class DiffStudio {
   private fromFileHandler = false;
   private appTree: DG.TreeViewGroup | null = null;
   private recentFolder: DG.TreeViewGroup | null = null;
-  private libraryFolder: DG.TreeViewGroup | null = null;
+  private appTreeResolver: (() => DG.TreeViewGroup) | null = null;
   private librarySub: {unsubscribe: () => void} | null = null;
   private treeSelSub: {unsubscribe: () => void} | null = null;
   private treeFocusSub: {unsubscribe: () => void} | null = null;
@@ -2050,27 +2050,29 @@ export class DiffStudio {
   private async createTree(browsing?: Browsing) {
     if (browsing) {
       this.browsePanel = browsing.browsePanel;
-      this.appTree = browsing.treeNode;
+      this.appTreeResolver = () => browsing.treeNode;
     } else {
       this.browsePanel = grok.shell.browsePanel;
-      const appsGroup = this.browsePanel.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
-      const computeGroup = appsGroup.getOrCreateGroup(TITLE.COMP, null, false);
-      this.appTree = computeGroup.getOrCreateGroup(TITLE.DIF_ST);
+      this.appTreeResolver = () => {
+        const bp = grok.shell.browsePanel;
+        const appsGroup = bp.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
+        const computeGroup = appsGroup.getOrCreateGroup(TITLE.COMP, null, false);
+        return computeGroup.getOrCreateGroup(TITLE.DIF_ST);
+      };
     }
+    this.appTree = this.appTreeResolver();
 
     if (this.appTree.items.length > 0)
       this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
     else {
       const templatesFolder = this.getFolderWithBultInModels(TEMPLATE_TITLES, TITLE.TEMPL);
       const examplesFolder = this.getLibraryFolder();
-      this.libraryFolder = examplesFolder;
       this.librarySub?.unsubscribe();
+      // Stay subscribed across browse-panel rebuilds (e.g. toolbox toggled, layout
+      // reset). refreshLibraryFolder() re-resolves the tree on each fire, so we
+      // never bail out on a transient disconnect — the previous bail-out caused
+      // saves to silently skip the refresh once the user toggled the toolbox.
       this.librarySub = grok.events.onCustomEvent(LIBRARY_CHANGED_EVENT).subscribe(() => {
-        if (!this.libraryFolder || !this.libraryFolder.root.isConnected) {
-          this.librarySub?.unsubscribe();
-          this.librarySub = null;
-          return;
-        }
         void this.refreshLibraryFolder();
       });
 
@@ -2420,13 +2422,28 @@ export class DiffStudio {
     });
   }
 
-  /** Rebuild Library tree folder: remove all items, then re-populate with built-in + external models */
+  /** Rebuild Library tree folder: remove all items, then re-populate with built-in + external models.
+   *  Re-resolves the folder from the current browse panel each call so that toolbox toggles or
+   *  any other browse-panel rebuilds (which detach the previously cached node) don't break the
+   *  refresh — we always operate on the live tree. */
   private async refreshLibraryFolder(): Promise<void> {
-    if (!this.libraryFolder)
+    const tree = this.resolveAppTree();
+    if (!tree)
       return;
-    this.libraryFolder.removeChildrenWhere(() => true);
-    EXAMPLE_TITLES.forEach((name) => this.putBuiltInModelToFolder(name, this.libraryFolder!, TITLE.LIBRARY));
-    await this.addExternalModelsToFolder(this.libraryFolder);
+    const folder = tree.getOrCreateGroup(TITLE.LIBRARY, null, false);
+    folder.removeChildrenWhere(() => true);
+    EXAMPLE_TITLES.forEach((name) => this.putBuiltInModelToFolder(name, folder, TITLE.LIBRARY));
+    await this.addExternalModelsToFolder(folder);
+  }
+
+  /** Return the current Diff Studio tree group, re-resolving via the saved resolver if the
+   *  cached reference has been detached from the DOM (browse-panel rebuild, toolbox toggle, etc.). */
+  private resolveAppTree(): DG.TreeViewGroup | null {
+    if (!this.appTreeResolver)
+      return this.appTree;
+    if (!this.appTree || !this.appTree.root.isConnected)
+      this.appTree = this.appTreeResolver();
+    return this.appTree;
   }
 
   /** Show settings dialog for an external model entry */
