@@ -499,6 +499,50 @@ body.dartium .power-pack-widgets-host.ui-div {
     flex-grow: 1;
 }
 
+.dlg-formula-lines-pane-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.dlg-formula-lines-pane-wrap > .d4-tab-host,
+.dlg-formula-lines-pane-wrap > .d4-viewer {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+}
+
+.dlg-formula-lines-tabs-box {
+    min-height: 80px;
+}
+
+.dlg-formula-lines-preview-box {
+    min-height: 180px;
+}
+
+.dlg-formula-lines-preview-box > .dlg-formula-lines-pane-wrap {
+    padding-top: 4px;
+}
+
+/* Editor (right pane) gives up width first when the dialog shrinks: high flex-shrink
+   plus a low min-width. The viewer/grid side is more important to keep visible, so
+   the left split has a larger min-width and the default flex-shrink: 1. */
+.dlg-formula-lines-editor-box {
+    min-width: 120px;
+    overflow: auto;
+    flex-shrink: 5;
+}
+
+.dlg-formula-lines-left-split {
+    min-width: 240px;
+    min-height: 0;
+}
+
 
 /** Viewers gallery */
 

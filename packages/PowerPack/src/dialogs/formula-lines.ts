@@ -458,7 +458,6 @@ class Preview {
   /** Source Scatter Plot axes */
   public srcAxes?: AxisNames;
 
-  public set height(h: number) {this.viewer.root.style.height = `${h}px`;}
   public get root(): HTMLElement {return this.viewer.root;}
 
   /** Returns the current columns pair of the preview viewer. Single-axis hosts
@@ -744,6 +743,7 @@ class Preview {
         axisType: look.axisType,
         invertYAxis: look.invertYAxis,
         showColorSelector: false,
+        showStatistics: false,
       });
     }
     else if (previewType === DG.VIEWER.HISTOGRAM) {
@@ -901,10 +901,10 @@ class Editor {
     const newForm = itemIdx >= 0
       ? (isFormulaLine ? this.createFormulaLineForm(itemIdx) : this.annotationRegionForm(itemIdx))
       : ui.div(['No formula line or annotation region selected, add one to edit.'], { classes: 'ui-form', style: {
-        marginLeft: '-14px',
-        overflowX: 'auto',
+        padding: '12px',
         textAlign: 'center',
-        marginTop: '6px',
+        whiteSpace: 'normal',
+        wordBreak: 'normal',
       }});
 
     this.form.replaceWith(newForm);
@@ -1799,11 +1799,27 @@ export class FormulaLinesDialog {
     this.tabs = this.initTabs();
     this.dialog.sub(this.dialog.onClose.subscribe(() => this.dialog.detach()));
 
-    /** Init Dialog layout */
-    const layout = ui.div([
-      ui.block([this.tabs.root, this.preview.root], {style: {width: '55%', paddingRight: '20px'}}),
-      ui.block([this.editor.root], {style: {width: '45%'}}),
-    ]);
+    const tabsInitialHeight = '140px';
+    const editoirInitialWidth = '420px';
+    const makeWrap = (child: HTMLElement): HTMLDivElement => {
+      const wrapDiv = document.createElement('div');
+      // plain <div>, not ui.div — ui.div tags it with `ui-div`, which would trigger
+      // `div.ui-div > div.ui-box { width:400px; height:300px }` on the d4-viewer/d4-tab-host child
+      wrapDiv.className = 'ui-update-shadow dlg-formula-lines-pane-wrap';
+      wrapDiv.appendChild(child);
+      return wrapDiv;
+    };
+
+    const tabsBox = ui.box(makeWrap(this.tabs.root),
+      {classes: 'dlg-formula-lines-tabs-box', style: {height: tabsInitialHeight}});
+
+    const previewBox = ui.box(makeWrap(this.preview.root), {classes: 'dlg-formula-lines-preview-box'});
+    const leftSplit = ui.splitV([tabsBox, previewBox], {classes: 'dlg-formula-lines-left-split'}, true);
+    const editorBox = ui.box(this.editor.root, {classes: 'dlg-formula-lines-editor-box',
+      style: {width: editoirInitialWidth}});
+
+    const layout = ui.splitH([leftSplit, editorBox],
+      {style: {width: '100%', height: '100%', minHeight: '0', minWidth: '0'}}, true);
 
     const width = Math.min(1000, Math.floor(document.body.clientWidth / 1.3));
     const height = Math.min(800, Math.floor(document.body.clientHeight / 1.5));
@@ -1880,11 +1896,9 @@ export class FormulaLinesDialog {
   }
 
   private initPreview(src: DG.DataFrame | DG.Viewer): Preview {
-    const preview = new Preview(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
+    return new Preview(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
       this.host.viewerAnnotationRegionItems! ?? this.host.dframeAnnotationRegionItems!,
       src, this.creationControl.popupMenu);
-    preview.height = 310;
-    return preview;
   }
 
   private initCreationControl(src: DG.DataFrame | DG.Viewer): CreationControl {
@@ -1939,7 +1953,6 @@ export class FormulaLinesDialog {
 
   private initTabs(): DG.TabControl {
     const tabs = DG.TabControl.create();
-    tabs.root.style.height = '230px';
 
     /** Init Viewer Table (in the first tab) */
     if (this.host.viewerFormulaLineItems || this.host.viewerAnnotationRegionItems) {
