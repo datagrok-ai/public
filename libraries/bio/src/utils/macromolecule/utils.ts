@@ -352,6 +352,10 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
   };
 }
 
+// this scary thing is a pattern for matching HELM RNA notation with most complex cases like [Sug(smt)]([NNs])[pm()].
+export const RNA_HELM_TRIPLET_MONOMER_REG = /^((?:[^\[\]()]|\[[^\[\]]*\])+)\(((?:[^\[\]()]|\[[^\[\]]*\])+)\)((?:[^\[\]()]|\[[^\[\]]*\])+)$/;
+// this one matches the terminal phosphate-less monomer in RNA HELM notation, e.g. [dR](A) or [R](A)
+export const RNA_HELM_TERMINAL_PHOSPHATELESS_MONOMER_REG = /^((?:[^\[\]()]|\[[^\[\]]*\])+)\(((?:[^\[\]()]|\[[^\[\]]*\])+)\)$/;
 /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
  * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
  * EG byciclic helm: PEPTIDE1{F}|PEPTIDE2{[dI].[Trp_Ome].[Asp_OMe].[Cys_Bn].[meG].[Phe_3Cl].[dD].T.[dI].T.[dK].[aG].[3Pal].[xiIle].[meD].[Ala_tBu]}|PEPTIDE3{L.[Pro_4Me3OH].S.[NMe2Abz].Q.[3Pal].[xiIle].[D-Hyp].[Ala_tBu].[dI].[Trp_Ome].[Asp_OMe].N.[meG].[Phe_34diCl].[Phe_34diCl]}$PEPTIDE2,PEPTIDE2,16:R2-1:R1|PEPTIDE3,PEPTIDE3,16:R2-1:R1|PEPTIDE3,PEPTIDE2,10:R3-1:R3|PEPTIDE1,PEPTIDE2,1:R2-9:R3$$$V2.0
@@ -371,10 +375,22 @@ export const splitterAsHelm: SplitterFunc = (seq: string): ISeqSplitted => {
   for (let i = 0; i < spList.length - 1; i++)
     spList[i] = spList[i] + '}';
 
-  const mListSplit = spList
-    .map((sp: string) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
-      .map((m) => cleanupHelmSymbol(m)));
   const polymerTypes = spList.map((sp) => sp.replace(/\d{1,2}\{.+\}/, '')) as PolymerTypes[];
+  const mListSplit = spList
+    .map((sp: string, i) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
+      .flatMap((m, k, fList) => {
+        if (polymerTypes[i] === PolymerTypes.RNA) {
+          const match = RNA_HELM_TRIPLET_MONOMER_REG.exec(m)!;
+          if (match != null)
+            return [cleanupHelmSymbol(match[1]), cleanupHelmSymbol(match[2]), cleanupHelmSymbol(match[3])];
+          if (k === fList.length - 1) { // if its the last monomer, it can be phosphate-less, so try to match it with another regex
+            const terminalMatch = RNA_HELM_TERMINAL_PHOSPHATELESS_MONOMER_REG.exec(m);
+            if (terminalMatch != null)
+              return [cleanupHelmSymbol(terminalMatch[1]), cleanupHelmSymbol(terminalMatch[2])];
+          }
+        }
+        return [cleanupHelmSymbol(m)];
+      }));
   const res = new HelmSplitted(mListSplit, connectionsPart ?? '', polymerTypes, GapOriginals[NOTATION.HELM]);
 
   return res;

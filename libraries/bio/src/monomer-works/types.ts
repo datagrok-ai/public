@@ -118,6 +118,13 @@ export type NumberWrapper = {
   value: number | null // null if there is no branch attach node
 }
 
+/** Role of an entry in a HELM RNA splitted sequence (sugar, base, phosphate). */
+export enum NucleotideRole {
+  SUGAR = 0,
+  BASE = 1,
+  PHOSPHATE = 2,
+}
+
 export type MonomerMapValue = { biotype: HelmType, symbol: string, atoms: number[], bonds: number[] };
 
 export class MonomerMap extends Map<number, MonomerMapValue> {
@@ -139,6 +146,10 @@ export class MolfileWithMap {
 /** Only simple types allowed for worker data, avoid classes with methods */
 export type SeqToMolfileWorkerData = {
   seqList: ISeqMonomer[][],
+  /** Per-row parallel array of NucleotideRole tags (only set for rows in
+   * "HELM RNA triples" mode, where each nucleotide contributes 3 entries
+   * sugar/base/phosphate). undefined for legacy bases-only rows. */
+  rolesList?: (NucleotideRole[] | undefined)[],
   monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET,
   polymerType: HELM_POLYMER_TYPE,
