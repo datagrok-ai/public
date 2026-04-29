@@ -14,6 +14,7 @@ export function makeScalarPairFunc(): DG.Func {
   return buildScript([
     '//name: ScalarPair',
     '//language: javascript',
+    '//meta.workerSafe: true',
     '//input: double a',
     '//input: double b',
     '//output: double y1',
@@ -29,6 +30,7 @@ export function makeSingleScalarFunc(): DG.Func {
   return buildScript([
     '//name: SingleScalar',
     '//language: javascript',
+    '//meta.workerSafe: true',
     '//input: double a',
     '//input: double b',
     '//output: double y',
@@ -45,6 +47,7 @@ export function makeExpDecayFunc(): DG.Func {
   return buildScript([
     '//name: ExpDecay',
     '//language: javascript',
+    '//meta.workerSafe: true',
     '//input: double a',
     '//input: double b',
     '//input: int N = 20',
@@ -71,6 +74,7 @@ export function makeLinearMixtureFunc(): DG.Func {
   return buildScript([
     '//name: LinearMixture',
     '//language: javascript',
+    '//meta.workerSafe: true',
     '//input: double a',
     '//input: double b',
     '//input: double c',
@@ -102,6 +106,7 @@ export function makeMultiOutputFunc(): DG.Func {
   return buildScript([
     '//name: MultiOutput',
     '//language: javascript',
+    '//meta.workerSafe: true',
     '//input: double a',
     '//input: double b',
     '//input: int N = 20',
@@ -132,6 +137,7 @@ export function makeRefDfPassthroughFunc(): DG.Func {
   return buildScript([
     '//name: RefDfPassthrough',
     '//language: javascript',
+    '//meta.workerSafe: true',
     '//input: dataframe refDf',
     '//input: double a',
     '//input: int N = 10',
@@ -160,6 +166,7 @@ export function makeDayjsFormatFunc(): DG.Func {
   return buildScript([
     '//name: DayjsFormat',
     '//language: javascript',
+    '//meta.workerSafe: true',
     '//input: datetime t0',
     '//input: double a',
     '//output: double y',
@@ -177,6 +184,7 @@ export function makeDateGetTimeFunc(): DG.Func {
   return buildScript([
     '//name: DateGetTime',
     '//language: javascript',
+    '//meta.workerSafe: true',
     '//input: datetime t0',
     '//input: double a',
     '//output: double y',
@@ -194,6 +202,7 @@ export function makeWedgedFunc(): DG.Func {
   return buildScript([
     '//name: Wedged',
     '//language: javascript',
+    '//meta.workerSafe: true',
     '//input: double a',
     '//output: double y',
     '',
@@ -209,6 +218,7 @@ export function makeThrowingFunc(): DG.Func {
   return buildScript([
     '//name: ThrowsOnNegA',
     '//language: javascript',
+    '//meta.workerSafe: true',
     '//input: double a',
     '//input: double b',
     '//output: double y',

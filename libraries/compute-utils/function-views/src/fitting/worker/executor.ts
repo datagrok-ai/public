@@ -8,8 +8,10 @@
 // `sampleSeeds` for the surrounding scaffolding.
 //
 // canHandle() is the canary that decides whether a fit can run on the worker
-// arm at all: requires a JS-language DG.Script whose body doesn't reach for
-// `grok.*` or `ui.*` (since neither exists in worker context).
+// arm at all: requires a JS-language DG.Script that explicitly opts in via
+// `//meta.workerSafe: true` in its header. The annotation is the contract —
+// a workerSafe script promises not to reach for `grok.*` / `ui.*` or any
+// other main-thread global the worker context lacks.
 
 import * as DG from 'datagrok-api/dg';
 import {Extremum, OptimizationResult, ValueBoundsData, OutputTargetItem}
@@ -49,7 +51,17 @@ export interface Executor {
 
 // ---- canHandle ------------------------------------------------------------
 
-const FORBIDDEN_API_RE = /(^|[^.\w])(grok|ui)\./;
+// Header annotation a script must carry to be eligible for worker dispatch.
+// Authors opt in by adding `//meta.workerSafe: true` to the script header.
+// The platform strips the `meta.` prefix when populating `func.options`, so
+// the value lands at `func.options['workerSafe']` (cf. `searchPattern`,
+// `vectorFunc`, `role`).
+const WORKER_SAFE_OPTION = 'workerSafe';
+
+function isWorkerSafe(func: DG.Func): boolean {
+  const v = (func.options as Record<string, unknown> | undefined)?.[WORKER_SAFE_OPTION];
+  return v === true || v === 'true';
+}
 
 export function canHandle(args: ExecutorArgs): boolean {
   if (typeof navigator === 'undefined' || (navigator.hardwareConcurrency ?? 0) < 2)
@@ -57,7 +69,7 @@ export function canHandle(args: ExecutorArgs): boolean {
   if (!(args.func && args.func instanceof DG.Script)) return false;
   const script = args.func as DG.Script;
   if (script.language !== 'javascript') return false;
-  if (FORBIDDEN_API_RE.test(script.script)) return false;
+  if (!isWorkerSafe(script)) return false;
   if (!args.outputTargets || !args.lossType) return false;
   return true;
 }

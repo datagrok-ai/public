@@ -19,7 +19,9 @@ export {makeConstFunction} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/cost-functions';
 export {runOptimizer} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
-export type {ExecutorChoice} from
+export type {ExecutorChoice, ExecutorArgs} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/executor';
+export {canHandle} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/executor';
 export {buildSetup, buildRunSeed} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/serialize';
