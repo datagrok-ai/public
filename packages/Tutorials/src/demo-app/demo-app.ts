@@ -52,7 +52,16 @@ export class DemoView extends DG.ViewBase {
       return;
     const dockNode = dockNodes.filter((node) => node.container.containerElement.classList.contains('document-manager') ||
       node.container.containerElement.getElementsByClassName('document-manager').length > 0)[0];
-    const updateIndicatorRoot = dockNode.container.containerElement.getElementsByClassName('tab-content')[0] as HTMLElement;
+    const activeRoot = grok.shell.v?.root ?? this.currentView?.root;
+    let activeTabContent: HTMLElement | null = null;
+    if (activeRoot) {
+      let el: HTMLElement | null = activeRoot.parentElement;
+      while (el && !el.classList.contains('tab-content'))
+        el = el.parentElement;
+      activeTabContent = el;
+    }
+    const updateIndicatorRoot = (activeTabContent ??
+      dockNode.container.containerElement.getElementsByClassName('tab-content')[0]) as HTMLElement;
 
     this._closePrevDemoViews();
     this.currentView = null;
@@ -60,6 +69,7 @@ export class DemoView extends DG.ViewBase {
     const viewsBefore = new Set<DG.View>(Array.from(grok.shell.views));
 
     if (func.options['isDemoScript'] == 'True') {
+      updateIndicatorRoot.classList.add('demo-app-loading');
       ui.setUpdateIndicator(updateIndicatorRoot, true);
       try {
         const pathElements = viewPath.split('|').map((s) => s.trim());
@@ -84,8 +94,10 @@ export class DemoView extends DG.ViewBase {
       } finally {
         this._tagNewDemoViews(viewsBefore, func.name);
         ui.setUpdateIndicator(updateIndicatorRoot, false);
+        updateIndicatorRoot.classList.remove('demo-app-loading');
       }
     } else {
+      updateIndicatorRoot.classList.add('demo-app-loading');
       ui.setUpdateIndicator(updateIndicatorRoot, true);
       const prevAutoShowToolbox = grok.shell.windows.autoShowToolbox;
       grok.shell.windows.autoShowToolbox = false;
@@ -100,6 +112,7 @@ export class DemoView extends DG.ViewBase {
         this._tagNewDemoViews(viewsBefore, func.name);
         grok.shell.windows.autoShowToolbox = prevAutoShowToolbox;
         ui.setUpdateIndicator(updateIndicatorRoot, false);
+        updateIndicatorRoot.classList.remove('demo-app-loading');
       }
       this.tree.rootNode.root.focus();
       this._guardTreeFocus();
