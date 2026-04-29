@@ -1,10 +1,10 @@
 // Bounds checker shared by the main-arm sampler and the fitting worker.
 //
-// DG-free on purpose: imports `runFormula` (zero-dependency) and uses
+// DG-free on purpose: imports `compileFormula` (zero-dependency) and uses
 // `import type` for the bound shapes so the worker bundle never reaches
 // `optimizer-misc.ts` (which has a value-level `import * as DG`).
 
-import {runFormula} from './formulas-resolver';
+import {compileFormula, runFormula, type CompiledFormula} from './formulas-resolver';
 import type {BoundFormula, ChangingValue, ConstValue, ValueBoundsData} from './optimizer-misc';
 
 type AccData = {
@@ -42,6 +42,24 @@ export function evalBoundFormula(bound: BoundFormula, context: Record<string, an
   return runFormula(bound.formula, context);
 }
 
+// One precompiled bound. Both sides resolved as closures — value sides
+// bind the constant; formula sides go through compileFormula. `pos` is
+// pre-resolved so the hot loop avoids the per-call Map lookup.
+type CompiledBound = {
+  name: string;
+  pos: number;
+  minOf: CompiledFormula;
+  maxOf: CompiledFormula;
+};
+
+function compileSide(side: ChangingValue['bottom'], knownNames: readonly string[]): CompiledFormula {
+  if (side.type === 'value') {
+    const v = side.value;
+    return () => v;
+  }
+  return compileFormula(side.formula, knownNames);
+}
+
 export function makeBoundsChecker(
   inputs: Record<string, ValueBoundsData>,
   variedInputNames: string[],
@@ -55,16 +73,41 @@ export function makeBoundsChecker(
   // override and falls back to the values stored in `inputs` const entries.
   const contextFixed = fixedContextOverride ?? getFixedContext(constValues);
 
+  // Names a formula may reference: every fixed input + every varied input.
+  // (A formula at iteration k may legally reference any varied input from
+  // iteration < k. Compiling against the union is fine — referenced names
+  // get destructured; ones not actually referenced drop out at compile
+  // time via the regex intersect inside compileFormula.)
+  const knownNames = [...Object.keys(contextFixed), ...variedInputNames];
+
+  // Precompile every bound at fit-setup time. Hot loop becomes a flat
+  // array walk with one closure call per side, no parse / `with` cost.
+  const compiled: CompiledBound[] = [];
+  for (const [name, , bound] of [...nonFormulaBounds, ...formulaBounds]) {
+    compiled.push({
+      name,
+      pos: variedNameToPosition.get(name)!,
+      minOf: compileSide(bound.bottom, knownNames),
+      maxOf: compileSide(bound.top, knownNames),
+    });
+  }
+
+  // Reuse one context object across calls instead of `{...contextFixed}`
+  // per call. Varied slots are reset each call so a formula referencing a
+  // not-yet-iterated varied input gets `undefined` (matching prior
+  // semantics — it would have been missing from a fresh clone).
+  const context: Record<string, any> = {...contextFixed};
+
   return function isInsideBounds(point: Float64Array): boolean {
-    const context = {...contextFixed};
-    for (const [name, , bound] of [...nonFormulaBounds, ...formulaBounds]) {
-      const pos = variedNameToPosition.get(name)!;
-      const val = point[pos];
-      const min = bound.bottom.type === 'value' ? bound.bottom.value : evalBoundFormula(bound.bottom, context);
-      const max = bound.top.type === 'value' ? bound.top.value : evalBoundFormula(bound.top, context);
+    for (const name of variedInputNames) context[name] = undefined;
+    for (let i = 0; i < compiled.length; ++i) {
+      const c = compiled[i];
+      const val = point[c.pos];
+      const min = c.minOf(context);
+      const max = c.maxOf(context);
       if (max == null || min == null || val == null || min > max || val < min || val > max)
         return false;
-      context[name] = val;
+      context[c.name] = val;
     }
     return true;
   };
