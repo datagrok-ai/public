@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.27.4 (2026-04-29)
+
+* Support for non canonical RNA and correct splitting in helm
+
 ## 2.27.0 (2026-04-09)
 
 * Engine based MSA
