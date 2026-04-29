@@ -33,6 +33,13 @@ export namespace funcs {
     return await grok.functions.call('PreclinicalCase:RunCoreValidate', { standard, dataPath, version, outputFormat, options });
   }
 
+  /**
+  Open a Preclinical Case view by name. Loads the study if needed. Used by tests.
+  */
+  export async function openPreclinicalCaseView(studyId: string , viewName: string ): Promise<DG.View> {
+    return await grok.functions.call('PreclinicalCase:OpenPreclinicalCaseView', { studyId, viewName });
+  }
+
   export async function combinedMeasurementsCellRenderer(): Promise<any> {
     return await grok.functions.call('PreclinicalCase:CombinedMeasurementsCellRenderer', {});
   }
