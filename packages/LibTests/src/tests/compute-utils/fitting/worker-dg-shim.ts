@@ -352,28 +352,22 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
   });
 
   test('pool_dispose_drains_pending_setups', async () => {
-    // White-box: dispose's job is to resolve any pendingSetups it finds.
+    // White-box: dispose's job is to fail every in-flight pending setup.
     // Inject one directly so the assertion doesn't depend on Worker
-    // round-trip timing (which would only happen to be deterministic
-    // because of JS's single-threaded event loop, but is brittle to read).
-    type SlotInternal = {
-      pendingSetups: Map<number, {sessionId: number; resolve: (ack: SetupAckLike) => void}>;
-    };
+    // round-trip timing.
     type SetupAckLike = {kind: 'setup-ack'; sessionId: number; ok: boolean; message?: string};
     const pool = new WorkerPool(1);
-    const internal = pool as unknown as {
-      ensureWorkers: () => void;
-      slots: SlotInternal[];
-    };
-    internal.ensureWorkers();
+    pool._ensureWorkersForTest();
     let resolved = false;
     let ack: SetupAckLike | null = null;
-    internal.slots[0].pendingSetups.set(7, {
+    const slot = pool._slotsArrayForTest()[0];
+    slot.pendingSetups.set(7, {
       sessionId: 7,
-      resolve: (a) => { resolved = true; ack = a; },
+      resolve: (a) => { resolved = true; ack = a as SetupAckLike; },
+      setupTimer: setTimeout(() => {}, 60_000),
     });
     pool.dispose();
-    expect(resolved, true, 'dispose must call pendingSetups[*].resolve');
+    expect(resolved, true, 'dispose must fail in-flight pending setups');
     expect(ack !== null, true);
     expect(ack!.kind, 'setup-ack');
     expect(ack!.ok, false, 'drained ack must signal failure');
@@ -383,18 +377,11 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
 
   test('pool_dispose_drains_inflight_run', async () => {
     // White-box: dispose's job is to resolve the in-flight run as a failure.
-    // Inject a Query into the slot's runState so the test doesn't hinge on
-    // the dispatchRun → worker → reply round-trip.
+    // Inject a Query via Slot._setRunningForTest so the test doesn't hinge
+    // on the dispatchRun → worker → reply round-trip.
     type RunReplyLike = {kind: string; taskId: number; message?: string};
-    type SlotInternal = {
-      runState: {phase: 'idle'} | {phase: 'running'; query: Query};
-    };
     const pool = new WorkerPool(1);
-    const internal = pool as unknown as {
-      ensureWorkers: () => void;
-      slots: SlotInternal[];
-    };
-    internal.ensureWorkers();
+    pool._ensureWorkersForTest();
     let resolved = false;
     let reply: RunReplyLike | null = null;
     const query = new Query(
@@ -405,7 +392,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     // Long-lived noop timer — Query.settle clearTimeouts it on dispose's
     // running→idle transition.
     query.startRunning(setTimeout(() => {}, 60_000));
-    internal.slots[0].runState = {phase: 'running', query};
+    pool._slotsArrayForTest()[0]._setRunningForTest(query);
     pool.dispose();
     expect(resolved, true, 'dispose must resolve the running slot\'s run');
     expect(reply !== null, true);
@@ -479,11 +466,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
 
       // Force the only slot out; pool spawns a fresh replacement and
       // re-primes it for session 99.
-      const internal = pool as unknown as {
-        removeSlot: (slot: any, reason: string) => void;
-        slots: any[];
-      };
-      internal.removeSlot(internal.slots[0], 'test forced remove');
+      pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'test forced remove');
       expect(pool._slotsForTest(), 1, 'replacement must be spawned');
 
       // dispatchRun on the (now-replaced) session must succeed via the
@@ -526,35 +509,30 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       });
       await pool.setupAll(setup, []);
 
-      const internal = pool as unknown as {
-        removeSlot: (slot: any, reason: string) => void;
-        slots: any[];
-        activeSetups: Map<number, {replacementAttempts: number}>;
-      };
-
       // Initial state: both slots primed.
       expect(pool._primedSlotCountForTest(77), 2, 'both slots primed');
-      expect(internal.activeSetups.get(77)!.replacementAttempts, 0);
+      expect(pool._replacementAttemptsForTest(77), 0);
 
       // Remove slot 0. Replacement is spawned and re-primed; budget hits 1.
       // Re-prime is async; wait for it to land by polling.
-      internal.removeSlot(internal.slots[0], 'test forced remove 1');
+      pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'test forced remove 1');
       const start = Date.now();
       while (pool._primedSlotCountForTest(77) < 2 && Date.now() - start < 2000)
         await new Promise((r) => setTimeout(r, 10));
       expect(pool._primedSlotCountForTest(77), 2, 'replacement should re-prime within budget');
-      expect(internal.activeSetups.get(77)!.replacementAttempts, 1, 'budget consumed');
+      expect(pool._replacementAttemptsForTest(77), 1, 'budget consumed');
 
       // Remove a second slot. Budget exhausted: replacement spawns but is
       // NOT re-primed for session 77. The count drops to 1 (the surviving
       // previously-primed slot).
-      internal.removeSlot(internal.slots[0], 'test forced remove 2');
+      pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'test forced remove 2');
       await new Promise((r) => setTimeout(r, 50));
       expect(pool._primedSlotCountForTest(77), 1,
         'budget exhausted: replacement should not re-prime');
 
       // Remove the last primed slot. Now no live slot has session 77.
-      internal.removeSlot(internal.slots.find((s) => s.sessions.has(77)), 'test forced remove 3');
+      const last = pool._slotsArrayForTest().find((s) => s.hasSession(77))!;
+      pool._removeSlotForTest(last, 'test forced remove 3');
       await new Promise((r) => setTimeout(r, 50));
       expect(pool._primedSlotCountForTest(77), 0,
         'no slot should remain primed for the session');
@@ -583,25 +561,18 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
   test('pool_replaces_slot_on_remove', async () => {
     // White-box: removeSlot must spawn a fresh slot so a long-lived pool
     // doesn't drift toward zero workers under repeated errors/timeouts.
-    type SlotInternal = {worker: Worker};
     const pool = new WorkerPool(2);
-    const internal = pool as unknown as {
-      ensureWorkers: () => void;
-      removeSlot: (slot: SlotInternal, reason: string) => void;
-      slots: SlotInternal[];
-    };
     try {
-      internal.ensureWorkers();
+      pool._ensureWorkersForTest();
       expect(pool._slotsForTest(), 2);
-      const originalWorker0 = internal.slots[0].worker;
-      internal.removeSlot(internal.slots[0], 'test forced remove');
+      const originalSlot0 = pool._slotsArrayForTest()[0];
+      pool._removeSlotForTest(originalSlot0, 'test forced remove');
       expect(pool._slotsForTest(), 2, 'removeSlot must spawn a replacement');
       // The replacement is appended at the end; the surviving original
-      // (was at index 1) is now at index 0. Either way, the freshly
-      // spawned worker must not be the one we terminated.
-      for (const slot of internal.slots)
-        expect(slot.worker !== originalWorker0, true,
-          'replacement must be a fresh Worker');
+      // (was at index 1) is now at index 0. Either way, the slot we
+      // terminated must not appear in the live array.
+      for (const slot of pool._slotsArrayForTest())
+        expect(slot !== originalSlot0, true, 'replacement must be a fresh Slot');
     } finally {
       pool.dispose();
     }

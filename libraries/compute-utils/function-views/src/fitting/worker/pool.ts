@@ -9,11 +9,20 @@
 // Lazy creation: workers spin up on the first `setupAll`. Each worker stays
 // alive across tasks and across sessions, so the in-worker compile cache is
 // reused.
+//
+// The state machine is split across three classes:
+//   - Slot (slot.ts):  one Worker + run-state + per-slot setup tracking.
+//   - Query (query.ts): one queued or in-flight dispatch + its result promise.
+//   - WorkerPool:      slot allocator + session registry + pump.
+//
+// Per-session lifecycle stays as a Map<SessionId, ActiveSetup> on the pool.
+// A FitSession class would absorb the queue and reprime budget, but the
+// cost of bidirectional Slot↔Session references doesn't pay off until a
+// feature requires it (priorities, quotas, per-session deadlines).
 
 import type {
   FitSessionSetup,
   RunSeed,
-  DropSession,
   WorkerInbound,
   SetupAck,
   WorkerSuccess,
@@ -21,32 +30,11 @@ import type {
   SessionId,
 } from './wire-types';
 import {Query} from './query';
-import {makeSetupFailure} from './failures';
+import {Slot} from './slot';
 
 export type RunReply = WorkerSuccess | WorkerFailure;
 export {Query} from './query';
-
-interface PendingSetup {
-  sessionId: SessionId;
-  resolve: (ack: SetupAck) => void;
-}
-
-// Slot run-state as a discriminated union. The running variant holds a
-// reference to the in-flight Query, which owns its own run-timeout timer;
-// transitioning out of `running` happens via takeRunningQuery() and lets
-// the caller settle the query (which clears the timer idempotently).
-type SlotRunState =
-  | {phase: 'idle'}
-  | {phase: 'running'; query: Query};
-
-type Slot = {
-  worker: Worker;
-  runState: SlotRunState;
-  sessions: Set<SessionId>;
-  // Per-slot pending setup ack indexed by sessionId — at most one per
-  // session per slot in flight.
-  pendingSetups: Map<SessionId, PendingSetup>;
-};
+export {Slot} from './slot';
 
 /** Bounds on every promise returned from the pool, so that a worker that
  *  silently wedges (infinite loop in user JS, dead under structured-clone
@@ -106,87 +94,67 @@ export class WorkerPool {
   }
 
   private spawnSlot(): Slot {
-    const w = new Worker(new URL('./fitting.worker.ts', import.meta.url));
-    const slot: Slot = {
-      worker: w,
-      runState: {phase: 'idle'},
-      sessions: new Set(),
-      pendingSetups: new Map(),
-    };
-    w.onmessage = (ev: MessageEvent<WorkerInbound>) => this.onMessage(slot, ev.data);
-    w.onerror = (ev: ErrorEvent) => this.onError(slot, ev);
+    const slot: Slot = new Slot(
+      (msg) => this.onMessage(slot, msg),
+      (ev) => this.onError(slot, ev),
+    );
     return slot;
   }
 
   private onMessage(slot: Slot, msg: WorkerInbound): void {
     if (msg.kind === 'setup-ack') {
-      const pending = slot.pendingSetups.get(msg.sessionId);
-      if (!pending) return;
-      slot.pendingSetups.delete(msg.sessionId);
+      const ps = slot.consumeSetupAck(msg.sessionId);
+      if (!ps) return;
       if (msg.ok) {
-        slot.sessions.add(msg.sessionId);
+        slot.recordPrimed(msg.sessionId);
         // Pump in case runs were queued while this slot was being primed
         // (e.g., a replacement re-prime mid-fit) — without this, queued
         // runs would only retry on the next reply, which may never come
         // if the new slot is the only one able to serve the session.
         this.pump();
       }
-      pending.resolve(msg);
+      ps.resolve(msg);
       return;
     }
-    // success / failure for a run-seed
-    if (slot.runState.phase !== 'running') {
-      // Stray reply (worker double-posted, or a reply arrived after the
-      // timeout already fired and removed the slot). Drop it.
-      return;
-    }
-    const {query} = slot.runState;
-    slot.runState = {phase: 'idle'};
+    // run-seed reply (success/failure). takeRunningQuery returns null for
+    // a stray reply (worker double-posted, or a reply arriving after the
+    // timeout already removed the slot) — drop it on the floor.
+    const query = slot.takeRunningQuery();
+    if (!query) return;
     query.settle(msg);
     this.pump();
   }
 
   private onError(slot: Slot, ev: ErrorEvent): void {
     const message = `worker error: ${ev.message ?? 'unknown'}`;
-    if (slot.runState.phase === 'running') {
-      const {query} = slot.runState;
-      slot.runState = {phase: 'idle'};
-      query.fail(message);
-    }
-    // Reject any in-flight setup acks for this slot too.
-    for (const ps of slot.pendingSetups.values())
-      ps.resolve(makeSetupFailure(ps.sessionId, message));
-    slot.pendingSetups.clear();
+    const inflight = slot.takeRunningQuery();
+    if (inflight) inflight.fail(message);
+    slot.failPendingSetups(message);
     this.pump();
   }
 
   private pump(): void {
     if (this.disposed) return;
-    // Place each pending run on an idle slot that has its session primed.
+    // Place each pending query on an idle slot that has its session primed.
     // Unplaceable items stay queued; pump runs again on every setup-ack ok
     // and every run reply, so they get retried as soon as a slot is
     // primed-and-idle for that session.
     let i = 0;
     while (i < this.queue.length) {
       const query = this.queue[i];
-      const slot = this.slots.find(
-        (s) => s.runState.phase === 'idle' && s.sessions.has(query.sessionId));
+      const slot = this.slots.find((s) => s.isIdle() && s.hasSession(query.sessionId));
       if (!slot) { ++i; continue; }
       this.queue.splice(i, 1);
       // Per-run timeout: terminates the slot if the worker wedges so the
       // caller's promise resolves instead of hanging. Query.settle is
       // idempotent, so a reply arriving after the timeout fires is
-      // harmless (and vice versa) — no defensive identity check needed.
-      const runTimer = setTimeout(() => {
+      // harmless (and vice versa).
+      slot.claim(query, this.runTimeoutMs, () => {
         if (query.phase !== 'running') return;
-        if (slot.runState.phase === 'running' && slot.runState.query === query)
-          slot.runState = {phase: 'idle'};
+        if (slot.currentQuery() === query) slot.takeRunningQuery();
         this.removeSlot(slot, 'run timed out');
         query.fail(`run timed out after ${this.runTimeoutMs}ms`);
-      }, this.runTimeoutMs);
-      query.startRunning(runTimer);
-      slot.runState = {phase: 'running', query};
-      slot.worker.postMessage(query.run, query.transferables);
+      });
     }
     // Drain sessions whose queues can't make progress. pump only retries
     // on setup-ack-ok and run-reply, neither of which can arrive when no
@@ -209,12 +177,12 @@ export class WorkerPool {
       this.drainQueue('no workers available', () => true);
   }
 
-  // Number of live slots whose `slot.sessions` Set contains the given
-  // sessionId. Derived state — slot count is bounded (≤ pool size,
-  // typically 2–8) and Set.has is O(1), so the linear scan is cheap.
+  // Number of live slots whose primed-session set contains the given id.
+  // Derived state — slot count is bounded (≤ pool size, typically 2–8) and
+  // Set.has is O(1), so the linear scan is cheap.
   private primedSlotCount(sessionId: SessionId): number {
     let n = 0;
-    for (const slot of this.slots) if (slot.sessions.has(sessionId)) ++n;
+    for (const slot of this.slots) if (slot.hasSession(sessionId)) ++n;
     return n;
   }
 
@@ -223,7 +191,7 @@ export class WorkerPool {
   // where a replacement re-prime is in flight.
   private hasInFlightSetup(sessionId: SessionId): boolean {
     for (const slot of this.slots) {
-      if (slot.pendingSetups.has(sessionId)) return true;
+      if (slot.hasPendingSetup(sessionId)) return true;
     }
     return false;
   }
@@ -245,15 +213,10 @@ export class WorkerPool {
     if (idx < 0) return;
     this.slots.splice(idx, 1);
     const message = `worker removed: ${reason}`;
-    for (const ps of slot.pendingSetups.values())
-      ps.resolve(makeSetupFailure(ps.sessionId, message));
-    slot.pendingSetups.clear();
-    if (slot.runState.phase === 'running') {
-      const {query} = slot.runState;
-      slot.runState = {phase: 'idle'};
-      query.fail(message);
-    }
-    try { slot.worker.terminate(); } catch { /* ignore */ }
+    slot.failPendingSetups(message);
+    const inflight = slot.takeRunningQuery();
+    if (inflight) inflight.fail(message);
+    slot.terminate();
     if (!this.disposed) {
       // Spawn a fresh replacement so a long-lived pool doesn't drift toward
       // zero workers under repeated errors/timeouts.
@@ -268,37 +231,16 @@ export class WorkerPool {
       for (const entry of this.activeSetups.values()) {
         if (entry.replacementAttempts >= this.maxReplacementReprimes) continue;
         ++entry.replacementAttempts;
-        // Fire-and-forget — primeSlot's own timeout path handles failure
-        // (calls removeSlot, which respects the cap).
-        void this.primeSlot(fresh, entry.setup);
+        // Fire-and-forget — slot.prime's onTimeout calls removeSlot, which
+        // respects the cap.
+        void fresh.prime(entry.setup, this.setupTimeoutMs,
+          () => this.removeSlot(fresh, 'setup timed out'));
       }
     }
     this.pump();
   }
 
-  // Post a setup to one slot and resolve when its ack arrives or the
-  // setup timeout fires. Shared by `setupAll` (initial priming of every
-  // slot) and `removeSlot` (re-priming a freshly spawned replacement).
-  // On timeout we remove the slot, which itself may spawn another
-  // replacement — bounded by `MAX_REPLACEMENT_REPRIMES` per session.
-  private primeSlot(slot: Slot, setup: FitSessionSetup): Promise<SetupAck> {
-    return new Promise<SetupAck>((resolve) => {
-      const timer = setTimeout(() => {
-        if (!slot.pendingSetups.has(setup.sessionId)) return;
-        slot.pendingSetups.delete(setup.sessionId);
-        this.removeSlot(slot, 'setup timed out');
-        resolve(makeSetupFailure(setup.sessionId,
-          `setup timed out after ${this.setupTimeoutMs}ms`));
-      }, this.setupTimeoutMs);
-      slot.pendingSetups.set(setup.sessionId, {
-        sessionId: setup.sessionId,
-        resolve: (ack) => { clearTimeout(timer); resolve(ack); },
-      });
-      slot.worker.postMessage(setup);
-    });
-  }
-
-  // Send `setup` to every slot; resolve when all acks come back ok, reject
+  // Send `setup` to every slot; resolve when all acks come back ok, throw
   // on the first ok=false. Setup is sent without transferables — every slot
   // gets a structured-clone copy. Transferring to one slot would detach the
   // underlying buffer before sibling slots could clone it.
@@ -309,10 +251,11 @@ export class WorkerPool {
     if (this.disposed) throw new Error('pool disposed');
     this.ensureWorkers();
     const results = await Promise.all(
-      [...this.slots].map((slot) => this.primeSlot(slot, setup)));
-    const failed = results.find((a) => !a.ok);
-    if (failed && !failed.ok)
-      throw new Error(`worker setup failed: ${failed.message}`);
+      [...this.slots].map((slot) =>
+        slot.prime(setup, this.setupTimeoutMs, () => this.removeSlot(slot, 'setup timed out'))));
+    for (const ack of results) {
+      if (!ack.ok) throw new Error(`worker setup failed: ${ack.message}`);
+    }
     // Remember the setup so a slot replacement (after onerror / timeout)
     // can re-prime a fresh worker without involving the executor layer.
     this.activeSetups.set(setup.sessionId, {setup, replacementAttempts: 0});
@@ -324,12 +267,7 @@ export class WorkerPool {
   dropSession(sessionId: SessionId): void {
     if (this.disposed) return;
     this.activeSetups.delete(sessionId);
-    const drop: DropSession = {kind: 'drop-session', sessionId};
-    for (const slot of this.slots) {
-      if (!slot.sessions.has(sessionId)) continue;
-      slot.sessions.delete(sessionId);
-      try { slot.worker.postMessage(drop); } catch { /* ignore */ }
-    }
+    for (const slot of this.slots) slot.dropSession(sessionId);
   }
 
   dispatchRun(args: {
@@ -359,35 +297,46 @@ export class WorkerPool {
     this.disposed = true;
     this.activeSetups.clear();
     for (const slot of this.slots) {
-      // Drain in-flight setup acks so setupAll's Promise.all can settle.
-      for (const ps of slot.pendingSetups.values()) {
-        ps.resolve(makeSetupFailure(ps.sessionId,
-          'pool disposed before setup completed'));
-      }
-      slot.pendingSetups.clear();
-      // Drain a run already dispatched but not yet replied.
-      if (slot.runState.phase === 'running') {
-        const {query} = slot.runState;
-        slot.runState = {phase: 'idle'};
-        query.fail('pool disposed mid-run');
-      }
-      try { slot.worker.terminate(); } catch { /* ignore */ }
+      slot.failPendingSetups('pool disposed before setup completed');
+      const inflight = slot.takeRunningQuery();
+      if (inflight) inflight.fail('pool disposed mid-run');
+      slot.terminate();
     }
     this.slots = [];
     // Drain queued runs that were never dispatched.
     this.drainQueue('pool disposed before task ran', () => true);
   }
 
-  // Test-only: read live slot count without exposing the array.
+  // ---- test-only ----
+
+  /** Number of live slots. */
   _slotsForTest(): number {
     return this.slots.length;
   }
 
-  // Test-only: how many slots currently have the session in their primed
-  // set. Used by white-box stall tests to observe progress through the
-  // remove → reprime cycle without reaching into the internals via casts.
+  /** Force lazy worker creation without going through setupAll, for white-box tests. */
+  _ensureWorkersForTest(): void {
+    this.ensureWorkers();
+  }
+
+  /** Slots referenced by index, for white-box test injection. */
+  _slotsArrayForTest(): readonly Slot[] {
+    return this.slots;
+  }
+
+  /** Number of slots primed for `sessionId`. */
   _primedSlotCountForTest(sessionId: SessionId): number {
     return this.primedSlotCount(sessionId);
+  }
+
+  /** Force a removeSlot from a test fixture. */
+  _removeSlotForTest(slot: Slot, reason: string): void {
+    this.removeSlot(slot, reason);
+  }
+
+  /** Read replacementAttempts for an active setup (for white-box stall tests). */
+  _replacementAttemptsForTest(sessionId: SessionId): number | undefined {
+    return this.activeSetups.get(sessionId)?.replacementAttempts;
   }
 }
 
