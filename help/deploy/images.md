@@ -49,19 +49,6 @@ Helm chart tags follow the same scheme with a `-helm` suffix
 (`1.27.3-helm`, `1.27.3-rc-helm`, `bleeding-edge-helm`). There is no `latest-helm`
 chart — pin the chart by version.
 
-:::caution Orphan semver tags on Docker Hub
-Between 2026-04-14 and 2026-04-29, nightly bleeding-edge cron builds for
-`grok_pipe`, `grok_spawner`, `jupyter_kernel_gateway`, `proxy_storage`,
-`grok_registry`, and `grok_registry_proxy` incorrectly published an extra
-bumped-semver tag (e.g. `grok_pipe:1.4.0` … `grok_pipe:1.20.0`) alongside the
-intended `:bleeding-edge` alias. Docker Hub still shows these tags — they look like
-releases but are nightly artifacts and were not part of any tested Datagrok release.
-Pin only to versions listed in the [Latest defaults](#latest-defaults) table or
-[release history](releases/release-history.md), or use `:latest` / `:bleeding-edge`.
-The bug was fixed in commit `6b47f410c0`; only `:bleeding-edge` is pushed from
-nightly runs going forward.
-:::
-
 ## Independent release cadence
 
 * **RabbitMQ** is an upstream image. Bump its tag only when there's a reason to —
