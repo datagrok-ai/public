@@ -1,5 +1,9 @@
 # File Editors changelog
 
+## v.next
+
+* GROK-20020: Added `renderMath(latex, displayMode)` for KaTeX rendering, used by `ui.markdown` to render LaTeX math.
+
 ## 1.3.1 (2025-07-30)
 
 Added support of TEX files
