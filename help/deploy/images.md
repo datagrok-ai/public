@@ -14,17 +14,18 @@ specific release or test a candidate.
 | Service | Image | Version |
 |---|---|---|
 | Datagrok | [`datagrok/datagrok`](https://hub.docker.com/r/datagrok/datagrok) | `1.27.3` |
-| Grok Pipe | [`datagrok/grok_pipe`](https://hub.docker.com/r/datagrok/grok_pipe) | `latest` |
-| Grok Spawner | [`datagrok/grok_spawner`](https://hub.docker.com/r/datagrok/grok_spawner) | `latest` |
+| Grok Pipe | [`datagrok/grok_pipe`](https://hub.docker.com/r/datagrok/grok_pipe) | `1.19.0` |
+| Grok Spawner | [`datagrok/grok_spawner`](https://hub.docker.com/r/datagrok/grok_spawner) | `2.16.0` |
 | Grok Connect | [`datagrok/grok_connect`](https://hub.docker.com/r/datagrok/grok_connect) | `2.6.2` |
-| Jupyter Kernel Gateway | [`datagrok/jupyter_kernel_gateway`](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) | `latest` |
+| Jupyter Kernel Gateway | [`datagrok/jupyter_kernel_gateway`](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) | `1.31.0` |
 | Grok Registry Proxy | [`datagrok/grok_registry_proxy`](https://hub.docker.com/r/datagrok/grok_registry_proxy) | `1.27.1` |
 | RabbitMQ | [`rabbitmq`](https://hub.docker.com/_/rabbitmq) | `4.0.5-management` |
 
-Sub-service rows pinned to `latest` track the most recent patch/minor/major-bump build
-for that service — see [tag conventions](#tag-conventions) below for what `:latest`
-points at, and the orphan-tag caution before pinning a numeric version that isn't in
-the [release history](releases/release-history.md).
+These match what `datagrok/<service>:latest` currently resolves to (verified against
+Docker Hub digests on 2026-04-29). Sub-service rows are pinned rather than tracking
+`:latest` directly so that an unattended deployment using these exact versions stays
+reproducible. See [tag conventions](#tag-conventions) below for what `:latest`
+points at and the orphan-tag caution before substituting a different numeric version.
 
 The Helm chart (`oci://registry-1.docker.io/datagrok/datagrok`) is published in the same
 repo as the `datagrok` image, with chart tags suffixed `-helm` to keep the namespaces
