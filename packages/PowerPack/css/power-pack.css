@@ -529,17 +529,17 @@ body.dartium .power-pack-widgets-host.ui-div {
     padding-top: 4px;
 }
 
-/* Editor (right pane) gives up width first when the dialog shrinks: high flex-shrink
-   plus a low min-width. The viewer/grid side is more important to keep visible, so
-   the left split has a larger min-width and the default flex-shrink: 1. */
+/* Editor (right pane) and the left viewer/grid pane both shrink and grow at the
+   same rate so dialog-resize is symmetric: shrinking from a wide dialog and
+   then growing back returns the panes to their original proportions. The
+   flex-grow ratios are set inline by ui.splitH from each pane's initial width. */
 .dlg-formula-lines-editor-box {
-    min-width: 120px;
+    min-width: 240px;
     overflow: auto;
-    flex-shrink: 5;
 }
 
 .dlg-formula-lines-left-split {
-    min-width: 240px;
+    min-width: 320px;
     min-height: 0;
 }
 

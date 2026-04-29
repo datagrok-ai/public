@@ -305,13 +305,32 @@ class Table {
     this.grid.columns.setVisible(['title', 'formula', 'visible', BTN_CAPTION.REMOVE]);
     this.grid.columns.setOrder(['title', 'formula', 'visible', BTN_CAPTION.REMOVE]);
 
+    const VISIBLE_COL_WIDTH = 40;
+    const REMOVE_COL_WIDTH = 35;
     this.grid.col('title')!.width = 120;
     this.grid.col('formula')!.width = 220;
-    this.grid.col('visible')!.width = 40;
+    this.grid.col('visible')!.width = VISIBLE_COL_WIDTH;
 
     const deleteBtnCol = this.grid.col(BTN_CAPTION.REMOVE)!;
-    deleteBtnCol.width = 35;
+    deleteBtnCol.width = REMOVE_COL_WIDTH;
     deleteBtnCol.cellType = 'html';
+
+    // Stretch title + formula to fill the grid width; visible + remove keep fixed widths.
+    // Buffer accounts for the vertical scrollbar + cell padding so the row doesn't
+    // overflow horizontally when the grid is at its initial size.
+    const stretchColumns = () => {
+      const total = this.grid.root.clientWidth;
+      if (total <= 0)
+        return;
+      const remaining = total - VISIBLE_COL_WIDTH - REMOVE_COL_WIDTH - 24;
+      if (remaining < 200)
+        return;
+      const titleW = Math.floor(remaining * 0.35);
+      this.grid.col('title')!.width = titleW;
+      this.grid.col('formula')!.width = remaining - titleW;
+    };
+    new ResizeObserver(stretchColumns).observe(this.grid.root);
+    DG.delay(0).then(stretchColumns);
 
     this.grid.onCellPrepare((cell) => {
       if (cell.isColHeader)
@@ -914,10 +933,9 @@ class Editor {
   private annotationRegionForm(itemIdx: number): HTMLElement {
     const item = itemIdx >= 0 ? this.annotationRegionItems[itemIdx] : { type: ITEM_TYPE.AREA_REGION_ANNOTATION };
     const mainPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
-    const formatPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
     const descriptionPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
 
-    /** Preparing the "Main" panel */
+    /** Formula/Area pane — formula or area inputs followed by combined format inputs */
     if (item.type === ITEM_TYPE.AREA_REGION_ANNOTATION) {
       mainPane.append(this.inputAreaColumn(itemIdx, 'x'));
       mainPane.append(this.inputAreaColumn(itemIdx, 'y'));
@@ -927,21 +945,23 @@ class Editor {
       mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula2'));
     }
 
-    /** Preparing the "Format" panel */
-    formatPane.append(this.areaInputColor(itemIdx, 'Region Color', 'fillColor', DG.Color.toHtml(DG.Color.gray)));
-    formatPane.append(this.inputOpacity(itemIdx, false));
-    formatPane.append(this.areaInputColor(itemIdx, 'Outline Color', 'outlineColor', DG.Color.toHtml(DG.Color.gray)));
-    formatPane.append(this.inputLineWidth(itemIdx));
-    
-    /** Preparing the "Description" panel */
+    mainPane.append(this.inlineInputs(
+      this.areaInputColor(itemIdx, 'Region Color', 'fillColor', DG.Color.toHtml(DG.Color.gray)),
+      this.inputOpacity(itemIdx, false),
+    ));
+    mainPane.append(this.inlineInputs(
+      this.areaInputColor(itemIdx, 'Outline Color', 'outlineColor', DG.Color.toHtml(DG.Color.gray)),
+      this.inputLineWidth(itemIdx),
+    ));
+
+    /** Description pane */
     descriptionPane.append(this.inputAnnotationHeader(itemIdx));
-    descriptionPane.append(this.areaInputColor(itemIdx, 'Header Color', 'headerColor'));
     descriptionPane.append(this.inputDescription(itemIdx, false));
+    descriptionPane.append(this.areaInputColor(itemIdx, 'Color', 'headerColor'));
 
     /** Creating the accordion */
     const combinedPanels = ui.accordion();
     combinedPanels.addPane(item.type === ITEM_TYPE.AREA_REGION_ANNOTATION ? 'Area' : 'Formula', () => mainPane, true);
-    combinedPanels.addPane('Format', () => formatPane, true);
     combinedPanels.addPane('Description', () => descriptionPane, true);
 
     return ui.div([combinedPanels.root]);
@@ -971,18 +991,16 @@ class Editor {
       if (caption === ITEM_CAPTION.BAND)
         mainPane.append(this.inputColumn2(itemIdx));
 
-      /** Preparing the "Format" panel */
-      formatPane.append(this.inputColor(itemIdx));
-      formatPane.append(this.inputOpacity(itemIdx));
+      /** Preparing the "Format" panel — Color + Opacity share a row when wide enough */
+      formatPane.append(this.inlineInputs(this.inputColor(itemIdx), this.inputOpacity(itemIdx)));
       if (caption !== ITEM_CAPTION.BAND)
         formatPane.append(this.inputStyle(itemIdx));
       formatPane.append(this.inputRange(itemIdx));
       formatPane.append(this.inputArrange(itemIdx));
 
-      /** Preparing the "Tooltip" panel */
+      /** Preparing the "Tooltip" panel — Show on plot + Show on tooltip share a row */
       tooltipPane.append(this.inputTitle(itemIdx));
-      tooltipPane.append(this.inputShowLabels(itemIdx));
-      tooltipPane.append(this.inputShowDescriptionInTooltip(itemIdx));
+      tooltipPane.append(this.inlineInputs(this.inputShowLabels(itemIdx), this.inputShowDescriptionInTooltip(itemIdx)));
       tooltipPane.append(this.inputDescription(itemIdx));
     }
 
@@ -1030,9 +1048,8 @@ class Editor {
 
     const elColor = ibColor.input as HTMLInputElement;
     elColor.placeholder = '#000000';
-    // elColor.setAttribute('style', 'width: 204px; max-width: none;');
 
-    return ui.divH([ibColor.root]);
+    return ibColor.root;
   }
 
   private areaInputColor(itemIdx: number, header: string = 'Color', key: keyof DG.AnnotationRegion, defaultColor: string = '#000000'): HTMLElement {
@@ -1044,12 +1061,12 @@ class Editor {
       }});
     const elColor = ibColor.input as HTMLInputElement;
     elColor.placeholder = defaultColor;
-    return ui.divH([ibColor.root]);
+    return ibColor.root;
   }
 
   private inputLineWidth(itemIdx: number): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
-    
+
     const elOpacity = ui.element('input');
     elOpacity.type = 'range';
     elOpacity.min = 0;
@@ -1059,12 +1076,11 @@ class Editor {
       item.outlineWidth = parseInt(elOpacity.value);
       this.onItemChangedAction(itemIdx, false);
     });
-    // elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
     elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
 
     const label = ui.label('Outline Width', 'ui-label ui-input-label');
 
-    return ui.divH([ui.div([label, elOpacity], 'ui-input-root')]);
+    return ui.div([label, elOpacity], 'ui-input-root');
   }
 
   /** Creates range slider for item opacity */
@@ -1079,12 +1095,27 @@ class Editor {
       item.opacity = parseInt(elOpacity.value);
       this.onItemChangedAction(itemIdx, isFormulaLine);
     });
-    // elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
     elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
 
     const label = ui.label('Opacity', 'ui-label ui-input-label');
 
-    return ui.divH([ui.div([label, elOpacity], 'ui-input-root')]);
+    return ui.div([label, elOpacity], 'ui-input-root');
+  }
+
+  /** Pairs ui-input-roots on a single row when there's enough width; wraps to
+   *  separate rows when the container is narrower than ~2× the basis. */
+  private inlineInputs(...children: HTMLElement[]): HTMLElement {
+    const row = ui.divH(children);
+    row.style.flexWrap = 'wrap';
+    row.style.gap = '4px 8px';
+    for (const child of children) {
+      // flex-shrink: 0 so wrap is decided by the basis, not by intrinsic min-content
+      // (color picker shrinks far below 180px, while a bool input doesn't, which would
+      // otherwise leave the color row side-by-side at narrow widths and the bool row stacked).
+      child.style.flex = '1 0 180px';
+      child.style.minWidth = '0';
+    }
+    return row;
   }
 
 
@@ -1175,17 +1206,20 @@ class Editor {
   private inputAnnotationFormula(itemIdx: number, title: keyof DG.FormulaAnnotationRegion): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.FormulaAnnotationRegion;
 
-    const ibHeader = ui.input.string(title === 'formula1' ? 'Formula 1' : 'Formula 2', {value: item[title] ? item[title] as string : '',
+    const ibFormula = ui.input.textArea(title === 'formula1' ? 'Formula 1' : 'Formula 2', {
+      value: item[title] ? item[title] as string : '',
       onValueChanged: (value) => {
         (item as any)[title] = value;
         const resultOk = this.onItemChangedAction(itemIdx, false);
-        this.setFormulaValidationResult(resultOk, value, ibHeader);
+        this.setFormulaValidationResult(resultOk, value, ibFormula);
       }});
 
-    const elHeader = ibHeader.input as HTMLInputElement;
-    elHeader.setAttribute('style', 'width: 204px; max-width: none;');
+    const elFormula = ibFormula.input as HTMLInputElement;
+    elFormula.setAttribute('style', 'height: 40px; font-family: inherit; font-size: inherit;');
 
-    return ui.divH([ibHeader.root]);
+    ui.tools.initFormulaAccelerators(ibFormula, this.dataFrame);
+
+    return ibFormula.root;
   }
 
   private setFormulaValidationResult(resultOk: boolean, value: string, ibHeader: DG.InputBase<string>, isBand: boolean = false): void {
@@ -1800,7 +1834,7 @@ export class FormulaLinesDialog {
     this.dialog.sub(this.dialog.onClose.subscribe(() => this.dialog.detach()));
 
     const tabsInitialHeight = '140px';
-    const editoirInitialWidth = '420px';
+    const editorInitialWidth = '420px';
     const makeWrap = (child: HTMLElement): HTMLDivElement => {
       const wrapDiv = document.createElement('div');
       // plain <div>, not ui.div — ui.div tags it with `ui-div`, which would trigger
@@ -1816,7 +1850,7 @@ export class FormulaLinesDialog {
     const previewBox = ui.box(makeWrap(this.preview.root), {classes: 'dlg-formula-lines-preview-box'});
     const leftSplit = ui.splitV([tabsBox, previewBox], {classes: 'dlg-formula-lines-left-split'}, true);
     const editorBox = ui.box(this.editor.root, {classes: 'dlg-formula-lines-editor-box',
-      style: {width: editoirInitialWidth}});
+      style: {width: editorInitialWidth}});
 
     const layout = ui.splitH([leftSplit, editorBox],
       {style: {width: '100%', height: '100%', minHeight: '0', minWidth: '0'}}, true);
