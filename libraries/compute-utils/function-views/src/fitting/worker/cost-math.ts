@@ -107,3 +107,69 @@ export function getErrors(
   }
   return errors;
 }
+
+// Per-call accumulator inputs. Both arms gather their target/sim pairs into
+// these structural shapes, then hand them to `accumulateLoss`. Frames defer
+// the per-output-column work to `getErrors`.
+export interface ScalarTarget {
+  readonly target: number;
+  readonly sim: number;
+}
+export interface FrameTarget {
+  readonly argCol: ColLike | null;
+  readonly funcCols: ColLike[];
+  readonly simDf: DfLike;
+}
+
+// MAD / RMSE accumulation, shared by main-arm cost-functions.ts and
+// worker-arm fitting.worker.ts. Both cost paths previously inlined this
+// loop; the only differences were how scalar.sim and frame.simDf are
+// fetched (DG.FuncCall vs WorkerFuncCall) and whether the wrapping
+// function was async — neither of which affects the math. RMSE uses
+// `getErrors(..., toScale=true)` and per-scalar `cur !== 0 ? cur : 1`
+// normalization; MAD uses `getErrors(..., toScale=false)` and a plain
+// max-abs over scalar diffs.
+export function accumulateLoss(
+  useRmse: boolean,
+  scalars: readonly ScalarTarget[],
+  frames: readonly FrameTarget[],
+): number {
+  if (!useRmse) {
+    let mad = 0;
+    for (let i = 0; i < scalars.length; ++i) {
+      const s = scalars[i];
+      const d = Math.abs(s.target - s.sim);
+      if (d > mad) mad = d;
+    }
+    for (let i = 0; i < frames.length; ++i) {
+      const f = frames[i];
+      const errs = getErrors(f.argCol, f.funcCols, f.simDf, false);
+      for (let j = 0; j < errs.length; ++j) {
+        const e = Math.abs(errs[j]);
+        if (e > mad) mad = e;
+      }
+    }
+    return mad;
+  }
+
+  let sumSq = 0;
+  let count = 0;
+  for (let i = 0; i < scalars.length; ++i) {
+    const s = scalars[i];
+    const cur = s.target;
+    const norm = cur !== 0 ? cur : 1;
+    const d = (cur - s.sim) / norm;
+    sumSq += d * d;
+    ++count;
+  }
+  for (let i = 0; i < frames.length; ++i) {
+    const f = frames[i];
+    const errs = getErrors(f.argCol, f.funcCols, f.simDf, true);
+    for (let j = 0; j < errs.length; ++j) {
+      const e = errs[j];
+      sumSq += e * e;
+      ++count;
+    }
+  }
+  return Math.sqrt(sumSq / count);
+}

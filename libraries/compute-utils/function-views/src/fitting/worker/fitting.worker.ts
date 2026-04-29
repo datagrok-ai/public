@@ -30,7 +30,8 @@ import {LOSS} from '../constants';
 import {makeBoundsChecker} from '../bounds-checker';
 import {arrowIpcToLite} from '../../../../webworkers/dg-lite/arrow-to-lite';
 import type {LiteDataFrame} from '../../../../webworkers/dg-lite/types';
-import {ColLike, DfLike, getErrors, InconsistentTablesError} from './cost-math';
+import {ColLike, DfLike, FrameTarget, ScalarTarget, accumulateLoss, InconsistentTablesError}
+  from './cost-math';
 import {createWorkerFuncCall, WorkerFuncCall}
   from '../../../../webworkers/script-runner/func-call-shim';
 import type {
@@ -157,38 +158,11 @@ function buildCostFunc(setup: FitSessionSetup): {
       varied[variedNames[i]] = x[i];
     fc.call(varied);
 
-    if (!useRmse) {
-      let mad = 0;
-      for (const s of targets.scalars) {
-        const sim = fc.getParamValue(s.propName) as number;
-        mad = Math.max(mad, Math.abs(s.target - sim));
-      }
-      for (const df of targets.dataFrames) {
-        const sim = fc.getParamValue(df.propName) as DfLike;
-        const errs = getErrors(df.argCol, df.funcCols, sim, false);
-        for (let i = 0; i < errs.length; ++i)
-          mad = Math.max(mad, Math.abs(errs[i]));
-      }
-      return mad;
-    }
-
-    let sumSq = 0;
-    let count = 0;
-    for (const s of targets.scalars) {
-      const sim = fc.getParamValue(s.propName) as number;
-      const cur = s.target;
-      sumSq += ((cur - sim) / (cur !== 0 ? cur : 1)) ** 2;
-      ++count;
-    }
-    for (const df of targets.dataFrames) {
-      const sim = fc.getParamValue(df.propName) as DfLike;
-      const errs = getErrors(df.argCol, df.funcCols, sim, true);
-      for (let i = 0; i < errs.length; ++i) {
-        sumSq += errs[i] ** 2;
-        ++count;
-      }
-    }
-    return Math.sqrt(sumSq / count);
+    const scalars: ScalarTarget[] = targets.scalars.map((s) =>
+      ({target: s.target, sim: fc.getParamValue(s.propName) as number}));
+    const frames: FrameTarget[] = targets.dataFrames.map((d) =>
+      ({argCol: d.argCol, funcCols: d.funcCols, simDf: fc.getParamValue(d.propName) as DfLike}));
+    return accumulateLoss(useRmse, scalars, frames);
   };
   return {cost, fc};
 }
