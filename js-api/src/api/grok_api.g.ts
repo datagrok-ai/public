@@ -1234,6 +1234,7 @@ export interface IDartApi {
   grok_ColumnList_Add(cols: any, col: any, notify: Bool): any;
   grok_ColumnList_Insert(cols: any, col: any, index: Num, notify: Bool): any;
   grok_ColumnList_AddNew(cols: any, name: String, type: String): any;
+  grok_Column_InitQnumFromColumns(qnum: any, qualifier: any, value: any): any;
   grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool, subscribeOnChanges: Bool): Promise<any>;
   grok_ColumnList_GetNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool): Promise<any>;
   grok_ColumnList_AddNewVirtual(cols: any, name: String, getValue: any, setValue: any, type: String): any;
