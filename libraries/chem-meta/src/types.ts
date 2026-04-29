@@ -69,6 +69,19 @@ export interface ISubstructProvider {
   getSubstruct(tableRowIndex: number | null): ISubstruct | undefined;
 }
 
+/** Atom-picker variant of `ISubstructProvider` written by Chem's
+ *  `AtomPickerController` into `col.temp[ChemTemps.SUBSTRUCT_PROVIDERS]` and
+ *  read by BiostructureViewer's 3D Molstar viewer to mirror the highlighted
+ *  atoms in 3D. The `__atomPicker` marker distinguishes these from other
+ *  providers (MMP, scaffold, monomer-hover, etc.) that share the same
+ *  `col.temp` array. Lives in chem-meta as the cross-package contract — Chem
+ *  is the writer, BSV is the reader. */
+export interface AtomPickerProvider extends ISubstructProvider {
+  __atomPicker?: boolean;
+  __rowIdx?: number;
+  __atoms?: Set<number>;
+}
+
 export type MonomerHoverData = {
   dataFrameId: string,
   gridRowIdx: number,

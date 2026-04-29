@@ -7,17 +7,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {Mol3DHoverEventArgs} from '@datagrok-libraries/chem-meta/src/types';
 
 import {mapAtomIndices2Dto3D, AtomIndexMapping} from '../utils/atom-index-mapper';
-
-/** Payload for CHEM_MOL3D_HOVER_EVENT. Mirrors `Mol3DHoverEventArgs` in
- *  `molstar-highlight-utils.ts`; duplicated to avoid a cross-package import. */
-export interface Mol3DHoverEventArgs {
-  mol3DColumnName: string;
-  rowIdx: number;
-  atom3DSerial: number | null;
-  mode: 'preview' | 'paint' | 'erase';
-}
 
 interface CellTopology {
   bondAtoms: Map<number, [number, number]>;

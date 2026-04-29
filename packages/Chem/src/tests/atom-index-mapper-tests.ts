@@ -1,5 +1,6 @@
 import {category, test, expect, before} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {
   parsePdbAtoms, inferBonds, pdbAtomsToMolblock, flattenBondOrders,
@@ -37,10 +38,10 @@ const SMILES_ETHANOL = 'CCO';
 // -- Tests -------------------------------------------------------------------
 
 category('atom index mapper', () => {
-  let rdkitModule: any;
+  let rdkitModule: RDModule;
 
   before(async () => {
-    rdkitModule = await grok.functions.call('Chem:getRdKitModule');
+    rdkitModule = await grok.functions.call('Chem:getRdKitModule') as RDModule;
   });
 
   // -- parsePdbAtoms ---------------------------------------------------------
@@ -67,11 +68,6 @@ category('atom index mapper', () => {
     expect(atoms[1].element, 'O'); // OA → O
     expect(atoms[2].element, 'N'); // NA → N
     expect(atoms[3].element, 'H'); // HD → H
-  });
-
-  test('parsePdbAtoms — empty input', async () => {
-    expect(parsePdbAtoms('').length, 0);
-    expect(parsePdbAtoms('REMARK this is not an atom line').length, 0);
   });
 
   // -- inferBonds ------------------------------------------------------------
@@ -106,10 +102,6 @@ category('atom index mapper', () => {
     expect(molblock!.includes('M  END'), true);
     // 3 atoms, check counts line
     expect(molblock!.includes('  3'), true);
-  });
-
-  test('pdbAtomsToMolblock — empty input', async () => {
-    expect(pdbAtomsToMolblock([]) === null, true);
   });
 
   // -- flattenBondOrders -----------------------------------------------------

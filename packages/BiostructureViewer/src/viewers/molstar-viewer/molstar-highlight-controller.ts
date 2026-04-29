@@ -16,6 +16,7 @@ import {Color} from 'molstar/lib/mol-util/color';
 import {
   setStructureOverpaint, clearStructureOverpaint,
 } from 'molstar/lib/mol-plugin-state/helpers/structure-overpaint';
+import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
 
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
@@ -23,7 +24,9 @@ import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {
   computeSerials, selectionCacheKey,
 } from './molstar-highlight-utils';
-import {AtomMapping3D, CHEM_MOL3D_SELECTION_EVENT, Mol3DHoverEventArgs} from '@datagrok-libraries/chem-meta/src/types';
+import {AtomMapping3D, AtomPickerProvider, CHEM_MOL3D_SELECTION_EVENT, Mol3DHoverEventArgs}
+  from '@datagrok-libraries/chem-meta/src/types';
+import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {MolstarViewer, type LigandMap} from './molstar-viewer';
 
 /** Narrow view of `MolstarViewer` that the highlight controller needs. */
@@ -249,12 +252,12 @@ export class MolstarHighlightController {
     return cell?.obj?.data;
   }
 
-  private _getAllComponents(): any[] | null {
+  private _getAllComponents(): StructureComponentRef[] | null {
     const plugin = this.host.getPlugin();
     if (!plugin) return null;
     const structures = plugin.managers.structure.hierarchy.current.structures;
     if (!structures || structures.length === 0) return null;
-    const comps = structures.flatMap((s: any) => s.components ?? []);
+    const comps = structures.flatMap((s) => s.components ?? []);
     return comps.length > 0 ? comps : null;
   }
 
@@ -290,13 +293,13 @@ export class MolstarHighlightController {
     if (!molCol) {
       molCol = df.columns.toList().find(
         (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE &&
-          ((c.temp as Record<string, unknown>)?.['substruct-providers'] as unknown[] ?? [])
-            .some((p: any) => p.__atomPicker)) ?? null;
+          ((c.temp as Record<string, unknown>)?.[ChemTemps.SUBSTRUCT_PROVIDERS] as
+            AtomPickerProvider[] ?? []).some((p) => p.__atomPicker)) ?? null;
     }
     if (!molCol) return [];
 
-    const providers = ((molCol.temp as Record<string, unknown>)?.['substruct-providers'] ?? []) as
-      Array<{__atomPicker?: boolean; __rowIdx?: number; __atoms?: Set<number>}>;
+    const providers = ((molCol.temp as Record<string, unknown>)?.[ChemTemps.SUBSTRUCT_PROVIDERS] ??
+      []) as AtomPickerProvider[];
     const picker = providers.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
     if (!picker?.__atoms || picker.__atoms.size === 0) return [];
     return [...picker.__atoms];

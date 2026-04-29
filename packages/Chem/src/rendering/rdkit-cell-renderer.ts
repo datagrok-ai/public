@@ -33,8 +33,11 @@ import {extractAtomPositionsFromSvg} from '../utils/chem-atom-picker-utils';
 import {AtomPickerController, CellInteractiveInfo} from './atom-picker-controller';
 
 // Re-exported for cross-package consumers (BiostructureViewer, tests).
+// `AtomPickerProvider` lives in `@datagrok-libraries/chem-meta/src/types` so
+// BSV can read it without depending on Chem; consumers should import it
+// directly from chem-meta rather than re-importing here.
 export {AtomPickerController} from './atom-picker-controller';
-export type {ChemSelectionEvent, AtomPickerProvider, CellInteractiveInfo}
+export type {ChemSelectionEvent, CellInteractiveInfo}
   from './atom-picker-controller';
 
 import {_package} from '../package';

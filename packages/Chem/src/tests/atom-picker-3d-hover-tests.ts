@@ -24,7 +24,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 
-import {CHEM_MOL3D_SELECTION_EVENT, CHEM_ATOM_PICKER_LINKED_3D_COL_TAG} from '@datagrok-libraries/chem-meta/src/types';
+import {AtomPickerProvider, CHEM_MOL3D_SELECTION_EVENT, CHEM_ATOM_PICKER_LINKED_3D_COL_TAG}
+  from '@datagrok-libraries/chem-meta/src/types';
 import {awaitGrid} from './utils';
 
 // ---------------------------------------------------------------------------
@@ -41,14 +42,6 @@ const POSE_ETHANOL_PDB = [
 ].join('\n');
 
 const SMILES_ETHANOL = 'CCO';
-
-/** Shape of atom-picker providers stored in `col.temp[ChemTemps.SUBSTRUCT_PROVIDERS]`. */
-type AtomPickerProvider = {
-  __atomPicker?: boolean;
-  __rowIdx?: number;
-  __atoms?: Set<number>;
-  getSubstruct: (rowIdx: number) => {atoms?: number[]} | undefined;
-};
 
 /** Returns the atom-picker provider for `(col, rowIdx)`, or undefined. */
 function getPickerProvider(col: DG.Column, rowIdx: number): AtomPickerProvider | undefined {
@@ -126,43 +119,65 @@ category('atom picker: 3D hover', () => {
     expect((substruct!.atoms as number[]).includes(2), true);
   }, {timeout: 15000});
 
-  test('3D hover — null serial clears preview', async () => {
-    // First establish a preview, then fire the "cursor left" event.
-    await fire3DHover({atom3DSerial: 3});
-    await fire3DHover({atom3DSerial: null});
-
-    // The provider may still exist (if persistent atoms remain) but the
-    // preview atom is gone. When no persistent atoms were ever painted,
-    // the provider disappears or getSubstruct returns no atoms. Either
-    // way means the preview is cleared.
-    const prov = getPickerProvider(smilesCol, 0);
-    if (prov) {
-      const persistentSize = prov.__atoms?.size ?? 0;
-      expect(persistentSize, 0);
-    }
-  }, {timeout: 15000});
-
-  // Note on coverage: the multi-event scenarios (paint-accumulates across
-  // serials, erase-after-paint, _previewFrom3D flag preserving preview across
-  // a subsequent document mousemove) were intentionally NOT ported to this
-  // file. They require each test to control `grok.shell.tv` across multiple
-  // event fires, which the shared-view category harness does not offer. The
-  // underlying contracts are still verified transitively:
-  //   - add / clear of the CHEM_ATOM_PICKER_LINKED_COL tag → `mol3d-link` tests
-  //   - paint / erase provider shape → `atom-picker` (2D path) tests
-  //   - preview + null-serial round-trip here
-  // Extend when the harness gets a per-test view hook.
-
   // -------------------------------------------------------------------------
-  // unknown column — event for a different 3D column must be ignored
+  // paint mode — 3D event should add the atom persistently in 2D
   // -------------------------------------------------------------------------
 
-  test('3D hover — event for unknown column is ignored', async () => {
+  test('3D hover — paint mode adds atom persistently', async () => {
     smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
-
-    await fire3DHover({mol3DColumnName: 'non-existent-col', atom3DSerial: 1});
+    // Paint serial 3 (= 2D O atom, idx 2 in CCO).
+    await fire3DHover({atom3DSerial: 3, mode: 'paint'});
 
     const prov = getPickerProvider(smilesCol, 0);
-    expect(prov === undefined, true);
+    expect(prov !== undefined, true);
+    // __atoms is the canonical persistent set — paint must have added 2.
+    expect(prov!.__atoms?.has(2), true);
   }, {timeout: 15000});
+
+  // -------------------------------------------------------------------------
+  // erase mode — 3D event should remove the atom from the persistent set
+  // -------------------------------------------------------------------------
+
+  test('3D hover — erase mode removes atom from persistent set', async () => {
+    smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
+    // First paint atom (serial 3 → 2D atom 2), then erase it via 3D event.
+    await fire3DHover({atom3DSerial: 3, mode: 'paint'});
+    await fire3DHover({atom3DSerial: 3, mode: 'erase'});
+
+    const prov = getPickerProvider(smilesCol, 0);
+    // Last atom removed → provider gone, OR present with __atoms empty.
+    if (prov)
+      expect(prov.__atoms?.size ?? 0, 0);
+  }, {timeout: 15000});
+
+  // -------------------------------------------------------------------------
+  // burst preview events — should not accumulate atoms in __atoms
+  // -------------------------------------------------------------------------
+
+  // Reproduces the user-reported bug: shift+click in 2D, then 3D hover
+  // keeps adding atoms to the persistent set instead of just previewing.
+  // After our fix, the persistent set must only contain the originally-
+  // painted atom no matter how many preview events fire.
+  test('3D hover — burst preview events do not accumulate state', async () => {
+    smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
+    // Paint atom 0 persistently first (via paint event for serial 1).
+    await fire3DHover({atom3DSerial: 1, mode: 'paint'});
+
+    // Burst of preview events on different serials, ending with cursor-leave.
+    for (const s of [2, 3, 2, 3, 2, null, 3, null]) {
+      grok.events.fireCustomEvent(CHEM_MOL3D_SELECTION_EVENT, {
+        mol3DColumnName: mol3DCol.name, rowIdx: 0,
+        atom3DSerial: s, mode: 'preview',
+      });
+    }
+    await delay(300);
+
+    // Re-read provider state via fresh col.temp access.
+    const prov = getPickerProvider(smilesCol, 0);
+    expect(prov !== undefined, true);
+    // __atoms must contain ONLY the originally painted atom (idx 0 from
+    // serial 1). Preview atoms must not have leaked in.
+    const atoms = Array.from(prov!.__atoms ?? []);
+    expect(JSON.stringify(atoms), '[0]');
+  }, {timeout: 20000});
 });

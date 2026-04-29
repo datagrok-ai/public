@@ -13,7 +13,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {addSubstructProvider, ISubstructProvider} from '@datagrok-libraries/chem-meta/src/types';
+import {addSubstructProvider, AtomPickerProvider} from '@datagrok-libraries/chem-meta/src/types';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
@@ -34,13 +34,6 @@ export interface ChemSelectionEvent {
   clearAll?: boolean;
   mapping3D?: AtomIndexMapping | null;
   mol3DColumnName?: string;
-}
-
-/** Substruct provider with atom-picker metadata fields. */
-export interface AtomPickerProvider extends ISubstructProvider {
-  __atomPicker?: boolean;
-  __rowIdx?: number;
-  __atoms?: Set<number>;
 }
 
 /** Per-cell layout info for atom hit-testing. Cached by "molString|WxH". */

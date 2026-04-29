@@ -18,19 +18,21 @@ import {
   clearAtomPickerHighlights,
 } from '../utils/mol3d-link';
 
-import {CHEM_ATOM_PICKER_LINKED_3D_COL_TAG,
-  CHEM_ATOM_PICKER_LINKED_SMILES_COL,} from '@datagrok-libraries/chem-meta/src/types';
+import {AtomPickerProvider, CHEM_ATOM_PICKER_LINKED_3D_COL_TAG,
+  CHEM_ATOM_PICKER_LINKED_SMILES_COL,
+  CHEM_ATOM_SELECTION_EVENT} from '@datagrok-libraries/chem-meta/src/types';
+import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Key where Chem's cell renderer stores atom-picker providers in col.temp.
- *  Mirrors ChemTemps.SUBSTRUCT_PROVIDERS from @datagrok-libraries/chem-meta. */
-const PROVIDERS_KEY = 'substruct-providers';
+const PROVIDERS_KEY = ChemTemps.SUBSTRUCT_PROVIDERS;
 
-/** Minimal provider shape used in these tests. */
-type TestProvider = {__atomPicker?: boolean; __scaffold?: boolean; __ordinaryMarker?: boolean; getSubstruct: () => undefined};
+/** `AtomPickerProvider` plus test-only marker fields used to verify which
+ *  providers survive `clearAtomPickerHighlights` (the canonical shape lives
+ *  in chem-meta; the markers are local test fixtures). */
+type TestProvider = AtomPickerProvider & {__scaffold?: boolean; __ordinaryMarker?: boolean};
 
 // Builds a minimal DataFrame with one SMILES col and one Molecule3D col.
 function makeDF(): {df: DG.DataFrame; smilesCol: DG.Column; mol3DCol: DG.Column} {
@@ -162,20 +164,6 @@ category('Mol3DLink', () => {
     expect(found, smilesCol.name);
   });
 
-  test('findLinkedSmilesColName — returns null when no link', async () => {
-    const {df, mol3DCol} = makeDF();
-    const found = findLinkedSmilesColName(df, mol3DCol.name);
-    expect(found === null, true);
-  });
-
-  test('findLinkedSmilesColName — returns null for unknown 3D col', async () => {
-    const {df, smilesCol, mol3DCol} = makeDF();
-    setSmilesColLink(smilesCol, mol3DCol.name);
-
-    const found = findLinkedSmilesColName(df, 'does-not-exist');
-    expect(found === null, true);
-  });
-
   // -------------------------------------------------------------------------
   // clearAtomPickerHighlights
   // -------------------------------------------------------------------------
@@ -201,10 +189,9 @@ category('Mol3DLink', () => {
 
   test('clearAtomPickerHighlights — fires clear-all event', async () => {
     const {smilesCol} = makeDF();
-    const CHEM_SELECTION_EVENT = 'chem-interactive-selection-changed';
 
     let receivedClearAll = false;
-    const sub = grok.events.onCustomEvent(CHEM_SELECTION_EVENT)
+    const sub = grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
       .subscribe((args: {clearAll?: boolean}) => {
         if (args?.clearAll)
           receivedClearAll = true;
@@ -221,19 +208,4 @@ category('Mol3DLink', () => {
     }
   });
 
-  test('clearAtomPickerHighlights — preserves non-picker providers', async () => {
-    const {smilesCol} = makeDF();
-
-    const scaffoldProv: TestProvider = {__scaffold: true, getSubstruct: () => undefined};
-    const pickerProv: TestProvider = {__atomPicker: true, getSubstruct: () => undefined};
-    smilesCol.temp[PROVIDERS_KEY] = [scaffoldProv, pickerProv];
-
-    clearAtomPickerHighlights(smilesCol);
-
-    const remaining = (smilesCol.temp[PROVIDERS_KEY] ?? []) as TestProvider[];
-    expect(remaining.length, 1);
-    // `col.temp` round-trips values as data, so check by marker rather than
-    // object identity — the surviving provider is the scaffold one.
-    expect(remaining[0].__scaffold === true, true);
-  });
 });

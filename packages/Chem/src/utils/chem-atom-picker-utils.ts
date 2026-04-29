@@ -50,8 +50,9 @@ export function extractAtomPositionsFromSvg(
   const positions = new Map<number, {x: number; y: number}>();
   const bondAtoms = new Map<number, [number, number]>();
 
-  // Text-labeled heteroatoms.
-  const texts = svgEl.querySelectorAll('text[class*="atom-"]');
+  // Text-labeled heteroatoms. `<text>` is `SVGTextElement` which extends
+  // `SVGGraphicsElement`, so `getBBox()` is reachable without an unknown cast.
+  const texts = svgEl.querySelectorAll<SVGTextElement>('text[class*="atom-"]');
   for (let i = 0; i < texts.length; i++) {
     const t = texts[i];
     const cls = t.getAttribute('class') || '';
@@ -59,7 +60,7 @@ export function extractAtomPositionsFromSvg(
     if (!m) continue;
     const idx = parseInt(m[1], 10);
     try {
-      const bb = (t as unknown as SVGGraphicsElement).getBBox();
+      const bb = t.getBBox();
       positions.set(idx, {x: bb.x + bb.width / 2, y: bb.y + bb.height / 2});
     } catch {
       /* ignore */

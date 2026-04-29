@@ -9,7 +9,8 @@
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {CHEM_ATOM_PICKER_LINKED_3D_COL_TAG, CHEM_ATOM_PICKER_LINKED_SMILES_COL, CHEM_ATOM_SELECTION_EVENT} from '@datagrok-libraries/chem-meta/src/types';
+import {AtomPickerProvider, CHEM_ATOM_PICKER_LINKED_3D_COL_TAG, CHEM_ATOM_PICKER_LINKED_SMILES_COL,
+  CHEM_ATOM_SELECTION_EVENT} from '@datagrok-libraries/chem-meta/src/types';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {_package} from '../package';
 
@@ -70,7 +71,7 @@ export function setSmilesColLink(
 export function clearAtomPickerHighlights(smilesCol: DG.Column): void {
   try {
     const providers = (smilesCol.temp?.[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as
-      Array<{__atomPicker?: boolean}>;
+      AtomPickerProvider[];
     if (providers.length > 0) {
       smilesCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = providers.filter(
         (p) => !p.__atomPicker);
