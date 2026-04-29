@@ -106,7 +106,18 @@ export class PackageFunctions{
 
     formatColumns(autodockResults);
     const processedResults = processAutodockResults(autodockResults, table);
+    // `processAutodockResults` returns an empty DataFrame when AutoDock's
+    // output is missing required columns — skip downstream wiring.
+    if (processedResults.columns.length === 0)
+      return processedResults;
     await grok.data.detectSemanticTypes(processedResults);
+
+    // NOTE: the SMILES↔pose atom-picker link is NOT written here. Users
+    // activate it explicitly via the "Link SMILES column" checkbox in the
+    // AutoDock context panel (`mol3dAtomPickerLinkWidget`). Auto-linking
+    // was rejected to avoid ambiguous pairings when the table has more
+    // than one SMILES column and to keep the interactive-highlight opt-in
+    // rather than implicit.
     return processedResults;
   }
 
@@ -236,6 +247,23 @@ export class PackageFunctions{
       result.appendChild(buildPropertyMap());
     });
     widget.subs.push(sub);
+
+    // Append the atom-picker "Link SMILES column" checkbox at the bottom
+    // of the AutoDock panel. Rendered via BiostructureViewer's exposed
+    // function rather than as a separate cell panel, so the UI stays as
+    // a single "AutoDock" section in the context panel instead of two.
+    // Fails silently if BSV isn't installed / the function isn't found.
+    try {
+      const linkWidget = await grok.functions.call(
+        'BiostructureViewer:mol3dAtomPickerLinkWidget',
+        {mol3DCol: molecule.cell.column},
+      ) as DG.Widget | null;
+      if (linkWidget?.root)
+        widget.root.append(linkWidget.root);
+    } catch (err: unknown) {
+      _package.logger.debug(
+        `mol3dAtomPickerLinkWidget unavailable: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     return widget;
   }

@@ -37,6 +37,12 @@ import './tests/chemprop-tests';
 import './tests/vector-funcs-tests';
 import './tests/synthon-search-tests';
 
+import './tests/atom-index-mapper-tests';
+import './tests/atom-picker-tests';
+import './tests/atom-picker-3d-hover-tests';
+import './tests/atom-picker-escape-tests';
+import './tests/renderer-hover-tests';
+
 import './tests/viewers';
 
 export const _package = new DG.Package();

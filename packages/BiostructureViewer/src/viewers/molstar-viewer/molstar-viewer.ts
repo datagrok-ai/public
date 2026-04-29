@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -39,6 +40,12 @@ import {getDataProviderList} from '@datagrok-libraries/bio/src/utils/data-provid
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData} from './molstar-viewer-open';
+import {
+  SelectionCacheEntry, selectionCacheKey,
+} from './molstar-highlight-utils';
+import {CHEM_MOL3D_SELECTION_EVENT, CHEM_ATOM_SELECTION_EVENT, ChemSelectionEventArgs,}
+  from '@datagrok-libraries/chem-meta/src/types';
+import {MolstarHighlightController} from './molstar-highlight-controller';
 import {defaults, molecule3dFileExtensions} from './consts';
 import {createRcsbViewer, disposeRcsbViewer} from './utils';
 import {
@@ -59,7 +66,8 @@ import {createStructureRepresentationParams} from 'molstar/lib/mol-plugin-state/
 import {StructureRepresentationRegistry} from 'molstar/lib/mol-repr/structure/registry';
 import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
 import {StateElements} from 'molstar/lib/examples/proteopedia-wrapper/helpers';
-import {Structure, StructureElement, StructureProperties as SP} from 'molstar/lib/mol-model/structure';
+import {Bond, Structure, StructureElement, StructureProperties as SP} from 'molstar/lib/mol-model/structure';
+import {InteractivityManager} from 'molstar/lib/mol-plugin-state/manager/interactivity';
 import {PluginUIContext} from 'molstar/lib/mol-plugin-ui/context';
 import {StructureRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
 
@@ -316,6 +324,41 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.logger = _package.logger;
     this.viewSyncer = new PromiseSyncer(this.logger);
 
+    this.highlightController = new MolstarHighlightController({
+      getPlugin: () => this.viewer?.plugin,
+      getLigands: () => this.ligands,
+      getDataFrame: () => this.dataFrame,
+      getLigandColumnName: () => this.ligandColumnName,
+      viewSyncer: this.viewSyncer,
+      logger: this.logger,
+    });
+
+    // Populates the class-static `selectionCache` from `CHEM_ATOM_SELECTION_EVENT`
+    // for replay on later viewer opens. Subscription is per-instance (tracked in
+    // `this.subs`) so it gets disposed with the viewer; multiple viewers writing
+    // the same cache entry is harmless because writes are idempotent.
+    this.subs.push(grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
+      .subscribe((args: ChemSelectionEventArgs) => {
+        const {
+          rowIdx = -1, atoms = [], persistent, clearAll, mapping3D, column,
+        } = args ?? {};
+        if (persistent === false) return;
+        const col = column as DG.Column | undefined;
+        const dfId = col?.dataFrame?.id ?? '';
+        const dfName = col?.dataFrame?.name ?? '';
+        const colName = col?.name ?? '';
+        this.logger.debug(
+          `[molstar-picker] caching selection event atomsLen=${atoms.length} rowIdx=${rowIdx}`);
+        if (clearAll)
+          MolstarViewer.selectionCache = new DG.LruCache<string, SelectionCacheEntry>();
+        else {
+          const key = selectionCacheKey(dfId, dfName, colName, rowIdx);
+          MolstarViewer.selectionCache.set(key, {
+            atoms, mapping3D: atoms.length > 0 ? (mapping3D ?? null) : null,
+          });
+        }
+      }));
+
     this.setDataRequest = new Subject<void>();
     this.subs.push(DG.debounce(this.setDataRequest, DebounceIntervals.setData)
       .subscribe(() => { this.onSetDataRequestDebounced(); }));
@@ -326,6 +369,15 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private static viewerCounter: number = -1;
   private readonly viewerId: number = ++MolstarViewer.viewerCounter;
+
+  // -- Class-static selection cache (shared across all instances) ---------------
+  // Populated from CHEM_ATOM_SELECTION_EVENT by each viewer's per-instance
+  // subscription (see constructor). Replays highlights when a viewer opens
+  // after a selection was already made.
+
+  /** Composite-key LRU cache of persistent atom selections. */
+  public static selectionCache: DG.LruCache<string, SelectionCacheEntry> =
+    new DG.LruCache<string, SelectionCacheEntry>();
 
   private _initButtonExpand() {
     const button = $('.msp-btn.msp-btn-icon.msp-btn-link-toggle-off');
@@ -766,6 +818,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private readonly logger: ILogger;
   private readonly viewSyncer: PromiseSyncer;
+  public readonly highlightController: MolstarHighlightController;
+  private _stateChangeTimer: ReturnType<typeof setTimeout> | null = null;
   private setDataInProgress: boolean = false;
 
   private viewerDiv?: HTMLDivElement;
@@ -911,6 +965,98 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       if (!(this.dataEff.ext in molecule3dFileExtensions))
         throw new Error(`Unsupported file extension '${this.dataEff.ext}'.`);
 
+      // Instance-level subscription: apply highlights in real-time while the viewer is alive.
+      // _initSelectionCache handles caching for replay (fires once per process).
+      this.viewSubs.push(grok.events.onCustomEvent(CHEM_ATOM_SELECTION_EVENT)
+        .subscribe((args: ChemSelectionEventArgs) => {
+          const {rowIdx = -1, atoms = [], mapping3D = null, persistent} = args ?? {};
+          try {
+            this.logger.debug(
+              `[molstar-picker] live highlight atomsLen=${atoms.length} rowIdx=${rowIdx} persistent=${persistent}`);
+            this.highlightController.highlightAllLigandAtoms({rowIdx, atoms, mapping3D});
+          } catch (err: unknown) {
+            this.logger.error(
+              `${CHEM_ATOM_SELECTION_EVENT} handler failed: ${err instanceof Error ? err.message : String(err)}`);
+          }
+        }));
+
+      // Reapply highlights on canvas interaction (zoom, focus, right-click may trigger rebuilds).
+      const canvas = plugin.canvas3d?.webgl?.gl?.canvas as HTMLElement | undefined;
+      if (canvas) {
+        const reapplyOnClick = () => {
+          if (this._stateChangeTimer) clearTimeout(this._stateChangeTimer);
+          this._stateChangeTimer = setTimeout(() => {
+            this._stateChangeTimer = null;
+            this.highlightController.replayHighlightIfCached();
+          }, 500);
+        };
+        canvas.addEventListener('contextmenu', reapplyOnClick);
+        canvas.addEventListener('mouseup', reapplyOnClick);
+        this.viewSubs.push({unsubscribe: () => {
+          canvas.removeEventListener('contextmenu', reapplyOnClick);
+          canvas.removeEventListener('mouseup', reapplyOnClick);
+        }});
+      }
+
+      // Subscribe to Molstar's hover observable for the 3D→2D reverse bridge.
+      // Fires CHEM_MOL3D_HOVER_EVENT when the user hovers a ligand atom;
+      // receptor and H atoms are filtered out. Dedup is handled by the controller.
+      this.highlightController.resetHoverDedup();
+      try {
+        this.viewSubs.push(plugin.behaviors.interaction.hover.subscribe(
+          (event: InteractivityManager.HoverEvent) => {
+            try {
+              if (!this.dataFrame || !this.ligandColumnName) return;
+              const rowIdx = this.dataFrame.currentRowIdx;
+              if (rowIdx == null || rowIdx < 0) return;
+
+              const loci = event.current.loci;
+              if (loci.kind === 'empty-loci') {
+                this.highlightController.fireMol3DHover(rowIdx, null, 'preview');
+                return;
+              }
+
+              // element-loci: direct atom pick; bond-loci: pick `a` side.
+              let loc: StructureElement.Location | null = null;
+              if (loci.kind === 'element-loci') {
+                if (StructureElement.Loci.isEmpty(loci)) {
+                  this.highlightController.fireMol3DHover(rowIdx, null, 'preview');
+                  return;
+                }
+                loc = StructureElement.Loci.getFirstLocation(loci) ?? null;
+              } else if (loci.kind === 'bond-loci' && loci.bonds.length > 0) {
+                const bond = loci.bonds[0] as Bond.Location;
+                loc = StructureElement.Location.create(loci.structure, bond.aUnit, bond.aUnit.elements[bond.aIndex]);
+              }
+              if (!loc) return;
+              // Filter: ligand (non-polymer) heavy atoms only.
+              try {
+                if (SP.entity.type(loc) !== 'non-polymer') return;
+              } catch { return; /* entity lookup failed — skip */ }
+              if (SP.atom.type_symbol(loc) === 'H') return;
+
+              const atomSerial = SP.atom.id(loc);
+              const {modifiers} = event;
+              // Ctrl/Cmd hover = paint (add). Ctrl+Shift / Cmd+Shift = erase.
+              // No modifier = preview. Mirrors the 2D-side picker modifiers
+              // so paint/erase keys are identical in both directions.
+              const mode: 'preview' | 'paint' | 'erase' =
+                (modifiers.control || modifiers.meta) && modifiers.shift ? 'erase' :
+                  ((modifiers.control || modifiers.meta) ? 'paint' : 'preview');
+              this.highlightController.fireMol3DHover(rowIdx, atomSerial, mode);
+            } catch (err: unknown) {
+              this.logger.error(
+                `${CHEM_MOL3D_SELECTION_EVENT} emit failed: ${err instanceof Error ? err.message : String(err)}`);
+            }
+          },
+        ));
+      } catch (err: unknown) {
+        // Older Molstar builds without `behaviors.interaction.hover` — reverse
+        // bridge just won't activate; forward direction remains unaffected.
+        this.logger.debug(
+          `Molstar hover subscription unavailable: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
       if (this.dataFrame && this.ligandColumnName) {
         this.viewSubs.push(this.dataFrame.onSelectionChanged.subscribe(
           this.dataFrameOnSelectionChanged.bind(this)));
@@ -920,7 +1066,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           this.dataFrameOnMouseOverRowChanged.bind(this)));
         this.viewSubs.push(DG.debounce(this.onRebuildViewLigandsRequest, DebounceIntervals.ligands).subscribe(
           this.onRebuildViewLigandsDebounced.bind(this)));
+
         await this.buildViewLigands(logIndent, callLog);
+      } else {
+        // Non-ligand viewer (e.g. "3D Structure" panel showing a single
+        // molecule). Replay any cached selection after the structure loads.
+        this.highlightController.replayHighlightIfCached();
       }
     }
     // Attach the overlay after viewer is ready (idempotent)
@@ -1023,6 +1174,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.viewSyncer.sync(logPrefix, async () => {
       [this.dataEff, this.dataEffStructureRefs] = await this.rebuildViewCurrentRow(
         oldStructureRefs, newCurrentRowIdx, 0, callLog);
+      // Protein structure was rebuilt — reapply highlights on ligands.
+      this.highlightController.replayHighlightIfCached();
     });
   }
 
@@ -1173,8 +1326,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         selectedLigand.structureRefs = await addLigandOnStage(plugin, selectedLigandData, color, this.zoom);
       });
     }
+    // When both current and hovered are loaded, always use distinct
+    // colors so the user can tell which pose belongs to which row.
+    const hasBothPoses = !!newLigands.current && !!newLigands.hovered;
     if (newLigands.current) {
-      const color = this.showSelectedRowsLigands ? DG.Color.currentRow : null;
+      const color = hasBothPoses || this.showSelectedRowsLigands ?
+        (DG.Color.currentRow || 0xFF8C00) : // dark orange fallback
+        null;
 
       const currentLigandData = this.getLigandStr(newLigands.current.rowIdx);
       const currentLigand = newLigands.current;
@@ -1183,17 +1341,16 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       });
     }
     if (newLigands.hovered) {
-      // TODO: color hovered ligand
-      const color =
-        this.showSelectedRowsLigands || this.showCurrentRowLigand ?
-          DG.Color.mouseOverRows : null;
+      const color = hasBothPoses || this.showSelectedRowsLigands || this.showCurrentRowLigand ?
+        (DG.Color.mouseOverRows || 0x2196F3) : // blue fallback
+        null;
       const hoveredLigandData = this.getLigandStr(newLigands.hovered.rowIdx);
       const hoveredLigand = newLigands.hovered;
       ligandTaskList.push(async () => {
         hoveredLigand.structureRefs = await addLigandOnStage(plugin, hoveredLigandData, color, this.zoom);
       });
     }
-    this.logger.debug(`${logPrefix},\nnewLigands = ${JSON.stringify(newLigands)}`);
+    this.logger.debug(`${logPrefix}, newLigands:`, () => newLigands);
 
     // Because of the async nature of loading structures to .viewer, the .dataFrame property can be changed (to null).
     // So collect data from the .dataFrame synchronously and then add ligands to the .viewer with postponed sync.
@@ -1210,6 +1367,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (this.showBindingSite)
       await this.applyBindingSiteView();
     this._refreshBindingSiteOverlay();
+
+    // Replay highlights after ligands are built (via syncer queue).
+    this.highlightController.replayHighlightIfCached();
 
     this.logger.debug(`${logPrefix}, end`);
   }

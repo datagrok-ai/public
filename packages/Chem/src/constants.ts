@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {Fingerprint} from './utils/chem-common';
 
 export const V2000_ATOM_NAME_POS = 30;
@@ -41,6 +42,7 @@ export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove thi
 export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
 export const FIXED_SCALE_TAG = '.%chem-fixed-scale';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
+
 export const SCAFFOLD_COL = 'scaffold-col';
 export const SCAFFOLD_COL_SYNC = '%scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';
