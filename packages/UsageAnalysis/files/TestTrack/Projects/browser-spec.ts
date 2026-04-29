@@ -1,22 +1,7 @@
-import { test, expect, Page } from '@playwright/test';
-import {specTestOptions} from '../spec-login';
+import {test, expect, Page} from '@playwright/test';
+import {baseUrl, loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
-
-const BASE_URL = 'https://release-ec2.datagrok.ai';
-const LOGIN = 'claude';
-const PASSWORD = 'grokclaude';
-
-async function login(page: Page) {
-  await page.goto(BASE_URL);
-  const loginInput = page.locator('input[placeholder*="Login"]');
-  if (await loginInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await loginInput.fill(LOGIN);
-    await page.locator('input[type="password"]').fill(PASSWORD);
-    await page.keyboard.press('Enter');
-  }
-  await page.waitForSelector('.d4-toolbox', { timeout: 60000 });
-}
 
 async function evalJs(page: Page, script: string): Promise<any> {
   return page.evaluate(script);
@@ -26,27 +11,22 @@ async function closeAll(page: Page) {
   await evalJs(page, 'grok.shell.closeAll()');
 }
 
-test.describe('Projects / Browser', () => {
+test('Projects / Browser', async ({page}) => {
+  test.setTimeout(600_000);
+  stepErrors.length = 0;
 
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-    await closeAll(page);
+  await loginToDatagrok(page);
+  await closeAll(page);
+
+  await softStep('Case 1: Navigate to Browse > Dashboards', async () => {
+    await page.goto(`${baseUrl}/projects`);
+    await page.waitForSelector('.grok-gallery-grid', {timeout: 30000});
+    await expect(page.locator('.grok-gallery-grid')).toBeVisible();
   });
 
-  test.afterEach(async ({ page }) => {
-    await closeAll(page);
-  });
-
-  test('Case 1: Navigate to Browse > Dashboards', async ({ page }) => {
-    await page.goto(`${BASE_URL}/projects`);
-    await page.waitForSelector('.grok-gallery-grid', { timeout: 30000 });
-    const gallery = page.locator('.grok-gallery-grid');
-    await expect(gallery).toBeVisible();
-  });
-
-  test('Case 2: Search for projects in Dashboards', async ({ page }) => {
-    await page.goto(`${BASE_URL}/projects`);
-    await page.waitForSelector('.grok-gallery-grid', { timeout: 30000 });
+  await softStep('Case 2: Search for projects in Dashboards', async () => {
+    await page.goto(`${baseUrl}/projects`);
+    await page.waitForSelector('.grok-gallery-grid', {timeout: 30000});
 
     const searchInput = page.locator('input[placeholder*="Search"]');
     await searchInput.fill('Test Project');
@@ -57,47 +37,42 @@ test.describe('Projects / Browser', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('Case 5: Check Context Panel for selected project', async ({ page }) => {
-    await page.goto(`${BASE_URL}/projects`);
-    await page.waitForSelector('.grok-gallery-grid', { timeout: 30000 });
+  await softStep('Case 5: Check Context Panel for selected project', async () => {
+    await page.goto(`${baseUrl}/projects`);
+    await page.waitForSelector('.grok-gallery-grid', {timeout: 30000});
 
-    // Click first project card
     const firstCard = page.locator('.grok-gallery-grid .d4-item-card').first();
     await firstCard.click();
     await page.waitForTimeout(1000);
 
-    // Check Context Panel sections
     const contextPanel = page.locator('.grok-prop-panel');
     await expect(contextPanel).toBeVisible();
     const panelText = await contextPanel.textContent();
     expect(panelText).toContain('Sharing');
   });
 
-  test('Case 8: Review Context Panel tabs', async ({ page }) => {
-    await page.goto(`${BASE_URL}/projects`);
-    await page.waitForSelector('.grok-gallery-grid', { timeout: 30000 });
+  await softStep('Case 8: Review Context Panel tabs', async () => {
+    await page.goto(`${baseUrl}/projects`);
+    await page.waitForSelector('.grok-gallery-grid', {timeout: 30000});
 
     const firstCard = page.locator('.grok-gallery-grid .d4-item-card').first();
     await firstCard.click();
     await page.waitForTimeout(1000);
 
     const contextPanel = page.locator('.grok-prop-panel');
-    const panelText = await contextPanel.textContent();
-    for (const section of ['Details', 'Sharing', 'Activity']) {
+    const panelText = await contextPanel.textContent() ?? '';
+    for (const section of ['Details', 'Sharing', 'Activity'])
       expect(panelText).toContain(section);
-    }
   });
 
-  test('Case 9: Open a project from Dashboards', async ({ page }) => {
+  await softStep('Case 9: Open a project from Dashboards', async () => {
     const projectName = 'AutoTest-Browser-' + Date.now();
 
-    // Create a project to open
     await evalJs(page, `(async () => {
-      const tv = grok.shell.addTableView(grok.data.demo.demog());
+      grok.shell.addTableView(grok.data.demo.demog());
     })()`);
     await page.waitForTimeout(2000);
 
-    // Save it
     await evalJs(page, `(async () => {
       const project = grok.shell.project;
       project.name = '${projectName}';
@@ -107,7 +82,6 @@ test.describe('Projects / Browser', () => {
 
     await closeAll(page);
 
-    // Open via API
     const tables = await evalJs(page, `(async () => {
       const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
       if (!p) return [];
@@ -116,10 +90,16 @@ test.describe('Projects / Browser', () => {
     })()`);
     expect(tables.length).toBeGreaterThan(0);
 
-    // Cleanup
     await evalJs(page, `(async () => {
       const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
       if (p) await grok.dapi.projects.delete(p);
     })()`);
   });
+
+  await closeAll(page);
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });
