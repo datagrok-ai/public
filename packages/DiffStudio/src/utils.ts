@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH, UI_TIME,
   LIBRARY_CHANGED_EVENT} from './ui-constants';
-import {CONTROL_EXPR, METHOD_KEY_WORD} from './constants';
+import {CONTROL_EXPR, CONTROL_TAG, METHOD_KEY_WORD} from './constants';
 import {CONTROL_SEP, BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR} from './scripting-tools';
 import {DEFAULT_OPTIONS} from './solver-tools';
 
@@ -622,22 +622,43 @@ grok.events.onCustomEvent(LIBRARY_CHANGED_EVENT).subscribe(() => {
     prefetchExternalLibraryEntries(externalEntriesWebRoot);
 });
 
-/** Extract `#name:` and `#description:` from an .ivp file content */
+/** Extract `#name:` and `#description:` from an .ivp file content.
+ *  The description block can place its content either on the same line as the
+ *  `#description:` header, or on subsequent indented lines until the next
+ *  `#`-directive. Multi-line descriptions are collapsed into a single
+ *  space-separated string. */
 export function extractIvpNameAndDescription(content: string): {name: string, description: string} {
   const namePrefix = `${CONTROL_EXPR.NAME}:`;
   const descPrefix = `${CONTROL_EXPR.DESCR}:`;
   let name = '';
-  let description = '';
+  const descParts: string[] = [];
+  let inDescBlock = false;
+  let descDone = false;
   for (const rawLine of content.split('\n')) {
     const line = rawLine.trim();
+    if (inDescBlock) {
+      if (line.startsWith(CONTROL_TAG)) {
+        inDescBlock = false;
+        descDone = true;
+        // fall through to let this directive line be handled below
+      } else {
+        if (line.length > 0)
+          descParts.push(line);
+        continue;
+      }
+    }
     if (!name && line.startsWith(namePrefix))
       name = line.slice(namePrefix.length).trim();
-    else if (!description && line.startsWith(descPrefix))
-      description = line.slice(descPrefix.length).trim();
-    if (name && description)
+    else if (!descDone && descParts.length === 0 && line.startsWith(descPrefix)) {
+      const rest = line.slice(descPrefix.length).trim();
+      if (rest.length > 0)
+        descParts.push(rest);
+      inDescBlock = true;
+    }
+    if (name && descDone)
       break;
   }
-  return {name, description};
+  return {name, description: descParts.join(' ')};
 }
 
 /** Return category control widget */

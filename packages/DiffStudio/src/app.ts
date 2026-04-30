@@ -3053,7 +3053,7 @@ export class DiffStudio {
         } catch (err) {
           grok.shell.warning(`Failed to open model: ${entry.modelPath}`);
         }
-      }, null, {description: entry.description || entry.modelPath});
+      }, null, {description: entry.description});
     }
   } // appendExternalLibraryModelsSync
 
