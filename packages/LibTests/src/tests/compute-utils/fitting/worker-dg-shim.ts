@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
 import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame, compileBody,
-  clearCompileCache, _getCompileStats, _setCompileCacheCap} from
+  clearCompileCache, _getCompileStats, _setCompileCacheCap, FLOAT_NULL} from
   '@datagrok-libraries/compute-utils/webworkers';
 import {toFeather} from '@datagrok-libraries/arrow';
 import {getErrors} from
@@ -164,6 +164,72 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     const b = dgDf.col('label')!;
     for (let i = 0; i < a.length; ++i)
       expect(a.get(i) as string, b.get(i) as string);
+  });
+
+  test('shim_columns_tolist_matches_iteration', async () => {
+    const liteDf = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('id', new Int32Array([1, 2, 3])),
+      shim.Column.fromFloat64Array('v', new Float64Array([0.5, 1.5, 2.5])),
+      shim.Column.fromStrings('s', ['a', 'b', 'c']),
+    ]);
+    const fromList = liteDf.columns.toList();
+    const fromIter = Array.from(liteDf.columns);
+    expect(fromList.length, fromIter.length, 'length');
+    for (let i = 0; i < fromList.length; ++i) {
+      expect(fromList[i].name, fromIter[i].name, `name[${i}]`);
+      expect(fromList[i] === liteDf.columns.byName(fromList[i].name), true, `byName identity[${i}]`);
+    }
+    fromList.push(fromList[0]);
+    expect(liteDf.columns.length, 3, 'toList must return a copy, not a live view');
+  });
+
+  test('shim_dataframe_tojson_parity', async () => {
+    const ids = new Int32Array([10, 20, 30]);
+    const vals = new Float64Array([1.1, 2.2, 3.3]);
+    const labels = ['x', 'y', 'z'];
+    const liteDf = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('id', ids),
+      shim.Column.fromFloat64Array('value', vals),
+      shim.Column.fromStrings('label', labels),
+    ]);
+    const dgDf = DG.DataFrame.fromColumns([
+      DG.Column.fromInt32Array('id', ids),
+      DG.Column.fromFloat64Array('value', vals),
+      DG.Column.fromStrings('label', labels),
+    ]);
+    expect(JSON.stringify(liteDf.toJson()), JSON.stringify(dgDf.toJson()), 'toJson parity');
+  });
+
+  test('shim_dataframe_tojson_skips_nulls', async () => {
+    const raw = new Float64Array([1, FLOAT_NULL, 3]);
+    const df = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('id', new Int32Array([1, 2, 3])),
+      shim.Column.fromFloat64Array('v', raw),
+    ]);
+    const rows = df.toJson();
+    expect(rows.length, 3, 'row count');
+    expect(rows[0].id, 1);
+    expect(rows[0].v, 1);
+    expect(rows[1].id, 2);
+    expect('v' in rows[1], false, 'null cell must be omitted, matching DG.toJson');
+    expect(rows[2].v, 3);
+  });
+
+  test('shim_arrow_roundtrip_numeric_string_column_names', async () => {
+    // Regression: numeric-string column names used to be reordered ahead
+    // of non-numeric ones by V8 object-key iteration in toFeather,
+    // misaligning IPC column data against the schema.
+    const dgDf = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('name', new Float64Array([1.5, 2.5])),
+      DG.Column.fromInt32Array('0', new Int32Array([10, 20])),
+    ]);
+    const lite = arrowIpcToLite(toFeather(dgDf)!);
+
+    expect(lite.columns.names().join('|'), 'name|0', 'col order preserved');
+    expect(lite.col('name')!.get(0), 1.5);
+    expect(lite.col('name')!.get(1), 2.5);
+    expect(lite.col('0')!.get(0), 10);
+    expect(lite.col('0')!.get(1), 20);
   });
 
   test('shim_geterrors_parity', async () => {
