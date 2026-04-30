@@ -117,6 +117,28 @@ export interface IBarChartSettings {
 
   minTextHeight: number;
 
+  formulaFont: string;
+
+  annotationFont: string;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of viewer-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
   /// When enabled, shows hatched areas and arrows on bars
   /// that are clipped by the value axis range.
   showClippedBarIndicators: boolean;
@@ -440,6 +462,28 @@ export interface IBoxPlotSettings {
   categoryFont: string;
 
   statisticsFont: string;
+
+  formulaFont: string;
+
+  annotationFont: string;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of viewer-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
 
   whiskerLineWidth: number;
 
@@ -834,6 +878,31 @@ export interface IDensityPlotSettings {
   showBinSelector: boolean;
 
   backColor: number;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of viewer-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// When true, lasso area selector is used instead of the rectangular one when drawing annotation regions.
+  lassoTool: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  formulaFont: string;
+
+  annotationFont: string;
 
   viewport: string;
 
@@ -1483,6 +1552,28 @@ export interface IHistogramSettings {
   backColor: number;
 
   axisFont: string;
+
+  formulaFont: string;
+
+  annotationFont: string;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of viewer-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
 
   filteredBinsColor: number;
 

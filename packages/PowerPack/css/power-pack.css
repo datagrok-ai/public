@@ -519,6 +519,50 @@ body.dartium .power-pack-widgets-host.ui-div {
     flex-grow: 1;
 }
 
+.dlg-formula-lines-pane-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.dlg-formula-lines-pane-wrap > .d4-tab-host,
+.dlg-formula-lines-pane-wrap > .d4-viewer {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+}
+
+.dlg-formula-lines-tabs-box {
+    min-height: 80px;
+}
+
+.dlg-formula-lines-preview-box {
+    min-height: 180px;
+}
+
+.dlg-formula-lines-preview-box > .dlg-formula-lines-pane-wrap {
+    padding-top: 4px;
+}
+
+/* Editor (right pane) and the left viewer/grid pane both shrink and grow at the
+   same rate so dialog-resize is symmetric: shrinking from a wide dialog and
+   then growing back returns the panes to their original proportions. The
+   flex-grow ratios are set inline by ui.splitH from each pane's initial width. */
+.dlg-formula-lines-editor-box {
+    min-width: 240px;
+    overflow: auto;
+}
+
+.dlg-formula-lines-left-split {
+    min-width: 320px;
+    min-height: 0;
+}
+
 
 /** Viewers gallery */
 

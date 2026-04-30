@@ -31,6 +31,10 @@ const enum ITEM_CAPTION {
   FORMULA_REGION = 'Region - Formula Lines',
   RECT_REGION = 'Region - Draw Rectangle',
   POLYGON_REGION = 'Region - Draw Lasso',
+  // Axis-bounds formula region — mirrors the axis context-menu's `Annotations > Region`.
+  // VERT bounds the X axis (vertical band-shape); HORZ bounds the Y axis.
+  VERT_RANGE_REGION = 'Region - Vertical Range',
+  HORZ_RANGE_REGION = 'Region - Horizontal Range',
 }
 
 const enum ITEM_ORIENTATION {
@@ -55,6 +59,54 @@ const enum BTN_CAPTION {
 }
 
 type EditorItem = DG.FormulaLine | DG.AnnotationRegion;
+
+/// Per-viewer allow-list for the creation popup. `undefined` means "all five items".
+/// Region items (FORMULA_REGION / RECT_REGION / POLYGON_REGION) are gated separately
+/// by `cols.x?.isNumerical && cols.y?.isNumerical` so they vanish for single-axis hosts.
+function allowedItemsForHost(src: DG.DataFrame | DG.Viewer): string[] | undefined {
+  if (!(src instanceof DG.Viewer))
+    return undefined;
+  if (src.type === DG.VIEWER.BOX_PLOT)
+    return [ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND];
+  if (src.type === DG.VIEWER.HISTOGRAM)
+    return [ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND];
+  if (src.type === DG.VIEWER.BAR_CHART)
+    return barChartIsVertical(src)
+      ? [ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND]
+      : [ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND];
+  return undefined;
+}
+
+/// Single-axis viewers restrict the column picker in the Editor to their value column.
+/// Returns the value column name when applicable, `undefined` otherwise.
+function singleAxisColumnNameForHost(src: DG.DataFrame | DG.Viewer): string | undefined {
+  if (!(src instanceof DG.Viewer))
+    return undefined;
+  if (src.type === DG.VIEWER.BOX_PLOT || src.type === DG.VIEWER.HISTOGRAM
+    || src.type === DG.VIEWER.BAR_CHART)
+    return src.getOptions().look.valueColumnName;
+  return undefined;
+}
+
+/// Resolves bar-chart `verticalMode` from the attached host viewer, mirroring the Dart-side getter.
+function barChartIsVertical(viewer: DG.Viewer): boolean {
+  const orientation = viewer.getOptions().look.orientation;
+  if (orientation === 'vertical')
+    return true;
+  if (orientation === 'horizontal')
+    return false;
+  // auto — derive from the host's canvas aspect ratio.
+  const w = viewer.root.clientWidth;
+  const h = viewer.root.clientHeight;
+  return w > 0 && h / w > 5;
+}
+
+/** Pick the first numeric column whose name is not in `exclude`. Returns null if no such column. */
+function pickFallbackNumericColumn(df: DG.DataFrame, exclude: (string | undefined | null)[]): string | null {
+  const skip = new Set(exclude.filter((n) => n != null));
+  const col = df.columns.toList().find((c) => c.isNumerical && !skip.has(c.name));
+  return col ? col.name : null;
+}
 
 export const DEFAULT_OPTIONS: EditorOptions = {
   allowEditDFLines: true,
@@ -253,13 +305,32 @@ class Table {
     this.grid.columns.setVisible(['title', 'formula', 'visible', BTN_CAPTION.REMOVE]);
     this.grid.columns.setOrder(['title', 'formula', 'visible', BTN_CAPTION.REMOVE]);
 
+    const VISIBLE_COL_WIDTH = 40;
+    const REMOVE_COL_WIDTH = 35;
     this.grid.col('title')!.width = 120;
     this.grid.col('formula')!.width = 220;
-    this.grid.col('visible')!.width = 40;
+    this.grid.col('visible')!.width = VISIBLE_COL_WIDTH;
 
     const deleteBtnCol = this.grid.col(BTN_CAPTION.REMOVE)!;
-    deleteBtnCol.width = 35;
+    deleteBtnCol.width = REMOVE_COL_WIDTH;
     deleteBtnCol.cellType = 'html';
+
+    // Stretch title + formula to fill the grid width; visible + remove keep fixed widths.
+    // Buffer accounts for the vertical scrollbar + cell padding so the row doesn't
+    // overflow horizontally when the grid is at its initial size.
+    const stretchColumns = () => {
+      const total = this.grid.root.clientWidth;
+      if (total <= 0)
+        return;
+      const remaining = total - VISIBLE_COL_WIDTH - REMOVE_COL_WIDTH - 24;
+      if (remaining < 200)
+        return;
+      const titleW = Math.floor(remaining * 0.35);
+      this.grid.col('title')!.width = titleW;
+      this.grid.col('formula')!.width = remaining - titleW;
+    };
+    new ResizeObserver(stretchColumns).observe(this.grid.root);
+    DG.delay(0).then(stretchColumns);
 
     this.grid.onCellPrepare((cell) => {
       if (cell.isColHeader)
@@ -375,10 +446,16 @@ interface AxisNames {
 }
 
 interface AxisColumns {
-  y: DG.Column,
-  x: DG.Column,
+  y: DG.Column | null,
+  x: DG.Column | null,
   yMap?: string,
   xMap?: string,
+  /** Optional stats override. When set, default formula values (q1/q2/q3) come
+   *  from here instead of `y.stats` / `x.stats`. Aggregated hosts (bar chart)
+   *  use this so defaults reflect the displayed value-axis range, while `y` / `x`
+   *  still carry the raw column whose name is referenced in the formula. */
+  yStats?: DG.Stats,
+  xStats?: DG.Stats,
 }
 
 export interface EditorOptions {
@@ -391,7 +468,7 @@ export interface EditorOptions {
  * Scatter Plot viewer by default.
  */
 class Preview {
-  public viewer: DG.ScatterPlotViewer | DG.LineChartViewer;
+  public viewer: DG.Viewer;
   public dataFrame: DG.DataFrame;
   
   /** Original data frame (used for line chart to validate columns).*/
@@ -400,46 +477,116 @@ class Preview {
   /** Source Scatter Plot axes */
   public srcAxes?: AxisNames;
 
-  public set height(h: number) {this.viewer.root.style.height = `${h}px`;}
   public get root(): HTMLElement {return this.viewer.root;}
 
-  /** Returns the current columns pair of the preview Scatter Plot */
+  /** Returns the current columns pair of the preview viewer. Single-axis hosts
+   *  (box plot, histogram, bar chart) report only their value axis; the other
+   *  side is `null`. */
   public get axisCols(): AxisColumns {
-    let yColName;
-    if (this.viewer instanceof DG.LineChartViewer) {
+    const t = this.viewer.type;
+    // Some viewers (e.g. density plot) don't declare xMap/yMap; the props proxy
+    // throws on unknown names, so check first.
+    const safeProp = (name: string): any =>
+      this.viewer.props.hasProperty(name) ? this.viewer.props[name] : undefined;
+    let yColName: string | undefined;
+    let xColName: string | undefined;
+    let xMap: string | undefined = safeProp('xMap');
+    let yMap: string | undefined;
+
+    if (t === DG.VIEWER.LINE_CHART) {
       const yCols: string[] = this.viewer.props.yColumnNames;
       yColName = this.dataFrame.columns.toList().find((col) => yCols.some((n) => col.name.includes(n)))?.name;
+      xColName = this.viewer.props.xColumnName;
     }
-    else
-      yColName = (this.viewer as DG.ScatterPlotViewer).props.yColumnName;
-
-    const xMap = this.viewer.props.xMap;
-    const yMap = this.viewer instanceof DG.ScatterPlotViewer
-      ? this.viewer.props.yMap
-      : undefined;
+    else if (t === DG.VIEWER.BOX_PLOT) {
+      yColName = this.viewer.props.valueColumnName;
+      yMap = safeProp('yMap');
+      xMap = undefined;
+    }
+    else if (t === DG.VIEWER.HISTOGRAM) {
+      xColName = this.viewer.props.valueColumnName;
+    }
+    else if (t === DG.VIEWER.BAR_CHART) {
+      // Bar chart's value axis renders aggregated values (count/sum/avg of
+      // valueColumnName grouped by splitColumnName), not the raw column. Carry
+      // the raw column for the formula's column reference (`${AGE} = …`) but
+      // override stats so defaults like q2 fall inside the displayed range.
+      const valueColName: string | undefined = this.viewer.props.valueColumnName;
+      const rawCol = valueColName ? this.dataFrame.col(valueColName) : null;
+      const aggStats = this.viewer instanceof DG.BarChartViewer
+        ? this.viewer.getAggregatedValueColumn()?.stats
+        : undefined;
+      const isVertical = barChartIsVertical(this.viewer);
+      if (isVertical) {
+        yMap = safeProp('yMap');
+        xMap = undefined;
+        return { y: rawCol, x: null, yMap, xMap, yStats: aggStats };
+      }
+      return { x: rawCol, y: null, xMap, yMap, xStats: aggStats };
+    }
+    else {
+      yColName = this.viewer.props.yColumnName;
+      yMap = safeProp('yMap');
+      xColName = this.viewer.props.xColumnName;
+    }
 
     return {
-      y: this.dataFrame.getCol(yColName!),
-      x: this.dataFrame.getCol(this.viewer.props.xColumnName),
+      y: yColName ? this.dataFrame.col(yColName) : null,
+      x: xColName ? this.dataFrame.col(xColName) : null,
       yMap,
       xMap,
     };
   }
 
-  /** Sets the current axes of the preview Scatter Plot by column names */
+  /** Sets the current axes of the preview viewer by column names. Each viewer
+   *  type uses different look-property names for its data column(s); single-axis
+   *  hosts only honor the matching side. */
   private set axes(names: AxisNames) {
-    const options: {  [x: string]: any} = {};
-    if (names?.y && this.dataFrame.getCol(names.y))
-      if (this.viewer.type === DG.VIEWER.LINE_CHART)
-        options['yColumnNames'] = [names.y]
-      else {
+    const options: { [x: string]: any } = {};
+    const t = this.viewer.type;
+    const hasY = names?.y && this.dataFrame.getCol(names.y);
+    const hasX = names?.x && this.dataFrame.getCol(names.x);
+
+    if (t === DG.VIEWER.LINE_CHART) {
+      if (hasY)
+        options['yColumnNames'] = [names.y];
+      if (hasX) {
+        options['xColumnName'] = names.x;
+        options['xMap'] = names.xMap;
+      }
+    }
+    else if (t === DG.VIEWER.BOX_PLOT) {
+      if (hasY) {
+        options['valueColumnName'] = names.y;
+        options['yMap'] = names.yMap;
+      }
+    }
+    else if (t === DG.VIEWER.HISTOGRAM) {
+      if (hasX) {
+        options['valueColumnName'] = names.x;
+        options['xMap'] = names.xMap;
+      }
+    }
+    else if (t === DG.VIEWER.BAR_CHART) {
+      const isVertical = barChartIsVertical(this.viewer);
+      if (isVertical && hasY) {
+        options['valueColumnName'] = names.y;
+        options['yMap'] = names.yMap;
+      }
+      else if (!isVertical && hasX) {
+        options['valueColumnName'] = names.x;
+        options['xMap'] = names.xMap;
+      }
+    }
+    else {
+      if (hasY) {
         options['yColumnName'] = names.y;
         options['yMap'] = names.yMap;
       }
-
-    if (names?.x && this.dataFrame.getCol(names.x)) {
-      options['xColumnName'] = names.x;
-      options['xMap'] = names.xMap;
+      if (hasX) {
+        options['xColumnName'] = names.x;
+        options['xMap'] = names.xMap;
+      }
     }
 
     this.viewer.setOptions(options);
@@ -450,6 +597,8 @@ class Preview {
    * of the formula to the axes of the original scatterplot.
    */
   private getItemAxes(axesItem: EditorItem): AxisNames {
+    let result: AxisNames;
+
     if (isAnnotationRegionType(axesItem.type)) {
       if (axesItem.type === ITEM_TYPE.AREA_REGION_ANNOTATION)
         return {
@@ -458,33 +607,34 @@ class Preview {
           yMap: (axesItem as DG.AreaAnnotationRegion).yMap,
           xMap: (axesItem as DG.AreaAnnotationRegion).xMap,
         };
-      
-        const item = axesItem as DG.FormulaAnnotationRegion;
-        const meta1 = item.formula1
-          ? DG.FormulaLinesHelper.getMetaByFormula(item.formula1, ITEM_TYPE.LINE)
-          : null;
 
-        const meta2 = item.formula2
-          ? DG.FormulaLinesHelper.getMetaByFormula(item.formula2, ITEM_TYPE.LINE)
-          : null;
-        
-        return {
-          y: meta1?.funcName ?? meta2?.funcName,
-          x: meta1?.argName ?? meta2?.argName,
-          yMap: item.yMap,
-          xMap: item.xMap,
-        };
+      const item = axesItem as DG.FormulaAnnotationRegion;
+      const meta1 = item.formula1
+        ? DG.FormulaLinesHelper.getMetaByFormula(item.formula1, ITEM_TYPE.LINE)
+        : null;
+
+      const meta2 = item.formula2
+        ? DG.FormulaLinesHelper.getMetaByFormula(item.formula2, ITEM_TYPE.LINE)
+        : null;
+
+      // For `axisCol = const` formulas argName is undefined, so the srcAxes swap below decides which axis funcName belongs to.
+      result = {
+        y: meta1?.funcName ?? meta2?.funcName,
+        x: meta1?.argName ?? meta2?.argName,
+        yMap: item.yMap,
+        xMap: item.xMap,
+      };
+    } else {
+      const item = axesItem as DG.FormulaLine;
+      const itemMeta = DG.FormulaLinesHelper.getMeta(item);
+      result = {
+        y: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.argName : itemMeta.funcName,
+        x: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.funcName : itemMeta.argName,
+        xMap: item.xMap,
+        yMap: item.yMap,
+      };
     }
 
-    const item = axesItem as DG.FormulaLine;
-    const itemMeta = DG.FormulaLinesHelper.getMeta(item);
-    const result: AxisNames = {
-      y: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.argName : itemMeta.funcName,
-      x: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.funcName : itemMeta.argName,
-      xMap: item.xMap,
-      yMap: item.yMap,
-    };
-    
     /** If the source axes exist, then we try to set similar axes */
     if (this.srcAxes) {
       result.y ??= this.srcAxes.y;
@@ -496,8 +646,8 @@ class Preview {
         const tmp = result.x;
         result.x = result.y;
         result.y = tmp;
-        
-        const tmpMap = result.x;
+
+        const tmpMap = result.xMap;
         result.xMap = result.yMap;
         result.yMap = tmpMap;
       }
@@ -530,6 +680,30 @@ class Preview {
         this.dataFrame = src.dataFrame!;
         const innerLook = src.getOptions()['look']['innerViewerLook'];
         this.srcAxes = {y: innerLook['yColumnName'], x: innerLook['xColumnName'], yMap: innerLook['yMap'], xMap: innerLook['xMap']};
+      } else if (src.type === DG.VIEWER.DENSITY_PLOT) {
+        this.dataFrame = src.dataFrame!;
+        const look = src.getOptions().look;
+        this.srcAxes = {x: look.xColumnName, y: look.yColumnName, xMap: look.xMap, yMap: look.yMap};
+      } else if (src.type === DG.VIEWER.BOX_PLOT) {
+        this.dataFrame = src.dataFrame!;
+        const look = src.getOptions().look;
+        const fallbackX = pickFallbackNumericColumn(this.dataFrame, [look.valueColumnName]);
+        this.srcAxes = {x: fallbackX ?? undefined, y: look.valueColumnName, yMap: look.yMap};
+      } else if (src.type === DG.VIEWER.HISTOGRAM) {
+        this.dataFrame = src.dataFrame!;
+        const look = src.getOptions().look;
+        const fallbackY = pickFallbackNumericColumn(this.dataFrame, [look.valueColumnName]);
+        this.srcAxes = {x: look.valueColumnName, y: fallbackY ?? undefined, xMap: look.xMap};
+      } else if (src.type === DG.VIEWER.BAR_CHART) {
+        this.dataFrame = src.dataFrame!;
+        const look = src.getOptions().look;
+        const isVertical = barChartIsVertical(src);
+        // Vertical bars → value on Y; horizontal bars → value on X. The categorical
+        // axis (`splitColumnName`) is undefined for the dialog.
+        const fallback = pickFallbackNumericColumn(this.dataFrame, [look.valueColumnName]);
+        this.srcAxes = isVertical
+          ? {x: fallback ?? undefined, y: look.valueColumnName, yMap: look.yMap}
+          : {x: look.valueColumnName, y: fallback ?? undefined, xMap: look.xMap};
       } else {
         this.dataFrame = src.dataFrame!;
         this.srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName, yMap: src.props.yMap, xMap: src.props.xMap};
@@ -539,31 +713,88 @@ class Preview {
 
     const isViewer = src instanceof DG.Viewer;
     const isTrellis = isViewer && src.type === DG.VIEWER.TRELLIS_PLOT;
-    if (isViewer && (src.type === DG.VIEWER.LINE_CHART ||
-      src.type === DG.VIEWER.TRELLIS_PLOT && src.getOptions().look['viewerType'] === DG.VIEWER.LINE_CHART)) {
-        const look = isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look;
-        this.viewer = DG.Viewer.lineChart(this.dataFrame, {
-          yColumnNames: look.yColumnNames?.length ? [look.yColumnNames[0]] : [],
-          yAxisType: look.yAxisType,
-          xAxisType: look.xAxisType,
-          splitColumnNames: look.splitColumnNames,
-          invertXAxis: look.invertXAxis,
-          showLabels: 'Never',
-          showDataframeFormulaLines: false,
-          showViewerFormulaLines: true,
-          showDataframeAnnotationRegions: false,
-          showViewerAnnotationRegions: true,
-          showContextMenu: false,
-          axesFollowFilter: false,
-          axisFont: 'normal normal 11px "Arial"',
-          legendVisibility: DG.VisibilityMode.Never,
-          xAxisHeight: 25,
-        });
-      }
+    const trellisInnerType = isTrellis ? src.getOptions().look['viewerType'] : null;
+    const previewType = isViewer
+      ? (isTrellis ? trellisInnerType : src.type)
+      : DG.VIEWER.SCATTER_PLOT;
+    const look = isViewer ? (isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look) : null;
+    const sharedOptions = {
+      showDataframeFormulaLines: false,
+      showViewerFormulaLines: true,
+      showDataframeAnnotationRegions: false,
+      showViewerAnnotationRegions: true,
+      showContextMenu: false,
+      axesFollowFilter: false,
+      axisFont: 'normal normal 11px "Arial"',
+      legendVisibility: DG.VisibilityMode.Never,
+    };
+
+    if (previewType === DG.VIEWER.LINE_CHART) {
+      this.viewer = DG.Viewer.lineChart(this.dataFrame, {
+        ...sharedOptions,
+        yColumnNames: look.yColumnNames?.length ? [look.yColumnNames[0]] : [],
+        yAxisType: look.yAxisType,
+        xAxisType: look.xAxisType,
+        splitColumnNames: look.splitColumnNames,
+        invertXAxis: look.invertXAxis,
+        showLabels: 'Never',
+        xAxisHeight: 25,
+      });
+    }
+    else if (previewType === DG.VIEWER.DENSITY_PLOT) {
+      this.viewer = DG.Viewer.densityPlot(this.dataFrame, {
+        ...sharedOptions,
+        xColumnName: look.xColumnName,
+        yColumnName: look.yColumnName,
+        xAxisType: look.xAxisType,
+        yAxisType: look.yAxisType,
+        invertXAxis: look.invertXAxis,
+        invertYAxis: look.invertYAxis,
+        showColorScale: false,
+        showBinSelector: false,
+      });
+    }
+    else if (previewType === DG.VIEWER.BOX_PLOT) {
+      this.viewer = DG.Viewer.boxPlot(this.dataFrame, {
+        ...sharedOptions,
+        valueColumnName: look.valueColumnName,
+        category1ColumnName: look.category1ColumnName,
+        axisType: look.axisType,
+        invertYAxis: look.invertYAxis,
+        showColorSelector: false,
+        showStatistics: false,
+      });
+    }
+    else if (previewType === DG.VIEWER.HISTOGRAM) {
+      this.viewer = DG.Viewer.histogram(this.dataFrame, {
+        ...sharedOptions,
+        valueColumnName: look.valueColumnName,
+        showRangeSlider: true,
+        showBinSelector: false,
+        showSplitSelector: false,
+        filteringEnabled: false,
+      });
+    }
+    else if (previewType === DG.VIEWER.BAR_CHART) {
+      this.viewer = DG.Viewer.barChart(this.dataFrame, {
+        ...sharedOptions,
+        valueColumnName: look.valueColumnName,
+        valueAggrType: look.valueAggrType,
+        splitColumnName: look.splitColumnName,
+        stackColumnName: look.stackColumnName,
+        orientation: look.orientation,
+        axisType: look.axisType,
+        showStackSelector: false,
+        // Bar chart anchors its range-slider handles at the chart edges, so with the default zero outer margins
+        // the 5px handles get clipped in the small preview. Pad top/bottom so the handles fit inside the canvas.
+        outerMarginTop: 15,
+        outerMarginBottom: 10,
+      });
+    }
     else {
-      const look = isViewer ? (isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look) : null;
       this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
         ...(look ?? {}),
+        ...sharedOptions,
         showXAxis: true,
         showYAxis: true,
         showXSelector: true,
@@ -572,20 +803,12 @@ class Preview {
         xAxisType: isViewer ? look.xAxisType : 'linear',
         invertXAxis: isViewer ? look.invertXAxis : false,
         invertYAxis: isViewer ? look.invertYAxis : false,
-        showDataframeFormulaLines: false,
-        showViewerFormulaLines: true,
-        showDataframeAnnotationRegions: false,
-        showViewerAnnotationRegions: true,
         showSizeSelector: false,
         showColorSelector: false,
-        showContextMenu: false,
-        axesFollowFilter: false,
         showMinMaxTickmarks: false,
         showMouseOverPoint: false,
         showCurrentPoint: false,
         zoomAndFilter: 'no action',
-        axisFont: 'normal normal 11px "Arial"',
-        legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });
     }
@@ -602,7 +825,12 @@ class Preview {
       if (this.viewer instanceof DG.ScatterPlotViewer || this.viewer instanceof DG.LineChartViewer) {
         const worldPoint = this.viewer.screenToWorld(event.offsetX, event.offsetY);
         onContextMenu(worldPoint.y, worldPoint.x);
-      } 
+      }
+      else if (this.viewer instanceof DG.HistogramViewer
+        || this.viewer instanceof DG.BarChartViewer
+        || this.viewer instanceof DG.BoxPlot
+        || this.viewer instanceof DG.DensityPlotViewer)
+        onContextMenu();
     });
   }
 
@@ -680,6 +908,9 @@ class Editor {
     private dataFrame: DG.DataFrame,
     public onItemChangedAction: (itemIdx: number, isFormulaLine: boolean) => boolean,
     private onFormulaValidation: (isValid: boolean) => void,
+    /// Single-axis viewers (box plot, histogram, bar chart) restrict the column picker
+    /// to their value column. `undefined` means "no restriction" (scatter / line / density).
+    private singleAxisColumnName?: string,
   ) {
     this.form = ui.form([]);
   }
@@ -689,10 +920,10 @@ class Editor {
     const newForm = itemIdx >= 0
       ? (isFormulaLine ? this.createFormulaLineForm(itemIdx) : this.annotationRegionForm(itemIdx))
       : ui.div(['No formula line or annotation region selected, add one to edit.'], { classes: 'ui-form', style: {
-        marginLeft: '-14px',
-        overflowX: 'auto',
+        padding: '12px',
         textAlign: 'center',
-        marginTop: '6px',
+        whiteSpace: 'normal',
+        wordBreak: 'normal',
       }});
 
     this.form.replaceWith(newForm);
@@ -702,10 +933,9 @@ class Editor {
   private annotationRegionForm(itemIdx: number): HTMLElement {
     const item = itemIdx >= 0 ? this.annotationRegionItems[itemIdx] : { type: ITEM_TYPE.AREA_REGION_ANNOTATION };
     const mainPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
-    const formatPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
     const descriptionPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
 
-    /** Preparing the "Main" panel */
+    /** Formula/Area pane — formula or area inputs followed by combined format inputs */
     if (item.type === ITEM_TYPE.AREA_REGION_ANNOTATION) {
       mainPane.append(this.inputAreaColumn(itemIdx, 'x'));
       mainPane.append(this.inputAreaColumn(itemIdx, 'y'));
@@ -715,21 +945,23 @@ class Editor {
       mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula2'));
     }
 
-    /** Preparing the "Format" panel */
-    formatPane.append(this.areaInputColor(itemIdx, 'Region Color', 'fillColor', DG.Color.toHtml(DG.Color.gray)));
-    formatPane.append(this.inputOpacity(itemIdx, false));
-    formatPane.append(this.areaInputColor(itemIdx, 'Outline Color', 'outlineColor', DG.Color.toHtml(DG.Color.gray)));
-    formatPane.append(this.inputLineWidth(itemIdx));
-    
-    /** Preparing the "Description" panel */
+    mainPane.append(this.inlineInputs(
+      this.areaInputColor(itemIdx, 'Region Color', 'fillColor', DG.Color.toHtml(DG.Color.gray)),
+      this.inputOpacity(itemIdx, false),
+    ));
+    mainPane.append(this.inlineInputs(
+      this.areaInputColor(itemIdx, 'Outline Color', 'outlineColor', DG.Color.toHtml(DG.Color.gray)),
+      this.inputLineWidth(itemIdx),
+    ));
+
+    /** Description pane */
     descriptionPane.append(this.inputAnnotationHeader(itemIdx));
-    descriptionPane.append(this.areaInputColor(itemIdx, 'Header Color', 'headerColor'));
     descriptionPane.append(this.inputDescription(itemIdx, false));
+    descriptionPane.append(this.areaInputColor(itemIdx, 'Color', 'headerColor'));
 
     /** Creating the accordion */
     const combinedPanels = ui.accordion();
     combinedPanels.addPane(item.type === ITEM_TYPE.AREA_REGION_ANNOTATION ? 'Area' : 'Formula', () => mainPane, true);
-    combinedPanels.addPane('Format', () => formatPane, true);
     combinedPanels.addPane('Description', () => descriptionPane, true);
 
     return ui.div([combinedPanels.root]);
@@ -759,18 +991,16 @@ class Editor {
       if (caption === ITEM_CAPTION.BAND)
         mainPane.append(this.inputColumn2(itemIdx));
 
-      /** Preparing the "Format" panel */
-      formatPane.append(this.inputColor(itemIdx));
-      formatPane.append(this.inputOpacity(itemIdx));
+      /** Preparing the "Format" panel — Color + Opacity share a row when wide enough */
+      formatPane.append(this.inlineInputs(this.inputColor(itemIdx), this.inputOpacity(itemIdx)));
       if (caption !== ITEM_CAPTION.BAND)
         formatPane.append(this.inputStyle(itemIdx));
       formatPane.append(this.inputRange(itemIdx));
       formatPane.append(this.inputArrange(itemIdx));
 
-      /** Preparing the "Tooltip" panel */
+      /** Preparing the "Tooltip" panel — Show on plot + Show on tooltip share a row */
       tooltipPane.append(this.inputTitle(itemIdx));
-      tooltipPane.append(this.inputShowLabels(itemIdx));
-      tooltipPane.append(this.inputShowDescriptionInTooltip(itemIdx));
+      tooltipPane.append(this.inlineInputs(this.inputShowLabels(itemIdx), this.inputShowDescriptionInTooltip(itemIdx)));
       tooltipPane.append(this.inputDescription(itemIdx));
     }
 
@@ -818,9 +1048,8 @@ class Editor {
 
     const elColor = ibColor.input as HTMLInputElement;
     elColor.placeholder = '#000000';
-    // elColor.setAttribute('style', 'width: 204px; max-width: none;');
 
-    return ui.divH([ibColor.root]);
+    return ibColor.root;
   }
 
   private areaInputColor(itemIdx: number, header: string = 'Color', key: keyof DG.AnnotationRegion, defaultColor: string = '#000000'): HTMLElement {
@@ -832,12 +1061,12 @@ class Editor {
       }});
     const elColor = ibColor.input as HTMLInputElement;
     elColor.placeholder = defaultColor;
-    return ui.divH([ibColor.root]);
+    return ibColor.root;
   }
 
   private inputLineWidth(itemIdx: number): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
-    
+
     const elOpacity = ui.element('input');
     elOpacity.type = 'range';
     elOpacity.min = 0;
@@ -847,12 +1076,11 @@ class Editor {
       item.outlineWidth = parseInt(elOpacity.value);
       this.onItemChangedAction(itemIdx, false);
     });
-    // elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
     elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
 
     const label = ui.label('Outline Width', 'ui-label ui-input-label');
 
-    return ui.divH([ui.div([label, elOpacity], 'ui-input-root')]);
+    return ui.div([label, elOpacity], 'ui-input-root');
   }
 
   /** Creates range slider for item opacity */
@@ -867,12 +1095,27 @@ class Editor {
       item.opacity = parseInt(elOpacity.value);
       this.onItemChangedAction(itemIdx, isFormulaLine);
     });
-    // elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
     elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
 
     const label = ui.label('Opacity', 'ui-label ui-input-label');
 
-    return ui.divH([ui.div([label, elOpacity], 'ui-input-root')]);
+    return ui.div([label, elOpacity], 'ui-input-root');
+  }
+
+  /** Pairs ui-input-roots on a single row when there's enough width; wraps to
+   *  separate rows when the container is narrower than ~2× the basis. */
+  private inlineInputs(...children: HTMLElement[]): HTMLElement {
+    const row = ui.divH(children);
+    row.style.flexWrap = 'wrap';
+    row.style.gap = '4px 8px';
+    for (const child of children) {
+      // flex-shrink: 0 so wrap is decided by the basis, not by intrinsic min-content
+      // (color picker shrinks far below 180px, while a bool input doesn't, which would
+      // otherwise leave the color row side-by-side at narrow widths and the bool row stacked).
+      child.style.flex = '1 0 180px';
+      child.style.minWidth = '0';
+    }
+    return row;
   }
 
 
@@ -963,17 +1206,20 @@ class Editor {
   private inputAnnotationFormula(itemIdx: number, title: keyof DG.FormulaAnnotationRegion): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.FormulaAnnotationRegion;
 
-    const ibHeader = ui.input.string(title === 'formula1' ? 'Formula 1' : 'Formula 2', {value: item[title] ? item[title] as string : '',
+    const ibFormula = ui.input.textArea(title === 'formula1' ? 'Formula 1' : 'Formula 2', {
+      value: item[title] ? item[title] as string : '',
       onValueChanged: (value) => {
         (item as any)[title] = value;
         const resultOk = this.onItemChangedAction(itemIdx, false);
-        this.setFormulaValidationResult(resultOk, value, ibHeader);
+        this.setFormulaValidationResult(resultOk, value, ibFormula);
       }});
 
-    const elHeader = ibHeader.input as HTMLInputElement;
-    elHeader.setAttribute('style', 'width: 204px; max-width: none;');
+    const elFormula = ibFormula.input as HTMLInputElement;
+    elFormula.setAttribute('style', 'height: 40px; font-family: inherit; font-size: inherit;');
 
-    return ui.divH([ibHeader.root]);
+    ui.tools.initFormulaAccelerators(ibFormula, this.dataFrame);
+
+    return ibFormula.root;
   }
 
   private setFormulaValidationResult(resultOk: boolean, value: string, ibHeader: DG.InputBase<string>, isBand: boolean = false): void {
@@ -999,8 +1245,19 @@ class Editor {
       const lhsColumn = refs[0];
       const rhsColumns = refs.slice(1);
 
-      // If RHS references the same column → invalid
-      if (rhsColumns.includes(lhsColumn))
+      // Single-axis viewers (box plot, histogram, bar chart) only support
+      // `${valueColumn} = const` formulas — the LHS must reference the value column,
+      // and the RHS must be a constant (no column references or operations between them).
+      if (this.singleAxisColumnName) {
+        if (lhsColumn !== this.singleAxisColumnName)
+          return `Left side must reference the value column \${${this.singleAxisColumnName}}`;
+        if (rhsColumns.length > 0)
+          return 'Right side must be a constant value — column references are not allowed on single-axis viewers';
+      }
+
+      // If RHS references the same column → invalid. Constant-only RHS (zero column refs)
+      // is valid — single-axis viewers (box plot, histogram, bar chart) only produce those.
+      if (rhsColumns.length > 0 && rhsColumns.includes(lhsColumn))
         return 'Line formula should contain different columns on both sides of the "=" sign';
 
       // Expression syntax validation comes last
@@ -1195,11 +1452,13 @@ class Editor {
   /** Creates column input for band second column */
   private inputColumn2(itemIdx: number): HTMLElement {
     const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
+    const axisName = this.singleAxisColumnName;
 
     //@ts-ignore
     const ibColumn2 = ui.input.column('Adjacent column', {
       nullable: false,
       table: this.dataFrame,
+      filter: axisName ? (c: DG.Column) => c.name === axisName : undefined,
       value: item.column2 ? this.dataFrame.col(item.column2) ?? undefined : undefined,
       onValueChanged: (value) => {
         this.inputColumn2Changing = true;
@@ -1218,11 +1477,13 @@ class Editor {
   /** Creates column input and text input for constant item */
   private inputConstant(itemIdx: number, colName: string, value: string): HTMLElement {
     const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
+    const axisName = this.singleAxisColumnName;
 
     //@ts-ignore
     const ibColumn = ui.input.column('Column', {
       nullable: false,
       table: this.dataFrame,
+      filter: axisName ? (c: DG.Column) => c.name === axisName : undefined,
       value: colName ? this.dataFrame.col(colName) ?? undefined : undefined,
       onValueChanged: (value) => {
         const oldFormula = item.formula!;
@@ -1309,7 +1570,11 @@ class CreationControl {
     getCols: () => AxisColumns,                              // Used to create constant lines passing through the mouse click point on the Scatter Plot
     getCurrentItem: () => EditorItem | null,                 // Used to create clone
     private onItemCreatedAction: (item: EditorItem) => void,                          // Updates the Table, Preview and Editor states after item creation
-    createArea: (lassoMode?: boolean) => Promise<DG.AnnotationRegion | null>  // Used to create area annotation regions
+    createArea: (lassoMode?: boolean) => Promise<DG.AnnotationRegion | null>,  // Used to create area annotation regions
+    /// Allow-list of `ITEM_CAPTION` strings to show in the popup. `undefined` means "all five".
+    allowedItems?: string[],
+    /// Hex color override for newly-created bands. `undefined` = use `setDefaults`' value.
+    defaultBandColor?: string,
   ) {
     this.formulaLinesHistoryItems = this.loadFormulaLinesHistory();
     this.annotationRegionsHistoryItems = this.loadAnnotationRegionsHistory();
@@ -1331,15 +1596,49 @@ class CreationControl {
         const cols: AxisColumns = getCols();
         const colY = cols.y;
         const colX = cols.x;
+        // Stats override (used by aggregated hosts like bar chart) — fall through
+        // to the column's own stats when not provided.
+        const yStats = cols.yStats ?? colY?.stats;
+        const xStats = cols.xStats ?? colX?.stats;
+        // Two-axis items (LINE, VERT_*, FORMULA_REGION) require both columns; bail
+        // when a single-axis host (box / histogram / bar) only exposes one.
+        const needsX = [ITEM_CAPTION.LINE, ITEM_CAPTION.VERT_LINE, ITEM_CAPTION.VERT_BAND,
+          ITEM_CAPTION.FORMULA_REGION].includes(itemCaption as ITEM_CAPTION);
+        const needsY = [ITEM_CAPTION.LINE, ITEM_CAPTION.HORZ_LINE, ITEM_CAPTION.HORZ_BAND,
+          ITEM_CAPTION.FORMULA_REGION].includes(itemCaption as ITEM_CAPTION);
+        if (needsX && !colX || needsY && !colY)
+          return;
         if (itemCaption === ITEM_CAPTION.FORMULA_REGION) {
           const item: DG.FormulaAnnotationRegion = {
             type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
-            formula1: `${wrapCol(colY.name)} = ${wrapCol(colX.name)} + ${colY.stats.q2.toFixed(1)}`,
-            formula2: `${wrapCol(colY.name)} = ${wrapCol(colX.name)} - ${colY.stats.q2.toFixed(1)}`,
+            formula1: `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)} + ${yStats!.q2.toFixed(1)}`,
+            formula2: `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)} - ${yStats!.q2.toFixed(1)}`,
           };
 
           this.annotationRegionsJustCreatedItems.unshift(item);
           /** Update the Table, Preview and Editor states */
+          onItemCreatedAction(item);
+          return;
+        }
+
+        // Axis-bounds formula region — `${col} = q1` / `${col} = q3` for the chosen axis.
+        // Mirrors `addAxisAnnotationsMenu`'s `Add Region` in `core/client/d4/lib/src/utils/utils.dart`.
+        if (itemCaption === ITEM_CAPTION.VERT_RANGE_REGION || itemCaption === ITEM_CAPTION.HORZ_RANGE_REGION) {
+          const isVert = itemCaption === ITEM_CAPTION.VERT_RANGE_REGION;
+          const col = isVert ? colX : colY;
+          const stats = isVert ? xStats : yStats;
+          if (!col || !stats)
+            return;
+          const lhs = wrapCol(col.name);
+          const lo = stats.q1.toFixed(1);
+          const hi = stats.q3.toFixed(1);
+          const item: DG.FormulaAnnotationRegion = {
+            type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
+            formula1: `${lhs} = ${lo}`,
+            formula2: `${lhs} = ${hi}`,
+            header: `${lhs} in [${lo}, ${hi}]`,
+          };
+          this.annotationRegionsJustCreatedItems.unshift(item);
           onItemCreatedAction(item);
           return;
         }
@@ -1349,35 +1648,37 @@ class CreationControl {
         /** Fill the item with the necessary data */
         switch (itemCaption) {
           case ITEM_CAPTION.LINE:
-            item.formula = `${wrapCol(colY.name)} = ${wrapCol(colX.name)}`;
+            item.formula = `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)}`;
             break;
 
           case ITEM_CAPTION.VERT_LINE:
-            const vertVal = (valX ?? colX.stats.q2).toFixed(1);
+            const vertVal = (valX ?? xStats!.q2).toFixed(1);
             item.orientation = ITEM_ORIENTATION.VERTICAL;
-            item.formula = `${wrapCol(colX.name)} = ${vertVal}`;
+            item.formula = `${wrapCol(colX!.name)} = ${vertVal}`;
             break;
 
           case ITEM_CAPTION.HORZ_LINE:
-            const horzVal = (valY ?? colY.stats.q2).toFixed(1);
+            const horzVal = (valY ?? yStats!.q2).toFixed(1);
             item.orientation = ITEM_ORIENTATION.HORIZONTAL;
-            item.formula = `${wrapCol(colY.name)} = ${horzVal}`;
+            item.formula = `${wrapCol(colY!.name)} = ${horzVal}`;
             break;
 
           case ITEM_CAPTION.VERT_BAND:
-            const left = colX.stats.q1.toFixed(1);
-            const right = colX.stats.q3.toFixed(1);
-            item.formula = `${wrapCol(colX.name)} in(${left}, ${right})`;
+            const left = xStats!.q1.toFixed(1);
+            const right = xStats!.q3.toFixed(1);
+            item.formula = `${wrapCol(colX!.name)} in(${left}, ${right})`;
             item.orientation = ITEM_ORIENTATION.VERTICAL;
-            item.column2 = colY.name;
+            // For single-axis hosts (no Y), fall back to the X column for `column2`.
+            item.column2 = (colY ?? colX!).name;
             break;
 
           case ITEM_CAPTION.HORZ_BAND:
-            const bottom = colY.stats.q1.toFixed(1);
-            const top = colY.stats.q3.toFixed(1);
-            item.formula = `${wrapCol(colY.name)} in(${bottom}, ${top})`;
+            const bottom = yStats!.q1.toFixed(1);
+            const top = yStats!.q3.toFixed(1);
+            item.formula = `${wrapCol(colY!.name)} in(${bottom}, ${top})`;
             item.orientation = ITEM_ORIENTATION.HORIZONTAL;
-            item.column2 = colX.name;
+            // For single-axis hosts (no X), fall back to the Y column for `column2`.
+            item.column2 = (colX ?? colY!).name;
             break;
 
           case BTN_CAPTION.CLONE:
@@ -1386,8 +1687,12 @@ class CreationControl {
         }
 
         item.type ??= getItemTypeByCaption(itemCaption);
-        
+
         item = DG.FormulaLinesHelper.setDefaults(item);
+
+        // Host-specific override: bar chart bands ship grey since the bars are green by default.
+        if (defaultBandColor && item.type === ITEM_TYPE.BAND)
+          item.color = defaultBandColor;
 
         this.formulaLinesJustCreatedItems.unshift(item);
 
@@ -1395,14 +1700,16 @@ class CreationControl {
         onItemCreatedAction(item);
       };
 
-      /** Construct popup menu */
-      const menu = DG.Menu.popup().items([
+      /** Construct popup menu — filtered by host viewer's allow-list when set */
+      const allItems = [
         ITEM_CAPTION.LINE,
         ITEM_CAPTION.VERT_LINE,
         ITEM_CAPTION.HORZ_LINE,
         ITEM_CAPTION.VERT_BAND,
         ITEM_CAPTION.HORZ_BAND,
-      ], onClickAction);
+      ];
+      const items = allowedItems ? allItems.filter((c) => allowedItems.includes(c)) : allItems;
+      const menu = DG.Menu.popup().items(items, onClickAction);
 
       const cols = getCols();
       // Bands don't use axis maps; any xMap/yMap leaking through from the preview viewer is spurious.
@@ -1411,16 +1718,40 @@ class CreationControl {
         && (currentItem as DG.FormulaLine).type === ITEM_TYPE.BAND;
       const xMapActive = !isBandCurrent && !!cols.xMap;
       const yMapActive = !isBandCurrent && !!cols.yMap;
-      if (cols.x?.isNumerical && !xMapActive && cols.y?.isNumerical && !yMapActive) {
-        const regionItems: Record<string, string> = {
-          [ITEM_CAPTION.FORMULA_REGION]: 'Adds a new area defined by two formula lines.',
-          [ITEM_CAPTION.RECT_REGION]: 'Draws a rectangle area.',
-          [ITEM_CAPTION.POLYGON_REGION]: 'Draws a polygon area using lasso tool.',
+      // 2D hosts: full set of region items (formula, draw rect, draw lasso).
+      // 1D hosts (histogram, bar chart, box plot — `allowedItems != null`) get a draw-rectangle
+      // option that the Dart-side `createDrawnRegion` override converts into a value-axis formula
+      // region, plus a single axis-bounds range item targeting the value column.
+      const xRegionEligible = !!cols.x?.isNumerical && !xMapActive;
+      const yRegionEligible = !!cols.y?.isNumerical && !yMapActive;
+      if (allowedItems == null) {
+        if (xRegionEligible && yRegionEligible) {
+          const twoAxisRegionItems: Record<string, string> = {
+            [ITEM_CAPTION.FORMULA_REGION]: 'Adds a new area defined by two formula lines.',
+            [ITEM_CAPTION.RECT_REGION]: 'Draws a rectangle area.',
+            [ITEM_CAPTION.POLYGON_REGION]: 'Draws a polygon area using lasso tool.',
+          };
+          for (const itemCaption in twoAxisRegionItems)
+            menu.item(itemCaption, () => onClickAction(itemCaption), null, {
+              description: twoAxisRegionItems[itemCaption]
+            });
         }
-
-        for (const itemCaption in regionItems)
-          menu.item(itemCaption, () => onClickAction(itemCaption), null, {
-            description: regionItems[itemCaption]
+      } else {
+        // Single-axis host. Value lives on the X axis when `allowedItems` includes vertical
+        // bands (histogram, horizontal bar chart) and on the Y axis otherwise (vertical bar
+        // chart, box plot).
+        const valueOnX = allowedItems.includes(ITEM_CAPTION.VERT_BAND);
+        if (xRegionEligible || yRegionEligible)
+          menu.item(ITEM_CAPTION.RECT_REGION, () => onClickAction(ITEM_CAPTION.RECT_REGION), null, {
+            description: 'Draws a rectangle and converts it to a value-axis formula region.'
+          });
+        if (valueOnX && xRegionEligible)
+          menu.item(ITEM_CAPTION.VERT_RANGE_REGION, () => onClickAction(ITEM_CAPTION.VERT_RANGE_REGION), null, {
+            description: 'Adds a region bounded by two values on the value axis (q1 .. q3 of the column).'
+          });
+        else if (!valueOnX && yRegionEligible)
+          menu.item(ITEM_CAPTION.HORZ_RANGE_REGION, () => onClickAction(ITEM_CAPTION.HORZ_RANGE_REGION), null, {
+            description: 'Adds a region bounded by two values on the value axis (q1 .. q3 of the column).'
           });
       }
 
@@ -1496,17 +1827,33 @@ export class FormulaLinesDialog {
   {
     /** Init Helpers */
     this.host = this.initHost(src);
-    this.creationControl = this.initCreationControl();
+    this.creationControl = this.initCreationControl(src);
     this.preview = this.initPreview(src);
-    this.editor = this.initEditor();
+    this.editor = this.initEditor(src);
     this.tabs = this.initTabs();
     this.dialog.sub(this.dialog.onClose.subscribe(() => this.dialog.detach()));
 
-    /** Init Dialog layout */
-    const layout = ui.div([
-      ui.block([this.tabs.root, this.preview.root], {style: {width: '55%', paddingRight: '20px'}}),
-      ui.block([this.editor.root], {style: {width: '45%'}}),
-    ]);
+    const tabsInitialHeight = '140px';
+    const editorInitialWidth = '420px';
+    const makeWrap = (child: HTMLElement): HTMLDivElement => {
+      const wrapDiv = document.createElement('div');
+      // plain <div>, not ui.div — ui.div tags it with `ui-div`, which would trigger
+      // `div.ui-div > div.ui-box { width:400px; height:300px }` on the d4-viewer/d4-tab-host child
+      wrapDiv.className = 'ui-update-shadow dlg-formula-lines-pane-wrap';
+      wrapDiv.appendChild(child);
+      return wrapDiv;
+    };
+
+    const tabsBox = ui.box(makeWrap(this.tabs.root),
+      {classes: 'dlg-formula-lines-tabs-box', style: {height: tabsInitialHeight}});
+
+    const previewBox = ui.box(makeWrap(this.preview.root), {classes: 'dlg-formula-lines-preview-box'});
+    const leftSplit = ui.splitV([tabsBox, previewBox], {classes: 'dlg-formula-lines-left-split'}, true);
+    const editorBox = ui.box(this.editor.root, {classes: 'dlg-formula-lines-editor-box',
+      style: {width: editorInitialWidth}});
+
+    const layout = ui.splitH([leftSplit, editorBox],
+      {style: {width: '100%', height: '100%', minHeight: '0', minWidth: '0'}}, true);
 
     const width = Math.min(1000, Math.floor(document.body.clientWidth / 1.3));
     const height = Math.min(800, Math.floor(document.body.clientHeight / 1.5));
@@ -1537,10 +1884,11 @@ export class FormulaLinesDialog {
       const isHorz = item.orientation === ITEM_ORIENTATION.HORIZONTAL;
 
       if (currentItem.type === ITEM_TYPE.BAND) {
-        if (isHorz && property.name === 'xColumnName') {
+        if (isHorz && property.name === 'xColumnName' && this.preview.axisCols.x) {
           item.column2 = this.preview.axisCols.x.name;
           this.editor.update(this.currentTable.currentItemIdx, true);
-        } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')) {
+        } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')
+          && this.preview.axisCols.y) {
           item.column2 = this.preview.axisCols.y.name;
           this.editor.update(this.currentTable.currentItemIdx, true);
         }
@@ -1548,8 +1896,8 @@ export class FormulaLinesDialog {
         const meta = DG.FormulaLinesHelper.getMeta(item);
         if (!meta.argName) {
           const newCol = isHorz
-            ? (property.name === 'yColumnName' || property.name === 'yColumnNames') ? this.preview.axisCols.y.name : null
-            : property.name === 'xColumnName' ? this.preview.axisCols.x.name : null;
+            ? (property.name === 'yColumnName' || property.name === 'yColumnNames') ? this.preview.axisCols.y?.name ?? null : null
+            : property.name === 'xColumnName' ? this.preview.axisCols.x?.name ?? null : null;
           if (newCol) {
             this.editor.inputColumn2Changing = true;
             item.formula = `${wrapCol(newCol)} = ${meta.expression ?? '0'}`;
@@ -1564,13 +1912,13 @@ export class FormulaLinesDialog {
     }));
   }
     
-  private initDefaultOnOpenState(): void {      
+  private initDefaultOnOpenState(): void {
       if (!this.showValueOnOpen)
         return;
 
       this.tabs.currentPane = this.tabs.getPane(this.showValueOnOpen.isDataFrame ? ITEM_SOURCE.DATAFRAME : ITEM_SOURCE.VIEWER);
-      if (this.showValueOnOpen.index) {
-        const isFormulaLine = this.preview.formulaLineItems.length > 0 && this.showValueOnOpen.index < this.preview.formulaLineItems.length;
+      if (this.showValueOnOpen.index !== undefined) {
+        const isFormulaLine = !this.showValueOnOpen.isAnnotationArea;
         this.currentTable.update(this.showValueOnOpen.index, isFormulaLine);
       } else {
         this.currentTable.setFirstItemAsCurrent();
@@ -1582,27 +1930,33 @@ export class FormulaLinesDialog {
   }
 
   private initPreview(src: DG.DataFrame | DG.Viewer): Preview {
-    const preview = new Preview(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
+    return new Preview(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
       this.host.viewerAnnotationRegionItems! ?? this.host.dframeAnnotationRegionItems!,
       src, this.creationControl.popupMenu);
-    preview.height = 310;
-    return preview;
   }
 
-  private initCreationControl(): CreationControl {
+  private initCreationControl(src: DG.DataFrame | DG.Viewer): CreationControl {
     return new CreationControl(
       () => this.preview.axisCols,
       () => this.currentTable.currentItem,
       (item: EditorItem) =>
         this.onItemCreatedAction(item, !isAnnotationRegionType(item?.type ?? '')),
       (lassoMode?: boolean) => new Promise<DG.AnnotationRegion | null>((resolve) => {
-        if (this.preview.viewer instanceof DG.ScatterPlotViewer || this.preview.viewer instanceof DG.LineChartViewer) {
-          this.preview.viewer.disableAnnotationRegionDrawing();
-          this.preview.viewer.setOptions({ annotationRegions: '[]', formulaLines: '[]' });
+        const previewViewer = this.preview.viewer;
+        const supportsDrawing = previewViewer instanceof DG.ScatterPlotViewer
+          || previewViewer instanceof DG.LineChartViewer
+          || previewViewer instanceof DG.HistogramViewer
+          || previewViewer instanceof DG.BarChartViewer
+          || previewViewer instanceof DG.BoxPlot
+          || previewViewer instanceof DG.DensityPlotViewer;
+        if (supportsDrawing) {
+          const drawHost = previewViewer as DG.ScatterPlotViewer | DG.LineChartViewer | DG.HistogramViewer | DG.BarChartViewer | DG.BoxPlot | DG.DensityPlotViewer;
+          drawHost.disableAnnotationRegionDrawing();
+          previewViewer.setOptions({ annotationRegions: '[]', formulaLines: '[]' });
           this.editor.update(-1, false);
-          this.preview.viewer.enableAnnotationRegionDrawing(lassoMode, (region: { [key: string]: unknown }) => {
+          drawHost.enableAnnotationRegionDrawing(lassoMode, (region: { [key: string]: unknown }) => {
             region['isDataFrameRegion'] = this.tabs.currentPane.name === ITEM_SOURCE.DATAFRAME;
-            const props = this.preview.viewer.props as DG.IScatterPlotSettings;
+            const props = previewViewer.props as DG.IScatterPlotSettings;
             const annotationRegions = JSON.parse(props.annotationRegions || '[]');
             annotationRegions.push(region);
             props.annotationRegions = JSON.stringify(annotationRegions);
@@ -1610,11 +1964,13 @@ export class FormulaLinesDialog {
           });
         } else
           resolve(null);
-      })
+      }),
+      allowedItemsForHost(src),
+      src instanceof DG.Viewer && src.type === DG.VIEWER.BAR_CHART ? '#838383' : undefined,
     );
   }
 
-  private initEditor(): Editor {
+  private initEditor(src: DG.DataFrame | DG.Viewer): Editor {
     return new Editor(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
       this.host.viewerAnnotationRegionItems! ?? this.host.dframeAnnotationRegionItems!,
       this.preview.dataFrame,
@@ -1624,12 +1980,13 @@ export class FormulaLinesDialog {
       },
       (isValid: boolean): void => {
         isValid ? this.dialog.getButton('OK').classList.remove('disabled') : this.dialog.getButton('OK').classList.add('disabled');
-      });
+      },
+      singleAxisColumnNameForHost(src),
+    );
   }
 
   private initTabs(): DG.TabControl {
     const tabs = DG.TabControl.create();
-    tabs.root.style.height = '230px';
 
     /** Init Viewer Table (in the first tab) */
     if (this.host.viewerFormulaLineItems || this.host.viewerAnnotationRegionItems) {

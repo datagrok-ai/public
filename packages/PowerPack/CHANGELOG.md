@@ -11,6 +11,7 @@
 * GROK-19613: Add New Column dialog: Fixed duplicate scrollbars appearing on the column and function list panels when the dialog is resized
 * Activity Dashboard: Replaced the "Mark all as read" floating button in the Notifications tab with a left-aligned "N unread · Mark all as read" summary row to prevent overlap with notification text in narrow panels
 * Activity Dashboard: Fixed unread count header and tab badge not updating when marking a single notification as read
+* GROK-20036: Formula Lines dialog: Added host support for box plot, histogram, bar chart, and density plot (matching preview viewer type, orientation-aware popup items, restricted column pickers) and fixed assorted preview, axis-context-menu, and band/region defaults issues
 
 ## 1.8.0 (2026-03-13)
 
