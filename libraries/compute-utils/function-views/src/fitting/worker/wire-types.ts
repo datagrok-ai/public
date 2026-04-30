@@ -59,7 +59,6 @@ export interface JobSpec {
 // deterministic order.
 export interface RunDispatch extends JobSpec {
   kind: 'run-dispatch';
-  taskId: number;
 }
 
 // Outbound — fire-and-forget at teardown. Required on long-lived pools so
@@ -81,7 +80,6 @@ export type SetupAck =
 
 export type WorkerSuccess = {
   kind: 'success';
-  taskId: number;
   seedIndex: number;
   point: Float64Array;
   cost: number;
@@ -91,7 +89,6 @@ export type WorkerSuccess = {
 
 export type WorkerFailure = {
   kind: 'failure';
-  taskId: number;
   seedIndex: number;
   message: string;
   failKind: 'inconsistent' | 'other';

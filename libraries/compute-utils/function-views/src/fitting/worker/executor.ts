@@ -189,11 +189,15 @@ export class WorkerExecutor implements Executor {
         throw e;
       }
 
-      const handleReply = (idx: number, reply: RunReply): void => {
+      // Reply placement is keyed by `reply.seedIndex`, which the worker (and
+      // every synthesized failure path) echoes from the dispatch's JobSpec —
+      // independent of which worker completes first.
+      const handleReply = (reply: RunReply): void => {
         ++completedCount;
         percentage = Math.floor(100 * completedCount / args.samplesCount);
         pi.update(percentage, `Fitting... (${percentage}%)`);
 
+        const idx = reply.seedIndex;
         if (reply.kind === 'failure') {
           if (reply.failKind === 'inconsistent') {
             if (inconsistentMessage == null) inconsistentMessage = reply.message;
@@ -232,7 +236,7 @@ export class WorkerExecutor implements Executor {
           const idx = nextIdx++;
           const seed = new Float64Array(params[idx]);
           const reply = await this.pool.dispatchRun({sessionId, seedIndex: idx, seed});
-          handleReply(idx, reply);
+          handleReply(reply);
         }
       };
 

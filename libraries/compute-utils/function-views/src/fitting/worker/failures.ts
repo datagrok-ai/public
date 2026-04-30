@@ -5,7 +5,6 @@ import type {SetupAck, WorkerFailure, SessionId} from './wire-types';
 export function makeRunFailure(seedIndex: number, seed: Float64Array, message: string): WorkerFailure {
   return {
     kind: 'failure',
-    taskId: 0,
     seedIndex,
     message,
     failKind: 'other',

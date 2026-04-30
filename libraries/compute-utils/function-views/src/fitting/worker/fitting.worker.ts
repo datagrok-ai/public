@@ -170,7 +170,6 @@ async function handleRun(run: RunDispatch): Promise<WorkerSuccess | WorkerFailur
   if (!session) {
     return {
       kind: 'failure',
-      taskId: run.taskId,
       seedIndex: run.seedIndex,
       message: `unknown session ${run.sessionId}`,
       failKind: 'other',
@@ -182,7 +181,6 @@ async function handleRun(run: RunDispatch): Promise<WorkerSuccess | WorkerFailur
     const ext = await optimizeNM(objective, run.seed, session.nmSettings, session.threshold);
     return {
       kind: 'success',
-      taskId: run.taskId,
       seedIndex: run.seedIndex,
       point: ext.point,
       cost: ext.cost,
@@ -194,7 +192,6 @@ async function handleRun(run: RunDispatch): Promise<WorkerSuccess | WorkerFailur
     const failKind = (e && e.name === 'InconsistentTables') ? 'inconsistent' : 'other';
     return {
       kind: 'failure',
-      taskId: run.taskId,
       seedIndex: run.seedIndex,
       message: msg,
       failKind,
@@ -226,11 +223,9 @@ function safePostMessage(msg: OutboundReply, transferables?: Transferable[]): vo
     if (transferables && transferables.length) ctx.postMessage(msg, transferables);
     else ctx.postMessage(msg);
   } catch (e) {
-    const taskId = (msg.kind === 'success' || msg.kind === 'failure') ? msg.taskId : 0;
     const seedIndex = (msg.kind === 'success' || msg.kind === 'failure') ? msg.seedIndex : -1;
     const fallback: WorkerFailure = {
       kind: 'failure',
-      taskId,
       seedIndex,
       message: `reply send failed: ${e instanceof Error ? e.message : String(e)}`,
       failKind: 'other',
@@ -254,7 +249,7 @@ ctx.onmessage = async (event: MessageEvent<WorkerOutbound>) => {
     } catch (e) {
       // handleRun has its own try/catch; this is belt-and-braces.
       reply = {
-        kind: 'failure', taskId: msg.taskId, seedIndex: msg.seedIndex,
+        kind: 'failure', seedIndex: msg.seedIndex,
         message: e instanceof Error ? e.message : String(e),
         failKind: 'other', seed: msg.seed,
       };

@@ -45,7 +45,7 @@ export class Slot {
     const runTimer = setTimeout(onTimeout, runTimeoutMs);
     job.startRunning(runTimer);
     this.runState = {phase: 'running', job};
-    const run: RunDispatch = {kind: 'run-dispatch', taskId: 0, ...job.spec};
+    const run: RunDispatch = {kind: 'run-dispatch', ...job.spec};
     this.worker.postMessage(run, job.transferables);
   }
 
