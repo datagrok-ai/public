@@ -96,4 +96,8 @@ export class ViewInfo extends Entity {
   toJson(): string {
     return api.grok_ViewInfo_ToJson(this.dart);
   }
+
+  /** Whether this view is materialized as a TableView when its project opens. */
+  get includeInProject(): boolean { return api.grok_ViewInfo_Get_IncludeInProject(this.dart); }
+  set includeInProject(value: boolean) { api.grok_ViewInfo_Set_IncludeInProject(this.dart, value); }
 }

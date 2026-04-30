@@ -45,6 +45,7 @@ import './packages/docker';
 import './packages/user-settings-storage';
 import './packages/upload-migrations';
 import './packages/upload-project-isolation';
+import './packages/include-in-project';
 import './grid/grid';
 import './grid/filterGroup';
 import './shell/events';

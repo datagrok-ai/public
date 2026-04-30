@@ -1146,6 +1146,8 @@ export interface IDartApi {
   grok_ViewInfo_FromJson(json: String): any;
   grok_ViewInfo_FromViewState(state: String): any;
   grok_ViewInfo_ToJson(info: any): any;
+  grok_ViewInfo_Get_IncludeInProject(info: any): any;
+  grok_ViewInfo_Set_IncludeInProject(info: any, v: Bool): any;
   grok_Qnum_Parse(s: String): any;
   grok_Qnum_ToString(x: Num): any;
   grok_Qnum_Qualifier(x: Num): any;
@@ -1552,6 +1554,8 @@ export interface IDartApi {
   grok_TableInfo_Get_DataFrame(ti: any): any;
   grok_TableInfo_Get_Columns(ti: any): any;
   grok_TableInfo_Get_Tags(ti: any): any;
+  grok_TableInfo_Get_IncludeInProject(ti: any): any;
+  grok_TableInfo_Set_IncludeInProject(ti: any, v: Bool): any;
   grok_ColumnInfo_Get_Type(ci: any): any;
   grok_ColumnInfo_Get_SemType(ci: any): any;
   grok_ColumnInfo_Get_LayoutColumnId(ci: any): any;

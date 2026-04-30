@@ -32,6 +32,10 @@ export class TableInfo extends Entity {
   get dataFrame(): DataFrame { return toJs(api.grok_TableInfo_Get_DataFrame(this.dart)); }
 
   get columns(): ColumnInfo[] { return toJs(api.grok_TableInfo_Get_Columns(this.dart)); }
+
+  /** Whether this table is materialized in the workspace when its project opens. */
+  get includeInProject(): boolean { return api.grok_TableInfo_Get_IncludeInProject(this.dart); }
+  set includeInProject(value: boolean) { api.grok_TableInfo_Set_IncludeInProject(this.dart, value); }
 }
 
 

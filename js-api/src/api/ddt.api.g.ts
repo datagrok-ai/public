@@ -209,6 +209,8 @@ export class Tags {
 
   static DataSync = '.data-sync';
 
+  static IncludeInProject = '.include-in-project';
+
   static IsDbEntity = '.db.entity';
 
   static IsDbView = '.db.view';
