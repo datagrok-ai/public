@@ -23,6 +23,7 @@ import {EarlyStopTracker} from '../early-stop-tracker';
 import {WorkerPool, defaultPoolSize, RunReply} from './pool';
 import {getSharedFittingPool} from './shared-pool';
 import {buildSetup, buildRunSeed} from './serialize';
+import {DeferredProgressIndicator} from './deferred-progress';
 import type {SessionId} from './wire-types';
 
 export type ExecutorMode = 'main' | 'worker';
@@ -142,7 +143,7 @@ export class WorkerExecutor implements Executor {
     const params = sampleSeeds(args.samplesCount, args.inputsBounds, args.reproSettings);
 
     let percentage = 0;
-    const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
+    const pi = DeferredProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
 
     const settings = args.earlyStoppingSettings;
     const useES = settings.useEarlyStopping;
