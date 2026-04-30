@@ -5,6 +5,7 @@
 import type {
   FitSessionSetup,
   JobSpec,
+  SetupAck,
   WorkerInbound,
   WorkerSuccess,
   WorkerFailure,
@@ -151,12 +152,18 @@ export class WorkerPool {
       for (const entry of this.activeSetups.values()) {
         if (entry.replacementAttempts >= this.maxReplacementReprimes) continue;
         ++entry.replacementAttempts;
-        void fresh.prime(entry.setup, this.setupTimeoutMs).then((ack) => {
-          if (!ack.ok && ack.timedOut) this.removeSlot(fresh, 'setup timed out');
-        });
+        void this.primeSlot(fresh, entry.setup);
       }
     }
     this.pump();
+  }
+
+  // Prime a slot and remove it on setup-timeout. Caller decides what to do
+  // with the returned ack (await + throw, or fire-and-forget).
+  private async primeSlot(slot: Slot, setup: FitSessionSetup): Promise<SetupAck> {
+    const ack = await slot.prime(setup, this.setupTimeoutMs);
+    if (!ack.ok && ack.timedOut) this.removeSlot(slot, 'setup timed out');
+    return ack;
   }
 
   // No transferables: each slot needs its own structured-clone copy.
@@ -164,15 +171,9 @@ export class WorkerPool {
   async setupAll(setup: FitSessionSetup): Promise<void> {
     if (this.disposed) throw new Error('pool disposed');
     this.ensureWorkers();
-    const targets = [...this.slots];
-    const acks = await Promise.all(
-      targets.map((slot) => slot.prime(setup, this.setupTimeoutMs)));
-    for (let i = 0; i < acks.length; ++i) {
-      const ack = acks[i];
-      if (!ack.ok) {
-        if (ack.timedOut) this.removeSlot(targets[i], 'setup timed out');
-        throw new Error(`worker setup failed: ${ack.message}`);
-      }
+    const acks = await Promise.all([...this.slots].map((s) => this.primeSlot(s, setup)));
+    for (const ack of acks) {
+      if (!ack.ok) throw new Error(`worker setup failed: ${ack.message}`);
     }
     this.activeSetups.set(setup.sessionId, {setup, replacementAttempts: 0});
   }
