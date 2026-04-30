@@ -77,7 +77,7 @@ Year - Month' and 'Year - Quarter':
 | Outer Margin Right | number |  |
 | Outer Margin Top | number |  |
 | Outer Margin Bottom | number |  |
-| Show Empty Bars | boolean |  |
+| Show Empty Bars | boolean | Indicates whether categories with no matching rows should appear as zero-height bars. |
 | Show Labels | string |  |
 | Legend Visibility | visibilitymode |  |
 | Legend Position | flexautoposition |  |
