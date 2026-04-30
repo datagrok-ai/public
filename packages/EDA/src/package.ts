@@ -30,7 +30,8 @@ import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
 import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
-import {getLinearRegressionParams, getPredictionByLinearRegression} from './regression';
+import {getLinearRegressionParams, getPredictionByLinearRegression,
+  isLinearRegressionApplicable, isLinearRegressionInteractive} from './regression';
 import {PlsModel} from './pls/pls-ml';
 import {SoftmaxClassifier} from './softmax-classifier';
 
@@ -720,12 +721,7 @@ export class PackageFunctions {
   static isApplicableLinearRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    for (const col of df.columns) {
-      if (!col.matches('numerical'))
-        return false;
-    }
-
-    return predictColumn.matches('numerical');
+    return isLinearRegressionApplicable(df.columns, predictColumn);
   }
 
 
@@ -739,7 +735,7 @@ export class PackageFunctions {
   static isInteractiveLinearRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return df.rowCount <= 100000;
+    return isLinearRegressionInteractive(df.columns, predictColumn);
   }
 
 
