@@ -1,5 +1,20 @@
 # HitTriage changelog
 
+## 1.10.0 (2026-04-09)
+
+### Features
+
+* Introduced PepTriage — a peptide-focused workflow alongside Hit Triage and Hit Design
+* Hit Triage:
+  * Added campaign grouping by template, status, author, last modified user, or custom fields
+  * Added sortable campaigns table columns
+  * Added column visibility editor for the campaigns table
+  * Migrated the compute function engine to a shared implementation now used together with Chem MPO
+
+### Bug Fixes
+
+* Browse panel compatibility restored
+
 ## 1.9.1 (2025-02-03)
 
 * HD: Parallel running functions, fix table joining
