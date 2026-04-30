@@ -14,7 +14,7 @@ export abstract class HitAppBase<T> {
   public template?: T;
   public baseUrl!: string;
   public computeFunctions: ComputeFunctions;
-  protected isJoining = false;
+  public isJoining = false;
   protected hasEditPermission = false;
   private _appName: AppName;
   public get appName(): AppName {return this._appName;}
