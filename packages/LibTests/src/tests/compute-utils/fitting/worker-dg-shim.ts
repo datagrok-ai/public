@@ -215,6 +215,143 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     expect(rows[2].v, 3);
   });
 
+  test('shim_dataframe_lookup_methods', async () => {
+    const df = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('Id', new Int32Array([1, 2, 3])),
+      shim.Column.fromFloat64Array('value', new Float64Array([0.5, 1.5, 2.5])),
+      shim.Column.fromStrings('Label', ['a', 'b', 'c']),
+    ]);
+
+    expect(df.col('Id')?.name, 'Id', 'col by exact name');
+    expect(df.col('id')?.name, 'Id', 'col case-insensitive');
+    expect(df.col('VALUE')?.name, 'value', 'col case-insensitive other case');
+    expect(df.col(0)?.name, 'Id', 'col by index 0');
+    expect(df.col(2)?.name, 'Label', 'col by index 2');
+    expect(df.col(99), null, 'col out-of-range index returns null');
+    expect(df.col('missing'), null, 'col missing name returns null');
+
+    expect(df.getCol('value').name, 'value', 'getCol exact');
+    expect(df.getCol('VALUE').name, 'value', 'getCol case-insensitive');
+    let getColThrew = false;
+    try { df.getCol('nope'); } catch { getColThrew = true; }
+    expect(getColThrew, true, 'getCol throws when missing');
+
+    expect(df.get('value', 1), 1.5, 'df.get(name, idx)');
+    expect(df.get('VALUE', 2), 2.5, 'df.get case-insensitive');
+  });
+
+  test('shim_columnlist_lookup_methods', async () => {
+    const cols = [
+      shim.Column.fromInt32Array('Id', new Int32Array([1, 2])),
+      shim.Column.fromFloat64Array('v', new Float64Array([0.1, 0.2])),
+      shim.Column.fromStrings('label', ['a', 'b']),
+      shim.Column.fromList('bool', 'flag', [true, false]),
+    ];
+    const df = shim.DataFrame.fromColumns(cols);
+    const list = df.columns;
+
+    expect(list.byName('Id').name, 'Id', 'byName exact');
+    expect(list.byName('id').name, 'Id', 'byName case-insensitive');
+    expect(list.byIndex(0).name, 'Id', 'byIndex 0');
+    expect(list.byIndex(3).name, 'flag', 'byIndex last');
+    let byIndexThrew = false;
+    try { list.byIndex(99); } catch { byIndexThrew = true; }
+    expect(byIndexThrew, true, 'byIndex throws on out-of-range');
+
+    const got = list.byNames(['v', 'LABEL']);
+    expect(got.length, 2);
+    expect(got[0].name, 'v');
+    expect(got[1].name, 'label');
+
+    expect(list.contains('Id'), true, 'contains exact');
+    expect(list.contains('id'), true, 'contains case-insensitive');
+    expect(list.contains('missing'), false);
+
+    const map = list.toMap();
+    expect(map.size, 4, 'toMap size');
+    expect(map.get('Id')?.name, 'Id', 'toMap preserves original case');
+
+    const found = list.firstWhere((c) => c.type === 'string');
+    expect(found?.name, 'label', 'firstWhere');
+    expect(list.firstWhere((c) => c.name === 'nope') === undefined, true, 'firstWhere none');
+
+    expect(list.dataFrame === df, true, 'columnList.dataFrame back-ref');
+  });
+
+  test('shim_columnlist_typed_iterables', async () => {
+    const df = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('a', new Int32Array([1, 2])),
+      shim.Column.fromFloat64Array('b', new Float64Array([0.5, 1.5])),
+      shim.Column.fromStrings('c', ['x', 'y']),
+      shim.Column.fromList('bool', 'd', [true, false]),
+    ]);
+    const list = df.columns;
+
+    const num = Array.from(list.numerical).map((c) => c.name);
+    expect(num.join(','), 'a,b', 'numerical iterable');
+
+    const cat = Array.from(list.categorical).map((c) => c.name);
+    expect(cat.join(','), 'c,d', 'categorical iterable (string + bool)');
+
+    const bools = Array.from(list.boolean).map((c) => c.name);
+    expect(bools.join(','), 'd', 'boolean iterable');
+
+    const dt = Array.from(list.dateTime).map((c) => c.name);
+    expect(dt.length, 0, 'dateTime iterable empty when no datetime cols');
+
+    const all = Array.from(list.all).map((c) => c.name);
+    expect(all.join(','), 'a,b,c,d', 'all iterable');
+
+    const numNoDt = Array.from(list.numericalNoDateTime).map((c) => c.name);
+    expect(numNoDt.join(','), 'a,b', 'numericalNoDateTime');
+  });
+
+  test('shim_column_extra_accessors', async () => {
+    const df = shim.DataFrame.fromColumns([
+      shim.Column.fromFloat64Array('v', new Float64Array([1, FLOAT_NULL, 3])),
+      shim.Column.fromStrings('s', ['hello', '', 'x']),
+      shim.Column.fromList('bool', 'b', [true, false, true]),
+    ]);
+
+    const v = df.col('v')!;
+    expect(v.isNumerical, true);
+    expect(v.isCategorical, false);
+    expect(v.isEmpty, false);
+    expect(v.min, 1);
+    expect(v.max, 3);
+    expect(v.isNone(0), false);
+    expect(v.isNone(1), true, 'null sentinel surfaces as isNone');
+    expect(v.isNone(2), false);
+    expect(v.getNumber(0), 1);
+    expect(Number.isNaN(v.getNumber(1)), true, 'getNumber on null returns NaN');
+    expect(v.getString(0), '1');
+    expect(v.getString(1), '', 'getString on null returns empty string');
+    expect(v.matches('numerical'), true);
+    expect(v.matches('categorical'), false);
+    expect(v.matches('double'), true, 'matches own type');
+    expect(v.matches('int'), false, 'does not match other numeric type');
+    expect(v.matches(null), true, 'null filter matches anything');
+    expect(v.dataFrame === df, true, 'column.dataFrame back-ref');
+    expect(v.toString(), 'v (double)');
+
+    const s = df.col('s')!;
+    expect(s.isNumerical, false);
+    expect(s.isCategorical, true);
+    expect(s.getString(0), 'hello');
+    expect(s.getString(1), '');
+    expect(Number.isNaN(s.getNumber(0)), true, 'string non-numeric → NaN');
+
+    const b = df.col('b')!;
+    expect(b.isCategorical, true, 'bool is categorical');
+    expect(b.getNumber(0), 1, 'true → 1');
+    expect(b.getNumber(1), 0, 'false → 0');
+
+    const empty = shim.Column.fromFloat64Array('e', new Float64Array(0));
+    expect(empty.isEmpty, true);
+    expect(empty.min, 0, 'empty min collapses to 0');
+    expect(empty.max, 0, 'empty max collapses to 0');
+  });
+
   test('shim_arrow_roundtrip_numeric_string_column_names', async () => {
     // Regression: numeric-string column names used to be reordered ahead
     // of non-numeric ones by V8 object-key iteration in toFeather,
