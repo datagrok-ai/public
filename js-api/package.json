@@ -1,55 +1,53 @@
 {
   "name": "datagrok-api",
-  "version": "1.27.2",
+  "version": "1.27.3",
   "description": "",
   "main": "./datagrok.js",
   "types": "./datagrok.d.ts",
-  "typesVersions": {
-    "*": {
-      "grok": ["./grok.d.ts"],
-      "grok.js": ["./grok.d.ts"],
-      "ui": ["./ui.d.ts"],
-      "ui.js": ["./ui.d.ts"],
-      "dg": ["./dg.d.ts"],
-      "dg.js": ["./dg.d.ts"],
-      "node-api": ["./node-api.d.ts"]
-    }
-  },
-  "exports": {
-    "./grok": {
+  "typesVersions": {"*":   {
+    "grok": ["./grok.d.ts"],
+    "grok.js": ["./grok.d.ts"],
+    "ui": ["./ui.d.ts"],
+    "ui.js": ["./ui.d.ts"],
+    "dg": ["./dg.d.ts"],
+    "dg.js": ["./dg.d.ts"],
+    "node-api": ["./node-api.d.ts"]
+  }},
+  "exports":   {
+    "./grok":     {
       "types": "./grok.d.ts",
       "default": "./grok.js"
     },
-    "./grok.js": {
+    "./grok.js":     {
       "types": "./grok.d.ts",
       "default": "./grok.js"
     },
-    "./ui": {
+    "./ui":     {
       "types": "./ui.d.ts",
       "default": "./ui.js"
     },
-    "./ui.js": {
+    "./ui.js":     {
       "types": "./ui.d.ts",
       "default": "./ui.js"
     },
-    "./dg": {
+    "./dg":     {
       "types": "./dg.d.ts",
       "default": "./dg.js"
     },
-    "./dg.js": {
+    "./dg.js":     {
       "types": "./dg.d.ts",
       "default": "./dg.js"
     },
-    "./node-api": {
+    "./node-api":     {
       "types": "./node-api.d.ts",
       "default": "./node-api.js"
     },
-    "./src/const": {
+    "./src/const":     {
       "types": "./src/const.d.ts",
       "default": "./src/const.js"
     }
   },
-  "dependencies": {
+  "dependencies":   {
     "@babel/core": "^7.27.1",
     "@datagrok-libraries/chem-meta": "^1.0.12",
     "@types/react": "^18.3.11",
@@ -63,7 +61,7 @@
     "wu": "^2.1.0",
     "ws": "^8.18.2"
   },
-  "devDependencies": {
+  "devDependencies":   {
     "@babel/preset-env": "^7.21.4",
     "@types/node": "^18.11.18",
     "@typescript-eslint/eslint-plugin": "^4.20.0",
@@ -83,7 +81,7 @@
     "utf-8-validate": "^6.0.5",
     "bufferutil": "^4.0.9"
   },
-  "scripts": {
+  "scripts":   {
     "link": "npm link",
     "link-all": "npm link @datagrok-libraries/chem-meta",
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",

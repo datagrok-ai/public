@@ -158,7 +158,8 @@ export class FuncFlowView extends DG.ViewBase {
         return (dragObject instanceof DG.FileInfo && dragObject.isFile) ||
           dragObject instanceof DG.Func;
       },
-      doDrop: (dragObject: any, _copying: boolean) => {
+      doDrop: (args) => {
+        const dragObject = args.dragObject;
         if (dragObject instanceof DG.Func) {
           this.addFuncNode(dragObject);
           return;

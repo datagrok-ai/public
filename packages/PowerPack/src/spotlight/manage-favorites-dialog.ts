@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {entityIcon} from './workspace-tab';
+import {pinEntityToGroup} from './group-favorites';
 import {
   querySearch, scriptsSearch,
   functionSearch, appSearch,
@@ -134,7 +135,7 @@ export function showManageFavoritesDialog(
   }
 
   async function addEntity(entity: DG.Entity, row: HTMLElement): Promise<void> {
-    await DG.Favorites.add(entity, group);
+    await pinEntityToGroup(entity, group);
     pinnedIds.add(entity.id);
     currentEntities.push(entity);
     refreshPinnedList(currentEntities);

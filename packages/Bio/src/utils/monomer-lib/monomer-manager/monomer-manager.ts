@@ -491,7 +491,7 @@ export class MonomerManager implements IMonomerManager {
     ui.tooltip.bind(deleteButton, () =>
       `${(this.tv?.dataFrame?.selection?.trueCount ?? 0) > 0 ? 'Delete selected monomers' : 'Delete monomer'}`);
 
-    const downloadButton = ui.iconFA('arrow-to-bottom', async () => {
+    const downloadAsJson = async () => {
       const libName = this.libInput.value;
       if (!libName)
         return grok.shell.error('No library selected');
@@ -508,6 +508,61 @@ export class MonomerManager implements IMonomerManager {
       if (!lib)
         return grok.shell.error(`Library ${libName} is empty`);
       DG.Utils.download(libName!, lib!, 'text/plain');
+    };
+
+    const downloadAsCsv = async () => {
+      const libName = this.libInput.value;
+      if (!libName)
+        return grok.shell.error('No library selected');
+      const df = this.tv?.dataFrame;
+      if (!df)
+        return grok.shell.error('No monomer table loaded');
+      const monomerCol = df.col(MONOMER_DF_COLUMN_NAMES.MONOMER);
+      const rgroupsCol = df.col(MONOMER_DF_COLUMN_NAMES.R_GROUPS);
+      if (!monomerCol || !rgroupsCol)
+        return grok.shell.error('Monomer or R-groups column not found');
+
+      const filtered = df.clone(df.filter);
+      const filteredMonomerCol = filtered.col(MONOMER_DF_COLUMN_NAMES.MONOMER)!;
+      const filteredRgroupsCol = filtered.col(MONOMER_DF_COLUMN_NAMES.R_GROUPS)!;
+      const cappedColName = filtered.columns.getUnusedName('Capped Molecule');
+      const cappedCol = filtered.columns.addNewString(cappedColName);
+      cappedCol.semType = DG.SEMTYPE.MOLECULE;
+
+      for (let i = 0; i < filtered.rowCount; i++) {
+        const smiles = filteredMonomerCol.get(i) as string | null;
+        if (!smiles) continue;
+        let rgroups: RGroup[] = [];
+        try {
+          const raw = filteredRgroupsCol.get(i) as string | null;
+          rgroups = raw ? JSON.parse(raw) : [];
+        } catch (_e) {
+          rgroups = [];
+        }
+        try {
+          cappedCol.set(i, capSmiles(smiles, rgroups), false);
+        } catch (e) {
+          console.error(`Error capping monomer at row ${i}`, e);
+        }
+      }
+
+      const orderedNames = filtered.columns.names();
+      const monomerIdx = orderedNames.indexOf(MONOMER_DF_COLUMN_NAMES.MONOMER);
+      if (monomerIdx >= 0) {
+        const reordered = orderedNames.filter((n) => n !== cappedColName);
+        reordered.splice(monomerIdx + 1, 0, cappedColName);
+        filtered.columns.setOrder(reordered);
+      }
+
+      const csvName = libName.toLowerCase().endsWith('.json') ? libName.replace(/\.json$/i, '.csv') : `${libName}.csv`;
+      DG.Utils.download(csvName, filtered.toCsv(), 'text/csv');
+    };
+
+    const downloadButton = ui.iconFA('arrow-to-bottom', () => {
+      DG.Menu.popup()
+        .item('JSON', () => { downloadAsJson(); })
+        .item('CSV', () => { downloadAsCsv(); })
+        .show();
     }, 'Download Monomer Library');
 
     ribbons.push([newMonomerButton, editButton, fixAllMonomersIcon, deleteButton, downloadButton]);

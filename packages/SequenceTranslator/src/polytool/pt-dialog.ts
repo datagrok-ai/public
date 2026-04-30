@@ -230,7 +230,8 @@ function buildCyclizedMonomerHoverLink(
 
     const alphabet = seqSH.alphabet as ALPHABET;
     const polymerType = alphabet == ALPHABET.RNA || alphabet == ALPHABET.DNA ? PolymerTypes.RNA : PolymerTypes.PEPTIDE;
-    const monomersDict = getMonomersDictFromLib([seqMList], polymerType, alphabet, monomerLib, rdKitModule);
+    const monomersDict = getMonomersDictFromLib([seqMList], [undefined], polymerType,
+      alphabet, monomerLib, rdKitModule);
     // Call seq-to-molfile worker core directly
     const molWM = monomerSeqToMolfile(seqMList, monomersDict, alphabet, polymerType);
     return molWM.monomers;

@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ANY_RUN_CHOICE, CDD_SEARCH_TYPES, CDDVaultSearchType, PROTOCOL_RUN_COND_CHOICES, ProtocolRunCond} from './constants';
 import {Protocol} from './cdd-vault-api';
+import {funcs} from './package-api';
 
 const LAST_SEARCH_KEY = 'CDDVaultLink.lastSearch';
 
@@ -86,7 +87,7 @@ export class SearchEditor {
 
   async init() {
     try {
-      const protocolsStr = await grok.functions.call('CDDVaultLink:getProtocolsAsync', {vaultId: this.vaultId, timeoutMinutes: 1});
+      const protocolsStr = await funcs.getProtocolsAsync(this.vaultId, 1);
       const protocols = protocolsStr !== '' ? JSON.parse(protocolsStr) as Protocol[] : [];
       if (protocols && protocols.length) {
         protocols.forEach((it) => this.protocols[it.name] = it);

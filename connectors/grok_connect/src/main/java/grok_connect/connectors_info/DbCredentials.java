@@ -45,7 +45,6 @@ public class DbCredentials
     /// credential resolution for any connector whose auth method is
     /// `AuthMethod.OAuth` (see GENERALIZED_OAUTH_CONNECTORS.md).
     public static final String TOKEN = "#token";
-    public static final String OAUTH_SCOPES = "oauthScopes";
 
     public String server;
     public String port;

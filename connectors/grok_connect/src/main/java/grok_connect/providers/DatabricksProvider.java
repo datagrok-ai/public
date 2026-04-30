@@ -60,11 +60,6 @@ public class DatabricksProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, "tenantId",
                     "Azure Directory ID (tenant GUID) used for OAuth authentication. Leave empty for AWS or GCP workspaces.", OAUTH_METHOD));
             add(new Property(Property.STRING_TYPE, DbCredentials.TOKEN, null, OAUTH_METHOD_NAME, new Prop("password")));
-            add(new Property(Property.STRING_TYPE, DbCredentials.OAUTH_SCOPES,
-                    "Space-separated OAuth scopes to request when consenting via the "
-                            + "configured OpenID Provider. Defaulted from the connector's OAuthSpec "
-                            + "under the active IdP flavour (oidc / azure). See "
-                            + "GENERALIZED_OAUTH_CONNECTORS.md.", OAUTH_METHOD_NAME));
         }};
 
         // Lazy OAuth/OpenID consent descriptor. Azure AD uses
@@ -75,7 +70,7 @@ public class DatabricksProvider extends JdbcDataProvider {
                 .scopes("azure", Arrays.asList(
                         AZURE_DATABRICKS_APP_ID + "/user_impersonation",
                         "offline_access"))
-                .scopes("oidc", Collections.singletonList("offline_access"))
+                .scopes("oidc", Arrays.asList("openid", "offline_access"))
                 .tokenProperty("Auth_AccessToken");
 
         descriptor.nameBrackets = "`";

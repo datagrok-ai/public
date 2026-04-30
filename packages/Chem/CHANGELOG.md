@@ -1,5 +1,9 @@
 # Chem changelog
 
+## v.next
+
+* Scaffold tree: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
+
 ## 1.17.5 (2026-04-15)
 
 ### Features:

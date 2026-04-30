@@ -65,6 +65,14 @@ Datagrok integrates with your LDAP or Active Directory server enabling the smoot
 >1. Disable 'Signup Allowed' to prevent unauthorized users from registering directly on Datagrok.
 >2. Enable 'Signup Enabled' in _'Domain Authentication'_ to allow new users already registered in the organization's LDAP or Active Directory (AD) system to log in.
 
+:::tip Sync AD groups with Datagrok groups
+
+LDAP authentication lets AD users sign in with their domain credentials. To
+keep Datagrok groups and shares in sync with AD groups, drive the platform
+from a script using the [`grok s` CLI](../../develop/server-management.md#sync-an-ad-group-with-datagrok).
+
+:::
+
 ## Oauth authentication
 
 Datagrok supports Google, Facebook, and GitHub OAUTH authentication.

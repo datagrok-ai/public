@@ -196,3 +196,28 @@ export function findLast<T, K extends T>(array: T[], predicate: (value: T, index
   }
   return undefined;
 }
+
+/** Renders markdown content with copy-on-code-blocks behavior and selectable text. */
+export function createStyledMarkdown(content: string): HTMLElement {
+  const markDown = ui.markdown(content);
+  markDown.style.position = 'relative';
+  dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
+  if (markDown.querySelector('pre > code')) {
+    const copyButton = ui.icons.copy(() => {}, 'Copy Code');
+    copyButton.classList.add('d4-ai-copy-code-button');
+    markDown.appendChild(copyButton);
+    copyButton.addEventListener('click', () => {
+      const codeElement = markDown.querySelector('pre > code');
+      if (codeElement) {
+        const header = markDown.children[0];
+        if (header && header.tagName?.toLowerCase() !== 'pre')
+          (header as HTMLElement).style.marginRight = '16px';
+        navigator.clipboard.writeText(codeElement.textContent || '').then(() => {
+          copyButton.classList.add('d4-ai-copy-code-button-copied');
+          setTimeout(() => copyButton.classList.remove('d4-ai-copy-code-button-copied'), 600);
+        }).catch(() => grok.shell.error('Failed to copy code to clipboard.'));
+      }
+    });
+  }
+  return markDown;
+}

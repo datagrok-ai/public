@@ -1,6 +1,8 @@
 import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 import * as DG from 'datagrok-api/dg';
 
+import './tests/cdd-vault-tests';
+
 export const _package = new DG.Package();
 export {tests};
 

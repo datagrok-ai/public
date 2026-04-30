@@ -1,5 +1,8 @@
-import {runFormula} from './formulas-resolver';
-import {BoundFormula, ChangingValue, ConstValue, ValueBoundsData} from './optimizer-misc';
+import {ValueBoundsData} from './optimizer-misc';
+import {evalBoundFormula, getAccData, getFixedContext, makeBoundsChecker}
+  from './bounds-checker';
+
+export {makeBoundsChecker};
 
 function sampleUniform(samplesCount: number, top: number, bottom: number,
   rand: () => number = Math.random): number[] {
@@ -35,67 +38,8 @@ export function sampleParams(samplesCount: number, top: Float64Array, bottom: Fl
   return params;
 }
 
-type AccData = {
-  constValues: [string, ConstValue][],
-  nonFormulaBounds: [string, number, ChangingValue][],
-  formulaBounds: [string, number, ChangingValue][],
-  boundsIdx: number,
-};
-
 export type SamplerInputsConfig = {
   inputs: Record<string, ValueBoundsData>,
-}
-
-function getAccData(inputs: Record<string, ValueBoundsData>) {
-  // partition inputs based on the type: fixed, numeric or formula bounds,
-  // keeping original order index of varried inputs
-  const data = Object.entries(inputs).reduce((acc, [name, val]) => {
-    if (val.type === 'const')
-      acc.constValues.push([name, val]);
-    else if (val.top.type === 'value' && val.bottom.type === 'value') {
-      acc.nonFormulaBounds.push([name, acc.boundsIdx, val]);
-      acc.boundsIdx++;
-    } else {
-      acc.formulaBounds.push([name, acc.boundsIdx, val]);
-      acc.boundsIdx++;
-    }
-    return acc;
-  }, {constValues: [], nonFormulaBounds: [], formulaBounds: [], boundsIdx: 0} as AccData);
-  return data;
-}
-
-function getFixedContext(constValues: [string, ConstValue][]) {
-  const contextFixed: Record<string, any> = {};
-  // add fixes inputs (can be any type) to formula context
-  for (const [name, data] of constValues)
-    contextFixed[name] = data.value;
-
-  return contextFixed;
-}
-
-function evalBoundFormula(bound: BoundFormula, context: Record<string, any>) {
-  return runFormula(bound.formula, context);
-}
-
-export function makeBoundsChecker(inputs: Record<string, ValueBoundsData>, variedInputNames: string[]) {
-  // indexing by name in point
-  const variedNameToPosition = new Map(variedInputNames.map((name, pos) => [name, pos]));
-  const {constValues, nonFormulaBounds, formulaBounds} = getAccData(inputs);
-  const contextFixed = getFixedContext(constValues);
-
-  return function isInsideBounds(point: Float64Array) {
-    const context = {...contextFixed};
-    for (const [name, , bound] of [...nonFormulaBounds, ...formulaBounds]) {
-      const pos = variedNameToPosition.get(name)!;
-      const val = point[pos];
-      const min = bound.bottom.type === 'value' ? bound.bottom.value : evalBoundFormula(bound.bottom, context);
-      const max = bound.top.type === 'value' ? bound.top.value : evalBoundFormula(bound.top, context);
-      if (max == null || min == null || val == null || min > max || val < min || val > max)
-        return false;
-      context[name] = val;
-    }
-    return true;
-  };
 }
 
 export function sampleParamsWithFormulaBounds(

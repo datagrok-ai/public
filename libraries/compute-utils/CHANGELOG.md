@@ -1,5 +1,31 @@
 # compute-utils changelog
 
+## 1.45.3 (2026-04-24)
+
+### Features
+
+- Action step type for routing actions to child steps via `visibleOn`
+- Unified pipeline navigation with Back/Next across all step types
+- Unified parallel and sequential pipelines into a single `dynamic` type (parallel/sequential are deprecated aliases)
+- Granular pipeline mutation actions (add, remove, reorder steps)
+- Validator debounce configuration, default to no debounce
+- Batched validator/meta/nodemeta link execution for performance
+- Use `asapScheduler` to eliminate 4ms `setTimeout` clamp in link scheduling
+- Suppress Vue rerenders during global lock
+- Unified error handling with `reportError` utility and logger injection
+
+### Refactoring
+
+- Split StateTree into Factory + Serializer modules
+- Refactored StateTree mutation methods into internal primitives
+- Extracted dependency calculation and default validators from LinksState
+- Renamed LinksDependencies.ts to kebab-case
+
+### Bug fixes
+
+- Fixed `isOutputOutdated` stuck on true for steps with no inputs
+- Fixed DynamicPipelineNode to preserve original pipeline type
+
 ## 1.45.2 (2026-03-19)
 
 - dayjs typings fix

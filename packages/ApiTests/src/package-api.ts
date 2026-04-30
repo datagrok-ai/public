@@ -8,88 +8,192 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace queries {
+  /**
+   * @param {number} x
+   * @returns {Promise<DG.DataFrame>}
+   */
   export async function dummyPackageQuery(x: number ): Promise<DG.DataFrame> {
     return await grok.data.query('APITests:DummyPackageQuery', { x });
   }
 }
 
 export namespace funcs {
+  /**
+   * @param {string} name
+   * @param {string} path
+   *   optional: true
+   * @returns {Promise<DG.DataFrame>}
+   */
   export async function getTable(name: string , path?: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('APITests:GetTable', { name, path });
   }
 
+  /**
+   * @param {DG.DataFrame} table
+   * @param {string} columnName
+   * @returns {Promise<DG.Column>}
+   */
   export async function getColumn(table: DG.DataFrame , columnName: string ): Promise<DG.Column> {
     return await grok.functions.call('APITests:GetColumn', { table, columnName });
   }
 
+  /**
+   * @param {number} rows
+   *   optional: true
+   * @param {string} name
+   *   optional: true
+   * @returns {Promise<DG.DataFrame>}
+   */
   export async function getDT(rows?: number , name?: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('APITests:GetDT', { rows, name });
   }
 
+  /**
+   * @param {DG.DataFrame} table
+   * @param {number} rowIndex
+   * @param {string} columnName
+   * @returns {Promise<any>}
+   */
   export async function getCell(table: DG.DataFrame , rowIndex: number , columnName: string ): Promise<any> {
     return await grok.functions.call('APITests:GetCell', { table, rowIndex, columnName });
   }
 
+  /**
+   * @param {DG.DataFrame} actual
+   * @param {DG.DataFrame} expected
+   * @returns {Promise<boolean>}
+   */
   export async function expectTable(actual: DG.DataFrame , expected: DG.DataFrame ): Promise<boolean> {
     return await grok.functions.call('APITests:ExpectTable', { actual, expected });
   }
 
+  /**
+   * @param {string} a
+   * @returns {Promise<number>}
+   */
   export async function dummyPackageFunctionWithDefaultValue(a: string ): Promise<number> {
     return await grok.functions.call('APITests:DummyPackageFunctionWithDefaultValue', { a });
   }
 
+  /**
+   * @param {number} a
+   * @param {number} b
+   * @returns {Promise<number>}
+   */
   export async function dummyPackageFunction(a: number , b: number ): Promise<number> {
     return await grok.functions.call('APITests:DummyPackageFunction', { a, b });
   }
 
+  /**
+   * @param {DG.DataFrame} table
+   * @returns {Promise<{count: number, tableOut: DG.DataFrame}>}
+   */
   export async function dummyDataFrameFunction(table: DG.DataFrame ): Promise<{count: number, tableOut: DG.DataFrame}> {
     return await grok.functions.call('APITests:DummyDataFrameFunction', { table });
   }
 
+  /**
+   * @param {number} a
+   * @returns {Promise<number>}
+   */
   export async function testIntAsync(a: number ): Promise<number> {
     return await grok.functions.call('APITests:TestIntAsync', { a });
   }
 
+  /**
+   * @param {any} params
+   * @returns {Promise<any>}
+   */
   export async function customStringInput(params: any ): Promise<any> {
     return await grok.functions.call('APITests:CustomStringInput', { params });
   }
 
+  /**
+   * @param {DG.DataFrame} data
+   * @param {DG.Column} col
+   * @returns {Promise<DG.DataFrame>}
+   */
   export async function testOutputAnnotationJoinDf(data: DG.DataFrame , col: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('APITests:TestOutputAnnotationJoinDf', { data, col });
   }
 
+  /**
+   * @param {DG.DataFrame} data
+   * @param {DG.Column} col
+   * @returns {Promise<DG.Column>}
+   */
   export async function testOutputAnnotationJoinCol(data: DG.DataFrame , col: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('APITests:TestOutputAnnotationJoinCol', { data, col });
   }
 
+  /**
+   * @param {DG.DataFrame} data
+   * @param {DG.Column} col
+   * @returns {Promise<string[]>}
+   */
   export async function testOutputAnnotationJoinColList(data: DG.DataFrame , col: DG.Column ): Promise<string[]> {
     return await grok.functions.call('APITests:TestOutputAnnotationJoinColList', { data, col });
   }
 
+  /**
+   * @param {DG.DataFrame} data
+   * @param {DG.Column} col
+   * @returns {Promise<DG.DataFrame>}
+   */
   export async function testOutputAnnotationReplaceDf(data: DG.DataFrame , col: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('APITests:TestOutputAnnotationReplaceDf', { data, col });
   }
 
+  /**
+   * @param {DG.DataFrame} data
+   * @param {DG.Column} col
+   * @returns {Promise<DG.Column>}
+   */
   export async function testOutputAnnotationReplaceCol(data: DG.DataFrame , col: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('APITests:TestOutputAnnotationReplaceCol', { data, col });
   }
 
+  /**
+   * @param {DG.DataFrame} data
+   * @param {DG.Column} col
+   * @returns {Promise<DG.Column>}
+   */
   export async function testOutputAnnotationReplaceColList(data: DG.DataFrame , col: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('APITests:TestOutputAnnotationReplaceColList', { data, col });
   }
 
+  /**
+   * @param {DG.DataFrame} data
+   * @param {DG.Column} col
+   * @returns {Promise<DG.Column>}
+   */
   export async function testOutputWithoutAction(data: DG.DataFrame , col: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('APITests:TestOutputWithoutAction', { data, col });
   }
 
+  /**
+   * @param {any} actual
+   * @param {any} expected
+   */
   export async function expectDate(actual: any , expected: any ): Promise<void> {
     return await grok.functions.call('APITests:ExpectDate', { actual, expected });
   }
 
+  /**
+   * @param {DG.Column} col
+   * @param {string} prefix
+   * @returns {Promise<DG.Column>}
+   */
   export async function testVectorFunc(col: DG.Column , prefix: string ): Promise<DG.Column> {
     return await grok.functions.call('APITests:TestVectorFunc', { col, prefix });
   }
 
+  /**
+   * @param {DG.Column} col
+   * @param {string} prefix
+   * @param {DG.Column} postfix
+   * @returns {Promise<DG.Column>}
+   */
   export async function testVectorFuncNonVectorizableParam(col: DG.Column , prefix: string , postfix: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('APITests:TestVectorFuncNonVectorizableParam', { col, prefix, postfix });
   }

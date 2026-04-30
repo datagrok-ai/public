@@ -22,7 +22,9 @@ import {filter} from 'rxjs/operators';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
 import {getDefaultCampaignStorageSettings, getDefaultSharingSettings} from '../packageSettingsEditor';
 import * as api from '../package-api';
-import {registerMol, registerMolsBatch} from './utils/molreg';
+import {registerMol} from './utils/molreg';
+import {mergeIntoCampaign} from './utils/merge-table';
+import {openMergeTableDialog} from './dialogs/merge-table-dialog';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
@@ -58,7 +60,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
   }
 
   /**
-   * Correctly joins the incoming dataframe with the existing campaign dataframe
+   * Correctly joins the incoming dataframe with the existing campaign dataframe.
+   * Drag-n-drop entry point — uses SMILES-based join with the historical defaults.
    * @param df Dataframe to be joined into existing campaign dataframe
    */
   async handleJoiningDataframe(df: DG.DataFrame) {
@@ -89,49 +92,19 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     } else
       chosenMolColName = molCols[0]!.name!;
 
-
-    const molCol = df.col(chosenMolColName);
-    if (!molCol) { // should not happen, but oh well
+    if (!df.col(chosenMolColName)) {
       grok.shell.error('No molecule column found');
       return;
     }
 
-    const compute = this.campaign?.template?.compute ?? this.template?.compute;
-    if (!compute) {
-      grok.shell.warning('No compute functions found');
-      return;
-    }
-    const mols = molCol.toList();
-    const descriptors = compute.descriptors.enabled ? compute.descriptors.args ?? [] : [];
-    const calcDf = await calculateCellValues(mols, descriptors, compute.functions, compute.scripts, compute.queries);
-    //merge  into adding dataframe
-    this.unionDataframes(calcDf, df, HitDesignMolColName, molCol.name);
-
-    if (this.stages.length > 0 && this.dataFrame!.columns.contains(TileCategoriesColName)) {
-      const newTilesCol = df.columns.getOrCreate(TileCategoriesColName, DG.TYPE.STRING);
-      for (let i = 0; i < df.rowCount; i++) {
-        if (newTilesCol.isNone(i))
-          newTilesCol.set(i, this.stages[0], false);
-      }
-    }
-
-    // handle the VID column for new table
-    // joining data is not allowed to have the VID column, so remove it if it exists
-    if (df.columns.contains(ViDColName))
-      df.columns.remove(ViDColName);
-
-    const vidCol = df.columns.addNewString(ViDColName);
-    // batch register the molecules
-    const registeredVids = await registerMolsBatch(mols, this._campaignId!, this.appName);
-    for (let i = 0; i < df.rowCount; i++) {
-      const mol = molCol.get(i);
-      const vid = registeredVids.get(mol);
-      if (vid)
-        vidCol.set(i, vid);
-    }
-    //merge changes into existing dataframe
-    this.unionDataframes(df, this.dataFrame!, molCol.name, this.molColName);
-    this.saveCampaign(false);
+    await mergeIntoCampaign(this, df, {
+      mode: 'smiles',
+      molColName: chosenMolColName,
+      addNewRows: true,
+      runComputeOnNewRows: true,
+      clashStrategy: 'overwrite',
+    });
+    await this.saveCampaign(false);
   }
 
   public get submitParams() {
@@ -575,6 +548,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         };
 
         const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
+        const mergeTableButton = ui.iconFA('code-merge', () => {openMergeTableDialog(this);},
+          'Merge another table into the campaign');
         const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
         const applyLayoutButton = ui.iconSvg('view-layout', () => {this.applyTemplateLayout(view);}, `Apply template layout ${this.template?.localLayoutPath ? '(Loaded from mounted file storage)' : '(Static)'}`);
         this._refreshCampaignIcon = ui.icons.sync(async () => {this.refreshCampaign();}, 'Refresh');
@@ -647,6 +622,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           ribbonButtons.unshift(designerButton);
         }
         ribbonButtons.unshift(calculateRibbon);
+        ribbonButtons.unshift(mergeTableButton);
         ribbonButtons.unshift(addNewRowButton);
         ribbonButtons.unshift(this._refreshCampaignIcon);
 
@@ -1062,6 +1038,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       authorUserFriendlyName: authorName,
       lastModifiedUserName: grok.shell.user.friendlyName,
       permissions,
+      mergeConfig: this.campaign?.mergeConfig,
     };
     if (!this.hasEditPermission) {
       grok.shell.error('You do not have permission to modify this campaign');

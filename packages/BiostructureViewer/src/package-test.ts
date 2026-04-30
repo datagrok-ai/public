@@ -11,11 +11,16 @@ import './tests/ngl-gl-service-tests';
 import './tests/pdb-grid-cell-renderer-tests';
 import './tests/molstar-preview-tests';
 import './tests/molstar-viewer-tests';
+import './tests/binding-site-tests';
 // import './tests/viewers';
 import './tests/pdbqt-tests';
 import './tests/data-provider-tests';
 import './tests/context-menu-tests';
 import './tests/pdb-info-tests';
+import './tests/atom-highlight-tests';
+import './tests/pdb-grid-cell-renderer-escape-tests';
+import './tests/mol3d-link-tests';
+import './tests/mol3d-atom-picker-link-widget-tests';
 
 
 // This _package object is for tests only.

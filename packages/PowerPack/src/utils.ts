@@ -74,9 +74,11 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget, title?: string) {
   }
 }
 
-function createWidgetHost(title: string): HTMLDivElement {
+function createWidgetHost(title: string, titleAttr?: string): HTMLDivElement {
   const header = ui.div([ui.divText(title, 'd4-dialog-title')], 'd4-dialog-header');
   const host = ui.box(null, 'power-pack-widget-host');
+  if (titleAttr)
+    host.setAttribute('widget-title', titleAttr);
   host.appendChild(header);
   host.appendChild(ui.box(null, 'power-pack-widget-content'));
   return host;
@@ -84,7 +86,7 @@ function createWidgetHost(title: string): HTMLDivElement {
 
 export function widgetHostFromFunc(f: DG.Func) {
   const title = f.options['showName'] === 'false' ? '' : f.friendlyName;
-  const host: HTMLDivElement = createWidgetHost(title);
+  const host: HTMLDivElement = createWidgetHost(title, f.friendlyName);
   const contentDiv: HTMLElement = (host.querySelector('.power-pack-widget-content')!) as HTMLElement;
 
   f.apply().then(function(w: DG.Widget) {

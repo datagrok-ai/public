@@ -151,6 +151,10 @@ export interface IDartApi {
   grok_FilesView_Get_ShowSearch(v: any): any;
   grok_FilesView_Set_ShowSearch(v: any, x: Bool): any;
   grok_FilesView_Get_Tree(v: any): any;
+  grok_SpaceView_Create_ForProject(p: any): any;
+  grok_SpaceView_Get_Project(v: any): any;
+  grok_SpaceView_Get_ShowItemPreview(v: any): any;
+  grok_SpaceView_Set_ShowItemPreview(v: any, x: Bool): any;
   grok_ProjectsView(params: any): any;
   grok_ScriptsView(params: any): any;
   grok_ScriptView(script: any): any;
@@ -184,7 +188,7 @@ export interface IDartApi {
   grok_TabPane_Get_Header(p: any): any;
   grok_TabPane_Get_Content(p: any): any;
   grok_TabPane_Get_Parent(p: any): any;
-  grok_TabControl(vertical: Bool): any;
+  grok_TabControl(vertical: Bool, key: String): any;
   grok_ToolboxPage_Get_Accordion(t: any): any;
   grok_VirtualItemView(verticalScroll: any, maxCols: any): any;
   grok_VirtualItemView_Get_Root(v: any): any;
@@ -820,6 +824,17 @@ export interface IDartApi {
   grok_UI_ShortTimestamp(x: any): any;
   grok_UI_MakeDraggable(e: any, allowCopy: any, check: any, getDragObject: any, getDragCaption: any, dragObjectType: String, getDragHint: any, getDragContext: any, onDragStart: any, onDragEnd: any): any;
   grok_UI_MakeDroppable(e: any, acceptDrop: any, doDrop: any): any;
+  grok_UI_MakeDroppableEx(e: any, acceptDrop: any, acceptDrag: any, doDrop: any, onBeginDrag: any, onEndDrag: any, onMouseEnter: any, onMouseOver: any, onMouseLeave: any, onMouseOut: any, getDropElement: any, makeDropZone: any, dropZoneRectTransformation: any, dropSuggestion: String, dropIndication: Bool): any;
+  grok_DragDropArgs_Get_DragObject(a: any): any;
+  grok_DragDropArgs_Get_DragSource(a: any): any;
+  grok_DragDropArgs_Get_DragObjectType(a: any): any;
+  grok_DragDropArgs_Get_Copying(a: any): any;
+  grok_DragDropArgs_Get_Link(a: any): any;
+  grok_DragDropArgs_Get_Event(a: any): any;
+  grok_DragDropArgs_Get_DropEvent(a: any): any;
+  grok_DragDropArgs_Get_DragFromElement(a: any): any;
+  grok_DragDropArgs_Get_Handled(a: any): any;
+  grok_DragDropArgs_Set_Handled(a: any, v: Bool): any;
   grok_UI_InitFormulaAccelerators(textInput: any, table: any): any;
   grok_ML_ApplyModel(model: String, table: any, columnNamesMap: any, showProgress: Bool): Promise<any>;
   grok_ML_MissingValuesImputation(table: any, impute: any, data: any, nearestNeighbours: any): Promise<any>;
@@ -1219,6 +1234,7 @@ export interface IDartApi {
   grok_ColumnList_Add(cols: any, col: any, notify: Bool): any;
   grok_ColumnList_Insert(cols: any, col: any, index: Num, notify: Bool): any;
   grok_ColumnList_AddNew(cols: any, name: String, type: String): any;
+  grok_Column_InitQnumFromColumns(qnum: any, qualifier: any, value: any): any;
   grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool, subscribeOnChanges: Bool): Promise<any>;
   grok_ColumnList_GetNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool): Promise<any>;
   grok_ColumnList_AddNewVirtual(cols: any, name: String, getValue: any, setValue: any, type: String): any;
@@ -1531,6 +1547,7 @@ export interface IDartApi {
   grok_Project_IsEmpty(p: any): any;
   grok_Project_IsDashboard(p: any): any;
   grok_Project_IsPackage(p: any): any;
+  grok_Project_Get_IsSpace(p: any): any;
   grok_Project_ToMarkup(p: any): any;
   grok_TableInfo_Get_DataFrame(ti: any): any;
   grok_TableInfo_Get_Columns(ti: any): any;
@@ -1722,6 +1739,7 @@ export interface IDartApi {
   grok_FileInfo_Get_UpdatedOn(fi: any): any;
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
   grok_FileInfo_ReadAsString(fi: any): Promise<any>;
+  grok_FileInfo_Save(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
   grok_Dapi_Set_Root(root: String): any;
   grok_Dapi_Set_Token(token: String): any;

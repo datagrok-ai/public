@@ -4,7 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
 import {queries} from '../package-api';
 import {LearningWidget} from '../widgets/learning-widget';
-import {WorkspaceTab} from './workspace-tab';
+import {WorkspaceTab, isApp} from './workspace-tab';
+import {clearWorkspacePreview} from './preview-host';
 
 
 enum SpotlightTabNames {
@@ -96,9 +97,11 @@ export class SpotlightWidget extends DG.Widget {
       'Learn': () => new LearningWidget().root,
     };
 
-    this.tabControl = ui.tabControl(tabs, true);
+    this.tabControl = ui.tabControl(tabs, true, 'spotlight-widget');
     this.subs.push(this.tabControl.onTabChanged.subscribe((tabPane: DG.TabPane) => {
       this.cleanLists();
+      if (tabPane.name !== 'Workspace')
+        clearWorkspacePreview();
       tabPane.name === 'Learn' ? tabPane.content.parentElement?.classList.add('power-pack-overflow-hidden') :
         tabPane.content.parentElement?.classList.remove('power-pack-overflow-hidden');
       for (const id of Array.from(this.markedReadIds)) {
@@ -411,14 +414,7 @@ export class SpotlightWidget extends DG.Widget {
               dartIcon.addEventListener('click', () => {
                 this.markedReadIds.add(item.id);
                 listChild.classList.remove('grok-notification-unread');
-                const badge = this.root.querySelector('.pp-notification-badge');
-                if (badge) {
-                  const count = parseInt(badge.textContent ?? '0') - 1;
-                  if (count <= 0)
-                    badge.remove();
-                  else
-                    badge.textContent = count.toString();
-                }
+                this.refreshUnreadCountUI();
               });
             }
           }
@@ -672,6 +668,27 @@ export class SpotlightWidget extends DG.Widget {
     return root;
   }
 
+  refreshUnreadCountUI(): void {
+    const unreadCount = this.recentNotifications.filter((n) => !n.isRead && !this.markedReadIds.has(n.id)).length;
+    const badge = this.root.querySelector('.pp-notification-badge');
+    if (badge) {
+      if (unreadCount <= 0)
+        badge.remove();
+      else
+        badge.textContent = unreadCount.toString();
+    }
+    const header = this.root.querySelector('.pp-notifications-header');
+    if (header) {
+      if (unreadCount <= 0)
+        header.remove();
+      else {
+        const countEl = header.querySelector('.pp-notifications-unread-count');
+        if (countEl)
+          countEl.textContent = `${unreadCount} unread`;
+      }
+    }
+  }
+
   async getNotificationsTab(): Promise<HTMLElement> {
     console.time('ActivityDashboardWidget.buildNotificationsTab');
     if (this.recentNotifications.length === 0)
@@ -694,14 +711,7 @@ export class SpotlightWidget extends DG.Widget {
           dartIcon.addEventListener('click', () => {
             this.markedReadIds.add(item.id);
             child.classList.remove('grok-notification-unread');
-            const badge = this.root.querySelector('.pp-notification-badge');
-            if (badge) {
-              const count = parseInt(badge.textContent ?? '0') - 1;
-              if (count <= 0)
-                badge.remove();
-              else
-                badge.textContent = count.toString();
-            }
+            this.refreshUnreadCountUI();
           });
         }
       }
@@ -714,17 +724,21 @@ export class SpotlightWidget extends DG.Widget {
           timeChild.remove();
       }
     }
-    const hasUnread = this.recentNotifications.some((n) => !n.isRead && !this.markedReadIds.has(n.id));
-    if (hasUnread) {
-      const markAllBtn = ui.button('Mark all as read', async () => {
+    const unreadCount = this.recentNotifications.filter((n) => !n.isRead && !this.markedReadIds.has(n.id)).length;
+    if (unreadCount > 0) {
+      const header = ui.div([], 'pp-notifications-header');
+      const countEl = ui.span([`${unreadCount} unread`], 'pp-notifications-unread-count');
+      const separator = ui.span(['·'], 'pp-notifications-separator');
+      const markAllLink = ui.link('Mark all as read', async () => {
         await grok.dapi.users.notifications.markAllAsRead();
-        markAllBtn.remove();
+        header.remove();
         this.root.querySelector('.pp-notification-badge')?.remove();
         this.root.querySelectorAll('.grok-notification-unread').forEach((el) =>
           el.classList.remove('grok-notification-unread'));
       });
-      markAllBtn.classList.add('pp-mark-all-read');
-      root.appendChild(markAllBtn);
+      markAllLink.classList.add('pp-mark-all-read');
+      header.append(countEl, separator, markAllLink);
+      root.appendChild(header);
     }
     root.appendChild(this.notificationsListRoot);
     this.cleanLists();
@@ -819,10 +833,9 @@ export class SpotlightWidget extends DG.Widget {
       return false;
     if (ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
       ent instanceof DG.UserReport || ent.entityType === 'UserReport' || ent instanceof DG.TableInfo ||
-      (ent instanceof DG.Func && !(ent instanceof DG.Script || ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) ||
+      (ent instanceof DG.Func && !(ent instanceof DG.Script || ent instanceof DG.DataQuery || ent instanceof DG.DataJob || isApp(ent))) ||
       ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection ||
-      (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage ||
-        (ent.name.startsWith('Report') && ent.name.length > 6 && !isNaN(Number(ent.name.slice(6)))))) ||
+      (ent instanceof DG.Project && (ent.isPackage || (!ent.isDashboard && !ent.isSpace))) ||
       //@ts-ignore
         (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))
       return false;

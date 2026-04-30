@@ -9,43 +9,53 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace queries {
   /**
-  "Get comprehensive antibody profile filtered by organism and target, including structure, HC/LC regions, and all assay data."
-  */
+   * "Get comprehensive antibody profile filtered by organism and target, including structure, HC/LC regions, and all assay data."
+   * @param {string} organism
+   *   choices: query("SELECT DISTINCT name FROM biologics.target_organisms")
+   * @param {string} target
+   *   choices: query("SELECT DISTINCT name FROM biologics.targets")
+   */
   export async function antibodyProfileByOrganismAndTarget(organism: string , target: string ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:AntibodyProfileByOrganismAndTarget', { organism, target });
   }
 
   /**
-  "Find biologics assays for a specified organism."
-  */
+   * "Find biologics assays for a specified organism."
+   * @param {string} organism
+   *   choices: query("SELECT distinct name FROM biologics.target_organisms")
+   */
   export async function assaysByOrganism(organism: string ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:AssaysByOrganism', { organism });
   }
 
   /**
-  "Find biologics ADCs with caspase activity higher than a specified value."
-  */
+   * "Find biologics ADCs with caspase activity higher than a specified value."
+   */
   export async function adcsWithCapsazeActivityHigherThan(minActivity: number ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:ADCsWithCapsazeActivityHigherThan', { minActivity });
   }
 
   /**
-  "Find biologics ADCs with IC50 higher or lower than a specified value. Use 'higher' or 'lower' for valueTarget to indicate the comparison direction."
-  */
+   * "Find biologics ADCs with IC50 higher or lower than a specified value. Use 'higher' or 'lower' for valueTarget to indicate the comparison direction."
+   * @param {string} valueTarget
+   *   choices: ['higher', 'lower']
+   */
   export async function adcsWithIC50HLThan(value: number , valueTarget: string ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:ADCsWithIC50HLThan', { value, valueTarget });
   }
 
   /**
-  "Find ADCs in biologics database linked to a specified drug identifier."
-  */
+   * "Find ADCs in biologics database linked to a specified drug identifier."
+   * @param {string} drugID
+   *   choices: query("SELECT distinct identifier FROM biologics.drugs")
+   */
   export async function adcsLinkedToDrug(drugID: string ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:AdcsLinkedToDrug', { drugID });
   }
 
   /**
-  "Retrieve the HELM sequence of a biologics peptide given its identifier that should follow the pattern GROKPEP-######."
-  */
+   * "Retrieve the HELM sequence of a biologics peptide given its identifier that should follow the pattern GROKPEP-######."
+   */
   export async function getBiologicsPeptideHelmByIdentifier(peptideIdentifier: string ): Promise<string> {
     return await grok.data.query('Biologics:GetBiologicsPeptideHelmByIdentifier', { peptideIdentifier });
   }
@@ -61,8 +71,8 @@ export namespace funcs {
   }
 
   /**
-  Populates missing ADC glyphs with random PNG (base64) strings
-  */
+   * Populates missing ADC glyphs with random PNG (base64) strings
+   */
   export async function populateAdcGlyphs(): Promise<void> {
     return await grok.functions.call('Biologics:PopulateAdcGlyphs', {});
   }

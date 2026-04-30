@@ -13,11 +13,12 @@ import {IMonomerLib, IMonomerLibBase, Monomer} from '../types/monomer-library';
 import {getFormattedMonomerLib, keepPrecision} from './to-atomic-level-utils';
 import {seqToMolFileWorker} from './seq-to-molfile';
 import {Atoms, Bonds, hasMolGraph, ITypedArray, LibMonomerKey, MolGraph,
-  MonomerMetadata, MonomerMolGraphMap, NumberWrapper, Point, setMolGraph} from './types';
+  MonomerMetadata, MonomerMolGraphMap, NucleotideRole, NumberWrapper, Point, setMolGraph} from './types';
 import {ISeqHelper, ToAtomicLevelRes} from '../utils/seq-helper';
 import {errInfo} from '../utils/err-info';
 import {alphabetToPolymerType} from './utils';
 import {HelmType, ISeqMonomer, PolymerType} from '../helm/types';
+import {HelmTypes, PolymerTypes} from '../helm/consts';
 import {monomerWorksConsts as C} from './consts';
 
 // todo: verify that all functions have return types
@@ -40,8 +41,16 @@ export async function _toAtomicLevel(
   let srcCol: DG.Column<string> = seqCol;
   const seqUh = seqHelper.getSeqHandler(seqCol);
 
-  // convert 'helm' to 'separator' units
-  if (seqUh.notation !== NOTATION.SEPARATOR && seqUh.notation !== NOTATION.BILN) {
+  // Decide whether we must keep HELM as-is for nucleotide assembly. The
+  // alphabet is unreliable here: a HELM RNA column with non-canonical bases
+  // can detect as ALPHABET.UN. Inspect the splitter's per-monomer polymer
+  // types instead — every monomer in every (non-empty) row must be RNA.
+  const keepHelmTriples = seqUh.notation === NOTATION.HELM &&
+    isAllHelmRna(seqCol, seqHelper);
+
+  // convert 'helm' to 'separator' units (peptide HELM, anything non-RNA/DNA)
+  if (!keepHelmTriples &&
+    seqUh.notation !== NOTATION.SEPARATOR && seqUh.notation !== NOTATION.BILN) {
     srcCol = seqUh.convert(NOTATION.SEPARATOR, '.');
     srcCol.name = seqCol.name; // Replace converted col name 'separator(<original>)' to '<original>';
   }
@@ -49,20 +58,39 @@ export async function _toAtomicLevel(
   let polymerType: PolymerType;
   let alphabet: ALPHABET;
   try {
-    const srcSh = seqHelper.getSeqHandler(srcCol);
-    alphabet = srcSh.alphabet as ALPHABET;
-    polymerType = alphabetToPolymerType(alphabet);
+    if (keepHelmTriples) {
+      // We already proved the column is HELM RNA. Pin the polymer type to
+      // RNA without leaning on the alphabet detector (which can yield UN
+      // when only modified monomers appear).
+      polymerType = HELM_POLYMER_TYPE.RNA;
+      alphabet = pickRnaAlphabetFromHelm(seqCol, seqHelper);
+    } else {
+      const srcSh = seqHelper.getSeqHandler(srcCol);
+      alphabet = srcSh.alphabet as ALPHABET;
+      polymerType = alphabetToPolymerType(alphabet);
+    }
   } catch (err: any) {
     const [errMsg, _errStack] = errInfo(err);
     return {molCol: null, warnings: [errMsg]};
   }
 
   const monomerSequencesArray: ISeqMonomer[][] = getMonomerSequencesArray(srcCol, seqHelper);
-  const monomersDict = getMonomersDictFromLib(monomerSequencesArray, polymerType, alphabet, monomerLib, rdKitModule);
+  // Per-row roles: only set in HELM RNA/DNA mode where the splitter emits triples.
+  const rolesArray: (NucleotideRole[] | undefined)[] = keepHelmTriples ?
+    buildRolesForHelmRna(monomerSequencesArray) :
+    new Array(monomerSequencesArray.length).fill(undefined);
+  // In triples mode, override the per-row biotype so it carries NUCLEOTIDE
+  // (rather than whatever the seq-handler defaults to for an UN-alphabet column).
+  if (keepHelmTriples) {
+    for (const row of monomerSequencesArray)
+      for (const m of row) m.biotype = HelmTypes.NUCLEOTIDE as HelmType;
+  }
+  const monomersDict = getMonomersDictFromLib(
+    monomerSequencesArray, rolesArray, polymerType, alphabet, monomerLib, rdKitModule);
   const srcColLength = srcCol.length;
 
   const res = await seqToMolFileWorker(
-    srcCol, monomersDict, alphabet, polymerType, monomerLib, seqHelper, rdKitModule);
+    srcCol, monomersDict, alphabet, polymerType, monomerLib, seqHelper, rdKitModule, rolesArray);
   if (res.warnings.length > 0.05 * srcColLength)
     grok.shell.warning(`Molfile conversion resulted in ${res.warnings.length} errors`);
 
@@ -81,6 +109,67 @@ export async function _toAtomicLevel(
   }
 
   return res;
+}
+
+// True iff every row in the column is HELM with a single disjoint
+// sequence whose every monomer carries polymerType=RNA. The check goes
+// through the splitter, not the alphabet, because non-canonical HELM RNA
+// sequences can be mis-detected as ALPHABET.UN.
+function isAllHelmRna(seqCol: DG.Column<string>, seqHelper: ISeqHelper): boolean {
+  const sh = seqHelper.getSeqHandler(seqCol);
+  if (sh.notation !== NOTATION.HELM) return false;
+
+  let sawAny = false;
+  for (let rowI = 0; rowI < seqCol.length; ++rowI) {
+    const seqSS = sh.getSplitted(rowI);
+    if (seqSS.length === 0) continue;
+    const gi = seqSS.graphInfo;
+    // graphInfo.polymerTypes is per-monomer. If the row has any non-RNA
+    // monomer (peptide chain, CHEM, BLOB, ...), bail out.
+    const pts = gi?.polymerTypes;
+    if (!pts || pts.length !== seqSS.length) return false;
+    for (const pt of pts)
+      if (pt !== PolymerTypes.RNA) return false;
+    sawAny = true;
+  }
+  return sawAny;
+}
+
+// When we've already confirmed all rows are HELM RNA via `isAllHelmRna`,
+// pick a column-level alphabet for the (rare) bases-only fallback rows.
+// Heuristic: if any sugar position references the deoxyribose symbol `d`,
+// use DNA, otherwise RNA. Modified-only sequences default to RNA.
+function pickRnaAlphabetFromHelm(seqCol: DG.Column<string>, seqHelper: ISeqHelper): ALPHABET {
+  const sh = seqHelper.getSeqHandler(seqCol);
+  for (let rowI = 0; rowI < seqCol.length; ++rowI) {
+    const seqSS = sh.getSplitted(rowI);
+    for (let i = 0; i < seqSS.length; ++i) {
+      // Sugars sit at index i % 3 === 0 in the HELM RNA triples layout.
+      if (i % 3 !== 0) continue;
+      const sym = seqSS.getCanonical(i);
+      if (sym === C.DEOXYRIBOSE.symbol) return ALPHABET.DNA;
+    }
+  }
+  return ALPHABET.RNA;
+}
+
+// For HELM RNA rows, the splitter emits sugar/base/phosphate triples in
+// that fixed order (per `RNA_HELM_MONOMER_REG`). Tag each entry with its
+// role from the index modulo 3. If a row's length is not a multiple of 3,
+// the splitter left a monomer unsplit (e.g. `r(A)` with no phosphate); we
+// leave roles undefined so that row falls back to bases-only mode.
+function buildRolesForHelmRna(monomerSequencesArray: ISeqMonomer[][]): (NucleotideRole[] | undefined)[] {
+  const out: (NucleotideRole[] | undefined)[] = new Array(monomerSequencesArray.length);
+  for (let rowI = 0; rowI < monomerSequencesArray.length; ++rowI) {
+    const row = monomerSequencesArray[rowI];
+    // handle cases where terminal phosphate is missing
+    if (row.length === 0 || !(row.length % 3 === 0 || row.length % 3 === 2)) { out[rowI] = undefined; continue; }
+    const roles: NucleotideRole[] = new Array(row.length);
+    for (let i = 0; i < row.length; ++i)
+      roles[i] = (i % 3) as NucleotideRole;
+    out[rowI] = roles;
+  }
+  return out;
 }
 
 /** Get jagged array of monomer symbols for the dataframe
@@ -115,13 +204,17 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>, seqHelp
 /** Get a mapping of monomer symbols to MolGraph objects. Notice, the
  * transformation from molfile V2000 to V3000 takes place,
  * with the help of async function call from Chem (RdKit module)
- * @param {string[]} monomerSequencesArray - Jagged array of monomer symbols for the dataframe
- * @param {IMonomerLib} monomerLib - Monomer library
+ * @param {ISeqMonomer[][]} monomerSequencesArray - Jagged array of monomer symbols for the dataframe
+ * @param {Array} rolesArray - Per-row NucleotideRole tags (undefined for legacy bases-only rows)
  * @param {PolymerType} polymerType - Polymer type
  * @param {ALPHABET} alphabet - Alphabet
- * @return {Map<string, MolGraph>} - Mapping of monomer symbols to MolGraph objects*/
+ * @param {IMonomerLibBase} monomerLib - Monomer library
+ * @param {RDModule} rdKitModule - RDKit module
+ * @return {MonomerMolGraphMap} - Mapping of monomer symbols to MolGraph objects */
 export function getMonomersDictFromLib(
-  monomerSequencesArray: ISeqMonomer[][], polymerType: PolymerType, alphabet: ALPHABET,
+  monomerSequencesArray: ISeqMonomer[][],
+  rolesArray: (NucleotideRole[] | undefined)[],
+  polymerType: PolymerType, alphabet: ALPHABET,
   monomerLib: IMonomerLibBase, rdKitModule: RDModule
 ): MonomerMolGraphMap {
   // todo: exception - no gaps, no empty string monomers
@@ -132,31 +225,41 @@ export function getMonomersDictFromLib(
     value: null
   };
 
-  // this must NOT be placed after translating monomer sequences
-  // because adding branch monomers for nucleobases relies on these data
-  if (polymerType === HELM_POLYMER_TYPE.RNA) {
+  // Pre-load default sugar/phosphate when ANY row falls back to bases-only
+  // mode (FASTA, separator, or HELM RNA rows the splitter could not split).
+  // The default monomer adjusters depend on these being present in the dict.
+  const anyBasesOnly = polymerType === HELM_POLYMER_TYPE.RNA &&
+    rolesArray.some((r) => r === undefined);
+  if (anyBasesOnly) {
     const symbols = (alphabet === ALPHABET.RNA) ?
       [C.RIBOSE, C.PHOSPHATE] : [C.DEOXYRIBOSE, C.PHOSPHATE];
-    for (const sym of symbols)
-      addMonomerToDict(monomersDict, sym.symbol, formattedMonomerLib, rdKitModule, polymerType, pointerToBranchAngle);
+    for (const sym of symbols) {
+      addMonomerToDict(monomersDict, sym.symbol, formattedMonomerLib, rdKitModule, polymerType,
+        pointerToBranchAngle, undefined);
+    }
   }
 
   for (let rowI = 0; rowI < monomerSequencesArray.length; ++rowI) {
     const monomerSeq: ISeqMonomer[] = monomerSequencesArray[rowI];
-    for (const seqMonomer of monomerSeq) {
+    const roles = rolesArray[rowI];
+    for (let posI = 0; posI < monomerSeq.length; ++posI) {
+      const seqMonomer = monomerSeq[posI];
       const sym = seqMonomer.symbol;
       if (sym === '') continue; // Skip gap/empty monomer for MSA
+      const role = roles ? roles[posI] : undefined;
       try {
-        if (polymerType === HELM_POLYMER_TYPE.RNA && sym.split(/\(|\)/).filter((e) => !!e).length === 3) {
-          // special case for nucleobases
+        if (polymerType === HELM_POLYMER_TYPE.RNA && role === undefined &&
+          sym.split(/\(|\)/).filter((e) => !!e).length === 3) {
+          // legacy: a single token of the form sugar(base)phosphate slipped
+          // through unsplit; index just the base.
           const nsym = sym.split(/\(|\)/)[1];
           addMonomerToDict(monomersDict, nsym, formattedMonomerLib,
-            rdKitModule, polymerType, pointerToBranchAngle);
+            rdKitModule, polymerType, pointerToBranchAngle, NucleotideRole.BASE);
           if (monomersDict[polymerType]?.[nsym])
             monomersDict[polymerType][sym] = monomersDict[polymerType][nsym];
         } else {
           addMonomerToDict(monomersDict, sym, formattedMonomerLib,
-            rdKitModule, polymerType, pointerToBranchAngle);
+            rdKitModule, polymerType, pointerToBranchAngle, role);
         }
       } catch (err: any) {
         const errTxt = err instanceof Error ? err.message : err.toString();
@@ -172,21 +275,23 @@ export function getMonomersDictFromLib(
 }
 
 /** Adds MolGraph object for 'sym' to the monomers dict when necessary
- * @param {Map<string, MolGraph>} monomersDict - Monomers dictionary
+ * @param {MonomerMolGraphMap} monomersDict - Monomers dictionary
  * @param {string} sym - Monomer symbol
- * @param {Map<string, any>} formattedMonomerLib - Formatted monomer library
+ * @param {Map} formattedMonomerLib - Formatted monomer library
  * @param {any} moduleRdkit - RDKit module
  * @param {PolymerType} polymerType - Polymer type
- * @param {NumberWrapper} pointerToBranchAngle - Pointer to branch angle*/
+ * @param {NumberWrapper} pointerToBranchAngle - Pointer to branch angle
+ * @param {NucleotideRole} role - Optional role hint for RNA (sugar/base/phosphate) */
 function addMonomerToDict(
   monomersDict: MonomerMolGraphMap, sym: string,
   formattedMonomerLib: Map<string, any>, moduleRdkit: any,
-  polymerType: PolymerType, pointerToBranchAngle: NumberWrapper
+  polymerType: PolymerType, pointerToBranchAngle: NumberWrapper,
+  role: NucleotideRole | undefined
 ): void {
   const symKey: LibMonomerKey = {polymerType, symbol: sym};
   if (!hasMolGraph(monomersDict, symKey)) {
     const monomerData: MolGraph | null =
-      getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle);
+      getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle, role);
     if (monomerData)
       setMolGraph(monomersDict, symKey, monomerData);
     else {
@@ -199,15 +304,18 @@ function addMonomerToDict(
 /** Construct the MolGraph object for specified monomerSymbol: the associated
  * graph is adjusted in XY plane and filled with default R-groups
  * @param {string} monomerSymbol - Monomer symbol
- * @param {Map<string, any>} formattedMonomerLib - Formatted monomer library
+ * @param {Map} formattedMonomerLib - Formatted monomer library
  * @param {any} moduleRdkit - RDKit module
  * @param {PolymerType} polymerType - Polymer type
  * @param {NumberWrapper} pointerToBranchAngle - Pointer to branch angle
- * @return {MolGraph | null} - MolGraph object or null if monomerSymbol is absent in the library*/
+ * @param {NucleotideRole} role - Optional explicit role (sugar/base/phosphate); when set
+ *   it takes priority over the legacy symbol-based dispatch.
+ * @return {MolGraph} - MolGraph object or null if monomerSymbol is absent in the library */
 function getMolGraph(
   monomerSymbol: string, formattedMonomerLib: Map<string, any>,
   moduleRdkit: any, polymerType: PolymerType,
-  pointerToBranchAngle: NumberWrapper
+  pointerToBranchAngle: NumberWrapper,
+  role: NucleotideRole | undefined
 ): MolGraph | null {
   if (!formattedMonomerLib.has(monomerSymbol))
     return null;
@@ -230,15 +338,21 @@ function getMolGraph(
     if (polymerType === HELM_POLYMER_TYPE.PEPTIDE)
       adjustPeptideMonomerGraph(monomerGraph);
     else { // nucleotides
-      if (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol)
+      // Prefer explicit role (HELM-RNA triples mode); fall back to symbol
+      // matching against the canonical r/d/p for the legacy bases-only path.
+      const isSugar = role === NucleotideRole.SUGAR ||
+        (role === undefined && (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol));
+      const isPhosphate = role === NucleotideRole.PHOSPHATE ||
+        (role === undefined && monomerSymbol === C.PHOSPHATE.symbol);
+      if (isSugar)
         adjustSugarMonomerGraph(monomerGraph, pointerToBranchAngle);
-      else if (monomerSymbol === C.PHOSPHATE.symbol)
+      else if (isPhosphate)
         adjustPhosphateMonomerGraph(monomerGraph);
       else
         adjustBaseMonomerGraph(monomerGraph, pointerToBranchAngle);
     }
 
-    setShiftsAndTerminalNodes(polymerType, monomerGraph, monomerSymbol);
+    setShiftsAndTerminalNodes(polymerType, monomerGraph, monomerSymbol, role);
     // todo: restore after debugging
     removeHydrogen(monomerGraph);
     replaceWrongfulRGroups(monomerGraph);
@@ -266,7 +380,8 @@ function getAbsStereocenters(molfileV3K: string): number[] {
 }
 
 function setShiftsAndTerminalNodes(
-  polymerType: PolymerType, monomerGraph: MolGraph, monomerSymbol: string
+  polymerType: PolymerType, monomerGraph: MolGraph, monomerSymbol: string,
+  role: NucleotideRole | undefined
 ): void {
   // remove the 'rightmost' chain-extending r-group node in the backbone
   if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
@@ -275,7 +390,13 @@ function setShiftsAndTerminalNodes(
     if (removedR2Atom?.removedAtom)
       monomerGraph.terminalR2Atom = removedR2Atom.removedAtom; // store the removed R2 Atom type, if any
   } else { // nucleotides
-    if (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol) {
+    // Prefer explicit role (HELM RNA triples mode); fall back to symbol
+    // matching against canonical r/d/p for the legacy bases-only path.
+    const isSugar = role === NucleotideRole.SUGAR ||
+      (role === undefined && (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol));
+    const isPhosphate = role === NucleotideRole.PHOSPHATE ||
+      (role === undefined && monomerSymbol === C.PHOSPHATE.symbol);
+    if (isSugar) {
       // remove R2
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
       // set terminalNode2 (oxygen) as new R2
@@ -288,7 +409,7 @@ function setShiftsAndTerminalNodes(
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[0]);
       // remove the branching r-group
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[2]);
-    } else if (monomerSymbol === C.PHOSPHATE.symbol) {
+    } else if (isPhosphate) {
       monomerGraph.meta.terminalNodes[0] = monomerGraph.meta.rNodes[0];
       shiftCoordinates(
         monomerGraph,

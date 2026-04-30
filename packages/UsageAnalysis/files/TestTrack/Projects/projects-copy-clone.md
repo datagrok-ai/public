@@ -5,6 +5,7 @@
   * add any viewer and save the original project, close all.
   * open the original project, add any viewer and save a copy with the **link**, close all, reopen it. Close all
   * open the original project, add any viewer and save a copy with the **clone**, close all, reopen it. Close all
+  * open the original project, add any viewer and save personal view customizations
 5. Share the new created projects. Check ability to open the shared projects
 
 ---

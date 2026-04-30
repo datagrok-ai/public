@@ -11,7 +11,7 @@ import {detectAlphabet, detectHelmAlphabet, splitterAsFastaSimple, StringListSeq
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
-import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from '@datagrok-libraries/bio/src/utils/const';
+import {DEOXYRIBOSE_SYMBOL, HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL, RIBOSE_SYMBOL} from '@datagrok-libraries/bio/src/utils/const';
 import {GAP_SYMBOL, GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {CellRendererBackBase, GridCellRendererTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
@@ -939,6 +939,11 @@ export class SeqHandler implements ISeqHandler {
 
       if (cm === GAP_SYMBOL)
         om = GapOriginals[NOTATION.FASTA];
+      // For HELM RNA, the splitter triplet-splits each nucleotide into
+      // [sugar, base, phosphate]; FASTA conversion keeps only the base, so
+      // drop standalone sugar/phosphate tokens.
+      else if (isHelm && (cm === PHOSPHATE_SYMBOL || cm === RIBOSE_SYMBOL || cm === DEOXYRIBOSE_SYMBOL))
+        om = '';
       else if (cm === PHOSPHATE_SYMBOL)
         om = '';
       else if (om.length > 1)
@@ -978,7 +983,9 @@ export class SeqHandler implements ISeqHandler {
     return joinToBiln(srcSS);
   }
 
-  /** Splits Helm sequence adjusting nucleotides to single char symbols. (!) Removes lone phosphorus. */
+  /** Splits Helm sequence adjusting nucleotides to single char symbols. (!) Removes lone phosphorus,
+   *  ribose, and deoxyribose tokens (which the underlying splitter emits when triplet-splitting
+   *  each nucleotide of an RNA chain). */
   private splitterAsHelmNucl(src: string): ISeqSplitted {
     const srcMList: ISeqSplitted = this.splitter(src);
     const tgtMList: (string | null)[] = new Array<string>(srcMList.length);
@@ -988,7 +995,8 @@ export class SeqHandler implements ISeqHandler {
       let om: string | null = srcMList.getOriginal(posIdx);
       if (isDna || isRna) {
         om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
-        om = om === PHOSPHATE_SYMBOL ? null : om;
+        if (om === PHOSPHATE_SYMBOL || om === RIBOSE_SYMBOL || om === DEOXYRIBOSE_SYMBOL)
+          om = null;
       }
       tgtMList[posIdx] = om ? om : null;
     }
@@ -1009,18 +1017,26 @@ export class SeqHandler implements ISeqHandler {
 // -- joiners --
 
 function joinToSeparator(seqS: ISeqSplitted, tgtSeparator: string, isHelm: boolean): string {
-  const resMList: string[] = new Array<string>(seqS.length);
+  const resMList: string[] = [];
   for (let posIdx: number = 0; posIdx < seqS.length; ++posIdx) {
     const cm = seqS.getCanonical(posIdx);
     let om = seqS.getOriginal(posIdx);
     if (isHelm)
       om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
 
-    if (cm === GAP_SYMBOL)
-      om = GapOriginals[NOTATION.SEPARATOR];
-    else if (cm === PHOSPHATE_SYMBOL)
-      om = '';
-    resMList[posIdx] = om;
+    if (cm === GAP_SYMBOL) {
+      resMList.push(GapOriginals[NOTATION.SEPARATOR]);
+      continue;
+    }
+    // For HELM RNA, the splitter triplet-splits each nucleotide into
+    // [sugar, base, phosphate]; separator conversion keeps only the base, so
+    // skip standalone sugar/phosphate tokens entirely (rather than emitting
+    // an empty cell that would show up as an extra separator in the output).
+    if (isHelm && (cm === PHOSPHATE_SYMBOL || cm === RIBOSE_SYMBOL || cm === DEOXYRIBOSE_SYMBOL))
+      continue;
+    if (cm === PHOSPHATE_SYMBOL)
+      continue;
+    resMList.push(om);
   }
   return resMList.join(tgtSeparator);
 }

@@ -356,6 +356,150 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
   }
 });
 
+/** Tests for the linear HELM-RNA path: must preserve modified sugars,
+ * phosphates, and bases per nucleotide. The non-linear (HELM via POM)
+ * path is the reference; the linear path is expected to match it on
+ * canonical SMILES for these inputs. */
+category('toAtomicLevelHelmRna', async () => {
+  let monomerLibHelper: IMonomerLibHelper;
+  let userLibSettings: UserLibSettings;
+  let seqHelper: ISeqHelper;
+  let monomerLib: IMonomerLib;
+  let rdKitModule: RDModule;
+
+  before(async () => {
+    rdKitModule = await getRdKitModule();
+    seqHelper = await getSeqHelper();
+    monomerLibHelper = await getMonomerLibHelper();
+    userLibSettings = await getUserLibSettings();
+    await monomerLibHelper.loadMonomerLibForTests();
+    monomerLib = monomerLibHelper.getMonomerLib();
+  });
+
+  after(async () => {
+    await setUserLibSettings(userLibSettings);
+    await monomerLibHelper.loadMonomerLib(true);
+  });
+
+  /** Build a single-row HELM RNA dataframe and run the linear converter,
+   * returning the canonical SMILES of the resulting molfile. */
+  async function helmRnaLinearToSmiles(srcHelm: string): Promise<string> {
+    const srcCsv = `seq\n${srcHelm}`;
+    const df = DG.DataFrame.fromCsv(srcCsv);
+    await grok.data.detectSemanticTypes(df);
+    const seqCol = df.getCol('seq');
+    expect(seqCol.semType, DG.SEMTYPE.MACROMOLECULE);
+
+    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper, rdKitModule);
+    if (!res.molCol)
+      throw new Error(`_toAtomicLevel returned no molCol for HELM '${srcHelm}'. ` +
+        `Warnings: ${(res.warnings ?? []).join(' / ')}`);
+
+    const molfile: string | null = res.molCol.get(0);
+    if (!molfile)
+      throw new Error(`_toAtomicLevel produced an empty molfile for HELM '${srcHelm}'`);
+    let smiles: string;
+    try {
+      smiles = grok.chem.convert(molfile, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+    } catch (err: any) {
+      throw new Error(`SMILES conversion threw for HELM '${srcHelm}': ${err?.message ?? err}\n` +
+        `--- MOLFILE START ---\n${molfile}\n--- MOLFILE END ---`);
+    }
+    // RDKit signals a parse failure by returning the literal string
+    // "MALFORMED_INPUT_VALUE" — surface it together with the offending molfile.
+    if (smiles === 'MALFORMED_INPUT_VALUE' || /^MALFORMED/.test(smiles)) {
+      throw new Error(`RDKit could not parse molfile produced for HELM '${srcHelm}'.\n` +
+        `--- MOLFILE START ---\n${molfile}\n--- MOLFILE END ---`);
+    }
+    return smiles;
+  }
+
+  // Unmodified RNA HELM — regression baseline. The linear path must produce
+  // a real RNA backbone (sugar + phosphate + base per nucleotide), not just
+  // a chain of bases.
+  test('rna-canonical', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{r(A)p.r(C)p.r(G)p}$$$$`);
+    // Should at minimum contain phosphate (P), ribose oxygens, and a purine ring.
+    expect(/P/.test(smiles), true, `expected phosphate in SMILES: ${smiles}`);
+    // Purine fragment (any ring closure digit): n<d>cnc<d> or N<d>C=N (case insensitive).
+    expect(/n\dcnc\d/.test(smiles) || /n\dcnc/i.test(smiles), true,
+      `expected purine ring fragment in SMILES: ${smiles}`);
+  });
+
+  // Modified base — 5-methylcytosine. Linear path should preserve the
+  // methyl branch on the cytidine of position 0.
+  test('rna-modified-base', async () => {
+    const smilesPlain = await helmRnaLinearToSmiles(`RNA1{r(C)p.r(A)p}$$$$`);
+    const smilesMod = await helmRnaLinearToSmiles(`RNA1{r([m5C])p.r(A)p}$$$$`);
+    expect(smilesPlain !== smilesMod, true,
+      `m5C must change the SMILES vs. plain C. plain=${smilesPlain} mod=${smilesMod}`);
+  });
+
+  // Modified phosphate — phosphorothioate. The linker between positions 0
+  // and 1 must change (S replaces a non-bridging O).
+  test('rna-modified-phosphate', async () => {
+    const smilesPlain = await helmRnaLinearToSmiles(`RNA1{r(A)p.r(C)p}$$$$`);
+    const smilesMod = await helmRnaLinearToSmiles(`RNA1{r(A)[Rsp].r(C)p}$$$$`);
+    expect(smilesPlain !== smilesMod, true,
+      `Rsp phosphorothioate must change the SMILES vs. plain p. plain=${smilesPlain} mod=${smilesMod}`);
+    expect(/S/.test(smilesMod), true,
+      `expected sulfur in phosphorothioate SMILES: ${smilesMod}`);
+    // HELM explicitly wrote 2 phosphates (one Rsp at position 0, one p at
+    // position 1); both must appear in the molecule, so two P atoms total.
+    const pCountPlain = (smilesPlain.match(/P/g) || []).length;
+    const pCountMod = (smilesMod.match(/P/g) || []).length;
+    expect(pCountPlain, 2, `expected 2 phosphates in plain: ${smilesPlain}`);
+    expect(pCountMod, 2, `expected 2 phosphates in modified: ${smilesMod}`);
+  });
+
+  // Modified sugar — 2'-fluoro ribose. Position 0 sugar gets a fluorine.
+  test('rna-modified-sugar', async () => {
+    const smilesPlain = await helmRnaLinearToSmiles(`RNA1{r(A)p.r(C)p}$$$$`);
+    const smilesMod = await helmRnaLinearToSmiles(`RNA1{[fl2r](A)p.r(C)p}$$$$`);
+    expect(smilesPlain !== smilesMod, true,
+      `fl2r (2'-F ribose) must change the SMILES vs. plain r. plain=${smilesPlain} mod=${smilesMod}`);
+    expect(/F/.test(smilesMod), true,
+      `expected fluorine in 2'-F ribose SMILES: ${smilesMod}`);
+  });
+
+  // HELM omits the trailing phosphate (3'-OH terminus on the sugar). The
+  // splitter must split the partial `r(C)` into [r, C], assembly must skip
+  // the trailing P emit, and counts must agree.
+  test('rna-no-trailing-phosphate', async () => {
+    const smilesWith = await helmRnaLinearToSmiles(`RNA1{r(A)p.r(C)p}$$$$`);
+    const smilesNoTail = await helmRnaLinearToSmiles(`RNA1{r(A)p.r(C)}$$$$`);
+    // Both should produce valid molecules with at least one P (the linker
+    // between the two nucleotides is always present).
+    expect(/P/.test(smilesNoTail), true,
+      `expected the inter-nucleotide phosphate to remain: ${smilesNoTail}`);
+    // The version WITH trailing phosphate should have exactly one more P
+    // atom than the version without.
+    const pCountWith = (smilesWith.match(/P/g) || []).length;
+    const pCountNoTail = (smilesNoTail.match(/P/g) || []).length;
+    expect(pCountWith, pCountNoTail + 1,
+      `expected pCountWith - pCountNoTail === 1, got with=${pCountWith}, noTail=${pCountNoTail}. ` +
+      `with=${smilesWith}, noTail=${smilesNoTail}`);
+  });
+
+  // Missing trailing phosphate combined with modifications.
+  test('rna-no-trailing-phosphate-with-modifications', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{[fl2r]([m5C])[Rsp].r(A)}$$$$`);
+    expect(/F/.test(smiles), true, `expected fluorine: ${smiles}`);
+    expect(/S/.test(smiles), true, `expected sulfur: ${smiles}`);
+    // Exactly one phosphate (the Rsp linker), no trailing P.
+    const pCount = (smiles.match(/P/g) || []).length;
+    expect(pCount, 1, `expected exactly 1 phosphate: ${smiles}`);
+  });
+
+  // All three modifications combined. End-to-end smoke test.
+  test('rna-all-modifications', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{[fl2r]([m5C])[Rsp].r(A)p}$$$$`);
+    expect(/F/.test(smiles), true, `expected fluorine: ${smiles}`);
+    expect(/S/.test(smiles), true, `expected sulfur: ${smiles}`);
+    expect(/P/.test(smiles), true, `expected phosphorus: ${smiles}`);
+  });
+});
+
 
 function polishMolfile(mol: string): string {
   return mol.replaceAll('\r\n', '\n')

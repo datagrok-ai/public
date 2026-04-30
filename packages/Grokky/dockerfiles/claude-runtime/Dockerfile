@@ -17,6 +17,8 @@ COPY --chown=grok:grok src ./src
 RUN npm ci && npx tsc && rm -rf src tsconfig.json && npm prune --production && \
     npm install -g @zilliz/claude-context-mcp@latest
 
+COPY --chown=grok:grok plugin /app/plugin
+
 ENV CLAUDE_WORKSPACE=/workspace
 
 USER grok

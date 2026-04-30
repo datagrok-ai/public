@@ -13,8 +13,8 @@ import {PreclinicalStudy} from './preclinical-study';
 import {TableView} from './types/types';
 import '../css/preclinical-case.css';
 import {scripts} from './package-api';
-import {cdiscAppTB, createStudiesFromAppData,
-  openApp, PRECLINICAL_CASE_APP_PATH,
+import {cdiscAppTB, createStudiesFromAppData, createStudyWithConfig,
+  openApp, PRECLINICAL_CASE_APP_PATH, readClinicalData,
   studies} from './utils/app-utils';
 // Import renderers to ensure they're registered
 import './utils/rule-violation-cell-renderer';
@@ -116,6 +116,48 @@ export class PackageFunctions {
       options: options ? JSON.stringify(options) : undefined,
     });
     return result;
+  }
+
+  @grok.decorators.func({
+    'name': 'openPreclinicalCaseView',
+    'description': 'Open a Preclinical Case view by name. Loads the study if needed. Used by tests.',
+  })
+  static async openPreclinicalCaseView(
+    @grok.decorators.param({'name': 'studyId'}) studyId: string,
+    @grok.decorators.param({'name': 'viewName'}) viewName: string,
+  ): Promise<DG.ViewBase> {
+    const factory = VIEW_CREATE_FUNC[viewName];
+    if (!factory)
+      throw new Error(`Unknown PreclinicalCase view: ${viewName}`);
+
+    if (!studies[studyId] || !studies[studyId].initCompleted) {
+      const files = await _package.files.list(`SEND/${studyId}`);
+      const stubNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('PreclinicalCase tests');
+      await createStudyWithConfig(files, stubNode, true);
+      await readClinicalData(studies[studyId], files);
+      studies[studyId].init();
+      await new Promise<void>((resolve) => {
+        if (studies[studyId].validated) {
+          resolve();
+          return;
+        }
+        const sub = studies[studyId].validationCompleted.subscribe(() => {
+          sub.unsubscribe();
+          resolve();
+        });
+        setTimeout(() => {
+          sub.unsubscribe();
+          resolve();
+        }, 30000);
+      });
+    }
+
+    const view = factory(studyId) as DG.ViewBase;
+    // Mount it so table-view internals (grid, dockManager) initialize, otherwise
+    // dock(...) / hideValidationColumns kicked off by createTableView fire against a
+    // null dockManager after this returns.
+    grok.shell.addPreview(view);
+    return view;
   }
 }
 

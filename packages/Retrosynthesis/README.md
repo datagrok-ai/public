@@ -13,7 +13,7 @@ Hover over the graph and click _plus_ icon to add the tree to the workspace.
 
 You can add custom models, stocks and configurations to use them for paths generation. To do that:
 
-- create a folder with your custom configuration name under AppData/Rerosynthesis/configs and place your custom files there. Minimum required files are:
+- create a folder with your custom configuration name under AppData/Retrosynthesis/configs and place your custom files there. Minimum required files are:
 
   - expansion model
   - file with templates

@@ -1,5 +1,14 @@
 # Datagrok-tools changelog
 
+## 6.1.13 (2026-04-30)
+
+* Reports: `grok report ticket` now uses direct JIRA REST honoring `$JIRA_PROJECT`, replacing the Datlas-mediated path that hardcoded GROK.
+
+## 6.1.11 (2026-04-27)
+
+* `grok report read <path | instance number>` — normalize a report zip/json into one JSON object on stdout (envelope unwrap, `_meta.json` merge, optional `--extract-screenshot` / `--extract-d42` / `--extract-actions`)
+* `grok report fetch` — single round-trip via the new `/reports/by-number/<number>/zip` endpoint, with fallback to the legacy search-then-download path on 404
+
 ## 6.1.10 (2026-04-17)
 
 * `grok s connections save` — create/update a connection from a JSON file (`--save-credentials` optional)

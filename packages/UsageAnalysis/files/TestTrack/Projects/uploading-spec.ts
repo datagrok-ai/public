@@ -1,22 +1,7 @@
-import { test, expect, Page } from '@playwright/test';
-import {specTestOptions} from '../spec-login';
+import {test, expect, Page} from '@playwright/test';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
-
-const BASE_URL = 'https://release-ec2.datagrok.ai';
-const LOGIN = 'claude';
-const PASSWORD = 'grokclaude';
-
-async function login(page: Page) {
-  await page.goto(BASE_URL);
-  const loginInput = page.locator('input[placeholder*="Login"]');
-  if (await loginInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await loginInput.fill(LOGIN);
-    await page.locator('input[type="password"]').fill(PASSWORD);
-    await page.keyboard.press('Enter');
-  }
-  await page.waitForSelector('.d4-toolbox', { timeout: 60000 });
-}
 
 async function evalJs(page: Page, script: string): Promise<any> {
   return page.evaluate(script);
@@ -29,12 +14,11 @@ async function closeAll(page: Page) {
 async function saveProject(page: Page, name: string) {
   await page.click('button:has-text("SAVE"), .ui-btn:has-text("SAVE")');
   const dialog = page.locator('.d4-dialog');
-  await dialog.waitFor({ timeout: 10000 });
+  await dialog.waitFor({timeout: 10000});
   const nameInput = dialog.locator('input[type="text"]');
   await nameInput.fill(name);
   await dialog.locator('.ui-btn.ui-btn-ok').click();
-  // Wait for share dialog
-  await page.waitForSelector('text=Share ' + name, { timeout: 30000 });
+  await page.waitForSelector('text=Share ' + name, {timeout: 30000});
   await page.locator('.d4-dialog .ui-btn:has-text("CANCEL")').click();
 }
 
@@ -45,138 +29,145 @@ async function deleteProject(page: Page, name: string) {
   })()`);
 }
 
-test.describe('Projects / Uploading', () => {
+test('Projects / Uploading', async ({page}) => {
+  test.setTimeout(900_000);
+  stepErrors.length = 0;
 
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-    await closeAll(page);
-  });
+  await loginToDatagrok(page);
+  await closeAll(page);
 
-  test.afterEach(async ({ page }) => {
-    await closeAll(page);
-  });
-
-  test('Case 1: Save project from two local tables', async ({ page }) => {
+  await softStep('Case 1: Save project from two local tables', async () => {
     const projectName = 'AutoTest-Upload-Case1-' + Date.now();
+    try {
+      await evalJs(page, `(async () => {
+        grok.shell.addTableView(grok.data.demo.demog());
+        const df2 = await grok.data.getDemoTable('demog.csv');
+        df2.name = 'demog2';
+        grok.shell.addTableView(df2);
+      })()`);
 
-    await evalJs(page, `(async () => {
-      const tv1 = grok.shell.addTableView(grok.data.demo.demog());
-      const df2 = await grok.data.getDemoTable('demog.csv');
-      df2.name = 'demog2';
-      grok.shell.addTableView(df2);
-    })()`);
+      await page.waitForTimeout(2000);
+      const tables = await evalJs(page, 'grok.shell.tables.map(t => t.name)');
+      expect(tables.length).toBe(2);
 
-    await page.waitForTimeout(2000);
-    const tables = await evalJs(page, 'grok.shell.tables.map(t => t.name)');
-    expect(tables.length).toBe(2);
+      await saveProject(page, projectName);
 
-    await saveProject(page, projectName);
-
-    // Verify project exists
-    const exists = await evalJs(page,
-      `(async () => {
-        const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
-        return p !== null;
-      })()`
-    );
-    expect(exists).toBe(true);
-
-    // Cleanup
-    await deleteProject(page, projectName);
+      const exists = await evalJs(page,
+        `(async () => {
+          const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
+          return p !== null;
+        })()`,
+      );
+      expect(exists).toBe(true);
+    } finally {
+      await deleteProject(page, projectName).catch(() => {});
+      await closeAll(page);
+    }
   });
 
-  test('Case 3: Save project from Browse > Files', async ({ page }) => {
+  await softStep('Case 3: Save project from Browse > Files', async () => {
     const projectName = 'AutoTest-Upload-Case3-' + Date.now();
+    try {
+      await evalJs(page, `(async () => {
+        const df1 = await grok.data.files.openTable('System:DemoFiles/demog.csv');
+        grok.shell.addTableView(df1);
+        const df2 = await grok.data.files.openTable('System:DemoFiles/geo/earthquakes.csv');
+        grok.shell.addTableView(df2);
+      })()`);
 
-    await evalJs(page, `(async () => {
-      const df1 = await grok.data.files.openTable('System:DemoFiles/demog.csv');
-      grok.shell.addTableView(df1);
-      const df2 = await grok.data.files.openTable('System:DemoFiles/geo/earthquakes.csv');
-      grok.shell.addTableView(df2);
-    })()`);
+      await page.waitForTimeout(2000);
+      const tables = await evalJs(page, 'grok.shell.tables.map(t => t.name)');
+      expect(tables.length).toBe(2);
 
-    await page.waitForTimeout(2000);
-    const tables = await evalJs(page, 'grok.shell.tables.map(t => t.name)');
-    expect(tables.length).toBe(2);
+      await saveProject(page, projectName);
 
-    await saveProject(page, projectName);
-
-    const exists = await evalJs(page,
-      `(async () => {
-        const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
-        return p !== null;
-      })()`
-    );
-    expect(exists).toBe(true);
-
-    await deleteProject(page, projectName);
+      const exists = await evalJs(page,
+        `(async () => {
+          const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
+          return p !== null;
+        })()`,
+      );
+      expect(exists).toBe(true);
+    } finally {
+      await deleteProject(page, projectName).catch(() => {});
+      await closeAll(page);
+    }
   });
 
-  test('Case 4: Save project from query results', async ({ page }) => {
+  await softStep('Case 4: Save project from query results', async () => {
     const projectName = 'AutoTest-Upload-Case4-' + Date.now();
+    try {
+      await evalJs(page, `(async () => {
+        const queries = await grok.dapi.queries.list({limit: 500});
+        const q1 = queries.find(q => q.name === 'PostgresProducts');
+        const q2 = queries.find(q => q.name === 'PostgresCustomers');
+        const r1 = await q1.executeTable();
+        grok.shell.addTableView(r1);
+        const r2 = await q2.executeTable();
+        grok.shell.addTableView(r2);
+      })()`);
 
-    await evalJs(page, `(async () => {
-      const queries = await grok.dapi.queries.list({limit: 500});
-      const q1 = queries.find(q => q.name === 'PostgresProducts');
-      const q2 = queries.find(q => q.name === 'PostgresCustomers');
-      const r1 = await q1.executeTable();
-      grok.shell.addTableView(r1);
-      const r2 = await q2.executeTable();
-      grok.shell.addTableView(r2);
-    })()`);
+      await page.waitForTimeout(5000);
+      const tables = await evalJs(page, 'grok.shell.tables.map(t => t.name)');
+      expect(tables.length).toBe(2);
 
-    await page.waitForTimeout(5000);
-    const tables = await evalJs(page, 'grok.shell.tables.map(t => t.name)');
-    expect(tables.length).toBe(2);
+      await saveProject(page, projectName);
 
-    await saveProject(page, projectName);
-
-    const exists = await evalJs(page,
-      `(async () => {
-        const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
-        return p !== null;
-      })()`
-    );
-    expect(exists).toBe(true);
-
-    await deleteProject(page, projectName);
+      const exists = await evalJs(page,
+        `(async () => {
+          const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
+          return p !== null;
+        })()`,
+      );
+      expect(exists).toBe(true);
+    } finally {
+      await deleteProject(page, projectName).catch(() => {});
+      await closeAll(page);
+    }
   });
 
-  test('Case 9: Save project with joined tables', async ({ page }) => {
+  await softStep('Case 9: Save project with joined tables', async () => {
     const projectName = 'AutoTest-Upload-Case9-' + Date.now();
+    try {
+      await evalJs(page, `(async () => {
+        const df1 = await grok.data.files.openTable('System:DemoFiles/demog.csv');
+        grok.shell.addTableView(df1);
+        const df2 = await grok.data.files.openTable('System:DemoFiles/demog.csv');
+        df2.name = 'demog_copy';
+        grok.shell.addTableView(df2);
 
-    await evalJs(page, `(async () => {
-      const df1 = await grok.data.files.openTable('System:DemoFiles/demog.csv');
-      grok.shell.addTableView(df1);
-      const df2 = await grok.data.files.openTable('System:DemoFiles/demog.csv');
-      df2.name = 'demog_copy';
-      grok.shell.addTableView(df2);
+        const innerJoin = grok.data.joinTables(df1, df2,
+          ['USUBJID'], ['USUBJID'],
+          ['AGE', 'SEX'], ['RACE', 'DIS_POP'], 'inner');
+        grok.shell.addTableView(innerJoin);
 
-      const innerJoin = grok.data.joinTables(df1, df2,
-        ['USUBJID'], ['USUBJID'],
-        ['AGE', 'SEX'], ['RACE', 'DIS_POP'], 'inner');
-      grok.shell.addTableView(innerJoin);
+        const leftJoin = grok.data.joinTables(df1, df2,
+          ['USUBJID'], ['USUBJID'],
+          ['HEIGHT', 'WEIGHT'], ['SEVERITY'], 'left');
+        grok.shell.addTableView(leftJoin);
+      })()`);
 
-      const leftJoin = grok.data.joinTables(df1, df2,
-        ['USUBJID'], ['USUBJID'],
-        ['HEIGHT', 'WEIGHT'], ['SEVERITY'], 'left');
-      grok.shell.addTableView(leftJoin);
-    })()`);
+      await page.waitForTimeout(3000);
+      const tables = await evalJs(page, 'grok.shell.tables.map(t => t.name)');
+      expect(tables.length).toBe(4);
 
-    await page.waitForTimeout(3000);
-    const tables = await evalJs(page, 'grok.shell.tables.map(t => t.name)');
-    expect(tables.length).toBe(4);
+      await saveProject(page, projectName);
 
-    await saveProject(page, projectName);
-
-    const exists = await evalJs(page,
-      `(async () => {
-        const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
-        return p !== null;
-      })()`
-    );
-    expect(exists).toBe(true);
-
-    await deleteProject(page, projectName);
+      const exists = await evalJs(page,
+        `(async () => {
+          const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
+          return p !== null;
+        })()`,
+      );
+      expect(exists).toBe(true);
+    } finally {
+      await deleteProject(page, projectName).catch(() => {});
+      await closeAll(page);
+    }
   });
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });
