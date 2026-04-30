@@ -80,7 +80,7 @@ export const RFVApp = Vue.defineComponent({
 
     Vue.watch(currentFuncCall, async (fc) => {
       const isOutputOutdated = JSON.parse(fc.options[OUTPUT_OUTDATED_PATH] ?? 'true');
-      currentCallState.value.isOutputOutdated = isOutputOutdated;
+      currentCallState.value = {...currentCallState.value, isOutputOutdated};
       searchParams.id = fc.author ? fc.id : undefined;
 
       const title = fc?.options?.['title'];
@@ -107,18 +107,25 @@ export const RFVApp = Vue.defineComponent({
     }, {immediate: true});
 
 
+    // Replace the object on every transition so RichFunctionView's
+    // by-reference watch on props.callState fires (it can't deep-watch).
+    const updateCallState = (patch: Partial<typeof currentCallState.value>) => {
+      currentCallState.value = {...currentCallState.value, ...patch};
+    };
+
     const run = async () => {
       if (!currentFuncCall.value) return;
       overlayActive.value = true;
-      currentCallState.value.isRunning = true;
+      updateCallState({isRunning: true});
       try {
         await currentFuncCall.value.call(undefined, undefined, {processed: true, report: false});
         currentFuncCall.value.started = dayjs();
 
-        currentCallState.value.isOutputOutdated = false;
         currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'false';
+        updateCallState({isOutputOutdated: false, isRunning: false});
       } finally {
-        currentCallState.value.isRunning = false;
+        if (currentCallState.value.isRunning)
+          updateCallState({isRunning: false});
         overlayActive.value = false;
       }
     };
@@ -127,8 +134,8 @@ export const RFVApp = Vue.defineComponent({
       if (props.view && !props.view.isPinned) {
         props.view.pin();
       }
-      currentCallState.value.isOutputOutdated = true;
       currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'true';
+      updateCallState({isOutputOutdated: true});
       searchParams.id = undefined;
       if (isRunningOnInput.value)
         runRequests$.next(true);
