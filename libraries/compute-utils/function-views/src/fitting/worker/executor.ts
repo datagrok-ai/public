@@ -1,6 +1,6 @@
 // Executor — the dispatch layer optimizer.ts branches into. MainExecutor is
 // the in-process seed loop; WorkerExecutor primes a per-fit session in every
-// pool slot via `setupAll` and dispatches one `RunSeed` per starting point.
+// pool slot via `setupAll` and dispatches one `RunDispatch` per starting point.
 // Both arms share `EarlyStopTracker`, `buildFailsDataFrame`, and `sampleSeeds`.
 //
 // canHandle() requires a JS-language DG.Script with `//meta.workerSafe: true`
@@ -16,7 +16,7 @@ import {buildFailsDataFrame, getInputsData, sampleSeeds} from '../fitting-utils'
 import {EarlyStopTracker} from '../early-stop-tracker';
 import {WorkerPool, defaultPoolSize, RunReply} from './pool';
 import {getSharedFittingPool} from './shared-pool';
-import {buildSetup, buildRunSeed} from './serialize';
+import {buildSetup} from './serialize';
 import {DeferredProgressIndicator} from './deferred-progress';
 import type {SessionId} from './wire-types';
 
@@ -231,9 +231,7 @@ export class WorkerExecutor implements Executor {
           if (stopRequested) break;
           const idx = nextIdx++;
           const seed = new Float64Array(params[idx]);
-          const dispatched = buildRunSeed({sessionId, taskId: 0, seedIndex: idx, seed});
-          const reply = await this.pool.dispatchRun({
-            run: dispatched.run, transferables: dispatched.transferables});
+          const reply = await this.pool.dispatchRun({sessionId, seedIndex: idx, seed});
           handleReply(idx, reply);
         }
       };

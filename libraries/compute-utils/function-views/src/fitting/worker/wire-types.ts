@@ -46,15 +46,21 @@ export type FitSessionSetup = {
   threshold?: number;
 };
 
-// Outbound — sent once per seed. The worker echoes `seedIndex` on every
-// reply so the executor can place results in deterministic order.
-export type RunSeed = {
-  kind: 'run-seed';
-  taskId: number;
+// Main-thread description of a single seed dispatch — the structural payload
+// the pool, queue, and RunJob all carry.
+export interface JobSpec {
   sessionId: SessionId;
   seedIndex: number;
   seed: Float64Array;
-};
+}
+
+// Outbound — sent once per seed. Wire envelope around `JobSpec`. The worker
+// echoes `seedIndex` on every reply so the executor can place results in
+// deterministic order.
+export interface RunDispatch extends JobSpec {
+  kind: 'run-dispatch';
+  taskId: number;
+}
 
 // Outbound — fire-and-forget at teardown. Required on long-lived pools so
 // per-session memory doesn't grow per fit.
@@ -63,7 +69,7 @@ export type DropSession = {
   sessionId: SessionId;
 };
 
-export type WorkerOutbound = FitSessionSetup | RunSeed | DropSession;
+export type WorkerOutbound = FitSessionSetup | RunDispatch | DropSession;
 
 // Inbound — setup acknowledgement. `ok: false` carries a compile or
 // Arrow-decode error. `timedOut` is set only by the local pool path (never

@@ -2,7 +2,7 @@
 // stray reply arriving after the run timer fired (or vice versa) doesn't
 // double-resolve.
 
-import type {RunSeed} from './wire-types';
+import type {JobSpec} from './wire-types';
 import {makeRunFailure} from './failures';
 import type {RunReply} from './pool';
 
@@ -15,13 +15,11 @@ export class RunJob {
   private state: JobState = {phase: 'queued'};
 
   constructor(
-    readonly run: RunSeed,
+    readonly spec: JobSpec,
     readonly transferables: Transferable[],
     private readonly resolveCb: (r: RunReply) => void,
   ) {}
 
-  get sessionId(): number { return this.run.sessionId; }
-  get taskId(): number { return this.run.taskId; }
   get phase(): JobState['phase'] { return this.state.phase; }
 
   startRunning(runTimer: ReturnType<typeof setTimeout>): void {
@@ -36,6 +34,6 @@ export class RunJob {
   }
 
   fail(message: string): void {
-    this.settle(makeRunFailure(this.run, message));
+    this.settle(makeRunFailure(this.spec.seedIndex, this.spec.seed, message));
   }
 }

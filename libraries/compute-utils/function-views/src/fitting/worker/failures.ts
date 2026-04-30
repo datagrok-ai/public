@@ -1,15 +1,15 @@
 // Failure-shape builders. Centralized so a missing field is a type error.
 
-import type {RunSeed, SetupAck, WorkerFailure, SessionId} from './wire-types';
+import type {SetupAck, WorkerFailure, SessionId} from './wire-types';
 
-export function makeRunFailure(run: RunSeed, message: string): WorkerFailure {
+export function makeRunFailure(seedIndex: number, seed: Float64Array, message: string): WorkerFailure {
   return {
     kind: 'failure',
-    taskId: run.taskId,
-    seedIndex: run.seedIndex,
+    taskId: 0,
+    seedIndex,
     message,
     failKind: 'other',
-    seed: run.seed,
+    seed,
   };
 }
 

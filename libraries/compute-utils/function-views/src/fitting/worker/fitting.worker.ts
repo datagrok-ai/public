@@ -1,5 +1,5 @@
 // Fitting worker entry. Receives `FitSessionSetup` once per fit, then
-// `RunSeed` per seed; `DropSession` releases per-session state at teardown.
+// `RunDispatch` per seed; `DropSession` releases per-session state at teardown.
 // All imports are DG-free — anything that touches DG.* would crash a worker
 // the moment the bundle loaded.
 
@@ -20,7 +20,7 @@ import {createWorkerFuncCall, WorkerFuncCall}
   from '../../../../webworkers/script-runner/func-call-shim';
 import type {
   FitSessionSetup,
-  RunSeed,
+  RunDispatch,
   DropSession,
   WorkerOutbound,
   SetupAck,
@@ -165,7 +165,7 @@ function handleSetup(setup: FitSessionSetup): SetupAck {
   }
 }
 
-async function handleRun(run: RunSeed): Promise<WorkerSuccess | WorkerFailure> {
+async function handleRun(run: RunDispatch): Promise<WorkerSuccess | WorkerFailure> {
   const session = sessions.get(run.sessionId);
   if (!session) {
     return {
@@ -247,7 +247,7 @@ ctx.onmessage = async (event: MessageEvent<WorkerOutbound>) => {
     safePostMessage(ack);
     return;
   }
-  if (msg.kind === 'run-seed') {
+  if (msg.kind === 'run-dispatch') {
     let reply: WorkerSuccess | WorkerFailure;
     try {
       reply = await handleRun(msg);

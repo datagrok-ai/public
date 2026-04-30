@@ -3,7 +3,7 @@
 // concurrently). All transitions go through pool callbacks; tests inject
 // state via the `_*ForTest` hooks below.
 
-import type {FitSessionSetup, WorkerInbound, SetupAck, SessionId} from './wire-types';
+import type {FitSessionSetup, RunDispatch, WorkerInbound, SetupAck, SessionId} from './wire-types';
 import {RunJob} from './run-job';
 import {makeSetupFailure, makeSetupTimeoutFailure} from './failures';
 
@@ -45,7 +45,8 @@ export class Slot {
     const runTimer = setTimeout(onTimeout, runTimeoutMs);
     job.startRunning(runTimer);
     this.runState = {phase: 'running', job};
-    this.worker.postMessage(job.run, job.transferables);
+    const run: RunDispatch = {kind: 'run-dispatch', taskId: 0, ...job.spec};
+    this.worker.postMessage(run, job.transferables);
   }
 
   takeRunningJob(): RunJob | null {

@@ -8,13 +8,13 @@ import {toFeather} from '@datagrok-libraries/arrow';
 import {LOSS} from '../constants';
 import type {OutputTargetItem, ValueBoundsData} from '../optimizer-misc';
 import type {
-  FitSessionSetup, RunSeed, SerializedDataFrameTarget, SerializedOutputTarget,
+  FitSessionSetup, RunDispatch, SerializedDataFrameTarget, SerializedOutputTarget,
   SerializedScalarTarget, SessionId, SetupAck, WorkerFailure, WorkerInbound, WorkerOutbound,
   WorkerSuccess,
 } from './wire-types';
 
 export type {
-  FitSessionSetup, RunSeed, SerializedDataFrameTarget, SerializedOutputTarget,
+  FitSessionSetup, RunDispatch, SerializedDataFrameTarget, SerializedOutputTarget,
   SerializedScalarTarget, SessionId, SetupAck, WorkerFailure, WorkerInbound, WorkerOutbound,
   WorkerSuccess,
 };
@@ -132,22 +132,6 @@ export function buildSetup(args: {
     setup,
     transferables: [...fixed.transferables, ...targets.transferables],
   };
-}
-
-export function buildRunSeed(args: {
-  sessionId: SessionId;
-  taskId: number;
-  seedIndex: number;
-  seed: Float64Array;
-}): {run: RunSeed; transferables: Transferable[]} {
-  const run: RunSeed = {
-    kind: 'run-seed',
-    taskId: args.taskId,
-    sessionId: args.sessionId,
-    seedIndex: args.seedIndex,
-    seed: args.seed,
-  };
-  return {run, transferables: [args.seed.buffer]};
 }
 
 // 1 MB covers Diff Studio bodies and multi-equation models; raise only with

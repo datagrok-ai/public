@@ -16,6 +16,6 @@ export {MainExecutor, WorkerExecutor, canHandle, runWithEphemeralPool, runWithSh
 export type {Executor, ExecutorArgs, ExecutorChoice, ExecutorMode} from './executor';
 export {getSharedFittingPool, disposeSharedFittingPool} from './shared-pool';
 export type {
-  FitSessionSetup, RunSeed, DropSession, WorkerOutbound, WorkerInbound,
+  FitSessionSetup, JobSpec, RunDispatch, DropSession, WorkerOutbound, WorkerInbound,
   SetupAck, WorkerSuccess, WorkerFailure, SessionId,
 } from './wire-types';

@@ -10,7 +10,7 @@
 
 import type {
   FitSessionSetup,
-  RunSeed,
+  JobSpec,
   WorkerInbound,
   WorkerSuccess,
   WorkerFailure,
@@ -44,7 +44,6 @@ export class WorkerPool {
   private queue: RunJob[] = [];
   private activeSetups: Map<SessionId, ActiveSetup> = new Map();
   private disposed = false;
-  private nextTaskId = 1;
   private readonly setupTimeoutMs: number;
   private readonly runTimeoutMs: number;
   private readonly maxReplacementReprimes: number;
@@ -99,7 +98,7 @@ export class WorkerPool {
     let i = 0;
     while (i < this.queue.length) {
       const job = this.queue[i];
-      const slot = this.slots.find((s) => s.isIdle() && s.hasSession(job.sessionId));
+      const slot = this.slots.find((s) => s.isIdle() && s.hasSession(job.spec.sessionId));
       if (!slot) { ++i; continue; }
       this.queue.splice(i, 1);
       // RunJob.settle is idempotent, so a reply landing after the timeout
@@ -121,7 +120,7 @@ export class WorkerPool {
             this.primedSlotCount(sessionId) === 0 &&
             !this.hasInFlightSetup(sessionId)) {
           this.drainQueue('session lost all primed slots',
-            (q) => q.sessionId === sessionId);
+            (q) => q.spec.sessionId === sessionId);
         }
       }
     }
@@ -205,22 +204,17 @@ export class WorkerPool {
     for (const slot of this.slots) slot.dropSession(sessionId);
   }
 
-  dispatchRun(args: {
-    run: Omit<RunSeed, 'taskId'>;
-    transferables: Transferable[];
-  }): Promise<RunReply> {
+  dispatchRun(spec: JobSpec): Promise<RunReply> {
     if (this.disposed) return Promise.reject(new Error('pool disposed'));
     // Reject only if the session was never set up. If it was set up but no
     // slot currently has it primed (e.g. a reprime is in flight), the run
     // sits in the queue — pump fires on every ack-ok / run-reply.
-    if (!this.activeSetups.has(args.run.sessionId)) {
+    if (!this.activeSetups.has(spec.sessionId)) {
       return Promise.reject(new Error(
-        `no slot is primed for session ${args.run.sessionId}; call setupAll first`));
+        `no slot is primed for session ${spec.sessionId}; call setupAll first`));
     }
-    const taskId = this.nextTaskId++;
-    const run: RunSeed = {...args.run, taskId} as RunSeed;
     return new Promise<RunReply>((resolve) => {
-      this.queue.push(new RunJob(run, args.transferables, resolve));
+      this.queue.push(new RunJob(spec, [spec.seed.buffer], resolve));
       this.pump();
     });
   }
