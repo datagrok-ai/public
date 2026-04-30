@@ -34,9 +34,35 @@ interface ActiveSetup {
   replacementAttempts: number;
 }
 
+class JobQueue {
+  private items: RunJob[] = [];
+
+  enqueue(job: RunJob): void { this.items.push(job); }
+  isEmpty(): boolean { return this.items.length === 0; }
+
+  // Walk once. If `claim` returns true, remove that item; else leave it.
+  tryDispatch(claim: (job: RunJob) => boolean): void {
+    let i = 0;
+    while (i < this.items.length) {
+      if (claim(this.items[i])) this.items.splice(i, 1);
+      else ++i;
+    }
+  }
+
+  // Remove and fail every queued item matching `match`.
+  drain(reason: string, match: (job: RunJob) => boolean): void {
+    const kept: RunJob[] = [];
+    for (const job of this.items) {
+      if (match(job)) job.fail(reason);
+      else kept.push(job);
+    }
+    this.items = kept;
+  }
+}
+
 export class WorkerPool {
   private slots: Slot[] = [];
-  private queue: RunJob[] = [];
+  private queue = new JobQueue();
   private activeSetups: Map<SessionId, ActiveSetup> = new Map();
   private disposed = false;
   private readonly setupTimeoutMs: number;
@@ -86,33 +112,31 @@ export class WorkerPool {
 
   private pump(): void {
     if (this.disposed) return;
-    let i = 0;
-    while (i < this.queue.length) {
-      const job = this.queue[i];
+    this.queue.tryDispatch((job) => {
       const slot = this.slots.find((s) => s.isIdle() && s.hasSession(job.spec.sessionId));
-      if (!slot) { ++i; continue; }
-      this.queue.splice(i, 1);
+      if (!slot) return false;
       slot.claim(job, this.runTimeoutMs, () => {
         if (job.phase !== 'running') return;
         slot.failRunning(`run timed out after ${this.runTimeoutMs}ms`);
         this.removeSlot(slot, 'run timed out');
       });
-    }
+      return true;
+    });
     // Stall drain: with no primed slot and the reprime budget exhausted,
     // pump won't fire again. `hasInFlightSetup` guards against draining
     // mid-reprime (replacementAttempts increments before the ack lands).
-    if (this.queue.length > 0) {
+    if (!this.queue.isEmpty()) {
       for (const [sessionId, entry] of this.activeSetups) {
         if (entry.replacementAttempts >= this.maxReplacementReprimes &&
             this.primedSlotCount(sessionId) === 0 &&
             !this.hasInFlightSetup(sessionId)) {
-          this.drainQueue('session lost all primed slots',
+          this.queue.drain('session lost all primed slots',
             (q) => q.spec.sessionId === sessionId);
         }
       }
     }
-    if (this.slots.length === 0 && this.queue.length > 0)
-      this.drainQueue('no workers available', () => true);
+    if (this.slots.length === 0 && !this.queue.isEmpty())
+      this.queue.drain('no workers available', () => true);
   }
 
   private primedSlotCount(sessionId: SessionId): number {
@@ -126,15 +150,6 @@ export class WorkerPool {
       if (slot.hasPendingSetup(sessionId)) return true;
     }
     return false;
-  }
-
-  private drainQueue(reason: string, match: (q: RunJob) => boolean): void {
-    const remaining: RunJob[] = [];
-    for (const job of this.queue) {
-      if (!match(job)) { remaining.push(job); continue; }
-      job.fail(reason);
-    }
-    this.queue = remaining;
   }
 
   private removeSlot(slot: Slot, reason: string): void {
@@ -195,7 +210,7 @@ export class WorkerPool {
         `no slot is primed for session ${spec.sessionId}; call setupAll first`));
     }
     return new Promise<RunReply>((resolve) => {
-      this.queue.push(new RunJob(spec, [spec.seed.buffer], resolve));
+      this.queue.enqueue(new RunJob(spec, [spec.seed.buffer], resolve));
       this.pump();
     });
   }
@@ -210,7 +225,7 @@ export class WorkerPool {
       slot.terminate();
     }
     this.slots = [];
-    this.drainQueue('pool disposed before task ran', () => true);
+    this.queue.drain('pool disposed before task ran', () => true);
   }
 
   // ---- test-only: live slot count, white-box hooks for replacement / drain tests ----
