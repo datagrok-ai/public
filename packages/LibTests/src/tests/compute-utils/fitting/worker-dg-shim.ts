@@ -11,7 +11,7 @@ import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame, compileBody,
 import {toFeather} from '@datagrok-libraries/arrow';
 import {getErrors} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/fitting-utils';
-import {buildSetup, buildRunSeed, LOSS, WorkerPool, RunJob} from './imports';
+import {buildSetup, LOSS, WorkerPool, RunJob} from './imports';
 import type {OutputTargetItem, ValueBoundsData} from './imports';
 import {rangeBound, formulaBound} from './utils';
 import {makeWedgedFunc} from './script-fixtures';
@@ -582,14 +582,13 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     // White-box: dispose's job is to resolve the in-flight run as a failure.
     // Inject a RunJob via Slot._setRunningForTest so the test doesn't hinge
     // on the dispatchRun → worker → reply round-trip.
-    type RunReplyLike = {kind: string; taskId: number; message?: string};
+    type RunReplyLike = {kind: string; seedIndex: number; message?: string};
     const pool = new WorkerPool(1);
     pool._ensureWorkersForTest();
     let resolved = false;
     let reply: RunReplyLike | null = null;
     const job = new RunJob(
-      {taskId: 42, sessionId: 9, kind: 'run-seed', seed: new Float64Array([1, 2])} as any,
-      [],
+      {sessionId: 9, seedIndex: 7, seed: new Float64Array([1, 2])}, [],
       (r: any) => { resolved = true; reply = r as RunReplyLike; },
     );
     // Long-lived noop timer — RunJob.settle clearTimeouts it on dispose's
@@ -600,7 +599,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     expect(resolved, true, 'dispose must resolve the running slot\'s run');
     expect(reply !== null, true);
     expect(reply!.kind, 'failure');
-    expect(reply!.taskId, 42);
+    expect(reply!.seedIndex, 7);
     expect(/disposed/i.test(reply!.message ?? ''), true,
       `expected disposed-flavor message, got: ${reply!.message}`);
   });
@@ -675,10 +674,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       // dispatchRun on the (now-replaced) session must succeed via the
       // re-primed slot. Pre-fix this would reject synchronously with
       // "no slot is primed" because the replacement has empty sessions.
-      const {run, transferables} = buildRunSeed({
-        sessionId: 99, taskId: 0, seedIndex: 0, seed: new Float64Array([1]),
-      });
-      const reply = await pool.dispatchRun({run, transferables});
+      const reply = await pool.dispatchRun({sessionId: 99, seedIndex: 0, seed: new Float64Array([1])});
       expect(reply.kind, 'success', 'replacement must serve the active session');
     } finally {
       pool.dispose();
@@ -744,10 +740,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       // promise must settle as a failure within a bounded window — if the
       // drain regresses, this would hang indefinitely, so race it against
       // a 2-second hard timeout.
-      const {run, transferables} = buildRunSeed({
-        sessionId: 77, taskId: 0, seedIndex: 0, seed: new Float64Array([1]),
-      });
-      const dispatch = pool.dispatchRun({run, transferables});
+      const dispatch = pool.dispatchRun({sessionId: 77, seedIndex: 0, seed: new Float64Array([1])});
       const reply = await Promise.race([
         dispatch,
         new Promise<never>((_, rej) =>
@@ -799,11 +792,8 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
         bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
       });
       await pool.setupAll(setup);  // setup is fast — only compile, no run
-      const {run, transferables} = buildRunSeed({
-        sessionId: 2, taskId: 0, seedIndex: 0, seed: new Float64Array([1]),
-      });
       const start = Date.now();
-      const reply = await pool.dispatchRun({run, transferables});
+      const reply = await pool.dispatchRun({sessionId: 2, seedIndex: 0, seed: new Float64Array([1])});
       const elapsed = Date.now() - start;
       expect(reply.kind, 'failure', 'wedged run must resolve as failure');
       expect(/timed? ?out/i.test((reply as any).message), true,

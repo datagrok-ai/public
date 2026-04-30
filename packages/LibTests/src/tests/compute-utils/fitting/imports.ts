@@ -23,7 +23,7 @@ export type {ExecutorChoice, ExecutorArgs} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/executor';
 export {canHandle, WorkerExecutor, runWithEphemeralPool} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/executor';
-export {buildSetup, buildRunSeed} from
+export {buildSetup} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/serialize';
 export type {FitSessionSetup, FixedInputKind} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/wire-types';
