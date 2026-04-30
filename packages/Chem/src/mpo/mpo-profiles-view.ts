@@ -136,6 +136,9 @@ export class MpoProfilesView {
   }
 
   private openCreateProfile(): void {
+    // Clear stale context panel (e.g. a profile selected via ui.bind in the list)
+    // until a dataset is loaded and MpoContextPanel takes over.
+    grok.shell.o = null;
     const view = new MpoProfileCreateView();
     grok.shell.v = grok.shell.addPreview(view.tableView!);
     view.setupBreadcrumbs();
