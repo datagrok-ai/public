@@ -73,9 +73,7 @@ export class WorkerPool {
       ps.resolve(msg);
       return;
     }
-    const job = slot.takeRunningJob();
-    if (!job) return;     // stray reply (double-post, or post-timeout race)
-    job.settle(msg);
+    if (!slot.deliverReply(msg)) return;   // stray reply (post-timeout race)
     this.pump();
   }
 
@@ -95,9 +93,8 @@ export class WorkerPool {
       this.queue.splice(i, 1);
       slot.claim(job, this.runTimeoutMs, () => {
         if (job.phase !== 'running') return;
-        if (slot.currentJob() === job) slot.takeRunningJob();
+        slot.failRunning(`run timed out after ${this.runTimeoutMs}ms`);
         this.removeSlot(slot, 'run timed out');
-        job.fail(`run timed out after ${this.runTimeoutMs}ms`);
       });
     }
     // Stall drain: with no primed slot and the reprime budget exhausted,
@@ -145,8 +142,7 @@ export class WorkerPool {
     this.slots.splice(idx, 1);
     const message = `worker removed: ${reason}`;
     slot.failPendingSetups(message);
-    const inflight = slot.takeRunningJob();
-    if (inflight) inflight.fail(message);
+    slot.failRunning(message);
     slot.terminate();
     if (!this.disposed) {
       const fresh = this.spawnSlot();
@@ -209,8 +205,7 @@ export class WorkerPool {
     this.activeSetups.clear();
     for (const slot of this.slots) {
       slot.failPendingSetups('pool disposed before setup completed');
-      const inflight = slot.takeRunningJob();
-      if (inflight) inflight.fail('pool disposed mid-run');
+      slot.failRunning('pool disposed mid-run');
       slot.terminate();
     }
     this.slots = [];

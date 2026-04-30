@@ -3,6 +3,7 @@
 
 import type {FitSessionSetup, RunDispatch, WorkerInbound, SetupAck, SessionId} from './wire-types';
 import {RunJob} from './run-job';
+import type {RunReply} from './pool';
 import {makeSetupFailure, makeSetupTimeoutFailure} from './failures';
 
 interface PendingSetup {
@@ -33,9 +34,6 @@ export class Slot {
   isIdle(): boolean { return this.runState.phase === 'idle'; }
   hasSession(id: SessionId): boolean { return this.sessions.has(id); }
   hasPendingSetup(id: SessionId): boolean { return this.pendingSetups.has(id); }
-  currentJob(): RunJob | null {
-    return this.runState.phase === 'running' ? this.runState.job : null;
-  }
 
   claim(job: RunJob, runTimeoutMs: number, onTimeout: () => void): void {
     const runTimer = setTimeout(onTimeout, runTimeoutMs);
@@ -45,7 +43,21 @@ export class Slot {
     this.worker.postMessage(run, job.transferables);
   }
 
-  takeRunningJob(): RunJob | null {
+  // Settle the in-flight job with this reply, transition to idle.
+  // Returns false (no-op) on stray reply (slot already idle).
+  deliverReply(reply: RunReply): boolean {
+    const job = this.takeRunning();
+    if (!job) return false;
+    job.settle(reply);
+    return true;
+  }
+
+  // Fail the in-flight job (if any) with this message, transition to idle.
+  failRunning(message: string): void {
+    this.takeRunning()?.fail(message);
+  }
+
+  private takeRunning(): RunJob | null {
     if (this.runState.phase !== 'running') return null;
     const {job} = this.runState;
     this.runState = {phase: 'idle'};
