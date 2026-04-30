@@ -172,6 +172,7 @@ function makeDataFrame(cols: LiteColumn[]): LiteDataFrame {
       return c;
     },
     names: () => cols.map((c) => c.name),
+    toList: () => cols.slice(),
     [Symbol.iterator]: function* () {
       yield* cols;
     },
@@ -180,6 +181,16 @@ function makeDataFrame(cols: LiteColumn[]): LiteDataFrame {
     columns,
     rowCount,
     col: (n) => byName.get(n) ?? null,
+    toJson() {
+      const result = Array.from({length: rowCount}, () => ({} as Record<string, unknown>));
+      for (const c of cols) {
+        for (let i = 0; i < rowCount; ++i) {
+          const v = c.get(i);
+          if (v != null) result[i][c.name] = v;
+        }
+      }
+      return result;
+    },
   };
 }
 

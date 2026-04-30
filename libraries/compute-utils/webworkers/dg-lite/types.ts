@@ -32,6 +32,7 @@ export interface LiteColumnList {
   readonly length: number;
   byName(name: string): LiteColumn;
   names(): string[];
+  toList(): LiteColumn[];
   [Symbol.iterator](): Iterator<LiteColumn>;
 }
 
@@ -39,4 +40,5 @@ export interface LiteDataFrame {
   readonly columns: LiteColumnList;
   readonly rowCount: number;
   col(name: string): LiteColumn | null;
+  toJson(): Record<string, unknown>[];
 }
