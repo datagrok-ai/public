@@ -15,8 +15,8 @@
 // so dayjs source must be bundled into any chunk that pulls this shim
 // transitively.
 import dayjs from 'dayjs/esm/index.js';
-import {LiteColumn, LiteColumnList, LiteColumnStats, LiteColumnType, LiteDataFrame}
-  from './types';
+import {LiteColumn, LiteColumnFilter, LiteColumnList, LiteColumnStats,
+  LiteColumnType, LiteDataFrame, LiteRawData} from './types';
 
 // Mirror DG.FLOAT_NULL / DG.INT_NULL from js-api/src/const.ts. Hard-coded so
 // this module has no DG dependency.
@@ -32,10 +32,70 @@ const COLUMN_TYPE = Object.freeze({
   BIG_INT: 'bigint',
 } as const);
 
+const NUMERICAL_TYPES: ReadonlySet<LiteColumnType> =
+  new Set(['int', 'float', 'double', 'qnum', 'bigint']);
+const CATEGORICAL_TYPES: ReadonlySet<LiteColumnType> =
+  new Set(['string', 'bool']);
+
+interface ColumnCore {
+  name: string;
+  type: LiteColumnType;
+  length: number;
+  getRawData(): LiteRawData;
+  toList(): unknown[];
+  get(i: number): unknown;
+  readonly stats: LiteColumnStats;
+}
+
+function decorate(core: ColumnCore): LiteColumn {
+  const numerical = NUMERICAL_TYPES.has(core.type);
+  const categorical = CATEGORICAL_TYPES.has(core.type);
+  const col = {
+    name: core.name,
+    type: core.type,
+    length: core.length,
+    dataFrame: null as LiteDataFrame | null,
+    isNumerical: numerical,
+    isCategorical: categorical,
+    isEmpty: core.length === 0,
+    getRawData: () => core.getRawData(),
+    toList: () => core.toList(),
+    get: (i: number) => core.get(i),
+    get stats() { return core.stats; },
+    get min() { return core.stats.min; },
+    get max() { return core.stats.max; },
+    isNone(i: number) { return core.get(i) === null; },
+    getString(i: number): string {
+      const v = core.get(i);
+      if (v == null) return '';
+      if (typeof v === 'object' && typeof (v as any).format === 'function')
+        return (v as any).format();
+      return String(v);
+    },
+    getNumber(i: number): number {
+      const v = core.get(i);
+      if (v == null) return Number.NaN;
+      if (typeof v === 'number') return v;
+      if (typeof v === 'bigint') return Number(v);
+      if (typeof v === 'boolean') return v ? 1 : 0;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : Number.NaN;
+    },
+    matches(filter: LiteColumnFilter): boolean {
+      if (filter == null) return true;
+      if (filter === 'numerical') return numerical;
+      if (filter === 'categorical') return categorical;
+      return core.type === filter;
+    },
+    toString() { return `${core.name} (${core.type})`; },
+  };
+  return col;
+}
+
 function makeNumericColumn(name: string, type: LiteColumnType, raw: Float64Array | Float32Array | Int32Array,
   nullSentinel: number): LiteColumn {
   let cached: LiteColumnStats | null = null;
-  return {
+  return decorate({
     name,
     type,
     length: raw.length,
@@ -55,19 +115,19 @@ function makeNumericColumn(name: string, type: LiteColumnType, raw: Float64Array
         if (v < min) min = v;
         if (v > max) max = v;
       }
-      // Match DG.Column.stats behaviour for empty/all-null columns: min/max
-      // collapse to 0. Avoids ±Infinity in scaling logic downstream.
+      // Match DG: empty/all-null columns collapse min/max to 0 to avoid
+      // ±Infinity propagating into downstream scaling logic.
       if (min === Number.POSITIVE_INFINITY) min = 0;
       if (max === Number.NEGATIVE_INFINITY) max = 0;
       cached = {min, max};
       return cached;
     },
-  };
+  });
 }
 
 function makeBigIntColumn(name: string, raw: BigInt64Array): LiteColumn {
   let cached: LiteColumnStats | null = null;
-  return {
+  return decorate({
     name,
     type: COLUMN_TYPE.BIG_INT,
     length: raw.length,
@@ -76,7 +136,7 @@ function makeBigIntColumn(name: string, raw: BigInt64Array): LiteColumn {
     get: (i) => raw[i],
     get stats() {
       if (cached) return cached;
-      // Stats are reported as numbers; lossy for values > Number.MAX_SAFE_INTEGER
+      // Stats reported as numbers; lossy for values > Number.MAX_SAFE_INTEGER
       // but matches DG.Column.stats which also returns numeric min/max.
       let min = Number.POSITIVE_INFINITY;
       let max = Number.NEGATIVE_INFINITY;
@@ -90,7 +150,7 @@ function makeBigIntColumn(name: string, raw: BigInt64Array): LiteColumn {
       cached = {min, max};
       return cached;
     },
-  };
+  });
 }
 
 // Datetime values are stored as microseconds since epoch (matches DG raw
@@ -100,7 +160,7 @@ function makeBigIntColumn(name: string, raw: BigInt64Array): LiteColumn {
 function makeDateTimeColumn(name: string, raw: Float64Array): LiteColumn {
   let cached: LiteColumnStats | null = null;
   const wrap = (v: number) => v === FLOAT_NULL ? null : dayjs(v / 1000);
-  return {
+  return decorate({
     name,
     type: COLUMN_TYPE.DATE_TIME,
     length: raw.length,
@@ -126,61 +186,93 @@ function makeDateTimeColumn(name: string, raw: Float64Array): LiteColumn {
       cached = {min, max};
       return cached;
     },
-  };
+  });
 }
 
 function makeStringColumn(name: string, values: string[]): LiteColumn {
   // Stats are not meaningful for strings; expose 0/0 to match DG behaviour.
   const cached: LiteColumnStats = {min: 0, max: 0};
-  return {
+  return decorate({
     name,
     type: COLUMN_TYPE.STRING,
     length: values.length,
     getRawData: () => values,
     toList: () => values.slice(),
     get: (i) => values[i],
-    get stats() {
-      return cached;
-    },
-  };
+    get stats() { return cached; },
+  });
 }
 
 function makeBoolColumn(name: string, values: boolean[]): LiteColumn {
   const cached: LiteColumnStats = {min: 0, max: 0};
-  return {
+  return decorate({
     name,
     type: COLUMN_TYPE.BOOL,
     length: values.length,
     getRawData: () => values,
     toList: () => values.slice(),
     get: (i) => values[i],
-    get stats() {
-      return cached;
-    },
-  };
+    get stats() { return cached; },
+  });
 }
 
 function makeDataFrame(cols: LiteColumn[]): LiteDataFrame {
-  const byName = new Map<string, LiteColumn>();
-  for (const c of cols) byName.set(c.name, c);
+  // Case-insensitive name lookup, matching DG.DataFrame.col / columns.byName.
+  const byKey = new Map<string, LiteColumn>();
+  for (const c of cols) byKey.set(c.name.toLowerCase(), c);
   const rowCount = cols.length === 0 ? 0 : cols[0].length;
+
+  const lookup = (n: string) => byKey.get(n.toLowerCase()) ?? null;
+  const filterIter = (pred: (c: LiteColumn) => boolean): Iterable<LiteColumn> =>
+    cols.filter(pred);
+
   const columns: LiteColumnList = {
     length: cols.length,
+    dataFrame: null,
     byName: (n) => {
-      const c = byName.get(n);
+      const c = lookup(n);
       if (!c) throw new Error(`column not found: ${n}`);
       return c;
     },
+    byIndex: (i) => {
+      if (i < 0 || i >= cols.length) throw new Error(`column index out of range: ${i}`);
+      return cols[i];
+    },
+    byNames: (names) => names.map((n) => columns.byName(n)),
     names: () => cols.map((c) => c.name),
     toList: () => cols.slice(),
-    [Symbol.iterator]: function* () {
-      yield* cols;
+    toMap: () => {
+      const m = new Map<string, LiteColumn>();
+      for (const c of cols) m.set(c.name, c);
+      return m;
     },
+    contains: (n) => byKey.has(n.toLowerCase()),
+    firstWhere: (p) => cols.find(p),
+    get all() { return cols; },
+    get numerical() { return filterIter((c) => c.isNumerical); },
+    get categorical() { return filterIter((c) => c.isCategorical); },
+    get boolean() { return filterIter((c) => c.type === 'bool'); },
+    get dateTime() { return filterIter((c) => c.type === 'datetime'); },
+    get numericalNoDateTime() { return filterIter((c) => c.isNumerical && c.type !== 'datetime'); },
+    [Symbol.iterator]: function* () { yield* cols; },
   };
-  return {
+
+  const df: LiteDataFrame = {
     columns,
     rowCount,
-    col: (n) => byName.get(n) ?? null,
+    col: (n) => typeof n === 'number' ?
+      (n >= 0 && n < cols.length ? cols[n] : null) :
+      lookup(n),
+    getCol: (n) => {
+      const c = lookup(n);
+      if (!c) throw new Error(`column not found: ${n}`);
+      return c;
+    },
+    get: (n, idx) => {
+      const c = lookup(n);
+      if (!c) throw new Error(`column not found: ${n}`);
+      return c.get(idx);
+    },
     toJson() {
       const result = Array.from({length: rowCount}, () => ({} as Record<string, unknown>));
       for (const c of cols) {
@@ -192,6 +284,14 @@ function makeDataFrame(cols: LiteColumn[]): LiteDataFrame {
       return result;
     },
   };
+
+  // Backfill back-refs. Cast through unknown — interface marks both as
+  // readonly to keep external callers honest, but the shim writes through
+  // them once at construction.
+  (columns as unknown as {dataFrame: LiteDataFrame}).dataFrame = df;
+  for (const c of cols)
+    (c as unknown as {dataFrame: LiteDataFrame}).dataFrame = df;
+  return df;
 }
 
 export interface WorkerDG {
