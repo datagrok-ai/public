@@ -24,7 +24,6 @@ import type {
   FitSessionSetup,
   RunSeed,
   WorkerInbound,
-  SetupAck,
   WorkerSuccess,
   WorkerFailure,
   SessionId,
@@ -126,11 +125,9 @@ export class WorkerPool {
   }
 
   private onError(slot: Slot, ev: ErrorEvent): void {
-    const message = `worker error: ${ev.message ?? 'unknown'}`;
-    const inflight = slot.takeRunningQuery();
-    if (inflight) inflight.fail(message);
-    slot.failPendingSetups(message);
-    this.pump();
+    const reason = ev.message ?? 'unknown';
+    console.warn(`worker error: ${reason}`);
+    this.removeSlot(slot, `worker errored: ${reason}`);
   }
 
   private pump(): void {

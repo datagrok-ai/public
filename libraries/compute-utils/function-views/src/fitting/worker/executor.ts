@@ -210,6 +210,7 @@ export class WorkerExecutor implements Executor {
             results[idx] = {kind: 'failure-fatal'};
             return;
           }
+          console.warn(`fitting worker seed ${idx} failed: ${reply.message}`);
           results[idx] = {kind: 'failure-warn', seed: reply.seed, message: reply.message};
           return;
         }
