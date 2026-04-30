@@ -17,6 +17,7 @@ import '../../css/styles.css';
 import {MPO_SCORE_CHANGED_EVENT} from './utils';
 
 const MAX_CATEGORICAL_CATEGORIES = 20;
+const COLUMN_DROPDOWN_OPEN_SELECTOR = '.d4-column-selector-backdrop';
 
 export class MpoProfileEditor {
   readonly root = ui.div([]);
@@ -296,21 +297,67 @@ export class MpoProfileEditor {
     if (matchedCol)
       editor.setColumn?.(matchedCol);
 
+    const commit = (v: DG.Column | null): void => {
+      this.columnMapping[name] = v?.name ?? null;
+      if (v && this.switchPropertyType(name, rowId, v))
+        return;
+      editor.setColumn?.(v);
+      this.emitChange();
+    };
+
+    // Local workaround to avoid blocking statistics releases on a js-api change.
+    // Proper fix: expose `changeOnHover` on IColumnInputInitOptions.
+    const isPopupOpen = (): boolean => !!document.querySelector(COLUMN_DROPDOWN_OPEN_SELECTOR);
+
+    let pending: {value: DG.Column | null} | null = null;
+    let observer: MutationObserver | null = null;
+
+    const stopObserving = (): void => {
+      observer?.disconnect();
+      observer = null;
+    };
+
+    const flush = (): void => {
+      if (!pending)
+        return;
+      const v = pending.value;
+      pending = null;
+      commit(v);
+    };
+
+    const watchForClose = (): void => {
+      if (observer)
+        return;
+      observer = new MutationObserver(() => {
+        if (isPopupOpen())
+          return;
+        stopObserving();
+        flush();
+      });
+      observer.observe(document.body, {childList: true, subtree: true});
+    };
+
     const input = ui.input.column('', {
       table: this.dataFrame,
       nullable: true,
       value: matchedCol ?? undefined,
       filter: (c: DG.Column) => !c.isCategorical || c.categories.length <= MAX_CATEGORICAL_CATEGORIES,
       onValueChanged: (v: DG.Column | null) => {
-        this.columnMapping[name] = v?.name ?? null;
-        if (v && this.switchPropertyType(name, rowId, v))
+        if (isPopupOpen()) {
+          pending = {value: v};
+          watchForClose();
           return;
-        editor.setColumn?.(v);
-        this.emitChange();
+        }
+        pending = null;
+        stopObserving();
+        commit(v);
       },
     });
-    // TODO: replace with a proper ui.input.column option once the JS API exposes changeOnHover
-    (input as any).dart.columnBox.changeOnHover = false;
+
+    // Block d4's mouse-wheel column cycling so page scroll over the input doesn't
+    // mutate the value. No preventDefault — the browser still scrolls.
+    input.root.addEventListener('wheel', (e: Event) => e.stopImmediatePropagation(), {capture: true});
+
     return input.root;
   }
 

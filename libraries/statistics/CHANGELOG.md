@@ -1,5 +1,9 @@
 # statistics changelog
 
+## 1.12.6 (2026-04-30)
+
+* GROK-20056: MPO: Prevent rerendering on column input hover and wheel scroll
+
 ## 1.12.5 (2026-04-15)
 
 * MPO: Use column input for auto-updating column selectors
