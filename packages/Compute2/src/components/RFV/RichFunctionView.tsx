@@ -284,12 +284,12 @@ export const RichFunctionView = Vue.defineComponent({
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
     }, {immediate: true});
 
-    Vue.watch([currentCall, isOutputOutdated, visibleTabLabels], ([call, isOutputOutdated, visibleTabLabels], [prevCall, prevOutputOutdated, prevLabels]) => {
-      if (prevCall === call && visibleTabLabels === prevLabels && isOutputOutdated === prevOutputOutdated)
+    Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
+      if (prevCall === call && prevCallState === callState && prevLabels === labels)
         return;
       const tabToPropertiesMap = tabToProperties(call);
 
-      tabsData.value = visibleTabLabels.map((tabLabel) =>
+      tabsData.value = labels.map((tabLabel) =>
         ({
           tabLabel,
           tabContent: tabToPropertiesMap.inputs.get(tabLabel) ?? tabToPropertiesMap.outputs.get(tabLabel)!,
