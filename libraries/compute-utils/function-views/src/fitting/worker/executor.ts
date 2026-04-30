@@ -1,17 +1,11 @@
-// Executor — the dispatch layer optimizer.ts branches into.
+// Executor — the dispatch layer optimizer.ts branches into. MainExecutor is
+// the in-process seed loop; WorkerExecutor primes a per-fit session in every
+// pool slot via `setupAll` and dispatches one `RunSeed` per starting point.
+// Both arms share `EarlyStopTracker`, `buildFailsDataFrame`, and `sampleSeeds`.
 //
-// MainExecutor is the synchronous in-process seed loop. WorkerExecutor
-// primes a per-fit session in every pool slot via `setupAll`, then
-// dispatches one `RunSeed` per starting point so a slow seed doesn't
-// bottleneck the whole fit. Both arms share `EarlyStopTracker` for the
-// valid/above-threshold bookkeeping and `buildFailsDataFrame` /
-// `sampleSeeds` for the surrounding scaffolding.
-//
-// canHandle() is the canary that decides whether a fit can run on the worker
-// arm at all: requires a JS-language DG.Script that explicitly opts in via
-// `//meta.workerSafe: true` in its header. The annotation is the contract —
-// a workerSafe script promises not to reach for `grok.*` / `ui.*` or any
-// other main-thread global the worker context lacks.
+// canHandle() requires a JS-language DG.Script with `//meta.workerSafe: true`
+// in its header — the contract is that the script body won't reach for
+// `grok.*` / `ui.*` or any other main-thread global.
 
 import * as DG from 'datagrok-api/dg';
 import {Extremum, OptimizationResult, ValueBoundsData, OutputTargetItem}
@@ -30,8 +24,7 @@ export type ExecutorMode = 'main' | 'worker';
 export type ExecutorChoice = 'auto' | ExecutorMode;
 
 export interface ExecutorArgs {
-  // Always present — the legacy main-arm objective. Used when the worker
-  // arm can't be picked.
+  // Main-arm objective; used when the worker arm can't be picked.
   objectiveFunc: (x: Float64Array) => Promise<number | undefined>;
   inputsBounds: Record<string, ValueBoundsData>;
   samplesCount: number;
@@ -39,8 +32,8 @@ export interface ExecutorArgs {
   reproSettings: ReproSettings;
   earlyStoppingSettings: EarlyStoppingSettings;
 
-  // Worker-arm payload. When present, WorkerExecutor disassembles this into
-  // a session setup. When absent, the worker arm falls back to main.
+  // Worker-arm payload. WorkerExecutor disassembles these into a session
+  // setup; absent → falls back to main.
   func?: DG.Func;
   outputTargets?: OutputTargetItem[];
   lossType?: LOSS;
@@ -150,22 +143,19 @@ export class WorkerExecutor implements Executor {
     const threshold = useES ? settings.costFuncThreshold! : Infinity;
     const stopAfter = settings.stopAfter;
 
-    // Per-index reply buffer. Replies land in `results[idx]` so finalization
-    // can walk in seed-index order (matching MainExecutor) regardless of
-    // worker completion order.
-    type Slot =
+    // Per-index reply buffer so finalization can walk in seed-index order
+    // (matching MainExecutor) regardless of worker completion order.
+    type SeedResult =
       | {kind: 'pending'}
       | {kind: 'success', extremum: Extremum}
       | {kind: 'failure-warn', seed: Float64Array, message: string}
       | {kind: 'failure-fatal'};
-    const PENDING: Slot = {kind: 'pending'};
-    const results: Slot[] = new Array(args.samplesCount).fill(PENDING);
+    const PENDING: SeedResult = {kind: 'pending'};
+    const results: SeedResult[] = new Array(args.samplesCount).fill(PENDING);
 
     let inconsistentMessage: string | null = null;
-    // `stopRequested` halts new dispatches (no more seeds pulled from
-    // `nextIdx`). In-flight replies still land in `results[idx]` because
-    // each runSlot awaits its dispatchRun before exiting the loop, so
-    // `Promise.all(slots)` IS the drain.
+    // Halts new dispatches; in-flight replies still land via the
+    // `await dispatchRun` inside each runSlot, so `Promise.all(slots)` drains.
     let stopRequested = false;
     let validCount = 0;
     let completedCount = 0;
@@ -190,7 +180,7 @@ export class WorkerExecutor implements Executor {
 
     try {
       try {
-        await this.pool.setupAll(built.setup, built.transferables);
+        await this.pool.setupAll(built.setup);
       } catch (e: any) {
         pi.close();
         const msg = e instanceof Error ? e.message : String(e);
@@ -223,11 +213,8 @@ export class WorkerExecutor implements Executor {
           iterCount: reply.iterCount,
         };
         results[idx] = {kind: 'success', extremum};
-        // Stop dispatching once the global valid count crosses stopAfter.
-        // We don't act on contiguous-prefix valid count here — that would
-        // dispatch more seeds than necessary. Tracking the global count
-        // matches main-arm semantics: once enough valids exist anywhere,
-        // the eventual first-M-in-index-order winners are pinned down.
+        // Stop on the global valid count (not the contiguous-prefix count) so
+        // we don't dispatch more seeds than necessary; matches main-arm semantics.
         if (useES && extremum.cost <= threshold) {
           ++validCount;
           if (validCount >= stopAfter) stopRequested = true;
@@ -259,12 +246,9 @@ export class WorkerExecutor implements Executor {
       if (inconsistentMessage)
         throw new Error(`Inconsistent dataframes: ${inconsistentMessage}`);
 
-      // Finalize: walk `results` in seed-index order, replaying replies
-      // through `EarlyStopTracker` so the selection rule stays shared with
-      // MainExecutor. The contiguous-prefix `break` on `pending` handles
-      // cancellation and the stop-with-gap case (where lower indices were
-      // never dispatched because stopRequested fired before the slots
-      // reached them).
+      // Walk in seed-index order through EarlyStopTracker so the selection
+      // rule stays shared with MainExecutor. Breaking on the contiguous-prefix
+      // `pending` covers both cancellation and the stop-with-gap case.
       const tracker = new EarlyStopTracker(settings);
       const failedInitPoint: Float64Array[] = [];
       const warnings: string[] = [];
@@ -286,9 +270,8 @@ export class WorkerExecutor implements Executor {
         fails: buildFailsDataFrame(failedInitPoint, warnings),
       };
     } finally {
-      // Always release session state in workers, regardless of whether the
-      // pool is ephemeral (we're about to dispose it anyway) or long-lived
-      // (so per-session state doesn't accumulate across fits).
+      // Always release per-session worker state — required for long-lived
+      // pools so state doesn't accumulate across fits.
       this.pool.dropSession(sessionId);
     }
   }
@@ -297,7 +280,6 @@ export class WorkerExecutor implements Executor {
 // ---- Pool lifecycle -------------------------------------------------------
 
 // Short-lived pool: created on demand, terminated when the fit returns.
-// Used by tests and ephemeral callers that don't want a tab-lifetime pool.
 export async function runWithEphemeralPool(args: ExecutorArgs): Promise<OptimizationResult> {
   const pool = new WorkerPool(defaultPoolSize());
   try {
@@ -307,12 +289,8 @@ export async function runWithEphemeralPool(args: ExecutorArgs): Promise<Optimiza
   }
 }
 
-// Long-lived pool: reuses the singleton from shared-pool.ts so worker
-// spin-up + per-slot compile amortize across fits. Each fit calls
-// `dropSession` on completion (inside WorkerExecutor.run's finally), so
-// per-session state in the workers doesn't accumulate. The compile
-// cache inside each worker (LRU, see func-call-shim.ts) is what makes
-// repeated fits of the same body cheap.
+// Long-lived pool: reuses the singleton from shared-pool.ts so worker spin-up
+// and per-slot compile amortize across fits.
 export async function runWithSharedPool(args: ExecutorArgs): Promise<OptimizationResult> {
   const pool = getSharedFittingPool();
   return new WorkerExecutor(pool).run(args);

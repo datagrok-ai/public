@@ -1,24 +1,14 @@
-// Wire types for main ↔ worker messages.
-//
-// Two-message protocol: a fit's immutable bundle (script body, fixed inputs,
-// targets, NM settings) ships once per worker as `FitSessionSetup`; per-seed
-// dispatch sends only `{sessionId, seed}` via `RunSeed`. Worker memory is
-// freed at fit teardown via `DropSession`.
-//
-// Pure type declarations + the LOSS string-enum re-export. Zero runtime
-// imports beyond `../constants`. Kept separate from serialize.ts so the
-// worker entry can import these types without pulling serialize.ts's
-// DG-coupled dependencies into the worker bundle.
+// Wire types for main ↔ worker messages. Pure type declarations — kept
+// separate from serialize.ts so the worker entry can import these without
+// pulling serialize.ts's DG-coupled deps into the worker bundle.
 
 import type {LOSS} from '../constants';
 import type {ValueBoundsData} from '../optimizer-misc';
 
 export type SessionId = number;
 
-// Sparse type tag for non-scalar fixedInputs that need worker-side
-// reification. Plain scalars (number, string, boolean, null) omit
-// themselves from the map entirely — only Dayjs and Date get tagged so
-// the worker knows to wrap the ISO string back into the original object.
+// Sparse tag for non-scalar fixedInputs needing worker-side reification.
+// Plain scalars are absent from the map; only Dayjs/Date carry a tag.
 export type FixedInputKind = 'dayjs' | 'date';
 
 export type SerializedScalarTarget = {
@@ -56,10 +46,8 @@ export type FitSessionSetup = {
   threshold?: number;
 };
 
-// Outbound — sent once per seed. `seedIndex` is the position in the per-fit
-// `params` array; the worker echoes it on every reply so the executor can
-// place results in deterministic seed-index order regardless of completion
-// order across workers.
+// Outbound — sent once per seed. The worker echoes `seedIndex` on every
+// reply so the executor can place results in deterministic order.
 export type RunSeed = {
   kind: 'run-seed';
   taskId: number;
@@ -68,10 +56,8 @@ export type RunSeed = {
   seed: Float64Array;
 };
 
-// Outbound — sent once per fit at teardown. Lets the worker free its
-// per-session state. Fire-and-forget, no ack expected. Harmless on
-// ephemeral pools (the worker is about to be terminated anyway); required
-// on long-lived pools so memory doesn't grow per fit.
+// Outbound — fire-and-forget at teardown. Required on long-lived pools so
+// per-session memory doesn't grow per fit.
 export type DropSession = {
   kind: 'drop-session';
   sessionId: SessionId;
@@ -80,13 +66,13 @@ export type DropSession = {
 export type WorkerOutbound = FitSessionSetup | RunSeed | DropSession;
 
 // Inbound — setup acknowledgement. `ok: false` carries a compile or
-// Arrow-decode error.
+// Arrow-decode error. `timedOut` is set only by the local pool path (never
+// posted by the worker) so the pool can distinguish ack-timeouts from
+// worker-reported failures.
 export type SetupAck =
   | { kind: 'setup-ack'; sessionId: SessionId; ok: true }
-  | { kind: 'setup-ack'; sessionId: SessionId; ok: false; message: string };
+  | { kind: 'setup-ack'; sessionId: SessionId; ok: false; message: string; timedOut?: true };
 
-// Inbound — run results. `seedIndex` echoes the dispatch's `RunSeed.seedIndex`
-// so the executor can record replies by index rather than completion order.
 export type WorkerSuccess = {
   kind: 'success';
   taskId: number;

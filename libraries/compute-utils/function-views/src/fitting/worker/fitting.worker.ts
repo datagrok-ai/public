@@ -1,36 +1,12 @@
-// Fitting worker entry. Long-lived; receives `FitSessionSetup` once per fit
-// to prime per-session state, then `RunSeed` per seed; `DropSession`
-// releases per-session state at fit teardown.
-//
-// Imports are deliberately DG-free:
-//   - `optimizer-nelder-mead` exports only `optimizeNM`; its type-only import
-//     of optimizer-misc is erased by tsc, so the compiled JS has no DG ref.
-//   - `bounds-checker` is the shared (with the main-arm sampler) bounds
-//     checker; it imports only `formulas-resolver` (also DG-free) and uses
-//     `import type` for the bound shapes.
-//   - `dayjs` is pulled in to reify ISO-string-encoded Dayjs inputs back to
-//     Dayjs objects on this side, matching what the main arm's FuncCall and
-//     formula context see.
-//   - `cost-math` is pure TypeScript with no datagrok-api/* runtime imports.
-//   - `webworkers/dg-lite/*` and `webworkers/script-runner/*` (the Lite DG
-//     shim, Arrow→Lite deserializer, and JS-script body compiler) are also
-//     pure TypeScript with no datagrok-api/* runtime imports.
-//
-// Anything that touches DG.* (fitting-utils.ts, optimizer-misc.ts runtime,
-// cost-functions.ts) is intentionally NOT imported here — it would crash a
-// worker the moment the bundle loaded.
+// Fitting worker entry. Receives `FitSessionSetup` once per fit, then
+// `RunSeed` per seed; `DropSession` releases per-session state at teardown.
+// All imports are DG-free — anything that touches DG.* would crash a worker
+// the moment the bundle loaded.
 
-// Workers can't reach window.dayjs, so the worker bundle must include
-// dayjs source. Consuming packages typically externalize the bare
-// specifier 'dayjs' to the platform global — that lookup matches by
-// exact request string, so importing via the deep path 'dayjs/esm/index'
-// sidesteps the externals matcher and forces webpack to bundle dayjs into
-// the worker chunk regardless of the consuming package's webpack config.
-//
-// The mirroring onto globalThis preserves the main-thread contract:
-// user-supplied script bodies that write `dayjs(...)` as a bare name
-// resolve through the worker's globalThis instead of throwing
-// ReferenceError.
+// Webpack externalizes the bare 'dayjs' specifier to the platform global by
+// exact match, so we import via the deep ESM path to force dayjs into the
+// worker chunk. Mirroring onto globalThis lets user script bodies that write
+// `dayjs(...)` resolve as on the main thread.
 import dayjs from 'dayjs/esm/index.js';
 (globalThis as any).dayjs = dayjs;
 import {optimizeNM} from '../optimizer-nelder-mead';
@@ -108,11 +84,9 @@ function reifyFixedDataFrames(blobs: Record<string, Uint8Array>): Record<string,
   return out;
 }
 
-// Mirror of serialize.serializeFixedInputs's tagging logic: turn ISO
-// strings tagged `'dayjs'` back into Dayjs objects and `'date'` back into
-// Date objects. Plain scalars pass through. The result is what
-// formulas + script bodies see — keeping observable behavior identical
-// to the main arm.
+// Mirror of serialize.serializeFixedInputs: turn tagged ISO strings back
+// into Dayjs / Date so formulas and script bodies see the same shapes the
+// main arm does.
 function reifyFixedInputs(
   scalars: Record<string, any>,
   types: Record<string, FixedInputKind>,
@@ -127,14 +101,12 @@ function reifyFixedInputs(
   return out;
 }
 
-// Per-fit state, primed once on `setup-fit` and reused across all
-// `run-seed` calls for that session.
 type Session = {
   costFunc: (x: Float64Array) => number | undefined;
   nmSettings: Map<string, number>;
   threshold?: number;
-  // Hold a strong reference to the funcCall so V8 keeps the compiled
-  // body and decoded LiteDataFrames alive across runs.
+  // Strong reference to the funcCall so V8 keeps the compiled body and
+  // decoded LiteDataFrames alive across runs.
   fc: WorkerFuncCall;
 };
 
@@ -145,8 +117,7 @@ function buildCostFunc(setup: FitSessionSetup): {
   fc: WorkerFuncCall;
 } {
   const targets = buildTargetEntries(setup.outputTargets);
-  // One reified map feeds two consumers (FuncCall body + bounds-checker
-  // formula context). Built once so both arms see equivalent values.
+  // Shared by FuncCall body and bounds-checker formula context.
   const merged: Record<string, any> = {
     ...reifyFixedInputs(setup.fixedInputs, setup.fixedInputTypes),
     ...reifyFixedDataFrames(setup.fixedDataFrames),
@@ -236,11 +207,8 @@ function handleDrop(drop: DropSession): void {
   sessions.delete(drop.sessionId);
 }
 
-// `self` is typed as `Window` here because compute-utils' tsconfig
-// lib is ["es2023", "dom"] (no webworker). The worker scope's
-// postMessage signature differs from Window's (no targetOrigin, transfer
-// is the second arg, not third). Cast through a small typed shim so the
-// rest of this file stays type-safe instead of using `(self as any)`.
+// compute-utils' tsconfig lib has no webworker, so `self` is typed as Window.
+// Cast through a typed shim instead of sprinkling `(self as any)` everywhere.
 type OutboundReply = SetupAck | WorkerSuccess | WorkerFailure;
 
 interface FittingWorkerScope {
@@ -250,12 +218,9 @@ interface FittingWorkerScope {
 
 const ctx = self as unknown as FittingWorkerScope;
 
-// Wrap the outbound postMessage so that a structured-clone failure on the
-// reply (detached transferable, exotic value past the type system, etc.)
-// turns into a non-transferable failure reply instead of an unhandled
-// rejection in this async handler — the parent's pending dispatchRun would
-// otherwise hang because worker `unhandledrejection` doesn't reliably
-// propagate to `worker.onerror`.
+// Convert a structured-clone failure on the reply into a non-transferable
+// failure reply, so the parent's dispatchRun doesn't hang on a worker
+// `unhandledrejection` that wouldn't reliably reach `worker.onerror`.
 function safePostMessage(msg: OutboundReply, transferables?: Transferable[]): void {
   try {
     if (transferables && transferables.length) ctx.postMessage(msg, transferables);
