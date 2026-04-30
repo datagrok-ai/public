@@ -84,9 +84,7 @@ function reifyFixedDataFrames(blobs: Record<string, Uint8Array>): Record<string,
   return out;
 }
 
-// Mirror of serialize.serializeFixedInputs: turn tagged ISO strings back
-// into Dayjs / Date so formulas and script bodies see the same shapes the
-// main arm does.
+// Inverse of serialize.serializeFixedInputs's tagging.
 function reifyFixedInputs(
   scalars: Record<string, any>,
   types: Record<string, FixedInputKind>,
@@ -204,8 +202,7 @@ function handleDrop(drop: DropSession): void {
   sessions.delete(drop.sessionId);
 }
 
-// compute-utils' tsconfig lib has no webworker, so `self` is typed as Window.
-// Cast through a typed shim instead of sprinkling `(self as any)` everywhere.
+// compute-utils' tsconfig lib has no webworker — type `self` via this shim.
 type OutboundReply = SetupAck | WorkerSuccess | WorkerFailure;
 
 interface FittingWorkerScope {
@@ -215,9 +212,9 @@ interface FittingWorkerScope {
 
 const ctx = self as unknown as FittingWorkerScope;
 
-// Convert a structured-clone failure on the reply into a non-transferable
-// failure reply, so the parent's dispatchRun doesn't hang on a worker
-// `unhandledrejection` that wouldn't reliably reach `worker.onerror`.
+// Convert a structured-clone failure into a non-transferable failure reply.
+// Worker `unhandledrejection` doesn't reliably reach `worker.onerror`, so
+// without this fallback the parent's dispatchRun would hang.
 function safePostMessage(msg: OutboundReply, transferables?: Transferable[]): void {
   try {
     if (transferables && transferables.length) ctx.postMessage(msg, transferables);

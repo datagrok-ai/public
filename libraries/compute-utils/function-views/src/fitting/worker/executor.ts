@@ -45,11 +45,8 @@ export interface Executor {
 
 // ---- canHandle ------------------------------------------------------------
 
-// Header annotation a script must carry to be eligible for worker dispatch.
-// Authors opt in by adding `//meta.workerSafe: true` to the script header.
-// The platform strips the `meta.` prefix when populating `func.options`, so
-// the value lands at `func.options['workerSafe']` (cf. `searchPattern`,
-// `vectorFunc`, `role`).
+// Authors opt in via `//meta.workerSafe: true` in the script header; the
+// platform strips `meta.`, so it lands at `func.options['workerSafe']`.
 const WORKER_SAFE_OPTION = 'workerSafe';
 
 function isWorkerSafe(func: DG.Func): boolean {
@@ -77,10 +74,8 @@ export class MainExecutor implements Executor {
     const tracker = new EarlyStopTracker(args.earlyStoppingSettings);
     const warnings: string[] = [];
     const failedInitPoint: Float64Array[] = [];
-    // Match WorkerExecutor: when early stopping is on, pass the threshold
-    // into each NM run so it short-circuits at cost ≤ threshold. Without
-    // this, the main arm refines past the threshold and the two arms
-    // produce divergent extremums for the same seed.
+    // Pass the threshold into NM so it short-circuits at cost ≤ threshold.
+    // Without this, the two arms diverge at the same seed.
     const nmThreshold = args.earlyStoppingSettings.useEarlyStopping ?
       args.earlyStoppingSettings.costFuncThreshold :
       undefined;
@@ -98,10 +93,8 @@ export class MainExecutor implements Executor {
         percentage = Math.floor(100 * (i + 1) / args.samplesCount);
         pi.update(percentage, `Fitting... (${percentage}%)`);
       } catch (e) {
-        // Discriminate by `name` (not instanceof) so both the original
-        // optimizer-misc.InconsistentTables and worker/cost-math's
-        // InconsistentTablesError are caught — see cost-math.ts for why
-        // the worker arm can't share the optimizer-misc class.
+        // Match by `name` (not instanceof) — worker/cost-math defines its
+        // own InconsistentTablesError; see cost-math.ts for why.
         if (e instanceof Error && e.name === 'InconsistentTables') {
           pi.close();
           throw new Error(`Inconsistent dataframes: ${e.message}`);
@@ -143,8 +136,6 @@ export class WorkerExecutor implements Executor {
     const threshold = useES ? settings.costFuncThreshold! : Infinity;
     const stopAfter = settings.stopAfter;
 
-    // Per-index reply buffer so finalization can walk in seed-index order
-    // (matching MainExecutor) regardless of worker completion order.
     type SeedResult =
       | {kind: 'pending'}
       | {kind: 'success', extremum: Extremum}
@@ -154,8 +145,7 @@ export class WorkerExecutor implements Executor {
     const results: SeedResult[] = new Array(args.samplesCount).fill(PENDING);
 
     let inconsistentMessage: string | null = null;
-    // Halts new dispatches; in-flight replies still land via the
-    // `await dispatchRun` inside each runSlot, so `Promise.all(slots)` drains.
+    // Halts new dispatches; in-flight replies still drain via Promise.all.
     let stopRequested = false;
     let validCount = 0;
     let completedCount = 0;
@@ -189,9 +179,8 @@ export class WorkerExecutor implements Executor {
         throw e;
       }
 
-      // Reply placement is keyed by `reply.seedIndex`, which the worker (and
-      // every synthesized failure path) echoes from the dispatch's JobSpec —
-      // independent of which worker completes first.
+      // Placement is keyed by `reply.seedIndex` — echoed by the worker and
+      // synthesized failures alike, so completion order doesn't matter.
       const handleReply = (reply: RunReply): void => {
         ++completedCount;
         percentage = Math.floor(100 * completedCount / args.samplesCount);
@@ -217,8 +206,7 @@ export class WorkerExecutor implements Executor {
           iterCount: reply.iterCount,
         };
         results[idx] = {kind: 'success', extremum};
-        // Stop on the global valid count (not the contiguous-prefix count) so
-        // we don't dispatch more seeds than necessary; matches main-arm semantics.
+        // Stop on global valid count (not contiguous-prefix) — matches main arm.
         if (useES && extremum.cost <= threshold) {
           ++validCount;
           if (validCount >= stopAfter) stopRequested = true;
@@ -248,9 +236,8 @@ export class WorkerExecutor implements Executor {
       if (inconsistentMessage)
         throw new Error(`Inconsistent dataframes: ${inconsistentMessage}`);
 
-      // Walk in seed-index order through EarlyStopTracker so the selection
-      // rule stays shared with MainExecutor. Breaking on the contiguous-prefix
-      // `pending` covers both cancellation and the stop-with-gap case.
+      // Index-ordered finalize through the shared EarlyStopTracker. Breaking
+      // on the first `pending` handles cancellation and stop-with-gap.
       const tracker = new EarlyStopTracker(settings);
       const failedInitPoint: Float64Array[] = [];
       const warnings: string[] = [];
@@ -272,8 +259,7 @@ export class WorkerExecutor implements Executor {
         fails: buildFailsDataFrame(failedInitPoint, warnings),
       };
     } finally {
-      // Always release per-session worker state — required for long-lived
-      // pools so state doesn't accumulate across fits.
+      // Long-lived pools accumulate per-session state otherwise.
       this.pool.dropSession(sessionId);
     }
   }

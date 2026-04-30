@@ -1,12 +1,6 @@
-// Worker pool with two-phase dispatch. `setupAll` ships an immutable bundle
-// to every slot once per fit; `dispatchRun` ships a seed and routes to a
-// slot whose primed-session set contains it; `dropSession` releases the
-// session at fit teardown. Workers are spun lazily on first setupAll and
-// stay alive across fits so the in-worker compile cache is reused.
-//
-// State is split across Slot (one Worker + run-state + setup tracking),
-// RunJob (one queued/in-flight dispatch + its result promise), and
-// WorkerPool (slot allocator + session registry + pump).
+// Worker pool with two-phase dispatch: setupAll → dispatchRun → dropSession.
+// Workers spin lazily on first setupAll and stay alive across fits so the
+// in-worker compile cache is reused.
 
 import type {
   FitSessionSetup,
@@ -79,10 +73,8 @@ export class WorkerPool {
       ps.resolve(msg);
       return;
     }
-    // Run reply. takeRunningJob returns null for a stray reply (worker
-    // double-posted, or a reply arriving after the timeout removed the slot).
     const job = slot.takeRunningJob();
-    if (!job) return;
+    if (!job) return;     // stray reply (double-post, or post-timeout race)
     job.settle(msg);
     this.pump();
   }
@@ -101,8 +93,6 @@ export class WorkerPool {
       const slot = this.slots.find((s) => s.isIdle() && s.hasSession(job.spec.sessionId));
       if (!slot) { ++i; continue; }
       this.queue.splice(i, 1);
-      // RunJob.settle is idempotent, so a reply landing after the timeout
-      // (or vice versa) is harmless.
       slot.claim(job, this.runTimeoutMs, () => {
         if (job.phase !== 'running') return;
         if (slot.currentJob() === job) slot.takeRunningJob();
@@ -110,10 +100,9 @@ export class WorkerPool {
         job.fail(`run timed out after ${this.runTimeoutMs}ms`);
       });
     }
-    // Stall drain: pump only retries on setup-ack-ok and run-reply, neither
-    // of which arrives once a session has lost all primed slots and the
-    // reprime budget is exhausted. `hasInFlightSetup` is load-bearing —
-    // replacementAttempts increments synchronously before primeSlot acks.
+    // Stall drain: with no primed slot and the reprime budget exhausted,
+    // pump won't fire again. `hasInFlightSetup` guards against draining
+    // mid-reprime (replacementAttempts increments before the ack lands).
     if (this.queue.length > 0) {
       for (const [sessionId, entry] of this.activeSetups) {
         if (entry.replacementAttempts >= this.maxReplacementReprimes &&
@@ -162,9 +151,7 @@ export class WorkerPool {
     if (!this.disposed) {
       const fresh = this.spawnSlot();
       this.slots.push(fresh);
-      // Re-prime the replacement for every active session, capped per session
-      // by maxReplacementReprimes. If the reprime itself times out, the .then
-      // recurses through removeSlot — the cap is what stops the loop.
+      // Re-prime for every active session; cap stops the timeout-recurse loop.
       for (const entry of this.activeSetups.values()) {
         if (entry.replacementAttempts >= this.maxReplacementReprimes) continue;
         ++entry.replacementAttempts;
@@ -176,10 +163,8 @@ export class WorkerPool {
     this.pump();
   }
 
-  // Send `setup` to every slot and resolve when all acks come back ok; throw
-  // on the first failure. Setup is sent without transferables: each slot
-  // gets its own structured-clone copy because transferring would detach
-  // the buffer before sibling slots could clone it.
+  // No transferables: each slot needs its own structured-clone copy.
+  // Transferring would detach the buffer before siblings could clone it.
   async setupAll(setup: FitSessionSetup): Promise<void> {
     if (this.disposed) throw new Error('pool disposed');
     this.ensureWorkers();
@@ -196,8 +181,8 @@ export class WorkerPool {
     this.activeSetups.set(setup.sessionId, {setup, replacementAttempts: 0});
   }
 
-  // Fire-and-forget. Workers process drops in receipt order, so any earlier
-  // run-seed for the session is replied to before the drop is observed.
+  // Fire-and-forget; workers process drops in receipt order, so earlier
+  // dispatches for the session are replied to before drop is observed.
   dropSession(sessionId: SessionId): void {
     if (this.disposed) return;
     this.activeSetups.delete(sessionId);
@@ -206,9 +191,8 @@ export class WorkerPool {
 
   dispatchRun(spec: JobSpec): Promise<RunReply> {
     if (this.disposed) return Promise.reject(new Error('pool disposed'));
-    // Reject only if the session was never set up. If it was set up but no
-    // slot currently has it primed (e.g. a reprime is in flight), the run
-    // sits in the queue — pump fires on every ack-ok / run-reply.
+    // If the session was set up but no slot has it primed (mid-reprime), the
+    // run sits in the queue — pump retries on every ack-ok / run-reply.
     if (!this.activeSetups.has(spec.sessionId)) {
       return Promise.reject(new Error(
         `no slot is primed for session ${spec.sessionId}; call setupAll first`));

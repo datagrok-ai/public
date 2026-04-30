@@ -1,7 +1,5 @@
-// One worker slot. Owns a Worker, a single run-state (idle | running),
-// and a per-session pending-setup map (multiple sessions can be primed
-// concurrently). All transitions go through pool callbacks; tests inject
-// state via the `_*ForTest` hooks below.
+// One worker slot: owns a Worker, a single run-state, and a per-session
+// pending-setup map. All transitions are pool-driven.
 
 import type {FitSessionSetup, RunDispatch, WorkerInbound, SetupAck, SessionId} from './wire-types';
 import {RunJob} from './run-job';
@@ -25,10 +23,8 @@ export class Slot {
     onMessage: (msg: WorkerInbound) => void,
     onError: (ev: ErrorEvent) => void,
   ) {
-    // The literal `new Worker(new URL('./fitting.worker.ts', import.meta.url))`
-    // pattern is what webpack's worker bundler recognizes; passing the URL
-    // through a parameter would break static analysis and fail to emit the
-    // worker chunk.
+    // Webpack's worker bundler only recognizes this exact `new Worker(new URL(...))`
+    // literal; parameterizing the URL breaks static analysis.
     this.worker = new Worker(new URL('./fitting.worker.ts', import.meta.url));
     this.worker.onmessage = (ev: MessageEvent<WorkerInbound>) => onMessage(ev.data);
     this.worker.onerror = onError;
@@ -72,8 +68,7 @@ export class Slot {
     });
   }
 
-  // Pop the pending setup for `sessionId`, clear its timer, and (on ok)
-  // mark the session primed. Returns null for stray acks.
+  // Returns null for stray acks (already timed out / never registered).
   completeSetupAck(sessionId: SessionId, ok: boolean): PendingSetup | null {
     const ps = this.pendingSetups.get(sessionId);
     if (!ps) return null;
@@ -105,7 +100,6 @@ export class Slot {
 
   // ---- test-only ----
 
-  /** Inject a running job; tests are responsible for slot sequencing. */
   _setRunningForTest(job: RunJob): void {
     this.runState = {phase: 'running', job};
   }

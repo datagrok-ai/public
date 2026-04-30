@@ -1,6 +1,5 @@
-// One queued or in-flight worker dispatch. `settle` is idempotent so a
-// stray reply arriving after the run timer fired (or vice versa) doesn't
-// double-resolve.
+// One queued or in-flight worker dispatch. `settle` is idempotent — late
+// timeouts and late replies race, both can hit safely.
 
 import type {JobSpec} from './wire-types';
 import {makeRunFailure} from './failures';
