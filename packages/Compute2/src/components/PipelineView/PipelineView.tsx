@@ -157,7 +157,7 @@ export const PipelineView = Vue.defineComponent({
                       class={cardsClasses}
                       onClick={() => emit('actionRequested', action.uuid)}
                     >
-                      <IconFA name={action.icon ?? 'circle'} class={'d4-picture'} />
+                      <IconFA name={action.icon ?? 'play'} class={'d4-picture'} />
                       <div> { action.friendlyName ?? action.uuid } </div>
                     </div>, [[tooltip, action.description]]))
                   }
