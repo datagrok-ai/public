@@ -99,7 +99,8 @@ export class MolstarHighlightController {
 
   // -- Base colors -----------------------------------------------------------
 
-  /** Tints comparison-pose carbons grey so multiple poses are visually distinct. */
+  /** Tints non-current ligand carbons dark grey so different poses look distinct
+   *  (matches by ligand data ref to catch the preset's visible structure). */
   async applyBaseColors(): Promise<void> {
     const plugin = this.host.getPlugin();
     if (!plugin) return;
@@ -115,14 +116,13 @@ export class MolstarHighlightController {
     for (const ligand of loadedLigands) {
       if (ligand.rowIdx === currentRowIdx) continue;
 
-      const structure = this._getStructureForLigand(ligand);
-      if (!structure) continue;
+      const dataRef = ligand.structureRefs?.[0] ?? null;
+      if (!dataRef) continue;
 
-      const targetStructure = structure;
       await setStructureOverpaint(
-        plugin, allComponents, Color(0x616161),
+        plugin, allComponents, Color(0x424242),
         async (structureData: Structure) => {
-          if (structureData !== targetStructure)
+          if (!this._structureDescendsFromRef(plugin, structureData, dataRef))
             return StructureElement.Loci.none(structureData);
           const query = MolScriptBuilder.struct.generator.atomGroups({
             'atom-test': MolScriptBuilder.core.rel.eq([
