@@ -11,7 +11,7 @@ import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame, compileBody,
 import {toFeather} from '@datagrok-libraries/arrow';
 import {getErrors} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/fitting-utils';
-import {buildSetup, buildRunSeed, LOSS, WorkerPool, Query} from './imports';
+import {buildSetup, buildRunSeed, LOSS, WorkerPool, RunJob} from './imports';
 import type {OutputTargetItem, ValueBoundsData} from './imports';
 import {rangeBound, formulaBound} from './utils';
 import {makeWedgedFunc} from './script-fixtures';
@@ -580,22 +580,22 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
 
   test('pool_dispose_drains_inflight_run', async () => {
     // White-box: dispose's job is to resolve the in-flight run as a failure.
-    // Inject a Query via Slot._setRunningForTest so the test doesn't hinge
+    // Inject a RunJob via Slot._setRunningForTest so the test doesn't hinge
     // on the dispatchRun → worker → reply round-trip.
     type RunReplyLike = {kind: string; taskId: number; message?: string};
     const pool = new WorkerPool(1);
     pool._ensureWorkersForTest();
     let resolved = false;
     let reply: RunReplyLike | null = null;
-    const query = new Query(
+    const job = new RunJob(
       {taskId: 42, sessionId: 9, kind: 'run-seed', seed: new Float64Array([1, 2])} as any,
       [],
-      (r) => { resolved = true; reply = r as RunReplyLike; },
+      (r: any) => { resolved = true; reply = r as RunReplyLike; },
     );
-    // Long-lived noop timer — Query.settle clearTimeouts it on dispose's
+    // Long-lived noop timer — RunJob.settle clearTimeouts it on dispose's
     // running→idle transition.
-    query.startRunning(setTimeout(() => {}, 60_000));
-    pool._slotsArrayForTest()[0]._setRunningForTest(query);
+    job.startRunning(setTimeout(() => {}, 60_000));
+    pool._slotsArrayForTest()[0]._setRunningForTest(job);
     pool.dispose();
     expect(resolved, true, 'dispose must resolve the running slot\'s run');
     expect(reply !== null, true);
@@ -664,7 +664,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
         lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
         bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
       });
-      await pool.setupAll(setup, []);
+      await pool.setupAll(setup);
       expect(pool._slotsForTest(), 1);
 
       // Force the only slot out; pool spawns a fresh replacement and
@@ -710,7 +710,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
         lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
         bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
       });
-      await pool.setupAll(setup, []);
+      await pool.setupAll(setup);
 
       // Initial state: both slots primed.
       expect(pool._primedSlotCountForTest(77), 2, 'both slots primed');
@@ -798,7 +798,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
         lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
         bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
       });
-      await pool.setupAll(setup, []);  // setup is fast — only compile, no run
+      await pool.setupAll(setup);  // setup is fast — only compile, no run
       const {run, transferables} = buildRunSeed({
         sessionId: 2, taskId: 0, seedIndex: 0, seed: new Float64Array([1]),
       });
