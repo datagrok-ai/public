@@ -62,10 +62,12 @@ export interface LiteColumnList {
 }
 
 export interface LiteDataFrame {
+  id: string | undefined;
   readonly columns: LiteColumnList;
   readonly rowCount: number;
   col(nameOrIndex: string | number): LiteColumn | null;
   getCol(name: string): LiteColumn;
   get(name: string, idx: number): unknown;
+  newId(): void;
   toJson(): Record<string, unknown>[];
 }

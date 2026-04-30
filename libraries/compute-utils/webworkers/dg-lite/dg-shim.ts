@@ -258,8 +258,10 @@ function makeDataFrame(cols: LiteColumn[]): LiteDataFrame {
   };
 
   const df: LiteDataFrame = {
+    id: undefined,
     columns,
     rowCount,
+    newId() { df.id = crypto.randomUUID(); },
     col: (n) => typeof n === 'number' ?
       (n >= 0 && n < cols.length ? cols[n] : null) :
       lookup(n),

@@ -100,8 +100,11 @@ function buildTargetEntries(targets: SerializedOutputTarget[]): {
 
 function reifyFixedDataFrames(blobs: Record<string, Uint8Array>): Record<string, LiteDataFrame> {
   const out: Record<string, LiteDataFrame> = {};
-  for (const [name, bytes] of Object.entries(blobs))
-    out[name] = arrowIpcToLite(bytes);
+  for (const [name, bytes] of Object.entries(blobs)) {
+    const df = arrowIpcToLite(bytes);
+    df.newId();
+    out[name] = df;
+  }
   return out;
 }
 
