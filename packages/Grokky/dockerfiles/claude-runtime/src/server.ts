@@ -6,6 +6,7 @@ import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 import {syncUserFiles, generatePackageIndex, WORKSPACE} from './sync-utils';
 import {createPackageKnowledgeServer} from './package-knowledge-tool';
+import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} from './workspace-sync';
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
@@ -276,6 +277,16 @@ interface ActiveQuery {
 
 const activeQueries = new Map<string, ActiveQuery>();
 
+function registerActiveQuery(sid: string, q: ActiveQuery): void {
+  activeQueries.set(sid, q);
+  markQueryStart();
+}
+
+function unregisterActiveQuery(sid: string): void {
+  activeQueries.delete(sid);
+  markQueryEnd();
+}
+
 function handleInputResponse(ws: WsSender, data: InputResponseMessage): void {
   const active = activeQueries.get(data.sessionId);
   if (active?.pendingInputResolve) {
@@ -291,10 +302,12 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   if (!message)
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
 
+  await awaitWorkspaceSync();
+
   const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
   const abortController = new AbortController();
   const active: ActiveQuery = {abortController, queryHandle: null, pendingInputResolve: null};
-  activeQueries.set(sid, active);
+  registerActiveQuery(sid, active);
 
   let userDir: string | undefined;
   let agentFiles: string[] | undefined;
@@ -350,7 +363,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
     if (!abortController.signal.aborted && (!gotResult || !/exited with code/i.test(String(e.message))))
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
-    activeQueries.delete(sid);
+    unregisterActiveQuery(sid);
   }
 }
 
@@ -433,4 +446,5 @@ if (!process.env['ANTHROPIC_API_KEY'])
 
 const server = serve({fetch: app.fetch, port: PORT});
 injectWebSocket(server);
+startWorkspaceSync();
 console.log(`claude-runtime listening on :${PORT}`);
