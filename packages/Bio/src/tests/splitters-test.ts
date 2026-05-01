@@ -73,8 +73,8 @@ category('splitters', async () => {
       ['P', 'R', 'U', 'P', 'R', 'T'],
     ],
     testHelm3: [
-      'RNA1{P.R(U).P.R(T)}$$$$', // invalid helm, but oh well,
-      ['P', 'R(U)', 'P', 'R', 'T'],
+      'RNA1{P.R(U).P.R(T)}$$$$',
+      ['P', 'R', 'U', 'P', 'R', 'T'],
     ],
   };
 
