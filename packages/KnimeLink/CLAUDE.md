@@ -85,7 +85,7 @@ Uses a two-phase approach:
   updates existing items' values with fresh functions, adds new items, and removes items whose deployment
   names are no longer found on the Hub.
 
-Test deployments (prefixed with `datagrok_test_`) are always grouped last under a "Test workflows" node.
+Test deployments (deployments named exactly `test_inputs`, case-insensitive) are always grouped last under a "Test workflows" node.
 
 Selecting a deployment registers it as a Datagrok function and shows two previews:
 - **Function preview** (`grok.shell.preview`) — the platform's built-in function preview with inputs/outputs
@@ -95,7 +95,6 @@ Selecting a deployment registers it as a Datagrok function and shows two preview
   S3 pre-signed URL, and all `fetch()`-based approaches fail (see `getWorkflowImageUrl()` JSDoc).
 
 The `workflowId` (repository item ID) is captured from the deployment metadata.
-Test deployments (prefixed with `datagrok_test_`) are grouped under a "Test workflows" node.
 The header includes a custom breadcrumb navigation UI.
 
 ### Data Conversion
@@ -110,7 +109,7 @@ The header includes a custom breadcrumb navigation UI.
 Results are extracted from the sync response or job response:
 
 - **`outputValues`** — inline key-value results; objects with `table-data` become DataFrames, scalars become variable rows
-- **`outputResources`** — named resources fetched via `GET /jobs/{uuid}/output-resources/{resourceId}`; plain string values are returned as scalars; JSON arrays are parsed via `knimeTableToDataFrame()`, CSV/TSV text is parsed via `DG.DataFrame.fromCsv()`; binary content is returned as a blob
+- **`outputResources`** — named resources fetched via `GET /jobs/{uuid}/output-resources/{resourceId}`; plain string values are returned as scalars; JSON arrays are parsed via `knimeTableToDataFrame()`, CSV/TSV text is parsed via `DG.DataFrame.fromCsv()`; other text content is returned as a scalar string; binary content is returned as a blob
 - **Output resource pre-fetching** — resources are fetched immediately when a job completes (before any job cleanup) to prevent race conditions with S3 pre-signed URL expiry
 - **Error handling** — both `nodeMessages` and `errors` arrays from failed executions are extracted; errors throw exceptions
 - **Flat result parsing** — handles responses where `table-spec`/`table-data` appears at the top level rather than wrapped in `outputValues`/`outputResources`
@@ -133,10 +132,11 @@ When no spec is available (fetch fails), the function is registered with no inpu
 
 ### Multipart File Upload
 
-When the workflow has file inputs (detected from the OpenAPI spec's multipart schema), the execution
-request is sent as `multipart/form-data` instead of JSON. Non-file inputs (tables, variables) are
+When the workflow has file inputs (detected as multipart schema properties with `format === 'binary'`), the
+execution request is sent as `multipart/form-data` instead of JSON. Non-file inputs (tables, variables) are
 serialized to JSON and included as a separate `data` part. This applies to both sync (`/execution`)
-and async (`/jobs/{uuid}`) execution paths.
+and async (`/jobs/{uuid}`) execution paths. Dispatch is centralized in the private `postWithInput()` helper,
+which builds the body (`buildInputBody()`) and routes to `request()` or `requestMultipart()` accordingly.
 
 ### Dynamic Function Registration
 

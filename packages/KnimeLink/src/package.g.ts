@@ -21,3 +21,23 @@ export async function knimeLinkApp() : Promise<any> {
 export async function knimeLinkAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.knimeLinkAppTreeBrowser(treeNode);
 }
+
+//input: string typeFilter 
+//output: list deployments
+export async function knimeListDeployments(typeFilter: string) : Promise<any> {
+  return await PackageFunctions.knimeListDeployments(typeFilter);
+}
+
+//input: string deploymentId 
+//input: string deploymentName 
+//input: string deploymentType 
+//output: func func
+export async function knimeGetOrRegisterFunc(deploymentId: string, deploymentName: string, deploymentType: string) : Promise<any> {
+  return await PackageFunctions.knimeGetOrRegisterFunc(deploymentId, deploymentName, deploymentType);
+}
+
+//input: string workflowId 
+//output: string url
+export async function knimeGetWorkflowImageUrl(workflowId: string) : Promise<any> {
+  return await PackageFunctions.knimeGetWorkflowImageUrl(workflowId);
+}

@@ -43,15 +43,30 @@ function containsMoleculeKeyword(name: string): boolean {
   return MOLECULE_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
+function sanitizeIdentifier(raw: string): string {
+  return raw.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+}
+
+function dedupeName(base: string, used: Set<string>): string {
+  let name = base;
+  let n = 2;
+  while (used.has(name)) {
+    name = `${base}_${n}`;
+    n++;
+  }
+  used.add(name);
+  return name;
+}
+
 export function sanitizeFuncName(name: string, id: string): string {
-  let result = name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  let result = sanitizeIdentifier(name);
   if (!result)
-    result = id.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').substring(0, 20);
+    result = sanitizeIdentifier(id).substring(0, 20);
   return 'Knime_' + result;
 }
 
 export function sanitizeParamName(name: string): string {
-  let result = name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  let result = sanitizeIdentifier(name);
   if (!result || /^\d/.test(result))
     result = 'p_' + result;
   return result;
@@ -62,16 +77,10 @@ export function buildParamMeta(params: KnimeInputParam[]): ParamMeta[] {
   const usedNames = new Set<string>();
 
   for (const param of params) {
-    let baseName = param.group
+    const baseName = param.group
       ? sanitizeParamName(param.group) + '_' + sanitizeParamName(param.name)
       : sanitizeParamName(param.name);
-    let name = baseName;
-    let n = 2;
-    while (usedNames.has(name)) {
-      name = `${baseName}_${n}`;
-      n++;
-    }
-    usedNames.add(name);
+    const name = dedupeName(baseName, usedNames);
 
     meta.push({
       sanitizedName: name,
@@ -98,15 +107,8 @@ export function buildOutputMeta(outputs: KnimeOutputParam[]): OutputMeta[] {
   const meta: OutputMeta[] = [];
   const usedNames = new Set<string>();
   for (const out of outputs) {
-    let name = sanitizeParamName(out.name);
-    let n = 2;
-    const baseName = name;
-    while (usedNames.has(name)) {
-      name = `${baseName}_${n}`;
-      n++;
-    }
-    usedNames.add(name);
-    meta.push({sanitizedName: name, originalName: out.name, dgType: knimeOutputTypeToDgType[out.type] ?? 'object'});
+    const name = dedupeName(sanitizeParamName(out.name), usedNames);
+    meta.push({sanitizedName: name, originalName: out.name, dgType: knimeOutputTypeToDgType[out.type]});
   }
   return meta;
 }
@@ -114,7 +116,7 @@ export function buildOutputMeta(outputs: KnimeOutputParam[]): OutputMeta[] {
 export function buildSignature(funcName: string, paramMeta: ParamMeta[], outputMeta: OutputMeta[]): string {
   const inputParts: string[] = [];
   for (const pm of paramMeta) {
-    const dgType = knimeInputTypeToDgType[pm.type] ?? 'string';
+    const dgType = knimeInputTypeToDgType[pm.type];
     inputParts.push(`${dgType} ${pm.sanitizedName}`);
   }
   let returnType: string;
@@ -210,9 +212,9 @@ function parseTable(t: any): DG.DataFrame {
   return Array.isArray(t) ? knimeTableToDataFrame(t) : knimeTableToDataFrame([t]);
 }
 
-function parseResource(fileName: string, resource: any): DG.DataFrame | null {
+function parseResource(fileName: string, resource: any): DG.DataFrame | string | null {
   if (resource.json !== undefined && Array.isArray(resource.json)) {
-    const df = knimeTableToDataFrame(resource.json, fileName);
+    const df = knimeTableToDataFrame(resource.json);
     df.name = fileName;
     return df;
   }
@@ -227,6 +229,7 @@ function parseResource(fileName: string, resource: any): DG.DataFrame | null {
       }
       catch { /* not parseable */ }
     }
+    return resource.text;
   }
   return null;
 }
@@ -251,7 +254,11 @@ function extractReturnValue(result: KnimeExecutionResult, outputMeta: OutputMeta
     for (const t of result.outputTables)
       unnamedTables.push(parseTable(t));
 
-  // Parse fetchedResources (named)
+  // Parse fetchedResources (named).
+  // TODO: this iterates result.outputResources (id→name map) but ignores
+  // result.fetchedResources (pre-fetched KnimeOutputResource blobs). Non-string
+  // resource outputs are effectively dropped — verify with a workflow emitting a
+  // file/table resource output.
   if (result.outputResources)
     for (const fileName of Object.keys(result.outputResources)) {
       const resource = result.outputResources[fileName];
@@ -259,9 +266,11 @@ function extractReturnValue(result: KnimeExecutionResult, outputMeta: OutputMeta
         parsedScalars.set(fileName, resource);
         continue;
       }
-      const df = parseResource(fileName, resource);
-      if (df)
-        parsedTables.set(fileName, df);
+      const parsed = parseResource(fileName, resource);
+      if (parsed instanceof DG.DataFrame)
+        parsedTables.set(fileName, parsed);
+      else if (typeof parsed === 'string')
+        parsedScalars.set(fileName, parsed);
     }
 
   // Single output — return the value directly for backward compatibility
