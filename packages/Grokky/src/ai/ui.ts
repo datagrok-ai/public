@@ -271,7 +271,7 @@ export async function runPromptWithLifecycle(
     await runClaudeStreaming(panel, command, view, clientToolHandler, 'bash');
     return;
   }
-  let echoed = false;
+  let session: ReturnType<StreamingPanel['startChatSession']> | undefined;
   if (!panel.rawRender) {
     const args: UserPromptEventArgs = {prompt, context: view, handled: false};
     fireBeforeUserPromptEvent(args);
@@ -280,28 +280,28 @@ export async function runPromptWithLifecycle(
 
     // Echo the user message before routing so it never disappears, even when
     // grok.ai.processPrompt's built-in handler claims the prompt.
-    const probe = panel.startChatSession();
-    probe.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
-    echoed = true;
+    session = panel.startChatSession();
+    session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
 
     if (await grok.ai.processPrompt(prompt)) {
-      probe.session.addUiMessage(
+      session.session.addUiMessage(
         'Handled by Datagrok\'s built-in handler — see the current view for the result.',
         false);
-      probe.endSession();
+      session.endSession();
       return;
     }
-    probe.endSession();
   }
-  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt))
+  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt)) {
+    session?.endSession();
     return;
-  await runClaudeStreaming(panel, prompt, view, clientToolHandler, undefined, echoed);
+  }
+  await runClaudeStreaming(panel, prompt, view, clientToolHandler, undefined, session);
   if (!panel.rawRender)
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string, skipUserEcho = false) {
-  const chatSession = panel.startChatSession();
+async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string, existingSession?: ReturnType<StreamingPanel['startChatSession']>) {
+  const chatSession = existingSession ?? panel.startChatSession();
   const sessionId = panel.sessionId;
   let accumulated = '';
   let toolStatus = '';
@@ -329,7 +329,7 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
     await client.ensureConnected();
 
-    if (!skipUserEcho)
+    if (!existingSession)
       chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
 
     forSession(client.onChunk, (evt) => {
