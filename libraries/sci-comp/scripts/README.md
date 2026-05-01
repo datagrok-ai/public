@@ -41,12 +41,12 @@ One-shot normaliser that re-shapes the reference fixtures from the external
 repo into our `{metadata, cases}` format. Re-run only when the upstream
 reference data is refreshed.
 
-### Prerequisites
+### Requirements
 
 Plain Python 3.9+ — no extra packages. A local checkout of
 `MatthewCorney/jonckheere_terpstra`.
 
-### Usage
+### How to run
 
 ```bash
 # Specify the repo path via --repo or the JT_REPO env var. With no args,
