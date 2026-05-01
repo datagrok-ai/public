@@ -1,6 +1,13 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectFloat, test} from '@datagrok-libraries/test/src/test';
 
+// JS API source: public/js-api/src/dataframe/qnum.ts:30
+// DG.Qnum packs a qualifier (`<`, `=`, `>`) into the two least-significant bits
+// of an IEEE 754 double. Covers the helpers the existing dataframe.ts test
+// does not touch: exact / less / greater (convenience wrappers over
+// create + qualifier constant) and parse / toString / qualifier (which round
+// through the Dart side via grok_Qnum_*). qualifier maps EXACT to '=' on the
+// JS side (not '' as the raw Dart QNum.qualifier does).
 category('AI: Qnum: static helpers', () => {
   test('exact / less / greater set qualifier', async () => {
     for (var v of [0, 1.5, -3.25, 1e-6, 1234567.89]) {
