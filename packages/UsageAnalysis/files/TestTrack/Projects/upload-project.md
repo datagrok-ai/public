@@ -2,7 +2,7 @@
 feature: projects
 sub_features_covered: [projects.upload, projects.api.save]
 target_layer: playwright
-priority: smoke
+coverage_type: smoke
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/upload-project.md
 migration_date: 2026-04-28

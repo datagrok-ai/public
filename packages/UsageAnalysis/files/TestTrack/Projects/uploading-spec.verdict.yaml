@@ -1,0 +1,135 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: step-7-projects-rerun-b70
+feature: projects
+mode: spec
+review_round: 2
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/uploading-spec.ts
+invoked_at: 2026-05-01T00:05:00Z
+verdict: SCOPE_REDUCTION
+failure_keys: []
+scope_reduction_proposal: |
+  Two-axis reduction (carries from round 1, expanded with within-case audit on re-run):
+  (1) Cross-case axis: 4 of 9 source-combination cases retained (Cases 1, 3, 4, 9).
+      Documented in spec header (lines 10-12), scenario frontmatter, and decision-log
+      mig-2026-04-30-uploading-migration. Cases 2/5/6/7/8 deferred — environmental
+      dependency (SPGIs space) and complexity (Get Top/Get All UI dispatch, Pivot/
+      Aggregate Add-to-workspace) flagged in scenario Notes (lines 328-336).
+  (2) Within-case axis: each retained case covers Sync ON save only — drops
+      Steps 5 (Data > Link Tables), 6 (verify linking), 8-9 (close + reopen +
+      verify on reopen), 10-12 (Sync OFF variant). Documented in migration report
+      (uploading-migration-report.md lines 44-47): "covering Cases 1, 3, 4, 9 with
+      Sync ON only". Re-run flags this within-case reduction is NOT explicitly
+      cited in spec header — recommend adding within-case reduction comment
+      alongside the cross-case scope-reduction comment for selector-source-style
+      explicitness.
+  Note on Case 1 dataset deviation: scenario specifies SPGI_v2_infinity.csv +
+  SPGI_v2.csv from System:Demo; spec uses demog.csv (twice via demo + getDemoTable).
+  Functionally equivalent for "two local file tables" smoke, but a literal-fidelity
+  gap. Acceptable for documented SR; flagged for housekeeping.
+  Note on Case 9: spec performs Inner+Left joins (2 of 4 join types) via JS API
+  joinTables; scenario specifies Inner/Outer/Left/Right (4 join types) via Data >
+  Join Tables UI. Within documented SR scope (covers the joined-tables save flow
+  intent without exhaustive UI-driven matrix coverage).
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: "Spec exists at allowed A1 path."
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: "Valid TypeScript."
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: "One test() block; 4 softStep blocks for retained cases."
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: "Test name 'Projects / Uploading' substring-matches H1; softStep names contain Case N substrings matching scenario H3 'Case N: ...' headings."
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: "Imports limited to @playwright/test and section-local '../spec-login'."
+  - check: E-TRACE-01
+    status: PASS
+    evidence: "Each softStep tagged by case number; Case 4 query availability check tagged '// technical:' (line 119)."
+  - check: E-TRACE-02
+    status: NA
+    evidence: "Steps 5/6/8-12 within each retained case dropped per documented SR; Cases 2/5/6/7/8 dropped per documented SR. Coverage matches the documented retention set (4 cases × Sync ON save+verify-exists)."
+  - check: E-TRACE-03
+    status: PASS
+    evidence: "Each case verifies project existence via grok.dapi.projects.filter; table-count assertions via grok.shell.tables. Scope-reduced verifications (linking-works, reopen-state) excluded per SR."
+  - check: E-SEL-01
+    status: PASS
+    evidence: "Selector sources cited in header (lines 1-9); .d4-dialog, [name='button-OK'], [name='button-CANCEL'], SAVE ribbon — all from widgets/dialog.md and projects.md:232."
+  - check: E-SEL-02
+    status: PASS
+    evidence: "No invented selectors; .ui-btn:has-text('SAVE') is a text-based fallback per projects.md:232 description."
+  - check: E-SEL-03
+    status: PASS
+    evidence: "Dart input via focus + Ctrl+A + keyboard.type (saveProject helper, lines 32-35)."
+  - check: E-HELP-01
+    status: PASS
+    evidence: "Local saveProject + spec-login helpers; uploadProject (registry, grok_test_layer-only) correctly not used."
+  - check: E-HELP-02
+    status: PASS
+    evidence: "No reinvention of registry helpers."
+  - check: E-LAYER-01
+    status: PASS
+    evidence: "target_layer: playwright matches @playwright/test."
+  - check: E-LAYER-02
+    status: NA
+    evidence: "No layer override."
+  - check: E-BOUND-01
+    status: PASS
+    evidence: "Spec at allowed TestTrack path."
+  - check: E-BOUND-02
+    status: PASS
+    evidence: "No core/** modifications."
+scope_reduction_validation:
+  applied: true
+  cross_case_documented: true
+  within_case_documented_in_migration_report: true
+  within_case_documented_in_spec_header: false
+  recommendation: "Add within-case scope-reduction comment block to spec header (e.g., 'Within-case scope: Sync ON save+verify only; Link Tables / reopen / Sync OFF deferred — see uploading-migration-report.md:44-47'). Housekeeping, not blocking — verdict remains SCOPE_REDUCTION."
+prior_rounds:
+  - review_round: 1
+    verdict: SCOPE_REDUCTION
+    failure_keys: []
+    note: "Initial verdict noted 4 of 9 cases retained per migration; did not call out within-case reduction explicitly."
+rerun_context:
+  trigger: "Phase 1 retro v8 B70 immediate action — re-run Critic E on all Step 7 batch specs"
+  budget_revision_verified: 2
+validator_rounds:
+  - round: 1
+    gate: B
+    timestamp: 2026-05-01T01:25:00Z
+    target_environment: "dev (https://dev.datagrok.ai)"
+    invocation: "cd public/packages/UsageAnalysis/files/TestTrack && DATAGROK_URL=https://dev.datagrok.ai CI=1 npx playwright test --project=dev Projects/uploading-spec.ts --repeat-each=3 --workers=1"
+    runs: 3
+    consecutive_pass: true
+    durations_s: [96, 96, 114]
+    total_duration: "5.3m"
+    hypothesis_cycles: 0
+    final_verdict: PASS
+    notes:
+      - "Case 4 skipped consistently across all 3 runs ('PostgresProducts/PostgresCustomers queries not present in this env'). This is the documented defensive skip-with-note from the original spec; Case 4 retains its Sync-ON save+verify reduction."
+      - "Wave 1a edit was comment-only; no behavioral impact on test execution. Prior 3x PASS pattern preserved."
+wave_1a_validator_context:
+  trigger: "Wave 1a Validator gate per B70 follow-up validation prompt"
+  b_stab_01_outcome: PASS
+wave_3_critic_e_round:
+  round: 3
+  gate: E
+  timestamp: 2026-05-01T02:01:00Z
+  trigger: "Wave 3 D4 verification — Critic E re-validate"
+  changes_since_prior: "Wave 1a polish: expanded header SR comment block (cross-case + within-case + Case 1 dataset note + Case 9 join-types limit). No spec body changes."
+  verdict: SCOPE_REDUCTION
+  failure_keys: []
+  rationale: |
+    Cross-case SR (4 of 9 retained) + within-case SR (Sync-ON-only) both
+    documented in spec header AND migration report. Legitimate-scope
+    persisting reduction.
+  frontmatter_finding:
+    overclaim_detected: true
+    field: projects.shell.open
+    reason: "Spec does not reopen any saved project; only saves + verifies existence via dapi.filter. projects.shell.open is therefore not exercised."
+    note: "Wave 2 oversight — uploading.md was not in Wave 2 cleanup scope. Flagged for follow-up cleanup pass (Wave 4 catch-up candidate)."
+  movement_vs_prior: stayed_SR_legit_scope

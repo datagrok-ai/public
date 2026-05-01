@@ -7,7 +7,7 @@ sub_features_covered:
   - projects.api.delete
   - projects.api.count
 target_layer: api-contract
-priority: regression
+coverage_type: regression
 produced_from: atlas-driven
 related_bugs: []
 ---

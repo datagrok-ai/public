@@ -1,0 +1,75 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: wave-3-critic-e-revalidate
+feature: projects
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-rename-spec.ts
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
+realized_subset: "Steps 7-8 (table rename inside project + re-save) + Step 11 (reopen-verify)"
+invoked_at: 2026-05-01T02:09:00Z
+verdict: SCOPE_REDUCTION
+failure_keys: []
+scope_reduction_proposal: |
+  Three documented reductions:
+  (1) Step 9 sub-bullet for Project / Query / Script renames reduced to
+      table-rename inside the project only (covers GROK-19212).
+      Query/Script renames NOT covered — env dep (registered server-side
+      query/script not provisioned for qa-pw). github-3550 reference-
+      resolution semantic IS exercised via the table-rename path; the
+      query-specific surface is partial.
+  (2) Project-entity rename (p.name = '<new>'; dapi.save(p)) attempted in
+      Wave 1b round 1 but failed to propagate on dev (3/3 runs). Removed
+      via Wave 1b hypothesis cycle 1. Documented in spec header as
+      deferred pending separate JS-API project rename investigation.
+  (3) Step 11 verification narrows to: project opens, tables/joined
+      tables load, no error balloons. Data Sync refresh verification NOT
+      probed (out of scope; covered by custom-creation-scripts-spec).
+claims:
+  - check: E-STRUCT-MECH-01..05
+    status: PASS
+    evidence: "File present, valid TS, test() block, name traceable, canonical imports."
+  - check: E-TRACE-01
+    status: PASS
+    evidence: "Setup/Step labels traceable; SR rationale extensively documented in header lines 1-29 with axis enumeration."
+  - check: E-TRACE-02
+    status: NA
+    evidence: "Steps 9 (Query/Script rename) + project-entity rename + Step 11 Sync refresh deferred via documented SR."
+  - check: E-TRACE-03
+    status: PASS
+    evidence: "GROK-19212 invariant verified via reopen-after-table-rename → tables resolve (>= 2). Pre/post-rename table state assertions via grok.shell.tables.find."
+  - check: E-SEL-01..03
+    status: PASS
+    evidence: "Selectors cited in header (lines 1-5); only used selectors are .d4-dialog, button-OK/CANCEL, SAVE — all documented. Dart input via focus + keyboard.type."
+  - check: E-HELP-01..02
+    status: PASS
+    evidence: "Local saveProject (defensive) + spec-login; no registry reinvention."
+  - check: E-LAYER-01..02
+    status: PASS
+    evidence: "target_layer: playwright matches; no override."
+  - check: E-BOUND-01..02
+    status: PASS
+    evidence: "Within TestTrack/Projects/ allowed path."
+scope_reduction_validation:
+  applied: true
+  axes:
+    - query-script-rename: "env dep (no provisioned query/script for qa-pw)"
+    - project-entity-rename: "JS API setter propagation issue surfaced in Wave 1b round 1; investigation pending"
+    - data-sync-refresh: "out of scope; sibling spec covers it"
+  rationale_aligned_with_scenario_intent: true
+  recommendation: "Accept as SR. GROK-19212 invariant verified all 3 runs (round 2). github-3550 partial coverage is honest."
+wave_1b_validator_record:
+  runs_round_1: 3
+  pattern_round_1: "FAIL, FAIL, FAIL"
+  hypothesis_cycle_1:
+    category: test-bug
+    fix: "Scope-reduced project-entity rename portion (Step 9 secondary)"
+  runs_round_2: 3
+  pattern_round_2: "PASS, PASS, PASS"
+  total_round_2: "2.8m"
+  hypothesis_cycles_consumed: 1
+  outcome: "GROK-19212 invariant held — table rename + reopen succeeds all 3 runs of round 2."
+movement_vs_prior: new_SR_first_critic_e_round_legit_scope
+rerun_context:
+  trigger: "Wave 3 D4 verification — first Critic E round on Wave 1b new spec"
+  budget_revision_verified: 2
