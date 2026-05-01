@@ -783,6 +783,8 @@ class Preview {
         showBinSelector: false,
         showSplitSelector: false,
         filteringEnabled: false,
+        showXAxis: true,
+        xAxisHeight: 25,
       });
     }
     else if (previewType === DG.VIEWER.BAR_CHART) {
