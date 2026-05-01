@@ -38,10 +38,23 @@ async function syncWorkspace(): Promise<void> {
   syncDone = new Promise((r) => (resolve = r));
   try {
     await allQueriesIdle;
+    const oldSha = (await exec('git', ['-C', WORKSPACE, 'rev-parse', 'HEAD'])).stdout.trim();
     await exec('git', ['-C', WORKSPACE, 'fetch', '--depth=1', 'origin', 'master']);
     await exec('git', ['-C', WORKSPACE, 'reset', '--hard', 'FETCH_HEAD']);
-    invalidatePackageKnowledgeCache();
-    console.log('workspace: synced to latest origin/master');
+    const newSha = (await exec('git', ['-C', WORKSPACE, 'rev-parse', 'HEAD'])).stdout.trim();
+
+    if (oldSha === newSha) {
+      console.log('workspace: already up to date');
+      return;
+    }
+
+    const {stdout} = await exec('git', ['-C', WORKSPACE, 'diff', '--name-only', oldSha, newSha]);
+    const changed = stdout.split('\n');
+    if (changed.some((f) => /^packages\/[^/]+\/agents\/package-knowledge\.yaml$/.test(f))) {
+      invalidatePackageKnowledgeCache();
+      console.log('workspace: knowledge cache invalidated');
+    }
+    console.log(`workspace: synced ${oldSha.slice(0, 7)} → ${newSha.slice(0, 7)}`);
   } catch (e: any) {
     console.warn('workspace: sync failed:', e.message);
   } finally {

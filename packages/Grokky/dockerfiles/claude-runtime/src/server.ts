@@ -1,3 +1,4 @@
+import * as path from 'node:path';
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
@@ -16,8 +17,14 @@ Output ONLY the exact stdout of the command — no preamble, no explanation, not
 
 const DATAGROK_PROMPT = `\
 You are Datagrok Code Assistant — an AI coding agent embedded in the Datagrok data analytics platform.
-You have full access to the Datagrok public repository at ${WORKSPACE}, including the JS API source,
-70+ extension packages, API samples, and documentation.
+You have access to the Datagrok public repository at ${WORKSPACE}, including the JS API source,
+API samples, and documentation.
+
+The "## Available Packages" table below lists the curated knowledge index for packages installed
+on this instance. For those, call get_package_knowledge(name) first — it returns authoritative
+apiRef/docsRef paths and is faster than searching the filesystem. Prefer packages from this table
+when answering requests; do not rely on training memory of packages not listed there, since they
+may not be available on this instance.
 
 ## How to find APIs
 
@@ -124,10 +131,10 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
   return idx > 0 ? mcpUrl.substring(0, idx) : undefined;
 }
 
-function buildMcpServers(apiKey?: string, mcpServerUrl?: string): Record<string, any> | undefined {
+function buildMcpServers(apiKey?: string, mcpServerUrl?: string, userId?: string): Record<string, any> | undefined {
   const servers: Record<string, any> = {};
 
-  servers['datagrok-knowledge'] = createPackageKnowledgeServer();
+  servers['datagrok-knowledge'] = createPackageKnowledgeServer(userId);
 
   const mcpUrl = mcpServerUrl || '';
   if (mcpUrl) {
@@ -156,10 +163,10 @@ function buildMcpServers(apiKey?: string, mcpServerUrl?: string): Record<string,
 function buildOptions(
   resume?: string, apiKey?: string, mcpServerUrl?: string,
   systemPromptMode?: string, userDir?: string, agentFiles?: string[],
-  packageIndex?: string | null,
+  packageIndex?: string | null, userId?: string,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode, agentFiles, packageIndex);
-  const mcpServers = buildMcpServers(apiKey, mcpServerUrl);
+  const mcpServers = buildMcpServers(apiKey, mcpServerUrl, userId);
   // Bash and 'none' modes are minimal — don't pull in output-format skills.
   const loadPlugin = !systemPromptMode || (systemPromptMode !== 'bash' && systemPromptMode !== 'none');
   return {
@@ -330,11 +337,13 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
     'mcp__datagrok__db_list_joins', 'mcp__datagrok__db_try_sql',
   ]);
 
+  const userId = userDir ? path.basename(userDir) : undefined;
+
   let gotResult = false;
   try {
-    const packageIndex = await generatePackageIndex();
+    const packageIndex = await generatePackageIndex(userId);
     const existingSession = getSession(sid);
-    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles, packageIndex);
+    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles, packageIndex, userId);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
@@ -347,6 +356,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
         });
         return {behavior: 'allow' as const, updatedInput};
       }
+
       return {behavior: 'allow' as const, updatedInput: input};
     };
     const outputFormat = data.outputSchema ? {type: 'json_schema' as const, schema: data.outputSchema as Record<string, unknown>} : undefined;

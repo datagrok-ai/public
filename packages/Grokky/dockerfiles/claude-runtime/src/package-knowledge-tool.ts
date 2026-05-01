@@ -4,6 +4,7 @@ import * as YAML from 'yaml';
 import {z} from 'zod/v4';
 import {createSdkMcpServer, tool} from '@anthropic-ai/claude-agent-sdk';
 import {WORKSPACE} from './sync-utils';
+import {getInstalledPackages} from './installed-packages';
 
 export interface PackageKnowledge {
   packageName: string;
@@ -70,39 +71,44 @@ export async function loadPackageKnowledge(): Promise<Map<string, LoadedPackage>
   return map;
 }
 
-const getPackageKnowledgeTool = tool(
-  'get_package_knowledge',
-  'Returns pointers to the authoritative reference files for a Datagrok package: ' +
-  'description, keywords, and absolute workspace paths to the API reference ' +
-  '(function signatures + types) and docs. Call this BEFORE exploring with Glob/Grep. ' +
-  'Then use Read on the returned apiRef path to locate the function you need — do NOT ' +
-  'try to discover package APIs by browsing the filesystem. The packageName must match ' +
-  'an entry from the "## Available Packages" table in the system prompt (case-sensitive).',
-  {packageName: z.string().describe('Exact package name from the index (e.g. "Chem", "Bio")')},
-  async ({packageName}) => {
-    const map = await loadPackageKnowledge();
-    const pkg = map.get(packageName);
-    if (!pkg) {
-      const known = [...map.keys()].sort().join(', ');
-      return {content: [{type: 'text' as const, text: `Unknown package "${packageName}". Known packages: ${known}`}]};
-    }
-    const text =
-      `# ${pkg.packageName}\n\n${pkg.description}\n\n` +
-      (pkg.overview ? `## Overview\n\n${pkg.overview}\n\n` : '') +
-      `Keywords: ${pkg.keywords.join(', ')}\n\n` +
-      (pkg.apiRefPath ? `apiRef: ${pkg.apiRefPath}\n` : '') +
-      (pkg.docsRefPath ? `docsRef: ${pkg.docsRefPath}\n` : '') +
-      (pkg.apiRefPath || pkg.docsRefPath ? `\nNext step: Read the apiRef path to find the function you need.\n` : '');
-    return {content: [{type: 'text' as const, text}]};
-  },
-);
+function createGetPackageKnowledgeTool(userId?: string) {
+  return tool(
+    'get_package_knowledge',
+    'Returns pointers to the authoritative reference files for a Datagrok package: ' +
+    'description, keywords, and absolute workspace paths to the API reference ' +
+    '(function signatures + types) and docs. Call this BEFORE exploring with Glob/Grep. ' +
+    'Then use Read on the returned apiRef path to locate the function you need — do NOT ' +
+    'try to discover package APIs by browsing the filesystem. The packageName must match ' +
+    'an entry from the "## Available Packages" table in the system prompt (case-sensitive).',
+    {packageName: z.string().describe('Exact package name from the index (e.g. "Chem", "Bio")')},
+    async ({packageName}) => {
+      const map = await loadPackageKnowledge();
+      const installed = userId ? getInstalledPackages(userId) : undefined;
+      if (installed && !installed.has(packageName))
+        return {content: [{type: 'text' as const, text: `Package "${packageName}" is not installed on this instance.`}]};
+      const pkg = map.get(packageName);
+      if (!pkg) {
+        const known = [...map.keys()].filter((n) => !installed || installed.has(n)).sort().join(', ');
+        return {content: [{type: 'text' as const, text: `Unknown package "${packageName}". Known packages: ${known}`}]};
+      }
+      const text =
+        `# ${pkg.packageName}\n\n${pkg.description}\n\n` +
+        (pkg.overview ? `## Overview\n\n${pkg.overview}\n\n` : '') +
+        `Keywords: ${pkg.keywords.join(', ')}\n\n` +
+        (pkg.apiRefPath ? `apiRef: ${pkg.apiRefPath}\n` : '') +
+        (pkg.docsRefPath ? `docsRef: ${pkg.docsRefPath}\n` : '') +
+        (pkg.apiRefPath || pkg.docsRefPath ? `\nNext step: Read the apiRef path to find the function you need.\n` : '');
+      return {content: [{type: 'text' as const, text}]};
+    },
+  );
+}
 
 // Create a fresh SDK MCP server instance per call — McpServer's Protocol
 // allows only one transport at a time, and the SDK calls connect() on every query().
-export function createPackageKnowledgeServer() {
+export function createPackageKnowledgeServer(userId?: string) {
   return createSdkMcpServer({
     name: 'datagrok-knowledge',
     version: '1.0.0',
-    tools: [getPackageKnowledgeTool],
+    tools: [createGetPackageKnowledgeTool(userId)],
   });
 }
