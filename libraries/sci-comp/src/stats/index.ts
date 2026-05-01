@@ -18,6 +18,9 @@ export {spearman, severityTrend} from './tests/spearman';
 export {hedgesG} from './tests/hedges-g';
 export {fisherExact2x2} from './tests/fisher-exact';
 export {jonckheere} from './tests/jonckheere';
+export type {
+  JonckheereSettings, JonckheereResult, JonckheereMethod,
+} from './tests/jonckheere';
 export {welchPairwise} from './tests/welch-pairwise';
 export type {TreatedGroup as WelchTreatedGroup, WelchPairwiseResult} from './tests/welch-pairwise';
 export {dunnettPairwise} from './tests/dunnett';

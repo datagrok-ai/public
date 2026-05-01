@@ -26,6 +26,7 @@
  */
 
 import {cochranArmitage, jonckheere} from '..';
+import {mulberry32} from '../internal/random';
 import {fmt, printCase, printKv, printProblem, printSection} from './_helpers';
 
 /* ================================================================== */
@@ -45,10 +46,28 @@ printProblem([
   '',
 ]);
 
-printCase('Three ordered groups');
+printCase('Three ordered groups (default: approximate, two-sided)');
 const jt1 = jonckheere([G1, G2, G3]);
-printKv('Z-statistic', fmt(jt1.statistic));
+printKv('J statistic', fmt(jt1.jStatistic));
+printKv('Z statistic', fmt(jt1.statistic));
 printKv('p-value (two-sided)', fmt(jt1.pValue, 6));
+
+printCase('One-sided alternative: increasing');
+const jt1Inc = jonckheere([G1, G2, G3], {alternative: 'increasing'});
+printKv('p-value (increasing)', fmt(jt1Inc.pValue, 6));
+
+printCase('Permutation method (seeded for reproducibility)');
+const jt1Perm = jonckheere([G1, G2, G3], {
+  method: 'permutation', nperm: 5000, rng: mulberry32(42),
+});
+printKv('p-value (permutation)', fmt(jt1Perm.pValue, 6));
+
+printCase('Exact enumeration on a small subset (N=6 → 720 perms)');
+// The exact method enumerates N! permutations and does not self-limit;
+// keep N ≲ 10. See src/stats/README.md for the runtime caveat.
+const jt1Exact = jonckheere([G1.slice(0, 2), G2.slice(0, 2), G3.slice(0, 2)], {method: 'exact'});
+printKv('J statistic', fmt(jt1Exact.jStatistic));
+printKv('p-value (exact, two-sided)', fmt(jt1Exact.pValue, 6));
 
 printProblem([
   '',
@@ -58,7 +77,7 @@ printProblem([
 
 printCase('Reversed group order');
 const jt2 = jonckheere([G3, G2, G1]);
-printKv('Z-statistic', fmt(jt2.statistic));
+printKv('Z statistic', fmt(jt2.statistic));
 printKv('p-value (two-sided)', fmt(jt2.pValue, 6));
 
 /* ================================================================== */

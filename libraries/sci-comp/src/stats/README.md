@@ -130,14 +130,46 @@ Both reduce to a Z-statistic and a two-sided p-value. Continuous data uses
 data uses **Cochran-Armitage** (linear contrast over scores):
 
 ```typescript
-// Continuous trend across ordered groups
+// Continuous trend across ordered groups (default: approximate, two-sided)
 jonckheere([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
-// {statistic: ~3.32, pValue: ~0.0009}
+// {statistic: ~2.83, pValue: ~0.005, jStatistic: 27}
 
 // Incidence trend (Tang 2006: 0/12, 0/12, 1/12, 3/12)
 cochranArmitage([0, 0, 1, 3], [12, 12, 12, 12]);
 // {zStatistic: ~2.34, chi2Statistic: ~5.45, pValue: ~0.020, ...}
 ```
+
+`jonckheere` accepts a `settings` object selecting one of three p-value
+methods, alternative direction, and continuity correction:
+
+```typescript
+import {mulberry32} from '@datagrok-libraries/sci-comp/dist/stats/internal/random';
+
+const G = [[4.2, 5.1, 5.5], [5.6, 6.0, 6.3], [6.4, 7.1, 7.5]];
+
+// Asymptotic normal approximation — fast, default; tie-aware variance
+jonckheere(G, {alternative: 'increasing', continuity: true});
+
+// Monte Carlo permutation p-value (recommended when ties are present)
+jonckheere(G, {method: 'permutation', nperm: 10000, rng: mulberry32(42)});
+
+// Exact enumeration of distinct permutations
+jonckheere(G, {method: 'exact', alternative: 'two-sided'});
+```
+
+The result includes the raw J count alongside the Z statistic and p-value:
+`{statistic, pValue, jStatistic}`. `statistic` is `null` for the exact
+method (no closed-form Z is computed). The asymptotic variance includes
+the standard tie-correction (Lehmann 1975 §6.2) so it agrees with R's
+`clinfun::jonckheere.test` on tied data; for small samples the
+`permutation` and `exact` methods are preferable.
+
+> ⚠ **`exact` cost grows as `N!`.** The method enumerates every distinct
+> permutation of the pooled sample and does not self-limit. It is
+> appropriate for `N ≲ 10` (≈ 3.6M permutations); around `N = 13–14` the
+> runtime moves from minutes to hours. Use `approximate` (cheap, exact-z
+> for the asymptotic distribution) or `permutation` (Monte Carlo at any
+> `N`) outside that range.
 
 `cochranArmitage` accepts custom scores, alternative direction, variance
 method (binomial / hypergeometric), and an optional Buonaccorsi-style
