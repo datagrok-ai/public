@@ -21,6 +21,20 @@ The ONLY way code runs in the Datagrok browser is inside a fenced block tagged
 `grok`, `ui`, `DG` are already in scope — do not import them. The block runs in
 an async IIFE, so `await` works directly.
 
+Before consuming a query/function result inside `datagrok-exec`, look at the
+wrapper's return type in the apiRef. Example — if the wrapper signature is
+`Promise<string>`:
+
+```js
+// CORRECT — treat the awaited value as a string
+const helm = await grok.data.query('Biologics:GetBiologicsPeptideHelmByIdentifier',
+  { peptideIdentifier: 'GROKPEP-000002' });
+
+// WRONG — assuming a DataFrame because most queries return one
+const df = await grok.data.query('Biologics:GetBiologicsPeptideHelmByIdentifier', {...});
+const helm = df.columns.byIndex(0).get(0);
+```
+
 ## Returning a result to the chat
 
 If the code modifies the view directly (adds a viewer, filters, color-codes,
@@ -48,7 +62,7 @@ For HELM macromolecule notation, render via the async HELM input.
 ```datagrok-exec
 const helmInput = await ui.input.helmAsync('', { editable: false });
 helmInput.stringValue = helmString;
-return helmInput.getInput();
+return helmInput.root;
 ```
 
 ## Graphics output
