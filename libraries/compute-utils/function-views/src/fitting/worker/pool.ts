@@ -177,7 +177,7 @@ export class WorkerPool {
   // with the returned ack (await + throw, or fire-and-forget).
   private async primeSlot(slot: Slot, setup: FitSessionSetup): Promise<SetupAck> {
     const ack = await slot.prime(setup, this.setupTimeoutMs);
-    if (!ack.ok && ack.timedOut) this.removeSlot(slot, 'setup timed out');
+    if (ack.ok === false && ack.timedOut) this.removeSlot(slot, 'setup timed out');
     return ack;
   }
 
@@ -188,7 +188,7 @@ export class WorkerPool {
     this.ensureWorkers();
     const acks = await Promise.all([...this.slots].map((s) => this.primeSlot(s, setup)));
     for (const ack of acks) {
-      if (!ack.ok) throw new Error(`worker setup failed: ${ack.message}`);
+      if (ack.ok === false) throw new Error(`worker setup failed: ${ack.message}`);
     }
     this.activeSetups.set(setup.sessionId, {setup, replacementAttempts: 0});
   }
