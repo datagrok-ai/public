@@ -48,6 +48,7 @@ export interface AnnotationRegion {
   description?: string;
   opacity?: number;
   isDataFrameRegion?: boolean;
+  zIndex?: number;
 }
 
 /**

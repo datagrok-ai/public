@@ -77,6 +77,16 @@ function allowedItemsForHost(src: DG.DataFrame | DG.Viewer): string[] | undefine
   return undefined;
 }
 
+/// Default item z-index per host (above markers for histogram/bar chart/density plot, below otherwise).
+function defaultItemZIndexForHost(src: DG.DataFrame | DG.Viewer): number {
+  if (src instanceof DG.Viewer
+    && (src.type === DG.VIEWER.HISTOGRAM
+      || src.type === DG.VIEWER.BAR_CHART
+      || src.type === DG.VIEWER.DENSITY_PLOT))
+    return 100;
+  return -100;
+}
+
 /// Single-axis viewers restrict the column picker in the Editor to their value column.
 /// Returns the value column name when applicable, `undefined` otherwise.
 function singleAxisColumnNameForHost(src: DG.DataFrame | DG.Viewer): string | undefined {
@@ -911,6 +921,8 @@ class Editor {
     /// Single-axis viewers (box plot, histogram, bar chart) restrict the column picker
     /// to their value column. `undefined` means "no restriction" (scatter / line / density).
     private singleAxisColumnName?: string,
+    /// Per-host default for the Arrange dropdown when an item's `zIndex` is unset.
+    private defaultItemZIndex: number = -100,
   ) {
     this.form = ui.form([]);
   }
@@ -953,6 +965,7 @@ class Editor {
       this.areaInputColor(itemIdx, 'Outline Color', 'outlineColor', DG.Color.toHtml(DG.Color.gray)),
       this.inputLineWidth(itemIdx),
     ));
+    mainPane.append(this.inputArrangeRegion(itemIdx));
 
     /** Description pane */
     descriptionPane.append(this.inputAnnotationHeader(itemIdx));
@@ -1178,12 +1191,35 @@ class Editor {
   /** Creates combobox for item position (z-index) */
   private inputArrange(itemIdx: number): HTMLElement {
     const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
+    // Lines default to above markers; bands fall back to the per-host default.
+    const fallbackZIndex = item.type === ITEM_TYPE.BAND ? this.defaultItemZIndex : 100;
+    const effectiveZIndex = item.zIndex ?? fallbackZIndex;
 
     const ibArrange = ui.input.choice('Arrange', {
-      value: item.zIndex && item.zIndex > 0 ? 'above markers' : 'below markers', items: ['above markers', 'below markers'],
+      value: effectiveZIndex >= 0 ? 'above markers' : 'below markers',
+      items: ['above markers', 'below markers'],
       onValueChanged: (value) => {
         item.zIndex = value === 'above markers' ? 100 : -100;
         this.onItemChangedAction(itemIdx, true);
+      }});
+
+    const elArrange = ibArrange.input as HTMLInputElement;
+    elArrange.setAttribute('style', 'width: 204px; max-width: none;');
+
+    return ui.divH([ibArrange.root]);
+  }
+
+  /** Creates combobox for region position (above/below markers); writes `AnnotationRegion.zIndex`. */
+  private inputArrangeRegion(itemIdx: number): HTMLElement {
+    const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
+    const effectiveZIndex = item.zIndex ?? this.defaultItemZIndex;
+
+    const ibArrange = ui.input.choice('Arrange', {
+      value: effectiveZIndex >= 0 ? 'above markers' : 'below markers',
+      items: ['above markers', 'below markers'],
+      onValueChanged: (value) => {
+        item.zIndex = value === 'above markers' ? 100 : -100;
+        this.onItemChangedAction(itemIdx, false);
       }});
 
     const elArrange = ibArrange.input as HTMLInputElement;
@@ -1575,6 +1611,8 @@ class CreationControl {
     allowedItems?: string[],
     /// Hex color override for newly-created bands. `undefined` = use `setDefaults`' value.
     defaultBandColor?: string,
+    /// Default `zIndex` stamped on freshly-created bands and annotation regions.
+    defaultItemZIndex: number = -100,
   ) {
     this.formulaLinesHistoryItems = this.loadFormulaLinesHistory();
     this.annotationRegionsHistoryItems = this.loadAnnotationRegionsHistory();
@@ -1586,6 +1624,7 @@ class CreationControl {
             if (!region)
               return;
 
+            region.zIndex ??= defaultItemZIndex;
             this.annotationRegionsJustCreatedItems.unshift(region);
             /** Update the Table, Preview and Editor states */
             onItemCreatedAction(region);
@@ -1613,6 +1652,7 @@ class CreationControl {
             type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
             formula1: `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)} + ${yStats!.q2.toFixed(1)}`,
             formula2: `${wrapCol(colY!.name)} = ${wrapCol(colX!.name)} - ${yStats!.q2.toFixed(1)}`,
+            zIndex: defaultItemZIndex,
           };
 
           this.annotationRegionsJustCreatedItems.unshift(item);
@@ -1637,6 +1677,7 @@ class CreationControl {
             formula1: `${lhs} = ${lo}`,
             formula2: `${lhs} = ${hi}`,
             header: `${lhs} in [${lo}, ${hi}]`,
+            zIndex: defaultItemZIndex,
           };
           this.annotationRegionsJustCreatedItems.unshift(item);
           onItemCreatedAction(item);
@@ -1690,9 +1731,12 @@ class CreationControl {
 
         item = DG.FormulaLinesHelper.setDefaults(item);
 
-        // Host-specific override: bar chart bands ship grey since the bars are green by default.
-        if (defaultBandColor && item.type === ITEM_TYPE.BAND)
-          item.color = defaultBandColor;
+        // Host-specific overrides for new bands (color + above/below markers).
+        if (item.type === ITEM_TYPE.BAND) {
+          if (defaultBandColor)
+            item.color = defaultBandColor;
+          item.zIndex = defaultItemZIndex;
+        }
 
         this.formulaLinesJustCreatedItems.unshift(item);
 
@@ -1967,6 +2011,7 @@ export class FormulaLinesDialog {
       }),
       allowedItemsForHost(src),
       src instanceof DG.Viewer && src.type === DG.VIEWER.BAR_CHART ? '#838383' : undefined,
+      defaultItemZIndexForHost(src),
     );
   }
 
@@ -1982,6 +2027,7 @@ export class FormulaLinesDialog {
         isValid ? this.dialog.getButton('OK').classList.remove('disabled') : this.dialog.getButton('OK').classList.add('disabled');
       },
       singleAxisColumnNameForHost(src),
+      defaultItemZIndexForHost(src),
     );
   }
 
