@@ -455,8 +455,10 @@ async function handleTicket(args: ReportArgs): Promise<boolean> {
 // the Datagrok org instance; override via --jira-url or $JIRA_URL.
 //
 // Why v2 and not v3: v3 requires comment bodies in ADF (Atlassian Document
-// Format) JSON; v2 accepts plain text / wiki-markup. The handoff prompt emits
-// markdown, which JIRA's plain-text path renders acceptably.
+// Format) JSON, which is much heavier to construct. v2 accepts a plain string
+// body, which JIRA renders as wiki markup — NOT Markdown. So a `# heading`
+// becomes a top-level ordered-list item, `&nbsp;` shows up literally, etc.
+// `markdownToJiraWiki` below bridges the gap for Markdown-emitting callers.
 
 function resolveJiraBase(args: ReportArgs): string {
   const cli = (args['jira-url'] as string | undefined) || '';
@@ -469,6 +471,78 @@ function jiraAuthHeader(): string | null {
   const token = process.env.JIRA_TOKEN;
   if (!user || !token) return null;
   return 'Basic ' + Buffer.from(`${user}:${token}`).toString('base64');
+}
+
+// Convert a Markdown string to JIRA wiki markup so that REST v2 renders it the
+// way the author intended. Handles the common cases that diverge between the
+// two dialects; for anything not listed, the input is passed through unchanged.
+//
+// Deferred for v1 (left as-is, may render imperfectly):
+//   - tables (Markdown and JIRA wiki use very similar pipe syntax)
+//   - nested lists deeper than two levels
+//   - footnotes, definition lists, raw HTML
+export function markdownToJiraWiki(md: string): string {
+  if (!md) return md;
+
+  // 1. Code fences first: extract their content into placeholders so that
+  //    later rules cannot rewrite anything inside `{noformat}` / `{code}`.
+  const placeholders: string[] = [];
+  const protect = (s: string): string => {
+    placeholders.push(s);
+    return `\x00P${placeholders.length - 1}\x00`;
+  };
+
+  let out = md;
+  out = out.replace(/```([A-Za-z0-9_+\-]*)\r?\n([\s\S]*?)```/g, (_m, lang, code) => {
+    const wiki = lang ? `{code:${lang}}\n${code}{code}` : `{noformat}\n${code}{noformat}`;
+    return protect(wiki);
+  });
+
+  // 2. Inline code spans (after fences, before anything else).
+  out = out.replace(/`([^`\n]+)`/g, (_m, code) => protect(`{{${code}}}`));
+
+  // 3. Headings — h6 → h1 so that the `###` prefix doesn't get matched as `##`.
+  //    Must run before list rules (where `#` would otherwise be ambiguous).
+  out = out.replace(/^###### (.+)$/gm, 'h6. $1');
+  out = out.replace(/^##### (.+)$/gm, 'h5. $1');
+  out = out.replace(/^#### (.+)$/gm, 'h4. $1');
+  out = out.replace(/^### (.+)$/gm, 'h3. $1');
+  out = out.replace(/^## (.+)$/gm, 'h2. $1');
+  out = out.replace(/^# (.+)$/gm, 'h1. $1');
+
+  // 4. Bold then italic. We stash bold runs behind a sentinel first so that
+  //    the inner italic pass can't mistake the leftover single `*` markers for
+  //    italic (and vice-versa for `**bold *italic* bold**`).
+  out = out.replace(/\*\*([\s\S]+?)\*\*/g, '\x01$1\x01');
+  out = out.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '_$1_');
+  out = out.replace(/\x01/g, '*');
+
+  // 5. Strikethrough.
+  out = out.replace(/~~([^~\n]+)~~/g, '-$1-');
+
+  // 6. Links: [text](url) → [text|url].
+  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '[$1|$2]');
+
+  // 7. Blockquote.
+  out = out.replace(/^> (.+)$/gm, 'bq. $1');
+
+  // 8. Unordered lists (one level of nesting). Two-space indent → second level.
+  out = out.replace(/^  - /gm, '** ');
+  out = out.replace(/^- /gm, '* ');
+
+  // 9. Ordered lists. After the heading pass so we don't clobber `# Title`.
+  out = out.replace(/^\d+\. /gm, '# ');
+
+  // 10. HTML entities that JIRA wiki shows literally.
+  out = out.replace(/&nbsp;/g, ' ');
+  out = out.replace(/&amp;/g, '&');
+  out = out.replace(/&lt;/g, '<');
+  out = out.replace(/&gt;/g, '>');
+
+  // Restore protected fences / inline code last.
+  out = out.replace(/\x00P(\d+)\x00/g, (_m, idx) => placeholders[Number(idx)]);
+
+  return out;
 }
 
 async function handleComment(args: ReportArgs): Promise<boolean> {
@@ -507,11 +581,15 @@ async function handleComment(args: ReportArgs): Promise<boolean> {
 
   const base = resolveJiraBase(args);
   const url = `${base}/rest/api/2/issue/${encodeURIComponent(ticket)}/comment`;
+  // Callers (especially the dg-fix-reports M2 handoff) emit Markdown, but JIRA
+  // REST v2 renders the body as wiki markup. Convert before posting so headings,
+  // lists, and HTML entities don't render as garbage in the JIRA UI.
+  const wikiBody = markdownToJiraWiki(body);
   try {
     const resp = await fetch(url, {
       method: 'POST',
       headers: {Authorization: auth, 'Content-Type': 'application/json', Accept: 'application/json'},
-      body: JSON.stringify({body}),
+      body: JSON.stringify({body: wikiBody}),
     });
     if (resp.status !== 200 && resp.status !== 201) {
       const text = await resp.text();
