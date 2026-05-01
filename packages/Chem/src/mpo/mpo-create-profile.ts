@@ -182,7 +182,22 @@ export class MpoProfileCreateView {
     };
 
     this.headerEl = editable(ui.h1(this.displayName), () => {
-      this.profile.name = this.textOf(this.headerEl);
+      const oldName = this.profile.name;
+      const newName = this.textOf(this.headerEl);
+
+      if (!newName || oldName === newName) {
+        this.profile.name = newName;
+        return;
+      }
+
+      if (this.df) {
+        const oldCol = this.df.col(oldName);
+        const newColExists = this.df.col(newName);
+        if (oldCol && !newColExists)
+          oldCol.name = newName;
+      }
+
+      this.profile.name = newName;
     }, true);
     this.headerEl.classList.add('chem-profile-header');
 
