@@ -61,6 +61,8 @@ import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-simila
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {ScaffoldHoppingFunctionEditor} from './analysis/scaffold-hopping/scaffold-hopping-editor';
+import {runScaffoldHopping} from './analysis/scaffold-hopping/scaffold-hopping';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -2314,6 +2316,58 @@ export class PackageFunctions {
       scalings: scalings, fragmentCutoff,
     });
     viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+  }
+
+  @grok.decorators.editor({
+    name: 'ScaffoldHoppingEditor',
+  })
+  static ScaffoldHoppingEditor(call: DG.FuncCall): void {
+    const funcEditor = new ScaffoldHoppingFunctionEditor();
+    const dialog = ui.dialog({title: 'Scaffold Hopping'})
+      .add(funcEditor.getEditor())
+      .onOK(async () => {
+        try {
+          const params = funcEditor.getParams();
+          await call.func.prepare({
+            table: params.table,
+            molecules: params.molecules,
+            referenceRowIdx: params.referenceRowIdx,
+            tanimotoMin: params.tanimotoMin,
+            tanimotoMax: params.tanimotoMax,
+            mcsRatioMax: params.mcsRatioMax,
+            minPharmOverlap: params.minPharmOverlap,
+            replaceableAtoms: JSON.stringify(params.replaceableAtoms),
+            useTcInFlag: params.useTcInFlag,
+            usePharmInFlag: params.usePharmInFlag,
+          }).call(true);
+        } catch (e: any) {
+          grok.shell.error(e?.message ?? String(e));
+        }
+      });
+    dialog.show();
+  }
+
+  @grok.decorators.func({
+    'name': 'Scaffold Hopping',
+    'description': 'Score every other molecule against a reference row using 2D scaffold-hopping criteria (ECFP4 Tanimoto, pharmacophore overlap, MCS atom ratio).',
+    'editor': 'Chem:ScaffoldHoppingEditor',
+    'top-menu': 'Chem | Analyze | Scaffold Hopping...',
+  })
+  static async scaffoldHopping(
+    table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'int', options: {description: 'Reference row index (0-based)', initialValue: '0'}}) referenceRowIdx: number,
+    @grok.decorators.param({type: 'double', options: {description: 'ECFP4 Tanimoto lower bound', initialValue: '0.2'}}) tanimotoMin: number,
+    @grok.decorators.param({type: 'double', options: {description: 'ECFP4 Tanimoto upper bound', initialValue: '0.6'}}) tanimotoMax: number,
+    @grok.decorators.param({type: 'double', options: {description: 'MCS atom ratio cutoff (Maeda 2024 scaffold-hop criterion)', initialValue: '0.4'}}) mcsRatioMax: number,
+    @grok.decorators.param({type: 'double', options: {description: 'Minimum pharmacophore-family Jaccard overlap vs. reference', initialValue: '0.3'}}) minPharmOverlap: number,
+    @grok.decorators.param({type: 'string', options: {description: 'JSON-encoded array of replaceable atom indices (empty = auto-Murcko fallback)', initialValue: '[]'}}) replaceableAtoms: string,
+    @grok.decorators.param({type: 'bool', options: {description: 'Apply ECFP4 Tc window as a flag condition (in addition to the always-on Maeda atom-ratio)', initialValue: 'true'}}) useTcInFlag: boolean,
+    @grok.decorators.param({type: 'bool', options: {description: 'Apply Pharm Sim minimum as a flag condition (in addition to the always-on Maeda atom-ratio)', initialValue: 'true'}}) usePharmInFlag: boolean,
+  ): Promise<void> {
+    await runScaffoldHopping(table, molecules, referenceRowIdx,
+      tanimotoMin, tanimotoMax, mcsRatioMax, minPharmOverlap, replaceableAtoms,
+      useTcInFlag, usePharmInFlag);
   }
 
   @grok.decorators.func({

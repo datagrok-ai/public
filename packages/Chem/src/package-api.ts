@@ -114,6 +114,13 @@ export namespace scripts {
   }
 
   /**
+  Computes CATS2D (Schneider et al. 1999) topological pharmacophore-pair descriptors over the Chem package's 7-family SMARTS definitions. CATS2D counts (familyA, familyB, topological_distance) triples and normalises by feature counts (Schneider scaling) to make the descriptor scale-invariant. Designed specifically for scaffold-hop retrieval at low Tanimoto similarity. Returns the 7×7×10 = 490-dim float vector per molecule, encoded as space-separated floats for transport.
+  */
+  export async function catsFingerprints(data: DG.DataFrame , smiles: DG.Column , features: DG.DataFrame ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CATSFingerprints', { data, smiles, features });
+  }
+
+  /**
   USRCAT - real-time ultrafast shape recognition with pharmacophoric constraints
   */
   export async function usrcat(data: DG.DataFrame , smiles: DG.Column ): Promise<any> {
@@ -132,6 +139,13 @@ export namespace scripts {
   */
   export async function murckoScaffolds(data: DG.DataFrame , smiles: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:MurckoScaffolds', { data, smiles });
+  }
+
+  /**
+  Computes Pharm2D (Gobbi-Poppinger 1998) topological pharmacophore fingerprints over the Chem package's standard 7-family SMARTS definitions, using RDKit's SigFactory with pair AND triplet feature combinations (maxPointCount=3) and triangle-pruned distance bins (0,2)(2,4)(4,6)(6,8)(8,12). Returns the sparse-bit-vector "on bits" as a comma-separated string per molecule for transport back to TypeScript.
+  */
+  export async function pharm2DFingerprints(data: DG.DataFrame , smiles: DG.Column , features: DG.DataFrame ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:Pharm2DFingerprints', { data, smiles, features });
   }
 
   /**
@@ -734,6 +748,17 @@ export namespace funcs {
 
   export async function mmpAnalysis(table: DG.DataFrame , molecules: DG.Column , activities: string[] , diffTypes: any , scalings: any , fragmentCutoff: number ): Promise<void> {
     return await grok.functions.call('Chem:MmpAnalysis', { table, molecules, activities, diffTypes, scalings, fragmentCutoff });
+  }
+
+  export async function scaffoldHoppingEditor(call: any ): Promise<void> {
+    return await grok.functions.call('Chem:ScaffoldHoppingEditor', { call });
+  }
+
+  /**
+  Score every other molecule against a reference row using 2D scaffold-hopping criteria (ECFP4 Tanimoto, pharmacophore overlap, MCS atom ratio).
+  */
+  export async function scaffoldHopping(table: DG.DataFrame , molecules: DG.Column , referenceRowIdx: number , tanimotoMin: number , tanimotoMax: number , mcsRatioMax: number , minPharmOverlap: number , replaceableAtoms: string , useTcInFlag: boolean , usePharmInFlag: boolean ): Promise<void> {
+    return await grok.functions.call('Chem:ScaffoldHopping', { table, molecules, referenceRowIdx, tanimotoMin, tanimotoMax, mcsRatioMax, minPharmOverlap, replaceableAtoms, useTcInFlag, usePharmInFlag });
   }
 
   /**

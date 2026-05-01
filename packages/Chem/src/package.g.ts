@@ -1016,6 +1016,30 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, act
   await PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff);
 }
 
+//input: funccall call 
+//meta.role: editor
+export function ScaffoldHoppingEditor(call: DG.FuncCall) : void {
+  PackageFunctions.ScaffoldHoppingEditor(call);
+}
+
+//name: Scaffold Hopping
+//description: Score every other molecule against a reference row using 2D scaffold-hopping criteria (ECFP4 Tanimoto, pharmacophore overlap, MCS atom ratio).
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: int referenceRowIdx = 0 { description: Reference row index (0-based) }
+//input: double tanimotoMin = 0.2 { description: ECFP4 Tanimoto lower bound }
+//input: double tanimotoMax = 0.6 { description: ECFP4 Tanimoto upper bound }
+//input: double mcsRatioMax = 0.4 { description: MCS atom ratio cutoff (Maeda 2024 scaffold-hop criterion) }
+//input: double minPharmOverlap = 0.3 { description: Minimum pharmacophore-family Jaccard overlap vs. reference }
+//input: string replaceableAtoms = [] { description: JSON-encoded array of replaceable atom indices (empty = auto-Murcko fallback) }
+//input: bool useTcInFlag = true { description: Apply ECFP4 Tc window as a flag condition (in addition to the always-on Maeda atom-ratio) }
+//input: bool usePharmInFlag = true { description: Apply Pharm Sim minimum as a flag condition (in addition to the always-on Maeda atom-ratio) }
+//editor: Chem:ScaffoldHoppingEditor
+//top-menu: Chem | Analyze | Scaffold Hopping...
+export async function scaffoldHopping(table: DG.DataFrame, molecules: DG.Column, referenceRowIdx: number, tanimotoMin: number, tanimotoMax: number, mcsRatioMax: number, minPharmOverlap: number, replaceableAtoms: string, useTcInFlag: boolean, usePharmInFlag: boolean) : Promise<void> {
+  await PackageFunctions.scaffoldHopping(table, molecules, referenceRowIdx, tanimotoMin, tanimotoMax, mcsRatioMax, minPharmOverlap, replaceableAtoms, useTcInFlag, usePharmInFlag);
+}
+
 //name: Scaffold Tree Filter
 //description: Scaffold Tree filter
 //output: filter result
