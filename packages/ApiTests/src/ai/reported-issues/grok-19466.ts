@@ -2,6 +2,22 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
+// Regression coverage for GROK-19466 (1.27.0): Trellis Bar chart with
+// globalScale=true used to break when valueAggrType was swapped under the
+// inner BarChartLook. The fix preserves viewer state across all aggr swaps
+// (avg / sum / min / max / count / med / q1 / q3 / stdev).
+//
+// JS API source: public/js-api/src/viewer.ts:299 (DG.Viewer.trellisPlot),
+// public/js-api/src/interfaces/d4.ts:3570 (ITrellisPlotSettings —
+// innerViewerLook at 3586, globalScale at 3605),
+// public/js-api/src/const.ts:696 (DG.VIEWER.TRELLIS_PLOT),
+// public/js-api/src/const.ts:673 (DG.VIEWER.BAR_CHART).
+//
+// Detached viewers throughout (no TableView, no canvas geometry); state is
+// pinned via getOptions(true).look. innerViewerLook is typed `any` and
+// backed by a Dart LookAndFeel rebuilt on every reassignment, so we read
+// back via the serialized JSON envelope rather than via props.
+
 const AGGRS = ['avg', 'sum', 'min', 'max', 'count', 'med', 'q1', 'q3', 'stdev'];
 
 function makeTrellis(): DG.Viewer {
