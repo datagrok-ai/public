@@ -645,7 +645,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     this._requestTerminated = flag;
   }
 
-  mostCommonStructure(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): string {
+  mostCommonStructure(
+    molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean,
+    timeoutSec?: number,
+  ): string {
     let mols;
     try {
       mols = new this._rdKitModule.MolList();
@@ -664,11 +667,21 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
       let mcsSmarts: string|null = null;
       if (mols.size() > 1) {
-        mcsSmarts = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
+        // RingMatchesRingOnly prevents pathological matches where an aromatic
+        // ring atom is paired with a chain atom — same setting `mmpGetMcs`
+        // already uses safely (line 630). `Timeout` (RDKit FMCS, seconds) is
+        // forwarded to the C++ side so the worker bounds its own search
+        // instead of relying on a JS-side `Promise.race` (which can't free a
+        // synchronous WASM call). When `timeoutSec` is undefined the option
+        // is omitted, preserving prior unbounded behaviour for legacy callers.
+        const opts: Record<string, unknown> = {
           AtomCompare: exactAtomSearch ? 'Elements' : 'Any',
           BondCompare: exactBondSearch ? 'OrderExact' : 'Order',
-          //RingMatchesRingOnly: true
-        }));
+          RingMatchesRingOnly: true,
+        };
+        if (timeoutSec !== undefined && timeoutSec > 0)
+          opts.Timeout = Math.max(1, Math.floor(timeoutSec));
+        mcsSmarts = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify(opts));
       }
       return mcsSmarts ?? '';
     } finally {

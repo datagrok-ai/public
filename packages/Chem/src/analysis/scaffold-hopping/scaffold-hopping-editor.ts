@@ -24,9 +24,13 @@ export type ScaffoldHoppingParams = {
   tanimotoMax: number;
   mcsRatioMax: number;
   minPharmOverlap: number;
-  /** RDKit atom indices the user marked as the *replaceable* region — i.e.
-   *  the part the scaffold hop should change. Empty means "let the system
-   *  decide" (auto-Murcko fallback). */
+  /** RDKit atom indices the user marked as the *replaceable* region — the
+   *  part the scaffold hop should change. Acts as an additional filter on
+   *  top of the Maeda atom-ratio classifier: when non-empty, a candidate is
+   *  flagged as a hop only if its MCS does NOT cover all marked atoms (i.e.
+   *  the candidate actually changes the marked region). Empty list = no
+   *  region constraint, the pipeline returns all global scaffold hops vs.
+   *  the reference — paper-faithful Maeda 2024 behaviour. */
   replaceableAtoms: number[];
   /** When true, the SH flag additionally requires the candidate's ECFP4 Tc
    *  to be inside the pre-filter window. When false, only the Maeda MCS
@@ -116,7 +120,7 @@ export class ScaffoldHoppingFunctionEditor {
     maxWidth: `${PREVIEW_SIZE}px`,
   }});
   clearSelectionBtn = ui.button('Clear selection', () => this._clearSelection(),
-    'Remove all marked atoms — the system will fall back to auto-Murcko');
+    'Remove all marked atoms — the run will return any global scaffold hop');
 
   /** Atom indices the user has marked. Reset whenever the reference changes. */
   selectedAtoms: Set<number> = new Set();
@@ -391,12 +395,15 @@ export class ScaffoldHoppingFunctionEditor {
   private _updateSelectionCaption() {
     const n = this.selectedAtoms.size;
     if (n === 0) {
-      this.selectionCaption.innerHTML = 'Click atoms to mark the replaceable region. ' +
-        '<span style="color:var(--grey-4)">Ctrl-hover paints, Ctrl+Shift-hover erases.</span>';
-      this.selectionCaption.style.color = 'var(--grey-5)';
+      this.selectionCaption.innerHTML =
+        '<span style="color:var(--grey-6)">Optional: mark a region to find hops that change it.</span><br>' +
+        '<span style="color:var(--grey-4)">Ctrl-hover paints, Ctrl+Shift-hover erases. ' +
+        'Leave empty to find any global scaffold hop.</span>';
+      this.selectionCaption.style.color = '';
       this.clearSelectionBtn.style.display = 'none';
     } else {
-      this.selectionCaption.textContent = `${n} atom${n === 1 ? '' : 's'} marked as replaceable.`;
+      this.selectionCaption.textContent =
+        `${n} atom${n === 1 ? '' : 's'} marked — hits will be filtered to hops that change this region.`;
       this.selectionCaption.style.color = 'var(--orange-2, #c87325)';
       this.clearSelectionBtn.style.display = '';
     }

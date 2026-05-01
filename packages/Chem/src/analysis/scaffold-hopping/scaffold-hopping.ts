@@ -19,8 +19,13 @@ const W_CATS = 0.3;
 /** Top-N rows by composite score that get the (expensive) per-pair MCS step. */
 const TOP_N_FOR_MCS = 200;
 
-/** Per-pair MCS timeout (ms). 8s gives FMCS room to finish on ~40-atom drugs. */
-const MCS_TIMEOUT_MS = 8000;
+/** Per-pair MCS timeout (seconds). Forwarded to RDKit's FMCS via the
+ *  `Timeout` option, so the search bounds itself in C++ rather than relying
+ *  on a JS-side `Promise.race` (which can't free a synchronous WASM call —
+ *  the worker stays stuck and every subsequent pair queues behind it).
+ *  8s gives FMCS room to finish on ~40-atom drugs while keeping the
+ *  worst-case top-200 sweep bounded at ~27 minutes instead of unbounded. */
+const MCS_TIMEOUT_SEC = 8;
 
 /** Atoms must match by element type — `AtomCompare: 'Elements'`. The default
  *  (`'Any'`) is exponential on drug-sized molecules and exceeds the timeout. */
@@ -117,6 +122,17 @@ export async function runScaffoldHopping(
     const score = new Float32Array(N).fill(NaN);
     const isHop = new Uint8Array(N);
 
+    // Reference-row pinning. Hoisted BEFORE the no-survivors early-return so
+    // the reference always shows 1.0 across every metric — without this the
+    // narrow / inverted-Tc-range case left the reference row's Pharm / CATS
+    // / Score / MCS as NaN, which looked like a per-metric failure rather
+    // than "the reference is by definition perfectly similar to itself".
+    score[referenceRowIdx] = 1.0;
+    tanimoto[referenceRowIdx] = 1.0;
+    pharmJaccard[referenceRowIdx] = 1.0;
+    catsCosine[referenceRowIdx] = 1.0;
+    mcsRatio[referenceRowIdx] = 1.0;
+
     if (survivorIdxs.length === 0) {
       grok.shell.warning(
         `No candidates passed the Tanimoto pre-filter [${tanimotoMin}, ${tanimotoMax}]. ` +
@@ -190,12 +206,8 @@ export async function runScaffoldHopping(
       isHop[i] = 1;
     }
 
-    // Reference pinning so it sorts to the top of the hops-first order.
-    score[referenceRowIdx] = 1.0;
-    tanimoto[referenceRowIdx] = 1.0;
-    pharmJaccard[referenceRowIdx] = 1.0;
-    catsCosine[referenceRowIdx] = 1.0;
-    mcsRatio[referenceRowIdx] = 1.0;
+    // (Reference pinning happens earlier — see the hoisted block above the
+    // no-survivors early-return.)
 
     progress.update(95, 'Writing result columns...');
     writeOutputColumns(table, tanimoto, pharmJaccard, catsCosine, mcsRatio, score, isHop);
@@ -463,13 +475,15 @@ async function computeTopMcsRatio(
     if (!candSmilesRaw) continue;
     const candSmiles = removeWaterAndSaltsSingle(candSmilesRaw);
 
+    // FMCS bounds itself via the `Timeout` option (forwarded into the C++
+    // side through `getMCS(..., timeoutSec)`). On timeout it returns the
+    // best partial match, or empty if it found none — both treated as a
+    // skip here. No JS-side `Promise.race` because that pattern leaves
+    // worker[0] stuck on the previous pair while the next iteration queues.
     let mcsSmarts = '';
     try {
-      mcsSmarts = await Promise.race<string>([
-        rdKitService.getMCS([refSmiles, candSmiles], MCS_EXACT_ATOMS, MCS_EXACT_BONDS),
-        new Promise<string>((_, rej) =>
-          setTimeout(() => rej(new Error('MCS timeout')), MCS_TIMEOUT_MS)),
-      ]);
+      mcsSmarts = await rdKitService.getMCS(
+        [refSmiles, candSmiles], MCS_EXACT_ATOMS, MCS_EXACT_BONDS, MCS_TIMEOUT_SEC);
     } catch {
       continue;
     }

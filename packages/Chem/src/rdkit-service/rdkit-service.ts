@@ -587,9 +587,15 @@ export class RdKitService {
     return res;
   }
 
-  async getMCS(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {
-    // MCS does not support parallelization, so we will use the first worker
-    return await this.parallelWorkers[0].mostCommonStructure(molecules, exactAtomSearch, exactBondSearch);
+  async getMCS(
+    molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean,
+    timeoutSec?: number,
+  ): Promise<string> {
+    // MCS does not support parallelization, so we will use the first worker.
+    // `timeoutSec` is forwarded to RDKit FMCS so the search bounds itself in
+    // C++; without it (legacy callers) FMCS runs unbounded as before.
+    return await this.parallelWorkers[0].mostCommonStructure(
+      molecules, exactAtomSearch, exactBondSearch, timeoutSec);
   }
 
   private async restartWorker(workerIndex: number) {

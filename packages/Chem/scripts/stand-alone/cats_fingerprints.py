@@ -69,22 +69,29 @@ def _cats2d_vector(smi):
         dist_mat = Chem.GetDistanceMatrix(mol)
 
         # Pairwise feature-pair × distance histogram, 7 × 7 × 10.
+        # Vectorised over atom pairs: for each (familyA, familyB) pair we
+        # slice the atom-atom distance matrix at the family's atom sets via
+        # np.ix_, mask out self-pairs and out-of-range distances, and use
+        # np.add.at (NOT `hist[..., d] += 1` — that would only count each
+        # bin once when multiple atom-pairs collide on the same distance)
+        # to scatter-accumulate into the 10-distance-bin slice. Replaces
+        # the per-atom-pair Python loop, which was O(|A|·|B|) Python-level
+        # iterations per family pair and dominated runtime on large
+        # screening libraries (~120K iter/molecule worst case).
         hist = np.zeros((N_FAMILIES, N_FAMILIES, N_BINS), dtype=np.float32)
         for fa_idx, fa in enumerate(FAMILIES):
             atoms_a = fam_atoms[fa]
             if not atoms_a:
                 continue
+            a_arr = np.fromiter(atoms_a, dtype=np.int32)
             for fb_idx, fb in enumerate(FAMILIES):
                 atoms_b = fam_atoms[fb]
                 if not atoms_b:
                     continue
-                for a in atoms_a:
-                    for b in atoms_b:
-                        if a == b:
-                            continue
-                        d = int(dist_mat[a][b])
-                        if 0 <= d < N_BINS:
-                            hist[fa_idx, fb_idx, d] += 1
+                b_arr = np.fromiter(atoms_b, dtype=np.int32)
+                d_mat = dist_mat[np.ix_(a_arr, b_arr)].astype(np.int32)
+                mask = (d_mat >= 0) & (d_mat < N_BINS) & (a_arr[:, None] != b_arr[None, :])
+                np.add.at(hist[fa_idx, fb_idx], d_mat[mask], 1)
 
         # Schneider 1999 normalisation: divide each (A, B) histogram by
         # (count(A) + count(B)) so the descriptor doesn't grow with molecule

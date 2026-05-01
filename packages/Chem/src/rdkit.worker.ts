@@ -50,7 +50,7 @@ ctx.addEventListener('message', async (e: any) => {
     else if (op === WORKER_CALL.MMP_GET_MCS)
       result = _rdKitServiceWorker!.mmpGetMcs(args[0]);
     else if (op === WORKER_CALL.MOST_COMMON_STRUCTURE)
-      result = _rdKitServiceWorker!.mostCommonStructure(args[0], args[1], args[2]);
+      result = _rdKitServiceWorker!.mostCommonStructure(args[0], args[1], args[2], args[3]);
     else if (op === WORKER_CALL.BEAUTIFY_MOLS)
       result = await _rdKitServiceWorker!.beautifyMoleculesV3K(args[0]);
     else
