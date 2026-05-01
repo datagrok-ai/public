@@ -17,8 +17,10 @@ export {LOSS} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/constants';
 export {makeConstFunction} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/cost-functions';
-export {runOptimizer} from
+export {runOptimizer, runOptimizerFinalized} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+export type {FinalizedFitting} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/finalize';
 export type {ExecutorChoice, ExecutorArgs} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/worker/executor';
 export {canHandle, WorkerExecutor, runWithEphemeralPool} from
