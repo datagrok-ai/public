@@ -3,6 +3,16 @@ import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
+// JS API source: public/js-api/src/viewer.ts:219 (DG.Viewer.histogram),
+// public/js-api/src/viewer.ts:671 (HistogramViewer),
+// public/js-api/src/dataframe/data-frame.ts:565 (df.plot.histogram).
+// Histogram JS-only surface: typed factory + df.plot.histogram, the
+// includeDefaults flag on getOptions, setOptions round-trip, dataFrame
+// getter/setter swap, getInfo/getProperties shape, the four event
+// Observables (onBinsSelected / onLineSelected / onMouseOverBins /
+// onMouseOverLine), and close() on attached. Note: close() on a
+// never-attached viewer (factory but no addViewer) throws inside
+// grok_Viewer_Close — that's why detached viewers are not close()-d.
 category('AI: Viewers: Histogram JS API', () => {
   test('factory typed', async () => {
     const df = grok.data.demo.demog(100);

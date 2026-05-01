@@ -2,6 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
+// JS API source: public/js-api/src/viewer.ts:219 (DG.Viewer.histogram),
+// public/js-api/src/viewer.ts:671 (HistogramViewer),
+// public/js-api/src/interfaces/d4.ts:1733 (IHistogramSettings),
+// public/js-api/src/entities/property.ts:121 (Property — choices,
+// columnTypeFilter).
+// Histogram-only JSON-shape coverage that the Dart parametric harness can't
+// reach through its boolean/midpoint/column iterator strategy: clearing a
+// *ColumnName via empty string, formula filter strings, array-typed look
+// values (linearColorScheme), and getProperties() introspection on
+// columnTypeFilter and colorAggrType choices. All assertions read state via
+// getOptions(true).look — no first-paint geometry.
 category('AI: Viewers: Histogram extras', () => {
   test('clear splitColumnName via setOptions empty string', async () => {
     const df = grok.data.demo.demog(50);

@@ -3,6 +3,18 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
+// JS API source: public/js-api/src/viewer.ts:243 (DG.Viewer.lineChart),
+// public/js-api/src/viewer.ts:577 (DG.LineChartViewer).
+// LineChart-only JS surface: factory friendly-key aliasing on
+// DG.Viewer.lineChart and df.plot.line (note: ILineChartSettings has no `y`
+// field — only yColumnNames; the singular 'y' alias does not resolve), the
+// multi-element array properties (yColumnNames / splitColumnNames) round-tripping
+// through getOptions(true).look, multiAxis + splineTension via setOptions,
+// the LineChart-typed events (onLineSelected / onZoomed / onResetView) as
+// rxjs Observables, and view.addViewer attaching a typed LineChartViewer with
+// activeFrame. screenToWorld(0,0) was intentionally dropped here — pre-paint
+// the viewport Rect is NaN and screenToWorld throws NaN.floor() rather than
+// returning null (worth a JIRA).
 category('AI: Viewers: LineChart JS API', () => {
   test('factory friendly-key aliasing via DG.Viewer.lineChart', async () => {
     const df = grok.data.demo.demog(50);

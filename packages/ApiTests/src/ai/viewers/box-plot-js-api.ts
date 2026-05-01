@@ -3,6 +3,18 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
+// JS API source: public/js-api/src/viewer.ts:231 (DG.Viewer.boxPlot),
+// public/js-api/src/viewer.ts:713 (DG.BoxPlot — bare class name, no Viewer
+// suffix), public/js-api/src/interfaces/d4.ts:999 (IBoxPlotSettings),
+// public/js-api/src/dataframe/data-frame.ts:568 (df.plot.box).
+// Box-only JS surface: typed factory returning DG.BoxPlot vs df.plot.box
+// returning a base Viewer, friendly-key aliasing (value/category1/category2),
+// the combined category1ColumnName + category2ColumnName JSON envelope,
+// statisticsFormat choices via getProperties() (it's a numeric-format list:
+// 'int', 'one/two/three/four digits after comma', 'scientific', etc.),
+// the four event Observables (onResetView / onAfterDrawScene /
+// onBeforeDrawScene / onPointClicked), and view.addViewer(VIEWER.BOX_PLOT)
+// returning a typed instance.
 category('AI: Viewers: BoxPlot JS API', () => {
   test('factory DG.Viewer.boxPlot returns typed DG.BoxPlot; df.plot.box returns base Viewer', async () => {
     const df = grok.data.demo.demog(50);

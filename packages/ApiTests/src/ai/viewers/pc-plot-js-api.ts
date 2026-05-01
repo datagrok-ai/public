@@ -3,6 +3,15 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
+// JS API source: public/js-api/src/viewer.ts:275 (DG.Viewer.pcPlot),
+// public/js-api/src/viewer.ts:704 (DG.PcPlot — bare class, no Viewer suffix),
+// public/js-api/src/interfaces/d4.ts:2692 (IPcPlotSettings).
+// PC-only JS surface: factory DG.Viewer.pcPlot, the defining
+// `columnNames: Array<string>` axis-list round-trip via setOptions and look,
+// PC-specific Boolean toggles (normalizeEachColumn / showCurrentLine /
+// showAllLines), the PC-only event Observables (onLineClicked / onLineHovered),
+// and view.addViewer(VIEWER.PC_PLOT) returning a typed DG.PcPlot. Note: there
+// is no df.plot.pcPlot shorthand on DataFramePlotHelper.
 category('AI: Viewers: PC Plot JS API', () => {
   test('factory DG.Viewer.pcPlot returns typed DG.PcPlot with PC settings', async () => {
     const df = grok.data.demo.demog(50);

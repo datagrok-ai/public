@@ -2,6 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
+// JS API source: public/js-api/src/viewer.ts:682 (BarChartViewer),
+// public/js-api/src/interfaces/d4.ts:786 (IBarChartSettings).
+// Second pass on Bar chart that pins behaviour the bar-chart-js-api suite,
+// the parametric round-trips in src/grid/viewer-set-property.ts, and the
+// Dart-side targeted Bar tests don't already cover: the friendly-key `color`
+// alias on the typed factory, split + stack JSON envelope shape, the
+// barSortType / barSortOrder pair round-trip, choices introspection on
+// barSortType, includeNulls boolean round-trip, and the onClick RowGroupAction
+// enum. Public JS API only — no canvas geometry.
 category('AI: Viewers: BarChart extras', () => {
   test('color friendly-key alias on factory', async () => {
     const df = grok.data.demo.demog(50);
