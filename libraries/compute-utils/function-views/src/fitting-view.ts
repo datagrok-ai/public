@@ -1671,8 +1671,6 @@ export class FittingView {
         });
       }
 
-      if (extrema.length > 0) console.log('fitting: iterations for first result =', extrema[0].iterCount);
-
       const nonSimilarExtrema = fin.selectedExtremums;
       const rowCount = nonSimilarExtrema.length;
 
