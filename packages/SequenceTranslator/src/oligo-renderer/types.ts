@@ -200,7 +200,8 @@ export function resolveConjugate(symbol: string): { color: string; meta: ModMeta
     return {color: known.color, meta: known};
   return {
     color: hashColor(symbol),
-    meta: {name: symbol, short: symbol.length > 6 ? symbol.slice(0, 6) : symbol, color: hashColor(symbol), category: 'conjugate'},
+    meta: {name: symbol, short: symbol.length > 6 ? symbol.slice(0, 6) : symbol,
+      color: hashColor(symbol), category: 'conjugate'},
   };
 }
 

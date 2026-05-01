@@ -22,6 +22,7 @@ import {
   canonicalPhosphateSymbol, canonicalSugarSymbol,
   ParsedNucleotide, resolveConjugate, resolvePhosphate, resolveSugar,
 } from './types';
+import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
 
 const STRUCT_W = 110;
 const STRUCT_H = 90;
@@ -117,7 +118,10 @@ function findMonomerMolfile(lib: IMonomerLib, rawSymbol: string, kind: Structure
   else if (kind === 'phosphate') candidates.push(canonicalPhosphateSymbol(rawSymbol));
   // Bases (A/C/G/U/T) and conjugates: try the symbol as-is.
 
-  const polymerTypes = lib.getPolymerTypes();
+  // make sure RNA and chem come first :D
+  const polymerTypes: PolymerType[] = (lib.getPolymerTypes()
+    .filter((pt) => pt === 'RNA' || pt === 'CHEM') as PolymerType[])
+    .concat(lib.getPolymerTypes().filter((pt) => pt !== 'RNA' && pt !== 'CHEM'));
   for (const sym of candidates) {
     for (const pt of polymerTypes) {
       const monomer = lib.getMonomer(pt, sym);
