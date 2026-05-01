@@ -544,8 +544,8 @@ class Preview {
   private set axes(names: AxisNames) {
     const options: { [x: string]: any } = {};
     const t = this.viewer.type;
-    const hasY = names?.y && this.dataFrame.getCol(names.y);
-    const hasX = names?.x && this.dataFrame.getCol(names.x);
+    const hasY = names?.y && this.dataFrame.col(names.y);
+    const hasX = names?.x && this.dataFrame.col(names.x);
 
     if (t === DG.VIEWER.LINE_CHART) {
       if (hasY)
@@ -1078,7 +1078,7 @@ class Editor {
     });
     elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
 
-    const label = ui.label('Outline Width', 'ui-label ui-input-label');
+    const label = ui.label('Width', 'ui-label ui-input-label');
 
     return ui.div([label, elOpacity], 'ui-input-root');
   }
