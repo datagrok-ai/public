@@ -17,6 +17,7 @@ import './tests/polytool-enumerate-chem-tests';
 import './tests/polytool-chain-parse-notation-tests';
 import './tests/polytool-chain-from-notation-tests';
 import './tests/toAtomicLevel-tests';
+import './tests/oligo-renderer-tests';
 
 import {OligoToolkitTestPackage} from './tests/utils';
 
