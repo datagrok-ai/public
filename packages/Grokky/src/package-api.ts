@@ -23,22 +23,22 @@ export namespace funcs {
   /**
   Get answers from AI assistant based on Datagrok documentation and public code.
   */
-  export async function askHelpLLMProvider(prompt: string ): Promise<any> {
-    return await grok.functions.call('Grokky:AskHelpLLMProvider', { prompt });
+  export async function askHelpLLMProvider(prompt: string , sessionId?: string ): Promise<any> {
+    return await grok.functions.call('Grokky:AskHelpLLMProvider', { prompt, sessionId });
   }
 
   /**
   Plans and executes function steps to achieve needed results
   */
-  export async function smartChainExecutionProvider(prompt: string ): Promise<any> {
-    return await grok.functions.call('Grokky:SmartChainExecutionProvider', { prompt });
+  export async function smartChainExecutionProvider(prompt: string , sessionId?: string ): Promise<any> {
+    return await grok.functions.call('Grokky:SmartChainExecutionProvider', { prompt, sessionId });
   }
 
   /**
   Tries to find a query which has the similar pattern as the prompt user entered and executes it
   */
-  export async function llmSearchQueryProvider(prompt: string ): Promise<any> {
-    return await grok.functions.call('Grokky:LlmSearchQueryProvider', { prompt });
+  export async function llmSearchQueryProvider(prompt: string , sessionId?: string ): Promise<any> {
+    return await grok.functions.call('Grokky:LlmSearchQueryProvider', { prompt, sessionId });
   }
 
   export async function findMatchingPatternQuery(prompt: string ): Promise<string> {

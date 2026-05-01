@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../../package';
 import {dartLike, fireAIAbortEvent} from '../../utils';
 import {ClaudeRuntimeClient} from '../../claude/runtime-client';
+import {RENDERED_EVENT} from '../ui';
 
 export interface QueryMatchResult {
   searchPattern: string;
@@ -164,7 +165,14 @@ Analyze the user request and return a JSON object with:
   }
 }
 
-export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widget> {
+export async function tableQueriesFunctionsSearchLlm(s: string, sessionId?: string): Promise<DG.Widget> {
+  const widget = await buildQueryWidget(s);
+  if (sessionId)
+    grok.events.fireCustomEvent(RENDERED_EVENT, sessionId);
+  return widget;
+}
+
+async function buildQueryWidget(s: string): Promise<DG.Widget> {
   const tvWidgeFunc = DG.Func.find({name: 'getFuncTableViewWidget'})[0];
   if (!tvWidgeFunc)
     return DG.Widget.fromRoot(ui.divText('Power Pack plugin not installed'));

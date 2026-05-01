@@ -124,20 +124,26 @@ export class PackageFunctions {
 
   @grok.decorators.func({meta: {
     role: 'aiSearchProvider',
-    useWhen: 'If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. The tone of the prompt should generally sound like "how do I do this" / "what is this". for example, "what sequence notations are supported?'
+    useWhen: 'If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. The tone of the prompt should generally sound like "how do I do this" / "what is this". for example, "what sequence notations are supported?',
   }, name: 'Help',
   description: 'Get answers from AI assistant based on Datagrok documentation and public code.', result: {type: 'widget', name: 'result'}})
-  static async askHelpLLMProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-    return await askWiki(prompt);
+  static async askHelpLLMProvider(
+    @grok.decorators.param({type: 'string'}) prompt: string,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
+  ): Promise<DG.Widget | null> {
+    return await askWiki(prompt, sessionId);
   }
 
   @grok.decorators.func({meta: {
     role: 'aiSearchProvider',
-    useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function'
+    useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function',
   }, name: 'Execute',
   description: 'Plans and executes function steps to achieve needed results', result: {type: 'widget', name: 'result'}})
-  static async smartChainExecutionProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-    return await smartExecution(prompt);
+  static async smartChainExecutionProvider(
+    @grok.decorators.param({type: 'string'}) prompt: string,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
+  ): Promise<DG.Widget | null> {
+    return await smartExecution(prompt, sessionId);
   }
 
   @grok.decorators.func({meta: {
@@ -145,8 +151,11 @@ export class PackageFunctions {
     useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc. Always use this function when user wants to get the data without any further processing or calculating'
   }, name: 'Query',
   description: 'Tries to find a query which has the similar pattern as the prompt user entered and executes it', result: {type: 'widget', name: 'result'}})
- static async llmSearchQueryProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-   return await tableQueriesFunctionsSearchLlm(prompt);
+ static async llmSearchQueryProvider(
+   @grok.decorators.param({type: 'string'}) prompt: string,
+   @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
+ ): Promise<DG.Widget | null> {
+   return await tableQueriesFunctionsSearchLlm(prompt, sessionId);
  }
 
   @grok.decorators.func({

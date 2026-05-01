@@ -142,14 +142,16 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _contextSent = false;
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
+  private _inline: boolean = false;
 
   get sessionId(): string { return this._sessionId; }
 
 
   private currentConversationId: string | null = null;
-  constructor(private _contextID: string = 'global-ai-panel', view: DG.View | DG.ViewBase) {
+  constructor(private _contextID: string = 'global-ai-panel', view: DG.View | DG.ViewBase, opts: {inline?: boolean} = {}) {
     this.view = view;
     this._sessionId = `claude-${_contextID}-${crypto.randomUUID()}`;
+    this._inline = !!opts.inline;
     this.root = ui.divV([], 'd4-ai-generation-panel');
     this.inputArea = ui.divV([], 'd4-ai-panel-input-area');
     this.outputArea = ui.divV([], 'd4-ai-panel-output-area');
@@ -226,6 +228,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected setupSubscriptions() {
+    if (this._inline)
+      return;
     // do some subscriptions
     let wasShown = false;
     const sub = grok.events.onCurrentViewChanged.subscribe(() => {
@@ -263,6 +267,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         document.removeEventListener('keydown', onKeyDownHandler);
       }
     });
+  }
+
+  mountInto(parent: HTMLElement) {
+    parent.appendChild(this.root);
   }
 
   show(focus: boolean = false) {
