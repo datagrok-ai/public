@@ -7,9 +7,10 @@ import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT, MIN_WORKERS_COUNT, NO_E
   RESULT_CODE, WORKERS_COUNT_DOWNSHIFT} from './defs';
 import {sampleParams, sampleParamsWithFormulaBounds} from '../optimizer-sampler';
 import {getBatches} from './fitting-utils';
-import {OptimizationResult, Extremum, ValueBoundsData} from '../optimizer-misc';
+import {OptimizationResult, Extremum, OptimizerInputsConfig, OptimizerOutputsConfig, ValueBoundsData} from '../optimizer-misc';
 import {seededRandom} from '../fitting-utils';
 import {FittingWorkerData} from './workers/basic';
+import {finalizeOptimizationResult, FinalizedFitting} from '../finalize';
 
 /** Return dataframe summarizing fails of fitting */
 export function getFailesDf(points: Float64Array[], warnings: string[]): DG.DataFrame | null {
@@ -219,3 +220,24 @@ export async function getFittedParams(
     fails: getFailesDf(failedInitPoints, warnings),
   };
 } // getFittedParams
+
+/** DiffGrok counterpart of `runOptimizerFinalized`: runs the in-webworker
+ *  Nelder-Mead and applies shared post-processing (sort + similarity filter
+ *  + materialize FuncCalls). Use this from new callers; legacy callers can
+ *  keep using `getFittedParams` and post-process themselves. */
+export async function getFittedParamsFinalized(
+  args: Parameters<typeof getFittedParams>[0] & {
+    func: DG.Func;
+    inputBounds: OptimizerInputsConfig;
+    outputTargets: OptimizerOutputsConfig;
+    similarity: number;
+  },
+): Promise<FinalizedFitting> {
+  const optResult = await getFittedParams(args);
+  return finalizeOptimizationResult(optResult, {
+    func: args.func,
+    inputBounds: args.inputBounds,
+    outputTargets: args.outputTargets,
+    similarity: args.similarity,
+  });
+}

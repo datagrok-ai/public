@@ -20,16 +20,16 @@ import {getCategoryWidget, getShowInfoWidget, getLossFuncDf, lightenRGB,
   getEarlyStoppingInputs,
   makeGetCalledFuncCall,
   getRowIndex} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum, TargetTableOutput, ValueBoundsData, OutputTargetItem} from './fitting/optimizer-misc';
+import {ValueBoundsData, OutputTargetItem} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from 'diff-grok';
-import {getFittedParams} from './fitting/diff-studio/nelder-mead';
-import {getNonSimilar} from './fitting/similarity-utils';
+import {getFittedParamsFinalized} from './fitting/diff-studio/nelder-mead';
 import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
 import {getPropViewers} from '../../shared-utils/utils';
 import {runFormula} from './fitting/formulas-resolver';
-import {runOptimizer} from './fitting/optimizer-api';
+import {runOptimizerFinalized} from './fitting/optimizer-api';
+import {FinalizedFitting} from './fitting/finalize';
 
 const colors = DG.Color.categoricalPalette;
 const colorsCount = colors.length;
@@ -1589,36 +1589,39 @@ export class FittingView {
 
       const costTooltip = this.loss === LOSS.MAD ? 'scaled maximum absolute deviation' : 'scaled root mean square error';
 
-      let optResult: OptimizationResult;
+      let fin: FinalizedFitting;
 
       if (this.method !== METHOD.NELDER_MEAD)
         throw new Error(`Not implemented the '${this.method}' method`);
 
-      // Perform optimization
+      // Perform optimization. Both arms return a FinalizedFitting (sorted +
+      // similarity-filtered + materialized FuncCalls) — no post-processing here.
       if (this.diffGrok !== undefined) {
         try {
           const index = INDICES.DIFF_STUDIO_OUTPUT;
-          optResult = await getFittedParams(
-            {
-              loss: this.loss,
-              ivp: this.diffGrok.ivp,
-              ivp2ww: this.diffGrok.ivpWW,
-              pipelineCreator: this.diffGrok.pipelineCreator,
-              settings: this.nelderMeadSettings,
-              variedInputNames,
-              bounds: inputBounds,
-              fixedInputs: inputs,
-              argColName: outputsOfInterest[index].argName,
-              funcCols: outputsOfInterest[index].funcColsInput.value,
-              target: outputsOfInterest[index].target as DG.DataFrame,
-              samplesCount: this.samplesCount,
-              reproSettings: this.randInputs.settings,
-              earlyStoppingSettings: this.earlyStoppingInputs.settings,
-            },
-          );
+          fin = await getFittedParamsFinalized({
+            loss: this.loss,
+            ivp: this.diffGrok.ivp,
+            ivp2ww: this.diffGrok.ivpWW,
+            pipelineCreator: this.diffGrok.pipelineCreator,
+            settings: this.nelderMeadSettings,
+            variedInputNames,
+            bounds: inputBounds,
+            fixedInputs: inputs,
+            argColName: outputsOfInterest[index].argName,
+            funcCols: outputsOfInterest[index].funcColsInput.value,
+            target: outputsOfInterest[index].target as DG.DataFrame,
+            samplesCount: this.samplesCount,
+            reproSettings: this.randInputs.settings,
+            earlyStoppingSettings: this.earlyStoppingInputs.settings,
+            func: this.func,
+            inputBounds,
+            outputTargets,
+            similarity: this.similarity,
+          });
         } catch (err) { // run fitting in the main thread if in-webworker run failed
           console.error(err);
-          [optResult] = await runOptimizer({
+          fin = await runOptimizerFinalized({
             lossType: this.loss,
             func: this.func,
             inputBounds,
@@ -1631,7 +1634,7 @@ export class FittingView {
           });
         }
       } else {
-        [optResult] = await runOptimizer({
+        fin = await runOptimizerFinalized({
           lossType: this.loss,
           func: this.func,
           inputBounds,
@@ -1644,12 +1647,12 @@ export class FittingView {
         });
       }
 
-      const extrema = optResult.extremums;
+      const extrema = fin.allExtremums;
       const allExtrCount = extrema.length;
 
       // Process fails
-      if (optResult.fails != null) {
-        this.failsDF = optResult.fails;
+      if (fin.fails != null) {
+        this.failsDF = fin.fails;
         const cols = this.failsDF.columns;
 
         variedInputsCaptions.forEach((cap, idx) => cols.byIndex(idx).name = cols.getUnusedName(cap));
@@ -1668,24 +1671,15 @@ export class FittingView {
         });
       }
 
-      // Sort all extrema with respect to the loss function
-      extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
+      if (extrema.length > 0) console.log('fitting: iterations for first result =', extrema[0].iterCount);
 
-      // Extract target dataframes
-      const targetDfs: TargetTableOutput[] = outputsOfInterest
-        .filter((output) => output.prop.propertyType === DG.TYPE.DATA_FRAME)
-        .map((output) => {
-          return {name: output.prop.name, target: output.target as DG.DataFrame, argColName: output.argName};
-        });
-
-      // Get non-similar points
-      const nonSimilarExtrema = await getNonSimilar(extrema, this.similarity, getCalledFuncCall, targetDfs);
+      const nonSimilarExtrema = fin.selectedExtremums;
       const rowCount = nonSimilarExtrema.length;
 
       this.clearPrev();
 
       // Show info/warning reporting results
-      if (optResult.fails != null) {
+      if (fin.fails != null) {
         if (allExtrCount < 1) {
           grok.shell.warning(ui.divV([
             ui.label(`Failed to find ${this.samplesCount} point${this.samplesCount > 1 ? 's' : ''}`),
