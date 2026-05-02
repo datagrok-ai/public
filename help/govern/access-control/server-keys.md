@@ -31,7 +31,6 @@ Every key has:
 | **Usage**    | `encryption` (seals credentials, connection parameters) or `signing` (mints session JWTs).                                                               |
 | **Backend**  | Where the private key material lives — Local PEM file, AWS Secrets Manager, or GCP Secret Manager.                                                       |
 | **Status**   | Lifecycle state — see below.                                                                                                                             |
-| **Schedule** | Optional cron expression for automatic rotation.                                                                                                         |
 
 ### Status
 
@@ -68,7 +67,6 @@ Use the **New key…** toolbar button. Choose:
   Manager [credentials connection](data-connection-credentials.md)
   you've already configured.
 - **Length** — RSA bit length (2048 is the default).
-- **Rotation cron** — optional. Leave blank for manual rotation.
 
 A freshly-created key is `active`. It only takes traffic once you
 rotate the existing primary into it (or create the very first key for
@@ -138,6 +136,16 @@ unless you pass `force=true` — then it deletes the material as well.
 Delete is for tidying up `retired` rows. Don't use it on an `active`
 or `rotating_out` key.
 
+:::note Cloud backend retention
+
+AWS Secrets Manager and GCP Secret Manager manage their own retention
+windows — the platform doesn't actively delete cloud-stored material on
+**Delete** or **Revoke (force)**. To remove the underlying secret
+immediately, scrub it in the cloud console after dropping the registry
+row. Local PEM files are deleted right away.
+
+:::
+
 ## Permissions
 
 Read access (the gallery, Identity / Usage / Rotation panes) is
@@ -165,9 +173,12 @@ the Keys page.
 
 ## When to rotate
 
-- **Routine**: set a cron schedule. Quarterly is a reasonable starting
-  cadence for encryption keys; signing keys can rotate more
-  aggressively because the retention window is small.
+- **Routine**: rotate on a cadence that matches your security policy.
+  Quarterly is a reasonable starting cadence for encryption keys;
+  signing keys can rotate more aggressively because the retention
+  window is small. The platform doesn't auto-trigger rotation —
+  schedule a job (cron, CI, etc.) that calls **Rotate…** or hits
+  `POST /admin/keys/manage/{kid}/rotate`.
 - **Compromise suspected**: revoke immediately. For a primary key,
   start with queued revoke unless the threat model demands instant
   invalidation.
