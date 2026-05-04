@@ -7,7 +7,7 @@ import wu from 'wu';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {HELM_FIELDS, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
+import {HELM_FIELDS, HELM_MONOMER_TYPE, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
 import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
 import {IMonomerLib, IMonomerLibBase, Monomer} from '../types/monomer-library';
 import {getFormattedMonomerLib, keepPrecision} from './to-atomic-level-utils';
@@ -77,7 +77,7 @@ export async function _toAtomicLevel(
   const monomerSequencesArray: ISeqMonomer[][] = getMonomerSequencesArray(srcCol, seqHelper);
   // Per-row roles: only set in HELM RNA/DNA mode where the splitter emits triples.
   const rolesArray: (NucleotideRole[] | undefined)[] = keepHelmTriples ?
-    buildRolesForHelmRna(monomerSequencesArray) :
+    buildRolesForHelmRna(monomerSequencesArray, monomerLib, polymerType) :
     new Array(monomerSequencesArray.length).fill(undefined);
   // In triples mode, override the per-row biotype so it carries NUCLEOTIDE
   // (rather than whatever the seq-handler defaults to for an UN-alphabet column).
@@ -153,20 +153,73 @@ function pickRnaAlphabetFromHelm(seqCol: DG.Column<string>, seqHelper: ISeqHelpe
   return ALPHABET.RNA;
 }
 
+// Returns 'r1-only' if the lib monomer has a single R-group labeled R1
+// (i.e. a 3'-end terminal modifier like GalNAc), 'r2-only' if it has only
+// R2 (a 5'-end terminal modifier like Chol), and null otherwise.
+//
+// IMPORTANT: nucleobases (A/C/G/U/T and their modified forms) are
+// monomerType='Branch' with a single R1, but they are NOT terminal
+// modifiers — they're branch attachments to the sugar's R3. We exclude
+// Branch monomers explicitly so the splitter's i-th-base position keeps
+// its BASE role.
+function classifyTerminal(
+  monomerLib: IMonomerLibBase, polymerType: PolymerType, symbol: string
+): 'r1-only' | 'r2-only' | null {
+  const m = monomerLib.getMonomer(polymerType, symbol);
+  if (!m || !m.rgroups || m.rgroups.length !== 1) return null;
+  if (m[HELM_FIELDS.MONOMER_TYPE] === HELM_MONOMER_TYPE.BRANCH) return null;
+  const lbl = m.rgroups[0].label;
+  if (lbl === 'R1') return 'r1-only';
+  if (lbl === 'R2') return 'r2-only';
+  return null;
+}
+
 // For HELM RNA rows, the splitter emits sugar/base/phosphate triples in
-// that fixed order (per `RNA_HELM_MONOMER_REG`). Tag each entry with its
-// role from the index modulo 3. If a row's length is not a multiple of 3,
-// the splitter left a monomer unsplit (e.g. `r(A)` with no phosphate); we
-// leave roles undefined so that row falls back to bases-only mode.
-function buildRolesForHelmRna(monomerSequencesArray: ISeqMonomer[][]): (NucleotideRole[] | undefined)[] {
+// that fixed order (per `RNA_HELM_TRIPLET_MONOMER_REG`). Tag each entry
+// with its role from its index, then promote first / last entries to
+// TERMINAL_5P / TERMINAL_3P when the lib says they are single-R-group
+// terminal modifiers (Chol / GalNAc-style monomers).
+//
+// Validation: after stripping the terminal positions the remaining "core"
+// length must be 0, 3K, or 3K+2 (the no-trailing-P variant). Rows that
+// don't fit fall back to bases-only mode by returning undefined for that
+// row.
+function buildRolesForHelmRna(
+  monomerSequencesArray: ISeqMonomer[][],
+  monomerLib: IMonomerLibBase,
+  polymerType: PolymerType,
+): (NucleotideRole[] | undefined)[] {
   const out: (NucleotideRole[] | undefined)[] = new Array(monomerSequencesArray.length);
   for (let rowI = 0; rowI < monomerSequencesArray.length; ++rowI) {
     const row = monomerSequencesArray[rowI];
-    // handle cases where terminal phosphate is missing
-    if (row.length === 0 || !(row.length % 3 === 0 || row.length % 3 === 2)) { out[rowI] = undefined; continue; }
+    if (row.length === 0) { out[rowI] = undefined; continue; }
+
+    // Detect terminals at row boundaries. Conventionally the start would
+    // require r2-only (Chol-style) and the end would require r1-only
+    // (GalNAc/Bio-style), but HELM authors sometimes put the "wrong" one
+    // at either end. We accept ANY single-R-group non-Branch monomer at
+    // each boundary; getMolGraph then swaps the rNodes so the real R
+    // ends up where the role expects it.
+    const startTerm = row.length >= 1 &&
+      classifyTerminal(monomerLib, polymerType, row[0].symbol) !== null;
+    // Don't double-count when row.length === 1 and the single monomer
+    // already became a 5'-terminal: it doesn't ALSO get treated as a 3'.
+    const endTerm = row.length >= 1 && !(startTerm && row.length === 1) &&
+      classifyTerminal(monomerLib, polymerType, row[row.length - 1].symbol) !== null;
+
+    const coreLen = row.length - (startTerm ? 1 : 0) - (endTerm ? 1 : 0);
+    if (coreLen < 0 || !(coreLen % 3 === 0 || coreLen % 3 === 2)) {
+      out[rowI] = undefined; continue;
+    }
+
     const roles: NucleotideRole[] = new Array(row.length);
-    for (let i = 0; i < row.length; ++i)
-      roles[i] = (i % 3) as NucleotideRole;
+    let coreI = 0;
+    for (let i = 0; i < row.length; ++i) {
+      if (i === 0 && startTerm) { roles[i] = NucleotideRole.TERMINAL_5P; continue; }
+      if (i === row.length - 1 && endTerm) { roles[i] = NucleotideRole.TERMINAL_3P; continue; }
+      roles[i] = (coreI % 3) as NucleotideRole;
+      coreI++;
+    }
     out[rowI] = roles;
   }
   return out;
@@ -344,7 +397,30 @@ function getMolGraph(
         (role === undefined && (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol));
       const isPhosphate = role === NucleotideRole.PHOSPHATE ||
         (role === undefined && monomerSymbol === C.PHOSPHATE.symbol);
-      if (isSugar)
+      const isTerminal = role === NucleotideRole.TERMINAL_5P || role === NucleotideRole.TERMINAL_3P;
+      if (isTerminal) {
+        // Terminal monomers have ONE real R-group from the lib; the other
+        // is a pseudo synthesized by getMonomerMetadata and points at a
+        // real atom of the monomer body. The TERMINAL_5P/TERMINAL_3P
+        // logic in setShiftsAndTerminalNodes assumes:
+        //   TERMINAL_5P → real R is at rNodes[1] (chain-extending right).
+        //   TERMINAL_3P → real R is at rNodes[0] (chain-incoming left).
+        // When HELM places a single-R monomer at the "wrong" boundary
+        // (e.g. Bio/GalNAc with only R1 at row[0], or Chol with only R2
+        // at row[last]), the real R sits at the OTHER index. Swap the
+        // rNodes / terminalNodes pair so the existing role logic works.
+        const realRLabel = libObject[HELM_FIELDS.RGROUPS]?.[0]?.label;
+        const realRIdx = realRLabel === 'R1' ? 0 : (realRLabel === 'R2' ? 1 : -1);
+        const expectedRealRIdx = role === NucleotideRole.TERMINAL_5P ? 1 : 0;
+        if (realRIdx !== -1 && realRIdx !== expectedRealRIdx) {
+          [monomerGraph.meta.rNodes[0], monomerGraph.meta.rNodes[1]] =
+            [monomerGraph.meta.rNodes[1], monomerGraph.meta.rNodes[0]];
+          [monomerGraph.meta.terminalNodes[0], monomerGraph.meta.terminalNodes[1]] =
+            [monomerGraph.meta.terminalNodes[1], monomerGraph.meta.terminalNodes[0]];
+        }
+        // Peptide-style adjustment correctly orients a 2-R monomer.
+        adjustPeptideMonomerGraph(monomerGraph);
+      } else if (isSugar)
         adjustSugarMonomerGraph(monomerGraph, pointerToBranchAngle);
       else if (isPhosphate)
         adjustPhosphateMonomerGraph(monomerGraph);
@@ -389,6 +465,24 @@ function setShiftsAndTerminalNodes(
     const removedR2Atom = removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
     if (removedR2Atom?.removedAtom)
       monomerGraph.terminalR2Atom = removedR2Atom.removedAtom; // store the removed R2 Atom type, if any
+  } else if (role === NucleotideRole.TERMINAL_5P) {
+    // 5'-end terminal modifier (e.g. Chol): R2 is the REAL R-group (chain
+    // attach point); R1 is a pseudo synthesized by getMonomerMetadata that
+    // points at a real atom of the monomer — DO NOT remove it. Remove the
+    // R2 placeholder so the chain bond can attach at terminalNodes[1].
+    setShifts(monomerGraph, polymerType);
+    removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
+  } else if (role === NucleotideRole.TERMINAL_3P) {
+    // 3'-end terminal modifier (e.g. GalNAc): R1 is the REAL R-group
+    // placeholder. After substituteCapGroups it carries the cap atom type
+    // (e.g. 'O' from "OH" or 'H' from "H") — that atom represents the
+    // FREE-form residue at this position and MUST be removed when the
+    // monomer is in a chain (otherwise we leave a stray OH/H bonded to the
+    // chain-attach carbon). After removal, terminalNodes[0] still points
+    // at the correct neighbor (the chain-attach atom).
+    // R2 is the PSEUDO synthesized by getMonomerMetadata; it points at a
+    // real atom of the monomer — DO NOT remove it.
+    removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[0]);
   } else { // nucleotides
     // Prefer explicit role (HELM RNA triples mode); fall back to symbol
     // matching against canonical r/d/p for the legacy bases-only path.
@@ -410,12 +504,25 @@ function setShiftsAndTerminalNodes(
       // remove the branching r-group
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[2]);
     } else if (isPhosphate) {
-      monomerGraph.meta.terminalNodes[0] = monomerGraph.meta.rNodes[0];
-      shiftCoordinates(
-        monomerGraph,
-        -monomerGraph.atoms.x[monomerGraph.meta.terminalNodes[0] - 1],
-        -monomerGraph.atoms.y[monomerGraph.meta.terminalNodes[0] - 1]
-      );
+      // Phosphate flow assumes the chain bond comes IN at the substituted
+      // R1 atom (e.g. canonical p has R1 cap "OH" → atom is O, the bridging
+      // oxygen). Some phosphate variants (sp, en, ...) have R1 cap "H" —
+      // their R1 placeholder substitutes to H and gets removed by
+      // removeHydrogen. In that case the chain attaches DIRECTLY to the
+      // atom previously bonded to R1 (typically the central P), and we
+      // must keep terminalNodes[0] pointing at THAT atom (its original
+      // setTerminalNodes value), not at the soon-to-disappear H.
+      const r1Idx = monomerGraph.meta.rNodes[0] - 1;
+      const r1AtomType = monomerGraph.atoms.atomTypes[r1Idx];
+      const r1IsH = r1AtomType?.toUpperCase() === C.HYDROGEN;
+      if (!r1IsH) {
+        monomerGraph.meta.terminalNodes[0] = monomerGraph.meta.rNodes[0];
+        shiftCoordinates(
+          monomerGraph,
+          -monomerGraph.atoms.x[monomerGraph.meta.terminalNodes[0] - 1],
+          -monomerGraph.atoms.y[monomerGraph.meta.terminalNodes[0] - 1]
+        );
+      }
       setShifts(monomerGraph, polymerType);
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
     } else { // nucleobases

@@ -467,7 +467,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     // collapse what used to be N distinct triple-tokens into a smaller union
     // of {sugar(s), bases, phosphate(s)} symbols.
     await _testDf(readSamples(Samples.testHelmCsv), {
-      'HELM string': new PosCol(NOTATION.HELM, null, null, 8, true),
+      'HELM string': new PosCol(NOTATION.HELM, null, null, 7, true),
     }, seqHelper);
   });
 

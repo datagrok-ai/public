@@ -1,5 +1,4 @@
 import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
 import {IKnimeClient} from './knime-client';
 import {CachedDeploymentEntry} from './types';
 import {registerFuncFromSpec, buildParamMeta, buildOutputMeta, buildSignature, sanitizeFuncName} from './function-registry';

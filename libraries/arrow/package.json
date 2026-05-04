@@ -5,6 +5,10 @@
   },
   "fullName": "Arrow",
   "version": "1.0.0",
+  "author": {
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
+  },
   "description": "DataFrame ↔ Arrow IPC conversion (extracted from @datagrok/arrow)",
   "main": "src/index.js",
   "types": "src/index.d.ts",

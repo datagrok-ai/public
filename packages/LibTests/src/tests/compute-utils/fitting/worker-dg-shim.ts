@@ -6,12 +6,12 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
 import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame, compileBody,
-  clearCompileCache, _getCompileStats, _setCompileCacheCap} from
+  clearCompileCache, _getCompileStats, _setCompileCacheCap, FLOAT_NULL} from
   '@datagrok-libraries/compute-utils/webworkers';
 import {toFeather} from '@datagrok-libraries/arrow';
 import {getErrors} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/fitting-utils';
-import {buildSetup, buildRunSeed, LOSS, WorkerPool, Query} from './imports';
+import {buildSetup, LOSS, WorkerPool, RunJob} from './imports';
 import type {OutputTargetItem, ValueBoundsData} from './imports';
 import {rangeBound, formulaBound} from './utils';
 import {makeWedgedFunc} from './script-fixtures';
@@ -164,6 +164,209 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     const b = dgDf.col('label')!;
     for (let i = 0; i < a.length; ++i)
       expect(a.get(i) as string, b.get(i) as string);
+  });
+
+  test('shim_columns_tolist_matches_iteration', async () => {
+    const liteDf = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('id', new Int32Array([1, 2, 3])),
+      shim.Column.fromFloat64Array('v', new Float64Array([0.5, 1.5, 2.5])),
+      shim.Column.fromStrings('s', ['a', 'b', 'c']),
+    ]);
+    const fromList = liteDf.columns.toList();
+    const fromIter = Array.from(liteDf.columns);
+    expect(fromList.length, fromIter.length, 'length');
+    for (let i = 0; i < fromList.length; ++i) {
+      expect(fromList[i].name, fromIter[i].name, `name[${i}]`);
+      expect(fromList[i] === liteDf.columns.byName(fromList[i].name), true, `byName identity[${i}]`);
+    }
+    fromList.push(fromList[0]);
+    expect(liteDf.columns.length, 3, 'toList must return a copy, not a live view');
+  });
+
+  test('shim_dataframe_tojson_parity', async () => {
+    const ids = new Int32Array([10, 20, 30]);
+    const vals = new Float64Array([1.1, 2.2, 3.3]);
+    const labels = ['x', 'y', 'z'];
+    const liteDf = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('id', ids),
+      shim.Column.fromFloat64Array('value', vals),
+      shim.Column.fromStrings('label', labels),
+    ]);
+    const dgDf = DG.DataFrame.fromColumns([
+      DG.Column.fromInt32Array('id', ids),
+      DG.Column.fromFloat64Array('value', vals),
+      DG.Column.fromStrings('label', labels),
+    ]);
+    expect(JSON.stringify(liteDf.toJson()), JSON.stringify(dgDf.toJson()), 'toJson parity');
+  });
+
+  test('shim_dataframe_tojson_skips_nulls', async () => {
+    const raw = new Float64Array([1, FLOAT_NULL, 3]);
+    const df = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('id', new Int32Array([1, 2, 3])),
+      shim.Column.fromFloat64Array('v', raw),
+    ]);
+    const rows = df.toJson();
+    expect(rows.length, 3, 'row count');
+    expect(rows[0].id, 1);
+    expect(rows[0].v, 1);
+    expect(rows[1].id, 2);
+    expect('v' in rows[1], false, 'null cell must be omitted, matching DG.toJson');
+    expect(rows[2].v, 3);
+  });
+
+  test('shim_dataframe_lookup_methods', async () => {
+    const df = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('Id', new Int32Array([1, 2, 3])),
+      shim.Column.fromFloat64Array('value', new Float64Array([0.5, 1.5, 2.5])),
+      shim.Column.fromStrings('Label', ['a', 'b', 'c']),
+    ]);
+
+    expect(df.col('Id')?.name, 'Id', 'col by exact name');
+    expect(df.col('id')?.name, 'Id', 'col case-insensitive');
+    expect(df.col('VALUE')?.name, 'value', 'col case-insensitive other case');
+    expect(df.col(0)?.name, 'Id', 'col by index 0');
+    expect(df.col(2)?.name, 'Label', 'col by index 2');
+    expect(df.col(99), null, 'col out-of-range index returns null');
+    expect(df.col('missing'), null, 'col missing name returns null');
+
+    expect(df.getCol('value').name, 'value', 'getCol exact');
+    expect(df.getCol('VALUE').name, 'value', 'getCol case-insensitive');
+    let getColThrew = false;
+    try { df.getCol('nope'); } catch { getColThrew = true; }
+    expect(getColThrew, true, 'getCol throws when missing');
+
+    expect(df.get('value', 1), 1.5, 'df.get(name, idx)');
+    expect(df.get('VALUE', 2), 2.5, 'df.get case-insensitive');
+  });
+
+  test('shim_columnlist_lookup_methods', async () => {
+    const cols = [
+      shim.Column.fromInt32Array('Id', new Int32Array([1, 2])),
+      shim.Column.fromFloat64Array('v', new Float64Array([0.1, 0.2])),
+      shim.Column.fromStrings('label', ['a', 'b']),
+      shim.Column.fromList('bool', 'flag', [true, false]),
+    ];
+    const df = shim.DataFrame.fromColumns(cols);
+    const list = df.columns;
+
+    expect(list.byName('Id').name, 'Id', 'byName exact');
+    expect(list.byName('id').name, 'Id', 'byName case-insensitive');
+    expect(list.byIndex(0).name, 'Id', 'byIndex 0');
+    expect(list.byIndex(3).name, 'flag', 'byIndex last');
+    let byIndexThrew = false;
+    try { list.byIndex(99); } catch { byIndexThrew = true; }
+    expect(byIndexThrew, true, 'byIndex throws on out-of-range');
+
+    const got = list.byNames(['v', 'LABEL']);
+    expect(got.length, 2);
+    expect(got[0].name, 'v');
+    expect(got[1].name, 'label');
+
+    expect(list.contains('Id'), true, 'contains exact');
+    expect(list.contains('id'), true, 'contains case-insensitive');
+    expect(list.contains('missing'), false);
+
+    const map = list.toMap();
+    expect(map.size, 4, 'toMap size');
+    expect(map.get('Id')?.name, 'Id', 'toMap preserves original case');
+
+    const found = list.firstWhere((c) => c.type === 'string');
+    expect(found?.name, 'label', 'firstWhere');
+    expect(list.firstWhere((c) => c.name === 'nope') === undefined, true, 'firstWhere none');
+
+    expect(list.dataFrame === df, true, 'columnList.dataFrame back-ref');
+  });
+
+  test('shim_columnlist_typed_iterables', async () => {
+    const df = shim.DataFrame.fromColumns([
+      shim.Column.fromInt32Array('a', new Int32Array([1, 2])),
+      shim.Column.fromFloat64Array('b', new Float64Array([0.5, 1.5])),
+      shim.Column.fromStrings('c', ['x', 'y']),
+      shim.Column.fromList('bool', 'd', [true, false]),
+    ]);
+    const list = df.columns;
+
+    const num = Array.from(list.numerical).map((c) => c.name);
+    expect(num.join(','), 'a,b', 'numerical iterable');
+
+    const cat = Array.from(list.categorical).map((c) => c.name);
+    expect(cat.join(','), 'c,d', 'categorical iterable (string + bool)');
+
+    const bools = Array.from(list.boolean).map((c) => c.name);
+    expect(bools.join(','), 'd', 'boolean iterable');
+
+    const dt = Array.from(list.dateTime).map((c) => c.name);
+    expect(dt.length, 0, 'dateTime iterable empty when no datetime cols');
+
+    const all = Array.from(list.all).map((c) => c.name);
+    expect(all.join(','), 'a,b,c,d', 'all iterable');
+
+    const numNoDt = Array.from(list.numericalNoDateTime).map((c) => c.name);
+    expect(numNoDt.join(','), 'a,b', 'numericalNoDateTime');
+  });
+
+  test('shim_column_extra_accessors', async () => {
+    const df = shim.DataFrame.fromColumns([
+      shim.Column.fromFloat64Array('v', new Float64Array([1, FLOAT_NULL, 3])),
+      shim.Column.fromStrings('s', ['hello', '', 'x']),
+      shim.Column.fromList('bool', 'b', [true, false, true]),
+    ]);
+
+    const v = df.col('v')!;
+    expect(v.isNumerical, true);
+    expect(v.isCategorical, false);
+    expect(v.isEmpty, false);
+    expect(v.min, 1);
+    expect(v.max, 3);
+    expect(v.isNone(0), false);
+    expect(v.isNone(1), true, 'null sentinel surfaces as isNone');
+    expect(v.isNone(2), false);
+    expect(v.getNumber(0), 1);
+    expect(Number.isNaN(v.getNumber(1)), true, 'getNumber on null returns NaN');
+    expect(v.getString(0), '1');
+    expect(v.getString(1), '', 'getString on null returns empty string');
+    expect(v.matches('numerical'), true);
+    expect(v.matches('categorical'), false);
+    expect(v.matches('double'), true, 'matches own type');
+    expect(v.matches('int'), false, 'does not match other numeric type');
+    expect(v.matches(null), true, 'null filter matches anything');
+    expect(v.dataFrame === df, true, 'column.dataFrame back-ref');
+    expect(v.toString(), 'v (double)');
+
+    const s = df.col('s')!;
+    expect(s.isNumerical, false);
+    expect(s.isCategorical, true);
+    expect(s.getString(0), 'hello');
+    expect(s.getString(1), '');
+    expect(Number.isNaN(s.getNumber(0)), true, 'string non-numeric → NaN');
+
+    const b = df.col('b')!;
+    expect(b.isCategorical, true, 'bool is categorical');
+    expect(b.getNumber(0), 1, 'true → 1');
+    expect(b.getNumber(1), 0, 'false → 0');
+
+    const empty = shim.Column.fromFloat64Array('e', new Float64Array(0));
+    expect(empty.isEmpty, true);
+    expect(empty.min, 0, 'empty min collapses to 0');
+    expect(empty.max, 0, 'empty max collapses to 0');
+  });
+
+  test('shim_arrow_roundtrip_numeric_string_column_names', async () => {
+    // Regression: numeric-string column names used to be reordered ahead
+    // of non-numeric ones by V8 object-key iteration in toFeather,
+    // misaligning IPC column data against the schema.
+    const dgDf = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('name', new Float64Array([1.5, 2.5])),
+      DG.Column.fromInt32Array('0', new Int32Array([10, 20])),
+    ]);
+    const lite = arrowIpcToLite(toFeather(dgDf)!);
+
+    expect(lite.columns.names().join('|'), 'name|0', 'col order preserved');
+    expect(lite.col('name')!.get(0), 1.5);
+    expect(lite.col('name')!.get(1), 2.5);
+    expect(lite.col('0')!.get(0), 10);
+    expect(lite.col('0')!.get(1), 20);
   });
 
   test('shim_geterrors_parity', async () => {
@@ -377,27 +580,26 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
 
   test('pool_dispose_drains_inflight_run', async () => {
     // White-box: dispose's job is to resolve the in-flight run as a failure.
-    // Inject a Query via Slot._setRunningForTest so the test doesn't hinge
+    // Inject a RunJob via Slot._setRunningForTest so the test doesn't hinge
     // on the dispatchRun → worker → reply round-trip.
-    type RunReplyLike = {kind: string; taskId: number; message?: string};
+    type RunReplyLike = {kind: string; seedIndex: number; message?: string};
     const pool = new WorkerPool(1);
     pool._ensureWorkersForTest();
     let resolved = false;
     let reply: RunReplyLike | null = null;
-    const query = new Query(
-      {taskId: 42, sessionId: 9, kind: 'run-seed', seed: new Float64Array([1, 2])} as any,
-      [],
-      (r) => { resolved = true; reply = r as RunReplyLike; },
+    const job = new RunJob(
+      {sessionId: 9, seedIndex: 7, seed: new Float64Array([1, 2])}, [],
+      (r: any) => { resolved = true; reply = r as RunReplyLike; },
     );
-    // Long-lived noop timer — Query.settle clearTimeouts it on dispose's
+    // Long-lived noop timer — RunJob.settle clearTimeouts it on dispose's
     // running→idle transition.
-    query.startRunning(setTimeout(() => {}, 60_000));
-    pool._slotsArrayForTest()[0]._setRunningForTest(query);
+    job.startRunning(setTimeout(() => {}, 60_000));
+    pool._slotsArrayForTest()[0]._setRunningForTest(job);
     pool.dispose();
     expect(resolved, true, 'dispose must resolve the running slot\'s run');
     expect(reply !== null, true);
     expect(reply!.kind, 'failure');
-    expect(reply!.taskId, 42);
+    expect(reply!.seedIndex, 7);
     expect(/disposed/i.test(reply!.message ?? ''), true,
       `expected disposed-flavor message, got: ${reply!.message}`);
   });
@@ -461,7 +663,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
         lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
         bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
       });
-      await pool.setupAll(setup, []);
+      await pool.setupAll(setup);
       expect(pool._slotsForTest(), 1);
 
       // Force the only slot out; pool spawns a fresh replacement and
@@ -472,10 +674,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       // dispatchRun on the (now-replaced) session must succeed via the
       // re-primed slot. Pre-fix this would reject synchronously with
       // "no slot is primed" because the replacement has empty sessions.
-      const {run, transferables} = buildRunSeed({
-        sessionId: 99, taskId: 0, seedIndex: 0, seed: new Float64Array([1]),
-      });
-      const reply = await pool.dispatchRun({run, transferables});
+      const reply = await pool.dispatchRun({sessionId: 99, seedIndex: 0, seed: new Float64Array([1])});
       expect(reply.kind, 'success', 'replacement must serve the active session');
     } finally {
       pool.dispose();
@@ -507,7 +706,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
         lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
         bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
       });
-      await pool.setupAll(setup, []);
+      await pool.setupAll(setup);
 
       // Initial state: both slots primed.
       expect(pool._primedSlotCountForTest(77), 2, 'both slots primed');
@@ -541,10 +740,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       // promise must settle as a failure within a bounded window — if the
       // drain regresses, this would hang indefinitely, so race it against
       // a 2-second hard timeout.
-      const {run, transferables} = buildRunSeed({
-        sessionId: 77, taskId: 0, seedIndex: 0, seed: new Float64Array([1]),
-      });
-      const dispatch = pool.dispatchRun({run, transferables});
+      const dispatch = pool.dispatchRun({sessionId: 77, seedIndex: 0, seed: new Float64Array([1])});
       const reply = await Promise.race([
         dispatch,
         new Promise<never>((_, rej) =>
@@ -595,12 +791,9 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
         lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
         bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
       });
-      await pool.setupAll(setup, []);  // setup is fast — only compile, no run
-      const {run, transferables} = buildRunSeed({
-        sessionId: 2, taskId: 0, seedIndex: 0, seed: new Float64Array([1]),
-      });
+      await pool.setupAll(setup);  // setup is fast — only compile, no run
       const start = Date.now();
-      const reply = await pool.dispatchRun({run, transferables});
+      const reply = await pool.dispatchRun({sessionId: 2, seedIndex: 0, seed: new Float64Array([1])});
       const elapsed = Date.now() - start;
       expect(reply.kind, 'failure', 'wedged run must resolve as failure');
       expect(/timed? ?out/i.test((reply as any).message), true,

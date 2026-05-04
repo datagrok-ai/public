@@ -1,0 +1,29 @@
+packageName: Curves
+description: Dose-response curve fitting and statistics — fits 4PL/sigmoidal curves to concentration-readout data, extracts IC50/Hill/AUC/top/bottom per row, renders inline curve cells, and provides assay-plate and well-level workflows.
+keywords:
+  - dose-response
+  - dose response
+  - curve fitting
+  - 4PL
+  - sigmoidal
+  - IC50
+  - EC50
+  - hill slope
+  - AUC
+  - intercept
+  - top
+  - bottom
+  - r-squared
+  - fit chart
+  - fit statistics
+  - assay plate
+  - assay readout
+  - well level
+  - data to curves
+  - pzfx
+  - prism
+  - 3dx
+  - compact-dr
+  - curve renderer
+apiRef: src/package-api.ts
+docsRef: README.md

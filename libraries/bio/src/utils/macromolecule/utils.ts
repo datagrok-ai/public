@@ -378,16 +378,14 @@ export const splitterAsHelm: SplitterFunc = (seq: string): ISeqSplitted => {
   const polymerTypes = spList.map((sp) => sp.replace(/\d{1,2}\{.+\}/, '')) as PolymerTypes[];
   const mListSplit = spList
     .map((sp: string, i) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
-      .flatMap((m, k, fList) => {
+      .flatMap((m) => {
         if (polymerTypes[i] === PolymerTypes.RNA) {
           const match = RNA_HELM_TRIPLET_MONOMER_REG.exec(m)!;
           if (match != null)
             return [cleanupHelmSymbol(match[1]), cleanupHelmSymbol(match[2]), cleanupHelmSymbol(match[3])];
-          if (k === fList.length - 1) { // if its the last monomer, it can be phosphate-less, so try to match it with another regex
-            const terminalMatch = RNA_HELM_TERMINAL_PHOSPHATELESS_MONOMER_REG.exec(m);
-            if (terminalMatch != null)
-              return [cleanupHelmSymbol(terminalMatch[1]), cleanupHelmSymbol(terminalMatch[2])];
-          }
+          const terminalMatch = RNA_HELM_TERMINAL_PHOSPHATELESS_MONOMER_REG.exec(m);
+          if (terminalMatch != null)
+            return [cleanupHelmSymbol(terminalMatch[1]), cleanupHelmSymbol(terminalMatch[2])];
         }
         return [cleanupHelmSymbol(m)];
       }));

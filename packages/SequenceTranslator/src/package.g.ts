@@ -223,6 +223,51 @@ export async function getPolyToolCombineDialog() : Promise<void> {
   await PackageFunctions.getPolyToolCombineDialog();
 }
 
+//description: Renders OligoNucleotide (siRNA / ASO) duplex view in grid cells
+//tags: cellRenderer
+//output: grid_cell_renderer result
+//meta.cellType: OligoNucleotide
+//meta.columnTags: quality=OligoNucleotide
+//meta.role: cellRenderer
+export function oligoNucleotideCellRenderer() : any {
+  return PackageFunctions.oligoNucleotideCellRenderer();
+}
+
+//name: Oligo-Nucleotide
+//description: Modifications, lengths, conjugates and color legend for an OligoNucleotide cell
+//tags: panel, widgets
+//input: semantic_value value { semType: OligoNucleotide }
+//output: widget result
+export function oligoNucleotidePanel(value: DG.SemanticValue) : any {
+  return PackageFunctions.oligoNucleotidePanel(value);
+}
+
+//name: Oligo Structures
+//description: Sense and antisense full molecular structures rendered separately
+//tags: panel, widgets
+//input: semantic_value value { semType: OligoNucleotide }
+//output: widget result
+export function oligoNucleotideStructuresPanel(value: DG.SemanticValue) : any {
+  return PackageFunctions.oligoNucleotideStructuresPanel(value);
+}
+
+//description: Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view
+//input: dataframe table 
+//input: column helmCol { caption: HELM column; semType: Macromolecule }
+//output: column result
+export async function convertHelmToOligoNucleotide(table: DG.DataFrame, helmCol: DG.Column) : Promise<any> {
+  return await PackageFunctions.convertHelmToOligoNucleotide(table, helmCol);
+}
+
+//description: Combine separate sense + antisense HELM columns into one OligoNucleotide column
+//input: dataframe table 
+//input: column senseCol { caption: Sense; semType: Macromolecule }
+//input: column antiCol { caption: Antisense; semType: Macromolecule }
+//output: column result
+export async function combineSenseAntisenseToOligoNucleotide(table: DG.DataFrame, senseCol: DG.Column, antiCol: DG.Column) : Promise<any> {
+  return await PackageFunctions.combineSenseAntisenseToOligoNucleotide(table, senseCol, antiCol);
+}
+
 //name: applyNotationProviderForHarmonizedSequence
 //input: column col 
 //input: string separator 

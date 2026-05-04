@@ -16,6 +16,11 @@ import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from '.
 import {getExternalAppViewFactories} from './plugins/mermade';
 import {defaultErrorHandler} from './utils/err-info';
 
+import {OligoNucleotideCellRenderer} from './oligo-renderer/cell-renderer';
+import {buildOligoPanel} from './oligo-renderer/legend-panel';
+import {buildOligoStructuresPanel} from './oligo-renderer/structures-panel';
+import {combineSenseAntisenseToOligo, convertHelmColumnToOligo} from './oligo-renderer/converters';
+
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
 import {polyToolEnumerateChemApp, polyToolEnumerateChemUI} from './polytool/pt-chem-enum-dialog';
 import {polyToolEnumerateHelmUI, polyToolEnumerateSeq} from './polytool/pt-enumerate-seq-dialog';
@@ -397,6 +402,77 @@ export class PackageFunctions {
     getPTCombineDialog();
   }
 
+
+  // ---- OligoNucleotide cell renderer + panel + converters ----
+
+  @grok.decorators.func({
+    name: 'oligoNucleotideCellRenderer',
+    description: 'Renders OligoNucleotide (siRNA / ASO) duplex view in grid cells',
+    tags: ['cellRenderer'],
+    meta: {
+      cellType: 'OligoNucleotide',
+      columnTags: 'quality=OligoNucleotide',
+      role: 'cellRenderer',
+    },
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}],
+  })
+  static oligoNucleotideCellRenderer(): DG.GridCellRenderer {
+    return new OligoNucleotideCellRenderer();
+  }
+
+  @grok.decorators.func({
+    name: 'Oligo-Nucleotide',
+    description: 'Modifications, lengths, conjugates and color legend for an OligoNucleotide cell',
+    tags: ['panel', 'widgets'],
+    outputs: [{type: 'widget', name: 'result'}],
+  })
+  static oligoNucleotidePanel(
+    @grok.decorators.param({type: 'semantic_value', options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
+  ): DG.Widget {
+    return buildOligoPanel(value);
+  }
+
+  @grok.decorators.func({
+    name: 'Oligo Structures',
+    description: 'Sense and antisense full molecular structures rendered separately',
+    tags: ['panel', 'widgets'],
+    outputs: [{type: 'widget', name: 'result'}],
+  })
+  static oligoNucleotideStructuresPanel(
+    @grok.decorators.param({type: 'semantic_value', options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
+  ): DG.Widget {
+    return buildOligoStructuresPanel(value);
+  }
+
+  // Invoked from the column / cell context menu via detectors.js (no top-menu).
+  @grok.decorators.func({
+    name: 'convertHelmToOligoNucleotide',
+    description: 'Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view',
+  })
+  static async convertHelmToOligoNucleotide(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'HELM column', semType: 'Macromolecule'}}) helmCol: DG.Column,
+  ): Promise<DG.Column> {
+    const out = convertHelmColumnToOligo(table, helmCol);
+    await grok.data.detectSemanticTypes(table);
+    return out;
+  }
+
+  // Invoked from the column / cell context menu via detectors.js — opens the
+  // function editor (`.prepare().edit()`) so the user can pick antisense column.
+  @grok.decorators.func({
+    name: 'combineSenseAntisenseToOligoNucleotide',
+    description: 'Combine separate sense + antisense HELM columns into one OligoNucleotide column',
+  })
+  static async combineSenseAntisenseToOligoNucleotide(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Sense', semType: 'Macromolecule'}}) senseCol: DG.Column,
+    @grok.decorators.param({options: {caption: 'Antisense', semType: 'Macromolecule'}}) antiCol: DG.Column,
+  ): Promise<DG.Column> {
+    const out = combineSenseAntisenseToOligo(table, senseCol, antiCol);
+    await grok.data.detectSemanticTypes(table);
+    return out;
+  }
 
   @grok.decorators.func({
     name: 'applyNotationProviderForHarmonizedSequence'

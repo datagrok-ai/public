@@ -13,12 +13,6 @@ module.exports = (env) => {
     console.warn('Building DEV ONLY Compute2 build with vue devtools support');
 
   const config = {
-    cache: {
-      type: 'filesystem',
-      buildDependencies: {
-        config: [__filename],
-      },
-    },
     mode,
     entry: {
       test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},

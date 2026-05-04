@@ -41,14 +41,17 @@ const MAX_ACTIVITY_LINES = 5;
 
 interface StreamingOpts {
   sessionPrefix?: string;
+  sessionId?: string;
   outputSchema?: object;
-  onFinal: (evt: FinalEvent, host: HTMLElement) => void;
+  onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
 }
+
+export const RENDERED_EVENT = 'grokky-rendered';
 
 async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.Widget> {
   const client = ClaudeRuntimeClient.getInstance();
   await client.ensureConnected();
-  const sessionId = `${opts.sessionPrefix ?? 'stream'}-${crypto.randomUUID()}`;
+  const sessionId = opts.sessionId ?? `${opts.sessionPrefix ?? 'stream'}-${crypto.randomUUID()}`;
 
   const activityHost = ui.divV([], 'grokky-stream-activity');
   const contentHost = ui.div([], 'grokky-stream-content');
@@ -62,12 +65,20 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     return container;
   }));
 
+  const signalRendered = () => grok.events.fireCustomEvent(RENDERED_EVENT, sessionId);
+
+  const sessionSubs: rxjs.Subscription[] = [];
   const forSession = <T extends {sessionId: string}>(
     src: rxjs.Observable<T>, handler: (evt: T) => void,
-  ) => widget.subs.push(src.subscribe((evt) => {
+  ) => {
+    const sub = src.subscribe((evt) => {
       if (evt.sessionId === sessionId)
         handler(evt);
-    }));
+    });
+    widget.subs.push(sub);
+    sessionSubs.push(sub);
+  };
+  const stopListening = () => sessionSubs.forEach((s) => s.unsubscribe());
 
   forSession<ToolActivityEvent>(client.onToolActivity, (evt) => {
     activityHost.appendChild(ui.divText(evt.summary, 'grokky-stream-activity-line'));
@@ -76,27 +87,35 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     onFirstEvent();
   });
 
-  forSession<FinalEvent>(client.onFinal, (evt) => {
+  forSession<FinalEvent>(client.onFinal, async (evt) => {
     activityHost.remove();
     onFirstEvent();
-    opts.onFinal(evt, contentHost);
+    try {
+      await opts.onFinal(evt, contentHost);
+    } finally {
+      signalRendered();
+      stopListening();
+    }
   });
 
   forSession<ErrorEvent>(client.onError, (evt) => {
     activityHost.remove();
     contentHost.appendChild(ui.info(`Error: ${evt.message}`));
     onFirstEvent();
+    signalRendered();
+    stopListening();
   });
 
   client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
   return widget;
 }
 
-export async function smartExecution(prompt: string): Promise<DG.Widget> {
+export async function smartExecution(prompt: string, sessionId?: string): Promise<DG.Widget> {
   return streamingWidget(prompt, {
+    sessionId,
     sessionPrefix: 'execute',
     outputSchema: executionPlanSchema,
-    onFinal: (evt, host) => {
+    onFinal: async (evt, host) => {
       const result = evt.structured_output as ExecutionPlan | undefined;
       if (!result) {
         host.appendChild(ui.divText(evt.content || 'No plan returned.'));
@@ -112,20 +131,26 @@ export async function smartExecution(prompt: string): Promise<DG.Widget> {
       codeAcc.addPane('Code', () => createStyledMarkdown(code), false);
       host.appendChild(codeAcc.root);
 
+      let resolveExec: () => void = () => {};
+      const execDone = new Promise<void>((res) => { resolveExec = res; });
       host.appendChild(ui.wait(async () => {
         try {
           const execResults = await executeDatagrokBlocks(code, grok.shell.v);
           return ui.divV(execResults);
         } catch (e: any) {
           return ui.info(`Execution error: ${e?.message ?? e}`);
+        } finally {
+          resolveExec();
         }
       }));
+      await execDone;
     },
   });
 }
 
-export async function askWiki(question: string): Promise<DG.Widget> {
+export async function askWiki(question: string, sessionId?: string): Promise<DG.Widget> {
   return streamingWidget(question, {
+    sessionId,
     sessionPrefix: 'help',
     onFinal: (evt, host) => {
       const md = ui.markdown(evt.content || '');
@@ -230,7 +255,7 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   return true;
 }
 
-async function runPromptWithLifecycle(
+export async function runPromptWithLifecycle(
   panel: StreamingPanel,
   prompt: string,
   view: DG.ViewBase,
@@ -246,7 +271,7 @@ async function runPromptWithLifecycle(
     await runClaudeStreaming(panel, command, view, clientToolHandler, 'bash');
     return;
   }
-  let echoed = false;
+  let session: ReturnType<StreamingPanel['startChatSession']> | undefined;
   if (!panel.rawRender) {
     const args: UserPromptEventArgs = {prompt, context: view, handled: false};
     fireBeforeUserPromptEvent(args);
@@ -255,28 +280,28 @@ async function runPromptWithLifecycle(
 
     // Echo the user message before routing so it never disappears, even when
     // grok.ai.processPrompt's built-in handler claims the prompt.
-    const probe = panel.startChatSession();
-    probe.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
-    echoed = true;
+    session = panel.startChatSession();
+    session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
 
     if (await grok.ai.processPrompt(prompt)) {
-      probe.session.addUiMessage(
+      session.session.addUiMessage(
         'Handled by Datagrok\'s built-in handler — see the current view for the result.',
         false);
-      probe.endSession();
+      session.endSession();
       return;
     }
-    probe.endSession();
   }
-  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt))
+  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt)) {
+    session?.endSession();
     return;
-  await runClaudeStreaming(panel, prompt, view, clientToolHandler, undefined, echoed);
+  }
+  await runClaudeStreaming(panel, prompt, view, clientToolHandler, undefined, session);
   if (!panel.rawRender)
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string, skipUserEcho = false) {
-  const chatSession = panel.startChatSession();
+async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string, existingSession?: ReturnType<StreamingPanel['startChatSession']>) {
+  const chatSession = existingSession ?? panel.startChatSession();
   const sessionId = panel.sessionId;
   let accumulated = '';
   let toolStatus = '';
@@ -304,7 +329,7 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
     await client.ensureConnected();
 
-    if (!skipUserEcho)
+    if (!existingSession)
       chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
 
     forSession(client.onChunk, (evt) => {
@@ -327,8 +352,12 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
     forSession(client.onFinal, (evt) => {
       panel.cancelInputRequest();
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: evt.content}]});
-      panel.finalizeStreaming(evt.content, view);
+      // evt.content is the SDK's result.result — only the final assistant turn after the last
+      // tool call. Use the full accumulated chunk stream so finalizeStreaming sees every
+      // datagrok-exec block Claude emitted, including ones written before it invoked a tool.
+      const fullContent = accumulated || evt.content;
+      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
+      panel.finalizeStreaming(fullContent, view);
       chatSession.endSession();
       cleanup();
     });

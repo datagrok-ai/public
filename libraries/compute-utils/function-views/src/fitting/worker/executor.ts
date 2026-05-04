@@ -1,17 +1,11 @@
-// Executor — the dispatch layer optimizer.ts branches into.
+// Executor — the dispatch layer optimizer.ts branches into. MainExecutor is
+// the in-process seed loop; WorkerExecutor primes a per-fit session in every
+// pool slot via `setupAll` and dispatches one `RunDispatch` per starting point.
+// Both arms share `EarlyStopTracker`, `buildFailsDataFrame`, and `sampleSeeds`.
 //
-// MainExecutor is the synchronous in-process seed loop. WorkerExecutor
-// primes a per-fit session in every pool slot via `setupAll`, then
-// dispatches one `RunSeed` per starting point so a slow seed doesn't
-// bottleneck the whole fit. Both arms share `EarlyStopTracker` for the
-// valid/above-threshold bookkeeping and `buildFailsDataFrame` /
-// `sampleSeeds` for the surrounding scaffolding.
-//
-// canHandle() is the canary that decides whether a fit can run on the worker
-// arm at all: requires a JS-language DG.Script that explicitly opts in via
-// `//meta.workerSafe: true` in its header. The annotation is the contract —
-// a workerSafe script promises not to reach for `grok.*` / `ui.*` or any
-// other main-thread global the worker context lacks.
+// canHandle() requires a JS-language DG.Script with `//meta.workerSafe: true`
+// in its header — the contract is that the script body won't reach for
+// `grok.*` / `ui.*` or any other main-thread global.
 
 import * as DG from 'datagrok-api/dg';
 import {Extremum, OptimizationResult, ValueBoundsData, OutputTargetItem}
@@ -22,15 +16,15 @@ import {buildFailsDataFrame, getInputsData, sampleSeeds} from '../fitting-utils'
 import {EarlyStopTracker} from '../early-stop-tracker';
 import {WorkerPool, defaultPoolSize, RunReply} from './pool';
 import {getSharedFittingPool} from './shared-pool';
-import {buildSetup, buildRunSeed} from './serialize';
+import {buildSetup} from './serialize';
+import {DeferredProgressIndicator} from './deferred-progress';
 import type {SessionId} from './wire-types';
 
 export type ExecutorMode = 'main' | 'worker';
 export type ExecutorChoice = 'auto' | ExecutorMode;
 
 export interface ExecutorArgs {
-  // Always present — the legacy main-arm objective. Used when the worker
-  // arm can't be picked.
+  // Main-arm objective; used when the worker arm can't be picked.
   objectiveFunc: (x: Float64Array) => Promise<number | undefined>;
   inputsBounds: Record<string, ValueBoundsData>;
   samplesCount: number;
@@ -38,8 +32,8 @@ export interface ExecutorArgs {
   reproSettings: ReproSettings;
   earlyStoppingSettings: EarlyStoppingSettings;
 
-  // Worker-arm payload. When present, WorkerExecutor disassembles this into
-  // a session setup. When absent, the worker arm falls back to main.
+  // Worker-arm payload. WorkerExecutor disassembles these into a session
+  // setup; absent → falls back to main.
   func?: DG.Func;
   outputTargets?: OutputTargetItem[];
   lossType?: LOSS;
@@ -51,11 +45,8 @@ export interface Executor {
 
 // ---- canHandle ------------------------------------------------------------
 
-// Header annotation a script must carry to be eligible for worker dispatch.
-// Authors opt in by adding `//meta.workerSafe: true` to the script header.
-// The platform strips the `meta.` prefix when populating `func.options`, so
-// the value lands at `func.options['workerSafe']` (cf. `searchPattern`,
-// `vectorFunc`, `role`).
+// Authors opt in via `//meta.workerSafe: true` in the script header; the
+// platform strips `meta.`, so it lands at `func.options['workerSafe']`.
 const WORKER_SAFE_OPTION = 'workerSafe';
 
 function isWorkerSafe(func: DG.Func): boolean {
@@ -83,10 +74,8 @@ export class MainExecutor implements Executor {
     const tracker = new EarlyStopTracker(args.earlyStoppingSettings);
     const warnings: string[] = [];
     const failedInitPoint: Float64Array[] = [];
-    // Match WorkerExecutor: when early stopping is on, pass the threshold
-    // into each NM run so it short-circuits at cost ≤ threshold. Without
-    // this, the main arm refines past the threshold and the two arms
-    // produce divergent extremums for the same seed.
+    // Pass the threshold into NM so it short-circuits at cost ≤ threshold.
+    // Without this, the two arms diverge at the same seed.
     const nmThreshold = args.earlyStoppingSettings.useEarlyStopping ?
       args.earlyStoppingSettings.costFuncThreshold :
       undefined;
@@ -104,10 +93,8 @@ export class MainExecutor implements Executor {
         percentage = Math.floor(100 * (i + 1) / args.samplesCount);
         pi.update(percentage, `Fitting... (${percentage}%)`);
       } catch (e) {
-        // Discriminate by `name` (not instanceof) so both the original
-        // optimizer-misc.InconsistentTables and worker/cost-math's
-        // InconsistentTablesError are caught — see cost-math.ts for why
-        // the worker arm can't share the optimizer-misc class.
+        // Match by `name` (not instanceof) — worker/cost-math defines its
+        // own InconsistentTablesError; see cost-math.ts for why.
         if (e instanceof Error && e.name === 'InconsistentTables') {
           pi.close();
           throw new Error(`Inconsistent dataframes: ${e.message}`);
@@ -142,29 +129,23 @@ export class WorkerExecutor implements Executor {
     const params = sampleSeeds(args.samplesCount, args.inputsBounds, args.reproSettings);
 
     let percentage = 0;
-    const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
+    const pi = DeferredProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
 
     const settings = args.earlyStoppingSettings;
     const useES = settings.useEarlyStopping;
     const threshold = useES ? settings.costFuncThreshold! : Infinity;
     const stopAfter = settings.stopAfter;
 
-    // Per-index reply buffer. Replies land in `results[idx]` so finalization
-    // can walk in seed-index order (matching MainExecutor) regardless of
-    // worker completion order.
-    type Slot =
+    type SeedResult =
       | {kind: 'pending'}
       | {kind: 'success', extremum: Extremum}
       | {kind: 'failure-warn', seed: Float64Array, message: string}
       | {kind: 'failure-fatal'};
-    const PENDING: Slot = {kind: 'pending'};
-    const results: Slot[] = new Array(args.samplesCount).fill(PENDING);
+    const PENDING: SeedResult = {kind: 'pending'};
+    const results: SeedResult[] = new Array(args.samplesCount).fill(PENDING);
 
     let inconsistentMessage: string | null = null;
-    // `stopRequested` halts new dispatches (no more seeds pulled from
-    // `nextIdx`). In-flight replies still land in `results[idx]` because
-    // each runSlot awaits its dispatchRun before exiting the loop, so
-    // `Promise.all(slots)` IS the drain.
+    // Halts new dispatches; in-flight replies still drain via Promise.all.
     let stopRequested = false;
     let validCount = 0;
     let completedCount = 0;
@@ -189,7 +170,7 @@ export class WorkerExecutor implements Executor {
 
     try {
       try {
-        await this.pool.setupAll(built.setup, built.transferables);
+        await this.pool.setupAll(built.setup);
       } catch (e: any) {
         pi.close();
         const msg = e instanceof Error ? e.message : String(e);
@@ -198,11 +179,14 @@ export class WorkerExecutor implements Executor {
         throw e;
       }
 
-      const handleReply = (idx: number, reply: RunReply): void => {
+      // Placement is keyed by `reply.seedIndex` — echoed by the worker and
+      // synthesized failures alike, so completion order doesn't matter.
+      const handleReply = (reply: RunReply): void => {
         ++completedCount;
         percentage = Math.floor(100 * completedCount / args.samplesCount);
         pi.update(percentage, `Fitting... (${percentage}%)`);
 
+        const idx = reply.seedIndex;
         if (reply.kind === 'failure') {
           if (reply.failKind === 'inconsistent') {
             if (inconsistentMessage == null) inconsistentMessage = reply.message;
@@ -210,6 +194,7 @@ export class WorkerExecutor implements Executor {
             results[idx] = {kind: 'failure-fatal'};
             return;
           }
+          console.warn(`fitting worker seed ${idx} failed: ${reply.message}`);
           results[idx] = {kind: 'failure-warn', seed: reply.seed, message: reply.message};
           return;
         }
@@ -221,11 +206,7 @@ export class WorkerExecutor implements Executor {
           iterCount: reply.iterCount,
         };
         results[idx] = {kind: 'success', extremum};
-        // Stop dispatching once the global valid count crosses stopAfter.
-        // We don't act on contiguous-prefix valid count here — that would
-        // dispatch more seeds than necessary. Tracking the global count
-        // matches main-arm semantics: once enough valids exist anywhere,
-        // the eventual first-M-in-index-order winners are pinned down.
+        // Stop on global valid count (not contiguous-prefix) — matches main arm.
         if (useES && extremum.cost <= threshold) {
           ++validCount;
           if (validCount >= stopAfter) stopRequested = true;
@@ -242,10 +223,8 @@ export class WorkerExecutor implements Executor {
           if (stopRequested) break;
           const idx = nextIdx++;
           const seed = new Float64Array(params[idx]);
-          const dispatched = buildRunSeed({sessionId, taskId: 0, seedIndex: idx, seed});
-          const reply = await this.pool.dispatchRun({
-            run: dispatched.run, transferables: dispatched.transferables});
-          handleReply(idx, reply);
+          const reply = await this.pool.dispatchRun({sessionId, seedIndex: idx, seed});
+          handleReply(reply);
         }
       };
 
@@ -257,12 +236,8 @@ export class WorkerExecutor implements Executor {
       if (inconsistentMessage)
         throw new Error(`Inconsistent dataframes: ${inconsistentMessage}`);
 
-      // Finalize: walk `results` in seed-index order, replaying replies
-      // through `EarlyStopTracker` so the selection rule stays shared with
-      // MainExecutor. The contiguous-prefix `break` on `pending` handles
-      // cancellation and the stop-with-gap case (where lower indices were
-      // never dispatched because stopRequested fired before the slots
-      // reached them).
+      // Index-ordered finalize through the shared EarlyStopTracker. Breaking
+      // on the first `pending` handles cancellation and stop-with-gap.
       const tracker = new EarlyStopTracker(settings);
       const failedInitPoint: Float64Array[] = [];
       const warnings: string[] = [];
@@ -284,9 +259,7 @@ export class WorkerExecutor implements Executor {
         fails: buildFailsDataFrame(failedInitPoint, warnings),
       };
     } finally {
-      // Always release session state in workers, regardless of whether the
-      // pool is ephemeral (we're about to dispose it anyway) or long-lived
-      // (so per-session state doesn't accumulate across fits).
+      // Long-lived pools accumulate per-session state otherwise.
       this.pool.dropSession(sessionId);
     }
   }
@@ -295,7 +268,6 @@ export class WorkerExecutor implements Executor {
 // ---- Pool lifecycle -------------------------------------------------------
 
 // Short-lived pool: created on demand, terminated when the fit returns.
-// Used by tests and ephemeral callers that don't want a tab-lifetime pool.
 export async function runWithEphemeralPool(args: ExecutorArgs): Promise<OptimizationResult> {
   const pool = new WorkerPool(defaultPoolSize());
   try {
@@ -305,12 +277,8 @@ export async function runWithEphemeralPool(args: ExecutorArgs): Promise<Optimiza
   }
 }
 
-// Long-lived pool: reuses the singleton from shared-pool.ts so worker
-// spin-up + per-slot compile amortize across fits. Each fit calls
-// `dropSession` on completion (inside WorkerExecutor.run's finally), so
-// per-session state in the workers doesn't accumulate. The compile
-// cache inside each worker (LRU, see func-call-shim.ts) is what makes
-// repeated fits of the same body cheap.
+// Long-lived pool: reuses the singleton from shared-pool.ts so worker spin-up
+// and per-slot compile amortize across fits.
 export async function runWithSharedPool(args: ExecutorArgs): Promise<OptimizationResult> {
   const pool = getSharedFittingPool();
   return new WorkerExecutor(pool).run(args);

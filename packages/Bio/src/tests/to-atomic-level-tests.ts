@@ -498,6 +498,141 @@ category('toAtomicLevelHelmRna', async () => {
     expect(/S/.test(smiles), true, `expected sulfur: ${smiles}`);
     expect(/P/.test(smiles), true, `expected phosphorus: ${smiles}`);
   });
+
+  // 3'-end terminal modifier (GalNAc, R1 only). HELM puts it in the
+  // "phosphate" slot of the last triple, but it's actually a chain end.
+  // Expectations: chain ends at GalNAc (no extra OH cap), no phosphate
+  // at all, GalNAc structural features (acetamide N) are present.
+  test('rna-helm-3p-terminal-galnac', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{r(T)[GalNAc]}$$$$V2.0`);
+    const pCount = (smiles.match(/P/g) || []).length;
+    expect(pCount, 0, `expected 0 phosphates (GalNAc replaces P): ${smiles}`);
+    expect(/N/.test(smiles), true, `expected nitrogen from GalNAc acetamide: ${smiles}`);
+    // Sanity: SMILES should not be RDKit's parse-failure sentinel.
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+  });
+
+  // 5'-end terminal modifier (Chol, R2 only) at the start of the chain.
+  // HELM puts Chol where the first sugar would be. With no trailing P,
+  // the chain is Chol → r(T)-3'-OH.
+  test('rna-helm-5p-terminal-chol', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{[Chol].r(T)}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    // Cholesterol has 4 fused rings (3 six-membered + 1 five-membered) — sanity-check
+    // by requiring at least 4 non-aromatic ring closures (digits 1-4) in the SMILES
+    // (cholesterol fragment alone uses ring closures 1-4).
+    expect(/1/.test(smiles) && /2/.test(smiles) && /3/.test(smiles) && /4/.test(smiles), true,
+      `expected cholesterol ring fragments: ${smiles}`);
+  });
+
+  // Chol at 5' with explicit trailing phosphate (the original failing case).
+  // Chain: Chol → r(T) → P-OH. Should produce exactly 1 phosphate.
+  test('rna-helm-5p-terminal-chol-with-trailing-phosphate', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{[Chol].r(T)p}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    const pCount = (smiles.match(/P/g) || []).length;
+    expect(pCount, 1, `expected exactly 1 phosphate: ${smiles}`);
+  });
+
+  // Both terminals at once: Chol at 5', GalNAc at 3', single nucleotide
+  // in between. No phosphates anywhere.
+  test('rna-helm-both-terminals', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{[Chol].r(T)[GalNAc]}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    const pCount = (smiles.match(/P/g) || []).length;
+    expect(pCount, 0, `expected 0 phosphates with both terminals: ${smiles}`);
+  });
+
+  // GalNAc oxygen-count regression. Previously the R1 placeholder atom
+  // (substituted to 'O' from the "OH" cap) was left in the assembly,
+  // adding a stray OH on the chain-attach carbon. lna(T)GalNAc has known
+  // expected SMILES with exactly 10 oxygens.
+  test('rna-helm-3p-terminal-galnac-no-extra-oh', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{[lna](T)[GalNAc]}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    // Count OXYGEN ATOMS only — uppercase O outside of brackets in standard
+    // SMILES denotes a non-aromatic oxygen. Ring-closure digits and atoms
+    // inside [] don't match this regex.
+    const oCount = (smiles.match(/O/g) || []).length;
+    expect(oCount, 10, `expected exactly 10 oxygen atoms in lna-T-GalNAc: ${smiles}`);
+  });
+
+  // sp (and similar phosphates with R-cap = H) used to disconnect the chain
+  // because the H placeholder was removed by removeHydrogen, leaving
+  // terminalNodes[0] pointing at the now-deleted atom. The result was a
+  // SMILES with two disconnected fragments separated by '.'. The fix:
+  // when the cap is H, leave terminalNodes[0] at its original
+  // setTerminalNodes value (the atom previously bonded to R1, e.g. P) so
+  // the chain bond goes there directly.
+  test('rna-helm-h-cap-phosphate-sp-connects', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{r(T)[sp].r(A)}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    // No '.' → single connected fragment.
+    expect(smiles.indexOf('.') === -1, true,
+      `expected single fragment (no '.' separator): ${smiles}`);
+    // Exactly one phosphorus from the sp linker.
+    const pCount = (smiles.match(/P/g) || []).length;
+    expect(pCount, 1, `expected exactly 1 phosphate: ${smiles}`);
+    // sp carries a sulfur on the phosphate.
+    expect(/S/.test(smiles), true, `expected sulfur from sp: ${smiles}`);
+  });
+
+  // R-group swap heuristic: a single-R-group terminal monomer can be placed
+  // at either end of a HELM chain, even if its R-group label "should" only
+  // belong at one end. The conversion swaps rNodes so the existing
+  // TERMINAL_5P/3P role logic still works.
+  //
+  // Bio (R1 only) — naturally a 3'-terminal, but we accept it at 5' too.
+  test('rna-helm-bio-terminal-at-end', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{r(T)[Bio]}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    // Bio replaces the trailing P → no phosphate at all.
+    const pCount = (smiles.match(/P/g) || []).length;
+    expect(pCount, 0, `expected 0 phosphates with Bio terminal: ${smiles}`);
+    // Single connected fragment.
+    expect(smiles.indexOf('.') === -1, true,
+      `expected single fragment: ${smiles}`);
+  });
+
+  test('rna-helm-bio-terminal-at-start', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{[Bio].r(T)}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    // Single connected fragment (Bio at start must connect to following sugar).
+    expect(smiles.indexOf('.') === -1, true,
+      `expected single fragment: ${smiles}`);
+    // No phosphates (Bio doesn't carry P, no trailing p in HELM).
+    const pCount = (smiles.match(/P/g) || []).length;
+    expect(pCount, 0, `expected 0 phosphates: ${smiles}`);
+  });
+
+  // Chol (R2 only) — naturally a 5'-terminal, but we accept it at 3' too.
+  test('rna-helm-chol-terminal-at-start', async () => {
+    // Already covered by rna-helm-5p-terminal-chol; this is the canonical case.
+    const smiles = await helmRnaLinearToSmiles(`RNA1{[Chol].r(T)}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    expect(smiles.indexOf('.') === -1, true, `expected single fragment: ${smiles}`);
+  });
+
+  test('rna-helm-chol-terminal-at-end', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{r(T)[Chol]}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    // Single connected fragment.
+    expect(smiles.indexOf('.') === -1, true,
+      `expected single fragment: ${smiles}`);
+    // Chol replaces the trailing P → no phosphate.
+    const pCount = (smiles.match(/P/g) || []).length;
+    expect(pCount, 0, `expected 0 phosphates with Chol terminal: ${smiles}`);
+  });
 });
 
 

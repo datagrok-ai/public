@@ -24,8 +24,16 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{
       errorText = 'No sequence handler found';
       return {errorText, mol: ''};
     }
-    if ((seqSh.getSplitted(sequence.cell.rowIndex, 60)?.length ?? 100) > 50) {
-      errorText = 'Maximum number of monomers is 50';
+
+    let maxLength = 50;
+    if (seqSh.isHelm()) {
+      const splitted = seqSh.getSplitted(sequence.cell.rowIndex);
+      if (!splitted.graphInfo?.polymerTypes?.some((pt) => pt !== 'RNA'))
+        maxLength = 150;
+    }
+
+    if ((seqSh.getSplitted(sequence.cell.rowIndex)?.length ?? 100) > maxLength) {
+      errorText = 'Maximum number of monomers is ' + maxLength;
       return {errorText, mol: ''};
     }
     const singleValCol = DG.Column.fromStrings('singleVal', [sequence.value]);
@@ -73,8 +81,11 @@ export async function toAtomicLevelWidget(sequence: DG.SemanticValue): Promise<D
     const molSemanticValue = DG.SemanticValue.fromValueType(res.mol, DG.SEMTYPE.MOLECULE);
     const panel = ui.panels.infoPanel(molSemanticValue);
     let molPanel: DG.Widget | null = null;
-    if (panel)
-      molPanel = DG.Widget.fromRoot(panel.root);
+    if (panel) {
+      const acc = ui.accordion('Sequence Molfile details');
+      acc.addPane('Explore', () => panel.root);
+      molPanel = DG.Widget.fromRoot(acc.root);
+    }
 
 
     const root = grok.chem.drawMolecule(res.mol, 300, 300, false);

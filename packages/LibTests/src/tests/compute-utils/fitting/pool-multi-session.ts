@@ -3,7 +3,7 @@
 //
 // The WorkerPool is multi-session by design: every fit calls
 // `setupAll(sessionId)` to prime its session in every slot, dispatches one
-// `RunSeed` per starting point, and `dropSession(sessionId)` in
+// `RunDispatch` per starting point, and `dropSession(sessionId)` in
 // WorkerExecutor.run's finally. The contract these tests pin:
 //
 //   - Sequential reuse: after fit A's dropSession, fit B sees no leaked

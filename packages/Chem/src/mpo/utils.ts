@@ -38,6 +38,12 @@ export enum MpoPathMode {
   Create = 'create',
 }
 
+export enum MpoUploadConflictAction {
+  Replace = 'replace',
+  KeepBoth = 'keep-both',
+  Cancel = 'cancel',
+}
+
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'MPOProfiles';
 export const MPO_PROFILES_NAME = 'MPO Profiles';

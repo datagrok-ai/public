@@ -118,8 +118,8 @@ function processUnits(molPBlok : string): string {
 
   let curPosAdd = curPos;
   for (let bondIdx =0; bondIdx < bondCount; ++bondIdx) {
-    let s = '';
-    if ((s = molPBlok.substring(curPosAdd + 8, curPosAdd + 9)) === '4') {
+    let _s = '';
+    if ((_s = molPBlok.substring(curPosAdd + 8, curPosAdd + 9)) === '4') {
       const endStr = molPBlok.substring(curPosAdd + 9);
       molPBlok = molPBlok.substring(0, curPosAdd + 6) + '  6' + endStr;
     }
@@ -699,10 +699,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   intersectionObserver: IntersectionObserver | undefined;
   resizeObserver: ResizeObserver | undefined;
 
+  // not to make chem dependent on unreleased js-api version with group.addNode
+  enableNodeRearangement: boolean = true;
+
+
   constructor() {
     super();
-
     this.tree = ui.tree();
+    // @ts-ignore
+    this.enableNodeRearangement = typeof this.tree['addNode'] === 'function';
     // this.tree.root.classList.add('d4-tree-view-lines');
 
     this.title = this.string('title', 'Scaffold Tree');
@@ -1114,7 +1119,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           thisViewer.wrapper?.close();
           thisViewer.wrapper = null;
         }
-      }, async (strMolSketch: string) => {
+      }, async (_strMolSketch: string) => {
       });
 
     this.wrapper.show();
@@ -1132,7 +1137,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.cancelled = false;
     const thisViewer = this;
     this.wrapper = SketcherDialogWrapper.create('Add new scaffold...', 'Add', group,
-      async (molStrSketcher: string, parent: TreeViewGroup, errorMsg: string | null) => {
+      async (molStrSketcher: string, parent: TreeViewGroup, _errorMsg: string | null) => {
         const child = thisViewer.createGroup(molStrSketcher, parent);
         if (child !== null) {
           enableNodeExtendArrow(child, false);
@@ -1193,7 +1198,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           thisViewer.wrapper?.close();
           thisViewer.wrapper = null;
         }
-      }, async (strMolSketch: string) => {
+      }, async (_strMolSketch: string) => {
       });
     this.wrapper.show();
   }
@@ -1243,10 +1248,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   moveNodeTo(node: TreeViewGroup, targetIdx: number): void {
     const parent = (node.parent ?? this.tree) as TreeViewGroup;
+
     const sourceIdx = parent.children.indexOf(node);
     node.remove();
     if (sourceIdx >= 0 && sourceIdx < targetIdx)
       targetIdx--;
+    // if node rearangment is not enabled (to not block release with older version of js-api),
+    // this func will not be called at all
+    // @ts-ignore
     parent.addNode(node, targetIdx);
     this.tree.currentItem = node;
     requestAnimationFrame(() => node.root.scrollIntoView({block: 'nearest'}));
@@ -2073,8 +2082,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (parentColor)
         value(group).parentColor = parentColor;
     }
-
-    this.setupDragAndDrop(molHost, group);
+    if (this.enableNodeRearangement)
+      this.setupDragAndDrop(molHost, group);
 
     molHost.onclick = () => this.makeNodeActiveAndFilter(group);
     return group;
@@ -2337,7 +2346,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
 
     this.tree.root.addEventListener('keydown', (e) => {
-      if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.altKey && e.shiftKey) {
+      if (this.enableNodeRearangement && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.altKey && e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
         if (this.current)

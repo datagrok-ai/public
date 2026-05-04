@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.1.14 (2026-05-01)
+
+* Reports: `grok report comment` now converts Markdown body to JIRA wiki markup before POSTing, fixing rendered headings/list/HTML-entity mismatches in JIRA UI.
+
 ## 6.1.13 (2026-04-30)
 
 * Reports: `grok report ticket` now uses direct JIRA REST honoring `$JIRA_PROJECT`, replacing the Datlas-mediated path that hardcoded GROK.

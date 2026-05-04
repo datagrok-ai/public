@@ -181,7 +181,7 @@ category('Pipeline: MockPipeline1 static', () => {
     view = undefined;
   });
 
-  test('Renders tree with steps and Proceed card', async () => {
+  test('Renders tree with steps and Next button', async () => {
     await awaitWebComponents();
     const func = DG.Func.byName('Compute2:MockPipeline1');
     const call = func.prepare();
@@ -201,10 +201,12 @@ category('Pipeline: MockPipeline1 static', () => {
       return texts.includes('step1') && texts.includes('step2');
     }, 'Tree should show step1 and step2', 10000);
 
-    // Verify pipeline view shows Proceed card
+    // Pipeline view's bottom bar shows the unified Next button (same as RFV).
     await awaitCheck(() => {
-      return view!.root.textContent?.includes('Proceed to the first step') ?? false;
-    }, 'Should show Proceed to the first step card', 10000);
+      return Array.from(view!.root.querySelectorAll('button')).some(
+        (b) => b.textContent?.trim() === 'Next',
+      );
+    }, 'Should show Next button', 10000);
   });
 });
 
@@ -216,7 +218,7 @@ category('Pipeline: MockPipeline2 sequential', () => {
     view = undefined;
   });
 
-  test('Renders tree with initial steps and Proceed card', async () => {
+  test('Renders tree with initial steps and Next button', async () => {
     await awaitWebComponents();
     const func = DG.Func.byName('Compute2:MockPipeline2');
     const call = func.prepare();
@@ -239,9 +241,11 @@ category('Pipeline: MockPipeline2 sequential', () => {
       return count >= 2;
     }, 'Tree should show at least 2 of: add, mul, cooling', 10000);
 
-    // Verify pipeline view shows Proceed card
+    // Pipeline view's bottom bar shows the unified Next button (same as RFV).
     await awaitCheck(() => {
-      return view!.root.textContent?.includes('Proceed to the first step') ?? false;
-    }, 'Should show Proceed to the first step card', 10000);
+      return Array.from(view!.root.querySelectorAll('button')).some(
+        (b) => b.textContent?.trim() === 'Next',
+      );
+    }, 'Should show Next button', 10000);
   });
 });

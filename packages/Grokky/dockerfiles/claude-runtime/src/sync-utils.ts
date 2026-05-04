@@ -5,6 +5,7 @@ import {resolveHomeConnection, syncHomeFiles} from './sync-home-files';
 import {syncPackages} from './sync-packages';
 import {syncSharedConnections} from './sync-shared-connections';
 import {loadPackageKnowledge} from './package-knowledge-tool';
+import {getInstalledPackages} from './installed-packages';
 
 
 const USERS_DIR = '/users';
@@ -233,16 +234,23 @@ async function doSync(
 
 // ── Package index generation ──────────────────────────────────────────
 
-export async function generatePackageIndex(): Promise<string | null> {
+export async function generatePackageIndex(userId?: string): Promise<string | null> {
   const map = await loadPackageKnowledge();
   if (map.size === 0)
     return null;
 
-  const packages = [...map.values()].sort((a, b) => a.packageName.localeCompare(b.packageName));
+  const installed = userId ? getInstalledPackages(userId) : undefined;
+  const visible = installed
+    ? [...map.values()].filter((p) => installed.has(p.packageName))
+    : [...map.values()];
+  if (!visible.length)
+    return null;
+
+  visible.sort((a, b) => a.packageName.localeCompare(b.packageName));
 
   let md = '| Package | Description | Keywords |\n';
   md += '|---------|-------------|----------|\n';
-  for (const pkg of packages)
+  for (const pkg of visible)
     md += `| ${pkg.packageName} | ${pkg.description} | ${pkg.keywords.join(', ')} |\n`;
 
   return md;

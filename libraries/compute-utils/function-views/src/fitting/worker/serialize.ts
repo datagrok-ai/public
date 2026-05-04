@@ -1,16 +1,6 @@
-// Serializer for main → worker dispatch.
-//
-// Two messages cross the boundary:
-//
-//   - 'setup-fit' — full immutable bundle (script body, fixed inputs and
-//     fixed DataFrames, output targets, bounds, NM settings, threshold).
-//     Sent once per worker per fit.
-//   - 'run-seed' — seed + sessionId pointer. Sent once per seed.
-//
-// DataFrames cross as Arrow IPC bytes via @datagrok-libraries/arrow toFeather;
-// the worker decodes via arrow-to-lite once when it receives the setup.
-//
-// Day.js dates → ISO string. Reconstructed in the worker if needed.
+// Serializer for main → worker dispatch. DataFrames cross as Arrow IPC bytes
+// (toFeather → arrow-to-lite); Dayjs/Date scalars cross as ISO strings and
+// are reified in the worker.
 
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
@@ -18,13 +8,13 @@ import {toFeather} from '@datagrok-libraries/arrow';
 import {LOSS} from '../constants';
 import type {OutputTargetItem, ValueBoundsData} from '../optimizer-misc';
 import type {
-  FitSessionSetup, RunSeed, SerializedDataFrameTarget, SerializedOutputTarget,
+  FitSessionSetup, RunDispatch, SerializedDataFrameTarget, SerializedOutputTarget,
   SerializedScalarTarget, SessionId, SetupAck, WorkerFailure, WorkerInbound, WorkerOutbound,
   WorkerSuccess,
 } from './wire-types';
 
 export type {
-  FitSessionSetup, RunSeed, SerializedDataFrameTarget, SerializedOutputTarget,
+  FitSessionSetup, RunDispatch, SerializedDataFrameTarget, SerializedOutputTarget,
   SerializedScalarTarget, SessionId, SetupAck, WorkerFailure, WorkerInbound, WorkerOutbound,
   WorkerSuccess,
 };
@@ -64,10 +54,9 @@ function serializeFixedInputs(
   return {scalars, dataFrames, types, transferables};
 }
 
-// Const VALUES live in fixedInputs/fixedDataFrames; setup.bounds keeps the
-// structural shape (which entries are const vs varying, formula bound
-// strings) only. Replacing const value with `null` keeps `getAccData`'s
-// constValues count and ordering intact while making the wire safe.
+// Const values cross via fixedInputs/fixedDataFrames; setup.bounds keeps only
+// the structural shape. Nulling const values keeps `getAccData`'s ordering
+// and count intact while keeping the wire payload safe to clone.
 function stripBoundsConstValues(
   bounds: Record<string, ValueBoundsData>,
 ): Record<string, ValueBoundsData> {
@@ -145,25 +134,8 @@ export function buildSetup(args: {
   };
 }
 
-export function buildRunSeed(args: {
-  sessionId: SessionId;
-  taskId: number;
-  seedIndex: number;
-  seed: Float64Array;
-}): {run: RunSeed; transferables: Transferable[]} {
-  const run: RunSeed = {
-    kind: 'run-seed',
-    taskId: args.taskId,
-    sessionId: args.sessionId,
-    seedIndex: args.seedIndex,
-    seed: args.seed,
-  };
-  return {run, transferables: [args.seed.buffer]};
-}
-
-// Cap on accepted body size — guards against pasted blobs and runaway
-// parse time. 1 MB covers Diff Studio bodies and multi-equation models;
-// raise again only with measured workloads.
+// 1 MB covers Diff Studio bodies and multi-equation models; raise only with
+// measured workloads.
 export const MAX_FN_SOURCE_BYTES = 1024 * 1024;
 
 export function checkSourceSize(source: string): void {

@@ -16,6 +16,7 @@ export const _package = new DG.Package();
 const TEST_WORKFLOW = 'test_inputs';
 
 export class PackageFunctions {
+
   @grok.decorators.autostart({description: 'KnimeLink function registration'})
   static async knimeLinkAutostart(): Promise<void> {
     let client;
@@ -140,30 +141,35 @@ export class PackageFunctions {
     };
 
     // Phase 1: Create tree items from cached functions
-    const cached = loadCachedEntries();
     const cachedItemsByName = new Map<string, DG.TreeViewNode>();
     const cachedTestItemsByName = new Map<string, DG.TreeViewNode>();
     let testGroup: DG.TreeViewGroup | null = null;
 
-    const cachedTest: typeof cached = [];
-    for (const entry of cached) {
-      if (entry.deployment.name.toLowerCase() === TEST_WORKFLOW) {
-        cachedTest.push(entry);
-        continue;
-      }
-      const funcName = sanitizeFuncName(entry.deployment.name, entry.deployment.id);
-      const existing = DG.Func.find({package: 'KnimeLink', name: funcName});
-      cachedItemsByName.set(entry.deployment.name,
-        addNode(entry.deployment, treeNode, existing.length > 0 ? existing[0] : undefined));
-    }
-    if (cachedTest.length > 0) {
-      testGroup = treeNode.group('Test workflows', undefined, false);
-      for (const entry of cachedTest) {
+    try {
+      const cached = loadCachedEntries();
+      const cachedTest: typeof cached = [];
+      for (const entry of cached) {
+        if (entry.deployment.name.toLowerCase() === TEST_WORKFLOW) {
+          cachedTest.push(entry);
+          continue;
+        }
         const funcName = sanitizeFuncName(entry.deployment.name, entry.deployment.id);
         const existing = DG.Func.find({package: 'KnimeLink', name: funcName});
-        cachedTestItemsByName.set(entry.deployment.name,
-          addNode(entry.deployment, testGroup, existing.length > 0 ? existing[0] : undefined));
+        cachedItemsByName.set(entry.deployment.name,
+          addNode(entry.deployment, treeNode, existing.length > 0 ? existing[0] : undefined));
       }
+      if (cachedTest.length > 0) {
+        testGroup = treeNode.group('Test workflows', undefined, false);
+        for (const entry of cachedTest) {
+          const funcName = sanitizeFuncName(entry.deployment.name, entry.deployment.id);
+          const existing = DG.Func.find({package: 'KnimeLink', name: funcName});
+          cachedTestItemsByName.set(entry.deployment.name,
+            addNode(entry.deployment, testGroup, existing.length > 0 ? existing[0] : undefined));
+        }
+      }
+    }
+    catch (e: any) {
+      errors.push(`Failed to load cached functions: ${e?.message ?? e}`);
     }
 
     // Phase 2: Refresh from live API with progress
@@ -203,6 +209,37 @@ export class PackageFunctions {
     }
     if (errors.length > 0)
       grok.shell.warning(`KNIME: Failed to load some workflows:\n${errors.join('\n')}`);
+  }
+
+    @grok.decorators.func({
+    name: 'knimeListDeployments',
+    outputs: [{name: 'deployments', type: 'list'}],
+  })
+  static async knimeListDeployments(typeFilter: string): Promise<KnimeDeployment[]> {
+    return await getKnimeClient().listDeployments(typeFilter);
+  }
+
+  /** Register (or fetch existing) Datagrok function for a KNIME deployment. */
+  @grok.decorators.func({
+    name: 'knimeGetOrRegisterFunc',
+    outputs: [{name: 'func', type: 'func'}],
+  })
+  static async knimeGetOrRegisterFunc(
+    deploymentId: string,
+    deploymentName: string,
+    deploymentType: string,
+  ): Promise<DG.Func> {
+    const dep: KnimeDeployment = {id: deploymentId, name: deploymentName, type: deploymentType};
+    return await getOrRegisterFunc(dep, getKnimeClient());
+  }
+
+  /** Resolve the proxy URL for a workflow's SVG image (the diagram shown in the context panel). */
+  @grok.decorators.func({
+    name: 'knimeGetWorkflowImageUrl',
+    outputs: [{name: 'url', type: 'string'}],
+  })
+  static async knimeGetWorkflowImageUrl(workflowId: string): Promise<string | null> {
+    return await getKnimeClient().getWorkflowImageUrl(workflowId);
   }
 }
 

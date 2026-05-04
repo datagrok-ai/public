@@ -49,29 +49,42 @@ export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8A
     fields.push(new arrow.Field(name, type, true));
   }
 
-  const vectors: { [key: string]: arrow.Vector<any> } = {};
+  // Build column data positionally, not via an object map. JS object keys
+  // that look like non-negative integers (e.g. "0", "25", "100") are
+  // iterated by V8 in numeric order ahead of non-numeric keys, which would
+  // misalign the table columns against the schema for any DataFrame whose
+  // column names are numeric strings.
+  const childData: arrow.Data<any>[] = [];
   for (const field of fields) {
-    const name = field.name;
     const type = field.type;
-
+    let vec: arrow.Vector<any>;
     if (type instanceof arrow.Float64)
-      vectors[name] = arrow.vectorFromArray(arrays[name] as number[], type);
+      vec = arrow.vectorFromArray(arrays[field.name] as number[], type);
     else if (type instanceof arrow.Int32)
-      vectors[name] = arrow.vectorFromArray(arrays[name] as number[], type);
+      vec = arrow.vectorFromArray(arrays[field.name] as number[], type);
     else if (type instanceof arrow.TimestampMillisecond)
-      vectors[name] = arrow.vectorFromArray(arrays[name] as Date[], type);
+      vec = arrow.vectorFromArray(arrays[field.name] as Date[], type);
     else if (type instanceof arrow.Utf8)
-      vectors[name] = arrow.vectorFromArray(arrays[name] as string[], type);
+      vec = arrow.vectorFromArray(arrays[field.name] as string[], type);
     else if (type instanceof arrow.Int64)
-      vectors[name] = arrow.vectorFromArray(arrays[name] as (bigint | null)[], type);
+      vec = arrow.vectorFromArray(arrays[field.name] as (bigint | null)[], type);
     else if (type instanceof arrow.Bool)
-      vectors[name] = arrow.vectorFromArray(arrays[name] as boolean[], type);
+      vec = arrow.vectorFromArray(arrays[field.name] as boolean[], type);
     else
-      throw new Error(`Unsupported type for field ${name}`);
+      throw new Error(`Unsupported type for field ${field.name}`);
+    childData.push(vec.data[0]);
   }
 
   const schema = new arrow.Schema(fields);
-  const tableArrow = new arrow.Table(schema, vectors);
+  const length = childData.length === 0 ? 0 : childData[0].length;
+  const structData = arrow.makeData({
+    type: new arrow.Struct(fields),
+    length,
+    nullCount: 0,
+    children: childData,
+  });
+  const recordBatch = new arrow.RecordBatch(schema, structData);
+  const tableArrow = new arrow.Table([recordBatch]);
   return arrow.tableToIPC(tableArrow, asStream ? 'stream' : 'file');
 }
 

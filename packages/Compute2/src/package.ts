@@ -18,7 +18,7 @@ import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {OptimizerParams, runOptimizer} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import {OptimizerParams, runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {ModelCatalogView,
   startModelCatalog,
@@ -243,8 +243,8 @@ export class PackageFunctions {
   static async RunOptimizer(
     @grok.decorators.param({'type': 'object'}) params: OptimizerParams,
   ) {
-    const [, calls] = await runOptimizer(params);
-    return calls;
+    const fin = await runOptimizerFinalized(params);
+    return fin.calls;
   }
 
 

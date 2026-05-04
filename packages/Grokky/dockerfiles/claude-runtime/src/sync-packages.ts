@@ -3,8 +3,9 @@ import * as path from 'node:path';
 import AdmZip from 'adm-zip';
 import {request, requestBinary} from './shared-api-client';
 import {WORKSPACE} from './sync-utils';
+import {setInstalledPackages} from './installed-packages';
 
-interface PackageInfo {
+export interface PackageInfo {
   id: string;
   name: string;
   updatedOn?: string;
@@ -80,6 +81,7 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
   }
 
   const userId = path.basename(userDir);
+  setInstalledPackages(userId, packages);
   if (!packageCache.has(userId))
     packageCache.set(userId, new Map());
   const cached = packageCache.get(userId)!;
