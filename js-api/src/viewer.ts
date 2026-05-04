@@ -1,6 +1,6 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
-import {BitSet, DataFrame} from "./dataframe.js";
+import {BitSet, Column, DataFrame} from "./dataframe.js";
 import {Property, IProperty} from "./entities";
 import {IWidgetStatus, IRectBounds, Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
 import {_toJson} from "./utils_convert";
@@ -256,8 +256,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <Viewer>Viewer.fromType(VIEWER.CORR_PLOT, t, options);
   }
 
-  static densityPlot(t: DataFrame, options?: Partial<interfaces.IDensityPlotSettings>): Viewer<interfaces.IDensityPlotSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.DENSITY_PLOT, t, options);
+  static densityPlot(t: DataFrame, options?: Partial<interfaces.IDensityPlotSettings>): DensityPlotViewer {
+    return <DensityPlotViewer>Viewer.fromType(VIEWER.DENSITY_PLOT, t, options);
   }
 
   static form(t: DataFrame, options?: Partial<interfaces.IFormSettings>): Viewer<interfaces.IFormSettings> {
@@ -668,10 +668,30 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get onPointDoubleClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-double-click'); }
 }
 
+export class DensityPlotViewer extends Viewer<interfaces.IDensityPlotSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_DensityPlotViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+
+  disableAnnotationRegionDrawing(): void { api.grok_DensityPlotViewer_DisableAnnotationRegionDrawing(this.dart); }
+}
+
 export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
   constructor(dart: any) {
     super(dart);
   }
+
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_HistogramViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+
+  disableAnnotationRegionDrawing(): void { api.grok_HistogramViewer_DisableAnnotationRegionDrawing(this.dart); }
 
   get onBinsSelected(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-select-bins'); }
   get onLineSelected(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-select-line'); }
@@ -687,6 +707,22 @@ export class BarChartViewer extends Viewer<interfaces.IBarChartSettings> {
   resetView(): void{
     api.grok_BarChartViewer_ResetView(this.dart);
   }
+
+  /** The aggregated value column the chart is currently rendering — i.e.
+   *  `valueAggrType(valueColumnName)` grouped by `splitColumnName`. The bar
+   *  chart computes this internally on each refresh; expose it so callers can
+   *  read the displayed value-axis range without re-aggregating.
+   *  Returns `null` when the chart has not refreshed yet. */
+  getAggregatedValueColumn(): Column | null {
+    return toJs(api.grok_BarChartViewer_GetAggregatedValueColumn(this.dart));
+  }
+
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_BarChartViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+
+  disableAnnotationRegionDrawing(): void { api.grok_BarChartViewer_DisableAnnotationRegionDrawing(this.dart); }
 
   get onCategoryClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-bar-chart-on-category-clicked'); }
   get onCategoryHovered(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-bar-chart-on-category-hovered'); }
@@ -721,6 +757,13 @@ export class BoxPlot extends Viewer<interfaces.IBoxPlotSettings> {
 
   get viewport(): Rect { return toJs(api.grok_CanvasViewportViewer_Get_Viewport(this.dart)); }
   set viewport(viewport: Rect) { api.grok_CanvasViewportViewer_SetViewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
+
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_BoxPlotViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+
+  disableAnnotationRegionDrawing(): void { api.grok_BoxPlotViewer_DisableAnnotationRegionDrawing(this.dart); }
 
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-boxplot-reset-view'); }
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }

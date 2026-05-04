@@ -30,6 +30,7 @@ General:
 | Bin To Range | boolean |  |
 | Show Bin Selector | boolean |  |
 | Back Color | number |  |
+| Lasso Tool | boolean | When true, lasso area selector is used instead of the rectangular one when drawing annotation regions. |
 | Row Source | string | Determines the rows shown on the plot. |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
@@ -45,6 +46,8 @@ General:
 | Invert Color Scheme | boolean |  |
 | Color Transform Type | string |  |
 | Linear Color Scheme | list |  |
+| Formula Font | string |  |
+| Annotation Font | string |  |
 | Controls Font | string | Viewer controls elements font. |
 | **X** | | |
 | Show X Axis | boolean |  |
@@ -62,6 +65,12 @@ General:
 | Y Max | number |  |
 | **Misc** | | |
 | Bins | number |  |
+| **Lines** | | |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| **Annotation regions** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
 | **Data** | | |
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
