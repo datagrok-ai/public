@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.api.search, projects.api.delete]
+--- */
 // Selector sources (grok-browser/references):
 //   widgets/dialog.md:22,29,61,69,74-92 — d4-dialog, button-OK, button-CANCEL, Dart input pattern
 //   projects.md:171-184 — Delete via JS API (grok.dapi.projects.delete)

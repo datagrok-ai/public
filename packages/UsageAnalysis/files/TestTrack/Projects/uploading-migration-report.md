@@ -98,7 +98,7 @@ mechanically auditable. No semantic content is added or removed.
     dialog with a Data Sync toggle, saves under the given name,
     closes, and reopens; would be reused by all 18 paths in this
     scenario plus the 8 paths still pending in scenarios 3, 5, 6.
-    Propose to Andrew for addition to `helpers-registry.yaml ::
+    Propose for external addition to `helpers-registry.yaml ::
     playwright_layer` if Step 2 of the orchestrator chain produces
     ≥4 paths that would reuse it (this scenario alone produces 18).
 - **Bug library consulted:** yes — `bug-library/projects.yaml` rev 2

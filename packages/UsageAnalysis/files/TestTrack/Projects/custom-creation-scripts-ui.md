@@ -13,7 +13,7 @@ moved_to_ui_reason: |
   Step 4 mutate System:DemoFiles/chem, Step 5 verify dynamic-data-
   resolution on reopen) had only environmental/infra blockers per D3
   classification (registered server function, per-test scratch folder,
-  qa-pw write perms on shared System: paths). Olena 2026-05-01
+  qa-pw write perms on shared System: paths). Per 2026-05-01
   decision: rather than tracking these as bucket-a gaps and waiting
   for env/helper backlog to close, mark the entire scenario as
   UI-only manual — the dynamic-data-resolution behavior is most
@@ -170,8 +170,8 @@ dated entry.
   exercised here. Atlas may benefit from a dedicated
   `projects.creation-script.*` sub_feature for non-URL-param
   creation-script flows (flagged in migration report Section 1
-  for Olena's review).
-- **No spec / no automation tracking.** Per Olena 2026-05-01 decision,
+  for review).
+- **No spec / no automation tracking.** Per 2026-05-01 decision,
   this scenario is fully manual. No corresponding `-spec.ts` exists.
   No bucket-a coverage gaps tracked in `coverage-gaps/projects.md`
   for this scenario (excluded — see "Test cases marked UI-only"

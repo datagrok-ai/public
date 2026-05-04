@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync]
+--- */
 // Selector sources (grok-browser/references):
 //   widgets/dialog.md:22 — `.d4-dialog` root selector
 //   widgets/dialog.md:29,61 — `[name="button-OK"]` (preferred over .ui-btn-ok)

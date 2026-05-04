@@ -99,15 +99,15 @@ Expected:
   `manual_only`, `coverage_exceptions`, `help_docs`, `impl_docs` are
   all empty. Scenario quality is bounded by source-derived behavior
   only; the curated path through this surface should be added when
-  Olesia / Olena enrich `projects.yaml`.
+  `projects.yaml` is enriched externally.
 - **Deferrals:**
   - File-storage and relation sub-APIs (`projects.api.files.*`,
     `projects.api.relations.*`) — deferred. Real dependency
     cited (per A-MERIT-02 / Lattice Rule 13): file-upload contract
     requires fixture binaries already on the server, which depend
     on a curated test data set that is not yet in
-    `helpers-registry.yaml`. To be picked up after Olesia adds a
-    fixture-builder helper for project files.
+    `helpers-registry.yaml`. To be picked up after a
+    fixture-builder helper for project files is added.
   - Namespace endpoints (`projects.api.namespaces.*`) — deferred.
     Requires a pre-existing namespace tree with known names; the
     `helpers-registry.yaml` does not yet expose a namespace-fixture

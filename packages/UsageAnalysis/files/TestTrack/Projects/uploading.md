@@ -26,6 +26,23 @@ own pair of tables, performs its own link/join, then saves and reopens.
 Cleanup between cases is the responsibility of the test harness
 (close all views before the next case).
 
+**Spaces prelude (Cases 4–6 only):** before running any Spaces-based
+case, create a Space named `test-projects-demo` and add `demog.csv`
+from `System:DemoFiles` to it via JS API:
+
+```js
+const space = await grok.dapi.spaces.createRoot('test-projects-demo');
+const client = await grok.dapi.spaces.spaceClient(space.id);
+const file = (await grok.dapi.files.list('System:DemoFiles', false, 'demog.csv'))[0];
+await client.addEntity(file, /*link=*/true);
+```
+
+**Spaces postlude (after Cases 4–6):** delete the Space:
+
+```js
+await grok.dapi.spaces.delete(space);
+```
+
 ## Scenarios
 
 ### Matrix: Table source combinations
@@ -51,17 +68,19 @@ verification.
 
 ### Case 1: Browse > Files + Browse > Files (Link Tables)
 
-1. Open **Browse** > **Files** > `System:Demo`.
-2. Double-click `SPGI_v2_infinity.csv` — wait for the table to open.
-3. Go back to **Browse** > **Files** > `System:Demo`.
-4. Double-click `SPGI_v2.csv` — wait for the table to open.
+1. Open **Browse** > **Files** > `System:AppData` > `Chem` > `tests`.
+2. Double-click `spgi-100.csv` — wait for the table to open.
+3. Go back to **Browse** > **Files** > `System:AppData` > `Chem` > `tests`.
+4. Double-click `spgi-100.csv` again — wait for the second table tab
+   to open (Datagrok auto-disambiguates names: `spgi-100` and
+   `spgi-100 (2)`).
 5. Go to **Data** > **Link Tables**:
-   - Table 1: `SPGI_v2_infinity`, Table 2: `SPGI_v2`
+   - Table 1: `spgi-100`, Table 2: `spgi-100 (2)`
    - Link column: `ID`
    - Link type: **Selection to filter**
    - Click **OK**
-6. **Verify:** select rows in `SPGI_v2_infinity` — corresponding rows
-   in `SPGI_v2` are filtered.
+6. **Verify:** select rows in `spgi-100` — corresponding rows
+   in `spgi-100 (2)` are filtered.
 7. **Save with Data Sync ON:**
    - **File** > **Save Project** (or Ctrl+S)
    - In the Save Project dialog, ensure the **Data sync** toggle is
@@ -84,8 +103,8 @@ verification.
 
 ### Case 2: Query result + Query result (Link Tables)
 
-1. Open **Browse** > **Databases** > **Postgres** > **NorthwindTest**.
-2. Find the query `PostgressAll`.
+1. Open **Browse** > **Platform** > **Functions** > **Queries**.
+2. Find the query `Samples:PostgresCustomers`.
 3. Run it (right-click > **Run** or double-click) — wait for the result
    table to open.
 4. Run the same query again to get a second result table in the
@@ -117,12 +136,13 @@ verification.
 
 ### Case 3: Query result + Browse > Files (Link Tables)
 
-1. Open **Browse** > **Databases** > **Postgres** > **NorthwindTest**.
-2. Run query `PostgressAll` — wait for the result table to open.
-3. Open **Browse** > **Files** > `System:Demo`.
-4. Double-click `SPGI_v2.csv` — wait for the table to open.
+1. Open **Browse** > **Platform** > **Functions** > **Queries**.
+2. Run query `Samples:PostgresCustomers` — wait for the result table
+   to open.
+3. Open **Browse** > **Files** > `System:AppData` > `Chem` > `tests`.
+4. Double-click `spgi-100.csv` — wait for the table to open.
 5. Go to **Data** > **Link Tables**:
-   - Table 1: query result, Table 2: `SPGI_v2`
+   - Table 1: query result, Table 2: `spgi-100`
    - Link column: `ID`
    - Link type: **Selection to filter**
    - Click **OK**
@@ -145,14 +165,18 @@ verification.
 
 ### Case 4: Spaces + Spaces (Link Tables)
 
-1. Open the **SPGIs** space: navigate to **Browse** > **Spaces** >
-   **SPGIs** (or open `https://dev.datagrok.ai/s/SPGIs`).
-2. Double-click `SPGI.csv` — wait for the table to open.
-3. Go back to the **SPGIs** space.
-4. Double-click `SPGI_v2.csv` — wait for the table to open.
+> **Prelude:** ensure the `test-projects-demo` Space exists with
+> `demog.csv` added (see Setup section above).
+
+1. Open the **test-projects-demo** space: navigate to **Browse** >
+   **Spaces** > **test-projects-demo**.
+2. Double-click `demog.csv` — wait for the table to open.
+3. Go back to the **test-projects-demo** space.
+4. Double-click `demog.csv` again — wait for the second table tab
+   to open (auto-disambiguated as `demog (2)`).
 5. Go to **Data** > **Link Tables**:
-   - Table 1: `SPGI`, Table 2: `SPGI_v2`
-   - Link column: `ID`
+   - Table 1: `demog`, Table 2: `demog (2)`
+   - Link column: any shared key in `demog.csv`
    - Link type: **Selection to filter**
    - Click **OK**
 6. **Verify:** linking works.
@@ -174,12 +198,15 @@ verification.
 
 ### Case 5: Spaces + Browse > Files (Link Tables)
 
-1. Open the **SPGIs** space and double-click `SPGI.csv`.
-2. Open **Browse** > **Files** > `System:Demo` and double-click
-   `SPGI_v2.csv`.
+> **Prelude:** ensure the `test-projects-demo` Space exists with
+> `demog.csv` added (see Setup section above).
+
+1. Open the **test-projects-demo** space and double-click `demog.csv`.
+2. Open **Browse** > **Files** > `System:AppData` > `Chem` > `tests`
+   and double-click `spgi-100.csv`.
 3. Go to **Data** > **Link Tables**:
-   - Table 1: `SPGI`, Table 2: `SPGI_v2`
-   - Link column: `ID`
+   - Table 1: `demog`, Table 2: `spgi-100`
+   - Link column: any shared key column
    - Link type: **Selection to filter**
    - Click **OK**
 4. **Verify:** linking works.
@@ -200,12 +227,15 @@ verification.
 
 ### Case 6: Spaces + Query result (Link Tables)
 
-1. Open the **SPGIs** space and double-click `SPGI.csv`.
-2. Open **Browse** > **Databases** > **Postgres** > **NorthwindTest**
-   and run query `PostgressAll`.
+> **Prelude:** ensure the `test-projects-demo` Space exists with
+> `demog.csv` added (see Setup section above).
+
+1. Open the **test-projects-demo** space and double-click `demog.csv`.
+2. Open **Browse** > **Platform** > **Functions** > **Queries** and
+   run query `Samples:PostgresCustomers`.
 3. Go to **Data** > **Link Tables**:
-   - Table 1: `SPGI`, Table 2: query result
-   - Link column: `ID`
+   - Table 1: `demog`, Table 2: query result
+   - Link column: any shared key column
    - Link type: **Selection to filter**
    - Click **OK**
 4. **Verify:** linking works.
@@ -265,8 +295,8 @@ verification.
 
 ### Case 8: Browse > Files + Pivot Table (Add to workspace)
 
-1. Open **Browse** > **Files** > `System:Demo`.
-2. Double-click `SPGI_v2.csv` — wait for the table to open.
+1. Open **Browse** > **Files** > `System:AppData` > `Chem` > `tests`.
+2. Double-click `spgi-100.csv` — wait for the table to open.
 3. Go to **Data** > **Pivot Table**.
 4. Configure the pivot table:
    - Rows: select a categorical column (e.g. `Country`).
@@ -325,11 +355,13 @@ verification.
   `upload-project.md` instead. Surfaced as candidate fixture set
   `uploading-18-projects` for chain analysis if any future scenario
   needs a wide projects-list fixture.
-- Cases 4–6 require a pre-configured **SPGIs** Space on the test
-  server; on environments without it, Cases 4–6 will fail at the
-  Spaces-navigation step. This is an environment dependency, not a
-  test-content dependency. The original 2026-03-09 run flagged this
-  by skipping Cases 4–8 ("No Spaces set up on release server").
+- Cases 4–6 use the inline `test-projects-demo` Space prelude (see
+  Setup section) — the Space is created via JS API at the start of
+  the case bundle and deleted at the end, so no pre-existing
+  server-side Space is required. The original 2026-03-09 run flagged
+  the prior pre-provisioned-Space formulation as blocked ("No Spaces
+  set up on release server"); the inline-prelude pattern closes that
+  env dependency.
 - Cases 7–9 produce derivative tables (joins, pivots, aggregates)
   alongside the source tables; the `Data sync` toggle applies to the
   source tables only — derivative tables are persisted as part of

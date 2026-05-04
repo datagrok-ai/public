@@ -39,10 +39,11 @@ no tear-down between steps within a chain.
    `beforeAll` block.
 2. **Recipient identity for Share operations:** required for steps 2
    and 5 (right-click Share dialog). Same recipient pattern as
-   `share-project.md`: a registered user (e.g. `Olena Ahadzhanian`)
-   AND/OR an email recipient (auto-creates a user account on the
-   server). The Automator stage owns `afterAll` cleanup of any
-   auto-created accounts.
+   `share-project.md`: the recipient is the placeholder user
+   `<RECIPIENT_USERNAME_TBD>` (single test account, pending
+   provisioning) AND/OR an email recipient (auto-creates a user
+   account on the server). The Automator stage owns `afterAll`
+   cleanup of any auto-created accounts.
 3. The browser session must be authenticated as the project owner
    (otherwise the Save Copy and Save modes will be unavailable in
    the project menu).

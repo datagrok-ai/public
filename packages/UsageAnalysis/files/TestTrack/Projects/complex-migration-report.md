@@ -132,7 +132,7 @@ dropped.
 - **Decision log queried:** yes — `decision-log.yaml` rev 10 read.
   Key cross-references:
   - `mig-2026-04-29-fixture-placeholder` directly applies — "second
-    user" placeholder used in steps 12-13 per Olena's decision.
+    user" placeholder used in steps 12-13 per the decision.
     Not re-asked.
   - `atlas-2026-04-30-add-projects-shell-share-via-context-menu` +
     `atlas-2026-04-30-cascade-share-via-context-menu` — Invariant

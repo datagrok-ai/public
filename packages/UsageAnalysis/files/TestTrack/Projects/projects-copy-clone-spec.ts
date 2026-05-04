@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.shell.open, projects.api.save, projects.add-relation, projects.add-link]
+--- */
 // Selector sources (grok-browser/references):
 //   widgets/dialog.md:22,29,61,69,74-92 — d4-dialog, button-OK, button-CANCEL, Dart input pattern
 //   projects.md:71-79 — Copy with link / Clone semantics documented;

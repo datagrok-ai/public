@@ -147,7 +147,7 @@ cases derivable from the steps:
   closed). Migrated body preserves the gap with a documented note
   rather than silently renumbering, to keep parity with the source
   for D-SAN-02 auditability. Flag for retro: should the gap be
-  closed in a follow-up source edit by Olena (out of Migrator
+  closed in a follow-up source edit by external review (out of Migrator
   scope), or kept as documentation of the source state?
 - **Email-recipient identity for the email-invite step.** The
   original does not specify the email address. The Automator stage

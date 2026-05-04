@@ -108,7 +108,7 @@ For each `<projectName>` in the upstream-produced project list:
   `mig-2026-04-29-bug-removed`, the historical github-3752 bug
   ("Deleting a project fails with FK violation on
   view_layouts_columns / table_columns") was removed from
-  `bug-library/projects.yaml` (rev 2) per Olena 2026-04-29 ("bad
+  `bug-library/projects.yaml` (rev 2) per 2026-04-29 ("bad
   exemplar"). The atlas critical_path
   `delete-with-view-layouts` that originally provided regression
   coverage for this bug was also deleted in that cleanup. As a

@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.view.browse, projects.api.search, projects.shell.open]
+--- */
 // Selector sources (grok-browser/references):
 //   widgets/dialog.md:22,29,61,69,74-92 — d4-dialog root, button-OK, button-CANCEL, Dart input pattern
 //   projects.md:232 — SAVE ribbon button is the reliable Save Project trigger

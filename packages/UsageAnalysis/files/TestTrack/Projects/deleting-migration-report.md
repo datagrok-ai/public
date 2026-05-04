@@ -80,7 +80,7 @@ migrated body Notes), making it discoverable from either side.
   delete-flow as of rev 2.** The historical github-3752 bug
   (FK violation on delete) was REMOVED from bug-library per
   `decision-log.yaml :: migration_decisions :: mig-2026-04-29-bug-removed`
-  ("bad exemplar per Olena 2026-04-29"). The associated atlas
+  ("bad exemplar 2026-04-29"). The associated atlas
   critical_path `delete-with-view-layouts` was also deleted in
   that cleanup (per
   `mig-2026-04-29-atlas-cascade-completion`). As a result,

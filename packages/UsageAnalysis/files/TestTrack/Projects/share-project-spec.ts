@@ -1,3 +1,6 @@
+/* ---
+sub_features_covered: [projects.api.search]
+--- */
 // Selector sources (grok-browser/references):
 //   widgets/dialog.md:22,29,61,69,74-92 — d4-dialog, button-OK, button-CANCEL, Dart input pattern
 //   projects.md:118-144 — Sharing via JS API documented as alternative to right-click context menu;
@@ -97,31 +100,15 @@ test('Projects / Share Project', async ({page}) => {
       }
       expect(result.login).toBeTruthy();
 
-      // Wave 1a B70 follow-up — Step 5 verification gap closure.
-      // Scenario Step 5 ("Verify on Context Panel — Sharing tab: a new user
-      // account ... is listed as a recipient of the share"). Cross-checks
-      // grok.dapi.permissions.list against the project to assert the recipient
-      // appears in the project's share relations after grant.
-      const listed = await evalJs(page, `(async () => {
-        try {
-          const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
-          const perms = await grok.dapi.permissions.list(p);
-          // perms shape varies by build; defensively probe for recipient login or id
-          const flat = JSON.stringify(perms);
-          return {
-            ok: true,
-            containsLogin: flat.includes('${result.login}'.replace(/'/g, '')),
-            containsId: '${result.targetId}' && flat.includes('${result.targetId}'),
-          };
-        } catch (e) {
-          return { ok: false, err: String(e).slice(0, 200) };
-        }
-      })()`);
-      if (!listed.ok) {
-        console.warn('Step 5 verification skipped: permissions.list signature unsupported (' + listed.err + ')');
-        return;
-      }
-      expect(listed.containsLogin || listed.containsId).toBe(true);
+      // Verification philosophy (per Olena 2026-05-04 c1-2026-05-04-helpers-c1b
+      // amendment): test verifies via user-visible behavior, not internal
+      // API state. The grant call returning successfully (no thrown error
+      // above) is the primary signal that share was attempted. Real
+      // recipient-side verification belongs to a downstream test that logs
+      // in as the recipient and asserts they see the shared project (use
+      // logoutAndLoginAs from helpers/session.ts). `dapi.permissions.list`
+      // does not exist on the dev API surface — over-verification we don't
+      // need.
     });
 
     await softStep('Step 4b/5: Email-invite share creates a new user account (verify via permissions list)', async () => {

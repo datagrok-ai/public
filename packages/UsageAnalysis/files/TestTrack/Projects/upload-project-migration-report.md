@@ -44,7 +44,7 @@
     `helpers.playwright.projects.uploadDemogWithViewers(page)` — a
     Playwright-layer counterpart to `uploadProject` that drives the
     Save Project dialog and dismisses the Share dialog. Propose to
-    Andrew for addition to `helpers-registry.yaml :: playwright_layer`
+    external review for addition to `helpers-registry.yaml :: playwright_layer`
     if Step 2 of the orchestrator chain produces ≥2 scenarios that
     would reuse it.
 - **Bug library consulted:** yes — `bug-library/projects.yaml` is

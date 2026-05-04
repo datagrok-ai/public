@@ -36,8 +36,12 @@ per scenario-chains rev 2).
    the Automator stage will set this up via a `beforeAll` block using
    `js-api-replay` of `upload-project.md`'s save flow OR by reusing
    an in-process fixture builder.
-2. **Recipient identity for the registered-user share:** `Olena Ahadzhanian`
-   (literal account name, as in the original).
+2. **Recipient identity for the registered-user share:** the share
+   target is the group `<RECIPIENT_GROUP_USERNAME_TBD>` (containing
+   both test accounts). Per-user verification in Step 5 references
+   the individual recipient account `<RECIPIENT_USERNAME_TBD>`. Both
+   placeholders are literal angle-bracketed tokens to be replaced by
+   sed once the recipient group + user accounts are provisioned.
 
 ## Scenarios
 
@@ -45,9 +49,25 @@ per scenario-chains rev 2).
 
 1. Go to **Browse** > **Dashboards**.
 2. Use the search bar to find the `demog` project.
-3. Right-click the project and select **Share**.
-4. In the Share dialog, share the project with a registered user —
-   `Olena Ahadzhanian`.
+3. Locate the project entity for the JS-API share path:
+   ```js
+   const p = await grok.dapi.projects.filter('name = "demog"').first();
+   ```
+4. Share the project with the recipient group via JS API (replaces
+   the original right-click → Share UI flow because the recipient
+   group `<RECIPIENT_GROUP_USERNAME_TBD>` is the canonical share
+   target until per-user accounts land):
+   ```js
+   const g = await grok.dapi.groups.filter('name = "<RECIPIENT_GROUP_USERNAME_TBD>"').first();
+   await grok.dapi.permissions.grant(p, g, /*edit=*/false);
+   ```
+5. **Recipient verification (placeholder).** The per-user verification
+   step ("the project appears in `<RECIPIENT_USERNAME_TBD>`'s
+   Shared-with-me list and opens correctly") is deferred pending
+   provisioning of the second test user account
+   `<RECIPIENT_USERNAME_TBD>`. Once available, this step will log in
+   as that user (via the re-auth helper Helper 3
+   `helpers.playwright.session.logoutAndLoginAs`) and verify open.
 
 > **UI-only steps moved to `share-project-ui.md`** (preserving original
 > numbering for cross-reference):
