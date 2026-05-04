@@ -94,7 +94,6 @@ The following components are licensed under the BSD 2-Clause License (full text 
 | shelf_rest        | (vendored)   | Anders Holmgren      |
 | shelf_route       | (vendored)   | Anders Holmgren      |
 | synchronized      | 1.5.0+1      | Alex Tekartik        |
-| twitter           | 0.5.2        | Adam Singer          |
 
 ## 3. MIT
 
