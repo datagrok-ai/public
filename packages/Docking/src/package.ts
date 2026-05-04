@@ -18,6 +18,40 @@ import { addColorCoding, buildComparisonTable, formatColumns, getRemarksFromPdb,
 export * from './package.g';
 export const _package = new DG.Package();
 
+function makeProlifWidget(params: {
+  protein: string;
+  ligand?: string;
+  ligand_resname?: string;
+}): DG.Widget {
+  const host = ui.div([ui.loader()], 'd4-empty-parent');
+  // Datagrok requires all script inputs to be present; defaults in the script
+  // header only apply to UI invocation, not to grok.functions.call.
+  const fullParams = {
+    protein: params.protein,
+    ligand: params.ligand ?? '',
+    ligand_resname: params.ligand_resname ?? '',
+  };
+  (async () => {
+    try {
+      const html = await grok.functions.call(
+        'BiostructureViewer:ProteinLigandInteractionDiagram', fullParams
+      ) as string;
+      ui.empty(host);
+      const iframe = document.createElement('iframe');
+      iframe.srcdoc = html;
+      iframe.style.cssText = 'width:100%; height:550px; border:0;';
+      iframe.setAttribute('sandbox', 'allow-scripts');
+      host.append(iframe);
+    } catch (err) {
+      ui.empty(host);
+      host.append(ui.divText(
+        `Could not compute interactions: ${err instanceof Error ? err.message : String(err)}`
+      ));
+    }
+  })();
+  return new DG.Widget(host);
+}
+
 
 export class PackageFunctions{
   @grok.decorators.func()
@@ -183,6 +217,21 @@ export class PackageFunctions{
   static async autodockWidget(
     @grok.decorators.param({'options':{'semType':'Molecule3D'}}) molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
     return await PackageFunctions.getAutodockSingle(molecule);
+  }
+
+  @grok.decorators.panel({
+    name: 'Protein-Ligand Interactions',
+    condition: 'Docking:isApplicableAutodock(molecule)',
+  })
+  static async dockingInteractionsWidget(
+    @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
+  ): Promise<DG.Widget> {
+    const pose = molecule.value as string;
+    const receptorData = await getReceptorData(pose);
+    const receptor = typeof receptorData.data === 'string'
+      ? receptorData.data
+      : new TextDecoder().decode(receptorData.data as Uint8Array);
+    return makeProlifWidget({protein: receptor, ligand: pose});
   }
 
   @grok.decorators.func()

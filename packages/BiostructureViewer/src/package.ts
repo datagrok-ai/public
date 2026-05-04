@@ -51,6 +51,40 @@ export const _package: BsvPackage = new BsvPackage();
 
 const dataDir = 'Admin:Data/PDB/CHEMBL2366517/';
 
+function makeProlifWidget(params: {
+  protein: string;
+  ligand?: string;
+  ligand_resname?: string;
+}): DG.Widget {
+  const host = ui.div([ui.loader()], 'd4-empty-parent');
+  // Datagrok requires all script inputs to be present; defaults in the script
+  // header only apply to UI invocation, not to grok.functions.call.
+  const fullParams = {
+    protein: params.protein,
+    ligand: params.ligand ?? '',
+    ligand_resname: params.ligand_resname ?? '',
+  };
+  (async () => {
+    try {
+      const html = await grok.functions.call(
+        'BiostructureViewer:ProteinLigandInteractionDiagram', fullParams
+      ) as string;
+      ui.empty(host);
+      const iframe = document.createElement('iframe');
+      iframe.srcdoc = html;
+      iframe.style.cssText = 'width:100%; height:550px; border:0;';
+      iframe.setAttribute('sandbox', 'allow-scripts');
+      host.append(iframe);
+    } catch (err) {
+      ui.empty(host);
+      host.append(ui.divText(
+        `Could not compute interactions: ${err instanceof Error ? err.message : String(err)}`
+      ));
+    }
+  })();
+  return new DG.Widget(host);
+}
+
 export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
@@ -227,6 +261,44 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbId: string
   ): Promise<DG.Widget> {
     return await pdbInfoWidget(pdbId);
+  }
+
+  @grok.decorators.func()
+  static hasNonWaterHetatm(molecule: string): boolean {
+    if (!molecule) return false;
+    // Skip AutoDock poses — they're handled by the Docking package's own panel
+    // and don't carry the receptor in the cell value.
+    if (molecule.includes('binding energy')) return false;
+    // Require both protein (ATOM records) and a non-water HETATM ligand —
+    // otherwise the script has nothing meaningful to compute.
+    if (!/^ATOM/m.test(molecule)) return false;
+    return /^HETATM.{11}(?!HOH|WAT|H2O)/m.test(molecule);
+  }
+
+  @grok.decorators.panel({
+    name: 'Protein-Ligand Interactions',
+    condition: 'BiostructureViewer:hasNonWaterHetatm(molecule)',
+  })
+  static async pdbInteractionsWidget(
+    @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
+  ): Promise<DG.Widget> {
+    return makeProlifWidget({protein: molecule.value as string});
+  }
+
+  @grok.decorators.panel({name: 'Protein-Ligand Interactions'})
+  static async pdbIdInteractionsWidget(
+    @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbId: string
+  ): Promise<DG.Widget> {
+    try {
+      const resp = await grok.dapi.fetchProxy(`https://files.rcsb.org/download/${pdbId}.pdb`);
+      if (!resp.ok)
+        return new DG.Widget(ui.divText(`Could not fetch PDB ${pdbId}`));
+      return makeProlifWidget({protein: await resp.text()});
+    } catch (err) {
+      return new DG.Widget(ui.divText(
+        `Error fetching ${pdbId}: ${err instanceof Error ? err.message : String(err)}`
+      ));
+    }
   }
 
   // -- Test apps --
