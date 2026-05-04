@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.5.3 (WIP)
+
+PLS Regression: skip non-numerical columns when training and report column name on type errors
+
 ## 1.5.2 (2026-04-24)
 
 Fix the column_list issue in PCA

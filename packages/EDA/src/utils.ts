@@ -38,7 +38,7 @@ const INCORRECT_CUTOFF_MES = 'cutoff must be non-negative.';
 /** Check column type */
 export function checkColumnType(col: DG.Column): void {
   if ((col.type != DG.COLUMN_TYPE.FLOAT) && (col.type != DG.COLUMN_TYPE.INT))
-    throw new Error(UNSUPPORTED_COLUMN_TYPE_MES + col.type);
+    throw new Error(`${UNSUPPORTED_COLUMN_TYPE_MES}${col.type} (column '${col.name}')`);
 }
 
 /** Check missing values */

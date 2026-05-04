@@ -822,7 +822,10 @@ export class PackageFunctions {
     df: DG.DataFrame,
     predictColumn: DG.Column,
     @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '10', 'initialValue': '3', 'description': 'Number of latent components.'}}) components: number): Promise<Uint8Array> {
-    const features = df.columns;
+    const numericalCols = df.columns.toList().filter((c) => c.matches('numerical'));
+    if (numericalCols.length < 1)
+      throw new Error('PLS Regression requires at least one numerical (int or float) feature column.');
+    const features = DG.DataFrame.fromColumns(numericalCols).columns;
 
     const model = new PlsModel();
     await model.fit(
