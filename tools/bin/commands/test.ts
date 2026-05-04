@@ -21,7 +21,7 @@ import {setAlphabeticalOrder} from '../utils/order-functions';
 const testInvocationTimeout = 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'no-playwright'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright'];
 
 const curDir = process.cwd();
 
@@ -250,7 +250,7 @@ export async function test(args: TestArgs): Promise<boolean> {
   process.env.TARGET_PACKAGE = packageName;
   let res = await runTesting(args);
 
-  if (!args['no-playwright']) {
+  if (!args['skip-playwright']) {
     const ptDir = playwrightRunner.hasPlaywrightTests(curDir);
     if (ptDir) {
       const ptRes = await playwrightRunner.runPlaywrightTests(curDir, ptDir, args, args.host ?? '');
@@ -526,7 +526,7 @@ interface TestArgs {
   f?: string,
   params?: string,
   logfailed?: boolean | string,
-  'no-playwright'?: boolean,
+  'skip-playwright'?: boolean,
 }
 
 interface TestResult {
