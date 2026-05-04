@@ -6,9 +6,11 @@ import {syncPackages} from './sync-packages';
 import {syncSharedConnections} from './sync-shared-connections';
 import {loadPackageKnowledge} from './package-knowledge-tool';
 import {getInstalledPackages} from './installed-packages';
+import {ensureUserDir, getUserDir} from './user-dir';
+import {buildStagedWorkspace} from './staged-workspace';
 
+export {ensureUserDir, getUserDir, userIdFromKey} from './user-dir';
 
-const USERS_DIR = '/users';
 export const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
 
 // ── Shared types ───────────────────────────────────────────────────────
@@ -73,53 +75,6 @@ export async function collectFiles(connId: string, dirPath: string): Promise<Rem
     }
   }
   return files;
-}
-
-// ── User ID extraction ─────────────────────────────────────────────────
-
-function userIdFromKey(apiKey: string): string {
-  try {
-    const token = apiKey.startsWith('Bearer ') ? apiKey.slice(7) : apiKey;
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
-    const id = payload.sub ?? payload.usr?.id;
-    if (!id) {
-      console.warn('user-files: JWT has no sub/usr.id, falling back to "default"');
-      return 'default';
-    }
-    return id;
-  } catch {
-    console.log('user-files: apiKey is not a JWT, using fallback user ID');
-    return apiKey.length > 64 ? 'default' : apiKey;
-  }
-}
-
-function getUserDir(apiKey: string): string {
-  return path.join(USERS_DIR, userIdFromKey(apiKey));
-}
-
-// ── Directory setup ────────────────────────────────────────────────────
-
-async function ensureUserDir(apiKey: string): Promise<string> {
-  const dir = getUserDir(apiKey);
-  console.log(`user-files: ensuring user dir ${dir}`);
-  await fs.mkdir(path.join(dir, 'agents'), {recursive: true});
-
-  const link = path.join(dir, 'workspace');
-  try {
-    const target = await fs.readlink(link);
-    if (target !== WORKSPACE) {
-      console.warn(`user-files: symlink ${link} points to ${target} instead of ${WORKSPACE}, recreating`);
-      await fs.rm(link);
-      await fs.symlink(WORKSPACE, link);
-    }
-  } catch (e: any) {
-    if (e.code === 'ENOENT') {
-      await fs.symlink(WORKSPACE, link);
-      console.log(`user-files: created workspace symlink ${link} -> ${WORKSPACE}`);
-    } else
-      throw e;
-  }
-  return dir;
 }
 
 // ── List agent files on disk ───────────────────────────────────────────
@@ -222,6 +177,15 @@ async function doSync(
         console.warn('package-agents: sync failed:', e.message);
       }
     });
+
+    const installed = getInstalledPackages(userId);
+    if (installed) {
+      try {
+        await buildStagedWorkspace(dir, installed.keys());
+      } catch (e: any) {
+        console.warn('staged-workspace: build failed:', e.message);
+      }
+    }
   }
 
   if (scope === 'all')

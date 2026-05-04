@@ -6,6 +6,7 @@ import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 import {syncUserFiles, generatePackageIndex, WORKSPACE} from './sync-utils';
+import {ensureUserDir} from './user-dir';
 import {createPackageKnowledgeServer} from './package-knowledge-tool';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} from './workspace-sync';
 const PORT = 5355;
@@ -17,8 +18,13 @@ Output ONLY the exact stdout of the command — no preamble, no explanation, not
 
 const DATAGROK_PROMPT = `\
 You are Datagrok Code Assistant — an AI coding agent embedded in the Datagrok data analytics platform.
-You have access to the Datagrok public repository at ${WORKSPACE}, including the JS API source,
-API samples, and documentation.
+You have access to the Datagrok public repository at \`workspace/\` (relative to your current working
+directory), including the JS API source, API samples, and documentation. This view contains only
+packages installed on this instance — uninstalled packages are not present.
+
+ALWAYS use paths under \`workspace/\` (e.g. \`workspace/packages/Chem/...\`, \`workspace/js-api/src/...\`).
+NEVER use \`/workspace/...\` as an absolute path — that path is outside your scope and access to it
+is blocked.
 
 The "## Available Packages" table below lists the curated knowledge index for packages installed
 on this instance. For those, call get_package_knowledge(name) first — it returns authoritative
@@ -37,7 +43,7 @@ apiRef path to find the function you need. Do NOT Glob/Grep package directories 
 ApiSamples / help/ to discover a package's APIs — the apiRef is authoritative.
 
 Only when no package matches the request should you fall back to searching the codebase:
-js-api/src/ (core API), packages/ApiSamples/ (usage examples), help/ (docs).
+workspace/js-api/src/ (core API), workspace/packages/ApiSamples/ (usage examples), workspace/help/ (docs).
 
 ## Code Execution
 
@@ -61,6 +67,9 @@ in multiple ways (which plot type, which column, which kind of cleanup), you MUS
 to clarify before acting. NEVER guess when there are multiple valid options.`;
 
 const MAX_AGENT_FILES_IN_PROMPT = 50;
+
+const USER_WORKSPACE_PATTERN = /\/users\/[\w.-]+\/workspace/g;
+const WORKSPACE_ACCESS_PATTERN = /\/workspace(?:[/"'\s\\]|$)/;
 
 function buildSystemPrompt(mode?: string, agentFiles?: string[], packageIndex?: string | null): string {
   if (mode === 'bash') return BASH_EXEC_PROMPT;
@@ -316,14 +325,15 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const active: ActiveQuery = {abortController, queryHandle: null, pendingInputResolve: null};
   registerActiveQuery(sid, active);
 
-  let userDir: string | undefined;
+  const userDir = data.apiKey ? await ensureUserDir(data.apiKey) : undefined;
+  const userId = userDir ? path.basename(userDir) : undefined;
+
   let agentFiles: string[] | undefined;
   const apiUrl = apiUrlFromMcpUrl(mcpUrl);
   if (apiUrl && data.apiKey) {
     try {
       console.log('handleMessage: syncing user files...');
       const result = await syncUserFiles(apiUrl, data.apiKey);
-      userDir = result.dir;
       agentFiles = result.files;
       console.log(`handleMessage: user dir=${userDir}, ${agentFiles?.length ?? 0} agent file(s)`);
     } catch (e: any) {
@@ -336,8 +346,6 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
     'mcp__datagrok__db_list_tables', 'mcp__datagrok__db_describe_tables',
     'mcp__datagrok__db_list_joins', 'mcp__datagrok__db_try_sql',
   ]);
-
-  const userId = userDir ? path.basename(userDir) : undefined;
 
   let gotResult = false;
   try {
@@ -355,6 +363,16 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
           }, {once: true});
         });
         return {behavior: 'allow' as const, updatedInput};
+      }
+
+      const inputStr = JSON.stringify(input ?? '');
+      const stripped = inputStr.replace(USER_WORKSPACE_PATTERN, '');
+      if (WORKSPACE_ACCESS_PATTERN.test(stripped)) {
+        console.log(`canUseTool: blocked /workspace reference in ${toolName}`);
+        return {
+          behavior: 'deny' as const,
+          message: 'Direct access to /workspace is blocked. Use cwd-relative `workspace/...` paths (e.g. `workspace/packages/Chem/...`) instead.',
+        };
       }
 
       return {behavior: 'allow' as const, updatedInput: input};
@@ -404,6 +422,9 @@ app.get('/ws', upgradeWebSocket(() => {
       } catch {
         return emit(sender, {type: 'error', sessionId: '', message: 'Invalid JSON'});
       }
+
+      if (data.apiKey)
+        ensureUserDir(data.apiKey).catch((e: any) => console.warn('user-dir pre-hook:', e.message));
 
       if (data.type === 'abort') {
         handleAbort(sender, data);

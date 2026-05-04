@@ -86,6 +86,25 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
     packageCache.set(userId, new Map());
   const cached = packageCache.get(userId)!;
 
+  const installedNames = new Set(packages.map((p) => p.name));
+  const agentsDir = path.join(userDir, 'agents');
+  try {
+    const existing = await fs.readdir(agentsDir);
+    const sortedNames = [...installedNames].sort((a, b) => b.length - a.length);
+    const orphans = existing.filter((f) => !sortedNames.some((n) => f.startsWith(`${n}-`)));
+    for (const f of orphans)
+      await fs.rm(path.join(agentsDir, f), {force: true});
+    if (orphans.length)
+      console.log(`package-agents: removed ${orphans.length} orphan file(s)`);
+  } catch {
+    // agents dir may not exist yet
+  }
+
+  for (const cachedName of [...cached.keys()]) {
+    if (!installedNames.has(cachedName))
+      cached.delete(cachedName);
+  }
+
   const wsPackages = await getWorkspacePackages();
 
   if (packageName) {
