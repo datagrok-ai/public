@@ -1,12 +1,20 @@
 /**
  * Cochran-Armitage trend test for incidence data.
  *
+ * Original references: Cochran (1954) Biometrics 10:417–451; Armitage (1955)
+ * Biometrics 11:375–386. Modern textbook treatment: Agresti, Categorical
+ * Data Analysis, 3rd ed., 2013, §6.4.
+ *
  * - `cochranArmitageBasic` — original `statistics_fixed.py` API: returns
  *   `{statistic, p_value}` with `null` on degenerate input. Always uses
  *   default scores `0..k-1`, binomial variance, two-sided alternative.
- * - `cochranArmitage` — modified API (Buonaccorsi 2014, Zhou 2017): scores,
- *   alternative, variance method, optional modified statistic. Raises on
- *   invalid input, returns `Z=0, p=1` on degenerate input.
+ * - `cochranArmitage` — extended API with scores, alternative, choice of
+ *   binomial vs hypergeometric (fixed-margin) variance, and an optional
+ *   robust ("modified") statistic σ²_m = Σ tᵢ(dᵢ−d̄)²·p̂ᵢ(1−p̂ᵢ) that does
+ *   not assume equal proportions under H₀ (score-test sandwich form;
+ *   Freidlin, Zheng, Li & Gastwirth, Hum. Hered. 53:146–152, 2002;
+ *   Buonaccorsi, Laake & Veierød, Stat. Methods Med. Res. 23(3):218–243,
+ *   2014). Raises on invalid input, returns `z=0, p=1` on degenerate input.
  */
 
 import {normalCdf, normalSf} from '../distributions';
@@ -44,7 +52,7 @@ export function cochranArmitageBasic(
   if (denomSq <= 0) return {statistic: null, pValue: null};
 
   const z = num / Math.sqrt(denomSq);
-  const p = 2 * (1 - normalCdf(Math.abs(z)));
+  const p = 2 * normalSf(Math.abs(z));
   return {statistic: z, pValue: p};
 }
 
@@ -220,11 +228,24 @@ export interface ThresholdStep {
 }
 
 /**
- * Williams-type sequential threshold test for proportions (Young 1985).
+ * Sequential threshold test for proportions: Young (1987), "The Cochran–
+ * Armitage Test for Trends or Thresholds in Proportions," in Risk Assessment
+ * in Setting National Priorities, Springer (doi:10.1007/978-1-4757-6443-7_45).
  *
  * Walks from the lowest dose, pooling each non-significant group into a
  * cumulative "control". Stops at the first significant comparison, marking
  * that group as the Effect Level (EL) and the prior groups as NOELs.
+ *
+ * Note: this is *not* the Williams (1971, Biometrics 27:103–117; 1972,
+ * Biometrics 28:519–531) test, which is a step-down isotonic-regression
+ * trend test for continuous Gaussian data using PAVA-fitted means and
+ * Williams' tabulated critical values. Young's procedure is the analogous
+ * idea applied to binomial proportions via the Cochran–Armitage statistic.
+ *
+ * Šidák α-adjustment is applied across the k−1 sequential comparisons by
+ * default. Closed testing (Marcus, Peritz & Gabriel 1976) would already
+ * control FWER without α-adjustment, so the default is conservative; set
+ * `adjustAlpha: false` to disable.
  */
 export function thresholdTest(
   counts: NumericInput,
