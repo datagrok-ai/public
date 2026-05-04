@@ -12,6 +12,7 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/UsageAnalysis"
   },
+  "playwrightTests": "files/TestTrack",
   "dependencies": {
     "@datagrok-libraries/test": "^1.1.0",
     "@datagrok-libraries/utils": "^4.6.5",
@@ -45,6 +46,7 @@
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "devDependencies": {
+    "@playwright/test": "^1.47.0",
     "@types/color-hash": "^1.0.2",
     "@types/select2": "^4.0.55",
     "@typescript-eslint/eslint-plugin": "^5.32.0",

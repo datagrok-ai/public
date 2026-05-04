@@ -14,13 +14,14 @@ const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 import * as Papa from 'papaparse';
 import * as testUtils from '../utils/test-utils';
+import * as playwrightRunner from '../utils/playwright-runner';
 import {BrowserOptions, loadTestsList, runBrowser, ResultObject, saveCsvResults, printBrowsersResult, mergeBrowsersResults, Test, OrganizedTests as OrganizedTest, timeout, addColumnToCsv} from '../utils/test-utils';
 import {setAlphabeticalOrder} from '../utils/order-functions';
 
 const testInvocationTimeout = 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'no-playwright'];
 
 const curDir = process.cwd();
 
@@ -247,7 +248,30 @@ export async function test(args: TestArgs): Promise<boolean> {
       }
   }
   process.env.TARGET_PACKAGE = packageName;
-  const res = await runTesting(args);
+  let res = await runTesting(args);
+
+  if (!args['no-playwright']) {
+    const ptDir = playwrightRunner.hasPlaywrightTests(curDir);
+    if (ptDir) {
+      const ptRes = await playwrightRunner.runPlaywrightTests(curDir, ptDir, args, args.host ?? '');
+      // mergeBrowsersResults assumes both inputs have a header row; an empty
+      // Puppeteer CSV (filter matched zero tests) breaks the merge. Take the
+      // Playwright CSV verbatim in that case, otherwise merge.
+      if (!res.csv || res.csv.trim().split('\n').length < 2) {
+        res.csv = ptRes.csv;
+        res.passedAmount += ptRes.passedAmount;
+        res.failedAmount += ptRes.failedAmount;
+        res.skippedAmount += ptRes.skippedAmount;
+        res.failed = res.failed || ptRes.failed;
+        res.verbosePassed = (res.verbosePassed || '') + ptRes.verbosePassed;
+        res.verboseFailed = (res.verboseFailed || '') + ptRes.verboseFailed;
+        res.verboseSkipped = (res.verboseSkipped || '') + ptRes.verboseSkipped;
+      } else if (ptRes.csv && ptRes.csv.trim().split('\n').length >= 2) {
+        res = await mergeBrowsersResults([res, ptRes]);
+      }
+    }
+  }
+
   if (args.csv) {
       res.csv = addColumnToCsv(res.csv, 'stress_test', args['stress-test'] ?? false);
       res.csv = addColumnToCsv(res.csv, 'benchmark', args.benchmark ?? false);
@@ -502,6 +526,7 @@ interface TestArgs {
   f?: string,
   params?: string,
   logfailed?: boolean | string,
+  'no-playwright'?: boolean,
 }
 
 interface TestResult {

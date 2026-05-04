@@ -1,5 +1,9 @@
 # Usage Analysis changelog
 
+## v.next
+
+* TestTrack: Wired Playwright suite (`files/TestTrack`) into `grok test` via the new `playwrightTests` opt-in; specs now authenticate via the same dev-key→token flow as the Puppeteer pass and run in CI alongside existing tests
+
 ## 2.5.1 ()
 
 * Click Events widget: Added date range filter, section labels, highlight zones tooltip
