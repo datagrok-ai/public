@@ -1,18 +1,23 @@
 // Static helpers
 import './color/color-static-helpers';
 import './qnum/qnum-static-helpers';
+import './utils/lru-cache';
 import './utils/string-utils-helpers';
 import './utils/utils-static-helpers';
 
 // Viewer JS API
 import './viewers/bar-chart-extras';
 import './viewers/bar-chart-js-api';
+import './viewers/box-plot-extras';
 import './viewers/box-plot-js-api';
+import './viewers/density-plot-js-api';
 import './viewers/histogram-extras';
 import './viewers/histogram-js-api';
+import './viewers/line-chart-extras';
 import './viewers/line-chart-js-api';
 import './viewers/pc-plot-js-api';
 import './viewers/pie-chart-js-api';
+import './viewers/scatter-plot-extras';
 import './viewers/scatter-plot-js-api';
 
 // Reported issues (regression coverage from JIRA tickets)
