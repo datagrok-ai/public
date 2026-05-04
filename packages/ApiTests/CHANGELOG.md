@@ -1,5 +1,9 @@
 # API Tests changelog
 
+## 1.10.3 (WIP)
+
+Add `Dapi: entities.save (polymorphic)` tests covering Project and DataConnection round-trip via `grok.dapi.entities.save`.
+
 ## 1.10.2 (2026-03-17)
 
 Additonal setOptions tests

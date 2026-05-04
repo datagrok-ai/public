@@ -27,6 +27,7 @@ import './dapi/groups';
 import './dapi/dapi';
 import './dapi/connection';
 import './dapi/entities';
+import './dapi/entities-save';
 import './dapi/layouts';
 import './dapi/packages';
 import './dapi/tables';
