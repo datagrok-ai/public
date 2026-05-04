@@ -3,7 +3,7 @@ import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
-import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
+import type {SDKMessage, HookCallback} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 import {WORKSPACE} from './constants';
 import {syncUserFiles, generatePackageIndex} from './sync/orchestrator';
@@ -71,6 +71,21 @@ const MAX_AGENT_FILES_IN_PROMPT = 50;
 
 const USER_WORKSPACE_PATTERN = /\/users\/[\w.-]+\/workspace/g;
 const WORKSPACE_ACCESS_PATTERN = /\/workspace(?:[/"'\s\\]|$)/;
+
+const blockWorkspaceAccess: HookCallback = async (input) => {
+  if (input.hook_event_name !== 'PreToolUse')
+    return {continue: true};
+  const inputStr = JSON.stringify(input.tool_input ?? '');
+  const stripped = inputStr.replace(USER_WORKSPACE_PATTERN, '');
+  if (WORKSPACE_ACCESS_PATTERN.test(stripped)) {
+    console.log(`PreToolUse: blocked /workspace reference in ${input.tool_name}`);
+    return {
+      decision: 'block',
+      reason: 'Direct access to /workspace is blocked. Use cwd-relative `workspace/...` paths (e.g. `workspace/packages/Chem/...`) instead.',
+    };
+  }
+  return {continue: true};
+};
 
 function buildSystemPrompt(mode?: string, agentFiles?: string[], packageIndex?: string | null): string {
   if (mode === 'bash') return BASH_EXEC_PROMPT;
@@ -188,6 +203,9 @@ function buildOptions(
     model: 'opus' as const,
     includePartialMessages: true,
     cwd: userDir || WORKSPACE,
+    hooks: {
+      PreToolUse: [{hooks: [blockWorkspaceAccess]}],
+    },
     ...(resume ? {resume} : {}),
   };
 }
@@ -365,17 +383,6 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
         });
         return {behavior: 'allow' as const, updatedInput};
       }
-
-      const inputStr = JSON.stringify(input ?? '');
-      const stripped = inputStr.replace(USER_WORKSPACE_PATTERN, '');
-      if (WORKSPACE_ACCESS_PATTERN.test(stripped)) {
-        console.log(`canUseTool: blocked /workspace reference in ${toolName}`);
-        return {
-          behavior: 'deny' as const,
-          message: 'Direct access to /workspace is blocked. Use cwd-relative `workspace/...` paths (e.g. `workspace/packages/Chem/...`) instead.',
-        };
-      }
-
       return {behavior: 'allow' as const, updatedInput: input};
     };
     const outputFormat = data.outputSchema ? {type: 'json_schema' as const, schema: data.outputSchema as Record<string, unknown>} : undefined;
