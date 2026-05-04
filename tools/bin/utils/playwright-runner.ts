@@ -135,8 +135,12 @@ function flattenSuites(
 }
 
 function rowsToCsv(rows: FlatRow[]): string {
-  const header = ['date', 'category', 'name', 'success', 'result', 'ms', 'skipped',
-    'logs', 'owner', 'package', 'widgetsDifference', 'flaking'];
+  // Column order must match what runTesting() actually serializes (see
+  // test-utils.ts:485 — `setOrder` is a no-op for the CSV writer, so the order
+  // is the natural order Dart's package-test emits). mergeBrowsersResults uses
+  // the first CSV's header, so any drift here misaligns Playwright rows.
+  const header = ['date', 'category', 'name', 'success', 'ms', 'skipped',
+    'owner', 'package', 'flaking', 'result', 'logs', 'widgetsDifference'];
   return Papa.unparse({fields: header, data: rows.map((r) => header.map((h) => (r as any)[h]))});
 }
 
