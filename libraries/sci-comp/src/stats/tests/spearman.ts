@@ -26,7 +26,7 @@ export function spearman(x: NumericInput, y: NumericInput): SpearmanResult {
   if (Number.isNaN(rho)) return {rho: null, pValue: null};
 
   if (rho === 1 || rho === -1) return {rho, pValue: 0};
-  const t = rho * Math.sqrt((n - 2) / (1 - rho * rho));
+  const t = rho * Math.sqrt((n - 2) / ((1 - rho) * (1 + rho)));
   return {rho, pValue: studentTTwoTail(t, n - 2)};
 }
 
