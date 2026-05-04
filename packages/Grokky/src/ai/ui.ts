@@ -352,8 +352,12 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
     forSession(client.onFinal, (evt) => {
       panel.cancelInputRequest();
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: evt.content}]});
-      panel.finalizeStreaming(evt.content, view);
+      // evt.content is the SDK's result.result — only the final assistant turn after the last
+      // tool call. Use the full accumulated chunk stream so finalizeStreaming sees every
+      // datagrok-exec block Claude emitted, including ones written before it invoked a tool.
+      const fullContent = accumulated || evt.content;
+      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
+      panel.finalizeStreaming(fullContent, view);
       chatSession.endSession();
       cleanup();
     });
