@@ -118,6 +118,21 @@ function pickFallbackNumericColumn(df: DG.DataFrame, exclude: (string | undefine
   return col ? col.name : null;
 }
 
+/** Returns `color` with `alpha` (0..1) applied via `DG.Color`, or undefined if it can't be parsed. */
+function dimColor(color: string | undefined | null, alpha: number): string | undefined {
+  if (!color)
+    return undefined;
+  try {
+    const c = DG.Color.fromHtml(color.trim());
+    if (c == null || Number.isNaN(c))
+      return undefined;
+    const a = Math.max(8, Math.min(255, Math.round(alpha * 255)));
+    return DG.Color.toHtml(DG.Color.setAlpha(c, a));
+  } catch {
+    return undefined;
+  }
+}
+
 export const DEFAULT_OPTIONS: EditorOptions = {
   allowEditDFLines: true,
 };
@@ -480,7 +495,11 @@ export interface EditorOptions {
 class Preview {
   public viewer: DG.Viewer;
   public dataFrame: DG.DataFrame;
-  
+
+  //Items from the inactive tab; rendered as ghosts only
+  public otherFormulaLineItems: DG.FormulaLine[] = [];
+  public otherAnnotationRegionItems: DG.AnnotationRegion[] = [];
+
   /** Original data frame (used for line chart to validate columns).*/
   private originalDataFrame?: DG.DataFrame;
 
@@ -854,11 +873,55 @@ class Preview {
     /** If there are no lines, try to set the axes as in the original Scatter Plot. */
     if (itemIdx < 0 && this.srcAxes)
       this.axes = this.srcAxes;
-    
+
     const clearMeta = (): void => {
       this.viewer.meta.annotationRegions.clear();
-      this.viewer.meta.formulaLines.clear();  
+      this.viewer.meta.formulaLines.clear();
     }
+
+    // Render non-current items as ghosts so the user keeps context for the line being edited.
+    // Color is dimmed in-place when possible (also fades the title); `opacity` is the fallback.
+    const GHOST = 0.4;
+    const fadeOpacity = (cur: number | undefined): number => Math.max(3, Math.round((cur ?? 30) * GHOST));
+    const addLineGhost = (line: DG.FormulaLine | undefined): void => {
+      if (!line || !line.visible)
+        return;
+      try {
+        const g = structuredClone(line);
+        const dimmed = dimColor(g.color, GHOST);
+        if (dimmed) {
+          g.color = dimmed;
+          g.opacity = 100;
+        } else
+          g.opacity = fadeOpacity(g.opacity);
+
+        this.viewer.meta.formulaLines.add(g);
+      } catch {}
+    };
+    const addRegionGhost = (region: DG.AnnotationRegion | undefined): void => {
+      if (!region || region.hidden)
+        return;
+      try {
+        const g = structuredClone(region);
+        const dimmed = dimColor(g.headerColor, GHOST);
+        if (dimmed) g.headerColor = dimmed;
+        g.opacity = fadeOpacity(g.opacity);
+        this.viewer.meta.annotationRegions.add(g);
+      } catch {}
+    };
+    const addGhosts = (skipIdx: number, skipIsLine: boolean): void => {
+      for (let i = 0; i < this.formulaLineItems.length; i++)
+        if (!skipIsLine || i !== skipIdx)
+          addLineGhost(this.formulaLineItems[i]);
+      for (let i = 0; i < this.annotationRegionItems.length; i++)
+        if (skipIsLine || i !== skipIdx)
+          addRegionGhost(this.annotationRegionItems[i]);
+
+      for (const line of this.otherFormulaLineItems)
+          addLineGhost(line);
+      for (const region of this.otherAnnotationRegionItems)
+          addRegionGhost(region);
+    };
 
     if (isFormulaLine) {
       try {
@@ -866,9 +929,10 @@ class Preview {
         const item = this.formulaLineItems[itemIdx];
         const previewItem = structuredClone(item);
         previewItem.visible = true;
-  
+
         /** Trying to show the item */
         clearMeta();
+        addGhosts(itemIdx, true);
         this.viewer.meta.formulaLines.add(previewItem);
         this.axes = this.getItemAxes(previewItem);
         return true;
@@ -882,9 +946,10 @@ class Preview {
         const item = this.annotationRegionItems[itemIdx];
         const previewItem = structuredClone(item);
         previewItem.hidden = false;
-  
+
         /** Trying to show the item */
         clearMeta();
+        addGhosts(itemIdx, false);
         this.viewer.meta.annotationRegions.add(previewItem);
         this.axes = this.getItemAxes(previewItem);
         return true;
@@ -1976,9 +2041,14 @@ export class FormulaLinesDialog {
   }
 
   private initPreview(src: DG.DataFrame | DG.Viewer): Preview {
-    return new Preview(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
+    const preview = new Preview(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
       this.host.viewerAnnotationRegionItems! ?? this.host.dframeAnnotationRegionItems!,
       src, this.creationControl.popupMenu);
+    // Viewer tab is shown first when present; DataFrame items become the ghosts.
+    const hasViewer = !!this.host.viewerFormulaLineItems;
+    preview.otherFormulaLineItems = (hasViewer ? this.host.dframeFormulaLineItems : undefined) ?? [];
+    preview.otherAnnotationRegionItems = (hasViewer ? this.host.dframeAnnotationRegionItems : undefined) ?? [];
+    return preview;
   }
 
   private initCreationControl(src: DG.DataFrame | DG.Viewer): CreationControl {
@@ -2063,6 +2133,9 @@ export class FormulaLinesDialog {
       this.preview.formulaLineItems = this.currentTable.formulaLineItems;
       this.editor.annotationRegionItems = this.currentTable.annotationRegionItems;
       this.preview.annotationRegionItems = this.currentTable.annotationRegionItems;
+      const isViewerTab = this.tabs.currentPane.name === ITEM_SOURCE.VIEWER;
+      this.preview.otherFormulaLineItems = (isViewerTab ? this.host.dframeFormulaLineItems : this.host.viewerFormulaLineItems) ?? [];
+      this.preview.otherAnnotationRegionItems = (isViewerTab ? this.host.dframeAnnotationRegionItems : this.host.viewerAnnotationRegionItems) ?? [];
       this.currentTable.setFirstItemAsCurrent();
     });
 
