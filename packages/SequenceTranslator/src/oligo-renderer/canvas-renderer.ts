@@ -25,7 +25,7 @@
 
 import {
   BASE_COLORS, FALLBACK_COLOR,
-  canonicalSugarSymbol,
+  canonicalPhosphateSymbol, canonicalSugarSymbol,
   ParsedDuplex, ParsedMonomer, ParsedNucleotide, ParsedStrand,
   resolveConjugate, resolvePhosphate, resolveSugar,
 } from './types';
@@ -364,9 +364,14 @@ function isModifiedSugar(sugar: string): boolean {
 }
 
 function drawLinkage(g: CanvasRenderingContext2D, link: LinkagePos): void {
+  // Only the canonical phosphate (`p` / aliased `P`) is treated as "no marker".
+  // Every other linkage — known PS / PS₂ / MeP, or unknown custom symbol that
+  // got a hash-derived color — gets a bar in the inter-chip gap so the user
+  // can see and hover it. Color comes from resolvePhosphate which is
+  // deterministic per symbol, so two distinct unknown symbols get distinct bars.
+  const canonical = canonicalPhosphateSymbol(link.phosphateSymbol);
+  if (canonical === 'p') return;
   const ps = resolvePhosphate(link.phosphateSymbol);
-  if (ps.meta.short !== 'PS' && ps.meta.short !== 'PS₂' && ps.meta.short !== 'MeP')
-    return; // only draw markers for non-canonical linkages
   const barW = Math.max(2.5, link.w * PS_BAR_RATIO);
   const barX = link.x + (link.w - barW) / 2;
   g.fillStyle = ps.color;

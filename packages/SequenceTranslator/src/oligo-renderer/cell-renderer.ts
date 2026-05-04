@@ -98,8 +98,14 @@ export class OligoNucleotideCellRenderer extends DG.GridCellRenderer {
     return m;
   }
 
+  /** Cache key for a cell's layout. Includes the column's `version` so any
+   * edit to the column (which bumps version) orphans previous cache entries
+   * — preventing onMouseMove from hit-testing a stale layout that was cached
+   * before the edit and not yet replaced by a fresh render(). */
   private cellKey(gridCell: DG.GridCell): string {
-    const colName = gridCell.tableColumn?.name ?? gridCell.gridColumn?.name ?? '?';
-    return `${colName}::${gridCell.tableRowIndex ?? -1}`;
+    const col = gridCell.tableColumn;
+    const colName = col?.name ?? gridCell.gridColumn?.name ?? '?';
+    const ver = col?.version ?? 0;
+    return `${colName}@${ver}::${gridCell.tableRowIndex ?? -1}`;
   }
 }
