@@ -3,9 +3,9 @@ import * as path from 'node:path';
 import * as YAML from 'yaml';
 import {z} from 'zod/v4';
 import {createSdkMcpServer, tool} from '@anthropic-ai/claude-agent-sdk';
-import {WORKSPACE} from './sync-utils';
-import {getInstalledPackages} from './installed-packages';
-import {userDirFromId} from './user-dir';
+import {WORKSPACE} from './constants';
+import {getInstalledPackages} from './user/installed-packages';
+import {userDirFromId} from './user/user-dir';
 
 export interface PackageKnowledge {
   packageName: string;

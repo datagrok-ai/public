@@ -1,9 +1,9 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import AdmZip from 'adm-zip';
-import {request, requestBinary} from './shared-api-client';
-import {WORKSPACE} from './sync-utils';
-import {setInstalledPackages} from './installed-packages';
+import {request, requestBinary} from '../shared-api-client';
+import {WORKSPACE} from '../constants';
+import {setInstalledPackages} from '../user/installed-packages';
 
 export interface PackageInfo {
   id: string;

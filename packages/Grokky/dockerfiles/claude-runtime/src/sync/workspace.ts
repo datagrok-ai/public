@@ -1,7 +1,7 @@
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {WORKSPACE} from './sync-utils';
-import {invalidatePackageKnowledgeCache} from './package-knowledge-tool';
+import {WORKSPACE} from '../constants';
+import {invalidatePackageKnowledgeCache} from '../package-knowledge-tool';
 
 const exec = promisify(execFile);
 const SYNC_INTERVAL_MS = 30 * 60 * 1000;

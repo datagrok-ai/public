@@ -1,4 +1,4 @@
-import type {PackageInfo} from './sync-packages';
+import type {PackageInfo} from '../sync/packages';
 
 const cache = new Map<string, Map<string, string>>();
 

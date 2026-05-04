@@ -1,8 +1,8 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import {request, downloadFile} from './shared-api-client';
-import type {ConnectionInfo, RemoteFileEntry} from './sync-utils';
-import {connectorPath, collectFiles} from './sync-utils';
+import {request, downloadFile} from '../shared-api-client';
+import type {ConnectionInfo} from './orchestrator';
+import {connectorPath, collectFiles} from './orchestrator';
 
 // Per-user file metadata cache: relative path → updatedOn timestamp.
 const userFileCache = new Map<string, Map<string, string>>();

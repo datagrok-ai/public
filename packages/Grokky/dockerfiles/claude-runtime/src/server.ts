@@ -5,10 +5,11 @@ import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
-import {syncUserFiles, generatePackageIndex, WORKSPACE} from './sync-utils';
-import {ensureUserDir} from './user-dir';
+import {WORKSPACE} from './constants';
+import {syncUserFiles, generatePackageIndex} from './sync/orchestrator';
+import {ensureUserDir} from './user/user-dir';
 import {createPackageKnowledgeServer} from './package-knowledge-tool';
-import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} from './workspace-sync';
+import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} from './sync/workspace';
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 

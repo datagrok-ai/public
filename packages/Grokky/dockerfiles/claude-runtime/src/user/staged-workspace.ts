@@ -1,6 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import {WORKSPACE} from './sync-utils';
+import {WORKSPACE} from '../constants';
 
 const PACKAGES_DIR = 'packages';
 const lastBuilt = new Map<string, string>();

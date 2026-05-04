@@ -1,17 +1,13 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import {runWithContext, request} from './shared-api-client';
-import {resolveHomeConnection, syncHomeFiles} from './sync-home-files';
-import {syncPackages} from './sync-packages';
-import {syncSharedConnections} from './sync-shared-connections';
-import {loadPackageKnowledge} from './package-knowledge-tool';
-import {getInstalledPackages} from './installed-packages';
-import {ensureUserDir, getUserDir} from './user-dir';
-import {buildStagedWorkspace} from './staged-workspace';
-
-export {ensureUserDir, getUserDir, userIdFromKey} from './user-dir';
-
-export const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
+import {runWithContext, request} from '../shared-api-client';
+import {resolveHomeConnection, syncHomeFiles} from './home-files';
+import {syncPackages} from './packages';
+import {syncSharedConnections} from './shared-connections';
+import {loadPackageKnowledge} from '../package-knowledge-tool';
+import {getInstalledPackages} from '../user/installed-packages';
+import {ensureUserDir, getUserDir} from '../user/user-dir';
+import {buildStagedWorkspace} from '../user/staged-workspace';
 
 // ── Shared types ───────────────────────────────────────────────────────
 
