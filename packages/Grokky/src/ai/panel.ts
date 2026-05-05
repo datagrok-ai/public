@@ -626,6 +626,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private tryAgain() {
     if (this._messages.length === 0)
       return; // should never happen, but just in case
+    if (this.runButtonTooltip === actionButtionValues.stop)
+      return;
     const inputs = this.getCurrentInputs();
     inputs.prompt = 'Please try again. ';
     this._onRunRequest.next({
@@ -640,6 +642,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   protected handleRun() {
     if (this._pendingInputResolve)
+      return;
+    if (this.runButtonTooltip === actionButtionValues.stop)
+      return;
+    if (!this.textArea.value.trim())
       return;
     const inputs = this.getCurrentInputs();
     this.textArea.value = '';
