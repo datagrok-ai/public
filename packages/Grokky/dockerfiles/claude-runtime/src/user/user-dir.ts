@@ -39,8 +39,7 @@ export function ensureUserDir(apiKey: string): Promise<string> {
     known.add(dir);
     console.log(`user-dir: ensured layout at ${dir}`);
     return dir;
-  })();
+  })().finally(() => inFlight.delete(dir));
   inFlight.set(dir, p);
-  p.finally(() => inFlight.delete(dir));
   return p;
 }

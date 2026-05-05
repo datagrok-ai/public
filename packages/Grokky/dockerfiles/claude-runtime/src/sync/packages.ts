@@ -21,7 +21,7 @@ async function getWorkspacePackages(): Promise<Set<string>> {
     return workspacePackages;
   try {
     const entries = await fs.readdir(path.join(WORKSPACE, 'packages'), {withFileTypes: true});
-    workspacePackages = new Set(entries.filter((e) => e.isDirectory()).map((e) => e.name));
+    workspacePackages = new Set(entries.filter((e) => e.isDirectory()).map((e) => e.name.toLowerCase()));
     console.log(`package-agents: found ${workspacePackages.size} workspace package(s)`);
   } catch {
     workspacePackages = new Set();
@@ -74,6 +74,13 @@ async function syncSinglePackage(userDir: string, pkg: PackageInfo, cached: Map<
 }
 
 export async function syncPackages(userDir: string, packageName?: string): Promise<void> {
+  const wsPackages = await getWorkspacePackages();
+
+  if (packageName && wsPackages.has(packageName.toLowerCase())) {
+    console.log(`package-agents: skipping workspace package ${packageName}`);
+    return;
+  }
+
   const packages = await request<PackageInfo[]>('GET', '/packages/published/current');
   if (!Array.isArray(packages) || !packages.length) {
     console.log('package-agents: no published packages found');
@@ -105,13 +112,7 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
       cached.delete(cachedName);
   }
 
-  const wsPackages = await getWorkspacePackages();
-
   if (packageName) {
-    if (wsPackages.has(packageName)) {
-      console.log(`package-agents: skipping workspace package ${packageName}`);
-      return;
-    }
     const pkg = packages.find((p) => p.name === packageName);
     if (!pkg) {
       console.log(`package-agents: package "${packageName}" not found among published`);
@@ -124,7 +125,7 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
   // Initial sync: fetch all, skip workspace packages
   console.log(`package-agents: syncing ${packages.length} published package(s), skipping ${wsPackages.size} workspace package(s)`);
   for (const pkg of packages) {
-    if (wsPackages.has(pkg.name)) {
+    if (wsPackages.has(pkg.name.toLowerCase())) {
       console.log(`package-agents: skipping workspace package ${pkg.name}`);
       continue;
     }
