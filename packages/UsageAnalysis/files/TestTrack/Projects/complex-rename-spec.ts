@@ -36,67 +36,15 @@ sub_features_covered: [projects.api.save, projects.shell.open]
 //     is NOT explicitly probed (would require source data mutation;
 //     out of scope here — see custom-creation-scripts-spec for that).
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {softStep, stepErrors} from '../spec-login';
 import {openTableFromFile} from '../helpers/openers';
+import {deleteProjectWithCleanup} from '../helpers/projects';
+import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 
-test.use(specTestOptions);
-
-async function evalJs(page: Page, script: string): Promise<any> {
-  return page.evaluate(script);
-}
+test.use(projectsTestOptions);
 
 async function closeAll(page: Page) {
   await evalJs(page, 'grok.shell.closeAll()');
-}
-
-async function saveProject(page: Page, name: string) {
-  // Phase B 2026-05-05: align with UITests platform pattern (scripts-layout.test.ts:415).
-  // `button[name="button-Save"]:visible` + `:first` is the verified selector;
-  // the legacy `button:has-text("SAVE")` text selector is intermittently
-  // intercepted by overlay banners in Playwright headed mode.
-  const saveBtn = page.locator('button[name="button-Save"]:visible').first();
-  await saveBtn.waitFor({timeout: 30_000, state: 'visible'});
-  await page.waitForTimeout(500);
-  try {
-    await saveBtn.click({timeout: 5_000});
-  } catch (_) {
-    await page.evaluate(() => {
-      const candidates = Array.from(document.querySelectorAll('button[name="button-Save"]'));
-      const visible = candidates.find(b => (b as HTMLElement).offsetParent !== null);
-      if (visible) (visible as HTMLElement).click();
-    });
-  }
-  const dialog = page.locator(
-    '.d4-dialog[name="dialog-Save-project"], .d4-dialog:has-text("Save project")',
-  ).first();
-  await dialog.waitFor({timeout: 15000});
-  const nameInput = dialog.locator(
-    'input[name="input-Name"], input[type="text"].ui-input-editor',
-  ).first();
-  await nameInput.fill(name);
-  await dialog.locator('button.ui-btn-ok, [name="button-OK"]').first().click();
-  // Auto-Share dialog dismissal — match by `dialog-Share-*` name-attr prefix
-  // (the title text uses server-PascalCased name, not literal `name`).
-  const shareDialog = page.locator(
-    '.d4-dialog[name^="dialog-Share-"], .d4-dialog:has-text("Share ")',
-  ).first();
-  if (await shareDialog.isVisible({timeout: 10000}).catch(() => false)) {
-    const cancel = shareDialog.locator(
-      '[name="button-CANCEL"], button.ui-btn-cancel, button:has-text("Cancel")',
-    ).first();
-    if (await cancel.isVisible({timeout: 2000}).catch(() => false))
-      await cancel.click();
-    else
-      await page.keyboard.press('Escape');
-    await expect(shareDialog).toBeHidden({timeout: 10000});
-  }
-}
-
-async function deleteProjectByName(page: Page, name: string) {
-  await evalJs(page, `(async () => {
-    const p = await grok.dapi.projects.filter('name = "${name}"').first();
-    if (p) await grok.dapi.projects.delete(p);
-  })()`);
 }
 
 test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-19212)', async ({page}) => {
@@ -106,9 +54,12 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
   const stamp = Date.now();
   const projectName = 'AutoTest-ComplexRename-' + stamp;
 
-  await loginToDatagrok(page);
+  await gotoApp(page);
+  await setupSession(page);
 
   let projectId: string | null = null;
+  let tableInfoId: string | null = null;
+  let layoutId: string | null = null;
 
   try {
     await softStep('Setup: open 2 source tables + join (sets up a referenced-table dependency)', async () => {
@@ -142,24 +93,43 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
     });
 
     await softStep('Save baseline project (Data Sync ON), capture project ID', async () => {
-      await saveProject(page, projectName);
-      // Capture project ID via shell.project — server PascalCases the name on
-      // UI save (AutoTest-ComplexRename- → AutoTestComplexRename), so the
-      // legacy filter-by-name lookup returns null. find-by-id is namespace/
-      // index-independent and works regardless of name normalization.
-      // Verified live 2026-05-05.
-      const id = await page.evaluate(async () => {
+      // Multi-table inline save — saveProjectWithProvenance helper saves
+      // only `tv.dataFrame` (the active TableView's df = joined). This
+      // scenario requires all 3 tables (src_a, src_b, joined) persisted
+      // so that renaming src_a inside the project breaks joined's
+      // reference (GROK-19212 trigger). Without src_a in the project
+      // payload, GROK-19212 is not exercisable.
+      const saved = await page.evaluate(async (n) => {
         const grok = (window as any).grok;
-        // Wait for shell.project.id to be populated post-save.
-        for (let i = 0; i < 30; i++) {
-          const pid = grok?.shell?.project?.id;
-          if (pid) return pid;
-          await new Promise((r) => setTimeout(r, 500));
+        const DG = (window as any).DG;
+        const project = DG.Project.create();
+        project.name = n;
+        const tables = Array.from(grok.shell.tables);
+        const tableInfoIds: string[] = [];
+        for (const df of tables as any[]) {
+          const ti = df.getTableInfo();
+          project.addChild(ti);
+          await grok.dapi.tables.uploadDataFrame(df);
+          await grok.dapi.tables.save(ti);
+          tableInfoIds.push(ti.id);
         }
-        return null;
-      });
-      expect(id).toBeTruthy();
-      projectId = id;
+        const tv = grok.shell.tv;
+        const layout = tv?.saveLayout?.();
+        if (layout) {
+          project.addChild(layout);
+          await grok.dapi.layouts.save(layout);
+        }
+        await grok.dapi.projects.save(project);
+        return {
+          projectId: project.id,
+          tableInfoIds,
+          layoutId: layout?.id ?? null,
+        };
+      }, projectName);
+      projectId = saved.projectId;
+      tableInfoId = saved.tableInfoIds[0] ?? null;
+      layoutId = saved.layoutId;
+      expect(projectId).toBeTruthy();
       // Server-side persistence verification via find-by-id.
       const exists = await page.evaluate(async (pid) => {
         const grok = (window as any).grok;
@@ -233,15 +203,12 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
     // round 2 — see header SR documentation. JS API setter rename behavior
     // on dev needs separate investigation before adding back.
   } finally {
-    if (projectId) {
-      await page.evaluate(async (pid) => {
-        try {
-          const grok = (window as any).grok;
-          const p = await grok.dapi.projects.find(pid);
-          if (p) await grok.dapi.projects.delete(p);
-        } catch {}
-      }, projectId).catch(() => {});
-    }
+    await deleteProjectWithCleanup(page, {
+      projectId: projectId ?? undefined,
+      tableInfoId: tableInfoId ?? undefined,
+    });
+    void layoutId; // layout cleanup deferred; deleteProjectWithCleanup
+                   // doesn't take layoutId yet — see helpers/projects.ts:866
     await closeAll(page);
   }
 

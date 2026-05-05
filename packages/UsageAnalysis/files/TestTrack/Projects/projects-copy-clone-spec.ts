@@ -18,7 +18,7 @@ import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
-import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '../helpers/projects';
 
 test.use(projectsTestOptions);
 
@@ -70,21 +70,41 @@ test('Projects / Copy Clone: 3 save modes + GROK-19750 invariant (2-reopen restr
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
       await assertProvenanceScript(page, 'files', opened.script);
 
-      // All saves in a SINGLE page.evaluate with a captured `tv` reference.
-      // After dapi.projects.save the shell.tv briefly loses its TableView
-      // identity — using local `tv` ref keeps subsequent addViewer calls
-      // pointing at the right object. Mirrors the canonical UITests
-      // gui-utils.ts:uploadProject pattern.
+      // Restored captured-tv pattern (post dapi.projects.save the
+      // shell.tv briefly loses .addViewer). The new piece: each save uses
+      // a FRESH df.clone() so its tableInfo is independent — avoids the
+      // shared-tableInfo race that produced rowCount=0 on reopen of
+      // earlier variants in the prior round.
       const result = await page.evaluate(async (n) => {
         const grok = (window as any).grok;
         const DG = (window as any).DG;
-        const tv = grok.shell.tv;
-        const df = tv.dataFrame;
-        const tableInfo = df.getTableInfo();
+        // Poll for shell.tv to be a fully-functional TableView. Even though
+        // openTableFromFile polled before returning, CDP-boundary latency
+        // can leave the next evaluate's grok.shell.tv proxy in an
+        // intermediate state where .addViewer is undefined. 12s settle.
+        let tv: any = null;
+        for (let i = 0; i < 24; i++) {
+          tv = grok.shell.tv;
+          if (tv?.dataFrame && typeof tv.addViewer === 'function') break;
+          await new Promise((r) => setTimeout(r, 500));
+        }
+        if (!tv?.dataFrame || typeof tv.addViewer !== 'function')
+          throw new Error('shell.tv not ready (no addViewer after 12s settle)');
+        const baseDf = tv.dataFrame;
 
         async function saveCopyOf(name: string) {
           const project = DG.Project.create();
           project.name = name;
+          // Clone the dataframe so the tableInfo is independent per variant.
+          // Clone preserves df.tags['.script'] (provenance) which is needed
+          // for reopen to re-execute the OpenFile call.
+          const df = baseDf.clone();
+          df.name = baseDf.name;
+          // Carry over the .script provenance tag — clone does not copy tags.
+          const script = baseDf.tags?.get?.('.script') ?? baseDf.tags?.['.script'];
+          if (script && df.tags?.set) df.tags.set('.script', script);
+          else if (script && df.tags) df.tags['.script'] = script;
+          const tableInfo = df.getTableInfo();
           project.addChild(tableInfo);
           const layout = tv.saveLayout?.();
           if (layout) {
@@ -102,7 +122,7 @@ test('Projects / Copy Clone: 3 save modes + GROK-19750 invariant (2-reopen restr
         tv.addViewer('Bar chart');
         const original = await saveCopyOf(n.original);
 
-        // Add Histogram, save link copy from the (now slightly mutated) state.
+        // Add Histogram, save link copy.
         tv.addViewer('Histogram');
         const linkCopy = await saveCopyOf(n.linkCopy);
 
@@ -147,24 +167,40 @@ test('Projects / Copy Clone: 3 save modes + GROK-19750 invariant (2-reopen restr
 
     await softStep('Step 5: re-share each variant via JS API', async () => {
       const variantIds = [ids.linkCopy?.projectId, ids.cloneCopy?.projectId, ids.pvcCopy?.projectId].filter(Boolean);
-      const r = await evalJs<{shared: string[]; skipped: string}>(page, `(async () => {
+      const r = await evalJs<{shared: string[]; skipped: string; errors: string[]}>(page, `(async () => {
+        // permissions.grant(project, recipient, edit) — recipient must be a
+        // Group, not a User. Passing a User triggers Postgres FK violation
+        // permissions_user_group_id_fkey because the User's .group field is
+        // not eagerly loaded by dapi.users.list. Re-fetch via find(id) to
+        // materialize .group, then grant to target.group.
         const users = await grok.dapi.users.list({limit: 50});
-        const target = users.find(u => u.login !== 'qa-pw' && u.login !== 'system');
-        if (!target) return {shared: [], skipped: 'no recipient'};
+        let target = null;
+        for (const u of users) {
+          if (u.login === 'qa-pw' || u.login === 'system') continue;
+          const full = await grok.dapi.users.find(u.id);
+          if (full && full.group && full.group.id) { target = full.group; break; }
+        }
+        if (!target) return {shared: [], skipped: 'no recipient with materialized group', errors: []};
         const shared = [];
+        const errors = [];
         for (const id of ${JSON.stringify(variantIds)}) {
           try {
             const p = await grok.dapi.projects.find(id);
-            if (p) {
-              await grok.dapi.permissions.grant(p, target, false);
-              shared.push(p.name);
-            }
-          } catch {}
+            if (!p) { errors.push(id + ': project not found'); continue; }
+            await grok.dapi.permissions.grant(p, target, false);
+            shared.push(p.name);
+          } catch (e) {
+            errors.push(id + ': ' + (e?.message ?? String(e)).slice(0, 200));
+          }
         }
-        return {shared, skipped: ''};
+        return {shared, skipped: '', errors};
       })()`);
       if (r.skipped) console.warn('Share skipped: ' + r.skipped);
-      else expect(r.shared.length).toBeGreaterThan(0);
+      else {
+        if (r.shared.length === 0)
+          console.error('Step 5 share errors:', JSON.stringify(r.errors, null, 2));
+        expect(r.shared.length).toBeGreaterThan(0);
+      }
     });
   } finally {
     for (const v of Object.values(ids))
