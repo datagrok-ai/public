@@ -248,7 +248,21 @@ export async function test(args: TestArgs): Promise<boolean> {
       }
   }
   process.env.TARGET_PACKAGE = packageName;
-  let res = await runTesting(args);
+  let res: ResultObject;
+  try {
+    res = await runTesting(args);
+  } catch (e: any) {
+    // Don't let Puppeteer-side failures (login error, browser crash) skip the
+    // Playwright pass — the two suites have independent auth and runtime paths,
+    // and we want at least one half of the run reported.
+    color.error(`Puppeteer pass failed: ${e?.message || e}`);
+    res = {
+      failed: true, verbosePassed: '', verboseSkipped: '',
+      verboseFailed: `Puppeteer pass failed: ${e?.message || e}\n`,
+      passedAmount: 0, skippedAmount: 0, failedAmount: 1, csv: '',
+      error: String(e?.message || e),
+    };
+  }
 
   if (!args['skip-playwright']) {
     const ptDir = playwrightRunner.hasPlaywrightTests(curDir);
