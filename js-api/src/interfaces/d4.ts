@@ -1,6 +1,788 @@
 /// this file was generated automatically from d4 classes declarations
 
 
+export interface IGridSettings {
+  controlsFont: string;
+
+  /// Indicates whether the grid is editable.
+  /// See also *Show Add New Row Icon*
+  allowEdit: boolean;
+
+  /// When [allowEditable] is true, shows the last virtual row that the user can edit.
+  /// This row gets appended to the underlying table as soon as any value is entered.
+  /// The grid should also be in the editable mode
+  showAddNewRowIcon: boolean;
+
+  /// Automatically adds a new row in the end of the dataframe when the last row is edited
+  /// The grid should also be in the editable mode
+  addNewRowOnLastRowEdit: boolean;
+
+  /// When [allowEditable] is true, allows user to remove the mouse over row.
+  /// The grid should also be in the editable mode
+  showRemoveRowIcon: boolean;
+
+  showColumnLabels: boolean;
+
+  /// When checked, friendly name gets shown underneath the column name.
+  showFriendlyName: boolean;
+
+  /// Column header height. If not specified, it is calculated automatically.
+  /// See also *Col Labels Orientation*, *Horz Col Labels Height*
+  colHeaderHeight: number;
+
+  /// Height of the column labels when the orientation is vertical,
+  /// and *Col Header Height* is not specified.
+  vertColLabelsHeight: number;
+
+  /// Height of the column labels when the orientation is horizontal,
+  /// and *Col Header Height* is not specified.
+  horzColLabelsHeight: number;
+
+  /// Applicable only to grid
+  rowHeight: number;
+
+  /// Indicates mouse-over row by drawing a vertical stripe on the row header
+  showMouseOverRowIndicator: boolean;
+
+  /// Indicates current row with the *Current Row Color*.
+  showCurrentRowIndicator: boolean;
+
+  sortByColumnNames: Array<string>;
+
+  sortTypes: Array<boolean>;
+
+  pinnedRowColumnNames: Array<string>;
+
+  pinnedRowValues: Array<string>;
+
+  /// Indicates whether the control is in the grid or heatmap mode.
+  /// Typically, you don't need to change it manually.
+  isGrid: boolean;
+
+  /// When set to false, default menu appears under the 'Grid' submenu.
+  topLevelDefaultMenu: boolean;
+
+  /// Whether items applicable to all viewers (such as Pickup Style) should
+  /// be shown in a popup menu. Also requires *Show Context Menu*.
+  showDefaultPopupMenu: boolean;
+
+  /// Mouse drag on the data cells selects both rows and columns
+  allowBlockSelection: boolean;
+
+  /// Shift+click on a header to select a column
+  /// Shift+mouse drag on the headers to select multiple columns
+  /// Ctrl+click to invert selection
+  /// Ctrl+Shift+click to deselect
+  allowColSelection: boolean;
+
+  /// Drag any cell (except the row number) to reorder rows
+  /// Drag the row number column to select rows
+  allowRowReordering: boolean;
+
+  /// Whether to sort when user double-clicks on the column header
+  allowSorting: boolean;
+
+  /// Mouse drag on the rows headers selects rows
+  /// Ctrl+click to invert selection
+  /// Shift+mouse drag to select multiple rows
+  /// Ctrl+Shift+mouse drag to unselect
+  allowRowSelection: boolean;
+
+  /// Right-click and drag to pan content
+  allowContentPanning: boolean;
+
+  showColumnGroups: boolean;
+
+  showRowHeader: boolean;
+
+  showRowGridlines: boolean;
+
+  /// Whether the "hamburger" menu should be shown for a column
+  /// when the mouse is over its header
+  allowColumnMenu: boolean;
+
+  /// Automatically scroll column into view when this column becomes current
+  autoScrollColumnIntoView: boolean;
+
+  /// Automatically scroll current row into view when it is set from outside
+  /// (for instance, as a result of clicking on a point in a scatter plot)
+  autoScrollRowIntoView: boolean;
+
+  /// Automatically resize column widths when row height is resized
+  autoResizeColumnWidths: boolean;
+
+  showColumnGridlines: boolean;
+
+  /// Reordering columns by dragging the header
+  allowColReordering: boolean;
+
+  /// Whether the current object (shown in the context panel) is changed
+  /// when you click on a column header.
+  allowChangeCurrentObject: boolean;
+
+  /// Whether row (rows) can be dragged out of the grid.
+  allowRowDragging: boolean;
+
+  extendLastColumn: boolean;
+
+  /// Resize rows by dragging the border between rows on a row header.
+  /// Applicable only to grid.
+  allowRowResizing: boolean;
+
+  /// Indicates the way colors are sampled in the heatmap mode when there is not enough
+  /// pixels on the screen for each row:
+  /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
+  /// False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all)
+  /// Applicable only to heatmap.
+  drawEveryRow: boolean;
+
+  /// Whether the context menu is shown
+  showContextMenu: boolean;
+
+  /// Whether to show notifications when the user tries to edit a read-only table
+  showReadOnlyNotifications: boolean;
+
+  /// Whether to show scrollbars in the heatmap mode
+  /// Note that scrollbars will still be visible if they are not "expanded"
+  showHeatmapScrollbars: boolean;
+
+  frozenColumns: number;
+
+  showCurrentCellOutline: boolean;
+
+  /// Color-coding that applies to all columns.
+  /// Additionally, each column can be individually color-coded.
+  colorCoding: keyof typeof GridColorCodingType;
+
+  defaultCellFont: string;
+
+  maxFontSize: number;
+
+  colHeaderFont: string;
+
+  /// Orientation of the column header text.
+  /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
+  /// In heat map mode, it depends on whether the text can fit in the area.
+  colLabelsOrientation: keyof typeof TextOrientation;
+
+  /// Resizing column header by dragging the border between the header and the first row
+  allowColHeaderResizing: boolean;
+
+  /// Resizing columns by dragging the border between column headers
+  allowColResizing: boolean;
+
+  missingValueColor: number;
+
+  selectedRowsColor: number;
+
+  selectedColsColor: number;
+
+  currentRowColor: number;
+
+  mouseOverRowColor: number;
+
+  mouseOverRowStripeColor: number;
+
+  backColor: number;
+
+  colHeaderTextColor: number;
+
+  colHeaderBackColor: number;
+
+  colHeaderMouseOverTextColor: number;
+
+  cellTextColor: number;
+
+  currentCellTextColor: number;
+
+  rowHeaderBackColor: number;
+
+  /// true: colors are scaled based on the global min/max in all numerical columns
+  /// false: colors are scaled based on the column min/max.
+  /// Applicable only to heatmap.
+  globalColorScaling: boolean;
+
+  /// Whether the heatmap should be color-coded (you might want to do it programmatically)
+  /// See also [globalColorScaling]
+  heatmapColors: boolean;
+
+  /// Controls grid tooltip visibility
+  showTooltip: string;
+
+  showLabels: keyof typeof VisibilityMode;
+
+  showCellTooltip: boolean;
+
+  /// Include currently visible columns in a tooltip
+  showVisibleColumnsInTooltip: boolean;
+
+  showColumnTooltip: boolean;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
+  rowTooltip: string;
+
+  marginLeft: number;
+
+  marginTop: number;
+
+  marginRight: number;
+
+  marginBottom: number;
+
+  allowStickyMeta: keyof typeof AllowStickyMetaType;
+
+  /// Heatmap horizontal scroll positions (maxRangeValue, minValue, maxValue)
+  heatmapHorzScroll: Array<number>;
+
+  /// Heatmap vertical scroll positions (maxRangeValue, minValue, maxValue)
+  heatmapVertScroll: Array<number>;
+
+  /// Determines whether newly added columns are added to the grid
+  syncNewColumns: boolean;
+
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
+
+  columnHeaderTypes: Array<string>;
+
+  cellStyle: any;
+
+  currentRowCellStyle: any;
+
+  columns: Array<any>;
+
+  isHeatmap: boolean;
+
+  maxHeatmapColumns: number;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  allowDynamicMenus: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export enum GridColorCodingType {
+  Auto = 'Auto',
+  All = 'All',
+  None = 'None',
+}
+
+export enum TextOrientation {
+  Auto = 'Auto',
+  Horz = 'Horz',
+  Vert = 'Vert',
+}
+
+export enum VisibilityMode {
+  Auto = 'Auto',
+  Always = 'Always',
+  Never = 'Never',
+}
+
+export enum AllowStickyMetaType {
+  Auto = 'Auto',
+  Always = 'Always',
+  Never = 'Never',
+}
+
+export enum RowSet {
+  All = 'All',
+  Filtered = 'Filtered',
+  Selected = 'Selected',
+  SelectedOrCurrent = 'SelectedOrCurrent',
+  FilteredSelected = 'FilteredSelected',
+  MouseOverGroup = 'MouseOverGroup',
+  CurrentRow = 'CurrentRow',
+  MouseOverRow = 'MouseOverRow',
+}
+
+export enum FlexPosition {
+  Left = 'Left',
+  Right = 'Right',
+  Top = 'Top',
+  Bottom = 'Bottom',
+}
+
+export interface IGridCellStyle {
+  font: string;
+
+  horzAlign: string;
+
+  vertAlign: string;
+
+  /// When defined, overrides the default cell tooltip
+  tooltip: string;
+
+  cursor: string;
+
+  textWrap: string;
+
+  /// Marker to be shown when the value does not fit in the cell
+  marker: string;
+
+  textColor: number;
+
+  backColor: number;
+
+  marginLeft: number;
+
+  marginRight: number;
+
+  marginTop: number;
+
+  marginBottom: number;
+
+  textVertical: boolean;
+
+  /// Applies to image columns only
+  imageScale: number;
+
+  /// Applies to image columns only
+  opacity: number;
+
+  clip: boolean;
+
+  /// For 'html' cell types only
+  element: any;
+
+  /// When defined, the cell editor becomes a combo box with the specified values
+  choices: Array<string>;
+
+}
+
+export interface IScatterPlotSettings {
+  /// Invalid are null values and not positive numbers if axis is logarithmic.
+  filterOutInvalid: boolean;
+
+  /// When true, filtered out points are rendered using *Filtered Out Rows Color*.
+  showFilteredOutPoints: boolean;
+
+  /// When true, scatter plot will zoom to an area defined by the range filters for X and Y columns,
+  /// even if *Zoom And Filter* property is not set to "Zoom by Filter".
+  axesFollowFilter: boolean;
+
+  /// Determines the relationship between table filter and scatter plot area:
+  /// * No action: they are disconnected
+  /// * Filter by zoom: scatter plot acts as a filter; as you zoom in, points get filtered out
+  /// * Zoom by filter: scatter plot focuses on the filtered points as the filter changes
+  /// * Pack and zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes.
+  zoomAndFilter: string;
+
+  /// A column to use on the X axis. Could be numerical or categorical.
+  x: string;
+  xColumnName: string;
+
+  /// Time unit map function for x column (applicable to dates only).
+  xMap: string;
+
+  /// A column to use on the Y axis. Could be numerical or categorical.
+  y: string;
+  yColumnName: string;
+
+  /// Time unit map function for y column (applicable to dates only).
+  yMap: string;
+
+  xAxisType: keyof typeof AxisType;
+
+  yAxisType: keyof typeof AxisType;
+
+  invertXAxis: boolean;
+
+  invertYAxis: boolean;
+
+  xMin: number;
+
+  yMin: number;
+
+  xMax: number;
+
+  yMax: number;
+
+  showVerticalGridLines: boolean;
+
+  showHorizontalGridLines: boolean;
+
+  showXAxis: boolean;
+
+  showYAxis: boolean;
+
+  showXSelector: boolean;
+
+  showYSelector: boolean;
+
+  /// Shows a distribution histogram along the X axis (at the top)
+  showXHistogram: boolean;
+
+  /// Shows a distribution histogram along the Y axis (on the right)
+  showYHistogram: boolean;
+
+  /// Number of bins for axis histograms
+  histogramBins: number;
+
+  /// Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*.
+  xWhiskerMin: string;
+  xWhiskerMinColumnName: string;
+
+  /// Point upper bound for x axis whiskers. Selecting it disables *X Whisker Range*.
+  xWhiskerMax: string;
+  xWhiskerMaxColumnName: string;
+
+  /// Point range for x axis whiskers. Applied only if *X Whisker Min* and *X Whisker Max* are not set.
+  xWhiskerRange: string;
+  xWhiskerRangeColumnName: string;
+
+  /// Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
+  yWhiskerMin: string;
+  yWhiskerMinColumnName: string;
+
+  /// Point upper bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
+  yWhiskerMax: string;
+  yWhiskerMaxColumnName: string;
+
+  /// Point range for y axis whiskers. Applied only if *Y Whisker Min* and *Y Whisker Max* are not set.
+  yWhiskerRange: string;
+  yWhiskerRangeColumnName: string;
+
+  xAxisLabelOrientation: string;
+
+  /// A column to be used for color-coding. Could be numerical or categorical.
+  /// If not set, *Filtered Rows Color* is used for markers that pass the filter.
+  /// Color palettes could defined either for columns in the column context panel,
+  /// or via *Linear Color Scheme* and *Categorical Color Scheme* properties.
+  color: string;
+  colorColumnName: string;
+
+  /// Categorical coloring time unit map function (applicable to dates only).
+  colorMap: string;
+
+  showColorSelector: boolean;
+
+  colorAxisType: keyof typeof AxisType;
+
+  invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
+
+  /// A numerical column to use for size-coding markers.
+  /// See also *Marker Min Size* and *Marker Max Size*.
+  size: string;
+  sizeColumnName: string;
+
+  showSizeSelector: boolean;
+
+  /// A categorical column that determines the shape of the markers.
+  markers: string;
+  markersColumnName: string;
+
+  /// Marker category time unit map function (applicable to dates only).
+  markersMap: string;
+
+  markerType: string;
+
+  // By default - automatic sizing based on current dataframe
+  markerDefaultSize: number;
+
+  markerOpacity: number;
+
+  /// Randomly shift (x, y) marker position up to the *Jitter Size* pixels.
+  /// Useful when multiple points fall on the same exact position.
+  /// If *Jitter Size Y* is defined, then *Jitter Size* shifts x only.
+  jitterSize: number;
+
+  /// Randomly shift y marker position up to the *Jitter Size Y* pixels.
+  jitterSizeY: number;
+
+  markerDrawBorder: boolean;
+
+  markerBorderWidth: number;
+
+  markerMinSize: number;
+
+  markerMaxSize: number;
+
+  /// When defined, a line would be drawn for each series (defined by the categorical color column)
+  /// using the order specified by "Lines Order"
+  linesOrder: string;
+  linesOrderColumnName: string;
+
+  /// When defined, lines are split into separate series by this categorical column instead of the color column.
+  linesBy: string;
+  linesByColumnName: string;
+
+  /// Defines the width of the lines connecting the markers. See **Lines Width**.
+  linesWidth: number;
+
+  /// Label columns to show next to the markers.
+  labelColumnNames: Array<string>;
+
+  /// Determines the rows shown on the scatter plot.
+  showLabelsFor: keyof typeof RowSet;
+
+  /// Determines how to show marker label:
+  /// * Always - show labels for all visible markers
+  /// * Auto - show labels only for markers where enough space is available
+  /// * Never - show no labels.
+  displayLabels: keyof typeof VisibilityMode;
+
+  /// Determines whether to show column names next to label values.
+  showLabelNamedColumns: keyof typeof VisibilityMode;
+
+  /// If checked, display a label content as marker.
+  useLabelAsMarker: boolean;
+
+  /// To display labels separately or as markers (works for non-text labels).
+  labelColorAsMarker: boolean;
+
+  /// Marker size in which label is inscribed.
+  labelAsMarkerSize: number;
+
+  /// Label inner content size.
+  labelContentSize: number;
+
+  /// Regression line visibility (toggle by pressing R)
+  showRegressionLine: boolean;
+
+  showRegressionLineEquation: boolean;
+
+  showSpearmanCorrelation: boolean;
+
+  showPearsonCorrelation: boolean;
+
+  showMeanAbsoluteError: boolean;
+
+  showRootMeanSquareError: boolean;
+
+  /// Supports up to 20 categories. Otherwise, a common regression line is shown.
+  regressionPerCategory: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
+
+  /// Controls the indication of the current row
+  showCurrentPoint: boolean;
+
+  /// Controls the indication of the mouse-over row
+  showMouseOverPoint: boolean;
+
+  /// Highlight 'mouse-over' rows (such as the ones that fall into a histogram bin that
+  /// the mouse is currently hovering over).
+  showMouseOverRowGroup: boolean;
+
+  /// When true, selected markers are highlighted using the selected rows color.
+  /// When false, selected markers use their regular color coding.
+  showSelectedRows: boolean;
+
+  /// When true, clicking on the background (no point hit) clears the current selection.
+  /// Set to false to preserve the selection when accidentally clicking outside of the markers.
+  resetSelectionOnBackgroundClick: boolean;
+
+  /// Shows tickmarks and labels for minimum and maximum value on each axis.
+  showMinMaxTickmarks: boolean;
+
+  /// Shows exact X and Y coordinates for the mouse cursor.
+  showDropLines: boolean;
+
+  mouseDrag: string;
+
+  /// When true, lasso area selector is used instead of the rectangular one.
+  /// Toggle this option by pressing L.
+  lassoTool: boolean;
+
+  allowZoom: boolean;
+
+  autoLayout: boolean;
+
+  backColor: number;
+
+  filteredRowsColor: number;
+
+  filteredOutRowsColor: number;
+
+  selectedRowsColor: number;
+
+  missingValueColor: number;
+
+  labelColor: number;
+
+  axisLineColor: number;
+
+  axisTextColor: number;
+
+  gridLineColor: number;
+
+  regressionLineColor: number;
+
+  whiskerColor: number;
+
+  regressionLineTransparency: number;
+
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
+
+  /// Determines whether the axes should follow the non-precision-related format (such as "money")
+  /// set for the corresponding column.
+  axesUseColumnFormat: boolean;
+
+  formulaLines: string;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  viewport: string;
+
+  /// Controls scatter plot tooltip visibility
+  showTooltip: string;
+
+  showLabels: keyof typeof VisibilityMode;
+
+  /// Controls whether columns on X and Y axes are displayed in tooltip
+  /// * Do not add: they are not shown
+  /// * Data values only: only they are shown
+  /// * Merge: standard behavior
+  dataValues: string;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
+  rowTooltip: string;
+
+  /// Delay in milliseconds before showing row tooltip
+  tooltipDelay: number;
+
+  rowGroupTooltip: string;
+
+  /// If true, *X Axis Height* and *Y Axis Width* are calculated automatically to fit the required precision.
+  /// If false, the specified *X Axis Height* and *Y Axis Width* properties are used.
+  autoAxisSize: boolean;
+
+  /// Requires *Auto Axis Size* to be turned off.
+  xAxisHeight: number;
+
+  /// Requires *Auto Axis Size* to be turned off.
+  yAxisWidth: number;
+
+  axisFont: string;
+
+  labelFont: string;
+
+  formulaFont: string;
+
+  annotationFont: string;
+
+  defaultRenderer: boolean;
+
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexAutoPosition;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer controls elements font.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export enum AxisType {
+  linear = 'linear',
+  logarithmic = 'logarithmic',
+}
+
+export enum FlexAutoPosition {
+  Auto = 'Auto',
+  Left = 'Left',
+  Right = 'Right',
+  Top = 'Top',
+  Bottom = 'Bottom',
+  RightTop = 'RightTop',
+  RightBottom = 'RightBottom',
+  LeftTop = 'LeftTop',
+  LeftBottom = 'LeftBottom',
+}
+
 export interface IBarChartSettings {
   /// Determines the rows shown on the scatter plot.
   rowSource: keyof typeof RowSet;
@@ -171,6 +953,7 @@ export interface IBarChartSettings {
 
   useSplitColors: boolean;
 
+  /// Indicates whether categories with no matching rows should appear as zero-height bars.
   showEmptyBars: boolean;
 
   showLabels: string;
@@ -193,10 +976,6 @@ export interface IBarChartSettings {
 
   // Properties common for all viewers
   // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
   showContextMenu: boolean;
 
   title: string;
@@ -207,27 +986,15 @@ export interface IBarChartSettings {
 
   /// Viewer description that gets shown at the *Descriptor Position*.
   /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
   description: string;
 
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   /// Help to be shown when user clicks on the '?' icon on top.
   /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
 
   /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
   initializationFunction: string;
 
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   onInitializedScript: string;
 
@@ -237,55 +1004,14 @@ export interface IBarChartSettings {
 
 }
 
-export enum RowSet {
-  All = 'All',
-  Filtered = 'Filtered',
-  Selected = 'Selected',
-  SelectedOrCurrent = 'SelectedOrCurrent',
-  FilteredSelected = 'FilteredSelected',
-  MouseOverGroup = 'MouseOverGroup',
-  CurrentRow = 'CurrentRow',
-  MouseOverRow = 'MouseOverRow',
-}
-
 export enum RowGroupAction {
   Select = 'Select',
   Filter = 'Filter',
   None = 'None',
 }
 
-export enum AxisType {
-  linear = 'linear',
-  logarithmic = 'logarithmic',
-}
-
 export enum VerticalAlignType {
   Center = 'Center',
-  Top = 'Top',
-  Bottom = 'Bottom',
-}
-
-export enum VisibilityMode {
-  Auto = 'Auto',
-  Always = 'Always',
-  Never = 'Never',
-}
-
-export enum FlexAutoPosition {
-  Auto = 'Auto',
-  Left = 'Left',
-  Right = 'Right',
-  Top = 'Top',
-  Bottom = 'Bottom',
-  RightTop = 'RightTop',
-  RightBottom = 'RightBottom',
-  LeftTop = 'LeftTop',
-  LeftBottom = 'LeftBottom',
-}
-
-export enum FlexPosition {
-  Left = 'Left',
-  Right = 'Right',
   Top = 'Top',
   Bottom = 'Bottom',
 }
@@ -573,12 +1299,6 @@ export interface IBoxPlotSettings {
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
 
-}
-
-export enum TextOrientation {
-  Auto = 'Auto',
-  Horz = 'Horz',
-  Vert = 'Vert',
 }
 
 export interface ICalendarSettings {
@@ -1074,359 +1794,6 @@ export interface IFormSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface IGridSettings {
-  controlsFont: string;
-
-  /// Indicates whether the grid is editable.
-  /// See also *Show Add New Row Icon*
-  allowEdit: boolean;
-
-  /// When [allowEditable] is true, shows the last virtual row that the user can edit.
-  /// This row gets appended to the underlying table as soon as any value is entered.
-  /// The grid should also be in the editable mode
-  showAddNewRowIcon: boolean;
-
-  /// Automatically adds a new row in the end of the dataframe when the last row is edited
-  /// The grid should also be in the editable mode
-  addNewRowOnLastRowEdit: boolean;
-
-  /// When [allowEditable] is true, allows user to remove the mouse over row.
-  /// The grid should also be in the editable mode
-  showRemoveRowIcon: boolean;
-
-  showColumnLabels: boolean;
-
-  /// When checked, friendly name gets shown underneath the column name.
-  showFriendlyName: boolean;
-
-  /// Column header height. If not specified, it is calculated automatically.
-  /// See also *Col Labels Orientation*, *Horz Col Labels Height*
-  colHeaderHeight: number;
-
-  /// Height of the column labels when the orientation is vertical,
-  /// and *Col Header Height* is not specified.
-  vertColLabelsHeight: number;
-
-  /// Height of the column labels when the orientation is horizontal,
-  /// and *Col Header Height* is not specified.
-  horzColLabelsHeight: number;
-
-  /// Applicable only to grid
-  rowHeight: number;
-
-  /// Indicates mouse-over row by drawing a vertical stripe on the row header
-  showMouseOverRowIndicator: boolean;
-
-  /// Indicates current row with the *Current Row Color*.
-  showCurrentRowIndicator: boolean;
-
-  sortByColumnNames: Array<string>;
-
-  sortTypes: Array<boolean>;
-
-  pinnedRowColumnNames: Array<string>;
-
-  pinnedRowValues: Array<string>;
-
-  /// Indicates whether the control is in the grid or heatmap mode.
-  /// Typically, you don't need to change it manually.
-  isGrid: boolean;
-
-  /// When set to false, default menu appears under the 'Grid' submenu.
-  topLevelDefaultMenu: boolean;
-
-  /// Whether items applicable to all viewers (such as Pickup Style) should
-  /// be shown in a popup menu. Also requires *Show Context Menu*.
-  showDefaultPopupMenu: boolean;
-
-  /// Mouse drag on the data cells selects both rows and columns
-  allowBlockSelection: boolean;
-
-  /// Shift+click on a header to select a column
-  /// Shift+mouse drag on the headers to select multiple columns
-  /// Ctrl+click to invert selection
-  /// Ctrl+Shift+click to deselect
-  allowColSelection: boolean;
-
-  /// Drag any cell (except the row number) to reorder rows
-  /// Drag the row number column to select rows
-  allowRowReordering: boolean;
-
-  /// Whether to sort when user double-clicks on the column header
-  allowSorting: boolean;
-
-  /// Mouse drag on the rows headers selects rows
-  /// Ctrl+click to invert selection
-  /// Shift+mouse drag to select multiple rows
-  /// Ctrl+Shift+mouse drag to unselect
-  allowRowSelection: boolean;
-
-  /// Right-click and drag to pan content
-  allowContentPanning: boolean;
-
-  showColumnGroups: boolean;
-
-  showRowHeader: boolean;
-
-  showRowGridlines: boolean;
-
-  /// Whether the "hamburger" menu should be shown for a column
-  /// when the mouse is over its header
-  allowColumnMenu: boolean;
-
-  /// Automatically scroll column into view when this column becomes current
-  autoScrollColumnIntoView: boolean;
-
-  /// Automatically scroll current row into view when it is set from outside
-  /// (for instance, as a result of clicking on a point in a scatter plot)
-  autoScrollRowIntoView: boolean;
-
-  /// Automatically resize column widths when row height is resized
-  autoResizeColumnWidths: boolean;
-
-  showColumnGridlines: boolean;
-
-  /// Reordering columns by dragging the header
-  allowColReordering: boolean;
-
-  /// Whether the current object (shown in the context panel) is changed
-  /// when you click on a column header.
-  allowChangeCurrentObject: boolean;
-
-  /// Whether row (rows) can be dragged out of the grid.
-  allowRowDragging: boolean;
-
-  extendLastColumn: boolean;
-
-  /// Resize rows by dragging the border between rows on a row header.
-  /// Applicable only to grid.
-  allowRowResizing: boolean;
-
-  /// Indicates the way colors are sampled in the heatmap mode when there is not enough
-  /// pixels on the screen for each row:
-  /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
-  /// False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all)
-  /// Applicable only to heatmap.
-  drawEveryRow: boolean;
-
-  /// Whether the context menu is shown
-  showContextMenu: boolean;
-
-  /// Whether to show notifications when the user tries to edit a read-only table
-  showReadOnlyNotifications: boolean;
-
-  /// Whether to show scrollbars in the heatmap mode
-  /// Note that scrollbars will still be visible if they are not "expanded"
-  showHeatmapScrollbars: boolean;
-
-  frozenColumns: number;
-
-  showCurrentCellOutline: boolean;
-
-  /// Color-coding that applies to all columns.
-  /// Additionally, each column can be individually color-coded.
-  colorCoding: keyof typeof GridColorCodingType;
-
-  defaultCellFont: string;
-
-  maxFontSize: number;
-
-  colHeaderFont: string;
-
-  /// Orientation of the column header text.
-  /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
-  /// In heat map mode, it depends on whether the text can fit in the area.
-  colLabelsOrientation: keyof typeof TextOrientation;
-
-  /// Resizing column header by dragging the border between the header and the first row
-  allowColHeaderResizing: boolean;
-
-  /// Resizing columns by dragging the border between column headers
-  allowColResizing: boolean;
-
-  missingValueColor: number;
-
-  selectedRowsColor: number;
-
-  selectedColsColor: number;
-
-  currentRowColor: number;
-
-  mouseOverRowColor: number;
-
-  mouseOverRowStripeColor: number;
-
-  backColor: number;
-
-  colHeaderTextColor: number;
-
-  colHeaderBackColor: number;
-
-  colHeaderMouseOverTextColor: number;
-
-  cellTextColor: number;
-
-  currentCellTextColor: number;
-
-  rowHeaderBackColor: number;
-
-  /// true: colors are scaled based on the global min/max in all numerical columns
-  /// false: colors are scaled based on the column min/max.
-  /// Applicable only to heatmap.
-  globalColorScaling: boolean;
-
-  /// Whether the heatmap should be color-coded (you might want to do it programmatically)
-  /// See also [globalColorScaling]
-  heatmapColors: boolean;
-
-  /// Controls grid tooltip visibility
-  showTooltip: string;
-
-  showLabels: keyof typeof VisibilityMode;
-
-  showCellTooltip: boolean;
-
-  /// Include currently visible columns in a tooltip
-  showVisibleColumnsInTooltip: boolean;
-
-  showColumnTooltip: boolean;
-
-  /// Newline-separated list of column names to be used in a tooltip.
-  /// Requires *showTooltip* to be enabled.
-  rowTooltip: string;
-
-  marginLeft: number;
-
-  marginTop: number;
-
-  marginRight: number;
-
-  marginBottom: number;
-
-  allowStickyMeta: keyof typeof AllowStickyMetaType;
-
-  /// Heatmap horizontal scroll positions (maxRangeValue, minValue, maxValue)
-  heatmapHorzScroll: Array<number>;
-
-  /// Heatmap vertical scroll positions (maxRangeValue, minValue, maxValue)
-  heatmapVertScroll: Array<number>;
-
-  /// Determines whether newly added columns are added to the grid
-  syncNewColumns: boolean;
-
-  linearColorScheme: Array<number>;
-
-  categoricalColorScheme: Array<number>;
-
-  columnHeaderTypes: Array<string>;
-
-  cellStyle: any;
-
-  currentRowCellStyle: any;
-
-  columns: Array<any>;
-
-  isHeatmap: boolean;
-
-  maxHeatmapColumns: number;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  allowDynamicMenus: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export enum GridColorCodingType {
-  Auto = 'Auto',
-  All = 'All',
-  None = 'None',
-}
-
-export enum AllowStickyMetaType {
-  Auto = 'Auto',
-  Always = 'Always',
-  Never = 'Never',
-}
-
-export interface IGridCellStyle {
-  font: string;
-
-  horzAlign: string;
-
-  vertAlign: string;
-
-  /// When defined, overrides the default cell tooltip
-  tooltip: string;
-
-  cursor: string;
-
-  textWrap: string;
-
-  /// Marker to be shown when the value does not fit in the cell
-  marker: string;
-
-  textColor: number;
-
-  backColor: number;
-
-  marginLeft: number;
-
-  marginRight: number;
-
-  marginTop: number;
-
-  marginBottom: number;
-
-  textVertical: boolean;
-
-  /// Applies to image columns only
-  imageScale: number;
-
-  /// Applies to image columns only
-  opacity: number;
-
-  clip: boolean;
-
-  /// For 'html' cell types only
-  element: any;
-
-  /// When defined, the cell editor becomes a combo box with the specified values
-  choices: Array<string>;
 
 }
 
@@ -2818,388 +3185,6 @@ export interface IRocCurveSettings {
 
   /// Select to draw thresholds
   showThreshold: boolean;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface IScatterPlotSettings {
-  /// Invalid are null values and not positive numbers if axis is logarithmic.
-  filterOutInvalid: boolean;
-
-  /// When true, filtered out points are rendered using *Filtered Out Rows Color*.
-  showFilteredOutPoints: boolean;
-
-  /// When true, scatter plot will zoom to an area defined by the range filters for X and Y columns,
-  /// even if *Zoom And Filter* property is not set to "Zoom by Filter".
-  axesFollowFilter: boolean;
-
-  /// Determines the relationship between table filter and scatter plot area:
-  /// * No action: they are disconnected
-  /// * Filter by zoom: scatter plot acts as a filter; as you zoom in, points get filtered out
-  /// * Zoom by filter: scatter plot focuses on the filtered points as the filter changes
-  /// * Pack and zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes.
-  zoomAndFilter: string;
-
-  /// A column to use on the X axis. Could be numerical or categorical.
-  x: string;
-  xColumnName: string;
-
-  /// Time unit map function for x column (applicable to dates only).
-  xMap: string;
-
-  /// A column to use on the Y axis. Could be numerical or categorical.
-  y: string;
-  yColumnName: string;
-
-  /// Time unit map function for y column (applicable to dates only).
-  yMap: string;
-
-  xAxisType: keyof typeof AxisType;
-
-  yAxisType: keyof typeof AxisType;
-
-  invertXAxis: boolean;
-
-  invertYAxis: boolean;
-
-  xMin: number;
-
-  yMin: number;
-
-  xMax: number;
-
-  yMax: number;
-
-  showVerticalGridLines: boolean;
-
-  showHorizontalGridLines: boolean;
-
-  showXAxis: boolean;
-
-  showYAxis: boolean;
-
-  showXSelector: boolean;
-
-  showYSelector: boolean;
-
-  /// Shows a distribution histogram along the X axis (at the top)
-  showXHistogram: boolean;
-
-  /// Shows a distribution histogram along the Y axis (on the right)
-  showYHistogram: boolean;
-
-  /// Number of bins for axis histograms
-  histogramBins: number;
-
-  /// Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*.
-  xWhiskerMin: string;
-  xWhiskerMinColumnName: string;
-
-  /// Point upper bound for x axis whiskers. Selecting it disables *X Whisker Range*.
-  xWhiskerMax: string;
-  xWhiskerMaxColumnName: string;
-
-  /// Point range for x axis whiskers. Applied only if *X Whisker Min* and *X Whisker Max* are not set.
-  xWhiskerRange: string;
-  xWhiskerRangeColumnName: string;
-
-  /// Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
-  yWhiskerMin: string;
-  yWhiskerMinColumnName: string;
-
-  /// Point upper bound for y axis whiskers. Selecting it disables *Y Whisker Range*.
-  yWhiskerMax: string;
-  yWhiskerMaxColumnName: string;
-
-  /// Point range for y axis whiskers. Applied only if *Y Whisker Min* and *Y Whisker Max* are not set.
-  yWhiskerRange: string;
-  yWhiskerRangeColumnName: string;
-
-  xAxisLabelOrientation: string;
-
-  /// A column to be used for color-coding. Could be numerical or categorical.
-  /// If not set, *Filtered Rows Color* is used for markers that pass the filter.
-  /// Color palettes could defined either for columns in the column context panel,
-  /// or via *Linear Color Scheme* and *Categorical Color Scheme* properties.
-  color: string;
-  colorColumnName: string;
-
-  /// Categorical coloring time unit map function (applicable to dates only).
-  colorMap: string;
-
-  showColorSelector: boolean;
-
-  colorAxisType: keyof typeof AxisType;
-
-  invertColorScheme: boolean;
-
-  colorMin: number;
-
-  colorMax: number;
-
-  /// A numerical column to use for size-coding markers.
-  /// See also *Marker Min Size* and *Marker Max Size*.
-  size: string;
-  sizeColumnName: string;
-
-  showSizeSelector: boolean;
-
-  /// A categorical column that determines the shape of the markers.
-  markers: string;
-  markersColumnName: string;
-
-  /// Marker category time unit map function (applicable to dates only).
-  markersMap: string;
-
-  markerType: string;
-
-  // By default - automatic sizing based on current dataframe
-  markerDefaultSize: number;
-
-  markerOpacity: number;
-
-  /// Randomly shift (x, y) marker position up to the *Jitter Size* pixels.
-  /// Useful when multiple points fall on the same exact position.
-  /// If *Jitter Size Y* is defined, then *Jitter Size* shifts x only.
-  jitterSize: number;
-
-  /// Randomly shift y marker position up to the *Jitter Size Y* pixels.
-  jitterSizeY: number;
-
-  markerDrawBorder: boolean;
-
-  markerBorderWidth: number;
-
-  markerMinSize: number;
-
-  markerMaxSize: number;
-
-  /// When defined, a line would be drawn for each series (defined by the categorical color column)
-  /// using the order specified by "Lines Order"
-  linesOrder: string;
-  linesOrderColumnName: string;
-
-  /// When defined, lines are split into separate series by this categorical column instead of the color column.
-  linesBy: string;
-  linesByColumnName: string;
-
-  /// Defines the width of the lines connecting the markers. See **Lines Width**.
-  linesWidth: number;
-
-  /// Label columns to show next to the markers.
-  labelColumnNames: Array<string>;
-
-  /// Determines the rows shown on the scatter plot.
-  showLabelsFor: keyof typeof RowSet;
-
-  /// Determines how to show marker label:
-  /// * Always - show labels for all visible markers
-  /// * Auto - show labels only for markers where enough space is available
-  /// * Never - show no labels.
-  displayLabels: keyof typeof VisibilityMode;
-
-  /// Determines whether to show column names next to label values.
-  showLabelNamedColumns: keyof typeof VisibilityMode;
-
-  /// If checked, display a label content as marker.
-  useLabelAsMarker: boolean;
-
-  /// To display labels separately or as markers (works for non-text labels).
-  labelColorAsMarker: boolean;
-
-  /// Marker size in which label is inscribed.
-  labelAsMarkerSize: number;
-
-  /// Label inner content size.
-  labelContentSize: number;
-
-  /// Regression line visibility (toggle by pressing R)
-  showRegressionLine: boolean;
-
-  showRegressionLineEquation: boolean;
-
-  showSpearmanCorrelation: boolean;
-
-  showPearsonCorrelation: boolean;
-
-  showMeanAbsoluteError: boolean;
-
-  showRootMeanSquareError: boolean;
-
-  /// Supports up to 20 categories. Otherwise, a common regression line is shown.
-  regressionPerCategory: boolean;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showDataframeFormulaLines: boolean;
-
-  /// Control the visibility of dataframe-originated formula lines.
-  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-  /// Requires the PowerPack plugin.
-  showViewerFormulaLines: boolean;
-
-  /// Controls the indication of the current row
-  showCurrentPoint: boolean;
-
-  /// Controls the indication of the mouse-over row
-  showMouseOverPoint: boolean;
-
-  /// Highlight 'mouse-over' rows (such as the ones that fall into a histogram bin that
-  /// the mouse is currently hovering over).
-  showMouseOverRowGroup: boolean;
-
-  /// When true, selected markers are highlighted using the selected rows color.
-  /// When false, selected markers use their regular color coding.
-  showSelectedRows: boolean;
-
-  /// When true, clicking on the background (no point hit) clears the current selection.
-  /// Set to false to preserve the selection when accidentally clicking outside of the markers.
-  resetSelectionOnBackgroundClick: boolean;
-
-  /// Shows tickmarks and labels for minimum and maximum value on each axis.
-  showMinMaxTickmarks: boolean;
-
-  /// Shows exact X and Y coordinates for the mouse cursor.
-  showDropLines: boolean;
-
-  mouseDrag: string;
-
-  /// When true, lasso area selector is used instead of the rectangular one.
-  /// Toggle this option by pressing L.
-  lassoTool: boolean;
-
-  allowZoom: boolean;
-
-  autoLayout: boolean;
-
-  backColor: number;
-
-  filteredRowsColor: number;
-
-  filteredOutRowsColor: number;
-
-  selectedRowsColor: number;
-
-  missingValueColor: number;
-
-  labelColor: number;
-
-  axisLineColor: number;
-
-  axisTextColor: number;
-
-  gridLineColor: number;
-
-  regressionLineColor: number;
-
-  whiskerColor: number;
-
-  regressionLineTransparency: number;
-
-  linearColorScheme: Array<number>;
-
-  categoricalColorScheme: Array<number>;
-
-  /// Determines whether the axes should follow the non-precision-related format (such as "money")
-  /// set for the corresponding column.
-  axesUseColumnFormat: boolean;
-
-  formulaLines: string;
-
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
-  viewport: string;
-
-  /// Controls scatter plot tooltip visibility
-  showTooltip: string;
-
-  showLabels: keyof typeof VisibilityMode;
-
-  /// Controls whether columns on X and Y axes are displayed in tooltip
-  /// * Do not add: they are not shown
-  /// * Data values only: only they are shown
-  /// * Merge: standard behavior
-  dataValues: string;
-
-  /// Newline-separated list of column names to be used in a tooltip.
-  /// Requires *showTooltip* to be enabled.
-  rowTooltip: string;
-
-  /// Delay in milliseconds before showing row tooltip
-  tooltipDelay: number;
-
-  rowGroupTooltip: string;
-
-  /// If true, *X Axis Height* and *Y Axis Width* are calculated automatically to fit the required precision.
-  /// If false, the specified *X Axis Height* and *Y Axis Width* properties are used.
-  autoAxisSize: boolean;
-
-  /// Requires *Auto Axis Size* to be turned off.
-  xAxisHeight: number;
-
-  /// Requires *Auto Axis Size* to be turned off.
-  yAxisWidth: number;
-
-  axisFont: string;
-
-  labelFont: string;
-
-  formulaFont: string;
-
-  annotationFont: string;
-
-  defaultRenderer: boolean;
-
-  legendVisibility: keyof typeof VisibilityMode;
-
-  legendPosition: keyof typeof FlexAutoPosition;
 
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;
