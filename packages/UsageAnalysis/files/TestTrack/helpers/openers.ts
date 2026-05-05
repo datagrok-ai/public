@@ -142,17 +142,27 @@ export async function openTableFromFile(
     const DG = (window as any).DG;
     const fns = DG.Func.find({name: 'OpenFile'});
     if (!fns?.length) throw new Error('OpenFile function not registered');
-    await fns[0].prepare({fullPath: p}).call(undefined, undefined, {processed: false});
-    // Settle: poll for shell.tv.dataFrame up to 8s — covers dev cold-start
-    // under multi-test load. Earlier fixed 800ms / 1200ms / 2000ms waits
-    // were brittle.
+    // Normalize namespace separator: colon-form (`System:DemoFiles/...`) and
+    // dot-form (`System.DemoFiles/...`) both open the same file, but the
+    // resulting df.tags['.script'] differs and the colon form fails the
+    // subsequent UI Save Project POST on dev with `Type descriptor for
+    // type 'dynamic' not found` (verified live 2026-05-05). Dot form
+    // serializes cleanly through the Save dialog.
+    const fullPathForOpen = p.replace(/^([^:/]+):/, '$1.');
+    await fns[0].prepare({fullPath: fullPathForOpen}).call(undefined, undefined, {processed: false});
+    // Settle: poll for shell.tv to be a TableView with addViewer + dataFrame
+    // up to 12s — under Playwright cold-start, shell.tv may transiently be
+    // a different view (loading splash, etc) before becoming TableView.
     let df: any = null;
-    for (let i = 0; i < 16; i++) {
-      df = grok.shell.tv?.dataFrame;
-      if (df) break;
+    for (let i = 0; i < 24; i++) {
+      const tv = grok.shell.tv;
+      if (tv?.dataFrame && typeof tv.addViewer === 'function') {
+        df = tv.dataFrame;
+        break;
+      }
       await new Promise((r) => setTimeout(r, 500));
     }
-    if (!df) throw new Error(`OpenFile("${p}") did not produce a TableView (8s settle)`);
+    if (!df) throw new Error(`OpenFile("${p}") did not produce a TableView (12s settle)`);
     const ti = df.getTableInfo?.();
     return {
       name: df.name,

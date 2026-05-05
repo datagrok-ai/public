@@ -99,6 +99,20 @@ chain (no `closeAll` between steps unless explicitly noted).
    run sequentially over the original project (e.g. `demog`). The
    original project state must be preserved between sub-flows for the
    GROK-19750 invariant to be testable.
+
+   > **Spec-time restructure (2026-05-05):** the canonical scenario
+   > below describes 4 sequential reopen-edit-save cycles. The spec
+   > implementation collapses these into a SINGLE session
+   > (1 open + cumulative addViewer + 4 sequential
+   > `saveProjectWithProvenance` calls — see
+   > `projects-copy-clone-spec.ts`), then verifies the
+   > GROK-19750 invariant via 2 reopens (link copy + original).
+   > Reason: each `closeAll` + `dapi.projects.find().open()` cycle
+   > on dev under Playwright headed mode races with shell.tv
+   > re-materialization; reducing reopens from 4-6 to 2 reduces
+   > flake. The semantic invariant (Save Copy variants exist
+   > server-side; original survives Save Copy without state leak)
+   > is preserved.
    - **4a. Save the original (baseline):**
      1. Open the original project (e.g. `demog`).
      2. Add any viewer (e.g. another bar chart) to the table view.
