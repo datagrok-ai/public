@@ -101,7 +101,7 @@ test('Scripts Run — context menu + console', async ({page}) => {
     expect(ok).toBe(true);
   });
 
-  await softStep('8-9. Enter agolovko:testRscript("cars"), press Enter, check output', async () => {
+  await softStep('8-9. Enter {login}:testRscript("cars"), press Enter, check output', async () => {
     await page.evaluate(async () => {
       // Ensure cars table is open
       if (!grok.shell.tables.some((t: any) => t.name === 'cars')) {
@@ -116,11 +116,12 @@ test('Scripts Run — context menu + console', async ({page}) => {
       if (tbl && tbl.name !== 'cars') tbl.name = 'cars';
     });
     await page.evaluate(() => {
+      const login = grok.shell.user?.login ?? 'admin';
       const cmd = Array.from(document.querySelectorAll('input[placeholder*="Enter command"]'))
         .find((i) => (i as HTMLElement).offsetParent !== null) as HTMLInputElement;
       cmd.focus();
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
-      setter.call(cmd, 'agolovko:testRscript("cars")');
+      setter.call(cmd, `${login}:testRscript("cars")`);
       cmd.dispatchEvent(new Event('input', {bubbles: true}));
     });
     await page.keyboard.press('Enter');
