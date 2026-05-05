@@ -1,0 +1,417 @@
+{
+  "metadata": {
+    "source": "validate_rest_statistics.py — Welch t",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "[McDonald] body temperatures 2pm vs 5pm",
+      "category": "published_reference",
+      "inputs": {
+        "x": [
+          69,
+          70,
+          66,
+          63,
+          68,
+          70,
+          69,
+          67,
+          62,
+          63,
+          76,
+          59,
+          62,
+          62,
+          75,
+          62,
+          72,
+          63
+        ],
+        "y": [
+          68,
+          62,
+          67,
+          68,
+          69,
+          67,
+          61,
+          59,
+          62,
+          61,
+          69,
+          66,
+          62,
+          62,
+          61,
+          70
+        ]
+      },
+      "expected": {
+        "statistic": 1.3108864083677225,
+        "p_value": 0.19947087310932504
+      },
+      "published": {
+        "t": 1.3109,
+        "p": 0.1995,
+        "tol": 0.001
+      }
+    },
+    {
+      "name": "[Rosetta] d1 vs d2",
+      "category": "published_reference",
+      "inputs": {
+        "x": [
+          27.5,
+          21.0,
+          19.0,
+          23.6,
+          17.0,
+          17.9,
+          16.9,
+          20.1,
+          21.9,
+          22.6,
+          23.1,
+          19.6,
+          19.0,
+          21.7,
+          21.4
+        ],
+        "y": [
+          27.1,
+          22.0,
+          20.8,
+          23.4,
+          23.4,
+          23.5,
+          25.8,
+          22.0,
+          24.8,
+          20.2,
+          21.9,
+          22.1,
+          22.9,
+          20.5,
+          24.4
+        ]
+      },
+      "expected": {
+        "statistic": -2.455356398286006,
+        "p_value": 0.021378001462866992
+      },
+      "published": {
+        "p": 0.021378001462867,
+        "tol_p": 1e-06
+      }
+    },
+    {
+      "name": "[Rosetta] d7 vs d8",
+      "category": "published_reference",
+      "inputs": {
+        "x": [
+          30.02,
+          29.99,
+          30.11,
+          29.97,
+          30.01,
+          29.99
+        ],
+        "y": [
+          29.89,
+          29.93,
+          29.72,
+          29.98,
+          30.02,
+          29.98
+        ]
+      },
+      "expected": {
+        "statistic": 1.9590058081081434,
+        "p_value": 0.09077332428566112
+      },
+      "published": {
+        "p": 0.090773324285671,
+        "tol_p": 1e-06
+      }
+    },
+    {
+      "name": "[Rosetta] x vs y (extreme variance ratio)",
+      "category": "published_reference",
+      "inputs": {
+        "x": [
+          3.0,
+          4.0,
+          1.0,
+          2.1
+        ],
+        "y": [
+          490.2,
+          340.0,
+          433.9
+        ]
+      },
+      "expected": {
+        "statistic": -9.559497721932658,
+        "p_value": 0.010751561149784488
+      },
+      "published": {
+        "t": -9.5595,
+        "p": 0.010751561149785,
+        "tol_t": 0.01,
+        "tol_p": 1e-06
+      }
+    },
+    {
+      "name": "scipy: basic two-group",
+      "category": "scipy_crosscheck",
+      "inputs": {
+        "x": [
+          10.2,
+          11.1,
+          9.8,
+          10.5,
+          10.0
+        ],
+        "y": [
+          15.3,
+          14.8,
+          16.1,
+          15.0,
+          15.5
+        ]
+      },
+      "expected": {
+        "statistic": -15.718229706237256,
+        "p_value": 2.6818291050499276e-07
+      }
+    },
+    {
+      "name": "hand-calc: t = 3/√2",
+      "category": "scipy_crosscheck",
+      "inputs": {
+        "x": [
+          4.0,
+          6.0
+        ],
+        "y": [
+          1.0,
+          3.0
+        ]
+      },
+      "expected": {
+        "statistic": 2.1213203435596424,
+        "p_value": 0.16794970566215633
+      }
+    },
+    {
+      "name": "scipy: unequal sizes",
+      "category": "scipy_crosscheck",
+      "inputs": {
+        "x": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "y": [
+          10.0,
+          11.0,
+          12.0,
+          13.0,
+          14.0,
+          15.0
+        ]
+      },
+      "expected": {
+        "statistic": -10.966892325208965,
+        "p_value": 1.4346424321760879e-05
+      }
+    },
+    {
+      "name": "scipy: numpy-style input",
+      "category": "scipy_crosscheck",
+      "inputs": {
+        "x": [
+          3.1,
+          4.1,
+          5.9,
+          2.6
+        ],
+        "y": [
+          7.0,
+          8.0,
+          9.0,
+          10.0
+        ]
+      },
+      "expected": {
+        "statistic": -4.700556097166411,
+        "p_value": 0.003452209156248226
+      }
+    },
+    {
+      "name": "NaN in group1 stripped",
+      "category": "nan_handling",
+      "inputs": {
+        "x": [
+          1.0,
+          null,
+          3.0,
+          2.0
+        ],
+        "y": [
+          10.0,
+          11.0,
+          12.0
+        ]
+      },
+      "expected_clean_inputs": {
+        "x": [
+          1.0,
+          3.0,
+          2.0
+        ],
+        "y": [
+          10.0,
+          11.0,
+          12.0
+        ]
+      },
+      "expected": {
+        "statistic": -11.022703842524301,
+        "p_value": 0.0003850677113665412
+      }
+    },
+    {
+      "name": "NaN in group2 stripped",
+      "category": "nan_handling",
+      "inputs": {
+        "x": [
+          10.0,
+          11.0,
+          12.0
+        ],
+        "y": [
+          null,
+          1.0,
+          null,
+          3.0,
+          2.0
+        ]
+      },
+      "expected_clean_inputs": {
+        "x": [
+          10.0,
+          11.0,
+          12.0
+        ],
+        "y": [
+          1.0,
+          3.0,
+          2.0
+        ]
+      },
+      "expected": {
+        "statistic": 11.022703842524301,
+        "p_value": 0.0003850677113665412
+      }
+    },
+    {
+      "name": "single element group1 → None",
+      "category": "edge_none",
+      "inputs": {
+        "x": [
+          5.0
+        ],
+        "y": [
+          1.0,
+          2.0,
+          3.0
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "single element group2 → None",
+      "category": "edge_none",
+      "inputs": {
+        "x": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "y": [
+          5.0
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "empty group → None",
+      "category": "edge_none",
+      "inputs": {
+        "x": [],
+        "y": [
+          1.0,
+          2.0
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "all-NaN group → None",
+      "category": "edge_none",
+      "inputs": {
+        "x": [
+          null,
+          null
+        ],
+        "y": [
+          1.0,
+          2.0,
+          3.0
+        ]
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "zero variance (constant groups) → NaN",
+      "category": "edge_nan",
+      "inputs": {
+        "x": [
+          5.0,
+          5.0,
+          5.0
+        ],
+        "y": [
+          5.0,
+          5.0,
+          5.0
+        ]
+      },
+      "expected": {
+        "statistic": "NaN",
+        "p_value": "NaN"
+      }
+    }
+  ]
+}

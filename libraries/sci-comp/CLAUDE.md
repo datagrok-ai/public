@@ -6,7 +6,7 @@
 
 ## Architecture
 
-The library is organized by numerical domain: **optimization** and **time-series**.
+The library is organized by numerical domain: **optimization**, **stats**, and **time-series**.
 
 ```
 index.ts                          # Entry point: re-exports {singleObjective, multiObjective, timeSeries} namespaces
@@ -55,6 +55,32 @@ src/optimization/
       bounded-benchmarks.ts       # 7 bounded problems: L-BFGS-B native bounds vs others via penalty layer
   multi-objectives/
     moead/                        # MOEA/D multi-objective optimizer (defs.ts, moead.ts, utils.ts)
+src/stats/
+  index.ts                        # Public entry — re-exports tests, types, distributions, multiple-comparison helpers
+  types.ts                        # NumericInput, Alternative, TestResult, SpearmanResult, FisherResult
+  distributions.ts                # Typed wrappers around jstat (normal, t, F, chi², hypergeom, special functions)
+  internal/
+    normalize.ts                  # NumericInput → Float64Array, NaN stripping, mean / variance / std / sum
+    rank.ts                       # Rank assignment with average-rank tie handling
+    matrix.ts                     # Linear algebra helpers (matrix inverse via jstat)
+    random.ts                     # mulberry32 seedable PRNG + shuffleInPlace (Fisher–Yates)
+  tests/                          # One file per statistical test
+    welch-t.ts, mann-whitney.ts, hedges-g.ts, spearman.ts, fisher-exact.ts
+    welch-pairwise.ts, dunnett.ts, cochran-armitage.ts, ancova.ts
+    williams.ts, williams-tables.ts
+    jonckheere.ts                 # Full JT: approximate / permutation / exact, ±continuity, tie-corrected variance
+    boschloo-exact.ts             # Unconditional exact test: Fisher one-sided p as test stat, sup over nuisance π via grid + golden-section refinement; `incidenceExactBoth` returns Boschloo + Fisher together
+  multiple-comparison/
+    bonferroni.ts                 # bonferroniCorrect — multiplicity adjustment
+  __tests__/                      # Jest tests, one per method, all driven by JSON fixtures in __tests__/fixtures/
+    helpers.ts                    # loadFixture, expectClose (note: uses `diff >= tol`, so pick tol > 0)
+    fixtures/
+      jonckheere-rp-approximate.json  # 24 cases vs Python regressionpack (tight)
+      jonckheere-rp-exact.json    # 5 cases vs Python regressionpack exact method
+      jonckheere-clinfun.json     # 144 cases vs R clinfun::jonckheere.test
+      jonckheere-pmcmr.json       # 144 cases vs R PMCMRplus permutation
+      boschloo-exact.json         # 31 cases vs scipy.stats.boschloo_exact (hand-picked + 60 randomised)
+  examples/                       # Runnable npx tsx examples
 src/time-series/
   feature-extraction/
     types.ts                      # NumericArray, TimeSeriesDataFrame, TimeSeriesColumn, FeatureColumn, FeatureMatrix, ExtractOptions

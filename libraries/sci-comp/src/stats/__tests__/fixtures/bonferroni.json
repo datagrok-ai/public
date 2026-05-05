@@ -1,0 +1,203 @@
+{
+  "metadata": {
+    "source": "validate_rest_statistics.py — bonferroni_correct",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "[Abdi] Table 1: 3 tests",
+      "category": "published_reference",
+      "inputs": {
+        "p_values": [
+          4e-05,
+          0.0161,
+          0.6123
+        ],
+        "n_tests": 3
+      },
+      "expected": [
+        0.00012,
+        0.0483,
+        1.0
+      ]
+    },
+    {
+      "name": "[Garcia/McDonald] 25-variable dietary",
+      "category": "published_reference",
+      "inputs": {
+        "p_values": [
+          0.001,
+          0.008,
+          0.039,
+          0.041,
+          0.042,
+          0.06,
+          0.074
+        ],
+        "n_tests": 25
+      },
+      "expected": [
+        0.025,
+        0.2,
+        0.975,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "basic [0.01,0.04,0.05] × 3",
+      "category": "algebraic",
+      "inputs": {
+        "p_values": [
+          0.01,
+          0.04,
+          0.05
+        ]
+      },
+      "expected": [
+        0.03,
+        0.12,
+        0.15
+      ]
+    },
+    {
+      "name": "cap at 1.0",
+      "category": "algebraic",
+      "inputs": {
+        "p_values": [
+          0.5,
+          0.8
+        ]
+      },
+      "expected": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "explicit n_tests=5",
+      "category": "algebraic",
+      "inputs": {
+        "p_values": [
+          0.01,
+          0.02,
+          0.03
+        ],
+        "n_tests": 5
+      },
+      "expected": [
+        0.05,
+        0.1,
+        0.15
+      ]
+    },
+    {
+      "name": "None passthrough (n_tests auto = 2)",
+      "category": "edge_none_passthrough",
+      "inputs": {
+        "p_values": [
+          0.01,
+          null,
+          0.05
+        ]
+      },
+      "expected": [
+        0.02,
+        null,
+        0.1
+      ]
+    },
+    {
+      "name": "all None",
+      "category": "edge_none_passthrough",
+      "inputs": {
+        "p_values": [
+          null,
+          null,
+          null
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "name": "single p-value",
+      "category": "edge",
+      "inputs": {
+        "p_values": [
+          0.04
+        ]
+      },
+      "expected": [
+        0.04
+      ]
+    },
+    {
+      "name": "empty list",
+      "category": "edge",
+      "inputs": {
+        "p_values": []
+      },
+      "expected": []
+    },
+    {
+      "name": "n_tests=0 returns originals",
+      "category": "edge",
+      "inputs": {
+        "p_values": [
+          0.01,
+          0.05
+        ],
+        "n_tests": 0
+      },
+      "expected": [
+        0.01,
+        0.05
+      ]
+    },
+    {
+      "name": "order preserved",
+      "category": "algebraic",
+      "inputs": {
+        "p_values": [
+          0.05,
+          0.01,
+          0.03,
+          0.02
+        ]
+      },
+      "expected": [
+        0.2,
+        0.04,
+        0.12,
+        0.08
+      ]
+    },
+    {
+      "name": "very small p",
+      "category": "algebraic",
+      "inputs": {
+        "p_values": [
+          1e-10,
+          1e-08
+        ]
+      },
+      "expected": [
+        2e-10,
+        2e-08
+      ]
+    }
+  ]
+}
