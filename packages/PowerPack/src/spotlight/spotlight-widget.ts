@@ -514,7 +514,11 @@ export class SpotlightWidget extends DG.Widget {
     for (const func of additionalFuncs) {
       const subWidget: DG.Widget = await func.apply();
       subWidget.root.classList.add('power-pack-activity-widget-subwidget-list-content');
-      const rootToAppend = ui.divV([ui.h3(ui.span([ui.span([func.options['activityWidgetHeader'] ?? ''])]), 'power-pack-activity-widget-spotlight-column-header'),
+      const customHeader = subWidget.root.querySelector('.power-pack-activity-widget-custom-header');
+      if (customHeader)
+        customHeader.remove();
+      const headerContent = customHeader ?? ui.span([ui.span([func.options['activityWidgetHeader'] ?? ''])]);
+      const rootToAppend = ui.divV([ui.h3(headerContent, 'power-pack-activity-widget-spotlight-column-header'),
         subWidget.root], 'power-pack-activity-widget-spotlight-column');
       root.appendChild(rootToAppend);
     }
