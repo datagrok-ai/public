@@ -1,5 +1,9 @@
 # sci-comp changelog
 
+## 0.5.1 (2026-05-05)
+
+Update docs
+
 ## 0.5.0 (2026-05-05)
 
 Statistics:
@@ -23,11 +27,13 @@ Statistics:
 Fix build
 
 ## 0.4.0 (2026-04-27)
+
 Optimization:
 
 * The L-BFGS-B method
 
 ## 0.3.0 (2026-04-17)
+
 Optimization:
 
 * The L-BFGS method
