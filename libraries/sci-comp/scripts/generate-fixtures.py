@@ -880,7 +880,13 @@ def gen_cochran_armitage() -> None:
 
 
 def _ca_basic(counts: list[int], totals: list[int]) -> tuple[float | None, float | None]:
-    """Reference implementation of basic CA trend test (binomial variance, scores=range(k))."""
+    """Reference implementation of basic CA trend test (binomial variance, scores=range(k)).
+
+    Degenerate inputs (p̄ = 0, p̄ = 1, Sxx ≤ 0) return ``(0, 1)`` — the natural
+    limit "no trend, cannot reject H₀", matching SEND
+    ``statistics.trend_test_incidence`` and the ``cochranArmitageBasic``
+    contract. Invalid shape (k < 2, N = 0) still returns ``(None, None)``.
+    """
     k = len(counts)
     if k < 2 or sum(totals) == 0:
         return None, None
@@ -889,14 +895,14 @@ def _ca_basic(counts: list[int], totals: list[int]) -> tuple[float | None, float
     n = float(tt.sum())
     p_bar = cc.sum() / n
     if p_bar == 0 or p_bar == 1:
-        return None, None
+        return 0.0, 1.0
     d = np.arange(k, dtype=float)
     num = float(d @ cc - p_bar * (d @ tt))
     d_bar = float((d @ tt) / n)
     Sxx = float(sum(tt[i] * (d[i] - d_bar) ** 2 for i in range(k)))
     denom_sq = p_bar * (1 - p_bar) * Sxx
     if denom_sq <= 0:
-        return None, None
+        return 0.0, 1.0
     z = num / math.sqrt(denom_sq)
     p = 2 * (1 - float(sp_stats.norm.cdf(abs(z))))
     return float(z), float(p)

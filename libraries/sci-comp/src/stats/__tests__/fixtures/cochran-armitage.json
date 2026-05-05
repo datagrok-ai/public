@@ -420,8 +420,8 @@
         ]
       },
       "expected": {
-        "statistic": null,
-        "p_value": null
+        "statistic": 0,
+        "p_value": 1
       }
     },
     {
@@ -440,8 +440,8 @@
         ]
       },
       "expected": {
-        "statistic": null,
-        "p_value": null
+        "statistic": 0,
+        "p_value": 1
       }
     },
     {
@@ -504,8 +504,8 @@
         ]
       },
       "expected": {
-        "statistic": null,
-        "p_value": null
+        "statistic": 0,
+        "p_value": 1
       }
     }
   ]

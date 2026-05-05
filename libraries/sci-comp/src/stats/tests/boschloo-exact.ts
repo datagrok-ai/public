@@ -19,8 +19,11 @@
  *               n1 = a+c   n2 = b+d
  * ```
  *
- * For two-sided tests the result is invariant under transposition, so
- * SEND-style tables (rows-as-groups) yield the same `pValue` either way.
+ * The two-sided `pValue` is invariant under row swap (success ↔ failure)
+ * and column swap (group 1 ↔ group 2), but **not** under matrix transpose
+ * — transposing changes which margin is fixed by design (column sums →
+ * row sums) and so changes the supremum problem. SEND-style data laid out
+ * with rows-as-groups must therefore be transposed before being passed in.
  * One-sided alternatives `'less'` / `'greater'` reference the column
  * orientation: `'less'` ⇔ `p_group1 < p_group2`.
  *

@@ -14,7 +14,7 @@ const {
   welchTTest, mannWhitneyU, hedgesG,
   spearman, severityTrend,
   welchPairwise, dunnettPairwise, bonferroniCorrect,
-  jonckheere, cochranArmitage, thresholdTest,
+  jonckheere, cochranArmitage, cochranArmitageBasic, thresholdTest,
   fisherExact2x2, boschlooExact, incidenceExactBoth,
   pavaIncreasing, pavaDecreasing, williamsTest,
   runAncova,
@@ -32,7 +32,8 @@ const {
 | `dunnettPairwise` | Many-to-one comparison vs control (FWER-controlled) | [Dunnett (1955)](https://doi.org/10.1080/01621459.1955.10501294) |
 | `bonferroniCorrect` | Multiplicity correction | [Bonferroni (1936)](https://en.wikipedia.org/wiki/Bonferroni_correction) |
 | `jonckheere` | Trend test for ordered groups (continuous) | [Jonckheere (1954)](https://doi.org/10.1093/biomet/41.1-2.133) |
-| `cochranArmitage` | Trend test for proportions (incidence) | [Cochran (1954)](https://doi.org/10.2307/3001616), [Armitage (1955)](https://doi.org/10.2307/3001775) |
+| `cochranArmitage` | Trend test for proportions (incidence) — extended (scores, alternative, hypergeometric variance, modified statistic) | [Cochran (1954)](https://doi.org/10.2307/3001616), [Armitage (1955)](https://doi.org/10.2307/3001775) |
+| `cochranArmitageBasic` | Original two-sided trend test (binomial variance, equal-spaced scores) | [Cochran (1954)](https://doi.org/10.2307/3001616), [Armitage (1955)](https://doi.org/10.2307/3001775) |
 | `thresholdTest` | Sequential threshold test for proportions | [Young (1985)](https://www.sra.org/) |
 | `fisherExact2x2` | Exact test for 2×2 contingency tables | [Fisher (1935)](https://en.wikipedia.org/wiki/Fisher%27s_exact_test) |
 | `boschlooExact` | Unconditional exact test (uniformly more powerful than Fisher) | [Boschloo (1970)](https://onlinelibrary.wiley.com/doi/10.1111/j.1467-9574.1970.tb00104.x) |
@@ -177,9 +178,18 @@ the standard tie-correction (Lehmann 1975 §6.2) so it agrees with R's
 > for the asymptotic distribution) or `permutation` (Monte Carlo at any
 > `N`) outside that range.
 
-`cochranArmitage` accepts custom scores, alternative direction, variance
-method (binomial / hypergeometric), and an optional Buonaccorsi-style
-modified statistic:
+`cochranArmitageBasic` is the textbook two-sided form (binomial variance,
+equal-spaced scores `0..k-1`) — useful when you only need a quick
+significance check and don't want to think about settings:
+
+```typescript
+cochranArmitageBasic([0, 0, 1, 3], [12, 12, 12, 12]);
+// {statistic: ~2.34, pValue: ~0.020}
+```
+
+`cochranArmitage` is the extended API: accepts custom scores, alternative
+direction, variance method (binomial / hypergeometric), and an optional
+Buonaccorsi-style modified statistic:
 
 ```typescript
 cochranArmitage([0, 0, 1, 3], [12, 12, 12, 12], {
@@ -232,20 +242,26 @@ conditional exact test on the same data — at the cost of higher
 computational expense. For preclinical incidence comparisons (one fixed
 margin: group sizes), Boschloo is the recommended primary test.
 
-Following `scipy.stats.boschloo_exact`, columns are interpreted as the two
-binomial groups; for two-sided tests the result is invariant under
-transposition. The two-sided p-value is `min(1, 2 · min(p_less, p_greater))`.
+Following `scipy.stats.boschloo_exact`, **columns** are interpreted as the
+two binomial groups and **rows** as success / failure. The two-sided
+p-value is `min(1, 2 · min(p_less, p_greater))`. It is invariant under
+row swap and column swap, but *not* under matrix transpose — transposing
+re-fixes the wrong margin. SEND-style data laid out with rows-as-groups
+must be transposed before being passed in.
 
 ```typescript
 // scipy doc example (Saari 2004)
 boschlooExact([[74, 31], [43, 32]], {alternative: 'greater'});
 // {statistic: 0.04831, pValue: 0.03556}
 
-// Preclinical 2/3 vs 0/3 — Fisher gives p = 0.40, Boschloo p ≈ 0.16
-boschlooExact([[2, 1], [0, 3]]);
+// Preclinical 2/3 vs 0/3 incidence (group 1: 2 successes in 3, group 2: 0 in 3).
+// Cols-as-groups layout: col 0 = (2 success, 1 failure), col 1 = (0, 3).
+// Fisher gives p = 0.40, Boschloo p ≈ 0.22 — power gain is real but
+// 2/3 vs 0/3 is still not significant at α = 0.05.
+boschlooExact([[2, 0], [1, 3]]);
 
 // Run both Boschloo (primary) and Fisher (alternative) at once
-incidenceExactBoth([[10, 5], [3, 12]]);
+incidenceExactBoth([[10, 3], [5, 12]]);
 // {oddsRatio, pValue: <Boschloo>, pValueFisher: <Fisher>}
 ```
 
@@ -337,6 +353,9 @@ npx tsx src/stats/examples/threshold-test.ts
 
 # Fisher 2×2 exact test (Lady Tasting Tea + edge cases)
 npx tsx src/stats/examples/fisher-exact.ts
+
+# Boschloo unconditional exact test + incidenceExactBoth (Boschloo + Fisher)
+npx tsx src/stats/examples/boschloo-exact.ts
 
 # PAVA + Williams' step-down test (Williams 1971/1972 numerical examples)
 npx tsx src/stats/examples/williams-step-down.ts

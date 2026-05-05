@@ -5,9 +5,12 @@
  * Biometrics 11:375–386. Modern textbook treatment: Agresti, Categorical
  * Data Analysis, 3rd ed., 2013, §6.4.
  *
- * - `cochranArmitageBasic` — original `statistics_fixed.py` API: returns
- *   `{statistic, p_value}` with `null` on degenerate input. Always uses
- *   default scores `0..k-1`, binomial variance, two-sided alternative.
+ * - `cochranArmitageBasic` — minimal API: returns `{statistic, p_value}`.
+ *   Always uses default scores `0..k-1`, binomial variance, two-sided
+ *   alternative. Returns `{statistic: 0, pValue: 1}` for degenerate inputs
+ *   (p̄ = 0, p̄ = 1, Sxx ≤ 0) — the natural limit ("no trend, cannot reject
+ *   H₀"), matching SEND `statistics.trend_test_incidence`. Returns
+ *   `{null, null}` only for invalid shape (k < 2, N = 0).
  * - `cochranArmitage` — extended API with scores, alternative, choice of
  *   binomial vs hypergeometric (fixed-margin) variance, and an optional
  *   robust ("modified") statistic σ²_m = Σ tᵢ(dᵢ−d̄)²·p̂ᵢ(1−p̂ᵢ) that does
@@ -33,7 +36,7 @@ export function cochranArmitageBasic(
 
   const n = sum(t);
   const pBar = sum(c) / n;
-  if (pBar === 0 || pBar === 1) return {statistic: null, pValue: null};
+  if (pBar === 0 || pBar === 1) return {statistic: 0, pValue: 1};
 
   const d = new Float64Array(k);
   for (let i = 0; i < k; i++) d[i] = i;
@@ -49,7 +52,7 @@ export function cochranArmitageBasic(
     Sxx += t[i] * dev * dev;
   }
   const denomSq = pBar * (1 - pBar) * Sxx;
-  if (denomSq <= 0) return {statistic: null, pValue: null};
+  if (denomSq <= 0) return {statistic: 0, pValue: 1};
 
   const z = num / Math.sqrt(denomSq);
   const p = 2 * normalSf(Math.abs(z));
