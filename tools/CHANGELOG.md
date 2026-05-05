@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.2.1 (2026-05-05)
+
+* Reports: `grok report attach <ticket> <file>` — upload a file as a JIRA issue attachment via REST v2 multipart POST.
+
 ## 6.2.0 (2026-05-04)
 
 * `grok test` — Playwright support: when a package's `package.json` declares `"playwrightTests": "<path>"`, `grok test` runs `npx playwright test` against that directory in addition to the existing Puppeteer pass and merges results into a single `test-report.csv`. Auth is unified with the Puppeteer pass (dev key from `~/.grok/config.yaml` → session token → cookie + `localStorage` injection — no login form). Optional `DATAGROK_DEV_KEY_2` env var enables a second-user identity for specs that need it (`DATAGROK_AUTH_TOKEN_2` exposed to specs). New `--skip-playwright` flag opts out of the Playwright pass for a single run.
