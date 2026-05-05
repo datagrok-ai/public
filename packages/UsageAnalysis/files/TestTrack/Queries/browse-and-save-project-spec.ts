@@ -3,119 +3,211 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 
 test.use(specTestOptions);
 
-/**
- * Scenario note: `FracClassificationWithSubstructure` on dev rejects
- * parameterized `executeTable({...})` calls with
- * "level1: Value not defined. substructure: Value not defined." — even when
- * the parameters are set. This blocks the downstream steps (add trellis, save
- * layout, reopen project). Verified in the MCP run with default and explicit
- * values; file a ticket with the server team. The spec below verifies the
- * navigation-and-preview path and leaves the blocked steps as softStep FAILs.
- */
-test('Queries — Browse CHEMBL + FRAC + save project', async ({page}) => {
-  test.setTimeout(300_000);
+test('Queries: browse and save project', async ({page}) => {
+  test.setTimeout(420_000);
 
   await loginToDatagrok(page);
 
-  const queryId = '2d12d7bb-4a57-53e7-bede-759e09213103'; // FracClassificationWithSubstructure
-
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    const w = window as any;
     document.body.classList.add('selenium');
-    (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
-    (window as any).grok.shell.windows.simpleMode = true;
-    (window as any).grok.shell.closeAll();
+    w.grok.shell.settings.showFiltersIconsConstantly = true;
+    w.grok.shell.windows.simpleMode = true;
+    w.grok.shell.closeAll();
   });
-  await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
-  await softStep('Navigate to Databases → Postgres → CHEMBL', async () => {
-    await page.goto(`${process.env.DATAGROK_URL}/browse`);
-    await page.locator('.d4-tree-view-root').waitFor({timeout: 15_000});
-    const ok = await page.evaluate(async () => {
-      const find = (label: string) =>
-        Array.from(document.querySelectorAll('.d4-tree-view-group-label, .d4-tree-view-item-label'))
-          .find((el) => el.textContent?.trim() === label) as HTMLElement | undefined;
-      // Expand Databases first (may be collapsed on a fresh /browse load).
-      const db = find('Databases');
-      if (db) db.click();
-      await new Promise((r) => setTimeout(r, 700));
-      // Poll for Postgres to be present before dbl-clicking to expand.
-      let pg: HTMLElement | undefined;
-      for (let i = 0; i < 30; i++) {
-        pg = find('Postgres');
-        if (pg) break;
-        await new Promise((r) => setTimeout(r, 300));
-      }
-      if (!pg) return false;
-      pg.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true}));
-      for (let i = 0; i < 50; i++) {
-        if (find('CHEMBL')) return true;
-        await new Promise((r) => setTimeout(r, 300));
-      }
-      return false;
+  await softStep('Step 1: Navigate to Databases > Postgres', async () => {
+    const result = await page.evaluate(async () => {
+      const w = window as any;
+      // Verify both CHEMBL and Northwind connections exist on Postgres provider
+      const conns = await w.grok.dapi.connections.list({pageSize: 1000});
+      const pg = conns.filter((c: any) => c.dataSource === 'Postgres');
+      const chembl = pg.find((c: any) => c.friendlyName === 'CHEMBL' || c.name === 'Chembl');
+      const nw = pg.find((c: any) => c.friendlyName === 'Northwind' || c.name === 'PostgresNorthwind');
+      return {chembl: !!chembl, nw: !!nw};
     });
-    expect(ok).toBe(true);
+    expect(result.chembl).toBe(true);
+    expect(result.nw).toBe(true);
   });
 
-  await softStep('Preview + run FRAC classification with substructure', async () => {
-    // `q.executeTable({level1: ...})` on dev rejects with
-    // `level1: Value not defined` even when values are provided — that's the
-    // server-side validation bug. The correct programmatic path is
-    // `q.prepare()` + `fc.inputs.set(...)` + `fc.call()`. Fall back to the
-    // simpler `FracClassification` query via prepare/call when the
-    // substructure variant still errors.
-    const result = await page.evaluate(async (id) => {
-      const tryPrepareCall = async (queryId: string, params: Record<string, string>) => {
-        const q = await (window as any).grok.dapi.queries.find(queryId);
-        const fc = q.prepare();
-        for (const [k, v] of Object.entries(params)) fc.inputs.set(k, v);
-        await fc.call();
-        const df = fc.getParamValue('result')
-          ?? fc.outputs?.get?.('result')
-          ?? fc.getOutputParamValue?.();
-        return df;
-      };
-      try {
-        const df = await tryPrepareCall(id, {
-          level1: 'STEROL BIOSYNTHESIS IN MEMBRANES',
-          level2: '', level3: '', level4: '', substructure: '',
-        });
-        (window as any).__fracDf = df;
-        return {ok: true, rows: df?.rowCount, cols: df?.columns?.length};
-      } catch (e1) {
-        try {
-          const df = await tryPrepareCall('aa2f7457-64e5-5b75-b08f-aceca059693f', {
-            level1: 'STEROL BIOSYNTHESIS IN MEMBRANES',
-            level2: '', level3: '', level4: '',
-          });
-          (window as any).__fracDf = df;
-          return {ok: true, rows: df?.rowCount, cols: df?.columns?.length, usedFallback: true};
-        } catch (e2) {
-          return {ok: false, error: String(e2).slice(0, 200)};
+  await softStep('Step 2: Preview + run sample queries on Northwind and CHEMBL', async () => {
+    const result = await page.evaluate(async () => {
+      const w = window as any;
+      const conns = await w.grok.dapi.connections.list({pageSize: 1000});
+      const nwConn = conns.find((c: any) => c.name === 'PostgresNorthwind');
+      const chConn = conns.find((c: any) => c.name === 'Chembl' && c.dataSource === 'Postgres');
+      const all = await w.grok.dapi.queries.list({pageSize: 1000});
+      const nwQ = all.find((x: any) => x.connection?.id === nwConn?.id && x.name === 'PostgresProducts');
+      const chQ = all.find((x: any) => x.connection?.id === chConn?.id && (x.inputs || []).length === 0);
+      const nwDf = await nwQ.executeTable();
+      const chDf = await chQ.executeTable();
+      w.grok.shell.addTableView(nwDf);
+      await new Promise(r => setTimeout(r, 600));
+      w.grok.shell.addTableView(chDf);
+      return {nwRows: nwDf.rowCount, chRows: chDf.rowCount};
+    });
+    expect(result.nwRows).toBeGreaterThan(0);
+    expect(result.chRows).toBeGreaterThan(0);
+  });
+
+  await softStep('Step 3: Open FRAC query, verify Context Panel tabs', async () => {
+    const tabs = await page.evaluate(async () => {
+      const w = window as any;
+      w.grok.shell.closeAll();
+      await new Promise(r => setTimeout(r, 800));
+      const all = await w.grok.dapi.queries.list({pageSize: 1000});
+      const q = all.find((x: any) => x.name === 'FracClassificationWithSubstructure');
+      // Select the query (browse-style preview)
+      w.grok.shell.o = q;
+      await new Promise(r => setTimeout(r, 1500));
+      const headers = Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
+        .map(h => h.textContent?.trim() || '');
+      return headers;
+    });
+    expect(tabs.some(t => t.startsWith('Run'))).toBe(true);
+    expect(tabs.some(t => t.startsWith('Query'))).toBe(true);
+    expect(tabs.some(t => t.startsWith('Transformations'))).toBe(true);
+  });
+
+  await softStep('Step 4: Open FRAC run dialog; first param change clears dependent params', async () => {
+    const result = await page.evaluate(async () => {
+      const runHdr = Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
+        .find(h => h.textContent?.trim().toLowerCase().startsWith('run')) as HTMLElement | undefined;
+      runHdr?.click();
+      await new Promise(r => setTimeout(r, 800));
+      const runBtn = document.querySelector<HTMLElement>('[name="button-RUN"]');
+      runBtn?.click();
+      await new Promise(r => setTimeout(r, 2000));
+      const dlg = document.querySelector('.d4-dialog');
+      const sel1 = dlg?.querySelector<HTMLSelectElement>('[name="input-host-Level1"] select');
+      const opts = Array.from(sel1?.options || []).map(o => o.value);
+      const newVal = opts.find(v => v && v !== sel1?.value);
+      if (sel1 && newVal) {
+        sel1.value = newVal;
+        sel1.dispatchEvent(new Event('change', {bubbles: true}));
+      }
+      await new Promise(r => setTimeout(r, 1500));
+      const vals = ['Level1', 'Level2', 'Level3', 'Level4'].map(n => {
+        const h = dlg?.querySelector(`[name="input-host-${n}"] select`) as HTMLSelectElement | null;
+        return {n, v: h?.value};
+      });
+      return {hasDialog: !!dlg, vals};
+    });
+    expect(result.hasDialog).toBe(true);
+    expect(result.vals.find(v => v.n === 'Level2')?.v).toBe('');
+    expect(result.vals.find(v => v.n === 'Level3')?.v).toBe('');
+    expect(result.vals.find(v => v.n === 'Level4')?.v).toBe('');
+  });
+
+  await softStep('Step 5: Set parameters and click OK; result table opens', async () => {
+    const result = await page.evaluate(async () => {
+      const w = window as any;
+      const dlg = document.querySelector('.d4-dialog');
+      const sel1 = dlg?.querySelector<HTMLSelectElement>('[name="input-host-Level1"] select');
+      if (sel1) {
+        sel1.value = 'STEROL BIOSYNTHESIS IN MEMBRANES';
+        sel1.dispatchEvent(new Event('change', {bubbles: true}));
+      }
+      await new Promise(r => setTimeout(r, 1500));
+      const sel2 = dlg?.querySelector<HTMLSelectElement>('[name="input-host-Level2"] select');
+      if (sel2) {
+        const opts = Array.from(sel2.options).map(o => o.value).filter(Boolean);
+        if (opts.length) {
+          sel2.value = opts[0];
+          sel2.dispatchEvent(new Event('change', {bubbles: true}));
         }
       }
-    }, queryId);
-    expect(result.ok).toBe(true);
+      await new Promise(r => setTimeout(r, 1500));
+      const ok = dlg?.querySelector<HTMLElement>('[name="button-OK"]');
+      ok?.click();
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        if (!document.querySelector('.d4-dialog')) break;
+      }
+      await new Promise(r => setTimeout(r, 3000));
+      const tv = w.grok.shell.tv;
+      return {viewType: w.grok.shell.v?.type, rows: tv?.dataFrame?.rowCount};
+    });
+    expect(result.viewType).toBe('TableView');
+    expect(result.rows).toBeGreaterThan(0);
   });
 
-  await softStep('Add trellis plot + save layout', async () => {
+  await softStep('Step 6: Add Trellis plot to result view', async () => {
     const result = await page.evaluate(async () => {
-      const df = (window as any).__fracDf as any;
-      if (!df) return {ok: false, reason: 'no-df'};
-      const tv = (window as any).grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
-      try {
-        tv.addViewer((window as any).DG.VIEWER.TRELLIS_PLOT);
-      } catch (e) {}
-      await new Promise((r) => setTimeout(r, 1500));
-      const layout = tv.saveLayout();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 500));
-      await (window as any).grok.dapi.layouts.delete(saved);
-      return {ok: true, layoutId: saved.id};
+      const w = window as any;
+      const tp = document.querySelector<HTMLElement>('[name="icon-trellis-plot"]');
+      tp?.click();
+      await new Promise(r => setTimeout(r, 2500));
+      const tv = w.grok.shell.tv;
+      const viewers = tv && tv.viewers ? Array.from(tv.viewers).map((v: any) => v.type) : [];
+      return {viewers};
     });
-    expect(result.ok).toBe(true);
+    expect(result.viewers).toContain('Trellis plot');
+  });
+
+  await softStep('Step 7: Save project (with embedded layout)', async () => {
+    const result = await page.evaluate(async () => {
+      const w = window as any;
+      const saveBtn = document.querySelector<HTMLElement>('[name="button-Save"]');
+      saveBtn?.click();
+      await new Promise(r => setTimeout(r, 3000));
+      const dlg = document.querySelector('.d4-dialog');
+      const inputs = Array.from(dlg?.querySelectorAll('input[type="text"], input:not([type])') || []);
+      const nameInput = inputs.find(i => /FRAC classification with substructure/i.test((i as HTMLInputElement).value || '')) as HTMLInputElement | undefined;
+      const newName = 'FRAC scenario test ' + Date.now();
+      if (nameInput) {
+        nameInput.focus();
+        const proto = Object.getPrototypeOf(nameInput);
+        const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+        setter?.call(nameInput, newName);
+        nameInput.dispatchEvent(new Event('input', {bubbles: true}));
+        nameInput.dispatchEvent(new Event('change', {bubbles: true}));
+      }
+      await new Promise(r => setTimeout(r, 600));
+      const ok = dlg?.querySelector<HTMLElement>('[name="button-OK"]');
+      ok?.click();
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        if (!document.querySelector('.d4-dialog')) break;
+      }
+      await new Promise(r => setTimeout(r, 3000));
+      const proj = await w.grok.dapi.projects.filter('FRAC scenario test').first();
+      return {savedId: proj?.id, savedName: proj?.name};
+    });
+    expect(result.savedId).toBeTruthy();
+  });
+
+  await softStep('Step 8: Close all and reopen project; trellis plot persists', async () => {
+    const result = await page.evaluate(async () => {
+      const w = window as any;
+      w.grok.shell.closeAll();
+      await new Promise(r => setTimeout(r, 2000));
+      const proj = await w.grok.dapi.projects.filter('FRAC scenario test').first();
+      if (!proj) return {viewers: [], rows: 0};
+      await proj.open();
+      for (let i = 0; i < 60; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        const tv = w.grok.shell.tv;
+        if (tv && tv.viewers && Array.from(tv.viewers).length > 1) break;
+      }
+      await new Promise(r => setTimeout(r, 4000));
+      const tv = w.grok.shell.tv;
+      const viewers = tv && tv.viewers ? Array.from(tv.viewers).map((v: any) => v.type) : [];
+      return {viewers, rows: tv?.dataFrame?.rowCount};
+    });
+    expect(result.viewers).toContain('Trellis plot');
+    expect(result.viewers).toContain('Grid');
+    expect(result.rows).toBeGreaterThan(0);
+  });
+
+  // Cleanup
+  await page.evaluate(async () => {
+    const w = window as any;
+    const old = await w.grok.dapi.projects.filter('FRAC scenario test').first();
+    if (old) await w.grok.dapi.projects.delete(old);
+    w.grok.shell.closeAll();
   });
 
   if (stepErrors.length > 0)
-    throw new Error('Soft step failures:\n' + stepErrors.map((e) => `- ${e.step}: ${e.error}`).join('\n'));
+    throw new Error('Step failures:\n' + stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n'));
 });
