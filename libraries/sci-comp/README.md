@@ -24,7 +24,7 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
   * multi-group vs control: Welch pairwise + [Bonferroni](https://en.wikipedia.org/wiki/Bonferroni_correction), [Dunnett's many-to-one](https://doi.org/10.1080/01621459.1955.10501294)
   * trend tests: [Jonckheere-Terpstra](https://doi.org/10.1093/biomet/41.1-2.133) (continuous), [Cochran-Armitage](https://doi.org/10.2307/3001775) (incidence, with Buonaccorsi-modified variant)
   * sequential threshold test for proportions ([Young 1985](https://www.sra.org/))
-  * categorical: [Fisher 2×2 exact](https://en.wikipedia.org/wiki/Fisher%27s_exact_test) (two-sided minlike + one-sided + odds ratio)
+  * categorical: [Fisher 2×2 exact](https://en.wikipedia.org/wiki/Fisher%27s_exact_test) (two-sided minlike + one-sided + odds ratio), [Boschloo's unconditional exact](https://onlinelibrary.wiley.com/doi/10.1111/j.1467-9574.1970.tb00104.x) (uniformly more powerful)
   * dose-response: [PAVA isotonic regression](https://en.wikipedia.org/wiki/Isotonic_regression), [Williams step-down](https://doi.org/10.2307/2528930) with 1971/1972 critical-value tables
   * covariate-adjusted analysis: ANCOVA (LS means, slope homogeneity, effect decomposition)
 

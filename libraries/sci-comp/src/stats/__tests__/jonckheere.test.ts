@@ -72,6 +72,10 @@ describe('jonckheere — input validation', () => {
     expect(() => jonckheere([[1, 2], [3, 4]])).toThrow(/at least 3/);
   });
 
+  it('error message points two-group callers to mannWhitneyU', () => {
+    expect(() => jonckheere([[1, 2], [3, 4]])).toThrow(/mannWhitneyU/);
+  });
+
   it('throws when method = "permutation" and nperm is missing', () => {
     expect(() => jonckheere(G3, {method: 'permutation'})).toThrow(/nperm/);
   });
@@ -80,15 +84,41 @@ describe('jonckheere — input validation', () => {
     expect(() => jonckheere(G3, {method: 'permutation', nperm: 0})).toThrow(/nperm/);
   });
 
-  it('returns null result when N is below the minimum', () => {
+  it('returns null result when all groups are empty', () => {
     const r = jonckheere([[], [], []]);
     expect(r).toEqual({statistic: null, pValue: null, jStatistic: null});
+  });
+
+  it('returns null result when N is below MIN_N = 4', () => {
+    // N = 3, three non-empty groups — pooled sample is too small.
+    const r = jonckheere([[1], [2], [3]]);
+    expect(r).toEqual({statistic: null, pValue: null, jStatistic: null});
+  });
+
+  it('returns null result when fewer than two groups are non-empty', () => {
+    // N = 5 ≥ MIN_N but only one group has data — variance is degenerate.
+    const r = jonckheere([[1, 2, 3, 4, 5], [], []]);
+    expect(r).toEqual({statistic: null, pValue: null, jStatistic: null});
+  });
+
+  it('accepts N = 4 with two non-empty groups', () => {
+    // Boundary case: exactly at MIN_N, exactly two non-empty groups.
+    const r = jonckheere([[1, 2], [3, 4], []]);
+    expect(r.jStatistic).not.toBeNull();
+    expect(r.statistic).not.toBeNull();
+    expect(r.pValue).not.toBeNull();
   });
 
   it('strips NaN before computing', () => {
     const a = jonckheere([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
     const b = jonckheere([[1, NaN, 2, 3], [4, 5, 6], [7, NaN, 8, 9]]);
     expect(b.jStatistic).toBe(a.jStatistic);
+  });
+
+  it('falls below MIN_N once NaNs are stripped', () => {
+    // 6 raw values but only 3 finite → below MIN_N.
+    const r = jonckheere([[1, NaN], [NaN, 2], [3, NaN]]);
+    expect(r).toEqual({statistic: null, pValue: null, jStatistic: null});
   });
 });
 
@@ -159,14 +189,37 @@ describe('jonckheere — tie handling (midrank convention)', () => {
   //      J = 7 + 8.5 + 7 = 22.5
   //      E[J] = (81 − 27)/4 = 13.5
   //      Var[J] = 1356/72 + 108/18144 + 180/576 ≈ 19.15179
-  //      Z = (22.5 − 13.5 − 0.5) / √Var ≈ 1.94229
-  //      p (two-sided) ≈ 0.05210
-  it('handles cross-group ties with the midrank convention', () => {
+  //      Z (continuity)    = (22.5 − 13.5 − 0.5) / √Var ≈ 1.94229
+  //      p (continuity, two-sided) ≈ 0.05210
+  it('handles cross-group ties with the midrank convention (continuity=true)', () => {
     const G = [[1, 2, 3], [2, 3, 4], [3, 4, 5]];
-    const r = jonckheere(G);
+    const r = jonckheere(G, {continuity: true});
     expect(r.jStatistic).toBe(22.5);
     expect(Math.abs(r.statistic! - 1.9422909597931441)).toBeLessThan(1e-9);
     expect(Math.abs(r.pValue! - 0.052101886806283026)).toBeLessThan(1e-9);
+  });
+
+  // 2b. Default omits continuity correction (matches clinfun / PMCMRplus /
+  //     SAS PROC FREQ — and the SEND `jonckheere_test` Python library).
+  //     Without the −0.5 shift, |Z| is strictly larger and p is smaller.
+  //     We assert the relationship algebraically so the test does not
+  //     depend on hand-computed normal-CDF values.
+  it('default omits continuity correction', () => {
+    const G = [[1, 2, 3], [2, 3, 4], [3, 4, 5]];
+    const rDefault = jonckheere(G);
+    const rNoCC = jonckheere(G, {continuity: false});
+    const rCC = jonckheere(G, {continuity: true});
+
+    // Default behaves exactly like an explicit `continuity: false`
+    expect(rDefault.statistic).toBe(rNoCC.statistic);
+    expect(rDefault.pValue).toBe(rNoCC.pValue);
+
+    // Without continuity, |Z| is larger than with continuity (J > E[J] here)
+    expect(Math.abs(rNoCC.statistic!)).toBeGreaterThan(Math.abs(rCC.statistic!));
+
+    // (Z_no_cc − Z_cc) · σ = 0.5 exactly, where σ = (J − E[J]) / Z_no_cc
+    const sigma = (22.5 - 13.5) / rNoCC.statistic!;
+    expect(Math.abs((rNoCC.statistic! - rCC.statistic!) * sigma - 0.5)).toBeLessThan(1e-12);
   });
 
   // 3. All values equal: J = E[J] (no information about ordering), and

@@ -15,7 +15,7 @@ const {
   spearman, severityTrend,
   welchPairwise, dunnettPairwise, bonferroniCorrect,
   jonckheere, cochranArmitage, thresholdTest,
-  fisherExact2x2,
+  fisherExact2x2, boschlooExact, incidenceExactBoth,
   pavaIncreasing, pavaDecreasing, williamsTest,
   runAncova,
 } = stats;
@@ -35,6 +35,8 @@ const {
 | `cochranArmitage` | Trend test for proportions (incidence) | [Cochran (1954)](https://doi.org/10.2307/3001616), [Armitage (1955)](https://doi.org/10.2307/3001775) |
 | `thresholdTest` | Sequential threshold test for proportions | [Young (1985)](https://www.sra.org/) |
 | `fisherExact2x2` | Exact test for 2×2 contingency tables | [Fisher (1935)](https://en.wikipedia.org/wiki/Fisher%27s_exact_test) |
+| `boschlooExact` | Unconditional exact test (uniformly more powerful than Fisher) | [Boschloo (1970)](https://onlinelibrary.wiley.com/doi/10.1111/j.1467-9574.1970.tb00104.x) |
+| `incidenceExactBoth` | Boschloo (primary) + Fisher (alternative) p-values together | — |
 | `pavaIncreasing/Decreasing` | Isotonic regression (PAVA) | [Barlow et al. (1972)](https://en.wikipedia.org/wiki/Isotonic_regression) |
 | `williamsTest` | Step-down dose-response with PAVA | [Williams (1971)](https://doi.org/10.2307/2528930), [Williams (1972)](https://doi.org/10.2307/2556895) |
 | `runAncova` | Covariate-adjusted group comparison (OLS) | Standard ANCOVA |
@@ -147,7 +149,11 @@ import {mulberry32} from '@datagrok-libraries/sci-comp/dist/stats/internal/rando
 
 const G = [[4.2, 5.1, 5.5], [5.6, 6.0, 6.3], [6.4, 7.1, 7.5]];
 
-// Asymptotic normal approximation — fast, default; tie-aware variance
+// Asymptotic normal approximation — fast, default; tie-aware variance.
+// `continuity` defaults to `false` to match clinfun / PMCMRplus / SAS PROC FREQ.
+jonckheere(G, {alternative: 'increasing'});
+
+// Set `continuity: true` for Wilcoxon-style ±0.5 shift in the numerator.
 jonckheere(G, {alternative: 'increasing', continuity: true});
 
 // Monte Carlo permutation p-value (recommended when ties are present)
@@ -216,6 +222,37 @@ const r = fisherExact2x2([[3, 1], [1, 3]]);
 fisherExact2x2([[5, 0], [0, 5]]);
 // {oddsRatio: Infinity, pValue: 1/126, ...}
 ```
+
+## Boschloo's exact (unconditional)
+
+Boschloo's test uses Fisher's one-sided p-value as a test statistic and
+maximises the rejection probability over the nuisance parameter
+`π = P(success)`. It is **uniformly more powerful** than Fisher's
+conditional exact test on the same data — at the cost of higher
+computational expense. For preclinical incidence comparisons (one fixed
+margin: group sizes), Boschloo is the recommended primary test.
+
+Following `scipy.stats.boschloo_exact`, columns are interpreted as the two
+binomial groups; for two-sided tests the result is invariant under
+transposition. The two-sided p-value is `min(1, 2 · min(p_less, p_greater))`.
+
+```typescript
+// scipy doc example (Saari 2004)
+boschlooExact([[74, 31], [43, 32]], {alternative: 'greater'});
+// {statistic: 0.04831, pValue: 0.03556}
+
+// Preclinical 2/3 vs 0/3 — Fisher gives p = 0.40, Boschloo p ≈ 0.16
+boschlooExact([[2, 1], [0, 3]]);
+
+// Run both Boschloo (primary) and Fisher (alternative) at once
+incidenceExactBoth([[10, 5], [3, 12]]);
+// {oddsRatio, pValue: <Boschloo>, pValueFisher: <Fisher>}
+```
+
+The agreement with `scipy.stats.boschloo_exact` is ~1e-11 absolute on
+preclinical-sized tables. `nGrid` defaults to 32 (matches scipy's Sobol
+budget); a golden-section refinement around the best grid point removes
+quantisation noise.
 
 ## Williams step-down (dose-response trend)
 

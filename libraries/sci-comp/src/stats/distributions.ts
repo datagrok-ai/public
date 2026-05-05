@@ -76,6 +76,16 @@ export function hypgeomPmf(k: number, N: number, K: number, n: number): number {
   return J.hypgeom.pdf(k, N, K, n);
 }
 
+/**
+ * Hypergeometric CDF: P(X ≤ k) where X is the count of successes in a draw of
+ * `n` items from a population of `N` containing `K` successes.
+ *
+ * Matches `scipy.stats.hypergeom.cdf(k, N, K, n)` exactly.
+ */
+export function hypgeomCdf(k: number, N: number, K: number, n: number): number {
+  return J.hypgeom.cdf(k, N, K, n);
+}
+
 // ── Special functions ────────────────────────────────────────────
 
 /** Error function. */

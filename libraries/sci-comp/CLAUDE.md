@@ -69,6 +69,7 @@ src/stats/
     welch-pairwise.ts, dunnett.ts, cochran-armitage.ts, ancova.ts
     williams.ts, williams-tables.ts
     jonckheere.ts                 # Full JT: approximate / permutation / exact, ±continuity, tie-corrected variance
+    boschloo-exact.ts             # Unconditional exact test: Fisher one-sided p as test stat, sup over nuisance π via grid + golden-section refinement; `incidenceExactBoth` returns Boschloo + Fisher together
   multiple-comparison/
     bonferroni.ts                 # bonferroniCorrect — multiplicity adjustment
   __tests__/                      # Jest tests, one per method, all driven by JSON fixtures in __tests__/fixtures/
@@ -78,6 +79,7 @@ src/stats/
       jonckheere-rp-exact.json    # 5 cases vs Python regressionpack exact method
       jonckheere-clinfun.json     # 144 cases vs R clinfun::jonckheere.test
       jonckheere-pmcmr.json       # 144 cases vs R PMCMRplus permutation
+      boschloo-exact.json         # 31 cases vs scipy.stats.boschloo_exact (hand-picked + 60 randomised)
   examples/                       # Runnable npx tsx examples
 src/time-series/
   feature-extraction/

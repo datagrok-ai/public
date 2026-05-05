@@ -17,6 +17,10 @@ export {mannWhitneyU} from './tests/mann-whitney';
 export {spearman, severityTrend} from './tests/spearman';
 export {hedgesG} from './tests/hedges-g';
 export {fisherExact2x2} from './tests/fisher-exact';
+export {boschlooExact, incidenceExactBoth} from './tests/boschloo-exact';
+export type {
+  BoschlooSettings, BoschlooResult, BoschlooAlternative,
+} from './tests/boschloo-exact';
 export {jonckheere} from './tests/jonckheere';
 export type {
   JonckheereSettings, JonckheereResult, JonckheereMethod,

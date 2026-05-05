@@ -54,8 +54,12 @@ export interface JonckheereSettings {
   /** Number of permutations. Required when `method === 'permutation'`. */
   nperm?: number;
   /**
-   * Apply continuity correction in the asymptotic approximation. Default
-   * `true`. Has no effect on `'permutation'` / `'exact'` methods.
+   * Apply continuity correction in the asymptotic approximation
+   * (`±0.5 · sign(J − E[J])` shift in the numerator before standardising).
+   * Default `false`, matching `clinfun::jonckheere.test`,
+   * `PMCMRplus::jonckheereTest`, and SAS PROC FREQ. Set to `true` to
+   * reproduce Wilcoxon-style continuity-corrected output. Has no effect on
+   * `'permutation'` / `'exact'` methods.
    */
   continuity?: boolean;
   /**
@@ -85,7 +89,19 @@ export interface JonckheereResult {
 
 const NULL_RESULT: JonckheereResult = {statistic: null, pValue: null, jStatistic: null};
 
+/**
+ * Minimum number of ordered groups. JT is undefined for `k < 2` and
+ * degenerates to a Mann-Whitney U test at `k = 2`. We refuse `k < 3`
+ * to push callers towards the appropriate two-sample test.
+ */
 const MIN_GROUPS = 3;
+
+/**
+ * Minimum pooled sample size, post-NaN-stripping. Matches the SEND
+ * `jonckheere_test` Python library and avoids degenerate small-sample
+ * variance estimates.
+ */
+const MIN_N = 4;
 
 /**
  * Jonckheere-Terpstra trend test against an ordered alternative.
@@ -96,10 +112,13 @@ const MIN_GROUPS = 3;
  * @param settings Optional configuration: `alternative`, `method`, `nperm`,
  *               `continuity`, `rng`.
  * @returns `{statistic, pValue, jStatistic}` — `statistic` is `null` for
- *          the exact method; `pValue`/`statistic` are `null` when the
- *          variance is non-positive or the pooled sample is too small.
+ *          the exact method; all three fields are `null` when the pooled
+ *          sample is below `MIN_N = 4`, when fewer than two groups have any
+ *          finite observations, or when the asymptotic variance is
+ *          non-positive.
  *
- * @throws `Error` when fewer than `MIN_GROUPS` groups are supplied, when
+ * @throws `Error` when fewer than `MIN_GROUPS` groups are supplied (use
+ *         `mannWhitneyU` for two-sample comparisons), when
  *         `method === 'permutation'` and `nperm` is missing, or when an
  *         unknown `method` / `alternative` is provided.
  */
@@ -109,11 +128,12 @@ export function jonckheere(
 ): JonckheereResult {
   const alternative: Alternative = settings.alternative ?? 'two-sided';
   const method: JonckheereMethod = settings.method ?? 'approximate';
-  const continuity = settings.continuity ?? true;
+  const continuity = settings.continuity ?? false;
 
   if (groups.length < MIN_GROUPS) {
     throw new Error(
-      `jonckheere: requires at least ${MIN_GROUPS} ordered groups (got ${groups.length}).`,
+      `jonckheere: requires at least ${MIN_GROUPS} ordered groups (got ${groups.length}). ` +
+      `For two groups, use mannWhitneyU instead.`,
     );
   }
 
@@ -121,11 +141,13 @@ export function jonckheere(
   const k = cleaned.length;
   const ns = new Int32Array(k);
   let N = 0;
+  let nonEmpty = 0;
   for (let i = 0; i < k; i++) {
     ns[i] = cleaned[i].length;
     N += ns[i];
+    if (ns[i] > 0) nonEmpty++;
   }
-  if (N < MIN_GROUPS) return NULL_RESULT;
+  if (nonEmpty < 2 || N < MIN_N) return NULL_RESULT;
 
   const J = jStatistic(cleaned);
   const {mean, variance} = meanVarianceTieAware(cleaned, ns, N);

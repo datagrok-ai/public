@@ -167,6 +167,12 @@ function assembleFallback(
  *
  * Outer Simpson over s ∈ (0, sMax], inner Simpson over Z_0 ∈ [-zMax, zMax].
  * The integrand is the product of the conditional rectangle probabilities.
+ *
+ * 160 × 160 panels match `scipy.stats.dunnett`'s own QMC precision floor
+ * (~1e-4 on small p-values, ~1e-5 on moderate ones). Doubling the grid
+ * further does not improve agreement beyond that floor — see
+ * <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dunnett.html>
+ * (the underlying `multivariate_t.cdf` Genz QMC has tolerance 1e-5).
  */
 function dunnettMaxCdf(
   c: number, df: number, alphas: number[], betas: number[],
@@ -174,8 +180,8 @@ function dunnettMaxCdf(
   const sMax = 6.0;
   const sMin = 1e-3;
   const zMax = 8.0;
-  const nOuter = 80; // Simpson panels for s
-  const nInner = 80; // Simpson panels for z
+  const nOuter = 160; // Simpson panels for s
+  const nInner = 160; // Simpson panels for z
 
   const outerH = (sMax - sMin) / nOuter;
   const innerH = (2 * zMax) / nInner;
