@@ -1,0 +1,128 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: projects-validate-batch-2026-05-05
+feature: projects
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-save-copy-spec.ts
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-save-copy.md
+invoked_at: 2026-05-05T00:00:00Z
+verdict: FAIL
+gate: E
+failure_keys: [E-TRACE-02, E-TRACE-03]
+
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Spec file exists at expected path
+      public/packages/UsageAnalysis/files/TestTrack/Projects/complex-save-copy-spec.ts (~80 lines).
+
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      File parses as valid TypeScript: balanced braces, well-formed imports,
+      valid test() call signature with destructured {page} arg.
+
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      One test() block present.
+
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name contains "Save Copy" token, traceable to scenario H1.
+
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Imports limited to canonical paths (@playwright/test + sibling local helpers).
+
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter `sub_features_covered: [projects.api.save, projects.api.files.sync,
+      projects.add-relation]` matches scenario .md frontmatter exactly.
+
+  - check: E-TRACE-01
+    status: PASS
+    evidence: |
+      All softSteps trace to scenario steps where covered (no orphan code blocks).
+
+  - check: E-TRACE-02
+    status: FAIL
+    evidence: |
+      MAJOR REGRESSION vs revision 1 (~280 lines → ~80 lines). Spec rewrote to use
+      only saveProjectWithProvenance(name) helper (helpers/projects.ts:739-767),
+      which has NO sync flag. The Save Copy mode + Data Sync OFF/ON UI toggle —
+      the central deliverable per scenario .md — is ENTIRELY ABSENT.
+      MD step 4 (verify Sync OFF) and MD step 6 (reopen + verify Sync ON) are
+      completely uncovered. Step 3 "original-untouched" + count==1 assertions
+      missing. Failure key.
+
+  - check: E-TRACE-03
+    status: FAIL
+    evidence: |
+      Only one expect() in entire spec (r.tables > 0 in Step 4). No
+      dapi.projects.filter count checks, no sync-state probes, no row-count
+      parity, no original-untouched verification. Failure key.
+
+  - check: E-SEL-01
+    status: PASS
+    evidence: |
+      No raw selectors at spec level — UI delegated to helpers.
+
+  - check: E-SEL-02
+    status: PASS
+    evidence: |
+      No invented selectors.
+
+  - check: E-SEL-03
+    status: NA
+    evidence: |
+      No .fill() calls in spec; helpers handle inputs.
+
+  - check: E-HELP-01
+    status: PASS
+    evidence: |
+      All helpers (openTableFromFile, assertProvenanceScript, saveProjectWithProvenance,
+      deleteProjectWithCleanup, resetShell) are registered in helpers-registry.
+
+  - check: E-HELP-02
+    status: PASS
+    evidence: |
+      No reinvention of registered helpers.
+
+  - check: E-LAYER-01
+    status: PASS
+    evidence: |
+      target_layer: playwright matches @playwright/test imports.
+
+  - check: E-LAYER-02
+    status: NA
+    evidence: |
+      No layer override.
+
+  - check: E-BOUND-01
+    status: PASS
+    evidence: |
+      Spec under public/packages/UsageAnalysis/files/TestTrack/** allowed path.
+
+  - check: E-BOUND-02
+    status: PASS
+    evidence: |
+      No core/** changes.
+
+scope_reduction_proposal: |
+  (Not applicable — verdict is FAIL.)
+
+evidence_needed: |
+  (Not applicable — verdict is FAIL.)
+
+remediation_required: |
+  Restore Save Copy mode UI driver (mode-radio + Data Sync toggle inline),
+  step 3 sync-OFF verification, step 5 sync-ON re-save, step 6 reopen +
+  sync-ON verification, count and original-untouched assertions. Either
+  extend saveProjectWithProvenance helper to accept sync flag, or restore
+  inline UI driving from revision 1.

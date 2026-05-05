@@ -1,0 +1,86 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: projects-validate-batch-2026-05-05
+feature: projects
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-spec.ts
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
+invoked_at: 2026-05-05T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: E
+failure_keys: []
+notes: Parent/master thin smoke for complex.md — intentionally delegates bulk to 3 satellite specs (complex-derived-tables, complex-rename, complex-share-second-user) plus drops UI-only Steps 4 & 10 per decision-log b2-2026-05-03-drag-drop-ui-only-reclassification.
+
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: Spec exists at expected path.
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: Valid TS.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: test() block present.
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: Every softStep tagged with scenario step number.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: Canonical imports.
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: Frontmatter has 5 valid atlas IDs (deliberate subset of .md's 7).
+  - check: E-TRACE-01
+    status: PASS
+    evidence: All softSteps trace to scenario steps; delegation declared in spec leading comment.
+  - check: E-TRACE-02
+    status: SCOPE_REDUCTION
+    evidence: |
+      Parent thin-smoke pattern — delegation to 3 satellites declared in .md
+      frontmatter (`realized_as`) and in spec leading comment. UI-only Steps 4 & 10
+      dropped per decision-log b2-2026-05-03-drag-drop-ui-only-reclassification.
+      Per task contract this is documented SR, not E-TRACE-02 FAIL.
+  - check: E-TRACE-03
+    status: PASS
+    evidence: Verifications match scenario steps within self-declared parent-smoke scope.
+  - check: E-SEL-01
+    status: PASS
+    evidence: No invented selectors.
+  - check: E-SEL-02
+    status: PASS
+    evidence: All selectors traceable.
+  - check: E-SEL-03
+    status: PASS
+    evidence: No raw .fill() on Dart inputs.
+  - check: E-HELP-01
+    status: PASS
+    evidence: Helpers registered.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No reinvention.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: target_layer playwright matches.
+  - check: E-LAYER-02
+    status: NA
+    evidence: No override.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Under allowed path.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No core/** changes.
+
+scope_reduction_proposal: |
+  Bulk delegation to 3 satellite specs:
+  - complex-derived-tables-spec.ts (Step 1 multi-source open + Step 2 Save-Sync ON, GROK-19103)
+  - complex-rename-spec.ts (Steps 7-9 + Step 11, GROK-19212)
+  - complex-share-second-user-spec.ts (Step 12, GROK-18345 share-side)
+  UI-only Steps 4 & 10 dropped per decision-log
+  b2-2026-05-03-drag-drop-ui-only-reclassification — covered manually in
+  complex-ui.md. Parent spec retains responsibility for the cross-cutting
+  smoke and serves as anchor for chain dependency_graph.
+
+evidence_needed: |
+  (Not applicable.)

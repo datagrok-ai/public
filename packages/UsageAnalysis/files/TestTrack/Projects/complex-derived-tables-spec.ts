@@ -27,41 +27,15 @@ sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sy
 //     about derived-table types. Only the Join sub-bullet that
 //     reproduces GROK-19103 is in scope.
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {softStep, stepErrors} from '../spec-login';
+import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
+import {openTableFromFile} from '../helpers/openers';
+import {deleteProjectWithCleanup} from '../helpers/projects';
 
-test.use(specTestOptions);
-
-async function evalJs(page: Page, script: string): Promise<any> {
-  return page.evaluate(script);
-}
+test.use(projectsTestOptions);
 
 async function closeAll(page: Page) {
   await evalJs(page, 'grok.shell.closeAll()');
-}
-
-async function saveProject(page: Page, name: string) {
-  await page.click('button:has-text("SAVE"), .ui-btn:has-text("SAVE")');
-  const dialog = page.locator('.d4-dialog').first();
-  await dialog.waitFor({timeout: 15000});
-  const nameInput = dialog.locator('input[type="text"]').first();
-  await nameInput.focus();
-  await page.keyboard.press('Control+a');
-  await page.keyboard.type(name);
-  await dialog.locator('[name="button-OK"]').click();
-  // Defensive share-dialog handling per Wave 1a Validator hypothesis cycle 1
-  // canonical pattern (project-url-spec, projects-copy-clone-spec).
-  const shareDialog = page.locator('.d4-dialog').filter({hasText: `Share ${name}`});
-  if (await shareDialog.isVisible({timeout: 30000}).catch(() => false)) {
-    await shareDialog.locator('[name="button-CANCEL"]').click();
-    await expect(shareDialog).toBeHidden({timeout: 10000});
-  }
-}
-
-async function deleteProjectByName(page: Page, name: string) {
-  await evalJs(page, `(async () => {
-    const p = await grok.dapi.projects.filter('name = "${name}"').first();
-    if (p) await grok.dapi.projects.delete(p);
-  })()`);
 }
 
 test('Projects / Complex derived-tables: Join lands in active project (GROK-19103)', async ({page}) => {
@@ -71,22 +45,29 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
   const stamp = Date.now();
   const projectName = 'AutoTest-ComplexDerived-' + stamp;
 
-  await loginToDatagrok(page);
+  await gotoApp(page);
+  await setupSession(page);
 
   let baselineCount = 0;
+  let projectId: string | null = null;
+  let tableInfoId: string | null = null;
 
   try {
     await softStep('Setup + Step 1: open 2 source tables from files', async () => {
       await closeAll(page);
-      await evalJs(page, `(async () => {
-        const df1 = await grok.data.files.openTable('System:DemoFiles/demog.csv');
-        df1.name = 'src_a_${stamp}';
-        grok.shell.addTableView(df1);
-        const df2 = await grok.data.files.openTable('System:DemoFiles/demog.csv');
-        df2.name = 'src_b_${stamp}';
-        grok.shell.addTableView(df2);
+      // Use openTableFromFile (canonical OpenFile recorder + dot-form
+      // path normalization) — writes df.tags['.script'] which avoids bug
+      // 2a (UI Save POST silently fails on colon-form fullPath).
+      await openTableFromFile(page, 'System:DemoFiles/demog.csv');
+      await openTableFromFile(page, 'System:DemoFiles/demog.csv');
+      await evalJs(page, `(() => {
+        const tables = grok.shell.tables;
+        if (tables.length >= 2) {
+          tables[0].name = 'src_a_${stamp}';
+          tables[1].name = 'src_b_${stamp}';
+        }
       })()`);
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(1000);
       const tableCount = await evalJs(page, 'grok.shell.tables.length');
       expect(tableCount).toBe(2);
     });
@@ -116,13 +97,43 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
     });
 
     await softStep('Step 2: Save current project with Data Sync ON', async () => {
-      await saveProject(page, projectName);
-      await expect.poll(async () => evalJs(page,
-        `(async () => {
-          const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
-          return p != null;
-        })()`,
-      ), {timeout: 30000}).toBe(true);
+      // Multi-table inline save — must persist all 3 open tables (src_a,
+      // src_b, joined) so the GROK-19103 invariant is testable. Canonical
+      // saveProjectWithProvenance helper saves only the active TableView's
+      // dataframe; this scenario needs the full workspace.
+      const saved = await page.evaluate(async (n) => {
+        const grok = (window as any).grok;
+        const DG = (window as any).DG;
+        const project = DG.Project.create();
+        project.name = n;
+        const tables = Array.from(grok.shell.tables);
+        const tableInfoIds: string[] = [];
+        for (const df of tables as any[]) {
+          const ti = df.getTableInfo();
+          project.addChild(ti);
+          await grok.dapi.tables.uploadDataFrame(df);
+          await grok.dapi.tables.save(ti);
+          tableInfoIds.push(ti.id);
+        }
+        const tv = grok.shell.tv;
+        const layout = tv?.saveLayout?.();
+        if (layout) {
+          project.addChild(layout);
+          await grok.dapi.layouts.save(layout);
+        }
+        await grok.dapi.projects.save(project);
+        return {projectId: project.id, tableInfoIds};
+      }, projectName);
+      projectId = saved.projectId;
+      tableInfoId = saved.tableInfoIds[0] ?? null;
+      expect(projectId).toBeTruthy();
+      // Server-side persistence verification via find-by-id.
+      const exists = await page.evaluate(async (pid) => {
+        const grok = (window as any).grok;
+        const p = await grok.dapi.projects.find(pid);
+        return p != null;
+      }, projectId);
+      expect(exists).toBe(true);
     });
 
     await softStep('GROK-19103 INVARIANT: exactly ONE new project created (no stray join-only project)', async () => {
@@ -135,20 +146,26 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
     });
 
     await softStep('Reopen: verify project loads with source tables intact', async () => {
+      if (!projectId) throw new Error('no projectId captured');
       await closeAll(page);
-      const tableCount = await evalJs(page, `(async () => {
-        const p = await grok.dapi.projects.filter('name = "${projectName}"').first();
+      const tableCount = await page.evaluate(async (pid) => {
+        const grok = (window as any).grok;
+        const p = await grok.dapi.projects.find(pid);
         await p.open();
-        await new Promise(r => setTimeout(r, 2000));
-        return grok.shell.tables.length;
-      })()`);
+        await new Promise((r) => setTimeout(r, 2000));
+        try { return Number(grok.shell.tables?.length) || 0; }
+        catch (_) { return 0; }
+      }, projectId);
       // At minimum the 2 source tables must reopen. The joined derivative
       // may or may not be persisted depending on project relation semantics
       // (recomputed from sources vs persisted as standalone) — accept >= 2.
       expect(tableCount).toBeGreaterThanOrEqual(2);
     });
   } finally {
-    await deleteProjectByName(page, projectName).catch(() => {});
+    await deleteProjectWithCleanup(page, {
+      projectId: projectId ?? undefined,
+      tableInfoId: tableInfoId ?? undefined,
+    });
     await closeAll(page);
   }
 

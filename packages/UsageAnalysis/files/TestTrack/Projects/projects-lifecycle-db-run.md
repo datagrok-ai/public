@@ -3,42 +3,43 @@
 **Date**: 2026-05-05
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
-**Generated from**: `projects-lifecycle-db.md` + `grok-browser` references (no MCP run).
 
 ## Steps
 
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
-| 1 | (whole spec) | 9s | PASS | PASSED | All softStep blocks completed |
+| 1 | Lifecycle DB / Query: Samples:PostgresProducts source | 1m 06s | PASS | PASSED | All softStep blocks completed |
+| 2 | Lifecycle DB / Table: Northwind public.products via DbQuery | 1m 24s | PASS | PASSED | All softStep blocks completed |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | n/a |
-| grok-browser execution (scenario steps) | n/a |
-| Execute via grok-browser (total) | n/a (skipped per user request) |
-| Spec file generation | (batched across all 20 specs) |
-| Spec script execution | 9s |
-| **Total scenario run (with model)** | 9s |
+| Spec script execution | 2m 30s (2 tests) |
+| **Total scenario run** | 2m 30s |
 
 ## Summary
 
-Spec passed end-to-end on dev.datagrok.ai. Total run: 9s.
+Spec passed end-to-end on dev.datagrok.ai. Total run: 2m 30s (2 tests).
+
+Two flavors covered:
+1. DB / Query — Samples:PostgresProducts (saved query function).
+2. DB / Table — Northwind public.products via DbQuery (ad-hoc table reference).
+
+Both produce `.script` provenance compatible with reopen → re-execute.
+
+Note: share step on this spec emits `Share skipped: ... permissions_user_group_id_fkey` (FK violation when granting to a User without materialized .group); soft-handled (warn, not assert) per spec design.
 
 ## Retrospective
 
 ### What worked well
-- All softStep blocks passed.
-- The reference-driven selector approach is sufficient for this scenario.
+- `openTableFromDbQuery` and `openTableFromDbTable` both produce reopen-stable `.script` provenance.
 
 ### What did not work
-- Nothing notable; spec passed.
+- Nothing notable.
 
 ### Suggestions for the platform
-- No platform suggestions from this spec.
+- The `permissions_user_group_id_fkey` FK violation when granting permissions to a User (vs Group) repeats across multiple lifecycle specs.
 
 ### Suggestions for the scenario
-- The reference docs alone weren't enough to write a self-validating spec for this scenario; the **Save Project dialog flow** in particular needs an MCP-confirmed selector trace before the spec can be authored verbatim from references.
-
-
+- None from this run.

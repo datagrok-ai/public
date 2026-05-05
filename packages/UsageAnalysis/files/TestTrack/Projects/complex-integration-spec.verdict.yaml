@@ -1,0 +1,91 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: projects-validate-batch-2026-05-05
+feature: projects
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-integration-spec.ts
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-integration.md
+invoked_at: 2026-05-05T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: E
+failure_keys: []
+notes: Regression from PASS (rev 1, ~336 lines) to current ~80-line rewrite — significant scope shrink.
+
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: Spec exists at expected path.
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: Valid TS.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: One test() block with 4 step-tagged softSteps + finally cleanup.
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: Test name traces to scenario H1.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: Canonical imports.
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: Frontmatter parses with non-empty sub_features list.
+  - check: E-TRACE-01
+    status: PASS
+    evidence: All softSteps trace to scenario steps where covered.
+  - check: E-TRACE-02
+    status: SCOPE_REDUCTION
+    evidence: |
+      Scenario Step 1 mandates 9 sub-sources (File + Space + DB + Query + Script
+      + Pivot + Aggregate + Join + Clone) and a Setup Spaces inline prelude.
+      Spec exercises only file-share opens (4 paths, floor `opened >= 2`);
+      DB/Query/Script/Pivot/Aggregate/Join/Clone and Spaces prelude are absent.
+      Frontmatter declares projects.add-relation and projects.add-link but
+      neither is behaviourally exercised.
+  - check: E-TRACE-03
+    status: SCOPE_REDUCTION
+    evidence: |
+      Verification floors silently weakened: scenario `tables.length >= 8` →
+      spec `opened >= 2`; scenario `relations.length >= 5` → spec `relations >= 0`
+      (non-asserting); scenario "parents 5+ + derivations" → spec `tables > 0`.
+  - check: E-SEL-01
+    status: PASS
+    evidence: No raw selectors at spec level (UI delegated to helpers).
+  - check: E-SEL-02
+    status: PASS
+    evidence: No invented selectors.
+  - check: E-SEL-03
+    status: NA
+    evidence: No .fill() at spec level.
+  - check: E-HELP-01
+    status: PASS
+    evidence: Helpers registered.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No reinvention.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: target_layer playwright matches.
+  - check: E-LAYER-02
+    status: NA
+    evidence: No override.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Under allowed path.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No core/** changes.
+
+scope_reduction_proposal: |
+  Either (A) re-author spec to call DB/Query/Script openers from
+  helpers/openers.ts + Spaces prelude from helpers/session.ts/helpers/projects.ts,
+  restore floors `>= 8 / >= 5 / >= 5`, route missing-env classes via
+  `test.skip(...)` with logged warnings; or (B) amend scenario
+  complex-integration.md to drop projects.add-relation/projects.add-link
+  and "8 sources" framing. Route (A) preferred. Movement:
+  regressed_PASS_to_SCOPE_REDUCTION (rev 2; previous rev-1 spec was
+  336 lines and PASSed).
+
+evidence_needed: |
+  (Not applicable.)

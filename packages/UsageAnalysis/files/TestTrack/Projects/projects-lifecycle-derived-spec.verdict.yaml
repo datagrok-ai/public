@@ -1,0 +1,89 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: projects-validate-batch-2026-05-05
+feature: projects
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-derived-spec.ts
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-derived.md
+invoked_at: 2026-05-05T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: E
+failure_keys: []
+
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: Spec exists at expected path.
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: Valid TS.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: test() block present.
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: Test name traces to scenario.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: All imports resolve (verified exports).
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: Frontmatter present at lines 1-5; sub_features_covered exact-matches scenario .md (6 entries).
+  - check: E-TRACE-01
+    status: PASS
+    evidence: All softSteps trace to scenario steps where covered.
+  - check: E-TRACE-02
+    status: SCOPE_REDUCTION
+    evidence: |
+      Scenario Step 2 enumerates THREE derivations (Pivot, Aggregate, Join).
+      Spec realizes ONLY Aggregate via Top-menu (lines 54-66). Pivot and Join
+      uncovered. Step 6 recipient-side reopen-after-rename also uncovered.
+  - check: E-TRACE-03
+    status: SCOPE_REDUCTION
+    evidence: |
+      The GROK-19103 invariant in scenario Step 2 is explicitly tied to the
+      JOIN result ("Join result lands in active workspace, not stray separate
+      project"). Spec asserts `tablesAfter === tablesBefore + 1` after Aggregate,
+      which is not the bug surface. The reinforcement contract per chain rev 3
+      proactive_lifecycle_specs[5].bugs_reinforcing: [GROK-19103] is weakened
+      relative to prior revision.
+  - check: E-SEL-01
+    status: PASS
+    evidence: No raw selectors at spec level.
+  - check: E-SEL-02
+    status: PASS
+    evidence: No invented selectors.
+  - check: E-SEL-03
+    status: NA
+    evidence: No .fill().
+  - check: E-HELP-01
+    status: PASS
+    evidence: Helpers registered.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No reinvention.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: target_layer playwright matches.
+  - check: E-LAYER-02
+    status: NA
+    evidence: No override.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Under allowed path.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No core/** changes.
+
+scope_reduction_proposal: |
+  Movement vs prior: rev 1 covered Pivot+Aggregate+Join via JS API with dual
+  pre/post-save GROK-19103 delta assertions. Rev 2 traded that for correct
+  provenance script tags (real win) but lost Pivot+Join + the Join-specific
+  invariant. Recommendation: Either (a) extend helpers and re-realize
+  Pivot/Join + Join-tied delta assertion, or (b) document cross-reference
+  to complex-derived-tables-spec.ts as primary GROK-19103 carrier and narrow
+  this spec's contract to Aggregate provenance only.
+
+evidence_needed: |
+  (Not applicable.)

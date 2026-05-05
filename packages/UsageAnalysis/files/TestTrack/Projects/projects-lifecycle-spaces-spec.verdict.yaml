@@ -1,0 +1,88 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: projects-validate-batch-2026-05-05
+feature: projects
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-spaces-spec.ts
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-spaces.md
+invoked_at: 2026-05-05T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: E
+failure_keys: []
+notes: env-pending defensive skip — platform-side blocker (spaceClient.addEntity UUID binding bug); diagnostic at .claude/diagnostics/mcp-capture-spaces-partial.md.
+
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: Spec file exists (75 lines, env-skip stub).
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: Valid TS, parses cleanly.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: Single test() block.
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: Test name traceable to scenario H1 + GROK-18345.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: Canonical imports (@playwright/test, ./_helpers).
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: B69 frontmatter at lines 1-5 with all 8 sub_feature IDs resolving to atlas.
+  - check: E-TRACE-01
+    status: PASS
+    evidence: Skip path documented; no orphan code.
+  - check: E-TRACE-02
+    status: NA
+    evidence: |
+      Scenario Steps 1-6 not exercised by design until platform unblocks
+      (documented in TODO at lines 68-74). env-pending defensive skip per
+      Edit 10 — acceptable SR routing, NOT E-* failure.
+  - check: E-TRACE-03
+    status: NA
+    evidence: Skipped under SR.
+  - check: E-SEL-01
+    status: PASS
+    evidence: Vacuously PASS — no DOM selectors.
+  - check: E-SEL-02
+    status: PASS
+    evidence: No invented selectors.
+  - check: E-SEL-03
+    status: PASS
+    evidence: No .fill().
+  - check: E-HELP-01
+    status: PASS
+    evidence: Only sibling ./_helpers utilities used; Helper 3 correctly absent under env-skip.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No reinvention.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: target_layer playwright matches.
+  - check: E-LAYER-02
+    status: NA
+    evidence: No override.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Under allowed path.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No core/** changes.
+
+scope_reduction_proposal: |
+  env-pending defensive skip pattern:
+  - Phase B execution exposed platform-side blocker:
+    spaceClient.addEntity(fileInfo, link) rejects with
+    `invalid input syntax for type uuid: "demog.csv"` (Dart-side serializer
+    sends fullPath, server expects UUID).
+  - Per spec-mode.md Edit 10: test.skip() with console.warn(...) citing
+    missing-env IS acceptable SR routing — NOT an E-* failure.
+  - Frontmatter sub_features_covered list unchanged — declares intended
+    coverage for re-cycle once platform binding is fixed.
+  Re-run Automator using TODO sketch (lines 68-74) once addEntity binding
+  bug resolves. No re-cycle for spec correctness.
+
+evidence_needed: |
+  (Not applicable.)

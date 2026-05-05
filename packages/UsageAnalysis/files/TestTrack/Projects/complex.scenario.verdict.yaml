@@ -1,0 +1,140 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: projects-migrate-force-2026-05-04
+feature: projects
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
+invoked_at: 2026-05-04T00:00:00Z
+phase: B
+chain_revision: 4
+verdict: PASS
+gate: A
+failure_keys: []
+notes: |
+  Phase B re-evaluation after Phase A frontmatter revision applied:
+  ui_coverage_delegated_to flipped from null to projects-ui-smoke.md;
+  ui_coverage_responsibility KEPT (7 specialty flows). This is the
+  Q3.5 dual-role pattern (VALID per Olena / chain rev 4): the
+  scenario simultaneously OWNS specialty flows uniquely witnessed
+  here AND DELEGATES shared flows to the chain's smoke witness.
+  Gate A's required-field set per [A-STRUCT-MECH-01] is {feature,
+  sub_features_covered, target_layer, coverage_type}; ui_coverage_*
+  fields are non-required and Gate A does NOT enforce mutual
+  exclusivity between ui_coverage_responsibility and
+  ui_coverage_delegated_to. Co-presence is therefore NOT flagged as
+  inconsistent at Gate A — it is a chain-rev-4 sanctioned dual-role
+  declaration verified at Gate F (coverage). Round-1 verdict
+  preserved as PASS.
+claims:
+  - check_id: A-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Frontmatter parses as YAML; all required fields present
+      (feature=projects; sub_features_covered=[7 ids]; target_layer=
+      playwright; coverage_type=regression). Phase A revision added
+      ui_coverage_delegated_to: projects-ui-smoke.md and kept
+      ui_coverage_responsibility: [7 flows]. Both fields are
+      non-required at Gate A and their co-presence is not flagged —
+      Q3.5 dual-role is the sanctioned pattern (chain rev 4).
+  - check_id: A-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      One scenario heading present under "## Scenarios":
+      "### Mega-flow: open many sources, save, evolve, rename, move,
+      share, re-auth verify".
+  - check_id: A-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Scenario heading has 13 numbered steps (1.–13.).
+  - check_id: A-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Scenario is non-empty (13 steps + Expected results sub-section).
+  - check_id: A-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      target_layer = playwright is in the allowed enum
+      (uitests-package | playwright | api-contract | manual-only).
+  - check_id: A-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      coverage_type = regression is in the allowed enum
+      (smoke | regression | edge | perf).
+  - check_id: A-STRUCT-01
+    status: PASS
+    evidence: |
+      The mega-flow scenario combines 7 sub-features (projects.upload,
+      projects.api.save, projects.api.files.sync, projects.shell.open,
+      projects.add-relation, projects.api.namespaces,
+      projects.shell.share-via-context-menu) — far above 3+ threshold.
+  - check_id: A-STRUCT-02
+    status: NA
+    evidence: |
+      Single-scenario file; coverage_type=regression at file level. The
+      A-STRUCT-02 requirement is section-level (Gate F territory) and
+      cannot be evaluated against a single mega-flow file. Section-
+      level edge/perf coverage is provided by sibling scenarios
+      (uploading.md, deleting.md, etc.) per chain rev 4.
+  - check_id: A-STRUCT-03
+    status: PASS
+    evidence: |
+      coverage_type=regression at file frontmatter level applies to the
+      single scenario; from the unified test-kind enum, not severity
+      axis.
+  - check_id: A-STRUCT-04
+    status: PASS
+    evidence: |
+      Repeated setup factored into "## Setup" section (4 numbered
+      setup items: second-user placeholder, re-auth pattern, env deps,
+      Spaces prelude/postlude with JS API code block). Not duplicated
+      across scenarios (only one scenario).
+  - check_id: A-STRUCT-05
+    status: NA
+    evidence: |
+      Coverage of atlas sub-features is a section-level concern
+      tracked by Gate F. This single scenario covers 7 sub-features
+      from a feature with 60+ entries; remainder owned by sibling
+      scenarios per chain rev 4.
+  - check_id: A-STRUCT-06
+    status: PASS
+    evidence: |
+      Single scenario covers 7 sub-features; density 7/1 = 7 ≥ 2.
+      coverage_type=regression (not smoke), so non-exempt rule applies
+      and passes.
+  - check_id: A-CONT-01
+    status: PASS
+    evidence: |
+      Real names used throughout: System:AppData/Chem/tests/spgi-100.csv,
+      test-projects-demo Space, demog.csv, Postgres NorthwindTest public
+      orders, Samples:PostgresCustomers, Samples:Cars,
+      Complex_Test_Project_1*. The "second user" string is an
+      intentional placeholder per decision-log
+      mig-2026-04-29-fixture-placeholder, explicitly documented in body
+      and Setup point 1 — not a hallucinated placeholder.
+  - check_id: A-BUG-01
+    status: PASS
+    evidence: |
+      Atlas known_issues entries exist for all 6 bugs cited; all 6
+      addressed via path (a) — frontmatter related_bugs lists
+      [GROK-19212, GROK-19103, GROK-19403, GROK-18345, GROK-19728,
+      github-3550] AND scenario body explicitly cites each bug's
+      reproduction steps. GROK-18345 Trigger 2 motivating example
+      (Step 1 + Step 2 + Step 12 + Step 13) documented in body lines
+      62-66 and Notes section "GROK-18345 single-scenario non-adjacent".
+  - check_id: A-MERIT-01
+    status: PASS
+    evidence: |
+      No scenario opted out for effort/complexity. Wave 1b split into
+      3 satellite specs cites real Critic-E re-run + chain YAML
+      strategy directive; complex-move drop cites
+      b2-2026-05-03-drag-drop-ui-only-reclassification (3 drag-drop
+      mechanisms tried, no Move-to menu on dev).
+  - check_id: A-MERIT-02
+    status: PASS
+    evidence: |
+      All deferrals (Step 13 recipient-side, JS API re-auth path,
+      project-rename JS API, fixture account binding, cleanup of
+      renamed/moved entities) reference real prerequisites — Helper 3
+      registration, external API confirmation, platform investigation,
+      Automator stage, deleting.md scope. No Lattice Rule 13 violations.

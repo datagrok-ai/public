@@ -1,163 +1,88 @@
-revision: 1
+revision: 2
 schema_version: "v3.0"
-cycle_id: step-7-projects-rerun-b70
+cycle_id: projects-validate-batch-2026-05-05
 feature: projects
 mode: spec
 review_round: 1
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-copy-clone-spec.ts
-invoked_at: 2026-05-01T00:25:00Z
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-copy-clone.md
+invoked_at: 2026-05-05T00:00:00Z
 verdict: SCOPE_REDUCTION
+gate: E
 failure_keys: []
-scope_reduction_proposal: |
-  Heavy SR (one of the heaviest in the batch). Cited rationale (spec header
-  lines 9-22) is technically valid but the resulting coverage is significantly
-  below the migrated scenario's intent.
 
-  Cited rationale: Save Copy mode UI selectors (Link / Clone / PersonalView) are
-  NOT documented in grok-browser/references; per E-SEL-01/02 a UI-driven path
-  would require invented selectors. Deferred to a future
-  helpers.playwright.projects.saveCopy({mode}) registry addition. Validated
-  against projects.md:71-79 — Copy with link / Clone semantics are documented
-  but the specific dialog mode-selector UI is not.
-
-  Coverage gap analysis vs migrated scenario:
-  | Migrated step | Spec coverage |
-  |---|---|
-  | Step 1 (Browse > Dashboards preview thumbnails verify) | NOT covered |
-  | Step 2 (Share each project → recipients on Sharing tab) | NOT covered |
-  | Step 3 (Open each, verify load) | partial (Setup only opens self-built one) |
-  | Step 4a (Re-save overwrite) | covered (4a softStep) |
-  | Step 4b (Save Copy with Link) + GROK-19750 invariant | NOT covered |
-  | Step 4c (Save Copy with Clone) | NOT covered |
-  | Step 4d (Save Personal View Customizations) | NOT covered |
-  | Step 5 (Re-share variants → recipient open) | NOT covered |
-
-  GROK-19750 mandatory regression assertion (sub-flow 4b step 7): spec lines
-  103-115 self-describe as "simplified version" and explicitly note "full
-  GROK-19750 invariant requires the SCOPE_REDUCTION-deferred helper". The
-  regression assertion is NOT actually exercised — the spec asserts only
-  basic project reload, not the Save-Copy-with-Link → original-viewers-intact
-  invariant. Per scenario Notes lines 142-151 the GROK-19750 assertion is
-  declared "MUST add an explicit assertion ... mandatory ... not a candidate"
-  — this is unmet.
-
-  Frontmatter sub_features_covered claims:
-  - projects.shell.share-via-context-menu — NOT exercised (no Step 2/5)
-  - projects.add-relation — NOT exercised (no Save Copy with Link)
-  - projects.add-link — NOT exercised (no Save Copy with Link)
-  Recommend trimming these from sub_features_covered until the helper exists,
-  OR proceed with helper implementation and full re-run.
-
-  Recommendation (BLOCKING for full PASS):
-  (a) Register helpers.playwright.projects.saveCopy({mode}) per the SR
-      rationale, then re-run Migrator → Test Designer → Automator to expand
-      coverage to all four sub-flows + GROK-19750 invariant.
-  (b) Until then, trim sub_features_covered frontmatter to honest list:
-      [projects.api.save, projects.shell.open] only.
-  (c) Treat current spec as smoke-equivalent of upload-project + opening, not
-      as projects-copy-clone coverage.
 claims:
   - check: E-STRUCT-MECH-01
     status: PASS
-    evidence: "Spec exists at allowed A1 path."
+    evidence: Spec exists at expected path.
   - check: E-STRUCT-MECH-02
     status: PASS
-    evidence: "Valid TypeScript."
+    evidence: Valid TS.
   - check: E-STRUCT-MECH-03
     status: PASS
-    evidence: "One test() block with Setup + 2 step softSteps."
+    evidence: test() block present.
   - check: E-STRUCT-MECH-04
     status: PASS
-    evidence: "Test name 'Projects / Save and reopen with added viewer' substring-matches scenario H1 'Projects Copy Clone' weakly (only the 'save'/'reopen' tokens overlap). Recommend renaming test to include 'Copy Clone' or annotate per E-STRUCT-MECH-04 with a '// scenario: Projects Copy Clone' comment."
+    evidence: Test name contains "Copy Clone" + "GROK-19750 invariant" — traceable.
   - check: E-STRUCT-MECH-05
     status: PASS
-    evidence: "Imports limited to @playwright/test and section-local '../spec-login'."
+    evidence: Canonical imports.
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: Frontmatter has 4 atlas-resolving sub_features (projects.shell.open, projects.api.save, projects.add-relation, projects.add-link).
   - check: E-TRACE-01
     status: PASS
-    evidence: "Setup/4a/Regression-class softStep tags clear; SR rationale extensively documented in header lines 1-22."
+    evidence: softSteps tagged with scenario step numbers; spec-time restructure rationale documented in header lines 1-16 mirrors md note lines 102-115.
   - check: E-TRACE-02
-    status: NA
-    evidence: "Steps 1, 2, 4b, 4c, 4d, 5 deferred via documented SR. Cross-instance 'each previously-created project' fold to single self-built project."
+    status: SCOPE_REDUCTION
+    evidence: |
+      Steps 1, 2 (right-click Share UI), 4d-PVC-visual delegated to
+      `projects-copy-clone-ui.md`; Step 5 via `dapi.permissions.grant` only
+      (no recipient-session open). UI Save Copy mode + recipient-session
+      not exercised.
   - check: E-TRACE-03
-    status: PARTIAL
-    evidence: "GROK-19750 mandatory regression assertion declared in scenario Notes 142-151 ('MUST add an explicit assertion ... mandatory') is NOT exercised. Spec self-acknowledges this (lines 105-107). E-TRACE-03 cannot mark PASS for this verification."
+    status: SCOPE_REDUCTION
+    evidence: |
+      GROK-19750 invariant exercised but via `reopenedRowCount > 0` proxy,
+      weaker than md's "viewers ... still present and intact". Documented
+      in spec lines 42-49.
   - check: E-SEL-01
     status: PASS
-    evidence: "Selectors cited in header (lines 1-7); only used selectors are .d4-dialog, button-OK/CANCEL, SAVE — all documented."
+    evidence: No invented selectors.
   - check: E-SEL-02
     status: PASS
-    evidence: "No invented selectors (Save Copy mode selectors AVOIDED, which is the SR rationale)."
+    evidence: All cited.
   - check: E-SEL-03
     status: PASS
-    evidence: "Dart input via focus + Ctrl+A + keyboard.type."
+    evidence: No .fill() at spec level.
   - check: E-HELP-01
     status: PASS
-    evidence: "Local saveProject + spec-login. helpers.playwright.projects.saveCopy candidate flagged in SR rationale (correctly NOT used since not yet registered)."
+    evidence: Helpers registered.
   - check: E-HELP-02
     status: PASS
-    evidence: "No reinvention of registered helpers."
+    evidence: |
+      No reinvention. Note: saveProjectWithProvenance imported but unused
+      (inlined for tv capture rationale lines 79-83).
   - check: E-LAYER-01
     status: PASS
-    evidence: "target_layer: playwright matches @playwright/test."
+    evidence: target_layer playwright matches.
   - check: E-LAYER-02
     status: NA
-    evidence: "No layer override."
+    evidence: No override.
   - check: E-BOUND-01
     status: PASS
-    evidence: "Spec at allowed TestTrack path."
+    evidence: Under allowed path.
   - check: E-BOUND-02
     status: PASS
-    evidence: "No core/** modifications."
-scope_reduction_validation:
-  applied: true
-  rationale_aligned_with_grok_browser_references: true
-  rationale_extent_matches_actual_coverage: false
-  grok_19750_mandatory_assertion_unmet: true
-  frontmatter_coverage_claim_honest: false
-  recommendation: "BLOCKING for full PASS. See proposal recommendations (a)/(b)/(c). The GROK-19750 mandatory regression assertion is the strongest blocker — scenario Notes explicitly tag it 'mandatory ... not a candidate'."
-schema_note: "E-TRACE-03 status PARTIAL is non-canonical; used to flag mandatory regression assertion gap without forcing FAIL. Strict reading would invoke E-TRACE-03 (canonical key) with FAIL status — but applied SCOPE_REDUCTION to honor decision-log's PASS_with_SCOPE_REDUCTION verdict context."
-rerun_context:
-  trigger: "Phase 1 retro v8 B70 immediate action — first Critic E pass for streamlined spec (cycle_completions[6] critic_E.rounds: 0)"
-  budget_revision_verified: 2
-notable_finding: "Heaviest SR in batch. GROK-19750 mandatory regression assertion (declared 'mandatory' in scenario Notes) NOT exercised. Frontmatter claims projects.shell.share-via-context-menu / projects.add-relation / projects.add-link but spec exercises none of those. Strong fix-cycle candidate."
-validator_rounds:
-  - round: 1
-    gate: B
-    timestamp: 2026-05-01T01:00:00Z
-    target_environment: "dev (https://dev.datagrok.ai)"
-    invocation: "cd public/packages/UsageAnalysis/files/TestTrack && DATAGROK_URL=https://dev.datagrok.ai CI=1 npx playwright test --project=dev Projects/projects-copy-clone-spec.ts --repeat-each=3 --workers=1"
-    runs: 3
-    consecutive_pass: true
-    durations_s: [52.8, 60.0, 52.4]
-    total_duration: "2.9m"
-    hypothesis_cycles: 0
-    final_verdict: PASS
-    grok_19750_outcome: "JS API approximation invariant assertion held all 3 runs (post-copy viewer count == baseline). No regression observed via the addLink + dapi.save path. NOTE: this does not rule out the bug being present in the UI Save-Copy-with-Link path — the JS API path is structurally different. Full UI coverage still requires helpers.playwright.projects.saveCopy({mode}) helper."
-wave_1a_validator_context:
-  trigger: "Wave 1a Validator gate per B70 follow-up validation prompt"
-  b_stab_01_outcome: PASS
-wave_3_critic_e_round:
-  round: 2
-  gate: E
-  timestamp: 2026-05-01T02:05:00Z
-  trigger: "Wave 3 D4 verification — Critic E re-validate"
-  changes_since_prior: |
-    Wave 1a: added 4b GROK-19750 invariant softStep using JS API
-    approximation (DG.Project.create + addLink + dapi.save → reopen → assert
-    viewer count preserved). 3/3 Validator PASS — invariant held.
-    Wave 2: cleaned frontmatter — removed projects.view.browse,
-    projects.view.single, projects.shell.share-via-context-menu. After:
-    [projects.shell.open, projects.api.save, projects.add-relation,
-    projects.add-link] — all exercised (add-link via 4b softStep,
-    add-relation as atlas parent of add-link).
-  verdict: SCOPE_REDUCTION
-  failure_keys: []
-  rationale: |
-    HIGH-severity prior finding (GROK-19750 mandatory regression assertion
-    UNMET) is RESOLVED via JS API approximation. Frontmatter coverage claim
-    now honest. Remaining SR: UI Save-Copy-with-Link path NOT exercised
-    (selectors not in references; helpers.playwright.projects.saveCopy({mode})
-    not registered). The JS API approximation tests the SEMANTIC invariant
-    but does NOT exercise the exact UI code path the bug was originally
-    reproduced under. Legitimate-scope SR pending helper registration.
-  movement_vs_prior: stayed_SR_but_HIGH_finding_resolved
+    evidence: No core/** changes.
+
+scope_reduction_proposal: |
+  Improvement within SR vs rev 1: GROK-19750 now exercised (weak proxy);
+  frontmatter trimmed to honest 4; all 4 sub-flows (4a/4b/4c/4d) covered via
+  JS API approximation. Remaining gap: UI-driven Save Copy mode + viewer-list
+  intactness assertion + recipient-session open. Either materialize the UI
+  flows in projects-copy-clone-ui.md sibling, or strengthen spec's invariant
+  to include viewer count assertion after reopen.
+
+evidence_needed: |
+  (Not applicable.)

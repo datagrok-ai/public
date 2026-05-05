@@ -39,13 +39,10 @@ sub_features_covered: [projects.shell.share-via-context-menu, projects.api.names
 //     share-project-spec). On dev qa-pw user lookup may fail with FK
 //     violation on permissions table — defensive handling absorbs it.
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {softStep, stepErrors} from '../spec-login';
+import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 
-test.use(specTestOptions);
-
-async function evalJs(page: Page, script: string): Promise<any> {
-  return page.evaluate(script);
-}
+test.use(projectsTestOptions);
 
 async function closeAll(page: Page) {
   await evalJs(page, 'grok.shell.closeAll()');
@@ -83,7 +80,8 @@ test('Projects / Complex share-second-user: dual-level grant via JS API (Step 12
   const stamp = Date.now();
   const projectName = 'AutoTest-ComplexShare-' + stamp;
 
-  await loginToDatagrok(page);
+  await gotoApp(page);
+  await setupSession(page);
 
   try {
     await softStep('Setup: build project (file source, Sync ON)', async () => {

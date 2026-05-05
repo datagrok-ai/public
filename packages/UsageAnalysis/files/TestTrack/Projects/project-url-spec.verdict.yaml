@@ -1,158 +1,92 @@
-revision: 1
+revision: 2
 schema_version: "v3.0"
-cycle_id: step-7-projects-rerun-b70
+cycle_id: projects-validate-batch-2026-05-05
 feature: projects
 mode: spec
 review_round: 1
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/project-url-spec.ts
-invoked_at: 2026-05-01T00:20:00Z
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/project-url.md
+invoked_at: 2026-05-05T00:00:00Z
 verdict: SCOPE_REDUCTION
+gate: E
 failure_keys: []
-scope_reduction_proposal: |
-  Two-axis reduction (re-run flags within-step path substitution that was not
-  explicitly documented):
-  (1) Cross-variant axis: scenario lists 4 variants (original / copy-with-link /
-      copy-with-clone / save-personal-view-customizations); spec exercises 1
-      variant (self-built original). Documented in spec header (lines 7-14):
-      "URL-apply behavior is uniform across variant modes". This rationale is
-      cited from scenario Notes lines 91-97 ("URL deep-link is generic ... 4-path
-      matrix exercises that the URL-apply behavior is uniform"). Acceptable.
-  (2) Within-step axis (NOT explicitly documented in spec header):
-      Scenario step 4-5 specifies "Open a new tab in the browser and paste/
-      navigate to the copied URL ... project corresponding to <variant> opens —
-      its tables, viewers, and view layout render in the new tab". This tests
-      URL routing / deep-link cold-load (the projects.url-params.apply +
-      projects.shell.open path).
-      Spec uses grok.dapi.projects.filter().first().open() (line 102-105) — a
-      same-session JS API roundtrip. JS API open() invokes projects.shell.open
-      directly, bypassing the URL handler / url-params.apply chain. So
-      sub_features_covered claims projects.url-params.apply / build-share-link
-      coverage in frontmatter, but the spec does not exercise those code paths.
-      Recommend either:
-      (a) Replace p.open() with page.goto(<project-url>) — actually exercise
-          the URL-apply path. Project URL convention per projects.md:91 is
-          shown in Context Panel > Links. The frontmatter claim of
-          url-params.build-share-link / url-params.apply coverage would then be
-          honest.
-      (b) Update spec header to explicitly document the path substitution
-          ("p.open() substitutes for URL navigation due to <reason>") AND
-          remove projects.url-params.* from sub_features_covered (since they
-          are not exercised).
-  This is the most significant SR finding across the 9 specs to date — the
-  frontmatter coverage claim does not match the actually-exercised path.
+
 claims:
   - check: E-STRUCT-MECH-01
     status: PASS
-    evidence: "Spec exists at allowed A1 path."
+    evidence: Spec exists at expected path.
   - check: E-STRUCT-MECH-02
     status: PASS
-    evidence: "Valid TypeScript."
+    evidence: Valid TS.
   - check: E-STRUCT-MECH-03
     status: PASS
-    evidence: "One test() block with Setup + 2 step softSteps."
+    evidence: test() block present.
   - check: E-STRUCT-MECH-04
     status: PASS
-    evidence: "Test name 'Projects / Project URL deep-link reopen' substring-matches scenario H1 / H2."
+    evidence: Test names substring-match scenario.
   - check: E-STRUCT-MECH-05
     status: PASS
-    evidence: "Imports limited to @playwright/test and section-local '../spec-login'."
+    evidence: Imports canonical.
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter — first content; 4 IDs (build-share-link/apply/shell.open/view.browse)
+      all resolve in atlas (projects.yaml lines 545/531/318/385). view.browse is
+      weakest claim (only [name="Browse"] waitFor as routing smoke); optionally
+      trim, but not blocking.
   - check: E-TRACE-01
     status: PASS
-    evidence: "Setup/Step labels traceable; comments explain construction approach."
+    evidence: All softSteps trace to scenario steps.
   - check: E-TRACE-02
-    status: NA
-    evidence: "Scenario steps reduced to 1 variant per documented cross-variant SR."
+    status: SCOPE_REDUCTION
+    evidence: |
+      Cross-variant SR (4 → 1): legitimate, justified by scenario Notes
+      ("URL-apply behavior is uniform across variant modes",
+      pyramid_layer: integration, Variant C source-agnostic). Spec uses
+      self-built demog-based fixture instead of composite fixture from
+      projects-copy-clone.md.
   - check: E-TRACE-03
-    status: PARTIAL
-    evidence: "Step 5 verification 'project loads in new tab via URL' substituted with same-session p.open() roundtrip — JS API code path is NOT the URL-apply path. See scope_reduction_proposal point (2)."
+    status: PASS
+    evidence: |
+      Within-step path now honest — page.goto executes
+      projects.url-params.apply + projects.shell.open; entity.path read
+      justifies projects.url-params.build-share-link claim.
   - check: E-SEL-01
     status: PASS
-    evidence: "Selectors cited in header (lines 1-5); .d4-dialog, button-OK/CANCEL, SAVE ribbon (Setup-only)."
+    evidence: Selectors cited.
   - check: E-SEL-02
     status: PASS
-    evidence: "No invented selectors."
+    evidence: No invented selectors.
   - check: E-SEL-03
     status: PASS
-    evidence: "Dart input via focus + Ctrl+A + keyboard.type in saveProject helper."
+    evidence: No raw .fill().
   - check: E-HELP-01
     status: PASS
-    evidence: "Local saveProject + spec-login (section-local)."
+    evidence: Helpers registered.
   - check: E-HELP-02
     status: PASS
-    evidence: "No reinvention of registered helpers."
+    evidence: No reinvention.
   - check: E-LAYER-01
     status: PASS
-    evidence: "target_layer: playwright matches @playwright/test."
+    evidence: target_layer playwright matches.
   - check: E-LAYER-02
     status: NA
-    evidence: "No layer override."
+    evidence: No override.
   - check: E-BOUND-01
     status: PASS
-    evidence: "Spec at allowed TestTrack path."
+    evidence: Under allowed path.
   - check: E-BOUND-02
     status: PASS
-    evidence: "No core/** modifications."
-scope_reduction_validation:
-  applied: true
-  cross_variant_documented: true
-  within_step_path_substitution_documented: false
-  frontmatter_coverage_claim_honest: false
-  recommendation: "BLOCKING for full PASS: either (a) actually navigate via page.goto(<project-url>) to exercise URL-apply path, OR (b) remove projects.url-params.* from sub_features_covered AND document p.open() substitution in spec header. Verdict held at SCOPE_REDUCTION rather than escalated because the cross-variant reduction IS valid, and the path substitution is fixable without rewriting the test premise."
-schema_note: "E-TRACE-03 status PARTIAL is non-canonical (vocabulary allows PASS/FAIL/NA). Used to flag actionable gap without forcing FAIL on a documented SR."
-rerun_context:
-  trigger: "Phase 1 retro v8 B70 immediate action — first Critic E pass for streamlined spec (cycle_completions[5] critic_E.rounds: 0)"
-  budget_revision_verified: 2
-notable_finding: "Frontmatter sub_features_covered claims projects.url-params.build-share-link + projects.url-params.apply but those code paths are not exercised by p.open(). Coverage claim does not match exercised behavior."
-validator_rounds:
-  - round: 1
-    gate: B
-    timestamp: 2026-05-01T01:05:00Z
-    target_environment: "dev (https://dev.datagrok.ai)"
-    invocation: "cd public/packages/UsageAnalysis/files/TestTrack && DATAGROK_URL=https://dev.datagrok.ai CI=1 npx playwright test --project=dev Projects/project-url-spec.ts --repeat-each=3 --workers=1"
-    runs: 3
-    consecutive_pass: false
-    pattern: "PASS, FAIL, PASS"
-    durations_s: [41.8, 72.0, 39.2]
-    failure_step: "Setup: build saved project fixture"
-    failure_message: "locator.waitFor: Timeout 30000ms exceeded — share dialog not appearing"
-    hypothesis_category: "test-bug + environmental-flake"
-    hypothesis: "saveProject helper used non-defensive shareDialog.waitFor({timeout: 30000}) — sibling specs (projects-copy-clone) use defensive isVisible-then-cancel pattern that tolerates intermittent dev-env case where the share dialog does not appear. The flake is in helper code, NOT in Wave 1a page.goto URL-apply fix."
-    final_verdict: FAIL
-  - round: 2
-    gate: B
-    timestamp: 2026-05-01T01:15:00Z
-    target_environment: "dev (https://dev.datagrok.ai)"
-    invocation: "(same as round 1 after hypothesis cycle 1 fix applied)"
-    runs: 3
-    consecutive_pass: true
-    durations_s: [44.7, 40.8, 45.2]
-    total_duration: "2.3m"
-    hypothesis_cycles_consumed: 1
-    fix_applied: "Replaced bare `shareDialog.waitFor({timeout: 30000})` + cancel block in saveProject helper with defensive `if (await shareDialog.isVisible({timeout: 30000}).catch(() => false)) { ... }` pattern (matches projects-copy-clone-spec.ts). Single edit at saveProject helper site."
-    final_verdict: PASS
-    url_apply_outcome: "page.goto(${baseUrl}/p/${nqName}) URL handler resolved correctly all 3 runs; URL-apply path exercised as intended."
-wave_1a_validator_context:
-  trigger: "Wave 1a Validator gate per B70 follow-up validation prompt"
-  b_stab_01_outcome: PASS_after_1_hypothesis_cycle
-wave_3_critic_e_round:
-  round: 2
-  gate: E
-  timestamp: 2026-05-01T02:04:00Z
-  trigger: "Wave 3 D4 verification — Critic E re-validate"
-  changes_since_prior: |
-    Wave 1a: replaced p.open() roundtrip with page.goto({BASE}/p/{nqName})
-    after closeAll → URL handler / url-params.apply path now actually
-    exercised (round 2 Validator 3/3 PASS after defensive share-dialog
-    hypothesis cycle).
-    Wave 2: cleaned frontmatter — removed projects.view.browse,
-    projects.view.single (overclaims). After: [projects.url-params.build-share-link,
-    projects.url-params.apply, projects.shell.open] — all 3 honestly exercised.
-  verdict: PASS
-  failure_keys: []
-  rationale: |
-    Within-step path substitution gap RESOLVED by Wave 1a (page.goto exercises
-    URL-apply path). Frontmatter coverage claim now honest (Wave 2). The
-    remaining cross-variant reduction (4 → 1) is legitimate-by-design per
-    scenario Notes ("URL-apply behavior is uniform across variant modes").
-    PASS verdict reflects all actionable findings closed.
-  movement_vs_prior: improved_SR_to_PASS
+    evidence: No core/** changes.
+
+scope_reduction_proposal: |
+  Cross-variant SR — covers 1 of 4 variants documented in scenario Notes
+  as "URL-apply behavior is uniform across variant modes" with Variant C
+  source-agnostic. URL-apply path is honestly executed via page.goto
+  after closeAll(). Optional cleanup: trim view.browse claim if pyramid
+  layering wants stricter granularity. Movement: revision 1 SCOPE_REDUCTION
+  → revision 2 SCOPE_REDUCTION (within-step path now executed; rev 1 had
+  gap there).
+
+evidence_needed: |
+  (Not applicable.)

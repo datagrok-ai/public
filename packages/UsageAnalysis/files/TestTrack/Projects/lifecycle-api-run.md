@@ -1,4 +1,4 @@
-# Projects / Complex (smoke): save, rename, share — Run Results
+# Projects / Lifecycle API contract — Run Results
 
 **Date**: 2026-05-05
 **URL**: https://dev.datagrok.ai
@@ -8,24 +8,23 @@
 
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
-| 1 | (whole spec) | 1m 24s | PASS | PASSED | All softStep blocks completed |
+| 1 | (whole spec) | 51.2s | PASS | PASSED | All softStep blocks completed |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Spec script execution | 1m 24s |
-| **Total scenario run** | 1m 24s |
+| Spec script execution | 51.2s |
+| **Total scenario run** | 51.2s |
 
 ## Summary
 
-Spec passed end-to-end on dev.datagrok.ai. Total run: 1m 24s.
+Spec passed end-to-end on dev.datagrok.ai. Total run: 51.2s.
 
 ## Retrospective
 
 ### What worked well
-- Top-level smoke (save → rename → share) across canonical lifecycle paths.
-- find-by-id post-rename verification (avoids the search-index lag of filter-by-name).
+- JS API lifecycle contract (Project.create → save → find → open → delete) round-trips cleanly.
 
 ### What did not work
 - Nothing notable.

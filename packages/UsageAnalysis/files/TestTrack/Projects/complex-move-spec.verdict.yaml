@@ -1,0 +1,87 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: projects-validate-batch-2026-05-05
+feature: projects
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-move-spec.ts
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-move.md
+invoked_at: 2026-05-05T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: E
+failure_keys: []
+
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: Spec exists (~105 lines).
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: Valid TS.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: One test() block at L15.
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: Test name substring-matches scenario heading.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: Imports limited to @playwright/test + 4 verified relative spec-local helpers.
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: Frontmatter at L1-3 matches scenario .md frontmatter exactly.
+  - check: E-TRACE-01
+    status: PASS
+    evidence: All softSteps trace.
+  - check: E-TRACE-02
+    status: SCOPE_REDUCTION
+    evidence: |
+      Five scenario verification points uncovered: (a) Step 2 initial-namespace
+      read via (await grok.dapi.projects.find(id)).fullName; (b) Step 3 post-move
+      namespace assertion; (c) Step 3 reopen-and-load check; (d) Step 4 post-move
+      namespace assertion; (e) Step 4 reopen + relations-preserved. The file-share
+      leg also hardcodes 'Home' (user default) instead of resolving via
+      grok.dapi.namespaces — does not exercise default→file-share transition.
+  - check: E-TRACE-03
+    status: SCOPE_REDUCTION
+    evidence: |
+      Only `expect(rowCount > 0)`, `expect(projectId).toBeTruthy()`, `expect(r.ok).toBe(true)`
+      are present; no `fullName`/namespace/`expect` assertions tied to scenario
+      verifications.
+  - check: E-SEL-01
+    status: PASS
+    evidence: No raw selectors at spec level.
+  - check: E-SEL-02
+    status: PASS
+    evidence: No invented selectors.
+  - check: E-SEL-03
+    status: NA
+    evidence: No .fill().
+  - check: E-HELP-01
+    status: PASS
+    evidence: Helpers registered.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No reinvention.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: target_layer playwright matches.
+  - check: E-LAYER-02
+    status: NA
+    evidence: No override.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Under allowed path.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No core/** changes.
+
+scope_reduction_proposal: |
+  Add the five missing JS-API verifications (cheap, same evalJs pattern already
+  in use): namespace reads on initial state, post-move state for both share
+  destinations, and reopen + relations-preserved assertion. Resolve file-share
+  destination via grok.dapi.namespaces instead of hardcoded 'Home'. Alternatively,
+  amend scenario to mark these as out-of-scope and route to a sibling spec.
+
+evidence_needed: |
+  (Not applicable.)

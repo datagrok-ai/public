@@ -42,7 +42,10 @@ test('Projects / Lifecycle Files: open → save with provenance → reopen → s
       expect(opened.rowCount).toBeGreaterThan(0);
       // Gate E-PROV-01: verify .script tag is set with the expected pattern.
       await assertProvenanceScript(page, 'files', opened.script);
-      expect(opened.script).toMatch(/OpenFile\("System:DemoFiles\/demog\.csv"\)/);
+      // Accept both colon-form (`System:DemoFiles`) and dot-form
+      // (`System.DemoFiles`) — openTableFromFile normalizes `:` → `.`
+      // before passing fullPath to OpenFile (workaround for bug 2a).
+      expect(opened.script).toMatch(/OpenFile\("System[:.]DemoFiles\/demog\.csv"\)/);
     });
 
     await softStep('Step 2: save project with provenance (canonical uploadProject)', async () => {

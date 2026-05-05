@@ -1,0 +1,468 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: projects-migrate-force-2026-05-04
+feature: projects
+mode: coverage
+review_round: 2
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects
+invoked_at: 2026-05-04T00:00:00Z
+verdict: PASS
+gate: F
+failure_keys: []
+scope_reduction_proposal: ""
+evidence_needed: ""
+
+# Round-1 → Round-2 delta summary
+# ===============================
+# Round 1 verdict: SCOPE_REDUCTION (18 gaps surfaced — 12
+#   ui-flow-uncovered + 6 proactive-spec-missing). Two checks PASS
+#   (F-BUG-COVERAGE-01, F-REDUNDANCY-01, F-PYRAMID-01); two checks
+#   FAIL → SR (F-UI-COVERAGE-01, F-PROACTIVE-COVERAGE-01).
+#
+# Round 2 verdict: PASS — all 5 F-* checks PASS.
+#   - F-UI-COVERAGE-01: chain rev 4 (1) introduced projects-ui-smoke.md
+#     as new dedicated smoke witness owning 20 flows, and (2) reconciled
+#     chain naming with reference-doc taxonomy. Naming variants
+#     (pcmdShareProject vs pcmdShare; project-double-click-open vs
+#     pcmdOpen; logout-login-as-second-user vs reauth-flow;
+#     delete-confirmation-dialog vs delete-project-dialog;
+#     share-dialog-recipients/permissions-editor vs share-project-dialog;
+#     rename-dialog covering Renaming H2) accepted under intent-layer
+#     interpretation — all 11 context-menu items + 5 verb-form H2
+#     dialogs are explicitly enumerated as smoke-owned per
+#     ui_coverage_plan.smoke_covers (20 entries) and per the smoke
+#     scenario's body notes (verbatim: "Owns 20 UI flows — the entire
+#     right-click context menu (11 items per references/projects.md
+#     ## Context Menu Items table)").
+#   - F-PROACTIVE-COVERAGE-01: 6 lifecycle .md scenarios authored on
+#     disk (projects-lifecycle-{files,derived,query,script,spaces,db}.md);
+#     intent-realization closed per round-1 SR proposal. .ts spec
+#     realization is downstream Automator work (Phase C). Per Olena's
+#     intent-layer interpretation: PASS at intent layer because the
+#     SR's gap[] proposal has been realized.
+#   - F-PYRAMID-01: PASS unchanged; new ui-smoke witness
+#     (projects-ui-smoke.md) reinforces ≥1 ui-smoke criterion alongside
+#     upload-project.md (which retains its ui-smoke pyramid_layer per
+#     scenario-shape Rule 1).
+#   - F-BUG-COVERAGE-01: PASS unchanged; chain rev 4 retains 7
+#     bug_focused_candidates with non-empty proposed_spec for each.
+#     Spans expanded per Phase A reinforcement (5 of 7 bugs gain a
+#     proactive-lifecycle .md span).
+#   - F-REDUNDANCY-01: PASS unchanged; the round-1 arguable subset
+#     (upload-project ⊂ uploading) remains exempted under
+#     "different layer testing OK" (ui-smoke vs source-matrix).
+#     New scenarios introduce no strict-subset relations:
+#     projects-ui-smoke.md sub_features_covered (6 features) is NOT a
+#     strict subset of any other scenario; lifecycle .md sets are
+#     each unique within the section (each covers a distinct
+#     source_class × dep_op cell).
+
+claims:
+  - check: F-UI-COVERAGE-01
+    status: PASS
+    evidence: |
+      Source 1 (## Context Menu Items table) walked: 11 raw flow-ids
+      (pcmdOpen, pcmdShare, pcmdRename, pcmdDeleteProject,
+      pcmdSaveAsZip, pcmdCopy, pcmdCopyId, pcmdCopyGrokName,
+      pcmdCopyMarkup, pcmdCopyUrl, pcmdAddToFavorites). Source 2
+      (verb-form H2) walked with regex
+      `^## (Saving|Sharing|Deleting|Renaming|Cloning|Moving|Opening|Re-auth) `:
+      5 raw matches (Saving a Project → save-project-dialog;
+      Opening a Project → open-project-dialog; Sharing a Project →
+      share-project-dialog; Re-auth pattern → reauth-flow; Deleting a
+      Project → delete-project-dialog). Out-of-scope filter drops
+      "## Opening Tables from Different Sources". Post-filter total:
+      16 canonical flow-ids.
+
+      Chain rev 4 ownership check:
+        9 of 11 Context-Menu items have exact-name match in
+        ui_coverage_plan.smoke_covers (pcmdRename, pcmdDeleteProject,
+        pcmdSaveAsZip, pcmdCopy, pcmdCopyId, pcmdCopyGrokName,
+        pcmdCopyMarkup, pcmdCopyUrl, pcmdAddToFavorites — all owned
+        by projects-ui-smoke.md; verified at chain rev 4 lines
+        857-867). 2 items have semantic-equivalent owners under
+        chain naming convention (pcmdShare ≡ pcmdShareProject —
+        owned by smoke + projects-copy-clone.md + complex.md;
+        pcmdOpen ≡ project-double-click-open — owned by
+        smoke at line 856).
+
+        5 of 5 verb-form H2 dialogs have semantic-equivalent owners:
+        save-project-dialog (exact match in smoke_covers + uploading.md);
+        delete-project-dialog ≡ delete-confirmation-dialog (smoke);
+        share-project-dialog ≡ share-dialog-recipients +
+        share-dialog-permissions-editor (smoke + projects-copy-clone.md);
+        reauth-flow ≡ logout-login-as-second-user (complex.md);
+        open-project-dialog ≡ project-double-click-open (smoke).
+        Per coverage-mode.md "UI-strict ownership": all 16 flows are
+        exercised through UI in their owning scenarios — the smoke
+        is target_layer: playwright, and complex.md/projects-copy-
+        clone.md exercise their owned flows via UI (logout/login UI
+        flow + share dialog UI flow respectively).
+
+        Per Olena's intent-layer interpretation: chain naming
+        variants accepted because the smoke scenario's body
+        verbatim declares "Owns 20 UI flows — the entire right-click
+        context menu (11 items per references/projects.md ## Context
+        Menu Items table) plus Save / Share / Delete / Rename dialog
+        surfaces plus Browse > Dashboards search + tile visibility."
+        Intent is unambiguous; chain naming variants documented in
+        Phase A reference comparison table (referenced from
+        unresolved_ambiguities). Round 1's 12 ui-flow-uncovered
+        gaps are now closed: 9 via exact-name match in smoke_covers,
+        3 via semantic-equivalent name reconciliation
+        (pcmdShare↔pcmdShareProject, pcmdOpen↔project-double-click-
+        open, reauth-flow↔logout-login-as-second-user;
+        delete-project-dialog↔delete-confirmation-dialog;
+        share-project-dialog↔share-dialog-recipients +
+        permissions-editor;  open-project-dialog↔project-double-
+        click-open).
+
+  - check: F-BUG-COVERAGE-01
+    status: PASS
+    evidence: |
+      bug-library/projects.yaml present with 7 curated_bugs all
+      `test_coverage: needed`. Mode 2 evaluation (chain rev 4
+      bug_match_attempts_skipped: []). Each of the 7 bugs is
+      addressed via path (ii) — chain rev 4
+      bug_focused_candidates emits non-empty `proposed_spec` for
+      each: GROK-19750 → projects-grok-19750-spec.ts (2 spans,
+      unchanged from rev 3); GROK-19212 → projects-grok-19212-spec.ts
+      (2 spans, unchanged); GROK-19103 → projects-grok-19103-spec.ts
+      (5 spans — gained projects-lifecycle-derived.md:Step 2 span);
+      GROK-19403 → projects-grok-19403-spec.ts (4 spans — gained
+      projects-lifecycle-script.md:Step 3); GROK-18345 →
+      projects-grok-18345-spec.ts (3 spans — gained
+      projects-lifecycle-spaces.md:Step 3); GROK-19728 →
+      projects-grok-19728-spec.ts (2 spans — gained
+      projects-lifecycle-script.md:Step 6); github-3550 →
+      projects-github-3550-spec.ts (2 spans — gained
+      projects-lifecycle-query.md:Step 4). Span expansion across
+      5 of 7 bugs reflects the 6 new proactive-lifecycle scenarios
+      that explicitly walk bug repro paths. PASS-by-intent — F-BUG-
+      COVERAGE-01 checks chain YAML emission (path ii non-empty
+      proposed_spec), not on-disk spec realization (downstream
+      Automator).
+
+  - check: F-REDUNDANCY-01
+    status: PASS
+    evidence: |
+      Pairwise sub_features_covered comparison across 20 migrated
+      .md frontmatter blocks (9 pre-existing + 11 new). No
+      newly-introduced strict-subset relations:
+
+        - projects-ui-smoke.md: {projects.upload, projects.api.save,
+          projects.shell.open, projects.shell.share-via-context-menu,
+          projects.api.search, projects.api.delete} — broader than
+          most individual scenarios; not a strict subset of any
+          single scenario (closest superset would be a hypothetical
+          union of upload-project + opening + share-project +
+          deleting; no single scenario subsumes all 6 features).
+        - projects-lifecycle-files.md: {projects.upload,
+          projects.api.save, projects.api.files.sync,
+          projects.shell.share-via-context-meu, projects.api.get-
+          by-id} — not subset of any (lifecycle-api has get-by-id
+          but lacks .upload; complex has .upload+save+sync but
+          lacks .get-by-id).
+        - projects-lifecycle-derived.md: {projects.upload,
+          projects.api.save, projects.api.files.sync, projects.add-
+          relation, projects.shell.share-via-context-menu,
+          projects.api.get-by-id} — not subset of any (closest
+          complex.md lacks .get-by-id).
+        - projects-lifecycle-query/script.md: {projects.upload,
+          projects.api.save, projects.api.files.sync,
+          projects.api.relations.list, projects.add-relation,
+          projects.shell.share-via-context-menu,
+          projects.api.get-by-id} — uniquely include
+          .relations.list + .get-by-id together; not subset of any.
+        - projects-lifecycle-spaces.md: adds projects.api.namespaces
+          to the script/query set — uniquely cover this combo.
+        - projects-lifecycle-db.md: {.upload, .save, .files.sync,
+          .add-relation, .share-via-context-menu, .get-by-id} —
+          mirror-set of derived; same as derived (NOT strict subset
+          of derived; equal sets exempted by spec).
+        - complex-{save-copy,move,augment,integration}.md: each
+          uses 3-6 features; none is strict subset of another nor
+          of complex.md (each adds at least one unique feature
+          like projects.move.move-entity, projects.tree.add-entity-
+          node, projects.add-link).
+
+      Round-1 arguable subset (upload-project ⊂ uploading) remains
+      exempted under spec's "different layer testing OK"
+      (ui-smoke vs source-matrix); no consolidation_proposals
+      needed. Phase A introduced TWO equal-set pairs:
+      projects-lifecycle-derived ≡ projects-lifecycle-db (equal
+      sub_features_covered); both have pyramid_layer:
+      proactive-lifecycle but exercise distinct atlas cells
+      (source_class=derived vs source_class=db_table). Equal sets
+      are explicitly acceptable per F-REDUNDANCY-01 spec ("equal
+      sub_features_covered lists are acceptable — different layer
+      testing OK"). No strict subsets detected.
+
+  - check: F-PYRAMID-01
+    status: PASS
+    evidence: |
+      Chain rev 4 dependency_graph contains TWO ui-smoke witnesses:
+      (a) upload-project.md (pyramid_layer: ui-smoke; rationale:
+      Rule 1 short golden-path scenario shape) and (b)
+      projects-ui-smoke.md (NEW in rev 4; pyramid_layer: ui-smoke;
+      rationale: Rule 1 single short UI-driven flow over one
+      source). ≥1 ui-smoke witness criterion met TWICE; the new
+      smoke explicitly serves as the chain's smoke_scenario per
+      ui_coverage_plan rev 4 (line 846), reinforcing F-PYRAMID-01
+      PASS. Other pyramid_layer values across 20 scenarios:
+      source-matrix (uploading); integration (share-project,
+      opening, project-url, deleting, lifecycle-api,
+      complex-{save-copy,move,augment,integration}); bug-focused
+      (projects-copy-clone, complex); proactive-lifecycle (6
+      lifecycle scenarios; extended enum value per Olena's Q3.2/D4
+      resolution — surfaced in unresolved_ambiguities as
+      audit-only). Layer ladder honored.
+
+  - check: F-PROACTIVE-COVERAGE-01
+    status: PASS
+    evidence: |
+      Chain rev 4 emits 6 proactive_lifecycle_specs entries (one per
+      atlas source_class affected by non-agnostic dep_lifecycle_op):
+      [files, query, script, spaces, db_table, derived]. Round 1
+      verdict surfaced 6 proactive-spec-missing gaps (the .ts files
+      did not exist). Round 2 evaluation:
+
+      Per Olena's intent-layer interpretation of F-PROACTIVE-
+      COVERAGE-01: F evaluates against the intent-realization
+      artifact (.md scenarios), NOT the downstream realization
+      artifact (.ts specs). The round-1 SR's `gaps[]` proposal
+      was: "Author 6 lifecycle .md scenarios (Test Designer
+      extension follow-up); Automator realizes the .ts files in a
+      subsequent pass." Phase A (2026-05-04) executed exactly that
+      — authored 6 .md files on disk (verified via directory
+      listing): projects-lifecycle-files.md (1842 bytes),
+      projects-lifecycle-derived.md, projects-lifecycle-query.md,
+      projects-lifecycle-script.md, projects-lifecycle-spaces.md,
+      projects-lifecycle-db.md. All 6 have valid frontmatter
+      (feature=projects; produced_from=atlas-driven;
+      pyramid_layer=proactive-lifecycle; ui_coverage_delegated_to=
+      projects-ui-smoke.md; sub_features_covered enumerated).
+      Each scenario realizes the proactive cell declared in chain
+      rev 4 proactive_lifecycle_specs[N] for its source_class.
+
+      Chain rev 4 D1 reconciliation: spec_target for source_class=
+      db_table updated from `projects-lifecycle-db-table-spec.ts`
+      (round 1 strict-canonical) to `projects-lifecycle-db-spec.ts`
+      (Olena's preference). The .md filename matches: file is
+      `projects-lifecycle-db.md` (not `-db-table.md`). Recorded
+      in spec_target_deviations[]; surfacing-only audit affordance
+      per coverage-mode.md "Phase 1 fallback for spec_target
+      deviation tracking" (C17 deferred).
+
+      Strict-literal reading of F-PROACTIVE-COVERAGE-01 spec
+      language ("file named by spec_target MUST exist") — the
+      6 .ts files do NOT exist on disk yet (0 of 6 spec.ts
+      present). Per Olena's expectation: F-PROACTIVE-COVERAGE-01
+      evaluates at the intent-realization layer in round 2; the
+      SR's gap[] proposal is realized via the 6 .md scenarios;
+      .ts realization is Automator/Phase C downstream work.
+      PASS at intent layer; .ts realization tracked separately.
+
+# Coverage-mode-specific blocks (additive on top of standard verdict
+# fields per coverage-mode.md output schema)
+
+extracted_ui_flows:
+  # Source 1 — `## Context Menu Items` table (11 rows)
+  - flow_id: pcmdOpen
+    source: "references/projects.md:## Context Menu Items"
+  - flow_id: pcmdShare
+    source: "references/projects.md:## Context Menu Items"
+  - flow_id: pcmdRename
+    source: "references/projects.md:## Context Menu Items"
+  - flow_id: pcmdDeleteProject
+    source: "references/projects.md:## Context Menu Items"
+  - flow_id: pcmdSaveAsZip
+    source: "references/projects.md:## Context Menu Items"
+  - flow_id: pcmdCopy
+    source: "references/projects.md:## Context Menu Items"
+  - flow_id: pcmdCopyId
+    source: "references/projects.md:## Context Menu Items"
+  - flow_id: pcmdCopyGrokName
+    source: "references/projects.md:## Context Menu Items"
+  - flow_id: pcmdCopyMarkup
+    source: "references/projects.md:## Context Menu Items"
+  - flow_id: pcmdCopyUrl
+    source: "references/projects.md:## Context Menu Items"
+  - flow_id: pcmdAddToFavorites
+    source: "references/projects.md:## Context Menu Items"
+  # Source 2 — verb-form H2 sections (post-filter; 5 in-scope)
+  - flow_id: save-project-dialog
+    source: "references/projects.md:## Saving a Project"
+  - flow_id: open-project-dialog
+    source: "references/projects.md:## Opening a Project"
+  - flow_id: share-project-dialog
+    source: "references/projects.md:## Sharing a Project"
+  - flow_id: reauth-flow
+    source: "references/projects.md:## Re-auth pattern (logout → login-as-different-user → verify → login-back)"
+  - flow_id: delete-project-dialog
+    source: "references/projects.md:## Deleting a Project"
+  # Out-of-scope filter applied:
+  #   - "## Opening Tables from Different Sources" — DROPPED
+  #   - Quick Reference, Browse Tree Paths, Context Panel Tabs,
+  #     Spaces, Common Pitfalls — not walked
+
+  # Ownership map (round 2 — chain rev 4):
+  #   pcmdOpen           → semantic match: project-double-click-open (smoke)
+  #   pcmdShare          → semantic match: pcmdShareProject (smoke + 2 others)
+  #   pcmdRename         → exact: smoke_covers (rev 4)
+  #   pcmdDeleteProject  → exact: smoke_covers (rev 4)
+  #   pcmdSaveAsZip      → exact: smoke_covers (rev 4)
+  #   pcmdCopy           → exact: smoke_covers (rev 4)
+  #   pcmdCopyId         → exact: smoke_covers (rev 4)
+  #   pcmdCopyGrokName   → exact: smoke_covers (rev 4)
+  #   pcmdCopyMarkup     → exact: smoke_covers (rev 4)
+  #   pcmdCopyUrl        → exact: smoke_covers (rev 4)
+  #   pcmdAddToFavorites → exact: smoke_covers (rev 4)
+  #   save-project-dialog → exact: smoke_covers (rev 4) + uploading
+  #   open-project-dialog → semantic match: project-double-click-open (smoke)
+  #   share-project-dialog → semantic match: share-dialog-recipients +
+  #                          share-dialog-permissions-editor (smoke + 2)
+  #   reauth-flow         → semantic match: logout-login-as-second-user
+  #                         (complex.md)
+  #   delete-project-dialog → semantic match: delete-confirmation-dialog (smoke)
+
+gaps: []
+# Round-2 round-up: 18 round-1 gaps closed.
+#   12 ui-flow-uncovered → closed (9 exact-match in smoke_covers,
+#     3 via semantic-equivalent reconciliation — pcmdShareProject,
+#     project-double-click-open, logout-login-as-second-user are
+#     the chain naming variants that map to F-canonical pcmdShare,
+#     pcmdOpen, reauth-flow per the smoke scenario's verbatim body
+#     declaration "Owns 20 UI flows — the entire right-click context
+#     menu (11 items per references/projects.md ## Context Menu
+#     Items table)").
+#   6 proactive-spec-missing → closed at intent layer (6 .md
+#     scenarios authored on disk; .ts realization downstream
+#     Automator work per Edit 4 routing).
+
+consolidation_proposals: []
+# F-REDUNDANCY-01 PASS — no new strict-subset relations introduced
+# by Phase A's 11 new scenarios. Round-1 arguable subset
+# (upload-project ⊂ uploading) remains exempted under
+# "different layer testing OK". Two equal-set pairs introduced
+# (projects-lifecycle-derived ≡ projects-lifecycle-db
+# sub_features_covered) — explicitly acceptable per spec.
+
+bug_focused_candidates:
+  # Verifying chain rev 4 bug_focused_candidates entries are well-
+  # formed and addressable. F's audit confirms 7 candidates as Stage
+  # 1 emitted (rev 4); spans expanded per Phase A reinforcement.
+  # No F-side additions/changes (path ii of F-BUG-COVERAGE-01
+  # satisfied by chain emission).
+  - bug_id: GROK-19750
+    spans:
+      - "upload-project.md:Step 1"
+      - "projects-copy-clone.md:Step 4"
+    proposed_spec: projects-grok-19750-spec.ts
+    rationale: |
+      Verified — chain rev 4 emission unchanged from rev 3 (no
+      proactive-lifecycle reinforcement; bug is Save-Copy-mode-
+      specific).
+  - bug_id: GROK-19212
+    spans:
+      - "uploading.md:Step 7"
+      - "complex.md:Step 7"
+    proposed_spec: projects-grok-19212-spec.ts
+    rationale: |
+      Verified — chain rev 4 emission unchanged from rev 3 (no
+      new scenario walks the table-rename-after-join-under-datasync
+      repro).
+  - bug_id: GROK-19103
+    spans:
+      - "upload-project.md:Step 1"
+      - "uploading.md:Step 6"
+      - "projects-copy-clone.md:Step 4"
+      - "complex.md:Step 1"
+      - "projects-lifecycle-derived.md:Step 2"
+    proposed_spec: projects-grok-19103-spec.ts
+    rationale: |
+      Verified — chain rev 4 gains projects-lifecycle-derived.md:
+      Step 2 span (Phase A reinforcement). 5 affecting scenarios
+      in rev 4 vs 4 in rev 3.
+  - bug_id: GROK-19403
+    spans:
+      - "share-project.md:Step 4"
+      - "complex.md:Step 12"
+      - "projects-copy-clone.md:Step 5"
+      - "projects-lifecycle-script.md:Step 3"
+    proposed_spec: projects-grok-19403-spec.ts
+    rationale: |
+      Verified — chain rev 4 gains projects-lifecycle-script.md:
+      Step 3 span (Phase A reinforcement). 4 affecting scenarios.
+      share-project.md span retained via semantic_match (flagged
+      for review at automation time).
+  - bug_id: GROK-18345
+    spans:
+      - "uploading.md:Step 7"
+      - "complex.md:Step 12"
+      - "projects-lifecycle-spaces.md:Step 3"
+    proposed_spec: projects-grok-18345-spec.ts
+    rationale: |
+      Verified — chain rev 4 gains projects-lifecycle-spaces.md:
+      Step 3 span (Phase A reinforcement). 3 affecting scenarios
+      in rev 4 vs 2 in rev 3.
+  - bug_id: GROK-19728
+    spans:
+      - "complex.md:Step 12"
+      - "projects-lifecycle-script.md:Step 6"
+    proposed_spec: projects-grok-19728-spec.ts
+    rationale: |
+      Verified — chain rev 4 gains projects-lifecycle-script.md:
+      Step 6 broken-script sub-flow span (Phase A reinforcement).
+      Sub-flow is deferred pending broken-script fixture, but the
+      .md scenario documents the repro path. 2 affecting scenarios
+      in rev 4 vs 1 in rev 3.
+  - bug_id: github-3550
+    spans:
+      - "complex.md:Step 9"
+      - "projects-lifecycle-query.md:Step 4"
+    proposed_spec: projects-github-3550-spec.ts
+    rationale: |
+      Verified — chain rev 4 gains projects-lifecycle-query.md:
+      Step 4 span (Phase A reinforcement). 2 affecting scenarios
+      in rev 4 vs 1 in rev 3.
+
+spec_target_deviations:
+  # F-PROACTIVE-COVERAGE-01 audit affordance — surfacing-only
+  # (C17 deferred per architectural-overhauls-pre-phase-2.md).
+  # Chain rev 4 records the projects-lifecycle-db rename per
+  # Olena's D1 resolution; F's independent audit confirms the
+  # deviation pattern.
+  - source_class: db_table
+    canonical_spec_target: projects-lifecycle-db-table-spec.ts
+    detected_pattern: |
+      Chain rev 4 proactive_lifecycle_specs[4].spec_target uses
+      `projects-lifecycle-db-spec.ts` (and corresponding .md file
+      `projects-lifecycle-db.md`) instead of the chain-analyzer-
+      prompt.md kebab(source_class.id) literal convention which
+      would emit `projects-lifecycle-db-table-spec.ts` /
+      `projects-lifecycle-db-table.md`. Deviation type:
+      source_class_id_shorthand. Rationale: Olena's preference
+      per PROJECTS-SPLIT-COMPLETION-PLAN line 324 (D1 resolution).
+      Recorded in chain rev 4 spec_target_deviations[]
+      (chain.yaml lines 1066-1080). No enforcement action under
+      Phase 1 fallback; future C17 work TBD (extend atlas
+      source_classes[id=db_table] with optional filename_alias
+      field, OR rename source_class.id from db_table to db
+      throughout atlas).
+
+# Phase A doc-drift findings (informational; Critic A round 2
+# surfaced body↔frontmatter prose drift in 4 files —
+# share-project.md, upload-project.md, opening.md,
+# complex-save-copy.md). Acknowledged but NOT routed to F-* gaps —
+# these are A-* concerns (Gate A scenario-mode), not F-*
+# (coverage). No F-* check is impacted; ownership analysis above
+# is grounded in frontmatter-declared sub_features_covered,
+# pyramid_layer, ui_coverage_responsibility — not body prose.
+# Documenting here for completeness only.
+
+# Routing recommendation per D12:
+#   Verdict: PASS → Orchestrator routes to Phase C (Automator + Gate E
+#   + Validator + Coverage update — task #6 in TaskList). All 5 F-*
+#   checks PASS; no SCOPE_REDUCTION proposal; no EVIDENCE_GAP recon
+#   needed. Test Designer extension queue is drained.

@@ -1,0 +1,97 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: projects-validate-batch-2026-05-05
+feature: projects
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-script-spec.ts
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-script.md
+invoked_at: 2026-05-05T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: E
+failure_keys: []
+
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: Spec exists (113 lines, current rewrite).
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: Valid TS, parses cleanly.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: Single test() block.
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name "Projects / Lifecycle Script: provisioned df-output script source"
+      traces to scenario H1 "Projects — Script-source lifecycle".
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: Canonical imports + project-relative helpers.
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter present at lines 1-5; all 7 sub_features non-empty and
+      matching scenario .md frontmatter lines 4-10.
+  - check: E-TRACE-01
+    status: PASS
+    evidence: Every softStep cites Step N; Setup is technical-glue.
+  - check: E-TRACE-02
+    status: SCOPE_REDUCTION
+    evidence: |
+      Scenario Steps 4 (script rename) + 5 (project rename) have ZERO
+      counterparts in code; covered only by the spec frontmatter line 4
+      declared narrowing "Phase B canonical openers + uploadProject + reopen-verify".
+      Coverage cell `dep_lifecycle_op=rename_external_dep × source_class=script`
+      is UNREALIZED at the playwright layer until a follow-on rename-spec lands.
+      Step 6 lacks a deferral softStep marker.
+  - check: E-TRACE-03
+    status: SCOPE_REDUCTION
+    evidence: |
+      Signature GROK-19403 invariant (recipient open + explicit-error regex
+      vs silent-null, scenario lines 76-87) is NOT asserted; spec header
+      lines 95-98 explicitly defer citing Helper 3. Note: prior rev-1 spec
+      realized it without Helper 3 (via same-tab balloon-DOM evidence pool) —
+      reinstateable.
+  - check: E-SEL-01
+    status: PASS
+    evidence: No raw selectors at spec level.
+  - check: E-SEL-02
+    status: PASS
+    evidence: No invented selectors.
+  - check: E-SEL-03
+    status: NA
+    evidence: No .fill().
+  - check: E-HELP-01
+    status: PASS
+    evidence: All imports resolve to real exports verified via grep.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No reinvention.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: target_layer playwright matches.
+  - check: E-LAYER-02
+    status: NA
+    evidence: No override.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Under allowed path.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No core/** changes.
+
+scope_reduction_proposal: |
+  Recommended follow-ups (non-blocking for SR acceptance):
+  - Restore inline GROK-19403 invariant (same-tab reopen + console.error +
+    .grok-balloon text harvest + explicit-error regex + silent-null guard).
+  - Add softStep('Step 6: GROK-19728 — DEFERRED', ...) log marker.
+  - Extract Steps 4+5 into a sibling projects-lifecycle-script-rename-spec.ts.
+  Substitution sanctioned: replacement of Samples:Cars with provisionDataframeScript-fixture
+  wrapping grok.data.getDemoTable('demog.csv') is well-justified (Cars is scalar-output,
+  rejects no-input call → would always silently skip). Documented in spec
+  header lines 6-12 + .claude/diagnostics/mcp-capture-scripts.md (Case 3a).
+
+evidence_needed: |
+  (Not applicable.)

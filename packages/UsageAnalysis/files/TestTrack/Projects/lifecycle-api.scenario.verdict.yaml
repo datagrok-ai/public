@@ -1,0 +1,189 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: projects-migrate-force-2026-05-04
+feature: projects
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/lifecycle-api.md
+invoked_at: 2026-05-04T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: A
+failure_keys: []
+scope_reduction_proposal: |
+  Two reductions required, both citing real atlas-level / chain-level
+  dependencies (not effort).
+
+  REDUCTION 1 — A-STRUCT-02 (no edge / perf scenario):
+    File-level frontmatter declares `coverage_type: regression` for all
+    three sub-scenarios. Scenario 3 ("Delete of non-existent id") IS a
+    negative-path contract test and would naturally fit
+    `coverage_type: edge`, but the scenario file uses file-level
+    frontmatter rather than per-scenario heading markers, so all
+    three sub-scenarios share the single `regression` value.
+    Real dependency: the chain rev 3 `output_plan.lifecycle-api.md`
+    declares `target_layer: api-contract, strategy: simple` with no
+    per-scenario coverage_type subdivision. The migration report
+    explicitly preserves the prior cycle's file-level
+    `coverage_type: regression` (Unresolved ambiguities, paragraph 1).
+    Proposed reduction: accept file-level `regression` for
+    api-contract scenarios where no edge/perf sub-scenario was
+    designed in chain output_plan, OR amend the scenario to mark
+    Scenario 3 with a per-scenario `coverage_type: edge` heading
+    marker (orchestrator's call). The latter is a small-touch change
+    and is the recommended fix on round 2 if Gate A is re-invoked.
+
+  REDUCTION 2 — A-STRUCT-05 (coverage <70% of atlas sub-features):
+    The `projects` atlas (rev 11) contains ~21 REST sub_features
+    under `projects.api.*`, plus shell/menu/UI sub_features outside
+    REST. This single scenario covers 5 of the REST sub_features
+    (save, get-by-id, list, delete, count) = ~24% of the REST
+    surface, ~5% of the entire atlas. The remaining REST sub_features
+    are NOT listed in atlas `manual_only` (rev 11 `manual_only`
+    block carries only drag-drop / move sub_features per the
+    migration report).
+    Real dependency: section-level coverage is owned by Gate F
+    (coverage critic) with 5 dedicated keys including
+    F-PROACTIVE-COVERAGE-01. Single api-contract scenarios in a
+    multi-layer chain cannot, by construction, cover 70% of an
+    atlas whose other 95% is owned by sibling playwright /
+    uitests-package scenarios in the same section.
+    The migration report `## Unresolved ambiguities` paragraph 4
+    already enumerates the uncovered REST sub_features
+    (`projects.api.search`, `search-namespace`, `recent`, `tags`,
+    `entity-paths`, `get-entity-project`, `guest-session-token`,
+    plus deferred files.* / relations.* / namespaces.*) and flags
+    them for `proactive_lifecycle_specs` follow-up.
+    Proposed reduction: A-STRUCT-05 is satisfied at the SECTION level
+    by Gate F; this scenario is acceptable as the api-contract
+    pioneer. Add the uncovered REST sub_features to chain rev 4
+    `proactive_api_specs[]` (NEW schema candidate per Stage-2a
+    report — orchestrator's instruction). Candidate spec filenames
+    already named in the report: `projects-api-search-spec.ts`,
+    `projects-api-recent-spec.ts`, `projects-api-tags-spec.ts`,
+    `projects-api-guest-session-token-spec.ts`. Suggested addition:
+    also `projects-api-entity-paths-spec.ts` and
+    `projects-api-get-entity-project-spec.ts` for the two
+    additionally-flagged sub_features.
+
+  All other A-* checks PASS (mechanical, structural, content,
+  bug-library, merit). Frontmatter parses cleanly; all 4 required
+  fields present; target_layer and coverage_type values are valid
+  enum members; 3 numbered scenarios all have steps; setup is
+  factored into `## Setup`; sub-feature density is 4 per scenario
+  (well above the 2 threshold); no placeholders; bug-library
+  triage is documented.
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Frontmatter parses as YAML. All 4 required fields present:
+      `feature: projects`, `sub_features_covered:` (5 entries),
+      `target_layer: api-contract`, `coverage_type: regression`.
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      Three `## ` scenario headings present in body
+      ("### Scenario 1: …", "### Scenario 2: …", "### Scenario 3: …")
+      under the `## Scenarios` parent heading. (h3 satisfies the
+      "scenario heading" requirement here; h2 is a grouping heading.)
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Each scenario heading has at least one numbered step (Scenario
+      1 has 6, Scenario 2 has 5, Scenario 3 has 3).
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      No empty scenarios; each has ≥1 step (see A-STRUCT-MECH-03).
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      `target_layer: api-contract` is a valid enum value (one of
+      uitests-package | playwright | api-contract | manual-only).
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      `coverage_type: regression` is a valid enum value (one of
+      smoke | regression | edge | perf).
+  - check: A-STRUCT-01
+    status: PASS
+    evidence: |
+      Scenario 1 combines 4 sub_features in interaction
+      (`projects.api.save` step 1, `get-by-id` steps 2/6,
+      `count` steps 3/5, `delete` step 4). Scenario 2 combines
+      `save` + `list` + `count` + `delete` (4 sub_features).
+      Both exceed the 3+ threshold.
+  - check: A-STRUCT-02
+    status: FAIL
+    evidence: |
+      File-level frontmatter is `coverage_type: regression`; no
+      sub-scenario carries `edge` or `perf`. Scenario 3 is a
+      negative-path test that would fit `edge` semantically. Routed
+      to SCOPE_REDUCTION (not raw FAIL) — see proposal Reduction 1.
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: |
+      Every scenario inherits `coverage_type: regression` from
+      file-level frontmatter (valid test-kind enum value, not a
+      severity p0..p3 value).
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: |
+      Common setup (server auth + unique-name allocation) factored
+      into `## Setup` section at file top. No setup-step duplication
+      across the 3 sub-scenarios.
+  - check: A-STRUCT-05
+    status: FAIL
+    evidence: |
+      5 sub_features_covered out of ~21 atlas REST sub_features
+      (~24%) and out of the broader projects atlas (~5%). Remaining
+      sub_features not in atlas `manual_only` block. Routed to
+      SCOPE_REDUCTION — see proposal Reduction 2 (section-level
+      coverage owned by Gate F; flag uncovered REST sub_features
+      for chain `proactive_api_specs[]`).
+  - check: A-STRUCT-06
+    status: PASS
+    evidence: |
+      sub_features_covered total = 5 across 3 scenarios = avg ~1.67
+      per scenario by frontmatter declaration; per-scenario
+      sub-feature reach (Scenario 1: 4, Scenario 2: 4, Scenario 3:
+      2) averages 3.3 per scenario. Density rule satisfied.
+  - check: A-CONT-01
+    status: PASS
+    evidence: |
+      No placeholders. `api-lifecycle-${Date.now()}` and
+      `api-lifecycle-batch-<n>` are real parametric naming patterns
+      (timestamp / index), not `<column>` / `[fill in]` / generic
+      stand-ins. Real `grok.dapi.projects.*` API surface used
+      throughout (verified against atlas sub_features).
+  - check: A-BUG-01
+    status: PASS
+    evidence: |
+      Bug-library triage is documented in migration report
+      (`## Decisions` → "Bug library consulted"): all 7 cited bugs
+      (GROK-19750, 19212, 19103, 19403, 18345, 19728, github-3550)
+      are out-of-scope by repro path (UI / multi-user / Spaces /
+      datasync). `related_bugs: []` retained with stated rationale
+      ("affects intersects vs repro covered"). Per the rule's
+      stricter form, `related_bugs` captures bugs whose repro path
+      is exercised; merely sharing a sub_feature is insufficient.
+      Cross-cutting candidates GROK-19403 / 18345 / 19728 are
+      enumerated in chain `bug_focused_candidates` for
+      F-BUG-COVERAGE-01 review — that surfaces the gap at section
+      level rather than absorbing it here.
+  - check: A-MERIT-01
+    status: PASS
+    evidence: |
+      No "effort" reasons cited. Deferrals (files.*, relations.*,
+      namespaces.*) all reference real fixture/helper prerequisites
+      missing from `helpers-registry.yaml :: api_contract_layer`.
+  - check: A-MERIT-02
+    status: PASS
+    evidence: |
+      No "TODO: add later" or "next phase" deferrals without
+      dependency reference. Three deferrals each name a concrete
+      missing helper (file-fixture builder, entity-id fixtures,
+      namespace-fixture builder). proactive_lifecycle_specs and
+      proactive_api_specs follow-up candidates are listed under
+      `## Edge cases` and `## Unresolved ambiguities` with named
+      target spec filenames (no Lattice-Rule-13 unprompted deferral).

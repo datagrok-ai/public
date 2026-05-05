@@ -1,0 +1,96 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: projects-validate-batch-2026-05-05
+feature: projects
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-query-spec.ts
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-query.md
+invoked_at: 2026-05-05T00:00:00Z
+verdict: FAIL
+gate: E
+failure_keys: [E-TRACE-01, E-TRACE-02, E-TRACE-03]
+
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: Spec exists at expected path (109 lines).
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: Valid TS; balanced braces; canonical imports.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: test() block(s) present.
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: Test names traceable.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: Canonical imports only.
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: Frontmatter with sub_features list resolves to atlas.
+  - check: E-TRACE-01
+    status: FAIL
+    evidence: |
+      Spec softStep "Step 3: reopen → query re-executes server-side" (lines 59-67)
+      does NOT match scenario Step 3 ("Share project with second user"). Silent
+      renumbering, no `// scenario:` / `// technical:` annotation. Env-skip
+      softStep also not marked `// technical:`.
+  - check: E-TRACE-02
+    status: FAIL
+    evidence: |
+      MAJOR REGRESSION from rev 1 (374 lines → 109 lines, Phase B helper-canonicalization
+      rewrite silently shrank scope). Two scenario steps uncovered:
+      - Step 3 (Share via grok.dapi.permissions.grant + Sharing-tab assertion) — zero
+        permissions.grant calls in spec.
+      - Step 4 github-3550 invariant (no Query rename, no tri-state assertion).
+      Frontmatter claims projects.shell.share-via-context-menu and projects.add-relation
+      but neither realized.
+  - check: E-TRACE-03
+    status: FAIL
+    evidence: |
+      Step 4 only checks relations.length >= 0 — a tautology. Scenario's stated
+      centerpiece (github-3550 invariant: silent-null FALSE; happy-path OR
+      graceful-failure TRUE) is absent.
+  - check: E-SEL-01
+    status: PASS
+    evidence: No raw selectors at spec level (UI delegated to helpers).
+  - check: E-SEL-02
+    status: PASS
+    evidence: No invented selectors.
+  - check: E-SEL-03
+    status: NA
+    evidence: No .fill() at spec level.
+  - check: E-HELP-01
+    status: PASS
+    evidence: Phase B helpers (openTableFromDbQuery, assertProvenanceScript, etc.) registered.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No reinvention of registered helpers.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: target_layer playwright matches.
+  - check: E-LAYER-02
+    status: NA
+    evidence: No override.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Under allowed path.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No core/** changes.
+
+scope_reduction_proposal: |
+  (Not applicable — verdict is FAIL.)
+
+evidence_needed: |
+  (Not applicable — verdict is FAIL.)
+
+remediation_required: |
+  Realize Step 3 original-user share via grok.dapi.permissions.grant; restore
+  github-3550 tri-state invariant for Step 4 (silent-null FALSE; happy-path OR
+  graceful-failure TRUE); add Query-name restore in finally{}; fix Step 3
+  softStep label to match scenario; mark env-skip with `// technical:`.
+  Alternative: split invariant to projects-github-3550-spec.ts and document
+  deferral in header + decision log.

@@ -81,15 +81,17 @@ test('Projects / Copy Clone: 3 save modes + GROK-19750 invariant (2-reopen restr
         // Poll for shell.tv to be a fully-functional TableView. Even though
         // openTableFromFile polled before returning, CDP-boundary latency
         // can leave the next evaluate's grok.shell.tv proxy in an
-        // intermediate state where .addViewer is undefined. 12s settle.
+        // intermediate state where .addViewer is undefined. 30s settle —
+        // 12s was sometimes insufficient on dev under Playwright load
+        // (full-suite-run regression 2026-05-05).
         let tv: any = null;
-        for (let i = 0; i < 24; i++) {
+        for (let i = 0; i < 60; i++) {
           tv = grok.shell.tv;
           if (tv?.dataFrame && typeof tv.addViewer === 'function') break;
           await new Promise((r) => setTimeout(r, 500));
         }
         if (!tv?.dataFrame || typeof tv.addViewer !== 'function')
-          throw new Error('shell.tv not ready (no addViewer after 12s settle)');
+          throw new Error('shell.tv not ready (no addViewer after 30s settle)');
         const baseDf = tv.dataFrame;
 
         async function saveCopyOf(name: string) {

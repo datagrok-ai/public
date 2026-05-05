@@ -72,12 +72,12 @@ Automator stage to a per-environment group account).
 ### Main flow — open, save, share, reopen, rename, delete
 
 1. **Open table from File share (UI).** Navigate
-   `Browse` > `Files` > `System:DemoFiles` > `demog.csv`. Double-click
-   the file. Verify the table opens in the workspace
+   `Browse` > `Files` > `Demo` and right-click `demog.csv` and select Open.
+    Verify the table opens in the workspace
    (`grok.shell.tables.length > 0`).
 2. **Save Project with Data Sync ON (UI).** Trigger
-   `File` > `Save Project` (or the equivalent ribbon button — NOT the
-   Ctrl+S keybind, per `feedback_no_ctrlS_for_layouts`). In the Save
+   Click the Save ribbon button — NOT the
+   Ctrl+S keybind, per `feedback_no_ctrlS_for_layouts`. In the Save
    Project dialog: enter the unique project name from Setup, ensure
    the **Data Sync** toggle is **ON**, click **OK**. Verify the save
    completes (project appears in `Browse` > `Dashboards` OR the

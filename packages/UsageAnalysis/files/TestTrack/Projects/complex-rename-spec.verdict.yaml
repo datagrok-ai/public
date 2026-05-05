@@ -1,75 +1,84 @@
-revision: 1
+revision: 2
 schema_version: "v3.0"
-cycle_id: wave-3-critic-e-revalidate
+cycle_id: projects-validate-batch-2026-05-05
 feature: projects
 mode: spec
 review_round: 1
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-rename-spec.ts
 canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
-realized_subset: "Steps 7-8 (table rename inside project + re-save) + Step 11 (reopen-verify)"
-invoked_at: 2026-05-01T02:09:00Z
+invoked_at: 2026-05-05T00:00:00Z
 verdict: SCOPE_REDUCTION
+gate: E
 failure_keys: []
-scope_reduction_proposal: |
-  Three documented reductions:
-  (1) Step 9 sub-bullet for Project / Query / Script renames reduced to
-      table-rename inside the project only (covers GROK-19212).
-      Query/Script renames NOT covered — env dep (registered server-side
-      query/script not provisioned for qa-pw). github-3550 reference-
-      resolution semantic IS exercised via the table-rename path; the
-      query-specific surface is partial.
-  (2) Project-entity rename (p.name = '<new>'; dapi.save(p)) attempted in
-      Wave 1b round 1 but failed to propagate on dev (3/3 runs). Removed
-      via Wave 1b hypothesis cycle 1. Documented in spec header as
-      deferred pending separate JS-API project rename investigation.
-  (3) Step 11 verification narrows to: project opens, tables/joined
-      tables load, no error balloons. Data Sync refresh verification NOT
-      probed (out of scope; covered by custom-creation-scripts-spec).
+notes: Wave 1b complex-split — covers Steps 7-9 rename flows + Step 11 reopen-verify; targets GROK-19212; sister bug github-3550 territory.
+
 claims:
-  - check: E-STRUCT-MECH-01..05
+  - check: E-STRUCT-MECH-01
     status: PASS
-    evidence: "File present, valid TS, test() block, name traceable, canonical imports."
+    evidence: Spec exists at expected path.
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: Valid TS.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: Single test() block at line 102.
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: Traceable name.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: Canonical imports + ../spec-login, ../helpers/openers.
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: Frontmatter at L1-3 [projects.api.save, projects.shell.open] resolves to atlas.
   - check: E-TRACE-01
     status: PASS
-    evidence: "Setup/Step labels traceable; SR rationale extensively documented in header lines 1-29 with axis enumeration."
+    evidence: Every softStep traces to Step 7 / Step 8 / Step 11 GROK-19212 invariant or technical setup.
   - check: E-TRACE-02
-    status: NA
-    evidence: "Steps 9 (Query/Script rename) + project-entity rename + Step 11 Sync refresh deferred via documented SR."
+    status: SCOPE_REDUCTION
+    evidence: |
+      Per invocation contract, evaluated only against self-declared subset
+      (Steps 7-9 + Step 11). Sister specs cover Steps 1-2 and Steps 12-13;
+      Steps 4+10 in complex-ui.md; Step 9 sub-bullets explicitly reduced to
+      table rename inside the project only (covers GROK-19212) — documented
+      in header lines 18-37.
   - check: E-TRACE-03
     status: PASS
-    evidence: "GROK-19212 invariant verified via reopen-after-table-rename → tables resolve (>= 2). Pre/post-rename table state assertions via grok.shell.tables.find."
-  - check: E-SEL-01..03
+    evidence: GROK-19212 invariant verified via reopen + dataFrame.rowCount > 0.
+  - check: E-SEL-01
     status: PASS
-    evidence: "Selectors cited in header (lines 1-5); only used selectors are .d4-dialog, button-OK/CANCEL, SAVE — all documented. Dart input via focus + keyboard.type."
-  - check: E-HELP-01..02
+    evidence: All selectors cited in header (widgets/dialog.md, projects.md).
+  - check: E-SEL-02
     status: PASS
-    evidence: "Local saveProject (defensive) + spec-login; no registry reinvention."
-  - check: E-LAYER-01..02
+    evidence: No invented selectors.
+  - check: E-SEL-03
     status: PASS
-    evidence: "target_layer: playwright matches; no override."
-  - check: E-BOUND-01..02
+    evidence: No raw .fill() on Dart inputs.
+  - check: E-HELP-01
     status: PASS
-    evidence: "Within TestTrack/Projects/ allowed path."
-scope_reduction_validation:
-  applied: true
-  axes:
-    - query-script-rename: "env dep (no provisioned query/script for qa-pw)"
-    - project-entity-rename: "JS API setter propagation issue surfaced in Wave 1b round 1; investigation pending"
-    - data-sync-refresh: "out of scope; sibling spec covers it"
-  rationale_aligned_with_scenario_intent: true
-  recommendation: "Accept as SR. GROK-19212 invariant verified all 3 runs (round 2). github-3550 partial coverage is honest."
-wave_1b_validator_record:
-  runs_round_1: 3
-  pattern_round_1: "FAIL, FAIL, FAIL"
-  hypothesis_cycle_1:
-    category: test-bug
-    fix: "Scope-reduced project-entity rename portion (Step 9 secondary)"
-  runs_round_2: 3
-  pattern_round_2: "PASS, PASS, PASS"
-  total_round_2: "2.8m"
-  hypothesis_cycles_consumed: 1
-  outcome: "GROK-19212 invariant held — table rename + reopen succeeds all 3 runs of round 2."
-movement_vs_prior: new_SR_first_critic_e_round_legit_scope
-rerun_context:
-  trigger: "Wave 3 D4 verification — first Critic E round on Wave 1b new spec"
-  budget_revision_verified: 2
+    evidence: Helpers from spec-login + openers, registered.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No reinvention.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: target_layer playwright matches.
+  - check: E-LAYER-02
+    status: NA
+    evidence: No override.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Under allowed path.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No core/** changes.
+
+scope_reduction_proposal: |
+  Three documented SR axes:
+  1. Query/Script rename → env dependency; Helper 3 logoutAndLoginAs not registered
+     for recipient-side reopen.
+  2. Project-entity rename → JS API setter propagation issue (Wave 1b round 1 had 3/3 FAIL).
+  3. Step 11 Data Sync refresh → out of scope (sibling spec).
+
+evidence_needed: |
+  (Not applicable.)
