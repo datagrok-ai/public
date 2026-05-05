@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.2.2 (2026-05-05)
+
+* `grok test` — Playwright runner now writes `test-report-playwright.csv` next to the existing merged `test-report.csv`, so CI can ship Playwright rows to a dedicated Datlas reporting bucket without disturbing the legacy `package` flow.
+
 ## 6.2.1 (2026-05-05)
 
 * Reports: `grok report attach <ticket> <file>` — upload a file as a JIRA issue attachment via REST v2 multipart POST.

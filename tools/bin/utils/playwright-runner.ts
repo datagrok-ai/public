@@ -300,6 +300,16 @@ export async function runPlaywrightTests(
     else { failedAmount++; verboseFailed += `${r.category}: ${r.name} (${r.ms} ms) :  ${r.result}\n`; }
   }
 
+  const csv = rowsToCsv(rows);
+  // Persist a Playwright-only CSV so the pipeline can ship it to the Datlas
+  // 'playwright' bucket, separate from the merged Puppeteer+Playwright
+  // test-report.csv that feeds the legacy 'package' bucket and JUnit.
+  try {
+    fs.writeFileSync(path.join(pkgDir, 'test-report-playwright.csv'), csv, 'utf-8');
+  } catch (e: any) {
+    color.warn(`Playwright: failed to write test-report-playwright.csv: ${e.message || e}`);
+  }
+
   return {
     failed: failedAmount > 0,
     passedAmount: passedAmount,
@@ -308,6 +318,6 @@ export async function runPlaywrightTests(
     verbosePassed: verbosePassed,
     verboseFailed: verboseFailed,
     verboseSkipped: verboseSkipped,
-    csv: rowsToCsv(rows),
+    csv: csv,
   };
 }
