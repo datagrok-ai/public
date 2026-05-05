@@ -1,0 +1,205 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: projects-migrate-force-2026-05-04
+feature: projects
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-files.md
+invoked_at: 2026-05-04T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: A
+failure_keys: []
+scope_reduction_proposal: |
+  Two reductions required, both citing real chain-level / Gate-F
+  section-level dependencies (not effort). Pattern matches Phase A
+  precedent in lifecycle-api.scenario.verdict.yaml (same cycle).
+
+  REDUCTION 1 — A-STRUCT-02 (no edge / perf scenario in file):
+    File-level frontmatter declares `coverage_type: regression`. The
+    file is a single-scenario proactive-lifecycle artifact realizing
+    chain rev 4 `proactive_lifecycle_specs[0]`
+    (source_class=files × dep_lifecycle_op=share_with_recipient_open).
+    By chain construction this proactive cell is a regression-grade
+    happy-path lifecycle, not an edge or perf cell — the chain
+    schema does not subdivide proactive_lifecycle_specs into edge /
+    perf flavors at this stage. Step 4 ("rename external dep N/A
+    for files") is a negative-source-class cell but is intentionally
+    a no-op per the cell definition, not a sub-scenario.
+    Real dependency: chain rev 4 `proactive_lifecycle_specs[0]`
+    declares `coverage_type: regression` with no edge sibling.
+    Proposed reduction: accept file-level `regression` for
+    proactive-lifecycle scenarios where the chain's
+    proactive_lifecycle_specs entry does not declare an edge / perf
+    sibling cell. Section-level edge / perf coverage is owned by
+    bug-focused scenarios and atlas-driven edge_cases scenarios in
+    the same section (Gate F section-level review).
+
+  REDUCTION 2 — A-STRUCT-05 (coverage <70% of atlas sub-features):
+    The `projects` atlas (rev 11) contains ~70 sub_features across
+    entity / api / shell / view / ui / move / url-params families.
+    This single proactive-lifecycle scenario covers 5 sub_features
+    (~7% of the atlas). The remaining sub_features are NOT all
+    listed in atlas `manual_only` and are by design owned by sibling
+    scenarios in the section (lifecycle-api, projects-ui-smoke,
+    complex-*, deleting, opening, share-project, project-url, etc.).
+    Real dependency: section-level coverage is owned by Gate F
+    (coverage critic) with 5 dedicated keys including
+    F-PROACTIVE-COVERAGE-01 / F-UI-COVERAGE-01. A single
+    proactive-lifecycle scenario in a multi-scenario chain cannot,
+    by construction, cover 70% of the atlas; the section's coverage
+    invariant lives at Gate F, not Gate A.
+    Proposed reduction: A-STRUCT-05 is satisfied at the SECTION
+    level by Gate F; this scenario is acceptable as the
+    files-source proactive-lifecycle realization of chain rev 4
+    proactive_lifecycle_specs[0]. UI surfaces explicitly delegated
+    to projects-ui-smoke.md per `ui_coverage_delegated_to`.
+
+  All other A-* checks PASS. Special note on the new
+  `pyramid_layer: proactive-lifecycle` enum value:
+  scenario-mode.md does NOT enforce a pyramid_layer enum at
+  Gate A (the field is not referenced in any A-STRUCT-MECH-* or
+  A-* content check). The new value is therefore transparent to
+  Gate A — no failure_key applies, no FAIL is raised. (Per Q3.2,
+  this is the intended safety property: chain analyzer / Gate F
+  schema additions must not retroactively trip Gate A on
+  scenarios that legitimately use the extension.)
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Frontmatter parses as YAML. All 4 required fields present:
+      `feature: projects`, `sub_features_covered:` (5 entries:
+      projects.upload, projects.api.save, projects.api.files.sync,
+      projects.shell.share-via-context-menu, projects.api.get-by-id),
+      `target_layer: playwright`, `coverage_type: regression`.
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      `## ` headings present in body: `## Setup`, `## Scenarios`,
+      `## Notes`, plus `### Main flow — files lifecycle` and
+      `### Expected results` under `## Scenarios`. The h3 "Main
+      flow" satisfies the scenario-heading requirement.
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      The scenario heading "### Main flow — files lifecycle" has 6
+      numbered steps (1. Open table from File share … 6. Cleanup).
+      `## Setup` also carries 5 numbered prerequisite items.
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Single scenario (Main flow) is non-empty (6 steps); no empty
+      scenarios in file.
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      `target_layer: playwright` is a valid enum value (one of
+      uitests-package | playwright | api-contract | manual-only).
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      `coverage_type: regression` is a valid enum value (one of
+      smoke | regression | edge | perf). Note: `pyramid_layer:
+      proactive-lifecycle` is NOT a Gate-A-enforced enum — A-*
+      checks do not reference `pyramid_layer`. The new enum value
+      is transparent to Gate A by design (Q3.2 safety property).
+  - check: A-STRUCT-01
+    status: PASS
+    evidence: |
+      Main flow combines 5 sub_features in interaction across 6
+      chained steps: load file (projects.api.files.sync via Data
+      Sync ON / projects.upload), save (projects.api.save), share
+      (projects.shell.share-via-context-menu via JS API substitute
+      with delegated UI), original-user reopen
+      (projects.api.get-by-id), rename + recipient-side reopen
+      (loops back through projects.api.save and get-by-id). 5 ≥ 3.
+  - check: A-STRUCT-02
+    status: FAIL
+    evidence: |
+      File has a single scenario with `coverage_type: regression`;
+      no edge / perf sub-scenario. By chain rev 4 design,
+      proactive_lifecycle_specs[0] is a regression-grade happy-path
+      lifecycle cell. Routed to SCOPE_REDUCTION (Reduction 1) — not
+      raw FAIL — because section-level edge coverage is owned by
+      sibling scenarios (Gate F section-level scope).
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: |
+      File-level frontmatter `coverage_type: regression` applies to
+      the single Main flow scenario. Valid test-kind enum value, not
+      a severity p0..p3 value.
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: |
+      Common setup (auth, project name, recipient placeholder,
+      Helper-3 deferral note, cleanup hook) factored into `## Setup`
+      section. Single scenario in file → no cross-scenario
+      duplication possible.
+  - check: A-STRUCT-05
+    status: FAIL
+    evidence: |
+      5 sub_features_covered out of ~70 atlas sub_features (~7%).
+      Remaining sub_features not in atlas `manual_only`. By design
+      this single proactive-lifecycle scenario is one cell of the
+      chain rev 4 plan; section-level coverage owned by Gate F.
+      Routed to SCOPE_REDUCTION (Reduction 2).
+  - check: A-STRUCT-06
+    status: PASS
+    evidence: |
+      sub_features_covered total = 5 across 1 scenario = avg 5.0 per
+      scenario, well above the 2 threshold. Density rule satisfied
+      (also satisfied trivially: even a smoke-flavored single-cell
+      scenario would be exempted per the smoke clause, but this
+      scenario does not need the exemption).
+  - check: A-CONT-01
+    status: PASS
+    evidence: |
+      No `<column>` / `[fill in]` / generic placeholders.
+      `lifecycle-files-${Date.now()}` is a real parametric timestamp
+      pattern. `<RECIPIENT_USERNAME_TBD>` is explicitly marked as
+      "resolved at Automator stage" with rationale (single recipient,
+      registry-pending) — this matches the parametric-test-design
+      escape clause in A-CONT-01 (intentional, marked, with reason).
+      Real file path used (`System:DemoFiles/demog.csv` — standard
+      Datagrok demo dataset). Real JS API surface used
+      (`grok.data.loadTable`, `grok.dapi.projects.find`,
+      `grok.dapi.projects.save`, `grok.dapi.projects.delete`,
+      `grok.dapi.permissions.grant/revoke`).
+  - check: A-BUG-01
+    status: PASS
+    evidence: |
+      PASS by vacuity. Atlas `known_issues` entries (GROK-19750,
+      19212, 19103, 19403, 18345, 19728, github-3550) use the
+      `test_coverage: { exists: false, paths: [] }` shape, not
+      `test_coverage: needed`. The A-BUG-01 rule triggers only on
+      `needed`. Note: scenario `related_bugs: []` matches the chain
+      rev 4 declaration "bugs_reinforcing: [] (per
+      proactive_lifecycle_specs[0])" — files-source has no bug-
+      reinforcement attached at this cell. Cross-section bug
+      coverage is owned by Gate F (F-BUG-COVERAGE-01) and by
+      bug-focused sibling scenarios.
+  - check: A-MERIT-01
+    status: PASS
+    evidence: |
+      No "effort" reasons cited. Step 3's recipient-side assertion
+      deferral cites a real registry dependency (Helper 3
+      `helpers.playwright.session.logoutAndLoginAs` not yet
+      registered — verified absent from helpers-registry.yaml).
+      Step 4 ("rename external dep N/A") cites chain rev 3
+      proactive_lifecycle_specs[0].dep_lifecycle_ops_covered as
+      the real reason rename is out of scope for files-source.
+      JS-API-instead-of-UI-driving (share / permission grant) cites
+      the real dependency `projects-ui-smoke.md`
+      `ui_coverage_responsibility` ownership (verified in sibling
+      file frontmatter: pcmdShareProject / share-dialog-* /
+      data-sync-toggle / save-project-dialog all owned there).
+  - check: A-MERIT-02
+    status: PASS
+    evidence: |
+      No "TODO: add later" / "next phase" deferrals without
+      dependency reference. The Helper-3 deferral graceful-degrades
+      with a documented condition ("If Helper 3 is not registered,
+      this sub-step skips with a logged warning") and matches the
+      same deferral pattern in `complex-share-second-user-spec.ts`
+      Step 13 (Lattice Rule 13 satisfied — real dependency cited,
+      not unprompted).

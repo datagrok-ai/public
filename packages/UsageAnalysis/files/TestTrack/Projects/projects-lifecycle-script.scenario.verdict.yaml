@@ -1,0 +1,221 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: projects-migrate-force-2026-05-04
+feature: projects
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-script.md
+invoked_at: 2026-05-04T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: A
+failure_keys: []
+scope_reduction_proposal: |
+  One reduction required, citing a real chain-level / decision-log dependency
+  (not effort). All other A-* checks PASS or NA.
+
+  REDUCTION 1 — A-CONT-01 (placeholder without explicit `# parametric:` marker):
+    The token `<RECIPIENT_USERNAME_TBD>` appears in Setup #3 and is referenced
+    by Step 3, Step 5, and Step 6 recipient-side assertions. The Setup #3
+    line literally calls it a "Recipient placeholder" but does not include
+    the literal `# parametric: <reason>` marker the rule prescribes.
+    Real dependency: same parameterization pattern used by share-project.md
+    (`<RECIPIENT_USERNAME_TBD>`, `<RECIPIENT_GROUP_USERNAME_TBD>`) which
+    was accepted under SR (3) of share-project.scenario.verdict.yaml round
+    1 citing decision-log
+    `sa-2026-05-03-share-project-group-and-user-placeholders` (sed-
+    replacement at automator stage when accounts land). The recipient-
+    placeholder convention is a section-wide parameterization pattern
+    inherited by every recipient-side proactive_lifecycle_specs scenario
+    in chain rev 3 / rev 4, including this one.
+    Proposed reduction: accept the placeholder under the same SR (3) as
+    share-project.md — semantic equivalent of `# parametric:` is provided
+    by Setup #3's literal "Recipient placeholder" prose plus the inherited
+    section-wide convention. Optional follow-up: add an explicit
+    `<!-- parametric: recipient-account-provisioning -->` comment near
+    Setup #3 in a single-touch edit if strict literal compliance is
+    desired; not required for the SR proposal to be accepted as-is.
+
+  GROK-19403 full reproduction verification (Step 3) and GROK-19728 sub-
+  flow deferral (Step 6 + Setup #5) both PASS unambiguously — see
+  A-BUG-01 and A-MERIT-02 evidence below.
+
+  New enum value `proactive-lifecycle` does NOT trip Gate A. `pyramid_layer`
+  is NOT among the 4 required Gate-A frontmatter fields (feature,
+  sub_features_covered, target_layer, coverage_type). The value is
+  established and used by 5 sibling proactive-lifecycle scenarios in this
+  section (projects-lifecycle-{db,spaces,query,derived,files}.md). The
+  enum-validity axis (target_layer + coverage_type) is satisfied
+  independently — see A-STRUCT-MECH-05 / A-STRUCT-MECH-06.
+
+claims:
+  - check_id: A-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Frontmatter parses as YAML. All 4 required fields present:
+      `feature: projects`, `sub_features_covered:` (7 entries:
+      projects.upload, projects.api.save, projects.api.files.sync,
+      projects.api.relations.list, projects.add-relation,
+      projects.shell.share-via-context-menu, projects.api.get-by-id),
+      `target_layer: playwright`, `coverage_type: regression`.
+      Additional non-required fields (pyramid_layer,
+      ui_coverage_responsibility, ui_coverage_delegated_to,
+      produced_from, original_path, migration_date, migration_report,
+      related_bugs) are well-formed.
+  - check_id: A-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      `## Scenarios` parent heading at line 58. One `### Main flow —
+      script-source lifecycle (happy path + GROK-19403)` scenario heading
+      at line 60 (h3 satisfies "scenario heading" per lifecycle-api
+      precedent).
+  - check_id: A-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      The single scenario heading has 7 numbered top-level steps
+      (1. Open table from Script; 2. Save project with Data Sync ON;
+      3. Share project with second user; 4. Rename external dependency;
+      5. Rename project itself; 6. GROK-19728 sub-flow; 7. Cleanup).
+  - check_id: A-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Single scenario is non-empty (7 numbered steps + Expected results
+      sub-section + Notes section).
+  - check_id: A-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      `target_layer: playwright` is a valid enum value (one of
+      uitests-package | playwright | api-contract | manual-only).
+  - check_id: A-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      `coverage_type: regression` is a valid enum value (one of
+      smoke | regression | edge | perf).
+  - check_id: A-STRUCT-01
+    status: PASS
+    evidence: |
+      The single Main flow scenario combines 7 sub_features in
+      interaction across its 7 steps:
+      - projects.upload + projects.api.save (Step 2 Save Project + Data
+        Sync)
+      - projects.api.files.sync (Step 2 Data Sync ON setup)
+      - projects.add-relation + projects.api.relations.list (Step 4
+        rename external dep + relation auto-resolution assertion)
+      - projects.shell.share-via-context-menu (Step 3 share via JS API
+        permissions.grant; UI delegated to projects-ui-smoke.md)
+      - projects.api.get-by-id (Steps 3.3 / 5 recipient-open; original-
+        user reopen)
+      Far above the 3+ threshold.
+  - check_id: A-STRUCT-02
+    status: NA
+    evidence: |
+      Single-scenario file with `coverage_type: regression`. The
+      A-STRUCT-02 requirement (presence of edge or perf scenario) is
+      a section-level concern (Gate F). Section-level edge coverage of
+      the script-source lifecycle invariants is owned by the chain rev
+      3 / rev 4 `bug_focused_candidates` slot
+      (`projects-grok-19403-spec.ts` for the share+recipient-open
+      invariant) and by sibling proactive_lifecycle_specs scenarios.
+      The complex.scenario.verdict.yaml round-1 PASS sets the
+      precedent for NA on single-scenario lifecycle files.
+  - check_id: A-STRUCT-03
+    status: PASS
+    evidence: |
+      Single scenario inherits `coverage_type: regression` from file-
+      level frontmatter — value from unified test-kind enum (smoke |
+      regression | edge | perf), not severity p0..p3 axis.
+  - check_id: A-STRUCT-04
+    status: PASS
+    evidence: |
+      Common setup (auth, project-name parameterization, recipient
+      placeholder, Helper 3 deferral note, env-provisioning note,
+      cleanup note) factored into `## Setup` section at file top
+      (6 numbered setup items). No setup-step duplication — single
+      scenario in file.
+  - check_id: A-STRUCT-05
+    status: NA
+    evidence: |
+      Coverage of atlas sub-features is a section-level concern
+      tracked by Gate F. This single scenario covers 7 sub-features
+      contributing to section coverage; remaining sub_features
+      covered across sibling scenarios in scenario-chains/projects.yaml
+      (lifecycle-api.md, complex.md, share-project.md, projects-ui-
+      smoke.md, projects-copy-clone.md, sibling
+      proactive_lifecycle_specs scenarios). complex.scenario.verdict
+      and lifecycle-api.scenario.verdict precedents support NA.
+  - check_id: A-STRUCT-06
+    status: PASS
+    evidence: |
+      Single scenario covers 7 sub_features → density 7/1 = 7 ≥ 2.
+      coverage_type=regression (not smoke), so non-exempt rule applies
+      and passes comfortably.
+  - check_id: A-CONT-01
+    status: FAIL
+    evidence: |
+      `<RECIPIENT_USERNAME_TBD>` placeholder in Setup #3 and references
+      in Steps 3 / 5 / 6 recipient-side assertions, without an explicit
+      `# parametric: <reason>` marker. Setup #3 prose ("Recipient
+      placeholder") documents the parameterization in human-readable
+      form but the literal `# parametric:` marker is absent.
+      Project-name token `lifecycle-script-${Date.now()}` (Setup #2)
+      is a real parametric naming pattern (timestamp), not a generic
+      stand-in — that part is fine. Routed to SCOPE_REDUCTION — see
+      proposal Reduction 1 (semantic equivalent + section-wide
+      precedent from share-project.md SR (3)).
+  - check_id: A-BUG-01
+    status: PASS
+    evidence: |
+      Both bugs in frontmatter `related_bugs: [GROK-19403, GROK-19728]`
+      are addressed via path (a) — explicit body citation with
+      reproduction steps:
+      - GROK-19403 (recipient cannot open shared project when
+        underlying script not shared): Step 3 walks the FULL bug
+        reproduction path — (i) precondition that script is NOT shared
+        with recipient (Step 3 first bullet), (ii) project-level grant
+        via `grok.dapi.permissions.grant(project, recipient, ...)`,
+        (iii) the explicit invariant assertion: "recipient should see
+        an explicit permission failure (e.g. 'Could not access script
+        Samples:Cars — you don't have permission'), NOT a silent null
+        table or success-with-empty-data". Original-user-still-opens
+        assertion present. Recipient-side Helper-3-deferred branch
+        explicitly tags silent-null-without-error as the GROK-19403
+        failure mode.
+      - GROK-19728 (view-and-use users edit creation script under
+        failure state): Step 6 sub-flow walks the broken-script +
+        view-and-use access path, deferred per Setup #5 (broken-script
+        fixture not provisioned). Share-side assertion (project opens
+        with view-and-use access) runs unconditionally. Compound
+        dependency (Helper 3 + broken-script fixture) acknowledged in
+        Notes.
+      No other atlas known_issues bugs intersect this scenario's
+      sub_features_covered or repro path beyond what is already
+      documented (cross-cutting candidates handled by chain
+      bug_focused_candidates per F-BUG-COVERAGE-01).
+  - check_id: A-MERIT-01
+    status: PASS
+    evidence: |
+      No "effort" / "complexity" reasons cited. Helper-3-deferral and
+      broken-script-fixture-deferral both reference real prerequisites:
+      `helpers.playwright.session.logoutAndLoginAs` is NOT YET
+      REGISTERED (Setup #4) and broken-script fixture provisioning
+      requires a separate test fixture (Setup #5). The "skip-with-
+      logged-warning if rename rejects on Samples-namespace permission"
+      branch in Step 4 cites a real platform permission-model
+      uncertainty (rename of a namespaced sample script), not effort.
+  - check_id: A-MERIT-02
+    status: PASS
+    evidence: |
+      All deferrals reference real prerequisites:
+      - Step 3.3 / Step 5 recipient-side assertions: Helper 3
+        (`helpers.playwright.session.logoutAndLoginAs`) registration —
+        same Helper 3 dependency referenced by share-project.md and
+        complex.md per b14-2026-04-30-re-auth-pattern-applied.
+      - Step 6 GROK-19728 sub-flow: broken-script fixture provisioning
+        (compound: Helper 3 + broken-script fixture). Notes section
+        explicitly enumerates the compound dependency.
+      - Step 4 rename: skip-with-logged-warning on Samples-namespace
+        permission rejection — real platform-permission gate, not
+        effort.
+      - Step 6 share-side assertion (project opens with view-and-use
+        access) runs unconditionally — only the broken-state branch is
+        deferred. No Lattice Rule 13 violation; every deferral cites a
+        documented dependency.

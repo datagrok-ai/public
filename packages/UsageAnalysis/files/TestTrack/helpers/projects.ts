@@ -523,12 +523,15 @@ export async function shareProjectViaContextMenu(
  * this call, fetch by ID rather than by typed name.
  *
  * **"Copy of" default name (mode === 'copy' only)**: when `name` is OMITTED
- * for copy mode, the server applies a default name `"Copy of <sourceName>"`
- * (display) / `"copyof<originalname>"` (URL slug) — verified live 2026-05-04.
- * The default-name path is the canonical / most reliable path because the
- * resulting display name is predictable from `sourceName` (no PascalCase
- * normalization applies because the server constructed the name itself).
- * Tests can verify by `dapi.projects.filter('name = "Copy of <source>"').first()`.
+ * for copy mode, the server applies a default name. Originally documented
+ * as `"Copy of <sourceName>"` (display) / `"copyof<originalname>"` (URL slug)
+ * but actual dev behavior 2026-05-04 derived the default from the active
+ * table name (PascalCase + auto-index, e.g. `C1bSaveCopyTable_4`) — the
+ * server-default-name policy is currently undocumented and varies by
+ * scenario shape. Default-name path documented but not exercised by helper
+ * test — see helpers/projects-spec.ts saveCopy softStep, which uses the
+ * explicit-name path. Tests SHOULD provide an explicit `name` for
+ * deterministic verification (id-based dapi.projects.find after save).
  *
  * For modes other than `'copy'`, `name` is REQUIRED.
  *
@@ -640,4 +643,249 @@ export async function saveCopy(
     await shareDialog.locator('[name="button-CANCEL"]').click();
     await expect(shareDialog).toBeHidden({timeout: 10000});
   }
+
+  // Verification — id-based dapi.projects.find.
+  // Replaces prior dapi.projects.filter('name = "X"').first() verification
+  // which returned null for fresh server-side names (I3 hypothesis: dapi
+  // index lag / namespace search gap on filter-by-name).
+  //
+  // Per fix-2026-05-04-savecopy-ui-search-verification (revised approach):
+  // after saveCopy completes the Dart `grok.shell.project` is set to the
+  // just-saved copy. Capture its id then verify via `dapi.projects.find(id)`
+  // — id-based lookup is namespace/index independent and works for fresh
+  // names where filter-by-name does not. UI Browse>Dashboards search
+  // verification was tried as the prompted approach but the Dashboards
+  // search input selector is not documented in references/projects.md
+  // (B14-NEEDED — see batch report).
+  const expectedName = options.name ?? (options.mode === 'copy' ? `Copy of ${options.sourceName}` : null);
+  if (!expectedName) return; // non-copy modes without explicit name → no verification target
+
+  // Wait for grok.shell.project to update to the saved copy (Dart side
+  // updates this after save commits). Poll up to 15s.
+  const verified = await page.evaluate(async (expected) => {
+    const grok = (window as any).grok;
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline) {
+      const proj = grok.shell.project;
+      if (proj && proj.id) {
+        // id-based lookup (filter-by-name returns null for fresh names; id-find works)
+        const found = await grok.dapi.projects.find(proj.id);
+        if (found && found.name === expected)
+          return {id: proj.id, name: found.name, ok: true};
+        if (found && found.name)
+          return {id: proj.id, name: found.name, ok: false, expected};
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    return {ok: false, expected, reason: 'timeout waiting for grok.shell.project.id'};
+  }, expectedName);
+
+  if (!verified.ok)
+    throw new Error(`saveCopy verification failed: ${JSON.stringify(verified)}`);
+}
+
+// ===========================================================================
+// Phase B helpers — provenance-aware save + reopen lifecycle (added 2026-05-05)
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// 11. saveProjectWithProvenance — canonical uploadProject pattern.
+// ---------------------------------------------------------------------------
+
+export interface SavedProject {
+  /** Server-assigned project id. */
+  projectId: string;
+  /** TableInfo id of the persisted source table. */
+  tableInfoId: string;
+  /** Layout id (if a layout was saved). */
+  layoutId: string | null;
+  /** Project name as persisted (may be PascalCased server-side via the dialog;
+   *  via JS API it is preserved verbatim — this is the latter). */
+  resolvedName: string;
+}
+
+/**
+ * Save the active TableView as a project, persisting the TableInfo with
+ * its `.script` provenance and the saved layout. Mirrors the canonical
+ * `uploadProject` helper in `public/packages/UITests/src/gui/gui-utils.ts:100-111`:
+ *
+ * ```ts
+ * project.addChild(tableInfo);
+ * const layout = view.saveLayout();
+ * project.addChild(layout);
+ * await grok.dapi.layouts.save(layout);
+ * await grok.dapi.tables.uploadDataFrame(df);
+ * await grok.dapi.tables.save(tableInfo);
+ * await grok.dapi.projects.save(project);
+ * ```
+ *
+ * The four calls our prior `saveProjectViaApi` (in section-local
+ * `_helpers.ts`) skipped were the cause of save+reopen "succeeding" without
+ * any data being re-materialized — the project entity persisted but neither
+ * the dataframe bytes, the TableInfo, nor the addChild relations did.
+ *
+ * Verified live 2026-05-05 against dev.datagrok.ai for files / db_query /
+ * db_table / script source classes — all four reopened with `.script` tag
+ * intact and table re-executed by Datagrok server-side. See
+ * `.claude/diagnostics/mcp-capture-{files,db,scripts}.md`.
+ *
+ * Use after one of the `helpers.playwright.openers.openTableFrom*` calls
+ * has populated `grok.shell.tv` with a provenance-tagged DataFrame.
+ *
+ * @param page - Playwright Page (must have an active TableView).
+ * @param projectName - Project name (preserved verbatim via the JS API path).
+ * @returns identifiers needed for downstream cleanup or reopen.
+ */
+export async function saveProjectWithProvenance(
+  page: Page,
+  projectName: string,
+): Promise<SavedProject> {
+  return await page.evaluate(async (n) => {
+    const grok = (window as any).grok;
+    const DG = (window as any).DG;
+    const tv = grok.shell.tv;
+    if (!tv?.dataFrame)
+      throw new Error('saveProjectWithProvenance: no active TableView');
+    const df = tv.dataFrame;
+    const project = DG.Project.create();
+    project.name = n;
+    const tableInfo = df.getTableInfo();
+    project.addChild(tableInfo);
+    const layout = tv.saveLayout?.() ?? null;
+    if (layout) project.addChild(layout);
+    if (layout) await grok.dapi.layouts.save(layout);
+    await grok.dapi.tables.uploadDataFrame(df);
+    await grok.dapi.tables.save(tableInfo);
+    await grok.dapi.projects.save(project);
+    return {
+      projectId: project.id,
+      tableInfoId: tableInfo.id,
+      layoutId: layout?.id ?? null,
+      resolvedName: project.name,
+    };
+  }, projectName);
+}
+
+// ---------------------------------------------------------------------------
+// 12. reopenAndAssertProvenance — closeAll + reopen + verify .script survives.
+// ---------------------------------------------------------------------------
+
+export interface ReopenResult {
+  /** Time taken from `closeAll()` to the table re-materializing (ms). */
+  reopenMs: number;
+  /** Number of tables visible in `grok.shell.tables` after reopen. */
+  tablesAfter: number;
+  /** Active TableView dataFrame name after reopen. */
+  reopenedName: string;
+  /** Active TableView dataFrame rowCount after reopen. */
+  reopenedRowCount: number;
+  /** `.script` tag value after reopen — should match the pre-save value. */
+  reopenedScript: string;
+}
+
+/**
+ * Verify that a project saved with `saveProjectWithProvenance` correctly
+ * round-trips through `closeAll → dapi.projects.find(id).open()` —
+ * i.e. that Datagrok re-executes the `.script` provenance and re-materializes
+ * the source table.
+ *
+ * This is the runtime check that distinguishes a real Data-Sync-ON
+ * lifecycle from a snapshot-only one. Without provenance, reopen returns
+ * an empty project (or a snapshot copy) and the assertions below fail.
+ *
+ * @param page - Playwright Page.
+ * @param projectId - Project id from `saveProjectWithProvenance`.
+ * @param expectedScriptPattern - Optional regex; if provided, the post-reopen
+ *   `.script` must match (e.g. `PROVENANCE_PATTERNS.files`). Use to enforce
+ *   Gate E-PROV-01 across the reopen boundary.
+ * @returns measurements needed for downstream assertions.
+ * @throws if reopen does not produce a TableView, OR if expectedScriptPattern
+ *   is provided and does not match.
+ */
+export async function reopenAndAssertProvenance(
+  page: Page,
+  projectId: string,
+  expectedScriptPattern?: RegExp,
+): Promise<ReopenResult> {
+  const result = await page.evaluate(async (id) => {
+    const grok = (window as any).grok;
+    grok.shell.closeAll();
+    await new Promise((r) => setTimeout(r, 1000));
+    const t0 = performance.now();
+    const proj = await grok.dapi.projects.find(id);
+    if (!proj) throw new Error(`Project not found by id: ${id}`);
+    await proj.open();
+    const reopenMs = Math.round(performance.now() - t0);
+    // Settle: tableviews materialise after the reopen promise.
+    await new Promise((r) => setTimeout(r, 2000));
+    const tv = grok.shell.tv;
+    const df = tv?.dataFrame;
+    if (!df) throw new Error(`Reopen of ${id}: no df after open + 2s settle`);
+    const tablesAfter = (() => {
+      try { return Number(grok.shell.tables?.length) || 0; }
+      catch (_) { return 0; }
+    })();
+    return {
+      reopenMs,
+      tablesAfter,
+      reopenedName: df.name,
+      reopenedRowCount: df.rowCount,
+      reopenedScript: df.tags?.get?.('.script') ?? '',
+    };
+  }, projectId);
+
+  if (expectedScriptPattern && !expectedScriptPattern.test(result.reopenedScript)) {
+    throw new Error(
+      `reopenAndAssertProvenance: post-reopen .script = ` +
+      `"${result.reopenedScript.slice(0, 200)}" does not match ` +
+      `${expectedScriptPattern}. The project saved successfully but ` +
+      `provenance did not survive — likely cause: prior save path skipped ` +
+      `tables.uploadDataFrame / tables.save / project.addChild(tableInfo).`,
+    );
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// 13. deleteProjectWithCleanup — drop project + tableInfo + (optional) script.
+// ---------------------------------------------------------------------------
+
+/**
+ * Delete a project and its associated TableInfo. Best-effort — swallows
+ * errors so it can be safely called from `finally` blocks.
+ *
+ * Use this in a try/finally for any spec that calls
+ * `saveProjectWithProvenance` to avoid leaking project entities on dev.
+ * Optionally also pass a provisioned script id to clean up
+ * test-fixture scripts in the same call.
+ *
+ * @param page - Playwright Page.
+ * @param ids - identifiers from `saveProjectWithProvenance` and (optional)
+ *   from `provisionDataframeScript` (in `helpers/openers.ts`).
+ */
+export async function deleteProjectWithCleanup(
+  page: Page,
+  ids: {projectId?: string; tableInfoId?: string; scriptId?: string},
+): Promise<void> {
+  await page.evaluate(async (i) => {
+    const grok = (window as any).grok;
+    if (i.projectId) {
+      try {
+        const p = await grok.dapi.projects.find(i.projectId);
+        if (p) await grok.dapi.projects.delete(p);
+      } catch (_) { /* best effort */ }
+    }
+    if (i.tableInfoId) {
+      try {
+        const ti = await grok.dapi.tables.find(i.tableInfoId);
+        if (ti) await grok.dapi.tables.delete(ti);
+      } catch (_) { /* best effort */ }
+    }
+    if (i.scriptId) {
+      try {
+        const s = await grok.dapi.scripts.find(i.scriptId);
+        if (s) await grok.dapi.scripts.delete(s);
+      } catch (_) { /* best effort */ }
+    }
+  }, ids).catch(() => {});
 }

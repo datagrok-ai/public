@@ -1,34 +1,62 @@
 ---
 feature: projects
-sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync]
+sub_features_covered:
+  - projects.upload
+  - projects.api.save
+  - projects.api.files.sync
+  - projects.add-relation
 target_layer: playwright
 coverage_type: regression
+pyramid_layer: source-matrix
+ui_coverage_responsibility:
+  - save-project-dialog
+  - link-tables-dialog
+  - join-tables-dialog
+  - pivot-table-add-to-workspace
+  - aggregate-rows-add-to-workspace
+ui_coverage_delegated_to: upload-project.md
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/uploading.md
-migration_date: 2026-04-30
+migration_date: 2026-05-04
 migration_report: uploading-migration-report.md
-related_bugs: [GROK-19103, GROK-18345]
+related_bugs:
+  - GROK-19103
+  - GROK-18345
 ---
 
 # Uploading
 
-Save 9 distinct two-table-source combinations as Datagrok projects, each
-with both **Data Sync ON** and **Data Sync OFF** variants — **18 saved
-projects total**. Verifies that project upload, save, reopen, and
-inter-table linking/joining work across all major data sources: local
-files, database query results, Spaces, file shares, get-top-N / get-all
-on DB tables, pivot-table derivations, and aggregate-row derivations.
+Save 8 distinct two-table-source combinations as Datagrok projects,
+each with both **Data Sync ON** and **Data Sync OFF** variants — **16
+saved projects total**. Verifies that project upload, save, reopen,
+and inter-table linking/joining work across all major data sources:
+local files, database query results, Spaces, file shares,
+pivot-table derivations, and aggregate-row derivations.
+
+DB-table right-click flows (`Get Top 100`, `Get All`) are covered
+by their dedicated scenario `../Queries/get-all-get-top-100.md`;
+this scenario uses plain DB-table double-click for DB sources.
+
+`pyramid_layer: source-matrix` per
+`scenario-chains/projects.yaml` rev 3 — this scenario enumerates
+table-source combinations rather than UI states. Save Project dialog
+smoke is owned by `upload-project.md` (chain
+`ui_coverage_plan.smoke_scenario`); this scenario adds the
+source-specific dialog flows (Link Tables, Join Tables,
+Pivot/Aggregate Add to workspace) that do not appear in
+upload-project.md's smoke surface.
 
 ## Setup
 
-A clean Datagrok session is the only shared setup. Each case opens its
-own pair of tables, performs its own link/join, then saves and reopens.
-Cleanup between cases is the responsibility of the test harness
-(close all views before the next case).
+A clean Datagrok session is the only shared setup. Each case opens
+its own pair of tables, performs its own link/join, then saves and
+reopens. Cleanup between cases is the responsibility of the test
+harness (close all views before the next case).
 
 **Spaces prelude (Cases 4–6 only):** before running any Spaces-based
 case, create a Space named `test-projects-demo` and add `demog.csv`
-from `System:DemoFiles` to it via JS API:
+from `System:DemoFiles` to it via JS API (per decision-log
+`sa-2026-05-03-spaces-inline-prelude-pattern`):
 
 ```js
 const space = await grok.dapi.spaces.createRoot('test-projects-demo');
@@ -55,14 +83,26 @@ await grok.dapi.spaces.delete(space);
 | 4    | Spaces                            | Spaces                                |
 | 5    | Spaces                            | Browse > Files                        |
 | 6    | Spaces                            | Query result (Run / Double-click)     |
-| 7    | Get Top 100 / Get All             | DB table (double-click)               |
 | 8    | Browse > Files                    | Pivot Table > Add to workspace        |
 | 9    | DB table (double-click)           | Aggregate Rows > Add to workspace     |
 
+Case numbering preserves 1–6, 8, 9 (no Case 7) so existing spec
+mappings (`uploading-spec.ts` covers Cases 1, 3, 4, 9) and run
+artefacts stay valid. Case 7 (Get Top 100 / Get All + DB table
+double-click + Join Tables) is owned by
+`../Queries/get-all-get-top-100.md` and is not duplicated here.
+
 Each case below is run twice — once with **Data Sync ON** (saved as
 `Test_Case<N>_Sync`) and once with **Data Sync OFF** (saved as
-`Test_Case<N>_NoSync`). Both variants are followed by a close-and-reopen
-verification.
+`Test_Case<N>_NoSync`). Both variants are followed by a
+close-and-reopen verification. **Total: 8 cases × 2 sync states = 16
+saved projects.**
+
+Per chain `ui_coverage_plan` rev 3 — Save Project dialog and Data
+Sync toggle smoke surface is owned by `upload-project.md`; this
+scenario witnesses the source-specific dialog flows (Link Tables,
+Join Tables, Pivot Table > Add to workspace, Aggregate Rows > Add to
+workspace).
 
 ---
 
@@ -82,7 +122,7 @@ verification.
 6. **Verify:** select rows in `spgi-100` — corresponding rows
    in `spgi-100 (2)` are filtered.
 7. **Save with Data Sync ON:**
-   - **File** > **Save Project** (or Ctrl+S)
+   - **File** > **Save Project** (or Ctrl+S).
    - In the Save Project dialog, ensure the **Data sync** toggle is
      **ON** for both tables.
    - Name the project `Test_Case1_Sync` and click **OK**.
@@ -254,42 +294,19 @@ verification.
 
 ---
 
-### Case 7: Get Top 100 / Get All + DB table double-click (Join Tables)
-
-1. Open **Browse** > **Databases** > **Postgres** > **NorthwindTest** >
-   **Schema** > **public**.
-2. Right-click on the `orders` table and select **Get Top 100** —
-   wait for the table to open.
-3. Right-click on the same `orders` table and select **Get All** —
-   wait for the second table to open.
-4. Add a calculated column to the first table:
-   - Select the first table, go to **Data** > **Add New Column**.
-   - Name: `key1`, Formula: `${orderid} - 5`, click **OK**.
-5. Add a calculated column to the second table:
-   - Select the second table, go to **Data** > **Add New Column**.
-   - Name: `key2`, Formula: `${orderid} + 5`, click **OK**.
-6. Go to **Data** > **Join Tables**:
-   - Table 1: first table (`orders` Get Top 100), Table 2: second
-     table (`orders` Get All).
-   - Key column 1: `key1`, Key column 2: `key2`.
-   - Join type: **Inner**.
-   - Click **OK**.
-7. Repeat step 6 for join types **Outer**, **Left**, **Right**
-   (4 joins total).
-8. **Verify:** all four joined result tables are visible in the
-   workspace.
-9. **Save with Data Sync ON:**
-   - **File** > **Save Project**.
-   - **Data sync** toggle **ON** for applicable tables.
-   - Save as `Test_Case7_Sync`.
-10. Close and reopen.
-11. **Verify on reopen:** all tables (source + 4 joined) are loaded,
-    no console errors.
-12. **Save with Data Sync OFF:**
-    - Repeat steps 1–8, **Data sync OFF**.
-    - Save as `Test_Case7_NoSync`.
-13. Close and reopen.
-14. **Verify on reopen:** all tables loaded, no console errors.
+> **Case 7 (Get Top 100 / Get All + DB table double-click + Join Tables)
+> moved to `../Queries/get-all-get-top-100.md`.** Cross-cutting bug
+> spans previously anchored here:
+> - `GROK-19103` — derivation lands in active project — still anchored
+>   in this scenario via Cases 8 (Pivot Add to workspace) and 9
+>   (Aggregate Rows Add to workspace), and externally in
+>   `upload-project.md:Step 1`, `projects-copy-clone.md:Step 4`,
+>   `complex.md:Step 1`.
+> - `GROK-19212` — rename → reference resolution under datasync —
+>   no longer anchored in this scenario; sole anchor is now
+>   `complex.md:Step 7`.
+> - `GROK-18345` — Spaces+sync — anchored in this scenario via
+>   Cases 4–6 (Spaces sources).
 
 ---
 
@@ -347,30 +364,62 @@ verification.
 
 ## Notes
 
-- Original `order: 1` — produces 18 saved projects
-  (`Test_Case<N>_Sync` and `Test_Case<N>_NoSync` for N in 1..9).
-  These names are not consumed by other migrated scenarios in the
-  Projects section as of scenario-chains rev 2; share-project.md and
-  later cases consume the `demog` project produced by
-  `upload-project.md` instead. Surfaced as candidate fixture set
-  `uploading-18-projects` for chain analysis if any future scenario
-  needs a wide projects-list fixture.
-- Cases 4–6 use the inline `test-projects-demo` Space prelude (see
-  Setup section) — the Space is created via JS API at the start of
-  the case bundle and deleted at the end, so no pre-existing
-  server-side Space is required. The original 2026-03-09 run flagged
-  the prior pre-provisioned-Space formulation as blocked ("No Spaces
-  set up on release server"); the inline-prelude pattern closes that
-  env dependency.
-- Cases 7–9 produce derivative tables (joins, pivots, aggregates)
-  alongside the source tables; the `Data sync` toggle applies to the
-  source tables only — derivative tables are persisted as part of
-  the project state, not synced from disk.
-- Helpers: the `uploadProject(projectName, tableInfo, view, df)`
-  helper at `public/packages/UITests/src/gui/gui-utils.ts:100` is
-  registered as `grok_test_layer` (a/b style) and is NOT
-  Playwright-compatible. The existing `uploading-spec.ts` covers
-  Cases 1, 3, 4, 9 (Sync ON only) at the playwright layer using a
-  local `saveProject(page, name)` helper. A Playwright-layer
-  counterpart for the registry is flagged as a candidate in the
-  migration report.
+- **D-STRUCT-02 — all 16 paths preserved at the .md level.** Per
+  chain `ui_coverage_plan` rev 3 and prior decision-log
+  `mig-2026-04-30-uploading-migration` (4-of-9 reduction was
+  Automator-stage, not Migrator-stage). The migrated .md remains the
+  full 16-path source of truth (Case 7 split out to
+  `../Queries/get-all-get-top-100.md`); any spec-side reduction
+  (e.g. the existing `uploading-spec.ts` covers Cases 1, 3, 4, 9 with
+  Sync ON only) is documented in the spec header, not in this .md.
+- **Project naming:** all 16 saved projects use deterministic names
+  (`Test_Case<N>_Sync` / `Test_Case<N>_NoSync`). Concurrent CI runs
+  will collide. The existing `uploading-spec.ts` uses a `Date.now()`
+  suffix (`AutoTest-Upload-Case<N>-<timestamp>`) to avoid this; the
+  Automator should preserve the timestamp-suffix convention at spec
+  time. Cleanup is delegated to `deleting.md` (must_run_last per
+  chain rev 3).
+- **Cases 4–6 Spaces prelude (decision-log
+  `sa-2026-05-03-spaces-inline-prelude-pattern`):** the Space is
+  created via JS API at the start of the case bundle and deleted at
+  the end, so no pre-existing server-side Space is required. The
+  original 2026-03-09 run flagged the prior pre-provisioned-Space
+  formulation as blocked ("No Spaces set up on release server"); the
+  inline-prelude pattern closes that env dependency.
+- **Cases 2/3/6 query substitution (decision-log
+  `sa-2026-05-03-postgres-queries-public-data-substitution`):** the
+  former `Samples:PostgresAll` reference is substituted with
+  `Samples:PostgresCustomers`. Two-table-source cases become
+  same-query-twice patterns after substitution; structural test value
+  is preserved, semantic distinctness of two query results is
+  degraded — flagged for downstream review.
+- **Cases 1/5/8 file substitution (decision-log
+  `sa-2026-05-03-spgi-file-public-data-substitution`):** the former
+  `SPGI_v2_infinity.csv` from `System:Demo` is substituted with
+  `spgi-100.csv` from `System:AppData/Chem/tests`. Two-file-source
+  cases become same-file-twice patterns after substitution; Datagrok
+  auto-disambiguates table-tab names as `spgi-100` and `spgi-100 (2)`.
+- **Case 9 DB-table reference** still points at
+  `Postgres > Northwind > public > orders` directly via plain
+  double-click (the source-class mapping does not cover bare DB-table
+  references). May be mapped to `Samples:PostgresOrders` in a future
+  pass or accepted as env-dependent skip on dev.
+- **Cases 8–9 derivative tables** (pivots, aggregates) are persisted
+  as part of the project state alongside the source tables; the
+  **Data sync** toggle applies to the source tables only —
+  derivative tables are persisted, not synced from disk.
+- **UI coverage delegation per chain rev 3:** Save Project dialog +
+  Data Sync toggle smoke is owned by `upload-project.md`. This
+  scenario owns the source-specific dialog flows (Link Tables, Join
+  Tables, Pivot Table > Add, Aggregate Rows > Add) — these are NOT
+  covered by `upload-project.md`'s smoke surface. Get Top 100 / Get
+  All flows are owned by `../Queries/get-all-get-top-100.md`.
+- **Helpers:** the legacy `uploadProject(projectName, tableInfo,
+  view, df)` helper at
+  `public/packages/UITests/src/gui/gui-utils.ts:100` is registered as
+  `grok_test_layer` and is NOT Playwright-compatible. The existing
+  `uploading-spec.ts` uses a local `saveProject(page, name)` helper.
+  A Playwright-layer counterpart
+  (`helpers.playwright.projects.saveAndReopen(page, name, syncOn)`)
+  is flagged as a candidate in the migration report (not invented by
+  this Migrator).
