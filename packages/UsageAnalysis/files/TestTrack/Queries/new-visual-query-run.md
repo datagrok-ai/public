@@ -37,7 +37,7 @@
 | Execute via grok-browser (total) | ~20m |
 | Spec file generation | 2m |
 | Spec script execution | 56s |
-| **Total scenario run (with model)** | ~23m |
+| **Total scenario run (with model)** | ~43m |
 
 ## Summary
 

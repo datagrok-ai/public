@@ -9,73 +9,130 @@ test('Connections / Schema', async ({page}) => {
 
   await loginToDatagrok(page);
   await page.goto(`${baseUrl}/connect?browse=connections`, {waitUntil: 'networkidle', timeout: 30000});
-  await page.waitForTimeout(3000);
+  await page.evaluate(() => {
+    document.body.classList.add('selenium');
+    grok.shell.settings.showFiltersIconsConstantly = true;
+    grok.shell.windows.simpleMode = true;
+  });
 
-  await softStep('Steps 1-2: Navigate to Databases > Postgres > Northwind', async () => {
+  await softStep('Step 1-2: Browse > Databases > Postgres expanded, Northwind visible', async () => {
     await page.evaluate(async () => {
-      const postgresNode = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
+      for (let i = 0; i < 60; i++) {
+        const found = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
+          .some((el) => el.textContent?.trim() === 'Postgres');
+        if (found) break;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      const postgres = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
+        .find((el) => el.textContent?.trim() === 'Postgres') as HTMLElement | undefined;
+      const row = postgres?.closest('.d4-tree-view-node');
+      const tri = row?.querySelector('.d4-tree-view-tri, .d4-tree-view-group-tri') as HTMLElement | null;
+      tri?.click();
+      for (let i = 0; i < 30; i++) {
+        const visible = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
+          .some((el) => el.textContent?.trim() === 'Northwind');
+        if (visible) break;
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    });
+    const northwindVisible = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
+        .some((el) => el.textContent?.trim() === 'Northwind'),
+    );
+    expect(northwindVisible).toBe(true);
+  });
+
+  await softStep('Step 3: Right-click Northwind > Browse opens connection view', async () => {
+    const result = await page.evaluate(async () => {
+      const postgres = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
         .find((el) => el.textContent?.trim() === 'Postgres');
-      const row = postgresNode?.closest('.d4-tree-view-node');
-      const tri = row?.querySelector('.d4-tree-view-group-tri, .d4-tree-view-tri') as HTMLElement | null;
-      if (tri) tri.click();
-      else (postgresNode as HTMLElement | undefined)?.click();
-      await new Promise((r) => setTimeout(r, 3000));
-    });
-    await expect(page.locator('text=Northwind').first()).toBeVisible({timeout: 10000});
-  });
-
-  await softStep('Step 3: Expand Northwind Schemas (Browse schema alternative)', async () => {
-    await page.evaluate(async () => {
-      const northwindNode = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
-        .find((el) => el.textContent?.trim() === 'Northwind');
-      const row = northwindNode?.closest('.d4-tree-view-node');
-      const tri = row?.querySelector('.d4-tree-view-group-tri, .d4-tree-view-tri') as HTMLElement | null;
-      if (tri) tri.click();
-      else (northwindNode as HTMLElement | undefined)?.click();
-      await new Promise((r) => setTimeout(r, 3000));
-    });
-    const hasSchemas = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
-        .some((el) => el.textContent?.trim() === 'Schemas'),
-    );
-    expect(hasSchemas).toBe(true);
-  });
-
-  await softStep('Step 4: Tables have DB interaction context menus', async () => {
-    await page.evaluate(async () => {
-      const schemasNode = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
-        .find((el) => el.textContent?.trim() === 'Schemas');
-      const sRow = schemasNode?.closest('.d4-tree-view-node');
-      (sRow?.querySelector('.d4-tree-view-group-tri, .d4-tree-view-tri') as HTMLElement | null)?.click();
-      await new Promise((r) => setTimeout(r, 2000));
-      const publicNode = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
-        .find((el) => el.textContent?.trim() === 'public');
-      const pRow = publicNode?.closest('.d4-tree-view-node');
-      (pRow?.querySelector('.d4-tree-view-group-tri, .d4-tree-view-tri') as HTMLElement | null)?.click();
-      await new Promise((r) => setTimeout(r, 3000));
-    });
-
-    const hasTables = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
-        .some((el) => el.textContent?.trim() === 'customers'),
-    );
-    expect(hasTables).toBe(true);
-
-    const menuItems = await page.evaluate(async () => {
-      const target = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
-        .find((el) => el.textContent?.trim() === 'customers');
-      if (!target) return [] as string[];
-      (target.closest('.d4-tree-view-node') as HTMLElement)?.dispatchEvent(
-        new MouseEvent('contextmenu', {bubbles: true, cancelable: true, button: 2}),
+      const postgresHost = postgres?.closest('.d4-tree-view-group')
+        ?.querySelector(':scope > .d4-tree-view-group-host');
+      const groups = postgresHost ? Array.from(postgresHost.children)
+        .filter((c) => c.classList.contains('d4-tree-view-group')) : [];
+      const northwindGroup = groups.find((g) =>
+        g.querySelector(':scope > .d4-tree-view-node > .d4-tree-view-group-label')?.textContent?.trim() === 'Northwind',
       );
-      await new Promise((r) => setTimeout(r, 400));
-      return Array.from(document.querySelectorAll('.d4-menu-item'))
-        .map((e) => e.textContent?.trim())
-        .filter((t): t is string => !!t);
+      const nRow = northwindGroup?.querySelector(':scope > .d4-tree-view-node') as HTMLElement | null;
+      nRow?.scrollIntoView({block: 'center'});
+      nRow?.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, button: 2}));
+      await new Promise((r) => setTimeout(r, 700));
+      const browseItem = document.querySelector('[name="div-Browse"]') as HTMLElement | null;
+      (browseItem as HTMLElement | null)?.click();
+      await new Promise((r) => setTimeout(r, 3500));
+      return {
+        browseClicked: !!browseItem,
+        viewName: (window as any).grok?.shell?.v?.name,
+        viewType: (window as any).grok?.shell?.v?.type,
+      };
     });
-    expect(menuItems).toContain('Get All');
-    expect(menuItems).toContain('Get Top 100');
-    expect(menuItems).toContain('New SQL Query...');
+    expect(result.browseClicked).toBe(true);
+    expect(result.viewName).toBe('PostgresNorthwind');
+  });
+
+  await softStep('Step 4: Tree exposes Schemas > public > customers with DB-table menu', async () => {
+    const result = await page.evaluate(async () => {
+      const postgres = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
+        .find((el) => el.textContent?.trim() === 'Postgres');
+      const postgresHost = postgres?.closest('.d4-tree-view-group')
+        ?.querySelector(':scope > .d4-tree-view-group-host');
+      const groups = postgresHost ? Array.from(postgresHost.children)
+        .filter((c) => c.classList.contains('d4-tree-view-group')) : [];
+      const northwindGroup = groups.find((g) =>
+        g.querySelector(':scope > .d4-tree-view-node > .d4-tree-view-group-label')?.textContent?.trim() === 'Northwind',
+      );
+
+      // Browse may already have expanded Northwind; expand if not.
+      let nHost = northwindGroup?.querySelector(':scope > .d4-tree-view-group-host');
+      if (!nHost || nHost.children.length === 0) {
+        const nRow = northwindGroup?.querySelector(':scope > .d4-tree-view-node') as HTMLElement | null;
+        (nRow?.querySelector('.d4-tree-view-tri, .d4-tree-view-group-tri') as HTMLElement | null)?.click();
+        await new Promise((r) => setTimeout(r, 4500));
+        nHost = northwindGroup?.querySelector(':scope > .d4-tree-view-group-host');
+      }
+
+      const nChildren = nHost ? Array.from(nHost.children).filter((c) => c.classList.contains('d4-tree-view-group')) : [];
+      const schemasGroup = nChildren.find((g) =>
+        g.querySelector(':scope > .d4-tree-view-node > .d4-tree-view-group-label')?.textContent?.trim() === 'Schemas');
+      let schemasHost = schemasGroup?.querySelector(':scope > .d4-tree-view-group-host');
+      if (!schemasHost || schemasHost.children.length === 0) {
+        const sRow = schemasGroup?.querySelector(':scope > .d4-tree-view-node') as HTMLElement | null;
+        sRow?.scrollIntoView({block: 'center'});
+        (sRow?.querySelector('.d4-tree-view-tri, .d4-tree-view-group-tri') as HTMLElement | null)?.click();
+        await new Promise((r) => setTimeout(r, 3500));
+        schemasHost = schemasGroup?.querySelector(':scope > .d4-tree-view-group-host');
+      }
+
+      const sChildren = schemasHost ? Array.from(schemasHost.children).filter((c) => c.classList.contains('d4-tree-view-group')) : [];
+      const pubGroup = sChildren.find((g) =>
+        g.querySelector(':scope > .d4-tree-view-node > .d4-tree-view-group-label')?.textContent?.trim() === 'public');
+      let pubHost = pubGroup?.querySelector(':scope > .d4-tree-view-group-host');
+      if (!pubHost || pubHost.children.length === 0) {
+        const pRow = pubGroup?.querySelector(':scope > .d4-tree-view-node') as HTMLElement | null;
+        pRow?.scrollIntoView({block: 'center'});
+        (pRow?.querySelector('.d4-tree-view-tri, .d4-tree-view-group-tri') as HTMLElement | null)?.click();
+        await new Promise((r) => setTimeout(r, 4500));
+        pubHost = pubGroup?.querySelector(':scope > .d4-tree-view-group-host');
+      }
+
+      const pubChildren = pubHost ? Array.from(pubHost.children).filter((c) => c.classList.contains('d4-tree-view-group')) : [];
+      const customersGroup = pubChildren.find((g) =>
+        g.querySelector(':scope > .d4-tree-view-node > .d4-tree-view-group-label')?.textContent?.trim() === 'customers');
+      const cRow = customersGroup?.querySelector(':scope > .d4-tree-view-node') as HTMLElement | null;
+      cRow?.scrollIntoView({block: 'center'});
+      cRow?.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, button: 2}));
+      await new Promise((r) => setTimeout(r, 700));
+      const items = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .map((el) => el.textContent?.trim()).filter((t): t is string => !!t);
+      document.body.click();
+      await new Promise((r) => setTimeout(r, 200));
+      return {customersFound: !!customersGroup, items};
+    });
+    expect(result.customersFound).toBe(true);
+    expect(result.items).toContain('Get All');
+    expect(result.items).toContain('Get Top 100');
+    expect(result.items).toContain('New SQL Query...');
+    expect(result.items).toContain('New Visual Query...');
   });
 
   if (stepErrors.length > 0) {
