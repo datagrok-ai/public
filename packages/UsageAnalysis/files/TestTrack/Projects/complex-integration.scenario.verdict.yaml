@@ -1,0 +1,168 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: projects-migrate-force-2026-05-04
+feature: projects
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-integration.md
+invoked_at: 2026-05-04T00:00:00Z
+verdict: PASS
+gate: A
+failure_keys: []
+claims:
+  - check_id: A-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Frontmatter parses as YAML. All 4 required fields present:
+      `feature: projects`, `sub_features_covered:` (6 entries — all
+      resolve in feature-atlas/projects.yaml: projects.upload,
+      projects.api.save, projects.api.files.sync,
+      projects.api.namespaces, projects.add-relation,
+      projects.add-link), `target_layer: playwright`,
+      `coverage_type: regression`. C7 rename (`priority` →
+      `coverage_type`) honored.
+  - check_id: A-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      `## Scenarios` heading present (line 54); one h3 scenario heading
+      "### Main flow — multi-source integration" (line 56) under it.
+      h3 satisfies the scenario-heading requirement (consistent with
+      sibling complex / lifecycle-* / projects-lifecycle-query
+      verdicts treating h3 as scenario heading).
+  - check_id: A-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Single scenario carries 5 numbered steps (1.–5.: Open 8 tables,
+      Save with Sync ON, Verify save persisted, Close + reopen,
+      Cleanup).
+  - check_id: A-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Scenario non-empty (5 substantive steps + Expected results
+      sub-section).
+  - check_id: A-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      `target_layer: playwright` ∈ {uitests-package, playwright,
+      api-contract, manual-only}.
+  - check_id: A-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      `coverage_type: regression` ∈ {smoke, regression, edge, perf}.
+      The frontmatter `pyramid_layer: integration` is a DIFFERENT axis
+      and is NOT subject to A-STRUCT-MECH-06; integration is an
+      established pyramid_layer enum value (chain-analyzer prompt
+      Heuristics for pyramid_layer assignment Rule 4 first-trigger,
+      explicitly cited in chain rev 4 notes for this scenario).
+      `produced_from: decomposed` is a separate enum extended in chain
+      rev 4 / Olena's Q3.1 / D3 resolution (audit-only ambiguity flag,
+      not a Gate A failure — Gate A's mechanical checks gate
+      target_layer + coverage_type only).
+  - check_id: A-STRUCT-01
+    status: PASS
+    evidence: |
+      Single scenario combines 6 sub-features in interaction
+      (projects.upload + projects.api.save in Steps 1-2;
+      projects.api.files.sync via Data Sync ON saves in Step 2;
+      projects.api.namespaces via Spaces source resolution;
+      projects.add-relation via parent-table saves; projects.add-link
+      via Clone in Step 1). Far above the 3+ threshold; the entire
+      scenario rationale IS multi-feature interaction (8 heterogeneous
+      sources in one workspace).
+  - check_id: A-STRUCT-02
+    status: NA
+    evidence: |
+      Single-scenario file; coverage_type=regression at file level.
+      A-STRUCT-02 requires at least one edge/perf scenario at section
+      level — owned by Gate F territory and addressed by sibling
+      scenarios (uploading.md, deleting.md, etc.) per chain rev 4.
+      Same treatment as complex.scenario.verdict.yaml,
+      projects-lifecycle-query.scenario.verdict.yaml, and other
+      single-scenario decomposed siblings.
+  - check_id: A-STRUCT-03
+    status: PASS
+    evidence: |
+      `coverage_type: regression` at file frontmatter level (unified
+      test-kind enum). Not a severity p0..p3 value.
+  - check_id: A-STRUCT-04
+    status: PASS
+    evidence: |
+      Repeated setup factored into `## Setup` section (4 numbered
+      items: auth, project-name parametric, env deps with
+      skip-with-logged-warning policy, cleanup contract). Single
+      scenario, so cross-scenario duplication is vacuously absent.
+  - check_id: A-STRUCT-05
+    status: NA
+    evidence: |
+      Section-level coverage owned by Gate F. This Wave 2B decomposed
+      scenario covers 6 atlas sub_features focused on the multi-source
+      co-existence cell (Plan line 170 rationale) — re-framing of
+      complex.md Step 1 in full + Step 2. Atlas remainder owned by
+      sibling scenarios per chain rev 4. Same treatment as
+      complex.scenario.verdict.yaml and
+      projects-lifecycle-query.scenario.verdict.yaml.
+  - check_id: A-STRUCT-06
+    status: PASS
+    evidence: |
+      Single scenario covers 6 sub_features; density 6/1 = 6 ≥ 2.
+      `coverage_type: regression` (non-smoke), so non-exempt rule
+      applies and passes comfortably.
+  - check_id: A-CONT-01
+    status: PASS
+    evidence: |
+      No A-CONT-01-rejectable placeholders. `integration-test-${Date.now()}`
+      is parametric naming (timestamp pattern, established convention
+      across siblings: lifecycle-query, lifecycle-files, complex-augment,
+      complex-move). `System:AppData/Chem/tests/spgi-100.csv` and
+      `System:DemoFiles/demog.csv` are real per
+      `sa-2026-05-03-spgi-file-public-data-substitution`.
+      `Postgres:NorthwindTest:public:orders` is the real env-provisioned
+      DB table. `Samples:PostgresCustomers` and `Samples:Cars` are real
+      per `sa-2026-05-03-postgres-queries-public-data-substitution`.
+      `test-projects-demo-integration-*` follows the inline-prelude
+      pattern per `sa-2026-05-03-spaces-inline-prelude-pattern`. The
+      `<id>` token in `grok.dapi.projects.find(<id>)` (Step 3) is the
+      established runtime-resolved id parametric convention used
+      identically in complex-augment.md, complex-move.md,
+      lifecycle-api.md, projects-lifecycle-files.md,
+      projects-lifecycle-query.md — accepted by every prior Gate A
+      verdict in this section.
+  - check_id: A-BUG-01
+    status: PASS
+    evidence: |
+      PASS by vacuity. Atlas projects.yaml `known_issues` field
+      contains 7 entries but each uses the structured shape
+      `test_coverage: { exists: false, paths: [] }`, NOT
+      `test_coverage: needed`. Per scenario-mode.md A-BUG-01
+      PASS-by-vacuity rule (no `needed` entries triggers PASS), the
+      check is satisfied. Same treatment as
+      projects-ui-smoke.scenario.verdict.yaml. Additionally, chain
+      rev 4 explicitly records `bugs_reinforcing: []` for this
+      scenario with documented rationale: no GROK ticket targets
+      multi-source co-existence specifically; each bug is
+      source-specific or op-specific. Bug coverage is owned by
+      sibling scenarios (complex.md retains rename + second-user repro
+      bug-focused role per chain rev 4).
+  - check_id: A-MERIT-01
+    status: PASS
+    evidence: |
+      No "effort" or "complexity" reasons cited as opt-outs. Scenario
+      notes acknowledge long runtime (~10-15 min CI) but justify it as
+      multi-source coverage value, not effort excuse. Defensive env
+      skips (Setup point 3) cite real env provisioning dependencies
+      (DB connection, Query, Script, Space inline-prelude) per named
+      decision-log entries: sa-2026-05-03-postgres-queries-public-
+      data-substitution, sa-2026-05-03-spgi-file-public-data-
+      substitution, sa-2026-05-03-spaces-inline-prelude-pattern. All
+      are real prerequisite citations.
+  - check_id: A-MERIT-02
+    status: PASS
+    evidence: |
+      No unprompted "TODO: add later" / "next phase" deferrals
+      (Lattice Rule 13). Cleanup Step 5 explicitly notes "no rename
+      ops in this scenario, so no restoration needed" — closure of
+      cleanup contract, not a deferral. Notes section explicitly
+      records the dual-scope decision (UI delegated to
+      projects-ui-smoke.md; Pivot/Aggregate/Join/Clone UI surfaces
+      witnessed in uploading.md Cases 8/9) — explicit cross-references,
+      not deferred work.

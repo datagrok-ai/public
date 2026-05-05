@@ -1,0 +1,132 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: projects-migrate-force-2026-05-04
+feature: projects
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-augment.md
+invoked_at: 2026-05-04T00:00:00Z
+verdict: PASS
+gate: A
+failure_keys: []
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Frontmatter parses as YAML; all 4 required fields present
+      (feature=projects, sub_features_covered=[projects.api.save,
+      projects.add-relation, projects.tree.add-entity-node],
+      target_layer=playwright, coverage_type=regression). C7 rename
+      honored (coverage_type, not priority). Extra field
+      produced_from=decomposed is informational metadata not gated by
+      Gate A enum (mechanical check enumerates 4 fields only; Gate D
+      validates produced_from=migrated, not applicable here).
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      One scenario heading present: "### Main flow — augment via JS API"
+      under "## Scenarios" (line 44).
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Scenario heading has 5 numbered steps (1.–5.) covering open
+      baseline, JS API addRelation, reopen verify, optional UI gap
+      note, cleanup.
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Scenario is non-empty (5 steps + Expected results sub-section).
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      target_layer=playwright is in the allowed enum (uitests-package,
+      playwright, api-contract, manual-only).
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      coverage_type=regression is in the allowed enum
+      (smoke|regression|edge|perf).
+  - check: A-STRUCT-01
+    status: PASS
+    evidence: |
+      Main-flow scenario combines 3 sub-features in interaction:
+      projects.api.save (Save baseline + post-augment save),
+      projects.add-relation (the addRelation loop adding 3 tables in
+      Link mode), projects.tree.add-entity-node (the JS API contract
+      equivalent of the manual_only UI drag-drop sub-feature). 3 ≥ 3
+      threshold met.
+  - check: A-STRUCT-02
+    status: NA
+    evidence: |
+      Single-scenario file; coverage_type=regression at file level.
+      A-STRUCT-02 (edge/perf coverage) is section-level concern (Gate F
+      territory) per complex.scenario.verdict.yaml precedent. Section-
+      level edge/perf coverage is provided by sibling scenarios per
+      chain rev 4 (Wave 2B context).
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: |
+      coverage_type=regression at frontmatter level applies to the
+      single scenario; from the unified test-kind enum, not severity
+      axis (p0..p3 values would FAIL — none used).
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: |
+      Repeated setup factored into "## Setup" section (4 numbered
+      items: auth, project name template, source files list, cleanup
+      directive). Not duplicated in scenario steps.
+  - check: A-STRUCT-05
+    status: NA
+    evidence: |
+      Coverage of atlas sub-features is a section-level concern
+      tracked by Gate F. This single scenario covers 3 sub-features
+      from a feature with 60+ entries; remainder owned by sibling
+      scenarios per Wave 2B chain rev 4.
+  - check: A-STRUCT-06
+    status: PASS
+    evidence: |
+      Single scenario covers 3 sub-features; density 3/1 = 3 ≥ 2.
+      coverage_type=regression (not smoke), so non-exempt rule
+      applies and passes.
+  - check: A-CONT-01
+    status: PASS
+    evidence: |
+      Real names used throughout: System:DemoFiles, demog.csv,
+      cars.csv, iris.csv, geo.csv, grok.dapi.projects.find,
+      grok.dapi.projects.addRelation, grok.dapi.projects.save,
+      grok.dapi.files.list. The "<id>" in code is a documented
+      runtime placeholder for the project id resolved at execution
+      time (parametric by API design, not a hallucinated placeholder).
+      ${Date.now()} is a deterministic naming pattern aligned with
+      sibling scenarios (complex-save-copy.md, complex-move.md).
+  - check: A-BUG-01
+    status: PASS
+    evidence: |
+      PASS-by-vacuity. Atlas projects.yaml known_issues entries use
+      schema test_coverage:{exists,paths} — none carry
+      test_coverage:needed flag matching the A-BUG-01 trigger
+      condition. GROK-19103 (affects add-relation) is owned by
+      sibling complex.md per its frontmatter related_bugs; not this
+      scenario's responsibility (Wave 2B decomposition; bug-focused
+      coverage centralized in complex.md per chain rev 4).
+  - check: A-MERIT-01
+    status: PASS
+    evidence: |
+      No effort/complexity opt-out. The UI drag-drop deferral (Step 4
+      "optional UI verification") cites real technical dependency:
+      decision-log b2-2026-05-03-drag-drop-ui-only-reclassification —
+      3 drag mechanisms tried (synthetic DragEvent, raw mouse events,
+      CDP Input.dispatchMouseEvent), all failed; atlas manual_only
+      lists projects.tree.add-entity-node accordingly. Plan line 169
+      explicitly directs "Plan JS-API fallback grok.dapi.projects.
+      addRelation from the start" — JS API as primary path is the
+      planned design, not a deferral.
+  - check: A-MERIT-02
+    status: PASS
+    evidence: |
+      Step 4 "if/when automatable" deferral references real
+      prerequisite (drag-drop registration mechanism becoming
+      Playwright-addressable; tracked under
+      b2-2026-05-03-drag-drop-ui-only-reclassification). Notes
+      section's atlas manual_only refinement suggestion references
+      complex-move.md precedent. No Lattice Rule 13 violations.

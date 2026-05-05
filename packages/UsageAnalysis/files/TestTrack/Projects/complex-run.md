@@ -1,44 +1,71 @@
-# Complex — Run Results
+# Projects / Complex (smoke): save, rename, share — Run Results
 
-**Date**: 2026-03-09
-**URL**: https://release-ec2.datagrok.ai/
-**Status**: SKIP
+**Date**: 2026-05-05
+**URL**: https://dev.datagrok.ai
+**Status**: PARTIAL
+**Generated from**: `complex.md` + `grok-browser` references (no MCP run).
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Open tables from different sources | SKIP | SKIPPED | Complex multi-source scenario requires extensive setup |
-| 2 | Save all as project with Data Sync | SKIP | SKIPPED | Dependent on step 1 |
-| 3 | Open tables from Spaces, Files, Query, DB | SKIP | SKIPPED | Dependent on step 1 |
-| 4 | Add tables to opened project via drag-n-drop | SKIP | SKIPPED | Drag-and-drop not feasible via automation |
-| 5 | Save copy without Data Sync | SKIP | SKIPPED | Dependent on prior steps |
-| 6 | Save again with Data Sync enabled | SKIP | SKIPPED | Dependent on prior steps |
-| 7 | Rename all tables inside project | SKIP | SKIPPED | Dependent on prior steps |
-| 8 | Save copy with Data Sync | SKIP | SKIPPED | Dependent on prior steps |
-| 9 | Rename Project, Query, Script entities | SKIP | SKIPPED | Dependent on prior steps |
-| 10 | Move entities to file share, then Space | SKIP | SKIPPED | Dependent on prior steps |
-| 11 | Verify moved and saved projects | SKIP | SKIPPED | Dependent on prior steps |
-| 12 | Share project with View/Use and Full access | SKIP | SKIPPED | Dependent on prior steps |
-| 13 | Log in as second user and open shared project | SKIP | SKIPPED | Requires second user session |
+| # | Step | Time | Result | Playwright | Notes |
+|---|------|------|--------|------------|-------|
+| 1 | Step 1-2 | n/a | FAIL | FAILED | open demog (file source) and save with Sync ON: expect(received).toBe(expected) // Object.is equality |
+| 2 | Step 9 equiv | n/a | FAIL | FAILED | rename project via JS API: expect(received).toBe(expected) // Object.is equality |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Model thinking (scenario steps) | n/a |
+| grok-browser execution (scenario steps) | n/a |
+| Execute via grok-browser (total) | n/a (skipped per user request) |
+| Spec file generation | (batched across all 20 specs) |
+| Spec script execution | 1m 17s |
+| **Total scenario run (with model)** | 1m 17s |
 
 ## Summary
 
-All 13 steps skipped. This is the most complex scenario requiring tables from 7+ different sources, drag-and-drop, entity renaming, moving between Spaces, and multi-user verification. Not feasible in a single automated session.
+Spec finished with status `PARTIAL` on dev.datagrok.ai (1m 17s). 2 soft-step(s) failed.
 
 ## Retrospective
 
 ### What worked well
-- N/A (scenario not executed)
+- The spec compiled and ran end-to-end (no boilerplate-level breakage).
+- Reference-driven selectors load correctly via storageState auth.
 
 ### What did not work
-- Scenario is too complex for single-pass automated testing
+- **Step 1-2**: open demog (file source) and save with Sync ON: expect(received).toBe(expected) // Object.is equality
+- **Step 9 equiv**: rename project via JS API: expect(received).toBe(expected) // Object.is equality
 
 ### Suggestions for the platform
-- Expose project table management (add/remove tables, rename, move) via JS API
-- Provide API for Data Sync toggle
+- If failures cluster around Save Project dialog or `grok.dapi.files.readCsv`, consider verifying these JS APIs on the target environment and updating `grok-browser/references/projects.md` accordingly.
 
 ### Suggestions for the scenario
-- Break this into 4-5 smaller, independent scenarios
-- Remove dependency on second user login (or provide test credentials)
-- Specify exact table sources and expected outcomes
+- The reference docs alone weren't enough to write a self-validating spec for this scenario; the **Save Project dialog flow** in particular needs an MCP-confirmed selector trace before the spec can be authored verbatim from references.
+
+
+## Raw error
+
+```
+Error: 2 step(s) failed:
+  - Step 1-2: open demog (file source) and save with Sync ON: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+Call Log:
+- Timeout 60000ms exceeded while waiting on the predicate
+  - Step 9 equiv: rename project via JS API: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+  71 |   if (stepErrors.length > 0) {
+  72 |     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
+> 73 |     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+     |           ^
+  74 |   }
+  75 | });
+  76 |
+    at D:\Рабочая папка\Datagrok\Bitbucket\reddata\public\packages\UsageAnalysis\files\TestTrack\Projects\complex-spec.ts:73:11
+```

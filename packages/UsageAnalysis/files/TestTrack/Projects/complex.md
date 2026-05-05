@@ -3,12 +3,26 @@ feature: projects
 sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync, projects.shell.open, projects.add-relation, projects.api.namespaces, projects.shell.share-via-context-menu]
 target_layer: playwright
 coverage_type: regression
+pyramid_layer: bug-focused
+ui_coverage_responsibility:
+  - context-menu-rename-project
+  - context-menu-rename-query
+  - context-menu-rename-script
+  - pcmdShareProject
+  - share-dialog-permissions-editor
+  - logout-login-as-second-user
+  - data-sync-refresh-verification
+ui_coverage_delegated_to: projects-ui-smoke.md
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
-migration_date: 2026-04-30
+migration_date: 2026-05-04
 migration_report: complex-migration-report.md
 ui_companion: complex-ui.md
-related_bugs: [GROK-19212, GROK-19103, GROK-18345, github-3550]
+realized_as:
+  - complex-derived-tables-spec.ts
+  - complex-rename-spec.ts
+  - complex-share-second-user-spec.ts
+related_bugs: [GROK-19212, GROK-19103, GROK-19403, GROK-18345, GROK-19728, github-3550]
 ---
 
 # Complex
@@ -22,20 +36,53 @@ a second user at two access levels (View-and-Use, Full), and re-auth
 verification as that second user.
 
 This scenario is **complex-standalone** per
-`scenario-chains/projects.yaml` rev 2: no cross-file fixtures consumed;
+`scenario-chains/projects.yaml` rev 3: no cross-file fixtures consumed;
 all required state is created inline. The "second user" identity is a
 LITERAL placeholder per decision-log entry
 `mig-2026-04-29-fixture-placeholder` (eventual fixture account TBD; not
 bound to any named real account).
 
-This scenario is **flagged as a likely SCOPE_REDUCTION candidate** at
-the downstream Critic Gate A (Test Designer / Automator stage) — at 13
-top-level steps with multiple sub-bullets, it spans more flows than is
-typical for a single Playwright test. Migrator preserves all 13 steps
-faithfully here per D-MERIT-01 (opt-outs require technical dependency,
-not effort); a split along the rename / move / share-and-second-user
-boundaries is proposed in the migration report as a Critic-Gate-A
-candidate, NOT applied at Migrator stage.
+This scenario is **the central cross-cutting bug exemplar** for the
+Projects chain. Per chain YAML rev 3 `pyramid_layer: bug-focused` (Rule
+3 — 6 bugs walked here): Steps 7-9 (rename) + Step 11 (Data Sync
+verify) walk the GROK-19212 reproduction path (table-rename-then-
+reopen reference resolution under datasync); Step 1 sub-bullet "Join
+two tables" + Step 2 (Save with Sync) walks GROK-19103's repro (join
+result silently saved as separate project that fails to open); Step 1
+"Table from Space" + Step 2 (Save with Sync) + Step 12 (Share with
+second user) + Step 13 (open as second user) walks GROK-18345's repro
+(recipient cannot open shared project that uses Spaces dataset saved
+with data sync); Step 9 sub-bullet "Query — rename" + Step 11 (open
+and verify) walks github-3550's repro (external-entity rename
+invalidation, sister of GROK-19212); Step 12 (Share at View-and-Use)
++ Step 13 (recipient open) intersects GROK-19403 (recipient cannot
+open shared project when underlying script not also shared) at the
+share + recipient-open touchpoint; Step 12 (Share at View-and-Use) +
+Step 13 (recipient access under failure state) intersects GROK-19728
+(view-and-use users edit creation script under failure state) at the
+view-and-use + failure-state surface. **GROK-18345 is the primary
+motivating example for chain-analyzer-prompt.md Edit 5 Trigger 2 (single-
+scenario non-adjacent steps): the bug spans Step 1 + Step 2 + Step 12 +
+Step 13 — non-adjacent matched steps within this single scenario.**
+
+This scenario was **already split** at Wave 1b into 3 satellite specs
+per decision-log `wave-1b-complex-split-b70-followup` (2026-05-01):
+
+- `complex-derived-tables-spec.ts` — Step 1 multi-source open + Join
+  sub-bullet + Step 2 Save with Sync; targets GROK-19103.
+- `complex-rename-spec.ts` — Steps 7-8 table rename + Step 11 reopen-
+  verify; targets GROK-19212; partial github-3550.
+- `complex-share-second-user-spec.ts` — Step 12 share at View-and-Use +
+  Full; targets GROK-18345 (Step 13 deferred pending Helper 3
+  `helpers.playwright.session.logoutAndLoginAs` registration).
+
+The `complex-move` sub-spec was **dropped** per decision-log
+`wave-1b-complex-split-b70-followup` and reinforced by
+`b2-2026-05-03-drag-drop-ui-only-reclassification` — both documented
+paths (drag-drop and right-click `Move to`) are unautomatable in
+current state. The original 13-step .md remains the canonical scope
+reference; realized-state coverage is tracked in scenario-chains rev 3
+`output_plan.complex.md.realized_as`.
 
 ## Setup
 
@@ -49,13 +96,15 @@ candidate, NOT applied at Migrator stage.
    stage's responsibility.
 2. **Re-auth pattern dependency** — step 13 ("Log in as the second
    user") requires a logout + login-as-different-credentials + verify
-   + (optionally) login-back-as-original sequence. The re-auth pattern
-   in `.claude/skills/grok-browser/references/projects.md` (line 138)
-   is a stub comment (`// Log out, log in as other user, then:`) — no
-   executable pattern documented. Flagged as a B14 reference-file-
-   addition candidate in the migration report (propose-only; do NOT
-   write to references autonomously). Automator decides spec-time
-   re-auth implementation.
+   + (optionally) login-back-as-original sequence. Per decision-log
+   `b14-2026-04-30-re-auth-pattern-applied`, the re-auth pattern was
+   added to `.claude/skills/grok-browser/references/projects.md` (UI
+   path documented; JS API path TODO awaiting external confirmation).
+   Helper candidate `helpers.playwright.session.logoutAndLoginAs`
+   surfaced; not yet registered (Helper 3 from helpers-batch-1
+   backlog). Current realized coverage in
+   `complex-share-second-user-spec.ts` defers Step 13 pending the
+   helper.
 3. **Environment dependencies** — the scenario uses canonical
    public-data sources: `System:AppData/Chem/tests/spgi-100.csv`
    (file share), an inline-created `test-projects-demo` Space
@@ -234,50 +283,91 @@ After completing all 13 steps, verify:
 ## Notes
 
 - **Original `order: 8`** — runs after all preceding scenarios per
-  `scenario-chains/projects.yaml` rev 2 `order_from_files`. The
+  `scenario-chains/projects.yaml` rev 3 `order_from_files`. The
   chain ordering interleaves complex.md after deleting.md
   (`order: 7` per source) but `must_run_last: false` for complex.md
   (only `deleting.md` is the chain's terminal `must_run_last: true`).
-- **Likely SCOPE_REDUCTION at Critic Gate A.** The chain notes flag
-  this scenario as too long for a single test; a split along
-  `rename` (steps 7-9) / `move` (step 10) / `share-and-second-user`
-  (steps 12-13) boundaries is proposed in the migration report as a
-  Critic-Gate-A candidate for the Test Designer / Automator stage.
-  Migrator does NOT apply the split here per D-MERIT-01 (opt-outs
-  require technical dependency, not effort); the test-length concern
-  is an effort axis, not a technical dependency.
+- **Realized as 3 satellite specs (Wave 1b split — preserved).** Per
+  decision-log `wave-1b-complex-split-b70-followup` (2026-05-01),
+  this single .md has been realized as three satellite specs:
+  `complex-derived-tables-spec.ts` (GROK-19103),
+  `complex-rename-spec.ts` (GROK-19212; partial github-3550),
+  `complex-share-second-user-spec.ts` (GROK-18345 share-side; Step 13
+  deferred). The `complex-move` sub-spec was dropped per
+  `b2-2026-05-03-drag-drop-ui-only-reclassification` and is NOT to be
+  re-merged. This .md's frontmatter intentionally describes the full
+  canonical 13-step scope; the realized coverage is the 3-spec union
+  documented in `output_plan.complex.md.realized_as`.
+- **Pyramid layer: bug-focused (chain rev 3 Rule 3).** 6 bugs walked
+  by this scenario: GROK-19212 (rename), GROK-19103 (join+save),
+  GROK-19403 (share with un-shared deps), GROK-18345 (Spaces+sync+
+  share), GROK-19728 (view-and-use under failure state), github-3550
+  (external Query/Script rename invalidation). All 6 listed in
+  `related_bugs` per chain YAML rev 3.
+- **GROK-18345 single-scenario non-adjacent (Trigger 2 motivating
+  example).** GROK-18345 spans **Step 1** (Spaces sub-bullet),
+  **Step 2** (Save with Sync ON), **Step 12** (Share with second
+  user), and **Step 13** (recipient opens shared project) — exactly
+  the 4-component repro path of the bug, all within this single
+  scenario. This is THE primary motivating example for chain-
+  analyzer-prompt.md Edit 5 Trigger 2 (single-scenario non-adjacent
+  steps). Spec lines explicitly cite complex.md case in Edit 5
+  rationale.
+- **Cross-cutting candidate specs (chain YAML rev 3 bug_focused_candidates).**
+  Per migration-prompt.md "Cross-cutting bug citations from chain
+  YAML": this scenario is a span in the following candidates:
+  - GROK-19212: cross-cutting candidate spec —
+    `projects-grok-19212-spec.ts` (chain rev 3 spans uploading.md:
+    Step 7 + complex.md:Step 7).
+  - GROK-19103: cross-cutting candidate spec —
+    `projects-grok-19103-spec.ts` (chain rev 3 spans upload-project.md:
+    Step 1 + uploading.md:Step 6 + projects-copy-clone.md:Step 4 +
+    complex.md:Step 1).
+  - GROK-19403: cross-cutting candidate spec —
+    `projects-grok-19403-spec.ts` (chain rev 3 spans share-project.md:
+    Step 4 + complex.md:Step 12 + projects-copy-clone.md:Step 5).
+  - GROK-18345: cross-cutting candidate spec —
+    `projects-grok-18345-spec.ts` (chain rev 3 spans uploading.md:
+    Step 7 + complex.md:Step 12).
+  - GROK-19728: cross-cutting candidate spec —
+    `projects-grok-19728-spec.ts` (chain rev 3 spans complex.md:
+    Step 12 — single-scenario; emitted under Trigger 1 with
+    lifecycle-api.md inclusion via semantic step match per chain
+    rev 3 rationale).
+  - github-3550: cross-cutting candidate spec —
+    `projects-github-3550-spec.ts` (chain rev 3 spans complex.md:
+    Step 9).
+  Per-scenario migration alone does not capture these bugs'
+  cross-cutting invariants; F-BUG-COVERAGE-01 at section-complete
+  is the authoritative gate.
 - **"Second user" placeholder.** Per
   `mig-2026-04-29-fixture-placeholder`, the literal string "second
   user" is used as the recipient identity in step 12 and as the
   re-auth target identity in step 13. Eventual binding to a specific
   test account is TBD; the placeholder is intentional. Decision-log
   cross-reference recorded; not flagged as a Direct-answer gap.
-- **Re-auth pattern dependency.** Per
-  `.claude/skills/grok-browser/references/projects.md` line 138, the
-  current re-auth example is a comment stub
-  (`// Log out, log in as other user, then:`) without an executable
-  pattern. This scenario's step 13 implementation depends on a
-  documented re-auth pattern. Surfaced as a B14 reference-file-
-  addition candidate in the migration report (Section 3); propose-
-  only flow per the per-cycle override.
+- **Re-auth pattern dependency.** Per decision-log
+  `b14-2026-04-30-re-auth-pattern-applied`, the re-auth pattern was
+  added to `.claude/skills/grok-browser/references/projects.md`
+  (UI path documented; JS API path TODO). Helper candidate
+  `helpers.playwright.session.logoutAndLoginAs` not yet registered
+  (Helper 3 backlog). Step 13 in `complex-share-second-user-spec.ts`
+  is currently deferred pending registration.
 - **Invariant 3 (atlas-aware sub_features for share) APPLIES.**
   Step 12 exercises the right-click Share dialog
-  (`pcmdShareProject` per atlas rev 8 sub_feature
+  (`pcmdShareProject` per atlas rev 11 sub_feature
   `projects.shell.share-via-context-menu`). The sub_feature is
   correctly INCLUDED in `sub_features_covered`.
-- **Bugs intersecting this scenario.** Steps 7-9 (rename
-  tables/Project/Query/Script) + step 11 (open and verify Data Sync
-  updates) directly exercise the GROK-19212 reproduction path
-  (Project fails to open with "Could not resolve table" after a
-  referenced table is renamed). Step 1 sub-bullet "Join two tables
-  (DB + query)" + step 2 (Save with Sync) intersects GROK-19103
-  (join result silently saved as separate project that fails to
-  open). Step 1 "Table from Space" + step 2 (Save with Sync) +
-  step 12 (Share) intersects GROK-18345 (recipient cannot open
-  shared project that uses Spaces dataset saved with data sync).
-  Step 9 rename of Query/Script intersects github-3550 (external-
-  entity rename invalidation, sister of GROK-19212). All four
-  listed in `related_bugs` for traceability.
+- **UI coverage owned (chain rev 3 ui_coverage_responsibility, 7
+  flows).** This scenario is the chain's witness for: rename
+  context-menu surface (`context-menu-rename-project`,
+  `context-menu-rename-query`, `context-menu-rename-script` —
+  Step 9), share dialog with PermissionsEditor at two access levels
+  (`pcmdShareProject`, `share-dialog-permissions-editor` — Step 12),
+  re-auth flow (`logout-login-as-second-user` — Step 13),
+  data-sync refresh verification (`data-sync-refresh-verification` —
+  Step 11). `ui_coverage_delegated_to: null` — these flows are not
+  delegated to any sibling scenario in the chain.
 - **Cleanup responsibility.** This scenario produces multiple saved
   projects (from steps 2, 5, 6, 8) and possibly leaves entities
   renamed/moved. Terminal cleanup is the `deleting.md` (scenario 9,
@@ -286,8 +376,9 @@ After completing all 13 steps, verify:
   Automator's `afterAll` to restore entity names/locations OR
   isolated-environment teardown. Surfaced as a deferred item in
   the migration report.
-- **Sibling spec convention.** No existing `complex-spec.ts` exists
-  at any path under `public/`; per-cycle Invariant 2 is trivially
-  satisfied. The `complex-run.md` companion exists from a prior
-  MCP reproduction run but has no spec counterpart. Spec generation
-  is Step 7 of Phase 1 plan.
+- **Sibling spec convention.** The Wave 1b split realized this .md
+  as 3 satellite specs (see "Realized as 3 satellite specs" note
+  above). The `complex-run.md` companion exists from a prior MCP
+  reproduction run but has no spec counterpart. `complex-ui.md`
+  carries the UI-only Step 4 + Step 10 content per
+  `b2-2026-05-03-drag-drop-ui-only-reclassification`.

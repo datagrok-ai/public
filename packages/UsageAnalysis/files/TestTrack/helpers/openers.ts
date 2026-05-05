@@ -143,11 +143,16 @@ export async function openTableFromFile(
     const fns = DG.Func.find({name: 'OpenFile'});
     if (!fns?.length) throw new Error('OpenFile function not registered');
     await fns[0].prepare({fullPath: p}).call(undefined, undefined, {processed: false});
-    // Settle: shell.tv assignment is async post-call. 1200ms accommodates
-    // dev cold-start; 800ms was insufficient under load.
-    await new Promise((r) => setTimeout(r, 1200));
-    const df = grok.shell.tv?.dataFrame;
-    if (!df) throw new Error(`OpenFile("${p}") did not produce a TableView`);
+    // Settle: poll for shell.tv.dataFrame up to 8s — covers dev cold-start
+    // under multi-test load. Earlier fixed 800ms / 1200ms / 2000ms waits
+    // were brittle.
+    let df: any = null;
+    for (let i = 0; i < 16; i++) {
+      df = grok.shell.tv?.dataFrame;
+      if (df) break;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    if (!df) throw new Error(`OpenFile("${p}") did not produce a TableView (8s settle)`);
     const ti = df.getTableInfo?.();
     return {
       name: df.name,
