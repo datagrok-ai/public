@@ -1130,20 +1130,18 @@ class Editor {
   private inputLineWidth(itemIdx: number): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
 
-    const elOpacity = ui.element('input');
-    elOpacity.type = 'range';
-    elOpacity.min = 0;
-    elOpacity.max = 20;
-    elOpacity.value = item.outlineWidth ?? 1;
-    elOpacity.addEventListener('input', () => {
-      item.outlineWidth = parseInt(elOpacity.value);
-      this.onItemChangedAction(itemIdx, false);
-    });
-    elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
+    const ibWidth = ui.input.int('Width', {value: item.outlineWidth ?? 1,
+      onValueChanged: (value) => {
+        item.outlineWidth = value;
+        this.onItemChangedAction(itemIdx, false);
+      }});
+    ibWidth.addPostfix('px');
 
-    const label = ui.label('Width', 'ui-label ui-input-label');
+    const elWidth = ibWidth.input as HTMLInputElement;
+    elWidth.placeholder = '1';
+    elWidth.setAttribute('style', 'padding-right: 24px;');
 
-    return ui.div([label, elOpacity], 'ui-input-root');
+    return ibWidth.root;
   }
 
   /** Creates range slider for item opacity */
