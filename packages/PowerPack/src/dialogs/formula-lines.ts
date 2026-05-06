@@ -1050,9 +1050,15 @@ class Editor {
     let [itemY, itemX, expression] = ['', '', ''];
 
     if (itemIdx >= 0 && item.type !== ITEM_TYPE.BAND) {
-      const itemMeta = DG.FormulaLinesHelper.getMeta(item);
-      [itemY, itemX, expression] = [itemMeta.funcName!, itemMeta.argName!, itemMeta.expression!];
-      caption = itemX ? ITEM_CAPTION.LINE : ITEM_CAPTION.CONST_LINE;
+      // getMeta parses the formula and throws on invalid input — keep the form alive so
+      // the user can fix an in-progress edit instead of crashing on row switch.
+      try {
+        const itemMeta = DG.FormulaLinesHelper.getMeta(item);
+        [itemY, itemX, expression] = [itemMeta.funcName!, itemMeta.argName!, itemMeta.expression!];
+        caption = itemX ? ITEM_CAPTION.LINE : ITEM_CAPTION.CONST_LINE;
+      } catch {
+        caption = ITEM_CAPTION.LINE;
+      }
     }
 
     const mainPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
