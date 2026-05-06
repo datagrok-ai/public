@@ -11,6 +11,14 @@ const escapeColName = (name: string): string => grok.functions.handleOuterBracke
 /** Wrap a column name as a `${...}` reference, escaping nested braces. */
 const wrapCol = (name: string): string => `\${${escapeColName(name)}}`;
 
+function validateBandFormula(value: string): string {
+  const bandFormulaHelp = 'Band formula should be in format: ${column} in(min, max)';
+  const v = value ?? '';
+  const pattern = /^\s*\$\{(?:\\.|[^}\\])*\}\s+in\s*\(\s*[^,()]+\s*,\s*[^,()]+\s*\)\s*$/;
+  const refCount = v.match(COL_REF_REGEX)?.length ?? 0;
+  return refCount === 1 && pattern.test(v) ? '' : bandFormulaHelp;
+}
+
 /** Formula Line types */
 const enum ITEM_TYPE {
   LINE = 'line',
@@ -910,6 +918,12 @@ class Preview {
       try {
         /** Duplicate the original item to display it even if it's hidden */
         const item = this.formulaLineItems[itemIdx];
+
+        if (item.type === ITEM_TYPE.BAND && validateBandFormula(item.formula ?? '') !== '') {
+          clearMeta();
+          return false;
+        }
+
         const previewItem = structuredClone(item);
         previewItem.visible = true;
 
@@ -1079,13 +1093,14 @@ class Editor {
   /** Creates textarea for item formula */
   private inputFormula(itemIdx: number): HTMLElement {
     const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
+    const isBand = item.type === ITEM_TYPE.BAND;
 
     const ibFormula = ui.input.textArea('', {value: item.formula ?? '',
       onValueChanged: (value) => {
         const oldFormula = item.formula!;
         item.formula = value;
         const resultOk = this.onItemChangedAction(itemIdx, true);
-        this.setFormulaValidationResult(resultOk, value, ibFormula, item.type === ITEM_TYPE.BAND);
+        this.setFormulaValidationResult(resultOk, value, ibFormula, isBand);
         this.setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -1095,6 +1110,10 @@ class Editor {
     elFormula.setAttribute('style', 'height: 60px;');
 
     ui.tools.initFormulaAccelerators(ibFormula, this.dataFrame);
+
+    // Flag pre-existing invalid bands without waiting for the user to edit.
+    if (isBand)
+      this.setFormulaValidationResult(true, item.formula ?? '', ibFormula, true);
 
     return ibFormula.root;
   }
@@ -1310,7 +1329,7 @@ class Editor {
     const elHeader = ibHeader.input as HTMLInputElement;
     const validateValue = (): string => {
       if (isBand)
-        return resultOk ? '' : 'Invalid formula syntax';
+        return validateBandFormula(value) || (resultOk ? '' : 'Invalid formula syntax');
 
       // Replace each ${...} col-ref with a sentinel to check structure without
       // being confused by `=` chars inside nested column names (e.g. `${${AGE} = 10}`).
