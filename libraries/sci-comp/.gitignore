@@ -3,6 +3,8 @@ node_modules/
 dist/
 .idea
 coverage/
+.claude/settings.local.json
+docs/temp
 
 src/**/*.js
 src/**/*.js.map
