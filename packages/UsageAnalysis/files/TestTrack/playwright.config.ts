@@ -7,7 +7,11 @@ export default defineConfig({
   // share UI state across multiple test() blocks should opt out per-file
   // with `test.describe.configure({mode: 'serial'})`.
   fullyParallel: true,
-  workers: process.env.CI ? 8 : 1,
+  // 4 CI workers (down from 8): each worker drives its own Chromium hitting
+  // the same single-replica CI Datlas, and at 8× concurrency the
+  // `.grok-preloader` wait in spec-login.ts:33 was timing out under cold-start
+  // contention (34/154 specs). 4 is the empirical sweet spot.
+  workers: process.env.CI ? 4 : 1,
   retries: process.env.CI ? 1 : 0,
   // Per-test default timeout (1 minute). Specs that need longer override
   // explicitly via `test.setTimeout(N)` at the top of the test body.
