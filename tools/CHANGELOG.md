@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.2.3 (2026-05-06)
+
+* `grok test` — added `--skip-puppeteer` flag (symmetric counterpart of `--skip-playwright`). Bypasses `loadPackages()` and the Puppeteer/`DG.Test` runner so Playwright-only test directories (e.g. `public/playwright-public`) can run end-to-end via `grok test --skip-puppeteer` without tripping the Dart/JS package loader.
+
 ## 6.2.2 (2026-05-05)
 
 * `grok test` — Playwright runner now writes `test-report-playwright.csv` next to the existing merged `test-report.csv`, so CI can ship Playwright rows to a dedicated Datlas reporting bucket without disturbing the legacy `package` flow.
