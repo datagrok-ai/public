@@ -13,7 +13,7 @@ export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
 
   rendererSize: 'small' | 'normal' | 'large';
-  fontSize: number;
+  font: string;
   fieldsColumnNames: string[];
   colorCode: boolean;
   showCurrentRow: boolean;
@@ -92,7 +92,7 @@ export class FormsViewer extends DG.JsViewer {
     this.sortByColumnName = this.column('sortBy');
     this.sortAscending = false;
     this.rendererSize = this.string('rendererSize', 'small', {choices: ['small', 'normal', 'large'], description: 'Sets the display size of rendered content'}) as 'small' | 'normal' | 'large';
-    this.fontSize = this.int('fontSize', 13, {min: 8, max: 24, description: 'Font size for labels and values, in pixels'});
+    this.font = this.string('font', 'normal normal 13px "Roboto"', {editor: 'font', description: 'Font for labels and values'});
 
     //fields
     this.indexes = [];
@@ -228,7 +228,8 @@ export class FormsViewer extends DG.JsViewer {
           this.render();
         }, 'Remove');
         const columnLabelContainer = ui.div([columnLabel, closeIcon], 'd4-multi-form-column-name d4-flex-row');
-        columnLabelContainer.style.fontSize = `${this.fontSize}px`;
+        columnLabelContainer.style.font = this.font;
+        columnLabelContainer.style.fontWeight = 'bold';
         const idx = this.getSortByColumns().indexOf(name);
         if (idx > -1)
           columnLabelContainer.append(ui.divText(this.getSortByTypes()[idx] ? '↑' : '↓', 'd4-multi-form-column-sort-indicator'));
@@ -330,7 +331,7 @@ export class FormsViewer extends DG.JsViewer {
               if (this.dataFrame.col(name)!.semType === DG.SEMTYPE.MOLECULE)
                 input.input.classList.add(`d4-multi-form-molecule-input-${this.rendererSize}`);
               input.input.setAttribute('column', name);
-              input.input.style.fontSize = `${this.fontSize}px`;
+              input.input.style.font = this.font;
               input.value = this.dataFrame.col(name)?.isNone(row) ? null : this.dataFrame.get(name, row);
               input.readOnly = true;
 
