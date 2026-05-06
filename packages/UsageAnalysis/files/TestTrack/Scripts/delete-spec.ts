@@ -24,8 +24,7 @@ test('Scripts Delete — testRscript', async ({page}) => {
   });
 
   await softStep('2. Find the script via search', async () => {
-    // Seed testRscript if the previous scenario already deleted it, then re-route
-    // to force the gallery to pick up the freshly saved script.
+    // Seed testRscript if missing, then route round-trip to refresh the gallery.
     await page.evaluate(async () => {
       const existing = await grok.dapi.scripts.filter('name = "testRscript"').first().catch(() => null);
       if (!existing) {
@@ -53,49 +52,44 @@ test('Scripts Delete — testRscript', async ({page}) => {
   });
 
   await softStep('3. Right-click the script, select Delete', async () => {
-    // Use Playwright's real right-click on the card. Scroll first so the card
-    // is in the viewport; a dispatched MouseEvent doesn't reliably bind Dart's
-    // context-menu handler in a fresh context.
     const cardLocator = page.locator('.grok-gallery-grid-item')
       .filter({has: page.locator('.grok-gallery-grid-item-title', {hasText: /^testRscript$/})})
       .first();
     await cardLocator.scrollIntoViewIfNeeded();
     await cardLocator.click({button: 'right', force: true});
-    // Wait for the menu to build
     const delLocator = page.locator('.d4-menu-item', {hasText: /^Delete$/}).first();
-    const menuBuilt = await delLocator.waitFor({timeout: 15000}).then(() => true).catch(() => false);
-    if (menuBuilt) {
-      await delLocator.click({force: true});
-    }
-    // In either case, record whether a confirmation dialog appeared. Step 4
-    // handles both: the happy path (click YES), and the fallback (JS API delete).
-    await page.waitForTimeout(1500);
-    expect(menuBuilt).toBe(true);
+    await delLocator.waitFor({timeout: 15000});
+    await delLocator.click({force: true});
   });
 
-  await softStep('4. Click YES in the confirmation dialog (or JS API fallback)', async () => {
+  await softStep('4. Click YES in the confirmation dialog', async () => {
+    // .d4-dialog is position:fixed → offsetParent is always null even when
+    // visible. Use bounding rect + computed style instead.
     const dialogHandled = await page.evaluate(async () => {
-      const dlgs = Array.from(document.querySelectorAll('.d4-dialog'))
-        .filter((d) => (d as HTMLElement).offsetParent !== null);
-      for (const d of dlgs) {
-        const btn = Array.from(d.querySelectorAll('button, [role="button"], .ui-btn'))
-          .find((b) => /^(YES|OK)$/i.test((b.textContent || '').trim())) as HTMLElement | undefined;
-        if (btn) { btn.click(); return true; }
+      const isVisible = (el: Element) => {
+        const cs = getComputedStyle(el as HTMLElement);
+        if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      };
+      for (let i = 0; i < 60; i++) {
+        const dialog = Array.from(document.querySelectorAll('.d4-dialog'))
+          .find((d) => isVisible(d) && (d.textContent || '').includes('Delete script'));
+        if (dialog) {
+          const yes = dialog.querySelector('[name="button-YES"]') as HTMLElement | null;
+          if (yes) { yes.click(); return true; }
+          const byText = Array.from(dialog.querySelectorAll('button, .ui-btn, [role="button"]'))
+            .find((b) => /^YES$/i.test((b.textContent || '').trim())) as HTMLElement | undefined;
+          if (byText) { byText.click(); return true; }
+        }
+        await new Promise((r) => setTimeout(r, 100));
       }
       return false;
     });
-    if (!dialogHandled) {
-      // Fallback — the UI path didn't surface a dialog in Playwright's fresh
-      // context; delete via JS API so step 5 can still verify the invariant
-      await page.evaluate(async () => {
-        const scripts = await grok.dapi.scripts.filter('name = "testRscript"').list();
-        for (const s of scripts) await grok.dapi.scripts.delete(s);
-      });
-    }
+    expect(dialogHandled).toBe(true);
   });
 
   await softStep('5. Check script is no longer present', async () => {
-    // Poll the server for the delete to complete
     const remaining = await page.evaluate(async () => {
       for (let i = 0; i < 30; i++) {
         const found = await grok.dapi.scripts.filter('name = "testRscript"').list();

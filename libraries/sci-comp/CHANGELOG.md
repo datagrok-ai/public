@@ -1,15 +1,39 @@
 # sci-comp changelog
 
+## 0.5.1 (2026-05-05)
+
+Update docs
+
+## 0.5.0 (2026-05-05)
+
+Statistics:
+
+* Welch's t-test
+* Mann-Whitney U test
+* Hedges' g effect size
+* Spearman rank correlation (with severity-trend helper)
+* Fisher's exact test (2×2)
+* Welch pairwise comparisons
+* Dunnett's test
+* Cochran-Armitage trend test
+* Williams' test
+* ANCOVA
+* Jonckheere-Terpstra trend test (approximate / permutation / exact)
+* Bonferroni multiple-comparison correction
+* Boschloo's exact test
+
 ## 0.4.1 (2026-04-28)
 
 Fix build
 
 ## 0.4.0 (2026-04-27)
+
 Optimization:
 
 * The L-BFGS-B method
 
 ## 0.3.0 (2026-04-17)
+
 Optimization:
 
 * The L-BFGS method

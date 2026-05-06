@@ -1,0 +1,16 @@
+{
+  "name": "@datagrok/playwright-public",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Playwright end-to-end tests for the public Datagrok platform — connections, queries, scripts. Runs via `grok test --skip-puppeteer` against a configured server (typically `dev`).",
+  "playwrightTests": ".",
+  "scripts": {
+    "test": "grok test --skip-puppeteer",
+    "test-dev": "grok test --skip-puppeteer --host dev"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^18.0.0",
+    "typescript": "^5.3.3"
+  }
+}

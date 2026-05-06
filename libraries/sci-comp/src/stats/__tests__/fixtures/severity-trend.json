@@ -1,0 +1,183 @@
+{
+  "metadata": {
+    "source": "validate_rest_statistics.py — severity_trend",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "perfect increasing",
+      "category": "severity",
+      "inputs": {
+        "dose_levels": [
+          0,
+          10,
+          50,
+          100
+        ],
+        "avg_severities": [
+          0.1,
+          0.5,
+          1.2,
+          2.0
+        ]
+      },
+      "expected": {
+        "rho": 1.0,
+        "p_value": 0.0
+      }
+    },
+    {
+      "name": "perfect decreasing",
+      "category": "severity",
+      "inputs": {
+        "dose_levels": [
+          0,
+          10,
+          50,
+          100
+        ],
+        "avg_severities": [
+          2.0,
+          1.5,
+          1.0,
+          0.5
+        ]
+      },
+      "expected": {
+        "rho": -1.0,
+        "p_value": 0.0
+      }
+    },
+    {
+      "name": "arbitrary [0,1,5,10,50] vs [...]",
+      "category": "severity",
+      "inputs": {
+        "dose_levels": [
+          0,
+          1,
+          5,
+          10,
+          50
+        ],
+        "avg_severities": [
+          0.2,
+          0.3,
+          0.8,
+          0.5,
+          1.5
+        ]
+      },
+      "expected": {
+        "rho": 0.8999999999999998,
+        "p_value": 0.03738607346849874
+      }
+    },
+    {
+      "name": "toxicology dose-response (positive plateau)",
+      "category": "severity",
+      "inputs": {
+        "dose_levels": [
+          0,
+          50,
+          100,
+          200,
+          500
+        ],
+        "avg_severities": [
+          0.0,
+          0.2,
+          0.8,
+          1.5,
+          1.6
+        ]
+      },
+      "expected": {
+        "rho": 0.9999999999999999,
+        "p_value": 1.4042654220543602e-24
+      }
+    },
+    {
+      "name": "constant severity → None (correlation undefined)",
+      "category": "edge_constant",
+      "inputs": {
+        "dose_levels": [
+          0,
+          10,
+          50,
+          100
+        ],
+        "avg_severities": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "expected": {
+        "rho": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "NaN removal",
+      "category": "nan_handling",
+      "inputs": {
+        "dose_levels": [
+          0,
+          null,
+          50,
+          100,
+          200
+        ],
+        "avg_severities": [
+          0.1,
+          0.5,
+          null,
+          1.5,
+          2.0
+        ]
+      },
+      "expected_clean_inputs": {
+        "dose_levels": [
+          0,
+          100,
+          200
+        ],
+        "avg_severities": [
+          0.1,
+          1.5,
+          2.0
+        ]
+      },
+      "expected": {
+        "rho": 1.0,
+        "p_value": 0.0
+      }
+    },
+    {
+      "name": "fewer than 3 pairs → None",
+      "category": "edge_none",
+      "inputs": {
+        "dose_levels": [
+          0,
+          10
+        ],
+        "avg_severities": [
+          0.5,
+          1.0
+        ]
+      },
+      "expected": {
+        "rho": null,
+        "p_value": null
+      }
+    }
+  ]
+}

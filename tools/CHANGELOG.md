@@ -1,5 +1,21 @@
 # Datagrok-tools changelog
 
+## 6.2.3 (2026-05-06)
+
+* `grok test` — added `--skip-puppeteer` flag (symmetric counterpart of `--skip-playwright`). Bypasses `loadPackages()` and the Puppeteer/`DG.Test` runner so Playwright-only test directories (e.g. `public/playwright-public`) can run end-to-end via `grok test --skip-puppeteer` without tripping the Dart/JS package loader.
+
+## 6.2.2 (2026-05-05)
+
+* `grok test` — Playwright runner now writes `test-report-playwright.csv` next to the existing merged `test-report.csv`, so CI can ship Playwright rows to a dedicated Datlas reporting bucket without disturbing the legacy `package` flow.
+
+## 6.2.1 (2026-05-05)
+
+* Reports: `grok report attach <ticket> <file>` — upload a file as a JIRA issue attachment via REST v2 multipart POST.
+
+## 6.2.0 (2026-05-04)
+
+* `grok test` — Playwright support: when a package's `package.json` declares `"playwrightTests": "<path>"`, `grok test` runs `npx playwright test` against that directory in addition to the existing Puppeteer pass and merges results into a single `test-report.csv`. Auth is unified with the Puppeteer pass (dev key from `~/.grok/config.yaml` → session token → cookie + `localStorage` injection — no login form). Optional `DATAGROK_DEV_KEY_2` env var enables a second-user identity for specs that need it (`DATAGROK_AUTH_TOKEN_2` exposed to specs). New `--skip-playwright` flag opts out of the Playwright pass for a single run.
+
 ## 6.1.14 (2026-05-01)
 
 * Reports: `grok report comment` now converts Markdown body to JIRA wiki markup before POSTing, fixing rendered headings/list/HTML-entity mismatches in JIRA UI.

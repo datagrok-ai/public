@@ -28,13 +28,13 @@ test('Queries — adding a new SQL query', async ({page}) => {
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
   await softStep('Go to Browse → Databases → Postgres', async () => {
-    // Expand Databases group, then Postgres, wait for NorthwindTest to appear.
+    // Tree expand semantics differ across levels — Databases expands on single
+    // click, Postgres requires a dblclick event. Use JS to drive the tree.
     const expanded = await page.evaluate(async () => {
       const db = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
         .find((el) => el.textContent?.trim() === 'Databases') as HTMLElement | undefined;
       if (!db) return {ok: false, stage: 'Databases'};
       db.click();
-      // Wait for Postgres
       for (let i = 0; i < 30; i++) {
         const pg = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
           .find((el) => el.textContent?.trim() === 'Postgres') as HTMLElement | undefined;
@@ -57,6 +57,8 @@ test('Queries — adding a new SQL query', async ({page}) => {
   });
 
   await softStep('Right-click NorthwindTest → New Query...', async () => {
+    // chrome-devtools / Playwright contextmenu must be dispatched on the
+    // .d4-tree-view-node ancestor — not the label.
     const opened = await page.evaluate(async () => {
       const nw = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
         .find((el) => el.textContent?.trim() === 'NorthwindTest') as HTMLElement | undefined;
@@ -76,34 +78,19 @@ test('Queries — adding a new SQL query', async ({page}) => {
       return {ok: false, stage: 'menu-item-missing'};
     });
     expect(opened.ok).toBe(true);
-    // Wait for the editor (CodeMirror) to mount.
     await page.locator('.CodeMirror').first().waitFor({timeout: 15_000});
+    await page.locator('input[name="input-Name"]').waitFor({timeout: 15_000});
   });
 
   await softStep('Enter test_query into the Name field', async () => {
-    const nameInput = page.locator('input[type="text"]:visible').filter({hasText: ''}).first();
-    // Find the name input — it's the visible input that is not the console / spotlight.
-    const nameHandle = await page.evaluateHandle(() => {
-      const inputs = Array.from(document.querySelectorAll('input[type="text"]')) as HTMLInputElement[];
-      return inputs.find((i) =>
-        i.offsetParent !== null &&
-        i.placeholder !== 'Alt+Q to search commands' &&
-        i.placeholder !== '> Enter command');
-    });
-    await nameHandle.asElement()!.focus();
+    // Dart inputs commit only on real keyboard events — focus, Ctrl+A, type.
+    const nameInput = page.locator('input[name="input-Name"]').first();
+    await nameInput.click();
     await page.keyboard.press('Control+a');
     await page.keyboard.type('test_query');
-    const value = await page.evaluate(() => {
-      const inputs = Array.from(document.querySelectorAll('input[type="text"]')) as HTMLInputElement[];
-      const input = inputs.find((i) =>
-        i.offsetParent !== null &&
-        i.placeholder !== 'Alt+Q to search commands' &&
-        i.placeholder !== '> Enter command');
-      return input?.value ?? '';
-    });
+    const value = await page.evaluate(
+      () => (document.querySelector('input[name="input-Name"]') as HTMLInputElement)?.value ?? '');
     expect(value).toBe('test_query');
-    // Silence unused-locator lint: nameInput declared for future UI-first upgrade.
-    void nameInput;
   });
 
   await softStep('Enter query body: select * from products', async () => {
@@ -117,9 +104,7 @@ test('Queries — adding a new SQL query', async ({page}) => {
   });
 
   await softStep('Run via Ribbon Play button → inline preview grid', async () => {
-    const play = page.locator('[name="icon-play"]').first();
-    await play.click();
-    // Expect at least one grid canvas to render inside the current view.
+    await page.locator('[name="icon-play"]').first().click();
     await page.waitForFunction(
       () => document.querySelectorAll('[name="viewer-Grid"] canvas').length >= 1,
       null, {timeout: 30_000});
@@ -147,22 +132,24 @@ test('Queries — adding a new SQL query', async ({page}) => {
   });
 
   await softStep('Save the query', async () => {
-    // Switch back to the query editor view, then click SAVE.
+    // Switch back to the DataQueryView — the new TableView grabbed focus.
     await page.evaluate(() => {
       const views = Array.from((window as any).grok.shell.views) as any[];
       const qv = views.find((v) => v.type === 'DataQueryView');
       if (qv) (window as any).grok.shell.v = qv;
     });
     await page.waitForTimeout(500);
-    const saveBtn = page.locator('[name="button-SAVE"], [name="button-Save"]').first();
-    await saveBtn.click();
-    // Verify the query is persisted (connection name on dev is "PostgresTest", the
-    // NorthwindTest node's underlying connection; accept either name).
+    // Ribbon button is `button-Save` (Title-case) — no all-caps SAVE selector exists.
+    await page.locator('[name="button-Save"]').first().click();
+    // Verify persistence. Server normalizes name to PascalCase (`TestQuery`)
+    // while friendlyName stays `test_query`. Connection on dev is `PostgresTest`
+    // (the underlying connection that the `NorthwindTest` Browse node aliases).
     const saved = await page.evaluate(async () => {
       for (let i = 0; i < 40; i++) {
         const q = await (window as any).grok.dapi.queries
           .filter('name in ("test_query", "TestQuery")').first().catch(() => null);
-        if (q && q.connection) return {ok: true, connName: q.connection.name, id: q.id};
+        if (q && q.connection)
+          return {ok: true, name: q.name, friendly: q.friendlyName, connName: q.connection.name, body: q.query};
         await new Promise((r) => setTimeout(r, 300));
       }
       return {ok: false};

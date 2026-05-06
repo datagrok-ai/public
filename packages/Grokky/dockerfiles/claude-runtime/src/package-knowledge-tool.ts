@@ -3,8 +3,9 @@ import * as path from 'node:path';
 import * as YAML from 'yaml';
 import {z} from 'zod/v4';
 import {createSdkMcpServer, tool} from '@anthropic-ai/claude-agent-sdk';
-import {WORKSPACE} from './sync-utils';
-import {getInstalledPackages} from './installed-packages';
+import {WORKSPACE} from './constants';
+import {getInstalledPackages} from './user/installed-packages';
+import {userDirFromId} from './user/user-dir';
 
 export interface PackageKnowledge {
   packageName: string;
@@ -91,13 +92,17 @@ function createGetPackageKnowledgeTool(userId?: string) {
         const known = [...map.keys()].filter((n) => !installed || installed.has(n)).sort().join(', ');
         return {content: [{type: 'text' as const, text: `Unknown package "${packageName}". Known packages: ${known}`}]};
       }
+      const stagedRoot = userId ? path.join(userDirFromId(userId), 'workspace') : null;
+      const rewrite = (p?: string): string | undefined => p && stagedRoot ? p.replace(WORKSPACE, stagedRoot) : p;
+      const apiRef = rewrite(pkg.apiRefPath);
+      const docsRef = rewrite(pkg.docsRefPath);
       const text =
         `# ${pkg.packageName}\n\n${pkg.description}\n\n` +
         (pkg.overview ? `## Overview\n\n${pkg.overview}\n\n` : '') +
         `Keywords: ${pkg.keywords.join(', ')}\n\n` +
-        (pkg.apiRefPath ? `apiRef: ${pkg.apiRefPath}\n` : '') +
-        (pkg.docsRefPath ? `docsRef: ${pkg.docsRefPath}\n` : '') +
-        (pkg.apiRefPath || pkg.docsRefPath ? `\nNext step: Read the apiRef path to find the function you need.\n` : '');
+        (apiRef ? `apiRef: ${apiRef}\n` : '') +
+        (docsRef ? `docsRef: ${docsRef}\n` : '') +
+        (apiRef || docsRef ? `\nNext step: Read the apiRef path to find the function you need.\n` : '');
       return {content: [{type: 'text' as const, text}]};
     },
   );

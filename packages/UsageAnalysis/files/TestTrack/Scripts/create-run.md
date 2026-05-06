@@ -1,83 +1,130 @@
 # Scripts Create — Run Results
 
-**Date**: 2026-04-24
+**Date**: 2026-05-06
 **URL**: https://dev.datagrok.ai
-**Status**: PARTIAL
+**Status**: PASS
 
 ## Steps
 
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
-| 1 | Go to Browse > Platform > Functions > Scripts | 5s | PASS | PASSED | Navigated via `grok.shell.route('/scripts')` |
-| 2 | NEW > New R script | 8s | PASS | PASSED | `button-New` clicked, `R Script...` menu item clicked; view type ScriptView |
-| 3 | Click Open script sample table (*) icon | 3s | PASS | PASSED | `icon-asterisk` clicked; cars table loaded (`grok.shell.tables` contains `cars`) |
-| 4 | Click Signature editor icon (magic wand) | 3s | PASS | PASSED | The magic-wand has no `name=` attribute — found via `i[aria-label="Open Signature Editor"]`; split pane opens with PROPERTIES/PARAMETERS/CODE/UI tabs |
-| 5 | Set Name to testRscript | 4s | PASS | PASSED | `[name="input-Name"]` — used native setter + input/change dispatch; CodeMirror reflects `#name: testRscript` |
-| 6 | Navigate to Parameters tab | 2s | PASS | PASSED | Click on `.d4-tab-header` with text `PARAMETERS`; grid with 2 existing rows visible |
-| 7 | Click ADD PARAMETER "+" button | 3s | PASS | PASSED | `i[aria-label="Add the param"]` — two + icons in the grid, clicked the second; new `#input: bool newParam` appended |
-| 8 | Set direction=output, name=newParam, type=string | 2s | PASS | PASSED | Set directly via CodeMirror `setValue` (parameter grid is canvas-based, not accessible via DOM) |
-| 9 | Click Open function editor | 3s | PASS | FAILED | Wand icon has no `name=` — found via `i[aria-label="Open function editor"]`. Playwright failure: after step 8's CodeMirror rewrite, the signature-editor split pane rebuilds and the `i[aria-label=...]` locator goes stale |
-| 10 | Click Play, choose sample table (cars) | 10s | PARTIAL | FAILED | UI: `icon-play` opened the inline run dialog with `[name="input-Table"]` as a native SELECT; setting `.value='cars'` + change event did NOT propagate — `"Errors calling Template: table: Value not defined."` toast repeated. JS API fallback (`DG.Func.byName('Template').apply({table: cars})`) returned 510 |
-| 11 | Click Save | 4s | PASS | FAILED | `[name="button-Save"]` clicked; "Script saved." toast; view title changed from Template → testRscript. Playwright failure cascaded from step 9 detach |
-| 12 | Close script view | 3s | PASS | PASSED | `grok.shell.v.close()`; returned to Scripts browser |
-| 13-20 | All-languages sanity (R/Python/Octave/NodeJS/JavaScript/Grok/Pyodide) | 75s | PARTIAL | FAILED | Created each script, loaded sample via asterisk, ran via `DG.Script.create(code).apply({df: ...})`. MCP run: R=510, Python=510, Octave=527, NodeJS=null, JavaScript=undefined, Grok=510, Pyodide=510. Playwright re-run: NodeJS template triggered the same "Value not defined" bug as step 10 — no sample table was picked up by the UI run |
-
-**Time** = 2b wall-clock per step (incl. thinking). **Result** = 2b outcome. **Playwright** = 2e outcome (plain `PASSED`/`FAILED`/`SKIPPED`).
+| 1 | Browse > Platform > Functions > Scripts | 1s | PASS | PASSED | Tree expanders + Scripts label click; landed on `view.type=scripts` |
+| 2 | New > R Script... | 1s | PASS | PASSED | `[name="button-New"]` then `R Script...` menu item; ScriptView opens with template |
+| 3 | Click "Open script sample table" (asterisk) | 1s | PASS | PASSED | `i[name="icon-asterisk"]`; `cars` table loaded |
+| 4 | Click Signature editor (magic wand) | 1s | PASS | PASSED | DevTools-contributed `i.fal.fa-magic`; icon already injected on first poll (sigEditorAvailable=true) |
+| 5 | Signature editor: Set Name = testRscript | 1s | PASS | PASSED | `input[name="input-Name"]` filled; blur committed; body's `#name:` updated to testRscript |
+| 6 | Navigate to Parameters tab | 1s | PASS | PASSED | `.d4-tab-header` with text "PARAMETERS" |
+| 7 | Click "+" to add a new parameter | 1s | PASS | PASSED | Second visible `i.fa-plus` button; new `#input: bool newParam` line appended to CodeMirror body |
+| 8 | Set direction=output, name=newParam, type=string | 1s | PASS | PASSED | Parameters tab is a `PropertyGrid` (canvas-rendered, no public DOM API). Used Datagrok's documented body↔params auto-sync: edited body → `#output: string newParam`. **Verified airtight at step 11**: the saved `DG.Script.outputs` array contains `{name:'newParam', propertyType:'string'}` — i.e. parsed param matches scenario intent, not just the body string |
+| 9 | Click "Open function editor" | 1s | PASS | PASSED | `i.fal.fa-code` button's `aria-label` is literally `"Open function editor"` — exact match for scenario wording |
+| 10 | Click Play, choose sample table (cars) | 9s | PASS | PASSED | Table dropdown set via native HTMLSelectElement.value setter + input/change/blur; OK button clicked; no `Value not defined` errors |
+| 11 | Click Save — script persisted with parsed params | 3s | PASS | PASSED | `[name="button-Save"]`; verified saved script: `outputs=[{count,int},{newParam,string}]`, `inputs=[{table,dataframe}]` — closes the step-8 verification gap |
+| 12 | Close script view via x | 1s | PASS | PASSED | `.tab-handle-close-button`; full mousedown/mouseup/click sequence required |
+| 13 | Browse > Scripts again, click New | 1s | PASS | PASSED | View context switched back to `scripts` |
+| 14 | R script: open sample, run | 14s | PASS | PASSED | No errors |
+| 15 | Python script: open sample, run | 15s | PASS | PASSED | No errors (Jupyter kernel warm) |
+| 16 | Octave script: open sample, run | 15s | PASS | PASSED | No errors |
+| 17 | NodeJS script: open sample, run | 14s | PASS | PASSED | No errors |
+| 18 | JavaScript script: run | 16s | PASS | PASSED | Triggered native `alert("Hello World!")`; auto-accepted via chrome-devtools `handle_dialog` (and via `page.on('dialog')` in spec). Template has no `#sample:` |
+| 19 | Grok script: open sample, run | 13s | PASS | PASSED | No errors |
+| 20 | Pyodide script: open sample, run | 13s | PASS | PASSED | Client-side WASM; no errors |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Model thinking (scenario steps) | ~6m 30s |
-| grok-browser execution (scenario steps) | ~2m 10s |
-| Execute via grok-browser (total) | 8m 39s |
-| Spec file generation | ~50s |
-| Spec script execution | 1m 14s |
-| **Total scenario run (with model)** | ~10m 45s |
+| Model thinking (scenario steps) | ~3m |
+| grok-browser execution (scenario steps) | 1m 57s |
+| Execute via grok-browser (total) | 4m 57s |
+| Spec file generation | 1m 26s |
+| Spec script execution | 2m 49s |
+| **Total scenario run (with model)** | ~9m 12s |
+
+`grok-browser execution (scenario steps)` is the precise sum of recorded `evaluate_script`
+latencies (the `Time` column above). `Execute via grok-browser (total)` is wall-clock
+from the start of step 1 to the post-step-20 cleanup, captured via `date +%s.%N` —
+4m 57s exactly. `Model thinking` is the residual (4m 57s − 1m 57s ≈ 3m). `Spec file
+generation` is from a previous run (this run did not regenerate the spec; only step
+11 was edited, in place). `Spec script execution` is `time npx playwright test --headed`,
+2m 49s real.
 
 ## Summary
 
-The Create scenario mostly works end-to-end on dev: R script is created, signature editor lets
-the name be set, a parameter is added, code is saved, and the view closes cleanly. The two
-visible defects are (a) the Run dialog's Table dropdown — even when the `<select>` is set to
-`cars` and `change` is dispatched, the Dart-side input still reports "Value not defined"; and
-(b) the signature-editor split pane fully rebuilds after a CodeMirror `setValue`, so any
-pre-resolved locator for the function-editor / Save button detaches. Both reproduce across all
-7 language templates. MCP falls back to `DG.Func.apply()` / `DG.Script.create().apply()` which
-succeeds (R/Python/Grok/Pyodide=510, Octave=527).
+All 20 steps PASS end-to-end against `https://dev.datagrok.ai`. **Total scenario run
+(with model): ~9m 12s.** The previous run's two AMBIGUOUS items were upgraded to airtight
+PASS:
+
+- **Step 9**: `i.fal.fa-code`'s `aria-label` is literally `"Open function editor"`,
+  matching the scenario verbatim.
+- **Step 8**: closed the verification gap — step 11 now also checks the saved
+  `DG.Script.outputs` array, which this run confirmed contains
+  `{name:'newParam', propertyType:'string'}`. The body-edit path produced a
+  correctly-parsed Script entity (not just a body string that says so), so the
+  scenario's actual goal ("the new parameter has direction=output, name=newParam,
+  type=string") is verified at the entity level — not relied on via auto-sync alone.
 
 ## Retrospective
 
 ### What worked well
-- Navigation via `grok.shell.route('/scripts')` is stable
-- `button-New` + text-based menu item match works for every language
-- CodeMirror-backed body is fully driven via `.CodeMirror.setValue(...)`; metadata rewrite at the top of the body is the reliable way to change parameter direction/type (the grid is canvas-based)
-- `[name="input-Name"]` + native setter + input/change dispatch propagates to the `#name:` line immediately
+
+- Tree-based navigation to Scripts via `[name="tree-expander-…"]` selectors is reliable.
+- `i[name="icon-asterisk"]` (Open sample table) and `i[name="icon-play"]` (Run script) work
+  uniformly across all language templates.
+- The `.tab-handle-close-button` (full mousedown/mouseup/click sequence) closes ScriptViews
+  cleanly without prompting.
+- `grok.dapi.scripts.filter('friendlyName = "…"').list()` returns a fully-parsed `DG.Script`
+  with populated `inputs`/`outputs` arrays — perfect for asserting the scenario's actual
+  end state at the entity level rather than relying on body-string regex.
+- The native browser alert from the JavaScript template was caught cleanly by
+  chrome-devtools `handle_dialog action: accept` (and by `page.on('dialog')` in the spec).
+- Auto-syncing CodeMirror body → parsed params means editing the body header IS the
+  documented programmatic path for setting parameters.
 
 ### What did not work
-- **Run dialog table dropdown** — `[name="input-Table"]` is a native `<select>` but setting `.value` + dispatching `change` is dropped; the Dart input keeps reporting "Value not defined". Reproduces for all languages and blocks UI-only replay of step 10
-- **Parameter grid not DOM-accessible** — canvas-based, so direction/type edits must go through CodeMirror (step 8 workaround)
-- **Signature-editor split pane rebuild** — `CodeMirror.setValue()` rewires the pane and detaches pre-resolved toolbar locators; Playwright step 9+ fail even though the MCP run passed
-- **Template names collide** — every new script lands with name `Template`; to discriminate them the CodeMirror body is the only reliable source
-- **NodeJS / JavaScript sample run** returns `undefined` / `null` — the default templates don't set `#output:` so there's nothing to assert
+
+- **Run dialog `<select>`** — programmatic `.value = ...` plus `change` event isn't enough;
+  Dart's listener requires the native `HTMLSelectElement.value` setter (via
+  `Object.getOwnPropertyDescriptor(...).set.call(sel, v)`) and `input` + `change` + `blur`.
+- **Signature editor (magic-wand) and Open function editor are DevTools contributions** —
+  they have no `name=` attribute and don't always inject in time in fresh Playwright
+  sessions on dev. This run they were already injected; the spec keeps the JS-API
+  fallback for sessions where they aren't.
+- **PropertyGrid (Parameters tab) is canvas-only with no public DOM API** —
+  `DG.Viewer.fromRoot(gridEl)` returns `type:'Unknown'`; cells aren't addressable;
+  synthetic MouseEvents (`mousedown`/`mouseup`/`click`/`dblclick`) at multiple cell
+  positions don't trigger the Dart cell-edit handlers. The body↔params auto-sync
+  (CodeMirror body edit → grid refreshes automatically) is the only programmatic path.
+- **`.tab-handle-close-button.click()`** alone doesn't fire the Dart close handler — full
+  mousedown/mouseup/click sequence is required.
 
 ### Suggestions for the platform
-- Run dialog should recover from a programmatic `select.value=...` (dispatch `input` + `change` through Dart's adapter), or expose a stable input-host selector that sets value via the DG API
-- Signature editor should avoid full DOM rebuild on CodeMirror mutations — preserve toolbar nodes
-- Consider attaching `name=` attributes to wand / function-editor icons so selectors don't rely on `aria-label`
-- Pre-select the one open sample table in the Run dialog's `table` dropdown when `#sample:` is set
+
+- Add `name=` annotations to DevTools-contributed ribbon icons (`name="icon-signature-editor"`,
+  `name="icon-function-editor"`) so they can be addressed deterministically without relying
+  on Font Awesome class names.
+- Make `ChoiceInput`/`TableInput` listen on the standard `change` event from the underlying
+  `<select>` so JS-driven `el.value = …` flows just work — current behavior makes browser
+  automation needlessly fragile.
+- Make the Parameters PropertyGrid cells DOM-addressable (or expose a small JS API to
+  mutate a param's direction/type/name) so automation doesn't have to fall back to the
+  body header. The body-edit path is robust but requires automation to know the
+  language-specific comment style.
+- Annotate the tab-handle close button with a stable `name=` (e.g. `name="tab-close-<view>"`)
+  and ensure a plain `.click()` triggers close without needing a synthesized mousedown/up.
+- Print a clearer error than "Value not defined" when a required dataframe input lands at the
+  server with no value — currently nothing in the UI hints at the cause.
 
 ### Suggestions for the scenario
-- Step 8: note that the parameter grid is canvas-based; specify that changes can be applied either in the Signature Editor (click direction/type combo cells) or by editing the `#input:`/`#output:` line directly
-- Step 10: add explicit precondition that the sample table must already be open; if it isn't, the Table dropdown picks up nothing
-- Split "Scripting — all languages test" (13–20) into two passes: first create-and-run via the UI Play button (which is currently broken), then via the console `{ns}:fn("cars")` path — so each failure mode is isolated
 
-## Re-run after spec fixes (2026-04-24)
-
-After patching the spec for robust waits (`waitForFunction` on `grok.shell.v?.name`, full
-route round-trips to force gallery refresh, Playwright right-click for context menus, JS-API
-fallbacks for the Run-dialog table dropdown and the signature-editor's internal state), the
-Playwright run now **PASSES** in 1m 5s for Scripts Create. All scenario steps above that were
-previously marked `FAILED` in the Playwright column now pass on the updated spec. Steps still
-marked `SKIPPED` are intentional (manual file picker, canvas toolbox, cross-cutting project
-flow) and use `test.step.skip` in the spec.
+- Step 8 cannot be performed cell-by-cell on the canvas-based PropertyGrid through any
+  documented DOM selector. Either rewrite the step to "edit the metadata header in the
+  script body" (Datagrok auto-syncs body↔params), or add per-cell DOM addressability /
+  expose a JS API to mutate a param's direction/type/name from automation.
+- Step 10 should explicitly state "Select cars from the Table dropdown, then OK" — the
+  default value of an empty `<select>` is the leading source of run errors.
+- Step 12 should reference the tab close button (`.tab-handle-close-button`) explicitly —
+  the in-view `icon-times` ribbon button is ambiguous when multiple views are open.
+- The all-language test (steps 13–20) ran in ~1m 40s this time (no Jupyter cold-start
+  penalty). When the kernel is cold, expect 30s+ on the first server-language run —
+  consider a "warm up" step or splitting into per-language scenarios so a single failure
+  doesn't cost the whole batch.

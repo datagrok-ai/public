@@ -496,9 +496,8 @@ class Preview {
   public viewer: DG.Viewer;
   public dataFrame: DG.DataFrame;
 
-  //Items from the inactive tab; rendered as ghosts only
+  //Lines from the inactive tab; rendered as ghosts only
   public otherFormulaLineItems: DG.FormulaLine[] = [];
-  public otherAnnotationRegionItems: DG.AnnotationRegion[] = [];
 
   /** Original data frame (used for line chart to validate columns).*/
   private originalDataFrame?: DG.DataFrame;
@@ -879,12 +878,13 @@ class Preview {
       this.viewer.meta.formulaLines.clear();
     }
 
-    // Render non-current items as ghosts so the user keeps context for the line being edited.
+    // Render the other formula lines as ghosts so the user keeps context for the line being edited.
+    // Bands and regions are not ghosted; ghosts are only added when the current item is a line.
     // Color is dimmed in-place when possible (also fades the title); `opacity` is the fallback.
     const GHOST = 0.4;
     const fadeOpacity = (cur: number | undefined): number => Math.max(3, Math.round((cur ?? 30) * GHOST));
     const addLineGhost = (line: DG.FormulaLine | undefined): void => {
-      if (!line || !line.visible)
+      if (!line || !line.visible || line.type === ITEM_TYPE.BAND)
         return;
       try {
         const g = structuredClone(line);
@@ -898,29 +898,12 @@ class Preview {
         this.viewer.meta.formulaLines.add(g);
       } catch {}
     };
-    const addRegionGhost = (region: DG.AnnotationRegion | undefined): void => {
-      if (!region || region.hidden)
-        return;
-      try {
-        const g = structuredClone(region);
-        const dimmed = dimColor(g.headerColor, GHOST);
-        if (dimmed) g.headerColor = dimmed;
-        g.opacity = fadeOpacity(g.opacity);
-        this.viewer.meta.annotationRegions.add(g);
-      } catch {}
-    };
-    const addGhosts = (skipIdx: number, skipIsLine: boolean): void => {
+    const addLineGhosts = (skipIdx: number): void => {
       for (let i = 0; i < this.formulaLineItems.length; i++)
-        if (!skipIsLine || i !== skipIdx)
+        if (i !== skipIdx)
           addLineGhost(this.formulaLineItems[i]);
-      for (let i = 0; i < this.annotationRegionItems.length; i++)
-        if (skipIsLine || i !== skipIdx)
-          addRegionGhost(this.annotationRegionItems[i]);
-
       for (const line of this.otherFormulaLineItems)
-          addLineGhost(line);
-      for (const region of this.otherAnnotationRegionItems)
-          addRegionGhost(region);
+        addLineGhost(line);
     };
 
     if (isFormulaLine) {
@@ -932,7 +915,8 @@ class Preview {
 
         /** Trying to show the item */
         clearMeta();
-        addGhosts(itemIdx, true);
+        if (item.type !== ITEM_TYPE.BAND)
+          addLineGhosts(itemIdx);
         this.viewer.meta.formulaLines.add(previewItem);
         this.axes = this.getItemAxes(previewItem);
         return true;
@@ -949,7 +933,6 @@ class Preview {
 
         /** Trying to show the item */
         clearMeta();
-        addGhosts(itemIdx, false);
         this.viewer.meta.annotationRegions.add(previewItem);
         this.axes = this.getItemAxes(previewItem);
         return true;
@@ -2047,7 +2030,6 @@ export class FormulaLinesDialog {
     // Viewer tab is shown first when present; DataFrame items become the ghosts.
     const hasViewer = !!this.host.viewerFormulaLineItems;
     preview.otherFormulaLineItems = (hasViewer ? this.host.dframeFormulaLineItems : undefined) ?? [];
-    preview.otherAnnotationRegionItems = (hasViewer ? this.host.dframeAnnotationRegionItems : undefined) ?? [];
     return preview;
   }
 
@@ -2135,7 +2117,6 @@ export class FormulaLinesDialog {
       this.preview.annotationRegionItems = this.currentTable.annotationRegionItems;
       const isViewerTab = this.tabs.currentPane.name === ITEM_SOURCE.VIEWER;
       this.preview.otherFormulaLineItems = (isViewerTab ? this.host.dframeFormulaLineItems : this.host.viewerFormulaLineItems) ?? [];
-      this.preview.otherAnnotationRegionItems = (isViewerTab ? this.host.dframeAnnotationRegionItems : this.host.viewerAnnotationRegionItems) ?? [];
       this.currentTable.setFirstItemAsCurrent();
     });
 

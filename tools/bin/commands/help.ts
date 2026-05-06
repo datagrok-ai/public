@@ -211,6 +211,8 @@ Options:
 --report            Report failed tests to audit, notifies package author (default=false)
 --skip-build        Skip the package build step
 --skip-publish      Skip the package publication step
+--skip-puppeteer    Skip the Puppeteer/DG.Test pass; only run Playwright (for playwright-only test directories)
+--skip-playwright   Skip the Playwright pass; only run Puppeteer/DG.Test
 --link  	        Link the package to local utils
 --record            Records the test execution process in mp4 format
 --platform          Runs only platform tests (applicable for ApiTests package only)

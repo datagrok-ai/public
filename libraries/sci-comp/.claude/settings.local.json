@@ -14,7 +14,8 @@
       "Bash(node -e ':*)",
       "Bash(ls c:/Users/vmaka/Datagrok/public/libraries/sci-comp/src/*.d.ts)",
       "Bash(ls c:/Users/vmaka/Datagrok/public/libraries/sci-comp/*.d.ts)",
-      "Bash(grep -E \"\\(━|Rosenbrock$|Rastrigin$|L-BFGS-B|L-BFGS \\)\")"
+      "Bash(grep -E \"\\(━|Rosenbrock$|Rastrigin$|L-BFGS-B|L-BFGS \\)\")",
+      "Read(//c/Users/vmaka/Datagrok/SEND/send-data-browser/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\vmaka\\Datagrok\\public\\libraries\\sci-comp\\.claude\\skills"

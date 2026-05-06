@@ -80,6 +80,11 @@
   overflow: scroll;
   width: 100%;
   flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-output-area > *:first-child {
   margin-top: auto;
 }
 

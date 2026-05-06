@@ -1,8 +1,6 @@
 import {test, Page} from '@playwright/test';
 
 export const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
-export const login = process.env.DATAGROK_LOGIN ?? 'admin';
-export const password = process.env.DATAGROK_PASSWORD ?? 'admin';
 
 export const specTestOptions = {
   viewport: {width: 1920, height: 1080},
@@ -23,52 +21,29 @@ export async function softStep(name: string, fn: () => Promise<void>) {
   }
 }
 
-export async function loginToDatagrok(page: Page) {
+async function injectToken(page: Page, token: string) {
+  // Navigate to the origin first so the cookie/localStorage entries are
+  // attached to the right host. The `/oauth/` path matches what `grok test`
+  // does for Puppeteer (test-utils.ts:135).
+  await page.goto(baseUrl + '/oauth/');
+  const u = new URL(baseUrl);
+  await page.context().addCookies([{name: 'auth', value: token, domain: u.hostname, path: '/'}]);
+  await page.evaluate((t) => window.localStorage.setItem('auth', t), token);
   await page.goto(baseUrl);
-  // Fresh-context flake: the login form sometimes appears while Dart is still
-  // mounting listeners — typing + Enter are then silently dropped. Give the
-  // page a moment to settle before probing the form. `networkidle` is the
-  // cheapest reliable signal that Dart boot is done.
-  await page.waitForLoadState('networkidle', {timeout: 30000}).catch(() => {});
+  await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, null, {timeout: 120_000});
+  await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
+}
 
-  const submitLogin = async () => {
-    // The active login inputs live inside `#signup-login-fields` (there are
-    // several hidden duplicates for Reset / Sign-Up flows elsewhere on the
-    // page). Scope directly to that container — and use `.focus()` instead of
-    // `.click()` to avoid the "signup-container intercepts pointer events"
-    // flake, where Playwright's actionability check picks the wrong stacking
-    // context on fresh page loads.
-    const loginInput = page.locator('#signup-login-fields input[placeholder="Login or Email"]');
-    const passwordInput = page.locator('#signup-login-fields input[placeholder="Password"]');
-    if (!(await loginInput.isVisible({timeout: 15000}).catch(() => false)))
-      return;
-    await loginInput.focus();
-    await page.keyboard.type(login);
-    // Dart re-renders #signup-login-fields on input — pre-resolved locators
-    // detach. Tab to the next field so we don't need to re-locate the
-    // password input through Playwright's actionability pipeline.
-    await page.keyboard.press('Tab');
-    await page.keyboard.type(password);
-    await page.keyboard.press('Enter');
-    // Dev/public login markup has no <form>, so Enter is sometimes a no-op —
-    // as a backup, try to click the "Login" button (filtered to exclude "Login
-    // with Google"). Race it against the post-login Browse tab so we don't
-    // block if login already succeeded or the button is mid-detach.
-    const loginBtn = page.locator('button').filter({hasText: /^Login$/}).and(page.locator(':visible'));
-    await Promise.race([
-      page.locator('[name="Browse"]').waitFor({timeout: 5000}).catch(() => {}),
-      (async () => {
-        if (await loginBtn.isVisible({timeout: 2000}).catch(() => false))
-          await loginBtn.click({force: true, timeout: 3000}).catch(() => {});
-      })(),
-    ]);
-  };
+export async function loginToDatagrok(page: Page) {
+  const token = process.env.DATAGROK_AUTH_TOKEN;
+  if (!token || token.length === 0)
+    throw new Error('DATAGROK_AUTH_TOKEN is not set. Run via `grok test`, which derives the token from ~/.grok/config.yaml.');
+  await injectToken(page, token);
+}
 
-  await submitLogin();
-  // One retry if Browse still hasn't appeared — covers cases where the first
-  // submit was dropped because Dart hadn't wired up the change listener yet.
-  if (!(await page.locator('[name="Browse"]').isVisible({timeout: 15000}).catch(() => false)))
-    await submitLogin();
-
-  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
+export async function loginAsSecondUser(page: Page) {
+  const token2 = process.env.DATAGROK_AUTH_TOKEN_2;
+  if (!token2 || token2.length === 0)
+    throw new Error('DATAGROK_AUTH_TOKEN_2 is not set. Provide a second-user dev key via DATAGROK_DEV_KEY_2 (the runner exchanges it for a token).');
+  await injectToken(page, token2);
 }

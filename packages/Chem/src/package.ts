@@ -24,6 +24,7 @@ import {
   CHEM_SPACE_CLUSTER_COL,
 } from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {calculateDescriptors, getDescriptorsTree} from './docker/api';
 import {addDescriptorsColsToDf, getDescriptorsSingle, getSelected, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
 import {identifiersWidget, getMapIdentifiers, openMapIdentifiersDialog, textToSmiles} from './widgets/identifiers';
@@ -563,6 +564,58 @@ export class PackageFunctions {
   })
   static diversitySearchTopMenu(): void {
     (grok.shell.v as DG.TableView).addViewer('Chem Diversity Search');
+  }
+
+
+  @grok.decorators.func({
+    'name': 'Similarity Matrix',
+    'top-menu': 'Chem | Calculate | Similarity Matrix...',
+    'description': 'Computes a full pairwise Tanimoto similarity matrix for the molecules, labeled by the symbol column.',
+  })
+  static async similarityMatrixTopMenu(
+    table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column'}) symbols: DG.Column,
+    @grok.decorators.param({
+      type: 'string',
+      options: {
+        caption: 'Fingerprint type',
+        choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
+        initialValue: 'Morgan',
+      },
+    }) fingerprintType: string = 'Morgan',
+  ): Promise<DG.DataFrame> {
+    const pb = DG.TaskBarProgressIndicator.create('Computing similarity matrix...');
+    const dmService = new DistanceMatrixService(true, true);
+    try {
+      const fingerprints = await chemSearches.chemGetFingerprints(molecules, fingerprintType as Fingerprint, false);
+      const n = fingerprints.length;
+
+      const symbolValues: string[] = symbols.toList().map((v) => v == null ? '' : v.toString());
+
+      // parallel pairwise Tanimoto distances on web workers; condensed upper-triangular form
+      const distances = await dmService.calc(fingerprints, BitArrayMetricsNames.Tanimoto, false);
+      const dm = new DistanceMatrix(distances, n);
+
+      const result = DG.DataFrame.create(n);
+      result.name = `${molecules.name} similarity matrix`;
+      result.columns.add(DG.Column.fromStrings('symbol', symbolValues));
+
+      for (let j = 0; j < n; j++) {
+        const values = new Float32Array(n);
+        for (let i = 0; i < n; i++)
+          values[i] = i === j ? 1 : 1 - dm.get(i, j);
+        const colName = result.columns.getUnusedName(symbolValues[j] || `mol_${j}`);
+        const col = DG.Column.fromFloat32Array(colName, values);
+        col.meta.format = '0.000';
+        result.columns.add(col);
+      }
+
+      grok.shell.addTableView(result);
+      return result;
+    } finally {
+      pb.close();
+    }
   }
 
 
