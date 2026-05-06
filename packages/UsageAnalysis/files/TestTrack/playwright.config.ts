@@ -3,12 +3,14 @@ import {defineConfig, devices} from '@playwright/test';
 export default defineConfig({
   testDir: '.',
   testMatch: '**/*-spec.ts',
-  // fullyParallel stays off so tests *within* a file remain sequential (most
-  // specs share UI state — e.g. a project they create in step 1 and assert on
-  // in step 2). Spec *files* still run in parallel across `workers`.
-  fullyParallel: false,
-  workers: process.env.CI ? 4 : 1,
+  // Run all eligible tests in parallel — within and across files. Specs that
+  // share UI state across multiple test() blocks should opt out per-file
+  // with `test.describe.configure({mode: 'serial'})`.
+  fullyParallel: true,
+  workers: process.env.CI ? 8 : 1,
   retries: process.env.CI ? 1 : 0,
+  // Per-test default timeout (1 minute). Specs that need longer override
+  // explicitly via `test.setTimeout(N)` at the top of the test body.
   timeout: 60_000,
   expect: {timeout: 15_000},
   reporter: process.env.PLAYWRIGHT_JSON_OUTPUT_NAME
