@@ -2335,10 +2335,10 @@ export class PackageFunctions {
             tanimotoMin: params.tanimotoMin,
             tanimotoMax: params.tanimotoMax,
             mcsRatioMax: params.mcsRatioMax,
-            minPharmOverlap: params.minPharmOverlap,
+            minCatsSim: params.minCatsSim,
             replaceableAtoms: JSON.stringify(params.replaceableAtoms),
             useTcInFlag: params.useTcInFlag,
-            usePharmInFlag: params.usePharmInFlag,
+            useCatsInFlag: params.useCatsInFlag,
           }).call(true);
         } catch (e: any) {
           grok.shell.error(e?.message ?? String(e));
@@ -2349,7 +2349,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'name': 'Scaffold Hopping',
-    'description': 'Score every other molecule against a reference row using 2D scaffold-hopping criteria (ECFP4 Tanimoto, pharmacophore overlap, MCS atom ratio).',
+    'description': 'Score every other molecule against a reference row using 2D scaffold-hopping criteria (ECFP4 Tanimoto, CATS2D pharmacophore similarity, Maeda 2024 MCS atom ratio).',
     'editor': 'Chem:ScaffoldHoppingEditor',
     'top-menu': 'Chem | Analyze | Scaffold Hopping...',
   })
@@ -2360,14 +2360,14 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'double', options: {description: 'ECFP4 Tanimoto lower bound', initialValue: '0.2'}}) tanimotoMin: number,
     @grok.decorators.param({type: 'double', options: {description: 'ECFP4 Tanimoto upper bound', initialValue: '0.6'}}) tanimotoMax: number,
     @grok.decorators.param({type: 'double', options: {description: 'MCS atom ratio cutoff (Maeda 2024 scaffold-hop criterion)', initialValue: '0.4'}}) mcsRatioMax: number,
-    @grok.decorators.param({type: 'double', options: {description: 'Minimum pharmacophore-family Jaccard overlap vs. reference', initialValue: '0.3'}}) minPharmOverlap: number,
-    @grok.decorators.param({type: 'string', options: {description: 'JSON-encoded array of replaceable atom indices (empty = auto-Murcko fallback)', initialValue: '[]'}}) replaceableAtoms: string,
+    @grok.decorators.param({type: 'double', options: {description: 'Minimum CATS2D (Schneider 1999) pharmacophore-pair cosine similarity vs. reference', initialValue: '0.8'}}) minCatsSim: number,
+    @grok.decorators.param({type: 'string', options: {description: 'JSON-encoded array of replaceable atom indices (empty = no region constraint, returns any global hop)', initialValue: '[]'}}) replaceableAtoms: string,
     @grok.decorators.param({type: 'bool', options: {description: 'Apply ECFP4 Tc window as a flag condition (in addition to the always-on Maeda atom-ratio)', initialValue: 'true'}}) useTcInFlag: boolean,
-    @grok.decorators.param({type: 'bool', options: {description: 'Apply Pharm Sim minimum as a flag condition (in addition to the always-on Maeda atom-ratio)', initialValue: 'true'}}) usePharmInFlag: boolean,
+    @grok.decorators.param({type: 'bool', options: {description: 'Apply CATS Sim minimum as a flag condition (in addition to the always-on Maeda atom-ratio)', initialValue: 'true'}}) useCatsInFlag: boolean,
   ): Promise<void> {
     await runScaffoldHopping(table, molecules, referenceRowIdx,
-      tanimotoMin, tanimotoMax, mcsRatioMax, minPharmOverlap, replaceableAtoms,
-      useTcInFlag, usePharmInFlag);
+      tanimotoMin, tanimotoMax, mcsRatioMax, minCatsSim, replaceableAtoms,
+      useTcInFlag, useCatsInFlag);
   }
 
   @grok.decorators.func({

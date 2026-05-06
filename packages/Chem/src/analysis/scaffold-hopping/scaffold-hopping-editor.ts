@@ -15,6 +15,39 @@ const REPLACEABLE_COLOR: [number, number, number] = [1.0, 0.6, 0.2];
  *  molecule into the box and the picker uses these as click coordinates. */
 const PREVIEW_SIZE = 320;
 
+/** Three named threshold presets keyed to the Sun-Tawa-Wallqvist 2012 hop
+ *  taxonomy ("Classification of scaffold hopping approaches", DDT 17:310).
+ *  Each preset sets the ECFP4 Tc range and the Maeda 2024 atom-ratio cap to
+ *  match the structural-change regime users typically have in mind:
+ *
+ *  - **Easy** (substituent / heterocycle swap, Sun-Tawa-Wallqvist class 1°):
+ *    candidates share most of the scaffold; hops are decorations or single-
+ *    ring isosteres. Tc 0.4-0.7 is the typical range; mcsRatio ≤ 0.7 admits
+ *    most of the molecule into the MCS.
+ *  - **Middle** (ring open/close, residue swap, class 2°): meaningful but
+ *    bounded scaffold change. The default, balanced for typical SAR-table
+ *    workflows.
+ *  - **Hard / Maeda-faithful** (large topological change, class 3°/4°):
+ *    paper-faithful Maeda 2024 thresholds. The Tc lower bound is dropped to
+ *    0.05 because Schneider 1999, Vogt et al. 2010, and Iktos/Pinel 2023 all
+ *    show genuine large-topology hops sit in the 0.05-0.30 ECFP4 range —
+ *    higher cutoffs systematically discard exactly the candidates Maeda's
+ *    atom-ratio classifier is designed to find. */
+type PresetKey = 'Easy' | 'Middle' | 'Hard';
+const PRESETS: Record<PresetKey, {tcMin: number; tcMax: number; mcsRatioMax: number}> = {
+  'Easy':   {tcMin: 0.4,  tcMax: 0.7, mcsRatioMax: 0.7},
+  'Middle': {tcMin: 0.2,  tcMax: 0.5, mcsRatioMax: 0.5},
+  'Hard':   {tcMin: 0.05, tcMax: 0.3, mcsRatioMax: 0.4},
+};
+/** Display labels for the preset dropdown — keep the taxonomy hint visible
+ *  so the user doesn't have to read the tooltip to understand the choice. */
+const PRESET_LABELS: Record<PresetKey, string> = {
+  'Easy':   'Easy — substituent / heterocycle swap',
+  'Middle': 'Middle — ring open/close, residue swap',
+  'Hard':   'Hard — Maeda-faithful, large topological change',
+};
+const DEFAULT_PRESET: PresetKey = 'Middle';
+
 /** Parameters captured by the Scaffold Hopping dialog. */
 export type ScaffoldHoppingParams = {
   table: DG.DataFrame;
@@ -23,7 +56,7 @@ export type ScaffoldHoppingParams = {
   tanimotoMin: number;
   tanimotoMax: number;
   mcsRatioMax: number;
-  minPharmOverlap: number;
+  minCatsSim: number;
   /** RDKit atom indices the user marked as the *replaceable* region — the
    *  part the scaffold hop should change. Acts as an additional filter on
    *  top of the Maeda atom-ratio classifier: when non-empty, a candidate is
@@ -34,14 +67,14 @@ export type ScaffoldHoppingParams = {
   replaceableAtoms: number[];
   /** When true, the SH flag additionally requires the candidate's ECFP4 Tc
    *  to be inside the pre-filter window. When false, only the Maeda MCS
-   *  atom-ratio (and Pharm Sim if enabled) drive the flag — closer to the
+   *  atom-ratio (and CATS Sim if enabled) drive the flag — closer to the
    *  paper's pure SH definition. The Tc range is still used as a performance
    *  shortlist regardless of this flag. */
   useTcInFlag: boolean;
-  /** When true, the SH flag additionally requires Pharm Sim ≥ the threshold.
+  /** When true, the SH flag additionally requires CATS Sim ≥ the threshold.
    *  When false, only the Maeda MCS atom-ratio (and Tc window if enabled)
    *  drive the flag. */
-  usePharmInFlag: boolean;
+  useCatsInFlag: boolean;
 };
 
 /** Editor for `Chem | Analyze | Scaffold Hopping...`.
@@ -54,55 +87,69 @@ export type ScaffoldHoppingParams = {
  *  - Screening-library column picker (semType: Molecule) and reference-row
  *    index input — defaults to the dataframe's `currentRowIdx`.
  *  - Pre-filter shortlist (ECFP4 Tc min/max) and Maeda 2024 hop criterion
- *    (atom-ratio + Pharm overlap min) sections.
+ *    (atom-ratio + CATS Sim min) sections.
  *
- *  The composite ranking score combines three descriptors automatically
- *  (`0.4 × Tc + 0.3 × Pharm2D + 0.3 × CATS2D`); only Tc and Pharm have
- *  user-tunable thresholds because they participate in the flag. CATS
- *  contributes to the ranking score only — surfaced as a `Scaffold Hop
- *  CATS Sim` column on the result table. */
+ *  The composite ranking score combines two complementary descriptors
+ *  automatically (`0.4 × Tc + 0.6 × CATS2D`). ECFP4 captures scaffold/
+ *  topology, CATS captures the topological-pharmacophore-pair distribution
+ *  that survives scaffold swaps (Schneider 1999) — the canonical low-Tc
+ *  scaffold-hop signal. Both Tc and CATS Sim have user-tunable thresholds
+ *  that drive the flag. */
 export class ScaffoldHoppingFunctionEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
   colInput!: DG.InputBase<DG.Column | null>;
   colInputRoot: HTMLElement = ui.div();
   refRowInput!: DG.InputBase<number | null>;
 
-  tanimotoMinInput = ui.input.float('ECFP4 Tc min', {value: 0.2,
+  presetInput = ui.input.choice<string>('Preset', {
+    value: PRESET_LABELS[DEFAULT_PRESET],
+    items: (Object.keys(PRESETS) as PresetKey[]).map((k) => PRESET_LABELS[k]),
+    onValueChanged: () => this._applyPreset(),
+    tooltipText: 'Picks Tc range and MCS atom-ratio cap to match the kind of ' +
+      'scaffold change you\'re looking for, anchored to the Sun-Tawa-Wallqvist ' +
+      '2012 taxonomy (DDT 17:310). Pick Easy for substituent / heterocycle ' +
+      'swaps, Middle for ring open/close or residue swaps, Hard for large ' +
+      'topological changes (paper-faithful Maeda 2024). The three numeric ' +
+      'inputs below stay editable — the preset just seeds them.',
+  });
+
+  tanimotoMinInput = ui.input.float('ECFP4 Tc min', {value: PRESETS[DEFAULT_PRESET].tcMin,
     tooltipText: 'Pre-filter shortlist lower bound. Drops rows with negligible ' +
-      'similarity before pharmacophore / MCS scoring. Calibrated on Maeda 2024 ' +
-      'kinase / GPCR / enzyme targets — widen for nuclear receptors or peptide ' +
-      'ligands where genuine hops can fall below 0.2.'});
-  tanimotoMaxInput = ui.input.float('ECFP4 Tc max', {value: 0.6,
+      'similarity before pharmacophore / MCS scoring. Lower this if your ' +
+      'reference and the genuine hops are expected to share little topology — ' +
+      'Schneider 1999 and Iktos/Pinel 2023 both report real hops at Tc < 0.2.'});
+  tanimotoMaxInput = ui.input.float('ECFP4 Tc max', {value: PRESETS[DEFAULT_PRESET].tcMax,
     tooltipText: 'Pre-filter shortlist upper bound. Drops near-duplicates of ' +
       'the reference (Tc above this are usually trivial analogues, not hops).'});
-  mcsMaxInput = ui.input.float('MCS atom ratio max', {value: 0.4,
+  mcsMaxInput = ui.input.float('MCS atom ratio max', {value: PRESETS[DEFAULT_PRESET].mcsRatioMax,
     tooltipText: 'Maeda 2024 scaffold-hop criterion (J. Chem. Inf. Model. 2024, ' +
       '64, 5557): a candidate is flagged as a hop iff the atom-ratio ' +
       'ratio_atom = atoms(MCS) / atoms(reference) is ≤ this threshold. ' +
-      'Default 0.4 follows the paper exactly. (Note: this is Maeda\'s SH ' +
-      'classifier — distinct from TcMCS, the bond-Tanimoto formula Maeda also ' +
-      'defines but uses only for chemical-space-network visualisation.)'});
+      'Hard preset sets 0.4 (paper-faithful); looser presets relax it.'});
   useTcInFlagInput = ui.input.bool('Tc window in flag', {value: true,
     tooltipText: 'When checked, the Scaffold Hop flag also requires the ' +
       'candidate\'s ECFP4 Tc to be inside [Tc min, Tc max]. When unchecked, ' +
       'the Tc range is only used as a pre-filter shortlist for performance — ' +
-      'the flag itself ignores it. Uncheck this and "Pharm Sim in flag" ' +
+      'the flag itself ignores it. Uncheck this and "CATS Sim in flag" ' +
       'together to get pure Maeda 2024 behaviour (atom-ratio ≤ 0.4 only).'});
-  usePharmInFlagInput = ui.input.bool('Pharm Sim in flag', {value: true,
-    tooltipText: 'When checked, the Scaffold Hop flag also requires Pharm Sim ' +
-      '≥ Pharm Tc min. When unchecked, pharmacophore similarity is computed ' +
-      'and shown but does not affect the flag — closer to Maeda\'s paper-' +
-      'faithful definition (atom-ratio ≤ 0.4 only).'});
+  useCatsInFlagInput = ui.input.bool('CATS Sim in flag', {value: true,
+    tooltipText: 'When checked, the Scaffold Hop flag also requires CATS Sim ' +
+      '≥ CATS Sim min. When unchecked, CATS similarity is computed and shown ' +
+      'but does not affect the flag — closer to Maeda\'s paper-faithful ' +
+      'definition (atom-ratio ≤ 0.4 only).'});
 
-  pharmInput = ui.input.float('Pharm Tc min', {value: 0.3,
-    tooltipText: 'Minimum Pharm2D (Gobbi-Poppinger 1998) pharmacophore ' +
-      'Tanimoto similarity between the candidate and the reference. Built on ' +
-      'the Chem package\'s 7-family SMARTS (Donor / Acceptor / Hydrophobic / ' +
-      'Aromatic / Positive / Negative / Halogen Bond — same SMARTS the ' +
-      'Pharmacophore Features info panel uses) with feature pairs AND triplets ' +
-      '(maxPointCount=3) at distance bins (0,2)(2,4)(4,6)(6,8)(8,12). Encodes ' +
-      'where features sit relative to each other on the molecular graph, not ' +
-      'just whether they exist. Computed server-side via RDKit Chem.Pharm2D.'});
+  catsSimInput = ui.input.float('CATS Sim min', {value: 0.8,
+    tooltipText: 'Minimum CATS2D (Schneider 1999) topological-pharmacophore-' +
+      'pair cosine similarity between the candidate and the reference. CATS2D ' +
+      'is a 7×7×10 = 490-dim float vector counting (familyA, familyB, distance) ' +
+      'pair occurrences over the Chem package\'s 7-family SMARTS (Donor / ' +
+      'Acceptor / Hydrophobic / Aromatic / Positive / Negative / Halogen Bond), ' +
+      'normalised by Schneider scaling so it stays scale-invariant across ' +
+      'molecule sizes. Designed specifically for low-Tc scaffold-hop retrieval — ' +
+      'two molecules with the same pharmacophore arrangement on different ' +
+      'scaffolds will score high here even when ECFP4 says they are far apart. ' +
+      'Cosine values typically run 0.7+ for related chemotypes; 0.8 default ' +
+      'is permissive enough to catch genuine hops without admitting noise.'});
 
   /** Outer container holding the rendered SVG + click overlay. */
   referencePreview: HTMLElement = ui.div([], {style: {
@@ -145,7 +192,7 @@ export class ScaffoldHoppingFunctionEditor {
     this.tanimotoMinInput.addValidator(this._rangeValidator);
     this.tanimotoMaxInput.addValidator(this._rangeValidator);
     this.mcsMaxInput.addValidator(this._rangeValidator);
-    this.pharmInput.addValidator(this._rangeValidator);
+    this.catsSimInput.addValidator(this._rangeValidator);
     this.clearSelectionBtn.style.display = 'none';
     this.onTableInputChanged();
   }
@@ -363,6 +410,19 @@ export class ScaffoldHoppingFunctionEditor {
     this._lastPaintMode = null;
   }
 
+  /** Applies the currently-selected preset's Tc/mcsRatio values to the three
+   *  numeric inputs. The user can still tweak the inputs manually after the
+   *  preset is applied — we don't lock them. */
+  private _applyPreset() {
+    const label = this.presetInput.value;
+    const key = (Object.keys(PRESETS) as PresetKey[]).find((k) => PRESET_LABELS[k] === label);
+    if (!key) return;
+    const p = PRESETS[key];
+    this.tanimotoMinInput.value = p.tcMin;
+    this.tanimotoMaxInput.value = p.tcMax;
+    this.mcsMaxInput.value = p.mcsRatioMax;
+  }
+
   private _reRender(smiles: string) {
     let mol: any = null;
     try {
@@ -421,6 +481,13 @@ export class ScaffoldHoppingFunctionEditor {
       this.tableInput,
       this.colInputRoot,
       this.refRowInput,
+      ui.h3('Threshold preset',
+        {style: {marginTop: '12px', marginBottom: '4px'}}),
+      this.presetInput,
+      ui.divText('Sets Tc range + MCS atom-ratio cap. The numeric inputs ' +
+        'below remain editable; the preset just seeds them. Anchored to the ' +
+        'Sun-Tawa-Wallqvist 2012 hop taxonomy (DDT 17:310).',
+        {style: {fontSize: '11px', color: 'var(--grey-5)', marginTop: '4px'}}),
       ui.h3('Pre-filter shortlist (ECFP4 Tanimoto)',
         {style: {marginTop: '12px', marginBottom: '4px'}}),
       this.tanimotoMinInput,
@@ -435,8 +502,8 @@ export class ScaffoldHoppingFunctionEditor {
 
       ui.h3('Optional flag conditions',
         {style: {marginTop: '12px', marginBottom: '4px'}}),
-      this.usePharmInFlagInput,
-      this.pharmInput,
+      this.useCatsInFlagInput,
+      this.catsSimInput,
       this.useTcInFlagInput,
       ui.divText('Each unchecked condition is computed and shown but does not ' +
         'affect the Scaffold Hop boolean flag. Uncheck both to reproduce the ' +
@@ -458,10 +525,10 @@ export class ScaffoldHoppingFunctionEditor {
       tanimotoMin: this.tanimotoMinInput.value!,
       tanimotoMax: this.tanimotoMaxInput.value!,
       mcsRatioMax: this.mcsMaxInput.value!,
-      minPharmOverlap: this.pharmInput.value!,
+      minCatsSim: this.catsSimInput.value!,
       replaceableAtoms: [...this.selectedAtoms].sort((a, b) => a - b),
       useTcInFlag: this.useTcInFlagInput.value ?? true,
-      usePharmInFlag: this.usePharmInFlagInput.value ?? true,
+      useCatsInFlag: this.useCatsInFlagInput.value ?? true,
     };
   }
 }
