@@ -2946,6 +2946,16 @@ export class PackageFunctions {
     return infoView.view;
   }
 
+  @grok.decorators.app({
+    'name': 'Reaction Enumerator',
+    'description': 'Forward-reaction library enumeration over building blocks and SMARTS templates.',
+    'meta': {browsePath: 'Chem | Reactions'},
+  })
+  static async reactionEnumeratorApp(): Promise<DG.ViewBase> {
+    const {buildEnumeratorView} = await import('./utils/reaction-enumeration/enumerator-app');
+    return buildEnumeratorView();
+  }
+
   @grok.decorators.func()
   static async mpoProfilesAppTreeBrowser(
     @grok.decorators.param({type: 'dynamic'}) treeNode: DG.TreeViewGroup,

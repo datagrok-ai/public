@@ -197,6 +197,18 @@ export function diversitySearchTopMenu() : void {
   PackageFunctions.diversitySearchTopMenu();
 }
 
+//name: Similarity Matrix
+//description: Computes a full pairwise Tanimoto similarity matrix for the molecules, labeled by the symbol column.
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: column symbols 
+//input: string fingerprintType = 'Morgan' { caption: Fingerprint type; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
+//output: dataframe result
+//top-menu: Chem | Calculate | Similarity Matrix...
+export async function similarityMatrixTopMenu(table: DG.DataFrame, molecules: DG.Column, symbols: DG.Column, fingerprintType: string) : Promise<any> {
+  return await PackageFunctions.similarityMatrixTopMenu(table, molecules, symbols, fingerprintType);
+}
+
 //top-menu: Chem | Calculate | Descriptors...
 export async function descriptorsDocker() : Promise<void> {
   await PackageFunctions.descriptorsDocker();
@@ -1298,6 +1310,15 @@ export async function biochemPropsWidget() : Promise<void> {
 //meta.role: app
 export async function mpoProfilesApp(path?: string) : Promise<any> {
   return await PackageFunctions.mpoProfilesApp(path);
+}
+
+//name: Reaction Enumerator
+//description: Forward-reaction library enumeration over building blocks and SMARTS templates.
+//output: view result
+//meta.browsePath: Chem | Reactions
+//meta.role: app
+export async function reactionEnumeratorApp() : Promise<any> {
+  return await PackageFunctions.reactionEnumeratorApp();
 }
 
 //input: dynamic treeNode 

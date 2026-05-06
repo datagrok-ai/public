@@ -1,0 +1,611 @@
+import {RDModule, RDMol, RDReaction, MolList} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {EnumeratorConfig} from './config';
+import {applyProductFilters, buildExclusionQmols, computeMolStats, MolStats, stripIsotopesFromSmiles} from './filters';
+
+export interface TemplateInput {
+  smarts: string;
+  blockingSmartsList: string[];
+  reactionName: string;
+}
+
+export interface RouteStep {
+  reactants: string[];
+  product: string;
+  templateSmarts: string;
+  reactionName: string;
+}
+
+export type Route = RouteStep[];
+
+export interface ProductRecord {
+  smiles: string;
+  routes: Route[];
+  firstRound: number;
+}
+
+export interface EnumerationResult {
+  productsByRound: ProductRecord[][];
+  warnings: string[];
+}
+
+export interface EnumerationProgress {
+  round: number;
+  numRounds: number;
+  templateIndex: number;
+  numTemplates: number;
+  productsSoFar: number;
+  combosDone?: number;
+  combosTotal?: number;
+}
+
+export interface EnumerateOptions {
+  rdkit: RDModule;
+  config: EnumeratorConfig;
+  templates: TemplateInput[];
+  buildingBlocks: string[];
+  exclusionSmarts: string[];
+  onProgress?: (p: EnumerationProgress) => void;
+  isCancelled?: () => boolean;
+}
+
+export function splitSmartsByReactants(lhs: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < lhs.length; i++) {
+    const c = lhs[i];
+    if (c === '(' || c === '[') depth++;
+    else if (c === ')' || c === ']') depth--;
+    else if (c === '.' && depth === 0) {
+      parts.push(lhs.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(lhs.slice(start));
+  return parts.map((p) => p.trim()).filter((p) => p.length > 0);
+}
+
+// A reaction-SMARTS reactant slot may be wrapped in `(...)` to denote a tied group of fragments
+// that must come from a single connected molecule (multi-fragment SMARTS). Strip the outer parens
+// so the inner SMARTS can be parsed by get_qmol.
+export function stripOuterParens(s: string): string {
+  if (s.length < 2 || s[0] !== '(' || s[s.length - 1] !== ')') return s;
+  let depth = 0;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === '(' || s[i] === '[') depth++;
+    else if (s[i] === ')' || s[i] === ']') depth--;
+    if (depth === 0 && i < s.length - 1) return s;
+  }
+  return s.slice(1, -1).trim();
+}
+
+function tryGetMol(rdkit: RDModule, smiles: string): RDMol | null {
+  try {
+    const m = rdkit.get_mol(smiles);
+    if (!m) return null;
+    if (!m.is_valid()) { m.delete(); return null; }
+    return m;
+  } catch {
+    return null;
+  }
+}
+
+function tryGetQmol(rdkit: RDModule, smarts: string): RDMol | null {
+  try {
+    const q = rdkit.get_qmol(smarts);
+    if (!q) return null;
+    if (!q.is_valid()) { q.delete(); return null; }
+    return q;
+  } catch {
+    return null;
+  }
+}
+
+function tryGetRxn(rdkit: RDModule, smarts: string): RDReaction | null {
+  try {
+    const r = rdkit.get_rxn(smarts);
+    return r ?? null;
+  } catch {
+    return null;
+  }
+}
+
+interface ParsedTemplate {
+  index: number;
+  smarts: string;
+  reactionName: string;
+  rxn: RDReaction;
+  // [slot][fragment] — tied groups (parenthesized in the SMARTS) yield multi-fragment slots.
+  // A BB matches a slot only if it matches every fragment.
+  reactantQmols: RDMol[][];
+  blockingQmols: RDMol[];
+  numReactants: number;
+}
+
+function getSlotFragments(rs: string): string[] {
+  const stripped = stripOuterParens(rs);
+  return splitSmartsByReactants(stripped);
+}
+
+function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings: string[]): ParsedTemplate | null {
+  const arrowIdx = t.smarts.indexOf('>>');
+  if (arrowIdx < 0) {
+    warnings.push(`Template ${idx + 1} (${t.reactionName || 'unnamed'}) has no '>>' separator; skipping.`);
+    return null;
+  }
+  const lhs = t.smarts.slice(0, arrowIdx);
+  const slotSmarts = splitSmartsByReactants(lhs);
+  const rxn = tryGetRxn(rdkit, t.smarts);
+  if (!rxn) {
+    warnings.push(`Template ${idx + 1} (${t.reactionName || 'unnamed'}): get_rxn failed; skipping.`);
+    return null;
+  }
+  const reactantQmols: RDMol[][] = [];
+  const blockingQmols: RDMol[] = [];
+  for (const slot of slotSmarts) {
+    const fragments = getSlotFragments(slot);
+    const fragQmols: RDMol[] = [];
+    let ok = true;
+    for (const frag of fragments) {
+      const q = tryGetQmol(rdkit, frag);
+      if (!q) {
+        warnings.push(`Template ${idx + 1} (${t.reactionName || 'unnamed'}): invalid reactant SMARTS fragment '${frag}'; skipping template.`);
+        ok = false;
+        break;
+      }
+      fragQmols.push(q);
+    }
+    if (!ok) {
+      rxn.delete();
+      for (const slotQs of reactantQmols) for (const q of slotQs) q.delete();
+      for (const q of fragQmols) q.delete();
+      return null;
+    }
+    reactantQmols.push(fragQmols);
+  }
+  for (const bs of t.blockingSmartsList) {
+    const trimmed = (bs ?? '').trim();
+    if (!trimmed) continue;
+    const q = tryGetQmol(rdkit, trimmed);
+    if (q) blockingQmols.push(q);
+  }
+  return {
+    index: idx, smarts: t.smarts, reactionName: t.reactionName,
+    rxn, reactantQmols, blockingQmols, numReactants: slotSmarts.length,
+  };
+}
+
+function disposeTemplate(t: ParsedTemplate): void {
+  if ((t as any)._disposed) return;
+  (t as any)._disposed = true;
+  try { t.rxn.delete(); } catch (e) {
+    console.warn(`Template ${t.index + 1} rxn delete failed: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  for (let i = 0; i < t.reactantQmols.length; i++) {
+    const slotQs = t.reactantQmols[i];
+    for (let j = 0; j < slotQs.length; j++) {
+      try { slotQs[j].delete(); }
+      catch (e) {
+        console.warn(`Template ${t.index + 1} reactant qmol [${i}][${j}] delete failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+    slotQs.length = 0;
+  }
+  t.reactantQmols.length = 0;
+  for (let i = 0; i < t.blockingQmols.length; i++) {
+    try { t.blockingQmols[i].delete(); }
+    catch (e) {
+      console.warn(`Template ${t.index + 1} blocking qmol [${i}] delete failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  t.blockingQmols.length = 0;
+}
+
+function bbMatchesSlot(mol: RDMol, fragQmols: RDMol[]): boolean {
+  for (const q of fragQmols) if (!hasMatch(mol, q)) return false;
+  return true;
+}
+
+function hasMatch(mol: RDMol, qmol: RDMol): boolean {
+  let raw: string;
+  try {
+    raw = mol.get_substruct_match(qmol);
+  } catch {
+    return false;
+  }
+  if (!raw || raw === '' || raw === '{}') return false;
+  try {
+    const obj = JSON.parse(raw);
+    return Array.isArray(obj.atoms) && obj.atoms.length > 0;
+  } catch {
+    return raw.length > 2;
+  }
+}
+
+class MolCache {
+  private map = new Map<string, RDMol>();
+  constructor(private rdkit: RDModule) {}
+  get(smiles: string): RDMol | null {
+    const cached = this.map.get(smiles);
+    if (cached) return cached;
+    const m = tryGetMol(this.rdkit, smiles);
+    if (!m) return null;
+    this.map.set(smiles, m);
+    return m;
+  }
+  dispose(): void {
+    for (const m of this.map.values()) {
+      try { m.delete(); } catch { /* ignore */ }
+    }
+    this.map.clear();
+  }
+}
+
+function canonicalize(rdkit: RDModule, smiles: string): string | null {
+  const mol = tryGetMol(rdkit, smiles);
+  if (!mol) return null;
+  try {
+    return mol.get_smiles();
+  } catch {
+    return null;
+  } finally {
+    try { mol.delete(); } catch { /* ignore */ }
+  }
+}
+
+function* cartesian<T>(slots: T[][]): Generator<T[]> {
+  const n = slots.length;
+  if (n === 0) { yield []; return; }
+  const idx = new Array(n).fill(0);
+  const lengths = slots.map((s) => s.length);
+  if (lengths.some((l) => l === 0)) return;
+  while (true) {
+    yield idx.map((i, k) => slots[k][i]);
+    let k = n - 1;
+    while (k >= 0) { idx[k]++; if (idx[k] < lengths[k]) break; idx[k] = 0; k--; }
+    if (k < 0) return;
+  }
+}
+
+// Format a route as a single multi-step reaction string parseable by the Chem package's
+// reaction renderer (parseMultiStepReaction in rdkit-reaction-renderer.ts): split by '>>',
+// each adjacent pair is one step. So we always emit '>>'-joined chunks, never 'A; B'.
+//
+// Linear chain (typical depth-first):   BB1.BB2 → P1, then P1.BB3 → P2
+//   produces  "BB1.BB2>>P1.BB3>>P2"  (renderer reads steps: BB1.BB2>>P1.BB3, P1.BB3>>P2)
+//
+// Branching chain (rare, breadth-first when prev product isn't a reactant of next step):
+//   step i's reactants don't include step i-1's product. We still concat with '>>' so the
+//   renderer can split, even though the intermediate "fake" pair will look chemically odd.
+export function formatRoute(route: Route): string {
+  if (route.length === 0) return '';
+  let out = route[0].reactants.join('.') + '>>' + route[0].product;
+  for (let i = 1; i < route.length; i++) {
+    const step = route[i];
+    const prevProduct = route[i - 1].product;
+    const prevIdx = step.reactants.indexOf(prevProduct);
+    if (prevIdx >= 0) {
+      // Prev product is one of this step's reactants: elide it and append the rest + new product.
+      const remaining = step.reactants.slice();
+      remaining.splice(prevIdx, 1);
+      out += (remaining.length > 0 ? '.' + remaining.join('.') : '') + '>>' + step.product;
+    } else {
+      // Branching: emit a fresh '>>'-delimited segment for this step's reactants and product.
+      out += '>>' + step.reactants.join('.') + '>>' + step.product;
+    }
+  }
+  return out;
+}
+
+export interface OutputRow {
+  product: string;
+  route: string;
+  template: string;
+  reaction_name: string;
+  round: number;
+  n_routes: number;
+}
+
+export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRow[]; warnings: string[]}> {
+  const {rdkit, config, templates, buildingBlocks, exclusionSmarts, onProgress, isCancelled} = opts;
+  const warnings: string[] = [];
+
+  const parsedTemplates: ParsedTemplate[] = [];
+  for (let i = 0; i < templates.length; i++) {
+    const p = parseTemplate(rdkit, templates[i], i, warnings);
+    if (p) parsedTemplates.push(p);
+  }
+  if (parsedTemplates.length === 0) {
+    warnings.push('No valid templates found.');
+    return {rows: [], warnings};
+  }
+
+  const exclusion = buildExclusionQmols(rdkit, exclusionSmarts);
+
+  const canonBBs: string[] = [];
+  for (const s of buildingBlocks) {
+    const c = canonicalize(rdkit, s);
+    if (c) canonBBs.push(c);
+    else warnings.push(`Skipped invalid BB SMILES: ${s}`);
+  }
+  const uniqueBBs = Array.from(new Set(canonBBs));
+
+  const molCache = new MolCache(rdkit);
+
+  const productPools: ProductRecord[][] = [];
+  productPools.push(uniqueBBs.map((s) => ({smiles: s, routes: [], firstRound: 0})));
+
+  const productByRoundProducts = new Map<string, ProductRecord>();
+  uniqueBBs.forEach((s) => {
+    productByRoundProducts.set(s, {smiles: s, routes: [], firstRound: 0});
+  });
+
+  const {max_num_components, max_num_combinations_per_template, max_num_routes_per_compound,
+    max_num_routes_per_compound: _maxRoutes} = config;
+  void _maxRoutes;
+
+  const buildBlockingFilter = (mol: RDMol, blocking: RDMol[]): boolean => {
+    for (const q of blocking) if (hasMatch(mol, q)) return true;
+    return false;
+  };
+
+  // Time-based yield: surrender to the event loop (and paint) when we've been computing
+  // continuously for more than YIELD_INTERVAL_MS. requestAnimationFrame lets the browser
+  // render between chunks; setTimeout(0) is a fallback for non-browser hosts.
+  const YIELD_INTERVAL_MS = 50;
+  let lastYield = performance.now();
+  type ProgressCtx = {round: number; ti: number; total: number; combosTotal: number; combosDone: number; productsSoFar: number};
+  let progressContext: ProgressCtx | null = null;
+  const yieldIfNeeded = async (): Promise<void> => {
+    const now = performance.now();
+    if (now - lastYield < YIELD_INTERVAL_MS) return;
+    lastYield = now;
+    if (progressContext && onProgress) {
+      onProgress({
+        round: progressContext.round, numRounds: config.enumeration.num_rounds,
+        templateIndex: progressContext.ti, numTemplates: progressContext.total,
+        productsSoFar: progressContext.productsSoFar,
+        combosDone: progressContext.combosDone, combosTotal: progressContext.combosTotal,
+      });
+    }
+    await new Promise<void>((resolve) => {
+      if (typeof requestAnimationFrame !== 'undefined') requestAnimationFrame(() => resolve());
+      else setTimeout(resolve, 0);
+    });
+    lastYield = performance.now();
+  };
+
+  try {
+    for (let round = 1; round <= config.enumeration.num_rounds; round++) {
+      if (isCancelled?.()) break;
+
+      const newPool = new Map<string, ProductRecord>();
+      const prevRoundProducts = round === 1 ? [] : productPools[round - 1].map((p) => p.smiles);
+      const allPriorPool = new Set<string>();
+      for (let r = 0; r < round; r++) for (const p of productPools[r]) allPriorPool.add(p.smiles);
+
+      const eligibleSmiles = config.enumeration.depth_first ?
+        (round === 1 ? uniqueBBs : Array.from(new Set([...uniqueBBs, ...prevRoundProducts]))) :
+        Array.from(allPriorPool);
+
+      for (let ti = 0; ti < parsedTemplates.length; ti++) {
+        if (isCancelled?.()) break;
+        const t = parsedTemplates[ti];
+        if (t.numReactants > max_num_components) continue;
+
+        progressContext = {
+          round, ti, total: parsedTemplates.length,
+          combosTotal: 0, combosDone: 0,
+          productsSoFar: newPool.size,
+        };
+        onProgress?.({round, numRounds: config.enumeration.num_rounds,
+          templateIndex: ti, numTemplates: parsedTemplates.length,
+          productsSoFar: newPool.size});
+
+        const slots: string[][] = [];
+        for (let i = 0; i < t.numReactants; i++) slots.push([]);
+
+        for (const smi of eligibleSmiles) {
+          if (isCancelled?.()) break;
+          await yieldIfNeeded();
+          const mol = molCache.get(smi);
+          if (!mol) continue;
+          if (buildBlockingFilter(mol, t.blockingQmols)) continue;
+          for (let i = 0; i < t.numReactants; i++) {
+            if (bbMatchesSlot(mol, t.reactantQmols[i])) slots[i].push(smi);
+          }
+        }
+
+        if (slots.some((s) => s.length === 0)) continue;
+
+        let totalCombos = 1;
+        for (const s of slots) totalCombos *= s.length;
+        const comboCap = max_num_combinations_per_template;
+        let executed = 0;
+        let truncated = false;
+        progressContext.combosTotal = totalCombos;
+
+        for (const combo of cartesian(slots)) {
+          if (isCancelled?.()) break;
+          if (comboCap >= 0 && executed >= comboCap) {
+            truncated = true;
+            break;
+          }
+          executed++;
+          progressContext.combosDone = executed;
+          progressContext.productsSoFar = newPool.size;
+          await yieldIfNeeded();
+
+          if (config.enumeration.depth_first && round > 1) {
+            const prevSet = new Set(prevRoundProducts);
+            let hasPrev = false;
+            for (const c of combo) if (prevSet.has(c)) { hasPrev = true; break; }
+            if (!hasPrev) continue;
+          }
+
+          let molList: MolList | null = null;
+          let result: ReturnType<RDReaction['run_reactants']> | null = null;
+          // Always create fresh mols from SMILES for the MolList — never share with the BB cache.
+          // copy() appears to be shallow at the WASM level: a copy still aliases the original's
+          // managed memory, and molList.delete() reaches into both, corrupting the heap and
+          // surfacing as "null function" errors during dispose. Fresh-parse-per-combo matches the
+          // Chem package's reactions.ts pattern.
+          const inputMols: RDMol[] = [];
+          try {
+            molList = new rdkit.MolList();
+            let allValid = true;
+            for (const smi of combo) {
+              const fresh = tryGetMol(rdkit, smi);
+              if (!fresh) { allValid = false; break; }
+              inputMols.push(fresh);
+              molList.append(fresh);
+            }
+            if (!allValid) continue;
+
+            try {
+              result = t.rxn.run_reactants(molList, 1);
+            } catch (e) {
+              warnings.push(`run_reactants failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
+              continue;
+            }
+            if (!result || result.size() === 0) continue;
+
+            // Match the example in rdkit-api.ts exactly: result.get(i).next() once, no reset/at_end.
+            // Calling reset() or at_end() before next() can leave the iterator in a corrupt state.
+            const productSet = result.get(0);
+            try {
+              const productMol = productSet.next();
+              try {
+                if (!productMol || !productMol.is_valid()) continue;
+
+                let productSmiles: string;
+                try { productSmiles = productMol.get_smiles(); } catch { continue; }
+                if (config.products_specs.remove_isotope_information && /\[\d+[A-Za-z]/.test(productSmiles)) {
+                  const stripped = stripIsotopesFromSmiles(productSmiles);
+                  const re = canonicalize(rdkit, stripped);
+                  if (!re) continue;
+                  productSmiles = re;
+                }
+
+                // Always evaluate against a fresh mol parsed from the canonical SMILES — never touch
+                // productMol directly (it can be in a fragile post-reaction state, and downstream
+                // ops like get_substruct_match on it appear to corrupt the WASM heap).
+                const evalMol = tryGetMol(rdkit, productSmiles);
+                if (!evalMol) continue;
+                try {
+                  let stats: MolStats;
+                  try {
+                    stats = computeMolStats(evalMol);
+                  } catch (e) {
+                    warnings.push(`computeMolStats failed: ${e instanceof Error ? e.message : String(e)}`);
+                    continue;
+                  }
+                  const fr = applyProductFilters(stats, config.products_specs, exclusion.qmols, evalMol);
+                  if (!fr.pass) continue;
+                } finally {
+                  try { evalMol.delete(); } catch { /* ignore */ }
+                }
+
+                const step: RouteStep = {
+                  reactants: combo.slice(),
+                  product: productSmiles,
+                  templateSmarts: t.smarts,
+                  reactionName: t.reactionName,
+                };
+
+                let baseRoutes: Route[];
+                if (round === 1) {
+                  baseRoutes = [[]];
+                } else {
+                  const prevSet = new Set(prevRoundProducts);
+                  const prevComponents = combo.filter((c) => prevSet.has(c));
+                  if (prevComponents.length === 0) baseRoutes = [[]];
+                  else {
+                    const prevPool = productPools[round - 1];
+                    const prevRouteLists = prevComponents.map((pc) => {
+                      const rec = prevPool.find((p) => p.smiles === pc);
+                      return rec && rec.routes.length > 0 ? rec.routes : [[]];
+                    });
+                    baseRoutes = [];
+                    for (const combo2 of cartesian(prevRouteLists)) {
+                      const merged: Route = [];
+                      for (const r of combo2) for (const s of r) merged.push(s);
+                      baseRoutes.push(merged);
+                    }
+                  }
+                }
+
+                let rec = newPool.get(productSmiles);
+                if (!rec) {
+                  rec = {smiles: productSmiles, routes: [], firstRound: round};
+                  newPool.set(productSmiles, rec);
+                }
+                for (const base of baseRoutes) {
+                  if (max_num_routes_per_compound >= 0 && rec.routes.length >= max_num_routes_per_compound) break;
+                  rec.routes.push([...base, step]);
+                }
+              } finally {
+                try { productMol?.delete(); } catch { /* ignore */ }
+              }
+            } finally {
+              try { productSet.delete(); } catch { /* ignore */ }
+            }
+          } catch (e) {
+            warnings.push(`Combo execution failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
+          } finally {
+            try { result?.delete(); } catch { /* ignore */ }
+            try { molList?.delete(); } catch { /* ignore */ }
+            for (const m of inputMols) { try { m.delete(); } catch { /* ignore */ } }
+            inputMols.length = 0;
+          }
+        }
+        if (truncated) {
+          warnings.push(`Template ${t.index + 1} (${t.reactionName || ''}): truncated at ${executed}/${totalCombos} combinations (cap=${comboCap}).`);
+        }
+      }
+
+      productPools.push(Array.from(newPool.values()));
+    }
+  } catch (e) {
+    console.error('Enumeration failed:', e instanceof Error ? e.message : String(e));
+  }
+  finally {
+    for (const t of parsedTemplates) disposeTemplate(t);
+    exclusion.dispose();
+    molCache.dispose();
+  } 
+
+  const finalProducts = new Map<string, ProductRecord>();
+  const startRound = config.keep_building_blocks_in_final_output ? 0 : 1;
+  for (let r = startRound; r < productPools.length; r++) {
+    for (const p of productPools[r]) {
+      const ex = finalProducts.get(p.smiles);
+      if (!ex) finalProducts.set(p.smiles, {...p, routes: p.routes.slice()});
+      else for (const route of p.routes) ex.routes.push(route);
+    }
+  }
+
+  const rows: OutputRow[] = [];
+  for (const rec of finalProducts.values()) {
+    if (rec.routes.length === 0) {
+      rows.push({product: rec.smiles, route: '', template: '', reaction_name: '',
+        round: rec.firstRound, n_routes: 0});
+    } else {
+      const cap = max_num_routes_per_compound;
+      const limited = cap >= 0 ? rec.routes.slice(0, cap) : rec.routes;
+      for (const route of limited) {
+        const last = route[route.length - 1];
+        rows.push({
+          product: rec.smiles,
+          route: formatRoute(route),
+          template: last.templateSmarts,
+          reaction_name: last.reactionName,
+          round: rec.firstRound,
+          n_routes: rec.routes.length,
+        });
+      }
+    }
+  }
+
+  return {rows, warnings};
+}
