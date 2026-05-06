@@ -1,16 +1,15 @@
-revision: 1
+revision: 2
 schema_version: "v3.0"
-cycle_id: projects-validate-batch-2026-05-05
+cycle_id: projects-validate-batch-2026-05-06-post-manual
 feature: projects
 mode: spec
 review_round: 1
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-spec.ts
 canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
-invoked_at: 2026-05-05T00:00:00Z
+invoked_at: 2026-05-06T00:00:00Z
 verdict: SCOPE_REDUCTION
 gate: E
 failure_keys: []
-notes: Parent/master thin smoke for complex.md — intentionally delegates bulk to 3 satellite specs (complex-derived-tables, complex-rename, complex-share-second-user) plus drops UI-only Steps 4 & 10 per decision-log b2-2026-05-03-drag-drop-ui-only-reclassification.
 
 claims:
   - check: E-STRUCT-MECH-01
@@ -21,66 +20,61 @@ claims:
     evidence: Valid TS.
   - check: E-STRUCT-MECH-03
     status: PASS
-    evidence: test() block present.
+    evidence: One test block.
   - check: E-STRUCT-MECH-04
     status: PASS
-    evidence: Every softStep tagged with scenario step number.
+    evidence: Test name "Complex (smoke) save, rename, share" traceable to "Complex" heading; satellite split documented inline.
   - check: E-STRUCT-MECH-05
     status: PASS
-    evidence: Canonical imports.
+    evidence: Canonical/project-local imports.
   - check: E-STRUCT-MECH-06
     status: PASS
-    evidence: Frontmatter has 5 valid atlas IDs (deliberate subset of .md's 7).
+    evidence: Non-empty frontmatter with 5 sub-features.
   - check: E-TRACE-01
     status: PASS
-    evidence: All softSteps trace to scenario steps; delegation declared in spec leading comment.
+    evidence: 3 softSteps with explicit "Step 1-2", "Step 9 equiv", "Step 12 equiv" labels mapping to scenario steps.
   - check: E-TRACE-02
-    status: SCOPE_REDUCTION
-    evidence: |
-      Parent thin-smoke pattern — delegation to 3 satellites declared in .md
-      frontmatter (`realized_as`) and in spec leading comment. UI-only Steps 4 & 10
-      dropped per decision-log b2-2026-05-03-drag-drop-ui-only-reclassification.
-      Per task contract this is documented SR, not E-TRACE-02 FAIL.
+    status: PASS
+    evidence: 13-step scope realized via satellites; this spec smokes save+rename+share. Step 13 deferred (Helper 3).
   - check: E-TRACE-03
     status: PASS
-    evidence: Verifications match scenario steps within self-declared parent-smoke scope.
+    evidence: expect(r.ok).toBe(true), expect(r.persistedName).toBe(renamed); share via JS API permissions.grant.
   - check: E-SEL-01
     status: PASS
-    evidence: No invented selectors.
+    evidence: No DOM selectors.
   - check: E-SEL-02
     status: PASS
-    evidence: All selectors traceable.
+    evidence: None invented.
   - check: E-SEL-03
     status: PASS
-    evidence: No raw .fill() on Dart inputs.
+    evidence: No Dart .fill().
   - check: E-HELP-01
     status: PASS
-    evidence: Helpers registered.
+    evidence: Phase B helpers.
   - check: E-HELP-02
     status: PASS
-    evidence: No reinvention.
+    evidence: No inline login.
   - check: E-LAYER-01
     status: PASS
-    evidence: target_layer playwright matches.
+    evidence: playwright matches.
   - check: E-LAYER-02
-    status: NA
+    status: PASS
     evidence: No override.
   - check: E-BOUND-01
     status: PASS
-    evidence: Under allowed path.
+    evidence: Validation-only.
   - check: E-BOUND-02
     status: PASS
-    evidence: No core/** changes.
+    evidence: Vacuous.
 
 scope_reduction_proposal: |
-  Bulk delegation to 3 satellite specs:
-  - complex-derived-tables-spec.ts (Step 1 multi-source open + Step 2 Save-Sync ON, GROK-19103)
-  - complex-rename-spec.ts (Steps 7-9 + Step 11, GROK-19212)
-  - complex-share-second-user-spec.ts (Step 12, GROK-18345 share-side)
-  UI-only Steps 4 & 10 dropped per decision-log
-  b2-2026-05-03-drag-drop-ui-only-reclassification — covered manually in
-  complex-ui.md. Parent spec retains responsibility for the cross-cutting
-  smoke and serves as anchor for chain dependency_graph.
+  Per scenario notes: full 13-step complex.md is realized as 3 satellite specs
+  (complex-derived-tables / complex-rename / complex-share-second-user) + 4 split
+  decompositions (augment, integration, move, save-copy). complex-spec.ts is explicitly
+  documented as a "thin smoke" covering save + rename + share entry points end-to-end on
+  a single file source. Step 13 (re-auth as second user) deferred per Helper 3
+  registration backlog. Standard SR per the scenario's documented split + Helper 3
+  dependency.
 
 evidence_needed: |
-  (Not applicable.)
+  (Not applicable — verdict is SCOPE_REDUCTION.)

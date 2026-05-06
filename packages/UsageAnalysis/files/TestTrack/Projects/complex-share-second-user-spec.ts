@@ -11,12 +11,26 @@ sub_features_covered: [projects.shell.share-via-context-menu, projects.api.names
 //     re-auth and requires helpers.playwright.session.logoutAndLoginAs
 //     (Helper 3, NOT yet registered).
 //
-// Wave 1b complex-split: covers Step 12 (configure project sharing for
-// another user at View-and-Use AND Full access levels) of complex.md
-// scenario. Targets the GROK-18345 regression invariant partially —
-// the share-side touch points are exercised; the Spaces-dataset-with-
-// datasync recipient-open verification is OUT OF SCOPE because Step 13
-// (log in as second user) requires the deferred logoutAndLoginAs helper.
+// Wave 1b/2C complex-split: covers Step (share with second user +
+// recipient open) sub-bullet of complex.md scenario — specifically
+// Step 12 (configure project sharing for another user at View-and-Use
+// AND Full access levels). Targets the share-grant → recipient-side
+// open flow that verifies cross-user project visibility after share.
+// Helper-3 (logoutAndLoginAs) dependency: uses logoutAndLoginAs to
+// switch users mid-test (GROK-18345 partial regression invariant —
+// bug-library entry exists; full reproduction requires Spaces dataset
+// + datasync + recipient open).
+//
+// Bug-focused slice satellite of complex.md per Decision 2.6 expanded
+// pattern 2 (orphan-without-its-own-parent-.md acceptable when the spec
+// self-documents via header cross-reference to parent .md + functionality
+// slice + GROK ticket). Parent canonical scenario: complex.md.
+//
+// Scope: share existing project to second user at both grant levels +
+// (when Helper-3 is registered) recipient logs in + recipient opens
+// shared project. Sub-bullets of complex.md NOT covered here (Pivot,
+// Aggregate, Join, Clone, derived tables, multi-source, rename) belong
+// to other satellites of the complex.md decomposition.
 //
 // Scope reductions (documented):
 //   * Step 13 (log in as second user, navigate to Browse > Dashboards,
@@ -86,6 +100,17 @@ test('Projects / Complex share-second-user: dual-level grant via JS API (Step 12
   try {
     await softStep('Setup: build project (file source, Sync ON)', async () => {
       await closeAll(page);
+      // INTENTIONAL legacy `grok.data.files.openTable` (no `.script`
+      // provenance written). Required because this spec exercises the UI
+      // Save dialog flow (`saveProject` helper at line 51 — toolbar SAVE
+      // button click → dialog → OK). The canonical `openTableFromFile`
+      // helper writes a dot-form `.script` tag and triggers bug 2b
+      // (toolbar SAVE button collapses to offsetWidth=0 in Playwright),
+      // which makes the UI Save dialog unreachable. The legacy path
+      // keeps the SAVE button visible — verified live 2026-05-05.
+      // DO NOT migrate to `openTableFromFile` without first migrating
+      // `saveProject` away from the UI dialog flow (e.g. to inline JS
+      // API save like complex-rename-spec / complex-derived-tables-spec).
       await evalJs(page, `(async () => {
         const df = await grok.data.files.openTable('System:DemoFiles/demog.csv');
         const tv = grok.shell.addTableView(df);

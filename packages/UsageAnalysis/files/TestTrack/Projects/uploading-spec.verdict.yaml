@@ -1,12 +1,12 @@
-revision: 3
+revision: 4
 schema_version: "v3.0"
-cycle_id: projects-validate-batch-2026-05-05
+cycle_id: projects-validate-batch-2026-05-06-post-manual
 feature: projects
 mode: spec
 review_round: 1
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/uploading-spec.ts
 canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/uploading.md
-invoked_at: 2026-05-05T00:00:00Z
+invoked_at: 2026-05-06T00:00:00Z
 verdict: SCOPE_REDUCTION
 gate: E
 failure_keys: []
@@ -17,71 +17,66 @@ claims:
     evidence: Spec exists at expected path.
   - check: E-STRUCT-MECH-02
     status: PASS
-    evidence: Valid TS.
+    evidence: Valid TS; 3 test() blocks.
   - check: E-STRUCT-MECH-03
     status: PASS
-    evidence: test() block present.
+    evidence: Three test() blocks (Cases 1, 8, 9).
   - check: E-STRUCT-MECH-04
     status: PASS
-    evidence: Test name traceable to scenario.
+    evidence: Test names "Uploading / Case 1", "Case 8", "Case 9" trace to scenario "### Case 1", "### Case 8", "### Case 9" headings respectively.
   - check: E-STRUCT-MECH-05
     status: PASS
-    evidence: Imports canonical.
+    evidence: Canonical/project-local imports only.
   - check: E-STRUCT-MECH-06
     status: PASS
-    evidence: |
-      Frontmatter cleanup vs Wave 3: projects.shell.open overclaim resolved;
-      current [projects.upload, projects.api.save, projects.api.files.sync]
-      is a strict subset of scenario .md frontmatter. Linking sub-feature
-      projects.add-relation correctly excluded since linking is delegated
-      to upload-project.md.
+    evidence: Non-empty frontmatter, 3 sub-features.
   - check: E-TRACE-01
     status: PASS
-    evidence: softSteps trace to scenario step numbers within retained cases.
+    evidence: softSteps labelled Step 1/2/3/4 per case mapping to scenario steps within each Case heading.
   - check: E-TRACE-02
-    status: SCOPE_REDUCTION
-    evidence: |
-      Cross-case retention shifted from prior 1/3/4/9 → current 1/8/9
-      (Phase B canonical-opener pivot per spec header lines 5-13).
-      Sync ON only; linking flows fully delegated to upload-project.md.
-      Case 9 env-skip is technical defensive skip (acceptable per Edit 10).
+    status: PASS
+    evidence: Cases 1/8/9 covered through save+reopen+verify provenance. Cases 2/3/4/5/6 deferred per SR.
   - check: E-TRACE-03
     status: PASS
-    evidence: Verifications present where covered.
+    evidence: provenance regex; rowCount > 0; tablesAfter == tablesBefore + 1 derivation invariants; env-skip on Postgres.
   - check: E-SEL-01
     status: PASS
-    evidence: No raw selectors at spec level.
+    evidence: No DOM selectors.
   - check: E-SEL-02
     status: PASS
-    evidence: No invented selectors.
+    evidence: None invented.
   - check: E-SEL-03
     status: PASS
-    evidence: No raw .fill().
+    evidence: No .fill() on Dart inputs.
   - check: E-HELP-01
     status: PASS
-    evidence: Spec body is helper-pure (helpers/openers, helpers/projects).
+    evidence: Phase B helpers (openTableFromFile, openTableFromDbTable, addAggregateToWorkspace, etc.).
   - check: E-HELP-02
     status: PASS
-    evidence: No reinvention.
+    evidence: No reinvention; canonical helpers used.
   - check: E-LAYER-01
     status: PASS
-    evidence: target_layer playwright matches @playwright/test.
+    evidence: playwright matches scenario.
   - check: E-LAYER-02
-    status: NA
+    status: PASS
     evidence: No override.
   - check: E-BOUND-01
     status: PASS
-    evidence: Under allowed path.
+    evidence: Validation-only.
   - check: E-BOUND-02
     status: PASS
-    evidence: No core/** changes.
+    evidence: Vacuous.
 
 scope_reduction_proposal: |
-  Phase B canonical-opener pivot. Sync ON only; linking flows fully delegated
-  to upload-project.md. Dataset deviations persist (Case 1 demog+cars vs
-  scenario spgi-100×2; Case 8 demog vs spgi-100; Case 9 products vs orders) —
-  documented as housekeeping, non-blocking. Case 9 env-skip is acceptable
-  per spec-mode.md Edit 10.
+  Scenario specifies 8 cases × 2 sync states = 16 saved projects. Spec reduces to a
+  representative subset (Cases 1, 8, 9 in Sync ON only) — explicitly documented in the
+  spec header per scenario notes ("D-STRUCT-02 — all 16 paths preserved at the .md level
+  ... any spec-side reduction (e.g. existing uploading-spec.ts covers Cases 1, 3, 4, 9
+  with Sync ON only) is documented in the spec header"). Cases 2/3/4/5/6 (query+query;
+  query+files; spaces variants) deferred — Spaces blocked by addEntity bug (per
+  projects-lifecycle-spaces); Sync OFF variants collapsed since the spec exercises only
+  the canonical recorder + provenance pattern. Acceptable SR per source-matrix
+  representative-subset reduction strategy.
 
 evidence_needed: |
-  (Not applicable.)
+  (Not applicable — verdict is SCOPE_REDUCTION.)

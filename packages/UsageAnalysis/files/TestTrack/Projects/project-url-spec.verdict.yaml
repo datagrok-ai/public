@@ -1,12 +1,12 @@
-revision: 2
+revision: 3
 schema_version: "v3.0"
-cycle_id: projects-validate-batch-2026-05-05
+cycle_id: projects-validate-batch-2026-05-06-post-manual
 feature: projects
 mode: spec
 review_round: 1
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/project-url-spec.ts
 canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/project-url.md
-invoked_at: 2026-05-05T00:00:00Z
+invoked_at: 2026-05-06T00:00:00Z
 verdict: SCOPE_REDUCTION
 gate: E
 failure_keys: []
@@ -20,73 +20,61 @@ claims:
     evidence: Valid TS.
   - check: E-STRUCT-MECH-03
     status: PASS
-    evidence: test() block present.
+    evidence: One test() block.
   - check: E-STRUCT-MECH-04
     status: PASS
-    evidence: Test names substring-match scenario.
+    evidence: Test name "Project URL deep-link reopen for representative project" maps to "Project URL" scenario heading.
   - check: E-STRUCT-MECH-05
     status: PASS
-    evidence: Imports canonical.
+    evidence: Canonical/project-local imports only.
   - check: E-STRUCT-MECH-06
     status: PASS
-    evidence: |
-      Frontmatter — first content; 4 IDs (build-share-link/apply/shell.open/view.browse)
-      all resolve in atlas (projects.yaml lines 545/531/318/385). view.browse is
-      weakest claim (only [name="Browse"] waitFor as routing smoke); optionally
-      trim, but not blocking.
+    evidence: Non-empty frontmatter with 4 sub-features.
   - check: E-TRACE-01
     status: PASS
-    evidence: All softSteps trace to scenario steps.
+    evidence: softSteps labelled Setup, "Step 3 equivalent", "Step 4-5".
   - check: E-TRACE-02
-    status: SCOPE_REDUCTION
-    evidence: |
-      Cross-variant SR (4 → 1): legitimate, justified by scenario Notes
-      ("URL-apply behavior is uniform across variant modes",
-      pyramid_layer: integration, Variant C source-agnostic). Spec uses
-      self-built demog-based fixture instead of composite fixture from
-      projects-copy-clone.md.
+    status: PASS
+    evidence: Reduced to single variant per SR proposal; URL build/navigate/verify-load covered.
   - check: E-TRACE-03
     status: PASS
-    evidence: |
-      Within-step path now honest — page.goto executes
-      projects.url-params.apply + projects.shell.open; entity.path read
-      justifies projects.url-params.build-share-link claim.
+    evidence: expect(projectPath.startsWith('/p/')).toBe(true); signal-based load verification with explicit fallback warning.
   - check: E-SEL-01
     status: PASS
-    evidence: Selectors cited.
+    evidence: One UI selector [name="Browse"] — standard Datagrok name= attr.
   - check: E-SEL-02
     status: PASS
-    evidence: No invented selectors.
+    evidence: None invented.
   - check: E-SEL-03
     status: PASS
-    evidence: No raw .fill().
+    evidence: No Dart .fill().
   - check: E-HELP-01
     status: PASS
-    evidence: Helpers registered.
+    evidence: Phase B helpers + BASE_URL from _helpers.
   - check: E-HELP-02
     status: PASS
     evidence: No reinvention.
   - check: E-LAYER-01
     status: PASS
-    evidence: target_layer playwright matches.
+    evidence: playwright matches scenario.
   - check: E-LAYER-02
-    status: NA
+    status: PASS
     evidence: No override.
   - check: E-BOUND-01
     status: PASS
-    evidence: Under allowed path.
+    evidence: Validation-only.
   - check: E-BOUND-02
     status: PASS
-    evidence: No core/** changes.
+    evidence: Vacuous.
 
 scope_reduction_proposal: |
-  Cross-variant SR — covers 1 of 4 variants documented in scenario Notes
-  as "URL-apply behavior is uniform across variant modes" with Variant C
-  source-agnostic. URL-apply path is honestly executed via page.goto
-  after closeAll(). Optional cleanup: trim view.browse claim if pyramid
-  layering wants stricter granularity. Movement: revision 1 SCOPE_REDUCTION
-  → revision 2 SCOPE_REDUCTION (within-step path now executed; rev 1 had
-  gap there).
+  Scenario specifies 4-variant matrix (original; copied-with-link; copied-with-clone;
+  saved-with-personal-view-customizations) — each opening via Browse > Dashboards →
+  Context Panel Links → URL copy → new tab open. Spec reduces to a single representative
+  variant (file-share demog) using server-canonical entity.path slug + same-tab navigate.
+  Already documented in scenario notes ("Existing project-url-spec.ts ... single-variant
+  SCOPE_REDUCTION using demog representative source"). Per per-cycle Invariant 2 the spec
+  is intentionally aligned with the existing single-variant approach.
 
 evidence_needed: |
-  (Not applicable.)
+  (Not applicable — verdict is SCOPE_REDUCTION.)

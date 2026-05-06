@@ -1,84 +1,78 @@
-revision: 2
+revision: 3
 schema_version: "v3.0"
-cycle_id: projects-validate-batch-2026-05-05
+cycle_id: projects-validate-batch-2026-05-06-post-manual
 feature: projects
 mode: spec
 review_round: 1
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-rename-spec.ts
-canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
-invoked_at: 2026-05-05T00:00:00Z
-verdict: SCOPE_REDUCTION
+canonical_scenario: <missing — no complex-rename.md on disk>
+invoked_at: 2026-05-06T00:00:00Z
+verdict: EVIDENCE_GAP
 gate: E
 failure_keys: []
-notes: Wave 1b complex-split — covers Steps 7-9 rename flows + Step 11 reopen-verify; targets GROK-19212; sister bug github-3550 territory.
 
 claims:
   - check: E-STRUCT-MECH-01
     status: PASS
-    evidence: Spec exists at expected path.
+    evidence: Spec exists at expected path (complex-rename-spec.ts).
   - check: E-STRUCT-MECH-02
-    status: PASS
-    evidence: Valid TS.
+    status: NA
+    evidence: Skipped — parent .md missing.
   - check: E-STRUCT-MECH-03
-    status: PASS
-    evidence: Single test() block at line 102.
+    status: NA
+    evidence: Skipped — parent .md missing.
   - check: E-STRUCT-MECH-04
-    status: PASS
-    evidence: Traceable name.
+    status: NA
+    evidence: Skipped — parent .md missing.
   - check: E-STRUCT-MECH-05
-    status: PASS
-    evidence: Canonical imports + ../spec-login, ../helpers/openers.
+    status: NA
+    evidence: Skipped — parent .md missing.
   - check: E-STRUCT-MECH-06
-    status: PASS
-    evidence: Frontmatter at L1-3 [projects.api.save, projects.shell.open] resolves to atlas.
+    status: NA
+    evidence: Skipped — parent .md missing.
   - check: E-TRACE-01
-    status: PASS
-    evidence: Every softStep traces to Step 7 / Step 8 / Step 11 GROK-19212 invariant or technical setup.
+    status: NA
+    evidence: Cannot trace spec steps to a non-existent canonical scenario.
   - check: E-TRACE-02
-    status: SCOPE_REDUCTION
-    evidence: |
-      Per invocation contract, evaluated only against self-declared subset
-      (Steps 7-9 + Step 11). Sister specs cover Steps 1-2 and Steps 12-13;
-      Steps 4+10 in complex-ui.md; Step 9 sub-bullets explicitly reduced to
-      table rename inside the project only (covers GROK-19212) — documented
-      in header lines 18-37.
+    status: NA
+    evidence: Cannot enumerate scenario steps when parent .md is missing.
   - check: E-TRACE-03
-    status: PASS
-    evidence: GROK-19212 invariant verified via reopen + dataFrame.rowCount > 0.
+    status: NA
+    evidence: Cannot map verification steps when parent .md is missing.
   - check: E-SEL-01
-    status: PASS
-    evidence: All selectors cited in header (widgets/dialog.md, projects.md).
+    status: NA
+    evidence: Skipped.
   - check: E-SEL-02
-    status: PASS
-    evidence: No invented selectors.
+    status: NA
+    evidence: Skipped.
   - check: E-SEL-03
-    status: PASS
-    evidence: No raw .fill() on Dart inputs.
+    status: NA
+    evidence: Skipped.
   - check: E-HELP-01
-    status: PASS
-    evidence: Helpers from spec-login + openers, registered.
+    status: NA
+    evidence: Skipped.
   - check: E-HELP-02
-    status: PASS
-    evidence: No reinvention.
+    status: NA
+    evidence: Skipped.
   - check: E-LAYER-01
-    status: PASS
-    evidence: target_layer playwright matches.
+    status: NA
+    evidence: Skipped.
   - check: E-LAYER-02
     status: NA
-    evidence: No override.
+    evidence: Skipped.
   - check: E-BOUND-01
     status: PASS
-    evidence: Under allowed path.
+    evidence: Validation-only run.
   - check: E-BOUND-02
     status: PASS
-    evidence: No core/** changes.
-
-scope_reduction_proposal: |
-  Three documented SR axes:
-  1. Query/Script rename → env dependency; Helper 3 logoutAndLoginAs not registered
-     for recipient-side reopen.
-  2. Project-entity rename → JS API setter propagation issue (Wave 1b round 1 had 3/3 FAIL).
-  3. Step 11 Data Sync refresh → out of scope (sibling spec).
+    evidence: Vacuous.
 
 evidence_needed: |
-  (Not applicable.)
+  Parent scenario .md missing on disk for this spec (Wave 2D not-yet-deleted residue
+  per audit Section 3). Routing to Decision 2.6 (retroactive .md authoring) or
+  Decision 2.1 (deletion protocol) per Olena's product disposition. Cannot apply
+  E-TRACE-* / E-SEL-* / E-HELP-* / E-LAYER-* checks without canonical scenario.
+  Recon target: Olena's disposition on whether to retroactively author
+  complex-rename.md or delete the orphan spec. Until disposition recorded, this
+  spec sits in EVIDENCE_GAP state — not FAIL (per prompt instruction to avoid
+  attributing missing-parent on spec).

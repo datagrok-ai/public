@@ -23,12 +23,10 @@ import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs} from './_helpers';
 
-// Use system-installed Chrome (channel: 'chrome') instead of bundled
-// Chromium — bug 2b (toolbar SAVE button not in DOM) reproduces in
-// bundled Chromium but not in MCP-attached Chrome. Probe whether the
-// real-Chrome runtime sidesteps the issue. Other specs continue to
-// use bundled Chromium per playwright.config.ts default.
-test.use({...projectsTestOptions, channel: 'chrome'});
+// Bug 2b (toolbar SAVE button collapsed offsetWidth=0 after JS-API
+// openTableFromFile) was platform-fixed 2026-05-06. Bundled Chromium
+// is now sufficient — channel: 'chrome' override removed.
+test.use(projectsTestOptions);
 
 test('Projects / UI Smoke: open file → save w/ data sync → share → reopen → delete', async ({page}) => {
   test.setTimeout(420_000);
@@ -323,7 +321,11 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
     const confirmDlg = page.locator('.d4-dialog').filter({hasText: 'Are you sure'});
     await confirmDlg.waitFor({timeout: 10_000});
     await confirmDlg.locator('[name="button-DELETE"]').click();
-    await expect(confirmDlg).toBeHidden({timeout: 15_000});
+    // The Are-you-sure dialog stays open WHILE the server-side delete is
+    // in progress — it only auto-closes after the delete completes. On
+    // dev under Playwright load this can take up to ~60s for projects
+    // with multiple tableInfos / layouts. Keep the polling generous.
+    await expect(confirmDlg).toBeHidden({timeout: 60_000});
     // Re-search Dashboards — tile should be gone
     await page.waitForTimeout(2000);
     await expect(tile).toHaveCount(0, {timeout: 15_000});

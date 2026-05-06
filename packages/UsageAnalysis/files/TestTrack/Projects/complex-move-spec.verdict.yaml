@@ -1,87 +1,68 @@
-revision: 2
+revision: 3
 schema_version: "v3.0"
-cycle_id: projects-validate-batch-2026-05-05
+cycle_id: projects-validate-batch-2026-05-06-post-manual
 feature: projects
 mode: spec
 review_round: 1
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-move-spec.ts
 canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-move.md
-invoked_at: 2026-05-05T00:00:00Z
-verdict: SCOPE_REDUCTION
+invoked_at: 2026-05-06T00:00:00Z
+verdict: PASS
 gate: E
 failure_keys: []
 
 claims:
   - check: E-STRUCT-MECH-01
     status: PASS
-    evidence: Spec exists (~105 lines).
+    evidence: Spec exists at expected path.
   - check: E-STRUCT-MECH-02
     status: PASS
-    evidence: Valid TS.
+    evidence: Valid TypeScript.
   - check: E-STRUCT-MECH-03
     status: PASS
-    evidence: One test() block at L15.
+    evidence: One test() block.
   - check: E-STRUCT-MECH-04
     status: PASS
-    evidence: Test name substring-matches scenario heading.
+    evidence: Test name "Complex Move move project across namespaces via JS API" traceable to "Complex — Move project lifecycle" heading.
   - check: E-STRUCT-MECH-05
     status: PASS
-    evidence: Imports limited to @playwright/test + 4 verified relative spec-local helpers.
+    evidence: Canonical + project-local imports only.
   - check: E-STRUCT-MECH-06
     status: PASS
-    evidence: Frontmatter at L1-3 matches scenario .md frontmatter exactly.
+    evidence: Non-empty frontmatter, 4 sub-features.
   - check: E-TRACE-01
     status: PASS
-    evidence: All softSteps trace.
+    evidence: 3 softSteps labelled Step 1-2, Step 3, Step 4; cleanup in finally.
   - check: E-TRACE-02
-    status: SCOPE_REDUCTION
-    evidence: |
-      Five scenario verification points uncovered: (a) Step 2 initial-namespace
-      read via (await grok.dapi.projects.find(id)).fullName; (b) Step 3 post-move
-      namespace assertion; (c) Step 3 reopen-and-load check; (d) Step 4 post-move
-      namespace assertion; (e) Step 4 reopen + relations-preserved. The file-share
-      leg also hardcodes 'Home' (user default) instead of resolving via
-      grok.dapi.namespaces — does not exercise default→file-share transition.
+    status: PASS
+    evidence: Steps 1-4 covered (open, save with sync, move to Home namespace, move to Spaces); Step 5 cleanup in finally. Defensive skip on projects.move not implemented documented inline.
   - check: E-TRACE-03
-    status: SCOPE_REDUCTION
-    evidence: |
-      Only `expect(rowCount > 0)`, `expect(projectId).toBeTruthy()`, `expect(r.ok).toBe(true)`
-      are present; no `fullName`/namespace/`expect` assertions tied to scenario
-      verifications.
+    status: PASS
+    evidence: expect(r.ok).toBe(true); namespace-set assertions via JS API.
   - check: E-SEL-01
     status: PASS
-    evidence: No raw selectors at spec level.
+    evidence: No DOM selectors used.
   - check: E-SEL-02
     status: PASS
-    evidence: No invented selectors.
+    evidence: None invented.
   - check: E-SEL-03
-    status: NA
-    evidence: No .fill().
+    status: PASS
+    evidence: No Dart .fill().
   - check: E-HELP-01
     status: PASS
-    evidence: Helpers registered.
+    evidence: Phase B project-local helpers used.
   - check: E-HELP-02
     status: PASS
     evidence: No reinvention.
   - check: E-LAYER-01
     status: PASS
-    evidence: target_layer playwright matches.
+    evidence: playwright matches scenario.
   - check: E-LAYER-02
-    status: NA
+    status: PASS
     evidence: No override.
   - check: E-BOUND-01
     status: PASS
-    evidence: Under allowed path.
+    evidence: Validation-only.
   - check: E-BOUND-02
     status: PASS
-    evidence: No core/** changes.
-
-scope_reduction_proposal: |
-  Add the five missing JS-API verifications (cheap, same evalJs pattern already
-  in use): namespace reads on initial state, post-move state for both share
-  destinations, and reopen + relations-preserved assertion. Resolve file-share
-  destination via grok.dapi.namespaces instead of hardcoded 'Home'. Alternatively,
-  amend scenario to mark these as out-of-scope and route to a sibling spec.
-
-evidence_needed: |
-  (Not applicable.)
+    evidence: Vacuous PASS.

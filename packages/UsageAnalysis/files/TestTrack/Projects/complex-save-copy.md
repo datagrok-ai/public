@@ -85,9 +85,11 @@ UI coverage delegated to `projects-ui-smoke.md`.
   166 — Save Copy mechanics work the same regardless of
   underlying source class. Files + `demog.csv` chosen as
   representative source.
-- **`produced_from: migrated`, `original_path: complex.md`.**
+- **`produced_from: decomposed`, `original_path: complex.md`.**
   This scenario is a sub-component of complex.md decomposed
-  for focused testing per Wave 2B.
+  for focused testing per Wave 2B (Phase A authoring 2026-05-04;
+  produced_from enum widened to include `decomposed` per Q3.1/D3
+  resolution).
 - **No `related_bugs`.** Save Copy modes are not directly
   targeted by any GROK ticket. GROK-19750 (Save Copy with
   Link mode → original viewers preserved) is covered by

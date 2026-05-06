@@ -1,85 +1,79 @@
-revision: 2
+revision: 3
 schema_version: "v3.0"
-cycle_id: projects-validate-batch-2026-05-05
+cycle_id: projects-validate-batch-2026-05-06-post-manual
 feature: projects
 mode: spec
 review_round: 1
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-share-second-user-spec.ts
-canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
-invoked_at: 2026-05-05T00:00:00Z
-verdict: SCOPE_REDUCTION
+canonical_scenario: <missing — no complex-share-second-user.md on disk>
+invoked_at: 2026-05-06T00:00:00Z
+verdict: EVIDENCE_GAP
 gate: E
 failure_keys: []
-notes: Wave 1b complex-split — covers Step 12 (View-and-Use AND Full sharing); Step 13 deferred (Helper 3 logoutAndLoginAs not registered); partially targets GROK-18345.
 
 claims:
   - check: E-STRUCT-MECH-01
     status: PASS
-    evidence: Spec exists at expected path.
+    evidence: Spec exists at expected path (complex-share-second-user-spec.ts).
   - check: E-STRUCT-MECH-02
-    status: PASS
-    evidence: Valid TS.
+    status: NA
+    evidence: Skipped — parent .md missing.
   - check: E-STRUCT-MECH-03
-    status: PASS
-    evidence: One test() block at L79.
+    status: NA
+    evidence: Skipped — parent .md missing.
   - check: E-STRUCT-MECH-04
-    status: PASS
-    evidence: Test name explicitly cites "Step 12; Step 13 deferred".
+    status: NA
+    evidence: Skipped — parent .md missing.
   - check: E-STRUCT-MECH-05
-    status: PASS
-    evidence: Imports canonical (@playwright/test + ../spec-login).
+    status: NA
+    evidence: Skipped — parent .md missing.
   - check: E-STRUCT-MECH-06
-    status: PASS
-    evidence: Frontmatter at L1-3 with 3 sub_features all resolvable in atlas.
+    status: NA
+    evidence: Skipped — parent .md missing.
   - check: E-TRACE-01
-    status: PASS
-    evidence: softSteps trace to Setup + Step 12 (View-and-Use) + Step 12 (Full).
+    status: NA
+    evidence: Cannot trace spec steps to a non-existent canonical scenario.
   - check: E-TRACE-02
-    status: SCOPE_REDUCTION
-    evidence: |
-      Step 13 ("log in as second user") deferred — Helper 3 logoutAndLoginAs
-      not registered. Spec-mode.md Edit 10 env-pending defensive skip pattern
-      is acceptable SR routing.
+    status: NA
+    evidence: Cannot enumerate scenario steps when parent .md is missing.
   - check: E-TRACE-03
-    status: PASS
-    evidence: Verification via expect(result.login), expect(listed.contains).toBe(true), project-existence poll.
+    status: NA
+    evidence: Cannot map verification steps when parent .md is missing.
   - check: E-SEL-01
-    status: PASS
-    evidence: Selectors cited L4-12.
+    status: NA
+    evidence: Skipped.
   - check: E-SEL-02
-    status: PASS
-    evidence: No invented selectors.
+    status: NA
+    evidence: Skipped.
   - check: E-SEL-03
-    status: PASS
-    evidence: Dart input via focus + keyboard.type (no .fill).
+    status: NA
+    evidence: Skipped.
   - check: E-HELP-01
-    status: PASS
-    evidence: Spec-login registered helpers + spec-local utilities.
+    status: NA
+    evidence: Skipped.
   - check: E-HELP-02
-    status: PASS
-    evidence: logoutAndLoginAs correctly NOT open-coded (deferred).
+    status: NA
+    evidence: Skipped.
   - check: E-LAYER-01
-    status: PASS
-    evidence: target_layer playwright matches.
+    status: NA
+    evidence: Skipped.
   - check: E-LAYER-02
     status: NA
-    evidence: No override.
+    evidence: Skipped.
   - check: E-BOUND-01
     status: PASS
-    evidence: Under allowed path.
+    evidence: Validation-only run.
   - check: E-BOUND-02
     status: PASS
-    evidence: No core/** changes.
-
-scope_reduction_proposal: |
-  Four SR axes (all documented in spec header L1-40):
-  1. Step 13 deferred — Helper 3 (logoutAndLoginAs) not registered.
-  2. Step 12 UI Share dialog → grok.dapi.permissions.grant JS API per
-     projects.md:28+242.
-  3. GROK-18345 partial — share-side covered, recipient-side blocked on (1).
-  4. Defensive skip-with-note for env FK violations (acceptable per Edit 10).
-  When Helper 3 registers, extend or emit projects-grok-18345-spec.ts to
-  close recipient-side gap.
+    evidence: Vacuous.
 
 evidence_needed: |
-  (Not applicable.)
+  Parent scenario .md missing on disk for this spec (Wave 2D not-yet-deleted residue
+  per audit Section 3). Routing to Decision 2.6 (retroactive .md authoring) or
+  Decision 2.1 (deletion protocol) per Olena's product disposition. Cannot apply
+  E-TRACE-* / E-SEL-* / E-HELP-* / E-LAYER-* checks without canonical scenario.
+  Recon target: Olena's disposition on whether to retroactively author
+  complex-share-second-user.md or delete the orphan spec. Until disposition
+  recorded, this spec sits in EVIDENCE_GAP state — not FAIL (per prompt instruction
+  to avoid attributing missing-parent on spec). Helper-3 (logoutAndLoginAs)
+  registration backlog likely intersects with this spec's intent.

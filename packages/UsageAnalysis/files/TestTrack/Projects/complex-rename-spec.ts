@@ -7,13 +7,27 @@ sub_features_covered: [projects.api.save, projects.shell.open]
 //   projects.md:28 — Preferred default is grok.dapi for verification
 //   projects.md:24 — Rename via JS API: t.name = '<new>' then dapi.save
 //
-// Wave 1b complex-split: covers Steps 7-9 rename flows + Step 11
-// reopen-verify of complex.md scenario. Targets the GROK-19212 regression
-// invariant ("project fails to open with 'Could not resolve table' after
-// a referenced table is renamed"). Also touches github-3550 territory
-// (sister bug — Query/Script rename invalidation) via the table-rename
-// path, which exercises the same reference-resolution code-path on
-// reopen even though the bug was originally surfaced for queries.
+// Wave 1b/2C complex-split: covers Step (project rename) sub-bullet of
+// complex.md scenario — specifically Steps 7-9 rename flows + Step 11
+// reopen-verify. Targets the project rename → reopen flow that surfaces
+// if reopen-after-rename behavior regresses (GROK-19212 regression
+// invariant — "project fails to open with 'Could not resolve table' after
+// a referenced table is renamed"; bug-library entry exists). Also touches
+// github-3550 territory (sister bug — Query/Script rename invalidation)
+// via the table-rename path, which exercises the same reference-resolution
+// code-path on reopen even though the bug was originally surfaced for
+// queries.
+//
+// Bug-focused slice satellite of complex.md per Decision 2.6 expanded
+// pattern 2 (orphan-without-its-own-parent-.md acceptable when the spec
+// self-documents via header cross-reference to parent .md + functionality
+// slice + GROK ticket). Parent canonical scenario: complex.md.
+//
+// Scope: rename existing table inside project + verify rename persists
+// on reopen (GROK-19212 invariant). Sub-bullets of complex.md NOT
+// covered here (Pivot, Aggregate, Join, Clone, Save-Copy modes,
+// multi-source coexistence, recipient-side share) belong to other
+// satellites of the complex.md decomposition.
 //
 // Scope reductions (documented):
 //   * Step 9 sub-bullets for Project / Query / Script renames are reduced
