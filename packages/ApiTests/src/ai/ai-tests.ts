@@ -8,19 +8,24 @@ import './utils/utils-static-helpers';
 // Viewer JS API
 import './viewers/bar-chart-extras';
 import './viewers/bar-chart-js-api';
+import './viewers/bar-chart-legend-visibility';
 import './viewers/box-plot-extras';
 import './viewers/box-plot-js-api';
+import './viewers/box-plot-legend-visibility';
 import './viewers/density-plot-js-api';
 import './viewers/histogram-extras';
 import './viewers/histogram-js-api';
+import './viewers/line-chart-auto-detect';
 import './viewers/line-chart-extras';
 import './viewers/line-chart-js-api';
 import './viewers/pc-plot-js-api';
 import './viewers/pie-chart-js-api';
+import './viewers/scatter-plot-auto-detect';
 import './viewers/scatter-plot-extras';
 import './viewers/scatter-plot-js-api';
 
-// Reported issues (regression coverage from JIRA tickets)
+// Reported issues (regression coverage from JIRA tickets and GitHub issues)
+import './reported-issues/gh-3469';
 import './reported-issues/grok-2892';
 import './reported-issues/grok-13205';
 import './reported-issues/grok-13206';

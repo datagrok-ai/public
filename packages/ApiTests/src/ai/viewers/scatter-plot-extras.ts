@@ -178,4 +178,43 @@ category('AI: Viewers: ScatterPlot extras', () => {
     expect(on['showSelectedRows'], true);
     expect(on['resetSelectionOnBackgroundClick'], true);
   });
+
+  // Property-dependency coverage (commit 8dd87cb743, "Scatter plot whiskers:
+  // Whiskers auto detection optimized for 10k columns, column detection on
+  // axis property change in property panel added"). When the dataframe was
+  // attached without explicit X/Y and the platform auto-picked whisker
+  // columns by suffix (`_whiskersAutoDetected = true` in scatterplot_look.dart),
+  // a later xColumnName / yColumnName change must re-run the per-axis detector
+  // (scatterplot_core.dart `onLookChanged`, lines ~370-395). This is the
+  // companion to the existing GROK-16994 test, which only pins the initial
+  // auto-detect — here we pin the *update on axis change* path.
+  test('whiskers re-detect when xColumnName changes after auto-detect', async () => {
+    // Two independent <base, base min, base max> triples. Auto-detect picks
+    // one for X and one for Y at attach time; swapping xColumnName to the
+    // other triple must move the X whiskers to the matching min/max.
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList('double', 'a', [1, 2, 3, 4, 5, 6, 7, 8]),
+      DG.Column.fromList('double', 'a min', [0.8, 1.7, 2.6, 3.5, 4.4, 5.3, 6.2, 7.1]),
+      DG.Column.fromList('double', 'a max', [1.2, 2.3, 3.4, 4.5, 5.6, 6.7, 7.8, 8.9]),
+      DG.Column.fromList('double', 'b', [10, 20, 30, 40, 50, 60, 70, 80]),
+      DG.Column.fromList('double', 'b min', [9, 18, 28, 38, 48, 58, 68, 78]),
+      DG.Column.fromList('double', 'b max', [11, 22, 32, 42, 52, 62, 72, 82]),
+    ]);
+    const v = df.plot.scatter() as DG.ScatterPlotViewer;
+    const initialX = v.props['xColumnName'];
+    expect(initialX === 'a' || initialX === 'b', true);
+    const initialMin = v.props['xWhiskerMinColumnName'];
+    const initialMax = v.props['xWhiskerMaxColumnName'];
+    expect(initialMin, initialX + ' min');
+    expect(initialMax, initialX + ' max');
+
+    // Flip xColumnName to the *other* base. Whiskers must follow.
+    const otherBase = initialX === 'a' ? 'b' : 'a';
+    v.setOptions({xColumnName: otherBase});
+    await DG.delay(200);
+
+    expect(v.props['xColumnName'], otherBase);
+    expect(v.props['xWhiskerMinColumnName'], otherBase + ' min');
+    expect(v.props['xWhiskerMaxColumnName'], otherBase + ' max');
+  });
 }, {owner: 'agolovko@datagrok.ai'});

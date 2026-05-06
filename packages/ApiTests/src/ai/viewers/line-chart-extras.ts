@@ -149,4 +149,78 @@ category('AI: Viewers: LineChart extras', () => {
     expect(cleared['overviewColumnName'] === '' || cleared['overviewColumnName'] == null, true);
     expect(cleared['overviewAggrType'], 'avg');
   });
+
+  // Property-dependency coverage (commit cd5cfcb994, "Line chart: Added
+  // marker opacity adjusting based on whisker visibility"). When
+  // `whiskersType` flips, line_chart_core.dart sets `markerOpacity` to its
+  // optimal value (100 with no whiskers, 35 with whiskers). The auto-set
+  // happens synchronously inside `onLookChanged`, but downstream notify()s
+  // may schedule, so a small delay before reading is conservative.
+  test('whiskersType change auto-adjusts markerOpacity', async () => {
+    const df = grok.data.demo.demog(50);
+    const tv = grok.shell.addTableView(df);
+    try {
+      const v = DG.Viewer.lineChart(df, {x: 'age', yColumnNames: ['height']});
+      tv.addViewer(v);
+      // Default: no whiskers → optimal opacity 100.
+      v.setOptions({whiskersType: 'None'});
+      await DG.delay(100);
+      expect(v.getOptions(true).look['markerOpacity'], 100);
+
+      // Turn on whiskers → opacity drops off the no-whiskers optimal (100).
+      // The platform's exact optimal-with-whiskers value is implementation
+      // detail (currently 35) — pin only the *direction* of the change.
+      v.setOptions({whiskersType: 'Med | Q1, Q3'});
+      await DG.delay(100);
+      expect(v.getOptions(true).look['markerOpacity'] !== 100, true);
+
+      // Back to no whiskers → opacity bumps back up to 100.
+      v.setOptions({whiskersType: 'None'});
+      await DG.delay(100);
+      expect(v.getOptions(true).look['markerOpacity'], 100);
+    }
+    finally {
+      tv.close();
+    }
+  });
+
+  // Property-dependency coverage. When `autoLayout` flips to true and the
+  // current `markerSize` differs from the chart's optimal size,
+  // line_chart_core.dart resets `markerSize` to optimal (line ~444). Optimal
+  // depends on `chartsBox.area / dataFrame.rowCount` which is only valid
+  // after a layout pass, so we drive this through a real TableView and
+  // assert the *direction* (user-set value gets overridden), not the exact
+  // optimal number.
+  test('autoLayout=true overrides a user-set markerSize', async () => {
+    const df = grok.data.demo.demog(50);
+    const tv = grok.shell.addTableView(df);
+    try {
+      const v = DG.Viewer.lineChart(df, {x: 'age', yColumnNames: ['height']});
+      tv.addViewer(v);
+      await DG.delay(300);
+
+      // Pin a deliberately off-optimal value while autoLayout is off. With
+      // the chart laid out, the local `markerSize` field on the core mirrors
+      // this. Use 99 — the optimal for a 50-row demog rendered in a normal
+      // viewer pane is at most 5 (clamp in optimalMarkerSize), so 99 is
+      // guaranteed to be off-optimal.
+      v.setOptions({autoLayout: false, markerSize: 99});
+      await DG.delay(200);
+      expect(v.getOptions(true).look['autoLayout'], false);
+      expect(v.getOptions(true).look['markerSize'], 99);
+
+      // Re-enable autoLayout — markerSize must be reset to the chart's
+      // optimal value, which is in [1, 5] per the clamp.
+      v.setOptions({autoLayout: true});
+      await DG.delay(200);
+      const after = v.getOptions(true).look;
+      expect(after['autoLayout'], true);
+      expect(after['markerSize'] !== 99, true);
+      expect(typeof after['markerSize'], 'number');
+      expect(after['markerSize'] >= 1 && after['markerSize'] <= 5, true);
+    }
+    finally {
+      tv.close();
+    }
+  });
 }, {owner: 'agolovko@datagrok.ai'});
