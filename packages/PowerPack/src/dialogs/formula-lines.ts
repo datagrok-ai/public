@@ -1726,7 +1726,6 @@ class CreationControl {
             type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
             formula1: `${lhs} = ${lo}`,
             formula2: `${lhs} = ${hi}`,
-            header: `${lhs} in [${lo}, ${hi}]`,
             zIndex: defaultItemZIndex,
           };
           this.annotationRegionsJustCreatedItems.unshift(item);
