@@ -2,6 +2,7 @@ upload.keys.json
 node_modules/
 dist/
 .idea
+coverage/
 
 src/**/*.js
 src/**/*.js.map

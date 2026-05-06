@@ -65,13 +65,16 @@ PKNCA_CONFIG <- list(
 )
 
 PKNCA.options(
-  auc.method           = PKNCA_CONFIG$auc_method,
-  min.span.ratio       = PKNCA_CONFIG$min_span_ratio,
-  max.aucinf.pext      = PKNCA_CONFIG$extrap_error,
-  conc.na              = "drop",
-  conc.blq             = list(first = "keep", middle = "drop", last = "drop"),
-  adj.r.squared.factor = 1e-4,
-  tau.choices          = NA
+  auc.method              = PKNCA_CONFIG$auc_method,
+  min.span.ratio          = PKNCA_CONFIG$min_span_ratio,
+  max.aucinf.pext         = PKNCA_CONFIG$extrap_error,
+  conc.na                 = "drop",
+  conc.blq                = list(first = "keep", middle = "drop", last = "drop"),
+  adj.r.squared.factor    = 1e-4,
+  min.hl.points           = PKNCA_CONFIG$min_points,
+  min.hl.r.squared        = PKNCA_CONFIG$min_r_squared,
+  allow.tmax.in.half.life = !PKNCA_CONFIG$exclude_cmax,
+  tau.choices             = NA
 )
 
 # Parameters we want extracted for each profile, after t=0 insertion has
