@@ -51,37 +51,198 @@ export const _package: BsvPackage = new BsvPackage();
 
 const dataDir = 'Admin:Data/PDB/CHEMBL2366517/';
 
+const PROLIF_SKIP_RESNAMES = new Set([
+  'HOH', 'WAT', 'H2O', 'D2O', 'DOD',
+  'NA', 'CL', 'K', 'MG', 'CA', 'ZN', 'MN', 'FE', 'CU', 'NI',
+  'SO4', 'PO4', 'NO3', 'ACT', 'CO3',
+  'GOL', 'EDO', 'PEG', 'PG4', 'DMS', 'TRS', 'IMD', 'BME',
+]);
+
+// Returns each unique non-water HETATM ligand instance as a "RESNAME CHAIN RESID"
+// identifier (e.g. "STI A 401"). When the same resname appears at multiple sites
+// or in multiple chains, each instance gets its own entry so the user can pick.
+function detectNonWaterHetatmInstances(pdbText: string): string[] {
+  if (!pdbText) return [];
+  const seen = new Map<string, number>();
+  for (const line of pdbText.split('\n')) {
+    if (line.startsWith('HETATM') && line.length >= 26) {
+      const rn = line.slice(17, 20).trim();
+      const chain = (line[21] || '').trim() || 'A';
+      const resid = line.slice(22, 26).trim();
+      if (rn && !PROLIF_SKIP_RESNAMES.has(rn)) {
+        const key = `${rn} ${chain} ${resid}`;
+        seen.set(key, (seen.get(key) || 0) + 1);
+      }
+    }
+  }
+  // Sort: largest atom count first (most likely the "real" ligand)
+  return Array.from(seen.entries()).sort((a, b) => b[1] - a[1]).map(([k]) => k);
+}
+
+// Inject CSS + a vis.js post-stabilization hook into ProLIF's HTML so the
+// rendered diagram fills the iframe without surrounding whitespace:
+//  - aggressive margin/padding reset on body and wrapper divs
+//  - network container has a FIXED height (~520px) so the body's natural
+//    height is `network + legend` with no fixed iframe-height padding
+//  - after vis.js stabilizes, network.fit() zooms its viewport to the actual
+//    graph extent (removes internal canvas whitespace), and we report
+//    document.documentElement.scrollHeight back to the parent so the iframe
+//    can be resized to exactly fit content
+function injectCompactCss(html: string): string {
+  const css = `
+<style>
+  * { box-sizing: border-box; }
+  html { margin: 0 !important; padding: 0 !important; }
+  body {
+    margin: 0 !important; padding: 0 !important;
+    background: white;
+    /* Body shrinks to content (network + legend) — no full-iframe height here */
+  }
+  body > * { margin: 0 !important; }
+  /* Network area: fixed height so the body's overall height is predictable */
+  div[id^="mynetwork"], .vis-network, #mynetwork {
+    height: 520px !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  /* Legend area: tight padding, no extra space */
+  [class*="legend"], div[class*="-legend"] {
+    padding: 4px 8px !important;
+    margin: 0 !important;
+  }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var sent = false;
+    var send = function() {
+      if (sent) return;
+      sent = true;
+      var h = Math.max(
+        document.documentElement.scrollHeight || 0,
+        document.body ? (document.body.scrollHeight || 0) : 0
+      );
+      parent.postMessage({ type: 'prolif-ready', height: h }, '*');
+    };
+    var tryHook = function() {
+      if (typeof network !== 'undefined' && network && network.on) {
+        network.on('stabilizationIterationsDone', function() {
+          try { network.fit({animation: false}); } catch (e) {}
+          // Give the browser one frame to settle layout/scrollHeight
+          setTimeout(send, 60);
+        });
+        setTimeout(send, 250);
+      } else {
+        setTimeout(tryHook, 50);
+      }
+    };
+    tryHook();
+  });
+</script>`;
+  if (html.includes('<head>'))
+    return html.replace('<head>', '<head>' + css);
+  if (html.includes('<body>'))
+    return html.replace('<body>', '<body>' + css);
+  return css + html;
+}
+
 function makeProlifWidget(params: {
   protein: string;
   ligand?: string;
   ligand_resname?: string;
 }): DG.Widget {
-  const host = ui.div([ui.loader()], 'd4-empty-parent');
-  // Datagrok requires all script inputs to be present; defaults in the script
-  // header only apply to UI invocation, not to grok.functions.call.
-  const fullParams = {
-    protein: params.protein,
-    ligand: params.ligand ?? '',
-    ligand_resname: params.ligand_resname ?? '',
+  const host = ui.div([], 'd4-empty-parent');
+
+  // Detect available ligand instances. For the docking case (separate `ligand`
+  // input) detect from the ligand text only — the receptor PDBQT often contains
+  // ions and buffers we want to ignore. For the BSV case (everything in
+  // `protein`) detect from the full PDB. Each instance is "RESNAME CHAIN RESID".
+  const detectionSource = (params.ligand && params.ligand.trim()) || params.protein;
+  const ligands = detectNonWaterHetatmInstances(detectionSource);
+
+  // Compute helper — runs the ProLIF script for a chosen resname and renders
+  // the result into the section body.
+  const compute = (resname: string, body: HTMLElement) => {
+    ui.empty(body);
+    const loader = ui.loader();
+    body.append(loader);
+    (async () => {
+      try {
+        const html = await grok.functions.call(
+          'BiostructureViewer:ProteinLigandInteractionDiagram',
+          {
+            protein: params.protein,
+            ligand: params.ligand ?? '',
+            ligand_resname: resname,
+          },
+        ) as string;
+
+        // Insert iframe but keep it invisible — the inner script will
+        // postMessage({type: 'prolif-ready', height: N}) once vis.js stabilizes.
+        const iframe = document.createElement('iframe');
+        iframe.srcdoc = injectCompactCss(html);
+        iframe.style.cssText =
+          'width:100%; height:600px; border:0; display:block; opacity:0; transition:opacity 0.2s;';
+        iframe.setAttribute('sandbox', 'allow-scripts');
+
+        const reveal = (h?: number) => {
+          if (typeof h === 'number' && h > 0)
+            iframe.style.height = `${Math.max(300, Math.min(h + 4, 900))}px`;
+          if (loader.isConnected) loader.remove();
+          iframe.style.opacity = '1';
+        };
+        const onMsg = (e: MessageEvent) => {
+          if (e.source !== iframe.contentWindow) return;
+          const data = e.data;
+          if (data && typeof data === 'object' && data.type === 'prolif-ready') {
+            window.removeEventListener('message', onMsg);
+            reveal(typeof data.height === 'number' ? data.height : undefined);
+          } else if (data === 'prolif-ready') {
+            // backwards-compat with older message shape
+            window.removeEventListener('message', onMsg);
+            reveal();
+          }
+        };
+        window.addEventListener('message', onMsg);
+        // Fallback: reveal after 8s in case the postMessage never fires
+        setTimeout(() => { window.removeEventListener('message', onMsg); reveal(); }, 8000);
+
+        body.append(iframe);
+      } catch (err) {
+        ui.empty(body);
+        body.append(ui.divText(
+          `Could not compute interactions: ${err instanceof Error ? err.message : String(err)}`,
+        ));
+      }
+    })();
   };
-  (async () => {
-    try {
-      const html = await grok.functions.call(
-        'BiostructureViewer:ProteinLigandInteractionDiagram', fullParams
-      ) as string;
-      ui.empty(host);
-      const iframe = document.createElement('iframe');
-      iframe.srcdoc = html;
-      iframe.style.cssText = 'width:100%; height:550px; border:0;';
-      iframe.setAttribute('sandbox', 'allow-scripts');
-      host.append(iframe);
-    } catch (err) {
-      ui.empty(host);
-      host.append(ui.divText(
-        `Could not compute interactions: ${err instanceof Error ? err.message : String(err)}`
-      ));
-    }
-  })();
+
+  if (ligands.length === 0 && !params.ligand_resname) {
+    host.append(ui.divText('No non-water HETATM ligand found in this structure.'));
+  } else if (params.ligand_resname || ligands.length === 1) {
+    // Caller specified, or a single ligand — compute directly with no picker.
+    compute(params.ligand_resname || ligands[0], host);
+  } else {
+    // Multiple ligands — show a picker; nothing computed until user picks.
+    const body = ui.div();
+    const picker = ui.input.choice('Ligand', {
+      value: null,
+      items: ligands,
+      nullable: true,
+      onValueChanged: (v: string | null) => {
+        if (v) compute(v, body);
+      },
+    });
+    host.append(ui.divV([
+      ui.divText(
+        `${ligands.length} ligands found. Select one to compute interactions:`,
+        {style: {marginBottom: '6px', color: 'var(--grey-5)'}},
+      ),
+      picker.root,
+      body,
+    ]));
+  }
+
   return new DG.Widget(host);
 }
 
