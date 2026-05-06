@@ -3,8 +3,11 @@ import {defineConfig, devices} from '@playwright/test';
 export default defineConfig({
   testDir: '.',
   testMatch: '**/*-spec.ts',
+  // fullyParallel stays off so tests *within* a file remain sequential (most
+  // specs share UI state — e.g. a project they create in step 1 and assert on
+  // in step 2). Spec *files* still run in parallel across `workers`.
   fullyParallel: false,
-  workers: 1,
+  workers: process.env.CI ? 4 : 1,
   retries: process.env.CI ? 1 : 0,
   timeout: 60_000,
   expect: {timeout: 15_000},
