@@ -156,7 +156,7 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
       return parts.map((part) => {
         return this._smilesToSmartsCache.getOrCreate(part, (p) => {
           try {
-            if (p.includes('M  END'))
+            if (p.includes('M  END') || p.includes('#') || p.includes('$'))
               return p;
             return _convertMolNotation(p, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, this.rdKitModule, false);
           } catch (e) {
