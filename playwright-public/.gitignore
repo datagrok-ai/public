@@ -1,0 +1,8 @@
+node_modules/
+test-output/
+test-playwright-report.json
+test-playwright-output/
+test-report-playwright.csv
+.auth.json
+e2e/.auth.json
+e2e/.auth.public.json

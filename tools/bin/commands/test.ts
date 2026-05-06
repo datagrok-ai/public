@@ -21,7 +21,7 @@ import {setAlphabeticalOrder} from '../utils/order-functions';
 const testInvocationTimeout = 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright', 'skip-puppeteer'];
 
 const curDir = process.cwd();
 
@@ -235,7 +235,7 @@ export async function test(args: TestArgs): Promise<boolean> {
   //   color.warn('--core flag can only be used in the DevTools package');
 
 
-  if (!args.package) {
+  if (!args.package && !args['skip-puppeteer']) {
       try {
           await testUtils.loadPackages(packagesDir,
               packageName,
@@ -249,19 +249,30 @@ export async function test(args: TestArgs): Promise<boolean> {
   }
   process.env.TARGET_PACKAGE = packageName;
   let res: ResultObject;
-  try {
-    res = await runTesting(args);
-  } catch (e: any) {
-    // Don't let Puppeteer-side failures (login error, browser crash) skip the
-    // Playwright pass — the two suites have independent auth and runtime paths,
-    // and we want at least one half of the run reported.
-    color.error(`Puppeteer pass failed: ${e?.message || e}`);
+  if (args['skip-puppeteer']) {
+    // Playwright-only mode: skip the Puppeteer browser launch + DG.Test runner.
+    // Used by Playwright-only test directories (e.g. public/playwright-public)
+    // that have a `playwrightTests` field in package.json but no Dart/JS package
+    // tests on the server.
     res = {
-      failed: true, verbosePassed: '', verboseSkipped: '',
-      verboseFailed: `Puppeteer pass failed: ${e?.message || e}\n`,
-      passedAmount: 0, skippedAmount: 0, failedAmount: 1, csv: '',
-      error: String(e?.message || e),
+      failed: false, verbosePassed: '', verboseSkipped: '', verboseFailed: '',
+      passedAmount: 0, skippedAmount: 0, failedAmount: 0, csv: '',
     };
+  } else {
+    try {
+      res = await runTesting(args);
+    } catch (e: any) {
+      // Don't let Puppeteer-side failures (login error, browser crash) skip the
+      // Playwright pass — the two suites have independent auth and runtime paths,
+      // and we want at least one half of the run reported.
+      color.error(`Puppeteer pass failed: ${e?.message || e}`);
+      res = {
+        failed: true, verbosePassed: '', verboseSkipped: '',
+        verboseFailed: `Puppeteer pass failed: ${e?.message || e}\n`,
+        passedAmount: 0, skippedAmount: 0, failedAmount: 1, csv: '',
+        error: String(e?.message || e),
+      };
+    }
   }
 
   if (!args['skip-playwright']) {
@@ -541,6 +552,7 @@ interface TestArgs {
   params?: string,
   logfailed?: boolean | string,
   'skip-playwright'?: boolean,
+  'skip-puppeteer'?: boolean,
 }
 
 interface TestResult {
