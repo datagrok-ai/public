@@ -215,7 +215,8 @@ export function deepEqual<T>(current: T, original: T): boolean {
   if (current === original)
     return true;
 
-  if (typeof original !== 'object')
+  if (typeof original !== 'object' || original === null ||
+      typeof current !== 'object' || current === null)
     return false;
 
   if (Array.isArray(original)) {
