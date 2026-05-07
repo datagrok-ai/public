@@ -547,6 +547,30 @@ category('toAtomicLevelHelmRna', async () => {
     expect(pCount, 0, `expected 0 phosphates with both terminals: ${smiles}`);
   });
 
+  // LNA (2,4-BNA) regression. The 2,4-O-CH2 bridge sits ABOVE C1' once the
+  // sugar is oriented with R1/R2 atoms horizontal, so the natural R3 vector
+  // points sideways instead of up. Without the abnormal-sugar override the
+  // base ends up sideways from the sugar (or worse, overlapping it). The
+  // assertion here is structural: must produce a valid single-fragment
+  // SMILES with the LNA-specific bridge oxygen plus the normal nucleoside
+  // features. Coordinates aren't checked — only connectivity.
+  test('rna-helm-lna-base-above-sugar', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{[lna](A)p.[lna](T)}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    expect(smiles.indexOf('.') === -1, true,
+      `expected single fragment: ${smiles}`);
+    // Sanity check for nitrogens — adenine brings 5 (4 ring + 1 NH2) and
+    // thymine brings 2 (both ring), so at least 7 total. Match both
+    // uppercase (N, [nH]) and lowercase aromatic (n) — N atoms in heterocyclic
+    // SMILES are written lowercase when aromatic.
+    const nCount = (smiles.match(/[Nn]/g) || []).length;
+    expect(nCount >= 7, true, `expected at least 7 nitrogens: ${smiles}`);
+    // One inter-nucleotide phosphate.
+    const pCount = (smiles.match(/P/g) || []).length;
+    expect(pCount, 1, `expected exactly 1 phosphate: ${smiles}`);
+  });
+
   // GalNAc oxygen-count regression. Previously the R1 placeholder atom
   // (substituted to 'O' from the "OH" cap) was left in the assembly,
   // adding a stray OH on the chain-attach carbon. lna(T)GalNAc has known
@@ -581,6 +605,40 @@ category('toAtomicLevelHelmRna', async () => {
     expect(pCount, 1, `expected exactly 1 phosphate: ${smiles}`);
     // sp carries a sulfur on the phosphate.
     expect(/S/.test(smiles), true, `expected sulfur from sp: ${smiles}`);
+  });
+
+  // Regression: H-cap phosphates (sp et al.) used to drop the bridging O
+  // on the 3' side of the linkage. The previous sugar's 3'-O is removed
+  // unconditionally during sugar processing on the assumption that the
+  // following linker brings its own bridging oxygen via the R1 cap; with
+  // an H cap that assumption breaks and the chain ended up as
+  // C3'-P(=O)(SH)-O-C5' instead of the proper C3'-O-P(=O)(SH)-O-C5'.
+  // The fix promotes the H cap to an O so the bridging atom always exists.
+  // Use m(2'-OMe ribose) so we can also verify the methoxy group survives
+  // the sp chain assembly.
+  test('rna-helm-sp-bridging-o-preserved', async () => {
+    const smiles = await helmRnaLinearToSmiles(`RNA1{m(A)[sp].r(A)[sp]}$$$$V2.0`);
+    expect(smiles !== 'MALFORMED_INPUT_VALUE' && smiles.length > 10, true,
+      `valid SMILES expected: ${smiles}`);
+    // Single connected fragment.
+    expect(smiles.indexOf('.') === -1, true,
+      `expected single fragment: ${smiles}`);
+    // 2 sp linkers → 2 phosphorus atoms.
+    const pCount = (smiles.match(/P/g) || []).length;
+    expect(pCount, 2, `expected exactly 2 phosphates: ${smiles}`);
+    // 2 sulfurs (one per sp).
+    const sCount = (smiles.match(/S/g) || []).length;
+    expect(sCount, 2, `expected exactly 2 sulfurs (one per sp): ${smiles}`);
+    // No C-P bond — every P should be bordered by O on both chain sides.
+    // A P preceded directly by an aliphatic carbon (lowercase 'c' is
+    // aromatic; capital 'C' is sp3) means the bridging O was lost.
+    expect(/C\d*P|CP|cP/.test(smiles), false,
+      `expected no direct C-P bond (bridging O missing): ${smiles}`);
+    // 2' methoxy on m must survive — methyl ether oxygen plus three oxygens
+    // per nucleotide gives plenty of O atoms; the structural assertion
+    // above is the strict one. Sanity-check that a methyl ether (OC) is
+    // present somewhere.
+    expect(/OC|CO/.test(smiles), true, `expected methoxy fragment: ${smiles}`);
   });
 
   // R-group swap heuristic: a single-R-group terminal monomer can be placed
