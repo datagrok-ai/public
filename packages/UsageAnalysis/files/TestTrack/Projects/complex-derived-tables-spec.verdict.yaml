@@ -1,78 +1,146 @@
-revision: 3
+revision: 4
 schema_version: "v3.0"
 cycle_id: projects-validate-batch-2026-05-06-post-manual
 feature: projects
 mode: spec
-review_round: 1
+review_round: 2
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex-derived-tables-spec.ts
-canonical_scenario: <missing — no complex-derived-tables.md on disk>
+canonical_scenario: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
 invoked_at: 2026-05-06T00:00:00Z
-verdict: EVIDENCE_GAP
+verdict: SCOPE_REDUCTION
 gate: E
 failure_keys: []
+
+pattern_2_slice:
+  parent: complex.md
+  slice_steps:
+    - "Step 1 multi-source open + Join sub-bullet"
+    - "Step 2 Save with Data Sync ON"
+  bug_id: GROK-19103
+  chain_realized_as_recorded: true
 
 claims:
   - check: E-STRUCT-MECH-01
     status: PASS
-    evidence: Spec exists at expected path (complex-derived-tables-spec.ts).
+    evidence: Spec exists at expected path public/packages/UsageAnalysis/files/TestTrack/Projects/complex-derived-tables-spec.ts.
   - check: E-STRUCT-MECH-02
-    status: NA
-    evidence: Skipped — parent .md missing; structural fail-fast does NOT apply because the missing artifact is the canonical scenario, not the spec.
+    status: PASS
+    evidence: Spec parses as valid TypeScript — balanced braces, imports resolve (`@playwright/test`, `../spec-login`, `./_helpers`, `../helpers/openers`, `../helpers/projects` all present on disk), single well-formed `test(...)` block at line 41.
   - check: E-STRUCT-MECH-03
-    status: NA
-    evidence: Skipped — parent .md missing.
+    status: PASS
+    evidence: One `test(...)` block at line 41 — `test('Projects / Complex derived-tables: Join lands in active project (GROK-19103)', ...)`.
   - check: E-STRUCT-MECH-04
-    status: NA
-    evidence: Skipped — parent .md missing.
+    status: PASS
+    evidence: |
+      Test name traceable to slice scope. Pattern-2 adjustment applies — name need not match full complex.md heading; slice description suffices. Title contains "Complex derived-tables" + "Join lands in active project (GROK-19103)" which exactly names the slice + bug invariant.
   - check: E-STRUCT-MECH-05
-    status: NA
-    evidence: Skipped — parent .md missing.
+    status: PASS
+    evidence: |
+      Imports are `@playwright/test` (canonical) plus relative paths within the same TestTrack tree (`../spec-login`, `./_helpers`, `../helpers/openers`, `../helpers/projects`). No imports from arbitrary external locations; relative co-located helper modules are accepted convention across this section's specs.
   - check: E-STRUCT-MECH-06
-    status: NA
-    evidence: Skipped — parent .md missing.
+    status: PASS
+    evidence: |
+      Frontmatter block at lines 1-3: `/* ---\nsub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync, projects.shell.open]\n--- */`. Block precedes all imports/comments. List non-empty; ids match feature atlas conventions.
   - check: E-TRACE-01
-    status: NA
-    evidence: Cannot trace spec steps to a non-existent canonical scenario.
+    status: PASS
+    evidence: |
+      Six softSteps; each traces to slice scope or is invariant prep. (1) "Setup + Step 1: open 2 source tables" → Step 1 multi-source open. (2) "Step 1 (Join sub-bullet)" → Step 1 Join. (3) "Step 2: capture project-count baseline" → invariant prep for GROK-19103. (4) "Step 2: Save current project with Data Sync ON" → Step 2 Save. (5) "GROK-19103 INVARIANT: exactly ONE new project" → bug invariant verification. (6) "Reopen: verify project loads" → Step 2 persistence verification. No orphaned code blocks.
   - check: E-TRACE-02
-    status: NA
-    evidence: Cannot enumerate scenario steps when parent .md is missing.
+    status: PASS
+    evidence: |
+      All 3 slice steps have softStep counterparts. Step 1 multi-source open → softStep 1; Step 1 Join sub-bullet → softStep 2; Step 2 Save with Data Sync ON → softStep 4. Plus invariant verification (softSteps 3, 5) and reopen-verify (softStep 6). Full slice coverage.
   - check: E-TRACE-03
-    status: NA
-    evidence: Cannot map verification steps when parent .md is missing.
+    status: PASS
+    evidence: |
+      Each slice step has a verification: Step 1 open → `expect(tableCount).toBe(2)` (line 72); Step 1 Join → `expect(tableCount).toBe(3)` (line 89); Step 2 Save → `expect(projectId).toBeTruthy()` + `expect(exists).toBe(true)` server-side find (lines 129-136); GROK-19103 invariant → `expect(afterCount - baselineCount).toBe(1)` (line 145); reopen-verify → `expect(tableCount).toBeGreaterThanOrEqual(2)` (line 162). All assertions are JS API verification calls.
   - check: E-SEL-01
-    status: NA
-    evidence: Skipped — no canonical scenario to validate selector discipline against.
+    status: PASS
+    evidence: |
+      PASS-by-vacuity. Spec uses NO DOM selectors at all — pure JS API (`grok.shell.tables`, `grok.dapi.projects.*`, `grok.data.joinTables`, `grok.shell.addTableView`) and helper-module calls. All raw selectors live inside helper modules whose own selector discipline is governed independently.
   - check: E-SEL-02
-    status: NA
-    evidence: Skipped.
+    status: PASS
+    evidence: Vacuous — no selectors invented (none used).
   - check: E-SEL-03
-    status: NA
-    evidence: Skipped.
+    status: PASS
+    evidence: Vacuous — no Dart input fields touched. No `.fill()` calls anywhere in spec.
   - check: E-HELP-01
-    status: NA
-    evidence: Skipped.
+    status: PASS
+    evidence: |
+      Helpers used in spec are all either registered in helpers-registry.yaml or local TestTrack utility modules. Registered helpers used: `softStep` (line 3495), `openTableFromFile` (line 3511), `deleteProjectWithCleanup` (line 3625). Local utility imports (`evalJs`, `gotoApp`, `setupSession`, `projectsTestOptions` from `./_helpers`; `stepErrors` from `../spec-login`) are co-located file-scoped utilities, not custom helpers requiring registry entries.
   - check: E-HELP-02
-    status: NA
-    evidence: Skipped.
+    status: PASS
+    evidence: |
+      No reinvention of registered helpers. The spec inlines a multi-table save (lines 99-137) instead of using the registered `saveProjectWithProvenance` helper, but with explicit documented rationale at lines 100-103: `saveProjectWithProvenance` saves only the active TableView's dataframe; this scenario requires persisting all 3 open tables (src_a, src_b, joined) for the GROK-19103 invariant to be testable. Different semantics, not reinvention. Other helpers (`openTableFromFile`, `deleteProjectWithCleanup`) are used per registry.
   - check: E-LAYER-01
-    status: NA
-    evidence: Skipped.
+    status: PASS
+    evidence: Target layer = playwright; complex.md frontmatter `target_layer: playwright` (line 4). Match.
   - check: E-LAYER-02
-    status: NA
-    evidence: Skipped.
+    status: PASS
+    evidence: Vacuous — no layer override (spec layer matches scenario layer).
   - check: E-BOUND-01
     status: PASS
-    evidence: Validation-only run.
+    evidence: Spec resides under `public/packages/UsageAnalysis/files/TestTrack/Projects/` — within the allowed-path set (TestTrack/**). Verdict YAML write target same path. Validation-only run.
   - check: E-BOUND-02
     status: PASS
-    evidence: Vacuous.
+    evidence: No changes to `core/**` or any package source outside `src/tests/` and `src/package-test.ts`. Validation-only run.
+
+scope_reduction_proposal: |
+  Pattern-2 slice satellite of complex.md (parent decomposed in Wave 2B; spec
+  authored Wave 1b 2026-04-30 per decision-log `wave-1b-complex-split-b70-followup`).
+  Slice scope explicitly covers complex.md Step 1 multi-source open + Join sub-bullet
+  + Step 2 Save with Data Sync ON; targets GROK-19103 invariant ("Join result lands
+  in active project, not stray").
+
+  Documented within-slice scope reductions (anchored at spec lines 17-28):
+
+  1. Sources are file-based (System:DemoFiles/demog.csv used twice with distinct
+     names) instead of DB query result + DB table per the scenario sub-bullet.
+     Rationale (spec lines 19-24): the GROK-19103 invariant ("join lands in active
+     project, not stray") is independent of source type — the bug surfaces from
+     the joinTables → save flow regardless of where source tables originate. File
+     sources are env-resilient (no Postgres dependency).
+
+  2. Pivot / Aggregate / Clone-via-script sub-bullets of Step 1 are NOT covered
+     here — those belong to a future cross-feature scenario about derived-table
+     types. Only the Join sub-bullet that reproduces GROK-19103 is in scope per
+     pattern 2 (bug-focused slice; pivot/aggregate/clone are not part of the
+     GROK-19103 invariant).
+
+  Both reductions are env/scope-resilience choices that do not reduce GROK-19103
+  invariant coverage. Within the slice as defined, all 3 slice steps have
+  softStep counterparts and verifications; the GROK-19103 invariant assertion
+  (`afterCount - baselineCount === 1`) is the bug's discriminator.
 
 evidence_needed: |
-  Parent scenario .md missing on disk for this spec (Wave 2C residue per audit
-  Section 1). Routing to Decision 2.6 (retroactive .md authoring) or Decision 2.1
-  (deletion protocol) per Olena's product disposition. Cannot apply E-TRACE-* /
-  E-SEL-* / E-HELP-* / E-LAYER-* checks without canonical scenario. Recon target:
-  Olena's disposition on whether to retroactively author complex-derived-tables.md
-  or delete the orphan spec. Until disposition recorded, this spec sits in
-  EVIDENCE_GAP state — not FAIL (per prompt instruction to avoid attributing
-  missing-parent on spec).
+  (Not applicable — verdict is SCOPE_REDUCTION.)
+
+# Pattern-2 conditions audit (per .claude/plan/d4-5-critic-e-pattern2-rerun-derived-tables.md)
+pattern_2_conditions:
+  condition_1_self_doc:
+    status: SATISFIED
+    evidence: |
+      Spec lines 9-15 name parent (`complex.md`), the functionality slice
+      ("Step 1 multi-source open + Join sub-bullet + Step 2 Save with Data
+      Sync ON of complex.md scenario"), the bug GROK-19103, and the invariant
+      ("join result silently saved as a SEPARATE project that later fails to
+      open" → "exactly ONE new project is created on the server — not two").
+  condition_2_parent_md_contains_slice:
+    status: SATISFIED
+    evidence: |
+      complex.md exists and is non-empty (385 lines). Step 1 (lines 136-158)
+      contains multi-source open including "Join two tables — Data > Join
+      Tables" sub-bullet (lines 153-155). Step 2 (lines 159-165) contains
+      "Save all opened tables as a project with Data Sync enabled". Frontmatter
+      `related_bugs` (line 25) includes `GROK-19103`. Body lines 50-52
+      explicitly walk GROK-19103's repro through Step 1 join + Step 2 save.
+  condition_3_chain_realized_as:
+    status: SATISFIED
+    evidence: |
+      projects.yaml rev 5 (line 3 `revision: 5`). complex.md `realized_as`
+      block (lines 1181-1184) explicitly lists
+      `public/packages/UsageAnalysis/files/TestTrack/Projects/complex-derived-tables-spec.ts`
+      as first entry. Chain `bug_focused_candidates[]` block (lines 1483-1495)
+      records GROK-19103 → complex-derived-tables-spec.ts as orphan-spec-marker
+      entry per Decision 2.6 expanded pattern 2 (header changelog lines 38-46
+      explicitly enumerate this entry). Pattern 2 is the authoritative
+      resolution shape for this spec.

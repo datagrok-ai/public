@@ -562,7 +562,25 @@ export async function saveCopy(
   void options.sourceName; // documented context; not used in flow
 
   // Trigger Save Project dialog via toolbar SAVE button.
-  await page.locator('[name="button-Save"]').first().click();
+  // Use `:visible` filter + JS-DOM fallback per the pattern in
+  // _helpers.ts:saveProjectViaDialog and projects-ui-smoke-spec.ts:172-183.
+  // The bare `[name="button-Save"]` matches hidden duplicates from inactive
+  // views (offsetParent=null) and Playwright's actionability check rejects
+  // them as "not visible" — surfaced after Bug B fix in D4.3 spec re-run
+  // 2026-05-06 PM where the toolbar SAVE button under reopen+addViewer flow
+  // resolved to a `dim` non-visible candidate first.
+  const saveBtn = page.locator('button[name="button-Save"]:visible').first();
+  await saveBtn.waitFor({timeout: 30_000, state: 'visible'});
+  await page.waitForTimeout(500); // settle render
+  try {
+    await saveBtn.click({timeout: 10_000});
+  } catch (_) {
+    await page.evaluate(() => {
+      const candidates = Array.from(document.querySelectorAll('button[name="button-Save"]'));
+      const visible = candidates.find((b) => (b as HTMLElement).offsetParent !== null);
+      if (visible) (visible as HTMLElement).click();
+    });
+  }
 
   const dialog = page.locator('.d4-dialog').filter({hasText: 'Save project'});
   await dialog.waitFor({timeout: 15000});
@@ -597,15 +615,47 @@ export async function saveCopy(
   }, modeLabels[options.mode]);
   await page.waitForTimeout(800); // let dialog adapt to mode change
 
-  // Name input — first text input in dialog (no name=).
+  // Name input — `input#name` (id-based, precise; verified by MCP recon
+  // 2026-05-06). Only one `input[type="text"].ui-input-editor` exists in the
+  // dialog so the prior `.first()` would also resolve correctly — the bug
+  // was not the selector but the keyboard-based fill: `keyboard.press
+  // ('Control+a')` does NOT cause select-all in this Dart-side dialog
+  // (synthetic and CDP-routed Ctrl+A keydowns alike are not honored by
+  // Dart's input handler — observed selectionEnd unchanged after press).
+  // The auto-populated 'Copy of <source>' value remained, then `keyboard.type`
+  // appended on top, and a downstream Dart-side trim/normalize dropped the
+  // typed suffix entirely (confirmed by D4.3 run: typed `demog-{ts}-link`,
+  // server stored `Demog{ts}` — `Link` segment lost).
+  //
+  // Fix: native value setter + 'input'/'change' DOM events. The setter
+  // bypasses React-style runtime guards and Dart's keyboard interception;
+  // the dispatched events drive Dart's onChange listener so the new value
+  // is actually committed to the dialog's model. Verified end-to-end via
+  // MCP recon 2026-05-06: typed `recon-{ts}-link`, server stored
+  // `Recon{ts}Link` (correct PascalCase, suffix preserved). See
+  // .claude/plan/saveCopy-fix-report.md.
+  //
   // For mode='copy', if name is omitted, leave the dialog's default in
-  // place (server applies "Copy of <sourceName>"); otherwise type the
-  // requested name.
+  // place (server applies "Copy of <sourceName>" → PascalCase'd to e.g.
+  // "CopyOfRecon{ts}").
   if (options.name !== undefined) {
-    const nameInput = dialog.locator('input[type="text"].ui-input-editor').first();
-    await nameInput.focus();
-    await page.keyboard.press('Control+a');
-    await page.keyboard.type(options.name);
+    // Selector fallback chain: precise `input#name` first (verified via MCP
+    // recon), then the generic `input[type="text"].ui-input-editor` form
+    // (only one such input exists in the dialog when fully rendered).
+    // 15s timeout — observed as low as ~3s in MCP recon, but Playwright
+    // runs sometimes need more headroom for the dialog to fully render
+    // when chained from a fresh reopen flow.
+    const nameInput = dialog.locator('input#name, input[type="text"].ui-input-editor').first();
+    await nameInput.waitFor({state: 'visible', timeout: 15000});
+    await page.evaluate((newName) => {
+      const input = (document.querySelector('.d4-dialog input#name')
+        ?? document.querySelector('.d4-dialog input[type="text"].ui-input-editor')) as HTMLInputElement | null;
+      if (!input) throw new Error('saveCopy: Name input not found at fill-time (tried input#name and input[type="text"].ui-input-editor)');
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+      setter.call(input, newName);
+      input.dispatchEvent(new Event('input', {bubbles: true}));
+      input.dispatchEvent(new Event('change', {bubbles: true}));
+    }, options.name);
   } else if (options.mode !== 'copy') {
     throw new Error(`saveCopy: name is required for mode '${options.mode}' (only mode='copy' supports omitted-name → "Copy of <sourceName>" default)`);
   }
@@ -635,6 +685,21 @@ export async function saveCopy(
     }
   }
 
+  // Capture pre-OK source id for downstream verification. For mode='copy'
+  // and mode='personal-view-customizations' the Dart shell takes 1-2s to
+  // update grok.shell.project to the newly-created copy after OK click — if
+  // we sample shell.project.id immediately we still see the source's id.
+  // Without this baseline we can't tell apart "copy didn't happen" from
+  // "Dart hasn't updated shell yet" (verified via D4.3 spec re-run
+  // 2026-05-06 PM: Browse > Dashboards showed both `demog-{ts}` original
+  // AND `demog-{ts}-link` copy as distinct entries server-side, but
+  // shell.project.id was still source's after the previous verification's
+  // first iteration).
+  const preOkSourceId = await page.evaluate(() => {
+    const grok = (window as any).grok;
+    return grok.shell.project?.id ?? null;
+  });
+
   await dialog.locator('[name="button-OK"]').click();
 
   // Auto-share dialog may appear after save in some flows; cancel.
@@ -644,41 +709,72 @@ export async function saveCopy(
     await expect(shareDialog).toBeHidden({timeout: 10000});
   }
 
-  // Verification — id-based dapi.projects.find.
-  // Replaces prior dapi.projects.filter('name = "X"').first() verification
-  // which returned null for fresh server-side names (I3 hypothesis: dapi
-  // index lag / namespace search gap on filter-by-name).
+  // Verification — dual-strategy: shell.project update OR server-side name
+  // match (PascalCase predicted from typed name).
   //
-  // Per fix-2026-05-04-savecopy-ui-search-verification (revised approach):
-  // after saveCopy completes the Dart `grok.shell.project` is set to the
-  // just-saved copy. Capture its id then verify via `dapi.projects.find(id)`
-  // — id-based lookup is namespace/index independent and works for fresh
-  // names where filter-by-name does not. UI Browse>Dashboards search
-  // verification was tried as the prompted approach but the Dashboards
-  // search input selector is not documented in references/projects.md
-  // (B14-NEEDED — see batch report).
-  const expectedName = options.name ?? (options.mode === 'copy' ? `Copy of ${options.sourceName}` : null);
-  if (!expectedName) return; // non-copy modes without explicit name → no verification target
-
-  // Wait for grok.shell.project to update to the saved copy (Dart side
-  // updates this after save commits). Poll up to 15s.
-  const verified = await page.evaluate(async (expected) => {
+  // Prior code compared `found.name === expected` where `expected` was the
+  // typed name. The server normalizes typed names to PascalCase per
+  // grok-browser/references/projects.md:64 — e.g. typed
+  // `demog-{ts}-link` is stored as `Demog{ts}Link`. Strict equality could
+  // therefore never hold for any caller using a kebab/snake/space-separated
+  // typed name; the only callers that bypassed this were ones already
+  // typing PascalCase (helpers/projects-spec.ts:360 explicitly types
+  // `'C1bSaveCopy' + Date.now()` for this reason).
+  //
+  // For mode='original' (overwrite): shell.project.id stays the same as
+  // source; verify find(id) returns non-null.
+  // For mode='copy' / mode='personal-view-customizations': the new copy
+  // exists server-side immediately after OK click but `grok.shell.project`
+  // may lag for >15s in the Playwright/CDP harness (verified D4.3 spec
+  // re-run 2026-05-06 PM: server had `Demog{ts}Link` project with new id
+  // but shell.project.id stayed at source for the entire verification
+  // window). Fall back to a server-query for the predicted PascalCase
+  // name — that's the same form `dapi.projects.find(id).name` returns for
+  // dialog-saved projects.
+  const expectIdChange = options.mode !== 'original';
+  // Datagrok stores TWO name fields per project:
+  //   `name`         — PascalCase-normalized internal form (e.g. `Demog{ts}Link`)
+  //   `friendlyName` — typed name verbatim (e.g. `demog-{ts}-link`)
+  // The dapi.projects.filter(`name = "X"`) operator does NOT do reliable
+  // exact-match on either column — verified live 2026-05-06 against dev
+  // (filter('name = "Demog1778091193605Link"') returned 0 even though the
+  // project existed). The reliable path is `filter('name like "<typed>"')`
+  // (no wildcards) which apparently matches against friendlyName and works
+  // for exact and prefix matches alike.
+  const verified = await page.evaluate(async ({preId, expectChange, typedName}: {preId: string | null; expectChange: boolean; typedName: string | null}) => {
     const grok = (window as any).grok;
-    const deadline = Date.now() + 15000;
+    const deadline = Date.now() + 20000;
     while (Date.now() < deadline) {
-      const proj = grok.shell.project;
-      if (proj && proj.id) {
-        // id-based lookup (filter-by-name returns null for fresh names; id-find works)
-        const found = await grok.dapi.projects.find(proj.id);
-        if (found && found.name === expected)
-          return {id: proj.id, name: found.name, ok: true};
-        if (found && found.name)
-          return {id: proj.id, name: found.name, ok: false, expected};
+      // Strategy 1: shell.project (when it actually updates)
+      const shellProj = grok.shell.project;
+      if (shellProj?.id) {
+        const okShell = !expectChange || shellProj.id !== preId;
+        if (okShell) {
+          const found = await grok.dapi.projects.find(shellProj.id);
+          if (found?.name)
+            return {id: shellProj.id, name: found.name, ok: true, via: 'shell'};
+        }
       }
-      await new Promise((r) => setTimeout(r, 500));
+      // Strategy 2: server-side friendlyName match (typed name verbatim).
+      // Datagrok shell.project lags >15s in some Playwright/CDP runs even
+      // though server-side the project is created immediately on OK click.
+      if (expectChange && typedName) {
+        try {
+          const list = await grok.dapi.projects.filter(`name like "${typedName}"`).list();
+          const candidate = list.find((p: any) => p.id !== preId);
+          if (candidate)
+            return {id: candidate.id, name: candidate.name, ok: true, via: 'friendly-like'};
+        } catch (_) { /* server query may transiently fail; retry next iter */ }
+      }
+      await new Promise((r) => setTimeout(r, 1000));
     }
-    return {ok: false, expected, reason: 'timeout waiting for grok.shell.project.id'};
-  }, expectedName);
+    return {
+      ok: false,
+      reason: expectChange
+        ? `no copy found via shell update or friendlyName like "${typedName}" within 20s (preId=${preId})`
+        : 'timeout waiting for shell.project to settle with non-null find result',
+    };
+  }, {preId: preOkSourceId, expectChange: expectIdChange, typedName: options.name ?? null});
 
   if (!verified.ok)
     throw new Error(`saveCopy verification failed: ${JSON.stringify(verified)}`);
