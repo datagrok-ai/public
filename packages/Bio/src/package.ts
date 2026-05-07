@@ -236,6 +236,11 @@ export class PackageFunctions {
 
   @grok.decorators.editor({tags: ['editor']})
   static SequenceSpaceEditor(call: DG.FuncCall) {
+    const table = grok.shell.tv?.dataFrame;
+    if (!table || table.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE).length === 0) {
+      grok.shell.error('Sequence Space requires a table with a Macromolecule column. Open a sequence table first.');
+      return;
+    }
     const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
     const dialog = ui.dialog({title: 'Sequence Space'})
       .add(funcEditor.getEditor())
