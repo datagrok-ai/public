@@ -9,6 +9,7 @@
 #input: string ligand_resname
 #output: string html
 
+import logging
 from collections import Counter
 from io import StringIO
 
@@ -19,6 +20,8 @@ from openmm.app import PDBFile
 import MDAnalysis as mda
 from MDAnalysis.lib.util import NamedStream
 import prolif as plf
+
+logger = logging.getLogger('prolif')
 
 
 # ----------------------------------------------------------------------------
@@ -96,26 +99,53 @@ AD_TO_ELEMENT = {
     'MG':'Mg','CA':'Ca','MN':'Mn','FE':'Fe','ZN':'Zn','CU':'Cu',
 }
 
-SKIP_RESNAMES = {
+SKIP_RESNAMES = frozenset({
     'HOH','WAT','H2O','D2O','DOD',
     'NA','CL','K','MG','CA','ZN','MN','FE','CU','NI',
     'SO4','PO4','NO3','ACT','CO3',
     'GOL','EDO','PEG','PG4','DMS','TRS','IMD','BME',
-}
+})
+
+# Hoisted constants — defined at module scope so they're built once at import
+# rather than recreated on every helper call (and, for some, every loop iter).
+
+# PDB record prefixes used in fixed-column line parsing
+ATOM_HETATM_PREFIXES = ('ATOM  ', 'HETATM')
+PDB_HEADER_PREFIXES = ('HEADER', 'TITLE ', 'CRYST1', 'COMPND', 'MODEL ', 'ENDMDL')
+
+# AutoDock receptor PDBQTs lack ROOT/BRANCH but carry these atom-type codes
+# in cols 78-79; sample-based detection looks for them.
+AUTODOCK_ATOM_TYPES = frozenset({'OA', 'NA', 'HD', 'NS', 'NX', 'OS', 'SA', 'HS'})
+
+# AutoDock ligand PDBQTs carry these record types alongside ATOM/HETATM
+PDBQT_LIGAND_MARKERS = ('ROOT', 'BRANCH', 'TORSDOF')
+# All AutoDock-specific record prefixes that should be dropped during PDBQT→PDB
+PDBQT_RECORDS_TO_DROP = ('ROOT', 'ENDROOT', 'BRANCH', 'ENDBRA', 'TORSDO')
+
+# Records to preserve when concatenating ligand HETATMs into a fixed protein
+MERGE_LIGAND_RECORDS = ('ATOM  ', 'HETATM', 'CONECT')
 
 
-def is_pdbqt(text):
-    # Ligand PDBQT marker records
-    if 'ROOT' in text or 'BRANCH' in text or 'TORSDOF' in text:
-        return True
-    # Receptor PDBQT: no ROOT/BRANCH but ATOM/HETATM lines carry AutoDock atom
+# Helper functions take/return list[str] (one element per PDB line) so the
+# main flow only calls splitlines() once per text input. Calling splitlines on
+# a few-thousand-line PDB is ~1-5ms each — small individually, but it adds up
+# across 6-8 calls per row. Operating on lists everywhere makes the cost
+# proportional to the work, not to the number of helpers.
+
+def is_pdbqt_lines(lines):
+    # Ligand PDBQT marker records — return early if found
+    for line in lines:
+        if line.startswith(PDBQT_LIGAND_MARKERS):
+            return True
+        if line.startswith(ATOM_HETATM_PREFIXES):
+            break
+    # Receptor PDBQT: no ROOT/BRANCH, but ATOM/HETATM lines carry AutoDock atom
     # types in cols 78-79 (OA, NA, HD, NS, SA, HS, NX, OS) instead of standard
     # element symbols. Sample the first 50 ATOM/HETATM lines.
-    ad_specific = {'OA', 'NA', 'HD', 'NS', 'NX', 'OS', 'SA', 'HS'}
     checked = 0
-    for line in text.splitlines():
-        if line[:6] in ('ATOM  ', 'HETATM') and len(line) >= 79:
-            if line[77:79].strip().upper() in ad_specific:
+    for line in lines:
+        if line[:6] in ATOM_HETATM_PREFIXES and len(line) >= 79:
+            if line[77:79].strip().upper() in AUTODOCK_ATOM_TYPES:
                 return True
             checked += 1
             if checked >= 50:
@@ -123,50 +153,56 @@ def is_pdbqt(text):
     return False
 
 
-def pdbqt_to_pdb(text):
+def pdbqt_to_pdb_lines(lines):
     """Strip AutoDock-specific records and restore element symbols in cols 77-78."""
     out = []
-    for line in text.splitlines():
+    for line in lines:
         h = line[:6]
-        if h.startswith(('ROOT', 'ENDROOT', 'BRANCH', 'ENDBRA', 'TORSDO')):
+        if h.startswith(PDBQT_RECORDS_TO_DROP):
             continue
-        if h in ('ATOM  ', 'HETATM'):
+        if h in ATOM_HETATM_PREFIXES:
             ad_type = line[77:79].strip().upper() if len(line) >= 78 else ''
             element = AD_TO_ELEMENT.get(ad_type, ad_type[:2].title() if ad_type else '')
             line = line[:66].ljust(76) + element.rjust(2)
         out.append(line)
-    return '\n'.join(out)
+    return out
 
 
-def shift_negative_residues(pdb_text):
-    """Shift residues per chain so all are >= 1."""
+def shift_negative_residues_lines(lines):
+    """Shift residues per chain so all are >= 1.
+
+    Two logical passes (need every chain's minimum before applying the shift),
+    but each line is parsed only once: pass 1 records (index, chain, resnum)
+    triples for atom lines while accumulating min_per_chain, pass 2 patches
+    those indices in the output list.
+    """
+    parsed = []  # (line_index, chain, resnum) for atom lines
     min_per_chain = {}
-    for L in pdb_text.splitlines():
-        if L[:6] in ('ATOM  ', 'HETATM') and len(L) >= 26:
+    for idx, L in enumerate(lines):
+        if L[:6] in ATOM_HETATM_PREFIXES and len(L) >= 26:
             try:
                 ch, rn = L[21], int(L[22:26])
-                if ch not in min_per_chain or rn < min_per_chain[ch]:
-                    min_per_chain[ch] = rn
             except ValueError:
-                pass
+                continue
+            parsed.append((idx, ch, rn))
+            if ch not in min_per_chain or rn < min_per_chain[ch]:
+                min_per_chain[ch] = rn
+
     offsets = {ch: (1 - mn) for ch, mn in min_per_chain.items() if mn < 1}
     if not offsets:
-        return pdb_text
-    out = []
-    for L in pdb_text.splitlines():
-        if L[:6] in ('ATOM  ', 'HETATM') and len(L) >= 26:
-            try:
-                ch, rn = L[21], int(L[22:26])
-                if ch in offsets:
-                    L = L[:22] + f'{rn + offsets[ch]:>4}' + L[26:]
-            except ValueError:
-                pass
-        out.append(L)
-    return '\n'.join(out)
+        return lines
+
+    # Copy and patch only the affected indices.
+    out = list(lines)
+    for idx, ch, rn in parsed:
+        if ch in offsets:
+            L = out[idx]
+            out[idx] = L[:22] + f'{rn + offsets[ch]:>4}' + L[26:]
+    return out
 
 
-def extract_binding_site_pdb(protein_text, ligand_text, radius=8.0):
-    """Filter protein PDB text to only the residues with at least one atom
+def extract_binding_site_lines(protein_lines, ligand_lines, radius=8.0):
+    """Filter protein lines to only the residues with at least one atom
     within `radius` Å of any ligand atom. Used to shrink the input to
     pdbfixer (which scales linearly with atom count) — typically reduces a
     300-residue protein to 30-50 residues, giving a 5-10× speedup on the
@@ -179,8 +215,8 @@ def extract_binding_site_pdb(protein_text, ligand_text, radius=8.0):
     """
     # Collect ligand atom coordinates.
     ligand_xyz = []
-    for line in ligand_text.splitlines():
-        if line[:6] in ('ATOM  ', 'HETATM') and len(line) >= 54:
+    for line in ligand_lines:
+        if line[:6] in ATOM_HETATM_PREFIXES and len(line) >= 54:
             try:
                 ligand_xyz.append((
                     float(line[30:38]),
@@ -190,14 +226,14 @@ def extract_binding_site_pdb(protein_text, ligand_text, radius=8.0):
             except ValueError:
                 pass
     if not ligand_xyz:
-        return protein_text  # nothing to filter against
+        return protein_lines  # nothing to filter against
 
     r2 = radius * radius
 
     # First pass — identify (chain, resid) pairs to keep.
     keep = set()
-    for line in protein_text.splitlines():
-        if line[:6] not in ('ATOM  ', 'HETATM') or len(line) < 54:
+    for line in protein_lines:
+        if line[:6] not in ATOM_HETATM_PREFIXES or len(line) < 54:
             continue
         try:
             px = float(line[30:38])
@@ -217,33 +253,43 @@ def extract_binding_site_pdb(protein_text, ligand_text, radius=8.0):
                 break
 
     if not keep:
-        return protein_text  # safety: keep everything if nothing matched
+        return protein_lines  # safety: keep everything if nothing matched
 
     # Second pass — output only matching residue lines plus essential headers.
-    keep_prefixes = ('HEADER', 'TITLE ', 'CRYST1', 'COMPND', 'MODEL ', 'ENDMDL')
     out = []
-    for line in protein_text.splitlines():
-        if line[:6] in ('ATOM  ', 'HETATM') and len(line) >= 26:
+    for line in protein_lines:
+        if line[:6] in ATOM_HETATM_PREFIXES and len(line) >= 26:
             chain = (line[21] if len(line) > 21 else '').strip() or 'A'
             resid = line[22:26].strip()
             if (chain, resid) in keep:
                 out.append(line)
-        elif line[:6] in keep_prefixes or line.startswith('TER') or line.startswith('END'):
+        elif line[:6] in PDB_HEADER_PREFIXES or line.startswith('TER') or line.startswith('END'):
             out.append(line)
-    return '\n'.join(out)
+    return out
 
 
-def merge_protein_and_ligand(protein_pdb, ligand_pdb):
-    """Concat protein + ligand into one PDB, with TER between."""
-    p = [L for L in protein_pdb.splitlines() if not L.startswith('END')]
-    l = [L for L in ligand_pdb.splitlines()
-         if L[:6] in ('ATOM  ', 'HETATM', 'CONECT')]
-    return '\n'.join(p + ['TER'] + l + ['END'])
+def merge_protein_and_ligand_lines(protein_lines, ligand_lines):
+    """Concat protein + ligand lines, with TER between, ending with END."""
+    p = [L for L in protein_lines if not L.startswith('END')]
+    l = [L for L in ligand_lines if L[:6] in MERGE_LIGAND_RECORDS]
+    return p + ['TER'] + l + ['END']
 
 
-def detect_ligand_resname(pdb_text):
-    counts = Counter(L[17:20].strip() for L in pdb_text.splitlines()
-                     if L.startswith('HETATM') and L[17:20].strip() not in SKIP_RESNAMES)
+def detect_ligand_resname_lines(lines):
+    """Return the most-common non-water HETATM resname.
+
+    Single pass; resname slice is computed once per line; lines too short to
+    contain a resname are skipped explicitly rather than producing an empty
+    one (PDB lines are normally 80 cols but some tools truncate trailing
+    whitespace).
+    """
+    counts = Counter()
+    for L in lines:
+        if not L.startswith('HETATM') or len(L) < 20:
+            continue
+        rn = L[17:20].strip()
+        if rn and rn not in SKIP_RESNAMES:
+            counts[rn] += 1
     if not counts:
         raise ValueError('No non-water HETATM ligand found in PDB')
     return counts.most_common(1)[0][0]
@@ -332,22 +378,27 @@ def make_html_compact(html: str) -> str:
 
 
 # ---------- main ----------
+# We splitlines() once per text input (here for `protein`, and below for
+# `ligand` if/when it's available) and pass list[str] through every helper
+# so the per-call cost of splitlines is paid exactly once per input.
 
 # 1. Normalise protein input (PDBQT → PDB if needed; shift negative residues)
-if is_pdbqt(protein):
-    protein = pdbqt_to_pdb(protein)
-protein = shift_negative_residues(protein)
+protein_lines = protein.splitlines()
+if is_pdbqt_lines(protein_lines):
+    protein_lines = pdbqt_to_pdb_lines(protein_lines)
+protein_lines = shift_negative_residues_lines(protein_lines)
 
 # 2. Detect ligand resname BEFORE merging — when a separate ligand PDB is
 # provided (Docking case), trust IT for the resname rather than the receptor,
 # whose HETATMs (buffers, terminal NH3+, ions) would otherwise outvote the
 # real ligand via most-common heuristic.
 ligand_provided = bool(ligand and ligand.strip())
+ligand_lines = ligand.splitlines() if ligand_provided else []
 if not ligand_resname:
     if ligand_provided:
-        ligand_resname = detect_ligand_resname(ligand)
+        ligand_resname = detect_ligand_resname_lines(ligand_lines)
     else:
-        ligand_resname = detect_ligand_resname(protein)
+        ligand_resname = detect_ligand_resname_lines(protein_lines)
 
 # 2b. Parse the ligand selector (TS may pass "RESNAME CHAIN RESID" to
 # disambiguate between multiple instances of the same ligand at different sites)
@@ -363,8 +414,8 @@ else:
 # template library), and OpenMM's PDB writer can also renumber chains/residues.
 # Run pdbfixer on the protein alone, then re-attach the ligand to the H-fixed
 # PDB afterwards so the ligand survives untouched.
-if ligand_provided and is_pdbqt(ligand):
-    ligand = pdbqt_to_pdb(ligand)
+if ligand_provided and is_pdbqt_lines(ligand_lines):
+    ligand_lines = pdbqt_to_pdb_lines(ligand_lines)
 
 # 3b. BSV-case fix: if no separate ligand was provided (protein cell contains
 # both protein and ligand), extract the matching HETATMs from the protein text
@@ -374,10 +425,13 @@ if ligand_provided and is_pdbqt(ligand):
 if not ligand_provided:
     extracted_lines = []
     remaining_lines = []
-    for line in protein.splitlines():
-        if line.startswith('HETATM') and line[17:20].strip() == sel_resname:
-            ln_chain = (line[21] if len(line) > 21 else '').strip() or 'A'
-            ln_resid = line[22:26].strip() if len(line) >= 26 else ''
+    for line in protein_lines:
+        # Need at least cols 1-26 for resname/chain/resid; reject shorter lines
+        # so the slices below are always safe.
+        if line.startswith('HETATM') and len(line) >= 26 \
+                and line[17:20].strip() == sel_resname:
+            ln_chain = line[21].strip() or 'A'
+            ln_resid = line[22:26].strip()
             chain_ok = (sel_chain is None) or (ln_chain == sel_chain)
             resid_ok = (sel_resid is None) or (ln_resid == sel_resid)
             if chain_ok and resid_ok:
@@ -385,8 +439,8 @@ if not ligand_provided:
                 continue
         remaining_lines.append(line)
     if extracted_lines:
-        ligand = '\n'.join(extracted_lines)
-        protein = '\n'.join(remaining_lines)
+        ligand_lines = extracted_lines
+        protein_lines = remaining_lines
         ligand_provided = True
 
 # 4. pdbfixer for protein hydrogens — entirely in-memory (no temp files).
@@ -395,11 +449,14 @@ if not ligand_provided:
 # linearly with atom count, so for a 300-residue protein this is typically a
 # 5-10× speedup.
 if ligand_provided:
-    protein_for_fixer = extract_binding_site_pdb(protein, ligand, radius=8.0)
+    protein_for_fixer_lines = extract_binding_site_lines(
+        protein_lines, ligand_lines, radius=8.0,
+    )
 else:
-    protein_for_fixer = protein
+    protein_for_fixer_lines = protein_lines
 
-# pdbfixer accepts a file-like via the `pdbfile` keyword
+# pdbfixer needs a text stream, so we join only at this boundary
+protein_for_fixer = '\n'.join(protein_for_fixer_lines)
 fixer = PDBFixer(pdbfile=StringIO(protein_for_fixer))
 # We only need addMissingHydrogens() — the other pdbfixer steps don't apply:
 #   findMissingResidues() — detects chain gaps; after binding-site extraction
@@ -418,9 +475,13 @@ _buf = StringIO()
 PDBFile.writeFile(fixer.topology, fixer.positions, _buf)
 fixed_protein = _buf.getvalue()
 
-# Merge ligand text in-memory if a separate ligand was provided
+# Merge ligand lines into the fixed protein (operating on lines avoids one
+# more splitlines call — `merge_protein_and_ligand_lines` returns a list).
 if ligand_provided:
-    merged_pdb = merge_protein_and_ligand(fixed_protein, ligand)
+    merged_lines = merge_protein_and_ligand_lines(
+        fixed_protein.splitlines(), ligand_lines,
+    )
+    merged_pdb = '\n'.join(merged_lines)
 else:
     merged_pdb = fixed_protein
 
@@ -487,8 +548,9 @@ else:
 try:
     protein_mol_obj = plf.Molecule.from_mda(protein_ag, force=True)
 except Exception as e_force:
-    print(f'[ProLIF] from_mda(force=True) failed: {type(e_force).__name__}: {e_force}')
-    print('[ProLIF] Retrying with NoImplicit=False (skip bond-order inference)')
+    logger.warning('from_mda(force=True) failed: %s: %s',
+                   type(e_force).__name__, e_force)
+    logger.info('Retrying with NoImplicit=False (skip bond-order inference)')
     try:
         protein_mol_obj = plf.Molecule.from_mda(protein_ag, NoImplicit=False)
     except TypeError:
@@ -512,7 +574,7 @@ parameters = {
 try:
     fp = plf.Fingerprint(interactions=interactions, parameters=parameters)
 except Exception as e:
-    print(f'[ProLIF] Datagrok-aligned SMARTS rejected ({e}); using ProLIF defaults')
+    logger.warning('Datagrok-aligned SMARTS rejected (%s); using ProLIF defaults', e)
     fp = plf.Fingerprint(interactions=interactions)
 fp.run_from_iterable([ligand_mol_obj], protein_mol_obj, n_jobs=1)
 
