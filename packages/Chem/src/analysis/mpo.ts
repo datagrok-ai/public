@@ -93,7 +93,7 @@ export class MpoProfileDialog {
       value: MpoMethod.Manual,
       onValueChanged: async (value) => {
         if (value === MpoMethod.DataDriven)
-          await this.createProbabilisticProfile();
+          await this.createDataDrivenProfile();
         else
           this.createManualProfile();
       },
@@ -248,7 +248,7 @@ export class MpoProfileDialog {
     this.updateOkButtonState();
   }
 
-  private async createProbabilisticProfile(): Promise<void> {
+  private async createDataDrivenProfile(): Promise<void> {
     const tableView = grok.shell.getTableView(this.dataFrame.name);
     if (!tableView) {
       grok.shell.error('No table view found for the current dataframe');
@@ -261,7 +261,7 @@ export class MpoProfileDialog {
     try {
       const pMpoItems = await grok.functions.call('EDA:getPmpoAppItems', {view: tableView});
       if (!pMpoItems?.profile) {
-        grok.shell.warning('pMPO is not applicable for this dataset');
+        grok.shell.warning('Data-driven MPO is not applicable for this dataset');
         return;
       }
 
@@ -275,7 +275,7 @@ export class MpoProfileDialog {
       this.saveButton.classList.remove('chem-mpo-d-none');
       this.updateOkButtonState();
     } catch (e) {
-      grok.shell.warning(`pMPO training failed: ${e instanceof Error ? e.message : e}`);
+      grok.shell.warning(`Data-driven MPO training failed: ${e instanceof Error ? e.message : e}`);
     }
   }
 

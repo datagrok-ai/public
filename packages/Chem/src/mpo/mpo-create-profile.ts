@@ -234,7 +234,7 @@ export class MpoProfileCreateView {
         return;
       }
       this.tableView.dataFrame = this.df;
-      await this.runProbabilisticMpo();
+      await this.runDataDrivenMpo();
       return;
     }
 
@@ -301,7 +301,7 @@ export class MpoProfileCreateView {
       if (!this.isManualMode) {
         this.tableView.dataFrame = this.df;
         this.clearPreviousLayout();
-        await this.runProbabilisticMpo();
+        await this.runDataDrivenMpo();
         return;
       }
 
@@ -460,9 +460,9 @@ export class MpoProfileCreateView {
     this.profileViewContainer.append(errorDiv);
   }
 
-  // --- pMPO mode ---
+  // --- Data-driven MPO mode ---
 
-  private async runProbabilisticMpo(): Promise<void> {
+  private async runDataDrivenMpo(): Promise<void> {
     if (!this.df)
       return;
 
@@ -479,7 +479,7 @@ export class MpoProfileCreateView {
       const pMpoAppItems = await grok.functions.call('EDA:getPmpoAppItems', {view: this.tableView});
       if (!pMpoAppItems) {
         this.setTableViewVisible(false);
-        this.showError('pMPO is not applicable for this dataset.');
+        this.showError('Data-driven MPO is not applicable for this dataset.');
         return;
       }
 
@@ -488,7 +488,7 @@ export class MpoProfileCreateView {
       const dockMng = this.tableView.dockManager;
       const gridNode = dockMng.findNode(this.tableView.grid.root);
       if (!gridNode)
-        throw new Error('Failed to train pMPO: missing a grid in the table view.');
+        throw new Error('Failed to train data-driven MPO: missing a grid in the table view.');
 
       const controlsNode = dockMng.dock(pMpoAppItems.controls.form, DG.DOCK_TYPE.LEFT, gridNode, undefined, 0.1);
       const statGridNode = dockMng.dock(pMpoAppItems.statsGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
