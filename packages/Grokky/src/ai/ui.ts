@@ -11,7 +11,7 @@ import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEven
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
 import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
-import {executeDatagrokBlocks} from '../claude/exec-blocks';
+import {executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
 
@@ -93,6 +93,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     try {
       await opts.onFinal(evt, contentHost);
     } finally {
+      renderEntityBlocks(contentHost);
       signalRendered();
       stopListening();
     }
