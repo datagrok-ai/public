@@ -456,10 +456,12 @@ value of the parameter the expression applied to, but on other parameters as wel
 </details>
 
 
-The second option involves using a custom validation function and referencing it.
-A validation function accepts one parameter
-(a string that user enters), and returns null if the string is valid, or the reason for being invalid,
-otherwise.
+The second option involves using a custom validation function and referencing it. A validation
+function accepts one parameter (the value the user enters) and returns either `null` (valid) or
+the reason it's invalid (a string). It can also return a `boolean` — `true` is valid, `false`
+shows a generic message naming the function.
+
+To reference a function from another package, prefix the name with the package: `Pkg:FuncName`.
 
 :::important
 Validators must be synchronous. Only `package.ts` exports and `grok.functions.register({...})`
@@ -489,6 +491,13 @@ valid = input < 11 ? null : "Error val1";
 #name: Numbers
 #language: python
 #input: int count1 {validators: ["jsval1"]
+```
+
+Cross-package, bool-returning predicates work directly:
+
+```
+//input: string smiles = "CCO"  {validators: ["Chem:isSmiles"]}
+//input: string smarts = "[#6]" {validators: ["Chem:isSmarts"]}
 ```
 
 ![Script Parameter Validators](../../../uploads/features/script-param-validators.gif "Script Parameter Validators")
