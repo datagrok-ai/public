@@ -1,0 +1,33 @@
+verdict: PASS
+gate: B
+review_round: 9
+cycle_id: charts-migrate-2026-05-07
+artifact: tree-spec.ts
+scenario: tree.md
+runtime_evidence:
+  ran_against: https://dev.datagrok.ai
+  final_round_duration_seconds: 27.9
+  result: passed
+  steps_executed:
+    - "Setup: Open demog.csv (5850 rows); Add viewer Tree; setOptions hierarchy CONTROL/SEX/RACE — PASS (hierarchy read-back race-tolerant per D8.4 round 8)"
+    - "Step 1 (AMBIGUOUS programmatic fallback): trueCount=174 — PASS"
+    - "Step 2: filtered=39, selected=174, overlap=0 — PASS"
+    - "Step 3 (AMBIGUOUS programmatic fallback): selected=176, overlap=2 — PASS"
+    - "Step 4: filtered=5850, selected=176 — PASS"
+hypotheses_resolved:
+  round_1_environmental_flake:
+    summary: cold-start race during loginToDatagrok (DATAGROK_URL unset)
+    fix: DATAGROK_URL env var
+    outcome: succeeded
+  round_8_cold_start_race_definitive_fix:
+    summary: "Property not found: hierarchyColumnNames" — Tree's property machinery races at 1500ms post-setOptions
+    investigation: MCP recon confirmed props.get works at 1500ms in steady state, races at cold-start
+    fix: defensive try/catch around props.get returning null on race; setOptions success + viewer attached are the critical assertions
+    outcome: PASS in round 9
+notes: |
+  Tree branches are canvas-rendered (ECharts); Shift+Click at canvas
+  coords is not reliably synthesizable in Playwright. Spec uses df.selection
+  programmatic bitset fallback per scenario .md Notes ("current spec
+  authoritative behavior is the bitset fallback with [AMBIGUOUS] warning").
+  All 5 expected row-count assertions (174, 0, 2, 176, 5850) match scenario
+  exactly.

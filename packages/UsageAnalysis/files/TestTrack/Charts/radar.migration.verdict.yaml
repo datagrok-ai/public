@@ -1,0 +1,57 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: charts-migrate-2026-05-07
+feature: charts
+mode: migration
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Charts/radar.md
+invoked_at: 2026-05-07T12:00:00Z
+verdict: PASS
+gate: D
+failure_keys: []
+claims:
+  - check: D-STRUCT-MECH-01
+    status: PASS
+    evidence: Migration report exists at expected path `public/packages/UsageAnalysis/files/TestTrack/Charts/radar-migration-report.md` and is non-empty (188 lines).
+  - check: D-STRUCT-MECH-02
+    status: PASS
+    evidence: Report's `## Step mapping` section contains a Markdown table with 12 rows mapping every original step (incl. expected results, "Check all properties" directive, 4 "main things", and trailing metadata block) to migrated locations.
+  - check: D-STRUCT-MECH-03
+    status: PASS
+    evidence: Migrated frontmatter contains all 9 required fields (feature, sub_features_covered, target_layer, coverage_type, produced_from=migrated, original_path, migration_date, migration_report, related_bugs); deprecated `migrated_from` is not present.
+  - check: D-STRUCT-MECH-04
+    status: PASS
+    evidence: Report has all required `## ` sections — Step mapping, Decisions, Opt-outs (SCOPE_REDUCTION proposals), Deferred items, Edge cases, Unresolved ambiguities. None empty by mistake (Opt-outs intentionally `(none)`).
+  - check: D-STRUCT-MECH-05
+    status: PASS
+    evidence: `original_path: public/packages/UsageAnalysis/files/TestTrack/Charts/radar.md` resolves to the working-tree file under review (per pilot variant A — original `.md` is replaced in-place with migrated content; submodule history confirms the path existed pre-migration).
+  - check: D-STEP-01
+    status: PASS
+    evidence: All 3 original numbered steps (open earthquakes + add Radar; open demog + add Radar; click Gear + check properties incl. 4 main things) mapped to migrated steps 1-2, 4-5, 7-13 respectively. None dropped or deferred.
+  - check: D-STEP-02
+    status: PASS
+    evidence: Each "Radar viewer opens for X" expected result is preserved as an explicit `**Verify:**` step (steps 3, 6, 8); the Context-Panel-opens assertion is verification step 8; the 4 "main things that must be reflected on the viewer" become verifications in steps 9-12.
+  - check: D-EDGE-01
+    status: PASS
+    evidence: Original has no explicit edge cases. Implicit edge cases (table switch mid-session — atlas edge_cases[0] for GROK-18085, and show-current-row family) are addressed in the report's `## Edge cases` section with a clear preserved/deferred split.
+  - check: D-STRUCT-01
+    status: PASS
+    evidence: Chain rev 1 declares `dependency_graph.radar.md.depends_on: []` per the report's Decisions section. Independent scenario; no related-scenario dependency to lose.
+  - check: D-STRUCT-02
+    status: NA
+    evidence: Not a matrix scenario. The 2-dataset × Add-Viewer pairing is preserved 1:1 (earthquakes step 1-3, demog steps 4-6); no combinatorial reduction occurred.
+  - check: D-UI-DELEGATION-01
+    status: NA
+    evidence: `## Opt-outs (SCOPE_REDUCTION proposals)` is `(none)` — no UI-to-JS-API SR proposal; the delegation citation requirement does not apply.
+  - check: D-SAN-01
+    status: PASS
+    evidence: Report present and lists non-trivial decisions across all required sections (target_layer choice, coverage_type rationale, sibling spec consultation, helpers reused vs candidates, bug-library results, decision log result, edge cases split, three unresolved ambiguities documented).
+  - check: D-SAN-02
+    status: PASS
+    evidence: Every sentence/clause from the original is accounted for. Trailing JSON metadata block (`order: 28`, `datasets: [System:DemoFiles/demog.csv]`) is preserved verbatim at the bottom of the migrated file AND noted in Step mapping. The "Main things ... must be reflected on the viewer" framing is preserved via per-step bold sub-headers in steps 9-12.
+  - check: D-MERIT-01
+    status: PASS
+    evidence: Opt-outs section is `(none)`. No step opted out for effort. The single Deferred item (GROK-18085 save/reopen) cites real automation impossibility — original .md has no save/reopen step, and Migrator declines to silently expand scope (symmetric to no-silent-drops rule).
+  - check: D-MERIT-02
+    status: PASS
+    evidence: The Deferred item references a concrete prerequisite (`bug_match_attempts_skipped.GROK-18085.skip_category: reproduction_unparseable` from chain rev 1) and a clear unblocking trigger (amend original .md OR chain Mode 2 retrigger). Not an unprompted "TODO later" deferral.
