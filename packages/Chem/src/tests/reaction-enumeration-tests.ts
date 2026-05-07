@@ -1,3 +1,5 @@
+/* eslint-disable max-len */
+/* eslint-disable max-lines-per-function */
 import * as DG from 'datagrok-api/dg';
 import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
@@ -8,6 +10,7 @@ import {
 } from '../utils/reaction-enumeration/enumerate';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
+import {parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
@@ -32,19 +35,8 @@ function colAsStrings(df: DG.DataFrame, name: string): string[] {
   return out;
 }
 
-// Mirror of packages/Chem/src/rendering/rdkit-reaction-renderer.ts:parseMultiStepReaction.
-// Used to verify our route format renders correctly.
-function parseMultiStepReaction(reactionString: string): string[] {
-  const parts = reactionString.split('>>');
-  if (parts.length <= 2) return [reactionString];
-  const steps: string[] = [];
-  for (let i = 0; i < parts.length - 1; i++) {
-    const left = parts[i].trim();
-    const right = parts[i + 1].trim();
-    if (left && right) steps.push(`${left}>>${right}`);
-  }
-  return steps.length > 0 ? steps : [reactionString];
-}
+// (parseMultiStepReaction and BRANCH_DELIMITER are imported from the renderer above so the
+// test can't drift out of sync with the implementation.)
 
 async function runFullSetup(opts?: {
   maxComponents?: number; maxCombos?: number;
@@ -178,17 +170,20 @@ category('Reaction Enumeration', () => {
     expect(formatRoute(route), 'BB1.BB2>>P1');
   });
 
-  test('route formatting: two-step linear chain — Chem-renderer-compatible format', async () => {
+  test('route formatting: two-step linear chain — every step delimited', async () => {
     const route: Route = [
       step(['BB1', 'BB2'], 'P1'),
       step(['P1', 'BB3'], 'P2'),
     ];
     const formatted = formatRoute(route);
-    expect(formatted, 'BB1.BB2>>P1.BB3>>P2');
-    const steps = parseMultiStepReaction(formatted);
-    expect(steps.length, 2);
-    expect(steps[0], 'BB1.BB2>>P1.BB3');
-    expect(steps[1], 'P1.BB3>>P2');
+    expect(formatted, 'BB1.BB2>>P1--**--P1.BB3>>P2');
+    // parseMultiStepReaction returns branches × steps; both steps live in their own branch here
+    // (each step was emitted as its own --**--delimited segment).
+    const branches = parseMultiStepReaction(formatted);
+    expect(branches.length, 2);
+    expect(branches[0].length, 1);
+    expect(branches[0][0], 'BB1.BB2>>P1');
+    expect(branches[1][0], 'P1.BB3>>P2');
   });
 
   test('route formatting: three-step linear chain', async () => {
@@ -197,7 +192,7 @@ category('Reaction Enumeration', () => {
       step(['P1', 'C'], 'P2'),
       step(['P2', 'D'], 'P3'),
     ];
-    expect(formatRoute(route), 'A.B>>P1.C>>P2.D>>P3');
+    expect(formatRoute(route), 'A.B>>P1--**--P1.C>>P2--**--P2.D>>P3');
   });
 
   test('route formatting: linear chain where the next step has only the prev product as reactant', async () => {
@@ -205,33 +200,74 @@ category('Reaction Enumeration', () => {
       step(['BB1', 'BB2'], 'P1'),
       step(['P1'], 'P2'),
     ];
-    expect(formatRoute(route), 'BB1.BB2>>P1>>P2');
+    expect(formatRoute(route), 'BB1.BB2>>P1--**--P1>>P2');
   });
 
-  test('route formatting: branching route concatenates with >> only — never uses semicolons', async () => {
+  test('route formatting: branching route uses --**-- delimiter at every seam', async () => {
     const route: Route = [
       step(['A', 'B'], 'P1'),
       step(['C', 'D'], 'P2'),
       step(['P1', 'P2'], 'P3'),
     ];
     const formatted = formatRoute(route);
-    expect(formatted.indexOf('; '), -1, `Route used "; " separator: ${formatted}`);
-    expect(formatted.indexOf(';'), -1, `Route used ";" separator: ${formatted}`);
-    const steps = parseMultiStepReaction(formatted);
-    expect(steps.length >= 1, true, `parseMultiStepReaction returned no steps for ${formatted}`);
+    expect(formatted, 'A.B>>P1--**--C.D>>P2--**--P1.P2>>P3');
+    expect(formatted.indexOf(';'), -1, `Route used semicolon separator: ${formatted}`);
+    // Three branches, each a single step — renderer will draw branch separators (not arrows)
+    // between them.
+    const branches = parseMultiStepReaction(formatted);
+    expect(branches.length, 3, `Expected 3 branches, got ${branches.length}: ${JSON.stringify(branches)}`);
+    expect(branches.flat().length, 3, 'Each branch should hold exactly one step');
+    expect(branches[0][0], 'A.B>>P1');
+    expect(branches[1][0], 'C.D>>P2');
+    expect(branches[2][0], 'P1.P2>>P3');
   });
 
-  test('route formatting: each step is a valid single-step reaction after parseMultiStepReaction', async () => {
+  test('route formatting: convergent multi-branch synthesis — no fake intermediate seams', async () => {
+    // bb1+bb2→p1, bb3+bb4→p2, p2+bb5→p3, p3+p1→p4. Every step is its own self-contained
+    // reaction segment, so each ends up in its own branch.
+    const route: Route = [
+      step(['bb1', 'bb2'], 'p1'),
+      step(['bb3', 'bb4'], 'p2'),
+      step(['p2', 'bb5'], 'p3'),
+      step(['p3', 'p1'], 'p4'),
+    ];
+    const formatted = formatRoute(route);
+    expect(formatted, 'bb1.bb2>>p1--**--bb3.bb4>>p2--**--p2.bb5>>p3--**--p3.p1>>p4');
+
+    const branches = parseMultiStepReaction(formatted);
+    expect(branches.length, 4, `Expected 4 branches, got ${branches.length}: ${JSON.stringify(branches)}`);
+    const flat = branches.flat();
+    expect(flat.length, 4);
+    expect(flat[0], 'bb1.bb2>>p1');
+    expect(flat[1], 'bb3.bb4>>p2');
+    expect(flat[2], 'p2.bb5>>p3');
+    expect(flat[3], 'p3.p1>>p4');
+    for (const s of flat)
+      expect(s.split('>>').length - 1, 1, `Step "${s}" is not a single-step reaction`);
+  });
+
+  test('route formatting: each formatted step is a valid single-step reaction', async () => {
     const route: Route = [
       step(['BB1', 'BB2'], 'P1'),
       step(['P1', 'BB3'], 'P2'),
     ];
     const formatted = formatRoute(route);
-    const steps = parseMultiStepReaction(formatted);
-    for (const s of steps) {
+    const branches = parseMultiStepReaction(formatted);
+    for (const s of branches.flat()) {
       const arrowCount = s.split('>>').length - 1;
       expect(arrowCount, 1, `Step "${s}" has ${arrowCount} ">>" separators (expected 1)`);
     }
+  });
+
+  test('route formatting: a legacy linear chain (no delimiter) parses as a single branch', async () => {
+    // Backward compat: strings written before the delimiter existed must still parse as before
+    // (a single branch with multiple linear steps), so the renderer keeps drawing arrows between
+    // adjacent steps instead of branch separators.
+    const branches = parseMultiStepReaction('A.B>>C>>D');
+    expect(branches.length, 1, `Expected 1 branch for legacy linear chain, got ${branches.length}`);
+    expect(branches[0].length, 2);
+    expect(branches[0][0], 'A.B>>C');
+    expect(branches[0][1], 'C>>D');
   });
 
   // ── end-to-end ──────────────────────────────────────────────────────────
@@ -274,6 +310,209 @@ category('Reaction Enumeration', () => {
       expect(typeof row.route, 'string');
     }
   }, {timeout: 120000});
+
+  test('end-to-end: amino-acid bb file + peptide/disulfide reactions produce expected coupling products', async () => {
+    const rdkit = getRdKitModule();
+    const bbsDf = await loadCsv('enumerations/aa_bb.csv');
+    const rxnsDf = await loadCsv('enumerations/aa_reactions.csv');
+
+    const buildingBlocks = colAsStrings(bbsDf, 'SMILES').filter((s) => s.trim().length > 0);
+    expect(buildingBlocks.length, 20, `Expected 20 canonical amino acids, got ${buildingBlocks.length}`);
+
+    const smartsList = colAsStrings(rxnsDf, 'reaction_smarts');
+    const namesList = rxnsDf.col('reaction_name') ? colAsStrings(rxnsDf, 'reaction_name') : null;
+    const templates: TemplateInput[] = [];
+    for (let i = 0; i < smartsList.length; i++) {
+      const smarts = (smartsList[i] ?? '').trim();
+      if (!smarts) continue;
+      templates.push({smarts, blockingSmartsList: [], reactionName: namesList?.[i] ?? ''});
+    }
+    expect(templates.length, 2, 'Expected 2 reaction templates (peptide + disulfide)');
+
+    const config = cloneConfig(DEFAULT_CONFIG);
+    config.enumeration.num_rounds = 1;
+    config.enumeration.depth_first = true;
+    config.products_specs.min_num_carbon_atoms = -1;
+    config.products_specs.max_num_carbon_atoms = -1;
+    config.products_specs.max_num_hetero_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.products_specs.only_these_atoms_allowed = [];
+    config.max_num_combinations_per_template = 10000;
+
+    const {rows, warnings} = await enumerate({
+      rdkit, config, templates, buildingBlocks, exclusionSmarts: [],
+    });
+    if (rows.length === 0)
+      console.warn('aa enum: no rows. Warnings:', warnings.slice(0, 10));
+    expect(rows.length > 0, true,
+      `Expected products from amino-acid coupling. Warnings (${warnings.length}): ${warnings.slice(0, 5).join(' | ')}`);
+
+    // Peptide coupling: every AA pair (incl. self) -> dipeptide -> at least 20 products,
+    // all containing the C-N peptide bond pattern N-C(=O)-C.
+    const peptideRows = rows.filter((r) => r.reaction_name === 'Peptide coupling');
+    expect(peptideRows.length > 0, true, 'Peptide coupling produced no rows');
+
+    // Disulfide: only Cys-Cys can react (only Cys has a thiol). Expect exactly one canonical product.
+    const disulfideRows = rows.filter((r) => r.reaction_name === 'Disulfide formation');
+    expect(disulfideRows.length > 0, true, 'Disulfide formation produced no rows — Cys + Cys should match');
+    // The product should contain an S-S bond.
+    expect(disulfideRows[0].product.includes('SS') || /S.{0,3}S/.test(disulfideRows[0].product), true,
+      `Disulfide product missing SS link: ${disulfideRows[0].product}`);
+  }, {timeout: 120000});
+
+  test('end-to-end: every step\'s reactants are BBs or products of an earlier step', async () => {
+    // Regression test for the route-merging bug where a step using a product from a round
+    // earlier than (r-1) had that product's synthesis steps silently dropped, so the final
+    // route appeared to "start" from a non-BB intermediate.
+    //
+    // Use the AA library with breadth_first + 3 rounds — that's where convergent paths
+    // (e.g. final disulfide of LeuCysGly + CysVal) most commonly arise, with CysVal in R1
+    // and LeuCysGly in R2.
+    const rdkit = getRdKitModule();
+    const bbsDf = await loadCsv('enumerations/aa_bb.csv');
+    const rxnsDf = await loadCsv('enumerations/aa_reactions.csv');
+    const rawBBs = colAsStrings(bbsDf, 'SMILES').filter((s) => s.trim().length > 0);
+
+    // Canonicalize BBs through RDKit so they match the canonical SMILES the enumerator emits.
+    const canonBBs = new Set<string>();
+    for (const s of rawBBs) {
+      const m = rdkit.get_mol(s);
+      try {if (m && m.is_valid()) canonBBs.add(m.get_smiles());} finally {try {m?.delete();} catch {/* ignore */}}
+    }
+
+    const smartsList = colAsStrings(rxnsDf, 'reaction_smarts');
+    const namesList = rxnsDf.col('reaction_name') ? colAsStrings(rxnsDf, 'reaction_name') : null;
+    const templates: TemplateInput[] = [];
+    for (let i = 0; i < smartsList.length; i++) {
+      const smarts = (smartsList[i] ?? '').trim();
+      if (!smarts) continue;
+      templates.push({smarts, blockingSmartsList: [], reactionName: namesList?.[i] ?? ''});
+    }
+
+    const config = cloneConfig(DEFAULT_CONFIG);
+    config.enumeration.num_rounds = 3;
+    config.enumeration.depth_first = false;
+    config.products_specs.min_num_carbon_atoms = -1;
+    config.products_specs.max_num_carbon_atoms = -1;
+    config.products_specs.max_num_hetero_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.products_specs.only_these_atoms_allowed = [];
+    config.max_num_components = 2;
+    // Keep the budget small — we just need enough rows to exercise the merge logic.
+    config.max_num_combinations_per_template = 30;
+
+    const {rows, warnings} = await enumerate({
+      rdkit, config, templates, buildingBlocks: rawBBs, exclusionSmarts: [],
+    });
+    expect(rows.length > 0, true,
+      `Expected products. Warnings (${warnings.length}): ${warnings.slice(0, 5).join(' | ')}`);
+
+    // For every row, walk its route step-by-step. At each step, every reactant must already be
+    // either a BB or a product of an earlier step. This is the property the route-merging logic
+    // is supposed to guarantee.
+    let checked = 0;
+    let multiStepChecked = 0;
+    for (const row of rows) {
+      if (!row.route) continue;
+      const stepStrs = row.route.split('--**--');
+      const known = new Set<string>(canonBBs);
+      for (const stepStr of stepStrs) {
+        const arrow = stepStr.indexOf('>>');
+        if (arrow < 0) continue;
+        const lhs = stepStr.slice(0, arrow);
+        const rhs = stepStr.slice(arrow + 2);
+        for (const r of lhs.split('.')) {
+          if (!r) continue;
+          expect(known.has(r), true,
+            `Route step "${stepStr}" of product "${row.product}" uses reactant "${r}" that is ` +
+            `neither a BB nor a product of an earlier step. Full route: ${row.route}`);
+        }
+        for (const p of rhs.split('.')) if (p) known.add(p);
+      }
+      checked++;
+      if (stepStrs.length > 1) multiStepChecked++;
+    }
+    expect(checked > 0, true, 'No routes were checked');
+    // We need to actually exercise multi-step routes (otherwise the bug couldn't surface).
+    expect(multiStepChecked > 0, true,
+      `No multi-step routes produced; the merge logic wasn't exercised. Total rows: ${rows.length}`);
+  }, {timeout: 600000});
+
+  test('end-to-end: depth_first never merges two prev-round products in a single step', async () => {
+    // Regression test: in depth_first mode, every round-(R>1) step must combine EXACTLY ONE
+    // round-(R-1) product with original BBs (linear chain extension). Combining two complex
+    // products in one step is convergent/breadth-first behavior and must not occur in depth_first.
+    //
+    // The AA library + 3 rounds is the easy way to trigger the bug: without the strict filter,
+    // peptide+disulfide combinations would happily merge two prev-round products.
+    const rdkit = getRdKitModule();
+    const bbsDf = await loadCsv('enumerations/aa_bb.csv');
+    const rxnsDf = await loadCsv('enumerations/aa_reactions.csv');
+    const rawBBs = colAsStrings(bbsDf, 'SMILES').filter((s) => s.trim().length > 0);
+
+    const canonBBs = new Set<string>();
+    for (const s of rawBBs) {
+      const m = rdkit.get_mol(s);
+      try {
+        if (m && m.is_valid()) canonBBs.add(m.get_smiles());
+      } finally {
+        try {
+          m?.delete();
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    const smartsList = colAsStrings(rxnsDf, 'reaction_smarts');
+    const namesList = rxnsDf.col('reaction_name') ? colAsStrings(rxnsDf, 'reaction_name') : null;
+    const templates: TemplateInput[] = [];
+    for (let i = 0; i < smartsList.length; i++) {
+      const smarts = (smartsList[i] ?? '').trim();
+      if (!smarts) continue;
+      templates.push({smarts, blockingSmartsList: [], reactionName: namesList?.[i] ?? ''});
+    }
+
+    const config = cloneConfig(DEFAULT_CONFIG);
+    config.enumeration.num_rounds = 3;
+    config.enumeration.depth_first = true;
+    config.products_specs.min_num_carbon_atoms = -1;
+    config.products_specs.max_num_carbon_atoms = -1;
+    config.products_specs.max_num_hetero_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.products_specs.only_these_atoms_allowed = [];
+    config.max_num_components = 2;
+    config.max_num_combinations_per_template = 50;
+
+    const {rows, warnings} = await enumerate({
+      rdkit, config, templates, buildingBlocks: rawBBs, exclusionSmarts: [],
+    });
+    expect(rows.length > 0, true,
+      `Expected products. Warnings (${warnings.length}): ${warnings.slice(0, 5).join(' | ')}`);
+
+    // Walk every route. At each step, classify each reactant as BB or non-BB. In depth_first,
+    // a step has at most one non-BB reactant (the prev-round product being extended). Two non-BB
+    // reactants in one step = the bug we're guarding against.
+    let multiStepChecked = 0;
+    for (const row of rows) {
+      if (!row.route) continue;
+      const stepStrs = row.route.split('--**--');
+      if (stepStrs.length <= 1) continue;
+      multiStepChecked++;
+      for (const stepStr of stepStrs) {
+        const arrow = stepStr.indexOf('>>');
+        if (arrow < 0) continue;
+        const lhs = stepStr.slice(0, arrow);
+        const reactants = lhs.split('.').filter((r) => r.length > 0);
+        const nonBBs = reactants.filter((r) => !canonBBs.has(r));
+        expect(nonBBs.length <= 1, true,
+          `depth_first violation: step "${stepStr}" has ${nonBBs.length} non-BB reactants ` +
+          `(should be ≤ 1). Reactants: ${reactants.join(' + ')}. Full route: ${row.route}`);
+      }
+    }
+    expect(multiStepChecked > 0, true,
+      `No multi-step depth_first routes produced; constraint wasn't exercised. Total rows: ${rows.length}`);
+  }, {timeout: 600000});
 
   test('end-to-end: tied (parenthesized) reactant group of two fragments', async () => {
     const rdkit = getRdKitModule();

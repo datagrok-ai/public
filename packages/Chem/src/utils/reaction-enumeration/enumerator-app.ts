@@ -128,6 +128,44 @@ interface BuiltInputs {
   exclusionSmarts: string[];
 }
 
+const isStringCol = (c: DG.Column) => c.type === DG.COLUMN_TYPE.STRING;
+
+// Build a column input bound to a table. If the preferred column name exists and matches the
+// filter, it's pre-selected; otherwise the first matching column is used (Datagrok default).
+function makeColInput(
+  label: string, table: DG.DataFrame | null, preferredName: string,
+  filter: (c: DG.Column) => boolean, tooltip: string,
+): DG.InputBase<DG.Column | null> {
+  const opts: any = {filter};
+  if (table) {
+    opts.table = table;
+    const c = table.col(preferredName);
+    if (c && filter(c)) opts.value = c;
+  }
+  const inp = ui.input.column(label, opts);
+  inp.setTooltip(tooltip);
+  return inp;
+}
+
+// When the parent table changes, swap the column input's table in-place (preserves DOM identity
+// so form layout and onChanged subscribers keep working). Re-selects the preferred column name in
+// the new table if it exists.
+function bindColToTable(
+  colInput: DG.InputBase<DG.Column | null>, tableInput: DG.InputBase<DG.DataFrame | null>,
+  getPreferredName: () => string, filter: (c: DG.Column) => boolean,
+): void {
+  tableInput.onChanged.subscribe(() => {
+    const t = tableInput.value;
+    if (!t) return;
+    ui.input.setColumnInputTable(colInput, t, filter);
+    const wanted = getPreferredName();
+    if (wanted) {
+      const c = t.col(wanted);
+      if (c && filter(c)) colInput.value = c;
+    }
+  });
+}
+
 function buildInputs(
   config: EnumeratorConfig, tDf: DG.DataFrame, bDf: DG.DataFrame, xDf: DG.DataFrame | null,
 ): BuiltInputs {
@@ -175,35 +213,44 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     value: templatesDf ?? undefined, nullable: false,
     tooltipText: 'Table with reaction SMARTS templates. Pick an open workspace table or upload a CSV via the file icon.',
   });
-  const smartsColInput = ui.input.string('SMARTS column', {value: config.enumeration.smarts_col});
-  smartsColInput.setTooltip('Name of the column in the Templates table that contains the reaction SMARTS strings.');
+  const smartsColInput = makeColInput('SMARTS column', templatesDf, config.enumeration.smarts_col, isStringCol,
+    'Column in the Templates table that contains the reaction SMARTS strings.');
 
-  const blockingColInput = ui.input.string('Blocking SMARTS column',
-    {value: config.enumeration.reactant_blocking_groups_per_template_column});
-  blockingColInput.setTooltip(
+  const blockingColInput = makeColInput('Blocking SMARTS column', templatesDf,
+    config.enumeration.reactant_blocking_groups_per_template_column, isStringCol,
     'Optional column whose values are SMARTS patterns (separated by ";" or "|"). A building block ' +
-    'matching any blocking SMARTS for a given template is excluded from that template only. ' +
-    'Leave the column missing to skip blocking for the table.');
+    'matching any blocking SMARTS for a given template is excluded from that template only.');
 
-  const rxnNameColInput = ui.input.string('Reaction name column', {value: config.enumeration.reaction_name_col});
-  rxnNameColInput.setTooltip(
+  const rxnNameColInput = makeColInput('Reaction name column', templatesDf,
+    config.enumeration.reaction_name_col, isStringCol,
     'Optional column with a friendly name for each reaction template. Surfaces in the output ' +
-    '"reaction_name" column. Missing column is fine; names just default to empty.');
+    '"reaction_name" column.');
 
   const bbsInput = ui.input.table('Building blocks', {
     value: bbsDf ?? undefined, nullable: false,
     tooltipText: 'Table with the building-block library (SMILES). Pick a workspace table or upload a CSV.',
   });
-  const bbColInput = ui.input.string('SMILES column', {value: config.enumeration.bb_smiles_column});
-  bbColInput.setTooltip('Name of the column in the Building blocks table that contains SMILES.');
+  const bbColInput = makeColInput('SMILES column', bbsDf, config.enumeration.bb_smiles_column, isStringCol,
+    'Column in the Building blocks table that contains SMILES.');
 
   const exclusionInput = ui.input.table('Exclusion SMARTS (optional)', {
     value: exclusionDf ?? undefined, nullable: true,
     tooltipText: 'Optional table of SMARTS patterns. Any product matching one of these is rejected.',
   });
-  const exclusionColInput = ui.input.string('Exclusion SMARTS column',
-    {value: config.products_specs.exclusion_smarts_products_file_smarts_col});
-  exclusionColInput.setTooltip('Name of the column in the Exclusion table that contains the SMARTS strings.');
+  const exclusionColInput = makeColInput('Exclusion SMARTS column', exclusionDf,
+    config.products_specs.exclusion_smarts_products_file_smarts_col, isStringCol,
+    'Column in the Exclusion table that contains the SMARTS strings.');
+
+  // Re-bind column inputs whenever the parent table changes. Preserves the column input identity
+  // (so form layout and onChanged subscribers stay valid) and re-selects the preferred column
+  // name in the new table when present.
+  bindColToTable(smartsColInput, templatesInput, () => config.enumeration.smarts_col, isStringCol);
+  bindColToTable(blockingColInput, templatesInput,
+    () => config.enumeration.reactant_blocking_groups_per_template_column, isStringCol);
+  bindColToTable(rxnNameColInput, templatesInput, () => config.enumeration.reaction_name_col, isStringCol);
+  bindColToTable(bbColInput, bbsInput, () => config.enumeration.bb_smiles_column, isStringCol);
+  bindColToTable(exclusionColInput, exclusionInput,
+    () => config.products_specs.exclusion_smarts_products_file_smarts_col, isStringCol);
 
   // ---- CONFIG inputs ----
   const numRoundsInput = ui.input.int('Number of rounds', {value: config.enumeration.num_rounds, min: 1});
@@ -213,9 +260,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   const depthFirstInput = ui.input.bool('Depth first', {value: config.enumeration.depth_first});
   depthFirstInput.setTooltip(
-    'When checked, round r > 1 only forms combinations that include at least one product from ' +
-    'round r-1 (others must be original BBs). Off (breadth-first) allows any combination from ' +
-    'rounds 0..r-1 — typically explodes the search space.');
+    'When checked, each round-r > 1 step must combine EXACTLY ONE round-(r-1) product with original ' +
+    'BBs (linear chain extension, no merging two complex products). Off (breadth-first) allows any ' +
+    'combination from rounds 0..r-1 — typically explodes the search space and produces convergent routes.');
 
   const minCInput = ui.input.int('Min carbon atoms', {value: config.products_specs.min_num_carbon_atoms});
   minCInput.setTooltip('Minimum number of carbon atoms a product must have to pass. Set -1 to disable.');
@@ -235,12 +282,20 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     'Templates whose reaction SMARTS have more reactant slots than this are skipped. Default 4 ' +
     'covers all templates in the bundled set.');
 
+  // True while we're pushing config → inputs (syncConfigToQuickInputs). Each setAndFire fires
+  // onChanged, which triggers schedulePreview → refreshTooltip → syncQuickInputsToConfig — and
+  // that read-back happens MID-loop while only some inputs have been updated, overwriting config
+  // with the stale values of the inputs we haven't reached yet (e.g. max # components reverts).
+  // The flag short-circuits the read-back during the sync; refreshTooltip just reads the live
+  // `config` instead.
+  let pushingConfigToInputs = false;
+
   // ---- Header (i) tooltip with full YAML ----
   const infoIcon = ui.iconFA('info-circle', () => {});
   infoIcon.style.marginLeft = '8px';
   infoIcon.style.color = 'var(--blue-2)';
   const refreshTooltip = () => {
-    syncQuickInputsToConfig();
+    if (!pushingConfigToInputs) syncQuickInputsToConfig();
     const yaml = configToYaml(config);
     const pre = document.createElement('pre');
     pre.style.fontSize = '11px';
@@ -259,26 +314,67 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     config.products_specs.max_num_carbon_atoms = maxCInput.value ?? -1;
     config.max_num_combinations_per_template = maxCombosInput.value ?? config.max_num_combinations_per_template;
     config.max_num_components = maxComponentsInput.value ?? config.max_num_components;
-    config.enumeration.smarts_col = smartsColInput.value ?? config.enumeration.smarts_col;
+    // Column inputs hold a Column object; persist its name in the YAML config. If the input has no
+    // selection, keep the previous config value so YAML round-trip stays stable.
+    config.enumeration.smarts_col = smartsColInput.value?.name ?? config.enumeration.smarts_col;
     config.enumeration.reactant_blocking_groups_per_template_column =
-      blockingColInput.value ?? config.enumeration.reactant_blocking_groups_per_template_column;
-    config.enumeration.reaction_name_col = rxnNameColInput.value ?? config.enumeration.reaction_name_col;
-    config.enumeration.bb_smiles_column = bbColInput.value ?? config.enumeration.bb_smiles_column;
-    config.products_specs.exclusion_smarts_products_file_smarts_col = exclusionColInput.value ?? 'SMARTS';
+      blockingColInput.value?.name ?? config.enumeration.reactant_blocking_groups_per_template_column;
+    config.enumeration.reaction_name_col =
+      rxnNameColInput.value?.name ?? config.enumeration.reaction_name_col;
+    config.enumeration.bb_smiles_column = bbColInput.value?.name ?? config.enumeration.bb_smiles_column;
+    config.products_specs.exclusion_smarts_products_file_smarts_col =
+      exclusionColInput.value?.name ?? config.products_specs.exclusion_smarts_products_file_smarts_col;
+  };
+
+  // Setting `input.value = X` updates the model but, on int/float/string inputs, does NOT
+  // always refresh the rendered <input type="number"> text — the Dart-side widget skips the
+  // re-render when the value comes via the API rather than user typing. This is what causes the
+  // dialog→main "max # components doesn't update" symptom. The fix is to also push the new value
+  // into the underlying HTMLInputElement so its visible text matches the model.
+  const setAndFire = <T>(input: DG.InputBase<T>, v: T) => {
+    input.value = v;
+    try {
+      const el = input.input as HTMLInputElement | undefined;
+      if (el?.tagName === 'INPUT' && el.type !== 'checkbox') {
+        const desired = v == null ? '' : String(v);
+        if (el.value !== desired) el.value = desired;
+      }
+    } catch {/* ignore — non-textual inputs (column/table/bool/etc.) */}
+    try {input.fireChanged();} catch {/* ignore — older API versions */}
   };
 
   const syncConfigToQuickInputs = () => {
-    numRoundsInput.value = config.enumeration.num_rounds;
-    depthFirstInput.value = config.enumeration.depth_first;
-    minCInput.value = config.products_specs.min_num_carbon_atoms;
-    maxCInput.value = config.products_specs.max_num_carbon_atoms;
-    maxCombosInput.value = config.max_num_combinations_per_template;
-    maxComponentsInput.value = config.max_num_components;
-    smartsColInput.value = config.enumeration.smarts_col;
-    blockingColInput.value = config.enumeration.reactant_blocking_groups_per_template_column;
-    rxnNameColInput.value = config.enumeration.reaction_name_col;
-    bbColInput.value = config.enumeration.bb_smiles_column;
-    exclusionColInput.value = config.products_specs.exclusion_smarts_products_file_smarts_col;
+    pushingConfigToInputs = true;
+    try {
+      setAndFire(numRoundsInput, config.enumeration.num_rounds);
+      setAndFire(depthFirstInput, config.enumeration.depth_first);
+      setAndFire(minCInput, config.products_specs.min_num_carbon_atoms);
+      setAndFire(maxCInput, config.products_specs.max_num_carbon_atoms);
+      setAndFire(maxCombosInput, config.max_num_combinations_per_template);
+      setAndFire(maxComponentsInput, config.max_num_components);
+      // For column inputs, look up the column object by name on the currently-selected table.
+      const tDf = templatesInput.value;
+      if (tDf) {
+        const sc = tDf.col(config.enumeration.smarts_col);
+        if (sc) setAndFire(smartsColInput, sc);
+        const bc = tDf.col(config.enumeration.reactant_blocking_groups_per_template_column);
+        if (bc) setAndFire(blockingColInput, bc);
+        const rc = tDf.col(config.enumeration.reaction_name_col);
+        if (rc) setAndFire(rxnNameColInput, rc);
+      }
+      const bDf = bbsInput.value;
+      if (bDf) {
+        const c = bDf.col(config.enumeration.bb_smiles_column);
+        if (c) setAndFire(bbColInput, c);
+      }
+      const xDf = exclusionInput.value;
+      if (xDf) {
+        const c = xDf.col(config.products_specs.exclusion_smarts_products_file_smarts_col);
+        if (c) setAndFire(exclusionColInput, c);
+      }
+    } finally {
+      pushingConfigToInputs = false;
+    }
   };
 
   // ---- Validation ----
@@ -286,24 +382,15 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     syncQuickInputsToConfig();
     const tDf = templatesInput.value;
     if (!tDf) return 'Select a Templates table.';
-    const smartsCol = (smartsColInput.value ?? '').trim();
-    if (!smartsCol) return 'SMARTS column name is required.';
-    if (!tDf.col(smartsCol))
-      return `Column "${smartsCol}" not found in Templates table. Available: ${tDf.columns.names().join(', ')}`;
+    if (!smartsColInput.value) return 'Select a SMARTS column.';
 
     const bDf = bbsInput.value;
     if (!bDf) return 'Select a Building blocks table.';
-    const bbCol = (bbColInput.value ?? '').trim();
-    if (!bbCol) return 'SMILES column name is required.';
-    if (!bDf.col(bbCol))
-      return `Column "${bbCol}" not found in Building blocks table. Available: ${bDf.columns.names().join(', ')}`;
+    if (!bbColInput.value) return 'Select a SMILES column.';
 
     const xDf = exclusionInput.value;
-    if (xDf) {
-      const excCol = (exclusionColInput.value ?? '').trim();
-      if (excCol && !xDf.col(excCol))
-        return `Column "${excCol}" not found in Exclusion table. Available: ${xDf.columns.names().join(', ')}`;
-    }
+    if (xDf && !exclusionColInput.value)
+      return 'Select an Exclusion SMARTS column or clear the Exclusion table.';
 
     const rounds = numRoundsInput.value ?? 0;
     if (rounds < 1) return 'Number of rounds must be at least 1.';
@@ -356,8 +443,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     }
 
     let rdkit: any;
-    try { rdkit = await getRdKit(); }
-    catch (e) {
+    try {rdkit = await getRdKit();} catch (e) {
       previewStatus.textContent = '';
       validationDiv.textContent = `Could not load RDKit: ${e instanceof Error ? e.message : String(e)}`;
       runBtn.disabled = true;
@@ -395,7 +481,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       previewStatus.textContent = '';
       const msg = ui.divText('No products were produced for these inputs in the preview budget. ' +
         'Check that templates and building blocks are compatible, or relax the product filters.',
-        {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}});
+      {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}});
       showInPreview(msg);
       return;
     }
@@ -409,7 +495,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     try {
       grid.props.rowHeight = 110;
       const colByName = (n: string) => grid.col(n);
-      const setW = (n: string, w: number) => { const c = colByName(n); if (c) c.width = w; };
+      const setW = (n: string, w: number) => {const c = colByName(n); if (c) c.width = w;};
       setW('product', 180);
       setW('route', 460);
       setW('reaction_name', 140);
@@ -429,7 +515,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   function schedulePreview(): void {
     refreshTooltip();
     if (previewTimer) clearTimeout(previewTimer);
-    previewTimer = setTimeout(() => { previewTimer = null; updatePreview(); }, PREVIEW_DEBOUNCE_MS);
+    previewTimer = setTimeout(() => {previewTimer = null; updatePreview();}, PREVIEW_DEBOUNCE_MS);
   }
   refreshTooltip();
   const wireOnChange = <T>(input: DG.InputBase<T>) => input.onChanged.subscribe(() => schedulePreview());
@@ -452,7 +538,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const editConfigBtn = ui.button('Edit full config…', async () => {
     syncQuickInputsToConfig();
     const updated = await openConfigDialog(config);
-    if (updated) { config = updated; syncConfigToQuickInputs(); refreshTooltip(); schedulePreview(); }
+    if (updated) {config = updated; syncConfigToQuickInputs(); refreshTooltip(); schedulePreview();}
   });
   editConfigBtn.title = 'Open the full config form (every YAML field).';
 
@@ -501,7 +587,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   });
   runBtn.title = 'Run the full enumeration with the current config and add the result to the workspace.';
 
-  const cancelBtn = ui.button('Cancel', () => { cancelled = true; });
+  const cancelBtn = ui.button('Cancel', () => {cancelled = true;});
   cancelBtn.style.display = 'none';
 
   async function runFullEnumeration(): Promise<void> {

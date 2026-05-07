@@ -1,4 +1,7 @@
+/* eslint-disable max-len */
+/* eslint-disable camelcase */
 import {RDModule, RDMol, RDReaction, MolList} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {BRANCH_DELIMITER} from '../../rendering/rdkit-reaction-renderer';
 import {EnumeratorConfig} from './config';
 import {applyProductFilters, buildExclusionQmols, computeMolStats, MolStats, stripIsotopesFromSmiles} from './filters';
 
@@ -83,7 +86,7 @@ function tryGetMol(rdkit: RDModule, smiles: string): RDMol | null {
   try {
     const m = rdkit.get_mol(smiles);
     if (!m) return null;
-    if (!m.is_valid()) { m.delete(); return null; }
+    if (!m.is_valid()) {m.delete(); return null;}
     return m;
   } catch {
     return null;
@@ -94,7 +97,7 @@ function tryGetQmol(rdkit: RDModule, smarts: string): RDMol | null {
   try {
     const q = rdkit.get_qmol(smarts);
     if (!q) return null;
-    if (!q.is_valid()) { q.delete(); return null; }
+    if (!q.is_valid()) {q.delete(); return null;}
     return q;
   } catch {
     return null;
@@ -178,14 +181,13 @@ function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings:
 function disposeTemplate(t: ParsedTemplate): void {
   if ((t as any)._disposed) return;
   (t as any)._disposed = true;
-  try { t.rxn.delete(); } catch (e) {
+  try {t.rxn.delete();} catch (e) {
     console.warn(`Template ${t.index + 1} rxn delete failed: ${e instanceof Error ? e.message : String(e)}`);
   }
   for (let i = 0; i < t.reactantQmols.length; i++) {
     const slotQs = t.reactantQmols[i];
     for (let j = 0; j < slotQs.length; j++) {
-      try { slotQs[j].delete(); }
-      catch (e) {
+      try {slotQs[j].delete();} catch (e) {
         console.warn(`Template ${t.index + 1} reactant qmol [${i}][${j}] delete failed: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
@@ -193,8 +195,7 @@ function disposeTemplate(t: ParsedTemplate): void {
   }
   t.reactantQmols.length = 0;
   for (let i = 0; i < t.blockingQmols.length; i++) {
-    try { t.blockingQmols[i].delete(); }
-    catch (e) {
+    try {t.blockingQmols[i].delete();} catch (e) {
       console.warn(`Template ${t.index + 1} blocking qmol [${i}] delete failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -234,9 +235,9 @@ class MolCache {
     return m;
   }
   dispose(): void {
-    for (const m of this.map.values()) {
-      try { m.delete(); } catch { /* ignore */ }
-    }
+    for (const m of this.map.values())
+      try {m.delete();} catch {/* ignore */}
+
     this.map.clear();
   }
 }
@@ -249,52 +250,39 @@ function canonicalize(rdkit: RDModule, smiles: string): string | null {
   } catch {
     return null;
   } finally {
-    try { mol.delete(); } catch { /* ignore */ }
+    try {mol.delete();} catch {/* ignore */}
   }
 }
 
 function* cartesian<T>(slots: T[][]): Generator<T[]> {
   const n = slots.length;
-  if (n === 0) { yield []; return; }
+  if (n === 0) {yield []; return;}
   const idx = new Array(n).fill(0);
   const lengths = slots.map((s) => s.length);
   if (lengths.some((l) => l === 0)) return;
   while (true) {
     yield idx.map((i, k) => slots[k][i]);
     let k = n - 1;
-    while (k >= 0) { idx[k]++; if (idx[k] < lengths[k]) break; idx[k] = 0; k--; }
+    while (k >= 0) {idx[k]++; if (idx[k] < lengths[k]) break; idx[k] = 0; k--;}
     if (k < 0) return;
   }
 }
 
 // Format a route as a single multi-step reaction string parseable by the Chem package's
-// reaction renderer (parseMultiStepReaction in rdkit-reaction-renderer.ts): split by '>>',
-// each adjacent pair is one step. So we always emit '>>'-joined chunks, never 'A; B'.
+// reaction renderer (parseMultiStepReaction in rdkit-reaction-renderer.ts).
 //
-// Linear chain (typical depth-first):   BB1.BB2 → P1, then P1.BB3 → P2
-//   produces  "BB1.BB2>>P1.BB3>>P2"  (renderer reads steps: BB1.BB2>>P1.BB3, P1.BB3>>P2)
+// Each step is emitted as its own self-contained `reactants>>product` segment, joined by the
+// renderer's BRANCH_DELIMITER (`--**--`). The renderer splits on the delimiter so each step is
+// recovered exactly as it was, with no fake "prev_product → next_reactants" intermediates at
+// the seams. If a step uses a product from a previous step (linear chain, depth-first), that
+// product simply appears in this step's reactants list — no elision.
 //
-// Branching chain (rare, breadth-first when prev product isn't a reactant of next step):
-//   step i's reactants don't include step i-1's product. We still concat with '>>' so the
-//   renderer can split, even though the intermediate "fake" pair will look chemically odd.
+// Example route:   bb1+bb2→p1, bb3+bb4→p2, p2+bb5→p3, p3+p1→p4
+//   formatted:     "bb1.bb2>>p1--**--bb3.bb4>>p2--**--p2.bb5>>p3--**--p3.p1>>p4"
+//   renderer sees: 4 real steps in order, no fake seams.
 export function formatRoute(route: Route): string {
   if (route.length === 0) return '';
-  let out = route[0].reactants.join('.') + '>>' + route[0].product;
-  for (let i = 1; i < route.length; i++) {
-    const step = route[i];
-    const prevProduct = route[i - 1].product;
-    const prevIdx = step.reactants.indexOf(prevProduct);
-    if (prevIdx >= 0) {
-      // Prev product is one of this step's reactants: elide it and append the rest + new product.
-      const remaining = step.reactants.slice();
-      remaining.splice(prevIdx, 1);
-      out += (remaining.length > 0 ? '.' + remaining.join('.') : '') + '>>' + step.product;
-    } else {
-      // Branching: emit a fresh '>>'-delimited segment for this step's reactants and product.
-      out += '>>' + step.reactants.join('.') + '>>' + step.product;
-    }
-  }
-  return out;
+  return route.map((s) => `${s.reactants.join('.')}>>${s.product}`).join(BRANCH_DELIMITER);
 }
 
 export interface OutputRow {
@@ -384,6 +372,11 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       const allPriorPool = new Set<string>();
       for (let r = 0; r < round; r++) for (const p of productPools[r]) allPriorPool.add(p.smiles);
 
+      // Pool of SMILES that can fill any reactant slot this round.
+      // - depth_first round 1: only original BBs (BBs combine with BBs).
+      // - depth_first round R > 1: BBs ∪ R(R-1) products. The combo filter below then enforces
+      //   exactly one R(R-1) product + (N-1) BBs per combo (linear chain extension).
+      // - breadth_first: any product produced so far (rounds 0..R-1).
       const eligibleSmiles = config.enumeration.depth_first ?
         (round === 1 ? uniqueBBs : Array.from(new Set([...uniqueBBs, ...prevRoundProducts]))) :
         Array.from(allPriorPool);
@@ -411,9 +404,8 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
           const mol = molCache.get(smi);
           if (!mol) continue;
           if (buildBlockingFilter(mol, t.blockingQmols)) continue;
-          for (let i = 0; i < t.numReactants; i++) {
+          for (let i = 0; i < t.numReactants; i++)
             if (bbMatchesSlot(mol, t.reactantQmols[i])) slots[i].push(smi);
-          }
         }
 
         if (slots.some((s) => s.length === 0)) continue;
@@ -437,10 +429,18 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
           await yieldIfNeeded();
 
           if (config.enumeration.depth_first && round > 1) {
+            // Strict depth-first = linear chain extension. Each step takes EXACTLY ONE
+            // round-(R-1) product and reacts it with original BBs only — no merging two
+            // complex products in a single step (that would be convergent/breadth-first).
             const prevSet = new Set(prevRoundProducts);
-            let hasPrev = false;
-            for (const c of combo) if (prevSet.has(c)) { hasPrev = true; break; }
-            if (!hasPrev) continue;
+            const bbSet = new Set(uniqueBBs);
+            let prevCount = 0;
+            let bbCount = 0;
+            for (const c of combo) {
+              if (prevSet.has(c)) prevCount++;
+              else if (bbSet.has(c)) bbCount++;
+            }
+            if (prevCount !== 1 || prevCount + bbCount !== combo.length) continue;
           }
 
           let molList: MolList | null = null;
@@ -456,7 +456,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             let allValid = true;
             for (const smi of combo) {
               const fresh = tryGetMol(rdkit, smi);
-              if (!fresh) { allValid = false; break; }
+              if (!fresh) {allValid = false; break;}
               inputMols.push(fresh);
               molList.append(fresh);
             }
@@ -479,7 +479,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                 if (!productMol || !productMol.is_valid()) continue;
 
                 let productSmiles: string;
-                try { productSmiles = productMol.get_smiles(); } catch { continue; }
+                try {productSmiles = productMol.get_smiles();} catch {continue;}
                 if (config.products_specs.remove_isotope_information && /\[\d+[A-Za-z]/.test(productSmiles)) {
                   const stripped = stripIsotopesFromSmiles(productSmiles);
                   const re = canonicalize(rdkit, stripped);
@@ -503,7 +503,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                   const fr = applyProductFilters(stats, config.products_specs, exclusion.qmols, evalMol);
                   if (!fr.pass) continue;
                 } finally {
-                  try { evalMol.delete(); } catch { /* ignore */ }
+                  try {evalMol.delete();} catch {/* ignore */}
                 }
 
                 const step: RouteStep = {
@@ -513,17 +513,32 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                   reactionName: t.reactionName,
                 };
 
+                // Build the base route(s) — the synthesis history that must precede this step.
+                // For each combo component that's a previously-synthesized product (from ANY
+                // earlier round, not just round-(r-1)), splice in its known route. BBs and any
+                // unknown reactant are treated as starting materials with no prior history.
+                //
+                // Looking only at round-(r-1) was the original behavior, but it dropped the
+                // synthesis steps of round-(r-2) (or earlier) products that appear in the combo.
+                // In breadth-first mode (or whenever a step legitimately consumes products from
+                // multiple earlier rounds), the resulting route would look like it started from
+                // pre-formed peptides instead of bare BBs. Now we look across all prior rounds.
                 let baseRoutes: Route[];
-                if (round === 1) {
+                if (round === 1)
                   baseRoutes = [[]];
-                } else {
-                  const prevSet = new Set(prevRoundProducts);
-                  const prevComponents = combo.filter((c) => prevSet.has(c));
+                else {
+                  const allPrevProducts = new Map<string, ProductRecord>();
+                  for (let r = 1; r < round; r++) {
+                    for (const p of productPools[r]) {
+                      // First occurrence wins (typically the shorter route).
+                      if (!allPrevProducts.has(p.smiles)) allPrevProducts.set(p.smiles, p);
+                    }
+                  }
+                  const prevComponents = combo.filter((c) => allPrevProducts.has(c));
                   if (prevComponents.length === 0) baseRoutes = [[]];
                   else {
-                    const prevPool = productPools[round - 1];
                     const prevRouteLists = prevComponents.map((pc) => {
-                      const rec = prevPool.find((p) => p.smiles === pc);
+                      const rec = allPrevProducts.get(pc);
                       return rec && rec.routes.length > 0 ? rec.routes : [[]];
                     });
                     baseRoutes = [];
@@ -545,35 +560,33 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                   rec.routes.push([...base, step]);
                 }
               } finally {
-                try { productMol?.delete(); } catch { /* ignore */ }
+                try {productMol?.delete();} catch {/* ignore */}
               }
             } finally {
-              try { productSet.delete(); } catch { /* ignore */ }
+              try {productSet.delete();} catch {/* ignore */}
             }
           } catch (e) {
             warnings.push(`Combo execution failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
           } finally {
-            try { result?.delete(); } catch { /* ignore */ }
-            try { molList?.delete(); } catch { /* ignore */ }
-            for (const m of inputMols) { try { m.delete(); } catch { /* ignore */ } }
+            try {result?.delete();} catch {/* ignore */}
+            try {molList?.delete();} catch {/* ignore */}
+            for (const m of inputMols) try {m.delete();} catch {/* ignore */}
             inputMols.length = 0;
           }
         }
-        if (truncated) {
+        if (truncated)
           warnings.push(`Template ${t.index + 1} (${t.reactionName || ''}): truncated at ${executed}/${totalCombos} combinations (cap=${comboCap}).`);
-        }
       }
 
       productPools.push(Array.from(newPool.values()));
     }
   } catch (e) {
     console.error('Enumeration failed:', e instanceof Error ? e.message : String(e));
-  }
-  finally {
+  } finally {
     for (const t of parsedTemplates) disposeTemplate(t);
     exclusion.dispose();
     molCache.dispose();
-  } 
+  }
 
   const finalProducts = new Map<string, ProductRecord>();
   const startRound = config.keep_building_blocks_in_final_output ? 0 : 1;

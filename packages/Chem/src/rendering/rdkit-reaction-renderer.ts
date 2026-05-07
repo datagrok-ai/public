@@ -11,30 +11,67 @@ const STEP_ARROW_WIDTH = 30;
 const MAX_STEPS_PER_ROW = 3;
 
 /**
- * Split a multi-step reaction string into individual single-step reactions.
- *
- * RDKit only supports single-step reaction SMARTS ("reactants>>products").
- * Multi-step strings like "A.B>>C>>D>>E" are split into consecutive pairs:
- *   step 1: A.B>>C
- *   step 2: C>>D
- *   step 3: D>>E
- *
- * Single-step reactions (containing exactly one ">>") are returned as-is.
+ * Special branch-boundary delimiter. Inserted by route-formatting code (e.g. the reaction
+ * enumerator's `formatRoute`) to mark transitions between independent synthesis branches that
+ * later merge — e.g. branch A ends with product P1, branch B starts with fresh reactants —
+ * so the renderer doesn't draw a fake "P1 → fresh-reactants" reaction at the seam. The sequence
+ * `--**--` is not valid SMILES/SMARTS syntax (`*` is a wildcard atom but must be inside brackets
+ * or alone, never as `**`; `--` is not a valid bond expression), so it can't collide with real
+ * reaction strings.
  */
-function parseMultiStepReaction(reactionString: string): string[] {
-  const parts = reactionString.split('>>');
-  // Two parts means one ">>" — a normal single-step reaction
-  if (parts.length <= 2)
-    return [reactionString];
+export const BRANCH_DELIMITER = '--**--';
 
-  const steps: string[] = [];
-  for (let i = 0; i < parts.length - 1; i++) {
-    const left = parts[i].trim();
-    const right = parts[i + 1].trim();
-    if (left && right)
-      steps.push(`${left}>>${right}`);
+/**
+ * Split a multi-step reaction string into branches of single-step reactions.
+ *
+ * Returns a 2-D array: the outer array is one entry per branch (separated by BRANCH_DELIMITER
+ * `--**--`); each inner array is the linear sequence of single-step reactions inside that branch.
+ *
+ * Within a branch, `A.B>>C>>D>>E` becomes `[A.B>>C, C>>D, D>>E]` (consecutive `>>`-separated
+ * segments paired into single-step reactions). Single-step strings are returned as a single entry.
+ *
+ * Examples:
+ *   "A>>B"                                    → [["A>>B"]]
+ *   "A>>B>>C"                                 → [["A>>B", "B>>C"]]                      (1 branch, linear)
+ *   "A>>B--**--C>>D"                          → [["A>>B"], ["C>>D"]]                    (2 branches)
+ *   "A>>B--**--C>>D>>E--**--B.E>>F"           → [["A>>B"], ["C>>D","D>>E"], ["B.E>>F"]] (3 branches)
+ *
+ * The renderer draws step-arrows between consecutive steps within a branch, and a different
+ * "branch separator" between branches — so a convergent route doesn't get a fake reaction arrow
+ * drawn at the seam where one synthesis path ends and the next begins.
+ */
+export function parseMultiStepReaction(reactionString: string): string[][] {
+  const branchStrings = reactionString.split(BRANCH_DELIMITER);
+  const branches: string[][] = [];
+  for (const branchStr of branchStrings) {
+    const parts = branchStr.split('>>');
+    const branchSteps: string[] = [];
+    if (parts.length <= 2) {
+      const trimmed = branchStr.trim();
+      if (trimmed) branchSteps.push(trimmed);
+    } else {
+      for (let i = 0; i < parts.length - 1; i++) {
+        const left = parts[i].trim();
+        const right = parts[i + 1].trim();
+        if (left && right) branchSteps.push(`${left}>>${right}`);
+      }
+    }
+    if (branchSteps.length > 0) branches.push(branchSteps);
   }
-  return steps.length > 0 ? steps : [reactionString];
+  return branches.length > 0 ? branches : [[reactionString]];
+}
+
+/**
+ * Flatten the branches structure into a single ordered list of step strings. Whether a gap
+ * between two consecutive steps was a within-branch continuation or a branch boundary is no
+ * longer carried here — both are rendered with the same step arrow. The branch structure still
+ * matters at parse time because it prevents fake "prev_product → fresh_reactants" intermediate
+ * steps from being introduced at branch seams; visually the arrows are uniform.
+ */
+function flattenBranches(branches: string[][]): string[] {
+  const steps: string[] = [];
+  for (const branch of branches) for (const s of branch) steps.push(s);
+  return steps;
 }
 
 /** Color used for the step arrows and labels between reaction steps. */
@@ -181,12 +218,15 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
   /**
    * Render a multi-step reaction onto a canvas by splitting it into individual
    * steps laid out horizontally (up to MAX_STEPS_PER_ROW per row, then wrapping).
-   * Arrows are drawn between consecutive steps.
+   * A step arrow is drawn between every pair of consecutive steps. The branch structure from
+   * parseMultiStepReaction is preserved at parse time so no fake intermediate steps slip in
+   * at branch seams; visually the arrows are uniform.
    */
   _drawMultiStepReaction(
     x: number, y: number, w: number, h: number,
-    canvas: HTMLCanvasElement, steps: string[],
+    canvas: HTMLCanvasElement, branches: string[][],
   ): void {
+    const steps = flattenBranches(branches);
     const numRows = Math.ceil(steps.length / MAX_STEPS_PER_ROW);
     const rowH = Math.floor(h / numRows);
     const isLastRow = (row: number) => row === numRows - 1;
@@ -197,7 +237,7 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
       const rowEnd = Math.min(rowStart + MAX_STEPS_PER_ROW, steps.length);
       const stepsInRow = rowEnd - rowStart;
 
-      // Reserve arrow slots between steps, plus one at the end if the row wraps
+      // Reserve arrow slots between steps, plus one at the end if the row wraps.
       const hasWrapArrow = !isLastRow(row);
       const arrowCount = stepsInRow - 1 + (hasWrapArrow ? 1 : 0);
       const totalArrowW = arrowCount * arrowWidth * dpr;
@@ -208,7 +248,7 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
         const stepX = x + i * (stepW + arrowWidth * dpr);
         this._drawReaction(stepX, rowY, stepW, rowH, canvas, steps[rowStart + i]);
 
-        // Draw arrow after each step except the very last one overall
+        // Draw a step arrow after this step (if there's another to follow).
         const globalIdx = rowStart + i;
         if (globalIdx < steps.length - 1) {
           const arrowX = stepX + stepW;
@@ -227,11 +267,12 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
     const w = width ?? canvas.width;
     const h = height ?? canvas.height;
     try {
-      const steps = parseMultiStepReaction(reactionString);
-      if (steps.length === 1)
-        this._drawReaction(0, 0, w, h, canvas, steps[0]);
+      const branches = parseMultiStepReaction(reactionString);
+      const totalSteps = branches.reduce((n, b) => n + b.length, 0);
+      if (totalSteps === 1)
+        this._drawReaction(0, 0, w, h, canvas, branches[0][0]);
       else
-        this._drawMultiStepReaction(0, 0, w, h, canvas, steps);
+        this._drawMultiStepReaction(0, 0, w, h, canvas, branches);
       return true;
     } catch {
       return false;
@@ -248,14 +289,14 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
     x = r * x; y = r * y;
     w = r * w; h = r * h;
 
-    const steps = parseMultiStepReaction(reactionString);
-    if (steps.length === 1) {
+    const branches = parseMultiStepReaction(reactionString);
+    const totalSteps = branches.reduce((n, b) => n + b.length, 0);
+    if (totalSteps === 1) {
       // Single-step reaction — render directly
-      this._drawReaction(x, y, w, h, g.canvas, steps[0]);
-    }
-    else {
-      // Multi-step reaction — lay out steps horizontally with arrows between them
-      this._drawMultiStepReaction(x, y, w, h, g.canvas, steps);
+      this._drawReaction(x, y, w, h, g.canvas, branches[0][0]);
+    } else {
+      // Multi-step reaction — lay out steps horizontally with arrows / branch separators.
+      this._drawMultiStepReaction(x, y, w, h, g.canvas, branches);
     }
   }
 }
@@ -287,13 +328,14 @@ export function renderReactionToCanvas(
   }
 
   // Direct RDKit rendering — handle multi-step by splitting
-  const steps = parseMultiStepReaction(smarts);
+  const branches = parseMultiStepReaction(smarts);
+  const steps = flattenBranches(branches);
 
   if (steps.length === 1) {
     // Single step — simple direct rendering
     let rxn: RDReaction | null = null;
     try {
-      rxn = rdkit.get_rxn(smarts);
+      rxn = rdkit.get_rxn(steps[0]);
       if (!rxn) return false;
       rxn.draw_to_canvas(canvas, width, height);
       return true;
@@ -327,7 +369,7 @@ export function renderReactionToCanvas(
       const stepX = i * (stepW + arrowWidth);
       ctx.drawImage(tmpCanvas, stepX, 0);
 
-      // Draw connecting arrow after each step except the last
+      // Draw a step arrow after each step except the last.
       if (i < steps.length - 1)
         drawStepArrow(ctx, stepX + stepW, 0, arrowWidth, height, i + 2);
     } catch {
