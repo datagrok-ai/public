@@ -224,6 +224,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.root.appendChild(this.outputArea);
     this.root.appendChild(this.inputArea);
 
+    if (this._inline)
+      this.root.classList.add('d4-ai-inline-mode');
+
     this.setupSubscriptions();
   }
 

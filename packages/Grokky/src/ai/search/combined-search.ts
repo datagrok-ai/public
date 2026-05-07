@@ -104,7 +104,7 @@ export class CombinedAISearchAssistant {
   }
 
   private buildFunctionTabContent(funcInfo: AISearchFuncInfo, prompt: string): HTMLElement {
-    const host = ui.divV([]);
+    const host = ui.divV([], 'grokky-ai-search-tab-host');
     const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true});
     chat.onRunRequest.subscribe((a) => runPromptWithLifecycle(chat, a.currentPrompt.prompt, grok.shell.v, 'search'));
 
