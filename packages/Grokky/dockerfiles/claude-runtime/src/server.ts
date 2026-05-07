@@ -5,6 +5,7 @@ import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage, HookCallback} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
+import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
 import {syncUserFiles, generatePackageIndex} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
@@ -189,6 +190,7 @@ function buildOptions(
   resume?: string, apiKey?: string, mcpServerUrl?: string,
   systemPromptMode?: string, userDir?: string, agentFiles?: string[],
   packageIndex?: string | null, userId?: string,
+  model?: ClaudeModel,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode, agentFiles, packageIndex);
   const mcpServers = buildMcpServers(apiKey, mcpServerUrl, userId);
@@ -200,7 +202,7 @@ function buildOptions(
     ...(loadPlugin ? {plugins: [{type: 'local' as const, path: '/app/plugin'}]} : {}),
     ...(mcpServers ? {mcpServers} : {}),
     permissionMode: 'acceptEdits' as const,
-    model: 'opus' as const,
+    model: model ?? ClaudeModel.Sonnet,
     includePartialMessages: true,
     cwd: userDir || WORKSPACE,
     hooks: {
@@ -370,7 +372,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   try {
     const packageIndex = await generatePackageIndex(userId);
     const existingSession = getSession(sid);
-    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles, packageIndex, userId);
+    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles, packageIndex, userId, data.model);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         emit(ws, {type: 'input_request', sessionId: sid, toolName, input});

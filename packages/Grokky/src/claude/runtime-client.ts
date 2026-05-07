@@ -1,6 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 
+export const ClaudeModel = {
+  Haiku: 'haiku',
+  Sonnet: 'sonnet',
+  Opus: 'opus',
+} as const;
+export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
+
 export type ChunkEvent = {sessionId: string, content: string};
 export type ToolActivityEvent = {sessionId: string, summary: string};
 export type ToolResultEvent = {sessionId: string, content: string};
@@ -120,7 +127,7 @@ export class ClaudeRuntimeClient {
     };
   }
 
-  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string}): void {
+  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
@@ -129,6 +136,7 @@ export class ClaudeRuntimeClient {
       mcpServerUrl: this.mcpServerUrl,
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
+      ...(options?.model ? {model: options.model} : {}),
     }));
   }
 
@@ -163,7 +171,7 @@ export class ClaudeRuntimeClient {
     this.ws.send(JSON.stringify({type: 'input_response', sessionId, value}));
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object}): Promise<any> {
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}`;
     return new Promise((resolve, reject) => {
@@ -179,7 +187,10 @@ export class ClaudeRuntimeClient {
         cleanup();
         reject(new Error(evt.message));
       }));
-      this.send(sid, message, options?.outputSchema ? {outputSchema: options.outputSchema} : undefined);
+      this.send(sid, message, {
+        ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
+        ...(options?.model ? {model: options.model} : {}),
+      });
     });
   }
 
