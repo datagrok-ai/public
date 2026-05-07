@@ -30,8 +30,12 @@ export function getRemarksFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
   return resultDf;
 }
   
+// Shared with the PL batch handler (package.ts) for cheap receptor-name
+// pre-screening before doing the full file fetch.
+export const RECEPTOR_NAME_RE = /REMARK\s+1\s+receptor\.\s+(\S+)\s+J\./;
+
 export async function getReceptorData(pdb: string): Promise<BiostructureData> {
-  const match = pdb.match(/REMARK\s+1\s+receptor\.\s+(\S+)\s+J\./);
+  const match = pdb.match(RECEPTOR_NAME_RE);
   const receptorName = match ? match[1] : '';
   const receptor = await getReceptorFile(receptorName);
   

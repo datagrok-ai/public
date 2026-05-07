@@ -7,13 +7,16 @@
 #input: string protein
 #input: string ligand
 #input: string ligand_resname
-#output: string html
+#output: dataframe result
 
 import logging
+import os
+import tempfile
 from collections import Counter
 from io import StringIO
 
 import numpy as np
+import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import rdDetermineBonds
 from pdbfixer import PDBFixer
@@ -38,14 +41,20 @@ logger = logging.getLogger('prolif')
 #   HBDonor / HBAcceptor / Cationic / Anionic / XBDonor.
 # Hydrophobic, PiStacking, CationPi, PiCation, MetalDonor, MetalAcceptor and
 # VdWContact keep ProLIF's defaults (geometry-based or different model).
+# XBAcceptor also keeps ProLIF's default — `pharmacophore-features.csv`
+# defines no Family-X acceptor pattern, so there's no Datagrok-side reference
+# to align against (only the donor entry, feature 42, is in the CSV).
 # ----------------------------------------------------------------------------
 
 # Family D — HB donor (donor heavy atom + bonded H). ProLIF's HBDonor expects
 # the SMARTS to match a 2-tuple (donor, H), so the trailing [H] is required.
+# Mirrors `pharmacophore-features.csv` features 3-7 (Nitrogen, Oxygen, Sulfur,
+# Charged N-H, Acid O-H donors).
 DG_DONOR_SMARTS = (
     '[$([#7!H0&!$(N-[SX4](=O)(=O)[CX4](F)(F)F)]),'
     '$([#8!H0&!$([OH][C,S,P]=O)]),'
     '$([#16!H0]),'
+    '$([#7;+;!H0]),'
     '$([OX2H1][CX3]=[OX1])]'
     '[H]'
 )
@@ -63,30 +72,53 @@ DG_ACCEPTOR_SMARTS = (
 )
 
 # Family P — Cationic atom: amines (1°/2°/3°), amidine, guanidine, imidazole,
-# any explicit + charge
+# any explicit + charge. Mirrors `pharmacophore-features.csv` features 14-20.
+# `&!$(...)` exclusion guards prevent peptide-amide nitrogens and zwitterion
+# atoms from being misclassified as cationic. The exclusion attaches to the
+# OUTER atom expression — the recursive `$(...)` must close before `&`.
 DG_POSITIVE_SMARTS = (
-    '[$([NX3]([CX4])([CX4,#1])[CX4,#1]),'
+    '[$([NX3]([CX4])([CX4,#1])[CX4,#1])&!$([NX3]-*=[!#6]),'
     '$([CX3](=N)(-N)[!N]),'
     '$(N=[CX3](N)-N),'
-    '$([+,+2,+3]),'
-    '$([NX3;H2;+0][CX4]),'
-    '$([NX3;H1;+0]([CX4])[CX4]),'
+    '$([+,+2,+3])&!$(*[-,-2,-3]),'
+    '$([NX3;H2;+0][CX4])&!$([NX3;H2](C)C=[O,N,S]),'
+    '$([NX3;H1;+0]([CX4])[CX4])&!$([NX3;H1](C)(C)C=[O,N,S]),'
     '$(c1c[nH]cn1)]'
 )
 
 # Family N — Anionic atom: tetrazole, sulfonate/phosphonate, carboxylate,
-# sulfonamide, any explicit − charge
+# sulfonamide, any explicit − charge. Mirrors `pharmacophore-features.csv`
+# features 21-25. The `&!$(*[+,+2,+3])` guard on the bare anion entry
+# prevents zwitterion atoms from being misclassified — recursive `$(...)`
+# closes before `&` so the exclusion binds to the outer atom expression.
 DG_NEGATIVE_SMARTS = (
     '[$(c1nn[nH1]n1),'
     '$([SX4,PX4](=O)(=O)[O-,OH]),'
     '$([CX3,SX3,PX3](=O)[O-,OH]),'
-    '$([-,-2,-3]),'
+    '$([-,-2,-3])&!$(*[+,+2,+3]),'
     '$([NR;H1,-1](-C(=O))-[SX4](=O)(=O))]'
 )
 
 # Family X — Halogen-bond donor (carbon + bonded halogen). ProLIF's XBDonor
 # expects the SMARTS to match a 2-tuple (heavy atom, halogen).
 DG_HALOGEN_DONOR_SMARTS = '[#6][Cl,Br,I;X1]'
+
+
+# Mapping ProLIF interaction names → short codes for the comma-separated
+# per-row Interactions column (e.g. "GLY351_HD, LYS350_PI"). HBDonor and
+# HBAcceptor get DIFFERENT codes (HD/HA) since direction matters chemically
+# — a residue can be both donor and acceptor on different chemical groups,
+# and the user may want to filter for one or the other.
+INT_CODES = {
+    'HBDonor': 'HD', 'HBAcceptor': 'HA',
+    'Hydrophobic': 'HY',
+    'PiStacking': 'PI',
+    'Cationic': 'CAT', 'Anionic': 'AN',
+    'CationPi': 'CPI', 'PiCation': 'CPI',
+    'XBDonor': 'XB', 'XBAcceptor': 'XB',
+    'MetalDonor': 'M', 'MetalAcceptor': 'M',
+    'VdWContact': 'VDW',
+}
 
 
 # AutoDock atom-type → element mapping (PDBQT col 78-79 → standard PDB col 77-78)
@@ -101,10 +133,27 @@ AD_TO_ELEMENT = {
 }
 
 SKIP_RESNAMES = frozenset({
-    'HOH','WAT','H2O','D2O','DOD',
-    'NA','CL','K','MG','CA','ZN','MN','FE','CU','NI',
-    'SO4','PO4','NO3','ACT','CO3',
-    'GOL','EDO','PEG','PG4','DMS','TRS','IMD','BME',
+    # waters
+    'HOH', 'WAT', 'H2O', 'D2O', 'DOD',
+    # ions / metals
+    'NA', 'CL', 'K', 'MG', 'CA', 'ZN', 'MN', 'FE', 'CU', 'NI',
+    # crystallographic buffers / additives
+    'SO4', 'PO4', 'NO3', 'ACT', 'CO3',
+    'GOL', 'EDO', 'PEG', 'PG4', 'DMS', 'TRS', 'IMD', 'BME',
+    # common biological cofactors — typically not the inhibitor of interest
+    # and they often outvote a small ligand on the most-common-HETATM
+    # heuristic (cytochromes, dehydrogenases, kinases). Users can still
+    # explicitly target a cofactor via `ligand_resname`.
+    'HEM', 'HEC', 'HEB', 'HEA',                       # heme variants
+    'NAD', 'NAI', 'NAP', 'NDP', 'NAH', 'NAJ',         # NAD(H)/NADP(H)
+    'FAD', 'FMN', 'FDA',                              # flavins
+    'ATP', 'ADP', 'AMP', 'GTP', 'GDP', 'GMP',         # nucleotides
+    'COA', 'ACO', 'COO',                              # CoA
+    'SAM', 'SAH',                                     # SAM/SAH
+    'PLP', 'PMP',                                     # PLP/PMP
+    'BTN',                                            # biotin
+    'CLA', 'CHL',                                     # chlorophyll
+    'B12', 'COB', 'BCA',                              # cobalamin
 })
 
 # Hoisted constants — defined at module scope so they're built once at import
@@ -606,10 +655,13 @@ if len(ligand_ag) == 0:
         f'No atoms matching {sel_label} found in the prepared structure'
     )
 protein_ag = u.select_atoms(
-    # 5.0 Å is enough — ProLIF's longest cutoff is PiStacking at 5.5 Å, but
-    # `byres` selects the ENTIRE residue when any of its atoms is within the
-    # cutoff, so atoms further out are still included.
-    'protein and byres around 5.0 group ligand', ligand=ligand_ag
+    # 6.5 Å covers ProLIF's longest interaction cutoff: PiStacking is an
+    # umbrella over FaceToFace (5.5 Å) AND EdgeToFace (6.5 Å), the latter
+    # being the true longest. `byres` selects the ENTIRE residue when any
+    # of its atoms is within the cutoff, so atoms further out are still
+    # included. (ProLIF's own default `vicinity_cutoff` is 6.0 Å; we use
+    # 6.5 to leave no edge-to-face stacking interactions on the table.)
+    'protein and byres around 6.5 group ligand', ligand=ligand_ag
 )
 # Bond loading. Both protein and ligand CONECT records are now in the merged
 # PDB (we synthesise the protein's CONECT from the topology above, and the
@@ -630,14 +682,25 @@ if not _has_bonds(ligand_ag):
 
 n_h_lig = len(ligand_ag.select_atoms('element H'))
 
-# 6. Prepare ligand mol — write to in-memory PDB via NamedStream, parse with
-# RDKit. No temp file roundtrip.
+# 6. Prepare ligand mol — when Hs are present ProLIF can convert directly from
+# MDA; when absent we write to a tempfile, add Hs via RDKit, then convert.
 if n_h_lig > 0:
     ligand_mol_obj = plf.Molecule.from_mda(ligand_ag)
 else:
-    _ligbuf = StringIO()
-    ligand_ag.write(NamedStream(_ligbuf, 'lig.pdb'))
-    lig_pdb = _ligbuf.getvalue()
+    # MDA's PDB writer wraps our stream in another NamedStream and that wrapper
+    # closes our buffer regardless of NamedStream's own `close=False`.
+    # Use a tempfile to bypass the close-cascade entirely.
+    _fd, _ligpath = tempfile.mkstemp(suffix='.pdb')
+    os.close(_fd)
+    try:
+        ligand_ag.write(_ligpath)
+        with open(_ligpath, 'r') as _f:
+            lig_pdb = _f.read()
+    finally:
+        try:
+            os.unlink(_ligpath)
+        except OSError:
+            pass
     lig_rdkit = Chem.MolFromPDBBlock(
         lig_pdb, removeHs=False, sanitize=False, proximityBonding=False,
     )
@@ -653,22 +716,81 @@ else:
     lig_rdkit = Chem.AddHs(lig_rdkit, addCoords=True, addResidueInfo=True)
     ligand_mol_obj = plf.Molecule.from_rdkit(lig_rdkit)
 
-# Protein conversion. The MDA→RDKit converter occasionally hits
-# AtomValenceException on residues whose bond perception produces an
-# over-valent atom (modified residues, awkward pdbfixer geometry, glycans,
-# etc.). Try progressively more permissive modes:
-#   1. force=True   — skip strict valence check after bond inference
-#   2. NoImplicit=False — skip bond inference entirely; use implicit Hs.
-try:
-    protein_mol_obj = plf.Molecule.from_mda(protein_ag, force=True)
-except Exception as e_force:
-    logger.warning('from_mda(force=True) failed: %s: %s',
-                   type(e_force).__name__, e_force)
-    logger.info('Retrying with NoImplicit=False (skip bond-order inference)')
+# Protein conversion. The MDA→RDKit converter occasionally fails on:
+#   * AtomValenceException — bond perception produces an over-valent atom
+#     (modified residues, awkward pdbfixer geometry, glycans, etc.)
+#   * "HIS residue (N) has the wrong set of atoms" — strict residue-template
+#     check rejects non-canonical HIS protonation states (HID/HIE/HIP) or
+#     residues with extra/missing atoms after pdbfixer hydrogenation
+# Try progressively more permissive modes; on any failure, walk to the
+# next mode rather than raising. The TypeError catch is for older MDA
+# versions where `NoImplicit` is not a recognized kwarg.
+#   1. force=True       — skip strict valence check after bond inference
+#   2. NoImplicit=False — skip bond inference entirely; use implicit Hs
+#   3. default          — last try inside MDA's converter
+#   4. direct RDKit     — bypass MDA's converter entirely; let RDKit parse
+#                         the protein PDB directly. Loses some MDA metadata
+#                         but PDBResidueInfo is preserved, which is all
+#                         ProLIF needs for residue-aware interaction matching.
+_protein_modes = [
+    ('force=True',       lambda: plf.Molecule.from_mda(protein_ag, force=True)),
+    ('NoImplicit=False', lambda: plf.Molecule.from_mda(protein_ag, NoImplicit=False)),
+    ('default',          lambda: plf.Molecule.from_mda(protein_ag)),
+]
+protein_mol_obj = None
+last_mda_err: Exception | None = None
+for _label, _fn in _protein_modes:
     try:
-        protein_mol_obj = plf.Molecule.from_mda(protein_ag, NoImplicit=False)
-    except TypeError:
-        protein_mol_obj = plf.Molecule.from_mda(protein_ag)
+        protein_mol_obj = _fn()
+        break
+    except Exception as _e:
+        last_mda_err = _e
+        logger.warning('from_mda(%s) failed: %s: %s', _label,
+                       type(_e).__name__, _e)
+        continue
+
+if protein_mol_obj is None:
+    logger.warning(
+        'from_mda failed in all MDA modes (last error: %s: %s); '
+        'falling back to direct RDKit PDB parse',
+        type(last_mda_err).__name__, last_mda_err)
+    # Write the protein AtomGroup to a tempfile and let RDKit parse the
+    # PDB directly — bypasses MDA's residue-template check. Same close-
+    # cascade-safe pattern as the ligand path.
+    _fd_p, _propath = tempfile.mkstemp(suffix='.pdb')
+    os.close(_fd_p)
+    try:
+        protein_ag.write(_propath)
+        with open(_propath, 'r') as _f:
+            pro_pdb = _f.read()
+    finally:
+        try:
+            os.unlink(_propath)
+        except OSError:
+            pass
+    # First try with `proximityBonding=False` so RDKit relies on the CONECT
+    # records MDA wrote (one per topology bond from PDBFixer). If that fails
+    # — e.g. AtomGroup.write didn't emit CONECT in this MDA version — fall
+    # back to `proximityBonding=True` so RDKit infers bonds from coordinates.
+    pro_rdkit = Chem.MolFromPDBBlock(
+        pro_pdb, removeHs=False, sanitize=False, proximityBonding=False,
+    )
+    if pro_rdkit is None:
+        pro_rdkit = Chem.MolFromPDBBlock(
+            pro_pdb, removeHs=False, sanitize=False, proximityBonding=True,
+        )
+    if pro_rdkit is None:
+        # Re-raise the original MDA error so the user sees the most-
+        # informative message rather than "RDKit returned None" upstream.
+        raise last_mda_err  # type: ignore[misc]
+    try:
+        Chem.SanitizeMol(pro_rdkit)
+    except Exception as e_san:
+        # ProLIF tolerates un-sanitized mols for interaction matching
+        # since SMARTS patterns don't require Kekulization.
+        logger.warning('Protein SanitizeMol failed (%s); proceeding unsanitized',
+                       type(e_san).__name__)
+    protein_mol_obj = plf.Molecule.from_rdkit(pro_rdkit)
 
 # 7. Fingerprint with Datagrok-aligned SMARTS where it makes sense.
 # If our combined SMARTS fail to parse for any reason, fall back to ProLIF's
@@ -692,7 +814,79 @@ except Exception as e:
     fp = plf.Fingerprint(interactions=interactions)
 fp.run_from_iterable([ligand_mol_obj], protein_mol_obj, n_jobs=1)
 
-# 8. LigNetwork → HTML. The TS layer injects the compact CSS + ready-hook on
-# the way to the iframe, so we just return the raw ProLIF HTML here.
+# 8. LigNetwork → HTML. Inject the compact CSS + vis.js ready-hook here so
+# all callers (panel widget AND batch cell renderer) get consistent styling
+# without each having to re-apply it on the TS side.
 view = fp.plot_lignetwork(ligand_mol_obj, kind='frame', frame=0)
-html = extract_html_from_view(view)
+html = make_html_compact(extract_html_from_view(view))
+
+# 9. Extract structured per-residue interactions from the Fingerprint so the
+# TS layer can populate sortable/filterable metric columns alongside the
+# diagram. Format chosen for grid filters: comma-separated `RESNAME+RESID_CODE`
+# pairs (e.g. "GLY351_H, LYS350_PI"). User can filter for "GLY351" to find
+# rows engaging that residue, or for "_PI" to find rows with pi-stacking, etc.
+# fp.to_dataframe() returns a DataFrame indexed by Frame with a MultiIndex
+# (ligand, protein_residue, interaction) on the columns. Each cell is bool.
+fp_df = fp.to_dataframe()
+unique_pairs = set()  # (residue_str, code) — dedups HBDonor + HBAcceptor on
+                      # the same residue into a single 'H' contribution
+type_counts = Counter()
+for col in fp_df.columns:
+    if not bool(fp_df[col].iloc[0]):
+        continue
+    # col is a 3-tuple (ligand_id, protein_residue, interaction_type)
+    _, residue_str, int_type = col
+    # ProLIF residue format is "RESNAME+RESID.CHAIN" (e.g. "TYR23.A").
+    # Drop the chain suffix — the user-facing column omits it for compactness.
+    resname_resid = str(residue_str).split('.')[0]
+    code = INT_CODES.get(int_type, str(int_type)[:3].upper())
+    pair = (resname_resid, code)
+    if pair in unique_pairs:
+        continue
+    unique_pairs.add(pair)
+    type_counts[code] += 1
+
+interactions_str = ', '.join(
+    f'{r}_{c}' for r, c in sorted(unique_pairs)
+)
+
+# Per-code counts. Each `type_counts[code]` is "number of distinct residues
+# with at least one interaction of this code". `unique_pairs` already de-
+# duplicates (residue, code) pairs, so a single residue contributes once
+# per code. HBDonor and HBAcceptor get separate codes (HD/HA), so a residue
+# that's both a donor and an acceptor (e.g. SER hydroxyl on different
+# chemical groups) contributes 1 to each.
+n_hbond_donor = type_counts.get('HD', 0)
+n_hbond_acceptor = type_counts.get('HA', 0)
+n_hydrophobic = type_counts.get('HY', 0)
+n_pistacking = type_counts.get('PI', 0)
+n_cationic = type_counts.get('CAT', 0)
+n_anionic = type_counts.get('AN', 0)
+n_cationpi = type_counts.get('CPI', 0)
+n_xbond = type_counts.get('XB', 0)
+n_metal = type_counts.get('M', 0)
+n_vdw = type_counts.get('VDW', 0)
+n_total = sum(type_counts.values())
+
+# Pack into a 1-row DataFrame so Datagrok routes each column back to the TS
+# caller. The panel reads `result.col('html')`; the batch handler reads the
+# metric columns to populate filterable dataframe columns. One column per
+# ProLIF interaction family. HBDonor and HBAcceptor are kept separate
+# (n_hbond_donor / n_hbond_acceptor); the remaining symmetric pairs
+# (CationPi/PiCation, XBDonor/XBAcceptor, MetalDonor/MetalAcceptor) still
+# collapse via INT_CODES so a residue is counted once per family.
+result = pd.DataFrame({
+    'html': [html],
+    'interactions': [interactions_str],
+    'n_hbond_donor': [n_hbond_donor],
+    'n_hbond_acceptor': [n_hbond_acceptor],
+    'n_hydrophobic': [n_hydrophobic],
+    'n_pistacking': [n_pistacking],
+    'n_cationic': [n_cationic],
+    'n_anionic': [n_anionic],
+    'n_cationpi': [n_cationpi],
+    'n_xbond': [n_xbond],
+    'n_metal': [n_metal],
+    'n_vdw': [n_vdw],
+    'n_total': [n_total],
+})

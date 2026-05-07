@@ -33,3 +33,16 @@
     background-repeat: no-repeat;
     background-size: contain;
 }
+
+/* "Compute for whole dataset" button in the PL context-panel widget */
+.pl-batch-btn {
+    margin-top: 12px;
+    justify-content: flex-start;
+}
+
+/* Iframe used to render PL diagrams inside grid cells */
+.pl-cell-iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
