@@ -100,6 +100,8 @@ export class CombinedAISearchAssistant {
     tabcontrol.root.style.width = '100%';
     tabcontrol.root.style.height = 'unset';
     tabcontrol.root.style.minHeight = '300px';
+    // d4 TabControl auto-hides the header stripe when only one pane is added; force it visible so tabs always show
+    tabcontrol.header.style.display = 'flex';
     return DG.Widget.fromRoot(tabcontrol.root);
   }
 
