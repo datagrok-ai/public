@@ -150,6 +150,8 @@ export class Permission {
 
   static ADMIN_STICKY_META = 'AdminStickyMeta';
 
+  static ADMIN_KEYS = 'AdminKeys';
+
   static CREATE_REPOSITORY = 'CreateRepository';
 
   static CREATE_GROUP = 'CreateGroup';
