@@ -91,30 +91,18 @@ export function makeProlifWidget(params: {
           {protein: params.protein, ligand: params.ligand ?? '', ligand_resname: resname},
         ) as DG.DataFrame;
         const html = result.col('html')!.get(0) as string;
-        const iframe = document.createElement('iframe');
+        const iframe = ui.element('iframe') as HTMLIFrameElement;
         iframe.srcdoc = html;
-        iframe.style.cssText =
-          'width:100%; height:600px; border:0; display:block; opacity:0; transition:opacity 0.2s;';
+        iframe.classList.add('pl-panel-iframe');
         iframe.setAttribute('sandbox', 'allow-scripts');
-        const reveal = (h?: number) => {
-          if (typeof h === 'number' && h > 0)
-            iframe.style.height = `${Math.max(300, Math.min(h + 4, 900))}px`;
+        // See BSV/src/utils/prolif-panel.ts for the rationale on iframe.onload
+        // + fixed 600px height (the sandbox attribute blocks the parent from
+        // measuring the iframe's contentDocument).
+        const reveal = () => {
           if (loader.isConnected) loader.remove();
           iframe.style.opacity = '1';
         };
-        const onMsg = (e: MessageEvent) => {
-          if (e.source !== iframe.contentWindow) return;
-          const data = e.data;
-          if (data && typeof data === 'object' && data.type === 'prolif-ready') {
-            window.removeEventListener('message', onMsg);
-            reveal(typeof data.height === 'number' ? data.height : undefined);
-          } else if (data === 'prolif-ready') {
-            window.removeEventListener('message', onMsg);
-            reveal();
-          }
-        };
-        window.addEventListener('message', onMsg);
-        setTimeout(() => { window.removeEventListener('message', onMsg); reveal(); }, 8000);
+        iframe.onload = reveal;
         target.append(iframe);
       } catch (err) {
         ui.empty(target);
@@ -222,7 +210,7 @@ function _wireHtmlColumnRenderer(df: DG.DataFrame, colName: string) {
       if (!cell.isTableCell || !cell.gridColumn.name.startsWith('PL Diagram')) return;
       const html = cell.cell.value as string | null;
       if (!html) return;
-      const iframe = document.createElement('iframe');
+      const iframe = ui.element('iframe') as HTMLIFrameElement;
       iframe.srcdoc = html;
       iframe.className = 'pl-cell-iframe';
       iframe.setAttribute('sandbox', 'allow-scripts');
