@@ -12,6 +12,7 @@ import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/ut
 
 import {MpoContextPanel} from './mpo-context-panel';
 import {
+  MpoMethod,
   MpoPathMode,
   MPO_PROFILE_DELETED_EVENT,
   updateMpoPath,
@@ -23,9 +24,6 @@ import {
   UNTITLED_PROFILE,
 } from './utils';
 import {MpoProfileManager} from './mpo-profile-manager';
-
-const METHOD_MANUAL = 'Manual';
-const METHOD_PROBABILISTIC = 'Data-driven';
 
 const FIELD_DESCRIPTIONS: Record<string, string> = {
   'Method': 'Manual desirability curve editing or data-driven MPO trained from labeled data',
@@ -121,7 +119,7 @@ export class MpoProfileCreateView {
   }
 
   private get isManualMode(): boolean {
-    return !this.showMethod || this.methodInput?.value !== METHOD_PROBABILISTIC;
+    return !this.showMethod || this.methodInput?.value !== MpoMethod.DataDriven;
   }
 
   // --- Construction ---
@@ -138,8 +136,8 @@ export class MpoProfileCreateView {
   private initControls(showMethod: boolean) {
     if (showMethod) {
       this.methodInput = ui.input.choice('Method', {
-        items: [METHOD_MANUAL, METHOD_PROBABILISTIC],
-        value: METHOD_MANUAL,
+        items: [MpoMethod.Manual, MpoMethod.DataDriven],
+        value: MpoMethod.Manual,
         nullable: false,
         onValueChanged: () => this.onMethodChanged(),
       });
@@ -224,7 +222,7 @@ export class MpoProfileCreateView {
       return;
     this.aggregationField.classList.toggle('chem-mpo-d-none', !this.isManualMode);
 
-    if (this.methodInput!.value === METHOD_PROBABILISTIC) {
+    if (this.methodInput!.value === MpoMethod.DataDriven) {
       this.stashedManualProfile = {
         profile: structuredClone(this.profile),
         modified: this.profileModified,
@@ -254,7 +252,7 @@ export class MpoProfileCreateView {
     const keepChanges = this.profileModified ? await this.showKeepChangesDialog() : false;
     if (keepChanges === null) {
       this.suppressInputHandlers = true;
-      this.methodInput!.value = METHOD_PROBABILISTIC;
+      this.methodInput!.value = MpoMethod.DataDriven;
       this.suppressInputHandlers = false;
       return;
     }
