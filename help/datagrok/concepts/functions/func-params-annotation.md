@@ -134,6 +134,7 @@ For all parameters:
 
 | Option     | Value  | Description                                                               |
 |------------|--------|---------------------------------------------------------------------------|
+| validator  | string | Single [validator](#validation): a Grok expression or a regex literal     |
 | validators | string | Comma-separated list of [validators](#validation)                         |
 | caption    | string | Custom field caption                                                      |
 | postfix    | string | Field postfix                                                             |
@@ -491,6 +492,21 @@ valid = input < 11 ? null : "Error val1";
 ```
 
 ![Script Parameter Validators](../../../uploads/features/script-param-validators.gif "Script Parameter Validators")
+
+</div>
+</details>
+
+The third option is a regex literal in JavaScript form `/pattern/flags`. The input is valid when
+the value matches the pattern. Supported flags are `i` (case-insensitive) and `m` (multi-line).
+
+<details>
+<summary> Example: Regex validator </summary>
+<div>
+
+```
+//input: string code = "1234" {validator: /^[0-9]{4}$/}
+//input: string country = "US"  {validator: /^[A-Z]{2}$/i}
+```
 
 </div>
 </details>
