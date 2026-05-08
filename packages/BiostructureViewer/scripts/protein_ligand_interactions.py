@@ -1,9 +1,8 @@
 #name: ProteinLigandInteractionDiagram
 #description: Interactive 2D protein-ligand interaction diagram via ProLIF
 #language: python
-#environment: channels: [conda-forge, defaults], dependencies: [python=3.11, rdkit, mdanalysis, prolif, pdbfixer, openmm, matplotlib, requests]
-#meta.cache: all
-#meta.cache.invalidateOn: 0 0 * * *
+#environment: channels: [conda-forge, defaults], dependencies: [python=3.11, rdkit, mdanalysis, prolif, pdbfixer, openmm, matplotlib, requests, pip, {pip: [openbabel-wheel]}]
+#meta.cache: none
 #input: string protein
 #input: string ligand
 #input: string ligand_resname
@@ -14,6 +13,24 @@ import os
 import tempfile
 from collections import Counter
 from io import StringIO
+
+# Point urllib at certifi's CA bundle BEFORE importing pdbfixer (which uses
+# urlopen at runtime to fetch CCD residue templates from RCSB). Datagrok's
+# script-worker container has no system CA bundle, so without this the SSL
+# handshake fails and pdbfixer silently swallows the error (bare `except:`)
+# in `_downloadCCDDefinition` and skips template lookup entirely. The downstream
+# effect is that addMissingHydrogens does NOT add Hs to non-standard ligands
+# (E4Y, etc.) — the ligand keeps its 0-H state, the script falls into the
+# RDKit fallback path, and DetermineBonds fails with a charge mismatch
+# (the missing Hs make heavy atoms appear charged), producing all-SINGLE bonds.
+# Setting SSL_CERT_FILE points urllib at certifi's bundle, the CCD download
+# succeeds, pdbfixer adds Hs, and downstream bond perception works.
+try:
+    import certifi
+    os.environ.setdefault('SSL_CERT_FILE', certifi.where())
+    os.environ.setdefault('REQUESTS_CA_BUNDLE', certifi.where())
+except ImportError:
+    pass
 
 import numpy as np
 import pandas as pd
@@ -409,6 +426,38 @@ def merge_protein_and_ligand_lines(protein_lines, ligand_lines):
     return p_kept + ['TER'] + l_kept + ['END']
 
 
+def ensure_unique_atom_names(lines):
+    """Rewrite atom names within each (chain, resid) so every atom has a
+    unique name within its residue. AutoDock pose output uses generic names
+    (`C`, `N`, `O`, ...) that COLLIDE within the same residue — pdbfixer's
+    OpenMM PDB parser then silently drops all but the first occurrence under
+    each (residue, atom_name) key, leaving a tiny fragment instead of the
+    full ligand. The new names are formed as `<element><index>` (e.g.
+    `C1, C2, ..., N1, N2, ...`), padded right to 4 chars to fit cols 13-16.
+    Idempotent: re-running on already-unique names is harmless because each
+    residue starts a fresh counter.
+    """
+    counters = {}
+    out = []
+    for L in lines:
+        if L[:6] not in ATOM_HETATM_PREFIXES or len(L) < 27:
+            out.append(L)
+            continue
+        chain = L[21]
+        resid = L[22:26]
+        # Prefer the explicit element symbol (cols 77-78); fall back to the
+        # current atom-name field if the element column is blank.
+        elem = L[76:78].strip() if len(L) >= 78 else ''
+        if not elem:
+            elem = L[12:16].strip().rstrip('0123456789') or 'X'
+        key = (chain, resid)
+        n = counters.get(key, {}).get(elem, 0) + 1
+        counters.setdefault(key, {})[elem] = n
+        new_name = f'{elem}{n}'.ljust(4)[:4]
+        out.append(L[:12] + new_name + L[16:])
+    return out
+
+
 def detect_ligand_resname_lines(lines):
     """Return the most-common non-water HETATM resname.
 
@@ -475,6 +524,13 @@ _COMPACT_CSS_JS = """<style>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     var sent = false;
+    // Posts a single readiness message to the parent window with:
+    //   * height: total content height (used by the panel to size the iframe)
+    //   * pngDataUrl: the LigNetwork's vis.js canvas exported as a PNG data
+    //     URL (used by the per-cell grid renderer — cells show the PNG via
+    //     <img>, no per-cell iframe + vis.js needed). The legend is a
+    //     separate HTML block, NOT part of the canvas, so it's naturally
+    //     excluded — matches ProLIF's own `LigNetwork.save_png()` semantics.
     var send = function() {
       if (sent) return;
       sent = true;
@@ -482,15 +538,24 @@ _COMPACT_CSS_JS = """<style>
         document.documentElement.scrollHeight || 0,
         document.body ? (document.body.scrollHeight || 0) : 0
       );
-      parent.postMessage({ type: 'prolif-ready', height: h }, '*');
+      var pngDataUrl = null;
+      try {
+        var canvas = document.getElementsByTagName('canvas')[0];
+        if (canvas && canvas.width > 0 && canvas.height > 0)
+          pngDataUrl = canvas.toDataURL('image/png');
+      } catch (e) { /* canvas tainted or missing — leave pngDataUrl null */ }
+      parent.postMessage({ type: 'prolif-ready', height: h, pngDataUrl: pngDataUrl }, '*');
     };
     var tryHook = function() {
       if (typeof network !== 'undefined' && network && network.on) {
         network.on('stabilizationIterationsDone', function() {
           try { network.fit({animation: false}); } catch (e) {}
-          setTimeout(send, 60);
+          // 250ms delay lets vis.js finish the post-fit redraw — without it
+          // the canvas can be captured mid-animation, producing a half-drawn
+          // PNG. Empirically 250ms is enough on 30-residue networks.
+          setTimeout(send, 250);
         });
-        setTimeout(send, 250);
+        setTimeout(send, 500);  // safety fallback if stabilization event never fires
       } else {
         setTimeout(tryHook, 50);
       }
@@ -515,6 +580,23 @@ def make_html_compact(html: str) -> str:
 # We splitlines() once per text input (here for `protein`, and below for
 # `ligand` if/when it's available) and pass list[str] through every helper
 # so the per-call cost of splitlines is paid exactly once per input.
+
+# DIAGNOSTIC — capture the raw inputs the panel actually sends, so we can
+# diff them against what the standalone tests pass (which produce correct
+# bond perception).
+_diag_input_protein_len = len(protein) if protein else 0
+_diag_input_ligand_len = len(ligand) if ligand else 0
+_diag_input_resname_arg = ligand_resname or '(empty)'
+_diag_protein_first_atom = ''
+for _line in protein.splitlines() if protein else []:
+    if _line[:6] in ('ATOM  ', 'HETATM'):
+        _diag_protein_first_atom = _line[:80]
+        break
+_diag_ligand_first_atom = ''
+for _line in ligand.splitlines() if ligand else []:
+    if _line[:6] in ('ATOM  ', 'HETATM'):
+        _diag_ligand_first_atom = _line[:80]
+        break
 
 # 1. Normalise protein input (PDBQT → PDB if needed; shift negative residues)
 protein_lines = protein.splitlines()
@@ -551,6 +633,15 @@ else:
 if ligand_provided and is_pdbqt_lines(ligand_lines):
     ligand_lines = pdbqt_to_pdb_lines(ligand_lines)
 
+# Make ligand atom names unique within each residue. AutoDock-style poses
+# use generic names (every C is just "C", every N is just "N") which collide
+# under pdbfixer's (residue, atom_name) deduplication and silently lose
+# all but the first occurrence per element — the script then sees a 6-atom
+# stub (1 C, 1 N, 1 O + some Hs) instead of the full ligand. See
+# `ensure_unique_atom_names` for details.
+if ligand_provided:
+    ligand_lines = ensure_unique_atom_names(ligand_lines)
+
 # 3b. BSV-case fix: if no separate ligand was provided (protein cell contains
 # both protein and ligand), extract the matching HETATMs from the protein text
 # now and remove them from the protein. This way pdbfixer only sees the
@@ -577,21 +668,32 @@ if not ligand_provided:
         protein_lines = remaining_lines
         ligand_provided = True
 
-# 4. pdbfixer for protein hydrogens — entirely in-memory (no temp files).
-# Speed optimization: shrink the protein to just the binding-site neighborhood
-# (8 Å around the ligand) before running pdbfixer. Hydrogenation scales
-# linearly with atom count, so for a 300-residue protein this is typically a
-# 5-10× speedup.
+# 4. Merge protein + ligand BEFORE pdbfixer so addMissingHydrogens sees the
+# WHOLE merged structure and adds Hs to BOTH the protein (template-based)
+# and the ligand (template-based for standard PDB residues like HEM,
+# geometry-based via OpenBabel in the no-Hs fallback below).
+#
+# Speed optimization: shrink the PROTEIN to the binding-site neighborhood
+# (8 Å around the ligand) before merging. Hydrogenation scales linearly
+# with atom count, so on a 300-residue protein this is typically a 5-10×
+# speedup on addMissingHydrogens. (We previously suspected this fragmented
+# the topology and confused pdbfixer's CCD lookup for non-standard ligands,
+# but the real culprit was duplicate atom names in AutoDock poses — fixed
+# by `ensure_unique_atom_names` above. With unique names, binding-site
+# extraction is safe.)
 if ligand_provided:
     protein_for_fixer_lines = extract_binding_site_lines(
         protein_lines, ligand_lines, radius=8.0,
     )
+    structure_for_fixer_lines = merge_protein_and_ligand_lines(
+        protein_for_fixer_lines, ligand_lines,
+    )
 else:
-    protein_for_fixer_lines = protein_lines
+    structure_for_fixer_lines = protein_lines
 
 # pdbfixer needs a text stream, so we join only at this boundary
-protein_for_fixer = '\n'.join(protein_for_fixer_lines)
-fixer = PDBFixer(pdbfile=StringIO(protein_for_fixer))
+structure_for_fixer = '\n'.join(structure_for_fixer_lines)
+fixer = PDBFixer(pdbfile=StringIO(structure_for_fixer))
 # We only need addMissingHydrogens() — the other pdbfixer steps don't apply:
 #   findMissingResidues() — detects chain gaps; after binding-site extraction
 #     we have intentional gaps and we DON'T want them filled. `missingResidues`
@@ -601,38 +703,16 @@ fixer = PDBFixer(pdbfile=StringIO(protein_for_fixer))
 #     well-resolved in deposited structures.
 fixer.addMissingHydrogens(pH=7.0)
 
-# 5. Build the MDAnalysis Universe. The OpenMM-direct path
-# `mda.Universe(fixer.topology, fixer.positions)` fails on some MDA versions
-# because positions are treated as a filename — instead we serialize the
-# H-fixed structure to PDB text in memory (no file I/O) and load that.
+# 5. Serialize the H-fixed merged structure to PDB text in memory and load it.
+# PDBFile.writeFile renumbers atoms in topology order starting at 1, and
+# emits CONECT records for the ligand's non-standard residue bonds. The
+# protein's amino-acid bonds aren't emitted (PDBFile.writeFile expects
+# readers to reconstruct them from residue templates) — MDAnalysis doesn't
+# carry templates, but `protein_ag.guess_bonds()` below regenerates them
+# from element distances, so we don't need explicit CONECT for the protein.
 _buf = StringIO()
 PDBFile.writeFile(fixer.topology, fixer.positions, _buf)
-fixed_protein = _buf.getvalue()
-
-# OpenMM's PDBFile.writeFile only emits CONECT records for non-standard
-# residue bonds (it expects PDB readers to reconstruct standard amino-acid
-# bonds from residue templates). MDAnalysis doesn't carry a template
-# library, so without explicit CONECT it loads zero bonds — and we'd then
-# pay ~500-700ms for guess_bonds() to re-derive what the topology already
-# knows. Emit one CONECT line per topology bond so MDA gets them for free.
-# `bond[0].index + 1` because PDB serials are 1-based and writeFile
-# renumbers atoms in topology order starting at 1.
-_protein_lines = [L for L in fixed_protein.splitlines() if not L.startswith('END')]
-_protein_lines.extend(
-    f'CONECT{bond[0].index + 1:>5}{bond[1].index + 1:>5}'
-    for bond in fixer.topology.bonds()
-)
-fixed_protein = '\n'.join(_protein_lines) + '\n'
-
-# Merge ligand lines into the fixed protein (operating on lines avoids one
-# more splitlines call — `merge_protein_and_ligand_lines` returns a list).
-if ligand_provided:
-    merged_lines = merge_protein_and_ligand_lines(
-        fixed_protein.splitlines(), ligand_lines,
-    )
-    merged_pdb = '\n'.join(merged_lines)
-else:
-    merged_pdb = fixed_protein
+merged_pdb = _buf.getvalue()
 
 u = mda.Universe(NamedStream(StringIO(merged_pdb), 'merged.pdb'))
 
@@ -663,134 +743,127 @@ protein_ag = u.select_atoms(
     # 6.5 to leave no edge-to-face stacking interactions on the table.)
     'protein and byres around 6.5 group ligand', ligand=ligand_ag
 )
-# Bond loading. Both protein and ligand CONECT records are now in the merged
-# PDB (we synthesise the protein's CONECT from the topology above, and the
-# merge step renumbers and preserves the ligand's). If MDA loaded them we
-# can skip guess_bonds() entirely — saves ~500-700ms on the protein side
-# and ~50-300ms on the ligand side. Fall back to guess_bonds when CONECT
-# was absent or MDA didn't expose a `.bonds` attribute at all.
-def _has_bonds(ag):
-    try:
-        return len(ag.bonds) > 0
-    except Exception:
-        return False
-
-if not _has_bonds(protein_ag):
-    protein_ag.guess_bonds()
-if not _has_bonds(ligand_ag):
-    ligand_ag.guess_bonds()
+# Bond loading. Always re-guess bonds from distances — matches the reference
+# validation script. CONECT-derived bonds (when present) can be incomplete
+# or stale; running `guess_bonds()` regenerates clean connectivity from
+# interatomic distances + element radii, which is what MDA's RDKitConverter
+# needs to perceive bond orders correctly downstream.
+protein_ag.guess_bonds()
+ligand_ag.guess_bonds()
 
 n_h_lig = len(ligand_ag.select_atoms('element H'))
 
-# 6. Prepare ligand mol — when Hs are present ProLIF can convert directly from
-# MDA; when absent we write to a tempfile, add Hs via RDKit, then convert.
+# 6. Prepare ligand mol. Two paths matching the reference validation script:
+#   * Hs present (the normal case after pdbfixer ran): use MDA's converter
+#     directly. The Hs encode valences which MDA's RDKitConverter uses to
+#     assign bond orders correctly.
+#   * No Hs (rare — ligand bypassed pdbfixer): write to tempfile, parse
+#     with RDKit, run xyz2mol-style bond perception via `DetermineBonds`,
+#     then sanitize + AddHs. `addResidueInfo=True` is critical here:
+#     ProLIF's residue splitting silently breaks on Windows without it.
+_used_openbabel = False
+ligand_mol_obj = None
 if n_h_lig > 0:
-    ligand_mol_obj = plf.Molecule.from_mda(ligand_ag)
-else:
-    # MDA's PDB writer wraps our stream in another NamedStream and that wrapper
-    # closes our buffer regardless of NamedStream's own `close=False`.
-    # Use a tempfile to bypass the close-cascade entirely.
+    try:
+        ligand_mol_obj = plf.Molecule.from_mda(ligand_ag)
+    except Exception as _e_mda:
+        # MDA's RDKitConverter sometimes produces invalid Lewis structures
+        # for PDB ligands with explicit Hs — typically when the input PDB has
+        # an H atom bonded to two heavy atoms (CCD-template / pdbfixer
+        # mismatch on residues like NAD with mixed protonation states).
+        # Fall through to the OpenBabel path which rebuilds bonds + Hs from
+        # coordinates alone, sidestepping the problematic input Hs entirely.
+        logger.warning('plf.Molecule.from_mda(ligand_ag) failed (%s: %s); '
+                       'falling through to OpenBabel path',
+                       type(_e_mda).__name__, _e_mda)
+        # Strip Hs from ligand_ag so OpenBabel rebuilds them from scratch
+        ligand_ag = ligand_ag.select_atoms('not element H')
+if ligand_mol_obj is None:
+    # No-Hs path: AutoDock pose, any non-standard ligand pdbfixer can't
+    # template-match, or fallback after MDA's RDKitConverter rejected the
+    # explicit-Hs input. We need bond orders + Hs from coordinates alone.
+    # RDKit's `rdDetermineBonds.DetermineBonds` can do this in principle
+    # (xyz2mol algorithm), but it FAILS when the apparent valences imply a
+    # large net charge that doesn't match the requested `charge` parameter
+    # — which happens for many docking poses (carbonyls/amides look like
+    # charged O/N atoms because they're missing their Hs). Open Babel's
+    # `PerceiveBondOrders` works on the same input because it uses bond
+    # length heuristics rather than charge balancing, and produces correct
+    # double bonds + aromatic rings on standard drug-like ligands.
     _fd, _ligpath = tempfile.mkstemp(suffix='.pdb')
     os.close(_fd)
+    _lig_pdb_text = ''
     try:
         ligand_ag.write(_ligpath)
         with open(_ligpath, 'r') as _f:
-            lig_pdb = _f.read()
+            _lig_pdb_text = _f.read()
+        from openbabel import pybel as _pybel
+        _ob_mol = next(_pybel.readfile('pdb', _ligpath))
+        _ob_mol.OBMol.PerceiveBondOrders()
+        _ob_mol.addh()
+        # Hand off to RDKit via MOL block (V2000) — preserves bond orders
+        # and 3D coordinates that ProLIF's `from_rdkit` then consumes.
+        _mol_block = _ob_mol.write('mol')
     finally:
         try:
             os.unlink(_ligpath)
         except OSError:
             pass
-    lig_rdkit = Chem.MolFromPDBBlock(
-        lig_pdb, removeHs=False, sanitize=False, proximityBonding=False,
-    )
-    try:
-        rdDetermineBonds.DetermineBonds(lig_rdkit, charge=0)
-    except Exception:
+    lig_rdkit = Chem.MolFromMolBlock(_mol_block, removeHs=False, sanitize=True)
+    if lig_rdkit is None:
+        # Defensive fallback: if Open Babel produced something RDKit can't
+        # sanitize, fall back to legacy proximity-bonding. The ligand will
+        # end up with all-single bonds but at least be structurally intact
+        # so geometry-based interactions (Hydrophobic, VdW) still register.
         lig_rdkit = Chem.MolFromPDBBlock(
-            lig_pdb, removeHs=False, sanitize=False, proximityBonding=True,
+            _lig_pdb_text, removeHs=False, sanitize=False, proximityBonding=True,
         )
-    Chem.SanitizeMol(lig_rdkit)
-    # CRITICAL: addResidueInfo=True propagates PDBResidueInfo to new H atoms —
-    # without it ProLIF's residue splitting crashes silently on Windows.
-    lig_rdkit = Chem.AddHs(lig_rdkit, addCoords=True, addResidueInfo=True)
+        Chem.SanitizeMol(lig_rdkit)
+        lig_rdkit = Chem.AddHs(lig_rdkit, addCoords=True, addResidueInfo=True)
     ligand_mol_obj = plf.Molecule.from_rdkit(lig_rdkit)
+    _used_openbabel = True
 
-# Protein conversion. The MDA→RDKit converter occasionally fails on:
-#   * AtomValenceException — bond perception produces an over-valent atom
-#     (modified residues, awkward pdbfixer geometry, glycans, etc.)
-#   * "HIS residue (N) has the wrong set of atoms" — strict residue-template
-#     check rejects non-canonical HIS protonation states (HID/HIE/HIP) or
-#     residues with extra/missing atoms after pdbfixer hydrogenation
-# Try progressively more permissive modes; on any failure, walk to the
-# next mode rather than raising. The TypeError catch is for older MDA
-# versions where `NoImplicit` is not a recognized kwarg.
-#   1. force=True       — skip strict valence check after bond inference
-#   2. NoImplicit=False — skip bond inference entirely; use implicit Hs
-#   3. default          — last try inside MDA's converter
-#   4. direct RDKit     — bypass MDA's converter entirely; let RDKit parse
-#                         the protein PDB directly. Loses some MDA metadata
-#                         but PDBResidueInfo is preserved, which is all
-#                         ProLIF needs for residue-aware interaction matching.
-_protein_modes = [
-    ('force=True',       lambda: plf.Molecule.from_mda(protein_ag, force=True)),
-    ('NoImplicit=False', lambda: plf.Molecule.from_mda(protein_ag, NoImplicit=False)),
-    ('default',          lambda: plf.Molecule.from_mda(protein_ag)),
-]
-protein_mol_obj = None
-last_mda_err: Exception | None = None
-for _label, _fn in _protein_modes:
-    try:
-        protein_mol_obj = _fn()
-        break
-    except Exception as _e:
-        last_mda_err = _e
-        logger.warning('from_mda(%s) failed: %s: %s', _label,
-                       type(_e).__name__, _e)
-        continue
+protein_mol_obj = plf.Molecule.from_mda(protein_ag)
 
-if protein_mol_obj is None:
-    logger.warning(
-        'from_mda failed in all MDA modes (last error: %s: %s); '
-        'falling back to direct RDKit PDB parse',
-        type(last_mda_err).__name__, last_mda_err)
-    # Write the protein AtomGroup to a tempfile and let RDKit parse the
-    # PDB directly — bypasses MDA's residue-template check. Same close-
-    # cascade-safe pattern as the ligand path.
-    _fd_p, _propath = tempfile.mkstemp(suffix='.pdb')
-    os.close(_fd_p)
-    try:
-        protein_ag.write(_propath)
-        with open(_propath, 'r') as _f:
-            pro_pdb = _f.read()
-    finally:
-        try:
-            os.unlink(_propath)
-        except OSError:
-            pass
-    # First try with `proximityBonding=False` so RDKit relies on the CONECT
-    # records MDA wrote (one per topology bond from PDBFixer). If that fails
-    # — e.g. AtomGroup.write didn't emit CONECT in this MDA version — fall
-    # back to `proximityBonding=True` so RDKit infers bonds from coordinates.
-    pro_rdkit = Chem.MolFromPDBBlock(
-        pro_pdb, removeHs=False, sanitize=False, proximityBonding=False,
-    )
-    if pro_rdkit is None:
-        pro_rdkit = Chem.MolFromPDBBlock(
-            pro_pdb, removeHs=False, sanitize=False, proximityBonding=True,
-        )
-    if pro_rdkit is None:
-        # Re-raise the original MDA error so the user sees the most-
-        # informative message rather than "RDKit returned None" upstream.
-        raise last_mda_err  # type: ignore[misc]
-    try:
-        Chem.SanitizeMol(pro_rdkit)
-    except Exception as e_san:
-        # ProLIF tolerates un-sanitized mols for interaction matching
-        # since SMARTS patterns don't require Kekulization.
-        logger.warning('Protein SanitizeMol failed (%s); proceeding unsanitized',
-                       type(e_san).__name__)
-    protein_mol_obj = plf.Molecule.from_rdkit(pro_rdkit)
+# DIAGNOSTIC: capture multiple signals so we can see exactly what's happening
+# in Datagrok's worker (vs. local prolif_312 env).
+_diag_counts = Counter(
+    str(_b.GetBondType()) for _b in ligand_mol_obj.GetBonds()
+)
+_diag_smiles_with_h = ''
+_diag_smiles_no_h = ''
+try:
+    _diag_smiles_with_h = Chem.MolToSmiles(ligand_mol_obj)
+    _diag_smiles_no_h = Chem.MolToSmiles(Chem.RemoveHs(Chem.Mol(ligand_mol_obj)))
+except Exception as _e_smi:
+    logger.warning('SMILES export failed: %s: %s', type(_e_smi).__name__, _e_smi)
+
+# 6b. Per-cell rendering of the LigNetwork is handled on the TS side: the
+# `_COMPACT_CSS_JS` block injected into the HTML below makes the iframe
+# emit a `pngDataUrl` field in its `prolif-ready` postMessage, which the
+# batch handler captures into the `PL Diagram` column. That keeps cells
+# lightweight (a single <img> per cell instead of 100 vis.js iframes
+# running animations on scroll). No Python-side rendering needed.
+
+# Pipeline-level signals to bisect what differs between direct exec and the
+# Datagrok script-worker dispatcher.
+_diag_ligand_ag_n = len(ligand_ag)
+_diag_protein_ag_n = len(protein_ag)
+_diag_lig_chains = sorted(set(
+    ligand_ag.atoms.chainIDs.tolist() if hasattr(ligand_ag.atoms, 'chainIDs')
+    else []
+))[:5]
+_diag_lig_resids = sorted(set(ligand_ag.atoms.resids.tolist()))[:5]
+_diag_lig_resnames = sorted(set(ligand_ag.atoms.resnames.tolist()))[:5]
+_diag_path_taken = 'openbabel' if _used_openbabel else ('from_mda' if n_h_lig > 0 else 'rdkit_fallback')
+_diag_ssl_set = bool(os.environ.get('SSL_CERT_FILE'))
+# Did pdbfixer's CCD download succeed for this run?
+try:
+    from urllib.request import urlopen as _diag_urlopen
+    _diag_urlopen('https://files.rcsb.org/ligands/download/E4Y.cif', timeout=5).close()
+    _diag_ccd_ok = True
+except Exception as _e_ccd:
+    _diag_ccd_ok = f'FAIL:{type(_e_ccd).__name__}'
 
 # 7. Fingerprint with Datagrok-aligned SMARTS where it makes sense.
 # If our combined SMARTS fail to parse for any reason, fall back to ProLIF's
@@ -814,9 +887,9 @@ except Exception as e:
     fp = plf.Fingerprint(interactions=interactions)
 fp.run_from_iterable([ligand_mol_obj], protein_mol_obj, n_jobs=1)
 
-# 8. LigNetwork → HTML. Inject the compact CSS + vis.js ready-hook here so
-# all callers (panel widget AND batch cell renderer) get consistent styling
-# without each having to re-apply it on the TS side.
+# 8a. LigNetwork → HTML for the context panel (interactive vis.js diagram).
+# Inject the compact CSS + ready-hook here so the panel widget gets
+# consistent styling without having to re-apply it on the TS side.
 view = fp.plot_lignetwork(ligand_mol_obj, kind='frame', frame=0)
 html = make_html_compact(extract_html_from_view(view))
 
@@ -827,15 +900,28 @@ html = make_html_compact(extract_html_from_view(view))
 # rows engaging that residue, or for "_PI" to find rows with pi-stacking, etc.
 # fp.to_dataframe() returns a DataFrame indexed by Frame with a MultiIndex
 # (ligand, protein_residue, interaction) on the columns. Each cell is bool.
-fp_df = fp.to_dataframe()
+# `fp.to_dataframe()` raises a pandas KeyError for the 3-level MultiIndex
+# names ('ligand', 'protein', 'interaction') when no interactions were
+# detected (the resulting DataFrame is empty and has no MultiIndex). Treat
+# that as zero interactions instead of letting it abort the whole script.
 unique_pairs = set()  # (residue_str, code) — dedups HBDonor + HBAcceptor on
                       # the same residue into a single 'H' contribution
 type_counts = Counter()
-for col in fp_df.columns:
-    if not bool(fp_df[col].iloc[0]):
+try:
+    fp_df = fp.to_dataframe()
+    cols_iter = fp_df.columns if fp_df is not None else []
+except Exception as _e_fpdf:
+    logger.warning('fp.to_dataframe() failed (%s: %s); reporting zero interactions',
+                   type(_e_fpdf).__name__, _e_fpdf)
+    cols_iter = []
+for col in cols_iter:
+    try:
+        if not bool(fp_df[col].iloc[0]):
+            continue
+        # col is a 3-tuple (ligand_id, protein_residue, interaction_type)
+        _, residue_str, int_type = col
+    except Exception:
         continue
-    # col is a 3-tuple (ligand_id, protein_residue, interaction_type)
-    _, residue_str, int_type = col
     # ProLIF residue format is "RESNAME+RESID.CHAIN" (e.g. "TYR23.A").
     # Drop the chain suffix — the user-facing column omits it for compactness.
     resname_resid = str(residue_str).split('.')[0]
@@ -876,7 +962,24 @@ n_total = sum(type_counts.values())
 # (CationPi/PiCation, XBDonor/XBAcceptor, MetalDonor/MetalAcceptor) still
 # collapse via INT_CODES so a residue is counted once per family.
 result = pd.DataFrame({
-    'html': [html],
+    'html': [html],          # interactive vis.js LigNetwork; the panel
+                             # mounts it directly, the batch handler renders
+                             # it offscreen to capture the canvas as PNG
+                             # for the per-cell `PL Diagram` column.
+    # DIAGNOSTIC — to be removed once env-vs-env discrepancy is debugged.
+    'debug_lig': [
+        f'bonds={dict(_diag_counts)} | path={_diag_path_taken} | '
+        f'lig_atoms={_diag_ligand_ag_n} | prot_atoms={_diag_protein_ag_n} | '
+        f'lig_chains={_diag_lig_chains} | lig_resids={_diag_lig_resids} | '
+        f'lig_resnames={_diag_lig_resnames} | n_h_lig={n_h_lig} | '
+        f'sel_res={sel_resname!r}/{sel_chain!r}/{sel_resid!r} | '
+        f'in_prot_len={_diag_input_protein_len} | in_lig_len={_diag_input_ligand_len} | '
+        f'in_resname_arg={_diag_input_resname_arg!r} | '
+        f'prot_1st={_diag_protein_first_atom[:60]!r} | '
+        f'lig_1st={_diag_ligand_first_atom[:60]!r} | '
+        f'ssl_set={_diag_ssl_set} | ccd_ok={_diag_ccd_ok} | '
+        f'smiles_no_h={_diag_smiles_no_h[:80]}'
+    ],
     'interactions': [interactions_str],
     'n_hbond_donor': [n_hbond_donor],
     'n_hbond_acceptor': [n_hbond_acceptor],
