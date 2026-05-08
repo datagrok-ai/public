@@ -200,11 +200,18 @@ function buildOptions(
   return {
     systemPrompt,
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
+    // TODO: temporarily disabled — DB tools were getting picked up for unrelated prompts
+    // (e.g. "convert GROKPEP-000002 sequence to molecule"). Re-enable once routing is tighter.
+    disallowedTools: [
+      'mcp__datagrok__db_list_catalogs', 'mcp__datagrok__db_list_schemas',
+      'mcp__datagrok__db_list_tables', 'mcp__datagrok__db_describe_tables',
+      'mcp__datagrok__db_list_joins', 'mcp__datagrok__db_try_sql',
+    ],
     ...(loadPlugin ? {plugins: [{type: 'local' as const, path: '/app/plugin'}]} : {}),
     ...(mcpServers ? {mcpServers} : {}),
     strictMcpConfig: true,
     permissionMode: 'acceptEdits' as const,
-    model: model ?? ClaudeModel.Sonnet,
+    model: model ?? ClaudeModel.Opus,
     includePartialMessages: true,
     cwd: userDir || WORKSPACE,
     hooks: {

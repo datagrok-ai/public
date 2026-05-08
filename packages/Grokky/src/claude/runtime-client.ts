@@ -145,7 +145,6 @@ export class ClaudeRuntimeClient {
     packageName?: string,
   ): Promise<void> {
     await this.ensureConnected();
-    console.log(`ClaudeRuntimeClient: triggering sync (scope=${scope}${packageName ? `, package=${packageName}` : ''})`);
     this.ws!.send(JSON.stringify({
       type: 'sync_user_files',
       apiKey: grok.dapi.token,
