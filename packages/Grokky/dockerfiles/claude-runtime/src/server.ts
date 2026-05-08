@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
@@ -201,6 +202,7 @@ function buildOptions(
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
     ...(loadPlugin ? {plugins: [{type: 'local' as const, path: '/app/plugin'}]} : {}),
     ...(mcpServers ? {mcpServers} : {}),
+    strictMcpConfig: true,
     permissionMode: 'acceptEdits' as const,
     model: model ?? ClaudeModel.Sonnet,
     includePartialMessages: true,
@@ -482,8 +484,15 @@ app.get('/ws', upgradeWebSocket(() => {
 app.notFound((c) => c.json({error: 'Not found'}, 404));
 app.onError((err, c) => c.json({error: String(err)}, 500));
 
-if (!process.env['ANTHROPIC_API_KEY'])
-  console.warn('ANTHROPIC_API_KEY is not set — Claude API calls will fail');
+const hasApiKey = !!process.env['ANTHROPIC_API_KEY'];
+// Subscription auth requires the host's ~/.claude/.credentials.json to be mounted into the container at this path.
+const hasSubscription = fs.existsSync('/home/grok/.claude/.credentials.json');
+if (hasApiKey)
+  console.log('Claude auth: using ANTHROPIC_API_KEY');
+else if (hasSubscription)
+  console.log('Claude auth: using subscription credentials at ~/.claude/.credentials.json');
+else
+  console.warn('Claude auth: no ANTHROPIC_API_KEY and no ~/.claude/.credentials.json — API calls will fail');
 
 const server = serve({fetch: app.fetch, port: PORT});
 injectWebSocket(server);
