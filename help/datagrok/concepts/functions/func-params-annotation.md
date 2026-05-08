@@ -441,6 +441,9 @@ Result `true` or `null` means that the input is valid. `false` or a string error
 it gets highlighted and the validation message is shown in the tooltip. Note that the expression can depend not only on the
 value of the parameter the expression applied to, but on other parameters as well.
 
+Inside the expression, `value` always refers to the current input's value, so the same validator can be reused across
+parameters without rewriting the parameter name.
+
 <details>
 <summary> Example: Inline validation dependent on the value of other parameters </summary>
 <div>
@@ -448,6 +451,7 @@ value of the parameter the expression applied to, but on other parameters as wel
 ```js
 //input: int foo = 5 { validator: bar > 3 }
 //input: double bar = 2 { min: 0; max: 10 }
+//input: string code = "1234" { validator: startsWith(value, "12") }
 ```
 
 ![](param-visible-enabled-expressions.gif)
