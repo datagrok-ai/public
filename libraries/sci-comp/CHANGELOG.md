@@ -1,5 +1,16 @@
 # sci-comp changelog
 
+## 0.6.0 (2026-05-08)
+
+Non-Compartmental Analysis:
+
+* Cmax, Tmax, AUClast, AUCinf, AUCextrap, λz, t_half, CL, Vz
+* 3 AUC integration methods
+* 4 BLQ-handling rules
+* λz auto best-fit
+* IV bolus c0 back-extrapolation
+* Mulberry32 PRNG
+
 ## 0.5.1 (2026-05-05)
 
 Update docs

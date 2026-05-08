@@ -1,0 +1,230 @@
+{
+  "dataset": "03_rat_simple",
+  "pknca_version": "0.12.1",
+  "config": {
+    "auc_method": "lin up/log down",
+    "min_points": 3,
+    "min_r_squared": 0.85,
+    "exclude_cmax": true,
+    "min_span_ratio": 2,
+    "extrap_warn": 20,
+    "extrap_error": 50
+  },
+  "dataset_meta": {
+    "dose": {
+      "value": 2.5,
+      "unit": "mg"
+    },
+    "route": "extravascular"
+  },
+  "profiles": [
+    {
+      "profile_key": {
+        "subject": "1",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 3.486,
+        "tmax": 1,
+        "auclast": 10.3223908944,
+        "aucinf": 10.4346451186,
+        "pct_aucextrap": 1.0757838228,
+        "lambda_z": 0.39909411285,
+        "half_life": 1.7368013164,
+        "cl": 0.23958649016,
+        "vz": 0.60032579396
+      },
+      "provenance": {
+        "lambda_z_n_points": 5,
+        "lambda_z_r_squared": 0.98505165099,
+        "lambda_z_adj_r_squared": 0.98006886798,
+        "lambda_z_time_first": 2,
+        "lambda_z_time_last": 12,
+        "clast_obs": 0.0448,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "2",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 4.1329,
+        "tmax": 1,
+        "auclast": 21.673375201,
+        "aucinf": 22.5657767397,
+        "pct_aucextrap": 3.9546679425,
+        "lambda_z": 0.29112455406,
+        "half_life": 2.3809299864,
+        "cl": 0.11078723453,
+        "vz": 0.38054926313
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99882119357,
+        "lambda_z_adj_r_squared": 0.99764238714,
+        "lambda_z_time_first": 6,
+        "lambda_z_time_last": 12,
+        "clast_obs": 0.2598,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "3",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 4.1347,
+        "tmax": 1,
+        "auclast": 16.8825265821,
+        "aucinf": 17.0392519446,
+        "pct_aucextrap": 0.91979015878,
+        "lambda_z": 0.42430911584,
+        "half_life": 1.6335901226,
+        "cl": 0.14672005603,
+        "vz": 0.34578577398
+      },
+      "provenance": {
+        "lambda_z_n_points": 4,
+        "lambda_z_r_squared": 0.99832397943,
+        "lambda_z_adj_r_squared": 0.99748596914,
+        "lambda_z_time_first": 4,
+        "lambda_z_time_last": 12,
+        "clast_obs": 0.0665,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "4",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 1.5992,
+        "tmax": 1,
+        "auclast": 5.2023159864,
+        "aucinf": 5.2069182673,
+        "pct_aucextrap": 0.088387806728,
+        "lambda_z": 0.7170357708,
+        "half_life": 0.96668424197,
+        "cl": 0.48013044793,
+        "vz": 0.66960459642
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.9978697359,
+        "lambda_z_adj_r_squared": 0.99573947179,
+        "lambda_z_time_first": 6,
+        "lambda_z_time_last": 12,
+        "clast_obs": 0.0033,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "5",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 3.2928,
+        "tmax": 2,
+        "auclast": 18.8165513138,
+        "aucinf": 20.6666876963,
+        "pct_aucextrap": 8.9522637091,
+        "lambda_z": 0.22079453378,
+        "half_life": 3.1393312538,
+        "cl": 0.12096761884,
+        "vz": 0.547874156
+      },
+      "provenance": {
+        "lambda_z_n_points": 4,
+        "lambda_z_r_squared": 0.97446322915,
+        "lambda_z_adj_r_squared": 0.96169484373,
+        "lambda_z_time_first": 4,
+        "lambda_z_time_last": 12,
+        "clast_obs": 0.4085,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "6",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 3.275,
+        "tmax": 2,
+        "auclast": 17.3561213208,
+        "aucinf": 18.0303614745,
+        "pct_aucextrap": 3.7394710845,
+        "lambda_z": 0.30167292598,
+        "half_life": 2.2976777856,
+        "cl": 0.13865501274,
+        "vz": 0.45962033978
+      },
+      "provenance": {
+        "lambda_z_n_points": 4,
+        "lambda_z_r_squared": 0.97209876987,
+        "lambda_z_adj_r_squared": 0.95814815481,
+        "lambda_z_time_first": 4,
+        "lambda_z_time_last": 12,
+        "clast_obs": 0.2034,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "7",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 3.2913,
+        "tmax": 1,
+        "auclast": 14.3730805522,
+        "aucinf": 14.782746899,
+        "pct_aucextrap": 2.7712464374,
+        "lambda_z": 0.33173337538,
+        "half_life": 2.0894707377,
+        "cl": 0.16911606598,
+        "vz": 0.50979515037
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99657699878,
+        "lambda_z_adj_r_squared": 0.99315399757,
+        "lambda_z_time_first": 6,
+        "lambda_z_time_last": 12,
+        "clast_obs": 0.1359,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "8",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 2.0066,
+        "tmax": 1,
+        "auclast": 9.3609179542,
+        "aucinf": 9.6002360223,
+        "pct_aucextrap": 2.4928352552,
+        "lambda_z": 0.31673329384,
+        "half_life": 2.1884253851,
+        "cl": 0.26041026431,
+        "vz": 0.82217521609
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99920804155,
+        "lambda_z_adj_r_squared": 0.99841608309,
+        "lambda_z_time_first": 6,
+        "lambda_z_time_last": 12,
+        "clast_obs": 0.0758,
+        "c0_extrapolated": null
+      }
+    }
+  ]
+}

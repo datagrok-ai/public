@@ -8,14 +8,15 @@
     "access": "public"
   },
   "license": "MIT",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "friendlyName": "Scientific Computing",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "Pure TypeScript library for numerical methods",
   "keywords": [
     "optimization",
-    "time series features"
+    "time series features",
+    "statistics"
   ],
   "dependencies": {
     "jstat": "^1.9.6"

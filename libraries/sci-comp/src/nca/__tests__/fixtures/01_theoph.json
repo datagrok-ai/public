@@ -1,0 +1,334 @@
+{
+  "dataset": "01_theoph",
+  "pknca_version": "0.12.1",
+  "config": {
+    "auc_method": "lin up/log down",
+    "min_points": 3,
+    "min_r_squared": 0.85,
+    "exclude_cmax": true,
+    "min_span_ratio": 2,
+    "extrap_warn": 20,
+    "extrap_error": 50
+  },
+  "dataset_meta": {
+    "dose": {
+      "value": "per-subject (Dose_mg_per_kg * Wt_kg)",
+      "unit": "mg"
+    },
+    "route": "extravascular"
+  },
+  "profiles": [
+    {
+      "profile_key": {
+        "subject": "1",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 10.5,
+        "tmax": 1.12,
+        "auclast": 147.234748537,
+        "aucinf": 214.9236315752,
+        "pct_aucextrap": 31.4943882821,
+        "lambda_z": 0.048456996966,
+        "half_life": 14.3043775711,
+        "cl": 1.4888637311,
+        "vz": 30.7254643145
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99999972967,
+        "lambda_z_adj_r_squared": 0.99999945935,
+        "lambda_z_time_first": 9.05,
+        "lambda_z_time_last": 24.37,
+        "clast_obs": 3.28,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "10",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 10.21,
+        "tmax": 3.55,
+        "auclast": 135.576070097,
+        "aucinf": 167.8600307323,
+        "pct_aucextrap": 19.2326669395,
+        "lambda_z": 0.074959823776,
+        "half_life": 9.246915823,
+        "cl": 1.9069459156,
+        "vz": 25.4395730881
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99950868386,
+        "lambda_z_adj_r_squared": 0.99901736772,
+        "lambda_z_time_first": 9.38,
+        "lambda_z_time_last": 23.7,
+        "clast_obs": 2.42,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "11",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 8,
+        "tmax": 0.98,
+        "auclast": 77.8934723325,
+        "aucinf": 86.9026172559,
+        "pct_aucextrap": 10.3669431462,
+        "lambda_z": 0.095458559864,
+        "half_life": 7.261236515,
+        "cl": 3.6799812261,
+        "vz": 38.5505630016
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99999825596,
+        "lambda_z_adj_r_squared": 0.99999651192,
+        "lambda_z_time_first": 9.03,
+        "lambda_z_time_last": 24.08,
+        "clast_obs": 0.86,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "12",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 9.75,
+        "tmax": 3.52,
+        "auclast": 115.2202081633,
+        "aucinf": 125.8315397214,
+        "pct_aucextrap": 8.4329664738,
+        "lambda_z": 0.11025948945,
+        "half_life": 6.2865081637,
+        "cl": 2.5482482429,
+        "vz": 23.1113735026
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99939680165,
+        "lambda_z_adj_r_squared": 0.99879360329,
+        "lambda_z_time_first": 9.03,
+        "lambda_z_time_last": 24.15,
+        "clast_obs": 1.17,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "2",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 8.33,
+        "tmax": 1.92,
+        "auclast": 88.7312754883,
+        "aucinf": 97.3779346315,
+        "pct_aucextrap": 8.8794850455,
+        "lambda_z": 0.10408644369,
+        "half_life": 6.6593415626,
+        "cl": 3.2713776607,
+        "vz": 31.4294306231
+      },
+      "provenance": {
+        "lambda_z_n_points": 4,
+        "lambda_z_r_squared": 0.99719538828,
+        "lambda_z_adj_r_squared": 0.99579308243,
+        "lambda_z_time_first": 7.03,
+        "lambda_z_time_last": 24.3,
+        "clast_obs": 0.9,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "3",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 8.2,
+        "tmax": 1.02,
+        "auclast": 95.8781977934,
+        "aucinf": 106.1276685339,
+        "pct_aucextrap": 9.657680115,
+        "lambda_z": 0.10244431411,
+        "half_life": 6.7660873772,
+        "cl": 3.0092529537,
+        "vz": 29.3745239042
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99932496185,
+        "lambda_z_adj_r_squared": 0.9986499237,
+        "lambda_z_time_first": 9,
+        "lambda_z_time_last": 24.17,
+        "clast_obs": 1.05,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "4",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 8.6,
+        "tmax": 1.07,
+        "auclast": 102.6336232106,
+        "aucinf": 114.2162046382,
+        "pct_aucextrap": 10.1409265562,
+        "lambda_z": 0.099287020531,
+        "half_life": 6.981246661,
+        "cl": 2.8006533838,
+        "vz": 28.2076485808
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99892413703,
+        "lambda_z_adj_r_squared": 0.99784827405,
+        "lambda_z_time_first": 9.02,
+        "lambda_z_time_last": 24.65,
+        "clast_obs": 1.15,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "5",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 11.4,
+        "tmax": 1,
+        "auclast": 118.1793537528,
+        "aucinf": 136.3047315899,
+        "pct_aucextrap": 13.2976879274,
+        "lambda_z": 0.086618883982,
+        "half_life": 8.002264041,
+        "cl": 2.3473579843,
+        "vz": 27.0998410096
+      },
+      "provenance": {
+        "lambda_z_n_points": 4,
+        "lambda_z_r_squared": 0.99864718458,
+        "lambda_z_adj_r_squared": 0.99797077687,
+        "lambda_z_time_first": 7.02,
+        "lambda_z_time_last": 24.35,
+        "clast_obs": 1.57,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "6",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 6.44,
+        "tmax": 1.15,
+        "auclast": 71.6970149944,
+        "aucinf": 82.1758833246,
+        "pct_aucextrap": 12.7517562407,
+        "lambda_z": 0.087795740056,
+        "half_life": 7.894997868,
+        "cl": 3.8940865258,
+        "vz": 44.3539347503
+      },
+      "provenance": {
+        "lambda_z_n_points": 7,
+        "lambda_z_r_squared": 0.99824133715,
+        "lambda_z_adj_r_squared": 0.99788960458,
+        "lambda_z_time_first": 2.03,
+        "lambda_z_time_last": 23.85,
+        "clast_obs": 0.92,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "7",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 7.09,
+        "tmax": 3.48,
+        "auclast": 87.9692274358,
+        "aucinf": 100.987629232,
+        "pct_aucextrap": 12.8910856659,
+        "lambda_z": 0.088336496138,
+        "half_life": 7.8466682613,
+        "cl": 3.166427437,
+        "vz": 35.8450648991
+      },
+      "provenance": {
+        "lambda_z_n_points": 4,
+        "lambda_z_r_squared": 0.99867016765,
+        "lambda_z_adj_r_squared": 0.99800525148,
+        "lambda_z_time_first": 6.98,
+        "lambda_z_time_last": 24.22,
+        "clast_obs": 1.15,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "8",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 7.56,
+        "tmax": 2.02,
+        "auclast": 86.8065634779,
+        "aucinf": 102.1533002931,
+        "pct_aucextrap": 15.023241316,
+        "lambda_z": 0.081450539945,
+        "half_life": 8.5100378834,
+        "cl": 3.1263307116,
+        "vz": 38.3831797029
+      },
+      "provenance": {
+        "lambda_z_n_points": 6,
+        "lambda_z_r_squared": 0.99101239143,
+        "lambda_z_adj_r_squared": 0.98876548928,
+        "lambda_z_time_first": 3.53,
+        "lambda_z_time_last": 24.12,
+        "clast_obs": 1.25,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "9",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 9.03,
+        "tmax": 0.63,
+        "auclast": 83.9374360113,
+        "aucinf": 97.5200039393,
+        "pct_aucextrap": 13.9279813159,
+        "lambda_z": 0.08245863418,
+        "half_life": 8.4059988072,
+        "cl": 2.7465134247,
+        "vz": 33.3077724612
+      },
+      "provenance": {
+        "lambda_z_n_points": 3,
+        "lambda_z_r_squared": 0.99944366482,
+        "lambda_z_adj_r_squared": 0.99888732965,
+        "lambda_z_time_first": 8.8,
+        "lambda_z_time_last": 24.43,
+        "clast_obs": 1.12,
+        "c0_extrapolated": null
+      }
+    }
+  ]
+}
