@@ -1,0 +1,6 @@
+name,smiles,relation_to_imatinib,expected_at_easy_preset,expected_at_middle_preset,expected_at_hard_preset
+Imatinib,Cc1ccc(NC(=O)c2ccc(CN3CCN(C)CC3)cc2)cc1Nc1nccc(-c2cccnc2)n1,reference,reference (always 1.0),reference (always 1.0),reference (always 1.0)
+Nilotinib,Cc1cn(-c2cc(NC(=O)c3ccc(C)c(Nc4nccc(-c5cccnc5)n4)c3)cc2C(F)(F)F)cn1,close analog (same diaminopyrimidine + benzamide; methylpiperazine -> imidazole + CF3),flagged (mcsRatio likely under 0.7),probably not flagged (mcsRatio ~0.5-0.7),NOT flagged (mcsRatio > 0.4)
+Dasatinib,Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1,large hop (thiazole + aminopyrimidine; different scaffold),uncertain (Tc may be below 0.4),flagged,flagged
+Bosutinib,COc1cc(Nc2ncnc3cc(OCCCN4CCN(C)CC4)c(OC)cc23)c(Cl)cc1Cl,large hop (quinoline core; very different topology),unlikely (Tc usually under 0.4),flagged,flagged
+Ponatinib,Cc1ccc(C#Cc2cnc3cccc(C(=O)Nc4cc(C(F)(F)F)ccc4N4CCN(C)CC4)n23)cc1,large hop (imidazo[1;2-b]pyridazine + alkyne linker),unlikely (Tc usually under 0.4),flagged,flagged

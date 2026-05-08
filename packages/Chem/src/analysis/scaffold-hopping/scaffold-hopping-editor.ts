@@ -48,6 +48,23 @@ const PRESET_LABELS: Record<PresetKey, string> = {
 };
 const DEFAULT_PRESET: PresetKey = 'Middle';
 
+/** Module-level cache of the user's last-selected preset. Persists for the
+ *  page lifetime so the dialog remembers the choice across open/close
+ *  cycles. Updated by `_applyPreset` whenever the user picks something.
+ *  Initialised to `DEFAULT_PRESET` and read at field-initialisation time
+ *  by the editor's preset and threshold inputs — so the *first* time the
+ *  dialog opens in a session, it shows Middle; thereafter, whatever the
+ *  user last picked. */
+let _lastPresetKey: PresetKey = DEFAULT_PRESET;
+
+/** Module-level cache of replaceable-region atom marks, keyed by reference
+ *  SMILES. Persists for the page lifetime — across dialog open/close cycles
+ *  and across different tables that share the same reference molecule. The
+ *  user only has to mark a region once per molecule; subsequent invocations
+ *  restore the marks automatically. Cleared by the user via the Clear-
+ *  selection button (which also clears the cache entry for that SMILES). */
+const _atomMarkCache = new Map<string, number[]>();
+
 /** Parameters captured by the Scaffold Hopping dialog. */
 export type ScaffoldHoppingParams = {
   table: DG.DataFrame;
@@ -102,7 +119,7 @@ export class ScaffoldHoppingFunctionEditor {
   refRowInput!: DG.InputBase<number | null>;
 
   presetInput = ui.input.choice<string>('Preset', {
-    value: PRESET_LABELS[DEFAULT_PRESET],
+    value: PRESET_LABELS[_lastPresetKey],
     items: (Object.keys(PRESETS) as PresetKey[]).map((k) => PRESET_LABELS[k]),
     onValueChanged: () => this._applyPreset(),
     tooltipText: 'Picks Tc range and MCS atom-ratio cap to match the kind of ' +
@@ -113,15 +130,15 @@ export class ScaffoldHoppingFunctionEditor {
       'inputs below stay editable — the preset just seeds them.',
   });
 
-  tanimotoMinInput = ui.input.float('ECFP4 Tc min', {value: PRESETS[DEFAULT_PRESET].tcMin,
+  tanimotoMinInput = ui.input.float('ECFP4 Tc min', {value: PRESETS[_lastPresetKey].tcMin,
     tooltipText: 'Pre-filter shortlist lower bound. Drops rows with negligible ' +
       'similarity before pharmacophore / MCS scoring. Lower this if your ' +
       'reference and the genuine hops are expected to share little topology — ' +
       'Schneider 1999 and Iktos/Pinel 2023 both report real hops at Tc < 0.2.'});
-  tanimotoMaxInput = ui.input.float('ECFP4 Tc max', {value: PRESETS[DEFAULT_PRESET].tcMax,
+  tanimotoMaxInput = ui.input.float('ECFP4 Tc max', {value: PRESETS[_lastPresetKey].tcMax,
     tooltipText: 'Pre-filter shortlist upper bound. Drops near-duplicates of ' +
       'the reference (Tc above this are usually trivial analogues, not hops).'});
-  mcsMaxInput = ui.input.float('MCS atom ratio max', {value: PRESETS[DEFAULT_PRESET].mcsRatioMax,
+  mcsMaxInput = ui.input.float('MCS atom ratio max', {value: PRESETS[_lastPresetKey].mcsRatioMax,
     tooltipText: 'Maeda 2024 scaffold-hop criterion (J. Chem. Inf. Model. 2024, ' +
       '64, 5557): a candidate is flagged as a hop iff the atom-ratio ' +
       'ratio_atom = atoms(MCS) / atoms(reference) is ≤ this threshold. ' +
@@ -265,8 +282,26 @@ export class ScaffoldHoppingFunctionEditor {
       this._updateSelectionCaption();
       return;
     }
+    // Restore previously-marked atoms for this molecule (if any). The cache
+    // is keyed by SMILES string so the same reference molecule gets the same
+    // marks across dialog open/close cycles, table changes, row reordering,
+    // etc. — the user only has to mark a region once per molecule.
+    const cached = _atomMarkCache.get(smiles);
+    if (cached && cached.length > 0)
+      this.selectedAtoms = new Set(cached);
     this.referenceCaption.textContent = `Row ${rowIdx} • ${smiles}`;
     this._renderInteractivePicker(smiles);
+  }
+
+  /** Writes the current `selectedAtoms` to the module-level cache, keyed by
+   *  the current reference SMILES. Empty selections are deleted from the
+   *  cache so an explicit Clear-selection drops the cache entry too. */
+  private _saveMarksToCache() {
+    if (!this._currentRefSmiles) return;
+    if (this.selectedAtoms.size === 0)
+      _atomMarkCache.delete(this._currentRefSmiles);
+    else
+      _atomMarkCache.set(this._currentRefSmiles, [...this.selectedAtoms]);
   }
 
   private _renderInteractivePicker(smiles: string) {
@@ -363,7 +398,10 @@ export class ScaffoldHoppingFunctionEditor {
       else this.selectedAtoms.add(nearest);
       changed = true;
     }
-    if (changed) this._reRender(smiles);
+    if (changed) {
+      this._saveMarksToCache();
+      this._reRender(smiles);
+    }
   }
 
   /** Hover handler — paints atoms directly into the selection while the
@@ -402,7 +440,10 @@ export class ScaffoldHoppingFunctionEditor {
         changed = true;
       }
     }
-    if (changed) this._reRender(smiles);
+    if (changed) {
+      this._saveMarksToCache();
+      this._reRender(smiles);
+    }
   }
 
   private _resetPaintTracking() {
@@ -411,12 +452,14 @@ export class ScaffoldHoppingFunctionEditor {
   }
 
   /** Applies the currently-selected preset's Tc/mcsRatio values to the three
-   *  numeric inputs. The user can still tweak the inputs manually after the
-   *  preset is applied — we don't lock them. */
+   *  numeric inputs and remembers the choice in the module-level cache so
+   *  the next dialog open shows the same preset. The user can still tweak
+   *  the inputs manually after the preset is applied — we don't lock them. */
   private _applyPreset() {
     const label = this.presetInput.value;
     const key = (Object.keys(PRESETS) as PresetKey[]).find((k) => PRESET_LABELS[k] === label);
     if (!key) return;
+    _lastPresetKey = key;
     const p = PRESETS[key];
     this.tanimotoMinInput.value = p.tcMin;
     this.tanimotoMaxInput.value = p.tcMax;
@@ -448,6 +491,7 @@ export class ScaffoldHoppingFunctionEditor {
   private _clearSelection() {
     if (this.selectedAtoms.size === 0) return;
     this.selectedAtoms.clear();
+    this._saveMarksToCache();   // drops the cache entry — empty set is treated as "no marks"
     if (this._currentRefSmiles) this._reRender(this._currentRefSmiles);
     else this._updateSelectionCaption();
   }

@@ -43,6 +43,8 @@ import './tests/atom-picker-3d-hover-tests';
 import './tests/atom-picker-escape-tests';
 import './tests/renderer-hover-tests';
 
+import './tests/scaffold-hopping-tests';
+
 import './tests/viewers';
 
 export const _package = new DG.Package();
