@@ -143,62 +143,72 @@ workspace).
 
 ### Case 2: Query result + Query result (Link Tables)
 
-1. Open **Browse** > **Platform** > **Functions** > **Queries**.
-2. Find the query `Samples:PostgresCustomers`.
-3. Run it (right-click > **Run** or double-click) — wait for the result
-   table to open.
-4. Run the same query again to get a second result table in the
+> **Prerequisite:** spec provisions a saved query on `System:Datagrok`
+> via `helpers/openers.ts:provisionSystemDatagrokQuery({sql:
+> SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE})` before the case starts;
+> deletes it via `provisioned.cleanup()` after.
+
+1. Run the provisioned query via
+   `helpers/openers.ts:openTableFromDbQuery(page,
+   provisioned.queryNqName)` — wait for the result table to open.
+2. Run the same query again to get a second result table in the
    workspace.
-5. Go to **Data** > **Link Tables**:
+3. Go to **Data** > **Link Tables**:
    - Table 1: first query result, Table 2: second query result
-   - Link column: `ID`
+   - Link column: `id` (always present in `System:Datagrok` metadata
+     tables)
    - Link type: **Selection to filter**
    - Click **OK**
-6. **Verify:** select rows in Table 1 — corresponding rows in Table 2
+4. **Verify:** select rows in Table 1 — corresponding rows in Table 2
    are filtered.
-7. **Save with Data Sync ON:**
+5. **Save with Data Sync ON:**
    - **File** > **Save Project**.
    - Ensure the **Data sync** toggle is **ON** for both tables (the
      CREATION SCRIPT block should be visible).
    - Save as `Test_Case2_Sync`, click **OK**.
-8. Close the project. Reopen from **Browse** > **Projects**.
-9. **Verify on reopen:** both tables are loaded, linking works,
+6. Close the project. Reopen from **Browse** > **Projects**.
+7. **Verify on reopen:** both tables are loaded, linking works,
    no console errors.
-10. **Save with Data Sync OFF:**
-    - Repeat steps 1–6.
+8. **Save with Data Sync OFF:**
+    - Repeat steps 1–4.
     - Turn the **Data sync** toggle **OFF** for both tables.
     - Save as `Test_Case2_NoSync`.
-11. Close and reopen.
-12. **Verify on reopen:** tables loaded, linking works, no console
+9. Close and reopen.
+10. **Verify on reopen:** tables loaded, linking works, no console
     errors.
 
 ---
 
 ### Case 3: Query result + Browse > Files (Link Tables)
 
-1. Open **Browse** > **Platform** > **Functions** > **Queries**.
-2. Run query `Samples:PostgresCustomers` — wait for the result table
-   to open.
-3. Open **Browse** > **Files** > `System:AppData` > `Chem` > `tests`.
-4. Double-click `spgi-100.csv` — wait for the table to open.
-5. Go to **Data** > **Link Tables**:
+> **Prerequisite:** spec provisions a saved query on `System:Datagrok`
+> (same pattern as Case 2). Deletes it after the case ends.
+
+1. Run the provisioned query via
+   `helpers/openers.ts:openTableFromDbQuery(page,
+   provisioned.queryNqName)` — wait for the result table to open.
+2. Open **Browse** > **Files** > `System:AppData` > `Chem` > `tests`
+   and double-click `spgi-100.csv` (or use
+   `helpers/openers.ts:openTableFromFile`) — wait for the table to
+   open.
+3. Go to **Data** > **Link Tables**:
    - Table 1: query result, Table 2: `spgi-100`
-   - Link column: `ID`
+   - Link column: any shared key column
    - Link type: **Selection to filter**
    - Click **OK**
-6. **Verify:** linking works.
-7. **Save with Data Sync ON:**
+4. **Verify:** linking works.
+5. **Save with Data Sync ON:**
    - **File** > **Save Project**.
    - **Data sync** toggle **ON** for both tables.
    - Save as `Test_Case3_Sync`.
-8. Close and reopen.
-9. **Verify on reopen:** tables loaded, linking works, no console
+6. Close and reopen.
+7. **Verify on reopen:** tables loaded, linking works, no console
    errors.
-10. **Save with Data Sync OFF:**
-    - Repeat steps 1–6, **Data sync** toggle **OFF** for both tables.
+8. **Save with Data Sync OFF:**
+    - Repeat steps 1–4, **Data sync** toggle **OFF** for both tables.
     - Save as `Test_Case3_NoSync`.
-11. Close and reopen.
-12. **Verify on reopen:** tables loaded, linking works, no console
+9. Close and reopen.
+10. **Verify on reopen:** tables loaded, linking works, no console
     errors.
 
 ---
@@ -269,10 +279,15 @@ workspace).
 
 > **Prelude:** ensure the `test-projects-demo` Space exists with
 > `demog.csv` added (see Setup section above).
+>
+> **Prerequisite:** spec provisions a saved query on `System:Datagrok`
+> via `helpers/openers.ts:provisionSystemDatagrokQuery`. Deletes it
+> after the case ends.
 
 1. Open the **test-projects-demo** space and double-click `demog.csv`.
-2. Open **Browse** > **Platform** > **Functions** > **Queries** and
-   run query `Samples:PostgresCustomers`.
+2. Run the provisioned query via
+   `helpers/openers.ts:openTableFromDbQuery(page,
+   provisioned.queryNqName)`.
 3. Go to **Data** > **Link Tables**:
    - Table 1: `demog`, Table 2: query result
    - Link column: any shared key column
@@ -339,28 +354,30 @@ workspace).
 
 ### Case 9: DB table double-click + Aggregate Rows (Add to workspace)
 
-1. Open **Browse** > **Databases** > **Postgres** > **NorthwindTest** >
-   **Schema** > **public**.
-2. Double-click the `orders` table — wait for the table to open.
-3. Go to **Data** > **Aggregate Rows**.
-4. Configure the aggregation:
-   - Group by: `customerid`.
-   - Aggregation: `count` of `orderid`.
-5. Click **Add** (Add to workspace).
-6. **Verify:** the aggregated table opens as a separate table in a
+1. Open `public.groups` on the built-in `System:Datagrok` connection
+   via `helpers/openers.ts:openTableFromDbTable(page, {connectionNqName:
+   SYSTEM_DATAGROK_NQNAME, schemaName: 'public', tableName: 'groups'})`.
+   Mirrors `Browse > Databases > ... > double-click` semantics.
+2. Go to **Data** > **Aggregate Rows**.
+3. Configure the aggregation:
+   - Group by: `personal`.
+   - Aggregation: `count` of `id`.
+4. Click **Add** (Add to workspace) — or use
+   `helpers/openers.ts:addAggregateToWorkspace({via: 'menu'})`.
+5. **Verify:** the aggregated table opens as a separate table in a
    new tab.
-7. **Save with Data Sync ON:**
+6. **Save with Data Sync ON:**
    - **File** > **Save Project**.
    - **Data sync** toggle **ON** for the source table.
    - Save as `Test_Case9_Sync`.
-8. Close and reopen.
-9. **Verify on reopen:** both the source table and the aggregated
+7. Close and reopen.
+8. **Verify on reopen:** both the source table and the aggregated
    table are loaded, no console errors.
-10. **Save with Data Sync OFF:**
-    - Repeat steps 1–6, **Data sync OFF**.
+9. **Save with Data Sync OFF:**
+    - Repeat steps 1–5, **Data sync OFF**.
     - Save as `Test_Case9_NoSync`.
-11. Close and reopen.
-12. **Verify on reopen:** both tables loaded, no console errors.
+10. Close and reopen.
+11. **Verify on reopen:** both tables loaded, no console errors.
 
 ## Notes
 
@@ -386,24 +403,23 @@ workspace).
   original 2026-03-09 run flagged the prior pre-provisioned-Space
   formulation as blocked ("No Spaces set up on release server"); the
   inline-prelude pattern closes that env dependency.
-- **Cases 2/3/6 query substitution (decision-log
-  `sa-2026-05-03-postgres-queries-public-data-substitution`):** the
-  former `Samples:PostgresAll` reference is substituted with
-  `Samples:PostgresCustomers`. Two-table-source cases become
-  same-query-twice patterns after substitution; structural test value
-  is preserved, semantic distinctness of two query results is
-  degraded — flagged for downstream review.
+- **Cases 2/3/6 query provisioning.** Each case provisions its
+  own saved query on the built-in `System:Datagrok` connection
+  via `helpers/openers.ts:provisionSystemDatagrokQuery` (no
+  Samples package dependency). Two-table-source cases use the
+  same-query-twice pattern; structural test value is preserved,
+  semantic distinctness of two query results is degraded —
+  acceptable trade-off for self-containment.
 - **Cases 1/5/8 file substitution (decision-log
   `sa-2026-05-03-spgi-file-public-data-substitution`):** the former
   `SPGI_v2_infinity.csv` from `System:Demo` is substituted with
   `spgi-100.csv` from `System:AppData/Chem/tests`. Two-file-source
   cases become same-file-twice patterns after substitution; Datagrok
   auto-disambiguates table-tab names as `spgi-100` and `spgi-100 (2)`.
-- **Case 9 DB-table reference** still points at
-  `Postgres > Northwind > public > orders` directly via plain
-  double-click (the source-class mapping does not cover bare DB-table
-  references). May be mapped to `Samples:PostgresOrders` in a future
-  pass or accepted as env-dependent skip on dev.
+- **Case 9 DB-table reference** points at `System:Datagrok /
+  public.groups` via plain double-click (`openTableFromDbTable`
+  mirrors UI double-click semantics). Both the connection and the
+  table are built into the platform — no env provisioning required.
 - **Cases 8–9 derivative tables** (pivots, aggregates) are persisted
   as part of the project state alongside the source tables; the
   **Data sync** toggle applies to the source tables only —

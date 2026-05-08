@@ -2,12 +2,11 @@
 sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sync, projects.add-relation, projects.shell.share-via-context-menu, projects.api.get-by-id]
 generated_from: projects-lifecycle-db.md (Phase B canonical openers + uploadProject + reopen-verify)
 --- */
-// DB-source lifecycle. Two paths: saved query (Samples:PostgresProducts) +
-// ad-hoc DB table (DbQuery on Northwind public.products). Phase B 2026-05-05
-// — replaces fake `Postgres:NorthwindTest:select_top_n` (which never
-// resolved as a function and silently skipped) with the canonical
-// recorder-engaged paths captured live on dev. Reference:
-// .claude/diagnostics/mcp-capture-db.md
+// DB-source lifecycle. Two paths: provisioned saved query on System:Datagrok
+// + ad-hoc DB table (DbQuery on System:Datagrok public.groups). Both
+// prerequisites are created within the test via helpers/openers.ts
+// (provisionSystemDatagrokQuery / built-in System:Datagrok connection) —
+// no Samples package or external DB provisioning required.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
@@ -15,8 +14,13 @@ import {
   openTableFromDbQuery,
   openTableFromDbTable,
   assertProvenanceScript,
+  provisionSystemDatagrokQuery,
   resetShell,
   PROVENANCE_PATTERNS,
+  ProvisionedQuery,
+  SYSTEM_DATAGROK_DB_TABLE,
+  SYSTEM_DATAGROK_NQNAME,
+  SYSTEM_DATAGROK_QUERIES,
 } from '../helpers/openers';
 import {
   saveProjectWithProvenance,
@@ -26,19 +30,17 @@ import {
 
 test.use(projectsTestOptions);
 
-const QUERY_NQNAME = 'Samples:PostgresProducts';
-const CONNECTION_NQNAME = 'Samples:PostgresNorthwind';
-
 // ---------------------------------------------------------------------------
-// Test 1: saved query path
+// Test 1: saved query path (provisioned on System:Datagrok)
 // ---------------------------------------------------------------------------
 
-test('Projects / Lifecycle DB / Query: Samples:PostgresProducts source', async ({page}) => {
+test('Projects / Lifecycle DB / Query: provisioned System:Datagrok query source', async ({page}) => {
   test.setTimeout(420_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
   const projectName = `lifecycle-db-query-${stamp}`;
+  let provisioned: ProvisionedQuery | null = null;
   let saved: {projectId: string; tableInfoId: string; layoutId: string | null; resolvedName: string} | null = null;
 
   await gotoApp(page);
@@ -46,20 +48,22 @@ test('Projects / Lifecycle DB / Query: Samples:PostgresProducts source', async (
   await resetShell(page);
 
   try {
-    await softStep('Setup: env-skip if Samples:PostgresProducts not registered', async () => {
-      // Use DG.Func.find — same registry the opener consults, avoids the
-      // `dapi.queries.filter('name = "X"')` field-mismatch quirk
-      // (server matches by nqName, not bare name; use `shortName` if dapi).
-      const ok = await evalJs<boolean>(page,
-        `(() => DG.Func.find({namespace: 'Samples', name: 'PostgresProducts'}).length > 0)()`);
-      if (!ok) test.skip(true, 'Samples:PostgresProducts not provisioned on this env');
+    await softStep('Step 0: provision saved query on System:Datagrok', async () => {
+      provisioned = await provisionSystemDatagrokQuery(page, {
+        nameStem: 'lifecycle_db_query',
+        sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
+      });
+      expect(provisioned.queryId).toBeTruthy();
+      expect(provisioned.queryNqName).toMatch(/^[\w]+:[\w]+$/);
     });
 
-    await softStep('Step 1: run Samples:PostgresProducts via canonical recorder', async () => {
-      const opened = await openTableFromDbQuery(page, QUERY_NQNAME);
+    await softStep('Step 1: run provisioned query via canonical recorder', async () => {
+      if (!provisioned) throw new Error('no provisioned query');
+      const opened = await openTableFromDbQuery(page, provisioned.queryNqName);
       expect(opened.rowCount).toBeGreaterThan(0);
       await assertProvenanceScript(page, 'db_query', opened.script);
-      expect(opened.script).toMatch(/Samples:PostgresProducts\(\)/);
+      const callPattern = new RegExp(`${provisioned.queryNqName}\\(\\)`);
+      expect(opened.script).toMatch(callPattern);
     });
 
     await softStep('Step 2: save with provenance', async () => {
@@ -69,12 +73,13 @@ test('Projects / Lifecycle DB / Query: Samples:PostgresProducts source', async (
 
     await softStep('Step 3: reopen → query re-executes server-side', async () => {
       if (!saved) throw new Error('no saved project');
+      if (!provisioned) throw new Error('no provisioned query');
       const result = await reopenAndAssertProvenance(
         page, saved.projectId, PROVENANCE_PATTERNS.db_query,
       );
       expect(result.tablesAfter).toBeGreaterThan(0);
       expect(result.reopenedRowCount).toBeGreaterThan(0);
-      expect(result.reopenedScript).toMatch(/Samples:PostgresProducts/);
+      expect(result.reopenedScript).toMatch(new RegExp(provisioned.resolvedName));
     });
 
     await softStep('Step 4: share via JS API (View-and-Use)', async () => {
@@ -99,6 +104,7 @@ test('Projects / Lifecycle DB / Query: Samples:PostgresProducts source', async (
         projectId: saved.projectId,
         tableInfoId: saved.tableInfoId,
       });
+    if (provisioned) await provisioned.cleanup();
   }
 
   if (stepErrors.length > 0) {
@@ -108,10 +114,10 @@ test('Projects / Lifecycle DB / Query: Samples:PostgresProducts source', async (
 });
 
 // ---------------------------------------------------------------------------
-// Test 2: ad-hoc DB table double-click path
+// Test 2: ad-hoc DB table double-click path (System:Datagrok / public.groups)
 // ---------------------------------------------------------------------------
 
-test('Projects / Lifecycle DB / Table: Northwind public.products via DbQuery', async ({page}) => {
+test('Projects / Lifecycle DB / Table: System:Datagrok public.groups via DbQuery', async ({page}) => {
   test.setTimeout(420_000);
   stepErrors.length = 0;
 
@@ -124,25 +130,15 @@ test('Projects / Lifecycle DB / Table: Northwind public.products via DbQuery', a
   await resetShell(page);
 
   try {
-    await softStep('Setup: env-skip if Samples:PostgresNorthwind not registered', async () => {
-      // dapi.connections.filter `name = "X"` matches the fully-qualified
-      // server name and returns 0 for bare names — use `shortName`.
-      const ok = await evalJs<boolean>(page, `(async () => {
-        const list = await grok.dapi.connections.filter('shortName = "PostgresNorthwind"').list();
-        return list.length > 0;
-      })()`);
-      if (!ok) test.skip(true, 'Samples:PostgresNorthwind not provisioned on this env');
-    });
-
-    await softStep('Step 1: open public.products ad-hoc via DbQuery (double-click semantics)', async () => {
+    await softStep('Step 1: open public.groups ad-hoc via DbQuery (double-click semantics)', async () => {
       const opened = await openTableFromDbTable(page, {
-        connectionNqName: CONNECTION_NQNAME,
-        schemaName: 'public',
-        tableName: 'products',
+        connectionNqName: SYSTEM_DATAGROK_NQNAME,
+        schemaName: SYSTEM_DATAGROK_DB_TABLE.schemaName,
+        tableName: SYSTEM_DATAGROK_DB_TABLE.tableName,
       });
       expect(opened.rowCount).toBeGreaterThan(0);
       await assertProvenanceScript(page, 'db_table', opened.script);
-      expect(opened.script).toMatch(/DbQuery\([\w:]*Postgres[\w:]*Northwind,\s*"products"/);
+      expect(opened.script).toMatch(/DbQuery\([\w:]*Datagrok,\s*"groups"/);
     });
 
     await softStep('Step 2: save with provenance', async () => {

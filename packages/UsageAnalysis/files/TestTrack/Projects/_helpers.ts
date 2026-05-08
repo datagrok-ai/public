@@ -1,13 +1,13 @@
 // Shared helpers for Projects regression specs.
-// All specs run against https://dev.datagrok.ai using the storageState from
-// ../auth-dev.json — no interactive login. Helpers transcribed from
-// .claude/skills/grok-browser/references/projects.md and
-// .claude/skills/grok-browser/references/widgets/dialog.md.
+// All specs run against the configured Datagrok host using the storageState
+// from ../e2e/.auth.json — written by ../e2e/global-setup.ts at suite start.
+// Helpers transcribed from .claude/skills/grok-browser/references/projects.md
+// and .claude/skills/grok-browser/references/widgets/dialog.md.
 import {Page, expect} from '@playwright/test';
 import * as path from 'path';
 
-export const BASE_URL = 'https://dev.datagrok.ai';
-export const AUTH_FILE = path.resolve(__dirname, '..', 'auth-dev.json');
+export const BASE_URL = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+export const AUTH_FILE = path.resolve(__dirname, '..', 'e2e', '.auth.json');
 
 export const projectsTestOptions = {
   storageState: AUTH_FILE,
@@ -136,4 +136,108 @@ export async function pollUntilProjectExists(page: Page, name: string, timeout =
 export async function navigateToDashboards(page: Page) {
   await page.goto(BASE_URL + '/projects');
   await page.waitForSelector('.grok-gallery-grid', {timeout: 30_000});
+}
+
+// Spaces fixture provisioning. Creates a root Space and physically uploads a
+// file into the space's own storage via `client.files.write(name, bytes)`,
+// making it openable via `<spaceName>:Files/<name>` — the path-based open
+// flow scenarios use.
+//
+// Path format note: a Space exposes a child DataConnection literally named
+// `Files` (full name `<spaceName>:Files`); the file written via
+// `client.files.write(name, ...)` ends up at `<spaceName>:Files/<name>`.
+// `Spaces:<spaceName>/<name>` does NOT resolve — the global `Spaces:` namespace
+// is not the storage root. Verified empirically 2026-05-07 against dev:
+// `client.children.list()` returns the FileInfo with
+// `fullPath = "<spaceName>:Files/<fileName>"`, and that path opens cleanly
+// through the canonical `OpenFile` opener.
+//
+// Linked-entity provisioning (`addEntity(uuid, link=true)`) is intentionally
+// omitted: on dev/sandbox the test account doesn't own System:DemoFiles
+// FileInfos, so the server rejects the call with `Permission denied to change
+// entity`. Physical copy bypasses this — the bytes are uploaded fresh, the
+// space owns the resulting file outright.
+export interface SpaceFixture {
+  spaceId: string;
+  spaceName: string;            // server-normalized (PascalCase, no dashes)
+  fileName: string;             // filename inside the space (e.g. 'cars.csv')
+  filePath: string;             // `<spaceName>:Files/<fileName>` — usable with OpenFile
+}
+
+export interface ProvisionSpaceOptions {
+  namePrefix: string;          // suffixed with `-${Date.now()}` to avoid collisions
+  sourceDirectory?: string;    // default 'System:DemoFiles/'
+  fileName: string;            // file in sourceDirectory to copy into the space
+  asName?: string;             // override stored name in the space (default = fileName)
+}
+
+export interface ProvisionSpaceResult {
+  blocked: boolean;
+  reason: string;
+  // Populated when the Space itself was created, even if the copy failed.
+  // Always pass to releaseSpaceFixture for cleanup, regardless of `blocked`.
+  fixture: SpaceFixture | null;
+}
+
+export async function provisionSpaceFixture(
+  page: Page, opts: ProvisionSpaceOptions): Promise<ProvisionSpaceResult> {
+  const payload = {
+    namePrefix: opts.namePrefix,
+    sourceDirectory: opts.sourceDirectory ?? 'System:DemoFiles/',
+    fileName: opts.fileName,
+    asName: opts.asName ?? null,
+  };
+  return await evalJs<ProvisionSpaceResult>(page, `(async () => {
+    const opts = ${JSON.stringify(payload)};
+    try {
+      if (typeof grok.dapi.spaces?.createRootSpace !== 'function')
+        return {blocked: true, reason: 'spaces.createRootSpace not implemented on this env', fixture: null};
+      const space = await grok.dapi.spaces.createRootSpace(opts.namePrefix + '-' + Date.now());
+      const client = grok.dapi.spaces.id(space.id);
+      try {
+        const list = (await grok.dapi.files.list(opts.sourceDirectory)) || [];
+        const src = list.find(x => x.name === opts.fileName);
+        if (!src) throw new Error('source file not found in ' + opts.sourceDirectory + ': ' + opts.fileName);
+        const target = opts.asName || opts.fileName;
+        const bytes = await src.readAsBytes();
+        await client.files.write(target, Array.from(bytes));
+        if (!(await client.files.exists(target))) throw new Error('files.exists returned false after write: ' + target);
+        // Resolve the global path via the space's children — the FileInfo
+        // child carries the canonical fullPath ("<spaceName>:Files/<file>").
+        // Fall back to the synthesized form if children.list misses it.
+        let filePath = space.name + ':Files/' + target;
+        try {
+          const children = await client.children.list();
+          const match = (children || []).find(c => c?.name === target && (c?.fullPath || '').includes('/' + target));
+          if (match?.fullPath) filePath = match.fullPath;
+        } catch (_) { /* fall through */ }
+        return {
+          blocked: false,
+          reason: 'ok (' + filePath + ')',
+          fixture: {
+            spaceId: space.id,
+            spaceName: space.name,
+            fileName: target,
+            filePath,
+          },
+        };
+      } catch (e) {
+        // Best-effort cleanup of the empty Space before returning a blocker.
+        await grok.dapi.spaces.delete(space).catch(() => {});
+        return {blocked: true, reason: String((e && e.message) || e).slice(0, 250), fixture: null};
+      }
+    } catch (e) {
+      return {blocked: true, reason: 'Spaces fixture provisioning threw: ' + String((e && e.message) || e).slice(0, 250), fixture: null};
+    }
+  })()`);
+}
+
+export async function releaseSpaceFixture(page: Page, fixture: SpaceFixture | null) {
+  if (!fixture) return;
+  await evalJs(page, `(async () => {
+    try {
+      const sp = await grok.dapi.spaces.find(${JSON.stringify(fixture.spaceId)});
+      if (sp) await grok.dapi.spaces.delete(sp);
+    } catch (_) { /* best-effort cleanup */ }
+  })()`).catch(() => {});
 }

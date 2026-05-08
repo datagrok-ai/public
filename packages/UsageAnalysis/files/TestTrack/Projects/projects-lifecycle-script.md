@@ -24,14 +24,16 @@ related_bugs:
 
 # Projects — Script-source lifecycle
 
-Chained lifecycle for projects sourced from a **Script** output
-(`Samples:Cars`). Exercises proactive coverage cells
-`source_class=script × dep_lifecycle_op=rename_external_dep` AND
-`source_class=script × dep_lifecycle_op=share_with_recipient_open`
-per chain rev 3 `proactive_lifecycle_specs[2]`. Targets
-GROK-19403 (recipient cannot open shared project when underlying
-script not also shared) AND GROK-19728 (view-and-use users edit
-creation script under failure state — broken-script variant).
+Chained lifecycle for projects sourced from a **provisioned dataframe-
+output Script** (created in-test via
+`helpers/openers.ts:provisionDataframeScript`). Exercises proactive
+coverage cells `source_class=script ×
+dep_lifecycle_op=rename_external_dep` AND `source_class=script ×
+dep_lifecycle_op=share_with_recipient_open` per chain rev 3
+`proactive_lifecycle_specs[2]`. Targets GROK-19403 (recipient cannot
+open shared project when underlying script not also shared) AND
+GROK-19728 (view-and-use users edit creation script under failure
+state — broken-script variant).
 
 UI coverage delegated to `projects-ui-smoke.md`.
 
@@ -42,73 +44,68 @@ UI coverage delegated to `projects-ui-smoke.md`.
 3. Recipient placeholder: `<RECIPIENT_USERNAME_TBD>`.
 4. Helper 3 dependency: `helpers.playwright.session.logoutAndLoginAs`
    (NOT YET REGISTERED).
-5. **Environment dependencies (env-provisioning required):**
-   - Script: `Samples:Cars` provisioned for `qa-pw` test account.
-     Skip-with-logged-warning if not provisioned.
-   - For GROK-19403 sub-flow: the script must be **un-shared
-     with the recipient** initially — otherwise the bug doesn't
-     reproduce.
-   - For GROK-19728 sub-flow: a **broken** variant of the script
-     (intentionally introduce a syntax error or missing
-     dependency) is needed. Surfaced as deferred item — broken-
-     script provisioning may need a separate test fixture.
-6. Cleanup: delete project; revoke permissions; restore Script
-   name.
+5. Cleanup: delete project; revoke permissions; delete the
+   provisioned script (via `helpers/openers.ts:deleteProvisionedScript`).
 
 ## Scenarios
 
 ### Main flow — script-source lifecycle (happy path + GROK-19403)
 
-1. **Open table from Script.** Run `Samples:Cars` script (via
-   `Browse > Platform > Functions > Scripts > Samples > Cars`
-   double-click OR
-   `await grok.functions.eval('Samples:Cars()')`). Verify the
-   resulting table is loaded.
-2. **Save project with Data Sync ON.** Save Project, name from
-   Setup, Data Sync **ON**, OK. Cancel auto-share.
+0. **Provision JS script with `output: dataframe`.** Use
+   `helpers/openers.ts:provisionDataframeScript({name:
+   'lifecycleScript${stamp}', body: "df = await
+   grok.data.getDemoTable('demog.csv');"})`. The helper creates
+   the script via `DG.Script.create` + `grok.dapi.scripts.save`,
+   waits for `DG.Func` registration, and returns `{scriptId,
+   resolvedName, resolvedNqName}`. The script is namespaced
+   under the test user's login — full edit/rename/delete rights.
+   (This replaces the previous Samples:Cars env-dependency,
+   which was scalar-output and silently skipped.)
+1. **Open table from Script.** Use
+   `helpers/openers.ts:openTableFromScript(page,
+   provisioned.resolvedNqName, {idx: 0})`. Verify the resulting
+   table is loaded and `df.tags['.script']` matches
+   `<Var> = <resolvedName>(idx=0)`.
+2. **Save project with Data Sync ON.** Use
+   `helpers/projects.ts:saveProjectWithProvenance(page,
+   projectName)`.
 3. **Share project with second user (View-and-Use + Full) —
    script NOT also shared (GROK-19403 setup).**
-   - Verify the script `Samples:Cars` is NOT shared with the
-     recipient before this step (precondition for GROK-19403).
-   - Use `grok.dapi.permissions.grant(project, recipient, ...)`
-     for project-level grants.
+   - The provisioned script is owned by the test user and not
+     shared with anyone else by default — precondition for
+     GROK-19403 reproduction holds automatically.
+   - Use `grok.dapi.permissions.grant(project, recipient, false)`
+     for project-level grants. Defensive skip if no second user
+     exists (Helper 3 deferred).
    - **GROK-19403 invariant assertion:** when recipient opens
-     the shared project (Step 3.3 below), they should see an
-     **explicit permission failure** (e.g. "Could not access
-     script Samples:Cars — you don't have permission"), NOT a
-     silent null table or success-with-empty-data.
-   - Original-user assertion: project still opens for original
-     user (their access is fine; only recipient lacks script
-     access).
+     the shared project, they should see an **explicit
+     permission failure** ("Could not access script
+     <resolvedName> — you don't have permission"), NOT a silent
+     null table.
    - **Recipient-side assertion (Helper 3 — deferred):** logout +
      login as recipient; open shared project; verify the
-     **explicit error** is shown (NOT a silent null per
-     GROK-19403). If recipient sees an empty table without
-     error, that IS the GROK-19403 failure mode.
-4. **Rename external dependency — Script rename.** Via right-
-   click `Rename` on `Samples:Cars` OR via JS API:
+     **explicit error** is shown.
+4. **Rename external dependency — Script rename.** Via JS API:
    ```js
-   const s = await grok.dapi.scripts.find('Samples:Cars');
-   s.name = 'Cars_renamed';
+   const s = await grok.dapi.scripts.find(provisioned.scriptId);
+   s.name = `${provisioned.resolvedName}_renamed`;
    await grok.dapi.scripts.save(s);
    ```
-   Skip-with-logged-warning if rename rejects on Samples-
-   namespace permission.
+   The test owns the script — rename always succeeds.
    - Original-user assertion: project still opens; relation to
      the renamed script either auto-resolves OR fails with
-     explicit error.
+     explicit error (mirrors github-3550 invariant for queries).
 5. **Rename project itself.** Via JS API.
    - Original-user assertion: opens under new name.
    - Recipient-side (Helper 3 — deferred): opens under new name
-     (still with the GROK-19403 explicit-error behavior on
-     recipient side).
+     (still with the GROK-19403 explicit-error behavior).
 6. **GROK-19728 sub-flow — broken creation script + view-and-
-   use access (DEFERRED — broken-script fixture not yet
-   provisioned).**
-   - Setup: change the script content to introduce a runtime
-     error (e.g. `throw new Error('intentional break')`).
-     **Provisioning blocker** — needs a separate broken-script
-     fixture; deferred per Setup point 5.
+   use access (DEFERRED).**
+   - Setup: re-provision (or update) the script content to
+     introduce a runtime error (e.g. `throw new Error('intentional
+     break')`). With our provisioning helper this is now
+     trivially achievable — but the recipient-side assertion
+     still needs Helper 3.
    - Recipient with View-and-Use access opens the project.
    - **GROK-19728 invariant assertion:** recipient (view-and-
      use level) should NOT be able to edit the creation
@@ -116,12 +113,10 @@ UI coverage delegated to `projects-ui-smoke.md`.
      failure state. Test asserts the edit is rejected (script
      editing UI is read-only for view-and-use users) OR is
      gracefully blocked.
-   - Realized coverage: skipped pending broken-script fixture
-     provisioning. share-side assertion (project opens with
-     view-and-use access) runs unconditionally.
-7. **Cleanup.** Delete project. Revoke permissions. Restore
-   script name (rename back). Restore script content to working
-   state if Step 6 ran.
+   - Realized coverage: deferred until Helper 3 lands.
+7. **Cleanup.** Delete project. Revoke permissions. Delete the
+   provisioned script via `deleteProvisionedScript(page,
+   provisioned.scriptId)` (id is stable across rename).
 
 ### Expected results
 
@@ -134,28 +129,26 @@ UI coverage delegated to `projects-ui-smoke.md`.
 
 ## Notes
 
+- **Self-contained source provisioning.** This spec creates and
+  deletes its own dataframe-output script — no Samples package,
+  no env-provisioned fixture. The previous `Samples:Cars`
+  reference was scalar-output (rejected no-input call) and the
+  spec silently skipped; the in-test provisioned script wraps
+  `grok.data.getDemoTable('demog.csv')` and returns a real
+  dataframe.
 - **Origin: chain rev 3 proactive_lifecycle_specs[2]** with
   `bugs_reinforcing: [GROK-19403]` and
   `dep_lifecycle_ops_covered: [rename_external_dep,
   share_with_recipient_open]`. GROK-19728 added as a
-  reinforcement (per chain rev 3
-  `bug_focused_candidates[GROK-19728]` semantic match). Authored
-  in Phase A.
+  reinforcement.
 - **GROK-19403 full reproduction.** Step 3 walks the exact bug
   path: un-shared script as a project dependency + recipient
-  share + recipient-open expectation. The cross-cutting bug
-  spec `projects-grok-19403-spec.ts` (chain rev 3
-  bug_focused_candidates) targets the share+recipient-open
-  invariant; this scenario reinforces with full Script-source
-  lifecycle.
-- **GROK-19728 sub-flow deferred.** Step 6 requires a broken-
-  script fixture which is NOT YET PROVISIONED. Surfaced as
-  deferred item; share-side coverage runs unconditionally.
-  Recipient-side broken-state assertion blocked by Helper 3
-  + broken-script fixture (compound dependency).
-- **Env dependency.** Script provisioned for qa-pw +
-  recipient must have read access ONLY to project, NOT
-  script (precondition for GROK-19403 reproduction).
+  share + recipient-open expectation. The provisioned script is
+  owned by the test user and not auto-shared, so the GROK-19403
+  precondition holds without extra setup.
+- **GROK-19728 sub-flow deferred.** Step 6 needs Helper 3
+  (logoutAndLoginAs) to assert recipient-side behavior. Broken-
+  script provisioning is now trivial via the helper.
 - **`projects.api.relations.list` in sub_features.** Used in
   Step 4 to assert on relation resolution after Script
   rename.
@@ -164,7 +157,5 @@ UI coverage delegated to `projects-ui-smoke.md`.
   `projects-ui-smoke.md`. JS API path used here.
 - **Helper 3 deferral.** Recipient-side assertions in Step
   3.3 + Step 5 + Step 6 require Helper 3.
-- **Self-cleaning.** Step 7 deletes project + restores script.
-- **Sequencing within Wave 2C.** Fourth lifecycle scenario per
-  Plan line 219: needs env Script commit + broken-script
-  fixture (the latter is GROK-19728 specific).
+- **Self-cleaning.** Step 7 deletes project + provisioned
+  script.

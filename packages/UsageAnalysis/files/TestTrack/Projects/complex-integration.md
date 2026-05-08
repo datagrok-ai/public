@@ -36,39 +36,52 @@ UI coverage delegated to `projects-ui-smoke.md`.
 
 1. Authenticate as test user.
 2. Project name: `integration-test-${Date.now()}`.
-3. **Environment dependencies (multiple):**
-   - File share: `System:AppData/Chem/tests/spgi-100.csv`,
-     `System:DemoFiles/demog.csv`.
+3. **Source provisioning** — all required prerequisites are created
+   by the spec itself (no external package or DB env dependency):
+   - Files: `System:AppData/Chem/tests/spgi-100.csv` and
+     `System:DemoFiles/demog.csv` (file presence is not a
+     prerequisite per project-wide convention).
    - Space: inline-created `test-projects-demo-integration-*`
-     populated with `demog.csv` (Spaces prelude pattern).
-   - DB: `Postgres:NorthwindTest:public:orders` (env-provisioned).
-   - Query: `Samples:PostgresCustomers` (env-provisioned).
-   - Script: `Samples:Cars` (env-provisioned).
-   - Skip-with-logged-warning if any of the above is not
-     present. Per
-     `sa-2026-05-03-postgres-queries-public-data-substitution`,
-     `sa-2026-05-03-spgi-file-public-data-substitution`,
-     `sa-2026-05-03-spaces-inline-prelude-pattern` patterns.
-4. Cleanup: delete project; delete inline Space.
+     populated with `demog.csv` (Spaces prelude pattern; subject to
+     the platform-level Spaces blocker — defensive env-skip per
+     `projects-lifecycle-spaces-spec.ts` pattern).
+   - DB table: `System:Datagrok / public.groups` opened ad-hoc via
+     `helpers/openers.ts:openTableFromDbTable`.
+   - Saved query: provisioned in-test via
+     `helpers/openers.ts:provisionSystemDatagrokQuery({sql:
+     SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE})`.
+   - Dataframe-output script: provisioned in-test via
+     `helpers/openers.ts:provisionDataframeScript`.
+4. Cleanup: delete project; delete inline Space; invoke
+   `provisionedQuery.cleanup()` and
+   `deleteProvisionedScript(provisionedScript.scriptId)`.
 
 ## Scenarios
 
 ### Main flow — multi-source integration
 
+0. **Provision in-test prerequisites.** Create the saved query and
+   the dataframe-output script via the helpers listed in Setup
+   point 3.
 1. **Open 8 tables from heterogeneous sources.**
-   - File share: `System:AppData/Chem/tests/spgi-100.csv`.
+   - File share: `System:AppData/Chem/tests/spgi-100.csv` (via
+     `helpers/openers.ts:openTableFromFile`).
    - Space: `test-projects-demo-integration-* > demog.csv`
-     (prelude-created).
-   - DB: `Browse > Databases > Postgres > NorthwindTest > Schema >
-     public > orders` (double-click).
-   - Query: run `Samples:PostgresCustomers`.
-   - Script: run `Samples:Cars`.
-   - Pivot: configure Pivot Table on the demog table > **Add**.
-   - Aggregate: configure Aggregate Rows on the cars
-     (Samples:Cars) table > **Add**.
-   - Join: Join the spgi-100 table with the orders table on
-     a common-name key column (or any plausible join
-     condition); produce as new tab.
+     (prelude-created; defer / env-skip if Spaces blocker active).
+   - DB table: `System:Datagrok / public.groups` opened via
+     `openTableFromDbTable` (mirrors `Browse > Databases` double-
+     click).
+   - Query: run the provisioned saved query via
+     `openTableFromDbQuery(page, provisionedQuery.queryNqName)`.
+   - Script: run the provisioned script via
+     `openTableFromScript(page, provisionedScript.resolvedNqName)`.
+   - Pivot: configure Pivot Table on the demog table > **Add**
+     (use `addAggregateToWorkspace({via: 'pivot-viewer'})`).
+   - Aggregate: configure Aggregate Rows on the script-output
+     table > **Add** (use `addAggregateToWorkspace({via: 'menu'})`).
+   - Join: Join the spgi-100 table with the DB-table on a
+     common-name key column (or any plausible join condition);
+     produce as new tab.
    - Clone: right-click any open table > **Clone** to produce
      an independent copy.
    - Verify `grok.shell.tables.length >= 8` after all 8 sources
@@ -82,7 +95,7 @@ UI coverage delegated to `projects-ui-smoke.md`.
    `(await grok.dapi.projects.find(<id>)).relations.length` is
    the expected count (depends on parent vs derived counting
    semantics; assert `>= 5` for parent tables at minimum:
-   spgi, demog, orders, postgres-customers, cars).
+   spgi, demog, db-table, query-result, script-result).
 4. **Close all views and reopen the integration project.** Close
    via `grok.shell.closeAll()`. Reopen via
    `Browse > Dashboards`. Verify all parent tables load (5+);
@@ -90,8 +103,8 @@ UI coverage delegated to `projects-ui-smoke.md`.
    correctly. **Multi-source co-existence assertion:** all 8
    tabs are present in the workspace; no missing-source errors.
 5. **Cleanup.** Delete the project. Delete the inline Space.
-   Optionally restore environment state (no rename ops in
-   this scenario, so no restoration needed).
+   Invoke `provisionedQuery.cleanup()` and
+   `deleteProvisionedScript(provisionedScript.scriptId)`.
 
 ### Expected results
 
@@ -100,16 +113,19 @@ UI coverage delegated to `projects-ui-smoke.md`.
   derivations.
 - Reopen restores all 8 tables / tabs without errors.
 - No source-class interaction conflicts (e.g. Spaces +
-  Postgres + Files all coexist; Pivot + Aggregate + Join all
-  derive correctly; Clone is independent).
+  System:Datagrok + Files all coexist; Pivot + Aggregate + Join
+  all derive correctly; Clone is independent).
 
 ## Notes
 
+- **Self-contained source provisioning.** The Query and Script
+  prerequisites are created and deleted within the spec; the DB
+  table is on the built-in `System:Datagrok` connection. No
+  Samples package dependency.
 - **Origin: `complex.md` Step 1 in full + Step 2 (Wave 2B
   re-framing per Plan line 170).** Plan explicitly notes:
   "The only intentionally-long spec — value is multi-source
-  co-existence." Re-framing of Migrator's Split A as a
-  standalone integration test.
+  co-existence."
 - **Why this is NOT bug-focused.** None of the GROK bugs
   target multi-source co-existence specifically. Each bug
   is source-specific or op-specific. This scenario covers
@@ -124,12 +140,11 @@ UI coverage delegated to `projects-ui-smoke.md`.
 - **UI coverage delegated.** No UI surface beyond Save
   Project. Pivot/Aggregate/Join/Clone UI surfaces are owned
   by `uploading.md` source-matrix Cases 8/9.
-- **Env-dependent (skip if missing).** All 5 env
-  dependencies (File, Space, DB, Query, Script) must be
-  present — defensive skip-with-logged-warning otherwise.
+- **Spaces blocker.** Cases involving Spaces (Step 1
+  sub-bullet 2) defensively env-skip via the same pattern as
+  `projects-lifecycle-spaces-spec.ts` until the platform-level
+  Spaces bug is fixed.
 - **No `related_bugs`.** Pure proactive multi-source
   coverage.
-- **Self-cleaning.** Step 5 deletes project + Space.
-- **Sequencing within Wave 2B.** Last in Wave 2B per Plan
-  execution order — heaviest, requires all 5 env
-  provisioning items.
+- **Self-cleaning.** Step 5 deletes project + Space + provisioned
+  query + provisioned script.

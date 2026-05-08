@@ -863,6 +863,84 @@ export async function saveProjectWithProvenance(
 }
 
 // ---------------------------------------------------------------------------
+// 11b. saveAllTablesWithProvenance — multi-table variant of #11.
+// ---------------------------------------------------------------------------
+
+export interface SavedAllTables {
+  /** Server-assigned project id. */
+  projectId: string;
+  /** TableInfo ids of every persisted source table, in shell.tables order. */
+  tableInfoIds: string[];
+  /**
+   * Primary TableInfo id (first one) — for backward-compat with
+   * `deleteProjectWithCleanup({tableInfoId})` which currently accepts a single
+   * id. Callers that want full multi-table cleanup should iterate
+   * `tableInfoIds` and call `deleteProjectWithCleanup({tableInfoId: ...})`
+   * once per id.
+   */
+  primaryTableInfoId: string;
+  /** Layout id (active TableView's layout) if a layout was saved. */
+  layoutId: string | null;
+  /** Project name as persisted (preserved verbatim via the JS API path). */
+  resolvedName: string;
+}
+
+/**
+ * Like {@link saveProjectWithProvenance}, but persists EVERY open table in
+ * `grok.shell.tables` — not just the active TableView's dataframe. Use this
+ * for multi-source lifecycle scenarios where reopen must re-materialize all
+ * sources (file + DB-table + query + script + derived, etc.).
+ *
+ * The active TableView's layout is saved alongside (one layout, attached to
+ * the project). Per-table layouts are out of scope — see
+ * `complex-rename-spec.ts` for the inline pattern this helper consolidates.
+ *
+ * Each table's `df.tags['.script']` provenance is preserved through
+ * `dapi.tables.uploadDataFrame(df)` + `dapi.tables.save(tableInfo)`, enabling
+ * Datagrok server-side re-materialization on reopen (Data Sync).
+ *
+ * @param page - Playwright Page (must have at least one open TableView).
+ * @param projectName - Project name (preserved verbatim via the JS API path).
+ * @returns identifiers needed for downstream cleanup or reopen.
+ */
+export async function saveAllTablesWithProvenance(
+  page: Page,
+  projectName: string,
+): Promise<SavedAllTables> {
+  return await page.evaluate(async (n) => {
+    const grok = (window as any).grok;
+    const DG = (window as any).DG;
+    const tables = Array.from(grok.shell.tables);
+    if (tables.length === 0)
+      throw new Error('saveAllTablesWithProvenance: no tables in shell');
+    const project = DG.Project.create();
+    project.name = n;
+    const tableInfoIds: string[] = [];
+    for (const df of tables as any[]) {
+      const ti = df.getTableInfo();
+      project.addChild(ti);
+      await grok.dapi.tables.uploadDataFrame(df);
+      await grok.dapi.tables.save(ti);
+      tableInfoIds.push(ti.id);
+    }
+    const tv = grok.shell.tv;
+    const layout = tv?.saveLayout?.() ?? null;
+    if (layout) {
+      project.addChild(layout);
+      await grok.dapi.layouts.save(layout);
+    }
+    await grok.dapi.projects.save(project);
+    return {
+      projectId: project.id,
+      tableInfoIds,
+      primaryTableInfoId: tableInfoIds[0],
+      layoutId: layout?.id ?? null,
+      resolvedName: project.name,
+    };
+  }, projectName);
+}
+
+// ---------------------------------------------------------------------------
 // 12. reopenAndAssertProvenance — closeAll + reopen + verify .script survives.
 // ---------------------------------------------------------------------------
 

@@ -21,9 +21,10 @@ related_bugs: []
 
 # Projects — DB-source lifecycle (proactive)
 
-Chained lifecycle for projects sourced from a **DB table**
-(`Postgres:NorthwindTest:public:orders` via Browse > Databases double-
-click). Exercises proactive coverage cell `source_class=db_table ×
+Chained lifecycle for projects sourced from a **DB table** on
+`System:Datagrok` (the platform's built-in metadata Postgres connection,
+created by `ServiceConnectionsMigration` on every deploy — always
+present). Exercises proactive coverage cell `source_class=db_table ×
 dep_lifecycle_op=share_with_recipient_open` per chain rev 3
 `proactive_lifecycle_specs[4]`. Pure proactive coverage — no GROK
 ticket targets DB-source share+recipient-open today; this scenario
@@ -47,79 +48,88 @@ reconciliation.
 3. Recipient placeholder: `<RECIPIENT_USERNAME_TBD>`.
 4. Helper 3 dependency: `helpers.playwright.session.logoutAndLoginAs`
    (NOT YET REGISTERED).
-5. **Environment dependencies:**
-   - DB connection: `Postgres:NorthwindTest` provisioned for `qa-pw`.
-   - Recipient must have **per-user permissions on the Connection**
-     (this is the proactive coverage axis — DB connection share +
-     per-user execution model).
-   - Skip-with-logged-warning if any of the above is not present
-     (per `sa-2026-05-03-postgres-queries-public-data-substitution`
-     pattern).
-6. Cleanup: delete project; revoke project permissions; revoke
-   connection permissions if granted as part of the test.
+5. Cleanup: delete project; revoke project permissions; delete the
+   provisioned saved query (if Test 1 path) — all in `finally`.
 
 ## Scenarios
 
-### Main flow — DB-source lifecycle (proactive)
+### Test 1 — DB query source via provisioned saved query
 
-1. **Open table from DB via double-click.** Navigate
-   `Browse > Databases > Postgres > NorthwindTest > Schema >
-   public > orders`. Double-click. Verify the table loads.
-2. **Save project with Data Sync ON.** Save Project, name from
-   Setup, Data Sync **ON**, OK. Cancel auto-share.
-3. **Share project with second user (View-and-Use + Full).** Use
-   `grok.dapi.permissions.grant`. Verify Sharing tab.
-   - Verify the DB connection IS also shared with recipient (or
-     grant connection-level permission as part of this step:
-     `grok.dapi.permissions.grant(connection, recipient, false)`).
-   - Original-user assertion: project reopens; DB table loads via
-     Data Sync.
-   - **Recipient-side assertion (Helper 3 — deferred):** logout +
-     login as recipient; open shared project; verify the DB
-     table loads correctly under recipient's session (the
-     recipient's per-user DB credentials via Spawner re-execute
-     the query against `public.orders`).
-4. **Rename external dependency — N/A for db_table per chain rev 3.**
-   Per `proactive_lifecycle_specs[4].dep_lifecycle_ops_covered:
-   [share_with_recipient_open]` (NOT `rename_external_dep`).
-   Atlas rationale: rename of an external DB table renames at
-   the connection layer, not the project-relation layer; the
-   project's relation refers to the table by qualified name and
-   is not affected by table-name churn. This step is a no-op.
-5. **Rename project itself.** Via JS API. Verify rename
-   persists; recipient still opens under new name (Helper 3 —
-   deferred).
-6. **Cleanup.** Delete project. Revoke project permissions.
-   Revoke connection permission grant (if granted in Step 3).
+0. **Provision saved query on `System:Datagrok`.** Use
+   `helpers/openers.ts:provisionSystemDatagrokQuery({nameStem:
+   'lifecycle_db_query', sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE})`.
+   The helper creates a Postgres query against the `groups` table in
+   the platform's metadata DB and returns `{queryId, queryNqName,
+   resolvedName, cleanup}`. The query is namespaced under the test
+   user's login, so the user has full edit/rename/delete rights.
+1. **Open table from saved query.** Use
+   `helpers/openers.ts:openTableFromDbQuery(page,
+   provisioned.queryNqName)`. Verify `df.tags['.script']` matches
+   `<Var> = <queryNqName>()`.
+2. **Save project with Data Sync ON** via `saveProjectWithProvenance`.
+3. **Reopen** via `reopenAndAssertProvenance` — verify the query
+   re-executes server-side and `.script` references the provisioned
+   query's resolved name.
+4. **Share project with second user (View-and-Use).** Use
+   `grok.dapi.permissions.grant(project, recipient, false)`.
+   Defensive skip if no second user exists (Helper 3 deferred).
+5. **Cleanup.** Delete project + invoke `provisioned.cleanup()`.
+
+### Test 2 — DB table source via ad-hoc DbQuery double-click
+
+1. **Open `public.groups` ad-hoc.** Use
+   `helpers/openers.ts:openTableFromDbTable(page, {connectionNqName:
+   SYSTEM_DATAGROK_NQNAME, schemaName: 'public', tableName:
+   'groups'})`. Verify `df.tags['.script']` matches
+   `<Var> = DbQuery(System:Datagrok, "groups", ...)`.
+2. **Save project with Data Sync ON** via `saveProjectWithProvenance`.
+3. **Reopen** via `reopenAndAssertProvenance` — verify DbQuery
+   re-runs server-side.
+4. **Cleanup.** Delete project. (No external query to clean up —
+   ad-hoc DbQuery is part of project relations only.)
+
+### Original scope notes (deferred)
+
+- **Rename external dependency — N/A for db_table per chain rev 3.**
+  Per `proactive_lifecycle_specs[4].dep_lifecycle_ops_covered:
+  [share_with_recipient_open]` (NOT `rename_external_dep`).
+  Atlas rationale: rename of an external DB table renames at
+  the connection layer, not the project-relation layer; the
+  project's relation refers to the table by qualified name and
+  is not affected by table-name churn. This step is a no-op.
+- **Rename project itself.** Via JS API. Verify rename
+  persists; recipient still opens under new name (Helper 3 —
+  deferred).
+- **Recipient-side assertion (Helper 3 — deferred):** logout +
+  login as recipient; open shared project; verify the DB table
+  loads correctly under recipient's session.
 
 ### Expected results
 
 - Save / reopen works for DB-sourced projects.
-- Share + recipient-open works when both project AND
-  connection are shared.
+- Share + recipient-open works when project is shared (recipient
+  inherits access to `System:Datagrok` via `allUsers` — built-in
+  permission model, no per-user DB credential dance required).
 - Project rename persists; share survives rename.
-- Per-user query execution model works under recipient's
-  session.
 
 ## Notes
 
+- **Self-contained source provisioning.** Both tests create their
+  own DB-source prerequisites within the spec — Test 1 provisions
+  a saved query against `System:Datagrok` via
+  `helpers/openers.ts:provisionSystemDatagrokQuery`; Test 2 uses
+  an ad-hoc DbQuery on the same connection. No external package
+  (Samples) or env-provisioned DB connection is required.
+- **`System:Datagrok` rationale.** Built-in read-only Postgres
+  connection to the platform's metadata DB; created by
+  `ServiceConnectionsMigration` on every deploy and shared with
+  `allUsers` (or `admins` on public). The `groups` table is part
+  of the metadata schema and always non-empty.
 - **Origin: chain rev 3 proactive_lifecycle_specs[4]** with
   `bugs_reinforcing: []` and
   `dep_lifecycle_ops_covered: [share_with_recipient_open]`.
   Pure proactive — no GROK ticket targets this cell. Authored
   in Phase A.
-- **bugs_reinforcing: [].** Proactive coverage rationale per
-  PROJECTS-SPLIT-COMPLETION-PLAN bug-traceability line 311:
-  the right policy is per-source bundle covers all plausible
-  interaction cells regardless of whether a GROK ticket exists.
-  If this cell never has a regression, the cost is bounded
-  (~7 min in CI).
-- **Connection-share is the proactive surface.** This
-  scenario specifically tests the coordination of project-
-  share + connection-share + per-user query execution. The
-  connection-share step (Step 3) is the regression candidate
-  — if any future connection-share refactor breaks this path,
-  THIS scenario catches it before a customer hits it.
 - **Filename deviation from canonical `db-table` →
   `db`.** Per Plan line 324, authoring shorthand. Chain rev
   4 should reconcile (either rename canonical to `db` or
@@ -127,15 +137,8 @@ reconciliation.
 - **No external rename for db_table.** Per chain rev 3,
   external DB table rename is a connection-layer concern,
   not project-relation; not in scope for this entry.
-- **`projects.api.namespaces` NOT in sub_features.** DB
-  connections live under `Postgres:` namespace but the
-  project's relation is to the connection + table, not the
-  namespace itself. Atlas confirms.
 - **UI coverage delegated.** All UI surfaces are owned by
   `projects-ui-smoke.md`. JS API path used here.
 - **Helper 3 deferral.** Recipient-side assertions blocked.
-- **Self-cleaning.** Step 6 deletes project + revokes
-  permissions.
-- **Sequencing within Wave 2C.** Sixth lifecycle scenario per
-  Plan line 221: needs DB connection per-user perms commit.
-  Sequencing flexible with specs 3, 4, 5.
+- **Self-cleaning.** Cleanup deletes project + invokes
+  `provisioned.cleanup()` for the saved query.

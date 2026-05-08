@@ -571,3 +571,163 @@ export async function assertProvenanceScript(
       `does not match ${sourceClass} pattern ${pattern}.`,
     );
 }
+
+// ---------------------------------------------------------------------------
+// 8. System:Datagrok — built-in read-only Postgres connection to Datagrok's
+//    own metadata DB. Always present per ServiceConnectionsMigration
+//    (core/server/datlas/lib/src/migrations/service_connections.dart).
+//    Use as a self-contained replacement for Samples:* DB resources in
+//    project lifecycle tests.
+// ---------------------------------------------------------------------------
+
+/** Fully qualified name of the built-in System:Datagrok connection. */
+export const SYSTEM_DATAGROK_NQNAME = 'System:Datagrok';
+
+/**
+ * Canonical SQL templates for queries provisioned on System:Datagrok.
+ * All target the platform's metadata DB schema (read-only) — see
+ * `public/packages/UsageAnalysis/queries/*.sql` for the wider set of
+ * production queries that demonstrate which tables are safely accessible.
+ */
+export const SYSTEM_DATAGROK_QUERIES = {
+  /** Sample of platform groups — small, deterministic, always non-empty. */
+  GROUPS_SAMPLE: 'select id, friendly_name as name, personal from groups limit 20',
+  /** Sample of group-relations — alternative shape if scenario needs distinct columns. */
+  GROUPS_RELATIONS: 'select parent_id, child_id from groups_relations limit 30',
+};
+
+/**
+ * Real DB table on System:Datagrok suitable for ad-hoc DbQuery (double-click
+ * semantics) project lifecycle tests. `groups` is part of the platform's
+ * metadata schema and guaranteed by ServiceConnectionsMigration.
+ */
+export const SYSTEM_DATAGROK_DB_TABLE = {
+  schemaName: 'public',
+  tableName: 'groups',
+};
+
+export interface SystemDatagrokConnection {
+  /** UUID of the connection on the server. */
+  id: string;
+  /** Fully qualified name (`'System:Datagrok'`). */
+  nqName: string;
+}
+
+/**
+ * Resolve the built-in `System:Datagrok` connection. Always present per
+ * ServiceConnectionsMigration; throws if not found (signals a broken deploy
+ * — not an env-skip condition).
+ *
+ * Pattern reference: `core/client/xamgle/lib/src/tests/projects_layouts_test.dart:6`
+ * — the canonical Dart-side pattern is `await Func.eval('System:Datagrok')`.
+ *
+ * @param page - Playwright Page.
+ */
+export async function getSystemDatagrokConnection(
+  page: Page,
+): Promise<SystemDatagrokConnection> {
+  return await page.evaluate(async () => {
+    const grok = (window as any).grok;
+    const conn = await grok.functions.eval('System:Datagrok');
+    if (!conn?.id)
+      throw new Error('System:Datagrok connection not found — broken deploy');
+    return {id: conn.id, nqName: conn.nqName ?? 'System:Datagrok'};
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 9. provisionSystemDatagrokQuery — create a saved query on System:Datagrok
+//    for use as a self-contained DB-source fixture in lifecycle tests.
+// ---------------------------------------------------------------------------
+
+export interface ProvisionedQuery {
+  /** Server-assigned id of the saved DataQuery entity (for cleanup). */
+  queryId: string;
+  /** Fully qualified name including namespace (typically `<userLogin>:<resolvedName>`). */
+  queryNqName: string;
+  /** Name as recorded on the server — may be PascalCased server-side. */
+  resolvedName: string;
+  /** Best-effort cleanup — call in `finally` to delete the saved query. */
+  cleanup: () => Promise<void>;
+}
+
+/**
+ * Provision a saved Datagrok query against `System:Datagrok`, registered as
+ * a `DG.Func`. Used by lifecycle specs that need a deterministic Q-source
+ * fixture without depending on the Samples package.
+ *
+ * Pattern reference: `Queries/new-sql-query-spec.ts:28-33` and
+ * `core/client/xamgle/lib/src/tests/projects_layouts_test.dart:6-11`.
+ *
+ * **Caller is responsible for cleanup** — invoke `.cleanup()` in a `finally`
+ * block to delete the saved query. Does NOT auto-delete prior runs.
+ *
+ * @param page - Playwright Page.
+ * @param options.nameStem - Query name stem; spec should pass a value that
+ *   identifies the test, e.g. `'lifecycle_db_query'`. A `Date.now()` suffix
+ *   is appended to avoid collisions across parallel runs.
+ * @param options.sql - SQL body. Use one of {@link SYSTEM_DATAGROK_QUERIES}
+ *   for consistency, or a custom `select ...` statement.
+ * @returns metadata for downstream `openTableFromDbQuery` + cleanup.
+ */
+export async function provisionSystemDatagrokQuery(
+  page: Page,
+  options: {nameStem: string; sql: string},
+): Promise<ProvisionedQuery> {
+  // The server may normalize names (PascalCase, drop underscores, etc.) on
+  // save, so we use a name with no underscores and rely on the server-reported
+  // `saved.name` / `saved.nqName` as the source of truth for downstream lookups.
+  const stamp = Date.now();
+  const camelStem = options.nameStem.replace(/[_\s]+([a-z0-9])/gi, (_, c) => c.toUpperCase());
+  const uniqueName = `${camelStem}${stamp}`;
+
+  const provisioned = await page.evaluate(async ({n, s}) => {
+    const grok = (window as any).grok;
+    const DG = (window as any).DG;
+    const conn = await grok.functions.eval('System:Datagrok');
+    if (!conn) throw new Error('System:Datagrok connection not found');
+    const q = conn.query(n, s);
+    const saved = await grok.dapi.queries.save(q);
+    // Wait for DG.Func registration to propagate. The server may rename the
+    // function (PascalCase the first letter, etc.) on save — try every
+    // candidate form before giving up.
+    const cap = (x: string) => (x ? x.charAt(0).toUpperCase() + x.slice(1) : x);
+    const candidates = [saved?.name, saved?.shortName, n, cap(n)].filter(Boolean);
+    let fn: any = null;
+    for (let i = 0; i < 20 && !fn; i++) {
+      for (const cand of candidates) {
+        fn = DG.Func.find({name: cand})?.[0];
+        if (fn) break;
+      }
+      if (!fn) await new Promise((r) => setTimeout(r, 300));
+    }
+    // Even if DG.Func registration didn't propagate within the wait window,
+    // return server-reported metadata so downstream openTableFromDbQuery can
+    // try its own lookup with a clearer error if it ultimately fails.
+    return {
+      queryId: saved?.id,
+      resolvedName: fn?.name ?? saved?.name ?? n,
+      queryNqName: fn?.nqName ?? saved?.nqName
+        ?? (saved?.namespace ? `${saved.namespace}:${saved.name}` : n),
+    };
+  }, {n: uniqueName, s: options.sql});
+
+  return {
+    ...provisioned,
+    cleanup: () => deleteProvisionedQuery(page, provisioned.queryId),
+  };
+}
+
+/** Delete a provisioned query by id (best-effort, swallows errors). */
+export async function deleteProvisionedQuery(
+  page: Page,
+  queryId: string,
+): Promise<void> {
+  await page.evaluate(async (id) => {
+    try {
+      const grok = (window as any).grok;
+      const q = await grok.dapi.queries.find(id);
+      if (q) await grok.dapi.queries.delete(q);
+    } catch (_) { /* best effort */ }
+  }, queryId).catch(() => {});
+}
