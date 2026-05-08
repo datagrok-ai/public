@@ -93,7 +93,7 @@ export class TimelinesViewer extends EChartViewer {
 
   init() {
     if (!this.initialized) {
-      this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/Charts/README.md#timelines';
+      this.helpUrl = '/help/visualize/viewers/timelines.md';
 
       this.updateZoom();
       this.chart.on('dataZoom', () => {
