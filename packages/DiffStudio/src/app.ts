@@ -650,6 +650,105 @@ export class DiffStudio {
     grok.shell.preview = null;
   }
 
+  /** `view.temp` keys used to mark Diff Studio gallery / hub views so we can
+   *  later find them in `grok.shell.views` without relying on the view name
+   *  (which may collide with views from other apps) or JS-reference equality
+   *  (wrappers may be re-instantiated by the platform). `temp` is a
+   *  dart-side map, so the marker survives JS-wrapper re-creation. */
+  public static readonly GALLERY_TAG = 'diff-studio-gallery';
+  public static readonly HUB_TAG = 'diff-studio-hub';
+
+  /** Per-key in-flight flag for async gallery builds. Prevents two
+   *  concurrent dblclicks on the same folder from creating two tabs while
+   *  the first build is still running (no live view yet, so the find-loop
+   *  returns null for both). */
+  private static galleryBuilding: Set<TITLE> = new Set();
+
+  /** Currently mounted hub renderer, kept so that `notifyDataChanged` can
+   *  refresh the open hub in place. Set by `runDiffStudio` in package.ts;
+   *  cleared in its onViewRemoved subscription. */
+  public static currentHubRenderer: (() => void | Promise<void>) | null = null;
+
+  /** Find the open gallery view for `key`, if any. Source of truth is
+   *  `grok.shell.views`; matching is by `view.temp[GALLERY_TAG]` which we
+   *  stamp ourselves at creation. No name lookup, no reference equality. */
+  public static findGalleryView(key: TITLE): DG.View | null {
+    for (const v of grok.shell.views)
+      if (v.temp?.[DiffStudio.GALLERY_TAG] === key) return v;
+    return null;
+  }
+
+  /** Find the open hub view, if any. */
+  public static findHubView(): DG.View | null {
+    for (const v of grok.shell.views)
+      if (v.temp?.[DiffStudio.HUB_TAG] === true) return v;
+    return null;
+  }
+
+  /** If the platform's preview slot currently holds the gallery for `key`,
+   *  return it; otherwise null. Preview views live in `grok.shell.preview`,
+   *  not `grok.shell.views`, so they require a separate check. */
+  public static findGalleryPreview(key: TITLE): DG.View | null {
+    const p = grok.shell.preview as DG.View | null;
+    return (p && p.temp?.[DiffStudio.GALLERY_TAG] === key) ? p : null;
+  }
+
+  /** Mark a freshly created view as a Diff Studio gallery for `key`. */
+  public static stampGalleryView(view: DG.View, key: TITLE): void {
+    view.temp[DiffStudio.GALLERY_TAG] = key;
+  }
+
+  /** Mark a freshly created view as the Diff Studio hub. */
+  public static stampHubView(view: DG.View): void {
+    view.temp[DiffStudio.HUB_TAG] = true;
+  }
+
+  /** Activate `key`'s existing gallery tab if open; otherwise build a fresh
+   *  view, stamp it with the gallery tag, and add it as a view. The
+   *  `galleryBuilding` flag collapses concurrent dblclicks during an async
+   *  build into a single tab. */
+  private static async openOrFocusGallery(
+    key: TITLE,
+    build: () => Promise<DG.View>,
+  ): Promise<void> {
+    const existing = DiffStudio.findGalleryView(key);
+    if (existing) {
+      grok.shell.v = existing;
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      return;
+    }
+    if (DiffStudio.galleryBuilding.has(key)) return;
+    DiffStudio.galleryBuilding.add(key);
+    try {
+      const view = await build();
+      DiffStudio.stampGalleryView(view, key);
+      // If our same gallery is currently in the platform's preview slot,
+      // drop it before opening as a tab — otherwise the gallery would be
+      // visible in two places (preview slot + tab). Other apps' previews
+      // are left alone.
+      if (DiffStudio.findGalleryPreview(key))
+        grok.shell.preview = null;
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.addView(view, undefined, undefined, null);
+    } finally {
+      DiffStudio.galleryBuilding.delete(key);
+    }
+  } // openOrFocusGallery
+
+  /** Notify that data backing a gallery / hub section has changed. The open
+   *  gallery is closed (next click rebuilds with fresh data); the hub is
+   *  re-rendered in place via the stored renderer. */
+  private static notifyDataChanged(scope: 'library' | 'recent'): void {
+    const galleryKey = scope === 'library' ? TITLE.LIBRARY : TITLE.RECENT;
+    const galleryView = DiffStudio.findGalleryView(galleryKey);
+    if (galleryView) galleryView.close();
+
+    if (DiffStudio.currentHubRenderer && DiffStudio.findHubView())
+      void DiffStudio.currentHubRenderer();
+  } // notifyDataChanged
+
   private entityPath: string = PATH.CUSTOM;
   private mainPath: string = PATH.APPS_DS;
 
@@ -2153,6 +2252,7 @@ export class DiffStudio {
       // saves to silently skip the refresh once the user toggled the toolbox.
       this.librarySub = grok.events.onCustomEvent(LIBRARY_CHANGED_EVENT).subscribe(() => {
         void this.refreshLibraryFolder();
+        DiffStudio.notifyDataChanged('library');
       });
 
       const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup, section: TITLE) => {
@@ -2617,6 +2717,7 @@ export class DiffStudio {
       invalidateRecentCache();
       prefetchRecentModelsTable();
       invalidateFolderListing(folder);
+      DiffStudio.notifyDataChanged('recent');
     } catch (err) {
       grok.shell.warning(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
     }
@@ -2654,23 +2755,33 @@ export class DiffStudio {
         return;
       previewTimer = window.setTimeout(() => {
         previewTimer = null;
+        const key = title as TITLE;
+        const existing = DiffStudio.findGalleryView(key);
+        if (existing) {
+          grok.shell.v = existing;
+          grok.shell.windows.showToolbox = false;
+          grok.shell.windows.showBrowse = true;
+          return;
+        }
+        // Already showing in the preview slot — nothing to do, no rebuild.
+        if (DiffStudio.findGalleryPreview(key)) return;
         DiffStudio.releaseSharedPreview();
         grok.shell.windows.showToolbox = false;
         grok.shell.windows.showBrowse = true;
-        grok.shell.addPreview(buildView());
+        const view = buildView();
+        DiffStudio.stampGalleryView(view, key);
+        grok.shell.addPreview(view);
       }, UI_TIME.DBL_CLICK_DELAY);
     });
 
-    folder.root.addEventListener('dblclick', (e) => {
+    folder.root.addEventListener('dblclick', async (e) => {
       e.stopImmediatePropagation();
       e.preventDefault();
       if (previewTimer !== null) {
         clearTimeout(previewTimer);
         previewTimer = null;
       }
-      grok.shell.windows.showToolbox = false;
-      grok.shell.windows.showBrowse = true;
-      grok.shell.addView(buildView(), undefined, undefined, null);
+      await DiffStudio.openOrFocusGallery(title as TITLE, async () => buildView());
     });
 
     return folder;
@@ -2705,10 +2816,20 @@ export class DiffStudio {
         return;
       previewTimer = window.setTimeout(async () => {
         previewTimer = null;
+        const existing = DiffStudio.findGalleryView(TITLE.LIBRARY);
+        if (existing) {
+          grok.shell.v = existing;
+          grok.shell.windows.showToolbox = false;
+          grok.shell.windows.showBrowse = true;
+          return;
+        }
+        if (DiffStudio.findGalleryPreview(TITLE.LIBRARY)) return;
         DiffStudio.releaseSharedPreview();
         grok.shell.windows.showToolbox = false;
         grok.shell.windows.showBrowse = true;
-        grok.shell.addPreview(await buildView());
+        const view = await buildView();
+        DiffStudio.stampGalleryView(view, TITLE.LIBRARY);
+        grok.shell.addPreview(view);
       }, UI_TIME.DBL_CLICK_DELAY);
     });
 
@@ -2719,9 +2840,7 @@ export class DiffStudio {
         clearTimeout(previewTimer);
         previewTimer = null;
       }
-      grok.shell.windows.showToolbox = false;
-      grok.shell.windows.showBrowse = true;
-      grok.shell.addView(await buildView(), undefined, undefined, null);
+      await DiffStudio.openOrFocusGallery(TITLE.LIBRARY, () => buildView());
     });
 
     return folder;
@@ -2789,10 +2908,20 @@ export class DiffStudio {
         return;
       previewTimer = window.setTimeout(async () => {
         previewTimer = null;
+        const existing = DiffStudio.findGalleryView(TITLE.RECENT);
+        if (existing) {
+          grok.shell.v = existing;
+          grok.shell.windows.showToolbox = false;
+          grok.shell.windows.showBrowse = true;
+          return;
+        }
+        if (DiffStudio.findGalleryPreview(TITLE.RECENT)) return;
         DiffStudio.releaseSharedPreview();
         grok.shell.windows.showToolbox = false;
         grok.shell.windows.showBrowse = true;
-        grok.shell.addPreview(await buildView());
+        const view = await buildView();
+        DiffStudio.stampGalleryView(view, TITLE.RECENT);
+        grok.shell.addPreview(view);
       }, UI_TIME.DBL_CLICK_DELAY);
     });
 
@@ -2803,9 +2932,7 @@ export class DiffStudio {
         clearTimeout(previewTimer);
         previewTimer = null;
       }
-      grok.shell.windows.showToolbox = false;
-      grok.shell.windows.showBrowse = true;
-      grok.shell.addView(await buildView(), undefined, undefined, null);
+      await DiffStudio.openOrFocusGallery(TITLE.RECENT, () => buildView());
     });
 
     return folder;

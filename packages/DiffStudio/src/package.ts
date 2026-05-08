@@ -92,7 +92,22 @@ export class PackageFunctions {
       path.includes(`/${TITLE.RECENT}`);
 
     if (wasProcessed || !isDeepLink) {
+      // Dedup: if a hub view is already open (stamped on `view.temp`),
+      // activate it instead of creating a duplicate.
+      const existing = DiffStudio.findHubView();
+      if (existing) {
+        grok.shell.v = existing;
+        return existing;
+      }
       const hub = new DiffStudioHub();
+      DiffStudio.stampHubView(hub.view);
+      DiffStudio.currentHubRenderer = () => hub.render();
+      const sub = grok.events.onViewRemoved.subscribe((removed: DG.View) => {
+        if (removed.temp?.[DiffStudio.HUB_TAG] === true) {
+          DiffStudio.currentHubRenderer = null;
+          sub.unsubscribe();
+        }
+      });
       hub.renderHeader();
       setTimeout(() => hub.renderRest(), 0);
       return hub.view;
