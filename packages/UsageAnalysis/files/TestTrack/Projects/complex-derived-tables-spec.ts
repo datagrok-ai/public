@@ -28,14 +28,29 @@ sub_features_covered: [projects.upload, projects.api.save, projects.api.files.sy
 //     reproduces GROK-19103 is in scope.
 import {test, expect, Page} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
-import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
-import {openTableFromFile} from '../helpers/openers';
+import {projectsTestOptions, evalJs} from './_helpers';
 import {deleteProjectWithCleanup} from '../helpers/projects';
 
 test.use(projectsTestOptions);
 
 async function closeAll(page: Page) {
   await evalJs(page, 'grok.shell.closeAll()');
+}
+
+// Open System:DemoFiles/demog.csv via the canonical OpenFile recorder API
+// (verbatim form). Writes df.tags['.script'] provenance the same way the
+// Browse-tree right-click → Open path does, but without the UI traversal
+// flake observed on dev (tree-view-root remounts during /browse boot make
+// the DOM walk unreliable; verified empirically 2026-05-08).
+async function openDemogFile(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const DG = (window as any).DG;
+    await DG.Func.find({name: 'OpenFile'})[0].prepare({
+      fullPath: 'System:DemoFiles/demog.csv',
+    }).call(undefined, undefined, {processed: false});
+  });
+  await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
+  await page.waitForTimeout(1500);
 }
 
 test('Projects / Complex derived-tables: Join lands in active project (GROK-19103)', async ({page}) => {
@@ -45,21 +60,30 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
   const stamp = Date.now();
   const projectName = 'AutoTest-ComplexDerived-' + stamp;
 
-  await gotoApp(page);
-  await setupSession(page);
+  // Setup: navigate to root and wait for grok.shell to mount.
+  await page.goto('/');
+  await page.waitForFunction(() => {
+    try { return !!(window as any).grok?.shell?.user?.login; } catch { return false; }
+  }, {timeout: 60_000});
+  await evalJs(page, `(() => {
+    document.body.classList.add('selenium');
+    grok.shell.settings.showFiltersIconsConstantly = true;
+    grok.shell.windows.simpleMode = true;
+    grok.shell.closeAll();
+  })()`);
+  await page.waitForTimeout(1000);
 
   let baselineCount = 0;
   let projectId: string | null = null;
   let tableInfoId: string | null = null;
 
   try {
-    await softStep('Setup + Step 1: open 2 source tables from files', async () => {
-      await closeAll(page);
-      // Use openTableFromFile (canonical OpenFile recorder + dot-form
-      // path normalization) — writes df.tags['.script'] which avoids bug
-      // 2a (UI Save POST silently fails on colon-form fullPath).
-      await openTableFromFile(page, 'System:DemoFiles/demog.csv');
-      await openTableFromFile(page, 'System:DemoFiles/demog.csv');
+    await softStep('Setup + Step 1: open 2 source tables via OpenFile (colon-form fullPath)', async () => {
+      // OpenFile recorder API with colon-form fullPath ('System:DemoFiles/demog.csv')
+      // — produces a TableView with df.tags['.script'] = 'Demog = OpenFile(...)'
+      // provenance, the precondition for the GROK-19103-relevant Save flow.
+      await openDemogFile(page);
+      await openDemogFile(page);
       await evalJs(page, `(() => {
         const tables = grok.shell.tables;
         if (tables.length >= 2) {

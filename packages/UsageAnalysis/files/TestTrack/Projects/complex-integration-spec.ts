@@ -6,11 +6,10 @@ generated_from: complex-integration.md (multi-source: file + DB-table + query + 
 // provisioned saved query on System:Datagrok + provisioned dataframe-output
 // script. All non-file prerequisites are created in-test via
 // helpers/openers.ts — no Samples package or env-provisioned DB.
-import {test, expect} from '@playwright/test';
+import {test, expect, Page} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {
-  openTableFromFile,
   openTableFromDbQuery,
   openTableFromDbTable,
   openTableFromScript,
@@ -26,6 +25,36 @@ import {
   SYSTEM_DATAGROK_QUERIES,
 } from '../helpers/openers';
 import {saveAllTablesWithProvenance, deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
+
+// Local OpenFile invocation with colon-form fullPath (no helpers/openers.ts
+// dot-form normalization). Verified 2026-05-08: dot-form .script provenance
+// makes JS-API project Save mis-attribute children — derived-tables-spec was
+// fixed by switching to colon-form. Apply the same fix here to test the
+// hypothesis that project relations also depend on the colon-form provenance.
+async function openFileColonForm(page: Page, fullPath: string): Promise<{rowCount: number; script: string}> {
+  return await page.evaluate(async (p) => {
+    const grok = (window as any).grok;
+    const DG = (window as any).DG;
+    await DG.Func.find({name: 'OpenFile'})[0].prepare({
+      fullPath: p,
+    }).call(undefined, undefined, {processed: false});
+    // Settle and read provenance.
+    let df: any = null;
+    for (let i = 0; i < 24; i++) {
+      const tv = grok.shell.tv;
+      if (tv?.dataFrame && typeof tv.addViewer === 'function') {
+        df = tv.dataFrame;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    if (!df) throw new Error('OpenFile("' + p + '") did not produce a TableView');
+    return {
+      rowCount: df.rowCount,
+      script: df.tags?.get?.('.script') ?? '',
+    };
+  }, fullPath);
+}
 
 test.use(projectsTestOptions);
 
@@ -67,7 +96,7 @@ test('Projects / Complex Integration: heterogeneous sources in one project', asy
       let opened = 0;
       for (const path of tries) {
         try {
-          const r = await openTableFromFile(page, path);
+          const r = await openFileColonForm(page, path);
           if (r.script) {
             await assertProvenanceScript(page, 'files', r.script);
             opened++;
@@ -112,18 +141,21 @@ test('Projects / Complex Integration: heterogeneous sources in one project', asy
       expect(saved.tableInfoIds.length).toBeGreaterThanOrEqual(4);
     });
 
-    await softStep('Step 3: verify project relations server-side', async () => {
+    await softStep('Step 3: verify project children server-side', async () => {
       if (!saved) throw new Error('no saved project');
-      const r = await evalJs<{relations: number; ok: boolean}>(page, `(async () => {
+      // Project entity exposes .children (Entity[]) — there is no .relations
+      // getter on the JS API surface. Verified live 2026-05-08 via diag spec:
+      // protoMethods include children/addChild/removeChild but no relations.
+      const r = await evalJs<{children: number; ok: boolean}>(page, `(async () => {
         try {
           const fetched = await grok.dapi.projects.find('${saved.projectId}');
-          const relations = fetched.relations ? fetched.relations.length : 0;
-          return {relations, ok: true};
+          const children = fetched.children ? fetched.children.length : 0;
+          return {children, ok: true};
         } catch (e) {
-          return {relations: -1, ok: false};
+          return {children: -1, ok: false};
         }
       })()`);
-      if (r.ok) expect(r.relations).toBeGreaterThanOrEqual(4);
+      if (r.ok) expect(r.children).toBeGreaterThanOrEqual(4);
     });
 
     await softStep('Step 4: closeAll and reopen — multi-source co-existence assertion', async () => {

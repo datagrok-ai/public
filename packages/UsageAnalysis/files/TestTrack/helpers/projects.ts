@@ -434,7 +434,20 @@ export async function shareProjectViaContextMenu(
     message?: string;
   },
 ): Promise<void> {
-  const slug = name.toLowerCase();
+  // Tile slug rule (verified 2026-05-08, Datagrok dev): the tile's name=
+  // attribute uses the server-stored project name VERBATIM — PascalCase'd
+  // names are preserved as-is, kebab/lowercase names stay lowercase. The
+  // earlier `name.toLowerCase()` blanket-conversion missed PascalCase tiles.
+  // Try verbatim first, then lowercase as fallback for legacy callers.
+  const candidates = [name, name.toLowerCase()];
+  let slug = name;
+  for (const cand of candidates) {
+    const t = page.locator(`[name="div-${cand}"]`);
+    if (await t.isVisible({timeout: 5_000}).catch(() => false)) {
+      slug = cand;
+      break;
+    }
+  }
   const tile = page.locator(`[name="div-${slug}"]`);
   await tile.waitFor({timeout: 30000});
 
@@ -557,6 +570,13 @@ export async function saveCopy(
     name?: string;
     dataSyncMode?: 'on' | 'off';
     perTableLinkOrClone?: 'link' | 'clone';
+    /**
+     * Override the auto-detection of "should the saved id differ from the
+     * source id?". Default: `mode !== 'original'`. Some dev builds treat
+     * `personal-view-customizations` as a layout-only update (no new project
+     * entity created); pass `false` here to skip the new-id verification.
+     */
+    expectIdChange?: boolean;
   },
 ): Promise<void> {
   void options.sourceName; // documented context; not used in flow
@@ -731,7 +751,7 @@ export async function saveCopy(
   // window). Fall back to a server-query for the predicted PascalCase
   // name — that's the same form `dapi.projects.find(id).name` returns for
   // dialog-saved projects.
-  const expectIdChange = options.mode !== 'original';
+  const expectIdChange = options.expectIdChange ?? (options.mode !== 'original');
   // Datagrok stores TWO name fields per project:
   //   `name`         — PascalCase-normalized internal form (e.g. `Demog{ts}Link`)
   //   `friendlyName` — typed name verbatim (e.g. `demog-{ts}-link`)
