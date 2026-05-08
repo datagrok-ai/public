@@ -21,6 +21,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   _sketcher: Ketcher | null = null;
   ketcherHost: HTMLDivElement;
   reactRoot: ReactDOM.Root | null = null;
+  private _editorComponent: React.ReactElement | null = null;
+  private _editorMounted = false;
+  private _resizeObserver: ResizeObserver | null = null;
 
   constructor() {
     super();
@@ -67,12 +70,43 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     };
 
     this.ketcherHost = ui.div([], 'ketcher-host');
-
-    const component = React.createElement(Editor, props, null);
-    this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
-    this.reactRoot.render(component);
-
+    this._editorComponent = React.createElement(Editor, props, null);
     this.root.appendChild(this.ketcherHost);
+
+    // Mounting Ketcher's <Editor> into a zero-sized or detached host causes
+    // <RulerArea> to throw NotSupportedError reading SVGLength.value
+    // ('Could not resolve relative length') because the canvas SVG uses
+    // width/height="100%" and cannot resolve relative units without a sized
+    // containing block. Defer the React mount until the host actually has
+    // non-zero dimensions.
+    this._mountEditorWhenSized();
+  }
+
+  private _mountEditorWhenSized(): void {
+    if (this._editorMounted) return;
+    const rect = this.ketcherHost.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      this._mountEditor();
+      return;
+    }
+    this._resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          this._mountEditor();
+          break;
+        }
+      }
+    });
+    this._resizeObserver.observe(this.ketcherHost);
+  }
+
+  private _mountEditor(): void {
+    if (this._editorMounted || !this._editorComponent) return;
+    this._editorMounted = true;
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = null;
+    this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
+    this.reactRoot.render(this._editorComponent);
   }
 
   async init(host: grok.chem.Sketcher) {
@@ -191,6 +225,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
   detach() {
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = null;
+    this._editorComponent = null;
     this.reactRoot?.unmount();
     this.reactRoot = null;
     super.detach();

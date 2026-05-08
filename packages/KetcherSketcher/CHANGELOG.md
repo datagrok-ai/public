@@ -1,5 +1,9 @@
 # Ketcher Sketcher changelog
 
+## 2.4.3 (2026-05-08)
+
+* KetcherSketcher: Defer React Editor mount until the host has non-zero dimensions, preventing RulerArea SVGLength `Could not resolve relative length` error when the sketcher is rendered into a hidden or zero-sized container
+
 ## 2.4.2 (2026-04-23)
 
 * Reset explicitMol on change only if molecule has been already set
