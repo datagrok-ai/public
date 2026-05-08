@@ -2,166 +2,210 @@
 
 ## Overview
 
-Flow (FuncFlow) is an interactive visual function chain designer for Datagrok. It uses LiteGraph.js to let users compose Datagrok functions into executable JavaScript scripts via a node-based graph editor.
+Flow (FuncFlow) is an interactive visual function chain designer for Datagrok. It uses **Rete.js v2** to let users compose Datagrok functions, queries, and scripts into executable JavaScript scripts via a node-based graph editor.
+
+The renderer is React-based (`rete-react-plugin`), but React is contained to the canvas: the rest of the package — view, panels, ribbon, status bar — is plain TypeScript on top of the Datagrok UI helpers, exactly as KetcherSketcher mounts Ketcher inside a `ui.div`.
 
 ## Architecture
 
 ```
 src/
-├── package.ts                    # Entry: @funcflowApp, @fileViewer decorators
-├── funcflow-view.ts              # Main view: 2-panel layout + native context panel, ribbon, status bar
-├── canvas/
-│   ├── canvas-controller.ts      # LGraphCanvas wrapper, type validation, theme
-│   └── graph-manager.ts          # LGraph state wrapper, change notifications
-├── nodes/
-│   ├── node-factory.ts           # Node registration, DG.Func discovery
-│   ├── input-nodes.ts            # Source nodes (become //input: lines)
-│   ├── output-nodes.ts           # Sink nodes (become //output: lines)
-│   ├── func-node.ts              # Dynamic node generator for DG.Func
-│   ├── utility-nodes.ts          # Utility + constant nodes
-│   ├── comparison-nodes.ts       # Comparison operator nodes
-│   └── breakpoint-node.ts        # Debug breakpoint node (pauses in debug mode)
+├── package.ts                    # Entry: @grok.decorators.app + @grok.decorators.fileViewer
+├── funcflow-view.ts              # DG.ViewBase host: 2-panel layout, ribbon, status bar
+├── rete/
+│   ├── sockets.ts                # TypedSocket extends ClassicPreset.Socket — DG type → compatibility
+│   ├── scheme.ts                 # FlowNode / FlowConnection / FlowScheme
+│   ├── node-component.tsx        # React Node + Socket components (rendered to DOM by ReactPlugin)
+│   ├── flow-editor.ts            # NodeEditor + AreaPlugin + ConnectionPlugin + ReactPlugin wiring
+│   ├── node-factory.ts           # Type registry: createNode(typeName), DG.Func discovery
+│   └── nodes/
+│       ├── input-nodes.ts        # 13 input types — //input: lines
+│       ├── output-nodes.ts       # Table & Value (with auto-type detect)
+│       ├── utility-nodes.ts      # 9 helpers + 5 constants (ConstString has inline InputControl)
+│       ├── comparison-nodes.ts   # 10 ops
+│       ├── breakpoint-node.ts    # Debug pause node
+│       └── func-node.ts          # Dynamic node factory per DG.Func, builds pass-through outputs
 ├── compiler/
-│   ├── graph-compiler.ts         # Graph → CompiledStep[]
-│   ├── script-emitter.ts         # CompiledStep[] → JavaScript source (+ instrumented mode)
-│   ├── validator.ts              # Pre-compilation validation (cycles, required inputs, duplicates)
-│   ├── topological-sort.ts       # Kahn's algorithm
-│   └── graph-utils.ts            # Safe LGraph node accessor
+│   ├── topological-sort.ts       # Kahn's over editor.getConnections()
+│   ├── graph-utils.ts            # Thin shim around FlowEditor
+│   ├── graph-compiler.ts         # FlowEditor → CompiledStep[]
+│   ├── script-emitter.ts         # CompiledStep[] → JS source (clean + instrumented modes)
+│   └── validator.ts              # Pre-compilation checks
 ├── execution/
-│   ├── execution-state.ts        # NodeExecStatus enum, NodeExecState, ExecutionState class
-│   ├── execution-controller.ts   # Run lifecycle, event subscriptions, breakpoint control
-│   ├── execution-visualizer.ts   # Maps execution state → node visual properties (colors, overlays)
-│   └── value-inspector.ts        # Builds context panel section for runtime value display
+│   ├── execution-state.ts        # NodeExecStatus enum, NodeExecState (string node IDs)
+│   ├── execution-visualizer.ts   # Sets node.dgStatus → CSS handles all visuals
+│   ├── execution-controller.ts   # Run lifecycle, event subscriptions, breakpoints
+│   ├── value-inspector.ts        # Context panel runtime-value section
+│   └── output-preview.ts         # Bottom-docked output preview tabs
 ├── panel/
-│   ├── function-browser.ts       # Left sidebar: searchable function catalog
-│   └── property-panel.ts         # Context panel content: node properties editor with tooltips
+│   ├── function-browser.ts       # Left sidebar catalog
+│   └── property-panel.ts         # Side-panel node properties editor
 ├── serialization/
-│   ├── flow-schema.ts            # .ffjson type definitions
-│   └── flow-serializer.ts        # Load/save/download
-├── history/
-│   └── undo-manager.ts           # Command pattern (infrastructure, not fully wired)
+│   ├── flow-schema.ts            # .ffjson v2 type definitions (Rete-native, no LiteGraph payload)
+│   └── flow-serializer.ts        # serialize / deserialize / download
 ├── types/
-│   ├── funcflow-node.ts          # FuncFlowNode interface extends LGraphNode
-│   ├── type-map.ts               # DG type→slot type+color, type compatibility
-│   └── litegraph-augment.d.ts    # TypeScript augmentations for LiteGraph
+│   └── type-map.ts               # DG type → slot color, role color, type compatibility
 └── utils/
     └── dart-proxy-utils.ts       # Safe Dart proxy property access
 ```
 
+## Package Entry (`package.ts`)
+
+Uses `@grok.decorators` (TS decorator API):
+- `@grok.decorators.app({name: 'Flow', tags: ['app']})` → `funcflowApp(path?)` returns `FuncFlowView`
+- `@grok.decorators.fileViewer({fileViewer: 'ffjson'})` → `viewFuncFlow(file)` opens `.ffjson` files
+
+Both entry points hide the toolbox/help and show the context panel.
+
+## Rete Pipeline
+
+```
+NodeEditor (data layer — nodes & connections, signals via addPipe)
+  └─ AreaPlugin (DOM container, NodeView/ConnectionView per element, transform)
+        ├─ ConnectionPlugin (interactive connection drawing — pointerdown on socket DOM)
+        │     └─ ClassicFlow with custom canMakeConnection (TypedSocket compatibility)
+        └─ ReactPlugin (renders React components into element AreaPlugin provides)
+              └─ ClassicPreset with custom Node + Socket components
+```
+
+The four plugins are composed in `FlowEditor` ([rete/flow-editor.ts](src/rete/flow-editor.ts)). All other code in the package consumes the `FlowEditor` public API and never imports Rete plugins directly.
+
+### Why React inside the canvas?
+
+`rete-react-plugin` is the official, well-maintained renderer. Writing a vanilla DOM renderer would mean reimplementing socket position-watching, connection SVG paths, mount/unmount lifecycle, and StrictMode handling. The React surface is contained to one component file ([rete/node-component.tsx](src/rete/node-component.tsx)) — no React state outside it, no JSX in the rest of the package.
+
 ## Data Flow
 
 ```
-User double-clicks function in FunctionBrowser (or drags DG.Func / FileInfo onto canvas)
-  → CanvasController.addNodeAtCenter(nodeTypeName)
-  → User connects nodes visually
-  → Generate Script action:
-      validateGraph() → compileGraph() → emitScript()
+User double-clicks function in FunctionBrowser   (or drags DG.Func / FileInfo onto canvas)
+  → FuncFlowView.addNodeByType(typeName)
+  → createNode(typeName) — instantiates a registered FlowNode subclass
+  → flow.addNodeAtCenter(node)
+  → User connects nodes by dragging between sockets (ClassicFlow validates types)
+  → Run / View Script:
+      validateGraph(flow) → compileGraph(flow) → emitScript(flow, settings, options)
       → JavaScript source with //input: //output: annotations
 ```
 
 ## Drag-and-Drop
 
-The canvas accepts drops from the Datagrok browse tree via `ui.makeDroppable()`:
-- **DG.FileInfo** (files) → creates an OpenFile function node with the file path pre-filled
-- **DG.Func** (queries, scripts, functions) → finds the matching registered node type and adds it
+The canvas container accepts drops via `ui.makeDroppable()`:
+- **`DG.FileInfo`** (files) → creates an `OpenFile` function node with `inputValues['fullPath']` pre-set.
+- **`DG.Func`** (queries, scripts, functions) → finds the matching registered node type and adds it.
 
 ## Node Types
 
-### Input Nodes (src/nodes/input-nodes.ts)
-Become `//input:` annotation lines in generated scripts.
+All nodes extend [FlowNode](src/rete/scheme.ts) which extends `ClassicPreset.Node`. Per-node metadata: `dgNodeType` (`'input'` / `'output'` / `'utility'` / `'func'`), `dgOutputType`, `dgFunc`, `dgFuncName`, `dgRole`, `passthroughCount`, `properties`, `inputValues`, `pos`, `dgTypeName`, optional `dgStatus`.
 
-| Node | DG Type | Qualifiers |
-|------|---------|------------|
-| Table Input | dataframe | - |
-| Column Input | column | type, semType filters |
-| Column List Input | column_list | type, semType filters |
-| String Input | string | nullable, choices, caption, semType |
-| Number Input | double | nullable, min, max, showSlider, caption |
-| Int Input | int | nullable, min, max, showSlider, caption |
-| Boolean Input | bool | nullable, caption |
-| DateTime Input | datetime | nullable, caption |
-| File Input | file | nullable, caption |
-| Map Input | map | nullable, caption |
-| Dynamic Input | dynamic | nullable, caption |
-| String List Input | string_list | - |
-| Blob Input | blob | nullable, caption |
+### Input Nodes ([rete/nodes/input-nodes.ts](src/rete/nodes/input-nodes.ts))
 
-### Output Nodes (src/nodes/output-nodes.ts)
+Become `//input:` annotation lines.
+
+| Node | DG Type | Qualifiers (in `node.properties`) |
+|------|---------|-----------------------------------|
+| Table Input | `dataframe` | — |
+| Column Input | `column` | typeFilter, semTypeFilter |
+| Column List Input | `column_list` | typeFilter, semTypeFilter |
+| String Input | `string` | nullable, choices, caption, semType |
+| Number Input | `double` | nullable, min, max, showSlider, caption |
+| Int Input | `int` | nullable, min, max, showSlider, caption |
+| Boolean Input | `bool` | nullable, caption |
+| DateTime Input | `datetime` | nullable, caption |
+| File Input | `file` | nullable, caption |
+| Map Input | `map` | nullable, caption |
+| Dynamic Input | `dynamic` | nullable, caption |
+| String List Input | `string_list` | — |
+| Blob Input | `blob` (slot type `byte_array`) | nullable, caption |
+
+### Output Nodes ([rete/nodes/output-nodes.ts](src/rete/nodes/output-nodes.ts))
+
 Become `//output:` annotation lines.
 
 | Node | Notes |
 |------|-------|
-| Table Output | Fixed dataframe type |
-| Value Output | Configurable type: string, int, double, bool, dataframe, column, column_list, object, dynamic, list, view, viewer, widget, graphics, grid_cell_renderer, filter, map, datetime, blob, funccall |
+| Table Output | Fixed `dataframe` type |
+| Value Output | Configurable `outputType`. On connect, `FlowEditor.maybeAutoTypeValueOutput` copies the source slot's `dgType` into `properties.outputType` (skipping `dynamic` / `object`). |
 
-### Utility Nodes (src/nodes/utility-nodes.ts)
-Generate inline code in script body.
+### Utility Nodes ([rete/nodes/utility-nodes.ts](src/rete/nodes/utility-nodes.ts))
 
-| Node | Code Generated |
+| Node | Generated Code |
 |------|----------------|
-| Select Column | `df.col('name')` |
-| Select Columns | `[df.col('a'), df.col('b')]` |
-| Add Table View | `grok.shell.addTableView(df)` |
-| Log | `console.log(value)` |
+| Select Column | `let v = df.col('name')` |
+| Select Columns | `let v = [df.col('a'), df.col('b')]` |
+| Add Table View | `let v = grok.shell.addTableView(df)` |
+| Log | `console.log([label,] value)` |
 | Info | `grok.shell.info(msg)` |
 | Warning | `grok.shell.warning(msg)` |
 | ToString | `(value).toString()` |
 | FromJSON | `JSON.parse(json)` |
 | ToJSON | `JSON.stringify(value)` |
-| Constants | String, Int, Double, Boolean, List literals |
+| Constants (String / Int / Double / Boolean / List) | inline literals |
 
-### Comparison Nodes (src/nodes/comparison-nodes.ts)
-==, !=, >, >=, <, <=, Contains, StartsWith, EndsWith, IsNull
+`ConstStringNode` is the only node with an inline widget — a `ClassicPreset.InputControl` for fast text editing. All other property editing happens in the side panel.
 
-### Function Nodes (src/nodes/func-node.ts)
-Dynamically created for each DG.Func. Generate `await grok.functions.call(...)`.
+### Comparison Nodes ([rete/nodes/comparison-nodes.ts](src/rete/nodes/comparison-nodes.ts))
 
-#### Node Display Name
-Node headers use `func.friendlyName` (falling back to `func.name`), then split by `|` and take the last segment trimmed. E.g. `"Browse | CHEM | All ChEMBL structures"` → `"All ChEMBL structures"`. Helper: `getFuncDisplayName()` in `dart-proxy-utils.ts`.
+`==`, `!=`, `>`, `>=`, `<`, `<=`, `Contains`, `Starts With`, `Ends With`, `Is Null`.
+
+### Function Nodes ([rete/nodes/func-node.ts](src/rete/nodes/func-node.ts))
+
+`FuncNode` is built dynamically per `DG.Func`. Header uses `func.friendlyName` (split by `|`, last segment). Color comes from `ROLE_COLORS` map. Generates `await grok.functions.call('Pkg:funcName', {...})`.
 
 #### Pass-Through Outputs
-Every func node automatically gets **pass-through output slots** mirroring each input, named `inputName →` (with arrow suffix). These solve the execution ordering problem for mutating functions:
 
-- **Problem**: If `addNewColumn(table)` and `doSomething(table)` both take the same table input, topological sort can't determine order since there's no edge between them.
-- **Solution**: Connect `table` to `addNewColumn`'s input, then connect `addNewColumn`'s `table →` pass-through output to `doSomething`'s input. This creates a topological edge enforcing `addNewColumn` runs first.
-- **Compiler behavior**: Pass-through outputs resolve to the same variable as the corresponding input — no new code is generated. `_passthroughCount` stores how many pass-through slots are at the start of the outputs array.
-- **Visual layout**: Pass-through outputs come **first** (aligned with their corresponding input slots on the left), real outputs come **last** with arrow-shaped slots (`LiteGraph.ARROW_SHAPE`). The `→` suffix on pass-through names also distinguishes them.
-- **Tooltips**: Hovering a pass-through slot shows "pass-through" label + hint to connect for execution ordering.
+Every func node automatically gets **pass-through output slots** mirroring each input. They solve the execution-ordering problem for mutating functions:
 
-## Function Filtering (src/nodes/node-factory.ts)
+- **Problem**: `addNewColumn(table)` and `doSomething(table)` both consume the same table — topological sort can't determine order without an edge between them.
+- **Solution**: Connect `addNewColumn`'s pass-through output to `doSomething`'s input. Compiler treats the pass-through edge as an ordering edge only.
+- **Encoding**: Pass-through output keys are `<inputName>__pt`. The visible label is just `→`. `FuncNode.passthroughInputName(key)` extracts the original input name. `node.passthroughCount` records how many pass-through slots are at the start of the outputs map.
+- **Compile**: `graph-compiler.ts` resolves a pass-through output to the same expression as the corresponding input — no new variable is generated.
+- **Visual**: dashed border on the socket, faded italic label.
 
-Functions are filtered during registration using `EXCLUDED_TAGS` and `EXCLUDED_ROLES` constants. Functions with any excluded tag or role are skipped. Edit these arrays in `node-factory.ts` to control which DG functions appear.
+## Function Filtering ([rete/node-factory.ts](src/rete/node-factory.ts))
+
+Functions with no inputs *and* no outputs are skipped. Functions whose role appears in `EXCLUDED_ROLES` (or any tag in `EXCLUDED_TAGS`) are skipped.
+
+`registerBuiltinNodes()` populates the `FACTORIES` map with all built-in types. `registerAllFunctions()` discovers DG functions via `DG.Func.find({})` and registers a per-func factory under name `DG Functions/<role>/<funcName>` (or `DG Functions/<role>/<pkg>:<funcName>` on collision).
+
+`createNode(typeName)` looks up the factory and stamps `dgTypeName` on the new instance — this is what the serializer persists.
+
+## Type System (`types/type-map.ts`)
+
+- `DG_TYPE_MAP`: DG type string → `{slotType, color}`. The slot color is what the React Socket component fills the dot with.
+- `ROLE_COLORS`: DG role → title-bar color (white body always).
+- `areTypesCompatible(out, in)`: source-of-truth for connection validity. Used by `TypedSocket.isCompatibleWith`. Permissive for `dynamic` and `object`; explicit pairs for `int↔double↔num` and `list↔string_list`.
+
+`TypedSocket` ([rete/sockets.ts](src/rete/sockets.ts)) is one-instance-per-DG-type (cached), so reference equality holds. Its `isCompatibleWith` method is consulted at connection-pick time by `ClassicFlow.canMakeConnection`, which rejects incompatible drops before they enter the editor's data layer.
 
 ## Script Generation
 
-The compiler pipeline:
-1. **Topological sort** - Kahn's algorithm orders nodes
-2. **Compile** - Each node becomes a CompiledStep with inputs/outputs resolved
-3. **Emit** - Steps become JavaScript lines with `//input:`, `//output:` headers
+Pipeline ([compiler/](src/compiler)):
 
-### Validation (`validator.ts`)
-Runs before compilation. Checks:
-- Empty graph (warning)
-- Cycles via topological sort (error)
-- Column input without Table input (error)
-- **Required (non-nullable) func inputs**: unconnected inputs with no stored value are errors. `0` and `false` are valid values; only `undefined`/`null`/empty string = missing. Nullable check: `param.nullable || param.options.optional || param.options.nullable`
-- Disconnected nodes (warning)
-- Output nodes with no incoming connection (warning)
-- Empty or invalid parameter names (error)
-- Duplicate parameter names (error)
+1. **Topological sort** — Kahn's algorithm over `editor.getConnections()`.
+2. **Compile** — every node becomes a `CompiledStep` with `inputs: Map<key, expr>`, `outputs: Map<key, varName>`, `properties`, `inputValues`. Variable names: camelCase of node label + first real output; collisions deduplicated by suffix.
+3. **Emit** — steps become JS lines; dataframe inputs first; `//input:` / `//output:` headers from properties + qualifiers.
 
-Input annotation qualifiers are generated from node widget values:
-- `{type: numerical}` from Column type filter
-- `{semType: Molecule}` from Column semType filter or String semType combo
-- `{nullable: true}` from nullable toggle
-- `{caption: Name}` from caption field
-- `{choices: ["a","b"]}` from choices field
-- `{min: 0; max: 100}` from min/max fields
-- `{showSlider: true}` from showSlider toggle (Number/Int only)
+### Validation ([compiler/validator.ts](src/compiler/validator.ts))
+
+- Empty graph → warning
+- Cycles → error
+- Column input without Table input → error
+- Disconnected non-input nodes → warning
+- Output node with no incoming connection → warning
+- Empty / invalid JS-identifier `paramName` → error
+- Duplicate `paramName` across input/output nodes → error
+
+### Input qualifier emission
+
+Compiler reads `node.properties` and emits `{type:..; semType:..; nullable: true; caption: ..; choices: [..]; min:..; max:..; showSlider: true}`. Description appended as `[description]`. Default values inlined as `//input: type name = <value>`.
+
+### Auto Semantic-Type Detection
+
+After every function step, the emitter writes
+`if (varName != null) await varName.meta.detectSemanticTypes();`
+for each non-pass-through dataframe output (clean *and* instrumented modes).
 
 ### Instrumented Mode (`EmitOptions`)
-
-`emitScript()` accepts an optional `EmitOptions` parameter:
 
 ```typescript
 interface EmitOptions {
@@ -172,90 +216,134 @@ interface EmitOptions {
 }
 ```
 
-When `instrumented=true`, each step is wrapped in try/catch and fires custom events via `grok.events.fireCustomEvent()` on channel `funcflow.exec.{runId}`. Event types: `run-start`, `node-start`, `node-complete`, `node-error`, `breakpoint-hit`, `run-complete`. Output values are summarized (DataFrame → row/col count, Column → name + sample, etc.) to avoid large payloads.
+Each step is wrapped in try/catch and fires `funcflow.exec.<runId>` events: `run-start`, `node-start`, `node-complete`, `node-error`, `breakpoint-hit`, `run-complete`. Output values are summarized by an inline `__ff_summarize(value, declaredType?)` (DataFrame → row/col + clone, Column → name + 5-element sample, graphics → raw, primitives, etc.).
 
-**Variable hoisting**: When `wrapInstrumented()` encounters a code line starting with `let varName = ...`, it hoists the declaration (`let varName;`) before the `try` block and puts only the assignment (`varName = ...`) inside. This ensures variables are accessible to downstream nodes outside the try/catch scope.
+**Variable hoisting**: when wrapping `let x = ...`, the declaration is hoisted before `try` and only the assignment goes inside, so downstream nodes can reference `x`.
+
+**In-place mutating function support**: when a func node has dataframe input(s) but **zero real outputs**, the wrapper emits a synthetic output entry `'<inputName> (modified)': __ff_summarize(<inputExpr>, 'dataframe')` so the modified table is previewable.
 
 ## Execution Visualization
 
-KNIME-inspired live execution feedback. The script runs in the same browser context and communicates back to the Flow view via custom events.
+KNIME-inspired live feedback. The script runs in the same browser tab and communicates back via custom events.
 
 ### Architecture
-- **ExecutionController** (`execution-controller.ts`): Orchestrates runs. Subscribes to `funcflow.exec.{runId}` events, updates `ExecutionState`, drives `ExecutionVisualizer`.
-- **ExecutionState** (`execution-state.ts`): Tracks per-node status (idle/running/completed/errored/stale) and runtime output summaries.
-- **ExecutionVisualizer** (`execution-visualizer.ts`): Maps status → node visual properties (`boxcolor`, `bgcolor`, `onDrawForeground` overlay dot).
-- **ValueInspector** (`value-inspector.ts`): Renders runtime output values in the context panel when a completed/errored node is selected.
 
-### Visual States
-| State | boxcolor | bgcolor | Overlay |
-|---|---|---|---|
-| Idle | `#78909c` | `#ffffff` | none |
-| Running | `#1976d2` (blue) | `#e3f2fd` | pulsing blue dot (top-left, at collapse icon) |
-| Completed | `#43a047` (green) | `#ffffff` | green dot with checkmark (top-left) |
-| Errored | `#e53935` (red) | `#ffebee` | red dot with "!" (top-left) |
-| Stale | `#9E9E9E` (gray) | `#f5f5f5` | dimmed dot |
+- **ExecutionController** ([execution/execution-controller.ts](src/execution/execution-controller.ts)) — orchestrates runs. Subscribes to `funcflow.exec.<runId>`, updates `ExecutionState`, drives `ExecutionVisualizer`, pushes outputs into `OutputPreviewPanel`. Exposes callbacks `onBreakpointHit`, `onRunEnd`, `onNodeStateChanged`.
+- **ExecutionState** ([execution/execution-state.ts](src/execution/execution-state.ts)) — per-node status tracking (`idle` / `running` / `completed` / `errored` / `stale`) keyed by string node IDs.
+- **ExecutionVisualizer** ([execution/execution-visualizer.ts](src/execution/execution-visualizer.ts)) — sets `node.dgStatus` and calls `flow.updateNode(id)` to re-render. The React Node component reads `dgStatus` and writes it to a `data-status` attribute. CSS does the rest (status circle color, pulse animation, body tint).
+- **ValueInspector** ([execution/value-inspector.ts](src/execution/value-inspector.ts)) — runtime-value section in the side panel. DataFrame summaries embed a full `DG.Viewer.grid` preview with "Add to workspace".
+- **OutputPreviewPanel** ([execution/output-preview.ts](src/execution/output-preview.ts)) — bottom-docked tabs after a run completes. Classifies outputs (dataframe/viewer/widget/graphics/primitive) using `getOutputTypeHints()`.
 
-The status dot is positioned at the top-left of the title bar (same area as the collapse icon) for consistent visibility. During the running state, a periodic animation timer forces canvas redraws to ensure smooth pulsing even without mouse movement.
+### Visual States (CSS, in [css/funcflow.css](css/funcflow.css))
+
+| State | `.ff-node-status` | `.ff-node` body |
+|---|---|---|
+| idle | white circle + gray outline | white |
+| running | blue, `@keyframes ff-pulse` | light blue |
+| completed | green + checkmark via `::after` | white |
+| errored | red + `!` via `::after` | light red |
+| stale | gray, 65% opacity | light gray |
+
+The status circle is part of the title bar; CSS keyframes drive the pulse animation — no JS animation timer needed.
 
 ### Execution Modes
-- **Run**: Instrumented script with live visualization. Breakpoint nodes are skipped.
-- **Debug**: Same as Run but breakpoint nodes pause execution via `await new Promise(...)` that resolves when the user clicks "Continue" (fires `funcflow.exec.{runId}.continue` event).
-- **Run Script (Classic)**: Opens in Datagrok script editor with no instrumentation.
+
+- **Run** — instrumented script with live visualization. Breakpoints skipped.
+- **Debug** — same as Run but breakpoint nodes pause via `await new Promise(...)` resolved on `funcflow.exec.<runId>.continue`.
+- **Run Script (Classic)** — clean (non-instrumented) script run via `DG.Script.create(script).prepare()`, outputs piped into the same `OutputPreviewPanel`.
+- **View Script** — opens a dialog with the generated source; buttons: Copy / Export `.js` / Open in ScriptView / Run.
 
 ### Invalidation
-Graph structural changes increment a version counter. If the graph changes after a run, all completed/errored nodes become **stale** (dimmed gray, still inspectable). Starting a new run resets all states.
 
-### Breakpoint Node (`breakpoint-node.ts`)
-Pass-through node (dynamic in → dynamic out) in the "Debug" category. In debug mode, emits code that fires `breakpoint-hit` event and awaits a `continue` event from the view. In normal run mode, the node is skipped entirely. The compiler treats Breakpoint specially: its output slots resolve to its input expression (pure pass-through), so no `breakpoint` variable is declared — downstream nodes reference the original input variable directly.
+`onGraphChanged()` increments a graph version. Completed/errored nodes become **stale** when the graph changes after a run.
 
 ## File Format
 
-`.ffjson` files store the full flow state including LiteGraph graph data and FuncFlow metadata.
+`.ffjson` v2 — Rete-native. A v1 → v2 migrator lives at `tools/migrate-ffjson-v1-to-v2.py` (run with `py tools/migrate-ffjson-v1-to-v2.py path/to/flow.ffjson`); the demo files in `files/` were converted with it. The runtime loader rejects anything other than `version: '2.0'`.
 
-## UI Architecture: Widgets vs Property Panel
+```typescript
+{
+  version: '2.0',
+  name, description, author, created, modified,
+  nodes: [{id, typeName, label, pos, properties, inputValues}],
+  connections: [{id, source, sourceOutput, target, targetInput}],
+  metadata: { settings: { scriptName, scriptDescription, tags } }
+}
+```
 
-**Nodes have NO inline widgets** (except ConstStringNode). All property editing happens in Datagrok's native context panel (right side) when a node is selected.
+`serializeFlow(flow, settings)` produces the doc; `deserializeFlow(doc, flow)` clears and rebuilds. Unknown `typeName`s are skipped with a console warning. Connections referencing missing nodes are silently dropped.
 
-### Context Panel Integration
-- `grok.shell.windows.showContextPanel = true` enables the native panel
-- `grok.shell.o = propertyPanel.root` sets its content on node selection
-- Layout is 2-panel: `[leftPanel (FunctionBrowser), canvasContainer]` — no custom right panel
+## UI Architecture
 
-### Property Panel (`property-panel.ts`)
-- Uses `ui.accordion()` with `accordion.addPane()` for collapsible sections
-- **Connections pane** is collapsed by default
-- Reads `node.properties` and creates appropriate editors:
-  - `string` properties → `<textarea>` (auto-resizing)
-  - `number` properties → `<input type="number">` with step (1 for int, 0.1 for double)
-  - `boolean` properties → `<input type="checkbox">`
-  - enum properties → `<select>` dropdown
-- **Exception**: `ConstStringNode` keeps its inline `text` widget for quick editing
-- **Func nodes**: primitive input defaults stored as `_input_${name}` properties, edited in panel
-- **Collapse icon**: `NODE_DEFAULT_BOXCOLOR = '#78909c'` (Spotfire-inspired blue-gray)
-- **Font**: Roboto via Google Fonts import + LiteGraph canvas font overrides
-- **Theme**: Spotfire-inspired with soft shadows, subtle dot-grid background, blue selection highlight, rounded nodes
+### Layout
 
-### Tooltip System
-- **PROP_TOOLTIPS**: Maps label names (e.g. 'Param Name', 'Nullable') to tooltip strings for input/output node properties
-- **UTILITY_PROP_TOOLTIPS**: Maps `node.title → property name → tooltip` for utility/constant nodes (e.g. List → value → "Comma-separated list of values")
-- **buildFuncInputTooltip(param)**: Builds rich tooltips for DG.Func input parameters from `DG.Property` metadata: description, type, default value, nullable status
-- Tooltips are bound to both **labels** and **input elements** via `ui.tooltip.bind()`
-- All editor helpers (`createTextarea`, `createNumberInput`, `createToggle`, `createCombo`) accept optional `inputTooltip` parameter
+```
++----------------------+--------------------------------------+
+|  FunctionBrowser     |  Rete canvas container               |
+|  (search + groups)   |  (AreaPlugin mounts here)            |
+|                      |                                      |
++----------------------+--------------------------------------+
+|  Status bar: Nodes / Links / Validation                     |
++-------------------------------------------------------------+
+```
 
-### Function Browser Tooltips
-- All built-in nodes (inputs, outputs, utilities, constants, comparisons) have descriptive tooltips
-- Format: `"<description>. Double-click to add"` — e.g. "Dataframe input parameter. Double-click to add"
-- DG function nodes show their `func.description` plus package name
+Property panel goes into Datagrok's native context panel via `grok.shell.o = propertyPanel.root`.
+
+### Property Panel ([panel/property-panel.ts](src/panel/property-panel.ts))
+
+- Title row at top (editable label) + node-type badge.
+- Accordion with type-specific panes:
+  - Func nodes: **Function** (description, full name, role) + **Input Parameters** (per-input editor for primitives via `node.inputValues`; "connected only" label otherwise).
+  - Input nodes: **Input Configuration** (paramName, description, defaultValue, nullable, caption, type/semType filters, choices, min/max, showSlider).
+  - Output nodes: **Output Configuration** (paramName + outputType combo for ValueOutput).
+  - Utility nodes: **Configuration** for non-underscore properties (bool/number/text auto-detected).
+  - **Connections** pane (collapsed by default): Inputs / Pass-through / Outputs grouped, with connection status from `flow.isInputConnected()` / `flow.getConnections()`.
+- Editor helpers (auto-resizing textarea, number, toggle, combo) all support optional tooltips.
+- After each property change, calls `flow.updateNode(node.id)` to re-render visible state (label, etc.).
+
+### Function Browser ([panel/function-browser.ts](src/panel/function-browser.ts))
+
+- Search input + Group-by selector (`role` / `tags` / `package`).
+- Built-in sections: **Inputs**, **Outputs**, **Constants**, **Comparisons** (collapsed by default), **Utilities**, **Debug**. Tooltips on section headers.
+- DG functions follow, alphabetically grouped per the chosen mode.
+- Item tooltips: built-ins use `<description>. Double-click to add`; DG functions show `func.description (packageName)`.
+
+### Theme (CSS)
+
+Spotfire-inspired light theme:
+- White nodes with colored title bars (per `dgNodeType` or per-role).
+- Soft drop shadow (`box-shadow: 0 3px 10px rgba(0,0,0,0.1)`), rounded `border-radius: 8px`.
+- Selection: blue 1.5px border + outer halo.
+- Background: `#ebedf2` with subtle dot grid (programmatically generated PNG data URL, applied inline by `FlowEditor`).
+- Sockets: 12px dot, type-colored fill, white border, 1px gray ring; hover scales 1.18×.
+- Pass-through sockets: dashed white border, faded label.
+- Connections: cubic Bézier SVG path, 2.5px wide. **Stroke color is set per-connection from the source slot's DG type** — `FlowEditor.styleConnectionElement` runs on every `rendered` signal and writes the color into the `<path>` attribute. This way every connection visually carries its data type.
+- Connection states (`data-status="active"`/`"completed"`/`"errored"`/`"stale"`): `active` adds the marching-dashes `@keyframes ff-flow-march` animation to show data flowing through the edge; `errored` overrides the stroke to red; `stale` dims and dashes the path.
+
+### Interaction
+
+- **Collapse / expand**: click the status circle in the title bar (the same dot that shows execution state). Sets `node.collapsed`; the React component re-renders. Collapsed nodes still expose their socket DOM in a hidden absolute-positioned row at the title bar's left/right edges so existing connections keep their endpoints.
+- **Context menu (right-click on a node)**: Collapse/Expand · Duplicate · Hide · Delete. Right-click on a connection: Delete connection. Built with `DG.Menu.popup().item(...).separator().show({causedBy: ev})` so the platform handles positioning, dismissal, and styling. Trigger comes from `area-plugin`'s `contextmenu` signal — `data.context` is `'root'` / a `FlowNode` / a `FlowConnection` and we branch on it.
+- **Delete key (or Backspace)**: removes every selected node and all connections touching it. The handler is registered on `window.keydown` and skips events whose target is an `<input>`/`<textarea>`/`<select>` so typing in the property panel never deletes nodes.
+- **Drag from sidebar**: `ui.makeDroppable` on the canvas container — accepts `DG.FileInfo` (creates an `OpenFile` node with `inputValues['fullPath']`) or `DG.Func` (looks up the registered factory by func name).
 
 ## Key Dependencies
 
-- `litegraph.js` ^0.7.18 - Graph canvas library
-- `datagrok-api` - Platform API (external, not bundled)
+- `rete` ^2.0.6 — core data layer
+- `rete-area-plugin` ^2.1.5 — DOM container, NodeView/ConnectionView, transform
+- `rete-connection-plugin` ^2.0.5 — interactive connection drawing + ClassicFlow type validation
+- `rete-react-plugin` ^2.1.0 — React renderer with Classic preset
+- `rete-render-utils` ^2.0.3 — `getDOMSocketPosition`, `classicConnectionPath`
+- `react` / `react-dom` ^18.3 — for the renderer (NOT used outside `node-component.tsx`)
+- `styled-components` ^5.3 — peer dep of `rete-react-plugin`
+- `datagrok-api` ^1.27.0 — platform API (external, not bundled)
+
+`react`, `react-dom`, `styled-components`, and all `rete-*` packages are in `dependencies` (not `devDependencies`) — they're runtime-required.
 
 ## Development Guidelines
 
-1. **Adding new input nodes**: Add class in `input-nodes.ts` (properties only, no widgets), register in `registerInputNodes()`, add to `inputNodes` array with `desc` in `function-browser.ts`, handle in `buildInputLine()` in `script-emitter.ts` if special qualifiers needed. Property panel auto-discovers properties by key name.
-2. **Adding new utility nodes**: Add class in `utility-nodes.ts` (properties only, no widgets), register in `registerUtilityNodes()`, add to `utilityNodes` array with `desc` in `function-browser.ts`, add case in `emitUtilityStep()` in `script-emitter.ts`. Add property tooltips to `UTILITY_PROP_TOOLTIPS` in `property-panel.ts`.
-3. **Adding new types**: Add to `DG_TYPE_MAP` in `type-map.ts`, add compatibility rules to `COMPATIBLE_TYPES`
-4. **Modifying script emission**: All code generation (clean and instrumented) lives in `script-emitter.ts`. The `EmitOptions.instrumented` flag controls whether try/catch + event code is emitted. Add new step types to both the clean and instrumented paths.
-5. **Adding execution visual states**: Modify `execution-visualizer.ts` `STATUS_COLORS` map. Node overlays are drawn via `onDrawForeground` hooks.
+1. **Adding a new built-in node**: subclass `FlowNode` in the appropriate `rete/nodes/*.ts` file, set `dgNodeType` and slot definitions in the constructor, then register a factory in `node-factory.ts` `registerBuiltinNodes()`. Add it to the appropriate `*Nodes` array in `function-browser.ts`. If it generates code, add a case to `emitUtilityStep()` in `script-emitter.ts`. Property tooltips go in `UTILITY_PROP_TOOLTIPS` in `property-panel.ts`.
+2. **Adding a new DG type**: add to `DG_TYPE_MAP` in `type-map.ts` (slot type + color); extend `COMPATIBLE_TYPES` if needed.
+3. **Modifying script emission**: all code generation lives in `script-emitter.ts`. The `EmitOptions.instrumented` flag toggles the try/catch + event path. New step kinds need handling in both clean (`emitFuncStep` / `emitUtilityStep`) and instrumented (`emitFuncStepInstrumented` / `wrapInstrumented`) paths.
+4. **Adding execution visual states**: extend `NodeExecStatus` in `execution-state.ts` and add a CSS rule `.ff-node-status[data-status="newstate"] { ... }`. Then update `ExecutionVisualizer` to set the status, no JS animation needed (CSS keyframes handle it).
+5. **Adding output preview types**: extend the union in `OutputPreviewPanel` and add a case to `classifyOutput` / `buildPreview`. Make sure `getOutputTypeHints()` propagates the right declared type.

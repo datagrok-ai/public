@@ -1,8 +1,6 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import {FuncInfo, getRegisteredFuncs} from '../nodes/node-factory';
-import {getRole, getTags} from '../utils/dart-proxy-utils';
+import {FuncInfo, getRegisteredFuncs} from '../rete/node-factory';
 
 export type GroupByMode = 'role' | 'tags' | 'package';
 

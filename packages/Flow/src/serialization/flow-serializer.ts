@@ -1,56 +1,75 @@
-import {LGraph, LGraphNode} from 'litegraph.js';
+/** Saves and loads FuncFlow documents. .ffjson v2 — Rete-native. */
+
 import * as grok from 'datagrok-api/grok';
-import {FuncFlowDocument, FuncFlowMetadata, FuncFlowNodeMeta, FlowSettings} from './flow-schema';
 
-/** Serialize a graph to FuncFlow document format */
-export function serializeFlow(graph: LGraph, settings: FlowSettings): FuncFlowDocument {
-  const nodes = (graph as any)._nodes as LGraphNode[];
-  const nodesMeta: Record<number, FuncFlowNodeMeta> = {};
+import {FlowEditor} from '../rete/flow-editor';
+import {createNode} from '../rete/node-factory';
+import {FlowSettings, FuncFlowDocument, FuncFlowConnection} from './flow-schema';
 
-  for (const node of nodes) {
-    nodesMeta[node.id] = {
-      dgFuncName: (node as any).dgFuncName || node.title,
-      dgNodeType: (node as any).dgNodeType || 'func',
-      paramName: node.properties?.['paramName'],
-      defaultValue: node.properties?.['defaultValue'],
-      description: node.properties?.['description'],
-    };
-  }
+export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlowDocument {
+  const nodes = flow.getNodes().map((n): FuncFlowDocument['nodes'][number] => ({
+    id: n.id,
+    typeName: n.dgTypeName ?? '',
+    label: n.label,
+    pos: {x: n.pos.x, y: n.pos.y},
+    properties: {...n.properties},
+    inputValues: {...n.inputValues},
+  }));
+
+  const connections: FuncFlowConnection[] = flow.getConnections().map((c) => ({
+    id: c.id,
+    source: c.source,
+    sourceOutput: String(c.sourceOutput),
+    target: c.target,
+    targetInput: String(c.targetInput),
+  }));
 
   let author = 'unknown';
-  try {author = grok.shell.user?.login ?? 'unknown';} catch {/* ok */}
+  try {author = grok.shell.user?.login ?? 'unknown';} catch { /* no shell */ }
 
   return {
-    version: '1.0',
+    version: '2.0',
     name: settings.scriptName,
     description: settings.scriptDescription,
     author,
     created: new Date().toISOString(),
     modified: new Date().toISOString(),
-    graph: graph.serialize(),
-    metadata: {nodes: nodesMeta, settings},
+    nodes,
+    connections,
+    metadata: {settings},
   };
 }
 
-/** Deserialize a FuncFlow document into a graph */
-export function deserializeFlow(doc: FuncFlowDocument, graph: LGraph): void {
-  graph.configure(doc.graph);
+/** Deserialize into the editor. Clears the editor first. Skips nodes whose
+ *  registered type is not currently known (e.g. a DG.Func that disappeared).
+ *  Connections referencing missing nodes are silently skipped. */
+export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): Promise<void> {
+  await flow.clear();
 
-  // Restore FuncFlow-specific metadata
-  const nodes = (graph as any)._nodes as LGraphNode[];
-  for (const node of nodes) {
-    const meta = doc.metadata?.nodes?.[node.id];
-    if (meta) {
-      (node as any).dgFuncName = meta.dgFuncName;
-      (node as any).dgNodeType = meta.dgNodeType;
-      if (meta.paramName !== undefined) node.properties['paramName'] = meta.paramName;
-      if (meta.defaultValue !== undefined) node.properties['defaultValue'] = meta.defaultValue;
-      if (meta.description !== undefined) node.properties['description'] = meta.description;
+  // Map old node ids → new node ids (Rete generates a fresh id on construction).
+  const idMap = new Map<string, string>();
+
+  for (const docNode of doc.nodes) {
+    const node = createNode(docNode.typeName);
+    if (!node) {
+      console.warn(`FuncFlow: skipped unknown node type "${docNode.typeName}"`);
+      continue;
     }
+    node.label = docNode.label;
+    node.properties = {...docNode.properties};
+    node.inputValues = {...docNode.inputValues};
+    await flow.addNodeAt(node, docNode.pos.x, docNode.pos.y);
+    idMap.set(docNode.id, node.id);
+  }
+
+  for (const c of doc.connections) {
+    const source = idMap.get(c.source);
+    const target = idMap.get(c.target);
+    if (!source || !target) continue;
+    await flow.addConnectionByKeys(source, c.sourceOutput, target, c.targetInput);
   }
 }
 
-/** Download a flow as a .funcflow.json file */
 export function downloadFlow(doc: FuncFlowDocument): void {
   const json = JSON.stringify(doc, null, 2);
   const blob = new Blob([json], {type: 'application/json'});
@@ -62,8 +81,11 @@ export function downloadFlow(doc: FuncFlowDocument): void {
   URL.revokeObjectURL(url);
 }
 
-/** Load a flow from a File object */
 export async function loadFlowFromFile(file: File): Promise<FuncFlowDocument> {
   const text = await file.text();
-  return JSON.parse(text) as FuncFlowDocument;
+  const doc = JSON.parse(text) as FuncFlowDocument;
+  if (doc.version !== '2.0')
+    throw new Error(`Unsupported flow file version "${doc.version}"; expected 2.0`);
+  return doc;
 }
+
