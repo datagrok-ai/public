@@ -1,0 +1,73 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: charts-migrate-2026-05-07
+feature: charts
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Charts/sunburst.md
+invoked_at: 2026-05-07T00:00:00Z
+verdict: SCOPE_REDUCTION
+failure_keys:
+  - A-STRUCT-02
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: Frontmatter parses as YAML; all four required fields present (feature=charts, sub_features_covered list of 6, target_layer=playwright, coverage_type=regression). Plus migration extras (pyramid_layer, ui_coverage_responsibility, produced_from, original_path, migration_date, migration_report, related_bugs).
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: Body contains `## Setup`, `## Scenarios`, `## Notes`, and 13 `### ` scenario headings under `## Scenarios` (Viewer creation smoke through Collaborative filtering).
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: Every scenario heading has numbered steps starting with "1." (e.g., Viewer creation smoke 1-2, Hierarchy configuration 1-7, Multi-selection 1-6, Collaborative filtering 1-4).
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: All 13 scenarios contain at least one numbered step; no empty scenarios.
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: target_layer=playwright matches the allowed enum {uitests-package, playwright, api-contract, manual-only}.
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: coverage_type=regression matches the allowed enum {smoke, regression, edge, perf}.
+  - check: A-STRUCT-01
+    status: PASS
+    evidence: Scenario "Hierarchy configuration via Select Columns dialog" exercises charts.sunburst + charts.echart-base (table binding) + Select Columns dialog + label/tooltip rendering — 3+ sub-feature concerns. "Collaborative filtering" combines sunburst + on-click filter + filter widget intersection. Multiple integration scenarios meet the 3+ bar.
+  - check: A-STRUCT-02
+    status: FAIL
+    evidence: File-level frontmatter coverage_type=regression and no per-scenario `coverage_type` overrides. "Old layout compatibility (issue #2979)" and "Select / filter on empty category" are edge-shaped in intent but lack explicit `coverage_type: edge` markers. No scenario is labeled `edge` or `perf` per A-STRUCT-02 strict reading.
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: File-level frontmatter coverage_type=regression provides label for all scenarios; A-STRUCT-03 explicitly allows frontmatter-level labeling. Severity-axis values (p0..p3) are not used.
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: Repeated authentication and dataset-open steps factored into `## Setup` (steps 1-4); cleanup also in Setup step 5. Per-scenario steps do not duplicate auth or table-open boilerplate.
+  - check: A-STRUCT-05
+    status: PASS
+    evidence: Atlas slice (lines 392-429) lists 5 sunburst-specific sub-features (charts.sunburst, .title, .on-click, .inherit-from-grid, .include-nulls). Scenario covers all 5 plus charts.echart-base = 6/5 sunburst-attributable sub-features = 100% coverage of the sunburst section. Integration-shape note acknowledged.
+  - check: A-STRUCT-06
+    status: PASS
+    evidence: 6 sub_features_covered at file level distributed across 13 scenarios; integration scenarios (Hierarchy, Inherit from grid, Include nulls, Multi-selection, Empty category, Collaborative filtering) each exercise 2+ sub-features. Average density ≥ 2 holds for non-smoke scenarios; the lone "Viewer creation smoke" scenario covers charts.sunburst alone but is structurally a smoke shape (not labeled smoke; mild concern but file-level coverage_type=regression governs).
+  - check: A-CONT-01
+    status: PASS
+    evidence: Real column names (SEX, Core, R101, Sampling Time), real datasets (System:DemoFiles/demog.csv, System:DemoFiles/SPGI_v2.csv), real properties (Inherit from grid, Include nulls, onClick), real bug IDs (github-2954, github-3412, issue #2979). No angle/square-bracket placeholders or generic stand-ins.
+  - check: A-BUG-01
+    status: PASS
+    evidence: related_bugs frontmatter cites github-2954 and github-3412; scenario body explicitly maps them to "Hierarchy configuration via Select Columns dialog" (column-type defense-in-depth) and "Inherit from grid (demog.csv)" respectively. Atlas known_issues content not consulted (forbidden read); PASS based on visible bug coverage citations.
+  - check: A-MERIT-01
+    status: PASS
+    evidence: Notes section opt-outs cite real dependencies — date-column repro flagged as coverage gap by chain analyzer (atlas-level), Scatterplot cross-viewer pairing excluded per chain "single-viewer scenario" decision. No "effort"/"complexity" alone justifications.
+  - check: A-MERIT-02
+    status: PASS
+    evidence: The #2979 layout fixture deferral cites a concrete unresolved prerequisite (fixture not in repo or System:DemoFiles) and explicitly delegates the resolution choice to downstream Automator with three named options (commit fixture, provision via grok.dapi.layouts, test.skip). Lattice Rule 13 satisfied.
+scope_reduction_proposal: |
+  Add an explicit per-scenario `coverage_type: edge` marker to either
+  "### Old layout compatibility (issue #2979)" (edge: legacy-layout
+  compatibility shape, fixture-dependent) or "### Select / filter on
+  empty category (SPGI_v2.csv)" (edge: null-segment behaviour). Both
+  are edge-shaped in intent. The file-level frontmatter
+  coverage_type=regression is correct for the integration-shape majority
+  but A-STRUCT-02 requires at least one edge/perf scenario to exist.
+  Real atlas-level dependency: the integration-shape pyramid_layer
+  classification (charts.yaml rev 1) does not preclude edge labels on
+  individual sub-flows, and per-scenario coverage_type overrides are
+  permitted by A-STRUCT-03.
+evidence_needed: []

@@ -1,0 +1,130 @@
+verdict: SCOPE_REDUCTION
+gate: E
+review_round: 1
+cycle_id: charts-migrate-2026-05-07
+artifact: tree-spec.ts
+scenario: tree.md
+failure_keys: []
+scope_reduction_proposal: |
+  selector-pending defensive substitution + canvas-synthesis defensive
+  fallback (acceptable SR class — analogous to env-pending defensive skip
+  per orchestrator SKILL.md "Acceptable SR classes (Edit 10)" section).
+
+  Reason: Tree branches are canvas-rendered (ECharts); Shift+Click at
+  canvas-coord branch positions is not reliably synthesizable in Playwright
+  (per scenario .md Notes: "current spec authoritative behavior is the
+  bitset fallback with [AMBIGUOUS] warning"). Spec uses df.selection
+  programmatic bitset for branch selection (Steps 1, 3 — AMBIGUOUS
+  warnings logged), and df.filter bitset for Filter Panel CONTROL toggle
+  (Steps 2, 4) — equivalent to the UI gestures' net dataframe state but
+  not the DOM event path.
+
+  Additionally: references/charts.md UI flow registry is DEFERRED per
+  orchestrator cycle directive. Without registry, Tree's UI flows
+  (add-viewer-tree, tree-hierarchy-config, tree-shift-click-multi-select,
+  filter-panel-control) lack documented selectors for DOM driving.
+
+  Remediation path: when references/charts.md lands AND a canvas-coord
+  Shift+Click synthesis pattern is established (e.g. via Datagrok-internal
+  hit-testing API exposed for tests), replace df.selection bitset fallback
+  with real DOM gestures. Filter Panel CONTROL toggle could be DOM-driven
+  earlier if filter-panel selectors land first (independent of tree
+  hierarchy DOM).
+claims:
+  - check_id: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      File exists at public/packages/UsageAnalysis/files/TestTrack/Charts/tree-spec.ts.
+  - check_id: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      Spec parses as valid TypeScript; balanced braces; well-formed test()
+      signature.
+  - check_id: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      One test() block at line 23: test('Tree viewer (Charts package)').
+  - check_id: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name matches scenario heading "## Setup" + section
+      "### Collaborative filtering — Tree viewer ↔ Filter Panel". softStep
+      names use "Step N:" prefix matching scenario step numbering
+      (Setup, Step 1, Step 2, Step 3, Step 4 = scenario Steps 1-7).
+  - check_id: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Imports from canonical paths only.
+  - check_id: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter "/* --- sub_features_covered: [charts.tree] --- */" at
+      line 1. Mirrors scenario .md sub_features_covered: [charts.tree]
+      exactly. Element resolves in atlas as charts.tree base feature.
+  - check_id: E-TRACE-01
+    status: PASS
+    evidence: |
+      Each softStep traces to a scenario step. Programmatic fallback noted
+      via [AMBIGUOUS] comment headers — implicit technical reason for the
+      JS-API substitution path.
+  - check_id: E-TRACE-02
+    status: PASS
+    evidence: |
+      Scenario .md has Setup + 7 numbered steps (1-7) under "Collaborative
+      filtering". Spec covers Setup + Steps 1-7 as 5 softStep blocks
+      (Setup combined with hierarchy; Step 1 = scenario Steps 1, Step 2 =
+      scenario Steps 2-3, Step 3 = scenario Steps 4-5, Step 4 = scenario
+      Steps 6-7). Coverage complete though paradigm is bitset-substituted
+      where canvas synthesis is AMBIGUOUS.
+  - check_id: E-TRACE-03
+    status: PASS
+    evidence: |
+      Verification steps mapped: filtered row count assertions
+      (overlap=0 / overlap=2 / selected=176 / filtered=5850) match
+      scenario expected values exactly.
+  - check_id: E-SEL-01
+    status: PASS
+    evidence: |
+      Only documented selectors used.
+  - check_id: E-SEL-02
+    status: PASS
+    evidence: |
+      No invented selectors.
+  - check_id: E-SEL-03
+    status: PASS
+    evidence: |
+      No .fill() calls.
+  - check_id: E-HELP-01
+    status: PASS
+    evidence: |
+      Helpers from ../spec-login (registered).
+  - check_id: E-HELP-02
+    status: PASS
+    evidence: |
+      No reinvention.
+  - check_id: E-LAYER-01
+    status: PASS
+    evidence: |
+      Scenario target_layer: playwright; spec is playwright.
+  - check_id: E-LAYER-02
+    status: NA
+    evidence: |
+      No layer override.
+  - check_id: E-LAYER-COMPLIANCE-01
+    status: SCOPE_REDUCTION
+    evidence: |
+      target_layer=playwright requires ≥1 DOM-driving call. Spec body has
+      zero matches (only page.evaluate). Pyramid_layer is integration per
+      chain (Notes section says scenario Notes lacks explicit pyramid_layer
+      frontmatter — chain dependency_graph.tree.md.pyramid_layer = integration
+      per Rule 4 multi-subsystem). Integration permits JS API for state
+      setup but expects ≥1 DOM-driving call. Routed as SR (selector-pending
+      + canvas-synthesis-pending); remediation when registry lands.
+  - check_id: E-BOUND-01
+    status: PASS
+    evidence: |
+      Path under TestTrack/Charts/.
+  - check_id: E-BOUND-02
+    status: PASS
+    evidence: |
+      No core or off-path changes.

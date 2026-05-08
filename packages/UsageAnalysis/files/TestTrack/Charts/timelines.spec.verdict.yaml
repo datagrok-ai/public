@@ -1,0 +1,157 @@
+verdict: SCOPE_REDUCTION
+gate: E
+review_round: 1
+cycle_id: charts-migrate-2026-05-07
+artifact: timelines-spec.ts
+scenario: timelines.md
+failure_keys: []
+scope_reduction_proposal: |
+  selector-pending defensive skip (acceptable SR class — canonical
+  Edit 10 env-pending defensive-skip pattern by analogy: the spec
+  contains test.skip() blocks with logged warnings citing the missing
+  references/charts.md UI registry).
+
+  Reason: GROK-19033 reproduction class is intrinsically DOM-event-driven
+  (ECharts legend item DOM click). Without references/charts.md ECharts
+  legend selectors, the click-to-filter gesture cannot be exercised at the
+  DOM layer. Spec degrades by:
+    1. Skipping the actual click-to-filter gesture (Scenario 1 Steps 5-7,
+       Scenario 2 Step 5, Scenario 3 Step 3) via test.skip() with logged
+       warning.
+    2. Covering the bug-class invariants that CAN be exercised via
+       property surface deterministically:
+         - legendVisibility transitions Auto → Always → Never → Auto
+           (Scenario 2 Steps 2-4) with visual stability assertions
+           (root non-empty, non-zero size, no console error).
+         - splitByColumnName rebind USUBJID → AESEV → USUBJID
+           (Scenario 3 Steps 2, 4) with same invariant.
+         - colorColumnName binding (Scenario 1 Step 4).
+    3. Capturing console errors throughout via page.on('console') and
+       page.on('pageerror'), asserted empty after each transition —
+       the GROK-19033 invariant carrier.
+
+  Remediation path: when references/charts.md lands with ECharts legend
+  selectors, replace test.skip blocks with real DOM legend item clicks
+  (e.g. page.locator(...).click()). Critic E re-invocation will surface
+  SR as resolvable; bug-focused coverage tightens from "property-driven
+  invariant assertion" to "real DOM legend click + invariant assertion".
+
+  Smoke slot for Timelines viewer remains DEFERRED (per scenario .md
+  Notes section + chain unresolved_ambiguities). This bug-focused spec
+  does NOT cover the canonical Add-Viewer → Timelines smoke surface; a
+  separate timelines-smoke.md / charts-ui-smoke.md is a follow-up.
+claims:
+  - check_id: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      File exists at public/packages/UsageAnalysis/files/TestTrack/Charts/timelines-spec.ts.
+  - check_id: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      Spec parses as valid TypeScript; balanced braces; well-formed test()
+      signature; imports resolve (loginToDatagrok, specTestOptions, softStep,
+      stepErrors all present in ../spec-login).
+  - check_id: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      One test() block: test('Timelines viewer — legend filtering regression
+      (GROK-19033)').
+  - check_id: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name matches scenario heading "# Timelines viewer — legend
+      filtering regression (GROK-19033)". softStep names use scenario block
+      identifiers ("Scenario 1 Step 1-2:", "Scenario 1 Step 3-4:",
+      "Scenario 2 Step 2:", etc.) traceable to scenario .md headings
+      "### Scenario 1: Legend click-to-filter ...", "### Scenario 2: ...",
+      "### Scenario 3: ...".
+  - check_id: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Imports: '@playwright/test', '../spec-login'. Canonical paths only.
+  - check_id: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter "/* --- sub_features_covered: [charts.timelines,
+      charts.timelines.legend-visibility, charts.timelines.split-by-column,
+      charts.timelines.color-column, charts.timelines.start-column,
+      charts.timelines.end-column] --- */" at line 1. Mirrors scenario .md
+      sub_features_covered exactly. Atlas resolves all 6 ids under
+      charts.timelines.* family.
+  - check_id: E-TRACE-01
+    status: PASS
+    evidence: |
+      Each softStep traces to a scenario step or scenario-block step set;
+      technical setup (closeAll, settings, console-error subscription) is
+      in pre-step blocks and the loginToDatagrok call.
+  - check_id: E-TRACE-02
+    status: PASS
+    evidence: |
+      Scenario .md has 3 scenario blocks with 7 + 5 + 4 = 16 numbered steps.
+      Spec covers Scenario 1 Steps 1-2 (combined open+addViewer), Steps 3-4
+      (combined gear+colorColumn), Steps 5-7 (test.skip — selector-pending),
+      Scenario 2 Step 2, 3, 4, 5 (Step 5 test.skip), Scenario 3 Steps 2, 3
+      (Step 3 test.skip), 4. All numbered scenario steps either covered or
+      explicitly skipped with rationale.
+  - check_id: E-TRACE-03
+    status: PASS
+    evidence: |
+      Verification mapping: "no console error during legend filter
+      transitions" → consoleErrors.slice(errorsBefore).toEqual([]) in
+      every property-transition softStep; "viewer renders without console
+      errors" → expect(result.viewerTypes).toContain('Timelines'); default
+      property values per atlas → splitByColumnName.toBe('USUBJID') etc;
+      colorColumnName binding → colorColumn.toBe('AESOC').
+  - check_id: E-SEL-01
+    status: PASS
+    evidence: |
+      Only documented selectors used: ".d4-dialog" / '[name="button-CANCEL"]'
+      (parity with sibling Charts specs), '[name="Browse"]' (spec-login).
+  - check_id: E-SEL-02
+    status: PASS
+    evidence: |
+      No invented selectors. Legend-click selectors deliberately NOT
+      authored — gated by B14 escalation per Section 4.3 of automator-prompt
+      (refs/charts.md deferred).
+  - check_id: E-SEL-03
+    status: PASS
+    evidence: |
+      No .fill() calls.
+  - check_id: E-HELP-01
+    status: PASS
+    evidence: |
+      Helpers from ../spec-login (registered). Helper candidates surfaced
+      in scenario .md Notes (clickLegendCategory, assertNoWhiteScreen) NOT
+      invented in spec — pattern inlined with TODO marker per Section 6
+      Step 5 fallback (registry write deferred).
+  - check_id: E-HELP-02
+    status: PASS
+    evidence: |
+      No reinvention; no open-coded loginToDatagrok.
+  - check_id: E-LAYER-01
+    status: PASS
+    evidence: |
+      Scenario target_layer: playwright; spec is playwright.
+  - check_id: E-LAYER-02
+    status: NA
+    evidence: |
+      No layer override.
+  - check_id: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: |
+      target_layer=playwright requires ≥1 DOM-driving call. Spec body
+      contains 1 match: page.locator('[name="Browse"]').waitFor() at line
+      ~52 — documented selector from spec-login.ts. pyramid_layer=
+      bug-focused permits JS API for setup/teardown not in slice; spec body
+      stays within bug-invariant slice (legend filter visual stability
+      across legendVisibility / splitByColumnName transitions). No slice
+      scope creep — all 3 scenario blocks exercise the GROK-19033 invariant
+      class.
+  - check_id: E-BOUND-01
+    status: PASS
+    evidence: |
+      Path under TestTrack/Charts/.
+  - check_id: E-BOUND-02
+    status: PASS
+    evidence: |
+      No core or off-path changes.

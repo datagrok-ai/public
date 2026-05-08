@@ -1,0 +1,144 @@
+verdict: SCOPE_REDUCTION
+gate: E
+review_round: 1
+cycle_id: charts-migrate-2026-05-07
+artifact: sunburst-spec.ts
+scenario: sunburst.md
+failure_keys: []
+scope_reduction_proposal: |
+  selector-pending defensive skip + dataset-pending defensive substitution
+  (acceptable SR class — analogous to env-pending defensive skip per
+  orchestrator SKILL.md "Acceptable SR classes (Edit 10)" section).
+
+  Reasons:
+  1. references/charts.md UI flow registry is DEFERRED per orchestrator
+     cycle charts-migrate-2026-05-07 directive. Without selectors for the
+     7 owned UI flows (add-viewer-sunburst, viewer-property-panel-gear,
+     select-columns-dialog, viewer-context-menu-reset-view,
+     sunburst-multi-selection, viewer-save-layout, viewer-apply-layout),
+     six scenario blocks are gracefully test.skip'd with logged warnings
+     (canonical Edit 10 env-pending pattern shape):
+       - Step 3.1 Table switching SPGI <-> demog
+       - Step 4 Reset view (canvas double-click / context menu)
+       - Step 5 Multi-selection (canvas-based Click / Ctrl+Click /
+         Ctrl+Shift+Click)
+       - Step 6 Select/filter on empty (null) category (canvas-based)
+       - Step 7 Project save / close-all / reopen
+       - Step 8 Old layout compatibility (issue #2979 — also blocked by
+         missing layout fixture per scenario .md NOTE)
+       - Step 9 Collaborative filtering (internal viewer ∧ panel filter
+         intersection)
+
+  2. Dataset SPGI_v2.csv (declared by scenario .md) not present on dev env;
+     spec falls back to System:DemoFiles/SPGI.csv (line 7 comment). Defensive
+     dataset substitution acknowledged in spec; scenario coverage adapts to
+     available data shape.
+
+  Remediation path: when references/charts.md lands AND SPGI_v2.csv is
+  provisioned on dev / qa-pw, replace test.skip blocks with DOM-driven
+  sequences and revert the SPGI fallback to SPGI_v2 per scenario.
+
+  Issue #2979 layout fixture: separately tracked under
+  scenario-chains/charts.yaml unresolved_ambiguities[].step "Step 8: Open
+  the layout from issue #2979" (priority: medium, recommended fixture-builder).
+claims:
+  - check_id: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      File exists at public/packages/UsageAnalysis/files/TestTrack/Charts/sunburst-spec.ts.
+  - check_id: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      Spec parses as valid TypeScript; balanced braces; well-formed test()
+      signature; imports resolve.
+  - check_id: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      One test() block at line 25: test('Sunburst viewer').
+  - check_id: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name matches scenario heading "# Sunburst viewer". softStep names
+      explicitly trace to scenario steps via "Step N:" prefix and AMBIGUOUS
+      tags where applicable.
+  - check_id: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Imports from canonical paths only: '@playwright/test', '../spec-login'.
+  - check_id: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter block "/* --- sub_features_covered: [charts.sunburst,
+      charts.sunburst.title, charts.sunburst.on-click,
+      charts.sunburst.inherit-from-grid, charts.sunburst.include-nulls,
+      charts.echart-base] --- */" at line 1. List mirrors scenario .md
+      sub_features_covered verbatim. All elements resolve in atlas.
+  - check_id: E-TRACE-01
+    status: PASS
+    evidence: |
+      softStep names trace to scenario steps via "Step N:" prefix; technical
+      setup (closeAll, settings) is in the pre-step page.evaluate block.
+  - check_id: E-TRACE-02
+    status: SCOPE_REDUCTION
+    evidence: |
+      Scenario .md has 9 named scenario blocks; spec covers Steps 1, 2, 3.2,
+      3.3, 3.4 in JS API substituted form. Steps 3.1, 4, 5, 6, 7, 8, 9 are
+      gracefully test.skip'd with logged AMBIGUOUS / SKIP warnings citing
+      canvas-rendering / external-asset / not-exercised reasons. Routed via
+      SR per scope_reduction_proposal.
+  - check_id: E-TRACE-03
+    status: PASS
+    evidence: |
+      Verification steps mapped: viewer creation → viewerTypes.toContain;
+      property names → propNames.toEqual(arrayContaining([...])); property
+      round-trips → expect getter equals setter input.
+  - check_id: E-SEL-01
+    status: PASS
+    evidence: |
+      Only documented selectors used: ".d4-dialog" / '[name="button-CANCEL"]'
+      (parity with sibling Charts specs), '[name="Browse"]' (spec-login).
+  - check_id: E-SEL-02
+    status: PASS
+    evidence: |
+      No invented selectors; all interactions via page.evaluate + JS API.
+  - check_id: E-SEL-03
+    status: PASS
+    evidence: |
+      No .fill() calls; not applicable.
+  - check_id: E-HELP-01
+    status: PASS
+    evidence: |
+      Helpers from ../spec-login: softStep, loginToDatagrok, specTestOptions,
+      stepErrors. All registered.
+  - check_id: E-HELP-02
+    status: PASS
+    evidence: |
+      No reinvention.
+  - check_id: E-LAYER-01
+    status: PASS
+    evidence: |
+      Scenario target_layer: playwright; spec is playwright.
+  - check_id: E-LAYER-02
+    status: NA
+    evidence: |
+      No layer override.
+  - check_id: E-LAYER-COMPLIANCE-01
+    status: SCOPE_REDUCTION
+    evidence: |
+      target_layer=playwright requires ≥1 DOM-driving call. Spec body has
+      ZERO matches in the FORBIDDEN regex set (no page.click, page.fill,
+      page.locator, page.hover, page.press, page.keyboard, page.mouse, dlg.*).
+      Pyramid sub-rule: integration permits broader JS API substitution but
+      still expects ≥1 DOM-driving call. Routed as SR (selector-pending);
+      remediation: when references/charts.md lands, replace 6 test.skip
+      blocks with DOM-driven sequences for Save Layout / Apply Layout / Reset
+      View / multi-select gestures / project save-reopen / Select Columns
+      dialog interaction.
+  - check_id: E-BOUND-01
+    status: PASS
+    evidence: |
+      Path under TestTrack/Charts/. Allowed.
+  - check_id: E-BOUND-02
+    status: PASS
+    evidence: |
+      No core or package-source-outside-tests changes.

@@ -1,0 +1,104 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: charts-migrate-2026-05-07
+feature: charts
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Charts/timelines.md
+invoked_at: 2026-05-07T19:30:00Z
+verdict: SCOPE_REDUCTION
+gate: A
+failure_keys: []
+scope_reduction_proposal: |
+  Accept the file with sub_features_covered scoped to the 6 listed
+  Timelines sub-features (charts.timelines, charts.timelines.legend-visibility,
+  charts.timelines.split-by-column, charts.timelines.color-column,
+  charts.timelines.start-column, charts.timelines.end-column).
+
+  Atlas charts.timelines.* surface declares 13 sub-features (parent +
+  12 properties). The scenario covers 6/13 = ~46%, below the
+  A-STRUCT-05 70% threshold. The remaining 7 sub-features
+  (show-open-intervals, event-tooltip, marker, line-width,
+  date-format, axis-pointer, show-zoom-sliders) are NOT covered and
+  are NOT yet listed in atlas `manual_only` / `coverage_exceptions`,
+  so a strict literal A-STRUCT-05 read fails.
+
+  Real cited dependency for the reduction:
+  (a) `pyramid_layer: bug-focused` with `related_bugs: [GROK-19033]`
+      — this artifact is the orchestrator's Edit-4 SR-routing fallback
+      block specifically for the GROK-19033 legend-filtering
+      reproduction, NOT the smoke/regression slot for the Timelines
+      viewer's full property surface. Bug-focused scenarios are
+      explicitly narrow by pyramid-layer design.
+  (b) The 6 chosen sub-features are exactly those required by
+      bug-library/charts.yaml GROK-19033 `affects` (3 sub-features:
+      charts.timelines, legend-visibility, split-by-column) plus the
+      3 sub-features that any reproducible Timelines render requires
+      on the SDTM ae.csv shape (start-column=AESTDY, end-column=AEENDY,
+      color-column=AESOC for legend categories). The Notes section
+      "sub_features_covered scope rationale" documents this
+      derivation explicitly.
+  (c) The Charts section already has full-property-surface coverage
+      pending in sibling scenarios (radar.md, sunburst.md, tree.md);
+      the Timelines viewer's broader smoke/regression slot is
+      acknowledged as deferred (Notes: "Smoke slot deferred") with
+      Lattice-Rule-13-compliant cited dependency
+      ("orchestrator SR dispatch routes this fallback to
+      bug_focused_candidates slot only; smoke-slot scenario authoring
+      is a separate Phase 1 routing decision").
+
+  This matches the pattern applied to the existing migrated Charts
+  scenarios where bug-focused or narrowly-scoped artifacts are
+  accepted under SCOPE_REDUCTION rather than blocked on full
+  coverage. No new authoring is required to satisfy the reduction;
+  the verdict simply registers the narrowed scope as authorized.
+
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: Frontmatter is parseable YAML and contains all four required fields (feature=charts, sub_features_covered=[6 items], target_layer=playwright, coverage_type=edge). Additional non-required fields (produced_from=atlas-driven, pyramid_layer=bug-focused, related_bugs, date_created, authored_by) are present and well-formed.
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: Body contains H2 "## Scenarios" plus three H3 scenario headings (Scenario 1, Scenario 2, Scenario 3). Sibling Charts scenarios (radar.md, sunburst.md, tree.md) use the identical H2-Scenarios + H3-per-scenario convention; Block-11 refinement intent is "scenario heading exists" which the H3 headings satisfy.
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: Each of the three scenario H3 headings has its own "Steps:" block with numbered steps starting "1.", "2.", etc. Scenario 1 has 7 steps, Scenario 2 has 5 steps, Scenario 3 has 4 steps.
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: No empty scenarios. All three scenarios contain >=4 numbered steps with concrete actions and Expected lines.
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: target_layer=playwright is in the canonical enum {uitests-package, playwright, api-contract, manual-only}.
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: coverage_type=edge is in the canonical test-kind enum {smoke, regression, edge, perf}.
+  - check: A-STRUCT-01
+    status: PASS
+    evidence: At least one scenario covers >=3 sub-features. Per the file's own density audit (Notes section) Scenario 1 = 5 sub-features in interaction (timelines, color-column, start-column, end-column, legend-visibility); Scenario 3 = 4 (timelines, split-by-column, legend-visibility, color-column). Both exceed the threshold. Scenario 2 covers 3 (timelines, legend-visibility, color-column) which also satisfies.
+  - check: A-STRUCT-02
+    status: PASS
+    evidence: File-level frontmatter coverage_type=edge satisfies the "at least one edge or perf scenario in section" rule. The Notes section explicitly defends the edge label against the regression alternative (visual-stability invariant of GROK-19033 is bug-class negative-path coverage).
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: File-level coverage_type=edge label is present in frontmatter; per A-STRUCT-03 either file-level or per-scenario marker satisfies. No severity-axis (p0..p3) values used.
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: Setup is factored into a single "## Setup" section that covers the shared dataset (System:AppData/ApiSamples/ae.csv) for all three scenarios. Scenarios 2 and 3 explicitly reference Scenario 1's configured state ("Continuing from Scenario 1") rather than duplicating the property-panel configuration steps.
+  - check: A-STRUCT-05
+    status: FAIL
+    evidence: sub_features_covered lists 6 of 13 atlas charts.timelines.* sub-features (~46%, below 70% threshold). The 7 omitted sub-features (show-open-intervals, event-tooltip, marker, line-width, date-format, axis-pointer, show-zoom-sliders) are not listed in atlas manual_only or coverage_exceptions. The narrowing is principled and documented (bug-focused pyramid_layer, GROK-19033 affects-only + minimal-render-prerequisites) but not yet authorized — surfacing as the SCOPE_REDUCTION trigger. See scope_reduction_proposal.
+  - check: A-STRUCT-06
+    status: PASS
+    evidence: Average density = (5+3+4)/3 = 4.0 sub-features per scenario, well above the >=2 threshold. Smoke exemption not invoked (and not applicable; coverage_type=edge).
+  - check: A-CONT-01
+    status: PASS
+    evidence: All names are real and resolvable. Dataset System:AppData/ApiSamples/ae.csv is referenced by Charts/src/demos/demo.ts (cited in Setup) and ApiSamples scripts/ui/viewers/js viewers/timelines-viewer.js. Column names (USUBJID, AESTDY, AEENDY, AETERM, AESEV, AESOC) are SDTM-standard and listed in Setup. AESOC category labels (e.g. SKIN AND SUBCUTANEOUS TISSUE DISORDERS) are concrete strings from the dataset. No angle/square placeholders, no "column1"/"the column" generics. Property names (splitByColumnName, colorColumnName, legendVisibility, etc.) match atlas charts.timelines.* source descriptions verbatim.
+  - check: A-BUG-01
+    status: PASS
+    evidence: Atlas known_issues entry for GROK-19033 with test_coverage.exists=false (charts.yaml ~lines 1116-1124, cited in the file body) is addressed by both routes (a) and (b) in the rule: frontmatter related_bugs:[GROK-19033] AND scenario body references "GROK-19033 reproduction"/"GROK-19033 invariant" repeatedly across Scenarios 1-3. No other timelines.* known_issues entries require coverage in the visible atlas slice.
+  - check: A-MERIT-01
+    status: PASS
+    evidence: No "effort" or "complexity" opt-out language. The narrowed sub_features_covered scope is justified with a substantive technical/atlas-level dependency (Notes "sub_features_covered scope rationale" cites bug-library affects field plus minimal-render prerequisites for the SDTM dataset shape).
+  - check: A-MERIT-02
+    status: PASS
+    evidence: The "Smoke slot deferred" item in Notes cites Lattice Rule 13 / A-MERIT-02 explicitly and pins the deferral to a real dependency ("orchestrator SR dispatch routes this fallback to bug_focused_candidates slot only; smoke-slot scenario authoring is a separate Phase 1 routing decision, not a sub-task of this dispatch"). No bare "TODO" / "to be done in next phase" language.

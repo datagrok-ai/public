@@ -1,0 +1,93 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: charts-migrate-2026-05-07
+feature: charts
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Charts/radar.md
+invoked_at: 2026-05-07T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: A
+failure_keys: []
+scope_reduction_proposal: |
+  Accept this artifact as a smoke-only single-scenario migration with two
+  structural waivers, both grounded in real architectural / migration
+  dependencies declared in the file's body:
+
+  1. Waive A-STRUCT-02 (no edge/perf scenario) for this file. The file is
+     pinned to `pyramid_layer: ui-smoke` per `scenario-chains/charts.yaml`
+     rev 1 ("Rule 1 — single viewer create + configure smoke; shortest
+     qualifying scenario by step count"). Edge/perf scenarios for radar
+     belong on sibling specs or section-level coverage, not on the smoke
+     anchor file. The artifact already declares this assignment in body
+     paragraph 2 with chain-rev citation.
+
+  2. Waive A-STRUCT-05 (>=70% atlas coverage) for this file. A single
+     migrated radar viewer scenario cannot cover 70% of the section-wide
+     `charts.*` atlas (which spans chord, globe, group-analysis,
+     multiplot, radar, sankey, sunburst, surface-plot, timelines, tree,
+     word-cloud — 11 viewer families). Section-level coverage is the
+     responsibility of Gate F coverage-critic across all migrated files
+     in `Charts/` (radar.md + sunburst.md + tree.md + future siblings).
+     Per-file ≥70% on a section-segmented migration is architecturally
+     unattainable.
+
+  Both waivers reference real chain-level / migration-architecture
+  dependencies. Step 13 ("Check all properties — broad sweep") preserves
+  the original scenario's broad-sweep instruction for the 6 remaining
+  `charts.radar.*` sub-features (title, min-percentile, max-percentile,
+  show-tooltip, show-min-max, legend-visibility) without enumerating
+  them, with explicit Notes-section justification (chain rev 1
+  unresolved ambiguity #1, flagged for QA review) — preserving the
+  original ambiguity rather than narrowing or widening per migrator's
+  faithfulness mandate.
+
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: Frontmatter is parseable YAML with all four required fields present (feature, sub_features_covered, target_layer, coverage_type), plus the Block 6 migration-side fields (produced_from, original_path, migration_date, migration_report, related_bugs).
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: H2 headings `## Setup`, `## Scenarios`, `## Notes` exist in body. Scenario heading is `### Add Radar viewer to two datasets and exercise the property panel` under `## Scenarios`.
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: Numbered steps 1 through 13 exist under the scenario H3 heading.
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: The single scenario contains 13 numbered steps; not empty.
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: `target_layer: playwright` is one of the four allowed enum values.
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: `coverage_type: smoke` is one of the four allowed enum values.
+  - check: A-STRUCT-01
+    status: PASS
+    evidence: The single scenario interleaves 5 sub-features (charts.radar, charts.radar.show-current-row, charts.radar.color-column, charts.radar.color-palette, charts.echart-base.table) — well above the 3+ threshold. Steps 9-12 exercise four distinct property families in sequence on the same viewer instance.
+  - check: A-STRUCT-02
+    status: FAIL
+    evidence: The single scenario has `coverage_type: smoke`. No scenario in this file is `edge` or `perf`. Smoke-only file by chain-rev-1 architectural assignment (`pyramid_layer: ui-smoke`); waiver requested in scope_reduction_proposal section 1.
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: File-level frontmatter `coverage_type: smoke` applies to the single scenario; uses unified test-kind enum value (not severity-axis).
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: `## Setup` section declares clean Datagrok session is shared; no fixture chaining (`depends_on: []` per chain rev 1 cited in body). Single-scenario file — no opportunity for cross-scenario duplication.
+  - check: A-STRUCT-05
+    status: FAIL
+    evidence: The 5 sub-features covered are <<70% of the charts atlas (which spans 11 viewer families with ~80 sub-features in the lines 20-780 slice I read). Per-file section-segmented coverage is architecturally unattainable; waiver requested in scope_reduction_proposal section 2 (Gate F section-level review owns this).
+  - check: A-STRUCT-06
+    status: PASS
+    evidence: `coverage_type: smoke` exempts from density rule per A-STRUCT-06 smoke-exemption clause. Even without exemption, 5 sub-features in 1 scenario = density 5.0, well above the 2.0 threshold.
+  - check: A-CONT-01
+    status: PASS
+    evidence: Scenarios reference real dataset paths (`System:DemoFiles/geo/earthquakes.csv`, `System:DemoFiles/demog.csv`), real menu names (Add viewer, Radar, Gear, Context Panel), and real radar property names from atlas (`currentRowColor`, `mouseOverRowColor`, `lineColor`, `backgroundMinColor`, `backgroundMaxColor`). No angle/square-bracket placeholders, no generic stand-ins.
+  - check: A-BUG-01
+    status: PASS
+    evidence: `related_bugs: [GROK-18085]` is declared in frontmatter; Notes section explicitly cites the bug ID, the technical reason it is not exercised here (original radar.md has no project-save/reopen step), and the chain-rev-1 coverage-gap acknowledgment (`bug_match_attempts_skipped: reproduction_unparseable`) for downstream Critic F surfacing. Scenario satisfies Bug Library integration via body reference (option b in the check's three-options list).
+  - check: A-MERIT-01
+    status: PASS
+    evidence: GROK-18085 invariant is not verified here, but the body cites a real technical dependency ("bug reproduction requires save/reopen which is not in the original scenario"), not effort/complexity. Step 13's broad-sweep treatment cites migrator-faithfulness mandate (preserving original ambiguity) plus chain rev 1 unresolved ambiguity #1 — a real atlas-level dependency.
+  - check: A-MERIT-02
+    status: PASS
+    evidence: No "TODO: add later" or "to be done in next phase" patterns. Step 13's broad-sweep preserves original instruction faithfully; flagging for QA review is a coverage-gap surfacing for Critic F, not a Lattice-Rule-13 deferral. GROK-18085 non-verification is a documented cross-cutting limitation, not a deferred item.
