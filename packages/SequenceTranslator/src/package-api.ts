@@ -133,6 +133,10 @@ export namespace funcs {
     return await grok.functions.call('SequenceTranslator:GetPtChemEnumeratorDialog', { cell });
   }
 
+  export async function getPtOligoEnumeratorDialog(cell: any | null): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:GetPtOligoEnumeratorDialog', { cell });
+  }
+
   /**
   Enumerate provided HELM sequence on provided positions with provided monomers and generates new table
   */
