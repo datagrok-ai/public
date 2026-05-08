@@ -96,7 +96,6 @@ export type BlqRule = 'set-zero' | 'set-half-lloq' | 'exclude' | 'missing';
 
 /**
  * BLQ-handling configuration broken out by phase of the concentration profile.
- * Conventions follow PKNCA (see `scripts/generate-nca-fixtures.R`).
  */
 export interface BlqStrategy {
   /** BLQ points before the first measurable observation. */

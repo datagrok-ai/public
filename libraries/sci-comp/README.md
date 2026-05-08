@@ -31,8 +31,8 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
 * **[NCA (Non-Compartmental Analysis)](./src/nca/README.md):**
   * 8 PK parameters: Cmax, Tmax, AUClast, AUCinf, %AUCextrap, λz, t½, CL, Vz
   * 3 AUC methods (linear, log-linear, linear-up/log-down) × naive Float64 + Neumaier-compensated summation
-  * 4 BLQ-handling rules × 4 phases (PKNCA convention)
-  * λz auto best-fit (subset search by adjusted R² with PKNCA tie-breaking) + manual
+  * 4 BLQ-handling rules × 4 phases
+  * λz auto best-fit (subset search by adjusted R²) + manual
   * IV bolus `c0` back-extrapolation (`logslope` / `c1` / `cmin` / `set0` chain), extravascular pre-dose insertion
   * validated against [PKNCA](https://billdenney.github.io/pknca/) on 26 reference profiles (theophylline, indomethacin, synthetic rat)
 
@@ -186,6 +186,6 @@ const result = nca.computeNca(inputs, rules);
 
 See [NCA docs](./src/nca/README.md) for
 
-* PKNCA-equivalent algorithm details (BLQ phasing, lambda_z best-fit search, IV bolus c0 back-extrapolation)
+* algorithm details (BLQ phasing, lambda_z best-fit search, IV bolus c0 back-extrapolation)
 * parameter contract (`ProfileInputs`, `NcaRules`, `ComputeResult`)
-* validation against PKNCA fixtures (26 profiles across 3 datasets, all within §9.2 tolerances)
+* validation against fixtures (26 profiles across 3 datasets, all within §9.2 tolerances)

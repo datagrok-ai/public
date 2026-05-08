@@ -15,7 +15,8 @@
   "description": "Pure TypeScript library for numerical methods",
   "keywords": [
     "optimization",
-    "time series features"
+    "time series features",
+    "statistics"
   ],
   "dependencies": {
     "jstat": "^1.9.6"

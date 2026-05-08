@@ -151,8 +151,8 @@ describe('lambda_z validation gate (Task 1.7.5)', () => {
   describe('Indomethacin (IV bolus, no BLQ — full pipeline with c0 insertion)', () => {
     // PKNCA's `pk.calc.c0` (default chain: c0 → logslope → c1 → cmin → set0)
     // is reproduced in `c0.ts`. For each Indometh subject we estimate c0,
-    // insert (0, c0), and run lambda_z on the augmented profile — exactly
-    // what PKNCA did in `scripts/generate-nca-fixtures.R`.
+    // insert (0, c0), and run lambda_z on the augmented profile — matching
+    // the reference fixture, which was produced the same way.
     const profiles = loadSubjectProfiles('02_indometh.csv', 'time');
     const fixture = loadFixture('02_indometh.json');
     const fxBySubject = new Map(
