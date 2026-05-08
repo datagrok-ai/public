@@ -491,6 +491,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   get rawRender(): boolean { return this._rawRender; }
   get noPrompt(): boolean { return this._noPrompt; }
 
+  public appendArtifact(node: HTMLElement): void {
+    this.outputArea.appendChild(ui.divV([node], 'd4-ai-assistant-response-container'));
+    this.showContentIcons();
+  }
+
   enableNoPrompt(): void {
     this._noPrompt = true;
     if (!this._rawRender) {

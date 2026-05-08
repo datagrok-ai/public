@@ -98,6 +98,10 @@
   overflow: visible;
 }
 
+.d4-ai-generation-panel.d4-ai-inline-mode .d4-ai-panel-output-area > *:first-child {
+  margin-top: 0;
+}
+
 .grokky-ai-search-tab-host {
   max-height: calc(100vh - 200px);
   overflow-y: auto;
