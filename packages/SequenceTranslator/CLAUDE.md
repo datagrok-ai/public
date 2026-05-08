@@ -107,13 +107,13 @@ The table below lists every function/app/panel registered by `PackageFunctions`.
 
 #### Top-Menu Functions
 
-| Method | top-menu | Description |
-|---|---|---|
-| `polyToolConvertTopMenu` | `Bio \| PolyTool \| Convert...` | Open convert dialog |
-| `polyToolEnumerateHelmTopMenu` | `Bio \| PolyTool \| Enumerate HELM...` | HELM enumerate dialog |
-| `polyToolEnumerateChemTopMenu` | `Bio \| PolyTool \| Enumerate Chem...` | Chem enumerate dialog |
-| `chemEnumerateReactionsTopMenu` | `Chem \| Transform \| Reactions \| Enumerate...` | Alternate menu for chem enumeration |
-| `getPolyToolCombineDialog` | `Bio \| PolyTool \| Combine Sequences...` | Cartesian-product combine |
+| Method | Registered name | top-menu | Description |
+|---|---|---|---|
+| `polyToolConvertTopMenu` | polyToolConvert | `Bio \| PolyTool \| Convert...` | Open convert dialog |
+| `polyToolEnumerateHelmTopMenu` | polyToolEnumerateHelm | `Bio \| PolyTool \| Enumerate HELM...` | HELM enumerate dialog |
+| `polyToolEnumerateChemTopMenu` | polyToolEnumerateChem | `Bio \| PolyTool \| Enumerate Chem...` | Chem enumerate dialog |
+| `chemEnumerateReactionsTopMenu` | chemEnumerateReactions | `Chem \| Transform \| Reactions \| Enumerate...` | Alternate menu for chem enumeration |
+| `getPolyToolCombineDialog` | Combine Sequences | `Bio \| PolyTool \| Combine Sequences...` | Cartesian-product combine |
 
 #### Cell Renderer
 
@@ -252,9 +252,9 @@ A self-contained renderer + panels + converters for siRNA/ASO duplex HELM cells.
 
 **Model:** `event-bus.ts` (RxJS BehaviorSubjects), `data-manager.ts` (singleton CRUD via user storage, SHA1 identity), `translator.ts` (`bulkTranslate`, `applyPatternToRawSequence`), `router.ts` (URL ↔ EventBus), `subscription-manager.ts`, `types.ts`, `const.ts` (strands, termini, `MAX_SEQUENCE_LENGTH = 34`), `utils.ts`.
 
-**View:** `ui.ts` (`OligoPatternUI`), `components/` (left section, edit-block, load-block, strand-editor dialog, terminal-modification editor, bulk-convert, numeric-label visibility, translation-examples).
+**View:** `ui.ts` (`OligoPatternUI`), `components/` (left-section, right-section, edit-block, load-block, strand-editor dialog, terminal-modification editor, bulk-convert, numeric-label visibility, translation-examples).
 
-**SVG Rendering** (`view/svg-utils/`): `svg-renderer.ts` (`NucleotidePatternSVGRenderer`), `strands-block.ts`, `title-block.ts`, `legend-block.ts`, `svg-element-factory.ts`, `svg-display-manager.ts` (debounced 100ms + PNG export), `text-dimensions-calculator.ts`, `const.ts`.
+**SVG Rendering** (`view/svg-utils/`): `svg-block-base.ts` (`SVGBlockBase` — base class for composable SVG blocks, see Design Pattern #7), `svg-renderer.ts` (`NucleotidePatternSVGRenderer`), `strands-block.ts`, `title-block.ts`, `legend-block.ts`, `svg-element-factory.ts`, `svg-display-manager.ts` (debounced 100ms + PNG export), `text-dimensions-calculator.ts`, `utils.ts`, `const.ts`.
 
 ### `apps/structure/` — Molecular Structure App
 
@@ -278,8 +278,8 @@ A self-contained renderer + panels + converters for siRNA/ASO duplex HELM cells.
 |---|---|
 | `pt-dialog.ts` | Main convert dialog; `polyToolConvertUI()`, `polyToolConvert()` |
 | `pt-enumerate-seq-dialog.ts` | HELM enumeration dialog; `polyToolEnumerateHelmUI(cell?, outputAsOligo=false)`, `getPolyToolEnumerateDialog`, `polyToolEnumerateSeq`. The `outputAsOligo` flag tags the result column as OligoNucleotide so the duplex renderer picks it up |
-| `pt-chem-enum.ts` | Chem enumeration core (formerly `pt-enumeration-chem.ts` in older docs) |
-| `pt-chem-enum-dialog.ts` | Chem enumeration dialog UI; `polyToolEnumerateChemUI`, `polyToolEnumerateChemApp` |
+| `pt-chem-enum.ts` | Chem enumeration core (formerly `pt-enumeration-chem.ts` in older docs). Pure logic — RDKit module only, no Datagrok/UI deps. Normalizes 5 R-label spellings (`[N*]`, `[*:N]`, `[*N]`, `[RN]`, `[R:N]`) to `[*:N]`. `Zip` and `Cartesian` modes; `CHEM_ENUM_MAX_RESULTS = 1_000_000` cap. **Two-path SMILES assembly** (`buildJoinedSmiles`): atom-substitution R-groups (no `[*:N]` in their SMILES — single-atom mode) are spliced into the core via plain string replace; labeled R-groups are then joined via shared ring-closure digits across a disconnected SMILES. **`isSingleAtom`** on `ChemEnumRGroup` is set when `makeRGroup` finds 0 R-labels and `trySingleAtomCanonical` (RDKit `get_num_atoms(true) === 1` + `remove_hs_in_place()`) returns a canonical atom token. Pipeline is two-stage: `enumerateRaw` returns parseable-but-uncanonical SMILES with **zero RDKit calls**; `executeEnumeration` then canonicalizes the whole column in one batched `Chem:convertNotation` call, which also fixes aromaticity case after a single-atom splice. `enumerate` / `enumerateSample` are sync-RDKit variants for tests. Helpers: `moveStartRLabelToBranch`, `pickFreeRingDigits`, `formatRingDigit`, `substituteRLabelWithRingDigit`, `substituteRLabelWithAtom` |
+| `pt-chem-enum-dialog.ts` | Chem enumeration dialog UI; `polyToolEnumerateChemUI(cell?)` (dialog; cell preload → first core when it has ≥1 R-label, else `grok.shell.info`) and `polyToolEnumerateChemApp` (`DG.View` entry; both share `buildChemEnumPanel` + `bindActionButton`). Card UI 110×104 with 320×260 hover tooltip, three hover-revealed action icons: edit + duplicate (`var(--blue-3)`) + delete (`var(--red-3)`). **Duplicate** reopens the sketcher pre-loaded with the molecule and pushes a NEW card on OK (original untouched). Cores rendered in a single horizontal `virtualView`; R-groups in one horizontal `virtualView` per R# inside a capped-height vertical scroll. Live preview: up to 12 reservoir-sampled molecules via `enumerateSampleRaw` (uncanonical SMILES, `grok.chem.drawMolecule` parses lazily per visible card). `openCoreSketchDialog` accepts when ≥1 R-label is present; `openRGroupSketchDialog` accepts when **(exactly 1 R-label) OR (single atom + target R# set)**. Import wizard (`openImportWizard`) picks Molecule column from any open table, infers R# from column name via `/r[\s_\-:]*(\d+)/i`, dedup checkbox, single-atom rows labeled `R{n} · atom`. Mode tooltip / status messages explain Zip vs Cartesian and the single-atom shortcut |
 | `pt-enumeration-helm.ts` | `doPolyToolEnumerateHelm` engine — Single / Parallel / Matrix / Breadth strategies |
 | `pt-combine-dialog.ts` | `getPTCombineDialog` — Cartesian combine |
 | `pt-placeholders-input.ts` | Grid input for point placeholders |
@@ -386,6 +386,8 @@ Helper scripts and a standalone HTML prototype for the OligoNucleotide subsystem
 8. **Dialog Singletons** — Strand/terminal editors prevent multiple instances
 9. **HELMCore-canonical aliases** (oligo-renderer) — input HELM may use vendor / Pistoia / legacy symbols (`mR`, `fR`, `sP`); the renderer resolves through alias maps and serializes canonical (`m`, `fl2r`, `sp`) before forwarding to Bio's library-driven pipelines (so monomer lookups always hit)
 10. **Column-version-keyed cache** — the OligoNucleotide cell renderer's per-cell layout cache is keyed by `${colName}@${col.version}::${rowIdx}`, so column edits orphan old entries automatically
+11. **Two-stage chem-enum pipeline** — `enumerateRaw` does pure-string assembly (ring-closure trick + atom splice for single-atom R-groups), produces parseable but uncanonical SMILES with **zero per-row RDKit calls**; `executeEnumeration` then canonicalizes the whole output column in a single batched `Chem:convertNotation` call (`overwrite: true`, `kekulize: false`). This also handles aromaticity case-fixup after a single-atom splice (e.g. uppercase `N` spliced into an aromatic ring). The bulk path is parallelized across Chem workers; per-row sync RDKit (`enumerate` / `enumerateSample`) is reserved for tests
+12. **Single-atom R-group shortcut** (chem-enum) — drawing a bare atom (`N`, `O`, `Cl`) without any `[*:N]` label is accepted as long as RDKit confirms exactly one heavy atom. Such groups bypass ring-closure joining and are spliced into the core's `[*:N]` slot via plain string replace; mixing single-atom and labeled R-groups in the same enumeration is supported per R-number
 
 ---
 
@@ -452,7 +454,8 @@ OligoNucleotide structures panel:
 | Structure app | `src/apps/structure/` |
 | PolyTool convert pipeline | `src/polytool/conversion/`, `pt-dialog.ts` |
 | HELM enumeration (with `outputAsOligo`) | `src/polytool/pt-enumerate-seq-dialog.ts` |
-| Chem enumeration | `src/polytool/pt-chem-enum.ts`, `pt-chem-enum-dialog.ts` |
+| Chem enumeration (logic) | `src/polytool/pt-chem-enum.ts` (`buildJoinedSmiles` two-path assembly, `trySingleAtomCanonical`, `substituteRLabelWithAtom`) |
+| Chem enumeration (UI) | `src/polytool/pt-chem-enum-dialog.ts` (`buildChemEnumPanel`, sketch dialogs, `openImportWizard`, duplicate/edit/delete card icons) |
 | Demo / sample siRNA data | `files/samples/sirna-demo.csv` |
 | Off-tree dev tooling | `prototypes/` (gen / validate / HTML prototype) |
 | Auto-generated wrappers | `src/package.g.ts`, `src/package-api.ts` |
