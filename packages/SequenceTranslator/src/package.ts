@@ -358,6 +358,34 @@ export class PackageFunctions {
     return polyToolEnumerateChemUI(cell);
   }
 
+
+  /** Enumerator entry for OligoNucleotide cells.
+   *
+   * The cell value is HELM (under the hood). The enumerator dialog is built
+   * around `Macromolecule` cells, so we wrap the oligo HELM in a temp
+   * Macromolecule column and pass that cell in. The `outputAsOligo` flag
+   * makes the dialog tag the enumerated result column as OligoNucleotide so
+   * the duplex renderer picks it up automatically. */
+  @grok.decorators.func({
+    name: 'Polytool Oligo Enumerator dialog'
+  })
+  static async getPtOligoEnumeratorDialog(
+    @grok.decorators.param({type: 'object', options: {nullable: true}}) cell?: DG.Cell) {
+    if (!cell || cell.value == null)
+      return polyToolEnumerateHelmUI(undefined, true);
+
+    const helm = String(cell.value);
+    const tempCol = DG.Column.fromStrings('helm', [helm]);
+    tempCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    tempCol.meta.units = 'helm';
+    tempCol.setTag('aligned', 'SEQ');
+    tempCol.setTag('alphabet', 'RNA');
+    tempCol.setTag('cell.renderer', 'helm');
+    const tempDf = DG.DataFrame.fromColumns([tempCol]);
+    const tempCell = tempDf.cell(0, 'helm');
+    return polyToolEnumerateHelmUI(tempCell, true);
+  }
+
   @grok.decorators.func({
     name: 'Enumerate Single HELM Sequence',
     description: 'Enumerate provided HELM sequence on provided positions with provided monomers and generates new table',

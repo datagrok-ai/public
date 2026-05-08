@@ -197,6 +197,12 @@ export async function getPtChemEnumeratorDialog(cell?: any) : Promise<void> {
   await PackageFunctions.getPtChemEnumeratorDialog(cell);
 }
 
+//name: Polytool Oligo Enumerator dialog
+//input: object cell { nullable: true }
+export async function getPtOligoEnumeratorDialog(cell?: any) : Promise<void> {
+  await PackageFunctions.getPtOligoEnumeratorDialog(cell);
+}
+
 //name: Enumerate Single HELM Sequence
 //description: Enumerate provided HELM sequence on provided positions with provided monomers and generates new table
 //input: string helmSequence 

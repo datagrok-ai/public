@@ -73,6 +73,14 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
             menu.item('PolyTool-Enumerate', () => { grok.functions.call(`${packageName}:getPtChemEnumeratorDialog`, {cell: item.cell}).catch(catchError); });
             break;
           }
+          case 'OligoNucleotide': {
+            // Same enumerator as HELM cells, but the result column is tagged
+            // as OligoNucleotide so the duplex renderer picks it up.
+            menu.item('PolyTool-Enumerate', () => {
+              grok.functions.call(`${packageName}:getPtOligoEnumeratorDialog`, {cell: item.cell}).catch(catchError);
+            });
+            break;
+          }
           }
         }
         this.logger.debug(`${logPrefix}, onContextMenu, end`);
