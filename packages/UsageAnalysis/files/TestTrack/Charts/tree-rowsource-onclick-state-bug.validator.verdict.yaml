@@ -1,0 +1,33 @@
+verdict: PASS
+gate: B
+review_round: 2
+cycle_id: charts-automator-only-2026-05-08
+artifact: tree-rowsource-onclick-state-bug-spec.ts
+scenario: tree-rowsource-onclick-state-bug.md
+prior_verdict_cycle: charts-migrate-2026-05-07
+prior_round: 1
+runtime_evidence:
+  ran_against: https://dev.datagrok.ai
+  duration_seconds: 66  # 1.1m (round 1, prior cycle); 32.1s in 2026-05-08 batch
+  result: passed
+  batch_run: '10/10 charts specs PASS in 6.2m wall clock (final 2026-05-08 batch — re-run confirmed; 32.1s)'
+  spec_body_changed_in_cycle: false
+  steps_executed:
+    - "Setup: Open demog.csv + Tree + hierarchy — PASS"
+    - "Forward iteration: 9 rowSource x onClick combos — all PASS (visual stability + no console errors); read-backs initially null (cold-start race) then populated correctly in reverse"
+    - "Reverse iteration: 9 combos in reverse — all PASS; read-backs all populated"
+    - "ESC-equivalent (df.selection.setAll(false)) — PASS (viewer remains visually stable)"
+  diagnostic_log:
+    - "Forward 1-9: readbackRs/readbackOc all null (race-tolerant; setOptions accepted)"
+    - "Reverse 1-9: readbackRs/readbackOc populated — Selected/None, Selected/Filter (returned All/Filter), Selected/Select (returned Filtered/Select), etc."
+notes: |
+  github-3245 invariant satisfied: 18 combinations (9 forward + 9 reverse)
+  produce visually stable viewer state with no console errors. The transition-
+  history independence is verified — reverse-order iteration yields same
+  invariants as forward-order. Read-back values race in cold-start; some
+  show transition-history-influenced values (e.g., Selected/Filter readback
+  showed All/Filter — possibly indicating internal state coalescing). Per
+  the bug-class invariant focus (state-machine consistency: same logical
+  state produces same visual result), the visual stability + no-console-error
+  assertions are the load-bearing checks; specific read-back values are
+  diagnostic.

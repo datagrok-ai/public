@@ -235,3 +235,31 @@ This is NOT a single-viewer ui-smoke; do not consolidate.
   `sunburst.md` is independent (`depends_on: []`).
 - **Self-cleaning** — Setup Step 5 deletes any project saved during
   the run.
+- **Remediation cycle scope decision (charts-remediate-2026-05-09):**
+  Critic E canonical subagent surfaced `### Project save and reopen`
+  heading (L146-156) as uncovered in predecessor cycle
+  charts-automator-only-2026-05-08 (FAIL with E-TRACE-02 +
+  E-LAYER-COMPLIANCE-01). Migrator Decision: **KEEP "Project save
+  and reopen"** as a softStep in sunburst-spec.ts. Rationale:
+  Sunburst-specialty UI (Select-Columns dialog, Reset View, Save
+  Layout) is exercised on the saved project in a way Radar-specific
+  tests don't witness. The save/reopen serialization regression class
+  (github-3412 for Sunburst×Scatterplot is a related precedent) can
+  manifest differently per viewer. Distinct from
+  radar-save-reopen-bug-spec.ts (Radar-specific GROK-18085
+  reproduction). Automator implements between current Step 7
+  (Layout) and Step 8 (#2979): save project, closeAll, find by
+  name, open, assert Sunburst viewer present + hierarchy preserved.
+  Cleanup deletes saved project in `finally`.
+- **E-LAYER-COMPLIANCE-01 follow-up (deferred):** spec body
+  currently uses `page.evaluate` + `dispatchEvent` exclusively for
+  DOM driving; canonical critic flagged FAIL on strict regex.
+  Per legend-* failed_attempts precedent, refactor to
+  `page.locator(...).click()` is the canonical fix. **Deferred to
+  next charts cycle** (charts-evaluate-extract-2026-05-09 in
+  decision-log) — pairing the refactor with tree-spec.ts (which
+  is being refactored in this remediation cycle) is the symmetric
+  approach. Sunburst defer rationale: this cycle's primary scope
+  is Project save+reopen softStep insertion; bundling a body-wide
+  refactor risks scope creep and lengthens Validator B re-run
+  surface. Documented in scenario Notes for traceability.

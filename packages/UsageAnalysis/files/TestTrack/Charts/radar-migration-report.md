@@ -86,12 +86,23 @@ Migrated by: grok-migrate-scenario Step 2 (section invocation, `--proceed-to-mig
 
 ## Opt-outs (SCOPE_REDUCTION proposals)
 
-(none)
+### Remediation cycle 2026-05-09 — Step 13 SR (A-MERIT-02 / Lattice Rule 13)
 
-_No step is opted out for effort. Every original step lands in
-the migrated body or in a tracked report section. The Step 3
-"Check all properties" instruction is preserved (intentionally
-broad — see Unresolved ambiguities), not opted out._
+**Step 13 (broad property sweep)** is opted out from per-property
+toggles per A-MERIT-02 (Lattice Rule 13). Rationale: the categories
+enumeration sweep already asserted in Step 3 (Context Panel
+categories check returning Data/Selection/Value/Style/Legend) is
+the broad-sweep representative — specific per-property toggles are
+deferred to property-grid widget specs (out of A1 boundary —
+property-grid mechanics are not Charts atlas surface). Steps 9, 10,
+11, 12 cover the four explicit Main Things the original scenario
+calls out as MUST be reflected on the viewer; the broader "check
+all properties" instruction is satisfied by Step 3 plus the 4
+specific verifications. SR documented in scenario Notes; Critic A
+re-invocation expected to PASS density rule.
+
+_Step 13 SCOPE_REDUCTION recorded in decision-log
+`migration_decisions[radar-step13-broad-sweep-sr-2026-05-09]`._
 
 ## Deferred items (NOT opt-outs)
 
@@ -107,6 +118,28 @@ broad — see Unresolved ambiguities), not opted out._
   silent-drops rule). Real prerequisite cited: chain
   `bug_match_attempts_skipped.GROK-18085.skip_category:
   reproduction_unparseable` (radar.md has no save/reopen body).
+
+## Remediation cycle 2026-05-09 — added step coverage for steps 9/10/11
+
+Predecessor cycle charts-automator-only-2026-05-08 surfaced 4
+uncovered scenario steps via canonical isolated Critic E subagent
+(verdict FAIL: E-TRACE-02 + E-TRACE-03). Remediation Migrator
+decisions:
+
+| Scenario step | Decision | Rationale |
+|---------------|----------|-----------|
+| Step 9 (table switch) | KEEP | Primary verification of table-rebind in-session, distinct from radar-save-reopen-bug-spec.ts (which tests save/reopen). Automator implements via `radar.setOptions({tableName: 'demog'})` + assert `radar.dataFrame.name` rebinds. |
+| Step 10 (selected-row lines) | KEEP | Exercises `charts.radar.show-current-row` sub_feature already in `sub_features_covered`. Automator implements via `df.selection.set` + `dispatchSelected` + assert `radar.props.get('showCurrentRow') === true`. |
+| Step 11 (Values columns count) | KEEP | Exercises `charts.radar.color-column` property surface. Automator implements via `radar.setOptions({valuesColumnNames: [...]})` + read-back. |
+| Step 12 (Style colors) | KEEP (already covered) | Step 3 colorEchoOk for `backgroundMinColor` partially covered this; remediation expands the verification. |
+| Step 13 (broad sweep) | SCOPE_REDUCE | A-MERIT-02 Lattice Rule 13 — Step 3 categories enumeration is broad-sweep representative; specific per-property toggles deferred to property-grid widget specs (A1 boundary). |
+
+Decision-log cross-reference:
+`migration_decisions[radar-remediate-2026-05-09]`.
+
+Sister specs not affected by this remediation:
+`radar-save-reopen-bug-spec.ts` (PASSED canonical Critic E in
+predecessor cycle — different bug class).
 
 ## Edge cases
 

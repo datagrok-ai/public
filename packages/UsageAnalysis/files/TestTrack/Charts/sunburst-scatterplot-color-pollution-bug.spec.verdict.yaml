@@ -1,0 +1,87 @@
+verdict: PASS
+gate: E
+review_round: 1
+cycle_id: charts-automator-only-2026-05-08
+artifact: sunburst-scatterplot-color-pollution-bug-spec.ts
+scenario: sunburst-scatterplot-color-pollution-bug.md
+authoring_note: |
+  Canonical isolated-context Critic E subagent verdict (2026-05-08).
+  Confirms prior charts-migrate-2026-05-07 PASS.
+failure_keys: []
+claims:
+  - check_id: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Spec file exists at expected path.
+  - check_id: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      Spec parses as valid TypeScript: balanced braces, all imports resolved, test() signature well-formed.
+  - check_id: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      One test() block at line 21.
+  - check_id: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name 'Sunburst x Scatterplot — color-state isolation (github-3412)' substring-matches scenario heading on Sunburst, Scatterplot, color-state, github-3412.
+  - check_id: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Imports limited to @playwright/test and the local helpers module ../spec-login.
+  - check_id: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      File begins with frontmatter; both IDs (charts.sunburst, charts.sunburst.inherit-from-grid) resolve to atlas sub_features.
+  - check_id: E-TRACE-01
+    status: PASS
+    evidence: |
+      All softStep calls carry explicit scenario step references in their names.
+  - check_id: E-TRACE-02
+    status: PASS
+    evidence: |
+      Scenario steps 1-9 all covered: Step 1=Setup softStep; Steps 2-4=second softStep; Steps 5-7=third softStep; Step 8=fourth softStep; Step 9=closeAll() at line 183.
+  - check_id: E-TRACE-03
+    status: PASS
+    evidence: |
+      Verification steps mapped to expect() calls: types contain Sunburst/Scatter plot, sbHierarchyAfter contains sharedColumn, sbHasContent toBe(true), sbWidth>0, zero new console errors, readBack contains sharedColumn.
+  - check_id: E-SEL-01
+    status: PASS
+    evidence: |
+      Only DOM selector is page.locator('[name="Browse"]') — canonical Datagrok sidebar selector.
+  - check_id: E-SEL-02
+    status: PASS
+    evidence: |
+      No invented selectors.
+  - check_id: E-SEL-03
+    status: PASS
+    evidence: |
+      No .fill() on Dart inputs.
+  - check_id: E-HELP-01
+    status: PASS
+    evidence: |
+      Helpers used: softStep (registry line 3597), loginToDatagrok (line 3603); specTestOptions and stepErrors are co-located.
+  - check_id: E-HELP-02
+    status: PASS
+    evidence: |
+      No reinvention of registered helpers.
+  - check_id: E-LAYER-01
+    status: PASS
+    evidence: |
+      Scenario frontmatter target_layer: playwright matches spec.
+  - check_id: E-LAYER-02
+    status: NA
+    evidence: |
+      No layer override applied.
+  - check_id: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: |
+      target_layer: playwright requires >=1 DOM-driving call; spec has page.locator('[name="Browse"]') at line 33 and via loginToDatagrok helper. pyramid_layer: bug-focused (not ui-smoke) and ui_coverage_responsibility:[] so pyramid sub-rule does not apply.
+  - check_id: E-BOUND-01
+    status: PASS
+    evidence: |
+      Spec lives at public/packages/UsageAnalysis/files/TestTrack/Charts/.
+  - check_id: E-BOUND-02
+    status: PASS
+    evidence: |
+      No changes to core/**.

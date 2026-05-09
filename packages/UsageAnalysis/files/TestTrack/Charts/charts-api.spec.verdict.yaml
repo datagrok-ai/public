@@ -1,0 +1,87 @@
+verdict: PASS
+gate: E
+review_round: 1
+cycle_id: charts-automator-only-2026-05-08
+artifact: charts-api.ts
+scenario: charts-api.md
+authoring_note: |
+  Canonical isolated-context Critic E subagent verdict (2026-05-08).
+  Confirms prior charts-migrate-2026-05-07 PASS (authored by Task subagent in that cycle).
+failure_keys: []
+claims:
+  - check_id: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Spec file exists at expected path public/packages/UsageAnalysis/files/TestTrack/Charts/charts-api.ts.
+  - check_id: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      Spec parses as valid TS — single test() block with balanced braces, all imports resolve.
+  - check_id: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      One test('Charts — viewer API contract', async ({page}) => {...}) block at line 26.
+  - check_id: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name 'Charts — viewer API contract' substring-matches scenario H1 heading.
+  - check_id: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Imports are @playwright/test (canonical) and ../spec-login.
+  - check_id: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter block at line 1 with sub_features_covered list. All 6 IDs resolve to atlas.
+  - check_id: E-TRACE-01
+    status: PASS
+    evidence: |
+      Every softStep block carries 'Scenario N:' label tracing to scenario heading.
+  - check_id: E-TRACE-02
+    status: PASS
+    evidence: |
+      Scenario 1 → softStep #1 (4 viewers). Scenario 2 → softStep #2 (Radar categories). Scenario 3 → 4 softStep blocks. Scenario 4 → softStep #5 (getProperties surface). Every numbered scenario step covered.
+  - check_id: E-TRACE-03
+    status: PASS
+    evidence: |
+      Scenario 1 verifies via expect(...).toContain(). Scenario 2 verifies via expect().toEqual(arrayContaining([cats])). Scenario 3 verifies via expect(echoed).toBe / toEqual round-trip. Scenario 4 verifies via expect().toEqual(arrayContaining([names])).
+  - check_id: E-SEL-01
+    status: PASS
+    evidence: |
+      Spec body uses no Playwright selectors. Inside page.evaluate, '.d4-dialog' and '[name="button-CANCEL"]' are standard cleanup-glue selectors.
+  - check_id: E-SEL-02
+    status: PASS
+    evidence: |
+      No invented selectors — spec body uses only JS API.
+  - check_id: E-SEL-03
+    status: NA
+    evidence: |
+      No Dart input field interaction — apitest layer does not drive inputs.
+  - check_id: E-HELP-01
+    status: PASS
+    evidence: |
+      Helpers used: softStep + loginToDatagrok in registry; specTestOptions / stepErrors co-located in spec-login.ts.
+  - check_id: E-HELP-02
+    status: PASS
+    evidence: |
+      Login uses registered loginToDatagrok helper; no open-coded login.
+  - check_id: E-LAYER-01
+    status: PASS
+    evidence: |
+      Scenario frontmatter target_layer: apitest. Spec body uses only JS API — paradigm matches.
+  - check_id: E-LAYER-02
+    status: NA
+    evidence: |
+      No layer override.
+  - check_id: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: |
+      Forbidden regex set scan over spec body: matches inside // comments only (excluded per rule). No occurrences of page.click / page.fill / page.locator / page.hover / page.press / page.keyboard / page.mouse / dlg.* in active code. Apitest paradigm pure.
+  - check_id: E-BOUND-01
+    status: PASS
+    evidence: |
+      Spec at public/packages/UsageAnalysis/files/TestTrack/Charts/charts-api.ts — within allowed path.
+  - check_id: E-BOUND-02
+    status: PASS
+    evidence: |
+      No changes to core/**.

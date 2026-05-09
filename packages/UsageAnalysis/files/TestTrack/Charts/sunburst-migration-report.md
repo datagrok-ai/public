@@ -99,19 +99,74 @@
 
 ## Opt-outs (SCOPE_REDUCTION proposals)
 
-(none)
+(none — remediation cycle KEEPs all original steps)
 
 _No step is opted out for effort. Every step from the original landed
-in the migrated body or in a tracking section below._
+in the migrated body or in a tracking section below. The remediation
+cycle 2026-05-09 explicitly KEEPs `### Project save and reopen` as a
+softStep (see Remediation cycle section below) — Option 1 chosen
+over Option 2 (drop) per Sunburst-specialty UI rationale._
 
 ## Deferred items (NOT opt-outs)
 
-(none)
+- **E-LAYER-COMPLIANCE-01 strict-regex compliance** (deferred to
+  next charts cycle, tracked under decision-log entry
+  `charts-evaluate-extract-2026-05-09`). Predecessor cycle
+  charts-automator-only-2026-05-08 surfaced canonical Critic E FAIL
+  on E-LAYER-COMPLIANCE-01 — spec body uses `page.evaluate` +
+  `dispatchEvent` exclusively (zero `page.click/locator/...`
+  matches). Per legend-* failed_attempts precedent
+  (`legend-filtering-frontmatter-only-x14`,
+  `legend-scatterplot-frontmatter-only-x14`), the canonical fix is
+  body rewrite extracting `page.locator/click` from `page.evaluate`
+  blocks for the DOM-driveable flows (Add-Viewer, gear,
+  Select-Columns dialog, Layouts pane, Reset View context menu).
+  Remediation 2026-05-09 narrowly scoped to Project save+reopen
+  softStep insertion — bundling a body-wide refactor with the new
+  softStep risks scope creep and lengthens Validator B surface.
+  Tree-spec.ts refactor is being done in same cycle and provides
+  the canonical pattern reference for next cycle.
 
-_All original steps are exercised in the migrated scenario. The
-fixture provisioning for `### Old layout compatibility (issue #2979)`
-is NOT a deferral — the step itself is preserved; only the fixture
-sourcing is unresolved (see Unresolved ambiguities)._
+## Remediation cycle 2026-05-09 — Project save+reopen KEEP decision
+
+Predecessor cycle charts-automator-only-2026-05-08 surfaced
+`### Project save and reopen` heading (sunburst.md L146-156) as
+uncovered via canonical isolated Critic E subagent (verdict FAIL:
+E-TRACE-02 + E-LAYER-COMPLIANCE-01). The spec header comment block
+at L17-19 misnumbers steps 7-9 (current text says "project
+save/reopen, old-layout #2979, collaborative filtering" but actual
+softSteps cover Layout save, #2979, collab filter — not project
+save).
+
+**Migrator decision: KEEP "Project save and reopen"** (Option 1).
+
+| Decision factor | Evaluation |
+|-----------------|------------|
+| Distinct from radar-save-reopen-bug-spec.ts? | YES — radar-bug spec covers GROK-18085 (Radar-specific table-rebind on save/reopen); sunburst project save/reopen exercises Sunburst-specialty UI (Select-Columns dialog, Reset View, Save Layout) on the saved project. |
+| github-3412 precedent? | YES — Sunburst×Scatterplot color editor pollution is a save/reopen-adjacent serialization regression class; per-viewer save/reopen tests have demonstrated value. |
+| Cross-viewer asymmetry? | The save/reopen serialization regression class manifests differently per viewer (radar table-rebind vs sunburst hierarchy column preservation). Single Charts-package save/reopen test is insufficient. |
+| Drop alternative (Option 2)? | REJECTED — would orphan github-3412 precedent and lose Sunburst-specific hierarchy column preservation invariant. |
+
+**Automator implementation** (post-Migrator):
+1. Insert new softStep between current Step 7 (Layout save/apply)
+   and Step 8 (#2979).
+2. Save project via `grok.dapi.projects.save` on the active
+   TableView with Sunburst attached + 3-4 hierarchy columns
+   configured.
+3. closeAll + verify shell empty.
+4. Find project by name via `grok.dapi.projects.find`, open it.
+5. After reopen, assert Sunburst viewer present + hierarchy columns
+   preserved. GROK-18085-class invariant: no console error during
+   reopen.
+6. Cleanup in `finally`: `grok.dapi.projects.delete(saved)`.
+
+Spec header comment block at L17-19 will be fixed concurrently to
+correctly enumerate steps 7-9 as Layout save / Project save+reopen
+/ #2979 / collab filter (renumbering). New softStep insertion
+shifts subsequent step numbers by +1.
+
+Decision-log cross-reference:
+`migration_decisions[sunburst-project-save-reopen-keep-2026-05-09]`.
 
 ## Edge cases
 

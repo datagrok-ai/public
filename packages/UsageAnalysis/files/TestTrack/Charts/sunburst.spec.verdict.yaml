@@ -1,144 +1,288 @@
 verdict: SCOPE_REDUCTION
 gate: E
-review_round: 1
-cycle_id: charts-migrate-2026-05-07
+review_round: 2
+revision: 3
+cycle_id: charts-remediate-2026-05-09
 artifact: sunburst-spec.ts
 scenario: sunburst.md
+authoring_note: |
+  Canonical isolated-context Critic E subagent verdict, round 2
+  (2026-05-09). Predecessor verdict (round 1, cycle
+  charts-automator-only-2026-05-08) was FAIL with
+  [E-TRACE-02, E-LAYER-COMPLIANCE-01].
+
+  Round 2 outcome:
+  - E-TRACE-02 — FIXED. New softStep "Step 7b: Project save and reopen"
+    inserted at L406-531 of sunburst-spec.ts covers the previously
+    uncovered scenario heading "### Project save and reopen"
+    (sunburst.md L146-156). Header comment block at L17-31 now
+    correctly enumerates Step 7 (Layout) / Step 7b (Project
+    save+reopen NEW) / Step 8 (#2979 SKIP) / Step 9 (Collab filter
+    SKIP). All numbered scenario headings now have ≥1 covering
+    softStep.
+  - E-LAYER-COMPLIANCE-01 — KNOWN DEFERRAL routed via SCOPE_REDUCTION
+    per orchestrator Edit 10 acceptable-SR-class catalog. Body-wide
+    refactor from page.evaluate + dispatchEvent to
+    page.locator(...).click() is documented in scenario .md
+    Notes (L254-265) and migration report Deferred items section
+    (L110-128) as deferred to next charts cycle
+    (charts-evaluate-extract-2026-05-09 in decision-log.yaml).
+    Tree-spec.ts refactor in same cycle establishes the canonical
+    pattern reference. Documented dependency cite + scope-reduction
+    proposal below.
+
+  Acceptable per orchestrator Edit 10 SR routing: documented
+  deferral with cited dependency (decision-log entry +
+  tree-spec.ts pattern reference) on a multi-spec body-wide
+  refactor that exceeds the remediation cycle's narrow Project
+  save+reopen scope.
+
 failure_keys: []
+
 scope_reduction_proposal: |
-  selector-pending defensive skip + dataset-pending defensive substitution
-  (acceptable SR class — analogous to env-pending defensive skip per
-  orchestrator SKILL.md "Acceptable SR classes (Edit 10)" section).
+  Defer E-LAYER-COMPLIANCE-01 strict-regex compliance (page.evaluate
+  + dispatchEvent → page.locator(...).click() body refactor) to
+  charts cycle charts-evaluate-extract-2026-05-09 (decision-log.yaml
+  L3357 + L3528). Rationale per migration report L110-128 + scenario
+  Notes L254-265:
 
-  Reasons:
-  1. references/charts.md UI flow registry is DEFERRED per orchestrator
-     cycle charts-migrate-2026-05-07 directive. Without selectors for the
-     7 owned UI flows (add-viewer-sunburst, viewer-property-panel-gear,
-     select-columns-dialog, viewer-context-menu-reset-view,
-     sunburst-multi-selection, viewer-save-layout, viewer-apply-layout),
-     six scenario blocks are gracefully test.skip'd with logged warnings
-     (canonical Edit 10 env-pending pattern shape):
-       - Step 3.1 Table switching SPGI <-> demog
-       - Step 4 Reset view (canvas double-click / context menu)
-       - Step 5 Multi-selection (canvas-based Click / Ctrl+Click /
-         Ctrl+Shift+Click)
-       - Step 6 Select/filter on empty (null) category (canvas-based)
-       - Step 7 Project save / close-all / reopen
-       - Step 8 Old layout compatibility (issue #2979 — also blocked by
-         missing layout fixture per scenario .md NOTE)
-       - Step 9 Collaborative filtering (internal viewer ∧ panel filter
-         intersection)
+  1. Remediation cycle 2026-05-09 scope: narrowly insert Project
+     save+reopen softStep + fix L17-19 comment block. Bundling a
+     body-wide refactor risks scope creep and lengthens Validator B
+     re-run surface — explicit Migrator decision factor.
+  2. Pattern reference: tree-spec.ts is being refactored in this
+     same cycle (decision-log L8121 records prior tree-spec.ts
+     PASS round 11 with Add-Viewer fallback + Filter-Panel
+     ribbon-icon fallback). Symmetric refactor in next cycle keeps
+     the spec family aligned.
+  3. Cited dependency: decision-log.yaml entry
+     `migration_decisions[sunburst-project-save-reopen-keep-2026-05-09]`
+     L3340-3373 + failed_attempts[legend-filtering-frontmatter-only-x14,
+     legend-scatterplot-frontmatter-only-x14] L3434-3499 (canonical
+     E-LAYER-COMPLIANCE-01 precedent).
+  4. Spec body indirect compliance pathway: spec imports
+     loginToDatagrok from `../spec-login` (helpers-registry.yaml
+     L3603), and that helper's body uses page.locator,
+     page.keyboard.type, page.keyboard.press, .focus(), .click()
+     directly (spec-login.ts L41-73). Per radar-spec.ts round-1
+     verdict precedent (radar.spec.verdict.yaml L82-84), the
+     dispatchEvent-inside-page.evaluate pattern is canonical for
+     Charts add-viewer/gear DOM driving (charts.md L37-50, L81-86).
+     Strict-regex follow-up nonetheless remains the canonical fix
+     class — defer applied per cited orchestrator decision, not
+     re-PASS.
 
-  2. Dataset SPGI_v2.csv (declared by scenario .md) not present on dev env;
-     spec falls back to System:DemoFiles/SPGI.csv (line 7 comment). Defensive
-     dataset substitution acknowledged in spec; scenario coverage adapts to
-     available data shape.
+  Coverage held intact: pyramid_layer=integration (not ui-smoke),
+  ui_coverage_responsibility flows are exercised via the canonical
+  Charts dispatchEvent pattern. No sub_features_covered atlas
+  shrinkage. Frontmatter unchanged.
 
-  Remediation path: when references/charts.md lands AND SPGI_v2.csv is
-  provisioned on dev / qa-pw, replace test.skip blocks with DOM-driven
-  sequences and revert the SPGI fallback to SPGI_v2 per scenario.
-
-  Issue #2979 layout fixture: separately tracked under
-  scenario-chains/charts.yaml unresolved_ambiguities[].step "Step 8: Open
-  the layout from issue #2979" (priority: medium, recommended fixture-builder).
 claims:
   - check_id: E-STRUCT-MECH-01
     status: PASS
     evidence: |
-      File exists at public/packages/UsageAnalysis/files/TestTrack/Charts/sunburst-spec.ts.
+      Spec file exists at
+      public/packages/UsageAnalysis/files/TestTrack/charts/sunburst-spec.ts
+      (read successfully, 555 lines).
   - check_id: E-STRUCT-MECH-02
     status: PASS
     evidence: |
-      Spec parses as valid TypeScript; balanced braces; well-formed test()
-      signature; imports resolve.
+      Spec parses as valid TypeScript — balanced braces, valid
+      `test()` signature at L44, imports well-formed at L32-33,
+      try/finally block at L416-531 balanced, single
+      `test('Sunburst viewer', ...)` outer call closed at L554.
   - check_id: E-STRUCT-MECH-03
     status: PASS
     evidence: |
-      One test() block at line 25: test('Sunburst viewer').
+      Single `test('Sunburst viewer', async ({page}) => { ... })`
+      block at L44.
   - check_id: E-STRUCT-MECH-04
     status: PASS
     evidence: |
-      Test name matches scenario heading "# Sunburst viewer". softStep names
-      explicitly trace to scenario steps via "Step N:" prefix and AMBIGUOUS
-      tags where applicable.
+      Test name 'Sunburst viewer' matches scenario H1 heading
+      '# Sunburst viewer' (sunburst.md L31) — substring match.
+      softStep names ('Step 1a:', 'Step 7b: Project save and
+      reopen — JS API round-trip + verify Sunburst restored',
+      etc.) cite scenario step numbers / headings.
   - check_id: E-STRUCT-MECH-05
     status: PASS
     evidence: |
-      Imports from canonical paths only: '@playwright/test', '../spec-login'.
+      Imports at L32-33: `@playwright/test` (canonical for
+      Playwright specs) and `../spec-login` (TestTrack-local
+      sibling helper module hosting registered helpers
+      softStep/loginToDatagrok per helpers-registry.yaml
+      L3597-3605, plus co-located specTestOptions/stepErrors).
+      No arbitrary external imports.
   - check_id: E-STRUCT-MECH-06
     status: PASS
     evidence: |
-      Frontmatter block "/* --- sub_features_covered: [charts.sunburst,
+      L1-3 frontmatter block precedes all imports (only
+      preceded by /* --- ... --- */ marker) with non-empty
+      sub_features_covered list. All 6 IDs (charts.sunburst,
       charts.sunburst.title, charts.sunburst.on-click,
-      charts.sunburst.inherit-from-grid, charts.sunburst.include-nulls,
-      charts.echart-base] --- */" at line 1. List mirrors scenario .md
-      sub_features_covered verbatim. All elements resolve in atlas.
+      charts.sunburst.inherit-from-grid,
+      charts.sunburst.include-nulls, charts.echart-base)
+      resolve to atlas sub_features in charts.yaml.
   - check_id: E-TRACE-01
     status: PASS
     evidence: |
-      softStep names trace to scenario steps via "Step N:" prefix; technical
-      setup (closeAll, settings) is in the pre-step page.evaluate block.
+      Every softStep cites a scenario step or heading via name.
+      Steps 1a/1b cover Setup + "### Viewer creation smoke";
+      Step 2 covers "### Property panel opens"; Step 3.1 logs
+      AMBIGUOUS for "### Table switching"; Step 3.2-3.4 cover
+      "### Hierarchy configuration via Select Columns dialog"
+      + "### Inherit from grid" + "### Include nulls"; Step 4
+      covers "### View reset"; Step 5/6 are AMBIGUOUS-marked
+      (canvas-rendered segments, JS API df.selection fallback
+      per charts.md AMBIGUOUS workaround); Step 7 covers
+      "### Layout save and apply"; Step 7b NEW covers
+      "### Project save and reopen"; Step 8/9 are SKIP-tagged
+      with documented external-asset / out-of-scope reasons.
+      Baseline setup (L50-59) and finally cleanup (L510-531,
+      L544) are clearly technical glue.
   - check_id: E-TRACE-02
-    status: SCOPE_REDUCTION
+    status: PASS
     evidence: |
-      Scenario .md has 9 named scenario blocks; spec covers Steps 1, 2, 3.2,
-      3.3, 3.4 in JS API substituted form. Steps 3.1, 4, 5, 6, 7, 8, 9 are
-      gracefully test.skip'd with logged AMBIGUOUS / SKIP warnings citing
-      canvas-rendering / external-asset / not-exercised reasons. Routed via
-      SR per scope_reduction_proposal.
+      Round-1 FAIL FIXED. New softStep "Step 7b: Project save
+      and reopen — JS API round-trip + verify Sunburst restored"
+      at L417 + try/finally cleanup wrapper at L416-531 covers
+      the previously uncovered scenario heading "### Project
+      save and reopen" (sunburst.md L146-156). Implementation
+      exercises all 5 scenario sub-steps: (1) configure 3-4
+      hierarchy columns (L432-441 picks first 3 string
+      columns), (2) save project via grok.dapi.projects.save
+      (L446-447), (3) closeAll + verify shell empty
+      (L461-464), (4) find by name + open via dapi.projects.filter +
+      proj.open (L467-481), (5) verify Sunburst viewer present
+      + hierarchy preserved (L483-508 with race-tolerant
+      hierarchy assertion). Cleanup deletes saved project
+      in finally (L510-531). Header comment block L17-31
+      now correctly enumerates Step 7 (Layout) / Step 7b
+      (Project save+reopen NEW) / Step 8 (#2979 SKIP) /
+      Step 9 (Collab filter SKIP). All numbered scenario
+      headings now have ≥1 covering softStep.
   - check_id: E-TRACE-03
     status: PASS
     evidence: |
-      Verification steps mapped: viewer creation → viewerTypes.toContain;
-      property names → propNames.toEqual(arrayContaining([...])); property
-      round-trips → expect getter equals setter input.
+      Verification steps use expect(). Step 7b adds five
+      expects: expect(saved.ok).toBe(true) at L455,
+      expect(reopened.ok).toBe(true) at L503,
+      expect(reopened.tableViewsAfterClose).toBe(0) at L505
+      (GROK-18085-class invariant), expect(reopened.sunburstPresent).toBe(true)
+      at L506, race-tolerant hierarchy length check at L508.
+      AMBIGUOUS / SKIP softSteps log warnings without expect —
+      consistent with documented skip pattern (Step 5
+      console.warn '[AMBIGUOUS]'; Step 6/8/9 console.warn
+      '[SKIP]').
   - check_id: E-SEL-01
     status: PASS
     evidence: |
-      Only documented selectors used: ".d4-dialog" / '[name="button-CANCEL"]'
-      (parity with sibling Charts specs), '[name="Browse"]' (spec-login).
+      All selectors used in spec body appear in
+      .claude/skills/grok-browser/references/charts.md
+      (Quick Reference + Add-Viewer-gallery-flow lines 37-50,
+      Viewer-containers, viewer-property-panel-gear,
+      select-columns-dialog, viewer-context-menu-reset-view,
+      Layouts pane lines 405-446 with Ctrl+S guard). Step 7b
+      uses no DOM selectors — JS API only (grok.dapi.projects
+      round-trip, grok.shell.tableViews, grok.shell.closeAll).
   - check_id: E-SEL-02
     status: PASS
     evidence: |
-      No invented selectors; all interactions via page.evaluate + JS API.
+      No invented selectors; every `[name="..."]` token
+      cross-validated to charts.md or sibling references.
+      Step 7b adds zero new selectors (pure JS API path
+      per migration report Decision: UI Save Project dialog
+      gated by share-dialog overlay unreliable in headless;
+      JS API substitution acceptable for AMBIGUOUS/blocked
+      sub-flow per Edit 10).
   - check_id: E-SEL-03
     status: PASS
     evidence: |
-      No .fill() calls; not applicable.
+      No .fill() calls on Dart inputs anywhere in the spec.
+      All input set via setOptions() JS API. Step 7b uses
+      project.name = name string assignment (JS property,
+      not Dart input). No keyboard.type calls.
   - check_id: E-HELP-01
     status: PASS
     evidence: |
-      Helpers from ../spec-login: softStep, loginToDatagrok, specTestOptions,
-      stepErrors. All registered.
+      Helpers from registered spec-login module
+      (loginToDatagrok at helpers-registry.yaml L3603,
+      softStep at L3597; specTestOptions and stepErrors
+      co-located in spec-login.ts L7-16 — same module).
+      uploadProject (helpers-registry.yaml L4-6) flagged as
+      candidate in scenario Notes L221 but NOT used in
+      Step 7b — Automator chose direct grok.dapi.projects.save
+      JS API path per migration report Decision (downstream
+      Automator decides whether to use uploadProject helper
+      or drive Save dialog UI explicitly).
   - check_id: E-HELP-02
     status: PASS
     evidence: |
-      No reinvention.
+      No reinvention — login uses loginToDatagrok(page) at
+      L47; soft steps use softStep(name, fn). Project save
+      uses grok.dapi.projects.save / .filter / .find / .delete
+      directly (canonical dapi pattern per
+      public/packages/CLAUDE.md "Common patterns" section).
   - check_id: E-LAYER-01
     status: PASS
     evidence: |
-      Scenario target_layer: playwright; spec is playwright.
+      Scenario target_layer=playwright (sunburst.md L10) matches
+      Playwright spec import `@playwright/test` (sunburst-spec.ts
+      L32). Frontmatter mirrored at L4 (target_layer: playwright)
+      via Edit X7 frontmatter extraction comment.
   - check_id: E-LAYER-02
     status: NA
     evidence: |
       No layer override.
   - check_id: E-LAYER-COMPLIANCE-01
-    status: SCOPE_REDUCTION
+    status: FAIL
     evidence: |
-      target_layer=playwright requires ≥1 DOM-driving call. Spec body has
-      ZERO matches in the FORBIDDEN regex set (no page.click, page.fill,
-      page.locator, page.hover, page.press, page.keyboard, page.mouse, dlg.*).
-      Pyramid sub-rule: integration permits broader JS API substitution but
-      still expects ≥1 DOM-driving call. Routed as SR (selector-pending);
-      remediation: when references/charts.md lands, replace 6 test.skip
-      blocks with DOM-driven sequences for Save Layout / Apply Layout / Reset
-      View / multi-select gestures / project save-reopen / Select Columns
-      dialog interaction.
+      Strict-regex check: scenario target_layer=playwright requires
+      ≥1 DOM-driving call from regex set
+      `page\.click | page\.fill | page\.locator | page\.hover |
+      page\.press | page\.keyboard | page\.mouse | dlg\.locator |
+      dlg\.click | dlg\.fill`. Spec body contains zero direct
+      matches (only `page.evaluate` x17). All DOM driving
+      occurs inside page.evaluate via el.dispatchEvent / .click()
+      on raw DOM elements (Add-Viewer gallery click L97/100/121,
+      gear click L211, select-columns dotsBtn L256, reset menu
+      reset.click L333, Layouts header click L375, save L384,
+      apply L392). Per Edit X2 strict mechanical rule this is
+      FAIL.
+
+      Routing: SCOPE_REDUCTION (not blocking FAIL) per
+      orchestrator Edit 10 acceptable-SR-class catalog —
+      documented deferral with cited dependency. See
+      scope_reduction_proposal above for rationale +
+      decision-log + pattern-reference cites.
+
+      Indirect compliance pathway noted (NOT used to flip the
+      mechanical regex result): spec imports loginToDatagrok from
+      `../spec-login`; that helper's body uses page.locator
+      (spec-login.ts L41-42), page.keyboard.type (L46/51),
+      page.keyboard.press (L50/52), loginInput.focus() (L45),
+      loginBtn.click (L62). Round-1 radar-spec.ts canonical
+      verdict (radar.spec.verdict.yaml L82-84) accepted the
+      sunburst/timelines dispatchEvent-inside-page.evaluate
+      pattern as canonical for Charts add-viewer / gear DOM
+      driving. This round honors the strict-regex reading per
+      scenario Notes L254-265 explicit deferral.
+
+      Cross-references: decision-log.yaml L3357 (deferred
+      follow-up), L3434/3484 (legend-* failed_attempts
+      precedent), tree-spec.ts in-cycle refactor as canonical
+      pattern reference for next cycle
+      charts-evaluate-extract-2026-05-09.
   - check_id: E-BOUND-01
     status: PASS
     evidence: |
-      Path under TestTrack/Charts/. Allowed.
+      Spec lives under
+      public/packages/UsageAnalysis/files/TestTrack/charts/ —
+      allowed by E-BOUND-01 rule 1 (TestTrack tree).
   - check_id: E-BOUND-02
     status: PASS
     evidence: |
-      No core or package-source-outside-tests changes.
+      No edits to core/** or package source outside TestTrack tree.
+      Step 7b adds no boundary-crossing code (JS API calls go
+      through grok.dapi which is the canonical client→server
+      path per public/packages/CLAUDE.md API rules).

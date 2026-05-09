@@ -1,0 +1,27 @@
+verdict: PASS
+gate: B
+review_round: 2
+cycle_id: charts-automator-only-2026-05-08
+artifact: sunburst-scatterplot-color-pollution-bug-spec.ts
+scenario: sunburst-scatterplot-color-pollution-bug.md
+prior_verdict_cycle: charts-migrate-2026-05-07
+prior_round: 1
+runtime_evidence:
+  ran_against: https://dev.datagrok.ai
+  duration_seconds: 102  # 1.7m (round 1, prior cycle)
+  result: passed
+  batch_run: '10/10 charts specs PASS in 6.2m wall clock (final 2026-05-08 batch — re-run confirmed)'
+  spec_body_changed_in_cycle: false
+  steps_executed:
+    - "Setup: Open SPGI.csv + identify shared string column — PASS (picked R100 from 5 candidates)"
+    - "Steps 2-4: Add Sunburst + Scatterplot, configure shared color column — PASS"
+    - "Steps 5-7: Color-state mutation + Sunburst persistence verification — PASS (sbHasContent: true, sbHierarchy survives)"
+    - "Step 8: In-session reopen check (detach Sunburst + re-add) — PASS"
+  shared_column_used: R100
+notes: |
+  github-3412 invariant satisfied: Sunburst's hierarchy binding survives
+  Scatterplot's color-state interaction; visual stability preserved across
+  detach + re-add cycle. Confirms Charts 1.25 cross-viewer isolation fix
+  is in place on dev. Real DOM color-editor popup driving deferred to
+  selector-pending session; programmatic substitute via column.meta.colors
+  exercised the broader contract (shared storage corruption invariant).

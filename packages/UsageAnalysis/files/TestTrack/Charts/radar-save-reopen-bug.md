@@ -1,0 +1,88 @@
+---
+feature: charts
+sub_features_covered:
+  - charts.radar
+  - charts.echart-base.table
+target_layer: playwright
+coverage_type: edge
+pyramid_layer: bug-focused
+ui_coverage_responsibility: []
+ui_coverage_delegated_to: null
+produced_from: atlas-driven
+original_path: public/packages/UsageAnalysis/files/TestTrack/Charts/radar-save-reopen-bug.md
+date_created: 2026-05-07
+authored_by: orchestrator-test-designer-charts-migrate-2026-05-07
+related_bugs:
+  - GROK-18085
+---
+
+# Radar viewer — table-rebind on project save/reopen (GROK-18085)
+
+Bug-focused regression scenario for GROK-18085: Radar table-rebind state
+serializes incorrectly across project save → close-all → reopen, causing
+a null error on deserialization.
+
+`pyramid_layer: bug-focused` per Edit 4 SR routing for
+`gaps[type: bug-uncovered]`. The canonical `radar.md` smoke scenario does
+NOT exercise project save/reopen — that's the bug-class invariant
+specifically. This scenario locks in the GROK-18085 reproduction.
+
+`related_bugs: [GROK-18085]` — bug-library `curated_bugs[]` reproduction
+class: rebind a Radar viewer's bound table mid-session, save the project,
+reopen, verify Radar deserializes correctly with the new table binding.
+
+## Setup
+
+A clean Datagrok session. Single scenario; uses `grok.dapi.projects` for
+the save/reopen flow programmatically (UI Save Project dialog requires
+selectors deferred per cycle charts-migrate-2026-05-07).
+
+## Scenarios
+
+### Scenario 1: Radar table-rebind survives project save → reopen (GROK-18085 invariant)
+
+Steps:
+
+1. Open `System:DemoFiles/demog.csv` and `System:DemoFiles/SPGI.csv` in the
+   same session (both as TableViews via `grok.shell.addTableView`).
+2. On the SPGI view, add a Radar viewer (`tv.addViewer('Radar')`).
+   **Expected:** Radar attached to SPGI without console error.
+3. Rebind the Radar's bound table from SPGI to demog via
+   `radar.setOptions({table: 'demog'})`. Wait for re-render.
+   **Expected:** Radar's `props.get('table')` returns `'demog'` (or the
+   read-back races to null — race-tolerant per cycle lessons).
+4. Save the project: construct a `Project` via `grok.dapi.projects` API,
+   save with a unique name like `radar-rebind-${Date.now()}`.
+   **Expected:** save resolves; project carries non-empty `id`.
+5. Close all views (`grok.shell.closeAll()`).
+6. Reopen the project via `grok.dapi.projects.find(<id>)` + open API.
+   **Expected (GROK-18085 invariant):** project reopens WITHOUT a null
+   error / deserialization exception. Console errors during reopen are
+   either empty or filtered to benign noise (Failed to load resource etc.).
+7. Verify the Radar viewer is present in the reopened table view and
+   `radar.props.get('table')` returns `'demog'` (or null on race).
+8. Cleanup: delete the saved project via `grok.dapi.projects.delete`.
+
+## Notes
+
+- **GROK-18085 invariant carrier:** Step 6 — project reopens without null
+  error / deserialization exception. Console-error capture filters benign
+  network noise (`Failed to load resource`, 404, favicon) per cycle
+  charts-migrate-2026-05-07 lessons.
+- **Cleanup contract:** Step 8 deletes the saved project. `try/finally`
+  block in the spec ensures cleanup runs even on assertion failure.
+- **Helpers used:** `softStep`, `loginToDatagrok`, `specTestOptions`,
+  `stepErrors` from `../spec-login.ts`.
+- **Authority:** atlas-driven; closes the bug coverage gap surfaced in
+  `scenario-chains/charts.yaml` rev 2 `bug_match_attempts_skipped` for
+  GROK-18085 (skip_category: reproduction_unparseable on radar.md
+  because radar.md has no save/reopen).
+
+## Dataset metadata
+
+```json
+{
+  "order": 32,
+  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/SPGI.csv"]
+}
+```

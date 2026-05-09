@@ -1,0 +1,121 @@
+verdict: PASS
+gate: D
+mode: migration
+review_round: 1
+cycle_id: charts-remediate-2026-05-09
+revision: 1
+failure_keys: []
+scope_reduction_proposal: |
+evidence_needed: |
+claims:
+  - check_id: D-STRUCT-MECH-01
+    status: PASS
+    evidence: >
+      Migration report file exists at the expected path
+      (public/packages/UsageAnalysis/files/TestTrack/charts/tree-enhancements-bundle-bug-migration-report.md)
+      and is non-empty (116 lines). Authored fresh in remediation cycle
+      charts-remediate-2026-05-09 since atlas-driven scenarios in the
+      2026-05-07 cycle did not produce migration reports — this is the
+      newly created report per remediation Migrator phase.
+  - check_id: D-STRUCT-MECH-02
+    status: PASS
+    evidence: >
+      Step mapping section is a Markdown table at lines 13-25 with 9 rows
+      mapping atlas / bug-library elements to scenario locations: 6 atlas
+      sub_features (charts.tree.{show-counts, on-click, font-size, orient,
+      include-nulls, layout, show-mouse-over-line}), 1 bug-library-only
+      element (moleculeSize), and 1 final invariant. Each row cites
+      decision (exerciseProperty / guarded probe / enumerate-only).
+  - check_id: D-STRUCT-MECH-03
+    status: PASS
+    evidence: >
+      Scenario frontmatter has all required fields: feature, sub_features_covered,
+      target_layer (playwright), coverage_type (regression), produced_from
+      (atlas-driven — valid per Phase-1-retro-2026-05-04 widening), original_path,
+      date_created (semantic equivalent of migration_date for atlas-driven
+      scenarios per lifecycle-api precedent), related_bugs ([github-3221]).
+      Deprecated migrated_from field is absent. coverage_type rename (C7) honored.
+  - check_id: D-STRUCT-MECH-04
+    status: PASS
+    evidence: >
+      All required sections present in migration report: Step mapping (line 13),
+      Decisions (line 27), Opt-outs (line 48 — empty per Option A TIGHTEN),
+      Deferred items (line 52 — empty beyond env-pending guarded probe),
+      Edge cases (line 97), Unresolved ambiguities (line 106). Plus a dedicated
+      "Remediation cycle 2026-05-09" section (line 58) documenting Option A.
+  - check_id: D-STRUCT-MECH-05
+    status: PASS
+    evidence: >
+      original_path references the scenario file's own canonical location
+      (atlas-driven self-reference precedent — no manual TestTrack source).
+      File exists in the repo at the cited path.
+  - check_id: D-STEP-01
+    status: PASS
+    evidence: >
+      Each of the 10 scenario steps has a corresponding mapping row in the
+      Step mapping table (capabilities 1-8 + final visual stability invariant
+      + Setup hierarchy). Conditional / enumerate-only handling for layout
+      and moleculeSize explicitly captured.
+  - check_id: D-STEP-02
+    status: PASS
+    evidence: >
+      Every "Invariant: no console error" assertion in the scenario (steps
+      2-9) is preserved as the regression invariant per github-3221, and the
+      final visual stability check (step 10) maps to the dedicated mapping
+      row "Final visual stability invariant". No assertion silently dropped.
+  - check_id: D-EDGE-01
+    status: PASS
+    evidence: >
+      Edge cases section explicitly preserves race-tolerant property access
+      (try/catch around tree.props.get/getProperties) and the env-pending
+      "layout property may not be exposed on all Tree builds" guard. Both
+      cases match the scenario body's "(race-tolerant)" and "if
+      tree.props.getProperties() includes 'layout'" phrasing.
+  - check_id: D-STRUCT-01
+    status: NA
+    evidence: >
+      Single bug-focused scenario; no dependency chain. Atlas-driven authoring
+      did not split any sister scenarios.
+  - check_id: D-STRUCT-02
+    status: NA
+    evidence: >
+      No matrix / combinatorial design — capability-by-capability sequential
+      property round-trip, not a matrix.
+  - check_id: D-UI-DELEGATION-01
+    status: NA
+    evidence: >
+      No SCOPE_REDUCTION proposal present (Opt-outs section is "(none)" — Option A
+      TIGHTEN chosen for layout property). UI-coverage-citation requirement does
+      not trigger.
+  - check_id: D-SAN-01
+    status: PASS
+    evidence: >
+      All non-trivial decisions documented across the required sections.
+      Remediation cycle decision (Option A vs Option B) backed by 5-factor
+      decision table (lines 69-75): Atlas mapping integrity, Code complexity,
+      Env-pending behavior, Forward path, Option B rejection rationale. Decision-log
+      cross-reference cited (migration_decisions[tree-enhancements-layout-probe-2026-05-09]).
+  - check_id: D-SAN-02
+    status: PASS
+    evidence: >
+      No silent drops. Atlas-driven scenario has no original .md to compare
+      step-by-step; instead the report comprehensively covers the layered
+      authoring decisions plus the 2026-05-09 remediation scope decision.
+      Every capability in the github-3221 fix bundle accounted for in mapping
+      table; moleculeSize gap explicitly flagged in Unresolved ambiguities.
+  - check_id: D-MERIT-01
+    status: PASS
+    evidence: >
+      No effort-only opt-outs. Layout property guarded probe is justified by
+      env-pending behavior (Tree build on dev may not expose 'layout');
+      moleculeSize enumerate-only check is justified by demog.csv lacking
+      molecule columns and atlas not currently listing charts.tree.moleculeSize
+      as a sub_feature. Both cite real technical / atlas dependencies.
+  - check_id: D-MERIT-02
+    status: PASS
+    evidence: >
+      No "deferred to later phase" without dependency reference. Env-pending
+      defensive skip class is documented per orchestrator Edit 10 (acceptable
+      SR class). Forward path for layout is automatic — when Charts package
+      exposes 'layout' on dev build, the probe picks it up without scenario
+      amendment, no re-cycle needed.

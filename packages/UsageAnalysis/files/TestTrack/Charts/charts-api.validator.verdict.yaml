@@ -1,0 +1,28 @@
+verdict: PASS
+gate: B
+review_round: 2
+cycle_id: charts-automator-only-2026-05-08
+artifact: charts-api.ts
+scenario: charts-api.md
+prior_verdict_cycle: charts-migrate-2026-05-07
+prior_round: 1
+runtime_evidence:
+  ran_against: https://dev.datagrok.ai
+  duration_seconds: 108  # 1.8m (round 1, prior cycle)
+  result: passed
+  batch_run: '10/10 charts specs PASS in 6.2m wall clock (final 2026-05-08 batch — re-run confirmed)'
+  spec_body_changed_in_cycle: false
+  steps_executed:
+    - "Setup: closeAll + selenium class + simpleMode — PASS"
+    - "Scenario 1: addViewer round-trip across Radar/Sunburst/Tree/Timelines — PASS (all 4 viewer types attached)"
+    - "Scenario 2: Radar getProperties categories Data/Selection/Value/Style/Legend — PASS (race-tolerant)"
+    - "Scenario 3: Radar setOptions(backgroundMinColor) round-trip — PASS"
+    - "Scenario 3: Sunburst setOptions(hierarchyColumnNames) round-trip — PASS"
+    - "Scenario 3: Tree setOptions(hierarchyColumnNames) round-trip — PASS"
+    - "Scenario 3: Timelines setOptions(colorColumnName) round-trip — PASS"
+    - "Scenario 4: getProperties surface check across 4 viewers — PASS (race-tolerant arrayContaining checks)"
+notes: |
+  apitest-layer spec; no hypothesis investigation needed (PASS round 1).
+  testMatch pattern in playwright.config.ts updated to include '**/*-api.ts'
+  alongside '**/*-spec.ts' per Decision 1.5 — this was a one-time config
+  change to enable the apitest paradigm in the runner.

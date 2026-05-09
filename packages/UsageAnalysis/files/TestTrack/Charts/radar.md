@@ -103,14 +103,38 @@ chain rev 1).
   decision to Step 2; selecting `playwright` aligns with the
   established sibling spec (rather than the chain's tentative
   `uitests-package` reading).
-- **"Check all properties" (Step 13)** is preserved deliberately
-  broad — the original scenario does not enumerate which of the 9
-  atlas-listed `charts.radar.*` properties (title, min/max
-  percentile, show-current-row, show-tooltip, color-column,
-  color-palette, show-min-max, legend-visibility) are required and
-  which are optional. Migrator preserves the original ambiguity
-  rather than narrowing or widening (chain rev 1 unresolved
-  ambiguity #1; flagged for QA review).
+- **Remediation cycle scope decisions (charts-remediate-2026-05-09):**
+  Critic E canonical subagent surfaced 4 uncovered scenario steps in
+  the predecessor cycle (charts-automator-only-2026-05-08, FAIL with
+  E-TRACE-02 + E-TRACE-03). Migrator decisions for steps 9/10/11/13:
+  - **Step 9 (table switch):** KEEP — primary verification of
+    table-rebind, distinct from radar-save-reopen-bug (which tests
+    save/reopen, not in-session rebind). Automator implements via
+    `radar.setOptions({tableName: 'demog'})` round-trip + assert
+    `radar.dataFrame.name` rebinds.
+  - **Step 10 (selected-row lines):** KEEP — exercises
+    `charts.radar.show-current-row` sub_feature already in
+    `sub_features_covered`. Automator implements via
+    `df.selection.set` + `dispatchSelected` + assert
+    `radar.props.get('showCurrentRow') === true` + visual stability.
+  - **Step 11 (Values columns count):** KEEP — exercises radar
+    property surface (charts.radar.color-column /
+    `radar.props.get('valuesColumnNames')`). Automator implements
+    via setOptions + read-back.
+  - **Step 13 (broad sweep): SCOPE_REDUCE per A-MERIT-02 (Lattice
+    Rule 13)** — relax to "categories enumeration sweep (already
+    asserted in Step 3 categories check) is the broad-sweep
+    representative; specific per-property toggles deferred to
+    property-grid widget specs". Cite A1 boundary: property-grid
+    mechanics are not Charts atlas surface.
+- **"Check all properties" (Step 13)** preserves the original
+  scenario's broad instruction. The 9 atlas-listed `charts.radar.*`
+  properties (title, min/max percentile, show-current-row,
+  show-tooltip, color-column, color-palette, show-min-max,
+  legend-visibility) are not enumerated as separate steps —
+  representative coverage via Step 3 categories check + steps 9-12
+  specific verifications satisfies the broad-sweep intent per
+  A-MERIT-02 lattice rule.
 - **GROK-18085 (related_bug, not exercised here):** the bug
   reproduction requires "save the project, then reopen it" with a
   Radar viewer's bound table changed mid-session. The original

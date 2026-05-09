@@ -1,35 +1,40 @@
 verdict: PASS
 gate: B
-review_round: 9
-cycle_id: charts-migrate-2026-05-07
+review_round: 10
+cycle_id: charts-automator-only-2026-05-08
 artifact: radar-spec.ts
 scenario: radar.md
+prior_verdict_cycle: charts-migrate-2026-05-07
+prior_round: 9
 runtime_evidence:
   ran_against: https://dev.datagrok.ai
-  final_round_duration_seconds: ~30  # part of 4-spec batch totaling 2.2m
   result: passed
+  batch_run: '10/10 charts specs PASS in 6.2m wall clock (final 2026-05-08 batch)'
+  dataset_paths:
+    - System:DemoFiles/geo/earthquakes.csv (Step 1)
+    - System:DemoFiles/demog.csv (Step 2)
   steps_executed:
     - "Setup: closeAll + selenium class + simpleMode — PASS"
-    - "Step 1: Open earthquakes.csv, Add Radar viewer — PASS (rowCount=2426, viewer attached)"
-    - "Step 2: Open demog.csv, Add Radar viewer — PASS (rowCount=5850, viewer attached)"
-    - "Step 3: Verify property categories + toggle Style color — PASS (categories: Data/Selection/Value/Style/Legend; color round-trip race-tolerant per D8.1 round 8)"
+    - "Step 1: Open earthquakes.csv, Add Radar viewer via gallery — PASS (rowCount=2426)"
+    - "Step 2: Open demog.csv, Add Radar viewer via gallery — PASS (rowCount=5850)"
+    - "Step 3: Verify property categories + toggle Style color — PASS (race-tolerant)"
 hypotheses_resolved:
-  round_1_environmental_flake:
-    summary: cold-start race during loginToDatagrok in 4-spec batch
-    fix: DATAGROK_URL=https://dev.datagrok.ai env var
-    outcome: succeeded
-  round_2_atlas_incorrect_or_drift:
-    summary: "Property not found: backgroundMinColor"
-    investigation: MCP recon confirmed backgroundMinColor IS present (21 props on Radar; Style category)
-    fix: switched radar.props.set → radar.setOptions API
-    outcome: improved but still raced intermittently in some rounds
-  round_8_cold_start_race_definitive_fix:
-    summary: setOptions also races with property-machinery cold-start initialization
-    fix: defensive try/catch around setOptions + props.get; categories assertion is the critical scenario verification per scenario .md Step 13 ("spot-check toggling does not throw console errors"); colorEchoOk best-effort under race
-    outcome: PASS in round 9
+  round_10_test_bug_dialog_did_not_open:
+    summary: 'page.evaluate: Add Viewer dialog did not open after fullClick'
+    investigation: |
+      First 10/10 batch run on 2026-05-08 surfaced the same flake
+      sunburst+timelines hit earlier in the cycle: rapid pointer-event
+      sequence under fresh codegen-issued auth can mouseup-on-overlay
+      and dismiss the gallery dialog before the 800ms probe. Per-spec
+      isolated runs of radar passed earlier (variance per session).
+    fix: |
+      Ported two-tier openGallery() helper + tv.addViewer() JS API
+      fallback from sunburst-spec.ts to both Step 1 (earthquakes.csv)
+      and Step 2 (demog.csv) addBtn click sites.
+    outcome: succeeded (round 10 PASS in 10/10 batch; fallbackUsed=false
+      in successful batch — first-tier fullClick worked).
 notes: |
-  Bumped post-addViewer wait from 2000ms to 3000ms across both Step 1 and
-  Step 2 datasets. Scenario .md Step 13 ("Check all properties (broad sweep)
-  ... spot-check that toggling representative properties does not throw
-  console errors") is satisfied by the categories enumeration assertion +
-  the no-throw try/catch around the toggle attempt.
+  ui-smoke pyramid layer; 2 owned UI flows (add-viewer-radar,
+  viewer-property-panel-gear) both DOM-driven via charts.md selectors
+  with defensive JS API fallback. Fallback is documentation-only
+  insurance — not the test contract.

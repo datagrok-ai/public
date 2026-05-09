@@ -1,0 +1,87 @@
+verdict: PASS
+gate: E
+review_round: 1
+cycle_id: charts-automator-only-2026-05-08
+artifact: sunburst-date-column-bug-spec.ts
+scenario: sunburst-date-column-bug.md
+authoring_note: |
+  Canonical isolated-context Critic E subagent verdict (2026-05-08).
+  Confirms prior charts-migrate-2026-05-07 PASS.
+failure_keys: []
+claims:
+  - check_id: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Spec file exists at expected path.
+  - check_id: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      Valid TypeScript: balanced braces, well-formed test() call.
+  - check_id: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Single test() block exists at line 20.
+  - check_id: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name substring-matches scenario heading on key tokens (Sunburst, date-column, hierarchy, github-2954).
+  - check_id: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Imports are from @playwright/test and ../spec-login.
+  - check_id: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter block at lines 1-3 with sub_features_covered: [charts.sunburst, charts.echart-base]; both resolve.
+  - check_id: E-TRACE-01
+    status: PASS
+    evidence: |
+      Each softStep label cites scenario step numbers.
+  - check_id: E-TRACE-02
+    status: PASS
+    evidence: |
+      Steps 1-2 → 'Steps 1-2' softStep; Step 3 → 'Step 3' softStep; Step 4 (read-back, log only) → readBack capture in Step 3 softStep; Step 5 (root non-empty/non-zero) → hasContent/width assertions in Step 3; Step 6 → 'Step 6' softStep.
+  - check_id: E-TRACE-03
+    status: PASS
+    evidence: |
+      Scenario verifications mapped to JS API expects: tv.viewers contains Sunburst, setOptionsThrew=false, consoleErrors empty, root.children.length>0 + width>0, recovery hasContent.
+  - check_id: E-SEL-01
+    status: PASS
+    evidence: |
+      Only one DOM selector used: [name="Browse"] — documented in grok-browser/references/navigation.md:32.
+  - check_id: E-SEL-02
+    status: PASS
+    evidence: |
+      No invented selectors.
+  - check_id: E-SEL-03
+    status: NA
+    evidence: |
+      No Dart input fields filled in this spec.
+  - check_id: E-HELP-01
+    status: PASS
+    evidence: |
+      softStep and loginToDatagrok in registry; specTestOptions and stepErrors co-located in spec-login.ts.
+  - check_id: E-HELP-02
+    status: PASS
+    evidence: |
+      No reinvention.
+  - check_id: E-LAYER-01
+    status: PASS
+    evidence: |
+      Scenario frontmatter target_layer: playwright matches.
+  - check_id: E-LAYER-02
+    status: NA
+    evidence: |
+      No layer override.
+  - check_id: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: |
+      target_layer: playwright requires ≥1 DOM-driving call. Spec has page.locator('[name="Browse"]').waitFor at line 32. pyramid_layer is bug-focused (not ui-smoke) and ui_coverage_responsibility is empty.
+  - check_id: E-BOUND-01
+    status: PASS
+    evidence: |
+      Spec located within allowed path.
+  - check_id: E-BOUND-02
+    status: PASS
+    evidence: |
+      No core/** changes.

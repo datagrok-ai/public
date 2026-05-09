@@ -1,0 +1,114 @@
+verdict: PASS
+gate: E
+review_round: 2
+revision: 2
+cycle_id: charts-remediate-2026-05-09
+artifact: tree-rowsource-onclick-state-bug-spec.ts
+scenario: tree-rowsource-onclick-state-bug.md
+authoring_note: |
+  Canonical isolated-context Critic E subagent verdict round 2 (2026-05-09).
+  Supersedes round 1 SCOPE_REDUCTION (charts-automator-only-2026-05-08).
+  Predecessor SR class (E-TRACE-03 readback equality not asserted) fully
+  resolved by Automator: 2 null-safe expect calls now assert
+  readbackRs/readbackOc equality with the setOptions input, preserving the
+  scenario's race-tolerant "if read-back succeeds" framing via the null
+  guard. Assertions fire from iterateCombo, which is invoked from both
+  forward and reverse loops — coverage spans all 18 combinations.
+failure_keys: []
+claims:
+  - check_id: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Spec file present at expected path tree-rowsource-onclick-state-bug-spec.ts
+      alongside the scenario .md.
+  - check_id: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      Imports balanced, single test() call signature well-formed, braces balanced.
+      No syntax issues introduced by the 2-line readback assertion patch.
+  - check_id: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Single top-level test() block at line 20.
+  - check_id: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name "Tree — rowSource x onClick state machine (github-3245)" contains
+      scenario heading words (rowSource, onClick, state machine, github-3245).
+  - check_id: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Imports only from `@playwright/test` and the local `../spec-login` helper module.
+  - check_id: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      File starts with frontmatter `/* --- sub_features_covered: [charts.tree,
+      charts.tree.on-click, charts.tree.color-palette] --- */`. All three IDs
+      resolve to atlas sub_features.
+  - check_id: E-TRACE-01
+    status: PASS
+    evidence: |
+      All softStep blocks trace to scenario steps. No orphaned code blocks.
+      The 2 new expect calls (lines 93-94) trace to scenario step 2 invariant 1.
+  - check_id: E-TRACE-02
+    status: PASS
+    evidence: |
+      Scenario steps 1-4 each have ≥1 corresponding test step. Forward + reverse
+      iterations cover step 2 and step 3 separately; ESC-equivalent softStep
+      covers step 4.
+  - check_id: E-TRACE-03
+    status: PASS
+    evidence: |
+      Scenario step 2 invariant 1 ('if read-back succeeds, the values match the
+      setOptions input') is now asserted at lines 93-94:
+      `if (result.readbackRs != null) expect(result.readbackRs).toBe(rs);` and
+      the same for `readbackOc`. The null-safe pattern preserves the scenario's
+      race-tolerant "if read-back succeeds" framing. Assertions fire from
+      iterateCombo and apply to all 18 combinations (9 forward + 9 reverse).
+      Invariants 2 (visual stability, lines 96-97) and 3 (no console error,
+      lines 99-100) remain properly asserted. Round 1 SR class fully resolved.
+  - check_id: E-SEL-01
+    status: PASS
+    evidence: |
+      Only DOM selector used is `[name="Browse"]` (line 32) — present in
+      grok-browser references.
+  - check_id: E-SEL-02
+    status: PASS
+    evidence: |
+      No invented selectors.
+  - check_id: E-SEL-03
+    status: NA
+    evidence: |
+      Spec uses no Dart input fields requiring keyboard.type().
+  - check_id: E-HELP-01
+    status: PASS
+    evidence: |
+      Helpers used (loginToDatagrok, specTestOptions, softStep, stepErrors) all
+      originate from `../spec-login` and are registered in helpers-registry.yaml.
+  - check_id: E-HELP-02
+    status: PASS
+    evidence: |
+      No reinvention of registered helpers.
+  - check_id: E-LAYER-01
+    status: PASS
+    evidence: |
+      Frontmatter `target_layer: playwright` matches spec paradigm.
+  - check_id: E-LAYER-02
+    status: NA
+    evidence: |
+      No layer override.
+  - check_id: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: |
+      `page.locator('[name="Browse"]').waitFor(...)` at line 32 satisfies the
+      ≥1 DOM-driving call floor for `target_layer: playwright`. pyramid_layer:
+      bug-focused, ui_coverage_responsibility: [] — no UI-smoke sub-rule applies.
+  - check_id: E-BOUND-01
+    status: PASS
+    evidence: |
+      Spec lives under public/packages/UsageAnalysis/files/TestTrack/charts/ —
+      within allowed paths.
+  - check_id: E-BOUND-02
+    status: PASS
+    evidence: |
+      No edits to core/** or out-of-scope package source.

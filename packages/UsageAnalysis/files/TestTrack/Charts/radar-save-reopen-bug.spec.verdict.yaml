@@ -1,0 +1,87 @@
+verdict: PASS
+gate: E
+review_round: 1
+cycle_id: charts-automator-only-2026-05-08
+artifact: radar-save-reopen-bug-spec.ts
+scenario: radar-save-reopen-bug.md
+authoring_note: |
+  Canonical isolated-context Critic E subagent verdict (2026-05-08).
+  Confirms prior charts-migrate-2026-05-07 PASS.
+failure_keys: []
+claims:
+  - check_id: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Spec file exists at public/packages/UsageAnalysis/files/TestTrack/Charts/radar-save-reopen-bug-spec.ts.
+  - check_id: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      Spec parses as valid TypeScript; balanced braces; well-formed test() signature.
+  - check_id: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      One test() block at line 21: test('Radar — table-rebind on project save/reopen (GROK-18085)').
+  - check_id: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test title substring-matches scenario heading on key tokens (Radar, table-rebind, project save/reopen, GROK-18085). softStep names ('Steps 1-3', 'Steps 4-6', 'Cleanup') trace to numbered scenario steps explicitly.
+  - check_id: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Imports from canonical '@playwright/test' and project-local '../spec-login'.
+  - check_id: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Spec begins with frontmatter block at line 1. Both ids resolve to feature-atlas sub_features.
+  - check_id: E-TRACE-01
+    status: PASS
+    evidence: |
+      Each softStep is labeled with the numbered scenario step range it covers.
+  - check_id: E-TRACE-02
+    status: PASS
+    evidence: |
+      Scenario steps 1-8 all have code counterparts.
+  - check_id: E-TRACE-03
+    status: PASS
+    evidence: |
+      Primary GROK-18085 invariant verification (step 6 — no null/deserialization error during reopen) is asserted via expect(errorsDuring).toEqual([]) at line 126. Step 7's table-prop read-back is captured but kept race-tolerant per scenario note.
+  - check_id: E-SEL-01
+    status: PASS
+    evidence: |
+      Selectors used: [name="Browse"], [name="button-CANCEL"], .d4-dialog. All documented in references.
+  - check_id: E-SEL-02
+    status: PASS
+    evidence: |
+      No invented selectors.
+  - check_id: E-SEL-03
+    status: PASS
+    evidence: |
+      No .fill() calls.
+  - check_id: E-HELP-01
+    status: PASS
+    evidence: |
+      All helpers from spec-login.ts; softStep + loginToDatagrok registered.
+  - check_id: E-HELP-02
+    status: PASS
+    evidence: |
+      No reinvention.
+  - check_id: E-LAYER-01
+    status: PASS
+    evidence: |
+      Scenario frontmatter target_layer: playwright matches spec.
+  - check_id: E-LAYER-02
+    status: NA
+    evidence: |
+      No layer override.
+  - check_id: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: |
+      target_layer=playwright requires ≥1 DOM-driving call. Spec contains page.locator('[name="Browse"]').waitFor() at line 33 plus page.on/page.evaluate throughout. pyramid_layer=bug-focused with ui_coverage_responsibility=[].
+  - check_id: E-BOUND-01
+    status: PASS
+    evidence: |
+      Spec resides under public/packages/UsageAnalysis/files/TestTrack/Charts/.
+  - check_id: E-BOUND-02
+    status: PASS
+    evidence: |
+      No edits to core/**.
