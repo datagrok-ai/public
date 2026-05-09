@@ -3,7 +3,6 @@ feature: charts
 sub_features_covered:
   - charts.sunburst
   - charts.sunburst.title
-  - charts.sunburst.on-click
   - charts.sunburst.inherit-from-grid
   - charts.sunburst.include-nulls
   - charts.echart-base
@@ -15,10 +14,11 @@ ui_coverage_responsibility:
   - viewer-property-panel-gear
   - select-columns-dialog
   - viewer-context-menu-reset-view
-  - sunburst-multi-selection
   - viewer-save-layout
   - viewer-apply-layout
-ui_coverage_delegated_to: null
+ui_coverage_delegated_to:
+  sunburst-multi-selection: charts-ui.md
+  sunburst-empty-category-click: charts-ui.md
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Charts/sunburst.md
 migration_date: 2026-05-07
@@ -124,24 +124,19 @@ This is NOT a single-viewer ui-smoke; do not consolidate.
 
 ### Multi-selection behaviour
 
-1. Click a single segment.
-2. Verify exactly that segment is selected and the corresponding grid
-   rows are selected.
-3. Hold **Ctrl** and click an additional segment.
-4. Verify both segments are selected and the grid row selection
-   reflects the union.
-5. Hold **Ctrl + Shift** and click one of the selected segments.
-6. Verify that segment is deselected and the grid row selection
-   reflects the new union.
+> **Moved to** `charts-ui.md` (ui-only, canvas-gesture). The
+> Click / Ctrl+Click / Ctrl+Shift+Click on canvas Sunburst segments
+> has no automatable JS-API equivalent that exercises the actual
+> hit-test + modifier-key dispatch. Manual scenario maintained
+> separately; this section intentionally left blank in the
+> playwright-layer scenario.
 
 ### Select / filter on empty category (SPGI_v2.csv)
 
-1. On the SPGI_v2 Sunburst, configure a column known to contain nulls
-   (e.g. **Sampling Time**) via **Select Columns**.
-2. Click on the null (grey) segment.
-3. Verify the segment behaves like any other category — the
-   corresponding rows (those with null in that column) are selected
-   or filtered (per `onClick` action).
+> **Moved to** `charts-ui.md` (ui-only, canvas-gesture). Clicking
+> the grey null-segment is canvas hit-testing on the null-category
+> bucket — `df.selection.set` proxy does not verify the canvas
+> hit-test routing. Manual scenario maintained separately.
 
 ### Project save and reopen
 

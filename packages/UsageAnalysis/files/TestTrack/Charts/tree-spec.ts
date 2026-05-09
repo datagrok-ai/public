@@ -5,7 +5,8 @@ sub_features_covered: [charts.tree]
 //   target_layer: playwright
 //   pyramid_layer: integration (per chain dependency_graph; absent from .md frontmatter)
 //   sub_features_covered: [charts.tree]
-//   ui_coverage_responsibility: [add-viewer-tree, tree-hierarchy-config, tree-shift-click-multi-select, filter-panel-control] (per chain; delegated_to: null)
+//   ui_coverage_responsibility: [add-viewer-tree, tree-hierarchy-config, filter-panel-control]
+//   ui_coverage_delegated_to: {tree-shift-click-multi-select: charts-ui.md, tree-shift-click-extend-selection: charts-ui.md}
 //   related_bugs: [github-3221, github-3245]
 //   produced_from: migrated
 // DOM-driving rationale (charts-remediate-2026-05-09):
@@ -14,10 +15,12 @@ sub_features_covered: [charts.tree]
 //   driven via real page.locator(...).click() per references/charts.md.
 //   E-LAYER-COMPLIANCE-01 strict-regex compliance: page.locator + page.click
 //   used for all DOM-driveable flows; JS API fallback only on DOM gallery
-//   miss. tree-shift-click-multi-select remains AMBIGUOUS per charts.md
-//   (Tree branches are ECharts-canvas; df.selection bitset fallback).
-//   Categorical-filter checkboxes are canvas per filters.md → df.filter
-//   bitset fallback (also AMBIGUOUS per charts.md authority).
+//   miss. tree-shift-click-multi-select MOVED to charts-ui.md (ui-only
+//   manual scenario) per user directive — canvas Shift+Click on ECharts
+//   has no automatable JS-API equivalent that exercises the gesture
+//   invariant. Categorical-filter checkboxes are canvas per filters.md
+//   → df.filter bitset fallback (still here, exercises filter cardinality
+//   contract).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -163,39 +166,21 @@ test('Tree viewer (Charts package)', async ({page}) => {
     console.log(`[Setup] fallbackUsed=${fallbackUsed}, selectColsDialogOpened=${selectColsOpened}`);
   });
 
-  // Step 1: Select branches in tree via Shift+Click — AMBIGUOUS, df.selection fallback.
-  await softStep('Step 1 (AMBIGUOUS): Shift+Click branches false/F/Asian, false/F/Black, false/M/Asian — programmatic fallback', async () => {
-    console.warn('[AMBIGUOUS] Tree branches are ECharts-canvas (single <canvas> inside ' +
-      '_echarts_instance_ container); per-branch DOM does not exist. ' +
-      'Applying df.selection bitset fallback per charts.md AMBIGUOUS workaround.');
-    const result = await page.evaluate(async () => {
-      const grok = (window as any).grok;
-      const df = grok.shell.tv.dataFrame;
-      const control = df.col('CONTROL');
-      const sex = df.col('SEX');
-      const race = df.col('RACE');
-      df.selection.setAll(false);
-      for (let i = 0; i < df.rowCount; i++) {
-        const c = control.get(i);
-        const s = sex.get(i);
-        const r = race.get(i);
-        if (c === false && s === 'F' && r === 'Asian') df.selection.set(i, true);
-        if (c === false && s === 'F' && r === 'Black') df.selection.set(i, true);
-        if (c === false && s === 'M' && r === 'Asian') df.selection.set(i, true);
-      }
-      df.selection.fireChanged();
-      await new Promise((r) => setTimeout(r, 500));
-      return {selected: df.selection.trueCount};
-    });
-    console.log(`[Step 1] Programmatic selection trueCount = ${result.selected}`);
-    expect(result.selected).toBe(174);
-  });
+  // Step 1 — MOVED to charts-ui.md (ui-only manual scenario).
+  // Tree branch Shift+Click multi-selection (canvas-rendered ECharts; per-
+  // branch DOM does not exist; modifier-key dispatch on canvas is non-
+  // synthesizable). The df.selection bitset proxy was removed — see
+  // charts-ui.md for the manual scenario catalog.
+  // Step 3 (extend Shift+Click) and Step 4 (clear filter, verify selection
+  // persists) also moved — both depended on the canvas-driven selection
+  // setup. This scenario now covers Filter Panel control flow + filter
+  // cardinality coordination only.
 
-  // Step 2: Filter panel control — open via page.locator (toolbox section
-  // header first, ribbon icon as fallback per charts.md filter-panel-control).
-  // Apply CONTROL=true filter via JS API (categorical checkboxes are canvas
-  // per filters.md → df.filter bitset is the AMBIGUOUS workaround).
-  await softStep('Step 2: Open Filter Panel (page.locator); apply CONTROL=true filter; expect overlap = 0', async () => {
+  // Step 2 (renumbered Step 1 in current scenario): Filter panel control
+  // — open via page.locator (toolbox section header first, ribbon icon as
+  // fallback per charts.md filter-panel-control). Apply CONTROL=true
+  // filter via JS API (categorical checkboxes are canvas per filters.md).
+  await softStep('Step 1: Open Filter Panel (page.locator); apply CONTROL=true filter; verify cardinality = 39', async () => {
     let panelOpened = false;
     let panelOpenedVia = 'none';
 
@@ -236,52 +221,16 @@ test('Tree viewer (Charts package)', async ({page}) => {
         if (control.get(i) === true) df.filter.set(i, true);
       df.filter.fireChanged();
       await new Promise((r) => setTimeout(r, 500));
-
-      let overlap = 0;
-      for (let i = 0; i < df.rowCount; i++)
-        if (df.filter.get(i) && df.selection.get(i)) overlap++;
-      return {
-        filtered: df.filter.trueCount,
-        selected: df.selection.trueCount,
-        overlap,
-      };
+      return {filtered: df.filter.trueCount};
     });
-    console.log(`[Step 2] panelOpened=${panelOpened} (via ${panelOpenedVia}), filtered=${result.filtered}, selected=${result.selected}, overlap=${result.overlap}`);
-    if (!panelOpened) console.warn('[Step 2]', 'Filter Panel did not materialize via DOM; filter applied via JS API only');
-    // Functional invariant (filter ∩ selection cardinality) is the load-bearing
-    // assertion — preserve as strict.
-    expect(result.overlap).toBe(0);
+    console.log(`[Step 1] panelOpened=${panelOpened} (via ${panelOpenedVia}), filtered=${result.filtered}`);
+    if (!panelOpened) console.warn('[Step 1]', 'Filter Panel did not materialize via DOM; filter applied via JS API only');
+    // Filter cardinality after CONTROL=true: 39 rows in demog.csv.
+    expect(result.filtered).toBe(39);
   });
 
-  // Step 3: Add true/F/Black to selection; expected combined count = 2
-  await softStep('Step 3 (AMBIGUOUS): Shift+Click branch true/F/Black — programmatic fallback; expect overlap = 2', async () => {
-    console.warn('[AMBIGUOUS] Extending tree selection via canvas Shift+Click is not reliably' +
-      ' synthesizable. Applying programmatic extension via df.selection bitset.');
-    const result = await page.evaluate(async () => {
-      const grok = (window as any).grok;
-      const df = grok.shell.tv.dataFrame;
-      const control = df.col('CONTROL');
-      const sex = df.col('SEX');
-      const race = df.col('RACE');
-      for (let i = 0; i < df.rowCount; i++) {
-        if (control.get(i) === true && sex.get(i) === 'F' && race.get(i) === 'Black')
-          df.selection.set(i, true);
-      }
-      df.selection.fireChanged();
-      await new Promise((r) => setTimeout(r, 500));
-
-      let overlap = 0;
-      for (let i = 0; i < df.rowCount; i++)
-        if (df.filter.get(i) && df.selection.get(i)) overlap++;
-      return {selected: df.selection.trueCount, overlap};
-    });
-    console.log(`[Step 3] selected=${result.selected}, overlap=${result.overlap}`);
-    expect(result.selected).toBe(176);
-    expect(result.overlap).toBe(2);
-  });
-
-  // Step 4: Clear CONTROL filter; expected selected count = 176
-  await softStep('Step 4: Clear CONTROL=true filter; expect selected = 176', async () => {
+  // Step 2 (was Step 4): Clear CONTROL filter; verify cardinality returns to 5850.
+  await softStep('Step 2: Clear CONTROL=true filter; verify cardinality returns to 5850', async () => {
     const result = await page.evaluate(async () => {
       const grok = (window as any).grok;
       const df = grok.shell.tv.dataFrame;
@@ -290,9 +239,11 @@ test('Tree viewer (Charts package)', async ({page}) => {
       await new Promise((r) => setTimeout(r, 500));
       return {filtered: df.filter.trueCount, selected: df.selection.trueCount};
     });
-    console.log(`[Step 4] filtered=${result.filtered}, selected=${result.selected}`);
+    console.log(`[Step 2] filtered=${result.filtered}, selected=${result.selected}`);
     expect(result.filtered).toBe(5850);
-    expect(result.selected).toBe(176);
+    // selection cardinality is no longer asserted — canvas Shift+Click
+    // setup moved to charts-ui.md; selection state on dataframe at this
+    // point depends on whatever (if anything) prior steps left.
   });
 
   // Cleanup

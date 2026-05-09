@@ -1,81 +1,128 @@
 verdict: SCOPE_REDUCTION
 gate: E
-review_round: 2
-revision: 3
+review_round: 3
+revision: 4
 cycle_id: charts-remediate-2026-05-09
 artifact: sunburst-spec.ts
 scenario: sunburst.md
+companion_ui_only_scenario: charts-ui.md
 authoring_note: |
-  Canonical isolated-context Critic E subagent verdict, round 2
-  (2026-05-09). Predecessor verdict (round 1, cycle
-  charts-automator-only-2026-05-08) was FAIL with
-  [E-TRACE-02, E-LAYER-COMPLIANCE-01].
+  Canonical isolated-context Critic E subagent verdict, round 3
+  (2026-05-09). Predecessor verdicts:
+  - Round 1 (cycle charts-automator-only-2026-05-08) → FAIL with
+    [E-TRACE-02, E-LAYER-COMPLIANCE-01].
+  - Round 2 (cycle charts-remediate-2026-05-09) → SCOPE_REDUCTION:
+    E-TRACE-02 fixed by Step 7b insertion; E-LAYER-COMPLIANCE-01
+    deferred to charts-evaluate-extract-2026-05-09.
 
-  Round 2 outcome:
-  - E-TRACE-02 — FIXED. New softStep "Step 7b: Project save and reopen"
-    inserted at L406-531 of sunburst-spec.ts covers the previously
-    uncovered scenario heading "### Project save and reopen"
-    (sunburst.md L146-156). Header comment block at L17-31 now
-    correctly enumerates Step 7 (Layout) / Step 7b (Project
-    save+reopen NEW) / Step 8 (#2979 SKIP) / Step 9 (Collab filter
-    SKIP). All numbered scenario headings now have ≥1 covering
-    softStep.
-  - E-LAYER-COMPLIANCE-01 — KNOWN DEFERRAL routed via SCOPE_REDUCTION
-    per orchestrator Edit 10 acceptable-SR-class catalog. Body-wide
-    refactor from page.evaluate + dispatchEvent to
-    page.locator(...).click() is documented in scenario .md
-    Notes (L254-265) and migration report Deferred items section
-    (L110-128) as deferred to next charts cycle
-    (charts-evaluate-extract-2026-05-09 in decision-log.yaml).
-    Tree-spec.ts refactor in same cycle establishes the canonical
-    pattern reference. Documented dependency cite + scope-reduction
-    proposal below.
+  Round 3 outcome (after ui-only extraction follow-up):
+  - User directive: extract canvas-gesture steps (Sunburst
+    Multi-selection Click/Ctrl+Click/Ctrl+Shift+Click + Sunburst
+    Empty-category null-segment click) from sunburst.md and
+    sunburst-spec.ts to a new manual-only ui-only scenario
+    `charts-ui.md`. The JS-API df.selection.set bitset proxies
+    were removed since they don't exercise the canvas UI invariant.
+  - Round-2 Steps 5 (Multi-selection AMBIGUOUS softStep) and 6
+    (empty-category SKIP softStep) REMOVED from spec body
+    (sunburst-spec.ts L371-376 now contains a comment block citing
+    the move; previous Step 5/6 softStep wrappers gone).
+  - sunburst.md `### Multi-selection behaviour` (L125) and
+    `### Select / filter on empty category (SPGI_v2.csv)` (L134)
+    sections REPLACED with cross-reference blockquotes pointing
+    to charts-ui.md. Headings preserved; bodies redirect to the
+    ui-only catalog with explicit "JS-API substitute does not
+    exercise canvas hit-test" rationale.
+  - sub_features_covered frontmatter: `charts.sunburst.on-click`
+    REMOVED from sunburst-spec.ts (L2) and sunburst.md (L3-7).
+    The atlas ID is now claimed by charts-ui.md (L3-6) which has
+    the canonical canvas-gesture coverage. 5 IDs remain in
+    sunburst-spec frontmatter: charts.sunburst,
+    charts.sunburst.title, charts.sunburst.inherit-from-grid,
+    charts.sunburst.include-nulls, charts.echart-base — all 5
+    resolve to atlas IDs (charts.yaml L30, L393, L400, L415, L423).
+  - ui_coverage_responsibility: `sunburst-multi-selection`
+    REMOVED (sunburst-spec.ts L8 / sunburst.md L12-18).
+    `ui_coverage_delegated_to: {sunburst-multi-selection:
+    charts-ui.md, sunburst-empty-category-click: charts-ui.md}`
+    NEW (sunburst-spec.ts L9 / sunburst.md L19-21) — formal
+    delegation route to the ui-only companion.
+  - Spec header comment L17-21 UPDATED to reflect the move
+    ("sunburst-multi-selection + sunburst-empty-category-click
+    MOVED to charts-ui.md (ui-only manual scenarios) per
+    charts-remediate-2026-05-09 user directive — canvas
+    Click/Ctrl+Click/Ctrl+Shift+Click and null-segment hit-test
+    have no automatable equivalent that exercises the actual UI
+    invariant; df.selection.set bitset proxies were removed").
+  - E-LAYER-COMPLIANCE-01 STILL DEFERRED to
+    charts-evaluate-extract-2026-05-09 — same routing as round 2.
+    Body still uses page.evaluate + dispatchEvent exclusively for
+    DOM driving (zero direct page.click/page.locator/page.fill/
+    page.hover/page.press/page.keyboard/page.mouse/dlg.locator/
+    dlg.click/dlg.fill matches). Spec header L32-35 + scenario
+    Notes L249-260 + migration report L110-128 cite the deferral
+    with cross-reference to decision-log
+    `charts-evaluate-extract-2026-05-09` and tree-spec.ts canonical
+    pattern reference. NOT a new failure — carries forward unchanged.
 
-  Acceptable per orchestrator Edit 10 SR routing: documented
-  deferral with cited dependency (decision-log entry +
-  tree-spec.ts pattern reference) on a multi-spec body-wide
-  refactor that exceeds the remediation cycle's narrow Project
-  save+reopen scope.
+  ui-only extraction is structurally clean:
+  - E-STRUCT-MECH-06 STILL PASS — sub_features_covered shrank
+    from 6 to 5 IDs but remains non-empty and all 5 resolve to atlas.
+  - E-TRACE-02 STILL PASS — the moved scenario sections retain
+    headings with cross-reference blockquote bodies; the
+    blockquote is the authoritative "section moved" marker
+    routing the reader to charts-ui.md. No orphaned scenario
+    steps in sunburst.md (every numbered step in retained
+    sections is covered by a softStep; moved sections delegate
+    cleanly).
+  - E-TRACE-01 STILL PASS — Step 5 / Step 6 softStep removal
+    matches removed scenario sections; comment at L371-376
+    documents the move so reviewer can trace the absent steps.
+  - E-LAYER-01 STILL PASS — target_layer=playwright unchanged;
+    spec body still uses @playwright/test imports.
+  - E-SEL-* STILL PASS — no new selectors introduced;
+    selectors used elsewhere unchanged.
+  - E-HELP-* STILL PASS — no new helper invented.
+  - E-BOUND-* STILL PASS — files remain under TestTrack tree.
 
 failure_keys: []
 
 scope_reduction_proposal: |
   Defer E-LAYER-COMPLIANCE-01 strict-regex compliance (page.evaluate
   + dispatchEvent → page.locator(...).click() body refactor) to
-  charts cycle charts-evaluate-extract-2026-05-09 (decision-log.yaml
-  L3357 + L3528). Rationale per migration report L110-128 + scenario
-  Notes L254-265:
+  charts cycle charts-evaluate-extract-2026-05-09. SAME deferral as
+  round 2 — carries forward unchanged. Round 3 made NO progress
+  toward closing E-LAYER-COMPLIANCE-01 because:
 
-  1. Remediation cycle 2026-05-09 scope: narrowly insert Project
-     save+reopen softStep + fix L17-19 comment block. Bundling a
-     body-wide refactor risks scope creep and lengthens Validator B
-     re-run surface — explicit Migrator decision factor.
-  2. Pattern reference: tree-spec.ts is being refactored in this
-     same cycle (decision-log L8121 records prior tree-spec.ts
-     PASS round 11 with Add-Viewer fallback + Filter-Panel
-     ribbon-icon fallback). Symmetric refactor in next cycle keeps
-     the spec family aligned.
-  3. Cited dependency: decision-log.yaml entry
-     `migration_decisions[sunburst-project-save-reopen-keep-2026-05-09]`
-     L3340-3373 + failed_attempts[legend-filtering-frontmatter-only-x14,
-     legend-scatterplot-frontmatter-only-x14] L3434-3499 (canonical
-     E-LAYER-COMPLIANCE-01 precedent).
-  4. Spec body indirect compliance pathway: spec imports
-     loginToDatagrok from `../spec-login` (helpers-registry.yaml
-     L3603), and that helper's body uses page.locator,
-     page.keyboard.type, page.keyboard.press, .focus(), .click()
-     directly (spec-login.ts L41-73). Per radar-spec.ts round-1
-     verdict precedent (radar.spec.verdict.yaml L82-84), the
-     dispatchEvent-inside-page.evaluate pattern is canonical for
-     Charts add-viewer/gear DOM driving (charts.md L37-50, L81-86).
-     Strict-regex follow-up nonetheless remains the canonical fix
-     class — defer applied per cited orchestrator decision, not
-     re-PASS.
+  1. Round 3 scope is the ui-only extraction (canvas-gesture
+     migration to charts-ui.md), narrowly scoped per user directive.
+     The body-wide page.evaluate → page.locator refactor is a
+     separate work item documented in spec header L32-35 and
+     scenario Notes L249-260.
+  2. Round 3 in fact REDUCES the regex match surface (Step 5/6
+     softSteps removed — they were AMBIGUOUS/SKIP placeholders
+     with no DOM driving anyway, so net page.evaluate count
+     drops marginally). The structural shape of the deferral is
+     unchanged.
+  3. Pattern reference (tree-spec.ts in-cycle refactor) and cited
+     dependency (decision-log entry
+     `charts-evaluate-extract-2026-05-09`) remain valid — same
+     citations as round 2 verdict L42-78.
 
-  Coverage held intact: pyramid_layer=integration (not ui-smoke),
-  ui_coverage_responsibility flows are exercised via the canonical
-  Charts dispatchEvent pattern. No sub_features_covered atlas
-  shrinkage. Frontmatter unchanged.
+  Coverage held intact across the extraction:
+  - pyramid_layer=integration unchanged (sunburst-spec.ts).
+  - ui_coverage_responsibility shrank by 1 flow
+    (sunburst-multi-selection) but added formal delegation
+    (`ui_coverage_delegated_to`) so the flow is not orphaned —
+    charts-ui.md owns it as ui-only manual.
+  - sub_features_covered shrank by 1 ID
+    (charts.sunburst.on-click) but the atlas ID remains covered
+    by charts-ui.md frontmatter — atlas coverage at the feature
+    level is preserved across the spec/ui-only split.
+  - The empty-category null-segment click (was Step 6 SKIP) is
+    now authoritatively documented in charts-ui.md
+    `### Sunburst — empty (null) category click (canvas)` rather
+    than living as a no-op SKIP softStep in the playwright spec —
+    a structural improvement.
 
 claims:
   - check_id: E-STRUCT-MECH-01
@@ -83,153 +130,165 @@ claims:
     evidence: |
       Spec file exists at
       public/packages/UsageAnalysis/files/TestTrack/charts/sunburst-spec.ts
-      (read successfully, 555 lines).
+      (read successfully, 583 lines). Companion ui-only scenario
+      at charts-ui.md (read successfully, 195 lines).
   - check_id: E-STRUCT-MECH-02
     status: PASS
     evidence: |
       Spec parses as valid TypeScript — balanced braces, valid
-      `test()` signature at L44, imports well-formed at L32-33,
-      try/finally block at L416-531 balanced, single
-      `test('Sunburst viewer', ...)` outer call closed at L554.
+      `test()` signature at L48, imports well-formed at L36-37,
+      try/finally block at L426-560 balanced, single
+      `test('Sunburst viewer', ...)` outer call closed at L583.
+      Step 5/6 removal at L371-376 left a clean comment block;
+      no dangling softStep wrapper or unclosed brace.
   - check_id: E-STRUCT-MECH-03
     status: PASS
     evidence: |
       Single `test('Sunburst viewer', async ({page}) => { ... })`
-      block at L44.
+      block at L48.
   - check_id: E-STRUCT-MECH-04
     status: PASS
     evidence: |
       Test name 'Sunburst viewer' matches scenario H1 heading
       '# Sunburst viewer' (sunburst.md L31) — substring match.
-      softStep names ('Step 1a:', 'Step 7b: Project save and
-      reopen — JS API round-trip + verify Sunburst restored',
-      etc.) cite scenario step numbers / headings.
+      All retained softStep names cite scenario step numbers /
+      headings (Step 1a, Step 1b, Step 2, Step 3.1, Step 3.2,
+      Step 3.3, Step 3.4, Step 4, Step 7, Step 7b, Step 8,
+      Step 9). Removed Step 5/6 traceable via comment block at
+      L371-376 citing the move to charts-ui.md.
   - check_id: E-STRUCT-MECH-05
     status: PASS
     evidence: |
-      Imports at L32-33: `@playwright/test` (canonical for
+      Imports at L36-37: `@playwright/test` (canonical for
       Playwright specs) and `../spec-login` (TestTrack-local
-      sibling helper module hosting registered helpers
-      softStep/loginToDatagrok per helpers-registry.yaml
-      L3597-3605, plus co-located specTestOptions/stepErrors).
-      No arbitrary external imports.
+      sibling helper module). No arbitrary external imports.
   - check_id: E-STRUCT-MECH-06
     status: PASS
     evidence: |
       L1-3 frontmatter block precedes all imports (only
       preceded by /* --- ... --- */ marker) with non-empty
-      sub_features_covered list. All 6 IDs (charts.sunburst,
-      charts.sunburst.title, charts.sunburst.on-click,
-      charts.sunburst.inherit-from-grid,
-      charts.sunburst.include-nulls, charts.echart-base)
-      resolve to atlas sub_features in charts.yaml.
+      sub_features_covered list. 5 IDs after extraction —
+      charts.sunburst (atlas L393), charts.sunburst.title
+      (atlas L400), charts.sunburst.inherit-from-grid (atlas
+      L415), charts.sunburst.include-nulls (atlas L423),
+      charts.echart-base (atlas L30). All resolve to
+      sub_features[].id in charts.yaml. The removed
+      charts.sunburst.on-click ID is now claimed by
+      charts-ui.md frontmatter L3-6 — atlas coverage preserved
+      across the spec/ui-only split.
   - check_id: E-TRACE-01
     status: PASS
     evidence: |
-      Every softStep cites a scenario step or heading via name.
-      Steps 1a/1b cover Setup + "### Viewer creation smoke";
-      Step 2 covers "### Property panel opens"; Step 3.1 logs
-      AMBIGUOUS for "### Table switching"; Step 3.2-3.4 cover
-      "### Hierarchy configuration via Select Columns dialog"
-      + "### Inherit from grid" + "### Include nulls"; Step 4
-      covers "### View reset"; Step 5/6 are AMBIGUOUS-marked
-      (canvas-rendered segments, JS API df.selection fallback
-      per charts.md AMBIGUOUS workaround); Step 7 covers
-      "### Layout save and apply"; Step 7b NEW covers
-      "### Project save and reopen"; Step 8/9 are SKIP-tagged
-      with documented external-asset / out-of-scope reasons.
-      Baseline setup (L50-59) and finally cleanup (L510-531,
-      L544) are clearly technical glue.
+      Every retained softStep cites a scenario step or heading
+      via name. Steps 1a/1b cover Setup + "### Viewer creation
+      smoke"; Step 2 covers "### Property panel opens"; Step
+      3.1 logs AMBIGUOUS for "### Table switching"; Step 3.2-3.4
+      cover "### Hierarchy configuration via Select Columns
+      dialog" + "### Inherit from grid" + "### Include nulls";
+      Step 4 covers "### View reset"; Step 7 covers "### Layout
+      save and apply"; Step 7b covers "### Project save and
+      reopen"; Step 8/9 are SKIP-tagged with documented external-
+      asset / out-of-scope reasons. Removed Step 5/6 traceable
+      via comment block at L371-376 citing the explicit move to
+      charts-ui.md per user directive — this is a documented
+      deletion, not an orphaned step. Baseline setup (L54-63)
+      and finally cleanup (L539-559, L573) are technical glue.
   - check_id: E-TRACE-02
     status: PASS
     evidence: |
-      Round-1 FAIL FIXED. New softStep "Step 7b: Project save
-      and reopen — JS API round-trip + verify Sunburst restored"
-      at L417 + try/finally cleanup wrapper at L416-531 covers
-      the previously uncovered scenario heading "### Project
-      save and reopen" (sunburst.md L146-156). Implementation
-      exercises all 5 scenario sub-steps: (1) configure 3-4
-      hierarchy columns (L432-441 picks first 3 string
-      columns), (2) save project via grok.dapi.projects.save
-      (L446-447), (3) closeAll + verify shell empty
-      (L461-464), (4) find by name + open via dapi.projects.filter +
-      proj.open (L467-481), (5) verify Sunburst viewer present
-      + hierarchy preserved (L483-508 with race-tolerant
-      hierarchy assertion). Cleanup deletes saved project
-      in finally (L510-531). Header comment block L17-31
-      now correctly enumerates Step 7 (Layout) / Step 7b
-      (Project save+reopen NEW) / Step 8 (#2979 SKIP) /
-      Step 9 (Collab filter SKIP). All numbered scenario
-      headings now have ≥1 covering softStep.
+      All numbered scenario headings in sunburst.md still have
+      ≥1 covering softStep OR formal cross-reference delegation
+      to charts-ui.md. Coverage map after extraction:
+      - "### Viewer creation smoke" (L59) → Step 1a/1b L71/155
+      - "### Property panel opens" (L66) → Step 2 L229
+      - "### Table switching" (L72) → Step 3.1 L269
+      - "### Hierarchy configuration via Select Columns dialog"
+        (L80) → Step 3.2 L275
+      - "### Inherit from grid (demog.csv)" (L95) → Step 3.3 L309
+      - "### Include nulls (SPGI_v2.csv)" (L107) → Step 3.4 L323
+      - "### View reset" (L116) → Step 4 L342
+      - "### Multi-selection behaviour" (L125) → cross-reference
+        blockquote L127-132 delegating to charts-ui.md
+        `### Sunburst — multi-selection on segments` L51-78.
+        Acceptable as "section moved" marker per Critic E
+        guidance — heading retained with explicit move
+        rationale; downstream reader / Critic F can trace the
+        delegation.
+      - "### Select / filter on empty category (SPGI_v2.csv)"
+        (L134) → cross-reference blockquote L136-139 delegating
+        to charts-ui.md `### Sunburst — empty (null) category
+        click (canvas)` L80-101.
+      - "### Project save and reopen" (L141) → Step 7b L427
+      - "### Layout save and apply" (L153) → Step 7 L380
+      - "### Old layout compatibility (issue #2979)" (L164) →
+        Step 8 L563 (SKIP)
+      - "### Collaborative filtering (demog.csv)" (L181) →
+        Step 9 L568 (SKIP)
+      No orphaned scenario heading. Cross-reference blockquotes
+      satisfy E-TRACE-02 because the moved sections cross-
+      reference charts-ui.md authoritatively (the ui-only
+      companion catalogues both extracted scenarios verbatim
+      with explicit JS-API-fallback-not-equivalent rationale).
   - check_id: E-TRACE-03
     status: PASS
     evidence: |
-      Verification steps use expect(). Step 7b adds five
-      expects: expect(saved.ok).toBe(true) at L455,
-      expect(reopened.ok).toBe(true) at L503,
-      expect(reopened.tableViewsAfterClose).toBe(0) at L505
-      (GROK-18085-class invariant), expect(reopened.sunburstPresent).toBe(true)
-      at L506, race-tolerant hierarchy length check at L508.
+      Verification steps in retained scenarios use expect().
+      Step 7b 5 expects unchanged from round 2:
+      expect(spgi.rowCount).toBeGreaterThan(0) L150,
+      expect(demog.rowCount).toBe(5850) L223,
+      expect(result.gearClicked).toBe(true) L259,
+      expect(result.cols).toEqual(['SEX','RACE']) L305,
+      expect(result.inheritFromGrid).toBe(true) L319,
+      expect(result.firstRead).toBe(true) L337,
+      expect(result.menuOpened).toBe(true) L367,
+      expect(reopened.tableViewsAfterClose).toBe(0) L529, etc.
       AMBIGUOUS / SKIP softSteps log warnings without expect —
-      consistent with documented skip pattern (Step 5
-      console.warn '[AMBIGUOUS]'; Step 6/8/9 console.warn
-      '[SKIP]').
+      consistent with documented skip pattern.
   - check_id: E-SEL-01
     status: PASS
     evidence: |
-      All selectors used in spec body appear in
-      .claude/skills/grok-browser/references/charts.md
-      (Quick Reference + Add-Viewer-gallery-flow lines 37-50,
-      Viewer-containers, viewer-property-panel-gear,
-      select-columns-dialog, viewer-context-menu-reset-view,
-      Layouts pane lines 405-446 with Ctrl+S guard). Step 7b
-      uses no DOM selectors — JS API only (grok.dapi.projects
-      round-trip, grok.shell.tableViews, grok.shell.closeAll).
+      All selectors used in the retained spec body appear in
+      .claude/skills/grok-browser/references/charts.md (Quick
+      Reference + Add-Viewer-gallery-flow lines, Viewer-
+      containers, viewer-property-panel-gear, select-columns-
+      dialog, viewer-context-menu-reset-view, Layouts pane).
+      Step 5/6 selectors gone — no orphaned references remain.
   - check_id: E-SEL-02
     status: PASS
     evidence: |
-      No invented selectors; every `[name="..."]` token
-      cross-validated to charts.md or sibling references.
-      Step 7b adds zero new selectors (pure JS API path
-      per migration report Decision: UI Save Project dialog
-      gated by share-dialog overlay unreliable in headless;
-      JS API substitution acceptable for AMBIGUOUS/blocked
-      sub-flow per Edit 10).
+      No invented selectors; every `[name="..."]` token cross-
+      validated to charts.md or sibling references. The ui-only
+      extraction REMOVED Step 5/6 selectors; no new selectors
+      introduced anywhere.
   - check_id: E-SEL-03
     status: PASS
     evidence: |
-      No .fill() calls on Dart inputs anywhere in the spec.
-      All input set via setOptions() JS API. Step 7b uses
-      project.name = name string assignment (JS property,
-      not Dart input). No keyboard.type calls.
+      No .fill() calls on Dart inputs anywhere in the retained
+      spec body. All input set via setOptions() JS API.
   - check_id: E-HELP-01
     status: PASS
     evidence: |
       Helpers from registered spec-login module
       (loginToDatagrok at helpers-registry.yaml L3603,
-      softStep at L3597; specTestOptions and stepErrors
-      co-located in spec-login.ts L7-16 — same module).
-      uploadProject (helpers-registry.yaml L4-6) flagged as
-      candidate in scenario Notes L221 but NOT used in
-      Step 7b — Automator chose direct grok.dapi.projects.save
-      JS API path per migration report Decision (downstream
-      Automator decides whether to use uploadProject helper
-      or drive Save dialog UI explicitly).
+      softStep at L3597). No new helper invented across the
+      extraction.
   - check_id: E-HELP-02
     status: PASS
     evidence: |
       No reinvention — login uses loginToDatagrok(page) at
-      L47; soft steps use softStep(name, fn). Project save
+      L51; soft steps use softStep(name, fn). Project save
       uses grok.dapi.projects.save / .filter / .find / .delete
-      directly (canonical dapi pattern per
-      public/packages/CLAUDE.md "Common patterns" section).
+      directly (canonical dapi pattern).
   - check_id: E-LAYER-01
     status: PASS
     evidence: |
-      Scenario target_layer=playwright (sunburst.md L10) matches
+      Scenario target_layer=playwright (sunburst.md L9) matches
       Playwright spec import `@playwright/test` (sunburst-spec.ts
-      L32). Frontmatter mirrored at L4 (target_layer: playwright)
-      via Edit X7 frontmatter extraction comment.
+      L36). Frontmatter mirrored at L4 (target_layer: playwright)
+      via Edit X7 frontmatter extraction comment. The companion
+      charts-ui.md correctly carries target_layer=manual +
+      pyramid_layer=ui-only — the ui-only extraction is
+      target_layer-consistent.
   - check_id: E-LAYER-02
     status: NA
     evidence: |
@@ -237,52 +296,48 @@ claims:
   - check_id: E-LAYER-COMPLIANCE-01
     status: FAIL
     evidence: |
-      Strict-regex check: scenario target_layer=playwright requires
-      ≥1 DOM-driving call from regex set
-      `page\.click | page\.fill | page\.locator | page\.hover |
-      page\.press | page\.keyboard | page\.mouse | dlg\.locator |
-      dlg\.click | dlg\.fill`. Spec body contains zero direct
-      matches (only `page.evaluate` x17). All DOM driving
-      occurs inside page.evaluate via el.dispatchEvent / .click()
-      on raw DOM elements (Add-Viewer gallery click L97/100/121,
-      gear click L211, select-columns dotsBtn L256, reset menu
-      reset.click L333, Layouts header click L375, save L384,
-      apply L392). Per Edit X2 strict mechanical rule this is
-      FAIL.
+      Strict-regex check carries forward from round 2 — STILL
+      FAIL on the mechanical regex. Spec body still contains
+      zero direct page.click / page.fill / page.locator /
+      page.hover / page.press / page.keyboard / page.mouse /
+      dlg.locator / dlg.click / dlg.fill matches. All DOM
+      driving still occurs inside page.evaluate via
+      el.dispatchEvent / .click() on raw DOM elements.
 
-      Routing: SCOPE_REDUCTION (not blocking FAIL) per
-      orchestrator Edit 10 acceptable-SR-class catalog —
-      documented deferral with cited dependency. See
-      scope_reduction_proposal above for rationale +
-      decision-log + pattern-reference cites.
+      Routing: SCOPE_REDUCTION (carrying forward round-2
+      deferral) per orchestrator Edit 10 acceptable-SR-class
+      catalog. Round 3 made no progress on closing this check
+      because round 3 scope was the ui-only extraction, not the
+      body-wide refactor. Same scope_reduction_proposal applies
+      as round 2 — see scope_reduction_proposal field above.
+
+      Cross-references unchanged from round 2: decision-log.yaml
+      entry `charts-evaluate-extract-2026-05-09`,
+      failed_attempts[legend-filtering-frontmatter-only-x14,
+      legend-scatterplot-frontmatter-only-x14] (canonical
+      precedent), tree-spec.ts in-cycle refactor as canonical
+      pattern reference for next cycle.
 
       Indirect compliance pathway noted (NOT used to flip the
-      mechanical regex result): spec imports loginToDatagrok from
-      `../spec-login`; that helper's body uses page.locator
-      (spec-login.ts L41-42), page.keyboard.type (L46/51),
-      page.keyboard.press (L50/52), loginInput.focus() (L45),
-      loginBtn.click (L62). Round-1 radar-spec.ts canonical
-      verdict (radar.spec.verdict.yaml L82-84) accepted the
-      sunburst/timelines dispatchEvent-inside-page.evaluate
+      mechanical regex result): spec imports loginToDatagrok
+      from `../spec-login`; that helper's body uses page.locator,
+      page.keyboard.type, page.keyboard.press, .focus(), .click()
+      directly. Round-1 radar-spec.ts canonical verdict accepted
+      the sunburst/timelines dispatchEvent-inside-page.evaluate
       pattern as canonical for Charts add-viewer / gear DOM
-      driving. This round honors the strict-regex reading per
-      scenario Notes L254-265 explicit deferral.
-
-      Cross-references: decision-log.yaml L3357 (deferred
-      follow-up), L3434/3484 (legend-* failed_attempts
-      precedent), tree-spec.ts in-cycle refactor as canonical
-      pattern reference for next cycle
-      charts-evaluate-extract-2026-05-09.
+      driving. Round 3 honors the strict-regex reading per
+      scenario Notes L249-260 explicit deferral.
   - check_id: E-BOUND-01
     status: PASS
     evidence: |
       Spec lives under
       public/packages/UsageAnalysis/files/TestTrack/charts/ —
-      allowed by E-BOUND-01 rule 1 (TestTrack tree).
+      allowed. Companion charts-ui.md lives under same TestTrack
+      directory — also allowed.
   - check_id: E-BOUND-02
     status: PASS
     evidence: |
-      No edits to core/** or package source outside TestTrack tree.
-      Step 7b adds no boundary-crossing code (JS API calls go
-      through grok.dapi which is the canonical client→server
-      path per public/packages/CLAUDE.md API rules).
+      No edits to core/** or package source outside TestTrack
+      tree. The ui-only extraction touched only sunburst-spec.ts,
+      sunburst.md, and the new charts-ui.md (all in
+      public/packages/UsageAnalysis/files/TestTrack/charts/).

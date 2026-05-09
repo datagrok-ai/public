@@ -1,11 +1,12 @@
 /* ---
-sub_features_covered: [charts.sunburst, charts.sunburst.title, charts.sunburst.on-click, charts.sunburst.inherit-from-grid, charts.sunburst.include-nulls, charts.echart-base]
+sub_features_covered: [charts.sunburst, charts.sunburst.title, charts.sunburst.inherit-from-grid, charts.sunburst.include-nulls, charts.echart-base]
 --- */
 // Frontmatter extraction (Edit X7):
 //   target_layer: playwright
 //   pyramid_layer: integration
-//   sub_features_covered: [charts.sunburst, charts.sunburst.title, charts.sunburst.on-click, charts.sunburst.inherit-from-grid, charts.sunburst.include-nulls, charts.echart-base]
-//   ui_coverage_responsibility: [add-viewer-sunburst, viewer-property-panel-gear, select-columns-dialog, viewer-context-menu-reset-view, sunburst-multi-selection, viewer-save-layout, viewer-apply-layout] (delegated_to: null)
+//   sub_features_covered: [charts.sunburst, charts.sunburst.title, charts.sunburst.inherit-from-grid, charts.sunburst.include-nulls, charts.echart-base]
+//   ui_coverage_responsibility: [add-viewer-sunburst, viewer-property-panel-gear, select-columns-dialog, viewer-context-menu-reset-view, viewer-save-layout, viewer-apply-layout]
+//   ui_coverage_delegated_to: {sunburst-multi-selection: charts-ui.md, sunburst-empty-category-click: charts-ui.md}
 //   related_bugs: [github-2954, github-3412]
 //   produced_from: migrated
 // DOM-driving rationale (charts-update-2026-05-08):
@@ -13,8 +14,11 @@ sub_features_covered: [charts.sunburst, charts.sunburst.title, charts.sunburst.o
 //   (open/OK/Cancel only — inner per-column toggle stays JS API as the grid
 //   is canvas-rendered), viewer-context-menu-reset-view, viewer-save-layout,
 //   viewer-apply-layout — driven via real DOM per references/charts.md.
-//   sunburst-multi-selection remains AMBIGUOUS (Sunburst segments are
-//   canvas-rendered; JS API df.selection fallback per charts.md).
+//   sunburst-multi-selection + sunburst-empty-category-click MOVED to
+//   charts-ui.md (ui-only manual scenarios) per charts-remediate-2026-05-09
+//   user directive — canvas Click/Ctrl+Click/Ctrl+Shift+Click and
+//   null-segment hit-test have no automatable equivalent that exercises the
+//   actual UI invariant; df.selection.set bitset proxies were removed.
 // Spec body softStep order (charts-remediate-2026-05-09 update):
 //   Step 7 — Layout save/apply (DOM via Toolbox Layouts pane).
 //   Step 7b — Project save and reopen (NEW per Migrator Decision 2,
@@ -364,28 +368,12 @@ test('Sunburst viewer', async ({page}) => {
     expect(result.resetClicked).toBe(true);
   });
 
-  // Step 5: Multi-selection — AMBIGUOUS (canvas-based) — JS API fallback per charts.md.
-  await softStep('Step 5 (AMBIGUOUS): Multi-selection via df.selection fallback (canvas segments)', async () => {
-    console.warn('[AMBIGUOUS]', 'Sunburst segments are canvas-rendered; gesture-level ' +
-      'Click/Ctrl+Click/Ctrl+Shift+Click is not deterministically reproducible. ' +
-      'Driving selection via df.selection.set per charts.md AMBIGUOUS workaround.');
-    const result = await page.evaluate(async () => {
-      const grok = (window as any).grok;
-      const df = grok.shell.tv.dataFrame;
-      df.selection.setAll(false);
-      const limit = Math.min(50, df.rowCount);
-      for (let i = 0; i < limit; i++) df.selection.set(i, true);
-      df.selection.fireChanged();
-      await new Promise((r) => setTimeout(r, 300));
-      return {selected: df.selection.trueCount};
-    });
-    expect(result.selected).toBeGreaterThan(0);
-  });
-
-  // Step 6: Select/filter on empty category — AMBIGUOUS
-  await softStep('Step 6: Select/filter on empty (null) category (AMBIGUOUS, canvas-based)', async () => {
-    console.warn('[SKIP]', 'AMBIGUOUS: canvas-based, depends on null-segment rendering and selection');
-  });
+  // Step 5 + Step 6 — MOVED to charts-ui.md (ui-only manual scenarios).
+  // Multi-selection (Click/Ctrl+Click/Ctrl+Shift+Click on canvas segments)
+  // and empty-category click (canvas grey null-segment hit-test) have no
+  // automatable JS-API equivalent that exercises the canvas UI invariant.
+  // df.selection.set bitset proxy was removed — see charts-ui.md for the
+  // manual scenario catalog.
 
   // Step 7: Layouts pane — Save current layout via Toolbox → Layouts pane (DOM).
   // Apply path is documented but list may be empty for fresh tables — degrade gracefully.
