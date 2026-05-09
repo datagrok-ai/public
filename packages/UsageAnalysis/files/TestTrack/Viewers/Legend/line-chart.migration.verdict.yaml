@@ -1,0 +1,57 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: legend-migrate-2026-05-07
+feature: legend
+mode: migration
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/line-chart.md
+invoked_at: 2026-05-07T00:00:00Z
+verdict: PASS
+gate: D
+failure_keys: []
+claims:
+  - check: D-STRUCT-MECH-01
+    status: PASS
+    evidence: "Migration report exists at Legend/line-chart-migration-report.md (57 lines, non-empty)."
+  - check: D-STRUCT-MECH-02
+    status: PASS
+    evidence: "Step mapping table present with 10 rows; every original numbered step has a row."
+  - check: D-STRUCT-MECH-03
+    status: PASS
+    evidence: "All 9 required Block 6 frontmatter fields present (feature, sub_features_covered, target_layer, coverage_type=regression, produced_from=migrated, original_path, migration_date, migration_report, related_bugs). No deprecated `migrated_from`. Extra `priority: p1` and `pyramid_layer: integration` are non-blocking auxiliary fields."
+  - check: D-STRUCT-MECH-04
+    status: PASS
+    evidence: "Required `## ` sections all present: Step mapping, Decisions, Opt-outs, Deferred items, Unresolved ambiguities (plus Edge cases)."
+  - check: D-STRUCT-MECH-05
+    status: PASS
+    evidence: "`original_path` points to the in-place migrated file path; file exists in repo."
+  - check: D-STEP-01
+    status: PASS
+    evidence: "All 10 original numbered steps are mapped to migrated locations in the Step mapping table; no opt-outs."
+  - check: D-STEP-02
+    status: PASS
+    evidence: "Every Expected result clause from original (legend lists distinct values, distinct colors no-adjacent-collision, per-subplot legend, layout/project round-trip persistence, two-Y blocks render, replacement updates the affected block) is preserved as a verification step in the migrated scenarios."
+  - check: D-EDGE-01
+    status: PASS
+    evidence: "Implicit edge cases preserved: ≥3 s layout settle (Scenario 3 step 2), in-plot column selector vs `yColumnNames` JS API fallback (Scenario 4 step 3 + Unresolved ambiguities), per-subplot legend cardinality (Scenario 2 step 3), no-adjacent-color collision (Scenario 1 step 3). All listed in Edge cases section of report."
+  - check: D-STRUCT-01
+    status: PASS
+    evidence: "Single linear flow per chain `output_plan.strategy: simple`; no cross-file dependency. Cross-cutting bug citations (GROK-17222, GROK-17278) noted from chain `bug_focused_candidates[]` and assigned to bug-focused specs."
+  - check: D-STRUCT-02
+    status: NA
+    evidence: "Not a matrix scenario; original is a single linear 10-step flow."
+  - check: D-UI-DELEGATION-01
+    status: PASS
+    evidence: "No SCOPE_REDUCTION proposals exist (Opt-outs is `(none)`), so the trigger condition does not fire. Migration report nonetheless documents UI delegation: standard legend UI flows (visibility/position/color picker/save dialog) delegated to `visibility-and-positioning.md`."
+  - check: D-SAN-01
+    status: PASS
+    evidence: "Report's Decisions section enumerates target_layer, strategy, pyramid_layer, priority, coverage_type rationales, sibling tests consulted, helpers reused, bug-library consultation, decision-log query, UI delegation, and cross-cutting bug citations."
+  - check: D-SAN-02
+    status: PASS
+    evidence: "No silent drops detected. Original 10 numbered steps all traced; trailing JSON `{order, datasets}` preserved verbatim at lines 70-73 of migrated file. Dataset path `System:DemoFiles/SPGI.csv` lifted from JSON into Setup step 1 — additive enrichment, not a drop."
+  - check: D-MERIT-01
+    status: PASS
+    evidence: "No opt-outs in the migration; vacuously satisfied."
+  - check: D-MERIT-02
+    status: PASS
+    evidence: "Two Unresolved ambiguities flagged for downstream Automator (hover-gated in-plot column selector; underspecified `values` in legend block update assertion). Both are next-gate concerns, not unprompted deferrals."

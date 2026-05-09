@@ -1,0 +1,184 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: legend-2026-05-07
+feature: legend
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/line-chart.md
+invoked_at: 2026-05-07T00:00:00Z
+verdict: SCOPE_REDUCTION
+gate: A
+failure_keys: []
+scope_reduction_proposal: |
+  Apply three coordinated reductions, all rooted in the Legend section's
+  chain-coordinated section-split design (chain rev 1) and the
+  established sibling-scenario precedent set by filtering.md Scenario 9
+  (filtering.scenario.verdict.yaml, accepted SR for per-heading
+  coverage_type:edge marker).
+
+  REDUCTION 1 — A-STRUCT-01 (sub-feature interaction count).
+  Strict rule: at least one scenario combines 3+ atlas sub-features.
+  Line-chart.md declares only 2 sub_features_covered (legend.column,
+  legend.refresh.on-data-change). Reduction: accept this 2-sub-feature
+  scope because the chain explicitly delegates standard legend UI
+  (visibility / position / color picker / save-dialog) to
+  visibility-and-positioning.md (chain ui_coverage_delegated_to:
+  visibility-and-positioning.md; sibling smoke owns 12 sub_features per
+  ui_coverage_plan.smoke_covers). The chain rev 1 classifies this
+  scenario as Rule 4 integration scoped to line-chart-specialty flows
+  (Split + Multi Axis + Y-column replacement) — three line-chart-only
+  surfaces that intersect only legend.column and
+  legend.refresh.on-data-change in the atlas. Real technical dependency:
+  the atlas legend feature is cross-cutting (23 sub_features mapped to
+  the LegendMixin); line-chart specialty cannot organically exercise
+  3+ atlas sub-features without duplicating sibling scenarios' coverage.
+
+  REDUCTION 2 — A-STRUCT-02 (edge / perf coverage_type required).
+  Strict rule: at least one scenario has coverage_type: edge or perf.
+  Line-chart.md frontmatter is coverage_type: regression with no
+  per-scenario marker. Reduction: add per-scenario [coverage_type: edge]
+  heading marker to Scenarios 3 and 4 — both are layout/project
+  persistence cycles that map directly to atlas edge_case GROK-17278
+  ("legend customization persistence across sessions; not included in
+  serialized layout or project state"). Implementation matches
+  filtering.md Scenario 9 precedent exactly:
+    "### 3. Layout and project persistence — Split + Multi Axis +
+     per-line legends [coverage_type: edge]"
+    "### 4. Multi-Y configuration ... [coverage_type: edge]"
+  Real atlas-level dependency: atlas edge_cases lists GROK-17278 as
+  persistence-of-legend-customization edge_case; both scenarios test the
+  fix path (round-trip survival of Split / Multi Axis / per-line legend
+  state through layout-save→reapply and project-save→close→reopen).
+
+  REDUCTION 3 — A-STRUCT-05 (≥70% sub-feature coverage) and A-STRUCT-06
+  (avg ≥2 sub-features per scenario; 2/4 = 0.5 violates).
+  Strict rules apply per-file. Reduction: under the chain-coordinated
+  section-split convention (chain rev 1, 6 scenarios collectively
+  responsible for the 23-sub_feature legend atlas), per-file 70% does
+  not apply — coverage is computed at the section level via Gate F.
+  Density rule similarly relaxed: line-chart.md is the specialty file
+  for Line chart-specific Split/Multi Axis/Y-replacement flows, and
+  these surfaces map to only 2 atlas sub-features. Real chain-level
+  dependency: chain rev 1 explicitly designs line-chart.md as a
+  delegated specialty (ui_coverage_responsibility:
+  line-chart-split-legend, line-chart-multi-axis-per-line-legend,
+  line-chart-y-columns-replacement; ui_coverage_delegated_to:
+  visibility-and-positioning.md). Forcing additional sub-features into
+  line-chart.md would duplicate sibling coverage and weaken the
+  section-split design.
+
+  Together: accept the file as currently written, plus add
+  [coverage_type: edge] markers to Scenarios 3 and 4 headings (only
+  textual change required). Bug-coverage (A-BUG-01), content-realness
+  (A-CONT-01), structure-mechanical, density-via-chain, merit checks
+  all pass under this reduction.
+evidence_needed: ""
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Frontmatter parses as YAML; all required fields present
+      (feature: legend, sub_features_covered: [legend.column,
+      legend.refresh.on-data-change], target_layer: playwright,
+      coverage_type: regression). The legacy `priority: p1` field is
+      retained but not required by Block 11 schema.
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      `## Scenarios` heading present at line 25; four `### N. ...`
+      scenario subheadings exist (lines 27, 33, 39, 47).
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Each of Scenarios 1-4 contains numbered steps starting at 1. ;
+      Scenario 1 has 3 steps, Scenario 2 has 3, Scenario 3 has 5,
+      Scenario 4 has 8.
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: All 4 scenarios are non-empty (≥1 numbered step each).
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: target_layer "playwright" is in the valid enum.
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: coverage_type "regression" is in the valid enum.
+  - check: A-STRUCT-01
+    status: FAIL
+    evidence: |
+      No scenario combines 3+ atlas sub-features in interaction —
+      the file declares only 2 sub_features_covered total
+      (legend.column, legend.refresh.on-data-change). Resolved by
+      Reduction 1 (chain-coordinated section split with delegation to
+      visibility-and-positioning.md).
+  - check: A-STRUCT-02
+    status: FAIL
+    evidence: |
+      No scenario has coverage_type "edge" or "perf"; file-level is
+      "regression" with no per-scenario marker. Scenarios 3 and 4
+      both exercise GROK-17278 atlas edge_case pattern (layout +
+      project persistence of legend state). Resolved by Reduction 2
+      (per-heading [coverage_type: edge] markers on Scenarios 3+4,
+      consistent with filtering.md Scenario 9 precedent).
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: |
+      File-level frontmatter coverage_type: regression applies to all
+      4 scenarios; no severity-axis values used. Reduction 2 layers
+      per-scenario edge markers on Scenarios 3+4 without violating
+      this check (frontmatter remains the default).
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: |
+      Shared setup ("Open SPGI", "Add a Line chart") factored into
+      `## Setup` section (lines 20-23); not duplicated across the 4
+      scenarios.
+  - check: A-STRUCT-05
+    status: FAIL
+    evidence: |
+      Per-file coverage is 2/23 atlas sub_features ≈ 8.7%, well below
+      70%. Remainder is not in atlas manual_only / coverage_exceptions.
+      Resolved by Reduction 3 (chain-coordinated section split: Gate F
+      validates aggregate coverage across the 6 Legend scenarios; this
+      is the line-chart specialty file).
+  - check: A-STRUCT-06
+    status: FAIL
+    evidence: |
+      Density = 2 unique sub_features / 4 scenarios = 0.5 average,
+      below the ≥2 rule. coverage_type "regression" does not qualify
+      for the smoke exemption. Resolved by Reduction 3 (chain-level
+      design: line-chart specialty maps to only 2 atlas sub-features
+      organically; forcing more would duplicate sibling coverage).
+  - check: A-CONT-01
+    status: PASS
+    evidence: |
+      All names are real and traceable: SPGI.csv (atlas-referenced
+      demo), Series / Average Mass / TPSA / NIBR logP (real SPGI
+      columns), lc.props.multiAxis / lc.props.yColumnNames (real
+      Line chart JS API surfaces). No angle/square-bracket
+      placeholders or generic stand-ins.
+  - check: A-BUG-01
+    status: PASS
+    evidence: |
+      Atlas known_issues lists 6 bugs with test_coverage: needed.
+      Line-chart.md addresses 3 via related_bugs frontmatter
+      (GROK-17222, GROK-17278, GROK-19083); the remaining 3
+      (GROK-17438, github-3132, GROK-19041) are owned by sibling
+      scenarios per chain bug_focused_candidates and ui_coverage_plan.
+      Per A-BUG-01 evaluation at the file under review, addressed
+      bugs are sufficient — no atlas known_issue affecting this
+      scenario's sub-features (legend.column /
+      legend.refresh.on-data-change) is unaddressed.
+  - check: A-MERIT-01
+    status: PASS
+    evidence: |
+      No scenarios opted out for "effort" / "complexity" reasons.
+      The Notes section justifies bug citations against atlas /
+      chain-level dependencies, not effort.
+  - check: A-MERIT-02
+    status: PASS
+    evidence: |
+      No "TODO: add later" or "next phase" deferrals. Scenario 4
+      step 3 retains a dual-path "or" branch with a documented
+      Unresolved-ambiguities reference in the migration report —
+      this is a real downstream dependency on Automator selector
+      decision, not an unprompted deferral.

@@ -1,0 +1,41 @@
+verdict: SCOPE_REDUCTION
+gate: B
+mode: validator
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/
+verdict_date: 2026-05-07
+scope_reduction_class: env-pending-defensive-skip
+scope_reduction_proposal: |
+  env-pending SR per Edit 10 acceptable SR class. Validator phase requires
+  a working Datagrok dev/qa-pw environment to execute Playwright specs.
+  In this session no live environment is attached; spec runtime
+  validation deferred to next cycle when Playwright runner can be
+  invoked against a running Datagrok instance.
+
+  Affected specs (6):
+    - visibility-and-positioning-spec.ts
+    - structure-rendering-spec.ts
+    - filtering-spec.ts
+    - color-consistency-spec.ts
+    - scatterplot-spec.ts
+    - line-chart-spec.ts
+
+  Remediation path: orchestrator next cycle on this section invokes
+  Validator with Playwright env available; Critic E re-runs on existing
+  specs if env-pending skip can be removed.
+claims:
+  - check_id: B-RUNTIME-01
+    status: SCOPE_REDUCTION
+    evidence: |
+      Playwright runner not invokable in this session — no Datagrok
+      dev/qa-pw env attached. Specs are syntactically valid (Critic E
+      gate covers static review); runtime PASS verdict deferred per
+      env-pending SR.
+notable_observations:
+  - All 6 specs share spec-login.ts helpers (loginToDatagrok, softStep, specTestOptions, stepErrors) which are already validated against the dev env per existing-test-index.yaml entries; Validator failure modes likely test-bug class on first run rather than environmental-flake, but this is a hypothesis, not evidence.
+  - Gate C scan-coverage refresh COMPLETED post-frontmatter-addition; coverage-map/legend.yaml reflects the new sub_features_covered declarations (visibility-and-positioning-spec.ts now shows covers: full for declared sub-features; other specs show covers: incidental for non-declared overlap).
+forward_path: |
+  When orchestrator next cycle re-enters with live Playwright env:
+    1. Re-invoke Validator on each spec.
+    2. If Validator passes: clear env-pending SR; cycle complete.
+    3. If Validator fails: enter D11 hypothesis protocol with MCP investigation per Section 7 of automator-prompt.md.

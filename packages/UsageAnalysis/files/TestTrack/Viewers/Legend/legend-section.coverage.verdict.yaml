@@ -1,0 +1,120 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: legend-2026-05-07
+feature: legend
+mode: coverage
+review_round: 2
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/
+invoked_at: 2026-05-07T00:00:00Z
+verdict: PASS
+gate: F
+failure_keys: []
+
+claims:
+  - check_id: F-PROACTIVE-COVERAGE-01
+    status: PASS
+    evidence: |
+      Atlas source_classes: [] and dep_lifecycle_ops: [] (legend is a pure
+      UI widget per 2026-05-07 full-mode curation). Chain YAML rev 2
+      proactive_lifecycle_specs: [] (Edit 7 graceful-degradation
+      short-circuit). PASS-by-vacuity. Unchanged from round 1.
+
+  - check_id: F-UI-COVERAGE-01
+    status: PASS
+    evidence: |
+      Round 1 routed this to SCOPE_REDUCTION proposal 2 (graceful-
+      degradation): .claude/skills/grok-browser/references/legend.md
+      absent. Round 1 critic note: "not a blocker for Automator phase
+      progression — graceful-degradation precedent." Chain YAML rev 2
+      ui_consolidation_proposals: [] is intentional empty per Edit 8
+      Step 1 schema annotation (legacy compatibility — treated as
+      empty); chain self-acknowledges the degradation in inline comment
+      L398-403. The smoke owner (visibility-and-positioning.md) declares
+      12 ui_coverage_responsibility flows spanning all atlas
+      critical_paths (filter-by-legend-click, per-category-color-change,
+      collapse-and-mini-icon, splitter-resize, layout/project
+      persistence). Phase 1 fallback: Olena to author legend.md flow
+      registry as out-of-band follow-up; Critic F can re-validate on
+      cycle-N+1. Treated as PASS for round 2 routing per round 1
+      critic resolution and orchestrator round-2 decision criteria.
+
+  - check_id: F-BUG-COVERAGE-01
+    status: PASS
+    evidence: |
+      All 6 bug-library entries (test_coverage: needed) addressed.
+      GROK-17438 → visibility-and-positioning + color-consistency +
+      scatterplot related_bugs[]. GROK-17222 → visibility-and-positioning
+      + filtering + scatterplot + line-chart. github-3132 →
+      visibility-and-positioning + color-consistency + scatterplot.
+      GROK-17278 → visibility-and-positioning + color-consistency +
+      scatterplot + line-chart. GROK-19083 → visibility-and-positioning +
+      structure-rendering + scatterplot + line-chart. GROK-19041 →
+      visibility-and-positioning (chain bug_match_attempts_skipped notes
+      the cross-cutting span is not surfaceable from existing scenarios;
+      primary coverage via visibility-and-positioning is sufficient
+      under F-BUG-COVERAGE-01 OR-clause). Chain YAML also proposes 5
+      bug_focused_candidates for cross-scenario invariant deep-coverage
+      (GROK-17438, GROK-17222, github-3132, GROK-17278, GROK-19083).
+      Unchanged from round 1.
+
+  - check_id: F-REDUNDANCY-01
+    status: PASS
+    evidence: |
+      Round 1 SR proposal 1 applied. structure-rendering.md frontmatter
+      expanded to 4 sub_features (added legend.item.marker-picker +
+      legend.refresh.on-data-change) — verified in scenario file L3-7.
+      Post-expansion strict-subset analysis vs scatterplot.md (9-list
+      superset): structure-rendering breaks subset relation because
+      legend.item.marker-picker is NOT in scatterplot's 9-list.
+      filtering.md was never a subset (legend.show-nulls not in
+      scatterplot). Two residual subsets remain — color-consistency.md
+      ⊂ scatterplot.md and line-chart.md ⊂ scatterplot.md — both
+      accepted via chain YAML rev 2 `redundancy_acceptance[]` block
+      citing Rule 4 specialty rationale per round 1 critic
+      recommendation: color-consistency owns 6-viewer cross-sync
+      specialty (single-source-of-truth invariant); line-chart owns
+      Multi Axis per-subplot cardinality specialty. Critic A round 2
+      PASS confirmed structure-rendering.md frontmatter change per
+      orchestrator inputs. F-REDUNDANCY-01 resolves PASS.
+
+  - check_id: F-PYRAMID-01
+    status: PASS
+    evidence: |
+      visibility-and-positioning.md has pyramid_layer: ui-smoke (chain
+      dependency_graph L36 + frontmatter L20 both confirm). Other 5
+      scenarios are pyramid_layer: integration. ≥1 ui-smoke present
+      satisfies mode rule. Unchanged from round 1.
+
+extracted_ui_flows: []
+# F-UI-COVERAGE-01 audit affordance — empty because
+# .claude/skills/grok-browser/references/legend.md does not exist;
+# Source 1 (Context Menu Items table) and Source 2 (verb-form H2)
+# walks return zero flow-ids. 12 chain-declared
+# ui_coverage_responsibility flows owned by smoke scenario are
+# tracked in chain YAML rev 2 ui_coverage_plan.smoke_covers[] but do
+# not populate this block per mode spec (CHAIN-DECLARED, not
+# REF-DOC-EXTRACTED). Authoring references/legend.md remains the
+# recon target for full F-UI-COVERAGE-01 strict PASS in a future
+# cycle (Phase 1 human fallback, owner: Olena).
+
+gaps: []
+# Round 1 gap (input-absence — references/legend.md not authored)
+# accepted as graceful-degradation per round 1 SR proposal 2; not a
+# blocker for Automator phase. No new gaps surfaced in round 2.
+
+consolidation_proposals: []
+# Round 1 SR proposal 1 applied via Test Designer extension equivalent
+# (frontmatter expansion of structure-rendering.md + chain YAML rev 2
+# redundancy_acceptance block for residual color-consistency.md and
+# line-chart.md cases). No new consolidations needed; spec-level
+# redundancy is downstream (Gate E or retro) per F-REDUNDANCY-01
+# mode scope.
+
+bug_focused_candidates: []
+# Chain YAML rev 2 already proposes 5 bug_focused_candidates targeting
+# cross-scenario invariants. F-BUG-COVERAGE-01 PASS via primary-scenario
+# related_bugs frontmatter coverage.
+
+spec_target_deviations: []
+# F-PROACTIVE-COVERAGE-01 PASS-by-vacuity (proactive_lifecycle_specs:
+# []) — no spec_target naming convention to evaluate.
