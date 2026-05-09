@@ -13,7 +13,7 @@ sub_features_covered: [charts.sunburst, charts.sunburst.title, charts.sunburst.i
 //   add-viewer-sunburst, viewer-property-panel-gear, select-columns-dialog
 //   (open/OK/Cancel only — inner per-column toggle stays JS API as the grid
 //   is canvas-rendered), viewer-context-menu-reset-view, viewer-save-layout,
-//   viewer-apply-layout — driven via real DOM per references/charts.md.
+//   viewer-apply-layout — driven via real DOM per references/viewers/charts.md.
 //   sunburst-multi-selection + sunburst-empty-category-click MOVED to
 //   charts-ui.md (ui-only manual scenarios) per charts-remediate-2026-05-09
 //   user directive — canvas Click/Ctrl+Click/Ctrl+Shift+Click and
@@ -271,7 +271,7 @@ test('Sunburst viewer', async ({page}) => {
   });
 
   // Step 3.2: Select Columns dialog open via gear → ... (DOM); column toggle via JS API
-  // (inner grid is canvas-rendered per references/charts.md → AMBIGUOUS sub-flow).
+  // (inner grid is canvas-rendered per references/viewers/charts.md → AMBIGUOUS sub-flow).
   await softStep('Step 3.2: Open Select columns dialog via Hierarchy "..." button; set hierarchy via JS API; OK', async () => {
     const result = await page.evaluate(async () => {
       // select-columns-dialog (real DOM open)

@@ -170,7 +170,7 @@ exercise the actual canvas + Filter Panel UI coordination chain.
   cardinalities, `setOptions`/`props.get` round-trips), but the UI-
   gesture invariant itself is documented here for manual
   verification.
-- **Ambiguous-canonical-by-design class** per `references/charts.md`
+- **Ambiguous-canonical-by-design class** per `references/viewers/charts.md`
   authority: `sunburst-multi-selection`, `tree-shift-click-multi-
   select`, `Select-Columns inner per-column toggle` are explicitly
   canonical-by-design AMBIGUOUS — not a deferral, not a coverage

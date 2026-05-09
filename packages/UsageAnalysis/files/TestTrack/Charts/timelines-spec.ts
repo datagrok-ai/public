@@ -17,7 +17,7 @@ sub_features_covered: [charts.timelines, charts.timelines.legend-visibility, cha
 //   transitions and splitByColumnName rebind.
 // DOM-driving rationale (charts-update-2026-05-08):
 //   ALL six ui_coverage_responsibility flows are now driven via real DOM per
-//   references/charts.md. The legend-click-filter flow — the GROK-19033
+//   references/viewers/charts.md. The legend-click-filter flow — the GROK-19033
 //   reproduction surface proper — uses the Datagrok [name="legend"] widget
 //   (real DOM, NOT ECharts SVG), which means we can dispatch a true click on
 //   the AESOC category item and assert visual-stability invariants (no
@@ -221,7 +221,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
   // Step 1.5-1.7: DOM legend click on AESOC category — GROK-19033 reproduction proper.
   // Selector: [name="viewer-Timelines"] [name="legend"] .d4-legend-item filtered
   // by .d4-legend-value text === '<Category>'. The Timelines legend is real DOM
-  // (Datagrok widget, NOT ECharts SVG/canvas) — see references/charts.md.
+  // (Datagrok widget, NOT ECharts SVG/canvas) — see references/viewers/charts.md.
   await softStep('Scenario 1 Step 5-7: DOM legend click on AESOC category — visual-stability assertion', async () => {
     const errorsBefore = consoleErrors.length;
     const result = await page.evaluate(async () => {

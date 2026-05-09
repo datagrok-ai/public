@@ -1,0 +1,77 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: legend-api-and-bug-specs-2026-05-09
+feature: legend
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/legend-grok-17278-spec.ts
+invoked_at: 2026-05-09T00:00:00Z
+verdict: PASS
+failure_keys: []
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: Spec file present at expected path.
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: TypeScript parses cleanly — imports + test() block + page.evaluate bodies + expect() chains.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: One test('GROK-17278: ...') block with setTimeout(900_000).
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: Test name contains GROK-17278 (bug-id substring); softStep labels reference Steps 2-3, 4, 5+9, 6-8.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: Imports only @playwright/test and ../../spec-login (canonical per Charts/charts-api.ts precedent).
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter [legend.item.color-picker, legend.column]; both resolve to atlas L103 / L34.
+  - check: E-TRACE-01
+    status: PASS
+    evidence: |
+      Each softStep references step numbers (Steps 2-3, 4, 5+9, 6-8); setup/cleanup tagged // technical.
+  - check: E-TRACE-02
+    status: PASS
+    evidence: |
+      All 9 reproduction steps mapped — step 1 in technical setup, 2-3 explicit, 4 explicit,
+      5+9 invariant, 6-8 invariant.
+  - check: E-TRACE-03
+    status: PASS
+    evidence: |
+      bug.expected realized via expect(rOneAfterReload).toBe('#1f77b4') and
+      expect(rOneAfter).toBe('#1f77b4').
+  - check: E-SEL-01
+    status: PASS
+    evidence: |
+      Selectors [name="legend"], .d4-legend-item, .d4-dialog[name="dialog-{CATEGORY}"],
+      [name="button-OK"] all in viewers.md L112-135 + color-picker recon.
+  - check: E-SEL-02
+    status: PASS
+    evidence: No invented selectors.
+  - check: E-SEL-03
+    status: NA
+    evidence: No Dart input fill in spec.
+  - check: E-HELP-01
+    status: PASS
+    evidence: |
+      Registered helpers (loginToDatagrok, specTestOptions, softStep, stepErrors); inline
+      withTimeout documented per spec-login header.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No reinvention.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: target_layer playwright matches frontmatter.
+  - check: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: |
+      ≥1 DOM-driving call — page.locator(...).waitFor + item.click({button:'right'}) +
+      dialog OK click.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Allowed path under TestTrack/Viewers/Legend/.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No out-of-tree writes.

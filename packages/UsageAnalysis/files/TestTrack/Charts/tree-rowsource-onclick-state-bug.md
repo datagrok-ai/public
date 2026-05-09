@@ -89,7 +89,7 @@ Steps:
   but viewer highlight remaining stuck. Programmatic equivalent
   (`df.selection.setAll(false)` + `fireChanged()`) is the
   selector-pending substitute. Real DOM ESC awaits
-  `references/charts.md` UI registry per cycle deferral.
+  `references/viewers/charts.md` UI registry per cycle deferral.
 - **Authority:** atlas-driven; closes the bug coverage gap for
   github-3245 surfaced in chain rev 2.
 

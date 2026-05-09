@@ -12,7 +12,7 @@ sub_features_covered: [charts.tree]
 // DOM-driving rationale (charts-remediate-2026-05-09):
 //   add-viewer-tree, tree-hierarchy-config (open Select Columns dialog only —
 //   inner column toggle stays JS API per charts.md), filter-panel-control —
-//   driven via real page.locator(...).click() per references/charts.md.
+//   driven via real page.locator(...).click() per references/viewers/charts.md.
 //   E-LAYER-COMPLIANCE-01 strict-regex compliance: page.locator + page.click
 //   used for all DOM-driveable flows; JS API fallback only on DOM gallery
 //   miss. tree-shift-click-multi-select MOVED to charts-ui.md (ui-only

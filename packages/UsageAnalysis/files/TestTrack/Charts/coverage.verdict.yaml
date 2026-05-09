@@ -1,230 +1,395 @@
 revision: 2
 schema_version: "v3.0"
-cycle_id: charts-migrate-2026-05-07
+cycle_id: charts-ui-only-extraction-2026-05-09
 feature: charts
 mode: coverage
 gate: F
 review_round: 2
 artifact_path: public/packages/UsageAnalysis/files/TestTrack/Charts
-invoked_at: 2026-05-07T20:15:00Z
-verdict: EVIDENCE_GAP
+invoked_at: 2026-05-09T13:15:00Z
+verdict: SCOPE_REDUCTION
 failure_keys: []
 
-# Round 2 verdict resolution (overwrites round 1):
-#   F-UI-COVERAGE-01      → NA (EVIDENCE_GAP component persists from R1 —
-#                                references/charts.md still absent;
-#                                see evidence_needed item 1)
-#   F-BUG-COVERAGE-01     → PASS (R1 FAIL → R2 PASS — timelines.md authored
-#                                  with related_bugs: [GROK-19033]; all 6
-#                                  curated bugs now covered via route (i))
-#   F-REDUNDANCY-01       → PASS (no strict subset; timelines.md adds
-#                                  4th orthogonal viewer surface)
+# Round-2 verdict resolution (overwrites predecessor rev 1 EVIDENCE_GAP):
+#   F-UI-COVERAGE-01      → PASS (UI flow registry now exists at the new
+#                                  path references/viewers/charts.md;
+#                                  Source-1 [Context Menu Items table] and
+#                                  Source-2 [verb-form H2 regex] yield zero
+#                                  raw flow-id candidates per coverage-
+#                                  mode.md taxonomy — registry uses
+#                                  inline-annotated viewer-flow taxonomy,
+#                                  not Project-style menu/dialog taxonomy.
+#                                  All inline-annotated flows are owned
+#                                  by chain ui_coverage_responsibility +
+#                                  ui_coverage_delegated_to mappings.
+#                                  Audit caveat noted in claim evidence.)
+#   F-BUG-COVERAGE-01     → PASS (6/6 curated bugs covered via dedicated
+#                                  bug-focused scenarios with related_bugs
+#                                  frontmatter linkage; unchanged from R1
+#                                  PASS).
+#   F-REDUNDANCY-01       → FAIL (5 strict-subset relations detected
+#                                  among bug-focused vs canonical
+#                                  scenarios — see consolidation_proposals
+#                                  block. SR routing required.)
 #   F-PYRAMID-01          → PASS (radar.md ui-smoke present; pyramid
-#                                  layers now span ui-smoke + integration
-#                                  + bug-focused)
+#                                  layers span ui-smoke + integration +
+#                                  bug-focused + ui-only — 4-layer
+#                                  coverage, strengthened by charts-ui.md
+#                                  ui-only addition).
 #   F-PROACTIVE-COVERAGE-01 → PASS-by-vacuity (atlas source_classes: [],
-#                                  unchanged from R1)
+#                                  proactive_lifecycle_specs: [];
+#                                  unchanged from R1).
 #
-# Primary verdict is EVIDENCE_GAP because F-UI-COVERAGE-01 cannot be
-# substantively evaluated without references/charts.md. The bug-coverage
-# regression that triggered round 1 SR is resolved (route (i) on
-# timelines.md frontmatter). Chain YAML rev 1 is now factually stale
-# (bug_match_attempts_skipped[GROK-19033] obsolete; no dependency_graph
-# entry for timelines.md) — rerun chain-analyzer is the second recon
-# item. Both recon paths are documented graceful paths under Edit 4 +
-# coverage-mode.md; this is NOT D8 escalation territory.
+# Primary verdict is SCOPE_REDUCTION because F-REDUNDANCY-01 surfaces 5
+# strict-subset relations. All 5 are bug-focused scenarios subsumed by
+# (or subsuming) their canonical sister scenario per the scenario-shape
+# convention bug_focused ≼ canonical (canonical owns broader sub_features,
+# bug-focused subsets to bug-class affected sub_features). F MUST surface
+# per coverage-mode.md F-REDUNDANCY-01 mechanical check, but the
+# consolidation_proposals[] entries are flagged with `requires:` that
+# names the bug-class invariant — Test Designer's expected disposition is
+# REJECT (bug-focused scenarios carry distinct test_coverage that
+# canonical scenarios do not exercise). This is a "noted-but-rejected"
+# consolidation surface — F is mechanically required to emit, downstream
+# disposition is governed by bug-class preservation rather than mechanical
+# subset.
 
 claims:
-  - check: F-UI-COVERAGE-01
-    status: NA
-    evidence: |
-      `.claude/skills/grok-browser/references/charts.md` is still
-      absent (user deferred authoring per orchestrator scope decision,
-      same as round 1). Without the UI flow registry, F cannot
-      mechanically extract Source-1 (Context Menu Items table) or
-      Source-2 (verb-form H2) flow-ids for ownership evaluation
-      against `ui_coverage_responsibility` / `ui_coverage_plan.smoke_covers`.
-      Chain YAML rev 1 emits `ui_consolidation_proposals: []` per
-      Edit 8 graceful degradation. Per coverage-mode.md verdict
-      mapping: "references/<feature>.md absent → EVIDENCE_GAP". This
-      component routes to evidence_needed item 1. No regression
-      vs. round 1 — same component, same routing.
-
-  - check: F-BUG-COVERAGE-01
+  - check_id: F-UI-COVERAGE-01
     status: PASS
     evidence: |
-      Round-1 FAIL resolved to round-2 PASS. All 6 curated bugs in
-      `bug-library/charts.yaml` rev 1 with `test_coverage: needed`
-      are now addressed via option (i) — frontmatter `related_bugs`:
-      GROK-18085 → radar.md (line 21);
-      GROK-19033 → timelines.md (NEW, line 15);
-      github-2954 → sunburst.md (line 27);
-      github-3221 → tree.md (line 10);
-      github-3245 → tree.md (line 10);
-      github-3412 → sunburst.md (line 28).
-      timelines.md (atlas-driven, pyramid_layer: bug-focused) was
-      authored in response to round-1 SR dispatch; its body
-      exercises the GROK-19033 reproduction class (legend
-      click-to-filter on the Timelines viewer over
-      System:AppData/ApiSamples/ae.csv with AESOC color column,
-      with explicit "no white screen / no console error during
-      legend filter transitions" invariant assertions across all 3
-      scenario blocks). Chain YAML rev 1's
-      `bug_match_attempts_skipped[GROK-19033]` record is now
-      obsolete but does not affect the substantive PASS — route (i)
-      operates on scenario frontmatter directly, not chain YAML.
-      Chain staleness surfaced as recon item 2 in evidence_needed.
+      Predecessor round-1 EVIDENCE_GAP component (registry absent)
+      resolved: `.claude/skills/grok-browser/references/viewers/charts.md`
+      now exists (file moved one folder deeper into viewers/ per
+      grok-browser skill restructure, per task brief MIGRATION note).
+      Per coverage-mode.md taxonomy: Source-1 (`## Context Menu Items`
+      H2 table) yields zero raw matches — the registry uses a
+      different "viewer-flow" taxonomy (inline `(<flow-id>)` markers
+      attached to per-section verb-form H3 + verified-flow callouts:
+      `add-viewer-radar`, `add-viewer-sunburst`, `add-viewer-tree`,
+      `add-viewer-timelines`, `viewer-property-panel-gear`,
+      `select-columns-dialog`, `tree-hierarchy-config`,
+      `viewer-context-menu-reset-view`, `sunburst-multi-selection`
+      (AMBIGUOUS), `tree-shift-click-multi-select` (AMBIGUOUS),
+      `timelines-color-column-config`,
+      `timelines-legend-visibility-toggle`,
+      `timelines-legend-click-filter`,
+      `timelines-split-by-column-rebind`, `viewer-save-layout`,
+      `viewer-apply-layout`, `filter-panel-control`). Source-2
+      (verb-form H2 regex matching Saving|Sharing|Deleting|Renaming|
+      Cloning|Moving|Opening|Re-auth) yields zero matches — registry
+      is a viewer-action surface, not a project-lifecycle surface.
+      Per strict coverage-mode.md mechanical taxonomy, this routes to
+      PASS-by-vacuity (no extracted candidates → ownership trivially
+      complete). Audit-only: the registry's inline taxonomy declares
+      14+ flow-ids; cross-validation against
+      ui_coverage_responsibility + ui_coverage_delegated_to confirms
+      every inline-annotated flow is owned by ≥1 chain entity:
+      add-viewer-{radar,sunburst,tree,timelines} →
+      radar/sunburst/timelines/tree.md (smoke-eligible delegation
+      via ui_coverage_plan); viewer-property-panel-gear → radar.md
+      (smoke); select-columns-dialog,
+      viewer-context-menu-reset-view, viewer-save-layout,
+      viewer-apply-layout → sunburst.md;
+      tree-hierarchy-config, filter-panel-control → tree.md (chain
+      entry); timelines-{color-column-config,
+      legend-visibility-toggle, legend-click-filter,
+      split-by-column-rebind} → timelines.md (chain entry);
+      sunburst-multi-selection, tree-shift-click-multi-select →
+      `charts-ui.md` via Edit-X1 ui_coverage_delegated_to mapping
+      (sunburst.md → charts-ui.md, plus charts-ui.md owns directly
+      in its own ui_coverage_responsibility). The
+      ui_coverage_delegated_to mechanism is ACCEPTED as routing the
+      AMBIGUOUS canvas-gesture flows to the manual layer per the
+      orchestrator's Edit-X1 ui-only taxonomy — these flows are NOT
+      coverage gaps but are formally delegated. UI flow registry
+      MIGRATION audit note: spec body comments + verdict YAMLs
+      reference the OLD path `references/charts.md`; this is
+      immutable historical metadata and does not affect F evaluation
+      (the new path is the canonical source).
 
-  - check: F-REDUNDANCY-01
+  - check_id: F-BUG-COVERAGE-01
     status: PASS
     evidence: |
-      No strict-subset relations among the 4 migrated scenarios'
-      `sub_features_covered` lists. radar.md = {charts.radar,
-      .show-current-row, .color-column, .color-palette,
-      charts.echart-base.table}; sunburst.md = {charts.sunburst,
-      .title, .on-click, .inherit-from-grid, .include-nulls,
-      charts.echart-base}; tree.md = {charts.tree}; timelines.md
-      = {charts.timelines, .legend-visibility, .split-by-column,
-      .color-column, .start-column, .end-column}. Each scenario
-      walks a distinct viewer family parent (radar / sunburst /
-      tree / timelines), so no subset relation is structurally
-      possible. timelines.md adds a 4th orthogonal viewer surface
-      — bug-focused (timelines legend filtering) is non-overlapping
-      with radar's ui-smoke and sunburst/tree's integration
-      coverage. No consolidation candidate emerges; round 1 PASS
-      preserved.
+      All 6 curated bugs in `bug-library/charts.yaml` rev 1 with
+      `test_coverage: needed` are addressed via route (i) — each has
+      ≥1 dedicated bug-focused scenario with `related_bugs: [<bug_id>]`
+      frontmatter linkage:
+        GROK-18085 → radar-save-reopen-bug.md (line 16); also cited
+                     in radar.md (line 21) for awareness.
+        GROK-19033 → timelines.md (line 15).
+        github-2954 → sunburst-date-column-bug.md (line 16); also
+                      cited in sunburst.md (line 27).
+        github-3221 → tree-enhancements-bundle-bug.md (line 21).
+        github-3245 → tree-rowsource-onclick-state-bug.md (line 17).
+        github-3412 → sunburst-scatterplot-color-pollution-bug.md
+                      (line 16); also cited in sunburst.md (line 28).
+      Each bug-focused scenario's sub_features_covered intersects
+      its bug's `affects` field. Six dedicated bug-focused scenarios
+      (rev 3 chain additions) each lock the corresponding
+      reproduction class. Strengthened from predecessor rev 1
+      coverage state.
 
-  - check: F-PYRAMID-01
+  - check_id: F-REDUNDANCY-01
+    status: FAIL
+    evidence: |
+      5 strict-subset relations detected on
+      `sub_features_covered` per coverage-mode.md mechanical check
+      (subset is on the frontmatter list as a set; no layer or
+      pyramid intent considered):
+        1. radar-save-reopen-bug.md {charts.radar,
+           charts.echart-base.table} ⊂ radar.md {charts.radar,
+           charts.radar.show-current-row, charts.radar.color-column,
+           charts.radar.color-palette, charts.echart-base.table}.
+        2. sunburst-date-column-bug.md {charts.sunburst,
+           charts.echart-base} ⊂ sunburst.md {charts.sunburst,
+           charts.sunburst.title, charts.sunburst.inherit-from-grid,
+           charts.sunburst.include-nulls, charts.echart-base}.
+           Note: charts.echart-base appears in both; sunburst.md
+           is superset on remaining items.
+        3. sunburst-scatterplot-color-pollution-bug.md
+           {charts.sunburst, charts.sunburst.inherit-from-grid} ⊂
+           sunburst.md (same superset).
+        4. tree.md {charts.tree} ⊂
+           tree-rowsource-onclick-state-bug.md {charts.tree,
+           charts.tree.on-click, charts.tree.color-palette}.
+        5. tree.md {charts.tree} ⊂
+           tree-enhancements-bundle-bug.md {charts.tree,
+           charts.tree.show-counts, charts.tree.on-click,
+           charts.tree.font-size, charts.tree.layout,
+           charts.tree.orient, charts.tree.include-nulls}.
+      All 5 relations are bug-focused vs canonical (or vice versa
+      in cases 4-5 where canonical is the subsumed). Per
+      F-REDUNDANCY-01 mechanical contract, F MUST emit
+      consolidation_proposals[] entries. However, each entry's
+      `requires:` field names the bug-class invariant
+      (`related_bugs: [<bug>]`) that the canonical scenario does
+      NOT exercise — Test Designer's expected disposition is
+      REJECT-AS-NONREDUNDANT for the bug-focused entries (they
+      carry distinct test_coverage), and for cases 4-5 the
+      canonical tree.md is intentionally minimal collaborative-
+      filtering coverage that the bug-focused scenarios do NOT
+      replicate. F surfaces; downstream disposition pending Test
+      Designer extension review per Edit 4 SR routing dispatch.
+      No pure-redundancy candidates emerge (all 5 relations have
+      bug-class or layer-distinct intent that defeats consolidation).
+      charts-ui.md vs sunburst.md and charts-ui.md vs tree.md were
+      checked: NEITHER is a strict subset (charts-ui.md owns
+      .on-click ids that canonical sunburst/tree do not), so the
+      ui-only extraction does NOT introduce new redundancy.
+
+  - check_id: F-PYRAMID-01
     status: PASS
     evidence: |
       Section has ≥1 migrated scenario with `pyramid_layer:
-      ui-smoke` — radar.md (frontmatter line 11; chain YAML rev 1
+      ui-smoke` — radar.md (frontmatter line 11; chain
       `dependency_graph.radar.md.pyramid_layer: ui-smoke`).
-      Pyramid layer coverage now spans 3 layers in round 2:
-      ui-smoke (radar), integration (sunburst, tree), and
-      bug-focused (timelines.md frontmatter line 13). The
-      all-bug-focused exception path is not invoked (clean
-      ui-smoke present), so the migration-report Decisions
-      justification check is not applicable. timelines.md's
-      `pyramid_layer: bug-focused` is asserted via frontmatter
-      only — chain YAML rev 1 lacks a dependency_graph entry for
-      it (see evidence_needed item 2) — but F-PYRAMID-01 evaluates
-      from any source of intent, and the substantive PASS holds
-      on radar.md's ui-smoke alone regardless. Round 1 PASS
-      preserved and strengthened.
+      Pyramid layer coverage now spans 4 layers in round 2:
+      ui-smoke (radar.md), integration (sunburst.md, tree.md,
+      charts-api.md), bug-focused (timelines.md,
+      radar-save-reopen-bug.md, sunburst-date-column-bug.md,
+      sunburst-scatterplot-color-pollution-bug.md,
+      tree-enhancements-bundle-bug.md,
+      tree-rowsource-onclick-state-bug.md), and ui-only (NEW —
+      charts-ui.md per Edit-X1 ui-only taxonomy). The all-bug-
+      focused exception path is not invoked (clean ui-smoke
+      present). Strengthened from predecessor rev 1 coverage state.
 
-  - check: F-PROACTIVE-COVERAGE-01
-    status: PASS
+  - check_id: F-PROACTIVE-COVERAGE-01
+    status: NA
     evidence: |
       PASS-by-vacuity per coverage-mode.md verdict mapping. Atlas
       `feature-atlas/charts.yaml` rev 2 declares `source_classes:
-      []` and `dep_lifecycle_ops: []` (lines 866-867, verified by
-      grep). Chain YAML rev 1 emits `proactive_lifecycle_specs:
-      []` per Edit 6/7 graceful-degradation contract — explicit
-      "no proactive coverage" signal. Charts viewers operate on
-      the attached DataFrame regardless of how loaded (CSV /
-      query / files / scripts / derived) — no source-dependency
-      surface. No spec_target deviations to surface (no entries
-      to evaluate for naming-convention compliance). Unchanged
-      from round 1.
+      []` and `dep_lifecycle_ops: []` (lines 866-867). Chain emits
+      `proactive_lifecycle_specs: []` per Edit 6/7 graceful-
+      degradation contract — explicit "no proactive coverage"
+      signal. Charts viewers operate on the attached DataFrame
+      regardless of how loaded; no source-dependency surface. No
+      spec_target deviations to surface. Unchanged from
+      predecessor rev 1.
 
 # F-mode-specific output blocks
 
 extracted_ui_flows: []
-# Empty because references/charts.md is still absent. F cannot walk
-# Source-1 (Context Menu Items table) or Source-2 (verb-form H2
-# regex). Audit affordance preserved as empty list per schema.
+# Per coverage-mode.md UI flow taxonomy:
+#   Source-1 (## Context Menu Items H2 table) — ZERO raw matches.
+#     The registry references/viewers/charts.md does not contain a
+#     `## Context Menu Items` H2 table heading. Its closest analogue
+#     is the `## Context Menu — Reset View` H2 section, whose body
+#     contains an "Items observed in the Sunburst context menu" table
+#     — but the H2 heading text is not the literal "## Context Menu
+#     Items" form. Strict literal extraction yields zero candidates.
+#   Source-2 (verb-form H2 regex `^## (Saving|Sharing|Deleting|
+#     Renaming|Cloning|Moving|Opening|Re-auth) `) — ZERO raw matches.
+#     The registry is a viewer-action / viewer-property surface, not
+#     a project-lifecycle surface; none of the enumerated verbs
+#     appear as H2 prefixes.
+# Audit-only note (NOT a coverage gap): the registry uses an inline
+# `(<flow-id>)` annotation taxonomy on per-section H2/H3 + Verified-
+# flow callouts. The 14+ inline-annotated flow-ids
+# (add-viewer-{radar,sunburst,tree,timelines},
+# viewer-property-panel-gear, select-columns-dialog,
+# tree-hierarchy-config, viewer-context-menu-reset-view,
+# sunburst-multi-selection, tree-shift-click-multi-select,
+# timelines-{color-column-config, legend-visibility-toggle,
+# legend-click-filter, split-by-column-rebind}, viewer-save-layout,
+# viewer-apply-layout, filter-panel-control) are all owned by chain
+# ui_coverage_responsibility + ui_coverage_delegated_to + ui-only
+# extension scenario charts-ui.md. The taxonomy mismatch (registry
+# uses viewer-flow inline markers vs. coverage-mode.md's project-
+# lifecycle H2 walk) is a known gap in coverage-mode.md taxonomy
+# generality — surface for retro consideration, NOT for round-2
+# verdict regression.
 
 gaps: []
 # No `gaps[]` entries emitted at this round:
-#   - ui-flow-uncovered: requires references/charts.md walk (absent)
-#                        → routed to evidence_needed item 1.
-#   - bug-uncovered: F-BUG-COVERAGE-01 PASS (timelines.md closes
-#                    the GROK-19033 gap that drove round 1's
-#                    bug_focused_candidates entry).
-#   - pyramid-no-smoke: F-PYRAMID-01 PASS.
+#   - ui-flow-uncovered: F-UI-COVERAGE-01 PASS (registry now exists;
+#                         all inline-annotated flows are owned via
+#                         chain or ui_coverage_delegated_to mapping).
+#   - bug-uncovered: F-BUG-COVERAGE-01 PASS (6/6 covered via
+#                    dedicated bug-focused scenarios).
+#   - pyramid-no-smoke: F-PYRAMID-01 PASS (radar.md ui-smoke present;
+#                       4-layer coverage strengthened).
 #   - proactive-spec-missing: F-PROACTIVE-COVERAGE-01 PASS-by-vacuity.
 
-consolidation_proposals: []
-# F-REDUNDANCY-01 PASS. No subsumed scenarios to drop.
+consolidation_proposals:
+  - drop_scenario: radar-save-reopen-bug.md
+    reason: |
+      Strict subset of radar.md sub_features_covered:
+      {charts.radar, charts.echart-base.table} ⊂ {charts.radar,
+      charts.radar.show-current-row, charts.radar.color-column,
+      charts.radar.color-palette, charts.echart-base.table}.
+    requires:
+      - "BUG-CLASS PRESERVATION: GROK-18085 reproduction
+        (table-rebind on project save/reopen) is NOT exercised by
+        radar.md. Dropping radar-save-reopen-bug.md would lose the
+        bug-class invariant. Test Designer expected disposition:
+        REJECT-AS-NONREDUNDANT — the bug-focused scenario carries
+        distinct test_coverage (project save/reopen path) that
+        radar.md (Add Viewer + property panel only) does not
+        replicate."
+  - drop_scenario: sunburst-date-column-bug.md
+    reason: |
+      Strict subset of sunburst.md sub_features_covered:
+      {charts.sunburst, charts.echart-base} ⊂ {charts.sunburst,
+      charts.sunburst.title, charts.sunburst.inherit-from-grid,
+      charts.sunburst.include-nulls, charts.echart-base}.
+    requires:
+      - "BUG-CLASS PRESERVATION: github-2954 reproduction (Sunburst
+        date-column hierarchy graceful handling) is NOT exercised
+        by sunburst.md (sunburst.md does Hierarchy column selection
+        but not date-column type specifically — chain rev 2
+        bug_match_attempts_skipped:[github-2954] confirms
+        below_trigger_threshold). Test Designer expected
+        disposition: REJECT-AS-NONREDUNDANT — bug-focused scenario
+        locks the column-type-validation defense invariant."
+  - drop_scenario: sunburst-scatterplot-color-pollution-bug.md
+    reason: |
+      Strict subset of sunburst.md sub_features_covered:
+      {charts.sunburst, charts.sunburst.inherit-from-grid} ⊂
+      {charts.sunburst, charts.sunburst.title,
+      charts.sunburst.inherit-from-grid,
+      charts.sunburst.include-nulls, charts.echart-base}.
+    requires:
+      - "BUG-CLASS PRESERVATION: github-3412 reproduction
+        (cross-viewer Sunburst × Scatterplot color-state isolation)
+        is NOT exercised by sunburst.md (sunburst.md is single-
+        viewer; the bug requires Scatterplot pairing). Test
+        Designer expected disposition: REJECT-AS-NONREDUNDANT —
+        bug-focused scenario carries the cross-viewer pairing
+        invariant that single-viewer sunburst.md cannot
+        replicate."
+  - drop_scenario: tree.md
+    reason: |
+      tree.md {charts.tree} is a strict subset of BOTH
+      tree-rowsource-onclick-state-bug.md {charts.tree,
+      charts.tree.on-click, charts.tree.color-palette} AND
+      tree-enhancements-bundle-bug.md {charts.tree,
+      charts.tree.show-counts, charts.tree.on-click,
+      charts.tree.font-size, charts.tree.layout,
+      charts.tree.orient, charts.tree.include-nulls}. Two
+      bug-focused supersets exist.
+    requires:
+      - "INTEGRATION-LAYER PRESERVATION: tree.md exercises
+        Tree × Filter Panel collaborative filtering coordination
+        (filter cardinality contract) that NEITHER bug-focused
+        scenario replicates. Both bug-focused scenarios are
+        property-round-trip / state-machine focused; neither
+        exercises the cross-subsystem Tree ↔ Filter Panel coupling
+        that tree.md owns at pyramid_layer: integration. Test
+        Designer expected disposition: REJECT-AS-NONREDUNDANT —
+        canonical tree.md preserves the integration-layer
+        Filter-Panel-coordination invariant."
+      - "UI-ONLY DELEGATION CHAIN: tree.md is the source of the
+        canvas Shift+Click extraction to charts-ui.md (per scenario
+        body 'moved to charts-ui.md' note). Dropping tree.md would
+        orphan the delegation pointer chain documented in scenario
+        body."
 
 bug_focused_candidates: []
-# Round 1 emitted bug_focused_candidates[GROK-19033] under SR
-# routing. Round 2: timelines.md exists with related_bugs:
-# [GROK-19033], satisfying F-BUG-COVERAGE-01 route (i). The
-# round-1 candidate has been realized at the .md layer and no
-# longer needs to be surfaced as a candidate. Empty list signals
-# "no further bug-focused authoring needed for this section."
+# All 6 curated bugs have dedicated bug-focused scenarios in rev 3
+# chain (radar-save-reopen-bug, sunburst-date-column-bug,
+# sunburst-scatterplot-color-pollution-bug,
+# tree-enhancements-bundle-bug, tree-rowsource-onclick-state-bug,
+# timelines.md). No further bug-focused authoring needed.
+# F-BUG-COVERAGE-01 PASS surface; bug-coverage envelope is closed
+# at the .md layer.
 
 spec_target_deviations: []
 # F-PROACTIVE-COVERAGE-01 PASS-by-vacuity → no spec_target entries
 # to evaluate. No deviations to surface.
 
-evidence_needed: |
-  Two recon items. Neither blocks the section's substantive
-  coverage state (F-BUG-COVERAGE-01 round 1 FAIL → round 2 PASS;
-  F-REDUNDANCY-01 / F-PYRAMID-01 / F-PROACTIVE-COVERAGE-01 all
-  PASS), but F-UI-COVERAGE-01 remains unevaluable and chain YAML
-  rev 1 is now factually stale.
+scope_reduction_proposal: |
+  Test Designer extension review required for 5 strict-subset
+  consolidation_proposals[] entries surfaced by F-REDUNDANCY-01
+  mechanical check. All 5 are bug-focused-vs-canonical (or
+  canonical-vs-bug-focused for tree.md) shape pairs where the
+  mechanical subset relation does NOT correspond to test-coverage
+  redundancy:
 
-  1. Author `references/charts.md` (grok-browser UI flow registry).
-     Same EVIDENCE_GAP component as round 1. The file is absent
-     under `.claude/skills/grok-browser/references/`. Without it,
-     F cannot extract Context Menu Items table OR verb-form H2
-     dialog sections to produce flow-id candidates, so
-     F-UI-COVERAGE-01 has no input to evaluate against
-     `ui_coverage_responsibility` / `ui_coverage_plan.smoke_covers`
-     in chain YAML. The 7 viewer families with no scenario at all
-     (Chord, Globe, Group Analysis, Multiplot, Sankey, Surface Plot,
-     Word Cloud) cannot be enumerated as gaps[] entries until the
-     registry exists. User deferred this authoring per orchestrator
-     scope decision — recon item, not regression. Recon target:
-     `.claude/skills/grok-browser/references/charts.md`. Skill:
-     grok-doc-control-ui or manual authoring per grok-browser
-     conventions, scoped to public/packages/Charts/.
+  - 3 bug-focused scenarios subset their canonical sister
+    (radar-save-reopen-bug ⊂ radar; sunburst-date-column-bug ⊂
+    sunburst; sunburst-scatterplot-color-pollution-bug ⊂
+    sunburst). Each carries a distinct bug-class invariant
+    (project save/reopen path, date-column type validation,
+    cross-viewer color isolation) that the canonical scenario
+    does NOT exercise.
+  - tree.md is subset of TWO bug-focused supersets
+    (tree-rowsource-onclick-state-bug, tree-enhancements-bundle-
+    bug). The canonical tree.md carries the Tree × Filter Panel
+    collaborative filtering coordination invariant
+    (pyramid_layer: integration) that neither bug-focused
+    scenario replicates.
 
-  2. Rerun chain-analyzer for the Charts section. Chain YAML rev
-     1 (`scenario-chains/charts.yaml`) was emitted before
-     timelines.md existed on disk. As a result:
-     (a) `bug_match_attempts_skipped[GROK-19033]` with
-         skip_category: no_affecting_scenarios is now obsolete —
-         timelines.md exists with related_bugs: [GROK-19033] and
-         walks charts.timelines.legend-visibility /
-         charts.timelines.split-by-column, which now intersect
-         the bug's `affects` field. The skip record should be
-         retracted (bug now has an affecting scenario, possibly
-         meeting Trigger 2 single-scenario non-adjacent threshold
-         on re-evaluation).
-     (b) `dependency_graph` lacks an entry for timelines.md, so
-         its pyramid_layer: bug-focused is asserted only by
-         frontmatter (not chain YAML). Downstream consumers
-         (Test Designer extension, Automator, Validator) will
-         need the chain entry for layer-decision routing.
-     (c) `ui_coverage_responsibility` for timelines.md is
-         unrecorded. Per the bug-focused pyramid layer it would
-         likely be empty or scoped to bug-class flows
-         (legend-click-to-filter, legend-visibility-mode-switch),
-         but full re-emission of `ui_consolidation_proposals[]`
-         requires the chain-analyzer's UI flow extraction pass
-         against references/charts.md — so item 2 is dependent
-         on item 1 for full re-emission.
-     Recon target: rerun chain-analyzer skill against
-     TestTrack/Charts/ (now containing 4 scenarios). Order:
-     ideally after item 1 is complete so that
-     ui_coverage_responsibility and ui_consolidation_proposals[]
-     can be re-derived non-vacuously. If item 1 is not feasible
-     in this cycle, rerun anyway with the absent-references
-     graceful-degradation path (current rev-1 contract) to
-     capture the timelines.md dependency_graph entry and retract
-     the obsolete bug_match_attempts_skipped[GROK-19033].
+  Expected Test Designer disposition: REJECT-AS-NONREDUNDANT for
+  all 5 entries. The mechanical subset relation surfaces because
+  coverage-mode.md F-REDUNDANCY-01 operates on
+  sub_features_covered list-as-set without considering
+  related_bugs / pyramid_layer / cross-subsystem coupling. The
+  5 surface entries are "noted-but-rejected" consolidation
+  candidates — F is mechanically required to emit per the gate's
+  contract, downstream disposition is governed by bug-class +
+  integration-layer preservation rather than mechanical subset.
 
-  Routing per Edit 4 dispatch table: round 2 EVIDENCE_GAP with
-  resolvable recon paths (both items above are documented graceful
-  paths — registry authoring + chain regen) does NOT trigger D8
-  escalation. Orchestrator may dispatch recon and (if D11 round
-  budget permits) re-invoke F round 3 against the regenerated
-  artifacts. The substantive coverage envelope is sound; both
-  recon items are hygiene rather than blockers — the cycle could
-  arguably proceed to Automator phase with the chain-staleness
-  acknowledged and the UI-registry gap tracked as Phase-1
-  deferral. Decision is the orchestrator's per the dispatch table.
+  No chain YAML updates are required for the rejection path. If
+  Test Designer extension instead accepts any drop, chain rev 4
+  must remove the dropped scenario from `order_from_files`,
+  `dependency_graph`, `output_plan`, and update the corresponding
+  `bug_match_attempts_skipped` records (re-add skip records for
+  bugs that lose dedicated scenario coverage).
+
+  Audit-only side-finding (NOT in scope for SR dispatch but
+  documented for retro): coverage-mode.md F-UI-COVERAGE-01 UI
+  flow taxonomy (Source-1 H2-table walk + Source-2 verb-form
+  regex) does not generalize to viewer-flow registries that use
+  inline `(<flow-id>)` annotation. The
+  references/viewers/charts.md registry yields zero raw flow-id
+  candidates under strict mechanical extraction, even though it
+  documents 14+ inline-annotated viewer flows. Cross-validation
+  via ui_coverage_responsibility shows complete ownership;
+  PASS-by-vacuity is substantively correct but the audit
+  affordance (extracted_ui_flows[]) is empty. Retro suggestion:
+  extend coverage-mode.md taxonomy with Source-3 inline
+  annotation pattern OR amend grok-browser registry convention
+  to project-lifecycle taxonomy alignment. Decision deferred to
+  orchestrator + grok-browser maintainer.

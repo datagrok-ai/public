@@ -1,0 +1,105 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: legend-api-and-bug-specs-2026-05-09
+feature: legend
+mode: spec
+review_round: 1
+post_fix_note: |
+  Validator B 2026-05-09 surfaced a 318s timeout on run 2 (300_000 budget too tight
+  for 8 sequential dataset re-reads + viewer attaches). test.setTimeout bumped
+  300_000 → 600_000; post-fix Validator B (runs 4/5/6) settled at 236s/245s/249s
+  with 3/3 GREEN. Critic E verdict unchanged (PASS) — fix is runtime tolerance,
+  not paradigm change. See decision-log cycle_completions[validator-b-legend-api-postfix-2026-05-09].
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/legend-api.ts
+invoked_at: 2026-05-09T00:00:00Z
+verdict: PASS
+failure_keys: []
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Spec file path public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/legend-api.ts
+      is the expected sibling of legend-api.md.
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      TypeScript parses cleanly — imports, test() block, page.evaluate bodies,
+      and expect() chains are well-formed.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Exactly one test('Legend — JS API contract', ...) block exists at top level.
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name 'Legend — JS API contract' is a substring match of the scenario H1 heading.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Imports limited to @playwright/test and ../../spec-login. Per Charts/charts-api.ts
+      precedent, ../../spec-login is permitted for nested-section specs.
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter block at top with sub_features_covered listing 8 atlas ids:
+      legend.column, legend.extra-column, legend.refresh.on-data-change,
+      legend.color-scale.numerical, legend.use-custom-color-coding,
+      legend.show-nulls, legend.allow-item-coloring, legend.refresh.on-reset-filter.
+  - check: E-TRACE-01
+    status: PASS
+    evidence: |
+      Every softStep is prefixed 'Scenario N:' and maps directly to a numbered
+      scenario heading. No invented steps.
+  - check: E-TRACE-02
+    status: PASS
+    evidence: |
+      All eight scenario blocks (1..8) have a corresponding softStep with matching
+      numbering and intent.
+  - check: E-TRACE-03
+    status: PASS
+    evidence: |
+      Verification statements realized as expect() assertions on viewer.props, col.tags,
+      JSON.parse(tag), col.categories, df.filter.trueCount.
+  - check: E-SEL-01
+    status: NA
+    evidence: apitest layer — no DOM selectors used in body.
+  - check: E-SEL-02
+    status: NA
+    evidence: apitest layer — no selectors invented.
+  - check: E-SEL-03
+    status: NA
+    evidence: apitest layer — no input-field driving.
+  - check: E-HELP-01
+    status: PASS
+    evidence: |
+      Helpers used (loginToDatagrok, specTestOptions, softStep, stepErrors) are all
+      listed in playwright_layer registry from spec-login.ts.
+  - check: E-HELP-02
+    status: PASS
+    evidence: |
+      No re-implementation of registered helpers.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: |
+      target_layer: apitest in scenario frontmatter; spec frontmatter comment confirms
+      apitest layer; body contains zero DOM-driving primitives.
+  - check: E-LAYER-02
+    status: NA
+    evidence: Layer not overridden.
+  - check: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: |
+      Mechanical regex scan of test body finds zero occurrences of
+      page.click | page.fill | page.locator | page.hover | page.press | page.keyboard |
+      page.mouse | dlg.locator | dlg.click | dlg.fill. The single page.locator inside
+      loginToDatagrok lives in spec-login.ts and is excluded per Charts/charts-api.ts
+      precedent. Body interactions are page.evaluate, page.on('console'), page.on('pageerror').
+  - check: E-BOUND-01
+    status: PASS
+    evidence: |
+      Spec resides under public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/,
+      an allowed boundary path.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: |
+      Artifact set touches only the test spec under TestTrack/Viewers/Legend/.

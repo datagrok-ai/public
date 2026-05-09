@@ -10,7 +10,7 @@ sub_features_covered: [charts.radar, charts.radar.show-current-row, charts.radar
 //   produced_from: migrated
 // DOM-driving rationale (charts-update-2026-05-08):
 //   Both ui-smoke flows (add-viewer-radar, viewer-property-panel-gear) are
-//   driven via real DOM per references/charts.md. No SR remains for this
+//   driven via real DOM per references/viewers/charts.md. No SR remains for this
 //   spec — the prior selector-pending defensive skip class is retired now
 //   that the UI flow registry has landed.
 import {test, expect} from '@playwright/test';
