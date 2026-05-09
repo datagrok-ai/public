@@ -12,6 +12,7 @@ import * as React from 'react';
 import {ClassicPreset} from 'rete';
 import {Presets} from 'rete-react-plugin';
 import type {RenderEmit} from 'rete-react-plugin';
+import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
 import {FlowNode, FlowScheme} from './scheme';
@@ -79,6 +80,10 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
         />
         <span className="ff-node-title-text">{node.label}</span>
       </div>
+
+      {node.description && !collapsed && (
+        <div className="ff-node-description" title={node.description}>{node.description}</div>
+      )}
 
       {!collapsed && (
         <div className="ff-node-body">
@@ -201,14 +206,28 @@ interface ConnectionProps {
 }
 
 export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Element | null {
-  const {path} = Presets.classic.useConnection();
+  const {path, start, end} = Presets.classic.useConnection();
   if (!path) return null;
   const color = props.data._color ?? '#8892a0';
 
-  // No arrowhead marker — direction is shown by the dash-flow animation
-  // applied via CSS in `funcflow.css`. Trying to orient an SVG marker on a
-  // bezier endpoint always disagreed with the visible curve direction; the
-  // marching dashes are unambiguous regardless of curve shape.
+  // Compute the actual path: if waypoints are present, chain
+  // classicConnectionPath segments through start → waypoints → end. Without
+  // waypoints, fall back to the preset's path (computed by useConnection).
+  const waypoints = (props.data as {waypoints?: Array<{x: number; y: number}>}).waypoints;
+  let drawPath = path;
+  if (waypoints && waypoints.length > 0 && start && end) {
+    const points = [start, ...waypoints, end];
+    drawPath = '';
+    for (let i = 0; i < points.length - 1; i++)
+      drawPath += classicConnectionPath([points[i], points[i + 1]], 0.3);
+  }
+
+  // Two paths: a wide invisible "hit" path (transparent stroke, 14px) so
+  // right-click and pointer events land reliably even though the visible
+  // line is only 2.5px, and the visible path itself with pointerEvents:none
+  // (the hit path handles all interaction). pointerEvents: 'stroke' on the
+  // hit path means events fire only within the stroke area, not in the
+  // unbounded SVG canvas.
   return (
     <svg
       data-testid="connection"
@@ -221,10 +240,29 @@ export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Eleme
       }}
     >
       <path
-        d={path}
-        className="ff-connection-path"
-        style={{stroke: color, pointerEvents: 'auto'}}
+        d={drawPath}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={14}
+        style={{pointerEvents: 'stroke'}}
       />
+      <path
+        d={drawPath}
+        className="ff-connection-path"
+        style={{stroke: color, pointerEvents: 'none'}}
+      />
+      {waypoints?.map((wp, i) => (
+        <circle
+          key={`wp-${i}`}
+          cx={wp.x}
+          cy={wp.y}
+          r={5}
+          className="ff-waypoint"
+          data-connection-id={props.data.id}
+          data-waypoint-index={i}
+          style={{fill: color, stroke: '#fff', strokeWidth: 1.5, pointerEvents: 'auto', cursor: 'move'}}
+        />
+      ))}
     </svg>
   );
 }

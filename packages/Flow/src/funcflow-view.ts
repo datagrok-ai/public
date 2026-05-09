@@ -17,7 +17,7 @@ import '../css/funcflow.css';
 
 import {FlowEditor} from './rete/flow-editor';
 import {FlowNode} from './rete/scheme';
-import {FunctionBrowser} from './panel/function-browser';
+import {FunctionBrowser, FF_DRAG_MIME} from './panel/function-browser';
 import {PropertyPanel} from './panel/property-panel';
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs,
@@ -30,13 +30,14 @@ import {
 } from './serialization/flow-serializer';
 import {FlowSettings} from './serialization/flow-schema';
 import {ExecutionController} from './execution/execution-controller';
+import {ValueSummary} from './execution/execution-state';
+import {buildPreview} from './execution/value-inspector';
 
 export class FuncFlowView extends DG.ViewBase {
   private flow!: FlowEditor;
   private functionBrowser!: FunctionBrowser;
   private propertyPanel!: PropertyPanel;
   private executionController!: ExecutionController;
-
   private canvasContainer!: HTMLElement;
   private statusBar!: HTMLElement;
   private nodeCountLabel!: HTMLElement;
@@ -59,6 +60,9 @@ export class FuncFlowView extends DG.ViewBase {
     this.setupRibbon();
     this.setupStatusBar();
 
+    // Browser lives in the platform toolbox window now — make sure both panels are visible.
+    this.toolbox = this.functionBrowser.root;
+    grok.shell.windows.showToolbox = true;
     grok.shell.windows.showContextPanel = true;
 
     setTimeout(() => {
@@ -77,7 +81,6 @@ export class FuncFlowView extends DG.ViewBase {
       onBuiltinNodeDoubleClick: (typeName: string) => void this.addNodeByType(typeName),
     });
 
-    const leftPanel = ui.div([this.functionBrowser.root], 'funcflow-left-panel');
     this.canvasContainer = ui.div([], 'funcflow-canvas-container');
 
     this.nodeCountLabel = ui.divText('Nodes: 0');
@@ -90,7 +93,7 @@ export class FuncFlowView extends DG.ViewBase {
       'funcflow-status-bar',
     );
 
-    const mainLayout = ui.div([leftPanel, this.canvasContainer], 'funcflow-root');
+    const mainLayout = ui.div([this.canvasContainer], 'funcflow-root');
     this.root.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
     this.root.appendChild(mainLayout);
     this.root.appendChild(this.statusBar);
@@ -98,16 +101,118 @@ export class FuncFlowView extends DG.ViewBase {
     mainLayout.style.overflow = 'hidden';
 
     this.setupFileDropTarget();
+    this.installPortContextMenu();
 
     setTimeout(() => this.initEditor(), 50);
+  }
+
+  // ---------- per-port "View Output" preview (KNIME pattern #2) ----------
+
+  /** Right-click on an output socket → menu with "View output" if a runtime
+   *  value is captured for that port. The handler runs in capture phase so
+   *  it intercepts the contextmenu before AreaPlugin emits its `'contextmenu'`
+   *  signal (which would route to the node menu). */
+  private installPortContextMenu(): void {
+    this.canvasContainer.addEventListener('contextmenu', (ev) => {
+      const target = ev.target as HTMLElement | null;
+      // Suppress root menu on input sockets — there's no output value to
+      // show, and without this we'd otherwise leak the "Add annotation
+      // here" item from the area-plugin's container-level emission.
+      if (target?.closest('.ff-socket-row-input')) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        return;
+      }
+      // Match anywhere in an output row — dot, wrapper, or label — so the
+      // user doesn't have to right-click the 12px socket dot precisely.
+      const rowEl = target?.closest('.ff-socket-row-output') as HTMLElement | null;
+      if (!rowEl) return;
+      const nodeEl = rowEl.closest('.ff-node') as HTMLElement | null;
+      if (!nodeEl) return;
+      const nodeId = nodeEl.dataset.nodeId;
+      if (!nodeId) return;
+      const node = this.flow?.getNodeById(nodeId);
+      if (!node) return;
+      // Output key by row index — same convention as the suggestion menu.
+      const rows = Array.from(nodeEl.querySelectorAll('.ff-socket-row-output')) as HTMLElement[];
+      const idx = rows.indexOf(rowEl);
+      const outputKey = Object.keys(node.outputs)[idx];
+      if (!outputKey) return;
+
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      const state = this.executionController?.state.getNodeState(nodeId);
+      const summary = state?.outputs?.[outputKey];
+
+      const menu = DG.Menu.popup();
+      if (summary && this.isPortPreviewable(summary)) {
+        menu.item('View output', () => this.showPortPreview(rowEl, outputKey, summary));
+      } else {
+        menu.item('No output captured yet', () => {});
+      }
+      menu.show({causedBy: ev});
+    }, true);
+  }
+
+  private isPortPreviewable(summary: ValueSummary): boolean {
+    if (summary.type === 'dataframe' && summary.clone) return true;
+    if (summary.type === 'column' && Array.isArray(summary.sample) && summary.sample.length > 0) return true;
+    if (summary.type === 'graphics' && typeof summary.value === 'string') return true;
+    return false;
+  }
+
+  private currentPortPopup: HTMLElement | null = null;
+
+  /** Floating popover anchored next to a port's screen position. Reuses the
+   *  same `buildPreview` renderer the docked panel uses. Auto-closes on
+   *  Esc or click-outside. */
+  private showPortPreview(anchorEl: HTMLElement, name: string, summary: ValueSummary): void {
+    if (this.currentPortPopup) this.currentPortPopup.remove();
+    const inner = buildPreview(name, summary);
+    if (!inner) return;
+
+    const popup = ui.div([inner], 'ff-port-preview');
+    document.body.appendChild(popup);
+    this.currentPortPopup = popup;
+
+    const rect = anchorEl.getBoundingClientRect();
+    const popupRect = popup.getBoundingClientRect();
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let left = rect.right + 12;
+    if (left + popupRect.width > vw - 8) left = rect.left - popupRect.width - 12;
+    if (left < 8) left = 8;
+    let top = rect.top;
+    if (top + popupRect.height > vh - 8) top = vh - popupRect.height - 8;
+    if (top < 8) top = 8;
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+
+    const close = (): void => {
+      popup.remove();
+      this.currentPortPopup = null;
+      document.removeEventListener('mousedown', onDoc, true);
+      document.removeEventListener('keydown', onKey, true);
+    };
+    const onDoc = (ev: MouseEvent): void => {
+      if (!popup.contains(ev.target as Node)) close();
+    };
+    const onKey = (ev: KeyboardEvent): void => {
+      if (ev.key === 'Escape') close();
+    };
+    document.addEventListener('mousedown', onDoc, true);
+    document.addEventListener('keydown', onKey, true);
   }
 
   private initEditor(): void {
     this.flow = new FlowEditor(this.canvasContainer, {
       onNodeSelected: (node: FlowNode) => {
         const execState = this.executionController?.state.getNodeState(node.id);
-        this.propertyPanel.showNodeWithExecution(node, execState);
+        this.propertyPanel.showNode(node, execState);
         grok.shell.o = this.propertyPanel.root;
+        // Lazy: opens (or updates) the bottom-docked output panel only if
+        // this node has captured runtime values from a prior run.
+        this.executionController?.showOutputsForNode(node);
       },
       onNodeDeselected: () => {
         this.propertyPanel.clear();
@@ -126,11 +231,30 @@ export class FuncFlowView extends DG.ViewBase {
       grok.shell.info('Breakpoint hit — click Continue in the ribbon to resume');
     };
     this.executionController.onRunEnd = (success: boolean) => {
-      if (success) grok.shell.info('Flow execution completed');
+      if (!success) return;
+      grok.shell.info('Flow execution completed');
+      // Land the user on the first output node — selecting it opens the
+      // bottom-docked panel with the captured value (if any).
+      this.autoSelectFirstOutputNode();
     };
   }
 
-  /** Accept drops of Datagrok files (→ OpenFile node) and DG.Func (→ matching node). */
+  /** Find the first output node in the graph (preferring one that has
+   *  captured runtime values) and programmatically select it. */
+  private autoSelectFirstOutputNode(): void {
+    if (!this.flow) return;
+    const outputs = this.flow.getNodes().filter((n) => n.dgNodeType === 'output');
+    if (outputs.length === 0) return;
+    const withValue = outputs.find((n) => {
+      const s = this.executionController?.state.getNodeState(n.id);
+      return s && s.outputs && Object.keys(s.outputs).length > 0;
+    });
+    void this.flow.selectNode((withValue ?? outputs[0]).id);
+  }
+
+  /** Accept drops of Datagrok files (→ OpenFile node), DG.Func (→ matching node),
+   *  and HTML5 native drags from the function browser (carry typeName via the
+   *  FF_DRAG_MIME data type). */
   private setupFileDropTarget(): void {
     ui.makeDroppable(this.canvasContainer, {
       acceptDrop: (drag: any) =>
@@ -142,6 +266,36 @@ export class FuncFlowView extends DG.ViewBase {
         void this.addOpenFileNode(fi.fullPath);
       },
     });
+
+    // Native HTML5 drag/drop from the function browser.
+    this.canvasContainer.addEventListener('dragover', (ev) => {
+      if (!ev.dataTransfer) return;
+      if (Array.from(ev.dataTransfer.types).includes(FF_DRAG_MIME)) {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = 'copy';
+      }
+    });
+    this.canvasContainer.addEventListener('drop', (ev) => {
+      const typeName = ev.dataTransfer?.getData(FF_DRAG_MIME);
+      if (!typeName) return;
+      ev.preventDefault();
+      void this.addNodeByTypeAt(typeName, ev.clientX, ev.clientY);
+    });
+  }
+
+  /** Add a node and place it at the canvas position corresponding to the given
+   *  screen-space pointer event. Used by drop handlers. */
+  private async addNodeByTypeAt(typeName: string, clientX: number, clientY: number): Promise<FlowNode | null> {
+    if (!this.flow) return null;
+    const node = createNode(typeName);
+    if (!node) {
+      grok.shell.warning(`Unknown node type: ${typeName}`);
+      return null;
+    }
+    const {x, y} = this.flow.screenToCanvas(clientX, clientY);
+    await this.flow.addNodeAt(node, x, y);
+    this.updateStatusBar();
+    return node;
   }
 
   private async addNodeByType(typeName: string): Promise<FlowNode | null> {
@@ -207,6 +361,8 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Zoom to Fit', () => void this.flow?.zoomToFit())
       .item('Zoom In', () => this.flow?.zoomIn())
       .item('Zoom Out', () => this.flow?.zoomOut())
+      .separator()
+      .item('Toggle Function Browser', () => this.toggleToolbox())
       .endGroup()
       .group('Script')
       .item('Run Script (Classic)', () => this.runScript())
@@ -245,12 +401,17 @@ export class FuncFlowView extends DG.ViewBase {
         ui.iconFA('search-plus', () => this.flow?.zoomIn(), 'Zoom In'),
         ui.iconFA('search-minus', () => this.flow?.zoomOut(), 'Zoom Out'),
         ui.iconFA('compress-arrows-alt', () => void this.flow?.zoomToFit(), 'Zoom to Fit (double-click empty canvas)'),
+        ui.iconFA('list-ul', () => this.toggleToolbox(), 'Toggle Function Browser'),
       ],
     ]);
   }
 
   private setupStatusBar(): void {
     this.statusBarPanels = [this.statusBar as HTMLDivElement];
+  }
+
+  private toggleToolbox(): void {
+    grok.shell.windows.showToolbox = !grok.shell.windows.showToolbox;
   }
 
   private updateStatusBar(): void {
@@ -349,18 +510,17 @@ export class FuncFlowView extends DG.ViewBase {
   private runScript(): void {
     const script = this.generateScript();
     if (!script) return;
-    const typeHints = this.executionController.getOutputTypeHints();
+    // Classic (non-instrumented) run — no per-node values are captured, so
+    // the click-to-inspect docked panel doesn't apply here. Outputs are
+    // surfaced by Datagrok's standard script-run dialog.
     const func = DG.Script.create(script);
     const fc = func.prepare();
-    const onComplete = (outputs: Record<string, any>) =>
-      this.executionController.outputPreview.showOutputs(outputs, typeHints);
     if (func.inputs.length === 0)
-      fc.call(undefined, undefined, {processed: true}).then(() => onComplete(fc.outputs));
+      void fc.call(undefined, undefined, {processed: true});
     else {
       fc.getEditor(false).then((e: HTMLElement) => {
         ui.dialog({title: func.friendlyName ?? func.name}).add(e).show().onOK(async () => {
           await fc.call(undefined, undefined, {processed: true});
-          onComplete(fc.outputs);
         });
       });
     }

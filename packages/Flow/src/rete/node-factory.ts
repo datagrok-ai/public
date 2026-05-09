@@ -8,6 +8,8 @@
 import * as DG from 'datagrok-api/dg';
 import {FlowNode} from './scheme';
 import {FuncNode} from './nodes/func-node';
+import {TypedSocket} from './sockets';
+import {areTypesCompatible} from '../types/type-map';
 
 import {
   TableInputNode, ColumnInputNode, ColumnListInputNode, StringInputNode,
@@ -182,4 +184,70 @@ export function createNode(typeName: string): FlowNode | null {
 /** All registered type names, mostly for debugging / completeness checks. */
 export function getRegisteredTypeNames(): string[] {
   return Array.from(FACTORIES.keys());
+}
+
+// ---------- input-type cache + suggestion helper ----------
+
+/** Cache of (typeName → input slot dgTypes), populated lazily. We construct
+ *  one sample of each node to read its input socket types and never again —
+ *  important for the suggestion menu where we may probe hundreds of factories. */
+const _sampleInputTypesCache = new Map<string, string[]>();
+
+function getInputTypesForType(typeName: string): string[] {
+  let cached = _sampleInputTypesCache.get(typeName);
+  if (cached !== undefined) return cached;
+  const factory = FACTORIES.get(typeName);
+  if (!factory) return [];
+  try {
+    const sample = factory();
+    cached = (Object.values(sample.inputs) as Array<{socket: TypedSocket} | undefined>)
+      .map((i) => i?.socket.dgType ?? 'dynamic');
+  } catch {
+    cached = [];
+  }
+  _sampleInputTypesCache.set(typeName, cached);
+  return cached;
+}
+
+export interface CompatibleNodeType {
+  typeName: string;
+  label: string;
+  isBuiltin: boolean;
+  description?: string;
+}
+
+/** Display label parsed from a typeName like `Inputs/Table Input` or
+ *  `DG Functions/Transform/JoinTables` → the trailing segment, but for DG
+ *  functions we also include the role for orientation. */
+function labelForTypeName(typeName: string): string {
+  const parts = typeName.split('/');
+  if (parts[0] === 'DG Functions' && parts.length >= 3)
+    return `${parts[parts.length - 1]}  (${parts[1]})`;
+  return parts[parts.length - 1];
+}
+
+/** All registered node types whose inputs include at least one slot
+ *  type-compatible with `sourceType`. Used by the drag-output suggestion
+ *  menu — Value Output is sorted first because dynamic accepts everything. */
+export function findNodeTypesAcceptingInput(sourceType: string): CompatibleNodeType[] {
+  const matches: CompatibleNodeType[] = [];
+  for (const typeName of FACTORIES.keys()) {
+    const inputTypes = getInputTypesForType(typeName);
+    if (inputTypes.length === 0) continue;
+    if (!inputTypes.some((t) => areTypesCompatible(sourceType, t))) continue;
+    matches.push({
+      typeName,
+      label: labelForTypeName(typeName),
+      isBuiltin: !typeName.startsWith('DG Functions/'),
+    });
+  }
+  // Stable sort: Value Output first, then the rest of built-ins, then DG
+  // funcs alphabetically.
+  matches.sort((a, b) => {
+    if (a.typeName === 'Outputs/Value Output') return -1;
+    if (b.typeName === 'Outputs/Value Output') return 1;
+    if (a.isBuiltin !== b.isBuiltin) return a.isBuiltin ? -1 : 1;
+    return a.label.localeCompare(b.label);
+  });
+  return matches;
 }

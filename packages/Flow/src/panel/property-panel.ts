@@ -10,12 +10,12 @@ import * as DG from 'datagrok-api/dg';
 import {FlowEditor} from '../rete/flow-editor';
 import {FlowNode} from '../rete/scheme';
 import {NodeExecState} from '../execution/execution-state';
-import {buildValuePanel} from '../execution/value-inspector';
+import {buildExecutionMeta} from '../execution/value-inspector';
 
 const PROP_TOOLTIPS: Record<string, string> = {
   'Title': 'Display name shown on the node',
   'Param Name': 'Variable name used in the generated script',
-  'Description': 'Description shown in the script run dialog',
+  'Description': 'Annotation rendered under the node title; for input/output nodes, also embedded in the //input:/output: line',
   'Default': 'Default value when no input is provided',
   'Nullable': 'Allow null/empty values for this input',
   'SemType': 'Semantic type annotation (e.g. Molecule)',
@@ -73,7 +73,7 @@ export class PropertyPanel {
     this.root = ui.divV([this.contentDiv], 'funcflow-property-panel');
   }
 
-  showNode(node: FlowNode): void {
+  showNode(node: FlowNode, execState?: NodeExecState): void {
     this.contentDiv.innerHTML = '';
 
     const titleInput = this.createTextarea('Title', node.label, (v) => {
@@ -85,6 +85,13 @@ export class PropertyPanel {
     const titleRow = ui.div([titleInput, typeBadge], 'funcflow-title-row');
     this.contentDiv.appendChild(titleRow);
 
+    // Per-node description: rendered under the title in the canvas, and
+    // embedded as the [description] suffix in //input:/output: lines.
+    this.contentDiv.appendChild(this.createTextarea('Description', node.description, (v) => {
+      node.description = v;
+      void this.flow.updateNode(node.id);
+    }));
+
     const acc = ui.accordion('funcflow-context-panel');
 
     if (node.dgFunc) this.addFuncNodePanes(acc, node);
@@ -95,15 +102,15 @@ export class PropertyPanel {
     this.addConnectionsPane(acc, node);
 
     this.contentDiv.appendChild(acc.root);
-  }
 
-  showNodeWithExecution(node: FlowNode, execState?: NodeExecState): void {
-    this.showNode(node);
+    // Execution metadata — status / duration / per-output dims / error.
+    // Rich previews (grid, sample, image) live in the bottom-docked panel
+    // instead, to keep this panel narrow.
     if (execState) {
       const header = ui.div([], 'funcflow-prop-section-header');
       header.textContent = 'Execution';
       this.contentDiv.appendChild(header);
-      this.contentDiv.appendChild(buildValuePanel(execState));
+      this.contentDiv.appendChild(buildExecutionMeta(execState));
     }
   }
 
@@ -177,9 +184,6 @@ export class PropertyPanel {
       const content = ui.div([], 'funcflow-accordion-content');
       content.appendChild(this.createTextarea('Param Name', String(node.properties['paramName'] ?? ''), (v) => {
         node.properties['paramName'] = v;
-      }));
-      content.appendChild(this.createTextarea('Description', String(node.properties['description'] ?? ''), (v) => {
-        node.properties['description'] = v;
       }));
 
       const outputType = node.dgOutputType;

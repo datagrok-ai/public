@@ -95,7 +95,7 @@ The canvas container accepts drops via `ui.makeDroppable()`:
 
 ## Node Types
 
-All nodes extend [FlowNode](src/rete/scheme.ts) which extends `ClassicPreset.Node`. Per-node metadata: `dgNodeType` (`'input'` / `'output'` / `'utility'` / `'func'`), `dgOutputType`, `dgFunc`, `dgFuncName`, `dgRole`, `passthroughCount`, `properties`, `inputValues`, `pos`, `dgTypeName`, optional `dgStatus`.
+All nodes extend [FlowNode](src/rete/scheme.ts) which extends `ClassicPreset.Node`. Per-node metadata: `dgNodeType` (`'input'` / `'output'` / `'utility'` / `'func'`), `dgOutputType`, `dgFunc`, `dgFuncName`, `dgRole`, `passthroughCount`, `properties`, `inputValues`, `pos`, `dgTypeName`, `description` (KNIME-style annotation rendered under the title; for input/output nodes it also becomes the `[description]` suffix in the generated `//input:` / `//output:` line), optional `dgStatus`.
 
 ### Input Nodes ([rete/nodes/input-nodes.ts](src/rete/nodes/input-nodes.ts))
 
@@ -278,16 +278,19 @@ The status circle is part of the title bar; CSS keyframes drive the pulse animat
 ### Layout
 
 ```
-+----------------------+--------------------------------------+
-|  FunctionBrowser     |  Rete canvas container               |
-|  (search + groups)   |  (AreaPlugin mounts here)            |
-|                      |                                      |
-+----------------------+--------------------------------------+
-|  Status bar: Nodes / Links / Validation                     |
-+-------------------------------------------------------------+
++--------------------------------------------------------------+
+|  Rete canvas container                                       |
+|  (AreaPlugin mounts here; FunctionBrowser lives in the       |
+|   platform toolbox window — the view sets `this.toolbox =    |
+|   functionBrowser.root` and turns `showToolbox` on)          |
++--------------------------------------------------------------+
+|  Status bar: Nodes / Links / Validation                      |
++--------------------------------------------------------------+
 ```
 
-Property panel goes into Datagrok's native context panel via `grok.shell.o = propertyPanel.root`.
+Property panel goes into Datagrok's native context panel via `grok.shell.o = propertyPanel.root`. The function browser is the view's toolbox; toggling `grok.shell.windows.showToolbox` shows/hides it (ribbon icon `list-ul`).
+
+A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time the user clicks a node that has captured runtime values from a prior run, [`ExecutionController.showOutputsForNode`](src/execution/execution-controller.ts) creates the dock at the bottom; subsequent clicks update it in place. Closed when the graph changes or a new run starts.
 
 ### Property Panel ([panel/property-panel.ts](src/panel/property-panel.ts))
 
@@ -303,7 +306,7 @@ Property panel goes into Datagrok's native context panel via `grok.shell.o = pro
 
 ### Function Browser ([panel/function-browser.ts](src/panel/function-browser.ts))
 
-- Search input + Group-by selector (`role` / `tags` / `package`).
+- Search input + Group-by selector (`role` / `tags` / `package` / `output`). The `output` mode buckets functions by what they produce: **Data Sources** (output dataframe), **Transformations** (no declared output — typically in-place mutators), **Column Operations**, **Visualization** (viewer/view/widget/graphics), **Compute** (primitives), **Utilities** (everything else).
 - Built-in sections: **Inputs**, **Outputs**, **Constants**, **Comparisons** (collapsed by default), **Utilities**, **Debug**. Tooltips on section headers.
 - DG functions follow, alphabetically grouped per the chosen mode.
 - Item tooltips: built-ins use `<description>. Double-click to add`; DG functions show `func.description (packageName)`.
@@ -325,7 +328,10 @@ Spotfire-inspired light theme:
 - **Collapse / expand**: click the status circle in the title bar (the same dot that shows execution state). Sets `node.collapsed`; the React component re-renders. Collapsed nodes still expose their socket DOM in a hidden absolute-positioned row at the title bar's left/right edges so existing connections keep their endpoints.
 - **Context menu (right-click on a node)**: Collapse/Expand · Duplicate · Hide · Delete. Right-click on a connection: Delete connection. Built with `DG.Menu.popup().item(...).separator().show({causedBy: ev})` so the platform handles positioning, dismissal, and styling. Trigger comes from `area-plugin`'s `contextmenu` signal — `data.context` is `'root'` / a `FlowNode` / a `FlowConnection` and we branch on it.
 - **Delete key (or Backspace)**: removes every selected node and all connections touching it. The handler is registered on `window.keydown` and skips events whose target is an `<input>`/`<textarea>`/`<select>` so typing in the property panel never deletes nodes.
-- **Drag from sidebar**: `ui.makeDroppable` on the canvas container — accepts `DG.FileInfo` (creates an `OpenFile` node with `inputValues['fullPath']`) or `DG.Func` (looks up the registered factory by func name).
+- **Drag from toolbox**: `ui.makeDroppable` on the canvas container — accepts `DG.FileInfo` (creates an `OpenFile` node with `inputValues['fullPath']`) or `DG.Func` (looks up the registered factory by func name). Native HTML5 drag from the FunctionBrowser carries the typeName via the `FF_DRAG_MIME` data type; the canvas drop handler reads it and calls `addNodeAt` with the drop point.
+- **Snap-to-grid + alignment guides**: `nodetranslate` is intercepted in `FlowEditor.wireEvents` — `computeSnap` returns either an alignment-snapped position (when an edge/center is within `alignThreshold` of another node's edge/center) or a 20px grid-snapped position. While dragging, dashed guide lines on a screen-space overlay (`.ff-guide-overlay`) mark the alignment axes; hidden on `nodedragged`.
+- **Pan-to-new-node**: `addNodeAtCenter` calls `panToNode(id)` after one rAF, translating the AreaPlugin so the freshly-added node is at viewport center.
+- **Drag-out suggestion menu**: pointerdown on `.ff-socket-row-output .ff-socket` records the source slot; if pointerup lands on empty canvas (not a node, not a socket) AND no connection was created in between, [`openSuggestionMenu`](src/rete/flow-editor.ts) opens a searchable popup of every node type whose first input is type-compatible with the dragged source (Value Output sorted first). Selecting an item creates the node at the drop point and auto-connects the source to its first compatible input. Compatible-types lookup is cached per node type — see `findNodeTypesAcceptingInput` / `_sampleInputTypesCache` in `node-factory.ts`.
 
 ## Key Dependencies
 

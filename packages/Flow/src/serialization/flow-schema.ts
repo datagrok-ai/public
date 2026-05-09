@@ -17,7 +17,19 @@ export interface FuncFlowDocument {
   /** Connections by source/target node id and slot key. */
   connections: FuncFlowConnection[];
 
+  /** Workflow annotations — purely visual, not part of the executable graph.
+   *  Optional for back-compat with .ffjson files that pre-date this field. */
+  annotations?: FuncFlowAnnotation[];
+
   metadata: FuncFlowMetadata;
+}
+
+export interface FuncFlowAnnotation {
+  id: string;
+  pos: {x: number; y: number};
+  size: {w: number; h: number};
+  text: string;
+  color: string;
 }
 
 export interface FuncFlowNode {
@@ -27,6 +39,13 @@ export interface FuncFlowNode {
   typeName: string;
   /** Human-friendly label shown on the node title bar. */
   label: string;
+  /** KNIME-style annotation rendered under the title. Optional — older saves
+   *  that pre-date this field will have it copied from `properties.description`
+   *  by the deserializer. */
+  description?: string;
+  /** Whether the node was collapsed (title-bar-only render) when saved.
+   *  Optional — absent in older saves; treated as false. */
+  collapsed?: boolean;
   /** Canvas position. */
   pos: {x: number; y: number};
   /** Free-form node properties (paramName, defaultValue, etc.). */
@@ -41,6 +60,8 @@ export interface FuncFlowConnection {
   sourceOutput: string;
   target: string;
   targetInput: string;
+  /** Optional routing waypoints (canvas-coord points the line bends through). */
+  waypoints?: Array<{x: number; y: number}>;
 }
 
 export interface FuncFlowMetadata {

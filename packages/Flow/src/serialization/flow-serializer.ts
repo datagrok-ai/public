@@ -11,6 +11,8 @@ export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlo
     id: n.id,
     typeName: n.dgTypeName ?? '',
     label: n.label,
+    description: n.description,
+    collapsed: n.collapsed || undefined, // omit when false to keep saves tidy
     pos: {x: n.pos.x, y: n.pos.y},
     properties: {...n.properties},
     inputValues: {...n.inputValues},
@@ -22,7 +24,10 @@ export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlo
     sourceOutput: String(c.sourceOutput),
     target: c.target,
     targetInput: String(c.targetInput),
+    waypoints: c.waypoints?.map((w) => ({x: w.x, y: w.y})),
   }));
+
+  const annotations = flow.getAnnotations().map((a) => a.toDoc());
 
   let author = 'unknown';
   try {author = grok.shell.user?.login ?? 'unknown';} catch { /* no shell */ }
@@ -36,6 +41,7 @@ export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlo
     modified: new Date().toISOString(),
     nodes,
     connections,
+    annotations,
     metadata: {settings},
   };
 }
@@ -58,6 +64,11 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
     node.label = docNode.label;
     node.properties = {...docNode.properties};
     node.inputValues = {...docNode.inputValues};
+    // Migration: older saves carried the per-node annotation in
+    // properties.description before we promoted it to a top-level field.
+    node.description = docNode.description ?? String(docNode.properties?.description ?? '');
+    delete (node.properties as Record<string, unknown>).description;
+    node.collapsed = docNode.collapsed === true;
     await flow.addNodeAt(node, docNode.pos.x, docNode.pos.y);
     idMap.set(docNode.id, node.id);
   }
@@ -67,6 +78,19 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
     const target = idMap.get(c.target);
     if (!source || !target) continue;
     await flow.addConnectionByKeys(source, c.sourceOutput, target, c.targetInput);
+    if (c.waypoints && c.waypoints.length > 0) {
+      // Match by source/target/keys since the new connection has a fresh id.
+      const newConn = flow.getConnections().find((nc) =>
+        nc.source === source && nc.target === target &&
+        String(nc.sourceOutput) === c.sourceOutput &&
+        String(nc.targetInput) === c.targetInput,
+      );
+      if (newConn) newConn.waypoints = c.waypoints.map((w) => ({x: w.x, y: w.y}));
+    }
+  }
+
+  if (doc.annotations) {
+    for (const a of doc.annotations) flow.addAnnotation(a);
   }
 }
 

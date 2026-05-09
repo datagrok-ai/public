@@ -1,8 +1,32 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 import {FuncInfo, getRegisteredFuncs} from '../rete/node-factory';
 
-export type GroupByMode = 'role' | 'tags' | 'package';
+export type GroupByMode = 'role' | 'tags' | 'package' | 'output';
+
+/** Bucket a function by what kind of value it produces.
+ *  Visualization wins over Data Sources when both apply (a func that builds
+ *  a viewer is more naturally found under "Visualization"). No-output funcs
+ *  are treated as Transformations — they typically mutate their dataframe
+ *  input in place (e.g. addNewColumn, fillNullValues). */
+function categorizeByOutput(func: DG.Func): string {
+  const outputs = func.outputs;
+  if (outputs.length === 0) return 'Transformations';
+  const types = outputs.map((o) => String(o.propertyType));
+  const has = (t: string): boolean => types.includes(t);
+  if (has('viewer') || has('view') || has('widget') || has('graphics')) return 'Visualization';
+  if (has('dataframe')) return 'Data Sources';
+  if (has('column') || has('column_list')) return 'Column Operations';
+  if (has('string') || has('int') || has('double') || has('bool') ||
+      has('datetime') || has('num')) return 'Compute';
+  return 'Utilities';
+}
+
+/** MIME-ish key used to carry a node type name through HTML5 drag/drop.
+ *  The canvas drop handler reads this and adds the corresponding node at
+ *  the drop point. */
+export const FF_DRAG_MIME = 'application/x-funcflow-node';
 
 export interface FunctionBrowserCallbacks {
   onFunctionDoubleClick: (funcInfo: FuncInfo) => void;
@@ -34,10 +58,16 @@ export class FunctionBrowser {
     // Group by selector
     this.groupBySelect = document.createElement('select');
     this.groupBySelect.className = 'funcflow-groupby-select';
-    for (const opt of ['role', 'tags', 'package']) {
+    const groupByLabels: Record<GroupByMode, string> = {
+      role: 'role',
+      tags: 'tags',
+      package: 'package',
+      output: 'output (data sources / transformations / …)',
+    };
+    for (const opt of Object.keys(groupByLabels) as GroupByMode[]) {
       const option = document.createElement('option');
       option.value = opt;
-      option.textContent = `Group by: ${opt}`;
+      option.textContent = `Group by: ${groupByLabels[opt]}`;
       this.groupBySelect.appendChild(option);
     }
     this.groupBySelect.addEventListener('change', () => {
@@ -164,11 +194,14 @@ export class FunctionBrowser {
     for (const node of nodes) {
       const item = ui.div([], 'funcflow-func-item');
       item.textContent = node.name;
-      const tip = node.desc ? `${node.desc}. Double-click to add` : `Double-click to add ${node.name}`;
+      const tip = node.desc ?
+        `${node.desc}. Double-click or drag to add` :
+        `Double-click or drag to add ${node.name}`;
       ui.tooltip.bind(item, tip);
       item.addEventListener('dblclick', () => {
         this.callbacks.onBuiltinNodeDoubleClick(node.type);
       });
+      this.makeItemDraggable(item, node.type);
       content.appendChild(item);
     }
 
@@ -204,6 +237,7 @@ export class FunctionBrowser {
       item.addEventListener('dblclick', () => {
         this.callbacks.onFunctionDoubleClick(info);
       });
+      this.makeItemDraggable(item, info.nodeTypeName);
       content.appendChild(item);
     }
 
@@ -222,6 +256,22 @@ export class FunctionBrowser {
     });
 
     return ui.divV([header, content]);
+  }
+
+  /** Wire HTML5 drag on a browser item so dropping it on the canvas creates
+   *  the matching node at the drop point. */
+  private makeItemDraggable(item: HTMLElement, typeName: string): void {
+    item.draggable = true;
+    item.addEventListener('dragstart', (ev) => {
+      if (!ev.dataTransfer) return;
+      ev.dataTransfer.setData(FF_DRAG_MIME, typeName);
+      ev.dataTransfer.setData('text/plain', typeName);
+      ev.dataTransfer.effectAllowed = 'copy';
+      item.classList.add('funcflow-func-item-dragging');
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('funcflow-func-item-dragging');
+    });
   }
 
   private filterBySearch(funcs: FuncInfo[]): FuncInfo[] {
@@ -250,6 +300,9 @@ export class FunctionBrowser {
         break;
       case 'package':
         keys = [f.packageName || 'Core'];
+        break;
+      case 'output':
+        keys = [categorizeByOutput(f.func)];
         break;
       default:
         keys = ['Other'];

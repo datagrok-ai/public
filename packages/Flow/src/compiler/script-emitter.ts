@@ -139,7 +139,7 @@ function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
   if (step.properties['showSlider'] === true) qualifiers.push('showSlider: true');
 
   if (qualifiers.length > 0) line += ` {${qualifiers.join('; ')}}`;
-  if (step.properties['description']) line += ` [${step.properties['description']}]`;
+  if (node.description) line += ` [${node.description}]`;
   return line;
 }
 

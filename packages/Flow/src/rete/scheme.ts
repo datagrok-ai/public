@@ -42,8 +42,13 @@ export class FlowNode extends ClassicPreset.Node<
    *  these in the side panel only, so they go here instead. */
   inputValues: Record<string, any> = {};
 
-  /** Free-form node properties (paramName, defaultValue, description, qualifiers). */
+  /** Free-form node properties (paramName, defaultValue, qualifiers). */
   properties: Record<string, any> = {};
+
+  /** KNIME-style annotation rendered below the title. For input/output nodes
+   *  this also becomes the `[description]` suffix in the generated `//input:` /
+   *  `//output:` line. Empty string means no annotation. */
+  description: string = '';
 
   /** Registered type name from `node-factory.ts`, stamped at construction
    *  via `createNode()`. Needed for serialization. */
@@ -77,6 +82,11 @@ export class FlowNode extends ClassicPreset.Node<
  *  `ClassicScheme` constraint without TS variance complaints. */
 export class FlowConnection extends ClassicPreset.Connection<ClassicPreset.Node, ClassicPreset.Node> {
   isPseudo?: boolean;
+  /** Optional routing points. The React Connection component chains
+   *  classicConnectionPath through start → waypoints[…] → end. Stored in
+   *  canvas coords; the editor exposes `addWaypoint`/`removeWaypoint` to
+   *  mutate and trigger a re-render. */
+  waypoints?: Array<{x: number; y: number}>;
 }
 
 export type FlowScheme = GetSchemes<FlowNode, FlowConnection>;

@@ -16,7 +16,7 @@ export class TableOutputNode extends FlowNode {
     super('Table Output');
     this.dgNodeType = 'output';
     this.dgOutputType = 'dataframe';
-    this.properties = {paramName: 'result', description: ''};
+    this.properties = {paramName: 'result'};
     (this as unknown as {color: string}).color = COLOR_OUTPUT;
     this.addInput('table', new ClassicPreset.Input(getSocket('dataframe'), 'table'));
   }
@@ -26,7 +26,7 @@ export class ValueOutputNode extends FlowNode {
   constructor() {
     super('Value Output');
     this.dgNodeType = 'output';
-    this.properties = {paramName: 'result', outputType: 'double', description: ''};
+    this.properties = {paramName: 'result', outputType: 'double'};
     (this as unknown as {color: string}).color = COLOR_OUTPUT;
     // Input socket is dynamic — accepts anything; declared type comes from
     // the `outputType` property and is auto-updated on connect via

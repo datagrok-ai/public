@@ -17,7 +17,7 @@ abstract class InputBase extends FlowNode {
     super(label);
     this.dgNodeType = 'input';
     this.dgOutputType = dgType;
-    this.properties = {paramName, defaultValue: '', description: '', ...extraProps};
+    this.properties = {paramName, defaultValue: '', ...extraProps};
     (this as unknown as {color: string}).color = COLOR_INPUT;
     this.addOutput(slotName, new ClassicPreset.Output(getSocket(dgType), slotName));
   }

@@ -50,6 +50,8 @@ export class ExecutionController {
     }
 
     this.stopRun();
+    // A new run invalidates anything we were showing.
+    this.outputPreview.close();
 
     const runId = crypto.randomUUID();
     this.state.startRun(runId, this.graphVersion);
@@ -69,20 +71,16 @@ export class ExecutionController {
 
     try {
       const script = emitScript(this.flow, settings, options);
-      const typeHints = this.getOutputTypeHints();
       const func = DG.Script.create(script);
       const fc = func.prepare();
-      const onComplete = (outputs: Record<string, any>) => {
-        this.outputPreview.showOutputs(outputs, typeHints);
-      };
-
+      // No auto-dock at completion — the user opens the panel by clicking a
+      // completed node (see `showOutputsForNode`).
       if (func.inputs.length === 0)
-        fc.call(undefined, undefined, {processed: true}).then(() => onComplete(fc.outputs));
+        void fc.call(undefined, undefined, {processed: true});
       else {
         fc.getEditor(false).then((e: HTMLElement) => {
           ui.dialog({title: settings.name}).add(e).show().onOK(async () => {
             await fc.call(undefined, undefined, {processed: true});
-            onComplete(fc.outputs);
           });
         });
       }
@@ -90,6 +88,14 @@ export class ExecutionController {
       grok.shell.error(`Script generation failed: ${e.message}`);
       this.stopRun();
     }
+  }
+
+  /** Lazily open or update the docked output panel with this node's runtime
+   *  values. No-op if the node has nothing captured. Called from the view's
+   *  selection callback. */
+  showOutputsForNode(node: {id: string; label: string}): void {
+    const state = this.state.getNodeState(node.id);
+    this.outputPreview.showForNode(node, state);
   }
 
   private handleEvent(event: ExecEvent): void {
@@ -146,24 +152,15 @@ export class ExecutionController {
     if (this.state.nodeStates.size > 0 && this.state.isStale(this.graphVersion)) {
       this.state.markAllStale();
       this.visualizer.markAllStale();
+      // Stale values aren't worth previewing; close to avoid stale impressions.
+      this.outputPreview.close();
     }
   }
 
   resetVisuals(): void {
     this.visualizer.resetAllNodes();
     this.state.reset();
-  }
-
-  /** Map output paramName → declared DG type (for output-preview classification). */
-  getOutputTypeHints(): Record<string, string> {
-    const hints: Record<string, string> = {};
-    for (const node of this.flow.getNodes()) {
-      if (node.dgNodeType !== 'output') continue;
-      const paramName = node.properties['paramName'] as string | undefined;
-      const outputType = (node.properties['outputType'] as string | undefined) ?? node.dgOutputType;
-      if (paramName && outputType) hints[paramName] = outputType;
-    }
-    return hints;
+    this.outputPreview.close();
   }
 
   dispose(): void {
