@@ -1,6 +1,7 @@
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 
-import {parseHelmDuplex, looksLikeHelm} from '../oligo-renderer/helm-parser';
+import {parseHelmDuplex, looksLikeHelm, canonicalizeHelm} from '../oligo-renderer/helm-parser';
+import {ParsedNucleotide} from '../oligo-renderer/types';
 import {computeLayout, hitTest, drawDuplex} from '../oligo-renderer/canvas-renderer';
 import {
   resolveSugar, resolvePhosphate, resolveConjugate,
@@ -93,6 +94,68 @@ category('OligoRenderer: parser', () => {
       expect(m0.sugar, 'xr');
       expect(m0.phosphate, 'zp');
     }
+  });
+
+  test('parser strips brackets from multi-char base in parens', async () => {
+    // Bug: pre-fix, cleanupHelmSymbol was not called on the base, so base === '[5Br-dC]'.
+    // Post-fix: cleanupHelmSymbol('[5Br-dC]') → '5Br-dC'.
+    const dup = parseHelmDuplex('RNA1{r([5Br-dC])p}$$$$');
+    const m = dup.sense.monomers[0] as ParsedNucleotide;
+    expect(m.kind, 'nucleotide');
+    expect(m.sugar, 'r');
+    // pre-fix: '[5Br-dC]'  post-fix: '5Br-dC'
+    expect(m.base, '5Br-dC');
+    expect(m.phosphate, 'p');
+  });
+
+  test('parser strips brackets from multi-char base on both strands', async () => {
+    // Covers both strands and different modification combinations.
+    // pre-fix: base === '[5meC]', '[5Br-dC]', '[5fU]'  post-fix: '5meC', '5Br-dC', '5fU'
+    const dup = parseHelmDuplex('RNA1{r([5meC])p.[fl2r]([5Br-dC])[sp]}|RNA2{r([5fU])p}$$$$');
+    const senseFirst = dup.sense.monomers[0] as ParsedNucleotide;
+    const senseSecond = dup.sense.monomers[1] as ParsedNucleotide;
+    const antiFirst = dup.antisense!.monomers[0] as ParsedNucleotide;
+    // pre-fix: '[5meC]'  post-fix: '5meC'
+    expect(senseFirst.base, '5meC');
+    expect(senseSecond.sugar, 'fl2r');
+    // pre-fix: '[5Br-dC]'  post-fix: '5Br-dC'
+    expect(senseSecond.base, '5Br-dC');
+    expect(senseSecond.phosphate, 'sp');
+    // pre-fix: '[5fU]'  post-fix: '5fU'
+    expect(antiFirst.base, '5fU');
+  });
+
+  test('parser leaves bare-letter base unchanged', async () => {
+    // Regression guard: single-letter bases must NOT be transformed.
+    // A, G, C, T, U are all single-char and do not have brackets → unchanged by cleanupHelmSymbol.
+    const dup = parseHelmDuplex('RNA1{r(A)p.r(G)p.r(C)p.r(T)p.r(U)p}$$$$');
+    const bases = dup.sense.monomers.map((m) => (m as ParsedNucleotide).base);
+    // Expected: ['A', 'G', 'C', 'T', 'U'] — unchanged for all five bases.
+    expect(bases.join(','), 'A,G,C,T,U');
+  });
+
+  test('canonicalizeHelm re-brackets multi-char base on output', async () => {
+    // serializeCanonicalMonomer emits `([${base}])` when base.length > 1.
+    // pre-fix: emitted '(5Br-dC)' (invalid HELM, missing brackets).
+    // post-fix: emits '([5Br-dC])' — round-trip is valid HELM.
+    const out = canonicalizeHelm('RNA1{r([5Br-dC])p}$$$$');
+    // Must contain the bracketed base form.
+    expect(out.includes('([5Br-dC])'), true,
+      `expected canonicalized HELM to contain '([5Br-dC])', got: ${out}`);
+    // Must NOT contain the bare (unbracketed) form.
+    expect(out.includes('(5Br-dC)') && !out.includes('([5Br-dC])'), false,
+      `must not emit unbracketed (5Br-dC) without wrapping brackets, got: ${out}`);
+  });
+
+  test('canonicalizeHelm keeps single-letter base unbracketed', async () => {
+    // serializeCanonicalMonomer: base.length === 1 → `(${base})`, not `([${base}])`.
+    // Expected output contains 'r(A)p' — single letter stays bare.
+    const out = canonicalizeHelm('RNA1{r(A)p}$$$$');
+    expect(out.includes('r(A)p'), true,
+      `expected single-letter base to stay unbracketed, got: ${out}`);
+    // Single-letter base must NOT get double-bracketed.
+    expect(out.includes('([A])'), false,
+      `single-letter base must NOT be wrapped in brackets, got: ${out}`);
   });
 });
 

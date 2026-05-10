@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## v.next
+
+* OligoNucleotide cell renderer: Fixed bracketed monomer base parsing (e.g. `[5Br-dC]` inside `(...)`) so renderer/resolver pick up modification colors and structures correctly.
+
 ## 1.10.14 (2026-04-21)
 
 * Chem Enumeration
