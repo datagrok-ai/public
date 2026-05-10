@@ -148,7 +148,28 @@ export const BASE_COLORS: Readonly<Record<string, string>> = Object.freeze({
   T: '#F0C5C5',
 });
 
+/** The canonical single-letter base symbols. Anything else is a custom /
+ * modified base (e.g. `cpm6A`, `5BrU`, `psiU`) and gets its color via natural
+ * analog lookup against the central Bio monomer library. */
+export const CANONICAL_BASES: Readonly<Set<string>> = new Set(['A', 'C', 'G', 'U', 'T']);
+
 export const FALLBACK_COLOR = '#BCBCBC';
+
+/** True if `base` is one of the canonical single-letter symbols. */
+export function isCanonicalBase(base: string | null | undefined): boolean {
+  return !!base && CANONICAL_BASES.has(base);
+}
+
+/** Shorten a multi-character base symbol to a chip-friendly label.
+ *  - 1-2 char symbols: returned as-is
+ *  - 3+ char symbols: first letter + ellipsis (e.g. `cpm6A` → `c…`)
+ * The renderer also has a width-aware path that shows the full symbol when
+ * the chip can fit it; this helper is the safe fallback. */
+export function displayBase(base: string | null): string {
+  if (!base) return '';
+  if (base.length <= 2) return base;
+  return base[0] + '…';
+}
 
 /** Deterministic color for unknown HELM monomer symbols. Stable across cells. */
 export function hashColor(symbol: string): string {

@@ -32,6 +32,7 @@ import {CyclizedNotationProvider} from './utils/cyclized';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {PolyToolDataRole, PolyToolTags} from './consts';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getPTCombineDialog} from './polytool/pt-combine-dialog';
 import {PolyToolEnumeratorTypes} from './polytool/types';
 import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -74,10 +75,11 @@ export const _package: OligoToolkitPackage = new OligoToolkitPackage({debug: tru
 let initSequenceTranslatorPromise: Promise<void> | null = null;
 
 async function initSequenceTranslatorInt(): Promise<void> {
-  const [helmHelper] = await Promise.all([
+  const [helmHelper, bioLibHelper] = await Promise.all([
     getHelmHelper(),
+    getMonomerLibHelper(),
   ]);
-  _package.completeInit(helmHelper);
+  _package.completeInit(helmHelper, bioLibHelper.getMonomerLib());
 }
 
 export class PackageFunctions {
