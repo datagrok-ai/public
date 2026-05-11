@@ -1,0 +1,90 @@
+# Datagrok typed facts (auto-generated from skill-harness).
+# Each entry is a contradictable claim cited by a shipped skill.
+# Do not edit by hand — append via commit-to-public.sh.
+
+- id: DG-FACT-330
+  kind: naming
+  scope: build-an-app
+  value: |
+    App entry point is registered with `@grok.decorators.app(config: AppOptions)`
+    on a `static` method of a `PackageFunctions` class in `src/package.ts`.
+    `AppOptions extends FunctionOptions` with optional `browsePath`, `icon`,
+    `url`. The decorator generates package metadata at build time; no runtime
+    registration call is required. Return type may be `void`, `Promise<DG.View>`,
+    or `Promise<DG.ViewBase>`.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:55-69
+    - code: js-api/src/decorators/functions.ts:189-193,246-252
+    - code: packages/Chem/src/package.ts:2919-2925
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-331
+  kind: naming
+  scope: build-an-app
+  value: |
+    A per-app navigation tree is declared with
+    `@grok.decorators.appTreeBrowser({app: '<AppName>'})` on a sibling
+    `static async` method that receives `treeNode: DG.TreeViewGroup` and
+    returns `Promise<void>`. The platform calls it automatically when the
+    named app launches. Populate via `treeNode.item(label)` /
+    `treeNode.group(label)`; subscribe via `node.onSelected.subscribe(...)`.
+    `AppTreeBrowserOptions extends FunctionOptions` with `app?: string`.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:110-133
+    - code: js-api/src/decorators/functions.ts:207-209,390-396
+    - code: packages/BenchlingLink/src/package.ts:47-58
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-332
+  kind: naming
+  scope: build-an-app
+  value: |
+    To bind the URL path-suffix into an app argument, annotate a string
+    parameter with `@grok.decorators.param({options: {metaUrl: true,
+    optional: true}}) path?: string`. The `InputOptions` interface declares
+    BOTH `metaUrl?: boolean` (camelCase, canonical in production) AND
+    `'meta.url'?: boolean` (string-keyed, used by the article snippet).
+    Both forms compile and emit the same metadata; production packages use
+    the camelCase alias exclusively.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:62-67
+    - code: js-api/src/decorators/functions.ts:101-102
+    - code: packages/Chem/src/package.ts:2923-2924
+  contradicts:
+    - DG-FACT-DRIFT-BUILD-APP-002
+  confidence: high
+
+- id: DG-FACT-333
+  kind: naming
+  scope: build-an-app
+  value: |
+    App launch URL form depends on the number of apps in the package:
+    one-app packages — `https://<HOST>/apps/<APP_NAME>`; multi-app —
+    `https://<HOST>/apps/<PACKAGE_NAME>/<APP_NAME>`. The launcher resolves
+    the route off the app function's `name` (and optional `meta.url`
+    override on either the function or the package). A direct link to the
+    full app list — `https://<HOST>/apps`.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:21-28,96-100,862-866
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-334
+  kind: enum
+  scope: build-an-app
+  value: |
+    `grok publish` has two lifecycle modes, mutually exclusive via CLI flag:
+    (a) Debug (default) — `grok publish` deploys a per-user version visible
+    ONLY to the publisher; other users keep seeing the previously released
+    version. (b) Release — `grok publish --release` replaces the installed
+    version for all users with proper privileges. Implementation: the CLI
+    passes `!args.release` as the `debug` flag to `processPackage(...)`;
+    `--debug` and `--release` together error with "Incompatible options".
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:851-857
+    - code: tools/bin/commands/publish.ts:651-654,712
+  contradicts: []
+  confidence: high
+
