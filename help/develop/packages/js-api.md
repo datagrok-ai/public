@@ -78,7 +78,7 @@ Use [DataFrame](https://datagrok.ai/api/js/api/dg/classes/DataFrame), [Column](h
 classes for table manipulation.
 
 ```javascript
-demog = grok.testData('demog', 5000);
+demog = grok.data.testData('demog', 5000);
 demog.cols.remove('sex');
 foo = demog.cols.addNew('foo', 'int');
 demog.rows.removeAt(1, 3);
@@ -164,8 +164,8 @@ grok.functions.register({
   signature: 'List<String> jsSuggestCountryName(String text)',
   isAsync: true,
   run: async function(text) {
-    let response = await fetch('https://restcountries.eu/rest/v2/name/' + text);
-    return response.status === 200 ? (await response.json()).map(country => country['name']) : [];
+    let response = await fetch('https://restcountries.com/v3.1/name/' + text);
+    return response.status === 200 ? (await response.json()).map(country => country['name']['common']) : [];
   }
 });
 ```
@@ -209,7 +209,7 @@ this particular event, copy-paste it from the context panel into your code if ne
 
 ## User-defined types
 
-Define your own classes, and integrate them easily by providing a meta-class that extends `DG.EntityMeta`. This will
+Define your own classes, and integrate them easily by providing a meta-class that extends `DG.ObjectHandler`. This will
 provide native support for context actions, rendering, drag-and drop, tooltips, and favorites.
 
 Code snippets:
