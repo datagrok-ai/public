@@ -17,9 +17,13 @@ if you want to use a particular schema (or database), you should add the `db` pr
 as Datagrok will resolve it dynamically based on the container address.
 
 To ensure the Datagrok platform recognizes the connection as one that requires Docker, the `server` property of the JSON 
-should have the following format: `${<package name>:<container friendly name><DockerContainer>}`. The `friendly name` of 
-the container is the same as the package name when you have only one container declared in the package. If there are 
-several folders inside the `dockerfiles` of the package with Dockerfile inside, then friendly name follows this format: `<package name>-<folder name>`.
+should have one of the following formats: `${<package name>:<container friendly name><DockerContainer>}` (two-segment, recommended for clarity) 
+or `${<container friendly name><DockerContainer>}` (single-segment, when the container friendly name is already unique). Both forms work; the 
+two-segment form makes the owning package explicit. The `friendly name` of the container is the same as the package name when you have only one 
+container declared in the package. If there are several folders inside the `dockerfiles` of the package with Dockerfile inside, then friendly name 
+follows this format: `<package name>-<folder name>`.
+
+> Note: the platform normalizes the package name in the placeholder to first-letter-only capitalization (e.g., package `DBTests` becomes `Dbtests` in the placeholder; package `SureChembl` becomes `Surechembl`). Use the normalized form in your connection JSON.
 
 For example, consider the following Dockerfile created inside a package called `Test`:
 
@@ -60,7 +64,7 @@ The connection JSON file could look like this:
 
 After publishing package you will see created connection under the **Databases** in the **Browse**. Such connections can be used like any other; you can execute database queries, browse schemas, and use them within projects.
 
-For a complete working example, please refer to the source code of our [DbTests package](https://github.com/datagrok-ai/public/tree/master/packages/DBTests).
+For a complete working example, please refer to the source code of our [DBTests package](https://github.com/datagrok-ai/public/tree/master/packages/DBTests).
 
 See also:
 
