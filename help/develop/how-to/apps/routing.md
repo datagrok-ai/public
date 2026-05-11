@@ -18,8 +18,8 @@ We start off by getting the path and splitting it in segments:
 //input: string path {meta.url: true}
 //input: string searchParam
 //meta.role: app
-export function test(url, searchParam) {
-  const pathSegments = url.split('/').filter((s) => s != '');
+export function test(path, searchParam) {
+  const pathSegments = path.split('/').filter((s) => s != '');
   // etc.
 }
 ```
@@ -36,15 +36,15 @@ if (pathSegments.length == 0) {
   //Adding demog table view
   const demog = grok.data.testData('demog');
   const demogView = grok.shell.addTableView(demog);
-  demogView.scatterPlot();
+  demogView.addViewer(DG.Viewer.scatterPlot(demog));
   demogView.path = '/Demog/All';
   grok.shell.v = demogView;
 
   //Adding random walk table view
   const wells = grok.data.testData('wells');
   const wellsView = grok.shell.addTableView(wells);
-  wellsView.scatterPlot();
-  wellsView.basePath = '/wells/All';
+  wellsView.addViewer(DG.Viewer.scatterPlot(wells));
+  wellsView.path = '/wells/All';
   grok.shell.v = wellsView;
 }
 ```
@@ -55,7 +55,7 @@ opened by another user, but for this, to work we also need to handle the case, w
 ```javascript
 const tableName = pathSegments[0];
 const selectionLabel = pathSegments[1] ?? 'All';
-const table = grok.data.testData(tableName as testData);
+const table = grok.data.testData(tableName as DG.DemoDatasetName);
 const tableView = grok.shell.addTableView(table);
 tableView.path = `/${tableName}/${selectionLabel}`;
 setSelection(tableView, selectionLabel);
@@ -110,8 +110,8 @@ Also, you can specify app URL alias with `meta.url` tag:
 //input: string searchParam
 //meta.url: /application
 //meta.role: app
-export function test(url, searchParam) {
-  const pathSegments = url.split('/').filter((s) => s != '');
+export function test(path, searchParam) {
+  const pathSegments = path.split('/').filter((s) => s != '');
   // etc.
 }
 ```
@@ -138,33 +138,31 @@ Here's the full code used in the tutorial.
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-type testData = "wells" | "demog" | "biosensor" | "random walk" | "geo" | "molecules" | "dose-response";
-
 //name: Test
 //input: string path {meta.url: true}
 //input: string filter
 //meta.role: app
 export function test(path: string, filter: string) {
-  const pathSegments = url.split('/').filter((s) => s != '');
+  const pathSegments = path.split('/').filter((s) => s != '');
 
   if (pathSegments.length == 0) {  //Fresh app start
     //Adding demog table view
     const demog = grok.data.testData('demog');
     const demogView = grok.shell.addTableView(demog);
-    demogView.scatterPlot();
+    demogView.addViewer(DG.Viewer.scatterPlot(demog));
     demogView.path = '/demog/All';
     grok.shell.v = demogView;
 
     //Adding random walk table view
     const wells = grok.data.testData('wells');
     const wellsView = grok.shell.addTableView(wells);
-    wellsView.scatterPlot();
+    wellsView.addViewer(DG.Viewer.scatterPlot(wells));
     wellsView.path = '/wells/All';
     grok.shell.v = wellsView;
   } else {  //Handle routing
     const tableName = pathSegments[0];
     const selectionLabel = pathSegments[1] ?? 'All';
-    const table = grok.data.testData(tableName as testData);
+    const table = grok.data.testData(tableName as DG.DemoDatasetName);
     const tableView = grok.shell.addTableView(table);
     setSelection(tableView, tableName, selectionLabel, filter);
     grok.shell.v = tableView;
