@@ -51,7 +51,7 @@ as the `Dockerfile`. This file defines resource allocation and container behavio
   "on_demand": true,
   "shutdown_timeout": 60,
   "storage": 25,
-  "env": {
+  "environmentVars": {
     "CONN": "#{x.Package:Entity}",
     "LOGIN": "login"
   }
@@ -69,14 +69,14 @@ as the `Dockerfile`. This file defines resource allocation and container behavio
 | **shutdown_timeout** | Integer | null    | Time in minutes after which the container shuts down if idle.    |
 | **storage**          | Integer | 21      | Allocated storage size in gigabytes.                             |
 | **shm_size**         | Integer | 64      | Shared memory size in megabytes.                                 |
-| **env**              | Object  |         | Environment variables for the container.                         |
+| **environmentVars**  | Object  |         | Environment variables for the container.                         |
 
 ### Usage
 
 1. Place `container.json` in the same directory as the `Dockerfile`.
 2. Modify resource limits as needed before publishing the package.
 
-Pass any environment variables to the container using env parameter.
+Pass any environment variables to the container using the `environmentVars` parameter.
 Use `#{x.Package:Entity}` expression to pass JSON-serialized entity from the package or any other namespace, for example: `#{x.MolTrack:Moltrack}` means Moltrack entity from Moltrack package.
 Please note, credentials for the connection are passed only within the same package. You can't get credentials from a connection that does not belong to your package.
 
@@ -108,7 +108,7 @@ async function requestAlignedObjects(id: string, body: PepseaBodyUnit[], method:
 }
 ```
 
-Use `grok.dapi.dockerfiles.fetchProxy` for HTTPS requests. You should specify the `id` in order to make the request
+Use `grok.dapi.docker.dockerContainers.fetchProxy` for HTTPS requests. You should specify the `id` in order to make the request
 to the right container, `path` and `params` of the request. The method logic is fully aligned
 with the [JavaScript Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) and `params` is [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/RequestInit) object type.
 
