@@ -22,9 +22,10 @@ import {makeProlifWidget, ProlifBatchCtx} from './utils/prolif-panel';
 export * from './package.g';
 export const _package = new DG.Package();
 
-// ProLIF panel + batch handler live in `./utils/prolif-panel.ts` (also
-// duplicated in `BiostructureViewer/src/utils/prolif-panel.ts` — same
-// FOLLOW-UP about moving to @datagrok-libraries/bio).
+// ProLIF panel + batch handler live in `@datagrok-libraries/bio/src/prolif/prolif-panel`.
+// `./utils/prolif-panel.ts` is a thin Docking-specific wrapper that supplies
+// the receptor pre-fetch and `isApplicableAutodock` per-row gate to the
+// shared `runPlBatch`.
 
 
 export class PackageFunctions{
@@ -236,6 +237,13 @@ export class PackageFunctions{
     } : undefined;
     return makeProlifWidget({protein: receptor, ligand: pose}, batchCtx);
   }
+
+  // NOTE: the context panel that fires on `PL Diagram` cells is registered
+  // ONCE in `BiostructureViewer/src/package.ts` as `plDiagramInteractionsWidget`.
+  // Registering it again here would mean both fire on the same cell click and
+  // the user sees the panel twice in the right sidebar. The BSV widget reads
+  // from the shared `window.__prolifCache` populated by either package's batch
+  // handler, so it works for both Docking and BSV datasets.
 
   @grok.decorators.func()
   static async getAutodockSingle(

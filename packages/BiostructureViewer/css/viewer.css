@@ -35,26 +35,95 @@
 }
 
 /* "Compute for whole dataset" button in the PL context-panel widget */
-.pl-batch-btn {
+.bsv-pl-batch-btn {
     margin-top: 12px;
     justify-content: flex-start;
 }
 
-/* Iframe used to render PL diagrams inside grid cells */
-.pl-cell-iframe {
-    width: 100%;
-    height: 100%;
-    border: 0;
-}
-
-/* Iframe used to render the PL diagram in the context-panel widget. The
-   600px height is fixed because the sandbox attribute prevents the parent
-   from reading the iframe's contentDocument to measure rendered content. */
-.pl-panel-iframe {
+/* Iframe used to render the interactive PL LigNetwork in the context-panel
+   widget. The 600px height is fixed because the sandbox attribute prevents
+   the parent from reading the iframe's contentDocument to measure
+   rendered content. Starts at opacity 0 and fades in once `bsv-pl-panel-iframe-loaded`
+   is added by the `onload` handler — keeps the visual pop from a half-rendered
+   network out of view. */
+.bsv-pl-panel-iframe {
     width: 100%;
     height: 600px;
     border: 0;
     display: block;
     opacity: 0;
     transition: opacity 0.2s;
+}
+.bsv-pl-panel-iframe-loaded {
+    opacity: 1;
+}
+
+/* Offscreen container that holds the LigNetwork capture iframes during a
+   batch run. See `prolif-panel.ts:_getCaptureContainer` for why we render
+   a small visible thumbnail (30x30, low opacity, fixed bottom-right)
+   instead of a fully offscreen iframe — Chrome throttles invisible
+   iframes and the vis.js network never finishes drawing. */
+.bsv-pl-capture-container {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 30px;
+    height: 30px;
+    overflow: hidden;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 2147483647;
+}
+
+/* Full-size iframe inside the capture container — clipped to 30x30 by the
+   container's overflow:hidden but rendered at full size so vis.js draws
+   the canvas at production resolution. */
+.bsv-pl-capture-iframe {
+    width: 600px;
+    height: 520px;
+    border: 0;
+    display: block;
+}
+
+/* Per-row ligand summary above the batch button in the ad-hoc panel. */
+.bsv-pl-summary {
+    color: var(--grey-6);
+    margin-bottom: 8px;
+}
+
+/* Interaction breakdown UI rendered below the LigNetwork iframe in the
+   post-batch context panel. Sectioned by interaction type with a header
+   showing the total count. */
+.bsv-pl-interaction-breakdown-header {
+    border-top: 1px solid var(--grey-2);
+    margin-top: 12px;
+    padding-top: 10px;
+    margin-bottom: 8px;
+    align-items: baseline;
+}
+.bsv-pl-interaction-breakdown-title {
+    font-weight: 700;
+    font-size: 14px;
+}
+.bsv-pl-interaction-breakdown-count {
+    color: var(--grey-6);
+    font-size: 13px;
+    margin-left: 6px;
+}
+.bsv-pl-interaction-breakdown-empty {
+    color: var(--grey-5);
+    font-size: 12px;
+    padding: 4px 0;
+}
+.bsv-pl-interaction-breakdown-row {
+    margin-bottom: 4px;
+    align-items: baseline;
+}
+.bsv-pl-interaction-breakdown-label {
+    font-weight: 600;
+    min-width: 160px;
+    flex: 0 0 auto;
+}
+.bsv-pl-interaction-breakdown-list {
+    color: var(--grey-7);
 }

@@ -18,6 +18,7 @@ import {BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
 import {PdbGridCellRenderer, PdbGridCellRendererBack, PdbIdGridCellRenderer} from './utils/pdb-grid-cell-renderer';
+import {PlLigNetworkPngRenderer} from './utils/pl-png-cell-renderer';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
 import {NglViewer} from './viewers/ngl-viewer';
@@ -48,6 +49,9 @@ import {
   hasNonWaterHetatm as _hasNonWaterHetatm,
   makeProlifWidget,
   ProlifBatchCtx,
+  getPlHtmlForRow,
+  renderInteractionBreakdown,
+  interactionsColForDiagram,
 } from './utils/prolif-panel';
 
 export * from './package.g';
@@ -56,9 +60,10 @@ export const _package: BsvPackage = new BsvPackage();
 
 const dataDir = 'Admin:Data/PDB/CHEMBL2366517/';
 
-// ProLIF panel + batch handler live in `./utils/prolif-panel.ts` (also
-// duplicated in `Docking/src/utils/prolif-panel.ts` — same FOLLOW-UP about
-// moving to @datagrok-libraries/bio when that path opens up).
+// ProLIF panel + batch handler live in `@datagrok-libraries/bio/src/prolif/prolif-panel`;
+// `./utils/prolif-panel.ts` is now a thin re-export shim. The Docking
+// package wraps the same shared module with its own per-row gate
+// (`isApplicableAutodock`) and receptor pre-fetch.
 
 
 export class PackageFunctions {
@@ -86,6 +91,23 @@ export class PackageFunctions {
   })
   static pdbIdCellRenderer(): PdbIdGridCellRenderer {
     return new PdbIdGridCellRenderer();
+  }
+
+  // Cell renderer for `PL Diagram` cells (base64 PNG of the captured
+  // LigNetwork canvas, written by `runPlBatch` in
+  // `@datagrok-libraries/bio/src/prolif/prolif-panel`). Bound to semType
+  // `PL.LigNetwork` — the same semType the context panel
+  // `plDiagramInteractionsWidget` binds to, so one semType drives both
+  // display and click-to-open-panel. See `pl-png-cell-renderer.ts` in
+  // the shared module for why we bundle our own renderer rather than
+  // depending on PowerGrid's `rawPng`.
+  @grok.decorators.func({
+    name: 'plLigNetworkPngCellRenderer',
+    meta: {cellType: 'PL.LigNetwork', role: 'cellRenderer'},
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}],
+  })
+  static plLigNetworkPngCellRenderer(): PlLigNetworkPngRenderer {
+    return new PlLigNetworkPngRenderer();
   }
 
   @grok.decorators.func()
@@ -187,14 +209,12 @@ export class PackageFunctions {
   }
 
   //TODO Support preview .ccp4 with Molstar
-  //eslint-disable-next-line max-len
   @grok.decorators.fileViewer({fileViewer: 'ccp4'})
   static previewNglDensity( @grok.decorators.param({type: 'file'}) file: any): DG.View {
     return previewNgl(file);
   }
 
 
-  // eslint-disable-next-line max-len
   @grok.decorators.fileViewer({fileViewer: 'mol,mol2,cif,mcif,mmcif,gro,pdb,pdbqt,ent,sd,xyz'})
   static previewBiostructureStructure(file: DG.FileInfo): DG.View {
     return previewBiostructure(file);
@@ -269,12 +289,12 @@ export class PackageFunctions {
       pdbCol = cell.column as DG.Column<string>;
     } else {
       // Fallback: use the current table view's DataFrame. Lets the button
-      // work even when the panel is invoked without a usable cell context.
+      // work even when the panel is invoked without a usable cell context
+      // (e.g. the panel was opened from the menu rather than a grid click).
       const t = grok.shell.t;
       if (t != null) {
         df = t;
-        const m3dCols = t.columns.toList()
-          .filter((c) => c.semType === 'Molecule3D' || c.tags['quality'] === 'Molecule3D');
+        const m3dCols = t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE3D);
         pdbCol = (m3dCols[0] ?? null) as DG.Column<string> | null;
         if (m3dCols.length > 1)
           grok.shell.warning(`Multiple Molecule3D columns found; PL batch will use "${m3dCols[0].name}".`);
@@ -299,6 +319,44 @@ export class PackageFunctions {
         `Error fetching ${pdbId}: ${err instanceof Error ? err.message : String(err)}`
       ));
     }
+  }
+
+  // Context panel that fires when the user clicks a `PL Diagram` cell
+  // (semType `PL.LigNetwork`, stamped by the batch handler). The cell holds
+  // the captured PNG; the interactive LigNetwork HTML is in
+  // `window.__prolifCache`, keyed by `(df.name, rowIdx)` — opening this
+  // panel costs one iframe mount, no script re-run.
+  @grok.decorators.panel({name: 'Protein-Ligand Interactions'})
+  static async plDiagramInteractionsWidget(
+    @grok.decorators.param({options: {semType: 'PL.LigNetwork'}}) cell: DG.SemanticValue
+  ): Promise<DG.Widget> {
+    // `SemanticValue.cell` is the typical path; `grok.shell.o` is the
+    // panel system's actual current object, used as fallback when the
+    // panel re-fires without a fresh cell on the SemanticValue.
+    const dgCell = cell.cell ?? (grok.shell.o as DG.Cell | null);
+    const df = dgCell?.dataFrame ?? grok.shell.t ?? null;
+    const rowIdx = dgCell?.rowIndex ?? df?.currentRowIdx ?? -1;
+    if (df == null || rowIdx < 0)
+      return new DG.Widget(ui.divText('No row context.'));
+    const html = getPlHtmlForRow(df, rowIdx);
+    if (!html) {
+      return new DG.Widget(ui.divText(
+        `LigNetwork HTML not cached for ${df.name} row ${rowIdx} — ` +
+        `re-run "Compute for whole dataset" to refresh.`,
+      ));
+    }
+    const iframe = ui.element('iframe') as HTMLIFrameElement;
+    iframe.srcdoc = html;
+    iframe.classList.add('bsv-pl-panel-iframe');
+    // No sandbox — we control the HTML, and same-origin lets vis.js read
+    // its own canvas cleanly. Same rationale as the cell renderer iframe.
+    iframe.onload = () => iframe.classList.add('bsv-pl-panel-iframe-loaded');
+    // Per-interaction-type residue breakdown below the diagram, sourced
+    // from the matching `PL Interactions` column (same suffix as the
+    // clicked diagram column). Empty string falls back to empty-state.
+    const interactionsCol = dgCell?.column?.name != null ? interactionsColForDiagram(df, dgCell.column.name) : null;
+    const interactionsStr = (interactionsCol?.get(rowIdx) as string | null) ?? '';
+    return new DG.Widget(ui.div([iframe, renderInteractionBreakdown(interactionsStr)], 'd4-empty-parent'));
   }
 
   // -- Test apps --
@@ -393,7 +451,6 @@ export class PackageFunctions {
 
   // -- Viewers --
 
-  // eslint-disable-next-line max-len
   @grok.decorators.panel({
     name: 'NGL',
     description: '3D structure viewer for large biological molecules (proteins, DNA, and RNA)',
@@ -499,7 +556,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object'})fi: DG.FileInfo) {
     try {
       await PackageFunctions.openPdbResidues(fi);
-    } catch (err: any) {
+    } catch (err: unknown) {
       defaultErrorHandler(err);
     }
   }
