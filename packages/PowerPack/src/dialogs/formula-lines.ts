@@ -2000,12 +2000,17 @@ export class FormulaLinesDialog {
       const isHorz = item.orientation === ITEM_ORIENTATION.HORIZONTAL;
 
       if (currentItem.type === ITEM_TYPE.BAND) {
-        if (isHorz && property.name === 'xColumnName' && this.preview.axisCols.x) {
-          item.column2 = this.preview.axisCols.x.name;
-          this.editor.update(this.currentTable.currentItemIdx, true);
-        } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')
-          && this.preview.axisCols.y) {
-          item.column2 = this.preview.axisCols.y.name;
+        // Only rebuild the editor when the axis column actually changed; otherwise our own
+        // preview.update (triggered by editing title/description/etc.) would steal focus on
+        // every keystroke, since setOptions re-fires onPropertyValueChanged for the same value.
+        let newCol2: string | undefined;
+        if (isHorz && property.name === 'xColumnName' && this.preview.axisCols.x)
+          newCol2 = this.preview.axisCols.x.name;
+        else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')
+          && this.preview.axisCols.y)
+          newCol2 = this.preview.axisCols.y.name;
+        if (newCol2 !== undefined && item.column2 !== newCol2) {
+          item.column2 = newCol2;
           this.editor.update(this.currentTable.currentItemIdx, true);
         }
       } else if (currentItem.type === ITEM_TYPE.LINE) {
