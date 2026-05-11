@@ -11,21 +11,6 @@ The following example defines a cell renderer for summary column visualized as b
 ["PowerGrid" public package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/src/package.ts).
 
 ```typescript
-//name: piechartCellRender
-//meta.role: cellRenderer
-//meta.cellType: piechart
-//meta.virtual: true
-//output: grid_cell_renderer result
-export function piechartCellRenderer() {
-  return new PieChartCellRenderer();
-}
-```
-
-:::tip
-
-If you are on version `^4.12.x` of `datagrok-tools`, you can use class decorators to register cell renderers:
-
-```ts
 @grok.decorators.cellRenderer({
   cellType: 'piechart',
   virtual: true,
@@ -35,9 +20,47 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 }
 ```
 
-This is equivalent to adding a function to `package.ts`. There is no need to add anything other than the class itself.
-When you run the `build` script for your package, the webpack plugin called `FuncGeneratorPlugin` will add a special
-`package.g.ts` file to your project. Note that it is not on the ignore list, so you are supposed to commit this file.
+This is the recommended form: the class decorator shipped by `datagrok-tools` emits the required package
+function on your behalf. There is no need to add anything other than the class itself. When you run the
+`build` script for your package, the webpack plugin called `FuncGeneratorPlugin` will add a special
+`package.g.ts` file to your project. Note that it is not on the ignore list, so you are supposed to commit
+this file.
+
+:::tip
+
+If you prefer to keep renderers in your `PackageFunctions` class, use the function decorator instead:
+
+```ts
+@grok.decorators.func({
+  meta: {
+    cellType: 'piechart',
+    gridChart: 'true',
+    virtual: 'true',
+    role: 'cellRenderer'
+  },
+  tags: ['cellRenderer'],
+  name: 'Pie Chart',
+  outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+})
+static piechartCellRenderer() {
+  return new PieChartCellRenderer();
+}
+```
+
+The codegen emits the matching header-form wrapper into `package.g.ts`:
+
+```ts
+//name: Pie Chart
+//tags: cellRenderer
+//output: grid_cell_renderer result
+//meta.cellType: piechart
+//meta.gridChart: true
+//meta.virtual: true
+//meta.role: cellRenderer
+export function piechartCellRenderer() {
+  return PackageFunctions.piechartCellRenderer();
+}
+```
 
 :::
 
