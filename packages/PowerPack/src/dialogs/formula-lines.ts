@@ -269,7 +269,16 @@ class Table {
   private get dataFrame(): DG.DataFrame { return this.grid.dataFrame!; }
 
   public get currentItemIdx(): number { return this.dataFrame.currentRowIdx; }
-  public set currentItemIdx(rowIdx: number) { this.dataFrame.currentRowIdx = rowIdx; }
+  // Setting only `currentRowIdx` leaves `currentCell.isCell` false (no column), and the
+  // grid's `_renderCurrentCell` paints the green stripe only when the current cell is a
+  // real cell — so without a column the indicator stays invisible until the user clicks.
+  // Using `currentCell` here sets both row and column atomically.
+  public set currentItemIdx(rowIdx: number) {
+    if (rowIdx >= 0 && rowIdx < this.dataFrame.rowCount)
+      this.dataFrame.currentCell = this.dataFrame.cell(rowIdx, 'title');
+    else
+      this.dataFrame.currentRowIdx = rowIdx;
+  }
 
   /** Used to prevent onValuesChanged event when the grid changes itself */
   public notify: boolean = true;
@@ -454,7 +463,7 @@ class Table {
     this.dataFrame.set('title', idx, isFormulaLine ? (item as DG.FormulaLine).title : (item as DG.AnnotationRegion).header);
     this.dataFrame.set('formula', idx, isFormulaLine ? (item as DG.FormulaLine).formula : formatAreaFormula(item as DG.AnnotationRegion));
     this.notify = true;
-    this.dataFrame.currentRowIdx = idx;
+    this.currentItemIdx = idx;
   }
 
   public add(item: EditorItem, isFormulaLine: boolean = true) {
