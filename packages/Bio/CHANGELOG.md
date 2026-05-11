@@ -1,5 +1,11 @@
 # Bio changelog
 
+## v.next
+
+### Bug Fixes
+
+* Sequence Space: Show a friendly error instead of crashing when invoked on a table without Macromolecule columns
+
 ## 2.27.4 (2026-04-29)
 
 * Support for non canonical RNA and correct splitting in helm
