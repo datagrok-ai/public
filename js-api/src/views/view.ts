@@ -284,13 +284,12 @@ export class View extends ViewBase {
   get helpUrl(): string | null { return api.grok_View_Get_HelpUrl(this.dart); }
   set helpUrl(url: string | null) { api.grok_View_Set_HelpUrl(this.dart, url); }
 
-  /** @returns {boolean} Whether the view is pinned. Pinned views are not closed when a new view is opened. */
+  /** Whether the view is pinned. Pinned views are not closed when a new view is opened. */
   get isPinned(): boolean { return api.grok_View_Get_IsPinned(this.dart); }
+  set isPinned(value: boolean) { api.grok_View_Set_IsPinned(this.dart, value); }
 
   /** Pins the view. Pinned views are not closed when a new view is opened. */
-  pin(): void {
-    return api.grok_View_Pin(this.dart);
-  }
+  pin(): void { this.isPinned = true; }
 
   /**
    * Loads previously saved view layout. Only applicable to certain views, such as {@link TableView}.

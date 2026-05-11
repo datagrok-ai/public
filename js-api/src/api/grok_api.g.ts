@@ -106,7 +106,7 @@ export interface IDartApi {
   grok_View_Get_Viewers(v: any): any;
   grok_View_SetIcon(v: any, icon: any): any;
   grok_View_Get_IsPinned(v: any): any;
-  grok_View_Pin(v: any): any;
+  grok_View_Set_IsPinned(v: any, value: Bool): any;
   grok_ScriptView_Set_Code(v: any, s: String): any;
   grok_ScriptView_Get_Code(v: any): any;
   grok_TableView(d: any, addToWorkspace: Bool): any;
