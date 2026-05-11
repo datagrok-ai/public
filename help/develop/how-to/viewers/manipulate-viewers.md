@@ -26,13 +26,13 @@ view.addViewer('Histogram', { value: 'age' });
 ```
 
 To avoid hardcoding the name of a viewer, you can reach it from the `DG` namespace, e.g., `DG.VIEWER.HISTOGRAM`
-or `DG.VIEWER.PIE_CHART`. For native viewers, Datagrok's API provides a bunch of handy wrapper methods, so this code
+or `DG.VIEWER.PIE_CHART`. For native viewers, `DG.Viewer` exposes static factory methods, so this code
 snippet is equivalent to the one given above:
 
 ```javascript
 let data = grok.data.demo.demog();
 let view = grok.shell.addTableView(data);
-view.histogram({ value: 'age' });
+view.addViewer(DG.Viewer.histogram(data, { value: 'age' }));
 ```
 
 In both cases, the `options` parameter is not required, besides, it is possible to specify them later on with the
@@ -192,10 +192,10 @@ the `getProperties` method:
 ```js
 let data = grok.data.demo.demog();
 let view = grok.shell.addTableView(data);
-let bc = view.barChart();
+let bc = view.addViewer(DG.Viewer.barChart(data));
 
 let descriptions = bc.getProperties()
-  .map((p) => p.propertyType + ' ' + p.name + ': ' + p.description + ' ' + p.columnFilter)
+  .map((p) => p.propertyType + ' ' + p.name + ': ' + p.description + ' ' + p.columnTypeFilter)
   .join('<br>');
 grok.shell.info(descriptions);
 ```
@@ -205,7 +205,7 @@ property:
 
 - `choices`: an array of predefined values that a property accepts, e.g., all possible aggregation functions you can
   use for the `Value` column in a bar chart; choices are given in a drop-down list in the context panel
-- `columnFilter`: an indication of allowed data types, it is only relevant to column properties, e.g., the `Value`
+- `columnTypeFilter`: an indication of allowed data types, it is only relevant to column properties, e.g., the `Value`
   column of a box plot has a *numerical* filter; acceptable values are *numerical*
   , *categorical*, and an individual data type (use `DG.COLUMN_TYPE` to refer to it)
 - `defaultValue`: a value used by default, often coupled with choices (and should be among the array values for choices
@@ -260,8 +260,8 @@ view.addViewer(viewer);
 view.dockManager.dock(viewer, 'right');
 ```
 
-The list of positions consists of the following options: `left | right | top | down | fill`. You can refer to them from
-the `DG` namespace, e.g., `DG.DOCK_TYPE.RIGHT`. Notice that here the viewer will be placed independently of the table
+The list of positions consists of the following options: `left | right | up | down | fill`. You can refer to them from
+the `DG` namespace, e.g., `DG.DOCK_TYPE.RIGHT` (note that `DG.DOCK_TYPE.TOP === 'up'`). Notice that here the viewer will be placed independently of the table
 view:
 
 ```javascript
@@ -305,9 +305,9 @@ grok.functions.register({
   }
 });
 
-grok.shell
-  .addTableView(grok.data.demo.demog())
-  .scatterPlot({ initializationFunction: 'initScatterSquare' });
+const data = grok.data.demo.demog();
+const view = grok.shell.addTableView(data);
+view.addViewer(DG.Viewer.scatterPlot(data, { initializationFunction: 'initScatterSquare' }));
 ```
 
 </details>
