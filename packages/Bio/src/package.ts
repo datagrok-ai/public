@@ -53,9 +53,9 @@ import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
 import {MonomerCollectionHandler} from './utils/monomer-lib/monomer-collection-handler';
 import {getMonomerLibraryManagerLink, showManageLibrariesDialog, showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
-import {demoBioSimDiv} from './demo/bio01-similarity-diversity';
+import {demoBioSimDivLayout} from './demo/bio01-similarity-diversity';
 import {demoSeqSpace} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
-import {demoActivityCliffsCyclic} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
+import {demoActivityCliffsCyclicLayout} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
 import {demoToAtomicLevel} from './demo/bio03-atomic-level';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {MsaWarning} from './utils/multiple-sequence-alignment';
@@ -1522,7 +1522,7 @@ export class PackageFunctions {
     path: '/apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity',
   })
   static async demoBioSimilarityDiversity(): Promise<void> {
-    await demoBioSimDiv();
+    await demoBioSimDivLayout();
   }
 
   @grok.decorators.demo({
@@ -1543,7 +1543,7 @@ export class PackageFunctions {
     path: '/apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs',
   })
   static async demoBioActivityCliffs(): Promise<void> {
-    await demoActivityCliffsCyclic();
+    await demoActivityCliffsCyclicLayout();
   }
 
   @grok.decorators.demo({
