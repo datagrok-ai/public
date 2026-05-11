@@ -51,7 +51,7 @@ let _package = new DG.Package();
 
 async function getCredentials() {
     let credentialsResponse = await _package.getCredentials();
-    if (credentialsResponse === null) {
+    if (credentialsResponse == null) {
         grok.shell.info("Credentials are not set.");
         return {};
     }
