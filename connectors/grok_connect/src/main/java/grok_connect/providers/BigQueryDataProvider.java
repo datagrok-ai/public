@@ -51,14 +51,16 @@ public class BigQueryDataProvider extends JdbcDataProvider {
         // accept the `offline_access` scope — refresh tokens are
         // requested via `access_type=offline` URL param (added by Datlas
         // in the authorize URL builder). Azure AD uses the standard
-        // `offline_access` scope convention.
+        // `offline_access` scope convention. No host-suffix rule —
+        // BigQuery hosts don't differentiate flavours; deployments that
+        // need Azure-flavour scopes set `oauthFlavour=azure` explicitly.
         descriptor.oauth = new OAuthSpec()
                 .scopes("oidc", Collections.singletonList(
                         "https://www.googleapis.com/auth/bigquery"))
                 .scopes("azure", Arrays.asList(
                         "https://bigquery.googleapis.com/.default",
                         "offline_access"))
-                .tokenProperty("OAuthAccessToken");
+                .flavourDefault("oidc");
 
         descriptor.nameBrackets = "`";
         descriptor.typesMap = new HashMap<String, String>() {{

@@ -169,8 +169,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate.stream().filter(p -> p.name.equals(DbCredentials.LOGIN)).forEach(p -> p.category = "Username/Password," + RSA_METHOD);
 
         descriptor.oauth = new OAuthSpec()
-                .scopes("oidc", Arrays.asList("session:role-any", "offline_access"))
-                .tokenProperty("token");
+                .scopes("oidc", Arrays.asList("session:role-any", "offline_access"));
 
         descriptor.nameBrackets = "\"";
 
