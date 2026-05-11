@@ -14,7 +14,7 @@ This guide outlines how to build and deploy your own Python-based Docker applica
 
 ## Folder Structure
 
-Create a `python/` directory inside your plugin root. Inside it:
+Create a `dockerfiles/` directory inside your plugin root. Inside it:
 
 * One or more folders, each representing a separate application
 * Each folder can contain:
@@ -27,7 +27,7 @@ Create a `python/` directory inside your plugin root. Inside it:
 
 ```
 plugin-root/
-└── python/
+└── dockerfiles/
     └── my_app/
         ├── logic.py
         ├── requirements.in
@@ -114,7 +114,8 @@ When you deploy a plugin:
 Once your app is deployed, functions can be called via the JS API:
 
 ```javascript
-await grok.functions.call('Plugin:add', { x: 1, y: 2 });
+// Replace <YourPackage> with your package name; 'add' is the value of the `#name:` header
+await grok.functions.call('<YourPackage>:add', { x: 1, y: 2 });
 ```
 
 The platform will:
