@@ -1,5 +1,6 @@
 # Diff Studio
 
+[![LNNS](https://img.shields.io/badge/LNNS-paper-red.svg)](https://link.springer.com/chapter/10.1007/978-3-032-22236-7_31)
 [![JOSS](https://joss.theoj.org/papers/10.21105/joss.09090/status.svg)](https://doi.org/10.21105/joss.09090)
 [![Run: Diff Studio](https://img.shields.io/badge/app-%20Diff%20Studio-red.svg)](https://public.datagrok.ai/apps/DiffStudio)
 [![Tutorial: Differential equations](https://img.shields.io/badge/tutorial-Differential%20Equations-yellow.svg)](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Differentialequations)
@@ -332,7 +333,9 @@ Diff Studio can render a model as LaTeX or Markdown for use in papers, reports a
 
 ## Citation
 
-If you use Diff Studio in your research, please cite our [JOSS paper](https://doi.org/10.21105/joss.09090):
+If you use this library for research purposes, please cite the following papers:
+
+* [Diff Studio: Ecosystem for Interactive Modeling by Ordinary Differential Equations](https://joss.theoj.org/papers/10.21105/joss.09090) in Journal of Open Source Software (2026).
 
 ```
 @article{diffstudio2026joss,
@@ -343,6 +346,22 @@ If you use Diff Studio in your research, please cite our [JOSS paper](https://do
   volume = {11},
   number = {120},
   doi = {10.21105/joss.09090}
+}
+```
+
+* [Diff Studio: Web-Based Environment for Interactive Modeling with Ordinary Differential Equations](https://link.springer.com/chapter/10.1007/978-3-032-22236-7_31) in Springer, CoMeSySo 2025 Proceedings (Lecture Notes in Networks and Systems, vol. 1901) - foundational paper.
+
+```
+@InProceedings{diffstudio2026lnns,
+title = {Diff Studio: Web-Based Environment for Interactive Modeling with Ordinary Differential Equations},
+author = {Viktor Makarichev, Larisa Bankurova, Gennadii Zakharov, Leonid Stolbov, Steven Mehrman, Dan Skatov, Jeffrey Cohen, Paul Sass, Davit Rizhinashvili, Andrew Skalkin},
+editor = {Radek Silhavy, Petr Silhavy},
+booktitle = {Focus on Artificial Intelligence in Intelligent Systems Design},
+year = {2026},
+publisher = {Springer Nature Switzerland},
+address = {Cham},
+pages = {390--401},
+doi = {10.1007/978-3-032-22236-7_31}
 }
 ```
 
