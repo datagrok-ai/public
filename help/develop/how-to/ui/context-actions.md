@@ -14,16 +14,16 @@ The following example registers a **Use as filter** action for molecules:
 //name: Use as filter
 //description: Adds this structure as a substructure filter
 //meta.action: Use as filter
-//input: string mol { semType: Molecule }
-export function useAsSubstructureFilter(mol: string): void {
+//input: semantic_value value { semType: Molecule }
+export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   let tv = grok.shell.tv;
-  let molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  tv.getFiltersGroup({createDefaultFilters: false}).add({
-    type: FILTER_TYPE.SUBSTRUCTURE,
+  let molCol = value.cell.column;
+  tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+    type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
     columnName: molCol.name,
-    molBlock: molToMolblock(mol, getRdKitModule())
-  });
+    molBlock: molToMolblock(value.value, getRdKitModule())
+  }, false);
 }
 ```
 
