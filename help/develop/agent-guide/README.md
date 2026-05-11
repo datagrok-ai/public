@@ -12,4 +12,4 @@ Files:
 | `api-map.md` | Canonical "for X, use grok.shell.Y not Z" entries |
 | `component-registry.md` | Named viewers / dialogs / patterns + reference packages |
 
-Generated 2026-05-11T11:43:15Z by `scripts/publish-knowledge.sh` in the skill-harness.
+Generated 2026-05-11T11:43:18Z by `scripts/publish-knowledge.sh` in the skill-harness.
