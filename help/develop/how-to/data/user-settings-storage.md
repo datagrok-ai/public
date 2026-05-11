@@ -20,14 +20,16 @@ Table of contents:
 
 The main class `grok.userSettings` has the following 6 methods:
 
-| Method        | Parameters                                                                                                           | Function                                                  |
-|---------------|----------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
-| `.add()`      | <b>name</b>: <i>string</i>, <b>key</b>: <i>string</i>, <b>value</b>: <i>string</i>, <b>isPrivate</b>: <i>boolean</i> | Saves a single value to storage                           |
-| `.addAll()`   | <b>name</b>: <i>string</i>, <b>data</b>: <i>Map</i>, <b>isPrivate</b>: <i>boolean</i>                                | Saves a map to storage, will be appended to existing data |
-| `.put()`      | <b>name</b>: <i>string</i>, <b>data</b>: <i>Map</i>, <b>isPrivate</b>: <i>boolean</i>                                | Saves a map to storage, will replace existing data        |
-| `.get()`      | <b>name</b>: <i>string</i>, <b>isPrivate</b>: <i>boolean</i>                                                         | Retrieves a map from storage                              |
-| `.getValue()` | <b>name</b>: <i>string</i>, <b>key</b>: <i>string</i>, <b>isPrivate</b>: <i>boolean</i>                              | Retrieves a single value from storage                     |
-| `.delete()`   | <b>name</b>: <i>string</i>, <b>key</b>: <i>string</i>, <b>isPrivate</b>: <i>boolean</i>                              | Removes a single value from storage                       |
+In all methods below, <b>isPrivate</b> is optional and defaults to <code>true</code> (private to the current user). Pass <code>false</code> to use the shared storage.
+
+| Method        | Parameters                                                                                                                          | Function                                                     |
+|---------------|-------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
+| `.add()`      | <b>name</b>: <i>string</i>, <b>key</b>: <i>string</i>, <b>value</b>: <i>string</i>, <b>isPrivate</b>?: <i>boolean</i>               | Saves a single value to storage                              |
+| `.addAll()`   | <b>name</b>: <i>string</i>, <b>data</b>: <i>{[key: string]: string}</i>, <b>isPrivate</b>?: <i>boolean</i>                          | Saves an object to storage, will be appended to existing data |
+| `.put()`      | <b>name</b>: <i>string</i>, <b>data</b>: <i>{[key: string]: string}</i>, <b>isPrivate</b>?: <i>boolean</i>                          | Saves an object to storage, will replace existing data       |
+| `.get()`      | <b>name</b>: <i>string</i>, <b>isPrivate</b>?: <i>boolean</i>                                                                       | Retrieves an object from storage                             |
+| `.getValue()` | <b>name</b>: <i>string</i>, <b>key</b>: <i>string</i>, <b>isPrivate</b>?: <i>boolean</i>                                            | Retrieves a single value from storage                        |
+| `.delete()`   | <b>name</b>: <i>string</i>, <b>key</b>: <i>string</i>, <b>isPrivate</b>?: <i>boolean</i>                                            | Removes a single value from storage                          |
 
 ## JavaScript API
 
