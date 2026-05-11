@@ -180,6 +180,14 @@ export class FormsViewer extends DG.JsViewer {
       this.render();
     });
 
+    sub(this.dataFrame.onColumnNameChanged, () => {
+      const filtered = this.fieldsColumnNames.filter((n) => !n.startsWith('~'));
+      if (filtered.length !== this.fieldsColumnNames.length) {
+        this.fieldsColumnNames = filtered;
+        this.render();
+      }
+    });
+
     sub(this.dataFrame.onCurrentRowChanged.pipe(filter((_) => this.showCurrentRow)),
       () => this.virtualView.refreshItem(this.currentRowPos!));
 
@@ -190,7 +198,8 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   setFieldsColumnNames(dfColumns: string[]) {
-    this.fieldsColumnNames = dfColumns.length > 20 ? dfColumns.slice(0, 20) : dfColumns;
+    const visible = dfColumns.filter((n) => !n.startsWith('~'));
+    this.fieldsColumnNames = visible.length > 20 ? visible.slice(0, 20) : visible;
   }
 
   updateFieldsColumnNames() {
