@@ -101,7 +101,7 @@ Or added through the UI via the filter panel.
 - Call `this.dataFrame.filter.set(i, value, notify)` to include/exclude rows; call `fireChanged()` after
 - The `root` property is the HTMLElement where you build the filter's UI
 - `attach()` is called when the filter is attached to a dataframe
-- For a real example, see: `public/packages/Widgets/src/filters/radio-button-filter.ts`
+- For a real example, see: `packages/Widgets/src/filters/radio-button-filter.ts`
 - Both decorator and function annotation approaches are equivalent; prefer decorators
 
 ## Behavior

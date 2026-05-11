@@ -1,0 +1,357 @@
+{
+  "package_id": "pkg:EDA",
+  "features": [
+    {
+      "id": "feature:EDA:dimensionality-reduction",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/eda-tools.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/eda-ui.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/EDA/src/utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/EDA/src/workers/umap-worker.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/EDA/src/workers/tsne-worker.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/EDA/src/tests/dim-reduction-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/tests/linear-methods-tests.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "PCA tested in linear-methods-tests under 'Principal component analysis'; UMAP/t-SNE tested in dim-reduction-tests."
+    },
+    {
+      "id": "feature:EDA:dbscan-clustering",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "DBSCAN algorithm itself lives in @datagrok-libraries/math; package.ts wires it up plus the post-processing function."
+    },
+    {
+      "id": "feature:EDA:mcl-clustering",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "MCL viewer/editor/clustering implementation lives in @datagrok-libraries/ml; only registration here."
+    },
+    {
+      "id": "feature:EDA:pls-multivariate-analysis",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/pls/pls-tools.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/pls/pls-ml.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/pls/pls-constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/EDA/src/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/EDA/src/regression.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/EDA/src/data-generators.ts",
+          "role": "demo",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/EDA/src/tests/linear-methods-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "data-generators.ts (carsDataframe) is used by the MVA demo; regression.ts shares getPredictionByLinearRegression with PLS."
+    },
+    {
+      "id": "feature:EDA:svm-classification",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/svm.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "No SVM-specific test file present in src/tests."
+    },
+    {
+      "id": "feature:EDA:anova",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/EDA/src/anova/anova-ui.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/anova/anova-tools.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/stat-tools.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/EDA/src/tests/anova-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:EDA:knn-imputation",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/EDA/src/missing-values-imputation/ui.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/missing-values-imputation/knn-imputer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/missing-values-imputation/ui-constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/EDA/src/tests/mis-vals-imputation-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:EDA:linear-regression",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/regression.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/EDA/src/tests/linear-methods-tests.ts",
+          "confidence": 0.9
+        }
+      ]
+    },
+    {
+      "id": "feature:EDA:softmax-classification",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/softmax-classifier.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/workers/softmax-worker.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/EDA/src/tests/classifiers-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:EDA:xgboost",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/xgbooster.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/EDA/src/tests/classifiers-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:EDA:pareto-front",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/EDA/src/pareto-optimization/pareto-optimizer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/pareto-optimization/pareto-front-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/pareto-optimization/pareto-computations.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/pareto-optimization/defs.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/EDA/src/pareto-optimization/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/EDA/src/tests/pareto-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:EDA:pmpo",
+      "implements": [
+        {
+          "path": "packages/EDA/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/EDA/src/probabilistic-scoring/prob-scoring.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/probabilistic-scoring/pmpo-utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/EDA/src/probabilistic-scoring/stat-tools.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/EDA/src/probabilistic-scoring/pmpo-defs.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/EDA/src/probabilistic-scoring/nelder-mead.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/EDA/src/probabilistic-scoring/data-generator.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/EDA/src/tests/pmpo-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "Dropped baseline's knn-imputer/pareto defs/utils references — those are tiny helper imports, not part of pMPO's core implementation."
+    }
+  ]
+}

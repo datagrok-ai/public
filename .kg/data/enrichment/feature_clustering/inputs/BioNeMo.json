@@ -1,0 +1,322 @@
+{
+  "package": {
+    "id": "pkg:BioNeMo",
+    "name": "BioNeMo",
+    "friendly_name": "BioNeMo",
+    "version": "1.3.1",
+    "category": "Bioinformatics",
+    "description": "Advanced models for protein structure prediction and molecular docking",
+    "extras": {
+      "npm_name": "@datagrok/bionemo",
+      "fullName": "BioNeMo",
+      "browserFeatures": null
+    }
+  },
+  "properties": [
+    {
+      "name": "apiKey",
+      "type": "string",
+      "choices": [],
+      "default": ""
+    }
+  ],
+  "functions": [
+    {
+      "id": "func:BioNeMo:MolMIMModel",
+      "name": "MolMIMModel",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "double",
+        "string",
+        "bool",
+        "double",
+        "double",
+        "double",
+        "string"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BioNeMo:EsmFold",
+      "name": "EsmFold",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BioNeMo:Bio | EsmFold",
+      "name": "Bio | EsmFold",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BioNeMo:getTargetFiles",
+      "name": "getTargetFiles",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        null
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BioNeMo:diffDockModelScript",
+      "name": "diffDockModelScript",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "double"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BioNeMo:DiffDock",
+      "name": "DiffDock",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "string",
+        "double"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:BioNeMo:Biology | DiffDock",
+      "name": "Biology | DiffDock",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:BioNeMo:diffdockPython",
+      "name": "diffdockPython",
+      "language": "python",
+      "description": "Predicts the 3D structure of how a molecule interacts with a protein"
+    },
+    {
+      "id": "script:BioNeMo:esmfoldPython",
+      "name": "esmfoldPython",
+      "language": "python",
+      "description": "Predicts the 3D structure of a protein from its amino acid sequence"
+    },
+    {
+      "id": "script:BioNeMo:MolMIMGenerate",
+      "name": "MolMIMGenerate",
+      "language": "python",
+      "description": "MolMIM performs controlled generation, finding molecules with the right properties"
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/BioNeMo/credits.md",
+      "title": "BioNeMo — Third-Party Libraries",
+      "url": "/packages/BioNeMo/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/BioNeMo/readme.md",
+      "title": "BioNeMo",
+      "url": "/packages/BioNeMo/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "title": "Bioinformatics",
+      "url": "/help/datagrok/solutions/domains/bio/bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "title": "Oligonucleotide Sequence Design",
+      "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+      "title": "FAQ: Peptides",
+      "url": "/help/datagrok/solutions/domains/bio/faq_bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "title": "Oligo Toolkit",
+      "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "title": "Peptides SAR",
+      "url": "/help/datagrok/solutions/domains/bio/peptides-sar",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+      "title": "Polytool",
+      "url": "/help/datagrok/solutions/domains/bio/polytool",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Bio/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Bio/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/credits.md",
+      "title": "Bio — Third-Party Libraries",
+      "url": "/packages/Bio/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/readme.md",
+      "title": "Bio",
+      "url": "/packages/Bio/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Peptides/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/credits.md",
+      "title": "Peptides — Third-Party Libraries",
+      "url": "/packages/Peptides/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/readme.md",
+      "title": "Peptides",
+      "url": "/packages/Peptides/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:BioNeMo:1.3.1:0",
+      "version": "1.3.1",
+      "released_at": "2025-04-01",
+      "ticket": "GROK-18813",
+      "text": "GROK-18813: Top menu | Docking: Provide consistent naming for menu and dialog"
+    },
+    {
+      "id": "clog:BioNeMo:1.2.0:0",
+      "version": "1.2.0",
+      "released_at": "2025-03-14",
+      "ticket": null,
+      "text": "Bionemo: Updated to support execution in a local environment"
+    },
+    {
+      "id": "clog:BioNeMo:1.2.0:1",
+      "version": "1.2.0",
+      "released_at": "2025-03-14",
+      "ticket": "GROK-17454",
+      "text": "GROK-17454: Bionemo: Fixed error when going through info panels"
+    },
+    {
+      "id": "clog:BioNeMo:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2024-11-29",
+      "ticket": null,
+      "text": "Bionemo: Integration with EsmFold and DiffDock models"
+    },
+    {
+      "id": "clog:BioNeMo:1.0.0:1",
+      "version": "1.0.0",
+      "released_at": "2024-11-29",
+      "ticket": null,
+      "text": "Bionemo: Add demos"
+    }
+  ],
+  "stats": {
+    "functions": 7,
+    "scripts": 3,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 14,
+    "changelog": 5
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "package_id": "pkg:PubChemApi",
+  "features": [
+    {
+      "id": "feature:PubChemApi:compound-info-panel",
+      "implements": [
+        {
+          "path": "packages/PubChemApi/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PubChemApi/src/widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PubChemApi/src/pubchem.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PubChemApi/src/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/PubChemApi/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PubChemApi/src/tests/chem-panels.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PubChemApi/src/tests/pubchem-tests.ts",
+          "confidence": 0.55
+        }
+      ],
+      "notes": "package.ts registers pubChemPanel; widget.buildInfoPanel renders the panel using pubchem.getCompoundInfo + smilesToPubChem; constants/utils provide URLs and SMILES normalization."
+    },
+    {
+      "id": "feature:PubChemApi:chemical-search",
+      "implements": [
+        {
+          "path": "packages/PubChemApi/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PubChemApi/src/widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PubChemApi/src/pubchem.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PubChemApi/src/utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/PubChemApi/src/constants.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PubChemApi/src/tests/chem-panels.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "package.ts registers the three search panels; widget.getSearchWidget orchestrates them; pubchem.{search,similaritySearch,identitySearch,substructureSearch} hits the fast* PubChem REST endpoints."
+    },
+    {
+      "id": "feature:PubChemApi:identifier-conversion",
+      "implements": [
+        {
+          "path": "packages/PubChemApi/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PubChemApi/src/pubchem.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PubChemApi/src/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/PubChemApi/src/constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PubChemApi/src/tests/chem-panels.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PubChemApi/src/tests/pubchem-tests.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "package.ts defines pubChemToSmiles / inchiKeysToSmiles / GetIupacName converters; inchiKeysToSmiles delegates to pubchem.getBy; constants supply pubChemPug and COLUMN_NAMES."
+    }
+  ]
+}

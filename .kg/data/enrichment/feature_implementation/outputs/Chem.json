@@ -1,0 +1,1954 @@
+{
+  "package_id": "pkg:Chem",
+  "features": [
+    {
+      "id": "feature:Chem:substructure-search",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/chem-searches.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/chem-substructure-filter.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-substructure.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-base.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-client.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-api.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/rdkit.worker.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rendering/rdkit-cell-renderer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/substructure-search-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/substructure-filter-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/api-based-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/utils.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Adds the full RDKit web-worker stack and ml-creation utilities; substructure-filter-tests covers the filter widget."
+    },
+    {
+      "id": "feature:Chem:similarity-search",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/chem-searches.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/chem-similarity-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/chem-search-base-viewer.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/utils/similarity-utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-base.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-client.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/rdkit.worker.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rendering/render-molecule.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/malformed-data-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/demo/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/menu-tests-similarity-diversity.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/api-based-tests.ts",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/tests/viewers.ts",
+          "confidence": 0.75
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:diversity-search",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/chem-diversity-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/chem-search-base-viewer.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/chem-searches.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/rendering/render-molecule.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/utils/malformed-data-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/menu-tests-similarity-diversity.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/viewers.ts",
+          "confidence": 0.7
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:fingerprints",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/chem-searches.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-base.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit.worker.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/malformed-data-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/fingerprints.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/vector-funcs-tests.ts",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/tests/menu-tests-cliffs.ts",
+          "confidence": 0.5
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:chemical-space",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/chem-space.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/chem-spe.js",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Chem/src/chem-searches.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/similarity-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/malformed-data-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/demo/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/menu-tests-chem-space.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:molecular-clustering",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/analysis/bit-birch/bitbirch-clustering.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/bit-birch/bitbirch-worker.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/bbwasm.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/bbwasm.d.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/most-common-subs.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/chem-searches.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-similarity.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Adds bit-birch clustering core, worker, and WASM glue; the Butina clustering script lives under scripts/."
+    },
+    {
+      "id": "feature:Chem:scaffold-tree",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/scaffold-tree.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/scaffold-tree-filter.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/chem-searches.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rendering/rdkit-cell-renderer.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/demo/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/scaffold-tree-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/viewers.ts",
+          "confidence": 0.7
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:r-groups-analysis",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/r-group-analysis.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/most-common-subs.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/demo/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/menu-tests-rgroups.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/projects-tests.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "AST baseline missed analysis/r-group-analysis.ts and most-common-subs (MCS) which are the actual core."
+    },
+    {
+      "id": "feature:Chem:activity-cliffs",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/activity-cliffs.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/chem-space.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/chem-searches.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/most-common-subs.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/similarity-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/demo/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/menu-tests-cliffs.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:matched-molecular-pairs",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-function-editor.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa-fragments.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa-generations.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa-differences.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-cliffs.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-filters.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-frag-vs-frag.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-generations.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-grids.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-lines.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-mol-rendering.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-substruct-provider.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/palette.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/analysis/molecular-matched-pairs/mmpa-activity-cell-renderer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/ui-utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/demo/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/mmpa-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "AST baseline missed several MMP submodules: mmpa-fragments/generations/differences/misc, mmp-mol-rendering/react-toolkit/substruct-provider/utils, mmpa-activity-cell-renderer."
+    },
+    {
+      "id": "feature:Chem:mpo",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/mpo.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/mpo/mpo-context-panel.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/mpo/mpo-create-profile.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/mpo/mpo-profile-handler.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/mpo/mpo-profile-manager.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/mpo/mpo-profiles-view.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/mpo/mpo-scores-viewer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/mpo/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/widgets/properties.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/elemental-analysis-utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "AST baseline missed analysis/mpo.ts (MpoProfileDialog) and the mpo-scores-viewer."
+    },
+    {
+      "id": "feature:Chem:chemical-descriptors",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/descriptors/descriptors-calculation.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/docker/api.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/utils/ui-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/projects-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/vector-funcs-tests.ts",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/tests/cell-panel-tests.ts",
+          "confidence": 0.7
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:chemical-properties",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/properties.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/biochem-properties-widget.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/utils/elemental-analysis-utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-ocl.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/calculations.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/index.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/ocl-service.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/consts.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/workers/ocl-worker.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/ui-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/calculate.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/tests/cell-panel-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/vector-funcs-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/projects-tests.ts",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/tests/screening-tools.ts",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/tests/rendering-scatter-plot-tooltip-tests.ts",
+          "confidence": 0.5
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:structural-alerts",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/structural-alerts.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/panels/structural-alerts.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-substructure.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/cell-panel-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/projects-tests.ts",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/tests/screening-tools.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/vector-funcs-tests.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "AST baseline missed widgets/structural-alerts.ts (the panel widget itself)."
+    },
+    {
+      "id": "feature:Chem:drug-likeness-admet",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/drug-likeness.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/toxicity.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-ocl.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/index.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/calculations.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/ocl-service.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/calculate.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/tests/projects-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/cell-panel-tests.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "AST baseline missed widgets/drug-likeness.ts."
+    },
+    {
+      "id": "feature:Chem:pharmacophore-features",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/pharmacophore-features.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/panels/pharmacophore-features.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service-worker-substructure.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/pharmacophore-features-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "AST baseline missed widgets/pharmacophore-features.ts and the dedicated test file."
+    },
+    {
+      "id": "feature:Chem:molecular-rendering",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rendering/rdkit-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rendering/render-molecule.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rendering/rdkit-reaction-renderer.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/rendering/molecule-label.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/rendering/atom-picker-controller.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/rendering/mol3d-hover-handler.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/widgets/structure2d.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/widgets/col-highlights.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/panels/chem-column-property-panel.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/atom-index-mapper.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-atom-picker-utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/rendering-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/cell-panel-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/atom-picker-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/tests/atom-picker-3d-hover-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/atom-picker-escape-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/atom-index-mapper-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/renderer-hover-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/chemical-table-parsing.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "AST baseline missed atom-picker-controller, mol3d-hover-handler, molecule-label, and the OCL cell renderer."
+    },
+    {
+      "id": "feature:Chem:3d-structure",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/structure3d.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rendering/mol3d-hover-handler.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/cell-panel-tests.ts",
+          "confidence": 0.65
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:notation-conversion",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-ocl.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/index.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-service/ocl-service.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/notation-converter-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/is-smarts-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/tests/vector-funcs-tests.ts",
+          "confidence": 0.75
+        }
+      ],
+      "notes": "AST baseline missed notation-converter-tests.ts and chem-common-ocl.ts (used by convertToV3KViaOCL)."
+    },
+    {
+      "id": "feature:Chem:sdf-mol-import",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/file-importers/mol2-importer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/file-importers/smi-importer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/open-chem/sdf-importer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/sdf-utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/save-as-sdf-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/mol2-importer-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "AST baseline missed mol2-importer-tests.ts."
+    },
+    {
+      "id": "feature:Chem:sketcher",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/open-chem/ocl-sketcher.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/sketcher-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/tests/substructure-filter-tests.ts",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/tests/clone-layout-tests.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "AST baseline missed sketcher-tests.ts despite the matching name."
+    },
+    {
+      "id": "feature:Chem:reaction-enumeration",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/reaction-enumeration/enumerator-app.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/reaction-enumeration/enumerate.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/reaction-enumeration/config.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/utils/reaction-enumeration/config-form.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/reaction-enumeration/filters.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/reactions/reactions.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/utils/reactions/reaction-browser.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/utils/reactions/reaction-editor.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/reactions/reaction-storage.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/reactions/types.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/reactions/ui.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/utils/reactions/consts.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rendering/rdkit-reaction-renderer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/reaction-enumeration-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "AST baseline missed the entire utils/reaction-enumeration/ directory (Reaction Enumerator app) and the dedicated test file."
+    },
+    {
+      "id": "feature:Chem:mixture-support",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rendering/mixture-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/mixfile.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/rendering/rdkit-cell-renderer.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/rendering/render-molecule.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": []
+    },
+    {
+      "id": "feature:Chem:chemprop-ml",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/docker/api.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/chemprop-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "AST baseline missed chemprop-tests.ts. Implementation is mostly registrations in package.ts that delegate to Python scripts."
+    },
+    {
+      "id": "feature:Chem:synthon-search",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/synthon-search.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/synthon-search-tests.ts",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:identifier-mapping",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/widgets/identifiers.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/panels/inchi.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/docker/api.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/convert-notation-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/utils/elemental-analysis-utils.ts",
+          "role": "support",
+          "confidence": 0.5
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/calculate.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/projects-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/tests/cell-panel-tests.ts",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/tests/vector-funcs-tests.ts",
+          "confidence": 0.7
+        }
+      ]
+    },
+    {
+      "id": "feature:Chem:validation-curation",
+      "implements": [
+        {
+          "path": "packages/Chem/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/analysis/deprotect.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chem/src/utils/reactions/reactions.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/utils/reactions/consts.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/utils/reactions/types.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Chem/src/utils/malformed-data-utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common-rdkit.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/chem-common.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Chem/src/utils/mol-creation_rdkit.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Chem/src/utils/err-info.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Chem/src/scripts-api.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Chem/src/rdkit-service/rdkit-service.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chem/src/tests/menu-tests-script-based.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chem/src/tests/sketcher-tests.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "AST baseline missed malformed-data-utils.ts and the menu-tests-script-based.ts test file (which exercises Curate and Mutate)."
+    }
+  ]
+}

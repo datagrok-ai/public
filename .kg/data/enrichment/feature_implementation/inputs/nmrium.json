@@ -1,0 +1,136 @@
+{
+  "package": {
+    "id": "pkg:nmrium",
+    "name": "nmrium",
+    "friendly_name": "NMRium",
+    "category": null,
+    "description": "Datagrok package for NMR data visualization"
+  },
+  "files": {
+    "src": [
+      "packages/nmrium/nmrium-wrapper/src/NMRiumWrapper.tsx",
+      "packages/nmrium/nmrium-wrapper/src/events/event.ts",
+      "packages/nmrium/nmrium-wrapper/src/events/index.ts",
+      "packages/nmrium/nmrium-wrapper/src/events/types.ts",
+      "packages/nmrium/nmrium-wrapper/src/hooks/useLoadSpectra.ts",
+      "packages/nmrium/nmrium-wrapper/src/hooks/usePreferences.ts",
+      "packages/nmrium/nmrium-wrapper/src/utilities/getFileNameFromURL.ts",
+      "packages/nmrium/nmrium-wrapper/src/utilities/isArrayOfString.ts",
+      "packages/nmrium/nmrium-wrapper/src/utilities/loadFilesFromURLs.ts",
+      "packages/nmrium/nmrium-wrapper/src/workspaces/nmrxiv.ts",
+      "packages/nmrium/src/bp.css",
+      "packages/nmrium/src/package.ts",
+      "packages/nmrium/src/utils.ts"
+    ],
+    "tests": [
+      "packages/nmrium/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/nmrium/CHANGELOG.md",
+      "packages/nmrium/CREDITS.md",
+      "packages/nmrium/README.md",
+      "packages/nmrium/nmrium-wrapper/CHANGELOG.md",
+      "packages/nmrium/nmrium-wrapper/README.md",
+      "packages/nmrium/nmrium-wrapper/README.old.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:nmrium:nmr-file-import",
+      "name": "NMR File Format Support",
+      "description": "Registers file handlers for .jdx and .nmrium formats so Datagrok can recognise and parse NMR data files on upload or file-browser open. Includes a JDX content validator used to gate format detection.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:nmrium:jdxFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "jdxFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:nmrium:nmriumFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "nmriumFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:nmrium:checkNmriumJdx",
+          "kind": "RegisteredFunction",
+          "name": "checkNmriumJdx",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:nmrium:1.0.0:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/nmrium/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:nmrium:nmr-spectrum-viewer",
+      "name": "NMR Spectrum Viewer",
+      "description": "Embeds the NMRium interactive spectrum viewer as a Datagrok file-preview panel, supporting both native .nmrium and JCAMP-DX (.dx/.jdx) formats with content-dependent view selection.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:nmrium:previewNMRData",
+          "kind": "RegisteredFunction",
+          "name": "previewNMRData",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:nmrium:previewNMRFromDX",
+          "kind": "RegisteredFunction",
+          "name": "previewNMRFromDX",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/nmrium/readme.md",
+          "kind": "DocPage",
+          "title": "NMRium",
+          "url": "/packages/nmrium/readme.md"
+        },
+        {
+          "id": "doc:/packages/nmrium/credits.md",
+          "kind": "DocPage",
+          "title": "NMRium — Third-Party Libraries",
+          "url": "/packages/nmrium/credits.md"
+        },
+        {
+          "id": "clog:nmrium:1.1.0:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/nmrium/src/package.ts",
+          "packages/nmrium/src/utils.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

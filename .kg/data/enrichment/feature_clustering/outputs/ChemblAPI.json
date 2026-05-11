@@ -1,0 +1,78 @@
+{
+  "package_id": "pkg:ChemblAPI",
+  "features": [
+    {
+      "id": "feature:ChemblAPI:substructure-search",
+      "name": "ChEMBL Substructure Search",
+      "description": "Provides an info-panel widget that queries the ChEMBL REST API for compounds containing a given substructure, displaying matched results inside Datagrok.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:ChemblAPI:Databases | ChEMBL | Substructure Search API", "weight": 1.0, "role": "core"},
+        {"id": "clog:ChemblAPI:1.1.1:0", "weight": 0.7, "role": "related"},
+        {"id": "doc:/packages/ChemblAPI/readme.md", "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "Function name and Databases menu path explicitly identify ChEMBL substructure search; GROK-16847 (empty structure in results) corroborates active maintenance of this panel."
+    },
+    {
+      "id": "feature:ChemblAPI:similarity-search",
+      "name": "ChEMBL Similarity Search",
+      "description": "Provides an info-panel widget that queries the ChEMBL REST API for structurally similar compounds with alignment scores, displayed inline within Datagrok.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:ChemblAPI:Databases | ChEMBL | Similarity Search API", "weight": 1.0, "role": "core"},
+        {"id": "clog:ChemblAPI:1.2.1:0", "weight": 0.9, "role": "related"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps", "weight": 0.3, "role": "related"}
+      ],
+      "evidence_summary": "Function name and menu path explicitly identify ChEMBL similarity search; GROK-18932 directly names this feature in a score-alignment bug fix."
+    },
+    {
+      "id": "feature:ChemblAPI:compound-lookup",
+      "name": "ChEMBL Compound Lookup",
+      "description": "Fetches ChEMBL compound records by ChEMBL ID or InChI key, returning a data frame suitable for downstream analysis.",
+      "category": "data-import",
+      "confidence": 0.90,
+      "members": [
+        {"id": "func:ChemblAPI:GetCompoundsIds", "weight": 1.0, "role": "core"},
+        {"id": "func:ChemblAPI:Chembl Get by Id", "weight": 1.0, "role": "core"},
+        {"id": "clog:ChemblAPI:1.0.12:0", "weight": 0.85, "role": "related"}
+      ],
+      "evidence_summary": "GetCompoundsIds and Chembl Get by Id share a compound-retrieval theme confirmed by the v1.0.12 changelog entry that introduced the InChI-key lookup function."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:ChemblAPI:substructure-search", "to": "feature:ChemblAPI:similarity-search", "kind": "sibling"},
+    {"from": "feature:ChemblAPI:compound-lookup", "to": "feature:ChemblAPI:substructure-search", "kind": "related"},
+    {"from": "feature:ChemblAPI:compound-lookup", "to": "feature:ChemblAPI:similarity-search", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/ChemblAPI/claude.md",
+    "doc:/packages/ChemblAPI/credits.md",
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+    "clog:ChemblAPI:1.1.4:0",
+    "clog:ChemblAPI:1.1.3:0",
+    "clog:ChemblAPI:1.1.2:0",
+    "clog:ChemblAPI:1.0.13:0"
+  ]
+}

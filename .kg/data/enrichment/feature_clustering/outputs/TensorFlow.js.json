@@ -1,0 +1,40 @@
+{
+  "package_id": "pkg:TensorFlow.js",
+  "features": [
+    {
+      "id": "feature:TensorFlow.js:neural-network-model",
+      "name": "Neural Network Model Training and Inference",
+      "description": "Lets users train browser-side neural networks via TensorFlow.js on a dataframe column with configurable architecture and hyperparameters, then apply the trained model to new data for in-browser prediction.",
+      "category": "ml",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:TensorFlow.js:trainNN",           "weight": 1.0,  "role": "core"},
+        {"id": "func:TensorFlow.js:applyNN",           "weight": 1.0,  "role": "core"},
+        {"id": "func:TensorFlow.js:isApplicableNN",    "weight": 0.85, "role": "core"},
+        {"id": "doc:/packages/TensorFlow.js/readme.md","weight": 0.75, "role": "doc"}
+      ],
+      "evidence_summary": "trainNN, applyNN, and isApplicableNN share the 'NN' name root and together implement Datagrok's standard ML model lifecycle interface (train → applicability check → predict)."
+    },
+    {
+      "id": "feature:TensorFlow.js:neural-network-visualization",
+      "name": "Neural Network Visualization",
+      "description": "Renders an interactive visual representation of a trained TensorFlow.js neural network for a selected input/output column pair, giving users insight into model structure and activations.",
+      "category": "viz",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:TensorFlow.js:visualizeNN", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "visualizeNN accepts a trained model object alongside two columns and produces a visualization, making it a clearly separate presentational capability from training and inference."
+    }
+  ],
+  "feature_relations": [
+    {
+      "from": "feature:TensorFlow.js:neural-network-visualization",
+      "to": "feature:TensorFlow.js:neural-network-model",
+      "kind": "related"
+    }
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/TensorFlow.js/credits.md"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "package_id": "pkg:Reinvent4",
+  "features": [
+    {
+      "id": "feature:Reinvent4:de-novo-molecule-generation",
+      "implements": [
+        {
+          "path": "packages/Reinvent4/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Reinvent4/src/utils/reinvent-editor.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Reinvent4/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts wires all five RegisteredFunctions (Reinvent, runReinvent, ReinventEditor, reinventTopMenu, getFolders); editor builds the dialog; utils.zipFolder packages target files for the docker call. package-test.ts is a generic test runner with no feature-specific tests."
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "package": {
+    "id": "pkg:Docking",
+    "name": "Docking",
+    "friendly_name": "Docking",
+    "category": "Cheminformatics",
+    "description": "Integrates Datagrok with molecular docking algorithms and tools."
+  },
+  "files": {
+    "src": [
+      "packages/Docking/src/apps/auto-dock-app.ts",
+      "packages/Docking/src/demo/demo.ts",
+      "packages/Docking/src/demo/docking-app.ts",
+      "packages/Docking/src/package-utils.ts",
+      "packages/Docking/src/package.ts",
+      "packages/Docking/src/utils/auto-dock-service.ts",
+      "packages/Docking/src/utils/constants.ts",
+      "packages/Docking/src/utils/utils.ts"
+    ],
+    "tests": [
+      "packages/Docking/src/package-test.ts",
+      "packages/Docking/src/tests/autodock-tests.ts",
+      "packages/Docking/src/tests/utils-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Docking/CHANGELOG.md",
+      "packages/Docking/CREDITS.md",
+      "packages/Docking/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Docking:autodock-vina-batch",
+      "name": "AutoDock Vina Batch Docking",
+      "description": "Docks a column of small-molecule ligands against a protein target using a Docker-backed AutoDock Vina service, returning scored poses for each compound. Exposed as a Hit Triage function so it integrates into Datagrok…",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Docking:AutoDock",
+          "kind": "RegisteredFunction",
+          "name": "AutoDock",
+          "friendly_name": null,
+          "role": "hitTriageFunction",
+          "description": "Autodock plugin UI",
+          "tags": []
+        },
+        {
+          "id": "func:Docking:getAutodockResults",
+          "kind": "RegisteredFunction",
+          "name": "getAutodockResults",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Docking:dockLigandCached",
+          "kind": "RegisteredFunction",
+          "name": "dockLigandCached",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Docking:isApplicableAutodock",
+          "kind": "RegisteredFunction",
+          "name": "isApplicableAutodock",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Docking:getAutoDockService",
+          "kind": "RegisteredFunction",
+          "name": "getAutoDockService",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Docking:getConfigFiles",
+          "kind": "RegisteredFunction",
+          "name": "getConfigFiles",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/develop/domains/chem/docking",
+          "kind": "DocPage",
+          "title": "Docking",
+          "url": "/help/develop/domains/chem/docking"
+        },
+        {
+          "id": "doc:/packages/Docking/readme.md",
+          "kind": "DocPage",
+          "title": "Docking",
+          "url": "/packages/Docking/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Docking/src/apps/auto-dock-app.ts",
+          "packages/Docking/src/package-utils.ts",
+          "packages/Docking/src/package.ts",
+          "packages/Docking/src/utils/auto-dock-service.ts",
+          "packages/Docking/src/utils/constants.ts",
+          "packages/Docking/src/utils/utils.ts"
+        ],
+        "tests": [
+          "packages/Docking/src/tests/autodock-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Docking:docking-app",
+      "name": "Docking Application",
+      "description": "A full-screen interactive application (accessible via the Bio browse path) that lets users configure targets and ligand sets, launch AutoDock runs, and explore docked poses in an integrated 3-D view.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Docking:Docking",
+          "kind": "RegisteredFunction",
+          "name": "Docking",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Docking:autoDockApp",
+          "kind": "RegisteredFunction",
+          "name": "autoDockApp",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Docking:Demo Docking",
+          "kind": "RegisteredFunction",
+          "name": "Demo Docking",
+          "friendly_name": null,
+          "role": null,
+          "description": "Small molecule docking to a macromolecule with pose visualization",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Docking/credits.md",
+          "kind": "DocPage",
+          "title": "Docking — Third-Party Libraries",
+          "url": "/packages/Docking/credits.md"
+        },
+        {
+          "id": "doc:/help/develop/domains/chem/docking",
+          "kind": "DocPage",
+          "title": "Docking",
+          "url": "/help/develop/domains/chem/docking"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Docking/src/apps/auto-dock-app.ts",
+          "packages/Docking/src/package.ts",
+          "packages/Docking/src/utils/auto-dock-service.ts",
+          "packages/Docking/src/utils/constants.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Docking:molecule-docking-panel",
+      "name": "Molecule Docking Info Panel",
+      "description": "Context-sensitive panel widget that runs AutoDock on the currently selected molecule and renders the docked pose inline, giving users per-compound docking feedback while browsing a table.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Docking:getAutodockSingle",
+          "kind": "RegisteredFunction",
+          "name": "getAutodockSingle",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Docking:Biology | AutoDock",
+          "kind": "RegisteredFunction",
+          "name": "Biology | AutoDock",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Docking/src/package-utils.ts",
+          "packages/Docking/src/package.ts",
+          "packages/Docking/src/utils/constants.ts",
+          "packages/Docking/src/utils/utils.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "package": {
+    "id": "pkg:WebComponents",
+    "name": "WebComponents",
+    "friendly_name": "WebComponents",
+    "version": "1.3.0",
+    "category": "General",
+    "description": "WebComponents runtime code",
+    "extras": {
+      "npm_name": "@datagrok/webcomponents",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:WebComponents:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/WebComponents/credits.md",
+      "title": "WebComponents — Third-Party Libraries",
+      "url": "/packages/WebComponents/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/WebComponents/readme.md",
+      "title": "WebComponents",
+      "url": "/packages/WebComponents/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:WebComponents:1.2.10:0",
+      "version": "1.2.10",
+      "released_at": "2025-11-20",
+      "ticket": null,
+      "text": "Tweak consistency icons in forms"
+    },
+    {
+      "id": "clog:WebComponents:1.2.10:1",
+      "version": "1.2.10",
+      "released_at": "2025-11-20",
+      "ticket": null,
+      "text": "Tweak dock spawn webcomponent api"
+    },
+    {
+      "id": "clog:WebComponents:1.2.9:0",
+      "version": "1.2.9",
+      "released_at": "2025-10-30",
+      "ticket": null,
+      "text": "Update deps"
+    },
+    {
+      "id": "clog:WebComponents:1.2.8:0",
+      "version": "1.2.8",
+      "released_at": "2025-09-09",
+      "ticket": null,
+      "text": "Support restoring focused tab in dock"
+    },
+    {
+      "id": "clog:WebComponents:1.2.7:0",
+      "version": "1.2.7",
+      "released_at": "2025-09-04",
+      "ticket": null,
+      "text": "Small bug fixes"
+    },
+    {
+      "id": "clog:WebComponents:1.2.6:0",
+      "version": "1.2.6",
+      "released_at": "2025-08-28",
+      "ticket": null,
+      "text": "Compute2 related updates"
+    },
+    {
+      "id": "clog:WebComponents:1.2.5:0",
+      "version": "1.2.5",
+      "released_at": "2025-07-28",
+      "ticket": null,
+      "text": "API updated for 1.26.0"
+    },
+    {
+      "id": "clog:WebComponents:1.2.4:0",
+      "version": "1.2.4",
+      "released_at": "2025-06-03",
+      "ticket": null,
+      "text": "Allow all users to use"
+    },
+    {
+      "id": "clog:WebComponents:1.2.0:0",
+      "version": "1.2.0",
+      "released_at": "2025-03-30",
+      "ticket": null,
+      "text": "API updated for 1.25.0"
+    },
+    {
+      "id": "clog:WebComponents:1.3.0:0",
+      "version": "1.3.0",
+      "released_at": "2025-03-19",
+      "ticket": null,
+      "text": "1.27 platform support"
+    },
+    {
+      "id": "clog:WebComponents:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2025-02-19",
+      "ticket": null,
+      "text": "Release for 1.24.0"
+    },
+    {
+      "id": "clog:WebComponents:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2024-12-25",
+      "ticket": null,
+      "text": "Initial release"
+    }
+  ],
+  "stats": {
+    "functions": 1,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 2,
+    "changelog": 12
+  }
+}

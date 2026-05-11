@@ -1,0 +1,1415 @@
+{
+  "package": {
+    "id": "pkg:EDA",
+    "name": "EDA",
+    "friendly_name": "EDA",
+    "version": "1.5.2",
+    "category": "Machine Learning",
+    "description": "Exploratory Data Analysis Tools",
+    "extras": {
+      "npm_name": "@datagrok/eda",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:EDA:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [
+        "init"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:DBSCAN",
+      "name": "DBSCAN",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Density-based spatial clustering of applications with noise (DBSCAN)",
+      "input_types": [
+        "dataframe",
+        "column",
+        "column",
+        "double",
+        "int"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:PCA",
+      "name": "PCA",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Principal component analysis (PCA)",
+      "input_types": [
+        "dataframe",
+        "column_list",
+        "int",
+        "bool",
+        "bool"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": "/help/explore/dim-reduction#pca",
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:DBSCAN clustering",
+      "name": "DBSCAN clustering",
+      "friendly_name": null,
+      "role": "dim-red-postprocessing-function",
+      "tags": [
+        "dim-red-postprocessing-function"
+      ],
+      "description": null,
+      "input_types": [
+        "column",
+        "column",
+        "double",
+        "int"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "dim-red-postprocessing-function"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:None (number)",
+      "name": "None (number)",
+      "friendly_name": null,
+      "role": "dim-red-preprocessing-function",
+      "tags": [
+        "dim-red-preprocessing-function"
+      ],
+      "description": null,
+      "input_types": [
+        "column",
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {
+        "role": "dim-red-preprocessing-function"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:None (string)",
+      "name": "None (string)",
+      "friendly_name": null,
+      "role": "dim-red-preprocessing-function",
+      "tags": [
+        "dim-red-preprocessing-function"
+      ],
+      "description": null,
+      "input_types": [
+        "column",
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {
+        "role": "dim-red-preprocessing-function"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:Multi Column Dimensionality Reduction",
+      "name": "Multi Column Dimensionality Reduction",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:GetMCLEditor",
+      "name": "GetMCLEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [
+        "editor"
+      ],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:MCLClustering",
+      "name": "MCLClustering",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.",
+      "input_types": [
+        "dataframe",
+        null,
+        null,
+        null,
+        "string",
+        null,
+        "object",
+        "int",
+        "int",
+        "bool",
+        "double",
+        "int"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:MCL",
+      "name": "MCL",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": "Markov clustering viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:PLS",
+      "name": "PLS",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Compute partial least squares (PLS) regression analysis components: prediction, regression coefficients, T- & U-scores, X-loadings.",
+      "input_types": [
+        "dataframe",
+        "column_list",
+        "column",
+        "int",
+        "column"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:topMenuPLS",
+      "name": "topMenuPLS",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Compute partial least squares (PLS) regression components. They maximally summarize the variation of the predictors while maximizing correlation with the response variable.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:multivariateAnalysis",
+      "name": "multivariateAnalysis",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Multidimensional data analysis using partial least squares (PLS) regression.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:MVA demo",
+      "name": "MVA demo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:trainLinearKernelSVM",
+      "name": "trainLinearKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "double"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:applyLinearKernelSVM",
+      "name": "applyLinearKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "dynamic"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isApplicableLinearKernelSVM",
+      "name": "isApplicableLinearKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isInteractiveLinearKernelSVM",
+      "name": "isInteractiveLinearKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:visualizeLinearKernelSVM",
+      "name": "visualizeLinearKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "column",
+        "dynamic"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:trainRBFkernelSVM",
+      "name": "trainRBFkernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:applyRBFkernelSVM",
+      "name": "applyRBFkernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "dynamic"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isApplicableRBFkernelSVM",
+      "name": "isApplicableRBFkernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isInteractiveRBFkernelSVM",
+      "name": "isInteractiveRBFkernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:visualizeRBFkernelSVM",
+      "name": "visualizeRBFkernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "column",
+        "dynamic"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:trainPolynomialKernelSVM",
+      "name": "trainPolynomialKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "double",
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:applyPolynomialKernelSVM",
+      "name": "applyPolynomialKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "dynamic"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isApplicablePolynomialKernelSVM",
+      "name": "isApplicablePolynomialKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isInteractivePolynomialKernelSVM",
+      "name": "isInteractivePolynomialKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:visualizePolynomialKernelSVM",
+      "name": "visualizePolynomialKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "column",
+        "dynamic"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:trainSigmoidKernelSVM",
+      "name": "trainSigmoidKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "double",
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:applySigmoidKernelSVM",
+      "name": "applySigmoidKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "dynamic"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isApplicableSigmoidKernelSVM",
+      "name": "isApplicableSigmoidKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isInteractiveSigmoidKernelSVM",
+      "name": "isInteractiveSigmoidKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:visualizeSigmoidKernelSVM",
+      "name": "visualizeSigmoidKernelSVM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "column",
+        "dynamic"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:ANOVA",
+      "name": "ANOVA",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:KNN impute",
+      "name": "KNN impute",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Missing values imputation using the k-nearest neighbors method (KNN)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:KNN imputation for a table",
+      "name": "KNN imputation for a table",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Missing values imputation using the k-nearest neighbors method",
+      "input_types": [
+        "dataframe"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:trainLinearRegression",
+      "name": "trainLinearRegression",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:applyLinearRegression",
+      "name": "applyLinearRegression",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "dynamic"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isApplicableLinearRegression",
+      "name": "isApplicableLinearRegression",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isInteractiveLinearRegression",
+      "name": "isInteractiveLinearRegression",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:trainSoftmax",
+      "name": "trainSoftmax",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "double",
+        "double",
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:applySoftmax",
+      "name": "applySoftmax",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "dynamic"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isApplicableSoftmax",
+      "name": "isApplicableSoftmax",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isInteractiveSoftmax",
+      "name": "isInteractiveSoftmax",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:trainPLSRegression",
+      "name": "trainPLSRegression",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "int"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:applyPLSRegression",
+      "name": "applyPLSRegression",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "dynamic"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isApplicablePLSRegression",
+      "name": "isApplicablePLSRegression",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:visualizePLSRegression",
+      "name": "visualizePLSRegression",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "column",
+        "dynamic"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isInteractivePLSRegression",
+      "name": "isInteractivePLSRegression",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:trainXGBooster",
+      "name": "trainXGBooster",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "int",
+        "double",
+        "int",
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:applyXGBooster",
+      "name": "applyXGBooster",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "dynamic"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isInteractiveXGBooster",
+      "name": "isInteractiveXGBooster",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:isApplicableXGBooster",
+      "name": "isApplicableXGBooster",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:Pareto Front",
+      "name": "Pareto Front",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:Pareto front",
+      "name": "Pareto front",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": "Pareto front viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:trainPmpo",
+      "name": "trainPmpo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Train probabilistic multi-parameter optimization (pMPO) model",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:getPmpoAppItems",
+      "name": "getPmpoAppItems",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "view"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:EDA:generatePmpoDataset",
+      "name": "generatePmpoDataset",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Generates syntethetic dataset oriented on the pMPO modeling",
+      "input_types": [
+        "int"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/EDA/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/EDA/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/EDA/credits.md",
+      "title": "EDA — Third-Party Libraries",
+      "url": "/packages/EDA/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/EDA/readme.md",
+      "title": "EDA",
+      "url": "/packages/EDA/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/workflows/eda",
+      "title": "Exploratory data analysis",
+      "url": "/help/datagrok/solutions/workflows/eda",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/explore/dim-reduction",
+      "title": "Dimensionality reduction",
+      "url": "/help/explore/dim-reduction",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/pareto-front-viewer",
+      "title": "Pareto front viewer",
+      "url": "/help/visualize/viewers/pareto-front-viewer",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/explore/missing-values-imputation",
+      "title": "Missing values imputation",
+      "url": "/help/explore/missing-values-imputation",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/multi-curve-viewer",
+      "title": "Multi curve viewer",
+      "url": "/help/visualize/viewers/multi-curve-viewer",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:EDA:1.5.2:0",
+      "version": "1.5.2",
+      "released_at": "2026-04-24",
+      "ticket": null,
+      "text": "Fix the column_list issue in PCA"
+    },
+    {
+      "id": "clog:EDA:1.5.1:0",
+      "version": "1.5.1",
+      "released_at": "2026-03-27",
+      "ticket": null,
+      "text": "Add formula for prediction in multivariate analysis"
+    },
+    {
+      "id": "clog:EDA:1.5.0:0",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Probabilistic Multi-Parameter Optimization (pMPO) - Enhancements"
+    },
+    {
+      "id": "clog:EDA:1.5.0:1",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Added support for both numeric and categorical desirability columns"
+    },
+    {
+      "id": "clog:EDA:1.5.0:2",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Introduced automatic parameter tuning for streamlined configuration"
+    },
+    {
+      "id": "clog:EDA:1.5.0:3",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Added option to run pMPO without sigmoidal correction"
+    },
+    {
+      "id": "clog:EDA:1.5.0:4",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "New ROC curve and confusion matrix visualizations for model evaluation"
+    },
+    {
+      "id": "clog:EDA:1.5.0:5",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Expanded correctness test coverage"
+    },
+    {
+      "id": "clog:EDA:1.4.12:0",
+      "version": "1.4.12",
+      "released_at": "2026-01-16",
+      "ticket": null,
+      "text": "Implemented"
+    },
+    {
+      "id": "clog:EDA:1.4.12:1",
+      "version": "1.4.12",
+      "released_at": "2026-01-16",
+      "ticket": null,
+      "text": "Interactive app for training probabilistic multi-parameter optimization (pMPO) models"
+    },
+    {
+      "id": "clog:EDA:1.4.12:2",
+      "version": "1.4.12",
+      "released_at": "2026-01-16",
+      "ticket": null,
+      "text": "Export pMPO models to MPO desirability profiles"
+    },
+    {
+      "id": "clog:EDA:1.4.11:0",
+      "version": "1.4.11",
+      "released_at": "2025-11-21",
+      "ticket": null,
+      "text": "Implemented"
+    },
+    {
+      "id": "clog:EDA:1.4.11:1",
+      "version": "1.4.11",
+      "released_at": "2025-11-21",
+      "ticket": null,
+      "text": "Pareto front viewer"
+    },
+    {
+      "id": "clog:EDA:1.4.11:2",
+      "version": "1.4.11",
+      "released_at": "2025-11-21",
+      "ticket": null,
+      "text": "Pareto optimization app"
+    },
+    {
+      "id": "clog:EDA:1.4.10:0",
+      "version": "1.4.10",
+      "released_at": "2025-11-05",
+      "ticket": null,
+      "text": "Correct MCL worker termination"
+    },
+    {
+      "id": "clog:EDA:1.4.9:0",
+      "version": "1.4.9",
+      "released_at": "2025-11-04",
+      "ticket": null,
+      "text": "Updated ML lib"
+    },
+    {
+      "id": "clog:EDA:1.4.8:0",
+      "version": "1.4.8",
+      "released_at": "2025-10-15",
+      "ticket": null,
+      "text": "Updated tutorials"
+    },
+    {
+      "id": "clog:EDA:1.4.7:0",
+      "version": "1.4.7",
+      "released_at": "2025-10-01",
+      "ticket": null,
+      "text": "Updated utils and js-api"
+    },
+    {
+      "id": "clog:EDA:1.4.6:0",
+      "version": "1.4.6",
+      "released_at": "2025-09-23",
+      "ticket": null,
+      "text": "Improved ANOVA:"
+    },
+    {
+      "id": "clog:EDA:1.4.6:1",
+      "version": "1.4.6",
+      "released_at": "2025-09-23",
+      "ticket": null,
+      "text": "Updated the F-test description"
+    },
+    {
+      "id": "clog:EDA:1.4.6:2",
+      "version": "1.4.6",
+      "released_at": "2025-09-23",
+      "ticket": null,
+      "text": "Implemented the tab control for the results"
+    },
+    {
+      "id": "clog:EDA:1.4.5:0",
+      "version": "1.4.5",
+      "released_at": "2025-09-19",
+      "ticket": null,
+      "text": "Dependencies update"
+    },
+    {
+      "id": "clog:EDA:1.4.4:0",
+      "version": "1.4.4",
+      "released_at": "2025-09-17",
+      "ticket": null,
+      "text": "Improved the PCA dialog"
+    },
+    {
+      "id": "clog:EDA:1.4.3:0",
+      "version": "1.4.3",
+      "released_at": "2025-03-28",
+      "ticket": null,
+      "text": "Updated grok tools"
+    },
+    {
+      "id": "clog:EDA:1.4.2:0",
+      "version": "1.4.2",
+      "released_at": "2025-03-28",
+      "ticket": null,
+      "text": "Updated Multivariate Analysis:"
+    },
+    {
+      "id": "clog:EDA:1.4.2:1",
+      "version": "1.4.2",
+      "released_at": "2025-03-28",
+      "ticket": null,
+      "text": "Implemented the Quadratic PLS regression"
+    },
+    {
+      "id": "clog:EDA:1.4.2:2",
+      "version": "1.4.2",
+      "released_at": "2025-03-28",
+      "ticket": null,
+      "text": "Improved MVA and PLS UI/UX"
+    },
+    {
+      "id": "clog:EDA:1.3.5:0",
+      "version": "1.3.5",
+      "released_at": "2025-03-07",
+      "ticket": null,
+      "text": "Vector distance functions support for dimensionality reduction on webGPU and without"
+    },
+    {
+      "id": "clog:EDA:1.3.4:0",
+      "version": "1.3.4",
+      "released_at": "2025-02-28",
+      "ticket": null,
+      "text": "MCL: Updated ML library to support large MCL matrices"
+    },
+    {
+      "id": "clog:EDA:1.3.3:0",
+      "version": "1.3.3",
+      "released_at": "2025-02-20",
+      "ticket": null,
+      "text": "Updated the MVA demo"
+    }
+  ],
+  "stats": {
+    "functions": 60,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 12,
+    "changelog": 92
+  }
+}

@@ -97,7 +97,7 @@ Run the prompt below in **two independent sub-agent sessions** (same prompt, sep
 
 Prompt to run in each sub-agent:
 
-> Analyze the source code in `public/packages/<PackageName>/src`. Find bugs, typos, code smells, and dead code. Suggest improvements and refactorings to make the code shorter, simpler, and easier to maintain. Group findings by file and include `file:line` for each. Skip generated files (`*.g.ts`, `*-api.ts`).
+> Analyze the source code in `packages/<PackageName>/src`. Find bugs, typos, code smells, and dead code. Suggest improvements and refactorings to make the code shorter, simpler, and easier to maintain. Group findings by file and include `file:line` for each. Skip generated files (`*.g.ts`, `*-api.ts`).
 
 After both runs return:
 - Merge reports. Dedupe by `file:line` (same line, same finding = one entry).

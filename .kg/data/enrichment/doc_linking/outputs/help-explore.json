@@ -1,0 +1,149 @@
+{
+  "slice_id": "help-explore",
+  "links": [
+    {
+      "doc_id": "doc:/help/explore/ai/ai",
+      "target_id": "pkg:EDA",
+      "confidence": 0.65,
+      "evidence": "EDA package covers ML/AI tools (dimensionality reduction, clustering, classification) that are core Datagrok AI capabilities described in the doc"
+    },
+    {
+      "doc_id": "doc:/help/explore/ai/ai",
+      "target_id": "pkg:NLP",
+      "confidence": 0.65,
+      "evidence": "NLP is a core AI domain; the AI doc covers AI capabilities across the platform including natural language processing"
+    },
+    {
+      "doc_id": "doc:/help/explore/ai/ai",
+      "target_id": "feature:PowerPack:power-search",
+      "confidence": 0.63,
+      "evidence": "Power Search feature explicitly uses 'AI-powered query interpretation and entity similarity search', directly illustrating the AI capabilities described"
+    },
+    {
+      "doc_id": "doc:/help/explore/anova",
+      "target_id": "feature:EDA:anova",
+      "confidence": 0.98,
+      "evidence": "Title 'Analysis of variances' matches feature name 'ANOVA' exactly; snippet describes one-way ANOVA via ML menu, matching feature description"
+    },
+    {
+      "doc_id": "doc:/help/explore/anova",
+      "target_id": "pkg:EDA",
+      "confidence": 0.88,
+      "evidence": "ANOVA is implemented in the EDA package (ML | Analyze menu)"
+    },
+    {
+      "doc_id": "doc:/help/explore/cluster-data",
+      "target_id": "pkg:EDA",
+      "confidence": 0.88,
+      "evidence": "Clustering is launched via 'ML | Cluster' menu which belongs to the EDA package"
+    },
+    {
+      "doc_id": "doc:/help/explore/cluster-data",
+      "target_id": "feature:EDA:dbscan-clustering",
+      "confidence": 0.72,
+      "evidence": "Doc covers data clustering in EDA; DBSCAN is one of the EDA clustering algorithms (doc focuses on k-means but DBSCAN is the co-located feature)"
+    },
+    {
+      "doc_id": "doc:/help/explore/cluster-data",
+      "target_id": "feature:EDA:mcl-clustering",
+      "confidence": 0.72,
+      "evidence": "Doc covers data clustering in EDA; MCL is another EDA clustering algorithm in the same feature cluster"
+    },
+    {
+      "doc_id": "doc:/help/explore/cluster-test",
+      "target_id": "pkg:EDA",
+      "confidence": 0.85,
+      "evidence": "Test doc for Cluster Data functionality which lives in EDA package"
+    },
+    {
+      "doc_id": "doc:/help/explore/cluster-test",
+      "target_id": "feature:EDA:dbscan-clustering",
+      "confidence": 0.70,
+      "evidence": "Test covers EDA clustering; DBSCAN is a primary EDA clustering feature"
+    },
+    {
+      "doc_id": "doc:/help/explore/cluster-test",
+      "target_id": "feature:EDA:mcl-clustering",
+      "confidence": 0.70,
+      "evidence": "Test covers EDA clustering; MCL is a primary EDA clustering feature"
+    },
+    {
+      "doc_id": "doc:/help/explore/data-augmentation/data-augmentation",
+      "target_id": "feature:PowerPack:data-enrichment",
+      "confidence": 0.82,
+      "evidence": "Feature description 'Augments dataframe columns with external data by matching on a key column, supporting catalog browsing, data sync, and cross-connection lookups' directly matches the data augmentation concept described in the doc"
+    },
+    {
+      "doc_id": "doc:/help/explore/data-augmentation/data-augmentation",
+      "target_id": "pkg:PowerPack",
+      "confidence": 0.75,
+      "evidence": "Data Enrichment / augmentation feature is implemented in PowerPack"
+    },
+    {
+      "doc_id": "doc:/help/explore/dim-reduction",
+      "target_id": "feature:EDA:dimensionality-reduction",
+      "confidence": 0.97,
+      "evidence": "Title 'Dimensionality reduction' exactly matches feature name; both mention UMAP/t-SNE and preprocessing of tabular data"
+    },
+    {
+      "doc_id": "doc:/help/explore/dim-reduction",
+      "target_id": "pkg:EDA",
+      "confidence": 0.88,
+      "evidence": "Dimensionality reduction is implemented in the EDA package"
+    },
+    {
+      "doc_id": "doc:/help/explore/dim-reduction",
+      "target_id": "feature:Chem:chemical-space",
+      "confidence": 0.78,
+      "evidence": "Doc snippet states it 'extends the functionality of the Chemical Space'; Chemical Space feature uses UMAP/t-SNE dimensionality reduction on fingerprints — direct functional link"
+    },
+    {
+      "doc_id": "doc:/help/explore/dim-reduction",
+      "target_id": "feature:Bio:sequence-space",
+      "confidence": 0.72,
+      "evidence": "Sequence Space projects macromolecule sequences into 2D via dimensionality reduction of pairwise distances — the same technique described in the doc applied to biological sequences"
+    },
+    {
+      "doc_id": "doc:/help/explore/explore",
+      "target_id": "pkg:EDA",
+      "confidence": 0.88,
+      "evidence": "Overview page lists data augmentation, multivariate analysis, clustering, ANOVA, and dimensionality reduction — all EDA capabilities; EDA is the primary package for this section"
+    },
+    {
+      "doc_id": "doc:/help/explore/missing-values-imputation",
+      "target_id": "feature:EDA:knn-imputation",
+      "confidence": 0.97,
+      "evidence": "Title 'Missing values imputation' and snippet describing k-NN imputation exactly match feature 'KNN Missing Value Imputation' in EDA"
+    },
+    {
+      "doc_id": "doc:/help/explore/missing-values-imputation",
+      "target_id": "pkg:EDA",
+      "confidence": 0.88,
+      "evidence": "KNN imputation is implemented in the EDA package"
+    },
+    {
+      "doc_id": "doc:/help/explore/multivariate-analysis",
+      "target_id": "feature:EDA:pls-multivariate-analysis",
+      "confidence": 0.97,
+      "evidence": "Title 'Multivariate analysis' and PLS regression description exactly match feature 'PLS / Multivariate Analysis' in EDA"
+    },
+    {
+      "doc_id": "doc:/help/explore/multivariate-analysis",
+      "target_id": "pkg:EDA",
+      "confidence": 0.88,
+      "evidence": "Multivariate analysis / PLS is implemented in the EDA package"
+    },
+    {
+      "doc_id": "doc:/help/explore/multivariate-analysis/multivariate-analysis-test",
+      "target_id": "feature:EDA:pls-multivariate-analysis",
+      "confidence": 0.93,
+      "evidence": "Test doc directly tests 'Partial Least Squares (PLS)' via ML | Analyze | Multivariate Analysis, exactly matching the PLS / Multivariate Analysis feature"
+    },
+    {
+      "doc_id": "doc:/help/explore/multivariate-analysis/multivariate-analysis-test",
+      "target_id": "pkg:EDA",
+      "confidence": 0.85,
+      "evidence": "Test doc for MVA/PLS which is implemented in the EDA package"
+    }
+  ]
+}

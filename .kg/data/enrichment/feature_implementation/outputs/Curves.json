@@ -1,0 +1,195 @@
+{
+  "package_id": "pkg:Curves",
+  "features": [
+    {
+      "id": "feature:Curves:curve-fitting",
+      "implements": [
+        {
+          "path": "packages/Curves/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Curves/src/fit/fit-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Curves/src/fit/fit-grid-cell-handler.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Curves/src/fit/render-utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Curves/src/fit/curve-converter.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Curves/src/fit/fit-inspection.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Curves/src/fit/fit-demo.ts",
+          "role": "demo",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Curves/src/tests/fit-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Curves/src/tests/curves-cell-renderer-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "FitChartCellRenderer (fit-renderer.ts) registers the 'Fit' cellRenderer; package.ts wires _initCurves; fit-grid-cell-handler renders the property panel; render-utils does the canvas drawing."
+    },
+    {
+      "id": "feature:Curves:data-to-curves",
+      "implements": [
+        {
+          "path": "packages/Curves/src/fit/data-to-curves.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Curves/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "convertDataToCurves and dataToCurvesUI live in data-to-curves.ts; package.ts exposes them via dataToCurves and dataToCurvesTopMenu functions."
+    },
+    {
+      "id": "feature:Curves:multi-curve-viewer",
+      "implements": [
+        {
+          "path": "packages/Curves/src/fit/multi-curve-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Curves/src/fit/fit-renderer.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Curves/src/fit/render-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "MultiCurveViewer class declares the @viewer decorator; reuses mergeChartOptions/mergeSeries/getOrCreateParsedChartData from fit-renderer."
+    },
+    {
+      "id": "feature:Curves:curve-format-import",
+      "implements": [
+        {
+          "path": "packages/Curves/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Curves/src/fit/curve-converter.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Curves/src/fit/converters/xml-converter.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Curves/src/fit/converters/compact-dr-converter.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Curves/src/fit/converters/pzfx-converter.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Curves/src/fit/fit-parser.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Curves/src/formats/pzfx/pzfx-parser.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Curves/src/tests/converter-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Curves/src/tests/detector-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Curves/src/tests/pzfx-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "Converter registry in curve-converter.ts; one converter per format file; fit-parser handles XML 3DX, pzfx-parser handles GraphPad PZFX; detectors in detectors.js (not in src/)."
+    },
+    {
+      "id": "feature:Curves:curve-statistics",
+      "implements": [
+        {
+          "path": "packages/Curves/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Curves/src/fit/fit-grid-cell-handler.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Curves/src/fit/fit-renderer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Curves/src/fit/curve-converter.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "addStatisticsColumn / addAggrStatisticsColumn declared in package.ts use calculateSeriesStats and getChartDataAggrStats from fit-grid-cell-handler.ts plus chart parsing helpers from fit-renderer.ts."
+    },
+    {
+      "id": "feature:Curves:msr-calculation",
+      "implements": [
+        {
+          "path": "packages/Curves/scripts/calculateMSR.py",
+          "role": "core",
+          "confidence": 0.99
+        }
+      ],
+      "tests": [],
+      "notes": "Server-side Python script; no TypeScript wrapper — registered directly via #name annotation."
+    },
+    {
+      "id": "feature:Curves:assay-plates",
+      "implements": [],
+      "tests": [],
+      "notes": "Assay Plates demo function is commented out in package.ts (assayPlatesDemo block); no live implementation files in this package — handled by the separate Plates package."
+    }
+  ]
+}

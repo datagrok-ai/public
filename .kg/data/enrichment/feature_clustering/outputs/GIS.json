@@ -1,0 +1,84 @@
+{
+  "package_id": "pkg:GIS",
+  "features": [
+    {
+      "id": "feature:GIS:map-viewer",
+      "name": "Map Viewer",
+      "description": "Interactive map viewer that renders tabular geospatial data as markers or a heat map, with a layers panel for toggling visibility. Auto-detects latitude/longitude columns via a semantic type detector.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:GIS:Map",           "weight": 1.0, "role": "core"},
+        {"id": "func:GIS:mapDemo",       "weight": 0.8, "role": "sample"},
+        {"id": "func:GIS:<anonymous>",   "weight": 0.7, "role": "related"},
+        {"id": "doc:/packages/GIS/readme.md", "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "func:GIS:Map is the registered viewer; mapDemo provides the sample; the anonymous semTypeDetector (lat/lon) is a direct prerequisite; the readme covers the viewer as the package's headline feature."
+    },
+    {
+      "id": "feature:GIS:geocoding",
+      "name": "Geocoding",
+      "description": "Forward, reverse, and batch geocoding functions that convert between street addresses and geographic coordinates.",
+      "category": "data-import",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:GIS:GISGeocoding",        "weight": 1.0, "role": "core"},
+        {"id": "func:GIS:gisReverseGeocoding", "weight": 1.0, "role": "core"},
+        {"id": "func:GIS:gisBatchGeocoding",   "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "All three functions share the 'GIS geocoding' name prefix and description, covering the full geocoding use case (forward, reverse, batch)."
+    },
+    {
+      "id": "feature:GIS:kml-kmz-file-support",
+      "name": "KML/KMZ File Support",
+      "description": "Built-in file viewer and handler for KML and KMZ geographic markup files, letting users open and inspect these formats directly in Datagrok.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:GIS:gisKMZAndKMLFileViewer", "weight": 1.0, "role": "core"},
+        {"id": "func:GIS:gisKMLFileHandler",       "weight": 1.0, "role": "core"},
+        {"id": "func:GIS:gisKMZFileHandler",       "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Viewer and handlers share the kml/kmz extension metadata and the 'gisK[M]L/KMZ' name prefix, forming a coherent file-format support unit."
+    },
+    {
+      "id": "feature:GIS:geojson-topojson-file-support",
+      "name": "GeoJSON/TopoJSON File Support",
+      "description": "Built-in file viewer and handler for GeoJSON and TopoJSON formats, enabling direct opening of standard web-mapping data files.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:GIS:gisGeoJSONFileViewer",  "weight": 1.0, "role": "core"},
+        {"id": "func:GIS:gisGeoJSONFileHandler", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Viewer and handler share the geojson/topojson extension metadata and the 'gisGeoJSON' name prefix; changelog v1.2.1 explicitly narrowed scope to geo/topo JSON."
+    },
+    {
+      "id": "feature:GIS:area-census-info-panel",
+      "name": "Area / Census Info Panel",
+      "description": "A context panel that shows census and geographic area information for the currently selected data row, surfacing demographic details derived from coordinates.",
+      "category": "viz",
+      "confidence": 0.82,
+      "members": [
+        {"id": "func:GIS:gisAreaWidget",                                        "weight": 1.0, "role": "core"},
+        {"id": "func:GIS:getCensusInfo",                                        "weight": 0.9, "role": "core"},
+        {"id": "func:GIS:getCensusInfoTest UI",                                 "weight": 0.5, "role": "test"},
+        {"id": "doc:/help/datagrok/navigation/info-pane-reference",             "weight": 0.7, "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/panels/info-panels",              "weight": 0.7, "role": "doc"},
+        {"id": "doc:/help/develop/how-to/ui/add-info-panel",                   "weight": 0.6, "role": "doc"}
+      ],
+      "evidence_summary": "gisAreaWidget (role=widgets,panel) displays census data fetched by getCensusInfo; getCensusInfoTest UI is a dev harness for that API; the three info-panel docs describe the platform mechanism the widget uses."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:GIS:kml-kmz-file-support",      "to": "feature:GIS:geojson-topojson-file-support", "kind": "sibling"},
+    {"from": "feature:GIS:geocoding",                  "to": "feature:GIS:map-viewer",                    "kind": "related"},
+    {"from": "feature:GIS:area-census-info-panel",     "to": "feature:GIS:map-viewer",                    "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:GIS:init",
+    "func:GIS:info",
+    "doc:/packages/GIS/credits.md",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+  ]
+}

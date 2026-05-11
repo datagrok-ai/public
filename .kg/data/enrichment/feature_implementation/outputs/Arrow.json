@@ -1,0 +1,58 @@
+{
+  "package_id": "pkg:Arrow",
+  "features": [
+    {
+      "id": "feature:Arrow:parquet-io",
+      "implements": [
+        {
+          "path": "packages/Arrow/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Arrow/src/api/api.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Arrow/src/types/with-implicit-coercion.d.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Arrow/src/tests/arrow-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Arrow/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "package.ts wires the toParquet/fromParquet/parquetFileHandler/saveAsParquet/parquetInit decorated methods; api/api.ts holds the parquet-wasm-backed implementation; arrow-tests.ts exercises Parquet round-trip on titanic.parquet."
+    },
+    {
+      "id": "feature:Arrow:feather-io",
+      "implements": [
+        {
+          "path": "packages/Arrow/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Arrow/src/api/api.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Arrow/src/types/with-implicit-coercion.d.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts wires toFeather/fromFeather/featherFileHandler/saveAsFeather; api/api.ts re-exports the implementation now living in @datagrok-libraries/arrow. Feather round-trip tests have moved to LibTests, so no in-package test files."
+    }
+  ]
+}

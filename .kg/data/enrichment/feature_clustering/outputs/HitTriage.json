@@ -1,0 +1,123 @@
+{
+  "package_id": "pkg:HitTriage",
+  "features": [
+    {
+      "id": "feature:HitTriage:hit-triage-workflow",
+      "name": "Hit Triage Workflow",
+      "description": "Application for loading compound sets into campaigns, applying configurable scoring functions, and deciding which hits advance to the next stage.",
+      "category": "chem-campaign",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:HitTriage:Hit Triage",                        "weight": 1.0,  "role": "core"},
+        {"id": "func:HitTriage:hitTriageAppTreeBrowser",           "weight": 0.85, "role": "core"},
+        {"id": "func:HitTriage:Demo Molecules 100",                "weight": 0.65, "role": "sample"},
+        {"id": "func:HitTriage:Demo Molecules 5000",               "weight": 0.65, "role": "sample"},
+        {"id": "func:HitTriage:Demo Molecules variable",           "weight": 0.65, "role": "sample"},
+        {"id": "func:HitTriage:Demo File Submit",                  "weight": 0.75, "role": "sample"},
+        {"id": "doc:/packages/HitTriage/readme.md",                "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/develop/domains/chem/hit_triage_system", "weight": 0.95, "role": "doc"}
+      ],
+      "evidence_summary": "All 'hitTriage'-prefixed functions cluster with the 'Hit Triage' app entry point, role-tagged demo data sources, a submit function, and the dedicated developer guide for building triage systems."
+    },
+    {
+      "id": "feature:HitTriage:hit-design-workflow",
+      "name": "Hit Design Workflow",
+      "description": "Application for designing and registering new compounds within an active campaign, with per-molecule VID tracking and integration with compute functions.",
+      "category": "chem-campaign",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:HitTriage:Hit Design",              "weight": 1.0,  "role": "core"},
+        {"id": "func:HitTriage:hitDesignAppTreeBrowser", "weight": 0.85, "role": "core"},
+        {"id": "func:HitTriage:Hit Design V-iD",         "weight": 0.8,  "role": "core"}
+      ],
+      "evidence_summary": "All three members share the 'Hit Design' name prefix; the V-iD panel is the designer's molecule-registry UI surface, registered as a panel for Hit Design."
+    },
+    {
+      "id": "feature:HitTriage:peptide-triage-workflows",
+      "name": "Peptide Triage Workflows",
+      "description": "Peptide-focused variants of the triage framework — PeptiHit for hit triage and PepTriage for broader peptide campaign management.",
+      "category": "peptide-campaign",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:HitTriage:PeptiHit",               "weight": 1.0,  "role": "core"},
+        {"id": "func:HitTriage:peptiHitAppTreeBrowser",  "weight": 0.85, "role": "core"},
+        {"id": "func:HitTriage:PepTriage",               "weight": 1.0,  "role": "core"},
+        {"id": "func:HitTriage:pepTriageAppTreeBrowser", "weight": 0.85, "role": "core"},
+        {"id": "func:HitTriage:Demo Peptide Sequences",  "weight": 0.65, "role": "sample"}
+      ],
+      "evidence_summary": "Four functions share 'Pepti'/'Pep' naming with paired app+treeBrowser entries plus a peptide demo data source; changelog 1.10.0 explicitly introduced PepTriage as a peptide-focused workflow."
+    },
+    {
+      "id": "feature:HitTriage:molecule-registry-vid",
+      "name": "Molecule Registry (VID System)",
+      "description": "A global virtual-ID registry that assigns canonical VIDs to molecules and tracks their presence across multiple campaigns.",
+      "category": "chem-registry",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:HitTriage:registerMoleculesToViD",      "weight": 1.0,  "role": "core"},
+        {"id": "query:HitTriage:addMolecule",                "weight": 1.0,  "role": "core"},
+        {"id": "query:HitTriage:addMolecules",               "weight": 1.0,  "role": "core"},
+        {"id": "query:HitTriage:getMoleculeByVid",           "weight": 0.95, "role": "core"},
+        {"id": "query:HitTriage:getCampaignsByVid",          "weight": 0.9,  "role": "core"}
+      ],
+      "evidence_summary": "The registration function and all five SQL queries directly reference VID operations (add, get, register); changelog 1.9.0 introduced the 'Global VID system and molecule tracking across multiple campaigns'."
+    },
+    {
+      "id": "feature:HitTriage:campaign-management",
+      "name": "Campaign Management",
+      "description": "Infrastructure for creating, organizing, locking, and collaborating on campaigns — covering grouping, sorting, column visibility, file storage, and multi-user change signaling.",
+      "category": "infra",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:HitTriage:Hit Triage package settings editor", "weight": 0.85, "role": "core"},
+        {"id": "query:HitTriage:acquireCampaignLock",               "weight": 1.0,  "role": "core"},
+        {"id": "query:HitTriage:releaseCampaignLock",               "weight": 1.0,  "role": "core"},
+        {"id": "query:HitTriage:getLastModified",                   "weight": 0.9,  "role": "core"},
+        {"id": "doc:/packages/HitTriage/claude.md",                 "weight": 0.7,  "role": "doc"}
+      ],
+      "evidence_summary": "Lock/release/modified queries implement the collaboration locking layer; the package settings editor governs campaign defaults; changelog entries across 1.4.3–1.10.0 confirm grouping, sorting, file storage, and multi-user signaling as a distinct management concern."
+    },
+    {
+      "id": "feature:HitTriage:gasteiger-charge-renderer",
+      "name": "Gasteiger Charge Cell Renderer",
+      "description": "A custom grid cell renderer that visualizes Gasteiger partial charges on molecule structures within campaign tables.",
+      "category": "chem-rendering",
+      "confidence": 0.8,
+      "members": [
+        {"id": "func:HitTriage:gasteigerRenderer", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Sole cellRenderer function in the package, named after the Gasteiger charge algorithm and registered with role='cellRenderer'."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:HitTriage:hit-design-workflow",       "to": "feature:HitTriage:molecule-registry-vid",   "kind": "related"},
+    {"from": "feature:HitTriage:hit-triage-workflow",       "to": "feature:HitTriage:campaign-management",     "kind": "related"},
+    {"from": "feature:HitTriage:hit-design-workflow",       "to": "feature:HitTriage:campaign-management",     "kind": "related"},
+    {"from": "feature:HitTriage:peptide-triage-workflows",  "to": "feature:HitTriage:hit-triage-workflow",     "kind": "sibling"},
+    {"from": "feature:HitTriage:peptide-triage-workflows",  "to": "feature:HitTriage:campaign-management",     "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/HitTriage/credits.md",
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/packages/Chem/claude.md",
+    "doc:/packages/Chem/contrib.md",
+    "doc:/packages/Chem/readme.md"
+  ]
+}

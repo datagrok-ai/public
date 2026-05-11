@@ -1,0 +1,106 @@
+{
+  "package": {
+    "id": "pkg:NodeJSDemo",
+    "name": "NodeJSDemo",
+    "friendly_name": "NodeTodo",
+    "category": null,
+    "description": "NodeJS Datagrok API demo"
+  },
+  "files": {
+    "src": [
+      "packages/NodeJSDemo/dockerfiles/todo-app/src/server.ts",
+      "packages/NodeJSDemo/src/app/todo_app.ts",
+      "packages/NodeJSDemo/src/package.ts"
+    ],
+    "tests": [
+      "packages/NodeJSDemo/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/NodeJSDemo/CHANGELOG.md",
+      "packages/NodeJSDemo/CREDITS.md",
+      "packages/NodeJSDemo/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:NodeJSDemo:todo-application",
+      "name": "Todo Application",
+      "description": "A Node.js-based Todo app registered as a Datagrok view-application, demonstrating how to build and launch a full UI app from a TypeScript plugin.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:NodeJSDemo:todoApplication",
+          "kind": "RegisteredFunction",
+          "name": "todoApplication",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/NodeJSDemo/readme.md",
+          "kind": "DocPage",
+          "title": "Datagrok Todo App Plugin",
+          "url": "/packages/NodeJSDemo/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/NodeJSDemo/src/app/todo_app.ts",
+          "packages/NodeJSDemo/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:NodeJSDemo:info-panel-demo",
+      "name": "Info Panel Demo",
+      "description": "Demonstrates registering a custom context-sensitive info panel (sidebar pane) from a TypeScript Datagrok plugin using the Node.js runtime.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:NodeJSDemo:info",
+          "kind": "RegisteredFunction",
+          "name": "info",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/add-info-panel",
+          "kind": "DocPage",
+          "title": "Add an info panel",
+          "url": "/help/develop/how-to/ui/add-info-panel"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/info-pane-reference",
+          "kind": "DocPage",
+          "title": "Supported info panes",
+          "url": "/help/datagrok/navigation/info-pane-reference"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes",
+          "url": "/help/datagrok/navigation/panels/info-panels"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/NodeJSDemo/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

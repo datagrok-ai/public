@@ -1,0 +1,66 @@
+{
+  "package_id": "pkg:MetabolicGraph",
+  "features": [
+    {
+      "id": "feature:MetabolicGraph:metabolic-pathway-visualization",
+      "name": "Metabolic Pathway Visualization",
+      "description": "Interactive application for visualizing and exploring metabolic pathway maps, including a built-in E. coli core metabolism map with Escher-style rendering and redundant-edge pruning.",
+      "category": "viz",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:MetabolicGraph:MetabolicGraph", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/MetabolicGraph/readme.md", "weight": 0.9, "role": "doc"},
+        {"id": "clog:MetabolicGraph:1.0.0:0", "weight": 0.6, "role": "related"},
+        {"id": "clog:MetabolicGraph:1.1.0:0", "weight": 0.7, "role": "related"},
+        {"id": "clog:MetabolicGraph:1.1.0:3", "weight": 0.6, "role": "related"},
+        {"id": "clog:MetabolicGraph:1.1.0:4", "weight": 0.6, "role": "related"}
+      ],
+      "evidence_summary": "The MetabolicGraph app function is the entry point for visualization; changelog entries confirm E. coli map addition, edge-removal tuning, and performance work all target the rendering layer."
+    },
+    {
+      "id": "feature:MetabolicGraph:escher-map-file-viewer",
+      "name": "Escher Map File Viewer",
+      "description": "Datagrok file-browser integration that opens Escher-format JSON metabolic map files directly in a dedicated view, with a validity-check function to detect applicable files.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:MetabolicGraph:EscherFileViewer", "weight": 1.0, "role": "core"},
+        {"id": "func:MetabolicGraph:escherFileViewerCheck", "weight": 0.85, "role": "core"}
+      ],
+      "evidence_summary": "EscherFileViewer and escherFileViewerCheck share the 'Escher' name prefix and together implement the fileViewer role for JSON metabolic maps."
+    },
+    {
+      "id": "feature:MetabolicGraph:flux-balance-analysis",
+      "name": "Flux Balance Analysis",
+      "description": "Constraint-based metabolic modeling using a WebAssembly GLPK solver to compute FBA solutions and extreme points of the flux polytope.",
+      "category": "ml",
+      "confidence": 0.8,
+      "members": [
+        {"id": "clog:MetabolicGraph:1.1.0:1", "weight": 0.85, "role": "related"},
+        {"id": "clog:MetabolicGraph:1.0.1:0", "weight": 0.75, "role": "related"}
+      ],
+      "evidence_summary": "Two changelog entries explicitly name GLPK and FBA/Extreme points as a distinct solver capability introduced across versions 1.0.1 and 1.1.0."
+    },
+    {
+      "id": "feature:MetabolicGraph:metabolic-flux-sampling",
+      "name": "Metabolic Flux Sampling",
+      "description": "Server-side OptGP-based stochastic sampling of the metabolic flux space, returning binned sample distributions via a configurable sampling dialog.",
+      "category": "ml",
+      "confidence": 0.9,
+      "members": [
+        {"id": "script:MetabolicGraph:OptGpSampling", "weight": 1.0, "role": "core"},
+        {"id": "clog:MetabolicGraph:1.1.0:2", "weight": 0.7, "role": "related"}
+      ],
+      "evidence_summary": "OptGpSampling script directly implements the sampling backend, and the changelog confirms a dedicated sampling dialog with configurable options."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:MetabolicGraph:flux-balance-analysis", "to": "feature:MetabolicGraph:metabolic-pathway-visualization", "kind": "subfeature"},
+    {"from": "feature:MetabolicGraph:metabolic-flux-sampling", "to": "feature:MetabolicGraph:metabolic-pathway-visualization", "kind": "subfeature"},
+    {"from": "feature:MetabolicGraph:flux-balance-analysis", "to": "feature:MetabolicGraph:metabolic-flux-sampling", "kind": "sibling"},
+    {"from": "feature:MetabolicGraph:escher-map-file-viewer", "to": "feature:MetabolicGraph:metabolic-pathway-visualization", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/MetabolicGraph/credits.md"
+  ]
+}

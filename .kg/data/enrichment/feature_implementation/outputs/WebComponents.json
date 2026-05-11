@@ -1,0 +1,58 @@
+{
+  "package_id": "pkg:WebComponents",
+  "features": [
+    {
+      "id": "feature:WebComponents:web-component-runtime",
+      "implements": [
+        {
+          "path": "packages/WebComponents/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/WebComponents/src/styles.css",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts is the sole entry point: its @init() defines all custom elements (dg-viewer, dg-input-form, dg-button, etc.) and awaits their definition. styles.css is bundled by the same entry."
+    },
+    {
+      "id": "feature:WebComponents:dock-web-component",
+      "implements": [
+        {
+          "path": "packages/WebComponents/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts imports DockSpawnTsWebcomponent from @datagrok-libraries/dock-spawn-dg and registers it as the 'dock-spawn-ts' custom element; the actual class lives in the external library, not in files.src."
+    },
+    {
+      "id": "feature:WebComponents:form-consistency-icons",
+      "implements": [
+        {
+          "path": "packages/WebComponents/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts imports ValidationIcon from @datagrok-libraries/webcomponents and registers it as the 'dg-validation-icon' custom element."
+    },
+    {
+      "id": "feature:WebComponents:compute2-integration",
+      "implements": [
+        {
+          "path": "packages/WebComponents/src/package.ts",
+          "role": "core",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Compute2-related changes (per CHANGELOG 1.2.6) ship via the InputForm/Viewer/DGToggleInput etc. wrappers registered in package.ts; no Compute2-specific source file exists in this thin runtime package."
+    }
+  ]
+}

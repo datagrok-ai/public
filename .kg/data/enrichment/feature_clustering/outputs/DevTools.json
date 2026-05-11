@@ -1,0 +1,62 @@
+{
+  "package_id": "pkg:DevTools",
+  "features": [
+    {
+      "id": "feature:DevTools:test-manager",
+      "name": "Test Manager",
+      "description": "An admin application for running, filtering, and tracking Datagrok package tests across all installed packages, with per-test, per-category, and per-package history queries.",
+      "category": "infra",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:DevTools:Test Manager",                    "weight": 1.0,  "role": "core"},
+        {"id": "func:DevTools:testManagerAppTreeBrowser",       "weight": 1.0,  "role": "core"},
+        {"id": "func:DevTools:TestDetectors",                   "weight": 0.9,  "role": "core"},
+        {"id": "func:DevTools:TestDetectorsStandard",           "weight": 0.9,  "role": "core"},
+        {"id": "func:DevTools:testFunctions",                   "weight": 0.95, "role": "core"},
+        {"id": "query:DevTools:TestHistory",                    "weight": 1.0,  "role": "core"},
+        {"id": "query:DevTools:CategoryHistory",                "weight": 1.0,  "role": "core"},
+        {"id": "query:DevTools:PackageHistory",                 "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/develop/dev-process/tools/test-manager", "weight": 1.0, "role": "doc"}
+      ],
+      "evidence_summary": "Named 'Test Manager' app with dedicated tree browser, test-runner functions, three history queries, a matching guide doc, and a changelog dominated by 'TM:' prefix entries covering routing, Dart test integration, state saving, and hierarchy improvements."
+    },
+    {
+      "id": "feature:DevTools:dev-panel",
+      "name": "Developer Panel",
+      "description": "A sidebar widget that auto-starts when DevTools is loaded, giving plugin developers quick access to developer tooling such as the script runner and object inspection within Datagrok.",
+      "category": "infra",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:DevTools:renderDevPanel",      "weight": 1.0, "role": "core"},
+        {"id": "func:DevTools:autostartTools",      "weight": 0.9, "role": "core"},
+        {"id": "doc:/packages/DevTools/readme.md",  "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "renderDevPanel widget and autostartTools autostart function both explicitly implement the Dev Panel; changelog entry GROK-13970 fixes the Dev Panel run option by name."
+    },
+    {
+      "id": "feature:DevTools:inspector-panel",
+      "name": "Inspector Panel",
+      "description": "Registers a custom DevTools panel inside the Datagrok object Inspector, exposing developer-relevant properties and actions for the currently selected object.",
+      "category": "infra",
+      "confidence": 0.80,
+      "members": [
+        {"id": "func:DevTools:_makeInspectorPanel", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Function is a widget with friendly_name 'DevTools' registered as an inspector panel; changelog GROK-13265 specifically introduced the ability to add custom inspector panels."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:DevTools:inspector-panel", "to": "feature:DevTools:dev-panel",    "kind": "sibling"},
+    {"from": "feature:DevTools:test-manager",    "to": "feature:DevTools:dev-panel",    "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:DevTools:_IconTool",
+    "doc:/packages/DevTools/credits.md",
+    "doc:/help/_internal/tutorials/data-tools",
+    "doc:/help/compute/function-analysis",
+    "doc:/help/datagrok/navigation/panels/column-manager",
+    "doc:/help/datagrok/navigation/panels/table-manager",
+    "doc:/help/explore/column-manager-test",
+    "doc:/help/develop/packages/_overview"
+  ]
+}

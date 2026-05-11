@@ -1,0 +1,543 @@
+{
+  "package": {
+    "id": "pkg:MolTrack",
+    "name": "MolTrack",
+    "friendly_name": "Mol Track",
+    "version": "0.0.2",
+    "category": "Cheminformatics",
+    "description": "Enables registering, tracking, and searching chemical compounds and batches.",
+    "extras": {
+      "npm_name": "@datagrok/moltrack",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:MolTrack:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:initDB",
+      "name": "initDB",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:MolTrack",
+      "name": "MolTrack",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "browsePath": "Chem",
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:molTrackAppTreeBrowser",
+      "name": "molTrackAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic",
+        "view"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:fetchCompoundProperties",
+      "name": "fetchCompoundProperties",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Retrieves all properties defined for the 'compound' scope",
+      "input_types": [],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:fetchBatchProperties",
+      "name": "fetchBatchProperties",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Retrieves all properties defined for the 'batch' scope",
+      "input_types": [],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:fetchSchema",
+      "name": "fetchSchema",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Retrieves all dynamic fields",
+      "input_types": [],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:fetchDirectSchema",
+      "name": "fetchDirectSchema",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Retrieves all static fields",
+      "input_types": [],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:getCompoundByCorporateId",
+      "name": "getCompoundByCorporateId",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:getBatchByCorporateId",
+      "name": "getBatchByCorporateId",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:registerMolTrackProperties",
+      "name": "registerMolTrackProperties",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Registers compound properties in the MolTrack service using the provided JSON payload",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:registerAssays",
+      "name": "registerAssays",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:registerBulk",
+      "name": "registerBulk",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:search",
+      "name": "search",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:advancedSearch",
+      "name": "advancedSearch",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Performs a structured MolTrack compound search. The caller must provide the \"output\": a list of fully-qualified field names to return; \"filter\": a structured filter tree describing search conditions.",
+      "input_types": [
+        "list",
+        "object"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:retrieveEntity",
+      "name": "retrieveEntity",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MolTrack:Databases | MolTrack",
+      "name": "Databases | MolTrack",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [
+    {
+      "id": "query:MolTrack:getCompounds",
+      "name": "getCompounds",
+      "connection": "moltrack",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:MolTrack:insertAdminUser",
+      "name": "insertAdminUser",
+      "connection": "moltrack",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:MolTrack:insertSemanticTypeSynonym",
+      "name": "insertSemanticTypeSynonym",
+      "connection": "moltrack",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:MolTrack:insertProperties",
+      "name": "insertProperties",
+      "connection": "moltrack",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:MolTrack:insertSettings",
+      "name": "insertSettings",
+      "connection": "moltrack",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:MolTrack:insertStandartization",
+      "name": "insertStandartization",
+      "connection": "moltrack",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:MolTrack:checkDBInitialized",
+      "name": "checkDBInitialized",
+      "connection": "moltrack",
+      "description": null,
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/MolTrack/credits.md",
+      "title": "Mol Track — Third-Party Libraries",
+      "url": "/packages/MolTrack/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/MolTrack/readme.md",
+      "title": "MolTrack",
+      "url": "/packages/MolTrack/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "title": "Cheminformatics",
+      "url": "/help/datagrok/solutions/domains/chem/chem",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/cheminformatics",
+      "title": "Cheminformatics",
+      "url": "/help/develop/domains/chem/cheminformatics",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/intro",
+      "title": "Cheminformatics concepts",
+      "url": "/help/develop/domains/chem/intro",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/readme.md",
+      "title": "Cheminformatics support",
+      "url": "/packages/Chem/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "title": "Scaffold tree",
+      "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "title": "Chemically-aware viewers",
+      "url": "/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+      "title": "Chemprop",
+      "url": "/help/datagrok/solutions/domains/chem/chemprop",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+      "title": "Supported descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "title": "Tests: Chem descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+      "title": "Supported fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/fingerprints",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "title": "Drug likeness",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "title": "Structural alerts",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "title": "SureChEMBL integration",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "title": "Toxicity risks",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+      "title": "Multiparameter optimization",
+      "url": "/help/datagrok/solutions/domains/chem/mpo",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "title": "Butina cluster",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "title": "Chemical scripts",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "title": "Filter by catalogs",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "title": "Gasteiger Partial Charges",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "title": "Murcko Scaffolds",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "title": "Mutate",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/reactions",
+      "title": "Reactions",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/reactions",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 17,
+    "scripts": 0,
+    "queries": 7,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 0
+  }
+}

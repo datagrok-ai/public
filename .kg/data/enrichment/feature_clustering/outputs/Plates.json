@@ -1,0 +1,143 @@
+{
+  "package_id": "pkg:Plates",
+  "features": [
+    {
+      "id": "feature:Plates:plates-app",
+      "name": "Plates Application",
+      "description": "The top-level Datagrok app and tree-browser that lets users navigate, open, and explore assay plate collections stored on the server.",
+      "category": "viz",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Plates:Plates",               "weight": 1.0, "role": "core"},
+        {"id": "func:Plates:platesAppTreeBrowser", "weight": 1.0, "role": "core"},
+        {"id": "func:Plates:Assay Plates",         "weight": 0.9, "role": "core"},
+        {"id": "func:Plates:_initPlates",          "weight": 0.8, "role": "core"},
+        {"id": "doc:/packages/Plates/readme.md",   "weight": 0.9, "role": "doc"},
+        {"id": "doc:/packages/Plates/claude.md",   "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "func:Plates:Plates (role:app), platesAppTreeBrowser (role:appTreeBrowser), and Assay Plates all share the application-level namespace and together constitute the entry-point user experience."
+    },
+    {
+      "id": "feature:Plates:plate-file-import",
+      "name": "Plate File Import",
+      "description": "Detects and ingests assay plate files in TXT, XLSX, and CSV formats, routing each to the appropriate parser and storing the result in the platform.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Plates:importPlate",         "weight": 1.0, "role": "core"},
+        {"id": "func:Plates:importPlateXlsx",     "weight": 1.0, "role": "core"},
+        {"id": "func:Plates:checkFileIsPlate",    "weight": 0.9, "role": "core"},
+        {"id": "func:Plates:checkExcelIsPlate",   "weight": 0.9, "role": "core"},
+        {"id": "func:Plates:checkCsvIsPlate",     "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "All five functions carry fileHandler / format-detection roles for TXT, XLSX, and CSV, forming a complete import pipeline."
+    },
+    {
+      "id": "feature:Plates:plate-visualization",
+      "name": "Plate Visualization",
+      "description": "Renders assay plates as interactive grid views within file previews, folder browsers, and inline grid cells, giving users an at-a-glance layout of well data.",
+      "category": "viz",
+      "confidence": 0.90,
+      "members": [
+        {"id": "func:Plates:previewPlate",          "weight": 1.0, "role": "core"},
+        {"id": "func:Plates:viewPlateXlsx",         "weight": 1.0, "role": "core"},
+        {"id": "func:Plates:platesFolderPreview",   "weight": 0.9, "role": "core"},
+        {"id": "func:Plates:PlateGridCellRenderer", "weight": 0.85,"role": "core"}
+      ],
+      "evidence_summary": "previewPlate, viewPlateXlsx, platesFolderPreview (all fileViewer/folderViewer roles), and PlateGridCellRenderer (cellRenderer) share the sole purpose of visually rendering plate data in the UI."
+    },
+    {
+      "id": "feature:Plates:plate-retrieval",
+      "name": "Plate Retrieval & Barcode Lookup",
+      "description": "Fetches individual plates or plate lists from the backing database, including barcode-based lookup and record counting.",
+      "category": "data-import",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Plates:getPlateByBarcode",        "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:getPlates",               "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:getPlateByBarcode",       "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:getPlatesCount",          "weight": 0.8, "role": "core"}
+      ],
+      "evidence_summary": "Function and query both named getPlateByBarcode, plus getPlates/getPlatesCount, collectively implement the plate-level lookup surface."
+    },
+    {
+      "id": "feature:Plates:well-data-access",
+      "name": "Well Data Access",
+      "description": "Retrieves per-well measurement values, roles, and property metadata, enabling downstream analysis and display of individual well readings.",
+      "category": "data-import",
+      "confidence": 0.91,
+      "members": [
+        {"id": "query:Plates:getWellLevelProperties",     "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:getWellValuesByBarcode",     "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:getWellValuesById",          "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:getWellRoles",               "weight": 0.9, "role": "core"},
+        {"id": "query:Plates:getUniqueWellPropertyValues","weight": 0.8, "role": "core"}
+      ],
+      "evidence_summary": "All five queries operate on the well level (values, roles, properties) and share the `plts` connection, forming a coherent well-data retrieval API."
+    },
+    {
+      "id": "feature:Plates:plate-properties",
+      "name": "Plate Property Management",
+      "description": "Defines, enumerates, and filters the custom properties attached to plates, supporting dynamic metadata schemas and allowed-value constraints.",
+      "category": "infra",
+      "confidence": 0.88,
+      "members": [
+        {"id": "query:Plates:getPlateLevelProperties",       "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:getPropertyNames",              "weight": 0.9, "role": "core"},
+        {"id": "query:Plates:getProperties",                 "weight": 0.9, "role": "core"},
+        {"id": "query:Plates:getAllowedValues",               "weight": 0.85,"role": "core"},
+        {"id": "query:Plates:getUniquePlatePropertyValues",  "weight": 0.8, "role": "core"},
+        {"id": "query:Plates:createProperty",                "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "These queries all operate on the plate-property schema layer (names, allowed values, creation), sharing the `plts` connection and a clear property-management naming pattern."
+    },
+    {
+      "id": "feature:Plates:plate-templates",
+      "name": "Plate Templates",
+      "description": "Creates and manages plate templates that pre-define the layout, plate-level, and well-level properties for new assay plates.",
+      "category": "infra",
+      "confidence": 0.92,
+      "members": [
+        {"id": "query:Plates:getPlateTypes",               "weight": 0.8, "role": "core"},
+        {"id": "query:Plates:getPlateTemplates",           "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:createTemplate",              "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:getTemplateProperties",       "weight": 0.9, "role": "core"},
+        {"id": "query:Plates:addTemplatePlateProperty",    "weight": 0.9, "role": "core"},
+        {"id": "query:Plates:addTemplateWellProperty",     "weight": 0.9, "role": "core"},
+        {"id": "query:Plates:getTemplatePlateProperties",  "weight": 0.9, "role": "core"},
+        {"id": "query:Plates:getTemplateWellProperties",   "weight": 0.9, "role": "core"},
+        {"id": "query:Plates:removeTemplatePlateProperty", "weight": 0.85,"role": "core"},
+        {"id": "query:Plates:removeTemplateWellProperty",  "weight": 0.85,"role": "core"}
+      ],
+      "evidence_summary": "All ten queries share `Template` in their names and manage the lifecycle of plate templates and their associated plate/well property definitions."
+    },
+    {
+      "id": "feature:Plates:analysis-runs",
+      "name": "Analysis Runs",
+      "description": "Records, parameterises, and queries analysis runs executed against plate data, enabling reproducible bioassay result tracking.",
+      "category": "ml",
+      "confidence": 0.90,
+      "members": [
+        {"id": "query:Plates:createAnalysisRun",         "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:saveAnalysisRunParameter",  "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:saveAnalysisResult",        "weight": 1.0, "role": "core"},
+        {"id": "query:Plates:getAnalysisRunGroups",      "weight": 0.9, "role": "core"},
+        {"id": "query:Plates:queryAnalyses",             "weight": 0.9, "role": "core"},
+        {"id": "query:Plates:queryAnalysesTemplate",     "weight": 0.7, "role": "core"}
+      ],
+      "evidence_summary": "createAnalysisRun, saveAnalysisRunParameter, saveAnalysisResult, and the query/group retrieval queries all share the `AnalysisRun`/`Analysis` name root and form the complete analysis-run CRUD surface."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Plates:plate-file-import",  "to": "feature:Plates:plate-visualization", "kind": "sibling"},
+    {"from": "feature:Plates:plate-retrieval",    "to": "feature:Plates:well-data-access",     "kind": "related"},
+    {"from": "feature:Plates:plate-retrieval",    "to": "feature:Plates:plate-properties",     "kind": "related"},
+    {"from": "feature:Plates:plate-properties",   "to": "feature:Plates:well-data-access",     "kind": "sibling"},
+    {"from": "feature:Plates:plate-templates",    "to": "feature:Plates:plate-properties",     "kind": "related"},
+    {"from": "feature:Plates:analysis-runs",      "to": "feature:Plates:plate-retrieval",      "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:Plates:createDummyPlateData",
+    "doc:/packages/Plates/credits.md"
+  ]
+}

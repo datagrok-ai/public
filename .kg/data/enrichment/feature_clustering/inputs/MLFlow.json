@@ -1,0 +1,123 @@
+{
+  "package": {
+    "id": "pkg:MLFlow",
+    "name": "MLFlow",
+    "friendly_name": "MLflow",
+    "version": "1.1.1",
+    "category": "Machine Learning",
+    "description": "MLflow integration package",
+    "extras": {
+      "npm_name": "@datagrok/mlflow",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:MLFlow:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/MLFlow/credits.md",
+      "title": "MLflow — Third-Party Libraries",
+      "url": "/packages/MLFlow/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/MLFlow/readme.md",
+      "title": "MLflow",
+      "url": "/packages/MLFlow/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/learn/mlflow",
+      "title": "Using MLFlow models",
+      "url": "/help/learn/mlflow",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:MLFlow:1.1.1:0",
+      "version": "1.1.1",
+      "released_at": "2025-04-24",
+      "ticket": null,
+      "text": "Standardized plugin name to title case in README and changelog"
+    },
+    {
+      "id": "clog:MLFlow:1.0.1:0",
+      "version": "1.0.1",
+      "released_at": "2025-02-12",
+      "ticket": null,
+      "text": "Adds boto dependency to the MLFlow container"
+    },
+    {
+      "id": "clog:MLFlow:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2024-11-08",
+      "ticket": null,
+      "text": "Package release for NPM."
+    },
+    {
+      "id": "clog:MLFlow:0.0.1:0",
+      "version": "0.0.1",
+      "released_at": "2024-06-20",
+      "ticket": null,
+      "text": "Initial release of MLFlow package"
+    }
+  ],
+  "stats": {
+    "functions": 1,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 7,
+    "changelog": 4
+  }
+}

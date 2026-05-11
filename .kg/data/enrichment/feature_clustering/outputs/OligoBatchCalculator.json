@@ -1,0 +1,60 @@
+{
+  "package_id": "pkg:OligoBatchCalculator",
+  "features": [
+    {
+      "id": "feature:OligoBatchCalculator:oligo-batch-calculator-app",
+      "name": "Oligo Batch Calculator App",
+      "description": "A browser-accessible application registered under 'Peptides | Oligo Toolkit' in the Browse tree that provides a unified UI for computing oligonucleotide batch properties. It is the primary user-facing entry point for this plugin.",
+      "category": "bio",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:OligoBatchCalculator:Oligo Batch Calculator", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/OligoBatchCalculator/readme.md",             "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",   "weight": 0.85, "role": "doc"},
+        {"id": "doc:/packages/OligoBatchCalculator/credits.md",            "weight": 0.5,  "role": "doc"},
+        {"id": "clog:OligoBatchCalculator:1.2.0:0",                        "weight": 0.7,  "role": "related"},
+        {"id": "clog:OligoBatchCalculator:1.2.0:1",                        "weight": 0.6,  "role": "related"}
+      ],
+      "evidence_summary": "The single 'app'-role function shares its name with the package and its browsePath 'Peptides | Oligo Toolkit' aligns directly with the oligo-toolkit doc page and the package readme."
+    },
+    {
+      "id": "feature:OligoBatchCalculator:oligonucleotide-property-calculation",
+      "name": "Oligonucleotide Property Calculation",
+      "description": "Computes key oligonucleotide batch properties — Optical Density, nMoles, Molecular Mass, Molecular Weight, and Extinction Coefficient (nearest-neighbour method) — exposed as individual typed functions callable from the platform or other plugins.",
+      "category": "bio",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:OligoBatchCalculator:opticalDensity",                          "weight": 1.0, "role": "core"},
+        {"id": "func:OligoBatchCalculator:nMole",                                   "weight": 1.0, "role": "core"},
+        {"id": "func:OligoBatchCalculator:molecularMass",                           "weight": 1.0, "role": "core"},
+        {"id": "func:OligoBatchCalculator:molecularWeight",                         "weight": 1.0, "role": "core"},
+        {"id": "func:OligoBatchCalculator:getUnits",                                "weight": 0.7, "role": "core"},
+        {"id": "clog:OligoBatchCalculator:1.0.6:1",                                 "weight": 0.8, "role": "related"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design", "weight": 0.6, "role": "doc"}
+      ],
+      "evidence_summary": "All four calculation functions share the same domain (oligonucleotide batch properties), take sequence/measurement inputs, and are described verbatim in the 1.0.6 changelog entry; getUnits is the shared unit-lookup utility they depend on."
+    }
+  ],
+  "feature_relations": [
+    {
+      "from": "feature:OligoBatchCalculator:oligo-batch-calculator-app",
+      "to": "feature:OligoBatchCalculator:oligonucleotide-property-calculation",
+      "kind": "subfeature"
+    }
+  ],
+  "unassigned_member_ids": [
+    "doc:/help/datagrok/solutions/domains/bio/bio",
+    "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+    "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+    "doc:/help/datagrok/solutions/domains/bio/polytool",
+    "doc:/packages/Bio/claude.md",
+    "doc:/packages/Bio/credits.md",
+    "doc:/packages/Bio/readme.md",
+    "doc:/packages/Peptides/claude.md",
+    "doc:/packages/Peptides/credits.md",
+    "doc:/packages/Peptides/readme.md",
+    "doc:/help/transform/batch-edit",
+    "clog:OligoBatchCalculator:1.0.7:0",
+    "clog:OligoBatchCalculator:1.0.6:0"
+  ]
+}

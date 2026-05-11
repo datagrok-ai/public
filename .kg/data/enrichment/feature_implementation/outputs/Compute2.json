@@ -1,0 +1,278 @@
+{
+  "package_id": "pkg:Compute2",
+  "features": [
+    {
+      "id": "feature:Compute2:rich-function-view",
+      "implements": [
+        {
+          "path": "packages/Compute2/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Compute2/src/apps/RFVApp.tsx",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Compute2/src/components/RFV/RichFunctionView.tsx",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Compute2/src/components/RFV/ScalarsPanel.tsx",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Compute2/src/components/RFV/RichFunctionView.css",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Compute2/src/components/RFV/ScalarsPanel.css",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Compute2/src/components/History/History.tsx",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Compute2/src/apps/HistoryApp.tsx",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Compute2/src/composables/use-viewers-hook.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Compute2/src/composables/use-help.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Compute2/src/directives/compositor-overlay.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Compute2/src/directives/compositor-overlay.css",
+          "role": "support",
+          "confidence": 0.5
+        },
+        {
+          "path": "packages/Compute2/src/package-instance.ts",
+          "role": "support",
+          "confidence": 0.5
+        },
+        {
+          "path": "packages/Compute2/src/apps/FormTestApp.tsx",
+          "role": "demo",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Compute2/src/apps/ViewerTestApp.tsx",
+          "role": "demo",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Compute2/scripts/simpleInputs.js",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Compute2/scripts/object-cooling-2.js",
+          "role": "demo",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Compute2/src/test/rfv.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Compute2/src/test/app-launch.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Compute2/src/test/viewers-hook.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "RFV editor + Custom Function View editor + renderRestPanel registered in package.ts; rendering by RichFunctionView/ScalarsPanel; FormTestApp/ViewerTestApp and the two demo scripts exercise the input/output forms."
+    },
+    {
+      "id": "feature:Compute2:workflows",
+      "implements": [
+        {
+          "path": "packages/Compute2/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Compute2/src/apps/TreeWizardApp.tsx",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Compute2/src/components/TreeWizard/TreeWizard.tsx",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Compute2/src/components/TreeWizard/TreeNode.tsx",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Compute2/src/components/TreeWizard/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Compute2/src/components/PipelineView/PipelineView.tsx",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/Compute2/src/composables/use-reactive-tree-driver.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Compute2/src/composables/use-help.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Compute2/src/composables/use-compositor-overlay.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Compute2/src/utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Compute2/src/components/History/History.tsx",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Compute2/src/apps/HistoryTestApp.tsx",
+          "role": "demo",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Compute2/src/apps/HistoryApp.tsx",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Compute2/scripts/config-script.js",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Compute2/scripts/long-script.js",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Compute2/scripts/long-failing-script.js",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Compute2/scripts/stress-mutate-step.js",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Compute2/scripts/stress-shared-producer.js",
+          "role": "demo",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Compute2/src/test/navigation.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Compute2/src/test/rfv.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "TreeWizard editor + StartWorkflow + MockPipeline*/StressTestPipeline registered in package.ts; UI implemented by TreeWizard/PipelineView, driven by use-reactive-tree-driver; navigation tests cover Back/Next; rfv.ts also tests Pipeline tree rendering."
+    },
+    {
+      "id": "feature:Compute2:model-hub",
+      "implements": [
+        {
+          "path": "packages/Compute2/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Compute2/src/package-instance.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "Model Hub app and modelCatalogTreeBrowser are wired in package.ts; the actual ModelCatalogView, makeModelTreeBrowser and renderRestPanel implementations live in @datagrok-libraries/compute-utils/model-catalog (outside this package)."
+    },
+    {
+      "id": "feature:Compute2:sensitivity-analysis-fitting",
+      "implements": [
+        {
+          "path": "packages/Compute2/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "RunOptimizer, fitTestFunc and testFittingOutputs are declared in package.ts; the FittingView/optimizer-api/SensitivityAnalysisView implementations reside in @datagrok-libraries/compute-utils/function-views (outside this package)."
+    },
+    {
+      "id": "feature:Compute2:diff-studio",
+      "implements": [],
+      "tests": [],
+      "notes": "Diff Studio is documented from Compute2 but implemented in the sibling DiffStudio package; no Compute2 source files implement it."
+    },
+    {
+      "id": "feature:Compute2:pipeline-inspector",
+      "implements": [
+        {
+          "path": "packages/Compute2/src/components/Inspector/Inspector.tsx",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Compute2/src/components/Inspector/FilterDropdown.tsx",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Compute2/src/components/Logger/Logger.tsx",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Compute2/src/components/TreeWizard/TreeWizard.tsx",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "Inspector debug panel embedded in TreeWizard; uses FilterDropdown for unified log filters and Logger for log rendering."
+    }
+  ]
+}

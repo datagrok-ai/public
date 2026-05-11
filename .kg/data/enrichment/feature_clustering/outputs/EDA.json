@@ -1,0 +1,206 @@
+{
+  "package_id": "pkg:EDA",
+  "features": [
+    {
+      "id": "feature:EDA:dimensionality-reduction",
+      "name": "Dimensionality Reduction",
+      "description": "Reduces high-dimensional tabular data to a small number of components via PCA and multi-column projection, with preprocessing adapters for numeric and string columns and an optional UMAP/t-SNE pipeline.",
+      "category": "ml",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:EDA:PCA",                                "weight": 1.0, "role": "core"},
+        {"id": "func:EDA:Multi Column Dimensionality Reduction", "weight": 0.9, "role": "core"},
+        {"id": "func:EDA:None (number)",                      "weight": 0.7, "role": "core"},
+        {"id": "func:EDA:None (string)",                      "weight": 0.7, "role": "core"},
+        {"id": "doc:/help/explore/dim-reduction",             "weight": 1.0, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/workflows/eda",  "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "func:EDA:PCA links directly to /help/explore/dim-reduction#pca; the preprocessing functions carry the dim-red-preprocessing-function role tag, and Multi Column Dimensionality Reduction is the generic wrapper for the whole pipeline."
+    },
+    {
+      "id": "feature:EDA:dbscan-clustering",
+      "name": "DBSCAN Clustering",
+      "description": "Density-based spatial clustering of applications with noise (DBSCAN), available as a standalone function on a dataframe and as a post-processing step wired into the dimensionality-reduction pipeline.",
+      "category": "ml",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:EDA:DBSCAN",           "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:DBSCAN clustering", "weight": 0.85, "role": "core"}
+      ],
+      "evidence_summary": "Both functions share the DBSCAN name; one is a standalone clustering function and the other is tagged dim-red-postprocessing-function, forming two entry points for the same algorithm."
+    },
+    {
+      "id": "feature:EDA:mcl-clustering",
+      "name": "MCL Clustering",
+      "description": "Markov Clustering (MCL) groups dataset rows by simulating stochastic flow on a graph, exposed as a compute function, a configurable viewer, and a parameter-editor panel.",
+      "category": "ml",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:EDA:MCLClustering", "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:MCL",           "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:GetMCLEditor",  "weight": 0.8,  "role": "core"}
+      ],
+      "evidence_summary": "All three functions share the MCL name root; MCL has role=viewer, MCLClustering is the compute entry point, and GetMCLEditor (role=editor) provides the parameter UI—a canonical viewer+editor pair."
+    },
+    {
+      "id": "feature:EDA:pls-multivariate-analysis",
+      "name": "PLS / Multivariate Analysis",
+      "description": "Partial Least Squares (PLS) regression and multivariate analysis (MVA) that identifies latent factors and builds a linear predictive model maximally correlated with a response variable.",
+      "category": "ml",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:EDA:PLS",                    "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:topMenuPLS",             "weight": 0.9,  "role": "core"},
+        {"id": "func:EDA:multivariateAnalysis",   "weight": 0.95, "role": "core"},
+        {"id": "func:EDA:MVA demo",               "weight": 0.75, "role": "core"},
+        {"id": "func:EDA:trainPLSRegression",     "weight": 0.9,  "role": "core"},
+        {"id": "func:EDA:applyPLSRegression",     "weight": 0.9,  "role": "core"},
+        {"id": "func:EDA:isApplicablePLSRegression","weight": 0.7, "role": "core"},
+        {"id": "func:EDA:visualizePLSRegression", "weight": 0.8,  "role": "core"},
+        {"id": "func:EDA:isInteractivePLSRegression","weight": 0.7,"role": "core"},
+        {"id": "doc:/help/visualize/viewers/multi-curve-viewer","weight": 0.5,"role": "related"}
+      ],
+      "evidence_summary": "PLS, topMenuPLS, multivariateAnalysis, MVA demo, and the trainPLSRegression adapter family all describe PLS/MVA in their descriptions; changelog entries v1.4.2 and v1.5.1 confirm ongoing MVA and PLS quadratic regression development."
+    },
+    {
+      "id": "feature:EDA:svm-classification",
+      "name": "SVM Classification",
+      "description": "Support Vector Machine (SVM) binary and multi-class classification with four kernel variants—Linear, RBF, Polynomial, and Sigmoid—each exposing train, apply, applicability-check, interactive-check, and visualization adapters.",
+      "category": "ml",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:EDA:trainLinearKernelSVM",           "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:applyLinearKernelSVM",           "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:isApplicableLinearKernelSVM",    "weight": 0.8,  "role": "core"},
+        {"id": "func:EDA:isInteractiveLinearKernelSVM",   "weight": 0.7,  "role": "core"},
+        {"id": "func:EDA:visualizeLinearKernelSVM",       "weight": 0.85, "role": "core"},
+        {"id": "func:EDA:trainRBFkernelSVM",              "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:applyRBFkernelSVM",              "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:isApplicableRBFkernelSVM",       "weight": 0.8,  "role": "core"},
+        {"id": "func:EDA:isInteractiveRBFkernelSVM",      "weight": 0.7,  "role": "core"},
+        {"id": "func:EDA:visualizeRBFkernelSVM",          "weight": 0.85, "role": "core"},
+        {"id": "func:EDA:trainPolynomialKernelSVM",       "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:applyPolynomialKernelSVM",       "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:isApplicablePolynomialKernelSVM","weight": 0.8,  "role": "core"},
+        {"id": "func:EDA:isInteractivePolynomialKernelSVM","weight": 0.7, "role": "core"},
+        {"id": "func:EDA:visualizePolynomialKernelSVM",   "weight": 0.85, "role": "core"},
+        {"id": "func:EDA:trainSigmoidKernelSVM",          "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:applySigmoidKernelSVM",          "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:isApplicableSigmoidKernelSVM",   "weight": 0.8,  "role": "core"},
+        {"id": "func:EDA:isInteractiveSigmoidKernelSVM",  "weight": 0.7,  "role": "core"},
+        {"id": "func:EDA:visualizeSigmoidKernelSVM",      "weight": 0.85, "role": "core"}
+      ],
+      "evidence_summary": "All 20 functions share the SVM name suffix, follow an identical train/apply/isApplicable/isInteractive/visualize adapter pattern, and differ only by kernel type—four parallel implementations of the same classifier interface."
+    },
+    {
+      "id": "feature:EDA:anova",
+      "name": "ANOVA",
+      "description": "One-way analysis of variance that determines whether a categorical factor has a statistically significant effect on a numeric column, presenting an F-test result with tabbed result views.",
+      "category": "ml",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:EDA:ANOVA", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Single function explicitly named ANOVA; changelog v1.4.6 describes F-test description update and tabbed results UI, confirming it as a distinct user-facing analysis."
+    },
+    {
+      "id": "feature:EDA:knn-imputation",
+      "name": "KNN Missing Value Imputation",
+      "description": "Fills missing values in numeric columns using the k-nearest neighbors algorithm, available as both a column-level dialog and a whole-table batch operation.",
+      "category": "ml",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:EDA:KNN impute",                  "weight": 1.0, "role": "core"},
+        {"id": "func:EDA:KNN imputation for a table",  "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/explore/missing-values-imputation", "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Both functions share the 'KNN impute' name and describe missing-value imputation via KNN; a dedicated help page confirms this as a documented user-facing capability."
+    },
+    {
+      "id": "feature:EDA:linear-regression",
+      "name": "Linear Regression",
+      "description": "Ordinary least-squares linear regression model adapter with train, apply, and applicability-check functions for use in the platform's predictive modelling pipeline.",
+      "category": "ml",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:EDA:trainLinearRegression",      "weight": 1.0, "role": "core"},
+        {"id": "func:EDA:applyLinearRegression",      "weight": 1.0, "role": "core"},
+        {"id": "func:EDA:isApplicableLinearRegression","weight": 0.8, "role": "core"},
+        {"id": "func:EDA:isInteractiveLinearRegression","weight": 0.7,"role": "core"}
+      ],
+      "evidence_summary": "Four functions share the LinearRegression suffix following the platform's standard train/apply/isApplicable/isInteractive ML adapter pattern."
+    },
+    {
+      "id": "feature:EDA:softmax-classification",
+      "name": "Softmax (Logistic) Classification",
+      "description": "Multi-class softmax classifier adapter with train, apply, and applicability-check functions for use in the platform's predictive modelling pipeline.",
+      "category": "ml",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:EDA:trainSoftmax",       "weight": 1.0, "role": "core"},
+        {"id": "func:EDA:applySoftmax",       "weight": 1.0, "role": "core"},
+        {"id": "func:EDA:isApplicableSoftmax","weight": 0.8, "role": "core"},
+        {"id": "func:EDA:isInteractiveSoftmax","weight": 0.7,"role": "core"}
+      ],
+      "evidence_summary": "Four functions share the Softmax suffix following the platform's standard train/apply/isApplicable/isInteractive ML adapter pattern."
+    },
+    {
+      "id": "feature:EDA:xgboost",
+      "name": "XGBoost",
+      "description": "Gradient-boosted tree ensemble (XGBoost) model adapter with train, apply, and applicability-check functions for use in the platform's predictive modelling pipeline.",
+      "category": "ml",
+      "confidence": 0.87,
+      "members": [
+        {"id": "func:EDA:trainXGBooster",       "weight": 1.0, "role": "core"},
+        {"id": "func:EDA:applyXGBooster",       "weight": 1.0, "role": "core"},
+        {"id": "func:EDA:isApplicableXGBooster","weight": 0.8, "role": "core"},
+        {"id": "func:EDA:isInteractiveXGBooster","weight": 0.7,"role": "core"}
+      ],
+      "evidence_summary": "Four functions share the XGBooster suffix following the platform's standard ML adapter pattern; changelog v1.4.9 references an ML library update that includes XGBoost."
+    },
+    {
+      "id": "feature:EDA:pareto-front",
+      "name": "Pareto Front / Multi-Objective Optimization",
+      "description": "Identifies Pareto-optimal rows across conflicting numeric objectives and displays the trade-off frontier in a dedicated interactive Pareto front viewer.",
+      "category": "ml",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:EDA:Pareto Front",  "weight": 1.0, "role": "core"},
+        {"id": "func:EDA:Pareto front",  "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/visualize/viewers/pareto-front-viewer", "weight": 1.0, "role": "doc"}
+      ],
+      "evidence_summary": "Both functions share the 'Pareto front' name (one is the app, one is a viewer role); changelog v1.4.11 explicitly describes the simultaneous release of the viewer and the optimization app."
+    },
+    {
+      "id": "feature:EDA:pmpo",
+      "name": "Probabilistic Multi-Parameter Optimization (pMPO)",
+      "description": "Trains probabilistic MPO desirability models from numeric or categorical columns and exports them as MPO profiles, with an interactive app UI and synthetic dataset generator.",
+      "category": "ml",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:EDA:trainPmpo",           "weight": 1.0,  "role": "core"},
+        {"id": "func:EDA:getPmpoAppItems",     "weight": 0.85, "role": "core"},
+        {"id": "func:EDA:generatePmpoDataset", "weight": 0.8,  "role": "core"}
+      ],
+      "evidence_summary": "All three functions share the Pmpo name root; changelog v1.4.12 and v1.5.0 describe the pMPO training app, dataset generation, and model export as a single evolving feature."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:EDA:dbscan-clustering",        "to": "feature:EDA:dimensionality-reduction",  "kind": "related"},
+    {"from": "feature:EDA:linear-regression",        "to": "feature:EDA:pls-multivariate-analysis", "kind": "sibling"},
+    {"from": "feature:EDA:softmax-classification",   "to": "feature:EDA:svm-classification",        "kind": "sibling"},
+    {"from": "feature:EDA:xgboost",                  "to": "feature:EDA:svm-classification",        "kind": "sibling"},
+    {"from": "feature:EDA:pareto-front",             "to": "feature:EDA:pmpo",                      "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:EDA:info",
+    "func:EDA:init",
+    "doc:/packages/EDA/claude.md",
+    "doc:/packages/EDA/credits.md",
+    "doc:/packages/EDA/readme.md",
+    "doc:/help/datagrok/navigation/info-pane-reference",
+    "doc:/help/datagrok/navigation/panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/develop/how-to/ui/add-info-panel"
+  ]
+}

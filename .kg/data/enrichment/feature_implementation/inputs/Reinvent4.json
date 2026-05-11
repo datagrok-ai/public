@@ -1,0 +1,100 @@
+{
+  "package": {
+    "id": "pkg:Reinvent4",
+    "name": "Reinvent4",
+    "friendly_name": "Reinvent4",
+    "category": "Bioinformatics",
+    "description": "Integrates Datagrok with REINVENT4 for advanced small molecule design and optimization"
+  },
+  "files": {
+    "src": [
+      "packages/Reinvent4/src/package.ts",
+      "packages/Reinvent4/src/utils/reinvent-editor.ts",
+      "packages/Reinvent4/src/utils/utils.ts"
+    ],
+    "tests": [
+      "packages/Reinvent4/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Reinvent4/CHANGELOG.md",
+      "packages/Reinvent4/CREDITS.md",
+      "packages/Reinvent4/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Reinvent4:de-novo-molecule-generation",
+      "name": "De Novo Molecule Generation",
+      "description": "Generates novel small molecules from a seed ligand using the REINVENT4 deep-learning framework, exposed through a dedicated editor UI and the top-level menu; results are returned as a dataframe for downstream analysis.",
+      "category": "chem-gen",
+      "members": [
+        {
+          "id": "func:Reinvent4:Reinvent",
+          "kind": "RegisteredFunction",
+          "name": "Reinvent",
+          "friendly_name": null,
+          "role": "hitDesignerFunction",
+          "description": "Generates molecules from a seed ligand.",
+          "tags": []
+        },
+        {
+          "id": "func:Reinvent4:runReinvent",
+          "kind": "RegisteredFunction",
+          "name": "runReinvent",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Reinvent4:ReinventEditor",
+          "kind": "RegisteredFunction",
+          "name": "ReinventEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Reinvent4:reinventTopMenu",
+          "kind": "RegisteredFunction",
+          "name": "reinventTopMenu",
+          "friendly_name": null,
+          "role": null,
+          "description": "Generates molecules from a seed ligand.",
+          "tags": []
+        },
+        {
+          "id": "func:Reinvent4:getFolders",
+          "kind": "RegisteredFunction",
+          "name": "getFolders",
+          "friendly_name": null,
+          "role": null,
+          "description": "Lists available optimization targets.",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Reinvent4/readme.md",
+          "kind": "DocPage",
+          "title": "Reinvent4",
+          "url": "/packages/Reinvent4/readme.md"
+        },
+        {
+          "id": "clog:Reinvent4:1.0.0:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Reinvent4/src/package.ts",
+          "packages/Reinvent4/src/utils/reinvent-editor.ts",
+          "packages/Reinvent4/src/utils/utils.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

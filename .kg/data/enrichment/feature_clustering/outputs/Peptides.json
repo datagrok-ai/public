@@ -1,0 +1,155 @@
+{
+  "package_id": "pkg:Peptides",
+  "features": [
+    {
+      "id": "feature:Peptides:peptide-sar-analysis",
+      "name": "Peptide SAR Analysis",
+      "description": "The core analysis app that coordinates all SAR viewers over a peptide collection, enabling multi-viewer exploration of structure–activity relationships across positions, monomers, and activity distributions.",
+      "category": "bio-sar",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Peptides:Peptides",                                       "weight": 1.0,  "role": "core"},
+        {"id": "func:Peptides:Peptide SAR",                                    "weight": 0.9,  "role": "core"},
+        {"id": "func:Peptides:initPeptides",                                   "weight": 0.5,  "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",        "weight": 0.95, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",             "weight": 0.85, "role": "doc"},
+        {"id": "doc:/packages/Peptides/readme.md",                             "weight": 0.8,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/bio",                 "weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "The Peptides viewer function and Peptide SAR demo share the same name root and the dedicated peptides-sar help page; changelog entries consistently reference 'Peptides analysis' and 'all SAR viewers' as a unified feature."
+    },
+    {
+      "id": "feature:Peptides:sequence-variability-map",
+      "name": "Sequence Variability Map",
+      "description": "A viewer that visualises the positional variability of monomers across a peptide collection, with filter reactivity to highlight how variability changes as subsets are selected.",
+      "category": "bio-sar",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Peptides:Sequence Variability Map",                        "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/visualize/viewers/sequence-variability-map",          "weight": 0.95, "role": "doc"}
+      ],
+      "evidence_summary": "Function name and doc title match exactly; changelog v1.27.3 references 'Sequence variability map' filter behaviour directly."
+    },
+    {
+      "id": "feature:Peptides:most-potent-residues",
+      "name": "Most Potent Residues",
+      "description": "A viewer that ranks residues at each sequence position by their association with potent activity values, helping identify which monomers drive SAR.",
+      "category": "bio-sar",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Peptides:Most Potent Residues",                            "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/visualize/viewers/most-potent-residues",              "weight": 0.95, "role": "doc"}
+      ],
+      "evidence_summary": "Function name and doc title match exactly; viewer is listed alongside other SAR viewers in filter-reactivity changelog entries."
+    },
+    {
+      "id": "feature:Peptides:mutation-cliffs",
+      "name": "Mutation Cliffs",
+      "description": "A line-chart viewer that identifies sequence pairs differing by a single-position mutation with large activity differences, revealing SAR cliffs in the peptide dataset.",
+      "category": "bio-sar",
+      "confidence": 0.98,
+      "members": [
+        {"id": "func:Peptides:Sequence Mutation Cliffs",                        "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/visualize/viewers/sequence-mutation-cliffs",          "weight": 0.95, "role": "doc"}
+      ],
+      "evidence_summary": "Function name, doc title, and the majority of recent changelog entries converge on 'mutation cliffs' as an independently tracked viewer with its own release arc (v1.26.1 initial release through v1.27.3 fixes)."
+    },
+    {
+      "id": "feature:Peptides:logo-summary-table",
+      "name": "Logo Summary Table",
+      "description": "A summary viewer that renders a WebLogo-style sequence logo alongside per-position monomer statistics, with a pie-chart cell renderer for compact in-grid display.",
+      "category": "bio-sar",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Peptides:Logo Summary Table",                              "weight": 1.0,  "role": "core"},
+        {"id": "func:Peptides:LST Pie Chart",                                  "weight": 0.85, "role": "core"},
+        {"id": "doc:/help/visualize/viewers/logo-summary-table",                "weight": 0.95, "role": "doc"}
+      ],
+      "evidence_summary": "The LST Pie Chart cell renderer name explicitly abbreviates 'LST' (Logo Summary Table); both share the logo-based display paradigm documented in the logo-summary-table help page."
+    },
+    {
+      "id": "feature:Peptides:position-statistics",
+      "name": "Sequence Position Statistics",
+      "description": "A viewer that shows statistical distributions (mean, SD, significance) for activity values grouped by monomer identity at each sequence position.",
+      "category": "bio-sar",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Peptides:Sequence Position Statistics",                    "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/visualize/viewers/position-statistics-viewer",        "weight": 0.95, "role": "doc"}
+      ],
+      "evidence_summary": "Function name and doc title match; changelog entries from v1.23.8 through v1.23.10 describe the viewer's introduction and improvements under 'position statistics'."
+    },
+    {
+      "id": "feature:Peptides:active-peptide-selection",
+      "name": "Active Peptide Selection",
+      "description": "An interactive selection viewer that lets users pick subsets of peptides for focused SAR exploration based on activity or cluster membership.",
+      "category": "bio-sar",
+      "confidence": 0.82,
+      "members": [
+        {"id": "func:Peptides:Active peptide selection",                        "weight": 1.0,  "role": "core"}
+      ],
+      "evidence_summary": "Standalone viewer function; changelog v1.23.14 mentions 'Default selection grid for Peptides analysis' and v1.23.3 references 'Selection widget: value retrieving fix', both pointing to a dedicated selection capability."
+    },
+    {
+      "id": "feature:Peptides:manual-alignment",
+      "name": "Manual Alignment",
+      "description": "A panel widget that allows users to manually align peptide sequences before feeding them into SAR analysis, useful when automatic alignment is insufficient.",
+      "category": "bio-sar",
+      "confidence": 0.80,
+      "members": [
+        {"id": "func:Peptides:Manual Alignment",                                "weight": 1.0,  "role": "core"}
+      ],
+      "evidence_summary": "Registered as a panel/widget function accepting a string (sequence) input; the name clearly designates a pre-analysis alignment utility distinct from the SAR viewers."
+    },
+    {
+      "id": "feature:Peptides:smiles-to-3d",
+      "name": "SMILES to 3D Structure",
+      "description": "A Python script that converts SMILES representations of peptide-related molecules to 3D coordinates, supporting 3D structure visualisation within the platform.",
+      "category": "viz",
+      "confidence": 0.72,
+      "members": [
+        {"id": "script:Peptides:smiTo3D",                                       "weight": 1.0,  "role": "core"}
+      ],
+      "evidence_summary": "Script name 'smiTo3D' unambiguously encodes 'SMILES to 3D'; it is the only script in the package and stands alone without a matching registered function or doc page."
+    },
+    {
+      "id": "feature:Peptides:bio-integration",
+      "name": "Bio Package Integration",
+      "description": "Infrastructure that wires Peptides SAR viewers into the Datagrok Bio package ecosystem, enabling the plugin to operate on Bio-registered sequence column types.",
+      "category": "infra",
+      "confidence": 0.70,
+      "members": [
+        {"id": "func:Peptides:Bio Peptides",                                    "weight": 1.0,  "role": "core"},
+        {"id": "doc:/packages/Bio/readme.md",                                  "weight": 0.6,  "role": "doc"},
+        {"id": "doc:/packages/Bio/claude.md",                                  "weight": 0.5,  "role": "doc"},
+        {"id": "doc:/packages/Bio/credits.md",                                 "weight": 0.4,  "role": "doc"}
+      ],
+      "evidence_summary": "Function name 'Bio Peptides' directly references the Bio package dependency; Bio readme and claude.md appear in the Peptides input because of the cross-package dependency on Bio sequence types."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Peptides:sequence-variability-map",   "to": "feature:Peptides:peptide-sar-analysis", "kind": "subfeature"},
+    {"from": "feature:Peptides:most-potent-residues",       "to": "feature:Peptides:peptide-sar-analysis", "kind": "subfeature"},
+    {"from": "feature:Peptides:mutation-cliffs",            "to": "feature:Peptides:peptide-sar-analysis", "kind": "subfeature"},
+    {"from": "feature:Peptides:logo-summary-table",         "to": "feature:Peptides:peptide-sar-analysis", "kind": "subfeature"},
+    {"from": "feature:Peptides:position-statistics",        "to": "feature:Peptides:peptide-sar-analysis", "kind": "subfeature"},
+    {"from": "feature:Peptides:active-peptide-selection",   "to": "feature:Peptides:peptide-sar-analysis", "kind": "subfeature"},
+    {"from": "feature:Peptides:bio-integration",            "to": "feature:Peptides:peptide-sar-analysis", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:Peptides:testInitFunctionPeptides",
+    "doc:/packages/Peptides/credits.md",
+    "doc:/packages/Peptides/claude.md",
+    "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+    "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+    "doc:/help/datagrok/solutions/domains/bio/polytool",
+    "doc:/help/_internal/tests/0-test-scenario-format",
+    "doc:/help/_internal/tests/release-cheklist-cases/adding-connections",
+    "doc:/help/_internal/tests/release-cheklist-cases/adding-query",
+    "doc:/help/_internal/tests/release-cheklist-cases/connection-browser",
+    "doc:/help/_internal/tests/release-cheklist-cases/connection-schema",
+    "doc:/help/_internal/tests/release-cheklist-cases/delete-connections",
+    "doc:/help/_internal/tests/release-cheklist-cases/delete-query",
+    "doc:/help/_internal/tests/release-cheklist-cases/edit-connections"
+  ]
+}

@@ -1,0 +1,207 @@
+{
+  "package": {
+    "id": "pkg:Biologics",
+    "name": "Biologics",
+    "friendly_name": "Biologics",
+    "version": "1.0.12",
+    "category": null,
+    "description": "Demo Database wrapper for ADCs",
+    "extras": {
+      "npm_name": "@datagrok/biologics",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Biologics:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Biologics:createDemoBiologicsData",
+      "name": "createDemoBiologicsData",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Biologics:populateAdcGlyphs",
+      "name": "populateAdcGlyphs",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Populates missing ADC glyphs with random PNG (base64) strings",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Biologics:autostartbiologics",
+      "name": "autostartbiologics",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [
+    {
+      "id": "query:Biologics:antibodyProfileByOrganismAndTarget",
+      "name": "antibodyProfileByOrganismAndTarget",
+      "connection": "Biologics:biologics",
+      "description": "\"Get comprehensive antibody profile filtered by organism and target, including HC/LC chains, dose-response curves, and all assay data.\"",
+      "tags": []
+    },
+    {
+      "id": "query:Biologics:assaysByOrganism",
+      "name": "assaysByOrganism",
+      "connection": "Biologics:biologics",
+      "description": "\"Find biologics assays for a specified organism.\"",
+      "tags": []
+    },
+    {
+      "id": "query:Biologics:ADCsWithCapsazeActivityHigherThan",
+      "name": "ADCsWithCapsazeActivityHigherThan",
+      "connection": "Biologics:biologics",
+      "description": "\"Find biologics ADCs with caspase activity higher than a specified value.\"",
+      "tags": []
+    },
+    {
+      "id": "query:Biologics:ADCsWithIC50HLThan",
+      "name": "ADCsWithIC50HLThan",
+      "connection": "Biologics:biologics",
+      "description": "\"Find biologics ADCs with IC50 higher or lower than a specified value. Use 'higher' or 'lower' for valueTarget to indicate the comparison direction.\"",
+      "tags": []
+    },
+    {
+      "id": "query:Biologics:adcsLinkedToDrug",
+      "name": "adcsLinkedToDrug",
+      "connection": "Biologics:biologics",
+      "description": "\"Find ADCs in biologics database linked to a specified drug identifier.\"",
+      "tags": []
+    },
+    {
+      "id": "query:Biologics:getBiologicsPeptideHelmByIdentifier",
+      "name": "getBiologicsPeptideHelmByIdentifier",
+      "connection": "Biologics:biologics",
+      "description": "\"Retrieve the HELM sequence of a biologics peptide given its identifier that should follow the pattern GROKPEP-######.\"",
+      "tags": []
+    },
+    {
+      "id": "query:Biologics:getBiologicsCurveByAssayResultIdentifier",
+      "name": "getBiologicsCurveByAssayResultIdentifier",
+      "connection": "Biologics:biologics",
+      "description": "\"Retrieve the dose-response curve JSON for a biologics assay curve identifier (GROKCRV-######).\"",
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Biologics/claude.md",
+      "title": "CLAUDE.md — Biologics package",
+      "url": "/packages/Biologics/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Biologics/credits.md",
+      "title": "Biologics — Third-Party Libraries",
+      "url": "/packages/Biologics/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Biologics/readme.md",
+      "title": "Biologics",
+      "url": "/packages/Biologics/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Biologics:1.0.9:0",
+      "version": "1.0.9",
+      "released_at": "2025-12-31",
+      "ticket": null,
+      "text": "Updated assaysByOrganism query"
+    },
+    {
+      "id": "clog:Biologics:1.0.5:0",
+      "version": "1.0.5",
+      "released_at": "2025-11-27",
+      "ticket": null,
+      "text": "Enhance query descriptions to improve integration with ChatGPT"
+    },
+    {
+      "id": "clog:Biologics:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2025-10-16",
+      "ticket": null,
+      "text": "Initial release with DB Explorer integration"
+    }
+  ],
+  "stats": {
+    "functions": 4,
+    "scripts": 0,
+    "queries": 7,
+    "tutorials": 0,
+    "docs": 7,
+    "changelog": 3
+  }
+}

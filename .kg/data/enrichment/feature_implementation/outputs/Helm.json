@@ -1,0 +1,238 @@
+{
+  "package_id": "pkg:Helm",
+  "features": [
+    {
+      "id": "feature:Helm:helm-cell-rendering",
+      "implements": [
+        {
+          "path": "packages/Helm/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Helm/src/package-utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Helm/src/utils/helm-grid-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Helm/src/utils/helm-service.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Helm/src/utils/get-hovered.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Helm/src/utils/get-monomer.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Helm/src/utils/index.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Helm/src/constants.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Helm/src/tests/helm-service-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Helm/src/tests/renderers-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "helmCellRenderer + getHelmService + measureCellRenderer wire HelmGridCellRenderer / HelmService through package-utils; hover and HELM-parse utilities support the renderer pipeline."
+    },
+    {
+      "id": "feature:Helm:helm-editor",
+      "implements": [
+        {
+          "path": "packages/Helm/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Helm/src/helm-helper.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Helm/src/helm-web-editor.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Helm/src/widgets/helm-input.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Helm/src/package-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Helm/src/tests/helm-input-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Helm/src/tests/helm-web-editor-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "editMoleculeCell / openEditor / helmInput delegate to HelmHelper.createWebEditorApp / createHelmInput, wrapping JSDraw2 via HelmWebEditor and HelmInput widget."
+    },
+    {
+      "id": "feature:Helm:molfile-conversion",
+      "implements": [
+        {
+          "path": "packages/Helm/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Helm/src/helm-helper.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Helm/src/package-utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Helm/src/utils/index.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Helm/src/tests/get-molfiles-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "getMolfiles in package.ts forwards to HelmHelper.getMolfiles which uses an off-screen JSDraw2 editor; gap-removal utility supports conversion."
+    },
+    {
+      "id": "feature:Helm:monomer-library",
+      "implements": [
+        {
+          "path": "packages/Helm/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Helm/src/package-utils.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/Helm/src/helm-helper.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Helm/src/utils/get-monomer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Helm/src/utils/index.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Helm/src/constants.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Helm/src/tests/get-monomer-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Helm/src/tests/findMonomers-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Helm/src/tests/helm-helper-tests.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "getHelmHelper exposes the IHelmHelper singleton; HelmPackage.completeInit + rewriteLibraries patch Pistoia monomer dictionaries from Datagrok IMonomerLib; highlightMonomers test app drives the highlight path."
+    },
+    {
+      "id": "feature:Helm:properties-panel",
+      "implements": [
+        {
+          "path": "packages/Helm/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Helm/src/widgets/properties-widget.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Helm/src/utils/index.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Helm/src/tests/properties-widget-tests.ts",
+          "confidence": 0.97
+        }
+      ],
+      "notes": "propertiesWidget @panel calls getPropertiesWidget / getPropertiesDict, computing formula / MW / extinction coefficient via off-screen JSDraw2 editor."
+    },
+    {
+      "id": "feature:Helm:bootstrap",
+      "implements": [
+        {
+          "path": "packages/Helm/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Helm/src/package-utils.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Helm/src/helm-helper.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Helm/src/utils/err-info.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "initHelm orchestrates HelmPackage.initHELMWebEditor (Dojo + HWE load + patches), instantiates HelmHelper, and calls completeInit; err-info standardizes init error reporting. No dedicated test file."
+    }
+  ]
+}

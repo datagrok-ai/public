@@ -1,0 +1,201 @@
+{
+  "package": {
+    "id": "pkg:DevTools",
+    "name": "DevTools",
+    "friendly_name": "Dev Tools",
+    "category": "Development",
+    "description": "Tools for the Datagrok developers (TestManager, DevPanel)."
+  },
+  "files": {
+    "src": [
+      "packages/DevTools/src/constants.ts",
+      "packages/DevTools/src/dev-panel.ts",
+      "packages/DevTools/src/icon-tool.ts",
+      "packages/DevTools/src/package-testing.ts",
+      "packages/DevTools/src/package.ts",
+      "packages/DevTools/src/script-editor.ts",
+      "packages/DevTools/src/signature-editor/const.ts",
+      "packages/DevTools/src/signature-editor/function-signature-editor.ts",
+      "packages/DevTools/src/utils/code-mirror-check.ts",
+      "packages/DevTools/src/utils/test-detectors.ts"
+    ],
+    "tests": [
+      "packages/DevTools/src/package-test.ts",
+      "packages/DevTools/src/tests/dev-panel-test.ts",
+      "packages/DevTools/src/tests/function-signature-editor-test.ts",
+      "packages/DevTools/src/tests/test-examples.ts",
+      "packages/DevTools/src/tests/test-manager-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/DevTools/queries/test-history.sql"
+    ],
+    "docs": [
+      "packages/DevTools/CHANGELOG.md",
+      "packages/DevTools/CREDITS.md",
+      "packages/DevTools/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:DevTools:test-manager",
+      "name": "Test Manager",
+      "description": "An admin application for running, filtering, and tracking Datagrok package tests across all installed packages, with per-test, per-category, and per-package history queries.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:DevTools:Test Manager",
+          "kind": "RegisteredFunction",
+          "name": "Test Manager",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DevTools:testManagerAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "testManagerAppTreeBrowser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DevTools:TestDetectors",
+          "kind": "RegisteredFunction",
+          "name": "TestDetectors",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DevTools:TestDetectorsStandard",
+          "kind": "RegisteredFunction",
+          "name": "TestDetectorsStandard",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DevTools:testFunctions",
+          "kind": "RegisteredFunction",
+          "name": "testFunctions",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:DevTools:TestHistory",
+          "kind": "DataQuery",
+          "name": "TestHistory",
+          "description": null
+        },
+        {
+          "id": "query:DevTools:CategoryHistory",
+          "kind": "DataQuery",
+          "name": "CategoryHistory",
+          "description": null
+        },
+        {
+          "id": "query:DevTools:PackageHistory",
+          "kind": "DataQuery",
+          "name": "PackageHistory",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/dev-process/tools/test-manager",
+          "kind": "DocPage",
+          "title": "Test Manager",
+          "url": "/help/develop/dev-process/tools/test-manager"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DevTools/src/package-testing.ts",
+          "packages/DevTools/src/package.ts"
+        ],
+        "tests": [
+          "packages/DevTools/src/tests/test-manager-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:DevTools:dev-panel",
+      "name": "Developer Panel",
+      "description": "A sidebar widget that auto-starts when DevTools is loaded, giving plugin developers quick access to developer tooling such as the script runner and object inspection within Datagrok.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:DevTools:renderDevPanel",
+          "kind": "RegisteredFunction",
+          "name": "renderDevPanel",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DevTools:autostartTools",
+          "kind": "RegisteredFunction",
+          "name": "autostartTools",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": "DevTools autostart function",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/DevTools/readme.md",
+          "kind": "DocPage",
+          "title": "Dev Tools",
+          "url": "/packages/DevTools/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DevTools/src/dev-panel.ts",
+          "packages/DevTools/src/package.ts",
+          "packages/DevTools/src/script-editor.ts",
+          "packages/DevTools/src/signature-editor/function-signature-editor.ts",
+          "packages/DevTools/src/utils/code-mirror-check.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DevTools:inspector-panel",
+      "name": "Inspector Panel",
+      "description": "Registers a custom DevTools panel inside the Datagrok object Inspector, exposing developer-relevant properties and actions for the currently selected object.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:DevTools:_makeInspectorPanel",
+          "kind": "RegisteredFunction",
+          "name": "_makeInspectorPanel",
+          "friendly_name": "DevTools",
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/develop/dev-process/tools/inspector",
+          "kind": "DocPage",
+          "title": "Inspector",
+          "url": "/help/develop/dev-process/tools/inspector"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DevTools/src/package.ts"
+        ],
+        "tests": [
+          "packages/DevTools/src/tests/test-manager-tests.ts"
+        ]
+      }
+    }
+  ]
+}

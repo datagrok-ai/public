@@ -1,0 +1,126 @@
+{
+  "package": {
+    "id": "pkg:Minitab",
+    "name": "Minitab",
+    "friendly_name": "Minitab",
+    "version": "0.1.0",
+    "category": "Data Access",
+    "description": "Support for Minitab files",
+    "extras": {
+      "npm_name": "@datagrok/minitab",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Minitab:importMwx",
+      "name": "importMwx",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": "Opens Minitab Worksheet file",
+      "input_types": [
+        "list"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "mwx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Minitab:previewMwx",
+      "name": "previewMwx",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "mwx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Minitab:importMpx",
+      "name": "importMpx",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": "Opens Minitab Project file",
+      "input_types": [
+        "list"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "mpx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Minitab:previewMpx",
+      "name": "previewMpx",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "mpx"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Minitab/credits.md",
+      "title": "Minitab — Third-Party Libraries",
+      "url": "/packages/Minitab/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Minitab/readme.md",
+      "title": "Minitab",
+      "url": "/packages/Minitab/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 4,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 2,
+    "changelog": 0
+  }
+}

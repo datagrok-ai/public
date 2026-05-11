@@ -1,0 +1,115 @@
+{
+  "package_id": "pkg:Chemspace",
+  "features": [
+    {
+      "id": "feature:Chemspace:catalog-browser",
+      "implements": [
+        {
+          "path": "packages/Chemspace/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chemspace/src/country-codes.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chemspace/src/model.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chemspace/src/tests/tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "PackageFunctions.app() in package.ts builds the standalone Chemspace search view; country-codes powers the shipToCountry input; model types describe the shared search response."
+    },
+    {
+      "id": "feature:Chemspace:molecule-availability-panel",
+      "implements": [
+        {
+          "path": "packages/Chemspace/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chemspace/src/country-codes.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Chemspace/src/model.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chemspace/src/tests/tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "samplesPanel() and the createSearchPanel helper in package.ts render Similar/Substructure hits; model.ChemspaceResult types the parsed responses."
+    },
+    {
+      "id": "feature:Chemspace:compound-pricing",
+      "implements": [
+        {
+          "path": "packages/Chemspace/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chemspace/src/model.ts",
+          "role": "support",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chemspace/src/country-codes.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Chemspace/src/tests/tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "pricesPanel() and getChemspacePrices() in package.ts use the ChemspacePriceColumns/Offer/PricesTableItem types from model.ts and the COUNTRY_CODES map."
+    },
+    {
+      "id": "feature:Chemspace:chemspace-id-resolution",
+      "implements": [
+        {
+          "path": "packages/Chemspace/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "getChemspaceIds() (a vectorFunc) and the chemspace-id semValueExtractor are both registered in package.ts; the semantic-type regex itself lives in detectors.js (not in files.src)."
+    },
+    {
+      "id": "feature:Chemspace:api-client",
+      "implements": [
+        {
+          "path": "packages/Chemspace/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Chemspace/src/model.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "queryMultipart() plus the module-level token / getApiToken / requestAuthToken helpers in package.ts implement the multipart HTTP client with OAuth refresh and 429 retry; model.ChemspaceResult types the response payload."
+    }
+  ]
+}

@@ -1,0 +1,3109 @@
+{
+  "package": {
+    "id": "pkg:ApiSamples",
+    "name": "ApiSamples",
+    "friendly_name": "API Samples",
+    "category": "Development",
+    "description": "API Samples"
+  },
+  "files": {
+    "src": [
+      "packages/ApiSamples/src/package.ts"
+    ],
+    "tests": [
+      "packages/ApiSamples/src/package-test.ts",
+      "packages/ApiSamples/src/tests/owners.ts",
+      "packages/ApiSamples/src/tests/test.ts"
+    ],
+    "scripts": [
+      "packages/ApiSamples/scripts/dapi/admin.js",
+      "packages/ApiSamples/scripts/dapi/applicable-layouts.js",
+      "packages/ApiSamples/scripts/dapi/entities-polymorphic-save.js",
+      "packages/ApiSamples/scripts/dapi/fetch.js",
+      "packages/ApiSamples/scripts/dapi/files.js",
+      "packages/ApiSamples/scripts/dapi/groups.js",
+      "packages/ApiSamples/scripts/dapi/layouts-and-permissions.js",
+      "packages/ApiSamples/scripts/dapi/messaging.js",
+      "packages/ApiSamples/scripts/dapi/projects-list.js",
+      "packages/ApiSamples/scripts/dapi/projects-open.js",
+      "packages/ApiSamples/scripts/dapi/projects.js",
+      "packages/ApiSamples/scripts/dapi/spaces.js",
+      "packages/ApiSamples/scripts/dapi/sticky-meta-1-tags.js",
+      "packages/ApiSamples/scripts/dapi/sticky-meta-2-semtype.js",
+      "packages/ApiSamples/scripts/dapi/users.js",
+      "packages/ApiSamples/scripts/dapi/who-am-i.js",
+      "packages/ApiSamples/scripts/data-access/connection.js",
+      "packages/ApiSamples/scripts/data-access/db-master-details-manual.js",
+      "packages/ApiSamples/scripts/data-access/db/ad-hoc-query.js",
+      "packages/ApiSamples/scripts/data-access/db/db-edit.js",
+      "packages/ApiSamples/scripts/data-access/db/dynamic-query.js",
+      "packages/ApiSamples/scripts/data-access/db/parameterized-query.js",
+      "packages/ApiSamples/scripts/data-access/db/query_builder_join.js",
+      "packages/ApiSamples/scripts/data-access/db/query_builder_simple.js",
+      "packages/ApiSamples/scripts/data-access/external/stock-prices.js",
+      "packages/ApiSamples/scripts/data-access/files/file-exists.js",
+      "packages/ApiSamples/scripts/data-access/files/read-file.js",
+      "packages/ApiSamples/scripts/data-access/load-csv.js",
+      "packages/ApiSamples/scripts/data-access/open-table-by-id.js",
+      "packages/ApiSamples/scripts/data-access/output-layouts.js",
+      "packages/ApiSamples/scripts/data-access/save-and-load-df.js",
+      "packages/ApiSamples/scripts/data-frame/advanced/custom-category-order.js",
+      "packages/ApiSamples/scripts/data-frame/advanced/data-frames-in-columns.js",
+      "packages/ApiSamples/scripts/data-frame/advanced/qualified-numbers-2.js",
+      "packages/ApiSamples/scripts/data-frame/advanced/qualified-numbers.js",
+      "packages/ApiSamples/scripts/data-frame/advanced/semantic-type-detection.js",
+      "packages/ApiSamples/scripts/data-frame/advanced/to-hierarchy.js",
+      "packages/ApiSamples/scripts/data-frame/advanced/virtual-columns.js",
+      "packages/ApiSamples/scripts/data-frame/advanced/virtual-int-column.js",
+      "packages/ApiSamples/scripts/data-frame/aggregation/aggregate-filter.js",
+      "packages/ApiSamples/scripts/data-frame/aggregation/aggregate.js",
+      "packages/ApiSamples/scripts/data-frame/aggregation/get-groups.js",
+      "packages/ApiSamples/scripts/data-frame/aggregation/unpivot.js",
+      "packages/ApiSamples/scripts/data-frame/bitset/and-or-xor.js",
+      "packages/ApiSamples/scripts/data-frame/bitset/from-bytes.js",
+      "packages/ApiSamples/scripts/data-frame/bitset/select-rows-fast.js",
+      "packages/ApiSamples/scripts/data-frame/bitset/similarity-metrics.js",
+      "packages/ApiSamples/scripts/data-frame/column-access.js",
+      "packages/ApiSamples/scripts/data-frame/columns-ordering.js",
+      "packages/ApiSamples/scripts/data-frame/compare-tables.js",
+      "packages/ApiSamples/scripts/data-frame/construction/add-new-column.js",
+      "packages/ApiSamples/scripts/data-frame/construction/create-from-arrays.js",
+      "packages/ApiSamples/scripts/data-frame/construction/create-from-columns.js",
+      "packages/ApiSamples/scripts/data-frame/construction/create-from-csv-format.js",
+      "packages/ApiSamples/scripts/data-frame/construction/create-from-csv.js",
+      "packages/ApiSamples/scripts/data-frame/construction/create-from-json.js",
+      "packages/ApiSamples/scripts/data-frame/construction/create-from-objects.js",
+      "packages/ApiSamples/scripts/data-frame/construction/create-from-typed-arrays.js",
+      "packages/ApiSamples/scripts/data-frame/construction/create-image-column.js",
+      "packages/ApiSamples/scripts/data-frame/construction/date-time.js",
+      "packages/ApiSamples/scripts/data-frame/construction/export-to-csv-advanced.js",
+      "packages/ApiSamples/scripts/data-frame/construction/export-to-csv-molblock.js",
+      "packages/ApiSamples/scripts/data-frame/construction/export-to-csv.js",
+      "packages/ApiSamples/scripts/data-frame/events/calculated-columns/creation.js",
+      "packages/ApiSamples/scripts/data-frame/events/calculated-columns/deletion.js",
+      "packages/ApiSamples/scripts/data-frame/events/calculated-columns/update.js",
+      "packages/ApiSamples/scripts/data-frame/events/current-elements.js",
+      "packages/ApiSamples/scripts/data-frame/events/events.js",
+      "packages/ApiSamples/scripts/data-frame/filtering/collaborative-filtering.js",
+      "packages/ApiSamples/scripts/data-frame/filtering/update-filter-state.js",
+      "packages/ApiSamples/scripts/data-frame/find-columns.js",
+      "packages/ApiSamples/scripts/data-frame/iterable.js",
+      "packages/ApiSamples/scripts/data-frame/join-link/join-tables.js",
+      "packages/ApiSamples/scripts/data-frame/join-link/link-tables-dynamic.js",
+      "packages/ApiSamples/scripts/data-frame/join-link/link-tables.js",
+      "packages/ApiSamples/scripts/data-frame/metadata/dataframe-meta.js",
+      "packages/ApiSamples/scripts/data-frame/metadata/formula-lines.js",
+      "packages/ApiSamples/scripts/data-frame/metadata/metadata.js",
+      "packages/ApiSamples/scripts/data-frame/modification/add-columns.js",
+      "packages/ApiSamples/scripts/data-frame/modification/add-qnum-from-columns.js",
+      "packages/ApiSamples/scripts/data-frame/modification/append.js",
+      "packages/ApiSamples/scripts/data-frame/modification/calculated-columns/add-calculated-column.js",
+      "packages/ApiSamples/scripts/data-frame/modification/calculated-columns/apply-formula.js",
+      "packages/ApiSamples/scripts/data-frame/modification/calculated-columns/edit-formula.js",
+      "packages/ApiSamples/scripts/data-frame/modification/change-type.js",
+      "packages/ApiSamples/scripts/data-frame/modification/delete-rows-or-columns.js",
+      "packages/ApiSamples/scripts/data-frame/modification/double-precision.js",
+      "packages/ApiSamples/scripts/data-frame/modification/init-column.js",
+      "packages/ApiSamples/scripts/data-frame/modification/manipulate.js",
+      "packages/ApiSamples/scripts/data-frame/modification/remove-where.js",
+      "packages/ApiSamples/scripts/data-frame/performance/access.js",
+      "packages/ApiSamples/scripts/data-frame/row-matching/patterns.js",
+      "packages/ApiSamples/scripts/data-frame/row-matching/select-rows.js",
+      "packages/ApiSamples/scripts/data-frame/sorting/custom-comparer.js",
+      "packages/ApiSamples/scripts/data-frame/sorting/sorted-order.js",
+      "packages/ApiSamples/scripts/data-frame/stats.js",
+      "packages/ApiSamples/scripts/data-frame/test-tables.js",
+      "packages/ApiSamples/scripts/data-frame/value-matching/value-matcher.js",
+      "packages/ApiSamples/scripts/demo/demo.js",
+      "packages/ApiSamples/scripts/demo/med-chem.js",
+      "packages/ApiSamples/scripts/demo/stock-broker.js",
+      "packages/ApiSamples/scripts/domains/bio/bioinformatics.js",
+      "packages/ApiSamples/scripts/domains/chem/chem-benchmark.js",
+      "packages/ApiSamples/scripts/domains/chem/descriptors.js",
+      "packages/ApiSamples/scripts/domains/chem/diversity-search.js",
+      "packages/ApiSamples/scripts/domains/chem/highlight-align-scaffolds.js",
+      "packages/ApiSamples/scripts/domains/chem/inspect-molecule.js",
+      "packages/ApiSamples/scripts/domains/chem/mcs.js",
+      "packages/ApiSamples/scripts/domains/chem/mol-atoms-bonds.js",
+      "packages/ApiSamples/scripts/domains/chem/mol-panel.js",
+      "packages/ApiSamples/scripts/domains/chem/mol-rendering-canvas.js",
+      "packages/ApiSamples/scripts/domains/chem/mol-rendering.js",
+      "packages/ApiSamples/scripts/domains/chem/r-group.js",
+      "packages/ApiSamples/scripts/domains/chem/similarity-scoring-scores.js",
+      "packages/ApiSamples/scripts/domains/chem/similarity-scoring-sorted.js",
+      "packages/ApiSamples/scripts/domains/chem/sketcher.js",
+      "packages/ApiSamples/scripts/domains/chem/substructure-search-benchmark.js",
+      "packages/ApiSamples/scripts/domains/chem/substructure-search-smarts-molfile-als.js",
+      "packages/ApiSamples/scripts/domains/chem/substructure-search-smarts.js",
+      "packages/ApiSamples/scripts/domains/chem/substructure-search.js",
+      "packages/ApiSamples/scripts/domains/data-science/cluster.js",
+      "packages/ApiSamples/scripts/domains/data-science/missing-values-imputation.js",
+      "packages/ApiSamples/scripts/domains/data-science/pca.js",
+      "packages/ApiSamples/scripts/domains/data-science/predictive-model.js",
+      "packages/ApiSamples/scripts/domains/data-science/random-data.js",
+      "packages/ApiSamples/scripts/events/custom-events.js",
+      "packages/ApiSamples/scripts/events/form-creation.js",
+      "packages/ApiSamples/scripts/events/function-events.js",
+      "packages/ApiSamples/scripts/events/global-events.js",
+      "packages/ApiSamples/scripts/events/layout-events.js",
+      "packages/ApiSamples/scripts/events/prevented-event.js",
+      "packages/ApiSamples/scripts/events/tree-view-events.js",
+      "packages/ApiSamples/scripts/events/viewer-data-events.js",
+      "packages/ApiSamples/scripts/events/viewer-events.js",
+      "packages/ApiSamples/scripts/functions/caching-results.js",
+      "packages/ApiSamples/scripts/functions/calling.js",
+      "packages/ApiSamples/scripts/functions/custom-viewers/viewers.js",
+      "packages/ApiSamples/scripts/functions/discover-functions.js",
+      "packages/ApiSamples/scripts/functions/func-call.js",
+      "packages/ApiSamples/scripts/functions/func-params-enhancement.js",
+      "packages/ApiSamples/scripts/functions/get-result-views.js",
+      "packages/ApiSamples/scripts/functions/info-panels/info-panels.js",
+      "packages/ApiSamples/scripts/functions/param-editor.js",
+      "packages/ApiSamples/scripts/functions/progress.js",
+      "packages/ApiSamples/scripts/functions/register-function.js",
+      "packages/ApiSamples/scripts/grid/advanced/auto-size.js",
+      "packages/ApiSamples/scripts/grid/advanced/cell-bounds.js",
+      "packages/ApiSamples/scripts/grid/advanced/cell-renderer.js",
+      "packages/ApiSamples/scripts/grid/advanced/charts-in-cells.js",
+      "packages/ApiSamples/scripts/grid/advanced/column-groups.js",
+      "packages/ApiSamples/scripts/grid/advanced/dynamic-value-retrieval.js",
+      "packages/ApiSamples/scripts/grid/advanced/format-formula.js",
+      "packages/ApiSamples/scripts/grid/advanced/hit-test.js",
+      "packages/ApiSamples/scripts/grid/advanced/invalidate.js",
+      "packages/ApiSamples/scripts/grid/advanced/link-click.js",
+      "packages/ApiSamples/scripts/grid/advanced/markup-link.js",
+      "packages/ApiSamples/scripts/grid/advanced/paint-counts.js",
+      "packages/ApiSamples/scripts/grid/advanced/pinned-columns.js",
+      "packages/ApiSamples/scripts/grid/advanced/pinned-rows.js",
+      "packages/ApiSamples/scripts/grid/advanced/sparklines.js",
+      "packages/ApiSamples/scripts/grid/advanced/visible-cells.js",
+      "packages/ApiSamples/scripts/grid/cell-types/tags-multi-cell.js",
+      "packages/ApiSamples/scripts/grid/color-coding/category-colors.js",
+      "packages/ApiSamples/scripts/grid/color-coding/color-coding-conditional.js",
+      "packages/ApiSamples/scripts/grid/color-coding/color-coding.js",
+      "packages/ApiSamples/scripts/grid/color-coding/get-cell-color.js",
+      "packages/ApiSamples/scripts/grid/events/custom-cell-prepare.js",
+      "packages/ApiSamples/scripts/grid/events/custom-cell-rendering-indexes.js",
+      "packages/ApiSamples/scripts/grid/events/custom-cell-rendering.js",
+      "packages/ApiSamples/scripts/grid/events/custom-cell-tooltip.js",
+      "packages/ApiSamples/scripts/grid/grid-from-properties.js",
+      "packages/ApiSamples/scripts/grid/html-cells/html-dynamic-cells.js",
+      "packages/ApiSamples/scripts/grid/html-cells/html-markup-cells.js",
+      "packages/ApiSamples/scripts/grid/html-cells/html-table-cells.js",
+      "packages/ApiSamples/scripts/grid/misc/plate-viewer.js",
+      "packages/ApiSamples/scripts/grid/navigate/scroll-bars.js",
+      "packages/ApiSamples/scripts/grid/navigate/scroll-to-cell.js",
+      "packages/ApiSamples/scripts/grid/navigate/scroll-to-pixels.js",
+      "packages/ApiSamples/scripts/grid/order/order-columns.js",
+      "packages/ApiSamples/scripts/grid/order/order-rows-by-comparer.js",
+      "packages/ApiSamples/scripts/grid/order/order-rows.js",
+      "packages/ApiSamples/scripts/grid/performance/10k-columns-updates.js",
+      "packages/ApiSamples/scripts/grid/performance/html-rendering.js",
+      "packages/ApiSamples/scripts/grid/resize/column-width-type.js",
+      "packages/ApiSamples/scripts/grid/resize/hide-columns.js",
+      "packages/ApiSamples/scripts/grid/resize/resize-columns.js",
+      "packages/ApiSamples/scripts/grid/resize/resize-events.js",
+      "packages/ApiSamples/scripts/grid/styles/column-cell-styles.js",
+      "packages/ApiSamples/scripts/grid/styles/column-controlled-values.js",
+      "packages/ApiSamples/scripts/grid/styles/data-format.js",
+      "packages/ApiSamples/scripts/misc/audit/aggregated-clicks.js",
+      "packages/ApiSamples/scripts/misc/audit/errors-summary.js",
+      "packages/ApiSamples/scripts/misc/audit/test-tracking.js",
+      "packages/ApiSamples/scripts/misc/audit/users-today.js",
+      "packages/ApiSamples/scripts/misc/package-credentials.js",
+      "packages/ApiSamples/scripts/misc/paint/paint.js",
+      "packages/ApiSamples/scripts/misc/sdtm.js",
+      "packages/ApiSamples/scripts/misc/user-settings-storage.js",
+      "packages/ApiSamples/scripts/misc/utils/hide-empty-columns.js",
+      "packages/ApiSamples/scripts/performance/1-million-columns.js",
+      "packages/ApiSamples/scripts/performance/100-million-rows.js",
+      "packages/ApiSamples/scripts/performance/1m-aggregation.js",
+      "packages/ApiSamples/scripts/performance/all-chembl-structures.js",
+      "packages/ApiSamples/scripts/performance/dataframe-access.js",
+      "packages/ApiSamples/scripts/performance/misc/read-strings.js",
+      "packages/ApiSamples/scripts/python/python_dup.py",
+      "packages/ApiSamples/scripts/r/r_dup.R",
+      "packages/ApiSamples/scripts/scripting/files-for-scripting.js",
+      "packages/ApiSamples/scripts/scripting/grok-scripting.js",
+      "packages/ApiSamples/scripts/scripting/package-scripting.js",
+      "packages/ApiSamples/scripts/shell/current-object-html.js",
+      "packages/ApiSamples/scripts/shell/current-object-js.js",
+      "packages/ApiSamples/scripts/shell/current-object.js",
+      "packages/ApiSamples/scripts/shell/last-error.js",
+      "packages/ApiSamples/scripts/shell/ui-parts.js",
+      "packages/ApiSamples/scripts/shell/windows/browse/customize-tree.js",
+      "packages/ApiSamples/scripts/shell/windows/shell-windows.js",
+      "packages/ApiSamples/scripts/statistics/pearson-correlation.js",
+      "packages/ApiSamples/scripts/ui/apps/bioreactor.js",
+      "packages/ApiSamples/scripts/ui/components/accordion.js",
+      "packages/ApiSamples/scripts/ui/components/balloons.js",
+      "packages/ApiSamples/scripts/ui/components/breadcrumbs.js",
+      "packages/ApiSamples/scripts/ui/components/buttons.js",
+      "packages/ApiSamples/scripts/ui/components/color-palettes.js",
+      "packages/ApiSamples/scripts/ui/components/combo-popup.js",
+      "packages/ApiSamples/scripts/ui/components/drop-down.js",
+      "packages/ApiSamples/scripts/ui/components/file-browser.js",
+      "packages/ApiSamples/scripts/ui/components/html-tables.js",
+      "packages/ApiSamples/scripts/ui/components/icons.js",
+      "packages/ApiSamples/scripts/ui/components/iframe.js",
+      "packages/ApiSamples/scripts/ui/components/image.js",
+      "packages/ApiSamples/scripts/ui/components/info-bar.js",
+      "packages/ApiSamples/scripts/ui/components/list.js",
+      "packages/ApiSamples/scripts/ui/components/loading-indicators.js",
+      "packages/ApiSamples/scripts/ui/components/markdown.js",
+      "packages/ApiSamples/scripts/ui/components/menu-advanced.js",
+      "packages/ApiSamples/scripts/ui/components/menu-customization.js",
+      "packages/ApiSamples/scripts/ui/components/menu.js",
+      "packages/ApiSamples/scripts/ui/components/popup-menu.js",
+      "packages/ApiSamples/scripts/ui/components/property-grid.js",
+      "packages/ApiSamples/scripts/ui/components/range-slider.js",
+      "packages/ApiSamples/scripts/ui/components/sidebar.js",
+      "packages/ApiSamples/scripts/ui/components/summary-card.js",
+      "packages/ApiSamples/scripts/ui/components/tab-control.js",
+      "packages/ApiSamples/scripts/ui/components/tag-editor.js",
+      "packages/ApiSamples/scripts/ui/components/taskbar_progress.js",
+      "packages/ApiSamples/scripts/ui/components/tree-view-adv.js",
+      "packages/ApiSamples/scripts/ui/components/tree-view.js",
+      "packages/ApiSamples/scripts/ui/components/typography.js",
+      "packages/ApiSamples/scripts/ui/components/update-indicator.js",
+      "packages/ApiSamples/scripts/ui/containers/blocks.js",
+      "packages/ApiSamples/scripts/ui/containers/box.js",
+      "packages/ApiSamples/scripts/ui/containers/containers.js",
+      "packages/ApiSamples/scripts/ui/containers/flexbox.js",
+      "packages/ApiSamples/scripts/ui/containers/panels.js",
+      "packages/ApiSamples/scripts/ui/containers/splitters.js",
+      "packages/ApiSamples/scripts/ui/css.js",
+      "packages/ApiSamples/scripts/ui/dialogs/dialogs-advanced.js",
+      "packages/ApiSamples/scripts/ui/dialogs/dialogs.js",
+      "packages/ApiSamples/scripts/ui/dialogs/full-screen.js",
+      "packages/ApiSamples/scripts/ui/dialogs/modal.js",
+      "packages/ApiSamples/scripts/ui/dialogs/wizard.js",
+      "packages/ApiSamples/scripts/ui/docking/docking-floating.js",
+      "packages/ApiSamples/scripts/ui/docking/docking-table-view.js",
+      "packages/ApiSamples/scripts/ui/docking/docking.js",
+      "packages/ApiSamples/scripts/ui/handlers/auto-renderers.js",
+      "packages/ApiSamples/scripts/ui/handlers/dynamic-resolving-2.js",
+      "packages/ApiSamples/scripts/ui/handlers/dynamic-resolving.js",
+      "packages/ApiSamples/scripts/ui/handlers/handlers.js",
+      "packages/ApiSamples/scripts/ui/handlers/list-handlers.js",
+      "packages/ApiSamples/scripts/ui/handlers/markup-handlers.js",
+      "packages/ApiSamples/scripts/ui/inputs/advanced/all-input-types.js",
+      "packages/ApiSamples/scripts/ui/inputs/advanced/custom-inputs.js",
+      "packages/ApiSamples/scripts/ui/inputs/advanced/for-columns.js",
+      "packages/ApiSamples/scripts/ui/inputs/advanced/for-properties.js",
+      "packages/ApiSamples/scripts/ui/inputs/advanced/input-api.js",
+      "packages/ApiSamples/scripts/ui/inputs/advanced/input-events.js",
+      "packages/ApiSamples/scripts/ui/inputs/advanced/input-form.js",
+      "packages/ApiSamples/scripts/ui/inputs/advanced/master-details.js",
+      "packages/ApiSamples/scripts/ui/inputs/choice-input.js",
+      "packages/ApiSamples/scripts/ui/inputs/column-combo-box.js",
+      "packages/ApiSamples/scripts/ui/inputs/column-inputs.js",
+      "packages/ApiSamples/scripts/ui/inputs/forms.js",
+      "packages/ApiSamples/scripts/ui/inputs/grid-input.js",
+      "packages/ApiSamples/scripts/ui/inputs/helm-input-ui.js",
+      "packages/ApiSamples/scripts/ui/inputs/inputs-events.js",
+      "packages/ApiSamples/scripts/ui/inputs/inputs-extended.js",
+      "packages/ApiSamples/scripts/ui/inputs/inputs.js",
+      "packages/ApiSamples/scripts/ui/inputs/molecule-input.js",
+      "packages/ApiSamples/scripts/ui/inputs/table-input.js",
+      "packages/ApiSamples/scripts/ui/inputs/tags-input.js",
+      "packages/ApiSamples/scripts/ui/inputs/typeahead-input.js",
+      "packages/ApiSamples/scripts/ui/inputs/validation/input-validators.js",
+      "packages/ApiSamples/scripts/ui/inputs/validation/parameter-expressions.js",
+      "packages/ApiSamples/scripts/ui/inputs/validation/parameter-validation.js",
+      "packages/ApiSamples/scripts/ui/interactivity/drag-and-drop.js",
+      "packages/ApiSamples/scripts/ui/interactivity/hints.js",
+      "packages/ApiSamples/scripts/ui/interactivity/widget-status.js",
+      "packages/ApiSamples/scripts/ui/interactivity/wizard-hints.js",
+      "packages/ApiSamples/scripts/ui/rendering/render-items.js",
+      "packages/ApiSamples/scripts/ui/tooltips/row-group-tooltips.js",
+      "packages/ApiSamples/scripts/ui/tooltips/tooltip-events.js",
+      "packages/ApiSamples/scripts/ui/tooltips/tooltips.js",
+      "packages/ApiSamples/scripts/ui/ui-events.js",
+      "packages/ApiSamples/scripts/ui/viewers/advanced/attached-properties.js",
+      "packages/ApiSamples/scripts/ui/viewers/advanced/default-axis-type.js",
+      "packages/ApiSamples/scripts/ui/viewers/advanced/default-properties.js",
+      "packages/ApiSamples/scripts/ui/viewers/advanced/descriptors.js",
+      "packages/ApiSamples/scripts/ui/viewers/advanced/init-function.js",
+      "packages/ApiSamples/scripts/ui/viewers/advanced/init-script.js",
+      "packages/ApiSamples/scripts/ui/viewers/advanced/sketch-form.js",
+      "packages/ApiSamples/scripts/ui/viewers/context-menu.js",
+      "packages/ApiSamples/scripts/ui/viewers/create-viewers-dynamically.js",
+      "packages/ApiSamples/scripts/ui/viewers/create-viewers.js",
+      "packages/ApiSamples/scripts/ui/viewers/custom-column-selector.js",
+      "packages/ApiSamples/scripts/ui/viewers/custom-scatterplot-rendering.js",
+      "packages/ApiSamples/scripts/ui/viewers/custom-viewer-properties.js",
+      "packages/ApiSamples/scripts/ui/viewers/filter-select-highlight.js",
+      "packages/ApiSamples/scripts/ui/viewers/filters/add-single-filter.js",
+      "packages/ApiSamples/scripts/ui/viewers/filters/custom-filters.js",
+      "packages/ApiSamples/scripts/ui/viewers/filters/filter-group.js",
+      "packages/ApiSamples/scripts/ui/viewers/filters/multi-value-filter.js",
+      "packages/ApiSamples/scripts/ui/viewers/inspect-viewer-properties.js",
+      "packages/ApiSamples/scripts/ui/viewers/js viewers/chord-viewer.js",
+      "packages/ApiSamples/scripts/ui/viewers/js viewers/globe-viewer.js",
+      "packages/ApiSamples/scripts/ui/viewers/js viewers/radar-viewer.js",
+      "packages/ApiSamples/scripts/ui/viewers/js viewers/sankey-viewer.js",
+      "packages/ApiSamples/scripts/ui/viewers/js viewers/sunburst-viewer.js",
+      "packages/ApiSamples/scripts/ui/viewers/js viewers/surface-plot.js",
+      "packages/ApiSamples/scripts/ui/viewers/js viewers/timelines-viewer.js",
+      "packages/ApiSamples/scripts/ui/viewers/js viewers/tree-viewer.js",
+      "packages/ApiSamples/scripts/ui/viewers/js viewers/word-cloud.js",
+      "packages/ApiSamples/scripts/ui/viewers/line-chart-multiple-series.js",
+      "packages/ApiSamples/scripts/ui/viewers/list-viewers.js",
+      "packages/ApiSamples/scripts/ui/viewers/scatter-plot-events.js",
+      "packages/ApiSamples/scripts/ui/viewers/style-settings.js",
+      "packages/ApiSamples/scripts/ui/viewers/trellis-plot-with-summary-viewer.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/bar-chart.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/box-plot.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/calendar.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/corr-plot.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/density-plot.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/filters.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/form-advanced.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/form.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/globe.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/grid.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/heat-map.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/histogram.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/line-chart.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/markup-advanced.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/markup-eeg.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/markup.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/matrix-plot.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/network-diagram.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/pc-plot.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/pie-chart.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/scatter-plot-3d.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/scatter-plot.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/shape-map.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/statistics.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/surface-plot.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/tile-viewer.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/tree-map.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/trellis-plot.js",
+      "packages/ApiSamples/scripts/ui/viewers/types/word-cloud.js",
+      "packages/ApiSamples/scripts/ui/viewers/viewer-info.js",
+      "packages/ApiSamples/scripts/ui/viewers/viewer-tooltips.js",
+      "packages/ApiSamples/scripts/ui/views/currently-open-views.js",
+      "packages/ApiSamples/scripts/ui/views/default-views.js",
+      "packages/ApiSamples/scripts/ui/views/files-view.js",
+      "packages/ApiSamples/scripts/ui/views/layouts.js",
+      "packages/ApiSamples/scripts/ui/views/multi-view.js",
+      "packages/ApiSamples/scripts/ui/views/navigation.js",
+      "packages/ApiSamples/scripts/ui/views/ribbon.js",
+      "packages/ApiSamples/scripts/ui/views/toolbox-page.js",
+      "packages/ApiSamples/scripts/ui/views/toolbox.js",
+      "packages/ApiSamples/scripts/ui/views/views.js",
+      "packages/ApiSamples/scripts/ui/views/virtual-view.js",
+      "packages/ApiSamples/scripts/ui/widgets/widgets-tree.js"
+    ],
+    "queries": [
+      "packages/ApiSamples/queries/mssql-northwind.sql",
+      "packages/ApiSamples/queries/postgres-northwind.sql"
+    ],
+    "docs": [
+      "packages/ApiSamples/CHANGELOG.md",
+      "packages/ApiSamples/CLAUDE.md",
+      "packages/ApiSamples/CREDITS.md",
+      "packages/ApiSamples/README.md"
+    ],
+    "config": [
+      "packages/ApiSamples/connections/mssql-northwind.json",
+      "packages/ApiSamples/connections/postgres-northwind.json"
+    ]
+  },
+  "features": [
+    {
+      "id": "feature:ApiSamples:dataframe-creation-and-io",
+      "name": "DataFrame Creation and I/O",
+      "description": "Demonstrates creating DataFrames from CSV, JSON, objects, columns, and raw bytes, as well as saving, loading, comparing, appending, joining, and linking tables.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "script:ApiSamples:create-from-csv",
+          "kind": "Script",
+          "name": "create-from-csv",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:create-from-csv-format",
+          "kind": "Script",
+          "name": "create-from-csv-format",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:create-from-json",
+          "kind": "Script",
+          "name": "create-from-json",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:create-from-objects",
+          "kind": "Script",
+          "name": "create-from-objects",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:create-from-columns",
+          "kind": "Script",
+          "name": "create-from-columns",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:load-csv",
+          "kind": "Script",
+          "name": "load-csv",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:from-bytes",
+          "kind": "Script",
+          "name": "from-bytes",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:save-and-load-df",
+          "kind": "Script",
+          "name": "save-and-load-df",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:compare-tables",
+          "kind": "Script",
+          "name": "compare-tables",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:test-tables",
+          "kind": "Script",
+          "name": "test-tables",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:append",
+          "kind": "Script",
+          "name": "append",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:join-tables",
+          "kind": "Script",
+          "name": "join-tables",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:link-tables",
+          "kind": "Script",
+          "name": "link-tables",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:link-tables-dynamic",
+          "kind": "Script",
+          "name": "link-tables-dynamic",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/advanced/data-frame",
+          "kind": "DocPage",
+          "title": "Dataframe",
+          "url": "/help/develop/advanced/data-frame"
+        },
+        {
+          "id": "doc:/help/develop/how-to/_data",
+          "kind": "DocPage",
+          "title": "Efficiently work with data",
+          "url": "/help/develop/how-to/_data"
+        },
+        {
+          "id": "doc:/help/transform/append-tables",
+          "kind": "DocPage",
+          "title": "Append tables",
+          "url": "/help/transform/append-tables"
+        },
+        {
+          "id": "doc:/help/transform/compare-tables",
+          "kind": "DocPage",
+          "title": "Compare tables",
+          "url": "/help/transform/compare-tables"
+        },
+        {
+          "id": "doc:/help/transform/compare-tables-test",
+          "kind": "DocPage",
+          "title": "Tests: Compare tables",
+          "url": "/help/transform/compare-tables-test"
+        },
+        {
+          "id": "doc:/help/transform/join-tables",
+          "kind": "DocPage",
+          "title": "Join tables",
+          "url": "/help/transform/join-tables"
+        },
+        {
+          "id": "doc:/help/transform/join-tables-test",
+          "kind": "DocPage",
+          "title": "Tests: Join tables",
+          "url": "/help/transform/join-tables-test"
+        },
+        {
+          "id": "doc:/help/transform/link-tables",
+          "kind": "DocPage",
+          "title": "Link tables",
+          "url": "/help/transform/link-tables"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:column-operations",
+      "name": "Column Operations",
+      "description": "Shows how to add, access, type-convert, sort, and manipulate DataFrame columns, including virtual columns and image columns.",
+      "category": "dataframe",
+      "members": [
+        {
+          "id": "script:ApiSamples:add-new-column",
+          "kind": "Script",
+          "name": "add-new-column",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:add-columns",
+          "kind": "Script",
+          "name": "add-columns",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:column-access",
+          "kind": "Script",
+          "name": "column-access",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:access",
+          "kind": "Script",
+          "name": "access",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:manipulate",
+          "kind": "Script",
+          "name": "manipulate",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:init-column",
+          "kind": "Script",
+          "name": "init-column",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:change-type",
+          "kind": "Script",
+          "name": "change-type",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:double-precision",
+          "kind": "Script",
+          "name": "double-precision",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:add-qnum-from-columns",
+          "kind": "Script",
+          "name": "add-qnum-from-columns",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:virtual-int-column",
+          "kind": "Script",
+          "name": "virtual-int-column",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:create-image-column",
+          "kind": "Script",
+          "name": "create-image-column",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:find-columns",
+          "kind": "Script",
+          "name": "find-columns",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:custom-comparer",
+          "kind": "Script",
+          "name": "custom-comparer",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:sorted-order",
+          "kind": "Script",
+          "name": "sorted-order",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:order-rows",
+          "kind": "Script",
+          "name": "order-rows",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/advanced/data-frame",
+          "kind": "DocPage",
+          "title": "Dataframe",
+          "url": "/help/develop/advanced/data-frame"
+        },
+        {
+          "id": "doc:/help/develop/how-to/_data",
+          "kind": "DocPage",
+          "title": "Efficiently work with data",
+          "url": "/help/develop/how-to/_data"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:row-filtering-and-bitsets",
+      "name": "Row Filtering and Bitsets",
+      "description": "Covers row selection, bitset boolean operations (AND/OR/XOR), aggregation, grouping, iterable rows, and collaborative filter-state synchronisation.",
+      "category": "dataframe",
+      "members": [
+        {
+          "id": "script:ApiSamples:select-rows",
+          "kind": "Script",
+          "name": "select-rows",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:select-rows-fast",
+          "kind": "Script",
+          "name": "select-rows-fast",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:and-or-xor",
+          "kind": "Script",
+          "name": "and-or-xor",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:aggregate-filter",
+          "kind": "Script",
+          "name": "aggregate-filter",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:aggregate",
+          "kind": "Script",
+          "name": "aggregate",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:get-groups",
+          "kind": "Script",
+          "name": "get-groups",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:iterable",
+          "kind": "Script",
+          "name": "iterable",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:stats",
+          "kind": "Script",
+          "name": "stats",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:update-filter-state",
+          "kind": "Script",
+          "name": "update-filter-state",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:collaborative-filtering",
+          "kind": "Script",
+          "name": "collaborative-filtering",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/how-to/_data",
+          "kind": "DocPage",
+          "title": "Efficiently work with data",
+          "url": "/help/develop/how-to/_data"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:metadata-and-semantic-types",
+      "name": "Metadata and Semantic Types",
+      "description": "Demonstrates tagging columns and DataFrames with metadata, detecting and assigning semantic types, qualified numbers, value-matchers, and custom category ordering.",
+      "category": "dataframe",
+      "members": [
+        {
+          "id": "script:ApiSamples:dataframe-meta",
+          "kind": "Script",
+          "name": "dataframe-meta",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:metadata",
+          "kind": "Script",
+          "name": "metadata",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:semantic-type-detection",
+          "kind": "Script",
+          "name": "semantic-type-detection",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:sticky-meta-1-tags",
+          "kind": "Script",
+          "name": "sticky-meta-1-tags",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:sticky-meta-2-semtype",
+          "kind": "Script",
+          "name": "sticky-meta-2-semtype",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:custom-category-order",
+          "kind": "Script",
+          "name": "custom-category-order",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:date-time",
+          "kind": "Script",
+          "name": "date-time",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:qualified-numbers",
+          "kind": "Script",
+          "name": "qualified-numbers",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:similarity-metrics",
+          "kind": "Script",
+          "name": "similarity-metrics",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:value-matcher",
+          "kind": "Script",
+          "name": "value-matcher",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:patterns",
+          "kind": "Script",
+          "name": "patterns",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/how-to/functions/define-semantic-type-detectors",
+          "kind": "DocPage",
+          "title": "Define semantic type detectors",
+          "url": "/help/develop/how-to/functions/define-semantic-type-detectors"
+        },
+        {
+          "id": "doc:/help/govern/catalog/semantic-types",
+          "kind": "DocPage",
+          "title": "Semantic types",
+          "url": "/help/govern/catalog/semantic-types"
+        },
+        {
+          "id": "doc:/help/govern/catalog/sticky-meta",
+          "kind": "DocPage",
+          "title": "Sticky meta",
+          "url": "/help/govern/catalog/sticky-meta"
+        },
+        {
+          "id": "doc:/help/govern/catalog/tags",
+          "kind": "DocPage",
+          "title": "Tags",
+          "url": "/help/govern/catalog/tags"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:grid-cell-rendering",
+      "name": "Grid Cell Rendering",
+      "description": "Shows how to implement custom cell renderers, HTML cells, sparklines, format formulas, tooltips, hit-testing, and paint callbacks for the main data grid.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "script:ApiSamples:cell-renderer",
+          "kind": "Script",
+          "name": "cell-renderer",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:custom-cell-prepare",
+          "kind": "Script",
+          "name": "custom-cell-prepare",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:custom-cell-rendering-indexes",
+          "kind": "Script",
+          "name": "custom-cell-rendering-indexes",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:custom-cell-tooltip",
+          "kind": "Script",
+          "name": "custom-cell-tooltip",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:html-dynamic-cells",
+          "kind": "Script",
+          "name": "html-dynamic-cells",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:html-table-cells",
+          "kind": "Script",
+          "name": "html-table-cells",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:html-rendering",
+          "kind": "Script",
+          "name": "html-rendering",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:auto-size",
+          "kind": "Script",
+          "name": "auto-size",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:sparklines",
+          "kind": "Script",
+          "name": "sparklines",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:visible-cells",
+          "kind": "Script",
+          "name": "visible-cells",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:tags-multi-cell",
+          "kind": "Script",
+          "name": "tags-multi-cell",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:format-formula",
+          "kind": "Script",
+          "name": "format-formula",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:markup-link",
+          "kind": "Script",
+          "name": "markup-link",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:link-click",
+          "kind": "Script",
+          "name": "link-click",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:dynamic-value-retrieval",
+          "kind": "Script",
+          "name": "dynamic-value-retrieval",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:hit-test",
+          "kind": "Script",
+          "name": "hit-test",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:paint",
+          "kind": "Script",
+          "name": "paint",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:row-group-tooltips",
+          "kind": "Script",
+          "name": "row-group-tooltips",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/how-to/grid/column-tooltip",
+          "kind": "DocPage",
+          "title": "Develop column tooltips",
+          "url": "/help/develop/how-to/grid/column-tooltip"
+        },
+        {
+          "id": "doc:/help/develop/how-to/grid/custom-cell-renderers",
+          "kind": "DocPage",
+          "title": "Develop custom cell renderers",
+          "url": "/help/develop/how-to/grid/custom-cell-renderers"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:grid-column-configuration",
+      "name": "Grid Column Configuration",
+      "description": "Covers column width, visibility, ordering, color-coding, styles, data formatting, controlled values, and scroll positioning in the data grid.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "script:ApiSamples:column-width-type",
+          "kind": "Script",
+          "name": "column-width-type",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:resize-columns",
+          "kind": "Script",
+          "name": "resize-columns",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:hide-columns",
+          "kind": "Script",
+          "name": "hide-columns",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:hide-empty-columns",
+          "kind": "Script",
+          "name": "hide-empty-columns",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:order-columns",
+          "kind": "Script",
+          "name": "order-columns",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:column-cell-styles",
+          "kind": "Script",
+          "name": "column-cell-styles",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:column-controlled-values",
+          "kind": "Script",
+          "name": "column-controlled-values",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:data-format",
+          "kind": "Script",
+          "name": "data-format",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:category-colors",
+          "kind": "Script",
+          "name": "category-colors",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:color-coding-conditional",
+          "kind": "Script",
+          "name": "color-coding-conditional",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:scroll-to-cell",
+          "kind": "Script",
+          "name": "scroll-to-cell",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:scroll-to-pixels",
+          "kind": "Script",
+          "name": "scroll-to-pixels",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:resize-events",
+          "kind": "Script",
+          "name": "resize-events",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/how-to/grid/customize-grid",
+          "kind": "DocPage",
+          "title": "Customize a grid",
+          "url": "/help/develop/how-to/grid/customize-grid"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:built-in-viewers",
+      "name": "Built-in Viewers",
+      "description": "Samples for every built-in Datagrok viewer: scatter plot, bar/box/line/pie chart, histogram, heat map, trellis, network diagram, globe, markup, form, statistics, and more.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "script:ApiSamples:scatter-plot",
+          "kind": "Script",
+          "name": "scatter-plot",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:scatter-plot-3d",
+          "kind": "Script",
+          "name": "scatter-plot-3d",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:bar-chart",
+          "kind": "Script",
+          "name": "bar-chart",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:box-plot",
+          "kind": "Script",
+          "name": "box-plot",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:line-chart",
+          "kind": "Script",
+          "name": "line-chart",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:line-chart-multiple-series",
+          "kind": "Script",
+          "name": "line-chart-multiple-series",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:pie-chart",
+          "kind": "Script",
+          "name": "pie-chart",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:histogram",
+          "kind": "Script",
+          "name": "histogram",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:corr-plot",
+          "kind": "Script",
+          "name": "corr-plot",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:density-plot",
+          "kind": "Script",
+          "name": "density-plot",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:heat-map",
+          "kind": "Script",
+          "name": "heat-map",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:matrix-plot",
+          "kind": "Script",
+          "name": "matrix-plot",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:network-diagram",
+          "kind": "Script",
+          "name": "network-diagram",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:pc-plot",
+          "kind": "Script",
+          "name": "pc-plot",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:trellis-plot",
+          "kind": "Script",
+          "name": "trellis-plot",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:tree-map",
+          "kind": "Script",
+          "name": "tree-map",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:calendar",
+          "kind": "Script",
+          "name": "calendar",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:statistics",
+          "kind": "Script",
+          "name": "statistics",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:tile-viewer",
+          "kind": "Script",
+          "name": "tile-viewer",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:word-cloud",
+          "kind": "Script",
+          "name": "word-cloud",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:form",
+          "kind": "Script",
+          "name": "form",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:form-advanced",
+          "kind": "Script",
+          "name": "form-advanced",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:radar-viewer",
+          "kind": "Script",
+          "name": "radar-viewer",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:globe",
+          "kind": "Script",
+          "name": "globe",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:globe-viewer",
+          "kind": "Script",
+          "name": "globe-viewer",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:markup",
+          "kind": "Script",
+          "name": "markup",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:markup-advanced",
+          "kind": "Script",
+          "name": "markup-advanced",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:markup-eeg",
+          "kind": "Script",
+          "name": "markup-eeg",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:grid",
+          "kind": "Script",
+          "name": "grid",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:filters",
+          "kind": "Script",
+          "name": "filters",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:plate-viewer",
+          "kind": "Script",
+          "name": "plate-viewer",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:shape-map",
+          "kind": "Script",
+          "name": "shape-map",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:viewer-info",
+          "kind": "Script",
+          "name": "viewer-info",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/how-to/viewers/develop-custom-viewer",
+          "kind": "DocPage",
+          "title": "Develop custom viewers",
+          "url": "/help/develop/how-to/viewers/develop-custom-viewer"
+        },
+        {
+          "id": "doc:/help/visualize/table-view-1",
+          "kind": "DocPage",
+          "title": "Table View",
+          "url": "/help/visualize/table-view-1"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/3d-scatter-plot",
+          "kind": "DocPage",
+          "title": "3D Scatter plot",
+          "url": "/help/visualize/viewers/3d-scatter-plot"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/bar-chart",
+          "kind": "DocPage",
+          "title": "Bar chart",
+          "url": "/help/visualize/viewers/bar-chart"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/box-plot",
+          "kind": "DocPage",
+          "title": "Box plot",
+          "url": "/help/visualize/viewers/box-plot"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/calendar",
+          "kind": "DocPage",
+          "title": "Calendar",
+          "url": "/help/visualize/viewers/calendar"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/confusion-matrix",
+          "kind": "DocPage",
+          "title": "Confusion matrix",
+          "url": "/help/visualize/viewers/confusion-matrix"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/correlation-plot",
+          "kind": "DocPage",
+          "title": "Correlation plot",
+          "url": "/help/visualize/viewers/correlation-plot"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/density-plot",
+          "kind": "DocPage",
+          "title": "Density plot",
+          "url": "/help/visualize/viewers/density-plot"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/form",
+          "kind": "DocPage",
+          "title": "Form",
+          "url": "/help/visualize/viewers/form"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/heat-map",
+          "kind": "DocPage",
+          "title": "Heatmap",
+          "url": "/help/visualize/viewers/heat-map"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/histogram",
+          "kind": "DocPage",
+          "title": "Histogram",
+          "url": "/help/visualize/viewers/histogram"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/line-chart",
+          "kind": "DocPage",
+          "title": "Line chart",
+          "url": "/help/visualize/viewers/line-chart"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/markup",
+          "kind": "DocPage",
+          "title": "Markup viewer",
+          "url": "/help/visualize/viewers/markup"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/markup-test",
+          "kind": "DocPage",
+          "title": "Tests: Markup viewer",
+          "url": "/help/visualize/viewers/markup-test"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/matrix-plot",
+          "kind": "DocPage",
+          "title": "Matrix plot",
+          "url": "/help/visualize/viewers/matrix-plot"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/network-diagram",
+          "kind": "DocPage",
+          "title": "Network diagram",
+          "url": "/help/visualize/viewers/network-diagram"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/pc-plot",
+          "kind": "DocPage",
+          "title": "Parallel coordinates plot",
+          "url": "/help/visualize/viewers/pc-plot"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/pie-chart",
+          "kind": "DocPage",
+          "title": "Pie chart",
+          "url": "/help/visualize/viewers/pie-chart"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/pivot-table",
+          "kind": "DocPage",
+          "title": "Pivot table",
+          "url": "/help/visualize/viewers/pivot-table"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/scatter-plot",
+          "kind": "DocPage",
+          "title": "Scatterplot",
+          "url": "/help/visualize/viewers/scatter-plot"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/statistics",
+          "kind": "DocPage",
+          "title": "Statistics",
+          "url": "/help/visualize/viewers/statistics"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/tile-viewer",
+          "kind": "DocPage",
+          "title": "Tile viewer",
+          "url": "/help/visualize/viewers/tile-viewer"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/tree-map",
+          "kind": "DocPage",
+          "title": "Treemap",
+          "url": "/help/visualize/viewers/tree-map"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/trellis-plot",
+          "kind": "DocPage",
+          "title": "Trellis plot",
+          "url": "/help/visualize/viewers/trellis-plot"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/viewers",
+          "kind": "DocPage",
+          "title": "Supported viewers",
+          "url": "/help/visualize/viewers/viewers"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/viewers-test",
+          "kind": "DocPage",
+          "title": "Tests: Viewers",
+          "url": "/help/visualize/viewers/viewers-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:viewer-interaction",
+      "name": "Viewer Interaction and Customisation",
+      "description": "Covers dynamic viewer creation, selection/filter/highlight coordination, custom scatter-plot rendering, filter widgets, and viewer event handling.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "script:ApiSamples:create-viewers-dynamically",
+          "kind": "Script",
+          "name": "create-viewers-dynamically",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:list-viewers",
+          "kind": "Script",
+          "name": "list-viewers",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:scatter-plot-events",
+          "kind": "Script",
+          "name": "scatter-plot-events",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:viewer-data-events",
+          "kind": "Script",
+          "name": "viewer-data-events",
+          "language": "javascript",
+          "description": "Handling viewer events: onDataEvent, onDataSelected, onDataHovered, onDataRowClicked."
+        },
+        {
+          "id": "script:ApiSamples:viewer-events",
+          "kind": "Script",
+          "name": "viewer-events",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:filter-select-highlight",
+          "kind": "Script",
+          "name": "filter-select-highlight",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:style-settings",
+          "kind": "Script",
+          "name": "style-settings",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:custom-scatterplot-rendering",
+          "kind": "Script",
+          "name": "custom-scatterplot-rendering",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:custom-column-selector",
+          "kind": "Script",
+          "name": "custom-column-selector",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:multi-value-filter",
+          "kind": "Script",
+          "name": "multi-value-filter",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:add-single-filter",
+          "kind": "Script",
+          "name": "add-single-filter",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/how-to/viewers/manipulate-viewers",
+          "kind": "DocPage",
+          "title": "Manipulate viewers",
+          "url": "/help/develop/how-to/viewers/manipulate-viewers"
+        },
+        {
+          "id": "doc:/help/visualize/viewer-event-scripts",
+          "kind": "DocPage",
+          "title": "Viewer event scripts",
+          "url": "/help/visualize/viewer-event-scripts"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/scatter-plot",
+          "kind": "DocPage",
+          "title": "Scatterplot",
+          "url": "/help/visualize/viewers/scatter-plot"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:view-management",
+      "name": "View Management and Navigation",
+      "description": "Shows how to open, navigate, and manage application views, including docking, ribbons, toolbox pages, layouts, layout permissions, and virtual views.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:ApiSamples:views",
+          "kind": "Script",
+          "name": "views",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:currently-open-views",
+          "kind": "Script",
+          "name": "currently-open-views",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:files-view",
+          "kind": "Script",
+          "name": "files-view",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:multi-view",
+          "kind": "Script",
+          "name": "multi-view",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:navigation",
+          "kind": "Script",
+          "name": "navigation",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:ribbon",
+          "kind": "Script",
+          "name": "ribbon",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:toolbox",
+          "kind": "Script",
+          "name": "toolbox",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:toolbox-page",
+          "kind": "Script",
+          "name": "toolbox-page",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:layouts",
+          "kind": "Script",
+          "name": "layouts",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:output-layouts",
+          "kind": "Script",
+          "name": "output-layouts",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:layouts-and-permissions",
+          "kind": "Script",
+          "name": "layouts-and-permissions",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:virtual-view",
+          "kind": "Script",
+          "name": "virtual-view",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:docking",
+          "kind": "Script",
+          "name": "docking",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:docking-floating",
+          "kind": "Script",
+          "name": "docking-floating",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:shell-windows",
+          "kind": "Script",
+          "name": "shell-windows",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:sidebar",
+          "kind": "Script",
+          "name": "sidebar",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/how-to/apps/build-an-app",
+          "kind": "DocPage",
+          "title": "Build an application",
+          "url": "/help/develop/how-to/apps/build-an-app"
+        },
+        {
+          "id": "doc:/help/develop/how-to/apps/routing",
+          "kind": "DocPage",
+          "title": "Routing",
+          "url": "/help/develop/how-to/apps/routing"
+        },
+        {
+          "id": "doc:/help/develop/how-to/views/custom-views",
+          "kind": "DocPage",
+          "title": "Create a custom view",
+          "url": "/help/develop/how-to/views/custom-views"
+        },
+        {
+          "id": "doc:/help/develop/how-to/views/layouts",
+          "kind": "DocPage",
+          "title": "Use layouts",
+          "url": "/help/develop/how-to/views/layouts"
+        },
+        {
+          "id": "doc:/help/visualize/table-view-1",
+          "kind": "DocPage",
+          "title": "Table View",
+          "url": "/help/visualize/table-view-1"
+        },
+        {
+          "id": "doc:/help/visualize/view-layout",
+          "kind": "DocPage",
+          "title": "Layout",
+          "url": "/help/visualize/view-layout"
+        },
+        {
+          "id": "doc:/help/visualize/view-layout-test",
+          "kind": "DocPage",
+          "title": "Tests: View layout",
+          "url": "/help/visualize/view-layout-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:ui-widgets",
+      "name": "UI Widgets",
+      "description": "A catalogue of atomic UI controls: buttons, menus, dropdowns, markdown, icons, images, progress indicators, sliders, tabs, and tooltips.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:ApiSamples:accordion",
+          "kind": "Script",
+          "name": "accordion",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:balloons",
+          "kind": "Script",
+          "name": "balloons",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:buttons",
+          "kind": "Script",
+          "name": "buttons",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:color-palettes",
+          "kind": "Script",
+          "name": "color-palettes",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:combo-popup",
+          "kind": "Script",
+          "name": "combo-popup",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:drop-down",
+          "kind": "Script",
+          "name": "drop-down",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:file-browser",
+          "kind": "Script",
+          "name": "file-browser",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:html-tables",
+          "kind": "Script",
+          "name": "html-tables",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:icons",
+          "kind": "Script",
+          "name": "icons",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:iframe",
+          "kind": "Script",
+          "name": "iframe",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:image",
+          "kind": "Script",
+          "name": "image",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:info-bar",
+          "kind": "Script",
+          "name": "info-bar",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:list",
+          "kind": "Script",
+          "name": "list",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:loading-indicators",
+          "kind": "Script",
+          "name": "loading-indicators",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:markdown",
+          "kind": "Script",
+          "name": "markdown",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:menu-advanced",
+          "kind": "Script",
+          "name": "menu-advanced",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:menu-customization",
+          "kind": "Script",
+          "name": "menu-customization",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:property-grid",
+          "kind": "Script",
+          "name": "property-grid",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:range-slider",
+          "kind": "Script",
+          "name": "range-slider",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:tab-control",
+          "kind": "Script",
+          "name": "tab-control",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:taskbar_progress",
+          "kind": "Script",
+          "name": "taskbar_progress",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:typography",
+          "kind": "Script",
+          "name": "typography",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:update-indicator",
+          "kind": "Script",
+          "name": "update-indicator",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:css",
+          "kind": "Script",
+          "name": "css",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:context-menu",
+          "kind": "Script",
+          "name": "context-menu",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:drag-and-drop",
+          "kind": "Script",
+          "name": "drag-and-drop",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:widget-status",
+          "kind": "Script",
+          "name": "widget-status",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:render-items",
+          "kind": "Script",
+          "name": "render-items",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/advanced/ui",
+          "kind": "DocPage",
+          "title": "Datagrok UI",
+          "url": "/help/develop/advanced/ui"
+        },
+        {
+          "id": "doc:/help/develop/how-to/packages/home-page-widgets",
+          "kind": "DocPage",
+          "title": "Develop widgets for home page",
+          "url": "/help/develop/how-to/packages/home-page-widgets"
+        },
+        {
+          "id": "doc:/help/develop/under-the-hood/markup",
+          "kind": "DocPage",
+          "title": "Markup",
+          "url": "/help/develop/under-the-hood/markup"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:layout-containers",
+      "name": "Layout Containers",
+      "description": "Shows the block, box, panel, flexbox, splitter, and widget-tree layout primitives used to arrange content inside a Datagrok view.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:ApiSamples:blocks",
+          "kind": "Script",
+          "name": "blocks",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:box",
+          "kind": "Script",
+          "name": "box",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:containers",
+          "kind": "Script",
+          "name": "containers",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:flexbox",
+          "kind": "Script",
+          "name": "flexbox",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:panels",
+          "kind": "Script",
+          "name": "panels",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:splitters",
+          "kind": "Script",
+          "name": "splitters",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:widgets-tree",
+          "kind": "Script",
+          "name": "widgets-tree",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:full-screen",
+          "kind": "Script",
+          "name": "full-screen",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/advanced/ui",
+          "kind": "DocPage",
+          "title": "Datagrok UI",
+          "url": "/help/develop/advanced/ui"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:dialogs-and-input-forms",
+      "name": "Dialogs and Input Forms",
+      "description": "Covers building modal dialogs, wizards, input forms, combo inputs, custom inputs, parameter validation, and master-detail forms using the JS API.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:ApiSamples:dialogs",
+          "kind": "Script",
+          "name": "dialogs",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:dialogs-advanced",
+          "kind": "Script",
+          "name": "dialogs-advanced",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:modal",
+          "kind": "Script",
+          "name": "modal",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:wizard",
+          "kind": "Script",
+          "name": "wizard",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:form-creation",
+          "kind": "Script",
+          "name": "form-creation",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:input-form",
+          "kind": "Script",
+          "name": "input-form",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:inputs",
+          "kind": "Script",
+          "name": "inputs",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:forms",
+          "kind": "Script",
+          "name": "forms",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:choice-input",
+          "kind": "Script",
+          "name": "choice-input",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:column-combo-box",
+          "kind": "Script",
+          "name": "column-combo-box",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:custom-inputs",
+          "kind": "Script",
+          "name": "custom-inputs",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:for-properties",
+          "kind": "Script",
+          "name": "for-properties",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:for-columns",
+          "kind": "Script",
+          "name": "for-columns",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:input-events",
+          "kind": "Script",
+          "name": "input-events",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:master-details",
+          "kind": "Script",
+          "name": "master-details",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:parameter-expressions",
+          "kind": "Script",
+          "name": "parameter-expressions",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:parameter-validation",
+          "kind": "Script",
+          "name": "parameter-validation",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/advanced/ui",
+          "kind": "DocPage",
+          "title": "Datagrok UI",
+          "url": "/help/develop/advanced/ui"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:event-handling",
+      "name": "Event Handling",
+      "description": "Shows how to subscribe to and prevent platform events: table, layout, function, and UI events.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:ApiSamples:events",
+          "kind": "Script",
+          "name": "events",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:current-elements",
+          "kind": "Script",
+          "name": "current-elements",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:function-events",
+          "kind": "Script",
+          "name": "function-events",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:layout-events",
+          "kind": "Script",
+          "name": "layout-events",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:prevented-event",
+          "kind": "Script",
+          "name": "prevented-event",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:ui-events",
+          "kind": "Script",
+          "name": "ui-events",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/visualize/viewer-event-scripts",
+          "kind": "DocPage",
+          "title": "Viewer event scripts",
+          "url": "/help/visualize/viewer-event-scripts"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:function-registry",
+      "name": "Function Registry",
+      "description": "Covers registering, discovering, calling, and caching registered functions; attaching handlers, markup handlers, and auto-renderers; and managing init hooks.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:ApiSamples:register-function",
+          "kind": "Script",
+          "name": "register-function",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:discover-functions",
+          "kind": "Script",
+          "name": "discover-functions",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:calling",
+          "kind": "Script",
+          "name": "calling",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:caching-results",
+          "kind": "Script",
+          "name": "caching-results",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:get-result-views",
+          "kind": "Script",
+          "name": "get-result-views",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:viewers",
+          "kind": "Script",
+          "name": "viewers",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:handlers",
+          "kind": "Script",
+          "name": "handlers",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:list-handlers",
+          "kind": "Script",
+          "name": "list-handlers",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:markup-handlers",
+          "kind": "Script",
+          "name": "markup-handlers",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:auto-renderers",
+          "kind": "Script",
+          "name": "auto-renderers",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:dynamic-resolving",
+          "kind": "Script",
+          "name": "dynamic-resolving",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:default-properties",
+          "kind": "Script",
+          "name": "default-properties",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:init-function",
+          "kind": "Script",
+          "name": "init-function",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:init-script",
+          "kind": "Script",
+          "name": "init-script",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/packages/_overview",
+          "kind": "DocPage",
+          "title": "JavaScript Development Overview",
+          "url": "/help/develop/packages/_overview"
+        },
+        {
+          "id": "doc:/help/develop/advanced/decorators",
+          "kind": "DocPage",
+          "title": "Decorators",
+          "url": "/help/develop/advanced/decorators"
+        },
+        {
+          "id": "doc:/help/develop/advanced/package-api",
+          "kind": "DocPage",
+          "title": "Package API",
+          "url": "/help/develop/advanced/package-api"
+        },
+        {
+          "id": "doc:/help/develop/function-roles",
+          "kind": "DocPage",
+          "title": "Function roles",
+          "url": "/help/develop/function-roles"
+        },
+        {
+          "id": "doc:/help/develop/how-to/functions/cache-function-results",
+          "kind": "DocPage",
+          "title": "Caching function results",
+          "url": "/help/develop/how-to/functions/cache-function-results"
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/add-info-panel",
+          "kind": "DocPage",
+          "title": "Add an info panel",
+          "url": "/help/develop/how-to/ui/add-info-panel"
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/context-actions",
+          "kind": "DocPage",
+          "title": "Register context actions",
+          "url": "/help/develop/how-to/ui/context-actions"
+        },
+        {
+          "id": "doc:/help/develop/packages/_package-function-types",
+          "kind": "DocPage",
+          "title": "Function Types",
+          "url": "/help/develop/packages/_package-function-types"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:package-scripting",
+      "name": "Package Scripting",
+      "description": "Shows how to write multi-language scripts (Python, R, JS) within a package, access file storage from scripts, inspect the scripting context, and handle errors.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:ApiSamples:package-scripting",
+          "kind": "Script",
+          "name": "package-scripting",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:files-for-scripting",
+          "kind": "Script",
+          "name": "files-for-scripting",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:PythonDup",
+          "kind": "Script",
+          "name": "PythonDup",
+          "language": "python",
+          "description": "Duplicates a string in Python"
+        },
+        {
+          "id": "script:ApiSamples:RDup",
+          "kind": "Script",
+          "name": "RDup",
+          "language": "r",
+          "description": "Duplicates a string in R"
+        },
+        {
+          "id": "script:ApiSamples:Pearson",
+          "kind": "Script",
+          "name": "Pearson",
+          "language": "javascript",
+          "description": "Computes Pearson correlation for two numerical columns"
+        },
+        {
+          "id": "script:ApiSamples:current-object",
+          "kind": "Script",
+          "name": "current-object",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:current-object-html",
+          "kind": "Script",
+          "name": "current-object-html",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:current-object-js",
+          "kind": "Script",
+          "name": "current-object-js",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:last-error",
+          "kind": "Script",
+          "name": "last-error",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:ui-parts",
+          "kind": "Script",
+          "name": "ui-parts",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/packages/_overview",
+          "kind": "DocPage",
+          "title": "JavaScript Development Overview",
+          "url": "/help/develop/packages/_overview"
+        },
+        {
+          "id": "doc:/help/develop/advanced/parallel-computing",
+          "kind": "DocPage",
+          "title": "Parallel computing",
+          "url": "/help/develop/advanced/parallel-computing"
+        },
+        {
+          "id": "doc:/help/develop/how-to/packages/python-functions",
+          "kind": "DocPage",
+          "title": "Creating Python Docker Apps",
+          "url": "/help/develop/how-to/packages/python-functions"
+        },
+        {
+          "id": "doc:/help/develop/how-to/scripts/custom-script-handlers",
+          "kind": "DocPage",
+          "title": "Custom script handler",
+          "url": "/help/develop/how-to/scripts/custom-script-handlers"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:server-api",
+      "name": "Server API (dapi)",
+      "description": "Shows how to use grok.dapi to save/load entities, fetch external URLs, manage user groups, inspect the current user, and persist user settings.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "script:ApiSamples:entities-polymorphic-save",
+          "kind": "Script",
+          "name": "entities-polymorphic-save",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:fetch",
+          "kind": "Script",
+          "name": "fetch",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:groups",
+          "kind": "Script",
+          "name": "groups",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:who-am-i",
+          "kind": "Script",
+          "name": "who-am-i",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:users-today",
+          "kind": "Script",
+          "name": "users-today",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:user-settings-storage",
+          "kind": "Script",
+          "name": "user-settings-storage",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:open-table-by-id",
+          "kind": "Script",
+          "name": "open-table-by-id",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/advanced/package-api",
+          "kind": "DocPage",
+          "title": "Package API",
+          "url": "/help/develop/advanced/package-api"
+        },
+        {
+          "id": "doc:/help/develop/how-to/data/user-settings-storage",
+          "kind": "DocPage",
+          "title": "User settings storage",
+          "url": "/help/develop/how-to/data/user-settings-storage"
+        },
+        {
+          "id": "doc:/help/develop/how-to/db/access-data",
+          "kind": "DocPage",
+          "title": "Access data",
+          "url": "/help/develop/how-to/db/access-data"
+        },
+        {
+          "id": "doc:/help/develop/how-to/packages/manage-credentials",
+          "kind": "DocPage",
+          "title": "Manage credentials",
+          "url": "/help/develop/how-to/packages/manage-credentials"
+        },
+        {
+          "id": "doc:/help/develop/packages/rest-api",
+          "kind": "DocPage",
+          "title": "REST API",
+          "url": "/help/develop/packages/rest-api"
+        },
+        {
+          "id": "doc:/help/govern/_deprecated/group",
+          "kind": "DocPage",
+          "title": "User group",
+          "url": "/help/govern/_deprecated/group"
+        },
+        {
+          "id": "doc:/help/govern/_deprecated/user",
+          "kind": "DocPage",
+          "title": "User",
+          "url": "/help/govern/_deprecated/user"
+        },
+        {
+          "id": "doc:/help/govern/access-control/users-and-groups",
+          "kind": "DocPage",
+          "title": "Users and groups",
+          "url": "/help/govern/access-control/users-and-groups"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:projects-and-spaces",
+      "name": "Projects and Spaces",
+      "description": "Shows how to list, open, and navigate projects and spaces via the JS API.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:ApiSamples:projects-list",
+          "kind": "Script",
+          "name": "projects-list",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:projects-open",
+          "kind": "Script",
+          "name": "projects-open",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:spaces",
+          "kind": "Script",
+          "name": "spaces",
+          "language": "js",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:file-management",
+      "name": "File Management",
+      "description": "Demonstrates reading files, checking file existence, and accessing the platform file store from JS scripts.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "script:ApiSamples:files",
+          "kind": "Script",
+          "name": "files",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:file-exists",
+          "kind": "Script",
+          "name": "file-exists",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:read-file",
+          "kind": "Script",
+          "name": "read-file",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/how-to/data/upload-data",
+          "kind": "DocPage",
+          "title": "Upload data",
+          "url": "/help/develop/how-to/data/upload-data"
+        },
+        {
+          "id": "doc:/help/develop/how-to/files/create-custom-file-viewers",
+          "kind": "DocPage",
+          "title": "Create custom file viewers",
+          "url": "/help/develop/how-to/files/create-custom-file-viewers"
+        },
+        {
+          "id": "doc:/help/develop/how-to/files/file-exporters",
+          "kind": "DocPage",
+          "title": "Create file exporters",
+          "url": "/help/develop/how-to/files/file-exporters"
+        },
+        {
+          "id": "doc:/help/develop/how-to/files/file-handlers",
+          "kind": "DocPage",
+          "title": "Develop custom file handlers",
+          "url": "/help/develop/how-to/files/file-handlers"
+        },
+        {
+          "id": "doc:/help/develop/how-to/packages/work-with-package-files",
+          "kind": "DocPage",
+          "title": "Work with package files",
+          "url": "/help/develop/how-to/packages/work-with-package-files"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:database-queries",
+      "name": "Database Queries",
+      "description": "Shows ad-hoc, parameterized, and dynamic SQL queries against Postgres and MSSQL connections, including in-place DB editing and master-detail query patterns.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "script:ApiSamples:ad-hoc-query",
+          "kind": "Script",
+          "name": "ad-hoc-query",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:db-edit",
+          "kind": "Script",
+          "name": "db-edit",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:dynamic-query",
+          "kind": "Script",
+          "name": "dynamic-query",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:parameterized-query",
+          "kind": "Script",
+          "name": "parameterized-query",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:db-master-details-manual",
+          "kind": "Script",
+          "name": "db-master-details-manual",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:all-chembl-structures",
+          "kind": "Script",
+          "name": "all-chembl-structures",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:read-strings",
+          "kind": "Script",
+          "name": "read-strings",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "query:ApiSamples:MSSQLByInt",
+          "kind": "DataQuery",
+          "name": "MSSQLByInt",
+          "description": null
+        },
+        {
+          "id": "query:ApiSamples:Countries",
+          "kind": "DataQuery",
+          "name": "Countries",
+          "description": null
+        },
+        {
+          "id": "query:ApiSamples:CustomersInCountry",
+          "kind": "DataQuery",
+          "name": "CustomersInCountry",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/how-to/db/access-data",
+          "kind": "DocPage",
+          "title": "Access data",
+          "url": "/help/develop/how-to/db/access-data"
+        },
+        {
+          "id": "doc:/help/develop/how-to/db/db-in-plugin",
+          "kind": "DocPage",
+          "title": "Plugin Postgres databases",
+          "url": "/help/develop/how-to/db/db-in-plugin"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:cheminformatics",
+      "name": "Cheminformatics",
+      "description": "Samples for the Chem JS API: molecule rendering, substructure search (SMARTS/molfile/ALS), sketcher, R-group decomposition, MCS, diversity search, and scaffold alignment.",
+      "category": "chem",
+      "members": [
+        {
+          "id": "script:ApiSamples:substructure-search",
+          "kind": "Script",
+          "name": "substructure-search",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:substructure-search-smarts",
+          "kind": "Script",
+          "name": "substructure-search-smarts",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:substructure-search-smarts-molfile-als",
+          "kind": "Script",
+          "name": "substructure-search-smarts-molfile-als",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:substructure-search-benchmark",
+          "kind": "Script",
+          "name": "substructure-search-benchmark",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:mol-rendering",
+          "kind": "Script",
+          "name": "mol-rendering",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:mol-rendering-canvas",
+          "kind": "Script",
+          "name": "mol-rendering-canvas",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:sketcher",
+          "kind": "Script",
+          "name": "sketcher",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:sketch-form",
+          "kind": "Script",
+          "name": "sketch-form",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:r-group",
+          "kind": "Script",
+          "name": "r-group",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:mcs",
+          "kind": "Script",
+          "name": "mcs",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:diversity-search",
+          "kind": "Script",
+          "name": "diversity-search",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:highlight-align-scaffolds",
+          "kind": "Script",
+          "name": "highlight-align-scaffolds",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:descriptors",
+          "kind": "Script",
+          "name": "descriptors",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:chem-benchmark",
+          "kind": "Script",
+          "name": "chem-benchmark",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:bioinformatics",
+          "kind": "Script",
+          "name": "bioinformatics",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "doc:/help/develop/domains/chem/cheminformatics",
+          "kind": "DocPage",
+          "title": "Cheminformatics",
+          "url": "/help/develop/domains/chem/cheminformatics"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:machine-learning",
+      "name": "Machine Learning",
+      "description": "Covers ML API samples: PCA, clustering, missing-value imputation, predictive model training, random data generation, and statistical correlation.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:ApiSamples:pca",
+          "kind": "Script",
+          "name": "pca",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:cluster",
+          "kind": "Script",
+          "name": "cluster",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:missing-values-imputation",
+          "kind": "Script",
+          "name": "missing-values-imputation",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:predictive-model",
+          "kind": "Script",
+          "name": "predictive-model",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:random-data",
+          "kind": "Script",
+          "name": "random-data",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:Pearson",
+          "kind": "Script",
+          "name": "Pearson",
+          "language": "javascript",
+          "description": "Computes Pearson correlation for two numerical columns"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:ApiSamples:application-demos",
+      "name": "Application Demos",
+      "description": "Full mini-application examples (stock-broker, bioreactor, general demo) that wire together multiple API surfaces into a cohesive interactive workflow.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:ApiSamples:demo",
+          "kind": "Script",
+          "name": "demo",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:stock-broker",
+          "kind": "Script",
+          "name": "stock-broker",
+          "language": "js",
+          "description": null
+        },
+        {
+          "id": "script:ApiSamples:bioreactor",
+          "kind": "Script",
+          "name": "bioreactor",
+          "language": "js",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

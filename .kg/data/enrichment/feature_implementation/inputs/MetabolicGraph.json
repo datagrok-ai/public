@@ -1,0 +1,226 @@
+{
+  "package": {
+    "id": "pkg:MetabolicGraph",
+    "name": "MetabolicGraph",
+    "friendly_name": "Metabolic Graph",
+    "category": null,
+    "description": "Metabolic graph visualizations and analysis"
+  },
+  "files": {
+    "src": [
+      "packages/MetabolicGraph/escher_src/src/Builder.tsx",
+      "packages/MetabolicGraph/escher_src/src/ButtonPanel.tsx",
+      "packages/MetabolicGraph/escher_src/src/DefaultTooltip.tsx",
+      "packages/MetabolicGraph/escher_src/src/DistributionTooltip.tsx",
+      "packages/MetabolicGraph/escher_src/src/Dropdown.tsx",
+      "packages/MetabolicGraph/escher_src/src/MenuBar.tsx",
+      "packages/MetabolicGraph/escher_src/src/MenuButton.tsx",
+      "packages/MetabolicGraph/escher_src/src/Picker.tsx",
+      "packages/MetabolicGraph/escher_src/src/ScaleSelection.tsx",
+      "packages/MetabolicGraph/escher_src/src/ScaleSelector.tsx",
+      "packages/MetabolicGraph/escher_src/src/ScaleSlider.tsx",
+      "packages/MetabolicGraph/escher_src/src/SearchBar.tsx",
+      "packages/MetabolicGraph/escher_src/src/SettingsMenu.tsx",
+      "packages/MetabolicGraph/escher_src/src/TooltipContainer.tsx",
+      "packages/MetabolicGraph/escher_src/src/css/Builder-embed.css",
+      "packages/MetabolicGraph/escher_src/src/css/Builder.css",
+      "packages/MetabolicGraph/escher_src/src/css/ButtonPanel.css",
+      "packages/MetabolicGraph/escher_src/src/css/DefaultTooltip.css",
+      "packages/MetabolicGraph/escher_src/src/css/DistributionTooltipComponent.css",
+      "packages/MetabolicGraph/escher_src/src/css/Dropdown.css",
+      "packages/MetabolicGraph/escher_src/src/css/Picker.css",
+      "packages/MetabolicGraph/escher_src/src/css/ScaleSlider.css",
+      "packages/MetabolicGraph/escher_src/src/css/SearchBar.css",
+      "packages/MetabolicGraph/escher_src/src/css/SettingsMenu.css",
+      "packages/MetabolicGraph/escher_src/src/renderWrapper.tsx",
+      "packages/MetabolicGraph/escher_src/src/ts/Behavior.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/Brush.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/BuildInput.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/CallbackManager.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/Canvas.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/CobraModel.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/DataMenu.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/DirectionArrow.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/Draw.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/KeyManager.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/PlacedDiv.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/Scale.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/SearchIndex.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/Settings.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/TextEditInput.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/UndoStack.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/ZoomContainer.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/algo.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/build.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/completely.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/dataStyles.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/escherMap.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/main.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/scalePresets.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/types.ts",
+      "packages/MetabolicGraph/escher_src/src/ts/utils.ts",
+      "packages/MetabolicGraph/src/FBA/cobra-model.ts",
+      "packages/MetabolicGraph/src/FBA/cobraSolver.ts",
+      "packages/MetabolicGraph/src/FBA/cobrasolver-worker.ts",
+      "packages/MetabolicGraph/src/FBA/index.ts",
+      "packages/MetabolicGraph/src/cobra/dummy.ts",
+      "packages/MetabolicGraph/src/cobra/emscc.bat",
+      "packages/MetabolicGraph/src/cobra/glpk-js-extreme-worker.ts",
+      "packages/MetabolicGraph/src/cobra/glpk-js-fba-worker.ts",
+      "packages/MetabolicGraph/src/cobra/glpkJS.ts",
+      "packages/MetabolicGraph/src/cobra/index.ts",
+      "packages/MetabolicGraph/src/cobra/prepend.bat",
+      "packages/MetabolicGraph/src/cobra/sampler-minimal.cpp",
+      "packages/MetabolicGraph/src/cobra/sampler-worker.ts",
+      "packages/MetabolicGraph/src/cobra/sampler-wrapper.ts",
+      "packages/MetabolicGraph/src/cobra/sampler.js",
+      "packages/MetabolicGraph/src/maps/E_coli_Core_metabolism_map.json",
+      "packages/MetabolicGraph/src/maps/E_coli_core_cobra.json",
+      "packages/MetabolicGraph/src/package.ts",
+      "packages/MetabolicGraph/src/utils.ts"
+    ],
+    "tests": [
+      "packages/MetabolicGraph/src/package-test.ts"
+    ],
+    "scripts": [
+      "packages/MetabolicGraph/scripts/OptGpSampling.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/MetabolicGraph/CHANGELOG.md",
+      "packages/MetabolicGraph/CREDITS.md",
+      "packages/MetabolicGraph/README.md",
+      "packages/MetabolicGraph/escher_src/DEPLOY.md",
+      "packages/MetabolicGraph/escher_src/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:MetabolicGraph:metabolic-pathway-visualization",
+      "name": "Metabolic Pathway Visualization",
+      "description": "Interactive application for visualizing and exploring metabolic pathway maps, including a built-in E. coli core metabolism map with Escher-style rendering and redundant-edge pruning.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:MetabolicGraph:MetabolicGraph",
+          "kind": "RegisteredFunction",
+          "name": "MetabolicGraph",
+          "friendly_name": null,
+          "role": "app",
+          "description": "Metabolic graph application",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/MetabolicGraph/readme.md",
+          "kind": "DocPage",
+          "title": "MetabolicGraph",
+          "url": "/packages/MetabolicGraph/readme.md"
+        },
+        {
+          "id": "clog:MetabolicGraph:1.0.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:MetabolicGraph:1.1.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:MetabolicGraph:1.1.0:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:MetabolicGraph:1.1.0:4",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/MetabolicGraph/src/cobra/index.ts",
+          "packages/MetabolicGraph/src/maps/E_coli_Core_metabolism_map.json",
+          "packages/MetabolicGraph/src/maps/E_coli_core_cobra.json",
+          "packages/MetabolicGraph/src/package.ts",
+          "packages/MetabolicGraph/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:MetabolicGraph:escher-map-file-viewer",
+      "name": "Escher Map File Viewer",
+      "description": "Datagrok file-browser integration that opens Escher-format JSON metabolic map files directly in a dedicated view, with a validity-check function to detect applicable files.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:MetabolicGraph:EscherFileViewer",
+          "kind": "RegisteredFunction",
+          "name": "EscherFileViewer",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:MetabolicGraph:escherFileViewerCheck",
+          "kind": "RegisteredFunction",
+          "name": "escherFileViewerCheck",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/MetabolicGraph/src/cobra/index.ts",
+          "packages/MetabolicGraph/src/package.ts",
+          "packages/MetabolicGraph/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:MetabolicGraph:flux-balance-analysis",
+      "name": "Flux Balance Analysis",
+      "description": "Constraint-based metabolic modeling using a WebAssembly GLPK solver to compute FBA solutions and extreme points of the flux polytope.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "clog:MetabolicGraph:1.1.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:MetabolicGraph:1.0.1:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:MetabolicGraph:metabolic-flux-sampling",
+      "name": "Metabolic Flux Sampling",
+      "description": "Server-side OptGP-based stochastic sampling of the metabolic flux space, returning binned sample distributions via a configurable sampling dialog.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:MetabolicGraph:OptGpSampling",
+          "kind": "Script",
+          "name": "OptGpSampling",
+          "language": "python",
+          "description": "Samples the metabolic map and returns binned values of samples"
+        },
+        {
+          "id": "clog:MetabolicGraph:1.1.0:2",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

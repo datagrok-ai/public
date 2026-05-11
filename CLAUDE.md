@@ -96,3 +96,35 @@ Full reference with JSON shapes, batch operations, and scripting patterns:
 Before creating or adding any package artifact, check `.claude/skills/` for a matching skill and follow it.
 
 When building UI components (viewers, file viewers, dialogs, layouts), use the `/ui` skill for authoritative guidelines.
+
+## End-to-end task harness — `/dg-task`
+
+For most plugin/library tasks (bug fix, feature add, behavior change),
+prefer the orchestrator skill at [`.claude/skills/dg-task/SKILL.md`](.claude/skills/dg-task/SKILL.md).
+Invoke as `/dg-task <free-form intent>`. It runs a closed loop:
+**discover** (KG-explorer subagent — knowledge graph at `.kg/` first,
+grep fallback) → **plan** with mandatory prior-art check (reuse vs.
+mimic-style-donor vs. truly novel) → **implement** ([`dg-implementer`](.claude/agents/dg-implementer.md))
+→ **test** on localhost ([`dg-tester`](.claude/agents/dg-tester.md), assertions must
+distinguish bug from no-bug per [`.claude/rules/critic-not-slop.md`](.claude/rules/critic-not-slop.md)) →
+**critique** ([`dg-critic`](.claude/agents/dg-critic.md), enforces all rules in `.claude/rules/`) →
+iterate up to 3 times → refresh KG.
+
+Setup once: `bash .kg/scripts/bootstrap.sh` (or `.kg\scripts\bootstrap.ps1`)
+creates the venv, installs requirements, and verifies the graph loads.
+Full guide: [`.kg/SETUP.md`](.kg/SETUP.md).
+
+## Knowledge graph — query before you grep
+
+A queryable knowledge graph of every plugin, function, script, query,
+library, doc page, tutorial, changelog entry and Jira ticket lives at
+[`.kg/`](.kg/). Use it as your **first lookup** for structural questions
+("what implements activity cliffs?", "which Charts viewers have help docs
+but no `helpUrl`?", "what does Bio import from `lib:bio`?"). Stored paths
+are repo-root-relative — a graph result `packages/Bio/src/foo.ts` is on
+disk at the same path. Full agent guide: [`.kg/CLAUDE.md`](.kg/CLAUDE.md).
+Cypher cookbook: [`.kg/docs/QUERYING.md`](.kg/docs/QUERYING.md).
+
+```powershell
+.kg\.venv\Scripts\python.exe .kg\qq.py "MATCH (p:Package {name:'Chem'})-[:HAS_FEATURE]->(f:Feature) RETURN f.name LIMIT 10"
+```

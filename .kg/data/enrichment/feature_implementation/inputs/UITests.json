@@ -1,0 +1,344 @@
+{
+  "package": {
+    "id": "pkg:UITests",
+    "name": "UITests",
+    "friendly_name": "UI Tests",
+    "category": "Development",
+    "description": "Automated UI tests"
+  },
+  "files": {
+    "src": [
+      "packages/UITests/src/gui/add-new-column.ts",
+      "packages/UITests/src/gui/apps.ts",
+      "packages/UITests/src/gui/balloon.ts",
+      "packages/UITests/src/gui/caret-model.ts",
+      "packages/UITests/src/gui/cell-imaging-segmentation.ts",
+      "packages/UITests/src/gui/dialogs.ts",
+      "packages/UITests/src/gui/exif-panel.ts",
+      "packages/UITests/src/gui/files.ts",
+      "packages/UITests/src/gui/grid.ts",
+      "packages/UITests/src/gui/gui-utils.ts",
+      "packages/UITests/src/gui/h2o-model.ts",
+      "packages/UITests/src/gui/project-upload.ts",
+      "packages/UITests/src/gui/viewers/bar-chart.ts",
+      "packages/UITests/src/gui/viewers/box-plot.ts",
+      "packages/UITests/src/gui/viewers/density-plot.ts",
+      "packages/UITests/src/gui/viewers/form.ts",
+      "packages/UITests/src/gui/viewers/histogram.ts",
+      "packages/UITests/src/gui/viewers/leaflet.ts",
+      "packages/UITests/src/gui/viewers/line-chart.ts",
+      "packages/UITests/src/gui/viewers/matrix-plot.ts",
+      "packages/UITests/src/gui/viewers/network-diagram.ts",
+      "packages/UITests/src/gui/viewers/pc-plot.ts",
+      "packages/UITests/src/gui/viewers/pie-chart.ts",
+      "packages/UITests/src/gui/viewers/scatter-plot-3d.ts",
+      "packages/UITests/src/gui/viewers/scatter-plot.ts",
+      "packages/UITests/src/package.ts",
+      "packages/UITests/src/shell/windows.ts",
+      "packages/UITests/src/ui/accordion.ts",
+      "packages/UITests/src/ui/buttons.ts",
+      "packages/UITests/src/ui/divs.ts",
+      "packages/UITests/src/ui/forms.ts",
+      "packages/UITests/src/ui/groups.ts",
+      "packages/UITests/src/ui/icons.ts",
+      "packages/UITests/src/ui/image.ts",
+      "packages/UITests/src/ui/input-for-property.ts",
+      "packages/UITests/src/ui/inputform.ts",
+      "packages/UITests/src/ui/inputs.ts",
+      "packages/UITests/src/ui/list.ts",
+      "packages/UITests/src/ui/range-slider.ts",
+      "packages/UITests/src/ui/sharing.ts",
+      "packages/UITests/src/ui/tab-control.ts",
+      "packages/UITests/src/ui/tables.ts",
+      "packages/UITests/src/ui/tags.ts",
+      "packages/UITests/src/ui/users.ts",
+      "packages/UITests/src/ui/utils.ts",
+      "packages/UITests/src/viewers/filters.ts",
+      "packages/UITests/src/viewers/test-custom-filter.ts",
+      "packages/UITests/src/viewers/test-viewer-for-properties.ts",
+      "packages/UITests/src/viewers/viewers.ts",
+      "packages/UITests/src/views/docking-nested.ts",
+      "packages/UITests/src/views/docking.ts",
+      "packages/UITests/src/views/events.ts",
+      "packages/UITests/src/views/files-view.ts",
+      "packages/UITests/src/views/layouts.ts",
+      "packages/UITests/src/views/packages.ts"
+    ],
+    "tests": [
+      "packages/UITests/src/package-test.ts"
+    ],
+    "scripts": [
+      "packages/UITests/playwright/scripts/helpers.ts",
+      "packages/UITests/playwright/scripts/scripts-browser.test.ts",
+      "packages/UITests/playwright/scripts/scripts-create-debugged.test.ts",
+      "packages/UITests/playwright/scripts/scripts-delete.test.ts",
+      "packages/UITests/playwright/scripts/scripts-edit-debugged.test.ts",
+      "packages/UITests/playwright/scripts/scripts-run-debugged.test.ts",
+      "packages/UITests/scripts/dummy.m"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/UITests/CHANGELOG.md",
+      "packages/UITests/CREDITS.md",
+      "packages/UITests/README.md",
+      "packages/UITests/playwright/login/TESTS.md",
+      "packages/UITests/playwright/spaces/spaces-missing-coverage.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:UITests:data-grid-tests",
+      "name": "Data Grid Tests",
+      "description": "Automated UI tests covering data grid behaviors including sorting, collections management, color coding, datetime extraction, normalization, and table schema validation.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "doc:/help/_internal/tests/collections-test",
+          "kind": "DocPage",
+          "title": "Tests: Collections",
+          "url": "/help/_internal/tests/collections-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/color-coding-test",
+          "kind": "DocPage",
+          "title": "Tests: Color Coding",
+          "url": "/help/_internal/tests/color-coding-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/datetime-extract-test",
+          "kind": "DocPage",
+          "title": "Tests: Datetime Extract",
+          "url": "/help/_internal/tests/datetime-extract-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/normalize-test",
+          "kind": "DocPage",
+          "title": "Tests: Normalize",
+          "url": "/help/_internal/tests/normalize-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/sorting-test",
+          "kind": "DocPage",
+          "title": "Tests: Sorting",
+          "url": "/help/_internal/tests/sorting-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/tables-schema-test",
+          "kind": "DocPage",
+          "title": "Tests: Tables Schema",
+          "url": "/help/_internal/tests/tables-schema-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UITests:dialog-ui-controls-tests",
+      "name": "Dialog and UI Controls Tests",
+      "description": "Automated UI tests for dialogs, input fields, context menus, tags, and viewer property panels.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "doc:/help/_internal/tests/dialogs-input-fields-test",
+          "kind": "DocPage",
+          "title": "Tests: Dialogs Input Fields",
+          "url": "/help/_internal/tests/dialogs-input-fields-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/dialogs-test",
+          "kind": "DocPage",
+          "title": "Tests: Dialogs",
+          "url": "/help/_internal/tests/dialogs-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/hide-menus-test",
+          "kind": "DocPage",
+          "title": "Tests: Hide Menus",
+          "url": "/help/_internal/tests/hide-menus-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/tags-favorites-test",
+          "kind": "DocPage",
+          "title": "Tests: Tags",
+          "url": "/help/_internal/tests/tags-favorites-test"
+        },
+        {
+          "id": "func:UITests:TestViewerForProperties",
+          "kind": "RegisteredFunction",
+          "name": "TestViewerForProperties",
+          "friendly_name": null,
+          "role": "viewer,panel",
+          "description": "Viewer to test properties and others",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/UITests/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UITests:data-connectivity-tests",
+      "name": "Data Connectivity Tests",
+      "description": "Automated UI tests for data connectors and export: file connector, web connector, Elastic Search, DB query builder, and data export.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "doc:/help/_internal/tests/build-query-test",
+          "kind": "DocPage",
+          "title": "Tests: Join DB Tables",
+          "url": "/help/_internal/tests/build-query-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/elastic-search-test",
+          "kind": "DocPage",
+          "title": "Tests: Elastic search",
+          "url": "/help/_internal/tests/elastic-search-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/export-test",
+          "kind": "DocPage",
+          "title": "Tests: Export",
+          "url": "/help/_internal/tests/export-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/file-connector-test",
+          "kind": "DocPage",
+          "title": "Tests: File connector",
+          "url": "/help/_internal/tests/file-connector-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/web-connector-test",
+          "kind": "DocPage",
+          "title": "Tests: Web connector",
+          "url": "/help/_internal/tests/web-connector-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UITests:data-transformation-tests",
+      "name": "Data Transformation Tests",
+      "description": "Automated UI tests for the transformation editor, substructure filter, and the custom filter extension point.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "doc:/help/_internal/tests/transformation-editor-test",
+          "kind": "DocPage",
+          "title": "Tests: Transformation Editor",
+          "url": "/help/_internal/tests/transformation-editor-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/substructure-filter",
+          "kind": "DocPage",
+          "title": "Tests: Substructure Filter",
+          "url": "/help/_internal/tests/substructure-filter"
+        },
+        {
+          "id": "func:UITests:testCustomFilter",
+          "kind": "RegisteredFunction",
+          "name": "testCustomFilter",
+          "friendly_name": null,
+          "role": "filter",
+          "description": "Test custom filter",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UITests:collaboration-user-tests",
+      "name": "Collaboration and User Management Tests",
+      "description": "Automated UI tests for user registration, invitations, project browsing, recently-opened views, and platform help.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "doc:/help/_internal/tests/inviting-a-friend-test",
+          "kind": "DocPage",
+          "title": "Tests: Inviting a friend",
+          "url": "/help/_internal/tests/inviting-a-friend-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/projects-browser-test",
+          "kind": "DocPage",
+          "title": "Tests: Projects Browser",
+          "url": "/help/_internal/tests/projects-browser-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/recently-open-test",
+          "kind": "DocPage",
+          "title": "Tests: Recently Open Views",
+          "url": "/help/_internal/tests/recently-open-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/registration-test",
+          "kind": "DocPage",
+          "title": "Tests: Registration",
+          "url": "/help/_internal/tests/registration-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/help-test",
+          "kind": "DocPage",
+          "title": "Tests: Help",
+          "url": "/help/_internal/tests/help-test"
+        },
+        {
+          "id": "doc:/help/collaborate/project-gallery-test",
+          "kind": "DocPage",
+          "title": "Tests: Project Browser",
+          "url": "/help/collaborate/project-gallery-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:UITests:test-infrastructure",
+      "name": "Test Infrastructure",
+      "description": "Shared fixtures, placeholder scripts, and package-level metadata supporting the UITests test suite.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:UITests:Dummy",
+          "kind": "Script",
+          "name": "Dummy",
+          "language": "octave",
+          "description": null
+        },
+        {
+          "id": "doc:/packages/UITests/readme.md",
+          "kind": "DocPage",
+          "title": "UI Tests",
+          "url": "/packages/UITests/readme.md"
+        },
+        {
+          "id": "doc:/packages/UITests/credits.md",
+          "kind": "DocPage",
+          "title": "UITests — Third-Party Libraries",
+          "url": "/packages/UITests/credits.md"
+        },
+        {
+          "id": "clog:UITests:1.0.12:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

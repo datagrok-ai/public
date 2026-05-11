@@ -1,0 +1,315 @@
+{
+  "package": {
+    "id": "pkg:RevvitySignalsLink",
+    "name": "RevvitySignalsLink",
+    "friendly_name": "RevvitySignalsLink",
+    "category": null,
+    "description": "Integration with RevvitySignals"
+  },
+  "files": {
+    "src": [
+      "packages/RevvitySignalsLink/src/compounds.ts",
+      "packages/RevvitySignalsLink/src/constants.ts",
+      "packages/RevvitySignalsLink/src/credentials-utils.ts",
+      "packages/RevvitySignalsLink/src/detectors.ts",
+      "packages/RevvitySignalsLink/src/layout.ts",
+      "packages/RevvitySignalsLink/src/libraries.ts",
+      "packages/RevvitySignalsLink/src/package.ts",
+      "packages/RevvitySignalsLink/src/properties.ts",
+      "packages/RevvitySignalsLink/src/revvity-api.ts",
+      "packages/RevvitySignalsLink/src/search-utils.ts",
+      "packages/RevvitySignalsLink/src/signals-search-query.ts",
+      "packages/RevvitySignalsLink/src/users.ts",
+      "packages/RevvitySignalsLink/src/utils.ts",
+      "packages/RevvitySignalsLink/src/view-utils.ts"
+    ],
+    "tests": [
+      "packages/RevvitySignalsLink/src/package-test.ts",
+      "packages/RevvitySignalsLink/src/tests/revvity-tests.ts"
+    ],
+    "scripts": [
+      "packages/RevvitySignalsLink/scripts/revvity_etl.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/RevvitySignalsLink/CHANGELOG.md",
+      "packages/RevvitySignalsLink/CLAUDE.md",
+      "packages/RevvitySignalsLink/CREDITS.md",
+      "packages/RevvitySignalsLink/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:RevvitySignalsLink:revvity-signals-app",
+      "name": "Revvity Signals Integration App",
+      "description": "A Datagrok application (browsed from the Chem menu) that connects to the Revvity Signals registration platform, providing an interactive tree browser and a unified entry point to Revvity data.",
+      "category": "integration",
+      "members": [
+        {
+          "id": "func:RevvitySignalsLink:Revvity Signals",
+          "kind": "RegisteredFunction",
+          "name": "Revvity Signals",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:RevvitySignalsLink:revvitySignalsLinkAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "revvitySignalsLinkAppTreeBrowser",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:RevvitySignalsLink:init",
+          "kind": "RegisteredFunction",
+          "name": "init",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/RevvitySignalsLink/readme.md",
+          "kind": "DocPage",
+          "title": "RevvitySignalsLink",
+          "url": "/packages/RevvitySignalsLink/readme.md"
+        },
+        {
+          "id": "doc:/packages/RevvitySignalsLink/claude.md",
+          "kind": "DocPage",
+          "title": "RevvitySignalsLink",
+          "url": "/packages/RevvitySignalsLink/claude.md"
+        },
+        {
+          "id": "clog:RevvitySignalsLink:1.0.0:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/RevvitySignalsLink/src/constants.ts",
+          "packages/RevvitySignalsLink/src/credentials-utils.ts",
+          "packages/RevvitySignalsLink/src/layout.ts",
+          "packages/RevvitySignalsLink/src/libraries.ts",
+          "packages/RevvitySignalsLink/src/package-api.ts",
+          "packages/RevvitySignalsLink/src/package.ts",
+          "packages/RevvitySignalsLink/src/revvity-api.ts",
+          "packages/RevvitySignalsLink/src/search-utils.ts",
+          "packages/RevvitySignalsLink/src/signals-search-query.ts",
+          "packages/RevvitySignalsLink/src/users.ts",
+          "packages/RevvitySignalsLink/src/utils.ts",
+          "packages/RevvitySignalsLink/src/view-utils.ts"
+        ],
+        "tests": [
+          "packages/RevvitySignalsLink/src/tests/revvity-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:RevvitySignalsLink:entity-search",
+      "name": "Entity Search",
+      "description": "Searches the Revvity Signals registry for chemical entities by text and filter criteria, optionally including chemical structures, and retrieves individual structures by ID.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:RevvitySignalsLink:Search Entities",
+          "kind": "RegisteredFunction",
+          "name": "Search Entities",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:RevvitySignalsLink:Search Entities With Structures",
+          "kind": "RegisteredFunction",
+          "name": "Search Entities With Structures",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:RevvitySignalsLink:Get Structure By Id",
+          "kind": "RegisteredFunction",
+          "name": "Get Structure By Id",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/_deprecated/data-search",
+          "kind": "DocPage",
+          "title": "Search data",
+          "url": "/help/datagrok/_deprecated/data-search"
+        },
+        {
+          "id": "doc:/help/datagrok/_deprecated/data-search-patterns",
+          "kind": "DocPage",
+          "title": "Search patterns",
+          "url": "/help/datagrok/_deprecated/data-search-patterns"
+        },
+        {
+          "id": "doc:/help/datagrok/_deprecated/smart-search",
+          "kind": "DocPage",
+          "title": "Smart search",
+          "url": "/help/datagrok/_deprecated/smart-search"
+        },
+        {
+          "id": "doc:/help/datagrok/concepts/objects",
+          "kind": "DocPage",
+          "title": "Entities",
+          "url": "/help/datagrok/concepts/objects"
+        },
+        {
+          "id": "doc:/help/explore/search-filter-select/data-search-test",
+          "kind": "DocPage",
+          "title": "Tests: Search",
+          "url": "/help/explore/search-filter-select/data-search-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/elastic-search-test",
+          "kind": "DocPage",
+          "title": "Tests: Elastic search",
+          "url": "/help/_internal/tests/elastic-search-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/RevvitySignalsLink/src/compounds.ts",
+          "packages/RevvitySignalsLink/src/constants.ts",
+          "packages/RevvitySignalsLink/src/credentials-utils.ts",
+          "packages/RevvitySignalsLink/src/libraries.ts",
+          "packages/RevvitySignalsLink/src/package-api.ts",
+          "packages/RevvitySignalsLink/src/package.ts",
+          "packages/RevvitySignalsLink/src/properties.ts",
+          "packages/RevvitySignalsLink/src/revvity-api.ts",
+          "packages/RevvitySignalsLink/src/search-utils.ts",
+          "packages/RevvitySignalsLink/src/signals-search-query.ts",
+          "packages/RevvitySignalsLink/src/users.ts",
+          "packages/RevvitySignalsLink/src/utils.ts",
+          "packages/RevvitySignalsLink/src/view-utils.ts"
+        ],
+        "tests": [
+          "packages/RevvitySignalsLink/src/tests/revvity-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:RevvitySignalsLink:metadata-vocabulary",
+      "name": "Metadata and Vocabulary Lookup",
+      "description": "Provides enumeration and autocomplete helpers for Revvity Signals metadata — users, libraries, tags, and field-level terms — used to populate search filters and UI dropdowns.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:RevvitySignalsLink:Get Users",
+          "kind": "RegisteredFunction",
+          "name": "Get Users",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:RevvitySignalsLink:Get Libraries",
+          "kind": "RegisteredFunction",
+          "name": "Get Libraries",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:RevvitySignalsLink:Get Tags",
+          "kind": "RegisteredFunction",
+          "name": "Get Tags",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:RevvitySignalsLink:Search Terms",
+          "kind": "RegisteredFunction",
+          "name": "Search Terms",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:RevvitySignalsLink:Get Terms For Field",
+          "kind": "RegisteredFunction",
+          "name": "Get Terms For Field",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/govern/access-control/users-and-groups",
+          "kind": "DocPage",
+          "title": "Users and groups",
+          "url": "/help/govern/access-control/users-and-groups"
+        },
+        {
+          "id": "doc:/help/govern/catalog/tags",
+          "kind": "DocPage",
+          "title": "Tags",
+          "url": "/help/govern/catalog/tags"
+        },
+        {
+          "id": "doc:/help/_internal/tests/tags-favorites-test",
+          "kind": "DocPage",
+          "title": "Tests: Tags",
+          "url": "/help/_internal/tests/tags-favorites-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/RevvitySignalsLink/src/compounds.ts",
+          "packages/RevvitySignalsLink/src/constants.ts",
+          "packages/RevvitySignalsLink/src/credentials-utils.ts",
+          "packages/RevvitySignalsLink/src/libraries.ts",
+          "packages/RevvitySignalsLink/src/package-api.ts",
+          "packages/RevvitySignalsLink/src/package.ts",
+          "packages/RevvitySignalsLink/src/properties.ts",
+          "packages/RevvitySignalsLink/src/revvity-api.ts",
+          "packages/RevvitySignalsLink/src/search-utils.ts",
+          "packages/RevvitySignalsLink/src/signals-search-query.ts",
+          "packages/RevvitySignalsLink/src/users.ts",
+          "packages/RevvitySignalsLink/src/utils.ts",
+          "packages/RevvitySignalsLink/src/view-utils.ts"
+        ],
+        "tests": [
+          "packages/RevvitySignalsLink/src/tests/revvity-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:RevvitySignalsLink:etl-pipeline",
+      "name": "ETL Pipeline to MolTrack",
+      "description": "A Python ETL script that exports Revvity Signals libraries, processes CSV files, and prepares chemical compound data for ingestion into MolTrack.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "script:RevvitySignalsLink:Revvity ETL",
+          "kind": "Script",
+          "name": "Revvity ETL",
+          "language": "python",
+          "description": "ETL process for Revvity Signals data - exports libraries, processes CSV files, and prepares data for MolTrack"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

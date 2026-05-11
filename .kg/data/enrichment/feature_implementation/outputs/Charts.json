@@ -1,0 +1,419 @@
+{
+  "package_id": "pkg:Charts",
+  "features": [
+    {
+      "id": "feature:Charts:chord",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/chord/chord-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/viewers/chord/utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Charts/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.5
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/demos/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Charts/src/tests/viewers.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "ChordViewer class with chord-specific layout/topSort utils; demo dispatched via viewerDemo('Chord')."
+    },
+    {
+      "id": "feature:Charts:globe",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/globe/globe-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Charts/src/tests/viewers.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "GlobeViewer using three-globe; no dedicated demo wrapper (commented out in package.ts)."
+    },
+    {
+      "id": "feature:Charts:radar",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/radar/radar-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/viewers/radar/constants.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Charts/src/viewers/echart/echart-viewer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/utils/legend-utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Charts/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/demos/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Charts/src/tests/radar-viewer-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Charts/src/tests/viewers.ts",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Charts/src/tests/utils.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "RadarViewer extends EChartViewer; uses LegendHelper and MessageHandler; constants define indicator caps."
+    },
+    {
+      "id": "feature:Charts:sankey",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/sankey/sankey.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/demos/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Charts/src/tests/viewers.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "SankeyViewer using d3-sankey; uses MessageHandler for empty/invalid input feedback."
+    },
+    {
+      "id": "feature:Charts:sunburst",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/sunburst/sunburst-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/viewers/echart/echart-viewer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/utils/tree-utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Charts/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/demos/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Charts/src/tests/viewers.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "SunburstViewer extends EChartViewer; relies on TreeUtils to build hierarchical data."
+    },
+    {
+      "id": "feature:Charts:surface-plot",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/surface-plot/surface-plot.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/viewers/echart/echart-viewer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/demos/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "SurfacePlot extends EChartViewer; uses echarts-gl. No dedicated test file."
+    },
+    {
+      "id": "feature:Charts:timelines",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/timelines/timelines-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/viewers/timelines/echarts-options.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Charts/src/viewers/timelines/constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/viewers/echart/echart-viewer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/utils/legend-utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/demos/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Charts/src/tests/timelines-viewer-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Charts/src/tests/utils.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "TimelinesViewer extends EChartViewer; uses LegendHelper, marker/timepoint types from constants."
+    },
+    {
+      "id": "feature:Charts:multiplot",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/multiplot/multiplot.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/viewers/multiplot/constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/viewers/multiplot/layout.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Charts/src/viewers/multiplot/timeLinesRender.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Charts/src/viewers/multiplot/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "MultiPlotViewer composes line/bar/scatter/timeline series; utils, layout and constants live alongside."
+    },
+    {
+      "id": "feature:Charts:group-analysis",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/group-analysis/group-analysis-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "Group analysis viewer; standalone implementation using DG.GroupByBuilder and t-tests."
+    },
+    {
+      "id": "feature:Charts:word-cloud",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/word-cloud/word-cloud-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/demos/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Charts/src/tests/viewers.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "WordCloudViewer using echarts-wordcloud; iterated over by the generic Viewers test loop."
+    },
+    {
+      "id": "feature:Charts:tree",
+      "implements": [
+        {
+          "path": "packages/Charts/src/viewers/tree/tree-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/viewers/echart/echart-viewer.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/utils/tree-utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Charts/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Charts/src/demos/demo.ts",
+          "role": "demo",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Charts/src/tests/tree-viewer-test.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Charts/src/tests/viewers.ts",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/Charts/src/tests/utils.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "TreeViewer extends EChartViewer; uses TreeUtils to construct hierarchical data."
+    },
+    {
+      "id": "feature:Charts:flag-renderer",
+      "implements": [
+        {
+          "path": "packages/Charts/src/renderers/flag-cell-renderer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Charts/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "FlagCellRenderer (GridCellRenderer for cellType 'flag') registered via flagCellRenderer in package.ts."
+    }
+  ]
+}

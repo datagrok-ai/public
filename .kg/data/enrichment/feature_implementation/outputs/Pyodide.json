@@ -1,0 +1,139 @@
+{
+  "package_id": "pkg:Pyodide",
+  "features": [
+    {
+      "id": "feature:Pyodide:in-browser-python-scripting",
+      "implements": [
+        {
+          "path": "packages/Pyodide/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Pyodide/src/worker.js",
+          "role": "core",
+          "confidence": 0.97
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Pyodide/src/package-test.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "package.ts registers initPyodide (spawns worker) and pyodideLanguageHandler (script handler); worker.js loads Pyodide WASM and runs Python."
+    },
+    {
+      "id": "feature:Pyodide:script-vectorization",
+      "implements": [
+        {
+          "path": "packages/Pyodide/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "makeVectorCode is defined in package.ts and wired via scriptHandler.vectorizationFunction meta."
+    },
+    {
+      "id": "feature:Pyodide:type-marshaling",
+      "implements": [
+        {
+          "path": "packages/Pyodide/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Pyodide/src/worker.js",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Pyodide/src/tests/funccall.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "prepareInputs/prepareOutputs/setOutputs in package.ts marshal primitive, datetime, blob, column-list types; worker.js converts PyProxy values back to JS."
+    },
+    {
+      "id": "feature:Pyodide:dataframe-io",
+      "implements": [
+        {
+          "path": "packages/Pyodide/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Pyodide/src/worker.js",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Pyodide/src/tests/funccall.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "DataFrame branches in prepareInputs/prepareOutputs/setOutputs handle Arrow/CSV serialization; funccall.ts tests Dataframe call js/py."
+    },
+    {
+      "id": "feature:Pyodide:funccall-interop",
+      "implements": [
+        {
+          "path": "packages/Pyodide/src/package.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/Pyodide/src/worker.js",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Pyodide/src/tests/funccall.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "worker.js registers the 'dg' Python module exposing execFuncCall; package.ts handleStartFuncCall executes the Datagrok Func and posts results back."
+    },
+    {
+      "id": "feature:Pyodide:script-dependencies",
+      "implements": [
+        {
+          "path": "packages/Pyodide/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Pyodide/src/worker.js",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts forwards script options.dependencies to the worker; worker.js installs them via micropip before execution."
+    },
+    {
+      "id": "feature:Pyodide:graphics-output",
+      "implements": [
+        {
+          "path": "packages/Pyodide/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Pyodide/src/worker.js",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "GRAPHICS branches in makeCodeHeader (matplotlib bootstrap, document patch) and prepareOutputs (savefig to base64 PNG) live in package.ts."
+    }
+  ]
+}

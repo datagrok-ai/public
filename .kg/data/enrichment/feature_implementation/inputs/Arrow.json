@@ -1,0 +1,147 @@
+{
+  "package": {
+    "id": "pkg:Arrow",
+    "name": "Arrow",
+    "friendly_name": "Arrow",
+    "category": "Data Access",
+    "description": "Provides support for the Parquet and Feather file formats."
+  },
+  "files": {
+    "src": [
+      "packages/Arrow/src/api/api.ts",
+      "packages/Arrow/src/package.ts",
+      "packages/Arrow/src/types/with-implicit-coercion.d.ts"
+    ],
+    "tests": [
+      "packages/Arrow/src/package-test.ts",
+      "packages/Arrow/src/tests/arrow-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Arrow/CHANGELOG.md",
+      "packages/Arrow/CREDITS.md",
+      "packages/Arrow/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Arrow:parquet-io",
+      "name": "Parquet File Import/Export",
+      "description": "Lets users open, read, and save Datagrok DataFrames as Apache Parquet files, with WASM-based columnar encoding/decoding. Registered as a platform file handler for .parquet files and as a file exporter menu entry.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Arrow:fromParquet",
+          "kind": "RegisteredFunction",
+          "name": "fromParquet",
+          "friendly_name": null,
+          "role": null,
+          "description": "Converts binary data in parquet format to DG.DataFrame",
+          "tags": []
+        },
+        {
+          "id": "func:Arrow:toParquet",
+          "kind": "RegisteredFunction",
+          "name": "toParquet",
+          "friendly_name": null,
+          "role": null,
+          "description": "Converts DG.DataFrame to parquet",
+          "tags": []
+        },
+        {
+          "id": "func:Arrow:parquetFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "parquetFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Arrow:saveAsParquet",
+          "kind": "RegisteredFunction",
+          "name": "saveAsParquet",
+          "friendly_name": null,
+          "role": "fileExporter",
+          "description": "Save as Parquet",
+          "tags": []
+        },
+        {
+          "id": "func:Arrow:parquetInit",
+          "kind": "RegisteredFunction",
+          "name": "parquetInit",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Arrow/readme.md",
+          "kind": "DocPage",
+          "title": "Arrow",
+          "url": "/packages/Arrow/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Arrow/src/package.ts"
+        ],
+        "tests": [
+          "packages/Arrow/src/tests/arrow-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Arrow:feather-io",
+      "name": "Feather File Import/Export",
+      "description": "Lets users open, read, and save Datagrok DataFrames as Feather (Arrow IPC stream) files. Registered as a platform file handler for .feather files and as a file exporter menu entry.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Arrow:fromFeather",
+          "kind": "RegisteredFunction",
+          "name": "fromFeather",
+          "friendly_name": null,
+          "role": null,
+          "description": "Converts arrow ipc stream to DG.DataFrame",
+          "tags": []
+        },
+        {
+          "id": "func:Arrow:toFeather",
+          "kind": "RegisteredFunction",
+          "name": "toFeather",
+          "friendly_name": null,
+          "role": null,
+          "description": "Converts DG.DataFrame to arrow",
+          "tags": []
+        },
+        {
+          "id": "func:Arrow:featherFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "featherFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Arrow:saveAsFeather",
+          "kind": "RegisteredFunction",
+          "name": "saveAsFeather",
+          "friendly_name": null,
+          "role": "fileExporter",
+          "description": "Save as Feather",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Arrow/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

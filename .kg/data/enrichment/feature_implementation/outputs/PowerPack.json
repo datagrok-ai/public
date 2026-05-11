@@ -1,0 +1,343 @@
+{
+  "package_id": "pkg:PowerPack",
+  "features": [
+    {
+      "id": "feature:PowerPack:spotlight",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerPack/src/spotlight/spotlight-widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/spotlight/workspace-tab.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerPack/src/spotlight/preview-host.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/spotlight/group-favorites.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerPack/src/spotlight/manage-favorites-dialog.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/widgets/learning-widget.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Spotlight dashboard widget with workspace tabs, group/personal favorites, and pinned-entity preview host."
+    },
+    {
+      "id": "feature:PowerPack:welcome-view",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/welcome-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/search/power-search.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/spotlight/preview-host.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/PowerPack/src/utils.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [],
+      "notes": "Home/landing view that wires the search bar, widgets host, and workspace preview together."
+    },
+    {
+      "id": "feature:PowerPack:dashboard-widgets",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/widgets/community-widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/widgets/web-widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/widgets/html-widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/widgets/kpi-widget.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PowerPack/src/tests/widgets.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "Four dashboard widget classes registered via PackageFunctions; widget tests instantiate Community/Html/RecentProjects/About widgets."
+    },
+    {
+      "id": "feature:PowerPack:power-search",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerPack/src/search/power-search.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/search/entity-search.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/search/templates-search.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerPack/src/search/help-entity.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/dg-db.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/PowerPack/src/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PowerPack/src/tests/search.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "powerPackSearchProvider aggregates files/functions/scripts/queries/users/groups/dockers/help/PDB/PubChem/wiki/apps/connections/new-users searches plus template-driven power search."
+    },
+    {
+      "id": "feature:PowerPack:formula-lines",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerPack/src/dialogs/formula-lines.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/dialogs/add-new-column.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PowerPack/src/tests/dialogs.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "Formula Lines dialog with formula validation; isFormulaColumn/Formula panel reuses AddNewColumnDialog for editing."
+    },
+    {
+      "id": "feature:PowerPack:add-new-column",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/dialogs/add-new-column.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PowerPack/src/tests/add-new-column.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/tests/utils.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "AddNewColumnDialog with CodeMirror-based formula editor; tests cover function evaluation, validation, hints, and click-to-insert."
+    },
+    {
+      "id": "feature:PowerPack:data-enrichment",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/db-explorer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/dg-db.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "runEnrichment + DB explorer setup wire the @datagrok-libraries/db-explorer machinery into the platform with caching, query-cell hooks, and the Datagrok user object handler."
+    },
+    {
+      "id": "feature:PowerPack:file-viewers",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/workers/exceljs-worker.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PowerPack/src/tests/excel.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "Markdown file viewer is implemented inline in package.ts; xlsxFileHandler delegates to ExcelJSService backed by the exceljs web worker."
+    },
+    {
+      "id": "feature:PowerPack:viewer-gallery",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PowerPack/src/viewers-gallery.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/search/power-search.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/PowerPack/src/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [],
+      "notes": "viewerDialog opens the gallery from package.ts; viewerGallery autostart adds the ribbon icon; createFuncTableViewWidget powers getFuncTableViewWidget."
+    },
+    {
+      "id": "feature:PowerPack:cron-input",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/widgets/cron-input.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PowerPack/src/widgets/cron-utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "JsInputBase<string> cron editor with presets and per-field validation, parsing utilities in cron-utils."
+    },
+    {
+      "id": "feature:PowerPack:compare-columns",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/compare-columns.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "Single-file dialog under Data | Compare Columns... menu."
+    },
+    {
+      "id": "feature:PowerPack:windows-manager",
+      "implements": [
+        {
+          "path": "packages/PowerPack/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PowerPack/src/windows-manager.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "Autostart toggles for AI/topmenu/toolbox/properties/help/variables/console/presentation/inspector window panes."
+    }
+  ]
+}

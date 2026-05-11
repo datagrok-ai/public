@@ -1,0 +1,100 @@
+{
+  "package_id": "pkg:Compute",
+  "features": [
+    {
+      "id": "feature:Compute:rich-function-view",
+      "implements": [
+        {
+          "path": "packages/Compute/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "openModelFromFuncall and RichFunctionViewEditor are declared in package.ts; the actual RichFunctionView implementation lives in @datagrok-libraries/compute-utils (outside this package)."
+    },
+    {
+      "id": "feature:Compute:scripting",
+      "implements": [
+        {
+          "path": "packages/Compute/src/package.ts",
+          "role": "core",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "CustomStringInput is the only TS member; the rest are server-side scripts and docs."
+    },
+    {
+      "id": "feature:Compute:diff-studio-ode-models",
+      "implements": [],
+      "tests": [],
+      "notes": "Feature is composed entirely of bundled JS scripts and external doc pages; Diff Studio engine itself lives outside this package."
+    },
+    {
+      "id": "feature:Compute:object-cooling-demo",
+      "implements": [
+        {
+          "path": "packages/Compute/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "All six validators and ObjectCoolingSelector are decorated functions in package.ts paired with the Object cooling / Heat Exchange scripts."
+    },
+    {
+      "id": "feature:Compute:model-optimization",
+      "implements": [
+        {
+          "path": "packages/Compute/src/outliers-selection/outliers-selection-viewer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Compute/src/package.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "OutliersSelectionViewer class implements the only remaining model-optimization surface in this package; package.ts registers it as a viewer."
+    },
+    {
+      "id": "feature:Compute:custom-data-upload",
+      "implements": [
+        {
+          "path": "packages/Compute/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "CustomDataUploader, CustomUploader, and CustomCustomizer are all decorated functions defined directly in package.ts."
+    },
+    {
+      "id": "feature:Compute:pipeline-step-editor",
+      "implements": [
+        {
+          "path": "packages/Compute/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "PipelineStepEditor is a thin decorator in package.ts wrapping RichFunctionView.fromFuncCall from compute-utils."
+    },
+    {
+      "id": "feature:Compute:jupyter-notebook",
+      "implements": [],
+      "tests": [],
+      "notes": "Documentation-only feature; no source file in this package implements it."
+    },
+    {
+      "id": "feature:Compute:biomedical-scripts",
+      "implements": [],
+      "tests": [],
+      "notes": "Feature is composed entirely of server-side scripts (Python/R); no TS implementation file."
+    }
+  ]
+}

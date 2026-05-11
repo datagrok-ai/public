@@ -1,0 +1,545 @@
+{
+  "package_id": "pkg:Samples",
+  "features": [
+    {
+      "id": "feature:Samples:statistical-hypothesis-testing",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/python/t_test.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/t_test.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/julia/t_test.jl",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/anova.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/ks_test.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/lmer.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "One script per hypothesis test (t-test, ANOVA, KS, LMER) across Python/R/Julia."
+    },
+    {
+      "id": "feature:Samples:multivariate-analysis",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/r/pca.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/lda.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/manova.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/pls.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/predictive_model_svm.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/linear_regression.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/knn.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/fitting_drc.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/python/datawig_test.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/environments/datawig2.yaml",
+          "role": "config",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "Datawig env file provides the Python deps for the missing-value imputation script."
+    },
+    {
+      "id": "feature:Samples:visualization",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/python/scatter_plot.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/scatter_plot.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/julia/scatter_plot.jl",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/contour_plot.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/surface_plot.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/ternary_plot.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/financial_chart.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "Scientific plot scripts in R/Python/Julia."
+    },
+    {
+      "id": "feature:Samples:time-series-analysis",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/r/time_series_forecasting.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/time_series_decomposition.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/autocorrelation.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/iir_filter.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/python/scalogram.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/scalogram.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/spectogram.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/python/ulmo.py",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Samples/environments/scalogram.yaml",
+          "role": "config",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Samples/environments/ulmo.yaml",
+          "role": "config",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "Scalogram and Ulmo scripts ship dedicated env yamls."
+    },
+    {
+      "id": "feature:Samples:image-analysis",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/python/cell_imaging_segmentation.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/python/exif.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/python/image_classification.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "Three Python scripts for cell segmentation, EXIF extraction, and EfficientNet classification."
+    },
+    {
+      "id": "feature:Samples:nlp",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/r/sentiment.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/renv_spelling.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "R sentiment classification and renv-managed spell check."
+    },
+    {
+      "id": "feature:Samples:clinical-health-formulas",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/python/bmi.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/bsa.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "BMI (Python) and BSA (R) reference scripts."
+    },
+    {
+      "id": "feature:Samples:multi-language-scripting-demos",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/python/python_dup.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/r_dup.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/julia/julia_dup.jl",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/node/js_dup.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/octave/octave_graphics_test.m",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "One-line dup scripts per language plus an Octave graphics demo."
+    },
+    {
+      "id": "feature:Samples:js-ui-scripting",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/js/cars.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/js/function-input.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/js/input-choice.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/js/validate-email.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "Browser-side JS scripts: cars lookup, function input embedding, input choice, email validation."
+    },
+    {
+      "id": "feature:Samples:pyodide-scripting",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/pyodide/stream_plot.py",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Samples/scripts/pyodide/ridge-plot.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/pyodide/contour.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "stream_plot.py registers as 'Scottish hills demo' (scatter); ridge-plot.py and contour.py are the named ridge/contour variants."
+    },
+    {
+      "id": "feature:Samples:environment-management",
+      "implements": [
+        {
+          "path": "packages/Samples/scripts/python/glom_env_test.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/python/glom_env_test_global.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/python/glom_env_test_inplace.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/python/PythonLibs.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/scripts/r/list_packages.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/environments/glom.yaml",
+          "role": "config",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Samples/environments/glom_global.yaml",
+          "role": "config",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Samples/src/package.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "Glom env yamls back the GlomEnvTest variants; Python/R libs scripts enumerate installed packages."
+    },
+    {
+      "id": "feature:Samples:mssql-connector-demo",
+      "implements": [
+        {
+          "path": "packages/Samples/queries/mssql-northwind.sql",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Samples/connections/mssql-northwind.json",
+          "role": "config",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "All ten MSSQL queries live in mssql-northwind.sql; connection JSON wires up MSSQLNorthwind."
+    },
+    {
+      "id": "feature:Samples:postgresql-connector-demo",
+      "implements": [
+        {
+          "path": "packages/Samples/queries/postgres-northwind.sql",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Samples/queries/postgresnet-world.sql",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/connections/postgres-northwind.json",
+          "role": "config",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Samples/connections/postgres-world.json",
+          "role": "config",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Samples/src/test/projects-test.ts",
+          "confidence": 0.4
+        }
+      ],
+      "notes": "postgres-northwind.sql holds the Northwind set; postgresnet-world.sql defines the 'domain usage' (World) query."
+    },
+    {
+      "id": "feature:Samples:clickhouse-connector-demo",
+      "implements": [
+        {
+          "path": "packages/Samples/queries/clickhouse-northwind.sql",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Samples/connections/clickhouse-northwind.json",
+          "role": "config",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "All seven ClickHouse Northwind queries live in clickhouse-northwind.sql."
+    },
+    {
+      "id": "feature:Samples:rdbms-connector-demos",
+      "implements": [
+        {
+          "path": "packages/Samples/queries/access-northwind.sql",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/queries/mariadb-northwind.sql",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/queries/mysql-northwind.sql",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/queries/oracle-northwind.sql",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Samples/connections/access-northwind.json",
+          "role": "config",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Samples/connections/mariadb-northwind.json",
+          "role": "config",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Samples/connections/mysql-northwind.json",
+          "role": "config",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Samples/connections/oracle-northwind.json",
+          "role": "config",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "Each RDBMS has a paired Orders/Products .sql + connection JSON."
+    }
+  ]
+}

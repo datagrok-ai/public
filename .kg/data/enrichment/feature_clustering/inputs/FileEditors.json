@@ -1,0 +1,285 @@
+{
+  "package": {
+    "id": "pkg:FileEditors",
+    "name": "FileEditors",
+    "friendly_name": "File Editors",
+    "version": "1.3.1",
+    "category": "Data Access",
+    "description": "Support for previewing and opening text file formats (PDF, DOCX, TEX)",
+    "extras": {
+      "npm_name": "@datagrok/file-editors",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:FileEditors:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:FileEditors:previewPdf",
+      "name": "previewPdf",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "pdf"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:FileEditors:viewPdf",
+      "name": "viewPdf",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "list"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "pdf"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:FileEditors:previewDocx",
+      "name": "previewDocx",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "docx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:FileEditors:viewDocx",
+      "name": "viewDocx",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "list"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "docx"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:FileEditors:previewRtf",
+      "name": "previewRtf",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "rtf"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:FileEditors:previewTex",
+      "name": "previewTex",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "tex"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/FileEditors/readme.md",
+      "title": "File Editors",
+      "url": "/packages/FileEditors/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/FileEditors/credits.md",
+      "title": "FileEditors — Third-Party Libraries",
+      "url": "/packages/FileEditors/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_access/_02-file-previews",
+      "title": "File previews",
+      "url": "/help/_access/_02-file-previews",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/_internal/tests/file-connector-test",
+      "title": "Tests: File connector",
+      "url": "/help/_internal/tests/file-connector-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/access/_stashed/_files-indexer",
+      "title": "Indexing File Shares",
+      "url": "/help/access/_stashed/_files-indexer",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/files/create-custom-file-viewers",
+      "title": "Create custom file viewers",
+      "url": "/help/develop/how-to/files/create-custom-file-viewers",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/files/file-exporters",
+      "title": "Create file exporters",
+      "url": "/help/develop/how-to/files/file-exporters",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/files/file-handlers",
+      "title": "Develop custom file handlers",
+      "url": "/help/develop/how-to/files/file-handlers",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/packages/custom-package-settings-editors",
+      "title": "Custom package settings editors",
+      "url": "/help/develop/how-to/packages/custom-package-settings-editors",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:FileEditors:1.3.1:0",
+      "version": "1.3.1",
+      "released_at": "2025-07-30",
+      "ticket": null,
+      "text": "Added support of TEX files"
+    },
+    {
+      "id": "clog:FileEditors:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2023-11-13",
+      "ticket": null,
+      "text": "Released package"
+    },
+    {
+      "id": "clog:FileEditors:1.0.0:1",
+      "version": "1.0.0",
+      "released_at": "2023-11-13",
+      "ticket": null,
+      "text": "Added support for PDF files (open and preview)"
+    },
+    {
+      "id": "clog:FileEditors:1.0.0:2",
+      "version": "1.0.0",
+      "released_at": "2023-11-13",
+      "ticket": null,
+      "text": "Added support for DOCX files (open and preview)"
+    }
+  ],
+  "stats": {
+    "functions": 7,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 13,
+    "changelog": 4
+  }
+}

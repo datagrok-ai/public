@@ -1,0 +1,123 @@
+{
+  "package": {
+    "id": "pkg:WebComponents",
+    "name": "WebComponents",
+    "friendly_name": "WebComponents",
+    "category": "General",
+    "description": "WebComponents runtime code"
+  },
+  "files": {
+    "src": [
+      "packages/WebComponents/src/package.ts",
+      "packages/WebComponents/src/styles.css"
+    ],
+    "tests": [
+      "packages/WebComponents/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/WebComponents/CHANGELOG.md",
+      "packages/WebComponents/CREDITS.md",
+      "packages/WebComponents/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:WebComponents:web-component-runtime",
+      "name": "Web Component Runtime",
+      "description": "Provides the core initialization and runtime infrastructure that registers and bootstraps custom HTML elements (web components) within the Datagrok platform. This is the entry point that makes all other web components…",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:WebComponents:init",
+          "kind": "RegisteredFunction",
+          "name": "init",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/WebComponents/readme.md",
+          "kind": "DocPage",
+          "title": "WebComponents",
+          "url": "/packages/WebComponents/readme.md"
+        },
+        {
+          "id": "doc:/packages/WebComponents/credits.md",
+          "kind": "DocPage",
+          "title": "WebComponents — Third-Party Libraries",
+          "url": "/packages/WebComponents/credits.md"
+        },
+        {
+          "id": "clog:WebComponents:1.0.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:WebComponents:1.2.4:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/WebComponents/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:WebComponents:dock-web-component",
+      "name": "Dock Spawn Web Component",
+      "description": "Custom element wrapper over the dock-spawn panel and tab system, exposing a web-component API for programmatic panel management including focused-tab restoration across sessions.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "clog:WebComponents:1.2.10:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:WebComponents:1.2.8:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:WebComponents:form-consistency-icons",
+      "name": "Form Consistency Icons",
+      "description": "Custom web components that render consistency-state indicator icons inside Datagrok forms, giving users immediate visual feedback on field or record validity.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "clog:WebComponents:1.2.10:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:WebComponents:compute2-integration",
+      "name": "Compute2 Integration",
+      "description": "Web component adaptations that align with the Compute2 computation framework, enabling compute-aware UI elements to function correctly within the updated compute pipeline.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "clog:WebComponents:1.2.6:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

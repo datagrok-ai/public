@@ -1,0 +1,145 @@
+{
+  "package_id": "pkg:PhyloTreeViewer",
+  "features": [
+    {
+      "id": "feature:PhyloTreeViewer:phylocanvas-gl-viewer",
+      "implements": [
+        {
+          "path": "packages/PhyloTreeViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/viewers/phylocanvas-gl-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/utils/phylocanvas-gl-service.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/consts.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/apps/phylocanvas-gl-viewer-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PhyloTreeViewer/src/tests/phylocanvas-gl-viewer-tests.ts",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/tests/viewers.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/tests/package-funcs-tests.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "PhylocanvasGlViewer registered as a viewer + singleton service (PhylocanvasGlService) wired through package.ts; consts.ts supplies TREE_TAGS used by the viewer; demo app exercises it."
+    },
+    {
+      "id": "feature:PhyloTreeViewer:tree-in-grid",
+      "implements": [
+        {
+          "path": "packages/PhyloTreeViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/viewers/inject-tree-to-grid.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/viewers/grid-with-tree-viewer.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/utils/phylocanvas-gl-service.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/apps/tree-to-grid-app.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/apps/tree-in-grid-cell-app.ts",
+          "role": "demo",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PhyloTreeViewer/src/tests/package-funcs-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/tests/grid-with-tree-tests.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "TreeToGrid app uses injectTreeToGridUI; TreeInGridCell app renders per-row trees via PhylocanvasGlService.renderOnGridCell; grid-with-tree-viewer is the combined viewer variant."
+    },
+    {
+      "id": "feature:PhyloTreeViewer:newick-file-import",
+      "implements": [
+        {
+          "path": "packages/PhyloTreeViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/viewers/inject-tree-to-grid.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PhyloTreeViewer/src/tests/package-funcs-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "injectTree static method in PackageFunctions infers the leaf column and delegates to injectTreeToGridUI."
+    },
+    {
+      "id": "feature:PhyloTreeViewer:tree-cut",
+      "implements": [
+        {
+          "path": "packages/PhyloTreeViewer/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/apps/tree-cut-as-tree-app.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/PhyloTreeViewer/src/viewers/inject-tree-to-grid.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/PhyloTreeViewer/src/tests/package-funcs-tests.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "TreeCutAsTreeApp parses Newick and prepares a Cluster column; the cut UI/slider lives in injectTreeToGridUI which supports an optional cut config and calls treeHelper.cutTreeToGrid."
+    }
+  ]
+}

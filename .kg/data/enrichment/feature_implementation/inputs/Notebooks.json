@@ -1,0 +1,116 @@
+{
+  "package": {
+    "id": "pkg:Notebooks",
+    "name": "Notebooks",
+    "friendly_name": null,
+    "category": "Compute",
+    "description": "JupyterLab Notebooks integration package"
+  },
+  "files": {
+    "src": [
+      "packages/Notebooks/src/commands.js",
+      "packages/Notebooks/src/package.js",
+      "packages/Notebooks/src/utils.js"
+    ],
+    "tests": [],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Notebooks/CHANGELOG.md",
+      "packages/Notebooks/CREDITS.md",
+      "packages/Notebooks/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Notebooks:jupyter-notebook-view",
+      "name": "Jupyter Notebook View",
+      "description": "Embeds a full JupyterLab interface inside Datagrok as a first-class view, spinning up a Docker-hosted Jupyter server so users can write and run notebooks without leaving the platform.",
+      "category": "compute",
+      "members": [
+        {
+          "id": "func:Notebooks:Notebook",
+          "kind": "RegisteredFunction",
+          "name": "Notebook",
+          "friendly_name": null,
+          "role": null,
+          "description": "Creates a Notebook View",
+          "tags": [
+            "view"
+          ]
+        },
+        {
+          "id": "func:Notebooks:initContainer",
+          "kind": "RegisteredFunction",
+          "name": "initContainer",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": [
+            "init"
+          ]
+        },
+        {
+          "id": "doc:/help/compute/jupyter-notebook",
+          "kind": "DocPage",
+          "title": "Jupyter Notebook",
+          "url": "/help/compute/jupyter-notebook"
+        },
+        {
+          "id": "doc:/packages/Notebooks/readme.md",
+          "kind": "DocPage",
+          "title": "Notebooks",
+          "url": "/packages/Notebooks/readme.md"
+        },
+        {
+          "id": "doc:/packages/Notebooks/credits.md",
+          "kind": "DocPage",
+          "title": "Notebooks — Third-Party Libraries",
+          "url": "/packages/Notebooks/credits.md"
+        },
+        {
+          "id": "clog:Notebooks:1.4.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Notebooks:1.3.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Notebooks:1.2.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Notebooks:1.0.1:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Notebooks:notebook-export",
+      "name": "Notebook Export",
+      "description": "Converts a notebook file's content to a specified output format (e.g., HTML, script), enabling downstream sharing or archiving of notebook results outside Datagrok.",
+      "category": "compute",
+      "members": [
+        {
+          "id": "func:Notebooks:convertNotebook",
+          "kind": "RegisteredFunction",
+          "name": "convertNotebook",
+          "friendly_name": null,
+          "role": null,
+          "description": "Converts notebook file content into specified format",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

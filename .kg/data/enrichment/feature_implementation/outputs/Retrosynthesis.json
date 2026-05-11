@@ -1,0 +1,79 @@
+{
+  "package_id": "pkg:Retrosynthesis",
+  "features": [
+    {
+      "id": "feature:Retrosynthesis:retrosynthesis-path-analysis",
+      "implements": [
+        {
+          "path": "packages/Retrosynthesis/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Retrosynthesis/src/utils.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Retrosynthesis/src/tree-creation-utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Retrosynthesis/src/config-utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Retrosynthesis/src/aizynth-api.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Retrosynthesis/src/const.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Retrosynthesis/src/mock-data.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Retrosynthesis/src/tests/retrosynthesis-panel-test.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "package.ts registers the Chemistry|Retrosynthesis panel; utils.ts holds updateRetrosynthesisWidget (backend call + cancellation); tree-creation-utils renders SVG tabs; config-utils handles user config; aizynth-api/const/mock-data are supporting types/constants/demo data."
+    },
+    {
+      "id": "feature:Retrosynthesis:retrosynthesis-demo",
+      "implements": [
+        {
+          "path": "packages/Retrosynthesis/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Retrosynthesis/src/const.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Retrosynthesis/src/mock-data.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Retrosynthesis/src/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "PackageFunctions.retrosynthesisDemo in package.ts builds the demo view with a sketcher, seeded by DEMO_MOLECULE (const.ts) which short-circuits to DEMO_DATA (mock-data.ts) via utils.ts."
+    }
+  ]
+}

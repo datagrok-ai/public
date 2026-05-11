@@ -1,0 +1,59 @@
+{
+  "package_id": "pkg:KetcherSketcher",
+  "features": [
+    {
+      "id": "feature:KetcherSketcher:molecule-sketcher",
+      "name": "Ketcher Molecule Sketcher",
+      "description": "Integrates the Ketcher open-source chemical structure editor as an optional molecule sketcher widget in Datagrok, enabling interactive drawing and editing of molecular structures. Replaces or supplements the default sketcher for structure-input workflows across the platform.",
+      "category": "chem-rendering",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:KetcherSketcher:Ketcher",              "weight": 1.0,  "role": "core"},
+        {"id": "doc:/packages/KetcherSketcher/readme.md",   "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/packages/KetcherSketcher/claude.md",   "weight": 0.8,  "role": "doc"},
+        {"id": "doc:/packages/KetcherSketcher/credits.md",  "weight": 0.7,  "role": "doc"},
+        {"id": "clog:KetcherSketcher:2.4.2:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.4.1:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.4.0:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.4.0:1",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.3.0:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.2.3:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.2.2:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.2.1:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.1.10:0",             "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.1.9:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.1.8:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.1.7:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.1.6:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.1.5:0",              "weight": 0.6,  "role": "related"},
+        {"id": "clog:KetcherSketcher:2.1.4:0",              "weight": 0.6,  "role": "related"}
+      ],
+      "evidence_summary": "The single registered function (role=moleculeSketcher) and all package-specific docs share the Ketcher name and sketcher theme; changelog entries track the same widget's evolution across every release."
+    }
+  ],
+  "feature_relations": [],
+  "unassigned_member_ids": [
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/mutate"
+  ]
+}

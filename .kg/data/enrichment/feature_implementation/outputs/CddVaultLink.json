@@ -1,0 +1,182 @@
+{
+  "package_id": "pkg:CddVaultLink",
+  "features": [
+    {
+      "id": "feature:CddVaultLink:vault-app",
+      "implements": [
+        {
+          "path": "packages/CddVaultLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CddVaultLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CddVaultLink/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/CddVaultLink/src/cdd-vault-api.ts",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CddVaultLink/src/tests/cdd-vault-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "package.ts hosts cddVaultApp/cddVaultAppTreeBrowser/molColumnPropertyPanel; utils.ts builds the tree, tabbed view loader, context panel, and stats; constants.ts defines tab names; cdd-vault-api.ts supplies vault types/queries used by the app shell."
+    },
+    {
+      "id": "feature:CddVaultLink:vault-connection",
+      "implements": [
+        {
+          "path": "packages/CddVaultLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CddVaultLink/src/cdd-vault-api.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CddVaultLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CddVaultLink/src/tests/cdd-vault-tests.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "getVaults/getVaultStats live in package.ts; queryVaults/queryProjects + lazy auth in cdd-vault-api.ts; createInitialStatistics and runAsyncExport (used by stats aggregation) live in utils.ts."
+    },
+    {
+      "id": "feature:CddVaultLink:molecule-retrieval",
+      "implements": [
+        {
+          "path": "packages/CddVaultLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CddVaultLink/src/cdd-vault-api.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CddVaultLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CddVaultLink/src/tests/cdd-vault-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "getMolecules/getMoleculesAsync in package.ts; queryMolecules/queryMoleculesAsync in cdd-vault-api.ts; createMoleculesDfFromObjects, runAsyncExportAsDf, createLinksFromIds, reorderColumns in utils.ts."
+    },
+    {
+      "id": "feature:CddVaultLink:batch-retrieval",
+      "implements": [
+        {
+          "path": "packages/CddVaultLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CddVaultLink/src/cdd-vault-api.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CddVaultLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CddVaultLink/src/tests/cdd-vault-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "getBatches/getBatchesAsync in package.ts; queryBatches/queryBatchesAsync in cdd-vault-api.ts; createBatchesDfFromObjects, runAsyncExportAsDf, createMoleculeIdLinks in utils.ts."
+    },
+    {
+      "id": "feature:CddVaultLink:compound-search",
+      "implements": [
+        {
+          "path": "packages/CddVaultLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CddVaultLink/src/cdd-vault-api.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CddVaultLink/src/search-function-editor.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CddVaultLink/src/constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/CddVaultLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CddVaultLink/src/tests/cdd-vault-tests.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "cDDVaultSearch/cDDVaultSearch2/cDDVaultSearchAsync/CDDVaultSearchEditor/getSavedSearches/getSavedSearchResults in package.ts; SearchEditor in search-function-editor.ts; search-related types/queries in cdd-vault-api.ts; CDDVaultSearchType and search-type constants in constants.ts; runAsyncExport(AsDf), reorderColumns helpers in utils.ts."
+    },
+    {
+      "id": "feature:CddVaultLink:protocols-and-collections",
+      "implements": [
+        {
+          "path": "packages/CddVaultLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CddVaultLink/src/cdd-vault-api.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CddVaultLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CddVaultLink/src/tests/cdd-vault-tests.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "getProtocolsAsync/getCollectionsAsync in package.ts; queryProtocolsAsync/queryCollectionsAsync (and Protocol/Collection types) in cdd-vault-api.ts; runAsyncExport polling helper plus tab-tree wiring (createNestedCDDNode) in utils.ts."
+    }
+  ]
+}

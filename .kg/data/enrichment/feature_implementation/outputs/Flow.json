@@ -1,0 +1,204 @@
+{
+  "package_id": "pkg:Flow",
+  "features": [
+    {
+      "id": "feature:Flow:function-chain-designer",
+      "implements": [
+        {
+          "path": "packages/Flow/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Flow/src/funcflow-view.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Flow/src/rete/flow-editor.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Flow/src/rete/node-factory.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/Flow/src/rete/node-component.tsx",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Flow/src/rete/scheme.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Flow/src/rete/sockets.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Flow/src/panel/function-browser.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/Flow/src/panel/property-panel.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/Flow/src/compiler/graph-compiler.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/Flow/src/compiler/script-emitter.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Flow/src/compiler/validator.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Flow/src/compiler/topological-sort.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Flow/src/compiler/graph-utils.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/Flow/src/execution/execution-controller.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Flow/src/execution/execution-state.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Flow/src/execution/execution-visualizer.ts",
+          "role": "support",
+          "confidence": 0.88
+        },
+        {
+          "path": "packages/Flow/src/execution/value-inspector.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Flow/src/execution/output-preview.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Flow/src/serialization/flow-serializer.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Flow/src/serialization/flow-schema.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Flow/src/types/type-map.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Flow/src/utils/dart-proxy-utils.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/Flow/src/rete/annotation.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Flow/src/rete/nodes/func-node.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/Flow/src/rete/nodes/input-nodes.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Flow/src/rete/nodes/output-nodes.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Flow/src/rete/nodes/utility-nodes.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Flow/src/rete/nodes/comparison-nodes.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Flow/src/rete/nodes/breakpoint-node.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "Entry point package.ts registers @app funcflowApp returning FuncFlowView, which wires Rete editor, panels, compiler, execution controller, and serialization into the visual function chain designer."
+    },
+    {
+      "id": "feature:Flow:flow-file-viewer",
+      "implements": [
+        {
+          "path": "packages/Flow/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Flow/src/funcflow-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Flow/src/serialization/flow-serializer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Flow/src/serialization/flow-schema.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Flow/src/rete/flow-editor.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Flow/src/rete/node-factory.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Flow/src/rete/scheme.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [],
+      "notes": "viewFuncFlow (@fileViewer ffjson) instantiates FuncFlowView and calls loadFromJson, which routes through deserializeFlow against the FuncFlowDocument schema; rendering reuses the same Rete editor + node factory."
+    }
+  ]
+}

@@ -1,0 +1,214 @@
+{
+  "package_id": "pkg:ApiTests",
+  "features": [
+    {
+      "id": "feature:ApiTests:dataframe-column-api",
+      "name": "DataFrame and Column API",
+      "description": "Core API for creating, accessing, and comparing DataFrames and Columns, including typed accessors, demo-table helpers, and assertion utilities used across the test suite.",
+      "category": "data",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:ApiTests:getTable",                  "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:getColumn",                 "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:getDT [get demo table]",    "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:getCell [get table cell]",  "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:expectTable",               "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:expectDate",                "weight": 0.9, "role": "core"},
+        {"id": "func:ApiTests:dummyDataFrameFunction",    "weight": 0.7, "role": "test"},
+        {"id": "script:ApiTests:ValueLookup",             "weight": 0.8, "role": "test"},
+        {"id": "script:ApiTests:ValueLookupWithNullable", "weight": 0.8, "role": "test"},
+        {"id": "doc:/help/_internal/tests/tables-schema-test",    "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/datetime-extract-test", "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "All members deal with DataFrame/Column creation, access, and equality assertion, sharing the Table/Column/Cell/expect naming root."
+    },
+    {
+      "id": "feature:ApiTests:function-output-annotations",
+      "name": "Function Output Annotations",
+      "description": "Tests for the output-annotation system that controls how function results join or replace existing DataFrame, Column, or ColumnList outputs.",
+      "category": "infra",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:ApiTests:testOutputAnnotationJoinDf",         "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:testOutputAnnotationJoinCol",        "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:testOutputAnnotationJoinColList",    "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:testOutputAnnotationReplaceDf",      "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:testOutputAnnotationReplaceCol",     "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:testOutputAnnotationReplaceColList", "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:testOutputWithoutAction",            "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "Seven functions share the testOutputAnnotation/testOutput naming root and systematically cover join-vs-replace semantics across Df/Col/ColList output types."
+    },
+    {
+      "id": "feature:ApiTests:vector-functions",
+      "name": "Vector Functions",
+      "description": "Tests for the JS API's vectorized column-computation mechanism, covering both fully vectorizable and partially non-vectorizable parameter configurations.",
+      "category": "data",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:ApiTests:testVectorFunc",                        "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:testVectorFuncNonVectorizableParam",    "weight": 1.0, "role": "core"},
+        {"id": "script:ApiTests:vectorScript",                        "weight": 1.0, "role": "core"},
+        {"id": "script:ApiTests:vectorScriptNonVectorizableParam",    "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Exact vectorFunc/vectorScript name-root match and the symmetric NonVectorizableParam pair confirm these four members test the same vector-function API surface."
+    },
+    {
+      "id": "feature:ApiTests:package-function-infra",
+      "name": "Package Function Infrastructure",
+      "description": "Baseline dummy functions, scripts, and a query that verify fundamental package-level registration, async invocation, and default-value handling in the JS API.",
+      "category": "infra",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:ApiTests:dummyPackageFunction",                  "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:dummyPackageFunctionWithDefaultValue",  "weight": 1.0, "role": "core"},
+        {"id": "func:ApiTests:testStringAsync",                       "weight": 0.8, "role": "core"},
+        {"id": "script:ApiTests:dummyPackageScript",                  "weight": 1.0, "role": "core"},
+        {"id": "query:ApiTests:dummyPackageQuery",                    "weight": 0.8, "role": "core"},
+        {"id": "doc:/packages/ApiTests/readme.md",                   "weight": 0.9, "role": "doc"},
+        {"id": "doc:/packages/ApiTests/credits.md",                  "weight": 0.6, "role": "doc"}
+      ],
+      "evidence_summary": "Shared 'dummy'/'Package' name root across function, script, and query signals deliberate baseline stubs for package-API smoke-testing."
+    },
+    {
+      "id": "feature:ApiTests:semantic-type-detection",
+      "name": "Semantic Type Detection",
+      "description": "Tests the registration and invocation of custom semantic-type detectors that classify column content at runtime.",
+      "category": "data",
+      "confidence": 0.75,
+      "members": [
+        {"id": "func:ApiTests:<anonymous>", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "The only function with role='semTypeDetector' in meta, confirming it is the semantic type detector registration test fixture."
+    },
+    {
+      "id": "feature:ApiTests:script-engine-properties",
+      "name": "Script Engine and Property Parsing",
+      "description": "Tests for the script execution engine, covering property annotation parsing, formula evaluation, NaN output handling, and package-level property defaults.",
+      "category": "infra",
+      "confidence": 0.8,
+      "members": [
+        {"id": "script:ApiTests:FormulaScript",   "weight": 1.0, "role": "core"},
+        {"id": "script:ApiTests:propertyParsing", "weight": 1.0, "role": "core"},
+        {"id": "script:ApiTests:Test NaN output", "weight": 0.8, "role": "core"},
+        {"id": "clog:ApiTests:1.10.2:0",          "weight": 0.7, "role": "related"}
+      ],
+      "evidence_summary": "FormulaScript, propertyParsing, and Test NaN output each probe distinct aspects of script-engine behavior (formula eval, property annotation, edge-case output); the setOptions changelog entry belongs to the same engine-configuration surface."
+    },
+    {
+      "id": "feature:ApiTests:ui-input-forms",
+      "name": "UI Input Forms and Dialogs",
+      "description": "Tests for the Datagrok dialog and input-form system, including custom input renderers, multi-field forms, and dialog lifecycle validation.",
+      "category": "ui",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:ApiTests:CustomStringInput",                          "weight": 1.0, "role": "core"},
+        {"id": "script:ApiTests:InputFormTest",                           "weight": 1.0, "role": "core"},
+        {"id": "script:ApiTests:InputFormTest2",                          "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/_internal/tests/dialogs-input-fields-test",     "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/dialogs-test",                  "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "CustomStringInput, InputFormTest*, and the two dialog doc pages all exercise the same dialog/input-form surface of the JS API."
+    },
+    {
+      "id": "feature:ApiTests:file-connector-api",
+      "name": "File and Connector API",
+      "description": "Tests for the dapi.files API and connector framework, covering local file functions, file-connector queries, and web connector integration.",
+      "category": "dapi",
+      "confidence": 0.85,
+      "members": [
+        {"id": "script:ApiTests:FileFuncTest",                       "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/_internal/tests/file-connector-test",      "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/web-connector-test",       "weight": 0.8, "role": "doc"},
+        {"id": "clog:ApiTests:1.7.17:0",                             "weight": 0.9, "role": "related"}
+      ],
+      "evidence_summary": "FileFuncTest, file-connector doc, web-connector doc, and the changelog entry for dapi.files.list tests all belong to the file and connector access surface."
+    },
+    {
+      "id": "feature:ApiTests:data-query-api",
+      "name": "Data Query API",
+      "description": "Tests for building and running database queries via the JS API, including join-based table queries and Elasticsearch integration.",
+      "category": "dapi",
+      "confidence": 0.75,
+      "members": [
+        {"id": "doc:/help/_internal/tests/build-query-test",    "weight": 1.0, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/elastic-search-test", "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "build-query-test and elastic-search-test docs share the query-execution theme and are the primary API surface covered by this feature."
+    },
+    {
+      "id": "feature:ApiTests:data-transformation",
+      "name": "Data Transformation and Table Operations",
+      "description": "Tests for data normalization, sorting, color coding, and the transformation editor — the core non-scripted table manipulation surface.",
+      "category": "data",
+      "confidence": 0.8,
+      "members": [
+        {"id": "doc:/help/_internal/tests/transformation-editor-test", "weight": 1.0, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/normalize-test",             "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/sorting-test",               "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/color-coding-test",          "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "All four test pages exercise table-level data manipulation (transform, normalize, sort, color code) that form a coherent data-wrangling cluster."
+    },
+    {
+      "id": "feature:ApiTests:data-export",
+      "name": "Data Export",
+      "description": "Tests for exporting tables and views to various file formats through the JS API.",
+      "category": "data",
+      "confidence": 0.7,
+      "members": [
+        {"id": "doc:/help/_internal/tests/export-test", "weight": 1.0, "role": "doc"}
+      ],
+      "evidence_summary": "Single dedicated export-test doc covers the export surface; isolated but distinct enough from transformation to merit its own feature."
+    },
+    {
+      "id": "feature:ApiTests:projects-collaboration",
+      "name": "Projects and Collaboration",
+      "description": "Tests for the project browser, sharing, user registration, and inviting collaborators — the multi-user collaboration surface of Datagrok.",
+      "category": "dapi",
+      "confidence": 0.8,
+      "members": [
+        {"id": "doc:/help/_internal/tests/projects-browser-test",   "weight": 1.0, "role": "doc"},
+        {"id": "doc:/help/collaborate/project-gallery-test",        "weight": 1.0, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/recently-open-test",      "weight": 0.7, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/inviting-a-friend-test",  "weight": 0.8, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/registration-test",       "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "projects-browser, project-gallery, recently-open, inviting-a-friend, and registration docs collectively cover the collaboration lifecycle (create, share, invite, register)."
+    },
+    {
+      "id": "feature:ApiTests:ui-navigation-metadata",
+      "name": "UI Navigation and Metadata",
+      "description": "Tests for platform-level UI navigation including the help system, menu visibility controls, entity tags, favorites, and entity collections.",
+      "category": "ui",
+      "confidence": 0.75,
+      "members": [
+        {"id": "doc:/help/_internal/tests/help-test",          "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/hide-menus-test",    "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/tags-favorites-test","weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tests/collections-test",   "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "Help, menu visibility, tags/favorites, and collections are all platform navigation and metadata management features grouped under the UI shell surface."
+    },
+    {
+      "id": "feature:ApiTests:substructure-filter",
+      "name": "Substructure Filter",
+      "description": "Integration test for the chemical substructure filter, verifying that structure-based column filtering works end-to-end in the platform.",
+      "category": "chem",
+      "confidence": 0.7,
+      "members": [
+        {"id": "doc:/help/_internal/tests/substructure-filter", "weight": 1.0, "role": "doc"}
+      ],
+      "evidence_summary": "Single test doc for substructure filter, a chem-domain feature isolated from all other API surface areas in this package."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:ApiTests:dataframe-column-api",      "to": "feature:ApiTests:function-output-annotations", "kind": "related"},
+    {"from": "feature:ApiTests:dataframe-column-api",      "to": "feature:ApiTests:vector-functions",            "kind": "related"},
+    {"from": "feature:ApiTests:dataframe-column-api",      "to": "feature:ApiTests:data-transformation",         "kind": "related"},
+    {"from": "feature:ApiTests:package-function-infra",    "to": "feature:ApiTests:script-engine-properties",    "kind": "sibling"},
+    {"from": "feature:ApiTests:file-connector-api",        "to": "feature:ApiTests:data-query-api",              "kind": "sibling"},
+    {"from": "feature:ApiTests:ui-input-forms",            "to": "feature:ApiTests:ui-navigation-metadata",      "kind": "sibling"}
+  ],
+  "unassigned_member_ids": []
+}

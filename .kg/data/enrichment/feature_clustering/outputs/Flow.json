@@ -1,0 +1,41 @@
+{
+  "package_id": "pkg:Flow",
+  "features": [
+    {
+      "id": "feature:Flow:function-chain-designer",
+      "name": "Interactive Function Chain Designer",
+      "description": "A visual app for composing Datagrok functions into executable pipelines. Users drag and drop functions onto a canvas, connect them, and run the chain interactively.",
+      "category": "infra",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Flow:Flow",             "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Flow/readme.md","weight": 0.8, "role": "doc"},
+        {"id": "clog:Flow:v.next:0",          "weight": 0.7, "role": "related"}
+      ],
+      "evidence_summary": "func:Flow:Flow is tagged 'app' with description 'Interactive function chain designer'; the readme and changelog entry both reference the FuncFlow view and its drop-handler."
+    },
+    {
+      "id": "feature:Flow:flow-file-viewer",
+      "name": "Flow Definition File Viewer",
+      "description": "Opens and renders .ffjson flow-definition files as an interactive flow diagram inside the Datagrok platform.",
+      "category": "viz",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:Flow:viewFuncFlow", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "func:Flow:viewFuncFlow is registered as a fileViewer for 'ffjson', the serialization format produced by the Flow chain-designer app."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Flow:flow-file-viewer", "to": "feature:Flow:function-chain-designer", "kind": "subfeature"}
+  ],
+  "unassigned_member_ids": [
+    "func:Flow:info",
+    "doc:/packages/Flow/claude.md",
+    "doc:/packages/Flow/credits.md",
+    "doc:/help/datagrok/navigation/info-pane-reference",
+    "doc:/help/datagrok/navigation/panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/develop/how-to/ui/add-info-panel"
+  ]
+}

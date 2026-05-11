@@ -1,0 +1,256 @@
+{
+  "package": {
+    "id": "pkg:UITests",
+    "name": "UITests",
+    "friendly_name": "UI Tests",
+    "version": "1.3.0",
+    "category": "Development",
+    "description": "Automated UI tests",
+    "extras": {
+      "npm_name": "@datagrok/ui-tests",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:UITests:TestViewerForProperties",
+      "name": "TestViewerForProperties",
+      "friendly_name": null,
+      "role": "viewer,panel",
+      "tags": [],
+      "description": "Viewer to test properties and others",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:UITests:testCustomFilter",
+      "name": "testCustomFilter",
+      "friendly_name": null,
+      "role": "filter",
+      "tags": [],
+      "description": "Test custom filter",
+      "input_types": [],
+      "output_types": [
+        "filter"
+      ],
+      "meta": {
+        "role": "filter"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:UITests:Dummy",
+      "name": "Dummy",
+      "language": "octave",
+      "description": null
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/UITests/credits.md",
+      "title": "UITests — Third-Party Libraries",
+      "url": "/packages/UITests/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/UITests/readme.md",
+      "title": "UI Tests",
+      "url": "/packages/UITests/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_internal/tests/build-query-test",
+      "title": "Tests: Join DB Tables",
+      "url": "/help/_internal/tests/build-query-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/collections-test",
+      "title": "Tests: Collections",
+      "url": "/help/_internal/tests/collections-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/color-coding-test",
+      "title": "Tests: Color Coding",
+      "url": "/help/_internal/tests/color-coding-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/datetime-extract-test",
+      "title": "Tests: Datetime Extract",
+      "url": "/help/_internal/tests/datetime-extract-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/dialogs-input-fields-test",
+      "title": "Tests: Dialogs Input Fields",
+      "url": "/help/_internal/tests/dialogs-input-fields-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/dialogs-test",
+      "title": "Tests: Dialogs",
+      "url": "/help/_internal/tests/dialogs-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/elastic-search-test",
+      "title": "Tests: Elastic search",
+      "url": "/help/_internal/tests/elastic-search-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/export-test",
+      "title": "Tests: Export",
+      "url": "/help/_internal/tests/export-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/file-connector-test",
+      "title": "Tests: File connector",
+      "url": "/help/_internal/tests/file-connector-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/help-test",
+      "title": "Tests: Help",
+      "url": "/help/_internal/tests/help-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/hide-menus-test",
+      "title": "Tests: Hide Menus",
+      "url": "/help/_internal/tests/hide-menus-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/inviting-a-friend-test",
+      "title": "Tests: Inviting a friend",
+      "url": "/help/_internal/tests/inviting-a-friend-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/normalize-test",
+      "title": "Tests: Normalize",
+      "url": "/help/_internal/tests/normalize-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/projects-browser-test",
+      "title": "Tests: Projects Browser",
+      "url": "/help/_internal/tests/projects-browser-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/recently-open-test",
+      "title": "Tests: Recently Open Views",
+      "url": "/help/_internal/tests/recently-open-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/registration-test",
+      "title": "Tests: Registration",
+      "url": "/help/_internal/tests/registration-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/sorting-test",
+      "title": "Tests: Sorting",
+      "url": "/help/_internal/tests/sorting-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/substructure-filter",
+      "title": "Tests: Substructure Filter",
+      "url": "/help/_internal/tests/substructure-filter",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/tables-schema-test",
+      "title": "Tests: Tables Schema",
+      "url": "/help/_internal/tests/tables-schema-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/tags-favorites-test",
+      "title": "Tests: Tags",
+      "url": "/help/_internal/tests/tags-favorites-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/transformation-editor-test",
+      "title": "Tests: Transformation Editor",
+      "url": "/help/_internal/tests/transformation-editor-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/web-connector-test",
+      "title": "Tests: Web connector",
+      "url": "/help/_internal/tests/web-connector-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/collaborate/project-gallery-test",
+      "title": "Tests: Project Browser",
+      "url": "/help/collaborate/project-gallery-test",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:UITests:1.0.12:0",
+      "version": "1.0.12",
+      "released_at": "2024-09-02",
+      "ticket": null,
+      "text": "Test fixes update"
+    }
+  ],
+  "stats": {
+    "functions": 2,
+    "scripts": 1,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 1
+  }
+}

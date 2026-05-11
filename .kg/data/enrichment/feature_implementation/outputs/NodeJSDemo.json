@@ -1,0 +1,39 @@
+{
+  "package_id": "pkg:NodeJSDemo",
+  "features": [
+    {
+      "id": "feature:NodeJSDemo:todo-application",
+      "implements": [
+        {
+          "path": "packages/NodeJSDemo/src/package.ts",
+          "role": "config",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/NodeJSDemo/src/app/todo_app.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/NodeJSDemo/dockerfiles/todo-app/src/server.ts",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers todoApplication and instantiates TodoView (core UI in todo_app.ts); server.ts is the Node/Express backend the view calls via fetchProxy."
+    },
+    {
+      "id": "feature:NodeJSDemo:info-panel-demo",
+      "implements": [
+        {
+          "path": "packages/NodeJSDemo/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "info() function is defined inline in package.ts; no separate implementation file."
+    }
+  ]
+}

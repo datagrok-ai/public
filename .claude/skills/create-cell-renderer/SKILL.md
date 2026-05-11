@@ -90,7 +90,7 @@ grok publish
 
 - The `cellType` string links the renderer to summary columns of that type
 - The `render` method receives a Canvas 2D context; draw within the bounding box (x, y, w, h)
-- For real examples, see the PowerGrid package: `public/packages/PowerGrid/src/sparklines/`
+- For real examples, see the PowerGrid package: `packages/PowerGrid/src/sparklines/`
 - Both decorator and function annotation approaches are equivalent; prefer decorators
 
 ## Behavior

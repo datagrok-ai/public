@@ -1,0 +1,55 @@
+{
+  "package_id": "pkg:monomerDB",
+  "features": [
+    {
+      "id": "feature:monomerDB:monomer-library-provider",
+      "name": "Monomer Library Provider",
+      "description": "Exposes a HELM-compatible monomer library to Datagrok's Bio/Chem ecosystem via the monomerLibProvider role, enabling downstream plugins to query and use monomer data.",
+      "category": "infra",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:monomerDB:Monomers DB Provider", "weight": 1.0, "role": "core"},
+        {"id": "func:monomerDB:init",                 "weight": 0.9, "role": "core"},
+        {"id": "query:monomerDB:getMonomersByLibrary", "weight": 0.9, "role": "core"},
+        {"id": "query:monomerDB:getMonomerByGrokID",   "weight": 0.9, "role": "core"},
+        {"id": "query:monomerDB:listLibraries",        "weight": 0.85, "role": "core"},
+        {"id": "doc:/packages/monomerDB/readme.md",    "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "The monomerLibProvider meta-role on the main function, plus all read-side queries and the readme, form the provider integration surface for downstream plugins."
+    },
+    {
+      "id": "feature:monomerDB:monomer-data-management",
+      "name": "Monomer Data Management",
+      "description": "Provides database-level write operations to create and update monomers, monomer properties, and libraries in the MonomerDB backing store.",
+      "category": "data-import",
+      "confidence": 0.80,
+      "members": [
+        {"id": "query:monomerDB:upsertMonomer",         "weight": 1.0, "role": "core"},
+        {"id": "query:monomerDB:upsertMonomerProperty", "weight": 1.0, "role": "core"},
+        {"id": "query:monomerDB:createLibrary",         "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "The upsert/create query names share a write-side pattern against the same mdb1 connection, indicating a distinct data-management capability."
+    },
+    {
+      "id": "feature:monomerDB:monomer-info-panel",
+      "name": "Monomer Info Panel",
+      "description": "Registers an info panel that surfaces monomer details in the Datagrok context panel when a monomer entity is selected.",
+      "category": "viz",
+      "confidence": 0.65,
+      "members": [
+        {"id": "func:monomerDB:info",                                                    "weight": 0.8, "role": "core"},
+        {"id": "doc:/help/datagrok/navigation/info-pane-reference",                      "weight": 0.7, "role": "doc"},
+        {"id": "doc:/help/datagrok/navigation/panels/info-panels",                       "weight": 0.7, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",      "weight": 0.65, "role": "doc"},
+        {"id": "doc:/help/develop/how-to/ui/add-info-panel",                             "weight": 0.6, "role": "doc"}
+      ],
+      "evidence_summary": "The untagged 'info' function combined with the set of info-panel documentation pages suggests a monomer detail panel registered as a Datagrok info pane."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:monomerDB:monomer-data-management", "to": "feature:monomerDB:monomer-library-provider", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/monomerDB/credits.md"
+  ]
+}

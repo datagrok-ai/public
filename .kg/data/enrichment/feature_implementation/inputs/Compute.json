@@ -1,0 +1,448 @@
+{
+  "package": {
+    "id": "pkg:Compute",
+    "name": "Compute",
+    "friendly_name": "Compute",
+    "category": "Compute",
+    "description": "Legacy modeling UI"
+  },
+  "files": {
+    "src": [
+      "packages/Compute/src/outliers-selection/outliers-selection-viewer.ts",
+      "packages/Compute/src/package.ts"
+    ],
+    "tests": [
+      "packages/Compute/src/package-test.ts"
+    ],
+    "scripts": [
+      "packages/Compute/scripts/default-get-real-data.js",
+      "packages/Compute/scripts/demo-rfv-df-input.js",
+      "packages/Compute/scripts/fab-arm-exchange.py",
+      "packages/Compute/scripts/heat-exchange.js",
+      "packages/Compute/scripts/intervals-from-ecg.py",
+      "packages/Compute/scripts/logistic-map.js",
+      "packages/Compute/scripts/lorenz-attractor.js",
+      "packages/Compute/scripts/lotka-volterra.js",
+      "packages/Compute/scripts/maximal-volume.R",
+      "packages/Compute/scripts/object-cooling.js"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/Compute/CHANGELOG.md",
+      "packages/Compute/CREDITS.md",
+      "packages/Compute/README.md",
+      "packages/Compute/files/readme.md",
+      "packages/Compute/help/outliers-selection/main.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Compute:rich-function-view",
+      "name": "Rich Function View",
+      "description": "Interactive UI for executing any registered function or script as a model, with auto-generated inputs, run controls, and structured output panels. Central model-execution surface of the legacy Compute framework.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Compute:openModelFromFuncall",
+          "kind": "RegisteredFunction",
+          "name": "openModelFromFuncall",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute:RichFunctionViewEditor",
+          "kind": "RegisteredFunction",
+          "name": "RichFunctionViewEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+          "kind": "DocPage",
+          "title": "Rich Function View",
+          "url": "/help/compute/scripting/advanced-scripting/rich-function-view"
+        },
+        {
+          "id": "doc:/help/compute/compute",
+          "kind": "DocPage",
+          "title": "Compute",
+          "url": "/help/compute/compute"
+        },
+        {
+          "id": "doc:/help/compute/models",
+          "kind": "DocPage",
+          "title": "Models",
+          "url": "/help/compute/models"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Compute/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute:scripting",
+      "name": "Scripting Platform",
+      "description": "Author and run multi-language scripts (R, Python, JS) inside Datagrok, with a rich script editor, custom input widgets, REST invocation, and visualisation of outputs.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Compute:CustomStringInput",
+          "kind": "RegisteredFunction",
+          "name": "CustomStringInput",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Compute:Default get real data",
+          "kind": "Script",
+          "name": "Default get real data",
+          "language": "javascript",
+          "description": "Shows that default view works (or not)"
+        },
+        {
+          "id": "script:Compute:Data stats",
+          "kind": "Script",
+          "name": "Data stats",
+          "language": "javascript",
+          "description": "Uses Datagrok's built-in viewer to show dataframe stats"
+        },
+        {
+          "id": "doc:/help/compute/scripting/getting-started",
+          "kind": "DocPage",
+          "title": "Getting started with scripting",
+          "url": "/help/compute/scripting/getting-started"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+          "kind": "DocPage",
+          "title": "Scripting features",
+          "url": "/help/compute/scripting/scripting-features/scripting-features"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+          "kind": "DocPage",
+          "title": "Complex data types",
+          "url": "/help/compute/scripting/scripting-features/complex-input-output"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+          "kind": "DocPage",
+          "title": "Work with the Datagrok script editor",
+          "url": "/help/compute/scripting/scripting-features/datagrok-script-editor"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+          "kind": "DocPage",
+          "title": "Enhance input UI",
+          "url": "/help/compute/scripting/scripting-features/enhance-input-ui"
+        },
+        {
+          "id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+          "kind": "DocPage",
+          "title": "Visualize output data",
+          "url": "/help/compute/scripting/scripting-features/visualize-output-data"
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+          "kind": "DocPage",
+          "title": "Automate inputs",
+          "url": "/help/compute/scripting/advanced-scripting/automate-inputs"
+        },
+        {
+          "id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+          "kind": "DocPage",
+          "title": "Call via REST",
+          "url": "/help/compute/scripting/advanced-scripting/call-via-rest"
+        },
+        {
+          "id": "doc:/help/compute/compute",
+          "kind": "DocPage",
+          "title": "Compute",
+          "url": "/help/compute/compute"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute:diff-studio-ode-models",
+      "name": "Diff Studio ODE Models",
+      "description": "Solve and visualise systems of ordinary differential equations interactively using Diff Studio, with bundled canonical examples covering chaotic systems and ecological models.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "doc:/help/compute/diff-studio",
+          "kind": "DocPage",
+          "title": "Diff Studio",
+          "url": "/help/compute/diff-studio"
+        },
+        {
+          "id": "script:Compute:Logistic Map",
+          "kind": "Script",
+          "name": "Logistic Map",
+          "language": "javascript",
+          "description": "Archetypal example of how complex, chaotic behaviour can arise from very simple non-linear dynamical equations."
+        },
+        {
+          "id": "script:Compute:Lorenz Attractor",
+          "kind": "Script",
+          "name": "Lorenz Attractor",
+          "language": "javascript",
+          "description": "Set of chaotic solutions of the system for weather prediction. It illustrates the phenomenon known as the Butterfly effect or (more technically) sensitive…"
+        },
+        {
+          "id": "script:Compute:LotkaVolterra",
+          "kind": "Script",
+          "name": "LotkaVolterra",
+          "language": "javascript",
+          "description": "Model describes the dynamics of biological systems in which two species interact, one as a predator and the other as prey."
+        },
+        {
+          "id": "doc:/help/compute/models",
+          "kind": "DocPage",
+          "title": "Models",
+          "url": "/help/compute/models"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute:object-cooling-demo",
+      "name": "Object Cooling Simulation Demo",
+      "description": "Interactive Newton's law of cooling simulation with per-parameter validators and a selector for cooling mode, serving as a self-contained demo of the Compute model framework.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:Compute:Object cooling",
+          "kind": "Script",
+          "name": "Object cooling",
+          "language": "javascript",
+          "description": "Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air."
+        },
+        {
+          "id": "func:Compute:ObjectCoolingSelector",
+          "kind": "RegisteredFunction",
+          "name": "ObjectCoolingSelector",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute:SimTimeValidator",
+          "kind": "RegisteredFunction",
+          "name": "SimTimeValidator",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute:DesiredTempValidator",
+          "kind": "RegisteredFunction",
+          "name": "DesiredTempValidator",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute:InitialTempValidator",
+          "kind": "RegisteredFunction",
+          "name": "InitialTempValidator",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute:AmbTempValidator",
+          "kind": "RegisteredFunction",
+          "name": "AmbTempValidator",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute:HeatCapValidator",
+          "kind": "RegisteredFunction",
+          "name": "HeatCapValidator",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Compute:Heat Exchange",
+          "kind": "Script",
+          "name": "Heat Exchange",
+          "language": "javascript",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute:model-optimization",
+      "name": "Model Optimization Tools",
+      "description": "Parameter fitting, sensitivity analysis, and outlier detection tooling for Compute models; core fitting and SA capabilities have migrated to Compute2 but documentation remains in this package.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "doc:/help/compute/function-analysis",
+          "kind": "DocPage",
+          "title": "Model optimization tools",
+          "url": "/help/compute/function-analysis"
+        },
+        {
+          "id": "func:Compute:OutliersSelectionViewer",
+          "kind": "RegisteredFunction",
+          "name": "OutliersSelectionViewer",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates an outliers selection viewer",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Compute/src/outliers-selection/outliers-selection-viewer.ts",
+          "packages/Compute/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute:custom-data-upload",
+      "name": "Custom Data Upload",
+      "description": "Extensible widget and handler for uploading custom input data within a model or pipeline run, allowing users to provide non-standard data types via a configurable uploader UI.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Compute:CustomDataUploader",
+          "kind": "RegisteredFunction",
+          "name": "CustomDataUploader",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute:CustomUploader",
+          "kind": "RegisteredFunction",
+          "name": "CustomUploader",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Compute:CustomCustomizer",
+          "kind": "RegisteredFunction",
+          "name": "CustomCustomizer",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Compute/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute:pipeline-step-editor",
+      "name": "Pipeline Step Editor",
+      "description": "Editor component that wraps a single function call as a step inside a multi-step model pipeline, enabling chaining of compute operations.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Compute:PipelineStepEditor",
+          "kind": "RegisteredFunction",
+          "name": "PipelineStepEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute:jupyter-notebook",
+      "name": "Jupyter Notebook Integration",
+      "description": "Run and display Jupyter notebooks as compute artefacts within the Datagrok platform, bridging notebook-based workflows with the model execution UI.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "doc:/help/compute/jupyter-notebook",
+          "kind": "DocPage",
+          "title": "Jupyter Notebook",
+          "url": "/help/compute/jupyter-notebook"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Compute:biomedical-scripts",
+      "name": "Biomedical Example Scripts",
+      "description": "Domain-specific demonstration scripts covering ECG interval analysis, antibody Fab arm exchange, and bioreactor filter sizing (Vmax), showcasing Compute's multi-language scripting for life-sciences applications.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:Compute:IntervalsFromECG",
+          "kind": "Script",
+          "name": "IntervalsFromECG",
+          "language": "python",
+          "description": "Identify the beats in an ECG signal and compute the IBIs"
+        },
+        {
+          "id": "script:Compute:Fab Arm Exchange",
+          "kind": "Script",
+          "name": "Fab Arm Exchange",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Compute:Vmax",
+          "kind": "Script",
+          "name": "Vmax",
+          "language": "r",
+          "description": "Predict the minimum filter size required for the separation of effluent from bioreactors, given the constraints of batch size and total batch time based on a…"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

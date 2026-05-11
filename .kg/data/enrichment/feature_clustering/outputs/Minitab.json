@@ -1,0 +1,36 @@
+{
+  "package_id": "pkg:Minitab",
+  "features": [
+    {
+      "id": "feature:Minitab:mwx-worksheet-support",
+      "name": "Minitab Worksheet (.mwx) Support",
+      "description": "Lets users import and preview Minitab Worksheet files (.mwx) inside Datagrok, surfacing worksheet data as a table.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Minitab:importMwx",          "weight": 1.0, "role": "core"},
+        {"id": "func:Minitab:previewMwx",         "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Minitab/readme.md", "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "Both functions share the 'mwx' extension token and together cover the full import + preview lifecycle for Minitab Worksheet files."
+    },
+    {
+      "id": "feature:Minitab:mpx-project-support",
+      "name": "Minitab Project (.mpx) Support",
+      "description": "Lets users import and preview Minitab Project files (.mpx), which may contain multiple worksheets and analysis outputs.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Minitab:importMpx",  "weight": 1.0, "role": "core"},
+        {"id": "func:Minitab:previewMpx", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Both functions share the 'mpx' extension token and together cover the full import + preview lifecycle for Minitab Project files."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Minitab:mwx-worksheet-support", "to": "feature:Minitab:mpx-project-support", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/Minitab/credits.md"
+  ]
+}

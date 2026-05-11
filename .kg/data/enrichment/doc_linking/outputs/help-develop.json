@@ -1,0 +1,497 @@
+{
+  "slice_id": "help-develop",
+  "links": [
+    {
+      "doc_id": "doc:/help/develop/advanced/data-frame",
+      "target_id": "feature:ApiSamples:dataframe-creation-and-io",
+      "confidence": 0.92,
+      "evidence": "title and content describe the DataFrame API and columnar I/O operations covered by this ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/advanced/data-frame",
+      "target_id": "feature:ApiSamples:column-operations",
+      "confidence": 0.85,
+      "evidence": "doc discusses strongly-typed column access and manipulation, matching the Column Operations feature in ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/develop/advanced/decorators",
+      "target_id": "feature:ApiSamples:function-registry",
+      "confidence": 0.87,
+      "evidence": "decorator-based function registration is a core mechanism in the Function Registry / package.ts workflow"
+    },
+    {
+      "doc_id": "doc:/help/develop/advanced/package-api",
+      "target_id": "feature:ApiSamples:function-registry",
+      "confidence": 0.82,
+      "evidence": "package API doc explains how to call package functions via grok.functions.call and share strongly-typed APIs"
+    },
+    {
+      "doc_id": "doc:/help/develop/advanced/package-api",
+      "target_id": "feature:ApiSamples:server-api",
+      "confidence": 0.75,
+      "evidence": "package-to-package API patterns overlap with server-side dapi calls demonstrated in the Server API feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/advanced/parallel-computing",
+      "target_id": "feature:ApiSamples:package-scripting",
+      "confidence": 0.72,
+      "evidence": "web-worker parallelism guidance applies to scripting contexts within Datagrok packages"
+    },
+    {
+      "doc_id": "doc:/help/develop/advanced/query-debugging",
+      "target_id": "feature:ApiTests:data-query-api",
+      "confidence": 0.83,
+      "evidence": "query debugging tool surfaces the same SQL, params, and column info that the Data Query API tests exercise"
+    },
+    {
+      "doc_id": "doc:/help/develop/advanced/ui",
+      "target_id": "feature:ApiSamples:ui-widgets",
+      "confidence": 0.88,
+      "evidence": "doc describes UI library primitives (buttons, dialogs, popups) which are the subject of the UI Widgets ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/advanced/ui",
+      "target_id": "feature:ApiSamples:dialogs-and-input-forms",
+      "confidence": 0.85,
+      "evidence": "input controls and dialogs covered explicitly in the doc match the Dialogs and Input Forms ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/advanced/ui",
+      "target_id": "feature:ApiSamples:layout-containers",
+      "confidence": 0.80,
+      "evidence": "accordion, popups, and layout primitives described in the UI doc align with the Layout Containers feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/api-overview",
+      "target_id": "pkg:ApiSamples",
+      "confidence": 0.83,
+      "evidence": "JS and Python API overview page is best exemplified by the ApiSamples package which spans all API areas"
+    },
+    {
+      "doc_id": "doc:/help/develop/dev-process/tools/inspector",
+      "target_id": "feature:DevTools:inspector-panel",
+      "confidence": 0.95,
+      "evidence": "title and content describe the Inspector tool (Alt+I) which is exactly the Inspector Panel feature in DevTools"
+    },
+    {
+      "doc_id": "doc:/help/develop/dev-process/tools/inspector",
+      "target_id": "pkg:DevTools",
+      "confidence": 0.88,
+      "evidence": "Inspector is a DevTools package feature; page-level link to the package is appropriate"
+    },
+    {
+      "doc_id": "doc:/help/develop/dev-process/tools/test-manager",
+      "target_id": "feature:DevTools:test-manager",
+      "confidence": 0.97,
+      "evidence": "title exactly matches the Test Manager feature registered in DevTools (func:DevTools:Test Manager)"
+    },
+    {
+      "doc_id": "doc:/help/develop/dev-process/tools/test-manager",
+      "target_id": "pkg:DevTools",
+      "confidence": 0.88,
+      "evidence": "Test Manager lives in DevTools; package-level link appropriate for a tool overview page"
+    },
+    {
+      "doc_id": "doc:/help/develop/domains/chem/cheminformatics",
+      "target_id": "pkg:Chem",
+      "confidence": 0.92,
+      "evidence": "developer guide for building cheminformatics solutions on Datagrok describes the Chem package capabilities"
+    },
+    {
+      "doc_id": "doc:/help/develop/domains/chem/cheminformatics",
+      "target_id": "feature:ApiSamples:cheminformatics",
+      "confidence": 0.85,
+      "evidence": "doc covers JS-level cheminformatics patterns that are demonstrated in the ApiSamples cheminformatics feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/domains/chem/docking",
+      "target_id": "pkg:Docking",
+      "confidence": 0.95,
+      "evidence": "doc is specifically about the Docking plugin that wraps AutoDock GPU"
+    },
+    {
+      "doc_id": "doc:/help/develop/domains/chem/docking",
+      "target_id": "feature:Docking:docking-app",
+      "confidence": 0.88,
+      "evidence": "end-to-end docking workflow described in the doc corresponds to the Docking Application feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/domains/chem/hit_triage_system",
+      "target_id": "pkg:Chem",
+      "confidence": 0.80,
+      "evidence": "hit triage tutorial uses Chem package queries and molecule screening functionality"
+    },
+    {
+      "doc_id": "doc:/help/develop/domains/chem/intro",
+      "target_id": "pkg:Chem",
+      "confidence": 0.82,
+      "evidence": "cheminformatics concepts intro directly precedes Chem package usage patterns"
+    },
+    {
+      "doc_id": "doc:/help/develop/function-roles",
+      "target_id": "feature:ApiSamples:function-registry",
+      "confidence": 0.88,
+      "evidence": "function roles (#app, #panel, #viewer, etc.) are the annotation contracts exercised in the Function Registry ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/_data",
+      "target_id": "feature:ApiSamples:dataframe-creation-and-io",
+      "confidence": 0.87,
+      "evidence": "guide on efficiently working with data programmatically covers DataFrame creation and I/O patterns from ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/_data",
+      "target_id": "feature:ApiSamples:row-filtering-and-bitsets",
+      "confidence": 0.82,
+      "evidence": "data manipulation doc covers row filtering and bitset selection, which is the subject of the ApiSamples row-filtering feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/_data",
+      "target_id": "feature:ApiSamples:column-operations",
+      "confidence": 0.80,
+      "evidence": "column-level data access and manipulation are discussed alongside row operations in the same guide"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/apps/build-an-app",
+      "target_id": "feature:ApiSamples:view-management",
+      "confidence": 0.78,
+      "evidence": "building an app requires managing views and navigation, which the View Management ApiSamples feature demonstrates"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/apps/build-an-app",
+      "target_id": "feature:Tutorials:tutorial-framework",
+      "confidence": 0.72,
+      "evidence": "Tutorials package's tutorial-framework app is a reference implementation of a Datagrok application"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/apps/routing",
+      "target_id": "feature:ApiSamples:view-management",
+      "confidence": 0.78,
+      "evidence": "routing is implemented via the view's path property, a concept demonstrated in the View Management feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/data/upload-data",
+      "target_id": "feature:ApiSamples:file-management",
+      "confidence": 0.82,
+      "evidence": "uploading CSV/data to user storage is part of the File Management API coverage in ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/data/user-settings-storage",
+      "target_id": "feature:ApiSamples:server-api",
+      "confidence": 0.80,
+      "evidence": "user settings storage is a server-side key-value store accessed via the same dapi patterns as the Server API feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/db/access-data",
+      "target_id": "feature:ApiSamples:database-queries",
+      "confidence": 0.88,
+      "evidence": "guide walks through creating connections and running queries, matching the Database Queries ApiSamples feature exactly"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/db/access-data",
+      "target_id": "feature:ApiSamples:server-api",
+      "confidence": 0.80,
+      "evidence": "REST API and dapi-based data access patterns are also covered by the Server API ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/db/db-in-plugin",
+      "target_id": "feature:ApiSamples:database-queries",
+      "confidence": 0.77,
+      "evidence": "plugin Postgres databases are queried through the same Data Query API patterns demonstrated in ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/db/register-identifiers",
+      "target_id": "feature:Chem:identifier-mapping",
+      "confidence": 0.78,
+      "evidence": "registering identifier patterns (e.g. CHEMBL IDs) is closely related to Chem's Identifier Mapping feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/files/create-custom-file-viewers",
+      "target_id": "feature:ApiSamples:file-management",
+      "confidence": 0.82,
+      "evidence": "custom file viewers are registered functions that plug into the file-management layer covered by ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/files/file-exporters",
+      "target_id": "feature:ApiSamples:file-management",
+      "confidence": 0.82,
+      "evidence": "file exporters are part of the file management API surface demonstrated in ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/files/file-handlers",
+      "target_id": "feature:ApiSamples:file-management",
+      "confidence": 0.85,
+      "evidence": "custom file handlers register against file extensions in the same file-management API layer"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/functions/cache-function-results",
+      "target_id": "feature:ApiSamples:function-registry",
+      "confidence": 0.78,
+      "evidence": "function result caching is a property of registered functions, within the Function Registry feature area"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/functions/define-semantic-type-detectors",
+      "target_id": "feature:ApiSamples:metadata-and-semantic-types",
+      "confidence": 0.92,
+      "evidence": "defining semantic type detectors is the primary subject of the Metadata and Semantic Types ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/functions/define-semantic-type-detectors",
+      "target_id": "feature:ApiTests:semantic-type-detection",
+      "confidence": 0.88,
+      "evidence": "ApiTests has a dedicated Semantic Type Detection feature that tests the detectors described in this guide"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/grid/column-tooltip",
+      "target_id": "feature:ApiSamples:grid-cell-rendering",
+      "confidence": 0.82,
+      "evidence": "column tooltips are a DG.Widget extension closely related to the Grid Cell Rendering feature in ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/grid/custom-cell-renderers",
+      "target_id": "feature:ApiSamples:grid-cell-rendering",
+      "confidence": 0.95,
+      "evidence": "title exactly matches the Grid Cell Rendering feature in ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/grid/customize-grid",
+      "target_id": "feature:ApiSamples:grid-column-configuration",
+      "confidence": 0.88,
+      "evidence": "grid customization (formatting, ordering, column visibility) aligns directly with the Grid Column Configuration ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/misc/write-demo-scripts",
+      "target_id": "feature:Tutorials:demo-app",
+      "confidence": 0.87,
+      "evidence": "demo scripts are the building blocks of the Tutorials Demo App (func:Tutorials:Demo)"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/misc/write-demo-scripts",
+      "target_id": "pkg:Tutorials",
+      "confidence": 0.82,
+      "evidence": "demo scripts live in and are executed by the Tutorials package"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/misc/write-tutorials",
+      "target_id": "feature:Tutorials:tutorial-framework",
+      "confidence": 0.93,
+      "evidence": "doc describes how to write tutorials using the framework that powers func:Tutorials:Tutorials app"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/misc/write-tutorials",
+      "target_id": "pkg:Tutorials",
+      "confidence": 0.87,
+      "evidence": "tutorials are authored in and published through the Tutorials package"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/packages/create-package",
+      "target_id": "pkg:ApiSamples",
+      "confidence": 0.75,
+      "evidence": "package creation guide references ApiSamples patterns as the canonical example for package development"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/packages/home-page-widgets",
+      "target_id": "feature:ApiSamples:ui-widgets",
+      "confidence": 0.78,
+      "evidence": "home page widgets are a specific widget role, a subset of the UI Widgets ApiSamples coverage"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/packages/manage-credentials",
+      "target_id": "feature:ApiSamples:server-api",
+      "confidence": 0.75,
+      "evidence": "credential management uses the same dapi.credentials API patterns covered in the Server API ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/packages/python-functions",
+      "target_id": "feature:ApiSamples:package-scripting",
+      "confidence": 0.75,
+      "evidence": "Python Docker Apps execute as Celery tasks, extending the package scripting model covered in ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/packages/work-with-package-files",
+      "target_id": "feature:ApiSamples:file-management",
+      "confidence": 0.83,
+      "evidence": "package file access patterns are directly within the File Management ApiSamples feature scope"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/scripts/custom-script-handlers",
+      "target_id": "feature:ApiSamples:package-scripting",
+      "confidence": 0.83,
+      "evidence": "custom script handlers register new scripting language support, within the Package Scripting ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/tests/add-package-tests",
+      "target_id": "pkg:ApiTests",
+      "confidence": 0.87,
+      "evidence": "guide for adding package tests describes the same Jest-like framework used in ApiTests"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/tests/test-packages",
+      "target_id": "pkg:ApiTests",
+      "confidence": 0.87,
+      "evidence": "test-packages guide describes the same unit test infrastructure as ApiTests package"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/tests/test-packages",
+      "target_id": "pkg:LibTests",
+      "confidence": 0.72,
+      "evidence": "library-level testing described in the guide mirrors the LibTests package purpose"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "target_id": "feature:ApiSamples:function-registry",
+      "confidence": 0.80,
+      "evidence": "info panels are registered via function annotations, a core Function Registry pattern in ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/ui/context-actions",
+      "target_id": "feature:ApiSamples:function-registry",
+      "confidence": 0.78,
+      "evidence": "context actions are registered functions with meta.action tags, within the Function Registry feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/viewers/develop-custom-viewer",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.80,
+      "evidence": "developing custom viewers builds on the same viewer API demonstrated in the Built-in Viewers ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/viewers/develop-custom-viewer",
+      "target_id": "feature:LibTests:ui-component-tests",
+      "confidence": 0.72,
+      "evidence": "custom viewer component contracts are tested by the UI Component Library Tests in LibTests"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/viewers/manipulate-viewers",
+      "target_id": "feature:ApiSamples:viewer-interaction",
+      "confidence": 0.88,
+      "evidence": "viewer manipulation (programmatic control of native viewers) is exactly the Viewer Interaction and Customisation ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/viewers/show-formula-lines",
+      "target_id": "feature:PowerPack:formula-lines",
+      "confidence": 0.90,
+      "evidence": "formula lines feature is implemented in PowerPack and the doc title directly matches the PowerPack Formula Lines feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/views/custom-views",
+      "target_id": "feature:ApiSamples:view-management",
+      "confidence": 0.87,
+      "evidence": "custom view creation is a central topic of the View Management and Navigation ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/how-to/views/layouts",
+      "target_id": "feature:ApiSamples:view-management",
+      "confidence": 0.85,
+      "evidence": "layouts are a key part of view management and are demonstrated in the View Management ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/onboarding/developers",
+      "target_id": "pkg:Tutorials",
+      "confidence": 0.80,
+      "evidence": "developer qualifications and skills map align with the interactive learning content in the Tutorials package"
+    },
+    {
+      "doc_id": "doc:/help/develop/onboarding/exercises",
+      "target_id": "pkg:Tutorials",
+      "confidence": 0.83,
+      "evidence": "programming exercises are hosted and run via the Tutorials package infrastructure"
+    },
+    {
+      "doc_id": "doc:/help/develop/onboarding/getting-started",
+      "target_id": "pkg:Tutorials",
+      "confidence": 0.82,
+      "evidence": "getting-started references the Tutorials app as a hands-on learning resource"
+    },
+    {
+      "doc_id": "doc:/help/develop/onboarding/learning-plan",
+      "target_id": "pkg:Tutorials",
+      "confidence": 0.82,
+      "evidence": "learning plan structures completion of the exercises hosted in the Tutorials package"
+    },
+    {
+      "doc_id": "doc:/help/develop/onboarding/tracks/cheminformatics",
+      "target_id": "pkg:Chem",
+      "confidence": 0.83,
+      "evidence": "cheminformatics developer track is built around Chem package capabilities"
+    },
+    {
+      "doc_id": "doc:/help/develop/onboarding/tracks/cheminformatics",
+      "target_id": "feature:Tutorials:cheminformatics-tutorials",
+      "confidence": 0.88,
+      "evidence": "cheminformatics exercises map directly to the Cheminformatics Tutorials feature in the Tutorials package"
+    },
+    {
+      "doc_id": "doc:/help/develop/onboarding/tracks/frontend",
+      "target_id": "pkg:Tutorials",
+      "confidence": 0.80,
+      "evidence": "frontend track exercises build Datagrok applications and use the Tutorials package as reference"
+    },
+    {
+      "doc_id": "doc:/help/develop/onboarding/tracks/intro",
+      "target_id": "pkg:Chem",
+      "confidence": 0.80,
+      "evidence": "cheminformatics concepts intro is foundational background for the Chem package"
+    },
+    {
+      "doc_id": "doc:/help/develop/packages/_overview",
+      "target_id": "pkg:ApiSamples",
+      "confidence": 0.75,
+      "evidence": "JS development overview references ApiSamples patterns throughout as canonical examples"
+    },
+    {
+      "doc_id": "doc:/help/develop/packages/_package-function-types",
+      "target_id": "feature:ApiSamples:function-registry",
+      "confidence": 0.85,
+      "evidence": "package function types (#app, #panel, #dashboard, etc.) are the annotation contracts in the Function Registry ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/packages/extensions",
+      "target_id": "pkg:ApiSamples",
+      "confidence": 0.75,
+      "evidence": "extensions overview describes all the plugin hooks that ApiSamples demonstrates in practice"
+    },
+    {
+      "doc_id": "doc:/help/develop/packages/js-api",
+      "target_id": "pkg:ApiSamples",
+      "confidence": 0.87,
+      "evidence": "JS API reference guide is best complemented by the ApiSamples package which provides working examples for every API area"
+    },
+    {
+      "doc_id": "doc:/help/develop/packages/rest-api",
+      "target_id": "feature:ApiSamples:server-api",
+      "confidence": 0.87,
+      "evidence": "REST API guide covers the same dapi patterns (files, tables, dashboards) demonstrated in the Server API ApiSamples feature"
+    },
+    {
+      "doc_id": "doc:/help/develop/qa/quality-assurance",
+      "target_id": "pkg:ApiTests",
+      "confidence": 0.78,
+      "evidence": "QA guide describes automated testing with the same framework used in ApiTests"
+    },
+    {
+      "doc_id": "doc:/help/develop/qa/quality-assurance",
+      "target_id": "pkg:LibTests",
+      "confidence": 0.72,
+      "evidence": "QA applies to libraries too; LibTests is the library-level automated test package"
+    },
+    {
+      "doc_id": "doc:/help/develop/qa/tests",
+      "target_id": "pkg:ApiTests",
+      "confidence": 0.82,
+      "evidence": "test criteria guide (viewer criteria, auto vs manual tests) maps to ApiTests as the primary automated test package"
+    },
+    {
+      "doc_id": "doc:/help/develop/server-management",
+      "target_id": "pkg:DevTools",
+      "confidence": 0.72,
+      "evidence": "grok s CLI is a developer tool that complements the DevTools package for managing Datagrok server entities"
+    },
+    {
+      "doc_id": "doc:/help/develop/under-the-hood/markup",
+      "target_id": "feature:ApiSamples:ui-widgets",
+      "confidence": 0.72,
+      "evidence": "Markup language produces UI elements (viewers, widgets) that are also covered in the UI Widgets ApiSamples feature"
+    }
+  ]
+}

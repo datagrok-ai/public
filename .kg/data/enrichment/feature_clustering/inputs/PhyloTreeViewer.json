@@ -1,0 +1,192 @@
+{
+  "package": {
+    "id": "pkg:PhyloTreeViewer",
+    "name": "PhyloTreeViewer",
+    "friendly_name": "PhyloTree Viewer",
+    "version": "1.4.0",
+    "category": "Visualizations",
+    "description": "Phylogenetic trees visualization.",
+    "extras": {
+      "npm_name": "@datagrok/phylo-tree-viewer",
+      "fullName": "PhyloTreeViewer",
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:PhyloTreeViewer:PhylocanvasGL",
+      "name": "PhylocanvasGL",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Phylogenetic tree visualization",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PhyloTreeViewer:phylocanvasGlViewerApp",
+      "name": "phylocanvasGlViewerApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for PhylocanvasGlViewer",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PhyloTreeViewer:TreeToGrid",
+      "name": "TreeToGrid",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for TreeToGrid (PhylocanvasGL based)",
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PhyloTreeViewer:TreeCutAsTree",
+      "name": "TreeCutAsTree",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for TreeCutAsTree",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PhyloTreeViewer:TreeInGridCell",
+      "name": "TreeInGridCell",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for TreeInGridCell",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PhyloTreeViewer:injectTree",
+      "name": "injectTree",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Opens Newick file",
+      "input_types": [
+        "viewer",
+        "string",
+        "string"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PhyloTreeViewer:getPhylocanvasGlService",
+      "name": "getPhylocanvasGlService",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/PhyloTreeViewer/credits.md",
+      "title": "PhyloTreeViewer — Third-Party Libraries",
+      "url": "/packages/PhyloTreeViewer/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/PhyloTreeViewer/readme.md",
+      "title": "PhyloTree Viewer",
+      "url": "/packages/PhyloTreeViewer/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:PhyloTreeViewer:1.4.0:0",
+      "version": "1.4.0",
+      "released_at": "2025-03-29",
+      "ticket": null,
+      "text": "Standardized plugin name to title case in README and changelog"
+    },
+    {
+      "id": "clog:PhyloTreeViewer:1.2.12:0",
+      "version": "1.2.12",
+      "released_at": "2024-09-02",
+      "ticket": null,
+      "text": "Fix tests"
+    },
+    {
+      "id": "clog:PhyloTreeViewer:1.2.11:0",
+      "version": "1.2.11",
+      "released_at": "2024-03-07",
+      "ticket": null,
+      "text": "Bump dependencies version, fix tests"
+    },
+    {
+      "id": "clog:PhyloTreeViewer:1.2.9:0",
+      "version": "1.2.9",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "Dependency: datgarok-api >= 1.15.2"
+    },
+    {
+      "id": "clog:PhyloTreeViewer:1.2.9:1",
+      "version": "1.2.9",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "[PhylocanvasGL](../../help/visualize/viewers/phylocanvas-gl) viewer"
+    },
+    {
+      "id": "clog:PhyloTreeViewer:1.2.9:2",
+      "version": "1.2.9",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "`Newick` cell renderer (trees in grid)"
+    }
+  ],
+  "stats": {
+    "functions": 7,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 2,
+    "changelog": 6
+  }
+}

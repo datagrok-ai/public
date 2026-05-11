@@ -1,0 +1,70 @@
+{
+  "package_id": "pkg:Retrosynthesis",
+  "features": [
+    {
+      "id": "feature:Retrosynthesis:retrosynthesis-path-analysis",
+      "name": "Retrosynthesis Path Analysis",
+      "description": "Runs AiZynthFinder (via Celery) on a selected molecule and renders the resulting synthetic routes as an interactive Chemistry info panel. Supports user-specific configuration, request cancellation, and saving results to the workspace.",
+      "category": "chem-synthesis",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Retrosynthesis:Chemistry | Retrosynthesis", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Retrosynthesis/readme.md",         "weight": 0.95, "role": "doc"},
+        {"id": "doc:/packages/Retrosynthesis/claude.md",         "weight": 0.85, "role": "doc"},
+        {"id": "doc:/packages/Retrosynthesis/credits.md",        "weight": 0.70, "role": "doc"},
+        {"id": "clog:Retrosynthesis:1.0.0:0",  "weight": 0.90, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.1:0",  "weight": 0.85, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.2:0",  "weight": 0.80, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.3:0",  "weight": 0.60, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.4:0",  "weight": 0.70, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.4:1",  "weight": 0.60, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.5:0",  "weight": 0.85, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.5:1",  "weight": 0.85, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.6:0",  "weight": 0.80, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.6:1",  "weight": 0.75, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.6:2",  "weight": 0.85, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.6:3",  "weight": 0.80, "role": "related"},
+        {"id": "clog:Retrosynthesis:1.0.6:4",  "weight": 0.50, "role": "related"}
+      ],
+      "evidence_summary": "The panel widget, all three plugin-specific docs, and every changelog entry converge on a single theme: AiZynthFinder-driven retrosynthetic route generation surfaced as a Chemistry info panel."
+    },
+    {
+      "id": "feature:Retrosynthesis:retrosynthesis-demo",
+      "name": "Retrosynthesis Demo",
+      "description": "A standalone demo application that lets users generate retrosynthesis paths directly, making the feature discoverable without navigating to a molecule's Chemistry panel.",
+      "category": "chem-synthesis",
+      "confidence": 0.80,
+      "members": [
+        {"id": "func:Retrosynthesis:Retrosynthesis Demo", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Single function named 'Retrosynthesis Demo' with description 'Generate retrosynthesis paths' — clearly a standalone demo entry point separate from the panel widget."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Retrosynthesis:retrosynthesis-demo", "to": "feature:Retrosynthesis:retrosynthesis-path-analysis", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/mutate"
+  ]
+}

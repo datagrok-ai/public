@@ -1,0 +1,137 @@
+{
+  "package": {
+    "id": "pkg:Flow",
+    "name": "Flow",
+    "friendly_name": "Flow",
+    "category": null,
+    "description": "Flow package"
+  },
+  "files": {
+    "src": [
+      "packages/Flow/src/compiler/graph-compiler.ts",
+      "packages/Flow/src/compiler/graph-utils.ts",
+      "packages/Flow/src/compiler/script-emitter.ts",
+      "packages/Flow/src/compiler/topological-sort.ts",
+      "packages/Flow/src/compiler/validator.ts",
+      "packages/Flow/src/execution/execution-controller.ts",
+      "packages/Flow/src/execution/execution-state.ts",
+      "packages/Flow/src/execution/execution-visualizer.ts",
+      "packages/Flow/src/execution/output-preview.ts",
+      "packages/Flow/src/execution/value-inspector.ts",
+      "packages/Flow/src/funcflow-view.ts",
+      "packages/Flow/src/package.ts",
+      "packages/Flow/src/panel/function-browser.ts",
+      "packages/Flow/src/panel/property-panel.ts",
+      "packages/Flow/src/rete/annotation.ts",
+      "packages/Flow/src/rete/flow-editor.ts",
+      "packages/Flow/src/rete/node-component.tsx",
+      "packages/Flow/src/rete/node-factory.ts",
+      "packages/Flow/src/rete/nodes/breakpoint-node.ts",
+      "packages/Flow/src/rete/nodes/comparison-nodes.ts",
+      "packages/Flow/src/rete/nodes/func-node.ts",
+      "packages/Flow/src/rete/nodes/input-nodes.ts",
+      "packages/Flow/src/rete/nodes/output-nodes.ts",
+      "packages/Flow/src/rete/nodes/utility-nodes.ts",
+      "packages/Flow/src/rete/scheme.ts",
+      "packages/Flow/src/rete/sockets.ts",
+      "packages/Flow/src/serialization/flow-schema.ts",
+      "packages/Flow/src/serialization/flow-serializer.ts",
+      "packages/Flow/src/types/type-map.ts",
+      "packages/Flow/src/utils/dart-proxy-utils.ts"
+    ],
+    "tests": [
+      "packages/Flow/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Flow/CHANGELOG.md",
+      "packages/Flow/CLAUDE.md",
+      "packages/Flow/CREDITS.md",
+      "packages/Flow/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Flow:function-chain-designer",
+      "name": "Interactive Function Chain Designer",
+      "description": "A visual app for composing Datagrok functions into executable pipelines. Users drag and drop functions onto a canvas, connect them, and run the chain interactively.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Flow:Flow",
+          "kind": "RegisteredFunction",
+          "name": "Flow",
+          "friendly_name": null,
+          "role": "app",
+          "description": "Interactive function chain designer",
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "doc:/packages/Flow/readme.md",
+          "kind": "DocPage",
+          "title": "Flow",
+          "url": "/packages/Flow/readme.md"
+        },
+        {
+          "id": "clog:Flow:v.next:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Flow/src/compiler/script-emitter.ts",
+          "packages/Flow/src/compiler/validator.ts",
+          "packages/Flow/src/execution/execution-controller.ts",
+          "packages/Flow/src/execution/execution-state.ts",
+          "packages/Flow/src/execution/value-inspector.ts",
+          "packages/Flow/src/funcflow-view.ts",
+          "packages/Flow/src/package.ts",
+          "packages/Flow/src/panel/function-browser.ts",
+          "packages/Flow/src/panel/property-panel.ts",
+          "packages/Flow/src/rete/flow-editor.ts",
+          "packages/Flow/src/rete/scheme.ts",
+          "packages/Flow/src/serialization/flow-schema.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Flow:flow-file-viewer",
+      "name": "Flow Definition File Viewer",
+      "description": "Opens and renders .ffjson flow-definition files as an interactive flow diagram inside the Datagrok platform.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Flow:viewFuncFlow",
+          "kind": "RegisteredFunction",
+          "name": "viewFuncFlow",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Flow/src/compiler/script-emitter.ts",
+          "packages/Flow/src/compiler/validator.ts",
+          "packages/Flow/src/execution/execution-controller.ts",
+          "packages/Flow/src/execution/execution-state.ts",
+          "packages/Flow/src/execution/value-inspector.ts",
+          "packages/Flow/src/funcflow-view.ts",
+          "packages/Flow/src/package.ts",
+          "packages/Flow/src/panel/function-browser.ts",
+          "packages/Flow/src/panel/property-panel.ts",
+          "packages/Flow/src/rete/flow-editor.ts",
+          "packages/Flow/src/rete/scheme.ts",
+          "packages/Flow/src/serialization/flow-schema.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

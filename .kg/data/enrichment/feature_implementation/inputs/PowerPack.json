@@ -1,0 +1,662 @@
+{
+  "package": {
+    "id": "pkg:PowerPack",
+    "name": "PowerPack",
+    "friendly_name": "Power Pack",
+    "category": "General",
+    "description": "Commonly used platform enhancements"
+  },
+  "files": {
+    "src": [
+      "packages/PowerPack/src/compare-columns.ts",
+      "packages/PowerPack/src/db-explorer.ts",
+      "packages/PowerPack/src/dg-db.ts",
+      "packages/PowerPack/src/dialogs/add-new-column.ts",
+      "packages/PowerPack/src/dialogs/formula-lines.ts",
+      "packages/PowerPack/src/package.ts",
+      "packages/PowerPack/src/search/entity-search.ts",
+      "packages/PowerPack/src/search/help-entity.ts",
+      "packages/PowerPack/src/search/power-search.ts",
+      "packages/PowerPack/src/search/templates-search.ts",
+      "packages/PowerPack/src/settings-editor.ts",
+      "packages/PowerPack/src/spotlight/group-favorites.ts",
+      "packages/PowerPack/src/spotlight/manage-favorites-dialog.ts",
+      "packages/PowerPack/src/spotlight/preview-host.ts",
+      "packages/PowerPack/src/spotlight/spotlight-widget.ts",
+      "packages/PowerPack/src/spotlight/workspace-tab.ts",
+      "packages/PowerPack/src/utils.ts",
+      "packages/PowerPack/src/viewers-gallery.ts",
+      "packages/PowerPack/src/welcome-view.ts",
+      "packages/PowerPack/src/widgets/about-widget.ts",
+      "packages/PowerPack/src/widgets/community-widget.ts",
+      "packages/PowerPack/src/widgets/cron-input.ts",
+      "packages/PowerPack/src/widgets/cron-utils.ts",
+      "packages/PowerPack/src/widgets/html-widget.ts",
+      "packages/PowerPack/src/widgets/kpi-widget.ts",
+      "packages/PowerPack/src/widgets/learning-widget.ts",
+      "packages/PowerPack/src/widgets/recent-projects-widget.ts",
+      "packages/PowerPack/src/widgets/web-widget.ts",
+      "packages/PowerPack/src/windows-manager.ts",
+      "packages/PowerPack/src/workers/exceljs-worker.ts"
+    ],
+    "tests": [
+      "packages/PowerPack/src/package-test.ts",
+      "packages/PowerPack/src/tests/add-new-column.ts",
+      "packages/PowerPack/src/tests/dialogs.ts",
+      "packages/PowerPack/src/tests/excel.ts",
+      "packages/PowerPack/src/tests/search.ts",
+      "packages/PowerPack/src/tests/utils.ts",
+      "packages/PowerPack/src/tests/widgets.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/PowerPack/queries/activity-dashboard.sql"
+    ],
+    "docs": [
+      "packages/PowerPack/CHANGELOG.md",
+      "packages/PowerPack/CLAUDE.md",
+      "packages/PowerPack/CREDITS.md",
+      "packages/PowerPack/README.md",
+      "packages/PowerPack/docs/initial-ux/GOAL.md",
+      "packages/PowerPack/docs/initial-ux/STATUS.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:PowerPack:spotlight",
+      "name": "Spotlight",
+      "description": "A dashboard widget that surfaces recently-viewed and recently-shared platform entities, giving users a fast way to resume work and discover shared content.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerPack:Spotlight",
+          "kind": "RegisteredFunction",
+          "name": "Spotlight",
+          "friendly_name": null,
+          "role": "dashboard",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:PowerPack:MostRecentEntities",
+          "kind": "DataQuery",
+          "name": "MostRecentEntities",
+          "description": null
+        },
+        {
+          "id": "query:PowerPack:RecentlySharedWithMe",
+          "kind": "DataQuery",
+          "name": "RecentlySharedWithMe",
+          "description": null
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/basic-tasks/_smart-bar",
+          "kind": "DocPage",
+          "title": "Smart bar",
+          "url": "/help/datagrok/navigation/basic-tasks/_smart-bar"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/package-api.ts",
+          "packages/PowerPack/src/package.ts",
+          "packages/PowerPack/src/spotlight/preview-host.ts",
+          "packages/PowerPack/src/spotlight/spotlight-widget.ts",
+          "packages/PowerPack/src/spotlight/workspace-tab.ts",
+          "packages/PowerPack/src/widgets/learning-widget.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:welcome-view",
+      "name": "Welcome View",
+      "description": "The home/activity dashboard view that greets users on startup, aggregating recent work and platform activity into a single landing screen.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerPack:welcomeView",
+          "kind": "RegisteredFunction",
+          "name": "welcomeView",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:10",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/package.ts",
+          "packages/PowerPack/src/search/power-search.ts",
+          "packages/PowerPack/src/spotlight/preview-host.ts",
+          "packages/PowerPack/src/utils.ts",
+          "packages/PowerPack/src/welcome-view.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:dashboard-widgets",
+      "name": "Dashboard Widgets",
+      "description": "A collection of embeddable dashboard widgets — community forum feed, web-page embed, custom HTML, and KPI metric display — for composing informational home screens.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerPack:Community",
+          "kind": "RegisteredFunction",
+          "name": "Community",
+          "friendly_name": null,
+          "role": "dashboard",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PowerPack:webWidget",
+          "kind": "RegisteredFunction",
+          "name": "webWidget",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PowerPack:htmlWidget",
+          "kind": "RegisteredFunction",
+          "name": "htmlWidget",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PowerPack:kpiWidget",
+          "kind": "RegisteredFunction",
+          "name": "kpiWidget",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/collaborate/forum",
+          "kind": "DocPage",
+          "title": "Community forum",
+          "url": "/help/collaborate/forum"
+        },
+        {
+          "id": "doc:/help/datagrok/concepts/project/dashboard",
+          "kind": "DocPage",
+          "title": "Dashboards",
+          "url": "/help/datagrok/concepts/project/dashboard"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/package.ts",
+          "packages/PowerPack/src/widgets/community-widget.ts",
+          "packages/PowerPack/src/widgets/html-widget.ts",
+          "packages/PowerPack/src/widgets/kpi-widget.ts",
+          "packages/PowerPack/src/widgets/web-widget.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:power-search",
+      "name": "Power Search",
+      "description": "A platform-wide search provider with AI-powered query interpretation and entity similarity search, accessible via the global search bar.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:PowerPack:powerPackSearchProvider",
+          "kind": "RegisteredFunction",
+          "name": "powerPackSearchProvider",
+          "friendly_name": null,
+          "role": "searchProvider",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:11",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:12",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/explore/ai/ai",
+          "kind": "DocPage",
+          "title": "AI",
+          "url": "/help/explore/ai/ai"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/dg-db.ts",
+          "packages/PowerPack/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:formula-lines",
+      "name": "Formula Lines",
+      "description": "Adds formula-driven reference lines and bands to viewers, with a visual editor for defining, validating, and editing formula expressions directly from viewer context menus.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerPack:isFormulaColumn",
+          "kind": "RegisteredFunction",
+          "name": "isFormulaColumn",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PowerPack:Formula",
+          "kind": "RegisteredFunction",
+          "name": "Formula",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PowerPack:formulaLinesEditor",
+          "kind": "RegisteredFunction",
+          "name": "formulaLinesEditor",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/develop/how-to/viewers/show-formula-lines",
+          "kind": "DocPage",
+          "title": "Show formula lines",
+          "url": "/help/develop/how-to/viewers/show-formula-lines"
+        },
+        {
+          "id": "doc:/help/transform/formula-syntax",
+          "kind": "DocPage",
+          "title": "Formula syntax",
+          "url": "/help/transform/formula-syntax"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:8",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:15",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:18",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:19",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:20",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/dialogs/add-new-column.ts",
+          "packages/PowerPack/src/dialogs/formula-lines.ts",
+          "packages/PowerPack/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:add-new-column",
+      "name": "Add New Column",
+      "description": "An interactive dialog for appending a computed column to a dataframe by authoring a formula expression, with auto-complete, type checking, and validation.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:PowerPack:addNewColumn",
+          "kind": "RegisteredFunction",
+          "name": "addNewColumn",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:16",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:21",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.7.14:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.7.12:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.7.11:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.7.10:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/transform/add-new-column",
+          "kind": "DocPage",
+          "title": "Add new column",
+          "url": "/help/transform/add-new-column"
+        },
+        {
+          "id": "doc:/help/transform/add-new-column-test",
+          "kind": "DocPage",
+          "title": "Tests: Add new column",
+          "url": "/help/transform/add-new-column-test"
+        },
+        {
+          "id": "doc:/help/transform/formula-syntax",
+          "kind": "DocPage",
+          "title": "Formula syntax",
+          "url": "/help/transform/formula-syntax"
+        },
+        {
+          "id": "doc:/help/transform/functions/aggregation-functions",
+          "kind": "DocPage",
+          "title": "Aggregation functions",
+          "url": "/help/transform/functions/aggregation-functions"
+        },
+        {
+          "id": "doc:/help/transform/functions/math-functions",
+          "kind": "DocPage",
+          "title": "Math functions",
+          "url": "/help/transform/functions/math-functions"
+        },
+        {
+          "id": "doc:/help/transform/functions/binning-functions",
+          "kind": "DocPage",
+          "title": "Binning functions",
+          "url": "/help/transform/functions/binning-functions"
+        },
+        {
+          "id": "doc:/help/transform/functions/conversion-functions",
+          "kind": "DocPage",
+          "title": "Conversion functions",
+          "url": "/help/transform/functions/conversion-functions"
+        },
+        {
+          "id": "doc:/help/transform/functions/datetime-functions",
+          "kind": "DocPage",
+          "title": "Date and Time functions",
+          "url": "/help/transform/functions/datetime-functions"
+        },
+        {
+          "id": "doc:/help/transform/functions/stats-functions",
+          "kind": "DocPage",
+          "title": "Statistical functions",
+          "url": "/help/transform/functions/stats-functions"
+        },
+        {
+          "id": "doc:/help/transform/functions/text-functions",
+          "kind": "DocPage",
+          "title": "Text functions",
+          "url": "/help/transform/functions/text-functions"
+        },
+        {
+          "id": "doc:/help/transform/functions/timespan-functions",
+          "kind": "DocPage",
+          "title": "TimeSpan functions",
+          "url": "/help/transform/functions/timespan-functions"
+        },
+        {
+          "id": "doc:/help/transform/transform",
+          "kind": "DocPage",
+          "title": "Data wrangling",
+          "url": "/help/transform/transform"
+        },
+        {
+          "id": "doc:/help/visualize/add-custom-form",
+          "kind": "DocPage",
+          "title": "Add custom form",
+          "url": "/help/visualize/add-custom-form"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/dialogs/add-new-column.ts",
+          "packages/PowerPack/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:data-enrichment",
+      "name": "Data Enrichment",
+      "description": "Augments dataframe columns with external data by matching on a key column, supporting catalog browsing, data sync, and cross-connection lookups.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:PowerPack:runEnrichment",
+          "kind": "RegisteredFunction",
+          "name": "runEnrichment",
+          "friendly_name": null,
+          "role": "transform",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:14",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:22",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/explore/data-augmentation/data-augmentation",
+          "kind": "DocPage",
+          "title": "Data augmentation",
+          "url": "/help/explore/data-augmentation/data-augmentation"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/db-explorer.ts",
+          "packages/PowerPack/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:file-viewers",
+      "name": "File Viewers",
+      "description": "In-platform rendering of Markdown (.md / .mdx) files and Excel (.xlsx) spreadsheets without leaving the Datagrok UI.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerPack:markdownFileViewer",
+          "kind": "RegisteredFunction",
+          "name": "markdownFileViewer",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PowerPack:xlsxFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "xlsxFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens Excel file",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:viewer-gallery",
+      "name": "Viewer Gallery",
+      "description": "A browsable gallery for discovering and adding viewers to a table view, automatically filtering out specialty viewers incompatible with the active dataset.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerPack:viewerDialog",
+          "kind": "RegisteredFunction",
+          "name": "viewerDialog",
+          "friendly_name": null,
+          "role": null,
+          "description": "Open 'Viewer Gallery' dialog",
+          "tags": []
+        },
+        {
+          "id": "func:PowerPack:viewerGallery",
+          "kind": "RegisteredFunction",
+          "name": "viewerGallery",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": "ViewerGallery",
+          "tags": []
+        },
+        {
+          "id": "func:PowerPack:getFuncTableViewWidget",
+          "kind": "RegisteredFunction",
+          "name": "getFuncTableViewWidget",
+          "friendly_name": null,
+          "role": "widget",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:9",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:17",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/package.ts",
+          "packages/PowerPack/src/search/entity-search.ts",
+          "packages/PowerPack/src/search/power-search.ts",
+          "packages/PowerPack/src/search/templates-search.ts",
+          "packages/PowerPack/src/utils.ts",
+          "packages/PowerPack/src/viewers-gallery.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:cron-input",
+      "name": "Cron Input",
+      "description": "A value-editor widget for cron-syntax scheduling expressions, used when configuring timed jobs and automations in the platform.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:PowerPack:cronInput",
+          "kind": "RegisteredFunction",
+          "name": "cronInput",
+          "friendly_name": null,
+          "role": "valueEditor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:PowerPack:1.8.0:7",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:compare-columns",
+      "name": "Compare Columns",
+      "description": "A utility that compares two or more dataframe columns side-by-side to highlight differences and statistical similarities.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerPack:compareColumns",
+          "kind": "RegisteredFunction",
+          "name": "compareColumns",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/compare-columns.ts",
+          "packages/PowerPack/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerPack:windows-manager",
+      "name": "Windows Manager",
+      "description": "An autostart service that manages platform window layout, docking, and lifecycle so user sessions resume in a consistent spatial arrangement.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:PowerPack:windowsManager",
+          "kind": "RegisteredFunction",
+          "name": "windowsManager",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": "Windows Manager",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerPack/src/package.ts",
+          "packages/PowerPack/src/windows-manager.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

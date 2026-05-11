@@ -114,7 +114,7 @@ let view = grok.shell.newView('My Quick View', [ui.divText('Hi!')]);
 - `saveStateMap` / `loadStateMap` enable saving views as part of a project
 - `handlePath` / `acceptsPath` enable URL-based routing (opening views from links)
 - The `path` property should return a unique URL that can reconstruct the view state
-- For real examples, see the Notebooks package: `public/packages/Notebooks/src/package.js`
+- For real examples, see the Notebooks package: `packages/Notebooks/src/package.js`
 
 ## Behavior
 

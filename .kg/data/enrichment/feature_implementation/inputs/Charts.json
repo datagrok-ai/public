@@ -1,0 +1,621 @@
+{
+  "package": {
+    "id": "pkg:Charts",
+    "name": "Charts",
+    "friendly_name": "Charts",
+    "category": "Visualizations",
+    "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library."
+  },
+  "files": {
+    "src": [
+      "packages/Charts/src/demos/demo.ts",
+      "packages/Charts/src/deprecated/viewers/chord/chord-viewer.ts",
+      "packages/Charts/src/deprecated/viewers/newick-tree/newick-tree-viewer.ts",
+      "packages/Charts/src/deprecated/viewers/sankey/sankey-viewer.ts",
+      "packages/Charts/src/deprecated/viewers/tree-map/tree-map-viewer.ts",
+      "packages/Charts/src/deprecated/viewers/word-cloud/word-cloud-viewer.ts",
+      "packages/Charts/src/package.ts",
+      "packages/Charts/src/renderers/flag-cell-renderer.ts",
+      "packages/Charts/src/utils/legend-utils.ts",
+      "packages/Charts/src/utils/tree-utils.ts",
+      "packages/Charts/src/utils/utils.ts",
+      "packages/Charts/src/viewers/chord/chord-viewer.ts",
+      "packages/Charts/src/viewers/chord/circos.d.ts",
+      "packages/Charts/src/viewers/chord/utils.ts",
+      "packages/Charts/src/viewers/echart/echart-viewer.ts",
+      "packages/Charts/src/viewers/globe/globe-viewer.ts",
+      "packages/Charts/src/viewers/group-analysis/group-analysis-viewer.ts",
+      "packages/Charts/src/viewers/multiplot/constants.ts",
+      "packages/Charts/src/viewers/multiplot/layout.ts",
+      "packages/Charts/src/viewers/multiplot/multiplot.ts",
+      "packages/Charts/src/viewers/multiplot/timeLinesRender.ts",
+      "packages/Charts/src/viewers/multiplot/utils.ts",
+      "packages/Charts/src/viewers/radar/constants.ts",
+      "packages/Charts/src/viewers/radar/radar-viewer.ts",
+      "packages/Charts/src/viewers/sankey/sankey.ts",
+      "packages/Charts/src/viewers/sunburst/sunburst-viewer.ts",
+      "packages/Charts/src/viewers/surface-plot/surface-plot.ts",
+      "packages/Charts/src/viewers/timelines/constants.ts",
+      "packages/Charts/src/viewers/timelines/echarts-options.ts",
+      "packages/Charts/src/viewers/timelines/echarts-time-util.d.ts",
+      "packages/Charts/src/viewers/timelines/timelines-viewer.ts",
+      "packages/Charts/src/viewers/tree/tree-viewer.ts",
+      "packages/Charts/src/viewers/word-cloud/word-cloud-viewer.ts"
+    ],
+    "tests": [
+      "packages/Charts/src/package-test.ts",
+      "packages/Charts/src/tests/radar-viewer-test.ts",
+      "packages/Charts/src/tests/timelines-viewer-test.ts",
+      "packages/Charts/src/tests/tree-viewer-test.ts",
+      "packages/Charts/src/tests/utils.ts",
+      "packages/Charts/src/tests/viewers.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Charts/CHANGELOG.md",
+      "packages/Charts/CREDITS.md",
+      "packages/Charts/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Charts:chord",
+      "name": "Chord Viewer",
+      "description": "Visualizes weighted relationships between entities as a chord diagram, with row-source selection and collaborative filtering.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Chord",
+          "kind": "RegisteredFunction",
+          "name": "Chord",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a chord viewer",
+          "tags": []
+        },
+        {
+          "id": "func:Charts:chordViewerDemo",
+          "kind": "RegisteredFunction",
+          "name": "chordViewerDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Chord viewer visualizes weighted relationships between several entities",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/chord",
+          "kind": "DocPage",
+          "title": "Chord",
+          "url": "/help/visualize/viewers/chord"
+        },
+        {
+          "id": "clog:Charts:1.6.2:5",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.2:7",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.0:3",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Charts/src/demos/demo.ts",
+          "packages/Charts/src/package.ts"
+        ],
+        "tests": [
+          "packages/Charts/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Charts:globe",
+      "name": "Globe Viewer",
+      "description": "Renders geospatial data on an interactive 3D globe with filtering and row-source support.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Globe",
+          "kind": "RegisteredFunction",
+          "name": "Globe",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a globe viewer",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/globe",
+          "kind": "DocPage",
+          "title": "Globe",
+          "url": "/help/visualize/viewers/globe"
+        },
+        {
+          "id": "clog:Charts:1.6.2:6",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": [
+          "packages/Charts/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Charts:radar",
+      "name": "Radar Viewer",
+      "description": "Plots multivariate data across several axes in a spider/radar chart with configurable column labels and legend.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Radar",
+          "kind": "RegisteredFunction",
+          "name": "Radar",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a radar viewer",
+          "tags": []
+        },
+        {
+          "id": "func:Charts:radarViewerDemo",
+          "kind": "RegisteredFunction",
+          "name": "radarViewerDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Radar viewer is used on multivariate data to plot groups of values over several common variables",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/radar",
+          "kind": "DocPage",
+          "title": "Radar viewer",
+          "url": "/help/visualize/viewers/radar"
+        },
+        {
+          "id": "clog:Charts:1.7.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.2:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.2:4",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.2:8",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.0:4",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Charts/src/demos/demo.ts",
+          "packages/Charts/src/package.ts"
+        ],
+        "tests": [
+          "packages/Charts/src/tests/radar-viewer-test.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Charts:sankey",
+      "name": "Sankey Viewer",
+      "description": "Depicts flow between sets of values as a Sankey diagram with color-coding for nodes and links.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Sankey",
+          "kind": "RegisteredFunction",
+          "name": "Sankey",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a sankey viewer",
+          "tags": []
+        },
+        {
+          "id": "func:Charts:sankeyViewerDemo",
+          "kind": "RegisteredFunction",
+          "name": "sankeyViewerDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Sankey viewer depicts a flow from one set of values to another",
+          "tags": []
+        },
+        {
+          "id": "clog:Charts:1.6.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.2:6",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.2:7",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/sankey",
+          "kind": "DocPage",
+          "title": "Sankey",
+          "url": "/help/visualize/viewers/sankey"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Charts/src/demos/demo.ts",
+          "packages/Charts/src/package.ts"
+        ],
+        "tests": [
+          "packages/Charts/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Charts:sunburst",
+      "name": "Sunburst Viewer",
+      "description": "Displays hierarchical data as a multi-ring sunburst chart with collaborative filtering and molecule rendering support.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Sunburst",
+          "kind": "RegisteredFunction",
+          "name": "Sunburst",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a sunburst viewer",
+          "tags": []
+        },
+        {
+          "id": "func:Charts:sunburstViewerDemo",
+          "kind": "RegisteredFunction",
+          "name": "sunburstViewerDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Sunburst viewer displays hierarchical data",
+          "tags": []
+        },
+        {
+          "id": "clog:Charts:1.7.0:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.4:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.3:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.2:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.2:4",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.2:5",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/sunburst",
+          "kind": "DocPage",
+          "title": "Sunburst",
+          "url": "/help/visualize/viewers/sunburst"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Charts/src/demos/demo.ts",
+          "packages/Charts/src/package.ts"
+        ],
+        "tests": [
+          "packages/Charts/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Charts:surface-plot",
+      "name": "Surface Plot Viewer",
+      "description": "Renders three-dimensional numeric datasets as an interactive mesh surface plot.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Surface plot",
+          "kind": "RegisteredFunction",
+          "name": "Surface plot",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a surface plot viewer",
+          "tags": []
+        },
+        {
+          "id": "func:Charts:surfacePlotDemo",
+          "kind": "RegisteredFunction",
+          "name": "surfacePlotDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Surface plot viewer displays a set of three-dimensional data as a mesh surface",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/surface-plot",
+          "kind": "DocPage",
+          "title": "Surface plot",
+          "url": "/help/visualize/viewers/surface-plot"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Charts/src/demos/demo.ts",
+          "packages/Charts/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Charts:timelines",
+      "name": "Timelines Viewer",
+      "description": "Displays sequences of events along a time axis with a range slider and configurable legend colors.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Timelines",
+          "kind": "RegisteredFunction",
+          "name": "Timelines",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a timelines viewer",
+          "tags": []
+        },
+        {
+          "id": "func:Charts:timelinesViewerDemo",
+          "kind": "RegisteredFunction",
+          "name": "timelinesViewerDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Timelines viewer displays the flow of events over time",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/timelines",
+          "kind": "DocPage",
+          "title": "timelines",
+          "url": "/help/visualize/viewers/timelines"
+        },
+        {
+          "id": "clog:Charts:1.7.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.2:9",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Charts/src/demos/demo.ts",
+          "packages/Charts/src/package.ts",
+          "packages/Charts/src/utils/legend-utils.ts",
+          "packages/Charts/src/viewers/echart/echart-viewer.ts",
+          "packages/Charts/src/viewers/timelines/constants.ts",
+          "packages/Charts/src/viewers/timelines/echarts-options.ts",
+          "packages/Charts/src/viewers/timelines/timelines-viewer.ts"
+        ],
+        "tests": [
+          "packages/Charts/src/tests/timelines-viewer-test.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Charts:multiplot",
+      "name": "Multiplot Viewer",
+      "description": "Combines multiple chart series in a single synchronized view for comparative multi-variable analysis.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Multiplot",
+          "kind": "RegisteredFunction",
+          "name": "Multiplot",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a multiplot viewer",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Charts:group-analysis",
+      "name": "Group Analysis Viewer",
+      "description": "Visualizes statistical summaries and comparisons across user-defined row groups to support exploratory analysis.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Group Analysis",
+          "kind": "RegisteredFunction",
+          "name": "Group Analysis",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a group analysis viewer",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/group-analysis",
+          "kind": "DocPage",
+          "title": "Group analysis viewer",
+          "url": "/help/visualize/viewers/group-analysis"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Charts:word-cloud",
+      "name": "Word Cloud Viewer",
+      "description": "Renders unstructured text data as a word cloud where word size reflects frequency.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Word cloud",
+          "kind": "RegisteredFunction",
+          "name": "Word cloud",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a word cloud viewer",
+          "tags": []
+        },
+        {
+          "id": "func:Charts:wordCloudViewerDemo",
+          "kind": "RegisteredFunction",
+          "name": "wordCloudViewerDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Word Cloud viewer visualizes unstructured text data",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/word-cloud",
+          "kind": "DocPage",
+          "title": "Word cloud",
+          "url": "/help/visualize/viewers/word-cloud"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Charts/src/demos/demo.ts",
+          "packages/Charts/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Charts:tree",
+      "name": "Tree Viewer",
+      "description": "Visualizes hierarchical categorical data as an interactive tree with standard and radial layout options, Ctrl+Click branch selection, and collaborative filtering.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:Tree",
+          "kind": "RegisteredFunction",
+          "name": "Tree",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Creates a tree viewer",
+          "tags": []
+        },
+        {
+          "id": "func:Charts:treeViewerDemo",
+          "kind": "RegisteredFunction",
+          "name": "treeViewerDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Tree viewer visualizes hierarchical data by categories",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/tree",
+          "kind": "DocPage",
+          "title": "Tree viewer",
+          "url": "/help/visualize/viewers/tree"
+        },
+        {
+          "id": "clog:Charts:1.7.0:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.2:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.2:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.6.0:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.5:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.2:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Charts:1.5.2:2",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Charts/src/demos/demo.ts",
+          "packages/Charts/src/package.ts"
+        ],
+        "tests": [
+          "packages/Charts/src/tests/tree-viewer-test.ts",
+          "packages/Charts/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Charts:flag-renderer",
+      "name": "Flag Cell Renderer",
+      "description": "Renders country/region flag icons in grid cells; the paired semantic-type detector auto-identifies columns eligible for flag display.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Charts:flagCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "flagCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Charts:<anonymous>",
+          "kind": "RegisteredFunction",
+          "name": "<anonymous>",
+          "friendly_name": null,
+          "role": "semTypeDetector",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

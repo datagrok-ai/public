@@ -1,0 +1,564 @@
+{
+  "package": {
+    "id": "pkg:Dendrogram",
+    "name": "Dendrogram",
+    "friendly_name": "Dendrogram",
+    "version": "1.4.11",
+    "category": "Visualizations",
+    "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
+    "extras": {
+      "npm_name": "@datagrok/dendrogram",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Dendrogram:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:Dendrogram",
+      "name": "Dendrogram",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Dendrogram tree visualization",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:getTreeHelper",
+      "name": "getTreeHelper",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:getDendrogramService",
+      "name": "getDendrogramService",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:generateTreeDialog",
+      "name": "generateTreeDialog",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:dendrogramApp",
+      "name": "dendrogramApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for Dendrogram",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:dendrogramLargeApp",
+      "name": "dendrogramLargeApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for Dendrogram Large",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:treeForGridApp",
+      "name": "treeForGridApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for TreeForGrid (custom renderer)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:treeForGridFilterApp",
+      "name": "treeForGridFilterApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for TreeForGridFilter (custom renderer)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:treeForGridCutApp",
+      "name": "treeForGridCutApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for TreeForGridCutApp (custom renderer, cutting slider)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:hierarchicalClusteringApp",
+      "name": "hierarchicalClusteringApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for hierarchical clustering (inject tree to grid)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:hierarchicalClusteringSequencesApp",
+      "name": "hierarchicalClusteringSequencesApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Test/demo app for hierarchical clustering (inject tree to grid)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:Hierarchical Clustering",
+      "name": "Hierarchical Clustering",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Calculates hierarchical clustering on features and injects tree to grid",
+      "input_types": [
+        "dataframe",
+        "column_list",
+        "string",
+        "string"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:importNwk",
+      "name": "importNwk",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": "Opens Newick file",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "list"
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "nwk, newick"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:previewNewick",
+      "name": "previewNewick",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "nwk,newick"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:Hierarchical Clustering (Sequences)",
+      "name": "Hierarchical Clustering (Sequences)",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Calculates hierarchical clustering on features and injects tree to grid",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:Hierarchical Clustering (Molecules)",
+      "name": "Hierarchical Clustering (Molecules)",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Calculates hierarchical clustering on features and injects tree to grid",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:Hierarchical Clustering (All)",
+      "name": "Hierarchical Clustering (All)",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Calculates hierarchical clustering on features and injects tree to grid",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Dendrogram:heatMapDemo",
+      "name": "heatMapDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Heatmap is a spreadsheet (grid) that contains colors instead of numbers and strings. For numerical data, the higher values are colored red, and the lower ones appear blue. The central value is assigned a light color so…",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:Dendrogram:distanceScript",
+      "name": "distanceScript",
+      "language": "python",
+      "description": "Returns distance matrix condensed"
+    },
+    {
+      "id": "script:Dendrogram:hierarchicalClusteringScript",
+      "name": "hierarchicalClusteringScript",
+      "language": "python",
+      "description": "Returns the newick representation of the tree for given dataset"
+    },
+    {
+      "id": "script:Dendrogram:hierarchicalClusteringByDistanceScript",
+      "name": "hierarchicalClusteringByDistanceScript",
+      "language": "python",
+      "description": "Returns the newick representation of the tree for given distance matrix"
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Dendrogram/credits.md",
+      "title": "Dendrogram — Third-Party Libraries",
+      "url": "/packages/Dendrogram/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Dendrogram/readme.md",
+      "title": "Dendrogram",
+      "url": "/packages/Dendrogram/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/dendrogram",
+      "title": "Dendrogram",
+      "url": "/help/visualize/viewers/dendrogram",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Dendrogram:1.4.8:0",
+      "version": "1.4.8",
+      "released_at": "2026-02-03",
+      "ticket": null,
+      "text": "Horizontal zooming of dendrogram with mouse wheel and pinch gesture."
+    },
+    {
+      "id": "clog:Dendrogram:1.4.7:0",
+      "version": "1.4.7",
+      "released_at": "2026-02-02",
+      "ticket": null,
+      "text": "Resizable dendrogram neighbor panel in the grid."
+    },
+    {
+      "id": "clog:Dendrogram:1.4.7:1",
+      "version": "1.4.7",
+      "released_at": "2026-02-02",
+      "ticket": null,
+      "text": "Cluster assignment based on cut-off slider or clusters number."
+    },
+    {
+      "id": "clog:Dendrogram:1.4.7:2",
+      "version": "1.4.7",
+      "released_at": "2026-02-02",
+      "ticket": null,
+      "text": "Fix error handling in hierarchical clustering."
+    },
+    {
+      "id": "clog:Dendrogram:1.4.7:3",
+      "version": "1.4.7",
+      "released_at": "2026-02-02",
+      "ticket": null,
+      "text": "Cut slider indicator vertical line"
+    },
+    {
+      "id": "clog:Dendrogram:1.4.7:4",
+      "version": "1.4.7",
+      "released_at": "2026-02-02",
+      "ticket": null,
+      "text": "Closing old dendrogram neighbor on new clustering"
+    },
+    {
+      "id": "clog:Dendrogram:1.4.5:0",
+      "version": "1.4.5",
+      "released_at": "2025-08-01",
+      "ticket": null,
+      "text": "Support initialization"
+    },
+    {
+      "id": "clog:Dendrogram:1.4.1:0",
+      "version": "1.4.1",
+      "released_at": "2025-06-16",
+      "ticket": null,
+      "text": "Fix loading with empty table, add default options for molecules and sequences"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.33:0",
+      "version": "1.2.33",
+      "released_at": "2024-09-02",
+      "ticket": null,
+      "text": "Fix for dependency math lib version update"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.32:0",
+      "version": "1.2.32",
+      "released_at": "2024-08-23",
+      "ticket": "GROK-15949",
+      "text": "GROK-15949:Fix open GridWithTree: error"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.32:1",
+      "version": "1.2.32",
+      "released_at": "2024-08-23",
+      "ticket": null,
+      "text": "Fix error on second Hierarchical Clustering"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.32:2",
+      "version": "1.2.32",
+      "released_at": "2024-08-23",
+      "ticket": null,
+      "text": "Fix error on mouse hover and current row changed"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.31:0",
+      "version": "1.2.31",
+      "released_at": "2024-08-19",
+      "ticket": null,
+      "text": "Fix Hierarchical clustering namings."
+    },
+    {
+      "id": "clog:Dendrogram:1.2.30:0",
+      "version": "1.2.30",
+      "released_at": "2024-07-23",
+      "ticket": null,
+      "text": "Bump dependencies versions, datagrok-api to 1.20.0"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.29:0",
+      "version": "1.2.29",
+      "released_at": "2024-04-23",
+      "ticket": null,
+      "text": "Bump dependencies versions, datagrok-api to 1.18.0, gridext to 1.3.71"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.28:0",
+      "version": "1.2.28",
+      "released_at": "2024-03-30",
+      "ticket": null,
+      "text": "#2707: Add original and canonical to monomer"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.27:0",
+      "version": "1.2.27",
+      "released_at": "2024-03-07",
+      "ticket": null,
+      "text": "Bump dependencies version, NEWICK_EMPTY"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.26:0",
+      "version": "1.2.26",
+      "released_at": "2024-03-06",
+      "ticket": null,
+      "text": "Bump dependencies version"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.26:1",
+      "version": "1.2.26",
+      "released_at": "2024-03-06",
+      "ticket": null,
+      "text": "Fix tree traverse order, fix tests"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.18:0",
+      "version": "1.2.18",
+      "released_at": "2023-07-21",
+      "ticket": null,
+      "text": "This release focuses on improving analysis stability and usability."
+    },
+    {
+      "id": "clog:Dendrogram:1.2.18:1",
+      "version": "1.2.18",
+      "released_at": "2023-07-21",
+      "ticket": null,
+      "text": "Dependency: datagarok-api >= 1.15.0*"
+    },
+    {
+      "id": "clog:Dendrogram:1.2.18:2",
+      "version": "1.2.18",
+      "released_at": "2023-07-21",
+      "ticket": null,
+      "text": "Implemented the ability to select all leaves from a certain node."
+    },
+    {
+      "id": "clog:Dendrogram:1.2.18:3",
+      "version": "1.2.18",
+      "released_at": "2023-07-21",
+      "ticket": null,
+      "text": "Added a separate loader view to the dendrogram."
+    },
+    {
+      "id": "clog:Dendrogram:1.2.18:4",
+      "version": "1.2.18",
+      "released_at": "2023-07-21",
+      "ticket": null,
+      "text": "Added the ability to reset zoom for Dendrogram."
+    },
+    {
+      "id": "clog:Dendrogram:1.2.18:5",
+      "version": "1.2.18",
+      "released_at": "2023-07-21",
+      "ticket": null,
+      "text": "Moved hierarchical clustering script to the client side."
+    },
+    {
+      "id": "clog:Dendrogram:1.2.18:6",
+      "version": "1.2.18",
+      "released_at": "2023-07-21",
+      "ticket": null,
+      "text": "Allowed to switch distance calculation method for macromolecules (Hamming or Levenstein) in case of MSA."
+    },
+    {
+      "id": "clog:Dendrogram:1.2.18:7",
+      "version": "1.2.18",
+      "released_at": "2023-07-21",
+      "ticket": null,
+      "text": "Enabled Dendrogram to work with semType `macromolecules`."
+    }
+  ],
+  "stats": {
+    "functions": 19,
+    "scripts": 3,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 7,
+    "changelog": 27
+  }
+}

@@ -1,0 +1,558 @@
+{
+  "package": {
+    "id": "pkg:Plates",
+    "name": "Plates",
+    "friendly_name": "Plates",
+    "category": "Visualizations",
+    "description": "Assay plates: ingestion, storage, and analysis"
+  },
+  "files": {
+    "src": [
+      "packages/Plates/src/package.ts",
+      "packages/Plates/src/plate/analyses/analysis-manager.ts",
+      "packages/Plates/src/plate/analyses/base-analysis-view.ts",
+      "packages/Plates/src/plate/analyses/base-analysis.ts",
+      "packages/Plates/src/plate/analyses/dose-ratio/dose-ratio-analysis.ts",
+      "packages/Plates/src/plate/analyses/drc/drc-analysis.css",
+      "packages/Plates/src/plate/analyses/drc/drc-analysis.ts",
+      "packages/Plates/src/plate/analyses/drc/drc-coordinator.ts",
+      "packages/Plates/src/plate/analyses/drc/utils.ts",
+      "packages/Plates/src/plate/analyses/plate-analyses.css",
+      "packages/Plates/src/plate/analyses/qpcr/qpcr-analysis.ts",
+      "packages/Plates/src/plate/csv-plates.ts",
+      "packages/Plates/src/plate/excel-plates.ts",
+      "packages/Plates/src/plate/plate-cell-renderer.ts",
+      "packages/Plates/src/plate/plate-reader.ts",
+      "packages/Plates/src/plate/plate-well-validators.ts",
+      "packages/Plates/src/plate/plate-widget/plate-selection-controller.ts",
+      "packages/Plates/src/plate/plate-widget/plate-widget.css",
+      "packages/Plates/src/plate/plate-widget/plate-widget.ts",
+      "packages/Plates/src/plate/plate.ts",
+      "packages/Plates/src/plate/plates-folder-preview.ts",
+      "packages/Plates/src/plate/readers/bmg-pherastar-96.ts",
+      "packages/Plates/src/plate/readers/delfia-envision-96-max-rlu.ts",
+      "packages/Plates/src/plate/readers/delfia-envision-by-row.ts",
+      "packages/Plates/src/plate/readers/spectramax.ts",
+      "packages/Plates/src/plate/utils.ts",
+      "packages/Plates/src/plates/matchers.ts",
+      "packages/Plates/src/plates/objects/plate-template-handler.ts",
+      "packages/Plates/src/plates/plates-app.ts",
+      "packages/Plates/src/plates/plates-crud.ts",
+      "packages/Plates/src/plates/plates-demo.ts",
+      "packages/Plates/src/plates/plates.sql",
+      "packages/Plates/src/plates/views/analyses-search-view.css",
+      "packages/Plates/src/plates/views/analyses-search-view.ts",
+      "packages/Plates/src/plates/views/components/analysis-mapping/analysis-mapping-panel.ts",
+      "packages/Plates/src/plates/views/components/mapping-editor/mapping-editor.css",
+      "packages/Plates/src/plates/views/components/mapping-editor/mapping-editor.ts",
+      "packages/Plates/src/plates/views/components/plate-grid-manager/plate-grid-manager.css",
+      "packages/Plates/src/plates/views/components/plate-grid-manager/plate-grid-manager.ts",
+      "packages/Plates/src/plates/views/components/template-panel/template-panel-and-mapping.css",
+      "packages/Plates/src/plates/views/components/template-panel/template-panel.css",
+      "packages/Plates/src/plates/views/components/template-panel/template-panel.ts",
+      "packages/Plates/src/plates/views/plates-create-view.css",
+      "packages/Plates/src/plates/views/plates-create-view.ts",
+      "packages/Plates/src/plates/views/plates-schema-view.ts",
+      "packages/Plates/src/plates/views/plates-search-view.ts",
+      "packages/Plates/src/plates/views/plates-templates-view.ts",
+      "packages/Plates/src/plates/views/plates-validation-panel.ts",
+      "packages/Plates/src/plates/views/shared/mapping-utils.ts",
+      "packages/Plates/src/plates/views/shared/plate-state-manager.ts",
+      "packages/Plates/src/plates/views/shared/scopes.ts",
+      "packages/Plates/src/plates/views/shared/types.ts",
+      "packages/Plates/src/plates/views/template-editor-view.ts"
+    ],
+    "tests": [
+      "packages/Plates/src/package-test.ts",
+      "packages/Plates/src/tests/plate-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/Plates/queries/plates-crud.sql"
+    ],
+    "docs": [
+      "packages/Plates/CHANGELOG.md",
+      "packages/Plates/CLAUDE.md",
+      "packages/Plates/CREDITS.md",
+      "packages/Plates/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Plates:plates-app",
+      "name": "Plates Application",
+      "description": "The top-level Datagrok app and tree-browser that lets users navigate, open, and explore assay plate collections stored on the server.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Plates:Plates",
+          "kind": "RegisteredFunction",
+          "name": "Plates",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Plates:platesAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "platesAppTreeBrowser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Plates:Assay Plates",
+          "kind": "RegisteredFunction",
+          "name": "Assay Plates",
+          "friendly_name": null,
+          "role": null,
+          "description": "Assasy plates with concentration, layout and readout data",
+          "tags": []
+        },
+        {
+          "id": "func:Plates:_initPlates",
+          "kind": "RegisteredFunction",
+          "name": "_initPlates",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Plates/readme.md",
+          "kind": "DocPage",
+          "title": "Plates",
+          "url": "/packages/Plates/readme.md"
+        },
+        {
+          "id": "doc:/packages/Plates/claude.md",
+          "kind": "DocPage",
+          "title": "CLAUDE.md",
+          "url": "/packages/Plates/claude.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Plates/src/package-api.ts",
+          "packages/Plates/src/package.ts",
+          "packages/Plates/src/plate/analyses/analysis-manager.ts",
+          "packages/Plates/src/plate/analyses/drc/drc-analysis.ts",
+          "packages/Plates/src/plate/analyses/drc/utils.ts",
+          "packages/Plates/src/plate/plate-cell-renderer.ts",
+          "packages/Plates/src/plate/plate-widget/plate-widget.ts",
+          "packages/Plates/src/plate/plate.ts",
+          "packages/Plates/src/plates/objects/plate-template-handler.ts",
+          "packages/Plates/src/plates/plates-app.ts",
+          "packages/Plates/src/plates/plates-crud.ts",
+          "packages/Plates/src/plates/plates-demo.ts",
+          "packages/Plates/src/plates/views/analyses-search-view.ts",
+          "packages/Plates/src/plates/views/plates-create-view.ts",
+          "packages/Plates/src/plates/views/plates-schema-view.ts",
+          "packages/Plates/src/plates/views/plates-search-view.ts",
+          "packages/Plates/src/plates/views/plates-templates-view.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Plates:plate-file-import",
+      "name": "Plate File Import",
+      "description": "Detects and ingests assay plate files in TXT, XLSX, and CSV formats, routing each to the appropriate parser and storing the result in the platform.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Plates:importPlate",
+          "kind": "RegisteredFunction",
+          "name": "importPlate",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Plates:importPlateXlsx",
+          "kind": "RegisteredFunction",
+          "name": "importPlateXlsx",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Plates:checkFileIsPlate",
+          "kind": "RegisteredFunction",
+          "name": "checkFileIsPlate",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Plates:checkExcelIsPlate",
+          "kind": "RegisteredFunction",
+          "name": "checkExcelIsPlate",
+          "friendly_name": null,
+          "role": null,
+          "description": "Checks if an Excel file contains plate data.",
+          "tags": []
+        },
+        {
+          "id": "func:Plates:checkCsvIsPlate",
+          "kind": "RegisteredFunction",
+          "name": "checkCsvIsPlate",
+          "friendly_name": null,
+          "role": null,
+          "description": "Checks if a CSV file can be parsed as a plate.",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Plates/src/package.ts",
+          "packages/Plates/src/plate/analyses/base-analysis.ts",
+          "packages/Plates/src/plate/analyses/drc/drc-analysis.ts",
+          "packages/Plates/src/plate/analyses/drc/drc-coordinator.ts",
+          "packages/Plates/src/plate/analyses/drc/utils.ts",
+          "packages/Plates/src/plate/plate-reader.ts",
+          "packages/Plates/src/plate/plate-well-validators.ts",
+          "packages/Plates/src/plate/plate-widget/plate-widget.ts",
+          "packages/Plates/src/plate/plate.ts",
+          "packages/Plates/src/plate/readers/bmg-pherastar-96.ts",
+          "packages/Plates/src/plate/readers/delfia-envision-96-max-rlu.ts",
+          "packages/Plates/src/plate/readers/delfia-envision-by-row.ts",
+          "packages/Plates/src/plate/readers/spectramax.ts",
+          "packages/Plates/src/plate/utils.ts",
+          "packages/Plates/src/plates/views/components/analysis-mapping/analysis-mapping-panel.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Plates:plate-visualization",
+      "name": "Plate Visualization",
+      "description": "Renders assay plates as interactive grid views within file previews, folder browsers, and inline grid cells, giving users an at-a-glance layout of well data.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Plates:previewPlate",
+          "kind": "RegisteredFunction",
+          "name": "previewPlate",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Plates:viewPlateXlsx",
+          "kind": "RegisteredFunction",
+          "name": "viewPlateXlsx",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Plates:platesFolderPreview",
+          "kind": "RegisteredFunction",
+          "name": "platesFolderPreview",
+          "friendly_name": null,
+          "role": "folderViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Plates:PlateGridCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "PlateGridCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Plates/src/package.ts",
+          "packages/Plates/src/plate/analyses/analysis-manager.ts",
+          "packages/Plates/src/plate/analyses/base-analysis.ts",
+          "packages/Plates/src/plate/analyses/drc/drc-analysis.ts",
+          "packages/Plates/src/plate/analyses/drc/drc-coordinator.ts",
+          "packages/Plates/src/plate/analyses/drc/utils.ts",
+          "packages/Plates/src/plate/plate-reader.ts",
+          "packages/Plates/src/plate/plate-well-validators.ts",
+          "packages/Plates/src/plate/plate-widget/plate-widget.ts",
+          "packages/Plates/src/plate/plate.ts",
+          "packages/Plates/src/plate/plates-folder-preview.ts",
+          "packages/Plates/src/plate/readers/bmg-pherastar-96.ts",
+          "packages/Plates/src/plate/readers/delfia-envision-96-max-rlu.ts",
+          "packages/Plates/src/plate/readers/delfia-envision-by-row.ts",
+          "packages/Plates/src/plate/readers/spectramax.ts",
+          "packages/Plates/src/plate/utils.ts",
+          "packages/Plates/src/plates/views/components/analysis-mapping/analysis-mapping-panel.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Plates:plate-retrieval",
+      "name": "Plate Retrieval & Barcode Lookup",
+      "description": "Fetches individual plates or plate lists from the backing database, including barcode-based lookup and record counting.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Plates:getPlateByBarcode",
+          "kind": "RegisteredFunction",
+          "name": "getPlateByBarcode",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:Plates:getPlates",
+          "kind": "DataQuery",
+          "name": "getPlates",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getPlateByBarcode",
+          "kind": "DataQuery",
+          "name": "getPlateByBarcode",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getPlatesCount",
+          "kind": "DataQuery",
+          "name": "getPlatesCount",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Plates/src/package-api.ts",
+          "packages/Plates/src/package.ts",
+          "packages/Plates/src/plate/analyses/analysis-manager.ts",
+          "packages/Plates/src/plate/excel-plates.ts",
+          "packages/Plates/src/plate/plate-well-validators.ts",
+          "packages/Plates/src/plate/plate.ts",
+          "packages/Plates/src/plates/matchers.ts",
+          "packages/Plates/src/plates/plates-crud.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Plates:well-data-access",
+      "name": "Well Data Access",
+      "description": "Retrieves per-well measurement values, roles, and property metadata, enabling downstream analysis and display of individual well readings.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Plates:getWellLevelProperties",
+          "kind": "DataQuery",
+          "name": "getWellLevelProperties",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getWellValuesByBarcode",
+          "kind": "DataQuery",
+          "name": "getWellValuesByBarcode",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getWellValuesById",
+          "kind": "DataQuery",
+          "name": "getWellValuesById",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getWellRoles",
+          "kind": "DataQuery",
+          "name": "getWellRoles",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getUniqueWellPropertyValues",
+          "kind": "DataQuery",
+          "name": "getUniqueWellPropertyValues",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Plates:plate-properties",
+      "name": "Plate Property Management",
+      "description": "Defines, enumerates, and filters the custom properties attached to plates, supporting dynamic metadata schemas and allowed-value constraints.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:Plates:getPlateLevelProperties",
+          "kind": "DataQuery",
+          "name": "getPlateLevelProperties",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getPropertyNames",
+          "kind": "DataQuery",
+          "name": "getPropertyNames",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getProperties",
+          "kind": "DataQuery",
+          "name": "getProperties",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getAllowedValues",
+          "kind": "DataQuery",
+          "name": "getAllowedValues",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getUniquePlatePropertyValues",
+          "kind": "DataQuery",
+          "name": "getUniquePlatePropertyValues",
+          "description": null
+        },
+        {
+          "id": "query:Plates:createProperty",
+          "kind": "DataQuery",
+          "name": "createProperty",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Plates:plate-templates",
+      "name": "Plate Templates",
+      "description": "Creates and manages plate templates that pre-define the layout, plate-level, and well-level properties for new assay plates.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:Plates:getPlateTypes",
+          "kind": "DataQuery",
+          "name": "getPlateTypes",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getPlateTemplates",
+          "kind": "DataQuery",
+          "name": "getPlateTemplates",
+          "description": null
+        },
+        {
+          "id": "query:Plates:createTemplate",
+          "kind": "DataQuery",
+          "name": "createTemplate",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getTemplateProperties",
+          "kind": "DataQuery",
+          "name": "getTemplateProperties",
+          "description": null
+        },
+        {
+          "id": "query:Plates:addTemplatePlateProperty",
+          "kind": "DataQuery",
+          "name": "addTemplatePlateProperty",
+          "description": null
+        },
+        {
+          "id": "query:Plates:addTemplateWellProperty",
+          "kind": "DataQuery",
+          "name": "addTemplateWellProperty",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getTemplatePlateProperties",
+          "kind": "DataQuery",
+          "name": "getTemplatePlateProperties",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getTemplateWellProperties",
+          "kind": "DataQuery",
+          "name": "getTemplateWellProperties",
+          "description": null
+        },
+        {
+          "id": "query:Plates:removeTemplatePlateProperty",
+          "kind": "DataQuery",
+          "name": "removeTemplatePlateProperty",
+          "description": null
+        },
+        {
+          "id": "query:Plates:removeTemplateWellProperty",
+          "kind": "DataQuery",
+          "name": "removeTemplateWellProperty",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Plates:analysis-runs",
+      "name": "Analysis Runs",
+      "description": "Records, parameterises, and queries analysis runs executed against plate data, enabling reproducible bioassay result tracking.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "query:Plates:createAnalysisRun",
+          "kind": "DataQuery",
+          "name": "createAnalysisRun",
+          "description": null
+        },
+        {
+          "id": "query:Plates:saveAnalysisRunParameter",
+          "kind": "DataQuery",
+          "name": "saveAnalysisRunParameter",
+          "description": null
+        },
+        {
+          "id": "query:Plates:saveAnalysisResult",
+          "kind": "DataQuery",
+          "name": "saveAnalysisResult",
+          "description": null
+        },
+        {
+          "id": "query:Plates:getAnalysisRunGroups",
+          "kind": "DataQuery",
+          "name": "getAnalysisRunGroups",
+          "description": null
+        },
+        {
+          "id": "query:Plates:queryAnalyses",
+          "kind": "DataQuery",
+          "name": "queryAnalyses",
+          "description": null
+        },
+        {
+          "id": "query:Plates:queryAnalysesTemplate",
+          "kind": "DataQuery",
+          "name": "queryAnalysesTemplate",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

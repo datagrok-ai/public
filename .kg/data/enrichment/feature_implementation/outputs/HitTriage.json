@@ -1,0 +1,262 @@
+{
+  "package_id": "pkg:HitTriage",
+  "features": [
+    {
+      "id": "feature:HitTriage:hit-triage-workflow",
+      "implements": [
+        {
+          "path": "packages/HitTriage/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-triage-app.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-app-base.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/base-view.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-triage-views/info-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-triage-views/submit-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/HitTriage/src/app/accordeons/new-campaign-accordeon.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/accordeons/new-template-accordeon.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/dialogs/functions-dialog.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/HitTriage/src/app/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/HitTriage/src/app/utils/calculate-single-cell.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "Hit Triage app entry, its views, accordions for campaign/template creation, compute-functions dialog, and shared base/utils."
+    },
+    {
+      "id": "feature:HitTriage:hit-design-workflow",
+      "implements": [
+        {
+          "path": "packages/HitTriage/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-design-app.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-app-base.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/base-view.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-design-views/info-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-design-views/submit-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-design-views/tiles-view.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/accordeons/new-hit-design-campaign-accordeon.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/accordeons/new-hit-design-template-accordeon.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/dialogs/merge-table-dialog.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/HitTriage/src/app/utils/calculate-single-cell.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/HitTriage/src/app/utils/merge-table.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "Hit Design app, its three views, design-specific accordions and merge-table support, compute pipeline."
+    },
+    {
+      "id": "feature:HitTriage:peptide-triage-workflows",
+      "implements": [
+        {
+          "path": "packages/HitTriage/src/package.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/HitTriage/src/app/pepti-hit-app.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/HitTriage/src/app/pep-triage-app.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/HitTriage/src/app/pepti-hits-views/info-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/HitTriage/src/app/pep-triage-views/info-view.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/HitTriage/src/app/accordeons/new-pep-triage-template-accordeon.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-design-app.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/HitTriage/src/app/consts.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "PeptiHit and PepTriage apps extend Hit Design; peptide-specific views and template accordion."
+    },
+    {
+      "id": "feature:HitTriage:molecule-registry-vid",
+      "implements": [
+        {
+          "path": "packages/HitTriage/src/app/utils/molreg.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/HitTriage/src/package.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/HitTriage/src/app/consts.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "molreg.ts implements V-iD register/obfuscate/lookup; package.ts wires registerMoleculesToViD and the Hit Design V-iD panel."
+    },
+    {
+      "id": "feature:HitTriage:campaign-management",
+      "implements": [
+        {
+          "path": "packages/HitTriage/src/app/utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/HitTriage/src/app/hit-app-base.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/dialogs/save-campaign-dialog.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/dialogs/permissions-dialog.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/HitTriage/src/app/accordeons/layout-input.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/HitTriage/src/packageSettingsEditor.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/HitTriage/src/package.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Campaign load/save/permissions/locking via utils + dialogs; package settings editor controls defaults."
+    },
+    {
+      "id": "feature:HitTriage:gasteiger-charge-renderer",
+      "implements": [
+        {
+          "path": "packages/HitTriage/src/pngRenderers.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/HitTriage/src/package.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "GasteigerPngRenderer in pngRenderers.ts; registered as cellRenderer in package.ts."
+    }
+  ]
+}

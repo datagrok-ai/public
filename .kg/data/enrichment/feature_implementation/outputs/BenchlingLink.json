@@ -1,0 +1,206 @@
+{
+  "package_id": "pkg:BenchlingLink",
+  "features": [
+    {
+      "id": "feature:BenchlingLink:benchling-app",
+      "implements": [
+        {
+          "path": "packages/BenchlingLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts hosts both benchlingLinkApp (the @app entry) and benchlingLinkAppTreeBrowser (the @appTreeBrowser) wiring all per-resource functions into the Chem tree."
+    },
+    {
+      "id": "feature:BenchlingLink:sequence-management",
+      "implements": [
+        {
+          "path": "packages/BenchlingLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BenchlingLink/src/aaSequencesApi.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BenchlingLink/src/dnaSequencesApi.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BenchlingLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BenchlingLink/src/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Get/Create AA & DNA Sequence wrappers in package.ts delegate to query/post functions in the two *Api.ts files; utils.ts provides buildQueryString/dataFrameFromObjects; types.ts supplies UserSummary used by aaSequencesApi.ts."
+    },
+    {
+      "id": "feature:BenchlingLink:dna-oligo-management",
+      "implements": [
+        {
+          "path": "packages/BenchlingLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BenchlingLink/src/dnaOligosApi.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BenchlingLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BenchlingLink/src/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "getDnaOligos/createDnaOligo wrappers delegate to queryDnaOligos/postDnaOligo in dnaOligosApi.ts, which imports UserSummary/ArchiveRecord from types.ts and dataFrameFromObjects from utils.ts."
+    },
+    {
+      "id": "feature:BenchlingLink:assay-data-access",
+      "implements": [
+        {
+          "path": "packages/BenchlingLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BenchlingLink/src/assayApi.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BenchlingLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "getAssayResults/Runs and createAssayResult/Run wrappers wrap items into the bulk envelope and call queryAssayResults/Runs and postAssayResults/Runs in assayApi.ts; assayApi.ts imports only utils."
+    },
+    {
+      "id": "feature:BenchlingLink:molecule-registry",
+      "implements": [
+        {
+          "path": "packages/BenchlingLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BenchlingLink/src/moleculesApi.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BenchlingLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BenchlingLink/src/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "getMolecules/createMolecule delegate to queryMolecules/postMolecule in moleculesApi.ts; chemicalStructure-shaped POST body is built in package.ts."
+    },
+    {
+      "id": "feature:BenchlingLink:plate-management",
+      "implements": [
+        {
+          "path": "packages/BenchlingLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BenchlingLink/src/platesApi.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BenchlingLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BenchlingLink/src/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "getPlates/createPlate wrappers delegate to queryPlates/postPlate in platesApi.ts; the file uses the _gt/_gte/_lt/_lte param translation in utils.ts."
+    },
+    {
+      "id": "feature:BenchlingLink:mixture-management",
+      "implements": [
+        {
+          "path": "packages/BenchlingLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BenchlingLink/src/mixturesApi.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BenchlingLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BenchlingLink/src/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "getMixtures/createMixture delegate to queryMixtures/postMixture in mixturesApi.ts; mixturesApi.ts imports UserSummary/ArchiveRecord from types.ts and dataFrameFromObjects from utils.ts."
+    },
+    {
+      "id": "feature:BenchlingLink:project-management",
+      "implements": [
+        {
+          "path": "packages/BenchlingLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/BenchlingLink/src/projectsApi.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/BenchlingLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/BenchlingLink/src/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "getProjects wrapper delegates to queryProjects in projectsApi.ts; projectsApi.ts imports UserSummary/Organization/ArchiveRecord from types.ts and dataFrameFromObjects from utils.ts."
+    }
+  ]
+}

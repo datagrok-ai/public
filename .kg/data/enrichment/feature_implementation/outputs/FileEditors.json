@@ -1,0 +1,68 @@
+{
+  "package_id": "pkg:FileEditors",
+  "features": [
+    {
+      "id": "feature:FileEditors:pdf-viewer",
+      "implements": [
+        {
+          "path": "packages/FileEditors/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "Both previewPdf (fileViewer) and viewPdf (fileHandler) are defined inline in package.ts using pdfjs-dist; no dedicated tests exist."
+    },
+    {
+      "id": "feature:FileEditors:docx-viewer",
+      "implements": [
+        {
+          "path": "packages/FileEditors/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "previewDocx and viewDocx are defined inline in package.ts using docx-preview's renderAsync."
+    },
+    {
+      "id": "feature:FileEditors:rtf-viewer",
+      "implements": [
+        {
+          "path": "packages/FileEditors/src/package.ts",
+          "role": "core",
+          "confidence": 0.97
+        }
+      ],
+      "tests": [],
+      "notes": "previewRtf is defined inline in package.ts; lazy-loads dist/package-rtf.js (RTFJS) at runtime."
+    },
+    {
+      "id": "feature:FileEditors:tex-viewer",
+      "implements": [
+        {
+          "path": "packages/FileEditors/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/FileEditors/src/latex/latex-viewer.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/FileEditors/src/latex/constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/FileEditors/src/latex/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [],
+      "notes": "previewTex in package.ts delegates to LatexViewer.create; constants/utils support the editor's debouncing and key handling."
+    }
+  ]
+}

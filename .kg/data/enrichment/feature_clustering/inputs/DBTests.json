@@ -1,0 +1,2132 @@
+{
+  "package": {
+    "id": "pkg:DBTests",
+    "name": "DBTests",
+    "friendly_name": "DB Tests",
+    "version": "1.4.0",
+    "category": "Development",
+    "description": "Automated tests for JDBC Providers",
+    "extras": {
+      "npm_name": "@datagrok/dbtests",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:DBTests:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DBTests:expectTable",
+      "name": "expectTable",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "dataframe"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [
+    {
+      "id": "query:DBTests:ClickHouseUuidType",
+      "name": "ClickHouseUuidType",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseSignedIntTypes",
+      "name": "ClickHouseSignedIntTypes",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseUnsignedIntTypes",
+      "name": "ClickHouseUnsignedIntTypes",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseFloatTypes",
+      "name": "ClickHouseFloatTypes",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseArrayType",
+      "name": "ClickHouseArrayType",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseTupleType",
+      "name": "ClickHouseTupleType",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseMapType",
+      "name": "ClickHouseMapType",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseDateTypes",
+      "name": "ClickHouseDateTypes",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseNestedType",
+      "name": "ClickHouseNestedType",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseGeoType",
+      "name": "ClickHouseGeoType",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHousePatternsAll",
+      "name": "ClickHousePatternsAll",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseIntTypePatternNone",
+      "name": "ClickHouseIntTypePatternNone",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypeIntPatternOpMore",
+      "name": "ClickHouseStringTypeIntPatternOpMore",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypeIntPatternOpMoreEq",
+      "name": "ClickHouseStringTypeIntPatternOpMoreEq",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypeIntPatternOpLessEq",
+      "name": "ClickHouseStringTypeIntPatternOpLessEq",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypeIntPatternOpLess",
+      "name": "ClickHouseStringTypeIntPatternOpLess",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypeIntPatternOpIn",
+      "name": "ClickHouseStringTypeIntPatternOpIn",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypeIntPatternOpNotIn",
+      "name": "ClickHouseStringTypeIntPatternOpNotIn",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypeIntPatternOpMinMax",
+      "name": "ClickHouseStringTypeIntPatternOpMinMax",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypeIntPatternOpNotEq",
+      "name": "ClickHouseStringTypeIntPatternOpNotEq",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseDoubleTypePatternNone",
+      "name": "ClickHouseDoubleTypePatternNone",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypePatternDoubleOpMore",
+      "name": "ClickHouseStringTypePatternDoubleOpMore",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypePatternDoubleOpMoreEq",
+      "name": "ClickHouseStringTypePatternDoubleOpMoreEq",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypePatternDoubleOpLess",
+      "name": "ClickHouseStringTypePatternDoubleOpLess",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypePatternDoubleOpLessEq",
+      "name": "ClickHouseStringTypePatternDoubleOpLessEq",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypePatternStringOpContains",
+      "name": "ClickHouseStringTypePatternStringOpContains",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypePatternStringOpStartsWith",
+      "name": "ClickHouseStringTypePatternStringOpStartsWith",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypePatternStringOpEndsWith",
+      "name": "ClickHouseStringTypePatternStringOpEndsWith",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypePatternStringOpIn",
+      "name": "ClickHouseStringTypePatternStringOpIn",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHouseStringTypePatternStringOpRegex",
+      "name": "ClickHouseStringTypePatternStringOpRegex",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:ClickHousePatternsAllParams",
+      "name": "ClickHousePatternsAllParams",
+      "connection": "ClickHouseDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbDateTypes",
+      "name": "MariaDbDateTypes",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbBinaryTypes",
+      "name": "MariaDbBinaryTypes",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbBitType",
+      "name": "MariaDbBitType",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbCharacterTypes",
+      "name": "MariaDbCharacterTypes",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbFloatTypes",
+      "name": "MariaDbFloatTypes",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbIntegerTypes",
+      "name": "MariaDbIntegerTypes",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbSpatialTypes",
+      "name": "MariaDbSpatialTypes",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbPatternsAll",
+      "name": "MariaDbPatternsAll",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbIntTypePatternNone",
+      "name": "MariaDbIntTypePatternNone",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypeIntPatternOpMore",
+      "name": "MariaDbStringTypeIntPatternOpMore",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypeIntPatternOpMoreEq",
+      "name": "MariaDbStringTypeIntPatternOpMoreEq",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypeIntPatternOpLessEq",
+      "name": "MariaDbStringTypeIntPatternOpLessEq",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypeIntPatternOpLess",
+      "name": "MariaDbStringTypeIntPatternOpLess",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypeIntPatternOpIn",
+      "name": "MariaDbStringTypeIntPatternOpIn",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypeIntPatternOpNotIn",
+      "name": "MariaDbStringTypeIntPatternOpNotIn",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypeIntPatternOpMinMax",
+      "name": "MariaDbStringTypeIntPatternOpMinMax",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypeIntPatternOpNotEq",
+      "name": "MariaDbStringTypeIntPatternOpNotEq",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbDoubleTypePatternNone",
+      "name": "MariaDbDoubleTypePatternNone",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypePatternDoubleOpMore",
+      "name": "MariaDbStringTypePatternDoubleOpMore",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypePatternDoubleOpMoreEq",
+      "name": "MariaDbStringTypePatternDoubleOpMoreEq",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypePatternDoubleOpLess",
+      "name": "MariaDbStringTypePatternDoubleOpLess",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypePatternDoubleOpLessEq",
+      "name": "MariaDbStringTypePatternDoubleOpLessEq",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypePatternStringOpContains",
+      "name": "MariaDbStringTypePatternStringOpContains",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypePatternStringOpStartsWith",
+      "name": "MariaDbStringTypePatternStringOpStartsWith",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypePatternStringOpEndsWith",
+      "name": "MariaDbStringTypePatternStringOpEndsWith",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypePatternStringOpIn",
+      "name": "MariaDbStringTypePatternStringOpIn",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbStringTypePatternStringOpRegex",
+      "name": "MariaDbStringTypePatternStringOpRegex",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MariaDbPatternsAllParams",
+      "name": "MariaDbPatternsAllParams",
+      "connection": "MariaDbDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLDateTypes",
+      "name": "MSSQLDateTypes",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLXmlType",
+      "name": "MSSQLXmlType",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLBinaryTypes",
+      "name": "MSSQLBinaryTypes",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLNumericTypes",
+      "name": "MSSQLNumericTypes",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLFloatTypes",
+      "name": "MSSQLFloatTypes",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLMoneyTypes",
+      "name": "MSSQLMoneyTypes",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLGeographyType",
+      "name": "MSSQLGeographyType",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLGeometryType",
+      "name": "MSSQLGeometryType",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLPatternsAll",
+      "name": "MSSQLPatternsAll",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLIntTypePatternNone",
+      "name": "MSSQLIntTypePatternNone",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypeIntPatternOpMore",
+      "name": "MSSQLStringTypeIntPatternOpMore",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypeIntPatternOpMoreEq",
+      "name": "MSSQLStringTypeIntPatternOpMoreEq",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypeIntPatternOpLessEq",
+      "name": "MSSQLStringTypeIntPatternOpLessEq",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypeIntPatternOpLess",
+      "name": "MSSQLStringTypeIntPatternOpLess",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypeIntPatternOpIn",
+      "name": "MSSQLStringTypeIntPatternOpIn",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypeIntPatternOpNotIn",
+      "name": "MSSQLStringTypeIntPatternOpNotIn",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypeIntPatternOpMinMax",
+      "name": "MSSQLStringTypeIntPatternOpMinMax",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypeIntPatternOpNotEq",
+      "name": "MSSQLStringTypeIntPatternOpNotEq",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLDoubleTypePatternNone",
+      "name": "MSSQLDoubleTypePatternNone",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypePatternDoubleOpMore",
+      "name": "MSSQLStringTypePatternDoubleOpMore",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypePatternDoubleOpMoreEq",
+      "name": "MSSQLStringTypePatternDoubleOpMoreEq",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypePatternDoubleOpLess",
+      "name": "MSSQLStringTypePatternDoubleOpLess",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypePatternDoubleOpLessEq",
+      "name": "MSSQLStringTypePatternDoubleOpLessEq",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypePatternStringOpContains",
+      "name": "MSSQLStringTypePatternStringOpContains",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypePatternStringOpStartsWith",
+      "name": "MSSQLStringTypePatternStringOpStartsWith",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypePatternStringOpEndsWith",
+      "name": "MSSQLStringTypePatternStringOpEndsWith",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLStringTypePatternStringOpIn",
+      "name": "MSSQLStringTypePatternStringOpIn",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLPatternsAllParams",
+      "name": "MSSQLPatternsAllParams",
+      "connection": "MSSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLAll",
+      "name": "MSSQLAll",
+      "connection": "MSSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLByInt",
+      "name": "MSSQLByInt",
+      "connection": "MSSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLByStringPatternInt",
+      "name": "MSSQLByStringPatternInt",
+      "connection": "MSSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLByDouble",
+      "name": "MSSQLByDouble",
+      "connection": "MSSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLByStringChoices",
+      "name": "MSSQLByStringChoices",
+      "connection": "MSSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLByStringPatternString",
+      "name": "MSSQLByStringPatternString",
+      "connection": "MSSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLByDatetime",
+      "name": "MSSQLByDatetime",
+      "connection": "MSSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLByStringPatternDatetime",
+      "name": "MSSQLByStringPatternDatetime",
+      "connection": "MSSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLOrders",
+      "name": "MSSQLOrders",
+      "connection": "MSSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MSSQLProducts",
+      "name": "MSSQLProducts",
+      "connection": "MSSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlDateTypes",
+      "name": "MySqlDateTypes",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlBinaryTypes",
+      "name": "MySqlBinaryTypes",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlBitType",
+      "name": "MySqlBitType",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlCharacterTypes",
+      "name": "MySqlCharacterTypes",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlFloatTypes",
+      "name": "MySqlFloatTypes",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlJsonType",
+      "name": "MySqlJsonType",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlIntegerTypes",
+      "name": "MySqlIntegerTypes",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlSpatialTypes",
+      "name": "MySqlSpatialTypes",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlPatternsAll",
+      "name": "MySqlPatternsAll",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlIntTypePatternNone",
+      "name": "MySqlIntTypePatternNone",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypeIntPatternOpMore",
+      "name": "MySqlStringTypeIntPatternOpMore",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypeIntPatternOpMoreEq",
+      "name": "MySqlStringTypeIntPatternOpMoreEq",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypeIntPatternOpLessEq",
+      "name": "MySqlStringTypeIntPatternOpLessEq",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypeIntPatternOpLess",
+      "name": "MySqlStringTypeIntPatternOpLess",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypeIntPatternOpIn",
+      "name": "MySqlStringTypeIntPatternOpIn",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypeIntPatternOpNotIn",
+      "name": "MySqlStringTypeIntPatternOpNotIn",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypeIntPatternOpMinMax",
+      "name": "MySqlStringTypeIntPatternOpMinMax",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypeIntPatternOpNotEq",
+      "name": "MySqlStringTypeIntPatternOpNotEq",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlDoubleTypePatternNone",
+      "name": "MySqlDoubleTypePatternNone",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypePatternDoubleOpMore",
+      "name": "MySqlStringTypePatternDoubleOpMore",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypePatternDoubleOpMoreEq",
+      "name": "MySqlStringTypePatternDoubleOpMoreEq",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypePatternDoubleOpLess",
+      "name": "MySqlStringTypePatternDoubleOpLess",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypePatternDoubleOpLessEq",
+      "name": "MySqlStringTypePatternDoubleOpLessEq",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypePatternStringOpContains",
+      "name": "MySqlStringTypePatternStringOpContains",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypePatternStringOpStartsWith",
+      "name": "MySqlStringTypePatternStringOpStartsWith",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypePatternStringOpEndsWith",
+      "name": "MySqlStringTypePatternStringOpEndsWith",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypePatternStringOpIn",
+      "name": "MySqlStringTypePatternStringOpIn",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlStringTypePatternStringOpRegex",
+      "name": "MySqlStringTypePatternStringOpRegex",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:MySqlPatternsAllParams",
+      "name": "MySqlPatternsAllParams",
+      "connection": "MySqlDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleXmlType",
+      "name": "OracleXmlType",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleCharacterTypes",
+      "name": "OracleCharacterTypes",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleDateTypes",
+      "name": "OracleDateTypes",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleJsonType",
+      "name": "OracleJsonType",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleUriType",
+      "name": "OracleUriType",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleVarrayType",
+      "name": "OracleVarrayType",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleNumericTypes",
+      "name": "OracleNumericTypes",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleLobTypes",
+      "name": "OracleLobTypes",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OraclePatternsAll",
+      "name": "OraclePatternsAll",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleIntTypePatternNone",
+      "name": "OracleIntTypePatternNone",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypeIntPatternOpMore",
+      "name": "OracleStringTypeIntPatternOpMore",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypeIntPatternOpMoreEq",
+      "name": "OracleStringTypeIntPatternOpMoreEq",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypeIntPatternOpLessEq",
+      "name": "OracleStringTypeIntPatternOpLessEq",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypeIntPatternOpLess",
+      "name": "OracleStringTypeIntPatternOpLess",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypeIntPatternOpIn",
+      "name": "OracleStringTypeIntPatternOpIn",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypeIntPatternOpNotIn",
+      "name": "OracleStringTypeIntPatternOpNotIn",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypeIntPatternOpMinMax",
+      "name": "OracleStringTypeIntPatternOpMinMax",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypeIntPatternOpNotEq",
+      "name": "OracleStringTypeIntPatternOpNotEq",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleDoubleTypePatternNone",
+      "name": "OracleDoubleTypePatternNone",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypePatternDoubleOpMore",
+      "name": "OracleStringTypePatternDoubleOpMore",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypePatternDoubleOpMoreEq",
+      "name": "OracleStringTypePatternDoubleOpMoreEq",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypePatternDoubleOpLess",
+      "name": "OracleStringTypePatternDoubleOpLess",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypePatternDoubleOpLessEq",
+      "name": "OracleStringTypePatternDoubleOpLessEq",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypePatternStringOpContains",
+      "name": "OracleStringTypePatternStringOpContains",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypePatternStringOpStartsWith",
+      "name": "OracleStringTypePatternStringOpStartsWith",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypePatternStringOpEndsWith",
+      "name": "OracleStringTypePatternStringOpEndsWith",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypePatternStringOpIn",
+      "name": "OracleStringTypePatternStringOpIn",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OracleStringTypePatternStringOpRegex",
+      "name": "OracleStringTypePatternStringOpRegex",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:OraclePatternsAllParams",
+      "name": "OraclePatternsAllParams",
+      "connection": "OracleDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PackageTest",
+      "name": "PackageTest",
+      "connection": "System:Datagrok",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresAll",
+      "name": "PostgresAll",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresByInt",
+      "name": "PostgresByInt",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresByStringPatternInt",
+      "name": "PostgresByStringPatternInt",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresByDouble",
+      "name": "PostgresByDouble",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresByStringChoices",
+      "name": "PostgresByStringChoices",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresByStringPatternString",
+      "name": "PostgresByStringPatternString",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresByBool",
+      "name": "PostgresByBool",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresByDatetime",
+      "name": "PostgresByDatetime",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresByStringPatternDatetime",
+      "name": "PostgresByStringPatternDatetime",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresOrders",
+      "name": "PostgresOrders",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresProducts",
+      "name": "PostgresProducts",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlTestCacheTableNormal",
+      "name": "PostgresqlTestCacheTableNormal",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlScalarCacheTest",
+      "name": "PostgresqlScalarCacheTest",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlCachedConnTest",
+      "name": "PostgresqlCachedConnTest",
+      "connection": "PostgreSQLDBTestsCached",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlCacheInvalidateQueryTest",
+      "name": "PostgresqlCacheInvalidateQueryTest",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlScalarCacheInvalidationTest",
+      "name": "PostgresqlScalarCacheInvalidationTest",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlGetNow",
+      "name": "PostgresqlGetNow",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlScalarCacheTestClient",
+      "name": "PostgresqlScalarCacheTestClient",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlTestCacheTableNormalClient",
+      "name": "PostgresqlTestCacheTableNormalClient",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:TestConnCache",
+      "name": "TestConnCache",
+      "connection": "PostgreSQLDBTestsCached",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlTableWideCachedClient",
+      "name": "PostgresqlTableWideCachedClient",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlTableWideCachedServer",
+      "name": "PostgresqlTableWideCachedServer",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlArrayType",
+      "name": "PostgresqlArrayType",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlBitString1",
+      "name": "PostgresqlBitString1",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlBitString2",
+      "name": "PostgresqlBitString2",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlComposite",
+      "name": "PostgresqlComposite",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlDates",
+      "name": "PostgresqlDates",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlJSONB",
+      "name": "PostgresqlJSONB",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlNumeric",
+      "name": "PostgresqlNumeric",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlDouble",
+      "name": "PostgresqlDouble",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlReal",
+      "name": "PostgresqlReal",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlBigInt",
+      "name": "PostgresqlBigInt",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlNumericPrecision",
+      "name": "PostgresqlNumericPrecision",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlNumericPrecisionScale",
+      "name": "PostgresqlNumericPrecisionScale",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlSmallSerial",
+      "name": "PostgresqlSmallSerial",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlSerial",
+      "name": "PostgresqlSerial",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlBigSerial",
+      "name": "PostgresqlBigSerial",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlUUID",
+      "name": "PostgresqlUUID",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlXML",
+      "name": "PostgresqlXML",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlPatternsAll",
+      "name": "PostgresqlPatternsAll",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlIntTypePatternNone",
+      "name": "PostgresqlIntTypePatternNone",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypeIntPatternOpMore",
+      "name": "PostgresqlStringTypeIntPatternOpMore",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypeIntPatternOpMoreEq",
+      "name": "PostgresqlStringTypeIntPatternOpMoreEq",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypeIntPatternOpLessEq",
+      "name": "PostgresqlStringTypeIntPatternOpLessEq",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypeIntPatternOpLess",
+      "name": "PostgresqlStringTypeIntPatternOpLess",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypeIntPatternOpIn",
+      "name": "PostgresqlStringTypeIntPatternOpIn",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypeIntPatternOpNotIn",
+      "name": "PostgresqlStringTypeIntPatternOpNotIn",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypeIntPatternOpMinMax",
+      "name": "PostgresqlStringTypeIntPatternOpMinMax",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypeIntPatternOpNotEq",
+      "name": "PostgresqlStringTypeIntPatternOpNotEq",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlDoubleTypePatternNone",
+      "name": "PostgresqlDoubleTypePatternNone",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypePatternDoubleOpMore",
+      "name": "PostgresqlStringTypePatternDoubleOpMore",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypePatternDoubleOpMoreEq",
+      "name": "PostgresqlStringTypePatternDoubleOpMoreEq",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypePatternDoubleOpLess",
+      "name": "PostgresqlStringTypePatternDoubleOpLess",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypePatternDoubleOpLessEq",
+      "name": "PostgresqlStringTypePatternDoubleOpLessEq",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypePatternStringOpContains",
+      "name": "PostgresqlStringTypePatternStringOpContains",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypePatternStringOpStartsWith",
+      "name": "PostgresqlStringTypePatternStringOpStartsWith",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypePatternStringOpEndsWith",
+      "name": "PostgresqlStringTypePatternStringOpEndsWith",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypePatternStringOpIn",
+      "name": "PostgresqlStringTypePatternStringOpIn",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlStringTypePatternStringOpRegex",
+      "name": "PostgresqlStringTypePatternStringOpRegex",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlPatternsAllParams",
+      "name": "PostgresqlPatternsAllParams",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlAll",
+      "name": "PostgresqlAll",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlByInt",
+      "name": "PostgresqlByInt",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlByStringPatternInt",
+      "name": "PostgresqlByStringPatternInt",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlByDouble",
+      "name": "PostgresqlByDouble",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlByStringChoices",
+      "name": "PostgresqlByStringChoices",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlByStringPatternString",
+      "name": "PostgresqlByStringPatternString",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlByBool",
+      "name": "PostgresqlByBool",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlByDatetime",
+      "name": "PostgresqlByDatetime",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlByStringPatternDatetime",
+      "name": "PostgresqlByStringPatternDatetime",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlOrders",
+      "name": "PostgresqlOrders",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": [
+        "unit-test"
+      ]
+    },
+    {
+      "id": "query:DBTests:PostgresqlProducts",
+      "name": "PostgresqlProducts",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresPerf",
+      "name": "PostgresPerf",
+      "connection": "PostgresTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgreScalarOutput",
+      "name": "PostgreScalarOutput",
+      "connection": "PostgreSQLTest",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlTableNormal",
+      "name": "PostgresqlTableNormal",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlTableWide",
+      "name": "PostgresqlTableWide",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:PostgresqlTableLong",
+      "name": "PostgresqlTableLong",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:TestForColumnsOnEmptyResult",
+      "name": "TestForColumnsOnEmptyResult",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SimpleSelect",
+      "name": "SimpleSelect",
+      "connection": "PostgreSQLDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeBinaryType",
+      "name": "SnowflakeBinaryType",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeDateTypes",
+      "name": "SnowflakeDateTypes",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeGeoType",
+      "name": "SnowflakeGeoType",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeNumericTypes",
+      "name": "SnowflakeNumericTypes",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeSemiStructuredTypes",
+      "name": "SnowflakeSemiStructuredTypes",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakePatternsAll",
+      "name": "SnowflakePatternsAll",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeIntTypePatternNone",
+      "name": "SnowflakeIntTypePatternNone",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypeIntPatternOpMore",
+      "name": "SnowflakeStringTypeIntPatternOpMore",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypeIntPatternOpMoreEq",
+      "name": "SnowflakeStringTypeIntPatternOpMoreEq",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypeIntPatternOpLessEq",
+      "name": "SnowflakeStringTypeIntPatternOpLessEq",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypeIntPatternOpLess",
+      "name": "SnowflakeStringTypeIntPatternOpLess",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypeIntPatternOpIn",
+      "name": "SnowflakeStringTypeIntPatternOpIn",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypeIntPatternOpNotIn",
+      "name": "SnowflakeStringTypeIntPatternOpNotIn",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypeIntPatternOpMinMax",
+      "name": "SnowflakeStringTypeIntPatternOpMinMax",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypeIntPatternOpNotEq",
+      "name": "SnowflakeStringTypeIntPatternOpNotEq",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeDoubleTypePatternNone",
+      "name": "SnowflakeDoubleTypePatternNone",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypePatternDoubleOpMore",
+      "name": "SnowflakeStringTypePatternDoubleOpMore",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypePatternDoubleOpMoreEq",
+      "name": "SnowflakeStringTypePatternDoubleOpMoreEq",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypePatternDoubleOpLess",
+      "name": "SnowflakeStringTypePatternDoubleOpLess",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypePatternDoubleOpLessEq",
+      "name": "SnowflakeStringTypePatternDoubleOpLessEq",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypePatternStringOpContains",
+      "name": "SnowflakeStringTypePatternStringOpContains",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypePatternStringOpStartsWith",
+      "name": "SnowflakeStringTypePatternStringOpStartsWith",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypePatternStringOpEndsWith",
+      "name": "SnowflakeStringTypePatternStringOpEndsWith",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypePatternStringOpIn",
+      "name": "SnowflakeStringTypePatternStringOpIn",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakeStringTypePatternStringOpRegex",
+      "name": "SnowflakeStringTypePatternStringOpRegex",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:DBTests:SnowflakePatternsAllParams",
+      "name": "SnowflakePatternsAllParams",
+      "connection": "SnowflakeDBTests",
+      "description": null,
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/DBTests/credits.md",
+      "title": "DBTests — Third-Party Libraries",
+      "url": "/packages/DBTests/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/DBTests/readme.md",
+      "title": "DB Tests",
+      "url": "/packages/DBTests/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_internal/tests/build-query-test",
+      "title": "Tests: Join DB Tables",
+      "url": "/help/_internal/tests/build-query-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/collections-test",
+      "title": "Tests: Collections",
+      "url": "/help/_internal/tests/collections-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/color-coding-test",
+      "title": "Tests: Color Coding",
+      "url": "/help/_internal/tests/color-coding-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/datetime-extract-test",
+      "title": "Tests: Datetime Extract",
+      "url": "/help/_internal/tests/datetime-extract-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/dialogs-input-fields-test",
+      "title": "Tests: Dialogs Input Fields",
+      "url": "/help/_internal/tests/dialogs-input-fields-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/dialogs-test",
+      "title": "Tests: Dialogs",
+      "url": "/help/_internal/tests/dialogs-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/elastic-search-test",
+      "title": "Tests: Elastic search",
+      "url": "/help/_internal/tests/elastic-search-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/export-test",
+      "title": "Tests: Export",
+      "url": "/help/_internal/tests/export-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/file-connector-test",
+      "title": "Tests: File connector",
+      "url": "/help/_internal/tests/file-connector-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/help-test",
+      "title": "Tests: Help",
+      "url": "/help/_internal/tests/help-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/hide-menus-test",
+      "title": "Tests: Hide Menus",
+      "url": "/help/_internal/tests/hide-menus-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/inviting-a-friend-test",
+      "title": "Tests: Inviting a friend",
+      "url": "/help/_internal/tests/inviting-a-friend-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/normalize-test",
+      "title": "Tests: Normalize",
+      "url": "/help/_internal/tests/normalize-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/projects-browser-test",
+      "title": "Tests: Projects Browser",
+      "url": "/help/_internal/tests/projects-browser-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/recently-open-test",
+      "title": "Tests: Recently Open Views",
+      "url": "/help/_internal/tests/recently-open-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/registration-test",
+      "title": "Tests: Registration",
+      "url": "/help/_internal/tests/registration-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/sorting-test",
+      "title": "Tests: Sorting",
+      "url": "/help/_internal/tests/sorting-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/substructure-filter",
+      "title": "Tests: Substructure Filter",
+      "url": "/help/_internal/tests/substructure-filter",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/tables-schema-test",
+      "title": "Tests: Tables Schema",
+      "url": "/help/_internal/tests/tables-schema-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/tags-favorites-test",
+      "title": "Tests: Tags",
+      "url": "/help/_internal/tests/tags-favorites-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/transformation-editor-test",
+      "title": "Tests: Transformation Editor",
+      "url": "/help/_internal/tests/transformation-editor-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/web-connector-test",
+      "title": "Tests: Web connector",
+      "url": "/help/_internal/tests/web-connector-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/collaborate/project-gallery-test",
+      "title": "Tests: Project Browser",
+      "url": "/help/collaborate/project-gallery-test",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:DBTests:1.3.0:0",
+      "version": "1.3.0",
+      "released_at": "2025-07-28",
+      "ticket": null,
+      "text": "Datagrok api dependency >= 1.26.0"
+    },
+    {
+      "id": "clog:DBTests:1.1.3:0",
+      "version": "1.1.3",
+      "released_at": "2025-02-18",
+      "ticket": null,
+      "text": "Test fixes"
+    },
+    {
+      "id": "clog:DBTests:1.1.1:0",
+      "version": "1.1.1",
+      "released_at": "2024-10-21",
+      "ticket": null,
+      "text": "Test fixes"
+    },
+    {
+      "id": "clog:DBTests:1.1.1:1",
+      "version": "1.1.1",
+      "released_at": "2024-10-21",
+      "ticket": null,
+      "text": "Eslint version update"
+    },
+    {
+      "id": "clog:DBTests:1.1.1:2",
+      "version": "1.1.1",
+      "released_at": "2024-10-21",
+      "ticket": null,
+      "text": "Visible only for developers"
+    },
+    {
+      "id": "clog:DBTests:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2024-09-09",
+      "ticket": null,
+      "text": "Datagrok api dependency > 1.21.1"
+    },
+    {
+      "id": "clog:DBTests:1.0.14:0",
+      "version": "1.0.14",
+      "released_at": "2024-08-01",
+      "ticket": null,
+      "text": "Fixes flapping tests"
+    },
+    {
+      "id": "clog:DBTests:1.0.13:0",
+      "version": "1.0.13",
+      "released_at": "2024-05-31",
+      "ticket": null,
+      "text": "Fixes connections tests initialization"
+    },
+    {
+      "id": "clog:DBTests:1.0.12:0",
+      "version": "1.0.12",
+      "released_at": "2024-05-22",
+      "ticket": null,
+      "text": "Fixes in server cache tests"
+    },
+    {
+      "id": "clog:DBTests:1.0.8:0",
+      "version": "1.0.8",
+      "released_at": null,
+      "ticket": null,
+      "text": "Initial version of DbTests package"
+    }
+  ],
+  "stats": {
+    "functions": 2,
+    "scripts": 0,
+    "queries": 260,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 10
+  }
+}

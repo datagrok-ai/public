@@ -1,0 +1,193 @@
+{
+  "package_id": "pkg:BiostructureViewer",
+  "features": [
+    {
+      "id": "feature:BiostructureViewer:molstar-viewer",
+      "name": "Mol* (Molstar) 3D Structure Viewer",
+      "description": "Standalone 3D viewer backed by the Mol*/RCSB Molstar engine for large biological molecules with support for cartoon, ball-and-stick, and other molecular representations.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:BiostructureViewer:Biostructure",                   "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:viewBiostructure",               "weight": 0.9,  "role": "core"},
+        {"id": "func:BiostructureViewer:viewPdbById",                    "weight": 0.85, "role": "core"},
+        {"id": "func:BiostructureViewer:viewPdbByData",                  "weight": 0.85, "role": "core"},
+        {"id": "func:BiostructureViewer:Show Biostructure Viewer menu item", "weight": 0.8, "role": "core"},
+        {"id": "func:BiostructureViewer:biostructureViewerApp",          "weight": 0.6,  "role": "related"},
+        {"id": "doc:/help/visualize/viewers/biostructure",               "weight": 0.95, "role": "doc"},
+        {"id": "doc:/packages/BiostructureViewer/readme.md",             "weight": 0.7,  "role": "doc"}
+      ],
+      "evidence_summary": "Viewer registration (role: viewer,panel), programmatic open functions (viewBiostructure/viewPdbById/viewPdbByData), context-menu item, and the dedicated help page all share the Biostructure/Molstar name root."
+    },
+    {
+      "id": "feature:BiostructureViewer:ngl-viewer",
+      "name": "NGL 3D Structure Viewer",
+      "description": "Standalone 3D viewer backed by the NGL library for large biological molecules, supporting formats such as mmtf, cns, gro, prmtop, and others.",
+      "category": "viz",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:BiostructureViewer:NGL",                    "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:getNglGlService",        "weight": 0.85, "role": "core"},
+        {"id": "func:BiostructureViewer:Show NGL Viewer menu item", "weight": 0.8, "role": "core"},
+        {"id": "func:BiostructureViewer:nglViewerApp",           "weight": 0.6,  "role": "related"},
+        {"id": "doc:/help/visualize/viewers/ngl",                "weight": 0.95, "role": "doc"}
+      ],
+      "evidence_summary": "Viewer function (role: viewer,panel), NGL GL service accessor, context-menu item, and dedicated help page all share the NGL name root."
+    },
+    {
+      "id": "feature:BiostructureViewer:biotrack-viewer",
+      "name": "Biotrack Sequence Track Viewer",
+      "description": "Viewer displaying polymer annotation tracks (secondary structure, sequence features, etc.) for biological sequences using the Saguaro engine.",
+      "category": "viz",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:BiostructureViewer:Biotrack",                        "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:biotrackViewerApp",               "weight": 0.65, "role": "related"},
+        {"id": "func:BiostructureViewer:biostructureAndTrackViewerApp",   "weight": 0.55, "role": "related"}
+      ],
+      "evidence_summary": "Viewer registration (role: viewer,panel) and test apps share the Biotrack/saguaro name root; the combined app shows Molstar + Biotrack used together."
+    },
+    {
+      "id": "feature:BiostructureViewer:in-grid-rendering",
+      "name": "In-Grid Structure Cell Renderer",
+      "description": "Renders 3D protein and small-molecule structure thumbnails directly inside Datagrok grid cells for PDB-ID and chemical structure columns, using both Molstar and NGL backends.",
+      "category": "viz",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:BiostructureViewer:pdbCellRenderer",           "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:chemCellRenderer",          "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:nglForGridTestApp",         "weight": 0.6,  "role": "related"},
+        {"id": "func:BiostructureViewer:ligandsWithNglApp",         "weight": 0.6,  "role": "related"},
+        {"id": "func:BiostructureViewer:ligandsWithBiostructureApp","weight": 0.6,  "role": "related"},
+        {"id": "func:BiostructureViewer:inGridDemo",                "weight": 0.65, "role": "related"},
+        {"id": "func:BiostructureViewer:demoBioProteins",           "weight": 0.65, "role": "related"}
+      ],
+      "evidence_summary": "Both cell renderers (role: cellRenderer) and all in-grid demo/test apps target the same pattern: 3D structure thumbnails rendered inside grid cells."
+    },
+    {
+      "id": "feature:BiostructureViewer:structure-file-import",
+      "name": "Structure File Import",
+      "description": "File-handler registrations that allow Datagrok to open a wide variety of 3D structure formats (PDB, mmCIF, GRO, XYZ, mmtf, ply, obj, ccp4, and more) directly from the file browser.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:BiostructureViewer:importPdb",       "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:importXYZ",       "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:importWithNgl",   "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:readAsText",      "weight": 0.7,  "role": "related"},
+        {"id": "func:BiostructureViewer:readAsTextDapi",  "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "Import functions all carry role: fileHandler with ext metadata covering the same domain of structure file formats; readAsText helpers support file-content loading."
+    },
+    {
+      "id": "feature:BiostructureViewer:structure-file-preview",
+      "name": "Structure File Preview",
+      "description": "File-browser preview panels that render structure, surface, density, and topology biostructure files inline when a user inspects a file in Datagrok.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:BiostructureViewer:previewNglStructure",           "weight": 1.0, "role": "core"},
+        {"id": "func:BiostructureViewer:previewNglSurface",             "weight": 1.0, "role": "core"},
+        {"id": "func:BiostructureViewer:previewNglDensity",             "weight": 1.0, "role": "core"},
+        {"id": "func:BiostructureViewer:previewBiostructureStructure",  "weight": 1.0, "role": "core"},
+        {"id": "func:BiostructureViewer:previewBiostructureTopology",   "weight": 1.0, "role": "core"},
+        {"id": "func:BiostructureViewer:previewBiostructureDensity",    "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "All six functions carry role: fileViewer and share the preview+Ngl/Biostructure naming pattern, covering different sub-formats of the same file-preview use case."
+    },
+    {
+      "id": "feature:BiostructureViewer:rcsb-structure-fetch",
+      "name": "RCSB PDB Structure Fetch",
+      "description": "Fetches protein structures from the RCSB Protein Data Bank by PDB ID in PDB, mmCIF, or BinaryCIF format, and can bulk-retrieve amino-acid sequences for a whole table column.",
+      "category": "data-import",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:BiostructureViewer:RCSB PDB",            "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:RCSB mmCIF",          "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:RCSB bCIF",           "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:Fetch PDB Sequences", "weight": 0.85, "role": "core"},
+        {"id": "func:BiostructureViewer:getPdbHelper",        "weight": 0.75, "role": "related"}
+      ],
+      "evidence_summary": "Three RCSB-prefixed data-provider functions share the same retrieval pattern (PDB ID → structure data); Fetch PDB Sequences extends this to table columns; getPdbHelper supports the same PDB-fetch workflow."
+    },
+    {
+      "id": "feature:BiostructureViewer:pdb-context-panel",
+      "name": "PDB Context Panel & 3D Structure Widget",
+      "description": "Context-panel widgets that automatically display a 3D structure preview and PDB metadata when the user selects a row with a PDB-ID or biostructure semantic type, and a panel for opening the residues table.",
+      "category": "viz",
+      "confidence": 0.90,
+      "members": [
+        {"id": "func:BiostructureViewer:PDB id viewer",                      "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:PDB Information",                    "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:3D Structure",                       "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:mol3dAtomPickerLinkWidget",          "weight": 0.8,  "role": "core"},
+        {"id": "func:BiostructureViewer:openPdbResidues",                    "weight": 0.75, "role": "related"},
+        {"id": "func:BiostructureViewer:Open PDB residues table menu item",  "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "Panel/widget functions (role: panel or widgets,panel) surface 3D structure information in the context panel; residue-table functions expose the same structural data in tabular form."
+    },
+    {
+      "id": "feature:BiostructureViewer:docking-conformations",
+      "name": "Docking Conformations Viewer",
+      "description": "Imports PDBQT docking-result files containing multiple ligand poses and displays them alongside the target protein structure, enabling visual inspection of docking results.",
+      "category": "viz",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:BiostructureViewer:importPdbqt",                 "weight": 0.9,  "role": "core"},
+        {"id": "func:BiostructureViewer:demoBioDockingConformations", "weight": 0.9,  "role": "related"},
+        {"id": "func:BiostructureViewer:dockingDemo",                 "weight": 0.75, "role": "related"}
+      ],
+      "evidence_summary": "importPdbqt is the file entry point for docking data (description: 'docking result ligand poses'); demoBioDockingConformations and dockingDemo both explicitly describe displaying ligand poses along the structure."
+    },
+    {
+      "id": "feature:BiostructureViewer:biostructure-data-api",
+      "name": "BiostructureData Serialization API",
+      "description": "Programmatic API for packing and unpacking BiostructureData values as JSON, with context-menu actions to copy or download the raw structure value from any viewer.",
+      "category": "infra",
+      "confidence": 0.82,
+      "members": [
+        {"id": "func:BiostructureViewer:biostructureDataToJson",        "weight": 1.0,  "role": "core"},
+        {"id": "func:BiostructureViewer:Copy Biostructure raw value",   "weight": 0.75, "role": "core"},
+        {"id": "func:BiostructureViewer:Download Biostructure raw value","weight": 0.75, "role": "core"},
+        {"id": "func:BiostructureViewer:biostructureDataProviderApp",   "weight": 0.6,  "role": "related"}
+      ],
+      "evidence_summary": "biostructureDataToJson packs BiostructureData to JSON; Copy/Download raw value actions expose the same underlying data for external use; all share the BiostructureData-value concept."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:BiostructureViewer:molstar-viewer",          "to": "feature:BiostructureViewer:ngl-viewer",              "kind": "sibling"},
+    {"from": "feature:BiostructureViewer:biotrack-viewer",         "to": "feature:BiostructureViewer:molstar-viewer",          "kind": "related"},
+    {"from": "feature:BiostructureViewer:in-grid-rendering",       "to": "feature:BiostructureViewer:molstar-viewer",          "kind": "related"},
+    {"from": "feature:BiostructureViewer:in-grid-rendering",       "to": "feature:BiostructureViewer:ngl-viewer",              "kind": "related"},
+    {"from": "feature:BiostructureViewer:docking-conformations",   "to": "feature:BiostructureViewer:molstar-viewer",          "kind": "subfeature"},
+    {"from": "feature:BiostructureViewer:rcsb-structure-fetch",    "to": "feature:BiostructureViewer:molstar-viewer",          "kind": "related"},
+    {"from": "feature:BiostructureViewer:pdb-context-panel",       "to": "feature:BiostructureViewer:rcsb-structure-fetch",    "kind": "related"},
+    {"from": "feature:BiostructureViewer:structure-file-import",   "to": "feature:BiostructureViewer:structure-file-preview",  "kind": "sibling"},
+    {"from": "feature:BiostructureViewer:biostructure-data-api",   "to": "feature:BiostructureViewer:molstar-viewer",          "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:BiostructureViewer:init",
+    "func:BiostructureViewer:autostart",
+    "func:BiostructureViewer:<anonymous>",
+    "func:BiostructureViewer:demoFix1",
+    "func:BiostructureViewer:demoFix2",
+    "func:BiostructureViewer:demoFix3",
+    "doc:/packages/BiostructureViewer/credits.md",
+    "doc:/help/datagrok/solutions/domains/bio/bio",
+    "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+    "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+    "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+    "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+    "doc:/help/datagrok/solutions/domains/bio/polytool",
+    "doc:/packages/Bio/claude.md",
+    "doc:/packages/Bio/credits.md",
+    "doc:/packages/Bio/readme.md",
+    "doc:/packages/Peptides/claude.md",
+    "doc:/packages/Peptides/credits.md",
+    "doc:/packages/Peptides/readme.md",
+    "doc:/help/_access/_01-open-files",
+    "doc:/help/_internal/tests/recently-open-test",
+    "doc:/help/_internal/tests/release-cheklist-cases/project-open",
+    "doc:/help/visualize/viewers/most-potent-residues"
+  ]
+}

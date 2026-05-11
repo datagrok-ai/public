@@ -1,0 +1,644 @@
+{
+  "package": {
+    "id": "pkg:PowerGrid",
+    "name": "PowerGrid",
+    "friendly_name": "Power Grid",
+    "category": "General",
+    "description": "Power Grid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images)."
+  },
+  "files": {
+    "src": [
+      "packages/PowerGrid/src/canvas-extensions.js",
+      "packages/PowerGrid/src/canvas-extensions.js.map",
+      "packages/PowerGrid/src/canvas-extensions.ts",
+      "packages/PowerGrid/src/cell-types/bar-cell-renderer.js",
+      "packages/PowerGrid/src/cell-types/bar-cell-renderer.js.map",
+      "packages/PowerGrid/src/cell-types/bar-cell-renderer.ts",
+      "packages/PowerGrid/src/cell-types/binary-image-cell-renderer.js",
+      "packages/PowerGrid/src/cell-types/binary-image-cell-renderer.js.map",
+      "packages/PowerGrid/src/cell-types/binary-image-cell-renderer.ts",
+      "packages/PowerGrid/src/cell-types/color-cell-renderer.md",
+      "packages/PowerGrid/src/cell-types/color-cell-renderer.ts",
+      "packages/PowerGrid/src/cell-types/confidence-interval-cell-renderer.md",
+      "packages/PowerGrid/src/cell-types/confidence-interval-cell-renderer.ts",
+      "packages/PowerGrid/src/cell-types/hyperlink-cell-renderer.js",
+      "packages/PowerGrid/src/cell-types/hyperlink-cell-renderer.js.map",
+      "packages/PowerGrid/src/cell-types/hyperlink-cell-renderer.ts",
+      "packages/PowerGrid/src/cell-types/image-cell-renderer.js",
+      "packages/PowerGrid/src/cell-types/image-cell-renderer.js.map",
+      "packages/PowerGrid/src/cell-types/image-cell-renderer.ts",
+      "packages/PowerGrid/src/cell-types/multi-choice-cell-renderer.js",
+      "packages/PowerGrid/src/cell-types/multi-choice-cell-renderer.js.map",
+      "packages/PowerGrid/src/cell-types/multi-choice-cell-renderer.ts",
+      "packages/PowerGrid/src/cell-types/stars-cell-renderer.ts",
+      "packages/PowerGrid/src/cell-types/svg-cell-renderer.ts",
+      "packages/PowerGrid/src/cell-types/tags-cell-renderer.js",
+      "packages/PowerGrid/src/cell-types/tags-cell-renderer.js.map",
+      "packages/PowerGrid/src/cell-types/tags-cell-renderer.ts",
+      "packages/PowerGrid/src/cell-types/test-cell-renderer.js",
+      "packages/PowerGrid/src/cell-types/test-cell-renderer.js.map",
+      "packages/PowerGrid/src/cell-types/test-cell-renderer.ts",
+      "packages/PowerGrid/src/forms/forms.js",
+      "packages/PowerGrid/src/forms/forms.js.map",
+      "packages/PowerGrid/src/forms/forms.ts",
+      "packages/PowerGrid/src/forms/scene.js",
+      "packages/PowerGrid/src/forms/scene.js.map",
+      "packages/PowerGrid/src/forms/scene.ts",
+      "packages/PowerGrid/src/package-test.js",
+      "packages/PowerGrid/src/package-test.js.map",
+      "packages/PowerGrid/src/package.g.js",
+      "packages/PowerGrid/src/package.g.js.map",
+      "packages/PowerGrid/src/package.js",
+      "packages/PowerGrid/src/package.js.map",
+      "packages/PowerGrid/src/package.ts",
+      "packages/PowerGrid/src/png-renderer.ts",
+      "packages/PowerGrid/src/sparklines/bar-chart.js",
+      "packages/PowerGrid/src/sparklines/bar-chart.js.map",
+      "packages/PowerGrid/src/sparklines/bar-chart.ts",
+      "packages/PowerGrid/src/sparklines/piechart.js",
+      "packages/PowerGrid/src/sparklines/piechart.js.map",
+      "packages/PowerGrid/src/sparklines/piechart.ts",
+      "packages/PowerGrid/src/sparklines/radar-chart.js",
+      "packages/PowerGrid/src/sparklines/radar-chart.js.map",
+      "packages/PowerGrid/src/sparklines/radar-chart.ts",
+      "packages/PowerGrid/src/sparklines/scatter-plot.js",
+      "packages/PowerGrid/src/sparklines/scatter-plot.js.map",
+      "packages/PowerGrid/src/sparklines/scatter-plot.ts",
+      "packages/PowerGrid/src/sparklines/shared.js",
+      "packages/PowerGrid/src/sparklines/shared.js.map",
+      "packages/PowerGrid/src/sparklines/shared.ts",
+      "packages/PowerGrid/src/sparklines/sparklines-lines.js",
+      "packages/PowerGrid/src/sparklines/sparklines-lines.js.map",
+      "packages/PowerGrid/src/sparklines/sparklines-lines.ts",
+      "packages/PowerGrid/src/utils/constants.js",
+      "packages/PowerGrid/src/utils/constants.js.map",
+      "packages/PowerGrid/src/utils/constants.ts",
+      "packages/PowerGrid/src/utils/vlaaivis-manager.js",
+      "packages/PowerGrid/src/utils/vlaaivis-manager.js.map",
+      "packages/PowerGrid/src/utils/vlaaivis-manager.ts",
+      "packages/PowerGrid/src/webgpu/scatterplot.js",
+      "packages/PowerGrid/src/webgpu/scatterplot.js.map",
+      "packages/PowerGrid/src/webgpu/scatterplot.ts"
+    ],
+    "tests": [
+      "packages/PowerGrid/src/package-test.ts",
+      "packages/PowerGrid/src/tests/pinned-column-tests.js",
+      "packages/PowerGrid/src/tests/pinned-column-tests.js.map",
+      "packages/PowerGrid/src/tests/webgpu-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/PowerGrid/CHANGELOG.md",
+      "packages/PowerGrid/CLAUDE.md",
+      "packages/PowerGrid/CREDITS.md",
+      "packages/PowerGrid/README.md",
+      "packages/PowerGrid/docs/CODE_ANALYSIS.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:PowerGrid:sparklines",
+      "name": "Sparklines and Mini-Charts in Grid Cells",
+      "description": "Renders compact multi-column charts (sparklines, bar, pie, radar, scatter) directly inside grid cells, letting users compare row-level distributions at a glance. The summarizeColumns action creates a summary column…",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerGrid:Sparklines",
+          "kind": "RegisteredFunction",
+          "name": "Sparklines",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:Bar Chart",
+          "kind": "RegisteredFunction",
+          "name": "Bar Chart",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:Pie Chart",
+          "kind": "RegisteredFunction",
+          "name": "Pie Chart",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:Radar",
+          "kind": "RegisteredFunction",
+          "name": "Radar",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:Scatter Plot",
+          "kind": "RegisteredFunction",
+          "name": "Scatter Plot",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:summarizeColumns",
+          "kind": "RegisteredFunction",
+          "name": "summarizeColumns",
+          "friendly_name": null,
+          "role": null,
+          "description": "Adds a sparkline column for the selected columns",
+          "tags": []
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:4",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:5",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:13",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.5:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/packages/PowerGrid/readme.md",
+          "kind": "DocPage",
+          "title": "Power Grid",
+          "url": "/packages/PowerGrid/readme.md"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/grid",
+          "kind": "DocPage",
+          "title": "Grid",
+          "url": "/help/visualize/viewers/grid"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerGrid/src/package.ts",
+          "packages/PowerGrid/src/sparklines/bar-chart.ts",
+          "packages/PowerGrid/src/sparklines/piechart.ts",
+          "packages/PowerGrid/src/sparklines/radar-chart.ts",
+          "packages/PowerGrid/src/sparklines/shared.ts",
+          "packages/PowerGrid/src/sparklines/sparklines-lines.ts",
+          "packages/PowerGrid/src/utils/vlaaivis-manager.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerGrid:image-renderers",
+      "name": "Image Cell Renderers",
+      "description": "Renders image content directly inside grid cells from binary data, URL strings, SVG markup, or raw PNG bytes; also provides a context-panel widget that previews image column content for the current row.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerGrid:binaryImageCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "binaryImageCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:imageUrlCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "imageUrlCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:svgCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "svgCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:rawPng",
+          "kind": "RegisteredFunction",
+          "name": "rawPng",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:Content",
+          "kind": "RegisteredFunction",
+          "name": "Content",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": "Image content",
+          "tags": [
+            "widgets",
+            "panel"
+          ]
+        },
+        {
+          "id": "clog:PowerGrid:1.7.15:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/develop/help-pages/_stash/content-types",
+          "kind": "DocPage",
+          "title": "Content types",
+          "url": "/help/develop/help-pages/_stash/content-types"
+        },
+        {
+          "id": "doc:/help/visualize/_supported-cell-renderers",
+          "kind": "DocPage",
+          "title": "Supported cell renderers",
+          "url": "/help/visualize/_supported-cell-renderers"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerGrid/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerGrid:forms-viewer",
+      "name": "Forms Viewer and Smart Form",
+      "description": "Displays each grid row as a rich configurable form (the standalone Forms viewer), and allows embedding a smart-form cell renderer inline in the grid itself; supports sorting, substructure highlighting, and styling…",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerGrid:Forms",
+          "kind": "RegisteredFunction",
+          "name": "Forms",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Forms viewer",
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:Smart Form",
+          "kind": "RegisteredFunction",
+          "name": "Smart Form",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:addFormColumn",
+          "kind": "RegisteredFunction",
+          "name": "addFormColumn",
+          "friendly_name": null,
+          "role": null,
+          "description": "Adds a 'form' column for the selected columns",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/forms",
+          "kind": "DocPage",
+          "title": "Forms",
+          "url": "/help/visualize/viewers/forms"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/form",
+          "kind": "DocPage",
+          "title": "Form",
+          "url": "/help/visualize/viewers/form"
+        },
+        {
+          "id": "doc:/help/visualize/add-custom-form",
+          "kind": "DocPage",
+          "title": "Add custom form",
+          "url": "/help/visualize/add-custom-form"
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:7",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:12",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:14",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.20:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.18:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.18:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.18:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.10:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.9:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.5:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.2:1",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerGrid/src/forms/forms.ts",
+          "packages/PowerGrid/src/forms/scene.ts",
+          "packages/PowerGrid/src/package.ts",
+          "packages/PowerGrid/src/sparklines/shared.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerGrid:data-display-cell-renderers",
+      "name": "Data Display Cell Renderers",
+      "description": "A collection of specialized cell renderers that visualize non-chart data types in the grid: color swatches, star ratings, multi-choice badges, tag chips, confidence intervals, inline progress bars, and hyperlinks.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerGrid:Color",
+          "kind": "RegisteredFunction",
+          "name": "Color",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PowerGrid:Stars",
+          "kind": "RegisteredFunction",
+          "name": "Stars",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:Multi Choice",
+          "kind": "RegisteredFunction",
+          "name": "Multi Choice",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:Tags",
+          "kind": "RegisteredFunction",
+          "name": "Tags",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:Confidence Interval",
+          "kind": "RegisteredFunction",
+          "name": "Confidence Interval",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:barCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "barCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "func:PowerGrid:hyperlinkCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "hyperlinkCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:2",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/govern/catalog/tags",
+          "kind": "DocPage",
+          "title": "Tags",
+          "url": "/help/govern/catalog/tags"
+        },
+        {
+          "id": "doc:/help/_internal/tests/color-coding-test",
+          "kind": "DocPage",
+          "title": "Tests: Color Coding",
+          "url": "/help/_internal/tests/color-coding-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/tags-favorites-test",
+          "kind": "DocPage",
+          "title": "Tests: Tags",
+          "url": "/help/_internal/tests/tags-favorites-test"
+        },
+        {
+          "id": "doc:/help/develop/how-to/grid/customize-grid",
+          "kind": "DocPage",
+          "title": "Customize a grid",
+          "url": "/help/develop/how-to/grid/customize-grid"
+        },
+        {
+          "id": "doc:/help/visualize/_supported-cell-renderers",
+          "kind": "DocPage",
+          "title": "Supported cell renderers",
+          "url": "/help/visualize/_supported-cell-renderers"
+        },
+        {
+          "id": "doc:/help/visualize/viewers/grid",
+          "kind": "DocPage",
+          "title": "Grid",
+          "url": "/help/visualize/viewers/grid"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerGrid/src/cell-types/confidence-interval-cell-renderer.ts",
+          "packages/PowerGrid/src/cell-types/tags-cell-renderer.ts",
+          "packages/PowerGrid/src/package.ts",
+          "packages/PowerGrid/src/sparklines/shared.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerGrid:pinned-columns",
+      "name": "Pinned Columns",
+      "description": "Allowed freezing specific columns to the left side of the grid so they remain visible during horizontal scrolling; removed in v1.8.0 because column freezing became a native platform capability.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:PowerGrid:addPinnedColumn",
+          "kind": "RegisteredFunction",
+          "name": "addPinnedColumn",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:8",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.4:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:PowerGrid:1.7.3:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:PowerGrid:webgpu-rendering",
+      "name": "WebGPU-Accelerated Grid Rendering",
+      "description": "Provides GPU-accelerated rendering of grid cell content via the WebGPU API, with availability detection and render-validity checks enabling graceful fallback on unsupported hardware.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:PowerGrid:_scWebGPURender",
+          "kind": "RegisteredFunction",
+          "name": "_scWebGPURender",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PowerGrid:_scWebGPUPointHitTest",
+          "kind": "RegisteredFunction",
+          "name": "_scWebGPUPointHitTest",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PowerGrid:isWebGPUAvailable",
+          "kind": "RegisteredFunction",
+          "name": "isWebGPUAvailable",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:PowerGrid:isWebGPURenderValid",
+          "kind": "RegisteredFunction",
+          "name": "isWebGPURenderValid",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:PowerGrid:1.8.0:11",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/PowerGrid/src/package.ts",
+          "packages/PowerGrid/src/webgpu/scatterplot.ts"
+        ],
+        "tests": [
+          "packages/PowerGrid/src/tests/webgpu-tests.ts"
+        ]
+      }
+    }
+  ]
+}

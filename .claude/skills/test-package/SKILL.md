@@ -14,7 +14,7 @@ Run `grok test` for one or more Datagrok packages and provide a summary of resul
 ## Instructions
 
 1. Parse the user's input to extract:
-   - One or more package names (required). These are directory names under `public/packages/`.
+   - One or more package names (required). These are directory names under `packages/`.
    - `--host` value (default: `localhost`)
    - Use `--csv` flag to get csv output 
    - Check if npm install is needed
@@ -23,7 +23,7 @@ Run `grok test` for one or more Datagrok packages and provide a summary of resul
 
 2. For each package, run tests from the package directory using the Bash tool:
    ```
-   cd /c/Repos/Datagrok/public/packages/<PackageName> && node grok test --host <host> --no-retry [extra flags]
+   cd packages/<PackageName> && node grok test --host <host> --no-retry [extra flags]
    ```
    Use a timeout of 600000ms (10 minutes). Print output to console.
 

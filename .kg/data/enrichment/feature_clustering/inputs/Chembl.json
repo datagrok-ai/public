@@ -1,0 +1,872 @@
+{
+  "package": {
+    "id": "pkg:Chembl",
+    "name": "Chembl",
+    "friendly_name": "ChEMBL",
+    "version": "1.4.12",
+    "category": "Cheminformatics",
+    "description": "ChEMBL integration, commonly used queries and browser",
+    "extras": {
+      "npm_name": "@datagrok/chembl",
+      "fullName": "Chembl",
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Chembl:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chembl:chemblSearchWidgetLocalDb",
+      "name": "chemblSearchWidgetLocalDb",
+      "friendly_name": null,
+      "role": "widgets",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "bool"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chembl:Databases | ChEMBL | Substructure Search (Internal)",
+      "name": "Databases | ChEMBL | Substructure Search (Internal)",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chembl:Databases | ChEMBL | Similarity Search (Internal)",
+      "name": "Databases | ChEMBL | Similarity Search (Internal)",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chembl:Chembl targets by organism",
+      "name": "Chembl targets by organism",
+      "friendly_name": null,
+      "role": "hitTriageDataSource",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {
+        "role": "hitTriageDataSource"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chembl:Chembl Compounds",
+      "name": "Chembl Compounds",
+      "friendly_name": null,
+      "role": "hitTriageDataSource",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "int"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {
+        "role": "hitTriageDataSource"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chembl:Chembl molregno",
+      "name": "Chembl molregno",
+      "friendly_name": null,
+      "role": "hitTriageFunction",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {
+        "role": "hitTriageFunction"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chembl:chemblIdToSmilesTs",
+      "name": "chemblIdToSmilesTs",
+      "friendly_name": null,
+      "role": "converter",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {
+        "role": "converter"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chembl:Database Queries",
+      "name": "Database Queries",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Running various queries to chemical databases using convenient input forms",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Chembl:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": "semValueExtractor",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "semantic_value"
+      ],
+      "meta": {
+        "role": "semValueExtractor"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [
+    {
+      "id": "query:Chembl:compound activity details for @target",
+      "name": "compound activity details for @target",
+      "connection": "Chembl",
+      "description": "Retrieves compound activity details including assay descriptions, standard measurements, and publication references for a specified ChEMBL target.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:_bioactivity data for bacterial targets for @organism",
+      "name": "_bioactivity data for bacterial targets for @organism",
+      "connection": "Chembl",
+      "description": "Retrieves bioactivity data for compounds tested against bacterial targets of a specified organism.",
+      "tags": [
+        "unit-test"
+      ]
+    },
+    {
+      "id": "query:Chembl:_cbAllChemblStructures",
+      "name": "_cbAllChemblStructures",
+      "connection": "Chembl",
+      "description": "Returns a limited set of all ChEMBL compound structures with canonical SMILES and molregno identifiers.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:_cbFindByMolregno",
+      "name": "_cbFindByMolregno",
+      "connection": "Chembl",
+      "description": "Retrieves detailed compound information by molregno including structure, names, properties, and synonyms.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:_cbChemblBrowserQuery",
+      "name": "_cbChemblBrowserQuery",
+      "connection": "Chembl",
+      "description": "Searches ChEMBL compounds by multiple filters including substructure, molecule type, name, max phase, and Lipinski violations.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:patternSimilaritySearch",
+      "name": "patternSimilaritySearch",
+      "connection": "Chembl",
+      "description": "Searches ChEMBL compounds by molecular fingerprint similarity to a given pattern using Tanimoto coefficient.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:patternSimilaritySearchWithThreshold",
+      "name": "patternSimilaritySearchWithThreshold",
+      "connection": "Chembl",
+      "description": "Search for a given pattern in the ChEMBL database with a specified threshold of similarity.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:patternSubstructureSearch",
+      "name": "patternSubstructureSearch",
+      "connection": "Chembl",
+      "description": "Search for a given substructure in the ChEMBL database.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:ChemblNumberOfStructures",
+      "name": "ChemblNumberOfStructures",
+      "connection": "Chembl",
+      "description": "Returns a specified number of ChEMBL compound structures with canonical SMILES and molregno identifiers.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:ChemblMolregNoBySmiles",
+      "name": "ChemblMolregNoBySmiles",
+      "connection": "Chembl",
+      "description": "Retrieves the molregno identifier for a compound by its canonical SMILES structure.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:StructuresByOrganism",
+      "name": "StructuresByOrganism",
+      "connection": "Chembl",
+      "description": "Retrieves compound structures and bioactivity data for bacterial targets of a specified organism.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:chemblIdToSmiles",
+      "name": "chemblIdToSmiles",
+      "connection": "ChemblSql",
+      "description": "Converts a ChEMBL ID to SMILES. CHEMBL IDs are unique identifiers for compounds in the ChEMBL database, for example CHEMBL1234. Not to be confused with molregno, which are unique registration numbers…",
+      "tags": [
+        "unit-test"
+      ]
+    },
+    {
+      "id": "query:Chembl:molregnoToSmiles",
+      "name": "molregnoToSmiles",
+      "connection": "ChemblSql",
+      "description": "Converts a CHEMBL molregno to SMILES. Molregno is a unique registration number for compounds in the ChEMBL database, for example 1234. Not to be confused with ChEMBL IDs, which are unique identifiers…",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:nameToSmiles",
+      "name": "nameToSmiles",
+      "connection": "ChemblSql",
+      "description": "Converts a compound name in chembl database to SMILES. For example aspirin or ibuprofen.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:namesToSmiles",
+      "name": "namesToSmiles",
+      "connection": "ChemblSql",
+      "description": "Converts a list of compound names in chembl database to SMILES.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:inchiKeyToChembl",
+      "name": "inchiKeyToChembl",
+      "connection": "ChemblSql",
+      "description": "Converts InChI Keys to ChEMBL identifiers using a dataframe input.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:inchiKeyToSmiles",
+      "name": "inchiKeyToSmiles",
+      "connection": "ChemblSql",
+      "description": "Converts InChI Keys to canonical SMILES using a dataframe input.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:inchiKeyToInchi",
+      "name": "inchiKeyToInchi",
+      "connection": "ChemblSql",
+      "description": "Converts InChI Keys to standard InChI strings using a dataframe input.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:chemblToSmiles",
+      "name": "chemblToSmiles",
+      "connection": "ChemblSql",
+      "description": "Converts a dataframe with ChEMBL IDs to SMILES.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:chemblToInchi",
+      "name": "chemblToInchi",
+      "connection": "ChemblSql",
+      "description": "Converts a dataframe with ChEMBL IDs to Inchi.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:chemblToInchiKey",
+      "name": "chemblToInchiKey",
+      "connection": "ChemblSql",
+      "description": "Converts a dataframe with ChEMBL IDs to Inchi Keys.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:_PK data from 'Curated Drug Pharmacokinetic Data' source for @drug",
+      "name": "_PK data from 'Curated Drug Pharmacokinetic Data' source for @drug",
+      "connection": "Chembl",
+      "description": "Retrieves pharmacokinetic data including dosage, route, regimen, and measured parameters for a specified drug from curated sources.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:_protein classification",
+      "name": "_protein classification",
+      "connection": "Chembl",
+      "description": "Returns the complete protein classification hierarchy with preferred names and definitions.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:_compounds which are selective to one target over a second target",
+      "name": "_compounds which are selective to one target over a second target",
+      "connection": "Chembl",
+      "description": "Identifies compounds with selective activity, showing high potency for one target and low potency for another target.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:compound activity details for all targets containing @protein",
+      "name": "compound activity details for all targets containing @protein",
+      "connection": "Chembl",
+      "description": "Retrieves compound bioactivity data for all targets containing a specified protein accession identifier.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:unichemUnitTestQuery",
+      "name": "unichemUnitTestQuery",
+      "connection": "Unichem",
+      "description": "Test query for Unichem database connectivity and data availability.",
+      "tags": [
+        "unit-test"
+      ]
+    },
+    {
+      "id": "query:Chembl:FracClassification",
+      "name": "FracClassification",
+      "connection": "Chembl",
+      "description": "Searches compound structures by FRAC (Fungicide Resistance Action Committee) classification hierarchy levels.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:QueryBySubstructure",
+      "name": "QueryBySubstructure",
+      "connection": "Chembl",
+      "description": "Complex search combining molecular similarity, drug mechanism action type, and company research location.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:ByChemblIds",
+      "name": "ByChemblIds",
+      "connection": "Chembl",
+      "description": "Retrieves molecule dictionary information for a list of ChEMBL identifiers.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:MolregnoInfo",
+      "name": "MolregnoInfo",
+      "connection": "Chembl",
+      "description": "Retrieves compound SMILES and research company country information for a given molregno identifier.",
+      "tags": [
+        "panel",
+        "widget"
+      ]
+    },
+    {
+      "id": "query:Chembl:ChemblInfo",
+      "name": "ChemblInfo",
+      "connection": "Chembl",
+      "description": "Retrieves compound SMILES and research company country information for a given ChEMBL identifier.",
+      "tags": [
+        "panel",
+        "widget"
+      ]
+    },
+    {
+      "id": "query:Chembl:FracClassificationWithSubstructure",
+      "name": "FracClassificationWithSubstructure",
+      "connection": "Chembl",
+      "description": "Combines FRAC classification hierarchy search with molecular substructure matching.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:_compoundNames",
+      "name": "_compoundNames",
+      "connection": "Chembl",
+      "description": "Provides autocomplete suggestions for compound names matching a substring pattern.",
+      "tags": [
+        "unit-test"
+      ]
+    },
+    {
+      "id": "query:Chembl:_organisms",
+      "name": "_organisms",
+      "connection": "Chembl",
+      "description": "Provides autocomplete suggestions for organism names matching a substring pattern.",
+      "tags": [
+        "unit-test"
+      ]
+    },
+    {
+      "id": "query:Chembl:_proteinTypes",
+      "name": "_proteinTypes",
+      "connection": "Chembl",
+      "description": "Provides autocomplete suggestions for protein classification short names matching a substring pattern.",
+      "tags": [
+        "unit-test"
+      ]
+    },
+    {
+      "id": "query:Chembl:_targetTypes",
+      "name": "_targetTypes",
+      "connection": "Chembl",
+      "description": "Provides autocomplete suggestions for target types matching a substring pattern.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:_assayTypes",
+      "name": "_assayTypes",
+      "connection": "Chembl",
+      "description": "Provides autocomplete suggestions for assay types matching a substring pattern.",
+      "tags": []
+    },
+    {
+      "id": "query:Chembl:_relationshipTypes",
+      "name": "_relationshipTypes",
+      "connection": "Chembl",
+      "description": "Provides autocomplete suggestions for relationship types matching a substring pattern.",
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Chembl/credits.md",
+      "title": "Chembl — Third-Party Libraries",
+      "url": "/packages/Chembl/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chembl/readme.md",
+      "title": "ChEMBL",
+      "url": "/packages/Chembl/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chembl/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Chembl/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "title": "Cheminformatics",
+      "url": "/help/datagrok/solutions/domains/chem/chem",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+      "title": "Similarity maps using fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/cheminformatics",
+      "title": "Cheminformatics",
+      "url": "/help/develop/domains/chem/cheminformatics",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/intro",
+      "title": "Cheminformatics concepts",
+      "url": "/help/develop/domains/chem/intro",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/readme.md",
+      "title": "Cheminformatics support",
+      "url": "/packages/Chem/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/ChemblAPI/readme.md",
+      "title": "ChEMBL API",
+      "url": "/packages/ChemblAPI/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "title": "Scaffold tree",
+      "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "title": "Chemically-aware viewers",
+      "url": "/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+      "title": "Chemprop",
+      "url": "/help/datagrok/solutions/domains/chem/chemprop",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+      "title": "Supported descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "title": "Tests: Chem descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+      "title": "Supported fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/fingerprints",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "title": "Drug likeness",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "title": "Structural alerts",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "title": "SureChEMBL integration",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "title": "Toxicity risks",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+      "title": "Multiparameter optimization",
+      "url": "/help/datagrok/solutions/domains/chem/mpo",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "title": "Butina cluster",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "title": "Chemical scripts",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "title": "Filter by catalogs",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "title": "Gasteiger Partial Charges",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Chembl:1.4.12:0",
+      "version": "1.4.12",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "Chembl: Add descriptions to all queries"
+    },
+    {
+      "id": "clog:Chembl:1.4.12:1",
+      "version": "1.4.12",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "Chembl: Fix validation"
+    },
+    {
+      "id": "clog:Chembl:1.4.12:2",
+      "version": "1.4.12",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "Chembl: Enrichments: Added samples"
+    },
+    {
+      "id": "clog:Chembl:1.4.12:3",
+      "version": "1.4.12",
+      "released_at": "2026-03-16",
+      "ticket": "GROK-19836",
+      "text": "GROK-19836: UI: Demo: Chem: Database Queries: Structure is cut"
+    },
+    {
+      "id": "clog:Chembl:1.4.10:0",
+      "version": "1.4.10",
+      "released_at": "2025-12-31",
+      "ticket": null,
+      "text": "Update db-explorer library version"
+    },
+    {
+      "id": "clog:Chembl:1.4.7:0",
+      "version": "1.4.7",
+      "released_at": "2025-12-11",
+      "ticket": null,
+      "text": "In place registration of regexp detectors for semantic types in DBExplorer integration"
+    },
+    {
+      "id": "clog:Chembl:1.4.6:0",
+      "version": "1.4.6",
+      "released_at": "2025-10-16",
+      "ticket": null,
+      "text": "Lazy loaded DBExplorer in Chembl package"
+    },
+    {
+      "id": "clog:Chembl:1.4.3:0",
+      "version": "1.4.3",
+      "released_at": "2025-04-01",
+      "ticket": null,
+      "text": "Fixed MolregnoInfo panel"
+    },
+    {
+      "id": "clog:Chembl:1.4.2:0",
+      "version": "1.4.2",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Fixed error in demo when result is null"
+    },
+    {
+      "id": "clog:Chembl:1.4.1:0",
+      "version": "1.4.1",
+      "released_at": "2025-03-29",
+      "ticket": null,
+      "text": "Correct help display in Database Queries demo"
+    },
+    {
+      "id": "clog:Chembl:1.4.0:0",
+      "version": "1.4.0",
+      "released_at": "2025-03-29",
+      "ticket": null,
+      "text": "Datagrok api >= 1.25.0"
+    },
+    {
+      "id": "clog:Chembl:1.3.0:0",
+      "version": "1.3.0",
+      "released_at": "2025-03-25",
+      "ticket": null,
+      "text": "Updated chemical databases demo"
+    },
+    {
+      "id": "clog:Chembl:1.2.3:0",
+      "version": "1.2.3",
+      "released_at": "2025-03-17",
+      "ticket": null,
+      "text": "Showing update indicator in context panel when waiting for request"
+    },
+    {
+      "id": "clog:Chembl:1.2.2:0",
+      "version": "1.2.2",
+      "released_at": "2025-01-16",
+      "ticket": null,
+      "text": "Fixed 'Compound Names' query"
+    },
+    {
+      "id": "clog:Chembl:1.4.11:0",
+      "version": "1.4.11",
+      "released_at": "2025-01-06",
+      "ticket": null,
+      "text": "Migrated tags to roles"
+    },
+    {
+      "id": "clog:Chembl:1.4.11:1",
+      "version": "1.4.11",
+      "released_at": "2025-01-06",
+      "ticket": null,
+      "text": "Add descriptions to all queries"
+    },
+    {
+      "id": "clog:Chembl:1.4.11:2",
+      "version": "1.4.11",
+      "released_at": "2025-01-06",
+      "ticket": null,
+      "text": "Fix validation"
+    },
+    {
+      "id": "clog:Chembl:1.2.1:0",
+      "version": "1.2.1",
+      "released_at": "2024-12-26",
+      "ticket": null,
+      "text": "Moved Chemical Databases demo to Chembl package from Chem"
+    },
+    {
+      "id": "clog:Chembl:1.1.6:0",
+      "version": "1.1.6",
+      "released_at": "2024-12-06",
+      "ticket": null,
+      "text": "Add Search integrated queries"
+    },
+    {
+      "id": "clog:Chembl:1.1.5:0",
+      "version": "1.1.5",
+      "released_at": "2024-10-23",
+      "ticket": null,
+      "text": "Remove dual function initialization"
+    },
+    {
+      "id": "clog:Chembl:1.1.4:0",
+      "version": "1.1.4",
+      "released_at": "2024-10-03",
+      "ticket": null,
+      "text": "Improve search integrated queries"
+    },
+    {
+      "id": "clog:Chembl:1.1.3:0",
+      "version": "1.1.3",
+      "released_at": "2024-09-27",
+      "ticket": null,
+      "text": "PowerSearch features"
+    },
+    {
+      "id": "clog:Chembl:1.1.2:0",
+      "version": "1.1.2",
+      "released_at": "2024-09-25",
+      "ticket": null,
+      "text": "Handle missing chembl connection."
+    },
+    {
+      "id": "clog:Chembl:1.1.1:0",
+      "version": "1.1.1",
+      "released_at": "2024-09-25",
+      "ticket": null,
+      "text": "Database explorer for ChEMBL database."
+    },
+    {
+      "id": "clog:Chembl:1.0.38:0",
+      "version": "1.0.38",
+      "released_at": "2024-07-22",
+      "ticket": null,
+      "text": "Fixed 'Pattern Similarity With Threshold' query name"
+    },
+    {
+      "id": "clog:Chembl:1.0.37:0",
+      "version": "1.0.37",
+      "released_at": "2024-06-12",
+      "ticket": null,
+      "text": "Updated datagrok api dependency"
+    },
+    {
+      "id": "clog:Chembl:1.0.36:0",
+      "version": "1.0.36",
+      "released_at": "2024-05-07",
+      "ticket": null,
+      "text": "Return ChemblId instead of molregno in substructure and similarity search"
+    },
+    {
+      "id": "clog:Chembl:1.0.35:0",
+      "version": "1.0.35",
+      "released_at": "2023-11-29",
+      "ticket": null,
+      "text": "Added script for converting list of names to smiles"
+    }
+  ],
+  "stats": {
+    "functions": 10,
+    "scripts": 0,
+    "queries": 38,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 28
+  }
+}

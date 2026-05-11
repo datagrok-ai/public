@@ -1,0 +1,95 @@
+{
+  "package_id": "pkg:LibTests",
+  "features": [
+    {
+      "id": "feature:LibTests:richfunctionview-tests",
+      "name": "RichFunctionView Tests",
+      "description": "Tests for the compute-utils RichFunctionView library, covering simple and complex input forms, dataframe handling, arithmetic helpers, error propagation, and multi-argument function calls.",
+      "category": "infra",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:LibTests:CustomInputMock",    "weight": 1.0, "role": "core"},
+        {"id": "func:LibTests:TestAdd2",            "weight": 0.9, "role": "test"},
+        {"id": "func:LibTests:TestSub2",            "weight": 0.9, "role": "test"},
+        {"id": "func:LibTests:TestMul2",            "weight": 0.9, "role": "test"},
+        {"id": "func:LibTests:TestDiv2",            "weight": 0.9, "role": "test"},
+        {"id": "func:LibTests:TestDF1",             "weight": 0.9, "role": "test"},
+        {"id": "func:LibTests:TestAdd2Error",       "weight": 0.85,"role": "test"},
+        {"id": "func:LibTests:TestMultiarg5",       "weight": 0.85,"role": "test"},
+        {"id": "script:LibTests:simpleInputs",              "weight": 1.0, "role": "test"},
+        {"id": "script:LibTests:simpleInputsDefaultValues", "weight": 1.0, "role": "test"},
+        {"id": "script:LibTests:complexInputs",             "weight": 1.0, "role": "test"},
+        {"id": "doc:/packages/LibTests/readme.md",          "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "All three RFV scripts mention 'RichFunctionView' in their description, and the arithmetic/DF mock functions are classic RFV fixture helpers whose names (TestAdd2, TestDF1, etc.) match the compute-utils RFV test conventions; changelog v1.4.2 notes 'Updated tests for synchronous RFV'."
+    },
+    {
+      "id": "feature:LibTests:validation-tests",
+      "name": "Validation Library Tests",
+      "description": "Tests for the compute-utils input-validation library, covering range validators, async validators, global validators, and validator action callbacks.",
+      "category": "infra",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:LibTests:RangeValidatorFactory",         "weight": 1.0, "role": "core"},
+        {"id": "func:LibTests:AsyncValidatorDemoFactory",     "weight": 1.0, "role": "core"},
+        {"id": "func:LibTests:GlobalValidatorDemoFactory",    "weight": 1.0, "role": "core"},
+        {"id": "func:LibTests:ValidatorActionsDemoFactory",   "weight": 1.0, "role": "core"},
+        {"id": "script:LibTests:validationTest",              "weight": 1.0, "role": "test"},
+        {"id": "script:LibTests:globalValidationTest",        "weight": 1.0, "role": "test"}
+      ],
+      "evidence_summary": "Factory functions named *ValidatorFactory / *ValidatorDemoFactory pair 1-to-1 with scripts described as 'Custom validators test' and 'Global validators test', forming a tightly named validation test cluster."
+    },
+    {
+      "id": "feature:LibTests:compute-api-composition-tests",
+      "name": "ComputeAPI / CompositionPipeline Tests",
+      "description": "Tests for the compute-utils ComputeAPI and CompositionPipeline libraries, using numbered mock-wrapper functions as registered function stubs that the pipeline harness can compose and call.",
+      "category": "infra",
+      "confidence": 0.78,
+      "members": [
+        {"id": "func:LibTests:MockWrapper1", "weight": 1.0, "role": "core"},
+        {"id": "func:LibTests:MockWrapper2", "weight": 1.0, "role": "core"},
+        {"id": "func:LibTests:MockWrapper3", "weight": 1.0, "role": "core"},
+        {"id": "func:LibTests:MockWrapper4", "weight": 1.0, "role": "core"},
+        {"id": "func:LibTests:MockWrapper5", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Changelog v1.1.0 adds 'tests for CompositionPipeline' and v1.2.0 adds 'tests for ComputeAPI'; the five uniformly-numbered MockWrapper functions are the registered stubs that both test layers require for pipeline composition."
+    },
+    {
+      "id": "feature:LibTests:ui-component-tests",
+      "name": "UI Component Library Tests",
+      "description": "Tests for the Datagrok UI component library, covering viewer components, form components, and general UI elements.",
+      "category": "infra",
+      "confidence": 0.80,
+      "members": [
+        {"id": "func:LibTests:TestViewerComponent", "weight": 1.0, "role": "test"},
+        {"id": "func:LibTests:TestFromComponent",   "weight": 1.0, "role": "test"},
+        {"id": "func:LibTests:TestElements",        "weight": 1.0, "role": "test"}
+      ],
+      "evidence_summary": "All three functions carry a 'test' tag and their names directly reference UI-layer concepts (viewer, form/from, elements), distinct from the compute/validation clusters."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:LibTests:richfunctionview-tests",          "to": "feature:LibTests:validation-tests",              "kind": "sibling"},
+    {"from": "feature:LibTests:richfunctionview-tests",          "to": "feature:LibTests:compute-api-composition-tests", "kind": "sibling"},
+    {"from": "feature:LibTests:compute-api-composition-tests",   "to": "feature:LibTests:validation-tests",              "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/LibTests/credits.md",
+    "doc:/help/develop/packages/_overview",
+    "clog:LibTests:1.7.8:0",
+    "clog:LibTests:1.7.0:0",
+    "clog:LibTests:1.8.0:0",
+    "clog:LibTests:1.5.0:0",
+    "clog:LibTests:1.4.3:0",
+    "clog:LibTests:1.4.2:0",
+    "clog:LibTests:1.4.1:0",
+    "clog:LibTests:1.3.0:0",
+    "clog:LibTests:1.3.0-rc:0",
+    "clog:LibTests:1.2.0:0",
+    "clog:LibTests:1.1.3:0",
+    "clog:LibTests:1.1.2:0",
+    "clog:LibTests:1.1.2:1",
+    "clog:LibTests:1.1.0:0",
+    "clog:LibTests:1.1.0:1"
+  ]
+}

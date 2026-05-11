@@ -1,0 +1,691 @@
+{
+  "package": {
+    "id": "pkg:Compute",
+    "name": "Compute",
+    "friendly_name": "Compute",
+    "version": "1.45.0",
+    "category": "Compute",
+    "description": "Legacy modeling UI",
+    "extras": {
+      "npm_name": "@datagrok/compute",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Compute:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:openModelFromFuncall",
+      "name": "openModelFromFuncall",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:OutliersSelectionViewer",
+      "name": "OutliersSelectionViewer",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates an outliers selection viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:RichFunctionViewEditor",
+      "name": "RichFunctionViewEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:PipelineStepEditor",
+      "name": "PipelineStepEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:CustomDataUploader",
+      "name": "CustomDataUploader",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:CustomUploader",
+      "name": "CustomUploader",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "widget",
+        "funccall"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:CustomCustomizer",
+      "name": "CustomCustomizer",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:SimTimeValidator",
+      "name": "SimTimeValidator",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:DesiredTempValidator",
+      "name": "DesiredTempValidator",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:InitialTempValidator",
+      "name": "InitialTempValidator",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:AmbTempValidator",
+      "name": "AmbTempValidator",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:HeatCapValidator",
+      "name": "HeatCapValidator",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:CustomStringInput",
+      "name": "CustomStringInput",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Compute:ObjectCoolingSelector",
+      "name": "ObjectCoolingSelector",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:Compute:Default get real data",
+      "name": "Default get real data",
+      "language": "javascript",
+      "description": "Shows that default view works (or not)"
+    },
+    {
+      "id": "script:Compute:Data stats",
+      "name": "Data stats",
+      "language": "javascript",
+      "description": "Uses Datagrok's built-in viewer to show dataframe stats"
+    },
+    {
+      "id": "script:Compute:Fab Arm Exchange",
+      "name": "Fab Arm Exchange",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:Compute:Heat Exchange",
+      "name": "Heat Exchange",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:Compute:IntervalsFromECG",
+      "name": "IntervalsFromECG",
+      "language": "python",
+      "description": "Identify the beats in an ECG signal and compute the IBIs"
+    },
+    {
+      "id": "script:Compute:Logistic Map",
+      "name": "Logistic Map",
+      "language": "javascript",
+      "description": "Archetypal example of how complex, chaotic behaviour can arise from very simple non-linear dynamical equations."
+    },
+    {
+      "id": "script:Compute:Lorenz Attractor",
+      "name": "Lorenz Attractor",
+      "language": "javascript",
+      "description": "Set of chaotic solutions of the system for weather prediction. It illustrates the phenomenon known as the Butterfly effect or (more technically) sensitive dependence on initial conditions"
+    },
+    {
+      "id": "script:Compute:LotkaVolterra",
+      "name": "LotkaVolterra",
+      "language": "javascript",
+      "description": "Model describes the dynamics of biological systems in which two species interact, one as a predator and the other as prey."
+    },
+    {
+      "id": "script:Compute:Vmax",
+      "name": "Vmax",
+      "language": "r",
+      "description": "Predict the minimum filter size required for the separation of effluent from bioreactors, given the constraints of batch size and total batch time based on a training dataset of time vs filtrate…"
+    },
+    {
+      "id": "script:Compute:Object cooling",
+      "name": "Object cooling",
+      "language": "javascript",
+      "description": "Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air."
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Compute/credits.md",
+      "title": "Compute — Third-Party Libraries",
+      "url": "/packages/Compute/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute/readme.md",
+      "title": "Compute",
+      "url": "/packages/Compute/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/compute",
+      "title": "Compute",
+      "url": "/help/compute/compute",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/diff-studio",
+      "title": "Diff Studio",
+      "url": "/help/compute/diff-studio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/function-analysis",
+      "title": "Model optimization tools",
+      "url": "/help/compute/function-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/jupyter-notebook",
+      "title": "Jupyter Notebook",
+      "url": "/help/compute/jupyter-notebook",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/models",
+      "title": "Models",
+      "url": "/help/compute/models",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+      "title": "Automate inputs",
+      "url": "/help/compute/scripting/advanced-scripting/automate-inputs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+      "title": "Call via REST",
+      "url": "/help/compute/scripting/advanced-scripting/call-via-rest",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+      "title": "Rich Function View",
+      "url": "/help/compute/scripting/advanced-scripting/rich-function-view",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/getting-started",
+      "title": "Getting started with scripting",
+      "url": "/help/compute/scripting/getting-started",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+      "title": "Complex data types",
+      "url": "/help/compute/scripting/scripting-features/complex-input-output",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "title": "Work with the Datagrok script editor",
+      "url": "/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+      "title": "Enhance input UI",
+      "url": "/help/compute/scripting/scripting-features/enhance-input-ui",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+      "title": "Scripting features",
+      "url": "/help/compute/scripting/scripting-features/scripting-features",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+      "title": "Visualize output data",
+      "url": "/help/compute/scripting/scripting-features/visualize-output-data",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Compute2/claude.md",
+      "title": "CLAUDE.md - Compute2",
+      "url": "/packages/Compute2/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute2/credits.md",
+      "title": "Compute2 — Third-Party Libraries",
+      "url": "/packages/Compute2/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute2/readme.md",
+      "title": "Compute2",
+      "url": "/packages/Compute2/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Compute:1.45.0:0",
+      "version": "1.45.0",
+      "released_at": "2026-03-19",
+      "ticket": null,
+      "text": "Mark as a leagacy package"
+    },
+    {
+      "id": "clog:Compute:1.45.0:1",
+      "version": "1.45.0",
+      "released_at": "2026-03-19",
+      "ticket": null,
+      "text": "ModelHub is moved to Compute2"
+    },
+    {
+      "id": "clog:Compute:1.45.0:2",
+      "version": "1.45.0",
+      "released_at": "2026-03-19",
+      "ticket": null,
+      "text": "Fitting and SA are moved to Compute2"
+    },
+    {
+      "id": "clog:Compute:1.44.6:0",
+      "version": "1.44.6",
+      "released_at": "2025-11-20",
+      "ticket": null,
+      "text": "Update deps"
+    },
+    {
+      "id": "clog:Compute:1.44.5:0",
+      "version": "1.44.5",
+      "released_at": "2025-10-30",
+      "ticket": null,
+      "text": "Fitting with formulas support"
+    },
+    {
+      "id": "clog:Compute:1.44.4:0",
+      "version": "1.44.4",
+      "released_at": "2025-09-04",
+      "ticket": null,
+      "text": "Small bug fixes"
+    },
+    {
+      "id": "clog:Compute:1.44.3:0",
+      "version": "1.44.3",
+      "released_at": "2025-08-15",
+      "ticket": null,
+      "text": "Update compute-utils"
+    },
+    {
+      "id": "clog:Compute:1.44.1:0",
+      "version": "1.44.1",
+      "released_at": "2025-08-08",
+      "ticket": null,
+      "text": "Update compute-utils"
+    },
+    {
+      "id": "clog:Compute:1.43.10:0",
+      "version": "1.43.10",
+      "released_at": "2025-06-09",
+      "ticket": null,
+      "text": "Sensitivity Analysis UI update"
+    },
+    {
+      "id": "clog:Compute:1.43.9:0",
+      "version": "1.43.9",
+      "released_at": "2025-06-03",
+      "ticket": null,
+      "text": "Update deps"
+    },
+    {
+      "id": "clog:Compute:1.43.7:0",
+      "version": "1.43.7",
+      "released_at": "2025-05-28",
+      "ticket": null,
+      "text": "Help tweaks"
+    },
+    {
+      "id": "clog:Compute:1.43.6:0",
+      "version": "1.43.6",
+      "released_at": "2025-05-12",
+      "ticket": null,
+      "text": "Sensitivity Analysis update"
+    },
+    {
+      "id": "clog:Compute:1.43.5:0",
+      "version": "1.43.5",
+      "released_at": "2025-05-02",
+      "ticket": null,
+      "text": "`OutliersSelectionViewer` improvements"
+    },
+    {
+      "id": "clog:Compute:1.43.4:0",
+      "version": "1.43.4",
+      "released_at": "2025-05-02",
+      "ticket": null,
+      "text": "Compute2 small changes/fixes"
+    },
+    {
+      "id": "clog:Compute:1.43.1:0",
+      "version": "1.43.1",
+      "released_at": "2025-04-22",
+      "ticket": null,
+      "text": "Updated the Fitting feature:"
+    },
+    {
+      "id": "clog:Compute:1.43.1:1",
+      "version": "1.43.1",
+      "released_at": "2025-04-22",
+      "ticket": null,
+      "text": "Target columns selection"
+    },
+    {
+      "id": "clog:Compute:1.43.1:2",
+      "version": "1.43.1",
+      "released_at": "2025-04-22",
+      "ticket": null,
+      "text": "Fitting results displaying"
+    },
+    {
+      "id": "clog:Compute:1.43.1:3",
+      "version": "1.43.1",
+      "released_at": "2025-04-22",
+      "ticket": null,
+      "text": "Goodness of fit viewers creation"
+    },
+    {
+      "id": "clog:Compute:1.43.0:0",
+      "version": "1.43.0",
+      "released_at": "2025-04-14",
+      "ticket": null,
+      "text": "Compute2 related changes/fixes"
+    },
+    {
+      "id": "clog:Compute:1.42.2:0",
+      "version": "1.42.2",
+      "released_at": "2025-04-10",
+      "ticket": null,
+      "text": "Updated Parameters Optimization:"
+    },
+    {
+      "id": "clog:Compute:1.42.2:1",
+      "version": "1.42.2",
+      "released_at": "2025-04-10",
+      "ticket": null,
+      "text": "Added progress bar;"
+    },
+    {
+      "id": "clog:Compute:1.42.2:2",
+      "version": "1.42.2",
+      "released_at": "2025-04-10",
+      "ticket": null,
+      "text": "Target columns selection"
+    },
+    {
+      "id": "clog:Compute:1.42.2:3",
+      "version": "1.42.2",
+      "released_at": "2025-04-10",
+      "ticket": null,
+      "text": "The hide similar curves feature"
+    },
+    {
+      "id": "clog:Compute:1.42.2:4",
+      "version": "1.42.2",
+      "released_at": "2025-04-10",
+      "ticket": null,
+      "text": "Navigation for users"
+    },
+    {
+      "id": "clog:Compute:1.42.1:0",
+      "version": "1.42.1",
+      "released_at": "2025-03-31",
+      "ticket": null,
+      "text": "Fix browser tree path"
+    },
+    {
+      "id": "clog:Compute:1.42.0:0",
+      "version": "1.42.0",
+      "released_at": "2025-03-30",
+      "ticket": null,
+      "text": "Rewrite to better support browse view."
+    },
+    {
+      "id": "clog:Compute:1.41.1:0",
+      "version": "1.41.1",
+      "released_at": "2025-02-20",
+      "ticket": null,
+      "text": "FittingView: in-webworker parameters optimization of Diff Studio models"
+    },
+    {
+      "id": "clog:Compute:1.41.0:0",
+      "version": "1.41.0",
+      "released_at": "2025-02-19",
+      "ticket": null,
+      "text": "ModelCatalog refactored"
+    },
+    {
+      "id": "clog:Compute:1.41.0:1",
+      "version": "1.41.0",
+      "released_at": "2025-02-19",
+      "ticket": null,
+      "text": "API updated for 1.24.0"
+    },
+    {
+      "id": "clog:Compute:1.40.4:0",
+      "version": "1.40.4",
+      "released_at": "2025-01-28",
+      "ticket": null,
+      "text": "ModelHandler: help disable sync"
+    }
+  ],
+  "stats": {
+    "functions": 15,
+    "scripts": 10,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 19,
+    "changelog": 185
+  }
+}

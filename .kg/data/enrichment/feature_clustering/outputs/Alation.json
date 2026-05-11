@@ -1,0 +1,25 @@
+{
+  "package_id": "pkg:Alation",
+  "features": [
+    {
+      "id": "feature:Alation:catalog-app",
+      "name": "Alation Catalog Browser",
+      "description": "Embedded Datagrok app that connects to a configured Alation data catalog instance, letting users browse catalogued data sources, tables, and queries and bring them into Datagrok workflows.",
+      "category": "data-import",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Alation:Alation",             "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Alation/readme.md",   "weight": 0.9, "role": "doc"},
+        {"id": "doc:/packages/Alation/credits.md",  "weight": 0.4, "role": "related"},
+        {"id": "clog:Alation:1.1.5:1",              "weight": 0.5, "role": "related"},
+        {"id": "clog:Alation:1.1.5:2",              "weight": 0.5, "role": "related"},
+        {"id": "clog:Alation:1.1.5:3",              "weight": 0.5, "role": "related"},
+        {"id": "clog:Alation:1.1.5:0",              "weight": 0.4, "role": "related"},
+        {"id": "clog:Alation:1.3.0:0",              "weight": 0.4, "role": "related"}
+      ],
+      "evidence_summary": "The plugin exposes exactly one user-facing entry point — an app function named 'Alation' — and all changelog entries and docs describe improvements to this single catalog integration."
+    }
+  ],
+  "feature_relations": [],
+  "unassigned_member_ids": []
+}

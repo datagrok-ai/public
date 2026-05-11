@@ -1,0 +1,260 @@
+{
+  "package_id": "pkg:Samples",
+  "features": [
+    {
+      "id": "feature:Samples:statistical-hypothesis-testing",
+      "name": "Statistical Hypothesis Testing",
+      "description": "Demonstrates parametric and non-parametric statistical tests (Welch's t-test, ANOVA, KS test, mixed-effects models) across Python, R, and Julia. Helps users compare group means and test distributional assumptions.",
+      "category": "ml",
+      "confidence": 0.97,
+      "members": [
+        {"id": "script:Samples:t-test Python",  "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:t-test R",        "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:t-test Julia",    "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:ANOVA",           "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:KS Test",         "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:LMER",            "weight": 0.8, "role": "core"}
+      ],
+      "evidence_summary": "All members share the explicit hypothesis-testing theme (t-test, ANOVA, KS, LMER) and are the only scripts whose description or name names a statistical test."
+    },
+    {
+      "id": "feature:Samples:multivariate-analysis",
+      "name": "Multivariate Analysis and Predictive Modelling",
+      "description": "Covers dimensionality reduction (PCA, LDA, PLS), regression (linear, SVM), dose-response curve fitting, and missing-value imputation (kNN, Datawig). All implemented in R or Python.",
+      "category": "ml",
+      "confidence": 0.92,
+      "members": [
+        {"id": "script:Samples:PCA R",               "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:LDA",                 "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:MANOVA",              "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:PLS",                 "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Predictive Model SVM","weight": 0.9, "role": "core"},
+        {"id": "script:Samples:Linear Regression",   "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:KNN R",               "weight": 0.8, "role": "core"},
+        {"id": "script:Samples:DatawigTest",         "weight": 0.7, "role": "core"},
+        {"id": "script:Samples:Fitting DRC",         "weight": 0.7, "role": "core"}
+      ],
+      "evidence_summary": "Scripts share multivariate/ML methodology — dimensionality reduction, discriminant analysis, regression, and imputation — grouped by analytical purpose rather than language."
+    },
+    {
+      "id": "feature:Samples:visualization",
+      "name": "Scientific Visualization",
+      "description": "Provides scatter, contour, surface, ternary, and financial chart scripts in R, Python, and Julia, demonstrating cross-language plotting against Datagrok dataframes.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "script:Samples:Scatter Plot Python", "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Scatter Plot R",      "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Scatter Plot Julia",  "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Contour Plot",        "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Surface Plot",        "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Ternary Plot",        "weight": 0.9, "role": "core"},
+        {"id": "script:Samples:Financial Chart",     "weight": 0.8, "role": "core"}
+      ],
+      "evidence_summary": "Scripts are named purely by chart type (scatter, contour, surface, ternary, financial), all output a plot as their primary artefact."
+    },
+    {
+      "id": "feature:Samples:time-series-analysis",
+      "name": "Time-Series Analysis and Signal Processing",
+      "description": "Demonstrates ACF, ARIMA forecasting, time-series decomposition, IIR filtering, CWT scalograms, and spectrogram analysis in R and Python, covering the full signal/time-series workflow.",
+      "category": "ml",
+      "confidence": 0.94,
+      "members": [
+        {"id": "script:Samples:ARIMA Forecasting",       "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Time Series Decomposition","weight": 1.0, "role": "core"},
+        {"id": "script:Samples:ACF",                     "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:IIR Filter",              "weight": 0.9, "role": "core"},
+        {"id": "script:Samples:Scalogram Python",        "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Scalogram R",             "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Spectrogram",             "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Ulmo",                    "weight": 0.7, "role": "core"}
+      ],
+      "evidence_summary": "ARIMA, decomposition, ACF, scalogram, spectrogram, and IIR filter all operate on sequential/temporal data; Ulmo is a hydrology time-series data library."
+    },
+    {
+      "id": "feature:Samples:image-analysis",
+      "name": "Image Analysis",
+      "description": "Showcases Python-based image workflows: cell segmentation via Watershed, EXIF metadata extraction, and deep-learning-based image classification (EfficientNet).",
+      "category": "ml",
+      "confidence": 0.97,
+      "members": [
+        {"id": "script:Samples:Cell Imaging Segmentation","weight": 1.0, "role": "core"},
+        {"id": "script:Samples:EXIF",                    "weight": 0.9, "role": "core"},
+        {"id": "script:Samples:Image Classification",    "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "All three scripts explicitly work with image data (pixel arrays / image files) and have no overlap with other analytical themes."
+    },
+    {
+      "id": "feature:Samples:nlp",
+      "name": "Natural Language Processing",
+      "description": "Demonstrates text analytics in R: sentiment classification (emotions and polarity) and spell-checking using renv-managed packages.",
+      "category": "ml",
+      "confidence": 0.93,
+      "members": [
+        {"id": "script:Samples:Sentiment Classification","weight": 1.0, "role": "core"},
+        {"id": "script:Samples:renvSpellingExample",     "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "Both scripts process natural language text — sentiment analysis and spell-checking are canonical NLP tasks."
+    },
+    {
+      "id": "feature:Samples:clinical-health-formulas",
+      "name": "Clinical Health Formulas",
+      "description": "Provides reference implementations of BMI (Body Mass Index) in Python and BSA (Body Surface Area) in R as minimal, single-formula scripting examples for clinical use.",
+      "category": "scripting",
+      "confidence": 0.88,
+      "members": [
+        {"id": "script:Samples:BMI","weight": 1.0, "role": "core"},
+        {"id": "script:Samples:BSA","weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Both scripts compute a single clinical anthropometric formula and share description patterns ('Body Mass/Surface Area'), making them a natural pair."
+    },
+    {
+      "id": "feature:Samples:multi-language-scripting-demos",
+      "name": "Multi-Language Scripting Demos",
+      "description": "Simple 'hello-world'-level scripts in Python, R, Julia, JavaScript (Node.js), and Octave that each duplicate a string, demonstrating that Datagrok can execute scripts in all supported languages.",
+      "category": "infra",
+      "confidence": 0.99,
+      "members": [
+        {"id": "script:Samples:PythonDup",    "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:RDup",         "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:JuliaDup",     "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:JSDup",        "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Octave Script 2","weight": 0.7, "role": "core"},
+        {"id": "doc:/packages/Samples/readme.md","weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "The four *Dup scripts share identical purpose ('Duplicates a string in <Lang>') and together with Octave Script 2 cover every non-browser scripting language supported by Datagrok."
+    },
+    {
+      "id": "feature:Samples:js-ui-scripting",
+      "name": "JavaScript UI Scripting",
+      "description": "Shows how to write browser-side Datagrok scripts in JavaScript: value lookup on a dataframe (cars), UI embedding (Function Input), choice inputs (inputChoice), and client-side validation (validateEmail).",
+      "category": "scripting",
+      "confidence": 0.9,
+      "members": [
+        {"id": "script:Samples:cars",           "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Function Input", "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:inputChoice",    "weight": 0.9, "role": "core"},
+        {"id": "script:Samples:validateEmail",  "weight": 0.9, "role": "core"},
+        {"id": "doc:/packages/ApiSamples/readme.md","weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "All four scripts are in the 'javascript' language and demonstrate UI-level patterns (value lookup, embedding, choice input, client validation) unique to browser-side scripting."
+    },
+    {
+      "id": "feature:Samples:pyodide-scripting",
+      "name": "Pyodide (In-Browser Python) Scripting",
+      "description": "Three Scottish hills dataset examples — scatter plot, ridge plot, and contour plot — running Python entirely in the browser via Pyodide, demonstrating zero-server-side compute scripting.",
+      "category": "infra",
+      "confidence": 0.98,
+      "members": [
+        {"id": "script:Samples:Scottish hills demo",         "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Scottish hills ridge plot",   "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:Scottish hills contour plot", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "All three scripts share language='pyodide', share the Scottish hills dataset, and were added together in the '1.2.0 Pyodide samples' changelog entry."
+    },
+    {
+      "id": "feature:Samples:environment-management",
+      "name": "Script Environment Management",
+      "description": "Demonstrates how Datagrok manages Python and R package environments: GlomEnv* scripts test environment isolation modes (default, global, inplace), while PythonLibs and ListPackages enumerate installed packages.",
+      "category": "infra",
+      "confidence": 0.9,
+      "members": [
+        {"id": "script:Samples:GlomEnvTest",        "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:GlomEnvTestGlobal",  "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:GlomEnvTestInplace", "weight": 1.0, "role": "core"},
+        {"id": "script:Samples:PythonLibs",         "weight": 0.9, "role": "core"},
+        {"id": "script:Samples:ListPackages",       "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "The GlomEnv* trio shares a name root ('GlomEnv') and tests environment isolation variants; PythonLibs and ListPackages both enumerate installed packages in their respective runtimes."
+    },
+    {
+      "id": "feature:Samples:mssql-connector-demo",
+      "name": "Microsoft SQL Server Connector Demo",
+      "description": "Ten sample queries against an MSSQL Northwind database showcasing every parameter annotation type (int, double, datetime, string pattern, string choices) alongside unfiltered and order-based queries.",
+      "category": "data-import",
+      "confidence": 0.99,
+      "members": [
+        {"id": "query:Samples:MSSQLAll",                     "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MSSQLByInt",                   "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MSSQLByStringPatternInt",      "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MSSQLByDouble",                "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MSSQLByStringChoices",         "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MSSQLByStringPatternString",   "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MSSQLByDatetime",              "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MSSQLByStringPatternDatetime", "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MSSQLOrders",                  "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MSSQLProducts",                "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/datagrok/concepts/functions/func-params-annotation","weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "All queries share connection='MSSQLNorthwind'; the ByInt/ByDouble/ByDatetime/ByStringChoices naming explicitly exercises every parameter type covered in the func-params-annotation guide."
+    },
+    {
+      "id": "feature:Samples:postgresql-connector-demo",
+      "name": "PostgreSQL Connector Demo",
+      "description": "Ten sample queries against PostgreSQL Northwind and World databases, including parameterized, lookup, and join-style queries, demonstrating the full range of PostgreSQL connector capabilities.",
+      "category": "data-import",
+      "confidence": 0.99,
+      "members": [
+        {"id": "query:Samples:postgres states",                                        "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:postgres countries",                                     "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:postgres products",                                      "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:postgres employees",                                     "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:postgres customers",                                     "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:postgres order details by @quantity, @productName, @country","weight": 1.0, "role": "core"},
+        {"id": "query:Samples:postgres customers in @country",                         "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:postgres productLookup",                                 "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:postgres productDetails",                                "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:OrdersByEmployee",                                       "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:domain usage",                                           "weight": 0.7, "role": "core"}
+      ],
+      "evidence_summary": "Queries share PostgresNorthwind or PostgresWorld connections; together they cover simple selects, parameterized filters, lookup, and join queries against PostgreSQL."
+    },
+    {
+      "id": "feature:Samples:clickhouse-connector-demo",
+      "name": "ClickHouse Connector Demo",
+      "description": "Seven sample queries against a ClickHouse Northwind database, mirroring the PostgreSQL Northwind set, to demonstrate ClickHouse connectivity and parameterized queries in Datagrok.",
+      "category": "data-import",
+      "confidence": 0.99,
+      "members": [
+        {"id": "query:Samples:click house states",                                          "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:click house countries",                                       "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:click house products",                                        "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:click house employees",                                       "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:click house customers",                                       "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:click house order details by @quantity, @productName, @country","weight": 1.0, "role": "core"},
+        {"id": "query:Samples:click house customers in @country",                           "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "All queries share connection='ClickHouseNorthwind' and are named with the 'click house' prefix, forming a self-contained ClickHouse connector demonstration set."
+    },
+    {
+      "id": "feature:Samples:rdbms-connector-demos",
+      "name": "RDBMS Connector Demos (Access, MariaDB, MySQL, Oracle)",
+      "description": "Lightweight Orders and Products query pairs for Microsoft Access, MariaDB, MySQL, and Oracle, providing minimal connectivity demonstrations for each of these RDBMS backends.",
+      "category": "data-import",
+      "confidence": 0.98,
+      "members": [
+        {"id": "query:Samples:Access Orders",  "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:Access Products","weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MariaDB Orders", "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MariaDB Products","weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MySQL Orders",   "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:MySQL Products", "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:Oracle Orders",  "weight": 1.0, "role": "core"},
+        {"id": "query:Samples:Oracle Products","weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Each database (Access, MariaDB, MySQL, Oracle) contributes exactly an Orders+Products pair against its Northwind connection, making them structurally parallel minimal-demo sets."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Samples:statistical-hypothesis-testing", "to": "feature:Samples:multivariate-analysis",          "kind": "sibling"},
+    {"from": "feature:Samples:visualization",                  "to": "feature:Samples:time-series-analysis",           "kind": "sibling"},
+    {"from": "feature:Samples:multi-language-scripting-demos", "to": "feature:Samples:js-ui-scripting",                "kind": "sibling"},
+    {"from": "feature:Samples:js-ui-scripting",                "to": "feature:Samples:pyodide-scripting",              "kind": "sibling"},
+    {"from": "feature:Samples:mssql-connector-demo",           "to": "feature:Samples:postgresql-connector-demo",      "kind": "sibling"},
+    {"from": "feature:Samples:postgresql-connector-demo",      "to": "feature:Samples:clickhouse-connector-demo",      "kind": "sibling"},
+    {"from": "feature:Samples:clickhouse-connector-demo",      "to": "feature:Samples:rdbms-connector-demos",          "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/Samples/credits.md"
+  ]
+}

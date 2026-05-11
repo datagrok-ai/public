@@ -1,0 +1,857 @@
+{
+  "package": {
+    "id": "pkg:EDA",
+    "name": "EDA",
+    "friendly_name": "EDA",
+    "category": "Machine Learning",
+    "description": "Exploratory Data Analysis Tools"
+  },
+  "files": {
+    "src": [
+      "packages/EDA/src/anova/anova-tools.ts",
+      "packages/EDA/src/anova/anova-ui.ts",
+      "packages/EDA/src/data-generators.ts",
+      "packages/EDA/src/eda-tools.ts",
+      "packages/EDA/src/eda-ui.ts",
+      "packages/EDA/src/missing-values-imputation/knn-imputer.ts",
+      "packages/EDA/src/missing-values-imputation/ui-constants.ts",
+      "packages/EDA/src/missing-values-imputation/ui.ts",
+      "packages/EDA/src/package.ts",
+      "packages/EDA/src/pareto-optimization/defs.ts",
+      "packages/EDA/src/pareto-optimization/pareto-computations.ts",
+      "packages/EDA/src/pareto-optimization/pareto-front-viewer.ts",
+      "packages/EDA/src/pareto-optimization/pareto-optimizer.ts",
+      "packages/EDA/src/pareto-optimization/utils.ts",
+      "packages/EDA/src/pls/pls-constants.ts",
+      "packages/EDA/src/pls/pls-ml.ts",
+      "packages/EDA/src/pls/pls-tools.ts",
+      "packages/EDA/src/probabilistic-scoring/data-generator.ts",
+      "packages/EDA/src/probabilistic-scoring/nelder-mead.ts",
+      "packages/EDA/src/probabilistic-scoring/pmpo-defs.ts",
+      "packages/EDA/src/probabilistic-scoring/pmpo-utils.ts",
+      "packages/EDA/src/probabilistic-scoring/prob-scoring.ts",
+      "packages/EDA/src/probabilistic-scoring/stat-tools.ts",
+      "packages/EDA/src/regression.ts",
+      "packages/EDA/src/softmax-classifier.ts",
+      "packages/EDA/src/stat-tools.ts",
+      "packages/EDA/src/svm.ts",
+      "packages/EDA/src/utils.ts",
+      "packages/EDA/src/workers/softmax-worker.ts",
+      "packages/EDA/src/workers/tsne-worker.ts",
+      "packages/EDA/src/workers/umap-worker.ts",
+      "packages/EDA/src/xgbooster.ts"
+    ],
+    "tests": [
+      "packages/EDA/src/package-test.ts",
+      "packages/EDA/src/tests/anova-tests.ts",
+      "packages/EDA/src/tests/classifiers-tests.ts",
+      "packages/EDA/src/tests/dim-reduction-tests.ts",
+      "packages/EDA/src/tests/linear-methods-tests.ts",
+      "packages/EDA/src/tests/mis-vals-imputation-tests.ts",
+      "packages/EDA/src/tests/pareto-tests.ts",
+      "packages/EDA/src/tests/pmpo-tests.ts",
+      "packages/EDA/src/tests/utils.ts"
+    ],
+    "scripts": [
+      "packages/EDA/scripts/command.txt",
+      "packages/EDA/scripts/exportForTS.py",
+      "packages/EDA/scripts/exportForTSConstants.py",
+      "packages/EDA/scripts/func.json",
+      "packages/EDA/scripts/module.json"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/EDA/CHANGELOG.md",
+      "packages/EDA/CLAUDE.md",
+      "packages/EDA/CREDITS.md",
+      "packages/EDA/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:EDA:dimensionality-reduction",
+      "name": "Dimensionality Reduction",
+      "description": "Reduces high-dimensional tabular data to a small number of components via PCA and multi-column projection, with preprocessing adapters for numeric and string columns and an optional UMAP/t-SNE pipeline.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:PCA",
+          "kind": "RegisteredFunction",
+          "name": "PCA",
+          "friendly_name": null,
+          "role": null,
+          "description": "Principal component analysis (PCA)",
+          "tags": []
+        },
+        {
+          "id": "func:EDA:Multi Column Dimensionality Reduction",
+          "kind": "RegisteredFunction",
+          "name": "Multi Column Dimensionality Reduction",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:None (number)",
+          "kind": "RegisteredFunction",
+          "name": "None (number)",
+          "friendly_name": null,
+          "role": "dim-red-preprocessing-function",
+          "description": null,
+          "tags": [
+            "dim-red-preprocessing-function"
+          ]
+        },
+        {
+          "id": "func:EDA:None (string)",
+          "kind": "RegisteredFunction",
+          "name": "None (string)",
+          "friendly_name": null,
+          "role": "dim-red-preprocessing-function",
+          "description": null,
+          "tags": [
+            "dim-red-preprocessing-function"
+          ]
+        },
+        {
+          "id": "doc:/help/explore/dim-reduction",
+          "kind": "DocPage",
+          "title": "Dimensionality reduction",
+          "url": "/help/explore/dim-reduction"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/workflows/eda",
+          "kind": "DocPage",
+          "title": "Exploratory data analysis",
+          "url": "/help/datagrok/solutions/workflows/eda"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/EDA/src/eda-tools.ts",
+          "packages/EDA/src/eda-ui.ts",
+          "packages/EDA/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:EDA:dbscan-clustering",
+      "name": "DBSCAN Clustering",
+      "description": "Density-based spatial clustering of applications with noise (DBSCAN), available as a standalone function on a dataframe and as a post-processing step wired into the dimensionality-reduction pipeline.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:DBSCAN",
+          "kind": "RegisteredFunction",
+          "name": "DBSCAN",
+          "friendly_name": null,
+          "role": null,
+          "description": "Density-based spatial clustering of applications with noise (DBSCAN)",
+          "tags": []
+        },
+        {
+          "id": "func:EDA:DBSCAN clustering",
+          "kind": "RegisteredFunction",
+          "name": "DBSCAN clustering",
+          "friendly_name": null,
+          "role": "dim-red-postprocessing-function",
+          "description": null,
+          "tags": [
+            "dim-red-postprocessing-function"
+          ]
+        },
+        {
+          "id": "doc:/help/explore/cluster-data",
+          "kind": "DocPage",
+          "title": "Cluster data",
+          "url": "/help/explore/cluster-data"
+        },
+        {
+          "id": "doc:/help/explore/cluster-test",
+          "kind": "DocPage",
+          "title": "Tests: Cluster data",
+          "url": "/help/explore/cluster-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:EDA:mcl-clustering",
+      "name": "MCL Clustering",
+      "description": "Markov Clustering (MCL) groups dataset rows by simulating stochastic flow on a graph, exposed as a compute function, a configurable viewer, and a parameter-editor panel.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:MCLClustering",
+          "kind": "RegisteredFunction",
+          "name": "MCLClustering",
+          "friendly_name": null,
+          "role": null,
+          "description": "Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.",
+          "tags": []
+        },
+        {
+          "id": "func:EDA:MCL",
+          "kind": "RegisteredFunction",
+          "name": "MCL",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Markov clustering viewer",
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "func:EDA:GetMCLEditor",
+          "kind": "RegisteredFunction",
+          "name": "GetMCLEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": [
+            "editor"
+          ]
+        },
+        {
+          "id": "doc:/help/explore/cluster-data",
+          "kind": "DocPage",
+          "title": "Cluster data",
+          "url": "/help/explore/cluster-data"
+        },
+        {
+          "id": "doc:/help/explore/cluster-test",
+          "kind": "DocPage",
+          "title": "Tests: Cluster data",
+          "url": "/help/explore/cluster-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/EDA/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:EDA:pls-multivariate-analysis",
+      "name": "PLS / Multivariate Analysis",
+      "description": "Partial Least Squares (PLS) regression and multivariate analysis (MVA) that identifies latent factors and builds a linear predictive model maximally correlated with a response variable.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:PLS",
+          "kind": "RegisteredFunction",
+          "name": "PLS",
+          "friendly_name": null,
+          "role": null,
+          "description": "Compute partial least squares (PLS) regression analysis components: prediction, regression coefficients, T- & U-scores, X-loadings.",
+          "tags": []
+        },
+        {
+          "id": "func:EDA:topMenuPLS",
+          "kind": "RegisteredFunction",
+          "name": "topMenuPLS",
+          "friendly_name": null,
+          "role": null,
+          "description": "Compute partial least squares (PLS) regression components. They maximally summarize the variation of the predictors while maximizing correlation with the…",
+          "tags": []
+        },
+        {
+          "id": "func:EDA:multivariateAnalysis",
+          "kind": "RegisteredFunction",
+          "name": "multivariateAnalysis",
+          "friendly_name": null,
+          "role": null,
+          "description": "Multidimensional data analysis using partial least squares (PLS) regression.",
+          "tags": []
+        },
+        {
+          "id": "func:EDA:MVA demo",
+          "kind": "RegisteredFunction",
+          "name": "MVA demo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.",
+          "tags": []
+        },
+        {
+          "id": "func:EDA:trainPLSRegression",
+          "kind": "RegisteredFunction",
+          "name": "trainPLSRegression",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:applyPLSRegression",
+          "kind": "RegisteredFunction",
+          "name": "applyPLSRegression",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isApplicablePLSRegression",
+          "kind": "RegisteredFunction",
+          "name": "isApplicablePLSRegression",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:visualizePLSRegression",
+          "kind": "RegisteredFunction",
+          "name": "visualizePLSRegression",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isInteractivePLSRegression",
+          "kind": "RegisteredFunction",
+          "name": "isInteractivePLSRegression",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/multi-curve-viewer",
+          "kind": "DocPage",
+          "title": "Multi curve viewer",
+          "url": "/help/visualize/viewers/multi-curve-viewer"
+        },
+        {
+          "id": "doc:/help/explore/multivariate-analysis",
+          "kind": "DocPage",
+          "title": "Multivariate analysis",
+          "url": "/help/explore/multivariate-analysis"
+        },
+        {
+          "id": "doc:/help/explore/multivariate-analysis/multivariate-analysis-test",
+          "kind": "DocPage",
+          "title": "Tests: multivariate analysis",
+          "url": "/help/explore/multivariate-analysis/multivariate-analysis-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/EDA/src/data-generators.ts",
+          "packages/EDA/src/package.ts",
+          "packages/EDA/src/pls/pls-constants.ts",
+          "packages/EDA/src/pls/pls-ml.ts",
+          "packages/EDA/src/pls/pls-tools.ts",
+          "packages/EDA/src/regression.ts",
+          "packages/EDA/src/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:EDA:svm-classification",
+      "name": "SVM Classification",
+      "description": "Support Vector Machine (SVM) binary and multi-class classification with four kernel variants—Linear, RBF, Polynomial, and Sigmoid—each exposing train, apply, applicability-check, interactive-check, and visualization…",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:trainLinearKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "trainLinearKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:applyLinearKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "applyLinearKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isApplicableLinearKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "isApplicableLinearKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isInteractiveLinearKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "isInteractiveLinearKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:visualizeLinearKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "visualizeLinearKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:trainRBFkernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "trainRBFkernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:applyRBFkernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "applyRBFkernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isApplicableRBFkernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "isApplicableRBFkernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isInteractiveRBFkernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "isInteractiveRBFkernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:visualizeRBFkernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "visualizeRBFkernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:trainPolynomialKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "trainPolynomialKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:applyPolynomialKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "applyPolynomialKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isApplicablePolynomialKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "isApplicablePolynomialKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isInteractivePolynomialKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "isInteractivePolynomialKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:visualizePolynomialKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "visualizePolynomialKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:trainSigmoidKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "trainSigmoidKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:applySigmoidKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "applySigmoidKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isApplicableSigmoidKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "isApplicableSigmoidKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isInteractiveSigmoidKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "isInteractiveSigmoidKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:visualizeSigmoidKernelSVM",
+          "kind": "RegisteredFunction",
+          "name": "visualizeSigmoidKernelSVM",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/EDA/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:EDA:anova",
+      "name": "ANOVA",
+      "description": "One-way analysis of variance that determines whether a categorical factor has a statistically significant effect on a numeric column, presenting an F-test result with tabbed result views.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:ANOVA",
+          "kind": "RegisteredFunction",
+          "name": "ANOVA",
+          "friendly_name": null,
+          "role": null,
+          "description": "One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/explore/anova",
+          "kind": "DocPage",
+          "title": "Analysis of variances",
+          "url": "/help/explore/anova"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": [
+          "packages/EDA/src/tests/anova-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:EDA:knn-imputation",
+      "name": "KNN Missing Value Imputation",
+      "description": "Fills missing values in numeric columns using the k-nearest neighbors algorithm, available as both a column-level dialog and a whole-table batch operation.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:KNN impute",
+          "kind": "RegisteredFunction",
+          "name": "KNN impute",
+          "friendly_name": null,
+          "role": null,
+          "description": "Missing values imputation using the k-nearest neighbors method (KNN)",
+          "tags": []
+        },
+        {
+          "id": "func:EDA:KNN imputation for a table",
+          "kind": "RegisteredFunction",
+          "name": "KNN imputation for a table",
+          "friendly_name": null,
+          "role": null,
+          "description": "Missing values imputation using the k-nearest neighbors method",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/explore/missing-values-imputation",
+          "kind": "DocPage",
+          "title": "Missing values imputation",
+          "url": "/help/explore/missing-values-imputation"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:EDA:linear-regression",
+      "name": "Linear Regression",
+      "description": "Ordinary least-squares linear regression model adapter with train, apply, and applicability-check functions for use in the platform's predictive modelling pipeline.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:trainLinearRegression",
+          "kind": "RegisteredFunction",
+          "name": "trainLinearRegression",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:applyLinearRegression",
+          "kind": "RegisteredFunction",
+          "name": "applyLinearRegression",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isApplicableLinearRegression",
+          "kind": "RegisteredFunction",
+          "name": "isApplicableLinearRegression",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isInteractiveLinearRegression",
+          "kind": "RegisteredFunction",
+          "name": "isInteractiveLinearRegression",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/EDA/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:EDA:softmax-classification",
+      "name": "Softmax (Logistic) Classification",
+      "description": "Multi-class softmax classifier adapter with train, apply, and applicability-check functions for use in the platform's predictive modelling pipeline.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:trainSoftmax",
+          "kind": "RegisteredFunction",
+          "name": "trainSoftmax",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:applySoftmax",
+          "kind": "RegisteredFunction",
+          "name": "applySoftmax",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isApplicableSoftmax",
+          "kind": "RegisteredFunction",
+          "name": "isApplicableSoftmax",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isInteractiveSoftmax",
+          "kind": "RegisteredFunction",
+          "name": "isInteractiveSoftmax",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/EDA/src/package.ts",
+          "packages/EDA/src/softmax-classifier.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:EDA:xgboost",
+      "name": "XGBoost",
+      "description": "Gradient-boosted tree ensemble (XGBoost) model adapter with train, apply, and applicability-check functions for use in the platform's predictive modelling pipeline.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:trainXGBooster",
+          "kind": "RegisteredFunction",
+          "name": "trainXGBooster",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:applyXGBooster",
+          "kind": "RegisteredFunction",
+          "name": "applyXGBooster",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isApplicableXGBooster",
+          "kind": "RegisteredFunction",
+          "name": "isApplicableXGBooster",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:isInteractiveXGBooster",
+          "kind": "RegisteredFunction",
+          "name": "isInteractiveXGBooster",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/EDA/src/package.ts",
+          "packages/EDA/src/xgbooster.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:EDA:pareto-front",
+      "name": "Pareto Front / Multi-Objective Optimization",
+      "description": "Identifies Pareto-optimal rows across conflicting numeric objectives and displays the trade-off frontier in a dedicated interactive Pareto front viewer.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:Pareto Front",
+          "kind": "RegisteredFunction",
+          "name": "Pareto Front",
+          "friendly_name": null,
+          "role": null,
+          "description": "Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.",
+          "tags": []
+        },
+        {
+          "id": "func:EDA:Pareto front",
+          "kind": "RegisteredFunction",
+          "name": "Pareto front",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Pareto front viewer",
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "doc:/help/visualize/viewers/pareto-front-viewer",
+          "kind": "DocPage",
+          "title": "Pareto front viewer",
+          "url": "/help/visualize/viewers/pareto-front-viewer"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:EDA:pmpo",
+      "name": "Probabilistic Multi-Parameter Optimization (pMPO)",
+      "description": "Trains probabilistic MPO desirability models from numeric or categorical columns and exports them as MPO profiles, with an interactive app UI and synthetic dataset generator.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:EDA:trainPmpo",
+          "kind": "RegisteredFunction",
+          "name": "trainPmpo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Train probabilistic multi-parameter optimization (pMPO) model",
+          "tags": []
+        },
+        {
+          "id": "func:EDA:getPmpoAppItems",
+          "kind": "RegisteredFunction",
+          "name": "getPmpoAppItems",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:EDA:generatePmpoDataset",
+          "kind": "RegisteredFunction",
+          "name": "generatePmpoDataset",
+          "friendly_name": null,
+          "role": null,
+          "description": "Generates syntethetic dataset oriented on the pMPO modeling",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/EDA/src/missing-values-imputation/knn-imputer.ts",
+          "packages/EDA/src/package.ts",
+          "packages/EDA/src/pareto-optimization/defs.ts",
+          "packages/EDA/src/pareto-optimization/utils.ts",
+          "packages/EDA/src/probabilistic-scoring/nelder-mead.ts",
+          "packages/EDA/src/probabilistic-scoring/prob-scoring.ts",
+          "packages/EDA/src/probabilistic-scoring/stat-tools.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

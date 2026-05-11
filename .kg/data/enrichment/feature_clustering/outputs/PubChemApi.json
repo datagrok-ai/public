@@ -1,0 +1,91 @@
+{
+  "package_id": "pkg:PubChemApi",
+  "features": [
+    {
+      "id": "feature:PubChemApi:compound-info-panel",
+      "name": "Compound Info Panel",
+      "description": "Displays a PubChem-sourced information panel for a selected compound, surfacing physicochemical properties and metadata directly in the Datagrok sidebar.",
+      "category": "chem-infopanel",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:PubChemApi:Databases | PubChem | Info", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/PubChemApi/readme.md",                                               "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",                "weight": 0.75, "role": "doc"},
+        {"id": "clog:PubChemApi:1.2.1:2",                                                          "weight": 0.55, "role": "related"},
+        {"id": "clog:PubChemApi:1.1.13:0",                                                         "weight": 0.5,  "role": "related"}
+      ],
+      "evidence_summary": "Single panel function under 'Databases | PubChem | Info' with direct support from the package readme and the platform info-panels guide."
+    },
+    {
+      "id": "feature:PubChemApi:chemical-search",
+      "name": "Chemical Structure Search",
+      "description": "Three PubChem-backed search widgets (Substructure, Similarity, Identity) that let users query the PubChem database for related compounds from within Datagrok.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:PubChemApi:Databases | PubChem | Substructure Search", "weight": 1.0,  "role": "core"},
+        {"id": "func:PubChemApi:Databases | PubChem | Similarity Search",   "weight": 1.0,  "role": "core"},
+        {"id": "func:PubChemApi:Databases | PubChem | Identity Search",     "weight": 1.0,  "role": "core"},
+        {"id": "clog:PubChemApi:1.2.1:0",                                   "weight": 0.65, "role": "related"},
+        {"id": "clog:PubChemApi:1.2.1:1",                                   "weight": 0.75, "role": "related"},
+        {"id": "clog:PubChemApi:1.1.13:1",                                  "weight": 0.7,  "role": "related"},
+        {"id": "clog:PubChemApi:1.3.1:0",                                   "weight": 0.55, "role": "related"}
+      ],
+      "evidence_summary": "Three functions share the 'Databases | PubChem | {Search type}' menu path and panel role, and multiple changelog entries track fixes and enhancements specifically to these search widgets."
+    },
+    {
+      "id": "feature:PubChemApi:identifier-conversion",
+      "name": "Chemical Identifier Conversion",
+      "description": "Converter functions that translate between PubChem CIDs, InChI Keys, SMILES, and IUPAC names by calling the PubChem REST API.",
+      "category": "chem-conversion",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:PubChemApi:pubChemToSmiles",   "weight": 1.0,  "role": "core"},
+        {"id": "func:PubChemApi:inchiKeysToSmiles",  "weight": 1.0,  "role": "core"},
+        {"id": "func:PubChemApi:GetIupacName",       "weight": 0.9,  "role": "core"},
+        {"id": "clog:PubChemApi:1.1.16:0",           "weight": 0.7,  "role": "related"},
+        {"id": "clog:PubChemApi:1.1.15:0",           "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "All three functions carry the 'converter' role and operate by fetching a single alternative identifier from PubChem; changelog entries document the addition and bug-fixing of exactly these functions."
+    }
+  ],
+  "feature_relations": [
+    {
+      "from": "feature:PubChemApi:compound-info-panel",
+      "to":   "feature:PubChemApi:chemical-search",
+      "kind": "sibling"
+    },
+    {
+      "from": "feature:PubChemApi:identifier-conversion",
+      "to":   "feature:PubChemApi:chemical-search",
+      "kind": "related"
+    }
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/PubChemApi/claude.md",
+    "doc:/packages/PubChemApi/credits.md",
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+    "clog:PubChemApi:1.2.3:0",
+    "clog:PubChemApi:1.2.2:0"
+  ]
+}

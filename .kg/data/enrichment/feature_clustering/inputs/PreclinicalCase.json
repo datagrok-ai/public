@@ -1,0 +1,218 @@
+{
+  "package": {
+    "id": "pkg:PreclinicalCase",
+    "name": "PreclinicalCase",
+    "friendly_name": "PreclinicalCase",
+    "version": "0.0.1",
+    "category": "Health",
+    "description": "PreclinicalCase package",
+    "extras": {
+      "npm_name": "preclinicalcase",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:PreclinicalCase:Preclinical Case",
+      "name": "Preclinical Case",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PreclinicalCase:preclinicalCaseAppTreeBrowser",
+      "name": "preclinicalCaseAppTreeBrowser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PreclinicalCase:xptFileHandler",
+      "name": "xptFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "list"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "xpt"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PreclinicalCase:Run CDISC CORE Validation",
+      "name": "Run CDISC CORE Validation",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Run CDISC CORE validation on SEND datasets",
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "dynamic"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PreclinicalCase:openPreclinicalCaseView",
+      "name": "openPreclinicalCaseView",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Open a Preclinical Case view by name. Loads the study if needed. Used by tests.",
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PreclinicalCase:combinedMeasurementsRenderer",
+      "name": "combinedMeasurementsRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PreclinicalCase:sdiscRuleViolationRenderer",
+      "name": "sdiscRuleViolationRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:PreclinicalCase:yAxisRenderer",
+      "name": "yAxisRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:PreclinicalCase:ReadSas",
+      "name": "ReadSas",
+      "language": "python",
+      "description": null
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/PreclinicalCase/readme.md",
+      "title": "Preclinical Case",
+      "url": "/packages/PreclinicalCase/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/PreclinicalCase/credits.md",
+      "title": "PreclinicalCase — Third-Party Libraries",
+      "url": "/packages/PreclinicalCase/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/PreclinicalCase/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/PreclinicalCase/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/ClinicalCase/readme.md",
+      "title": "Preclinical Case",
+      "url": "/packages/ClinicalCase/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/concepts/concepts",
+      "title": "Core Datagrok concepts",
+      "url": "/help/datagrok/concepts/concepts",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [],
+  "stats": {
+    "functions": 8,
+    "scripts": 1,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 5,
+    "changelog": 0
+  }
+}

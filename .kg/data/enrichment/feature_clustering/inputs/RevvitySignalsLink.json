@@ -1,0 +1,416 @@
+{
+  "package": {
+    "id": "pkg:RevvitySignalsLink",
+    "name": "RevvitySignalsLink",
+    "friendly_name": "RevvitySignalsLink",
+    "version": "1.0.0",
+    "category": null,
+    "description": "Integration with RevvitySignals",
+    "extras": {
+      "npm_name": "revvitysignalslink",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:RevvitySignalsLink:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:RevvitySignalsLink:Revvity Signals",
+      "name": "Revvity Signals",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Chem"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:RevvitySignalsLink:revvitySignalsLinkAppTreeBrowser",
+      "name": "revvitySignalsLinkAppTreeBrowser",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic",
+        "view"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:RevvitySignalsLink:Search Entities",
+      "name": "Search Entities",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:RevvitySignalsLink:Search Entities With Structures",
+      "name": "Search Entities With Structures",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "bool"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:RevvitySignalsLink:Get Users",
+      "name": "Get Users",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:RevvitySignalsLink:Get Libraries",
+      "name": "Get Libraries",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:RevvitySignalsLink:Get Tags",
+      "name": "Get Tags",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:RevvitySignalsLink:Search Terms",
+      "name": "Search Terms",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:RevvitySignalsLink:Get Terms For Field",
+      "name": "Get Terms For Field",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "string",
+        "bool"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:RevvitySignalsLink:Get Structure By Id",
+      "name": "Get Structure By Id",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:RevvitySignalsLink:Revvity ETL",
+      "name": "Revvity ETL",
+      "language": "python",
+      "description": "ETL process for Revvity Signals data - exports libraries, processes CSV files, and prepares data for MolTrack"
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/RevvitySignalsLink/credits.md",
+      "title": "RevvitySignalsLink — Third-Party Libraries",
+      "url": "/packages/RevvitySignalsLink/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/RevvitySignalsLink/claude.md",
+      "title": "RevvitySignalsLink",
+      "url": "/packages/RevvitySignalsLink/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/RevvitySignalsLink/readme.md",
+      "title": "RevvitySignalsLink",
+      "url": "/packages/RevvitySignalsLink/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_internal/tests/elastic-search-test",
+      "title": "Tests: Elastic search",
+      "url": "/help/_internal/tests/elastic-search-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/tags-favorites-test",
+      "title": "Tests: Tags",
+      "url": "/help/_internal/tests/tags-favorites-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/datagrok/_deprecated/data-search",
+      "title": "Search data",
+      "url": "/help/datagrok/_deprecated/data-search",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/_deprecated/data-search-patterns",
+      "title": "Search patterns",
+      "url": "/help/datagrok/_deprecated/data-search-patterns",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/_deprecated/smart-search",
+      "title": "Smart search",
+      "url": "/help/datagrok/_deprecated/smart-search",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/concepts/objects",
+      "title": "Entities",
+      "url": "/help/datagrok/concepts/objects",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/explore/search-filter-select/data-search-test",
+      "title": "Tests: Search",
+      "url": "/help/explore/search-filter-select/data-search-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/govern/access-control/users-and-groups",
+      "title": "Users and groups",
+      "url": "/help/govern/access-control/users-and-groups",
+      "kind": "guide",
+      "audience": "admin"
+    },
+    {
+      "id": "doc:/help/govern/catalog/tags",
+      "title": "Tags",
+      "url": "/help/govern/catalog/tags",
+      "kind": "guide",
+      "audience": "admin"
+    },
+    {
+      "id": "doc:/packages/Admetica/credits.md",
+      "title": "Admetica — Third-Party Libraries",
+      "url": "/packages/Admetica/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Alation/credits.md",
+      "title": "Alation — Third-Party Libraries",
+      "url": "/packages/Alation/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/ApiSamples/credits.md",
+      "title": "ApiSamples — Third-Party Libraries",
+      "url": "/packages/ApiSamples/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/ApiTests/credits.md",
+      "title": "ApiTests — Third-Party Libraries",
+      "url": "/packages/ApiTests/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Arrow/credits.md",
+      "title": "Arrow — Third-Party Libraries",
+      "url": "/packages/Arrow/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/BenchlingLink/credits.md",
+      "title": "BenchlingLink — Third-Party Libraries",
+      "url": "/packages/BenchlingLink/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/credits.md",
+      "title": "Bio — Third-Party Libraries",
+      "url": "/packages/Bio/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/BioNeMo/credits.md",
+      "title": "BioNeMo — Third-Party Libraries",
+      "url": "/packages/BioNeMo/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Biologics/credits.md",
+      "title": "Biologics — Third-Party Libraries",
+      "url": "/packages/Biologics/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/BiostructureViewer/credits.md",
+      "title": "BiostructureViewer — Third-Party Libraries",
+      "url": "/packages/BiostructureViewer/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Boltz1/credits.md",
+      "title": "Boltz1 — Third-Party Libraries",
+      "url": "/packages/Boltz1/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/CVMTests/credits.md",
+      "title": "CVMTests — Third-Party Libraries",
+      "url": "/packages/CVMTests/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/CddVaultLink/credits.md",
+      "title": "CddVaultLink — Third-Party Libraries",
+      "url": "/packages/CddVaultLink/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:RevvitySignalsLink:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2026-04-22",
+      "ticket": null,
+      "text": "Integration with [Revvity Signals](https://revvitysignals.com/) registration system."
+    }
+  ],
+  "stats": {
+    "functions": 11,
+    "scripts": 1,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 1
+  }
+}

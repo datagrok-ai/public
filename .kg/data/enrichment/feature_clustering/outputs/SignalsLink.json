@@ -1,0 +1,24 @@
+{
+  "package_id": "pkg:SignalsLink",
+  "features": [
+    {
+      "id": "feature:SignalsLink:eln-app-browser",
+      "name": "Signals ELN App Browser",
+      "description": "Provides a Datagrok application and tree-browser sidebar panel for navigating and accessing data from the Revvity Signals electronic lab notebook. Users can browse ELN entries without leaving the Datagrok platform.",
+      "category": "data-import",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:SignalsLink:Signals",              "weight": 1.0, "role": "core"},
+        {"id": "func:SignalsLink:signalsAppTreeBrowser", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/SignalsLink/readme.md",   "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Both functions implement the same ELN integration — one registers the top-level app view (browsePath: Chem), the other the tree-browser sidebar panel — and the package readme documents the same capability."
+    }
+  ],
+  "feature_relations": [],
+  "unassigned_member_ids": [
+    "doc:/packages/SignalsLink/credits.md",
+    "doc:/help/transform/link-tables",
+    "doc:/packages/CddVaultLink/readme.md"
+  ]
+}

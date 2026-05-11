@@ -1,0 +1,966 @@
+{
+  "package": {
+    "id": "pkg:Samples",
+    "name": "Samples",
+    "friendly_name": "Samples",
+    "category": null,
+    "description": "*Samples* contains sample [data connectors](https://datagrok.ai/help/access/databases/connectors/) and demonstrates [scripting](https://datagrok.ai/help/compute/scripting) and [notebooks](https://datagrok.ai/help/compute/jupyter-notebook) functionality."
+  },
+  "files": {
+    "src": [
+      "packages/Samples/src/package.ts",
+      "packages/Samples/src/test/projects-test.ts"
+    ],
+    "tests": [
+      "packages/Samples/src/package-test.ts"
+    ],
+    "scripts": [
+      "packages/Samples/_deprecated/scripts/context-actions/harmonize-county-names.grok",
+      "packages/Samples/_deprecated/scripts/info-panels/spectrogram-panel.grok",
+      "packages/Samples/_deprecated/scripts/knn.py",
+      "packages/Samples/_deprecated/scripts/newick.py",
+      "packages/Samples/_deprecated/scripts/pca.jl",
+      "packages/Samples/_deprecated/scripts/pca.js",
+      "packages/Samples/_deprecated/scripts/predict-sales.grok",
+      "packages/Samples/_deprecated/scripts/viewer-histogram.grok",
+      "packages/Samples/_deprecated/scripts/viewer-scatter.grok.bak",
+      "packages/Samples/scripts/info-panels/input-cell.grok",
+      "packages/Samples/scripts/info-panels/input-column.grok",
+      "packages/Samples/scripts/info-panels/input-user.grok",
+      "packages/Samples/scripts/info-panels/markup-button-panel.grok",
+      "packages/Samples/scripts/info-panels/markup-panel.grok",
+      "packages/Samples/scripts/info-panels/missing-value-analysis.grok",
+      "packages/Samples/scripts/info-panels/test-value-panel.grok",
+      "packages/Samples/scripts/js/cars.js",
+      "packages/Samples/scripts/js/function-input.js",
+      "packages/Samples/scripts/js/input-choice.js",
+      "packages/Samples/scripts/js/validate-email.js",
+      "packages/Samples/scripts/julia/julia_dup.jl",
+      "packages/Samples/scripts/julia/scatter_plot.jl",
+      "packages/Samples/scripts/julia/t_test.jl",
+      "packages/Samples/scripts/node/js_dup.js",
+      "packages/Samples/scripts/octave/octave_graphics_test.m",
+      "packages/Samples/scripts/pyodide/contour.py",
+      "packages/Samples/scripts/pyodide/ridge-plot.py",
+      "packages/Samples/scripts/pyodide/stream_plot.py",
+      "packages/Samples/scripts/python/PythonLibs.py",
+      "packages/Samples/scripts/python/bmi.py",
+      "packages/Samples/scripts/python/cell_imaging_segmentation.py",
+      "packages/Samples/scripts/python/datawig_test.py",
+      "packages/Samples/scripts/python/exif.py",
+      "packages/Samples/scripts/python/glom_env_test.py",
+      "packages/Samples/scripts/python/glom_env_test_global.py",
+      "packages/Samples/scripts/python/glom_env_test_inplace.py",
+      "packages/Samples/scripts/python/image_classification.py",
+      "packages/Samples/scripts/python/python_dup.py",
+      "packages/Samples/scripts/python/scalogram.py",
+      "packages/Samples/scripts/python/scatter_plot.py",
+      "packages/Samples/scripts/python/t_test.py",
+      "packages/Samples/scripts/python/ulmo.py",
+      "packages/Samples/scripts/r/anova.R",
+      "packages/Samples/scripts/r/autocorrelation.R",
+      "packages/Samples/scripts/r/bsa.R",
+      "packages/Samples/scripts/r/contour_plot.R",
+      "packages/Samples/scripts/r/financial_chart.R",
+      "packages/Samples/scripts/r/fitting_drc.R",
+      "packages/Samples/scripts/r/iir_filter.R",
+      "packages/Samples/scripts/r/knn.R",
+      "packages/Samples/scripts/r/ks_test.R",
+      "packages/Samples/scripts/r/lda.R",
+      "packages/Samples/scripts/r/linear_regression.R",
+      "packages/Samples/scripts/r/list_packages.R",
+      "packages/Samples/scripts/r/lmer.R",
+      "packages/Samples/scripts/r/manova.R",
+      "packages/Samples/scripts/r/pca.R",
+      "packages/Samples/scripts/r/pls.R",
+      "packages/Samples/scripts/r/predictive_model_svm.R",
+      "packages/Samples/scripts/r/r_dup.R",
+      "packages/Samples/scripts/r/renv_spelling.R",
+      "packages/Samples/scripts/r/scalogram.R",
+      "packages/Samples/scripts/r/scatter_plot.R",
+      "packages/Samples/scripts/r/sentiment.R",
+      "packages/Samples/scripts/r/spectogram.R",
+      "packages/Samples/scripts/r/surface_plot.R",
+      "packages/Samples/scripts/r/t_test.R",
+      "packages/Samples/scripts/r/ternary_plot.R",
+      "packages/Samples/scripts/r/time_series_decomposition.R",
+      "packages/Samples/scripts/r/time_series_forecasting.R"
+    ],
+    "queries": [
+      "packages/Samples/_deprecated/projects/aact/queries/queries.sql",
+      "packages/Samples/projects/coffee-company/queries/stores-in-state-by-sales.sql",
+      "packages/Samples/projects/coffee-company/queries/stores-in-state.sql",
+      "packages/Samples/queries/access-northwind.sql",
+      "packages/Samples/queries/clickhouse-northwind.sql",
+      "packages/Samples/queries/mariadb-northwind.sql",
+      "packages/Samples/queries/mssql-northwind.sql",
+      "packages/Samples/queries/mysql-northwind.sql",
+      "packages/Samples/queries/neo4j-northwind.cypher",
+      "packages/Samples/queries/oracle-northwind.sql",
+      "packages/Samples/queries/postgres-northwind.sql",
+      "packages/Samples/queries/postgresnet-world.sql"
+    ],
+    "docs": [
+      "packages/Samples/CHANGELOG.md",
+      "packages/Samples/CREDITS.md",
+      "packages/Samples/README.md",
+      "packages/Samples/_deprecated/projects/plates/info.md",
+      "packages/Samples/dockerfiles/README.md",
+      "packages/Samples/projects/eeg/info.md"
+    ],
+    "config": [
+      "packages/Samples/_deprecated/projects/aact/connections/aact.json",
+      "packages/Samples/connections/access-northwind.json",
+      "packages/Samples/connections/clickhouse-northwind.json",
+      "packages/Samples/connections/mariadb-northwind.json",
+      "packages/Samples/connections/mssql-northwind.json",
+      "packages/Samples/connections/mysql-northwind.json",
+      "packages/Samples/connections/neo4j-northwind.json",
+      "packages/Samples/connections/oracle-northwind.json",
+      "packages/Samples/connections/postgres-northwind.json",
+      "packages/Samples/connections/postgres-world.json",
+      "packages/Samples/environments/datawig2.yaml",
+      "packages/Samples/environments/glom.yaml",
+      "packages/Samples/environments/glom_global.yaml",
+      "packages/Samples/environments/scalogram.yaml",
+      "packages/Samples/environments/ulmo.yaml",
+      "packages/Samples/projects/coffee-company/connections/postgres-starbucks.json"
+    ]
+  },
+  "features": [
+    {
+      "id": "feature:Samples:statistical-hypothesis-testing",
+      "name": "Statistical Hypothesis Testing",
+      "description": "Demonstrates parametric and non-parametric statistical tests (Welch's t-test, ANOVA, KS test, mixed-effects models) across Python, R, and Julia. Helps users compare group means and test distributional assumptions.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:Samples:t-test Python",
+          "kind": "Script",
+          "name": "t-test Python",
+          "language": "python",
+          "description": "Welch's t-test"
+        },
+        {
+          "id": "script:Samples:t-test R",
+          "kind": "Script",
+          "name": "t-test R",
+          "language": "r",
+          "description": "Welch's t-test"
+        },
+        {
+          "id": "script:Samples:t-test Julia",
+          "kind": "Script",
+          "name": "t-test Julia",
+          "language": "julia",
+          "description": "Welch's t-test"
+        },
+        {
+          "id": "script:Samples:ANOVA",
+          "kind": "Script",
+          "name": "ANOVA",
+          "language": "r",
+          "description": "One-way ANOVA"
+        },
+        {
+          "id": "script:Samples:KS Test",
+          "kind": "Script",
+          "name": "KS Test",
+          "language": "r",
+          "description": "Kolmogorov–Smirnov test (K–S test or KS test)"
+        },
+        {
+          "id": "script:Samples:LMER",
+          "kind": "Script",
+          "name": "LMER",
+          "language": "r",
+          "description": "Mixed Effects Model (LMER)"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:multivariate-analysis",
+      "name": "Multivariate Analysis and Predictive Modelling",
+      "description": "Covers dimensionality reduction (PCA, LDA, PLS), regression (linear, SVM), dose-response curve fitting, and missing-value imputation (kNN, Datawig). All implemented in R or Python.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:Samples:PCA R",
+          "kind": "Script",
+          "name": "PCA R",
+          "language": "r",
+          "description": "Principal Component Analysis"
+        },
+        {
+          "id": "script:Samples:LDA",
+          "kind": "Script",
+          "name": "LDA",
+          "language": "r",
+          "description": "Linear Discriminant Analysis"
+        },
+        {
+          "id": "script:Samples:MANOVA",
+          "kind": "Script",
+          "name": "MANOVA",
+          "language": "r",
+          "description": "MANOVA with 3 Dependent Variables ((x, y) ~ z)"
+        },
+        {
+          "id": "script:Samples:PLS",
+          "kind": "Script",
+          "name": "PLS",
+          "language": "r",
+          "description": "Partial Least Squares (PLS)"
+        },
+        {
+          "id": "script:Samples:Predictive Model SVM",
+          "kind": "Script",
+          "name": "Predictive Model SVM",
+          "language": "r",
+          "description": "Predictive model based on Support vector machine (SVM)"
+        },
+        {
+          "id": "script:Samples:Linear Regression",
+          "kind": "Script",
+          "name": "Linear Regression",
+          "language": "r",
+          "description": "Linear regression"
+        },
+        {
+          "id": "script:Samples:KNN R",
+          "kind": "Script",
+          "name": "KNN R",
+          "language": "r",
+          "description": "Imputes (numerical) missing values using the kNN algorithm"
+        },
+        {
+          "id": "script:Samples:DatawigTest",
+          "kind": "Script",
+          "name": "DatawigTest",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Samples:Fitting DRC",
+          "kind": "Script",
+          "name": "Fitting DRC",
+          "language": "r",
+          "description": "Fit dose-response curve with a 4-parameter model with no constrain"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:visualization",
+      "name": "Scientific Visualization",
+      "description": "Provides scatter, contour, surface, ternary, and financial chart scripts in R, Python, and Julia, demonstrating cross-language plotting against Datagrok dataframes.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "script:Samples:Scatter Plot Python",
+          "kind": "Script",
+          "name": "Scatter Plot Python",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Samples:Scatter Plot R",
+          "kind": "Script",
+          "name": "Scatter Plot R",
+          "language": "r",
+          "description": null
+        },
+        {
+          "id": "script:Samples:Scatter Plot Julia",
+          "kind": "Script",
+          "name": "Scatter Plot Julia",
+          "language": "julia",
+          "description": null
+        },
+        {
+          "id": "script:Samples:Contour Plot",
+          "kind": "Script",
+          "name": "Contour Plot",
+          "language": "r",
+          "description": "Contour plot"
+        },
+        {
+          "id": "script:Samples:Surface Plot",
+          "kind": "Script",
+          "name": "Surface Plot",
+          "language": "r",
+          "description": "Surface plot"
+        },
+        {
+          "id": "script:Samples:Ternary Plot",
+          "kind": "Script",
+          "name": "Ternary Plot",
+          "language": "r",
+          "description": null
+        },
+        {
+          "id": "script:Samples:Financial Chart",
+          "kind": "Script",
+          "name": "Financial Chart",
+          "language": "r",
+          "description": "Charting tool to create standard financial charts given a time series"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:time-series-analysis",
+      "name": "Time-Series Analysis and Signal Processing",
+      "description": "Demonstrates ACF, ARIMA forecasting, time-series decomposition, IIR filtering, CWT scalograms, and spectrogram analysis in R and Python, covering the full signal/time-series workflow.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:Samples:ARIMA Forecasting",
+          "kind": "Script",
+          "name": "ARIMA Forecasting",
+          "language": "r",
+          "description": "Time series forecasting using ARIMA"
+        },
+        {
+          "id": "script:Samples:Time Series Decomposition",
+          "kind": "Script",
+          "name": "Time Series Decomposition",
+          "language": "r",
+          "description": "Time series decomposition"
+        },
+        {
+          "id": "script:Samples:ACF",
+          "kind": "Script",
+          "name": "ACF",
+          "language": "r",
+          "description": "Autocorrelation function (ACF) plots"
+        },
+        {
+          "id": "script:Samples:IIR Filter",
+          "kind": "Script",
+          "name": "IIR Filter",
+          "language": "r",
+          "description": "IIR Butterworth filter (high or low pass)"
+        },
+        {
+          "id": "script:Samples:Scalogram Python",
+          "kind": "Script",
+          "name": "Scalogram Python",
+          "language": "python",
+          "description": "CWT (Morlet wavelet) scalogram plot"
+        },
+        {
+          "id": "script:Samples:Scalogram R",
+          "kind": "Script",
+          "name": "Scalogram R",
+          "language": "r",
+          "description": "CWT (Morlet wavelet) scalogram plot"
+        },
+        {
+          "id": "script:Samples:Spectrogram",
+          "kind": "Script",
+          "name": "Spectrogram",
+          "language": "r",
+          "description": "Spectrogram plot"
+        },
+        {
+          "id": "script:Samples:Ulmo",
+          "kind": "Script",
+          "name": "Ulmo",
+          "language": "python",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:image-analysis",
+      "name": "Image Analysis",
+      "description": "Showcases Python-based image workflows: cell segmentation via Watershed, EXIF metadata extraction, and deep-learning-based image classification (EfficientNet).",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:Samples:Cell Imaging Segmentation",
+          "kind": "Script",
+          "name": "Cell Imaging Segmentation",
+          "language": "python",
+          "description": "Cell imaging segmentation based on Watershed algorithm"
+        },
+        {
+          "id": "script:Samples:EXIF",
+          "kind": "Script",
+          "name": "EXIF",
+          "language": "python",
+          "description": "Gets EXIF data from PNG, JPEG, WEBP"
+        },
+        {
+          "id": "script:Samples:Image Classification",
+          "kind": "Script",
+          "name": "Image Classification",
+          "language": "python",
+          "description": "Image classification based of Efficientnet model"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:nlp",
+      "name": "Natural Language Processing",
+      "description": "Demonstrates text analytics in R: sentiment classification (emotions and polarity) and spell-checking using renv-managed packages.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "script:Samples:Sentiment Classification",
+          "kind": "Script",
+          "name": "Sentiment Classification",
+          "language": "r",
+          "description": "Sentiment classification of emotions and polarity"
+        },
+        {
+          "id": "script:Samples:renvSpellingExample",
+          "kind": "Script",
+          "name": "renvSpellingExample",
+          "language": "r",
+          "description": "Simple Spell Checking"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:clinical-health-formulas",
+      "name": "Clinical Health Formulas",
+      "description": "Provides reference implementations of BMI (Body Mass Index) in Python and BSA (Body Surface Area) in R as minimal, single-formula scripting examples for clinical use.",
+      "category": "scripting",
+      "members": [
+        {
+          "id": "script:Samples:BMI",
+          "kind": "Script",
+          "name": "BMI",
+          "language": "python",
+          "description": "Body Mass Index"
+        },
+        {
+          "id": "script:Samples:BSA",
+          "kind": "Script",
+          "name": "BSA",
+          "language": "r",
+          "description": "Body Surface Area"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:multi-language-scripting-demos",
+      "name": "Multi-Language Scripting Demos",
+      "description": "Simple 'hello-world'-level scripts in Python, R, Julia, JavaScript (Node.js), and Octave that each duplicate a string, demonstrating that Datagrok can execute scripts in all supported languages.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:Samples:PythonDup",
+          "kind": "Script",
+          "name": "PythonDup",
+          "language": "python",
+          "description": "Duplicates a string in Python"
+        },
+        {
+          "id": "script:Samples:RDup",
+          "kind": "Script",
+          "name": "RDup",
+          "language": "r",
+          "description": "Duplicates a string in R"
+        },
+        {
+          "id": "script:Samples:JuliaDup",
+          "kind": "Script",
+          "name": "JuliaDup",
+          "language": "julia",
+          "description": "Duplicates a string in Julia"
+        },
+        {
+          "id": "script:Samples:JSDup",
+          "kind": "Script",
+          "name": "JSDup",
+          "language": "nodejs",
+          "description": "Duplicates a string in JS"
+        },
+        {
+          "id": "script:Samples:Octave Script 2",
+          "kind": "Script",
+          "name": "Octave Script 2",
+          "language": "octave",
+          "description": null
+        },
+        {
+          "id": "doc:/packages/Samples/readme.md",
+          "kind": "DocPage",
+          "title": "Demo",
+          "url": "/packages/Samples/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:js-ui-scripting",
+      "name": "JavaScript UI Scripting",
+      "description": "Shows how to write browser-side Datagrok scripts in JavaScript: value lookup on a dataframe (cars), UI embedding (Function Input), choice inputs (inputChoice), and client-side validation (validateEmail).",
+      "category": "scripting",
+      "members": [
+        {
+          "id": "script:Samples:cars",
+          "kind": "Script",
+          "name": "cars",
+          "language": "javascript",
+          "description": "Demonstrates value lookup"
+        },
+        {
+          "id": "script:Samples:Function Input",
+          "kind": "Script",
+          "name": "Function Input",
+          "language": "javascript",
+          "description": "Embedding"
+        },
+        {
+          "id": "script:Samples:inputChoice",
+          "kind": "Script",
+          "name": "inputChoice",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "script:Samples:validateEmail",
+          "kind": "Script",
+          "name": "validateEmail",
+          "language": "javascript",
+          "description": null
+        },
+        {
+          "id": "doc:/packages/ApiSamples/readme.md",
+          "kind": "DocPage",
+          "title": "API Samples",
+          "url": "/packages/ApiSamples/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:pyodide-scripting",
+      "name": "Pyodide (In-Browser Python) Scripting",
+      "description": "Three Scottish hills dataset examples — scatter plot, ridge plot, and contour plot — running Python entirely in the browser via Pyodide, demonstrating zero-server-side compute scripting.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:Samples:Scottish hills demo",
+          "kind": "Script",
+          "name": "Scottish hills demo",
+          "language": "pyodide",
+          "description": "Displays simple scatter plot"
+        },
+        {
+          "id": "script:Samples:Scottish hills ridge plot",
+          "kind": "Script",
+          "name": "Scottish hills ridge plot",
+          "language": "pyodide",
+          "description": "Displays ridge plot"
+        },
+        {
+          "id": "script:Samples:Scottish hills contour plot",
+          "kind": "Script",
+          "name": "Scottish hills contour plot",
+          "language": "pyodide",
+          "description": "Displays contour plot"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:environment-management",
+      "name": "Script Environment Management",
+      "description": "Demonstrates how Datagrok manages Python and R package environments: GlomEnv* scripts test environment isolation modes (default, global, inplace), while PythonLibs and ListPackages enumerate installed packages.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "script:Samples:GlomEnvTest",
+          "kind": "Script",
+          "name": "GlomEnvTest",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Samples:GlomEnvTestGlobal",
+          "kind": "Script",
+          "name": "GlomEnvTestGlobal",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Samples:GlomEnvTestInplace",
+          "kind": "Script",
+          "name": "GlomEnvTestInplace",
+          "language": "python",
+          "description": null
+        },
+        {
+          "id": "script:Samples:PythonLibs",
+          "kind": "Script",
+          "name": "PythonLibs",
+          "language": "python",
+          "description": "displays a list of locally installed python packages"
+        },
+        {
+          "id": "script:Samples:ListPackages",
+          "kind": "Script",
+          "name": "ListPackages",
+          "language": "r",
+          "description": "Body Mass Index"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:mssql-connector-demo",
+      "name": "Microsoft SQL Server Connector Demo",
+      "description": "Ten sample queries against an MSSQL Northwind database showcasing every parameter annotation type (int, double, datetime, string pattern, string choices) alongside unfiltered and order-based queries.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Samples:MSSQLAll",
+          "kind": "DataQuery",
+          "name": "MSSQLAll",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MSSQLByInt",
+          "kind": "DataQuery",
+          "name": "MSSQLByInt",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MSSQLByStringPatternInt",
+          "kind": "DataQuery",
+          "name": "MSSQLByStringPatternInt",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MSSQLByDouble",
+          "kind": "DataQuery",
+          "name": "MSSQLByDouble",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MSSQLByStringChoices",
+          "kind": "DataQuery",
+          "name": "MSSQLByStringChoices",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MSSQLByStringPatternString",
+          "kind": "DataQuery",
+          "name": "MSSQLByStringPatternString",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MSSQLByDatetime",
+          "kind": "DataQuery",
+          "name": "MSSQLByDatetime",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MSSQLByStringPatternDatetime",
+          "kind": "DataQuery",
+          "name": "MSSQLByStringPatternDatetime",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MSSQLOrders",
+          "kind": "DataQuery",
+          "name": "MSSQLOrders",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MSSQLProducts",
+          "kind": "DataQuery",
+          "name": "MSSQLProducts",
+          "description": null
+        },
+        {
+          "id": "doc:/help/datagrok/concepts/functions/func-params-annotation",
+          "kind": "DocPage",
+          "title": "Function annotations",
+          "url": "/help/datagrok/concepts/functions/func-params-annotation"
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/mssql",
+          "kind": "DocPage",
+          "title": "MS SQL",
+          "url": "/help/access/databases/connectors/mssql"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:postgresql-connector-demo",
+      "name": "PostgreSQL Connector Demo",
+      "description": "Ten sample queries against PostgreSQL Northwind and World databases, including parameterized, lookup, and join-style queries, demonstrating the full range of PostgreSQL connector capabilities.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Samples:postgres states",
+          "kind": "DataQuery",
+          "name": "postgres states",
+          "description": null
+        },
+        {
+          "id": "query:Samples:postgres countries",
+          "kind": "DataQuery",
+          "name": "postgres countries",
+          "description": null
+        },
+        {
+          "id": "query:Samples:postgres products",
+          "kind": "DataQuery",
+          "name": "postgres products",
+          "description": null
+        },
+        {
+          "id": "query:Samples:postgres employees",
+          "kind": "DataQuery",
+          "name": "postgres employees",
+          "description": null
+        },
+        {
+          "id": "query:Samples:postgres customers",
+          "kind": "DataQuery",
+          "name": "postgres customers",
+          "description": null
+        },
+        {
+          "id": "query:Samples:postgres order details by @quantity, @productName, @country",
+          "kind": "DataQuery",
+          "name": "postgres order details by @quantity, @productName, @country",
+          "description": null
+        },
+        {
+          "id": "query:Samples:postgres customers in @country",
+          "kind": "DataQuery",
+          "name": "postgres customers in @country",
+          "description": null
+        },
+        {
+          "id": "query:Samples:postgres productLookup",
+          "kind": "DataQuery",
+          "name": "postgres productLookup",
+          "description": null
+        },
+        {
+          "id": "query:Samples:postgres productDetails",
+          "kind": "DataQuery",
+          "name": "postgres productDetails",
+          "description": null
+        },
+        {
+          "id": "query:Samples:OrdersByEmployee",
+          "kind": "DataQuery",
+          "name": "OrdersByEmployee",
+          "description": null
+        },
+        {
+          "id": "query:Samples:domain usage",
+          "kind": "DataQuery",
+          "name": "domain usage",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/postgres",
+          "kind": "DocPage",
+          "title": "Postgres",
+          "url": "/help/access/databases/connectors/postgres"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:clickhouse-connector-demo",
+      "name": "ClickHouse Connector Demo",
+      "description": "Seven sample queries against a ClickHouse Northwind database, mirroring the PostgreSQL Northwind set, to demonstrate ClickHouse connectivity and parameterized queries in Datagrok.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Samples:click house states",
+          "kind": "DataQuery",
+          "name": "click house states",
+          "description": null
+        },
+        {
+          "id": "query:Samples:click house countries",
+          "kind": "DataQuery",
+          "name": "click house countries",
+          "description": null
+        },
+        {
+          "id": "query:Samples:click house products",
+          "kind": "DataQuery",
+          "name": "click house products",
+          "description": null
+        },
+        {
+          "id": "query:Samples:click house employees",
+          "kind": "DataQuery",
+          "name": "click house employees",
+          "description": null
+        },
+        {
+          "id": "query:Samples:click house customers",
+          "kind": "DataQuery",
+          "name": "click house customers",
+          "description": null
+        },
+        {
+          "id": "query:Samples:click house order details by @quantity, @productName, @country",
+          "kind": "DataQuery",
+          "name": "click house order details by @quantity, @productName, @country",
+          "description": null
+        },
+        {
+          "id": "query:Samples:click house customers in @country",
+          "kind": "DataQuery",
+          "name": "click house customers in @country",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/clickhouse",
+          "kind": "DocPage",
+          "title": "ClickHouse",
+          "url": "/help/access/databases/connectors/clickhouse"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Samples:rdbms-connector-demos",
+      "name": "RDBMS Connector Demos (Access, MariaDB, MySQL, Oracle)",
+      "description": "Lightweight Orders and Products query pairs for Microsoft Access, MariaDB, MySQL, and Oracle, providing minimal connectivity demonstrations for each of these RDBMS backends.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:Samples:Access Orders",
+          "kind": "DataQuery",
+          "name": "Access Orders",
+          "description": null
+        },
+        {
+          "id": "query:Samples:Access Products",
+          "kind": "DataQuery",
+          "name": "Access Products",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MariaDB Orders",
+          "kind": "DataQuery",
+          "name": "MariaDB Orders",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MariaDB Products",
+          "kind": "DataQuery",
+          "name": "MariaDB Products",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MySQL Orders",
+          "kind": "DataQuery",
+          "name": "MySQL Orders",
+          "description": null
+        },
+        {
+          "id": "query:Samples:MySQL Products",
+          "kind": "DataQuery",
+          "name": "MySQL Products",
+          "description": null
+        },
+        {
+          "id": "query:Samples:Oracle Orders",
+          "kind": "DataQuery",
+          "name": "Oracle Orders",
+          "description": null
+        },
+        {
+          "id": "query:Samples:Oracle Products",
+          "kind": "DataQuery",
+          "name": "Oracle Products",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/mariadb",
+          "kind": "DocPage",
+          "title": "MariaDB",
+          "url": "/help/access/databases/connectors/mariadb"
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/mysql",
+          "kind": "DocPage",
+          "title": "MySQL",
+          "url": "/help/access/databases/connectors/mysql"
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/oracle",
+          "kind": "DocPage",
+          "title": "Oracle",
+          "url": "/help/access/databases/connectors/oracle"
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/access",
+          "kind": "DocPage",
+          "title": "Access",
+          "url": "/help/access/databases/connectors/access"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

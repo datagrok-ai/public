@@ -1,0 +1,330 @@
+{
+  "package": {
+    "id": "pkg:KetcherSketcher",
+    "name": "KetcherSketcher",
+    "friendly_name": "Ketcher Sketcher",
+    "version": "2.4.2",
+    "category": "Cheminformatics",
+    "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
+    "extras": {
+      "npm_name": "@datagrok/ketcher-sketcher",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:KetcherSketcher:Ketcher",
+      "name": "Ketcher",
+      "friendly_name": null,
+      "role": "moleculeSketcher",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "moleculeSketcher"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/KetcherSketcher/claude.md",
+      "title": "KetcherSketcher",
+      "url": "/packages/KetcherSketcher/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/KetcherSketcher/credits.md",
+      "title": "KetcherSketcher — Third-Party Libraries",
+      "url": "/packages/KetcherSketcher/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/KetcherSketcher/readme.md",
+      "title": "Ketcher",
+      "url": "/packages/KetcherSketcher/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "title": "Cheminformatics",
+      "url": "/help/datagrok/solutions/domains/chem/chem",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/cheminformatics",
+      "title": "Cheminformatics",
+      "url": "/help/develop/domains/chem/cheminformatics",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/intro",
+      "title": "Cheminformatics concepts",
+      "url": "/help/develop/domains/chem/intro",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/readme.md",
+      "title": "Cheminformatics support",
+      "url": "/packages/Chem/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "title": "Scaffold tree",
+      "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "title": "Chemically-aware viewers",
+      "url": "/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+      "title": "Chemprop",
+      "url": "/help/datagrok/solutions/domains/chem/chemprop",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+      "title": "Supported descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "title": "Tests: Chem descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+      "title": "Supported fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/fingerprints",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "title": "Drug likeness",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "title": "Structural alerts",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "title": "SureChEMBL integration",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "title": "Toxicity risks",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+      "title": "Multiparameter optimization",
+      "url": "/help/datagrok/solutions/domains/chem/mpo",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "title": "Butina cluster",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "title": "Chemical scripts",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "title": "Filter by catalogs",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "title": "Gasteiger Partial Charges",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "title": "Murcko Scaffolds",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "title": "Mutate",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:KetcherSketcher:2.4.2:0",
+      "version": "2.4.2",
+      "released_at": "2026-04-23",
+      "ticket": null,
+      "text": "Reset explicitMol on change only if molecule has been already set"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.4.1:0",
+      "version": "2.4.1",
+      "released_at": "2026-03-18",
+      "ticket": null,
+      "text": "Updated ketcher libraries up to 3.12.0"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.4.0:0",
+      "version": "2.4.0",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "[#3459](https://github.com/datagrok-ai/public/issues/3459): Ketcher: fix cropping sketcher on last grid column"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.4.0:1",
+      "version": "2.4.0",
+      "released_at": "2026-03-16",
+      "ticket": null,
+      "text": "Ketcher: OG Smiles handling"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.3.0:0",
+      "version": "2.3.0",
+      "released_at": "2025-03-29",
+      "ticket": null,
+      "text": "Standardized plugin name to title case in README and changelog"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.2.3:0",
+      "version": "2.2.3",
+      "released_at": "2025-01-14",
+      "ticket": null,
+      "text": "Some additional styles fixes"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.2.2:0",
+      "version": "2.2.2",
+      "released_at": "2025-01-14",
+      "ticket": null,
+      "text": "Fixed styles of selectors"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.2.1:0",
+      "version": "2.2.1",
+      "released_at": "2024-11-05",
+      "ticket": null,
+      "text": "Fixed styles"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.1.10:0",
+      "version": "2.1.10",
+      "released_at": "2024-07-26",
+      "ticket": null,
+      "text": "Updated ketcher libraries up to 2.21.0 and Datagrok api to 1.20.0"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.1.9:0",
+      "version": "2.1.9",
+      "released_at": "2024-05-30",
+      "ticket": null,
+      "text": "Updated path to package icon"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.1.8:0",
+      "version": "2.1.8",
+      "released_at": "2024-05-28",
+      "ticket": null,
+      "text": "Fixed setting smarts into sketcher (had to remove saving user settings)"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.1.7:0",
+      "version": "2.1.7",
+      "released_at": "2024-02-21",
+      "ticket": null,
+      "text": "Visible \"Apply\" button when opening the setting"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.1.6:0",
+      "version": "2.1.6",
+      "released_at": "2024-02-19",
+      "ticket": null,
+      "text": "Saving user defined settings"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.1.5:0",
+      "version": "2.1.5",
+      "released_at": "2024-01-31",
+      "ticket": null,
+      "text": "Updated ketcher libraries up to 2.15.0"
+    },
+    {
+      "id": "clog:KetcherSketcher:2.1.4:0",
+      "version": "2.1.4",
+      "released_at": "2023-08-07",
+      "ticket": null,
+      "text": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher to Datagrok platfom"
+    }
+  ],
+  "stats": {
+    "functions": 1,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 15
+  }
+}

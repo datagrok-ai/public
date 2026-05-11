@@ -1,0 +1,653 @@
+{
+  "package": {
+    "id": "pkg:Peptides",
+    "name": "Peptides",
+    "friendly_name": "Peptides",
+    "version": "1.27.8",
+    "category": "Bioinformatics",
+    "description": "Advanced tools for analyzing collections of peptides.",
+    "extras": {
+      "npm_name": "@datagrok/peptides",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Peptides:initPeptides",
+      "name": "initPeptides",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [
+        "init"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:Peptides",
+      "name": "Peptides",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:Bio Peptides",
+      "name": "Bio Peptides",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:testInitFunctionPeptides",
+      "name": "testInitFunctionPeptides",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "viewer"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:Sequence Variability Map",
+      "name": "Sequence Variability Map",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": "Peptides Sequence Variability Map Viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:Most Potent Residues",
+      "name": "Most Potent Residues",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": "Peptides Most Potent Residues Viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:Sequence Mutation Cliffs",
+      "name": "Sequence Mutation Cliffs",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": "Mutation Cliffs Line Chart",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:Logo Summary Table",
+      "name": "Logo Summary Table",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:Sequence Position Statistics",
+      "name": "Sequence Position Statistics",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:Active peptide selection",
+      "name": "Active peptide selection",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:Manual Alignment",
+      "name": "Manual Alignment",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [
+        "widgets",
+        "panel"
+      ],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:Peptide SAR",
+      "name": "Peptide SAR",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Peptide SAR Analysis demo on peptide sequences in FASTA format",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Peptides:LST Pie Chart",
+      "name": "LST Pie Chart",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:Peptides:smiTo3D",
+      "name": "smiTo3D",
+      "language": "python",
+      "description": null
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Peptides/credits.md",
+      "title": "Peptides — Third-Party Libraries",
+      "url": "/packages/Peptides/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/readme.md",
+      "title": "Peptides",
+      "url": "/packages/Peptides/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Peptides/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "title": "Oligonucleotide Sequence Design",
+      "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "title": "Bioinformatics",
+      "url": "/help/datagrok/solutions/domains/bio/bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+      "title": "FAQ: Peptides",
+      "url": "/help/datagrok/solutions/domains/bio/faq_bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "title": "Peptides SAR",
+      "url": "/help/datagrok/solutions/domains/bio/peptides-sar",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "title": "Oligo Toolkit",
+      "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+      "title": "Polytool",
+      "url": "/help/datagrok/solutions/domains/bio/polytool",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Bio/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Bio/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/credits.md",
+      "title": "Bio — Third-Party Libraries",
+      "url": "/packages/Bio/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/readme.md",
+      "title": "Bio",
+      "url": "/packages/Bio/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/most-potent-residues",
+      "title": "Most Potent Residues",
+      "url": "/help/visualize/viewers/most-potent-residues",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/logo-summary-table",
+      "title": "Logo Summary Table",
+      "url": "/help/visualize/viewers/logo-summary-table",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/position-statistics-viewer",
+      "title": "Position Statistics",
+      "url": "/help/visualize/viewers/position-statistics-viewer",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/sequence-mutation-cliffs",
+      "title": "Mutation Cliffs Viewer",
+      "url": "/help/visualize/viewers/sequence-mutation-cliffs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/sequence-variability-map",
+      "title": "Sequence Variability Map viewer",
+      "url": "/help/visualize/viewers/sequence-variability-map",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/_internal/tests/0-test-scenario-format",
+      "title": "Manual Test: `<TEST SCENARIO NAME>`",
+      "url": "/help/_internal/tests/0-test-scenario-format",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/adding-connections",
+      "title": "Manual Test: Adding connections",
+      "url": "/help/_internal/tests/release-cheklist-cases/adding-connections",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/adding-query",
+      "title": "Manual Test: Adding Query",
+      "url": "/help/_internal/tests/release-cheklist-cases/adding-query",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/connection-browser",
+      "title": "Manual Test: Adding connections",
+      "url": "/help/_internal/tests/release-cheklist-cases/connection-browser",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/connection-schema",
+      "title": "Manual Test: Connection Schema",
+      "url": "/help/_internal/tests/release-cheklist-cases/connection-schema",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/delete-connections",
+      "title": "Manual Test: Adding connections",
+      "url": "/help/_internal/tests/release-cheklist-cases/delete-connections",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/delete-query",
+      "title": "Manual Test: Delete Query",
+      "url": "/help/_internal/tests/release-cheklist-cases/delete-query",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/_internal/tests/release-cheklist-cases/edit-connections",
+      "title": "Manual Test: Adding connections",
+      "url": "/help/_internal/tests/release-cheklist-cases/edit-connections",
+      "kind": "guide",
+      "audience": "internal"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Peptides:1.27.3:0",
+      "version": "1.27.3",
+      "released_at": "2025-11-12",
+      "ticket": null,
+      "text": "Fix mutation cliffs viewer not updating on filter change"
+    },
+    {
+      "id": "clog:Peptides:1.27.3:1",
+      "version": "1.27.3",
+      "released_at": "2025-11-12",
+      "ticket": null,
+      "text": "Fix mutation cliffs viewer not restoring selection on frame re-attach"
+    },
+    {
+      "id": "clog:Peptides:1.27.3:2",
+      "version": "1.27.3",
+      "released_at": "2025-11-12",
+      "ticket": null,
+      "text": "Sequence variability map: filter out absent monomers from grid when filter is applied"
+    },
+    {
+      "id": "clog:Peptides:1.27.0:0",
+      "version": "1.27.0",
+      "released_at": "2025-11-10",
+      "ticket": null,
+      "text": "Rework mutation cliffs and tooltips, shown information about sequence pairs and their statistics."
+    },
+    {
+      "id": "clog:Peptides:1.26.2:0",
+      "version": "1.26.2",
+      "released_at": "2025-11-08",
+      "ticket": null,
+      "text": "Add Current row tracking option to mutation cliffs viewer"
+    },
+    {
+      "id": "clog:Peptides:1.26.1:0",
+      "version": "1.26.1",
+      "released_at": "2025-11-07",
+      "ticket": null,
+      "text": "Sequence mutation cliffs viewer: Initial release"
+    },
+    {
+      "id": "clog:Peptides:1.26.0:0",
+      "version": "1.26.0",
+      "released_at": "2025-11-05",
+      "ticket": null,
+      "text": "Full filter reactivity for all panels, tooltips, aggregations and viewers"
+    },
+    {
+      "id": "clog:Peptides:1.26.0:1",
+      "version": "1.26.0",
+      "released_at": "2025-11-05",
+      "ticket": null,
+      "text": "Corrected aggregate calculations, statistics and mean difference comparisons"
+    },
+    {
+      "id": "clog:Peptides:1.26.0:2",
+      "version": "1.26.0",
+      "released_at": "2025-11-05",
+      "ticket": null,
+      "text": "Fix MCL viewer premature shutdown on loading"
+    },
+    {
+      "id": "clog:Peptides:1.25.1:0",
+      "version": "1.25.1",
+      "released_at": "2025-11-05",
+      "ticket": null,
+      "text": "Fix distribution tooltips not showing on weblogo hover"
+    },
+    {
+      "id": "clog:Peptides:1.25.1:1",
+      "version": "1.25.1",
+      "released_at": "2025-11-05",
+      "ticket": null,
+      "text": "Enable filter reactivity by default SAR viewers"
+    },
+    {
+      "id": "clog:Peptides:1.25.0:0",
+      "version": "1.25.0",
+      "released_at": "2025-11-04",
+      "ticket": null,
+      "text": "Update dependencies"
+    },
+    {
+      "id": "clog:Peptides:1.25.0:1",
+      "version": "1.25.0",
+      "released_at": "2025-11-04",
+      "ticket": null,
+      "text": "Enable filter reactivity for All Peptides Viewers (Invariant Map, Monomer-Position, Most Potent Residues, Logo Summary Table, WebLogo in header)"
+    },
+    {
+      "id": "clog:Peptides:1.25.0:2",
+      "version": "1.25.0",
+      "released_at": "2025-11-04",
+      "ticket": null,
+      "text": "Got rid of target column for Peptides analysis"
+    },
+    {
+      "id": "clog:Peptides:1.25.0:3",
+      "version": "1.25.0",
+      "released_at": "2025-11-04",
+      "ticket": null,
+      "text": "Add sum columns for Monomer-Position"
+    },
+    {
+      "id": "clog:Peptides:1.25.0:4",
+      "version": "1.25.0",
+      "released_at": "2025-11-04",
+      "ticket": null,
+      "text": "Fix navigation bugs"
+    },
+    {
+      "id": "clog:Peptides:1.23.14:0",
+      "version": "1.23.14",
+      "released_at": "2025-06-17",
+      "ticket": null,
+      "text": "Default selection grid for Peptides analysis"
+    },
+    {
+      "id": "clog:Peptides:1.23.11:0",
+      "version": "1.23.11",
+      "released_at": "2025-05-26",
+      "ticket": null,
+      "text": "Fix model loading with empty cluster selection"
+    },
+    {
+      "id": "clog:Peptides:1.23.10:0",
+      "version": "1.23.10",
+      "released_at": "2025-05-15",
+      "ticket": null,
+      "text": "Improved description for position statistics viewer"
+    },
+    {
+      "id": "clog:Peptides:1.23.9:0",
+      "version": "1.23.9",
+      "released_at": "2025-05-14",
+      "ticket": null,
+      "text": "Reveerse events for Position statistics viewer"
+    },
+    {
+      "id": "clog:Peptides:1.23.8:0",
+      "version": "1.23.8",
+      "released_at": "2025-05-12",
+      "ticket": null,
+      "text": "Performance improvements to Peptide viewers"
+    },
+    {
+      "id": "clog:Peptides:1.23.8:1",
+      "version": "1.23.8",
+      "released_at": "2025-05-12",
+      "ticket": null,
+      "text": "LST white space reduction"
+    },
+    {
+      "id": "clog:Peptides:1.23.8:2",
+      "version": "1.23.8",
+      "released_at": "2025-05-12",
+      "ticket": null,
+      "text": "Bug fixes"
+    },
+    {
+      "id": "clog:Peptides:1.23.8:3",
+      "version": "1.23.8",
+      "released_at": "2025-05-12",
+      "ticket": null,
+      "text": "Position statistics viewer"
+    },
+    {
+      "id": "clog:Peptides:1.23.6:0",
+      "version": "1.23.6",
+      "released_at": "2025-04-30",
+      "ticket": null,
+      "text": "Fix Peptides analysis not starting on data with existing position columns"
+    },
+    {
+      "id": "clog:Peptides:1.23.5:0",
+      "version": "1.23.5",
+      "released_at": "2025-04-22",
+      "ticket": null,
+      "text": "Fix invisible Scroller in mutations cliffs"
+    },
+    {
+      "id": "clog:Peptides:1.23.4:0",
+      "version": "1.23.4",
+      "released_at": "2025-04-21",
+      "ticket": null,
+      "text": "Fixes for selection table for DG null values"
+    },
+    {
+      "id": "clog:Peptides:1.23.4:1",
+      "version": "1.23.4",
+      "released_at": "2025-04-21",
+      "ticket": null,
+      "text": "Correction of unselection for standalone viewers"
+    },
+    {
+      "id": "clog:Peptides:1.23.4:2",
+      "version": "1.23.4",
+      "released_at": "2025-04-21",
+      "ticket": null,
+      "text": "Cosmetic corrections to null values in predictions"
+    },
+    {
+      "id": "clog:Peptides:1.23.3:0",
+      "version": "1.23.3",
+      "released_at": "2025-04-17",
+      "ticket": null,
+      "text": "Selection widget: value retrieving fix"
+    }
+  ],
+  "stats": {
+    "functions": 13,
+    "scripts": 1,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 175
+  }
+}

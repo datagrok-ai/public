@@ -1,0 +1,152 @@
+{
+  "package": {
+    "id": "pkg:Boltz1",
+    "name": "Boltz1",
+    "friendly_name": "Boltz1",
+    "category": "Bioinformatics",
+    "description": "Integrates Datagrok with Boltz-1"
+  },
+  "files": {
+    "src": [
+      "packages/Boltz1/src/css/boltz.css",
+      "packages/Boltz1/src/demo/boltz-app.ts",
+      "packages/Boltz1/src/package.ts",
+      "packages/Boltz1/src/utils/boltz-service.ts",
+      "packages/Boltz1/src/utils/constants.ts",
+      "packages/Boltz1/src/utils/utils.ts"
+    ],
+    "tests": [
+      "packages/Boltz1/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Boltz1/CHANGELOG.md",
+      "packages/Boltz1/CREDITS.md",
+      "packages/Boltz1/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Boltz1:protein-structure-prediction",
+      "name": "Protein Structure Prediction",
+      "description": "Runs the Boltz-1 deep-learning model to predict 3-D protein and complex structures from sequence data supplied as a DataFrame column, returning structured results as a new DataFrame.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Boltz1:Boltz",
+          "kind": "RegisteredFunction",
+          "name": "Boltz",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Boltz1:runBoltz",
+          "kind": "RegisteredFunction",
+          "name": "runBoltz",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Boltz1:getBoltzConfigFolders",
+          "kind": "RegisteredFunction",
+          "name": "getBoltzConfigFolders",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Boltz1/readme.md",
+          "kind": "DocPage",
+          "title": "Boltz1",
+          "url": "/packages/Boltz1/readme.md"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+          "kind": "DocPage",
+          "title": "Bioinformatics",
+          "url": "/help/datagrok/solutions/domains/bio/bio"
+        },
+        {
+          "id": "clog:Boltz1:v.next:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Boltz1/src/package.ts",
+          "packages/Boltz1/src/utils/boltz-service.ts",
+          "packages/Boltz1/src/utils/constants.ts",
+          "packages/Boltz1/src/utils/utils.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Boltz1:boltz1-info-panel",
+      "name": "Boltz-1 Info Panel",
+      "description": "Provides a contextual info-panel widget that triggers Boltz-1 structure prediction for a selected molecular or sequence value and renders the result directly in Datagrok's property panel.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Boltz1:Boltz-1",
+          "kind": "RegisteredFunction",
+          "name": "Boltz-1",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Boltz1:isApplicableBoltz",
+          "kind": "RegisteredFunction",
+          "name": "isApplicableBoltz",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes",
+          "url": "/help/datagrok/navigation/panels/info-panels"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/info-pane-reference",
+          "kind": "DocPage",
+          "title": "Supported info panes",
+          "url": "/help/datagrok/navigation/info-pane-reference"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/add-info-panel",
+          "kind": "DocPage",
+          "title": "Add an info panel",
+          "url": "/help/develop/how-to/ui/add-info-panel"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Boltz1/src/demo/boltz-app.ts",
+          "packages/Boltz1/src/package.ts",
+          "packages/Boltz1/src/utils/boltz-service.ts",
+          "packages/Boltz1/src/utils/constants.ts",
+          "packages/Boltz1/src/utils/utils.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

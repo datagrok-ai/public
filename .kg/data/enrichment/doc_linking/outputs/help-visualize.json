@@ -1,0 +1,593 @@
+{
+  "slice_id": "help-visualize",
+  "links": [
+    {
+      "doc_id": "doc:/help/visualize/_supported-cell-renderers",
+      "target_id": "feature:PowerGrid:data-display-cell-renderers",
+      "confidence": 0.82,
+      "evidence": "doc enumerates specialized grid cell renderers (color swatches, tags, ratings, etc.) that are the subject of the PowerGrid data-display renderer collection"
+    },
+    {
+      "doc_id": "doc:/help/visualize/_supported-cell-renderers",
+      "target_id": "feature:PowerGrid:image-renderers",
+      "confidence": 0.72,
+      "evidence": "doc mentions image/binary cell rendering in grid cells, matching PowerGrid image-renderer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/_supported-cell-renderers",
+      "target_id": "pkg:PowerGrid",
+      "confidence": 0.78,
+      "evidence": "PowerGrid is the primary source of extended cell renderers documented in this page"
+    },
+    {
+      "doc_id": "doc:/help/visualize/add-custom-form",
+      "target_id": "feature:PowerGrid:forms-viewer",
+      "confidence": 0.70,
+      "evidence": "doc adds a new column with form-based display, aligning with PowerGrid Forms Viewer and Smart Form feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/add-custom-form",
+      "target_id": "feature:PowerPack:add-new-column",
+      "confidence": 0.70,
+      "evidence": "doc describes adding a new column with custom form content, matching PowerPack Add New Column interactive dialog"
+    },
+    {
+      "doc_id": "doc:/help/visualize/table-view-1",
+      "target_id": "feature:ApiSamples:view-management",
+      "confidence": 0.72,
+      "evidence": "Table View is the central application view managed through the view-management API surface covered by ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/visualize/table-view-1",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.68,
+      "evidence": "Table View hosts all built-in Datagrok viewers documented in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/view-layout",
+      "target_id": "feature:ApiSamples:view-management",
+      "confidence": 0.80,
+      "evidence": "doc describes layout saving/restoring and table view layouts, which are explicitly covered in the view-management API samples including layout permissions"
+    },
+    {
+      "doc_id": "doc:/help/visualize/view-layout-test",
+      "target_id": "feature:ApiSamples:view-management",
+      "confidence": 0.68,
+      "evidence": "test doc for view layout functionality covered by the view-management API sample"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewer-event-scripts",
+      "target_id": "feature:ApiSamples:viewer-interaction",
+      "confidence": 0.85,
+      "evidence": "doc describes defining custom event handlers on viewers, which is the core subject of the viewer interaction and customisation sample"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewer-event-scripts",
+      "target_id": "feature:ApiSamples:event-handling",
+      "confidence": 0.72,
+      "evidence": "custom event scripts on viewers are a form of platform event subscription covered in the event-handling sample"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/3d-scatter-plot",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "3D scatter plot is a core built-in viewer documented among all built-in Datagrok viewers in ApiSamples"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/bar-chart",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.70,
+      "evidence": "bar chart is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature description"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/biostructure",
+      "target_id": "feature:BiostructureViewer:molstar-viewer",
+      "confidence": 0.95,
+      "evidence": "doc title and snippet exactly describe the Mol*/RCSB Molstar-based 3D biostructure viewer"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/biostructure",
+      "target_id": "pkg:BiostructureViewer",
+      "confidence": 0.90,
+      "evidence": "doc is a getting-started/overview page for the BiostructureViewer package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/box-plot",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.70,
+      "evidence": "box plot is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/calendar",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "calendar is a core built-in viewer covered in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/chord",
+      "target_id": "feature:Charts:chord",
+      "confidence": 0.97,
+      "evidence": "URL slug and title exactly match the Charts Chord Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/chord",
+      "target_id": "pkg:Charts",
+      "confidence": 0.90,
+      "evidence": "chord diagram is implemented in the Charts package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/confusion-matrix",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "confusion matrix is a core built-in viewer covered in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/correlation-plot",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "correlation plot is a core built-in viewer covered in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/dendrogram",
+      "target_id": "feature:Dendrogram:dendrogram-viewer",
+      "confidence": 0.97,
+      "evidence": "URL slug and title exactly match the Dendrogram package's interactive tree viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/dendrogram",
+      "target_id": "pkg:Dendrogram",
+      "confidence": 0.90,
+      "evidence": "doc is a guide for the Dendrogram package's visualization capabilities"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/density-plot",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "density plot is a core built-in viewer covered in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/filters",
+      "target_id": "feature:Widgets:category-filters",
+      "confidence": 0.78,
+      "evidence": "doc describes filter controls for column values; Widgets provides Single Choice and Multi Choice category filters that are the primary filter extension"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/form",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.72,
+      "evidence": "form viewer is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/forms",
+      "target_id": "feature:PowerGrid:forms-viewer",
+      "confidence": 0.97,
+      "evidence": "doc title 'Forms' and snippet explicitly state 'install the PowerGrid package'; exactly matches the Forms Viewer and Smart Form feature in PowerGrid"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/forms",
+      "target_id": "pkg:PowerGrid",
+      "confidence": 0.92,
+      "evidence": "doc explicitly states the Forms viewer requires the PowerGrid package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/globe",
+      "target_id": "feature:Charts:globe",
+      "confidence": 0.97,
+      "evidence": "URL slug and title exactly match the Charts Globe Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/globe",
+      "target_id": "pkg:Charts",
+      "confidence": 0.90,
+      "evidence": "Globe viewer is implemented in the Charts package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/grid",
+      "target_id": "pkg:PowerGrid",
+      "confidence": 0.80,
+      "evidence": "PowerGrid directly extends the built-in Grid viewer with sparklines, renderers, and forms; doc covers the Grid that PowerGrid builds on"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/grid",
+      "target_id": "feature:PowerGrid:sparklines",
+      "confidence": 0.72,
+      "evidence": "Grid doc documents cell-level mini-charts and sparklines that are provided by PowerGrid's sparklines feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/grid",
+      "target_id": "feature:PowerGrid:data-display-cell-renderers",
+      "confidence": 0.72,
+      "evidence": "Grid doc covers data display within cells which is extended by PowerGrid's data-display cell renderers"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/group-analysis",
+      "target_id": "feature:Charts:group-analysis",
+      "confidence": 0.97,
+      "evidence": "doc title and snippet exactly match Charts group-analysis feature; snippet explicitly states 'install the package Charts'"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/group-analysis",
+      "target_id": "pkg:Charts",
+      "confidence": 0.90,
+      "evidence": "doc explicitly states the Group Analysis viewer requires the Charts package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/heat-map",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.72,
+      "evidence": "heat map is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature description"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/histogram",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.70,
+      "evidence": "histogram is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/line-chart",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.70,
+      "evidence": "line chart is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/logo-summary-table",
+      "target_id": "feature:Peptides:logo-summary-table",
+      "confidence": 0.97,
+      "evidence": "title 'Logo Summary Table' exactly matches the Peptides logo-summary-table feature name"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/logo-summary-table",
+      "target_id": "pkg:Peptides",
+      "confidence": 0.88,
+      "evidence": "Logo Summary Table is a viewer from the Peptides package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/map",
+      "target_id": "feature:GIS:map-viewer",
+      "confidence": 0.92,
+      "evidence": "doc title 'Map viewer' and snippet 'shows geospatial data on a map as either markers, or a heat map' exactly describe the GIS Map Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/map",
+      "target_id": "pkg:GIS",
+      "confidence": 0.88,
+      "evidence": "Map viewer is implemented in the GIS package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/markup",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.72,
+      "evidence": "markup viewer is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/markup-test",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "test doc for the markup viewer which is a core built-in viewer covered in ApiSamples built-in-viewers"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/matrix-plot",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "matrix plot is a core built-in viewer covered in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/most-potent-residues",
+      "target_id": "feature:Peptides:most-potent-residues",
+      "confidence": 0.97,
+      "evidence": "title 'Most Potent Residues' exactly matches the Peptides most-potent-residues feature name"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/most-potent-residues",
+      "target_id": "pkg:Peptides",
+      "confidence": 0.88,
+      "evidence": "Most Potent Residues viewer belongs to the Peptides package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/multi-curve-viewer",
+      "target_id": "feature:Curves:multi-curve-viewer",
+      "confidence": 0.97,
+      "evidence": "doc title and snippet exactly describe the Curves package Multi-Curve Viewer; snippet explicitly states 'part of the Curves package'"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/multi-curve-viewer",
+      "target_id": "pkg:Curves",
+      "confidence": 0.92,
+      "evidence": "doc explicitly states the multi curve viewer is part of the Curves package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/network-diagram",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.72,
+      "evidence": "network diagram is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature description"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/ngl",
+      "target_id": "feature:BiostructureViewer:ngl-viewer",
+      "confidence": 0.97,
+      "evidence": "doc title 'NGL viewer' and snippet exactly match the BiostructureViewer NGL 3D Structure Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/ngl",
+      "target_id": "pkg:BiostructureViewer",
+      "confidence": 0.88,
+      "evidence": "NGL viewer belongs to the BiostructureViewer package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/pc-plot",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "parallel coordinates plot is a core built-in viewer covered in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/phylocanvas-gl",
+      "target_id": "feature:PhyloTreeViewer:phylocanvas-gl-viewer",
+      "confidence": 0.97,
+      "evidence": "doc title 'Phylocanvas.gl' exactly matches the PhyloTreeViewer phylocanvas-gl-viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/phylocanvas-gl",
+      "target_id": "pkg:PhyloTreeViewer",
+      "confidence": 0.90,
+      "evidence": "Phylocanvas.gl is the main viewer of the PhyloTreeViewer package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/pie-chart",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.70,
+      "evidence": "pie chart is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/pivot-table",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "pivot table is a core built-in viewer covered in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/position-statistics-viewer",
+      "target_id": "feature:Peptides:position-statistics",
+      "confidence": 0.95,
+      "evidence": "doc title 'Position Statistics' and snippet exactly describe the Peptides Sequence Position Statistics viewer"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/position-statistics-viewer",
+      "target_id": "pkg:Peptides",
+      "confidence": 0.85,
+      "evidence": "Position Statistics viewer belongs to the Peptides package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/protein-viewer",
+      "target_id": "pkg:BiostructureViewer",
+      "confidence": 0.82,
+      "evidence": "doc describes a protein structure viewer using PDB codes, which is the core use-case of the BiostructureViewer package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/protein-viewer",
+      "target_id": "feature:BiostructureViewer:pdb-context-panel",
+      "confidence": 0.75,
+      "evidence": "doc visualizes protein structure from PDB codes, matching the PDB Context Panel and 3D Structure Widget feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/radar",
+      "target_id": "feature:Charts:radar",
+      "confidence": 0.97,
+      "evidence": "URL slug and title 'Radar viewer' exactly match the Charts Radar Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/radar",
+      "target_id": "pkg:Charts",
+      "confidence": 0.90,
+      "evidence": "Radar viewer is implemented in the Charts package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/sankey",
+      "target_id": "feature:Charts:sankey",
+      "confidence": 0.97,
+      "evidence": "URL slug and title 'Sankey' exactly match the Charts Sankey Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/sankey",
+      "target_id": "pkg:Charts",
+      "confidence": 0.90,
+      "evidence": "Sankey viewer is implemented in the Charts package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/scaffold-tree",
+      "target_id": "feature:Chem:scaffold-tree",
+      "confidence": 0.97,
+      "evidence": "doc title 'Scaffold tree' exactly matches the Chem Scaffold Tree feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/scaffold-tree",
+      "target_id": "pkg:Chem",
+      "confidence": 0.88,
+      "evidence": "Scaffold Tree viewer is part of the Chem cheminformatics package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/scatter-plot",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.72,
+      "evidence": "scatter plot is a core built-in viewer explicitly mentioned first in the ApiSamples built-in-viewers feature description"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/scatter-plot",
+      "target_id": "feature:ApiSamples:viewer-interaction",
+      "confidence": 0.70,
+      "evidence": "doc covers scatter plot interactivity; ApiSamples viewer-interaction feature covers custom scatter-plot rendering and filter coordination"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/sequence-mutation-cliffs",
+      "target_id": "feature:Peptides:mutation-cliffs",
+      "confidence": 0.95,
+      "evidence": "doc title 'Mutation Cliffs Viewer' and snippet exactly describe the Peptides mutation-cliffs feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/sequence-mutation-cliffs",
+      "target_id": "pkg:Peptides",
+      "confidence": 0.85,
+      "evidence": "Mutation Cliffs Viewer belongs to the Peptides package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/sequence-variability-map",
+      "target_id": "feature:Peptides:sequence-variability-map",
+      "confidence": 0.97,
+      "evidence": "doc title 'Sequence Variability Map viewer' exactly matches the Peptides sequence-variability-map feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/sequence-variability-map",
+      "target_id": "pkg:Peptides",
+      "confidence": 0.88,
+      "evidence": "Sequence Variability Map viewer belongs to the Peptides package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/statistics",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.72,
+      "evidence": "statistics viewer is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/sunburst",
+      "target_id": "feature:Charts:sunburst",
+      "confidence": 0.97,
+      "evidence": "URL slug and title 'Sunburst' exactly match the Charts Sunburst Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/sunburst",
+      "target_id": "pkg:Charts",
+      "confidence": 0.90,
+      "evidence": "Sunburst viewer is implemented in the Charts package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/surface-plot",
+      "target_id": "feature:Charts:surface-plot",
+      "confidence": 0.97,
+      "evidence": "URL slug and title 'Surface plot' exactly match the Charts Surface Plot Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/surface-plot",
+      "target_id": "pkg:Charts",
+      "confidence": 0.90,
+      "evidence": "Surface Plot viewer is implemented in the Charts package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/tile-viewer",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "tile viewer is a core built-in viewer covered in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/timelines",
+      "target_id": "feature:Charts:timelines",
+      "confidence": 0.97,
+      "evidence": "doc title 'Timelines' and note 'install the package Charts' exactly match the Charts Timelines Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/timelines",
+      "target_id": "pkg:Charts",
+      "confidence": 0.90,
+      "evidence": "doc explicitly states the Timelines viewer requires the Charts package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/tree",
+      "target_id": "feature:Charts:tree",
+      "confidence": 0.97,
+      "evidence": "doc title 'Tree viewer' and note 'install the package Charts' exactly match the Charts Tree Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/tree",
+      "target_id": "pkg:Charts",
+      "confidence": 0.90,
+      "evidence": "doc explicitly states the Tree viewer requires the Charts package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/tree-map",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.65,
+      "evidence": "treemap is a core built-in viewer covered in the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/trellis-plot",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.72,
+      "evidence": "trellis plot is a core built-in viewer explicitly mentioned in the ApiSamples built-in-viewers feature description"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/vdregions",
+      "target_id": "feature:Bio:vd-regions",
+      "confidence": 0.97,
+      "evidence": "doc title 'V-Domain' and snippet exactly describe the Bio VD Regions Viewer feature for antibody CDR region visualization"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/vdregions",
+      "target_id": "pkg:Bio",
+      "confidence": 0.88,
+      "evidence": "V-Domain viewer belongs to the Bio bioinformatics package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/viewers",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.82,
+      "evidence": "overview doc for all supported viewers maps directly to the ApiSamples feature that samples every built-in Datagrok viewer"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/viewers",
+      "target_id": "pkg:Charts",
+      "confidence": 0.78,
+      "evidence": "Charts package provides a large fraction of the third-party viewers enumerated on the supported viewers page"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/viewers",
+      "target_id": "pkg:PowerGrid",
+      "confidence": 0.72,
+      "evidence": "PowerGrid extends the grid viewer with cell renderers and the Forms viewer listed among supported viewers"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/viewers-test",
+      "target_id": "feature:ApiSamples:built-in-viewers",
+      "confidence": 0.75,
+      "evidence": "test doc enumerates the same set of core viewers (scatter plot, histogram, bar chart, etc.) covered by the ApiSamples built-in-viewers feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/web-logo",
+      "target_id": "feature:Bio:weblogo-composition-analysis",
+      "confidence": 0.97,
+      "evidence": "doc title 'WebLogo' exactly matches the Bio WebLogo & Composition Analysis feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/web-logo",
+      "target_id": "pkg:Bio",
+      "confidence": 0.90,
+      "evidence": "WebLogo viewer belongs to the Bio bioinformatics package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/word-cloud",
+      "target_id": "feature:Charts:word-cloud",
+      "confidence": 0.97,
+      "evidence": "doc title 'Word cloud' exactly matches the Charts Word Cloud Viewer feature"
+    },
+    {
+      "doc_id": "doc:/help/visualize/viewers/word-cloud",
+      "target_id": "pkg:Charts",
+      "confidence": 0.90,
+      "evidence": "Word Cloud viewer is implemented in the Charts package"
+    },
+    {
+      "doc_id": "doc:/help/visualize/widgets",
+      "target_id": "pkg:Widgets",
+      "confidence": 0.90,
+      "evidence": "doc title 'Widgets' and subject matter directly correspond to the Widgets package: a collection of commonly used widgets, viewers, filters, and cell renderers"
+    },
+    {
+      "doc_id": "doc:/help/visualize/widgets",
+      "target_id": "feature:Widgets:table-summary-viewer",
+      "confidence": 0.73,
+      "evidence": "Widgets doc covers summary/overview widgets including the Table Summary Viewer"
+    },
+    {
+      "doc_id": "doc:/help/visualize/widgets",
+      "target_id": "feature:Widgets:category-filters",
+      "confidence": 0.72,
+      "evidence": "Widgets doc covers filter controls; Widgets package provides category filter widgets"
+    }
+  ]
+}

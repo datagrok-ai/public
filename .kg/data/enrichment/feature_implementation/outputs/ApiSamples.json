@@ -1,0 +1,2114 @@
+{
+  "package_id": "pkg:ApiSamples",
+  "features": [
+    {
+      "id": "feature:ApiSamples:dataframe-creation-and-io",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/create-from-csv.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/create-from-csv-format.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/create-from-json.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/create-from-objects.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/create-from-columns.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/create-from-typed-arrays.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/export-to-csv.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/export-to-csv-advanced.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/export-to-csv-molblock.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/load-csv.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/save-and-load-df.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/compare-tables.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/test-tables.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/modification/append.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/join-link/join-tables.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/join-link/link-tables.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/join-link/link-tables-dynamic.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/bitset/from-bytes.js",
+          "role": "support",
+          "confidence": 0.6
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Construction/IO scripts under scripts/data-frame/ and scripts/data-access/. package-test.ts auto-runs all package scripts."
+    },
+    {
+      "id": "feature:ApiSamples:column-operations",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/add-new-column.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/modification/add-columns.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/column-access.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/columns-ordering.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/performance/access.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/modification/manipulate.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/modification/init-column.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/modification/change-type.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/modification/double-precision.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/modification/add-qnum-from-columns.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/modification/delete-rows-or-columns.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/advanced/virtual-int-column.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/advanced/virtual-columns.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/create-image-column.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/find-columns.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/sorting/custom-comparer.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/sorting/sorted-order.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/order/order-rows.js",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "DataFrame column add/access/sort/type-change scripts under scripts/data-frame/."
+    },
+    {
+      "id": "feature:ApiSamples:row-filtering-and-bitsets",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/row-matching/select-rows.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/bitset/select-rows-fast.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/bitset/and-or-xor.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/aggregation/aggregate-filter.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/aggregation/aggregate.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/aggregation/get-groups.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/aggregation/unpivot.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/iterable.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/stats.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/filtering/update-filter-state.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/filtering/collaborative-filtering.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/modification/remove-where.js",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Row selection, bitset boolean ops, aggregation, and filter-state scripts."
+    },
+    {
+      "id": "feature:ApiSamples:metadata-and-semantic-types",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/metadata/dataframe-meta.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/metadata/metadata.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/metadata/formula-lines.js",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/advanced/semantic-type-detection.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/sticky-meta-1-tags.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/sticky-meta-2-semtype.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/advanced/custom-category-order.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/construction/date-time.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/advanced/qualified-numbers.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/advanced/qualified-numbers-2.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/bitset/similarity-metrics.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/value-matching/value-matcher.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/row-matching/patterns.js",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Metadata tags, semantic types, qualified numbers, value matchers and patterns."
+    },
+    {
+      "id": "feature:ApiSamples:grid-cell-rendering",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/cell-renderer.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/events/custom-cell-prepare.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/events/custom-cell-rendering.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/events/custom-cell-rendering-indexes.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/events/custom-cell-tooltip.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/html-cells/html-dynamic-cells.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/html-cells/html-table-cells.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/html-cells/html-markup-cells.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/performance/html-rendering.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/auto-size.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/sparklines.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/visible-cells.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/cell-types/tags-multi-cell.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/format-formula.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/markup-link.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/link-click.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/dynamic-value-retrieval.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/hit-test.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/paint-counts.js",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/advanced/invalidate.js",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ApiSamples/scripts/misc/paint/paint.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/tooltips/row-group-tooltips.js",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Grid cell custom rendering, tooltips, sparklines, html cells and paint hooks."
+    },
+    {
+      "id": "feature:ApiSamples:grid-column-configuration",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/grid/resize/column-width-type.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/resize/resize-columns.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/resize/hide-columns.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/resize/resize-events.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/misc/utils/hide-empty-columns.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/order/order-columns.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/order/order-rows-by-comparer.js",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/styles/column-cell-styles.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/styles/column-controlled-values.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/styles/data-format.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/color-coding/category-colors.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/color-coding/color-coding.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/color-coding/color-coding-conditional.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/color-coding/get-cell-color.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/navigate/scroll-to-cell.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/navigate/scroll-to-pixels.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/navigate/scroll-bars.js",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Grid column resize, ordering, color-coding, styles, scrolling."
+    },
+    {
+      "id": "feature:ApiSamples:built-in-viewers",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/scatter-plot.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/scatter-plot-3d.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/bar-chart.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/box-plot.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/line-chart.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/line-chart-multiple-series.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/pie-chart.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/histogram.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/corr-plot.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/density-plot.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/heat-map.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/matrix-plot.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/network-diagram.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/pc-plot.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/trellis-plot.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/trellis-plot-with-summary-viewer.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/tree-map.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/calendar.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/statistics.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/tile-viewer.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/word-cloud.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/js viewers/word-cloud.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/form.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/form-advanced.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/js viewers/radar-viewer.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/globe.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/js viewers/globe-viewer.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/markup.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/markup-advanced.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/markup-eeg.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/grid.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/filters.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/grid/misc/plate-viewer.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/shape-map.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/types/surface-plot.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/js viewers/surface-plot.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/js viewers/chord-viewer.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/js viewers/sankey-viewer.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/js viewers/sunburst-viewer.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/js viewers/timelines-viewer.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/js viewers/tree-viewer.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/viewer-info.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/viewer-tooltips.js",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Viewer-type sample scripts under scripts/ui/viewers/types/ and js viewers/."
+    },
+    {
+      "id": "feature:ApiSamples:viewer-interaction",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/create-viewers-dynamically.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/create-viewers.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/list-viewers.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/scatter-plot-events.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/events/viewer-data-events.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/events/viewer-events.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/filter-select-highlight.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/style-settings.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/custom-scatterplot-rendering.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/custom-column-selector.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/custom-viewer-properties.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/inspect-viewer-properties.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/filters/multi-value-filter.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/filters/add-single-filter.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/filters/filter-group.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/filters/custom-filters.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/advanced/attached-properties.js",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/advanced/default-axis-type.js",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/advanced/descriptors.js",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Dynamic viewer creation, scatter-plot rendering, viewer events, filter widgets."
+    },
+    {
+      "id": "feature:ApiSamples:view-management",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/views.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/currently-open-views.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/default-views.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/files-view.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/multi-view.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/navigation.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/ribbon.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/toolbox.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/toolbox-page.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/layouts.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/output-layouts.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/applicable-layouts.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/layouts-and-permissions.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/views/virtual-view.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/docking/docking.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/docking/docking-floating.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/docking/docking-table-view.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/shell/windows/shell-windows.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/shell/windows/browse/customize-tree.js",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/sidebar.js",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "View, layout, ribbon, toolbox, docking, shell-window scripts."
+    },
+    {
+      "id": "feature:ApiSamples:ui-widgets",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/accordion.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/balloons.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/breadcrumbs.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/buttons.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/color-palettes.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/combo-popup.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/drop-down.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/file-browser.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/html-tables.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/icons.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/iframe.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/image.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/info-bar.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/list.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/loading-indicators.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/markdown.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/menu.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/menu-advanced.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/menu-customization.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/popup-menu.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/property-grid.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/range-slider.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/summary-card.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/tab-control.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/tag-editor.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/taskbar_progress.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/tree-view.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/tree-view-adv.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/typography.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/components/update-indicator.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/css.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/context-menu.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/interactivity/drag-and-drop.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/interactivity/widget-status.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/interactivity/hints.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/interactivity/wizard-hints.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/rendering/render-items.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/tooltips/tooltips.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/tooltips/tooltip-events.js",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Atomic UI control sample scripts under scripts/ui/components/ and related folders."
+    },
+    {
+      "id": "feature:ApiSamples:layout-containers",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/ui/containers/blocks.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/containers/box.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/containers/containers.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/containers/flexbox.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/containers/panels.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/containers/splitters.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/widgets/widgets-tree.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/dialogs/full-screen.js",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Container/flexbox/splitter/full-screen layout primitives."
+    },
+    {
+      "id": "feature:ApiSamples:dialogs-and-input-forms",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/ui/dialogs/dialogs.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/dialogs/dialogs-advanced.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/dialogs/modal.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/dialogs/wizard.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/events/form-creation.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/advanced/input-form.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/inputs.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/inputs-extended.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/inputs-events.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/forms.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/choice-input.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/column-combo-box.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/column-inputs.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/grid-input.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/helm-input-ui.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/molecule-input.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/table-input.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/tags-input.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/typeahead-input.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/advanced/custom-inputs.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/advanced/all-input-types.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/advanced/input-api.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/advanced/for-properties.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/advanced/for-columns.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/advanced/input-events.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/advanced/master-details.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/validation/parameter-expressions.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/validation/parameter-validation.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/inputs/validation/input-validators.js",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Dialogs, wizards, form-creation, input controls and validation."
+    },
+    {
+      "id": "feature:ApiSamples:event-handling",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/events/events.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/events/current-elements.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/events/calculated-columns/creation.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/events/calculated-columns/deletion.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-frame/events/calculated-columns/update.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/events/function-events.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/events/global-events.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/events/custom-events.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/events/layout-events.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/events/prevented-event.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/events/tree-view-events.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/ui-events.js",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Subscribing to and preventing platform events from scripts/events/."
+    },
+    {
+      "id": "feature:ApiSamples:function-registry",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/functions/register-function.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/functions/discover-functions.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/functions/calling.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/functions/caching-results.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/functions/get-result-views.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/functions/func-call.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/functions/func-params-enhancement.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/functions/param-editor.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/functions/progress.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/functions/info-panels/info-panels.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/functions/custom-viewers/viewers.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/handlers/handlers.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/handlers/list-handlers.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/handlers/markup-handlers.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/handlers/auto-renderers.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/handlers/dynamic-resolving.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/handlers/dynamic-resolving-2.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/advanced/default-properties.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/advanced/init-function.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/advanced/init-script.js",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Function registry, handlers, init hooks, info panels, custom viewers."
+    },
+    {
+      "id": "feature:ApiSamples:package-scripting",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/scripting/package-scripting.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/scripting/files-for-scripting.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/scripting/grok-scripting.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/python/python_dup.py",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/r/r_dup.R",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/statistics/pearson-correlation.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/shell/current-object.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/shell/current-object-html.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/shell/current-object-js.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/shell/last-error.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/shell/ui-parts.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/misc/package-credentials.js",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Multi-language script samples (Python/R/JS) plus shell context inspection."
+    },
+    {
+      "id": "feature:ApiSamples:server-api",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/dapi/admin.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/entities-polymorphic-save.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/fetch.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/groups.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/users.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/who-am-i.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/messaging.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/projects.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/misc/audit/users-today.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/misc/audit/aggregated-clicks.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/misc/audit/errors-summary.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/misc/audit/test-tracking.js",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/ApiSamples/scripts/misc/user-settings-storage.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/open-table-by-id.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/connection.js",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "grok.dapi samples for entities, fetch, groups, current user, audit, settings."
+    },
+    {
+      "id": "feature:ApiSamples:projects-and-spaces",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/dapi/projects-list.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/projects-open.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/projects.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/dapi/spaces.js",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Project/space listing and opening via dapi."
+    },
+    {
+      "id": "feature:ApiSamples:file-management",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/dapi/files.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/files/file-exists.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/files/read-file.js",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "File-store access from JS scripts."
+    },
+    {
+      "id": "feature:ApiSamples:database-queries",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/data-access/db/ad-hoc-query.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/db/db-edit.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/db/dynamic-query.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/db/parameterized-query.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/db/query_builder_join.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/db/query_builder_simple.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/db-master-details-manual.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/data-access/external/stock-prices.js",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/ApiSamples/scripts/performance/all-chembl-structures.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/performance/misc/read-strings.js",
+          "role": "core",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/queries/postgres-northwind.sql",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/queries/mssql-northwind.sql",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/connections/postgres-northwind.json",
+          "role": "config",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/connections/mssql-northwind.json",
+          "role": "config",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Ad-hoc / parameterized / dynamic SQL with Postgres + MSSQL connections and demo queries."
+    },
+    {
+      "id": "feature:ApiSamples:cheminformatics",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/substructure-search.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/substructure-search-smarts.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/substructure-search-smarts-molfile-als.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/substructure-search-benchmark.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/mol-rendering.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/mol-rendering-canvas.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/sketcher.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/viewers/advanced/sketch-form.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/r-group.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/mcs.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/diversity-search.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/highlight-align-scaffolds.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/descriptors.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/chem-benchmark.js",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/inspect-molecule.js",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/mol-atoms-bonds.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/mol-panel.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/similarity-scoring-scores.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/chem/similarity-scoring-sorted.js",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/bio/bioinformatics.js",
+          "role": "core",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Chem JS API samples plus the bioinformatics demo grouped under domains/."
+    },
+    {
+      "id": "feature:ApiSamples:machine-learning",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/domains/data-science/pca.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/data-science/cluster.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/data-science/missing-values-imputation.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/data-science/predictive-model.js",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/domains/data-science/random-data.js",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiSamples/scripts/statistics/pearson-correlation.js",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "PCA, clustering, imputation, predictive model, random data, Pearson correlation."
+    },
+    {
+      "id": "feature:ApiSamples:application-demos",
+      "implements": [
+        {
+          "path": "packages/ApiSamples/scripts/demo/demo.js",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/demo/stock-broker.js",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/demo/med-chem.js",
+          "role": "demo",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiSamples/scripts/ui/apps/bioreactor.js",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiSamples/scripts/misc/sdtm.js",
+          "role": "demo",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiSamples/src/package-test.ts",
+          "confidence": 0.5
+        }
+      ],
+      "notes": "Mini-app demos under scripts/demo/, scripts/ui/apps/, and scripts/misc/."
+    }
+  ]
+}

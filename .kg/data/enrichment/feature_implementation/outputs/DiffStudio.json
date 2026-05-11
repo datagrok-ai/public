@@ -1,0 +1,331 @@
+{
+  "package_id": "pkg:DiffStudio",
+  "features": [
+    {
+      "id": "feature:DiffStudio:ode-solver-ide",
+      "implements": [
+        {
+          "path": "packages/DiffStudio/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/app.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/DiffStudio/src/scripting-tools.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/solver-tools.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/callbacks/callback-tools.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/DiffStudio/src/callbacks/callback-base.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DiffStudio/src/callbacks/iter-checker-callback.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DiffStudio/src/callbacks/time-checker-callback.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DiffStudio/src/templates.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/DiffStudio/src/use-cases.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/DiffStudio/src/ui-constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/DiffStudio/src/constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DiffStudio/src/error-utils.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DiffStudio/src/utils.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DiffStudio/src/tests/features-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DiffStudio/src/tests/numerical-methods-tests.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DiffStudio/src/tests/pipeline-tests.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "DiffStudio class in app.ts is the IDE entry; solver-tools wraps diff-grok methods, scripting-tools parses .ivp DSL, callbacks enforce iteration/time limits."
+    },
+    {
+      "id": "feature:DiffStudio:ivp-file-format",
+      "implements": [
+        {
+          "path": "packages/DiffStudio/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/app.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DiffStudio/src/scripting-tools.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/DiffStudio/src/solver-tools.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/DiffStudio/src/templates.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DiffStudio/src/use-cases.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DiffStudio/src/ui-constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DiffStudio/src/constants.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/DiffStudio/src/error-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DiffStudio/src/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "ivpFileHandler / previewIvp in package.ts delegate to DiffStudio.runSolverApp / getFilePreview in app.ts; no dedicated tests."
+    },
+    {
+      "id": "feature:DiffStudio:ode-serialization-api",
+      "implements": [
+        {
+          "path": "packages/DiffStudio/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/scripting-tools.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/DiffStudio/src/error-utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DiffStudio/src/constants.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DiffStudio/src/tests/platform-funcs-tests.ts",
+          "confidence": 0.95
+        }
+      ],
+      "notes": "serializeEquations and odesToCode are thin wrappers over getIVP / getScriptLines from scripting-tools."
+    },
+    {
+      "id": "feature:DiffStudio:domain-models",
+      "implements": [
+        {
+          "path": "packages/DiffStudio/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/model.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/app.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/DiffStudio/src/demo/pk-pd.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/demo/bioreactor.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/demo/acid-production.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/demo/pollution.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/demo/ball-flight.ts",
+          "role": "demo",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/ui-constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DiffStudio/src/solver-tools.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/DiffStudio/src/tests/demo-models-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/DiffStudio/src/tests/pipeline-tests.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "Model class wraps DiffStudio; each demo/*.ts exports MODEL_INFO consumed by package.ts model functions; ball-flight uses getBallFlightSim directly."
+    },
+    {
+      "id": "feature:DiffStudio:model-hub-browser",
+      "implements": [
+        {
+          "path": "packages/DiffStudio/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DiffStudio/src/app.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DiffStudio/src/templates.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DiffStudio/src/use-cases.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/DiffStudio/src/ui-constants.ts",
+          "role": "support",
+          "confidence": 0.75
+        },
+        {
+          "path": "packages/DiffStudio/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "runDiffStudioTreeBrowser instantiates DiffStudio with treeNode/browsePanel options; tree-population logic lives in app.ts."
+    },
+    {
+      "id": "feature:DiffStudio:parameter-fitting",
+      "implements": [
+        {
+          "path": "packages/DiffStudio/src/app.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DiffStudio/src/scripting-tools.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/DiffStudio/src/ui-constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "Fitting is surfaced inside DiffStudio UI via FittingView import from @datagrok-libraries/compute-utils; no registered package function."
+    },
+    {
+      "id": "feature:DiffStudio:sensitivity-analysis",
+      "implements": [
+        {
+          "path": "packages/DiffStudio/src/app.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/DiffStudio/src/scripting-tools.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/DiffStudio/src/ui-constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "SensitivityAnalysisView imported in app.ts and launched via UI; uses diff-grok web workers; no dedicated package function."
+    }
+  ]
+}

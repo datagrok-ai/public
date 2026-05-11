@@ -1,0 +1,155 @@
+{
+  "package_id": "pkg:KnimeLink",
+  "features": [
+    {
+      "id": "feature:KnimeLink:knime-application",
+      "implements": [
+        {
+          "path": "packages/KnimeLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.97
+        },
+        {
+          "path": "packages/KnimeLink/src/knime-client-factory.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/KnimeLink/src/knime-hub-client.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/KnimeLink/src/knime-client.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/KnimeLink/src/function-cache.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/KnimeLink/src/function-registry.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/KnimeLink/src/types.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [],
+      "notes": "knimeLinkApp + knimeLinkAppTreeBrowser are declared in package.ts; tree browser uses function-cache (load) and function-registry (getOrRegisterFunc/sanitizeFuncName) plus the hub client via the factory."
+    },
+    {
+      "id": "feature:KnimeLink:workflow-execution",
+      "implements": [
+        {
+          "path": "packages/KnimeLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/KnimeLink/src/function-registry.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/KnimeLink/src/knime-hub-client.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/KnimeLink/src/knime-client.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/KnimeLink/src/knime-client-factory.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/KnimeLink/src/data-conversion.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/KnimeLink/src/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/KnimeLink/src/types.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/KnimeLink/src/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/KnimeLink/src/credentials.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/KnimeLink/src/tests/integration-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/KnimeLink/src/package-test.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "knimeListDeployments / knimeGetOrRegisterFunc / knimeGetWorkflowImageUrl wrap the hub client and dynamic registry; integration-tests.ts exercises all three plus a real pipeline run."
+    },
+    {
+      "id": "feature:KnimeLink:plugin-init",
+      "implements": [
+        {
+          "path": "packages/KnimeLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/KnimeLink/src/function-cache.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/KnimeLink/src/function-registry.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/KnimeLink/src/knime-client-factory.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/KnimeLink/src/knime-hub-client.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/KnimeLink/src/knime-client.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/KnimeLink/src/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "knimeLinkAutostart in package.ts loads cached entries and triggers async refresh; function-cache.ts implements both phases and delegates to function-registry."
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "package": {
+    "id": "pkg:monomerDB",
+    "name": "monomerDB",
+    "friendly_name": "monomerDB",
+    "category": null,
+    "description": "monomerDB description"
+  },
+  "files": {
+    "src": [
+      "packages/monomerDB/src/libraryProvider.ts",
+      "packages/monomerDB/src/package.ts"
+    ],
+    "tests": [
+      "packages/monomerDB/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/monomerDB/queries/monomersApi.sql"
+    ],
+    "docs": [
+      "packages/monomerDB/CHANGELOG.md",
+      "packages/monomerDB/CREDITS.md",
+      "packages/monomerDB/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:monomerDB:monomer-library-provider",
+      "name": "Monomer Library Provider",
+      "description": "Exposes a HELM-compatible monomer library to Datagrok's Bio/Chem ecosystem via the monomerLibProvider role, enabling downstream plugins to query and use monomer data.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:monomerDB:Monomers DB Provider",
+          "kind": "RegisteredFunction",
+          "name": "Monomers DB Provider",
+          "friendly_name": null,
+          "role": "monomerLibProvider",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:monomerDB:init",
+          "kind": "RegisteredFunction",
+          "name": "init",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:monomerDB:getMonomersByLibrary",
+          "kind": "DataQuery",
+          "name": "getMonomersByLibrary",
+          "description": null
+        },
+        {
+          "id": "query:monomerDB:getMonomerByGrokID",
+          "kind": "DataQuery",
+          "name": "getMonomerByGrokID",
+          "description": null
+        },
+        {
+          "id": "query:monomerDB:listLibraries",
+          "kind": "DataQuery",
+          "name": "listLibraries",
+          "description": null
+        },
+        {
+          "id": "doc:/packages/monomerDB/readme.md",
+          "kind": "DocPage",
+          "title": "monomerDB",
+          "url": "/packages/monomerDB/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/monomerDB/src/libraryProvider.ts",
+          "packages/monomerDB/src/package-api.ts",
+          "packages/monomerDB/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:monomerDB:monomer-data-management",
+      "name": "Monomer Data Management",
+      "description": "Provides database-level write operations to create and update monomers, monomer properties, and libraries in the MonomerDB backing store.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "query:monomerDB:upsertMonomer",
+          "kind": "DataQuery",
+          "name": "upsertMonomer",
+          "description": null
+        },
+        {
+          "id": "query:monomerDB:upsertMonomerProperty",
+          "kind": "DataQuery",
+          "name": "upsertMonomerProperty",
+          "description": null
+        },
+        {
+          "id": "query:monomerDB:createLibrary",
+          "kind": "DataQuery",
+          "name": "createLibrary",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:monomerDB:monomer-info-panel",
+      "name": "Monomer Info Panel",
+      "description": "Registers an info panel that surfaces monomer details in the Datagrok context panel when a monomer entity is selected.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:monomerDB:info",
+          "kind": "RegisteredFunction",
+          "name": "info",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/info-pane-reference",
+          "kind": "DocPage",
+          "title": "Supported info panes",
+          "url": "/help/datagrok/navigation/info-pane-reference"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes",
+          "url": "/help/datagrok/navigation/panels/info-panels"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes for chemical data",
+          "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels"
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/add-info-panel",
+          "kind": "DocPage",
+          "title": "Add an info panel",
+          "url": "/help/develop/how-to/ui/add-info-panel"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/monomerDB/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

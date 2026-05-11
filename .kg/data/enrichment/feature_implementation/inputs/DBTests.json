@@ -1,0 +1,2099 @@
+{
+  "package": {
+    "id": "pkg:DBTests",
+    "name": "DBTests",
+    "friendly_name": "DB Tests",
+    "category": "Development",
+    "description": "Automated tests for JDBC Providers"
+  },
+  "files": {
+    "src": [
+      "packages/DBTests/src/benchmarks/benchmark.ts",
+      "packages/DBTests/src/cache/cache-test.ts",
+      "packages/DBTests/src/connections/queries-test.ts",
+      "packages/DBTests/src/connections/table-query-test.ts",
+      "packages/DBTests/src/db-annotations/db-annotations.ts",
+      "packages/DBTests/src/package.ts",
+      "packages/DBTests/src/sync/data-sync-test.ts"
+    ],
+    "tests": [
+      "packages/DBTests/src/package-test.ts",
+      "packages/DBTests/src/tests/categories.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/DBTests/queries/clickhouse-output-test.sql",
+      "packages/DBTests/queries/clickhouse-pattern-test.sql",
+      "packages/DBTests/queries/mariadb-output-test.sql",
+      "packages/DBTests/queries/mariadb-pattern-test.sql",
+      "packages/DBTests/queries/mssql-output-test.sql",
+      "packages/DBTests/queries/mssql-pattern-test.sql",
+      "packages/DBTests/queries/mssql-test-queries.sql",
+      "packages/DBTests/queries/mysql-output-test.sql",
+      "packages/DBTests/queries/mysql-pattern-test.sql",
+      "packages/DBTests/queries/neo4j-output-test.sql",
+      "packages/DBTests/queries/neo4j-pattern-test.sql",
+      "packages/DBTests/queries/oracle-output-test.sql",
+      "packages/DBTests/queries/oracle-pattern-test.sql",
+      "packages/DBTests/queries/package-test-queries.sql",
+      "packages/DBTests/queries/postgresnet-test-queries.sql",
+      "packages/DBTests/queries/postgresql-cache-test.sql",
+      "packages/DBTests/queries/postgresql-output-test.sql",
+      "packages/DBTests/queries/postgresql-pattern-test.sql",
+      "packages/DBTests/queries/postgresql-test-queries.sql",
+      "packages/DBTests/queries/snowflake-output-test.sql",
+      "packages/DBTests/queries/snowflake-pattern-test.sql"
+    ],
+    "docs": [
+      "packages/DBTests/CHANGELOG.md",
+      "packages/DBTests/CREDITS.md",
+      "packages/DBTests/README.md"
+    ],
+    "config": [
+      "packages/DBTests/connections/cached-postgresql-test.json",
+      "packages/DBTests/connections/clickhouse-db-tests.json",
+      "packages/DBTests/connections/mariadb-db-tests.json",
+      "packages/DBTests/connections/mssql-db-tests.json",
+      "packages/DBTests/connections/mssql-test.json",
+      "packages/DBTests/connections/mysql-db-tests.json",
+      "packages/DBTests/connections/neo4j-db-tests.json",
+      "packages/DBTests/connections/oracle-db-tests.json",
+      "packages/DBTests/connections/postgres-chembl.json",
+      "packages/DBTests/connections/postgres-db-tests.json",
+      "packages/DBTests/connections/postgres-test-docker.json",
+      "packages/DBTests/connections/postgresnet-test.json",
+      "packages/DBTests/connections/postgresql-test.json",
+      "packages/DBTests/connections/snowflake-db-tests.json"
+    ]
+  },
+  "features": [
+    {
+      "id": "feature:DBTests:clickhouse-connector-tests",
+      "name": "ClickHouse Connector Tests",
+      "description": "Validates ClickHouse JDBC type mapping (UUID, signed/unsigned integers, floats, arrays, tuples, maps, dates, nested, geo) and the full parameterized-pattern operator suite against a live ClickHouse connection.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:ClickHouseUuidType",
+          "kind": "DataQuery",
+          "name": "ClickHouseUuidType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseSignedIntTypes",
+          "kind": "DataQuery",
+          "name": "ClickHouseSignedIntTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseUnsignedIntTypes",
+          "kind": "DataQuery",
+          "name": "ClickHouseUnsignedIntTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseFloatTypes",
+          "kind": "DataQuery",
+          "name": "ClickHouseFloatTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseArrayType",
+          "kind": "DataQuery",
+          "name": "ClickHouseArrayType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseTupleType",
+          "kind": "DataQuery",
+          "name": "ClickHouseTupleType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseMapType",
+          "kind": "DataQuery",
+          "name": "ClickHouseMapType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseDateTypes",
+          "kind": "DataQuery",
+          "name": "ClickHouseDateTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseNestedType",
+          "kind": "DataQuery",
+          "name": "ClickHouseNestedType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseGeoType",
+          "kind": "DataQuery",
+          "name": "ClickHouseGeoType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHousePatternsAll",
+          "kind": "DataQuery",
+          "name": "ClickHousePatternsAll",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseIntTypePatternNone",
+          "kind": "DataQuery",
+          "name": "ClickHouseIntTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypeIntPatternOpMore",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypeIntPatternOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypeIntPatternOpMoreEq",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypeIntPatternOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypeIntPatternOpLessEq",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypeIntPatternOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypeIntPatternOpLess",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypeIntPatternOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypeIntPatternOpIn",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypeIntPatternOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypeIntPatternOpNotIn",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypeIntPatternOpNotIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypeIntPatternOpMinMax",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypeIntPatternOpMinMax",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypeIntPatternOpNotEq",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypeIntPatternOpNotEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseDoubleTypePatternNone",
+          "kind": "DataQuery",
+          "name": "ClickHouseDoubleTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypePatternDoubleOpMore",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypePatternDoubleOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypePatternDoubleOpMoreEq",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypePatternDoubleOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypePatternDoubleOpLess",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypePatternDoubleOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypePatternDoubleOpLessEq",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypePatternDoubleOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypePatternStringOpContains",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypePatternStringOpContains",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypePatternStringOpStartsWith",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypePatternStringOpStartsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypePatternStringOpEndsWith",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypePatternStringOpEndsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypePatternStringOpIn",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypePatternStringOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHouseStringTypePatternStringOpRegex",
+          "kind": "DataQuery",
+          "name": "ClickHouseStringTypePatternStringOpRegex",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:ClickHousePatternsAllParams",
+          "kind": "DataQuery",
+          "name": "ClickHousePatternsAllParams",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/clickhouse",
+          "kind": "DocPage",
+          "title": "ClickHouse",
+          "url": "/help/access/databases/connectors/clickhouse"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:mariadb-connector-tests",
+      "name": "MariaDB Connector Tests",
+      "description": "Validates MariaDB JDBC type mapping (dates, binary, bit, character, float, integer, spatial) and the full parameterized-pattern operator suite against a live MariaDB connection.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:MariaDbDateTypes",
+          "kind": "DataQuery",
+          "name": "MariaDbDateTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbBinaryTypes",
+          "kind": "DataQuery",
+          "name": "MariaDbBinaryTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbBitType",
+          "kind": "DataQuery",
+          "name": "MariaDbBitType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbCharacterTypes",
+          "kind": "DataQuery",
+          "name": "MariaDbCharacterTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbFloatTypes",
+          "kind": "DataQuery",
+          "name": "MariaDbFloatTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbIntegerTypes",
+          "kind": "DataQuery",
+          "name": "MariaDbIntegerTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbSpatialTypes",
+          "kind": "DataQuery",
+          "name": "MariaDbSpatialTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbPatternsAll",
+          "kind": "DataQuery",
+          "name": "MariaDbPatternsAll",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbIntTypePatternNone",
+          "kind": "DataQuery",
+          "name": "MariaDbIntTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypeIntPatternOpMore",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypeIntPatternOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypeIntPatternOpMoreEq",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypeIntPatternOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypeIntPatternOpLessEq",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypeIntPatternOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypeIntPatternOpLess",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypeIntPatternOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypeIntPatternOpIn",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypeIntPatternOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypeIntPatternOpNotIn",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypeIntPatternOpNotIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypeIntPatternOpMinMax",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypeIntPatternOpMinMax",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypeIntPatternOpNotEq",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypeIntPatternOpNotEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbDoubleTypePatternNone",
+          "kind": "DataQuery",
+          "name": "MariaDbDoubleTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypePatternDoubleOpMore",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypePatternDoubleOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypePatternDoubleOpMoreEq",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypePatternDoubleOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypePatternDoubleOpLess",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypePatternDoubleOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypePatternDoubleOpLessEq",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypePatternDoubleOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypePatternStringOpContains",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypePatternStringOpContains",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypePatternStringOpStartsWith",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypePatternStringOpStartsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypePatternStringOpEndsWith",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypePatternStringOpEndsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypePatternStringOpIn",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypePatternStringOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbStringTypePatternStringOpRegex",
+          "kind": "DataQuery",
+          "name": "MariaDbStringTypePatternStringOpRegex",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbPatternsAllParams",
+          "kind": "DataQuery",
+          "name": "MariaDbPatternsAllParams",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/mariadb",
+          "kind": "DocPage",
+          "title": "MariaDB",
+          "url": "/help/access/databases/connectors/mariadb"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:mssql-connector-tests",
+      "name": "SQL Server (MSSQL) Connector Tests",
+      "description": "Validates MSSQL JDBC type mapping (dates, XML, binary, numeric, float, money, geography, geometry) and the full parameterized-pattern operator suite against a live SQL Server connection.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:MSSQLDateTypes",
+          "kind": "DataQuery",
+          "name": "MSSQLDateTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLXmlType",
+          "kind": "DataQuery",
+          "name": "MSSQLXmlType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLBinaryTypes",
+          "kind": "DataQuery",
+          "name": "MSSQLBinaryTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLNumericTypes",
+          "kind": "DataQuery",
+          "name": "MSSQLNumericTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLFloatTypes",
+          "kind": "DataQuery",
+          "name": "MSSQLFloatTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLMoneyTypes",
+          "kind": "DataQuery",
+          "name": "MSSQLMoneyTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLGeographyType",
+          "kind": "DataQuery",
+          "name": "MSSQLGeographyType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLGeometryType",
+          "kind": "DataQuery",
+          "name": "MSSQLGeometryType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLPatternsAll",
+          "kind": "DataQuery",
+          "name": "MSSQLPatternsAll",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLIntTypePatternNone",
+          "kind": "DataQuery",
+          "name": "MSSQLIntTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypeIntPatternOpMore",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypeIntPatternOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypeIntPatternOpMoreEq",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypeIntPatternOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypeIntPatternOpLessEq",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypeIntPatternOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypeIntPatternOpLess",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypeIntPatternOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypeIntPatternOpIn",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypeIntPatternOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypeIntPatternOpNotIn",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypeIntPatternOpNotIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypeIntPatternOpMinMax",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypeIntPatternOpMinMax",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypeIntPatternOpNotEq",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypeIntPatternOpNotEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLDoubleTypePatternNone",
+          "kind": "DataQuery",
+          "name": "MSSQLDoubleTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypePatternDoubleOpMore",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypePatternDoubleOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypePatternDoubleOpMoreEq",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypePatternDoubleOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypePatternDoubleOpLess",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypePatternDoubleOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypePatternDoubleOpLessEq",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypePatternDoubleOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypePatternStringOpContains",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypePatternStringOpContains",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypePatternStringOpStartsWith",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypePatternStringOpStartsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypePatternStringOpEndsWith",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypePatternStringOpEndsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLStringTypePatternStringOpIn",
+          "kind": "DataQuery",
+          "name": "MSSQLStringTypePatternStringOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLPatternsAllParams",
+          "kind": "DataQuery",
+          "name": "MSSQLPatternsAllParams",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/mssql",
+          "kind": "DocPage",
+          "title": "MS SQL",
+          "url": "/help/access/databases/connectors/mssql"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:mysql-connector-tests",
+      "name": "MySQL Connector Tests",
+      "description": "Validates MySQL JDBC type mapping (dates, binary, bit, character, float, JSON, integer, spatial) and the full parameterized-pattern operator suite against a live MySQL connection.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:MySqlDateTypes",
+          "kind": "DataQuery",
+          "name": "MySqlDateTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlBinaryTypes",
+          "kind": "DataQuery",
+          "name": "MySqlBinaryTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlBitType",
+          "kind": "DataQuery",
+          "name": "MySqlBitType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlCharacterTypes",
+          "kind": "DataQuery",
+          "name": "MySqlCharacterTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlFloatTypes",
+          "kind": "DataQuery",
+          "name": "MySqlFloatTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlJsonType",
+          "kind": "DataQuery",
+          "name": "MySqlJsonType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlIntegerTypes",
+          "kind": "DataQuery",
+          "name": "MySqlIntegerTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlSpatialTypes",
+          "kind": "DataQuery",
+          "name": "MySqlSpatialTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlPatternsAll",
+          "kind": "DataQuery",
+          "name": "MySqlPatternsAll",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlIntTypePatternNone",
+          "kind": "DataQuery",
+          "name": "MySqlIntTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypeIntPatternOpMore",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypeIntPatternOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypeIntPatternOpMoreEq",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypeIntPatternOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypeIntPatternOpLessEq",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypeIntPatternOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypeIntPatternOpLess",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypeIntPatternOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypeIntPatternOpIn",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypeIntPatternOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypeIntPatternOpNotIn",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypeIntPatternOpNotIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypeIntPatternOpMinMax",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypeIntPatternOpMinMax",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypeIntPatternOpNotEq",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypeIntPatternOpNotEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlDoubleTypePatternNone",
+          "kind": "DataQuery",
+          "name": "MySqlDoubleTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypePatternDoubleOpMore",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypePatternDoubleOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypePatternDoubleOpMoreEq",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypePatternDoubleOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypePatternDoubleOpLess",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypePatternDoubleOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypePatternDoubleOpLessEq",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypePatternDoubleOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypePatternStringOpContains",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypePatternStringOpContains",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypePatternStringOpStartsWith",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypePatternStringOpStartsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypePatternStringOpEndsWith",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypePatternStringOpEndsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypePatternStringOpIn",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypePatternStringOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlStringTypePatternStringOpRegex",
+          "kind": "DataQuery",
+          "name": "MySqlStringTypePatternStringOpRegex",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlPatternsAllParams",
+          "kind": "DataQuery",
+          "name": "MySqlPatternsAllParams",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/mysql",
+          "kind": "DocPage",
+          "title": "MySQL",
+          "url": "/help/access/databases/connectors/mysql"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:oracle-connector-tests",
+      "name": "Oracle Connector Tests",
+      "description": "Validates Oracle JDBC type mapping (XML, character, dates, JSON, URI, Varray, numeric, LOB) and the full parameterized-pattern operator suite against a live Oracle connection.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:OracleXmlType",
+          "kind": "DataQuery",
+          "name": "OracleXmlType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleCharacterTypes",
+          "kind": "DataQuery",
+          "name": "OracleCharacterTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleDateTypes",
+          "kind": "DataQuery",
+          "name": "OracleDateTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleJsonType",
+          "kind": "DataQuery",
+          "name": "OracleJsonType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleUriType",
+          "kind": "DataQuery",
+          "name": "OracleUriType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleVarrayType",
+          "kind": "DataQuery",
+          "name": "OracleVarrayType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleNumericTypes",
+          "kind": "DataQuery",
+          "name": "OracleNumericTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleLobTypes",
+          "kind": "DataQuery",
+          "name": "OracleLobTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OraclePatternsAll",
+          "kind": "DataQuery",
+          "name": "OraclePatternsAll",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleIntTypePatternNone",
+          "kind": "DataQuery",
+          "name": "OracleIntTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypeIntPatternOpMore",
+          "kind": "DataQuery",
+          "name": "OracleStringTypeIntPatternOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypeIntPatternOpMoreEq",
+          "kind": "DataQuery",
+          "name": "OracleStringTypeIntPatternOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypeIntPatternOpLessEq",
+          "kind": "DataQuery",
+          "name": "OracleStringTypeIntPatternOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypeIntPatternOpLess",
+          "kind": "DataQuery",
+          "name": "OracleStringTypeIntPatternOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypeIntPatternOpIn",
+          "kind": "DataQuery",
+          "name": "OracleStringTypeIntPatternOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypeIntPatternOpNotIn",
+          "kind": "DataQuery",
+          "name": "OracleStringTypeIntPatternOpNotIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypeIntPatternOpMinMax",
+          "kind": "DataQuery",
+          "name": "OracleStringTypeIntPatternOpMinMax",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypeIntPatternOpNotEq",
+          "kind": "DataQuery",
+          "name": "OracleStringTypeIntPatternOpNotEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleDoubleTypePatternNone",
+          "kind": "DataQuery",
+          "name": "OracleDoubleTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypePatternDoubleOpMore",
+          "kind": "DataQuery",
+          "name": "OracleStringTypePatternDoubleOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypePatternDoubleOpMoreEq",
+          "kind": "DataQuery",
+          "name": "OracleStringTypePatternDoubleOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypePatternDoubleOpLess",
+          "kind": "DataQuery",
+          "name": "OracleStringTypePatternDoubleOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypePatternDoubleOpLessEq",
+          "kind": "DataQuery",
+          "name": "OracleStringTypePatternDoubleOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypePatternStringOpContains",
+          "kind": "DataQuery",
+          "name": "OracleStringTypePatternStringOpContains",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypePatternStringOpStartsWith",
+          "kind": "DataQuery",
+          "name": "OracleStringTypePatternStringOpStartsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypePatternStringOpEndsWith",
+          "kind": "DataQuery",
+          "name": "OracleStringTypePatternStringOpEndsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypePatternStringOpIn",
+          "kind": "DataQuery",
+          "name": "OracleStringTypePatternStringOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OracleStringTypePatternStringOpRegex",
+          "kind": "DataQuery",
+          "name": "OracleStringTypePatternStringOpRegex",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:OraclePatternsAllParams",
+          "kind": "DataQuery",
+          "name": "OraclePatternsAllParams",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/oracle",
+          "kind": "DocPage",
+          "title": "Oracle",
+          "url": "/help/access/databases/connectors/oracle"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:postgresql-connector-tests",
+      "name": "PostgreSQL Connector Tests — Type Mapping & Pattern Operators",
+      "description": "Validates PostgreSQL JDBC type mapping for advanced types (array, bit strings, composite, JSONB, UUID, XML, numeric precision, serial sequences) and the full parameterized-pattern operator suite.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:PostgresqlArrayType",
+          "kind": "DataQuery",
+          "name": "PostgresqlArrayType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlBitString1",
+          "kind": "DataQuery",
+          "name": "PostgresqlBitString1",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlBitString2",
+          "kind": "DataQuery",
+          "name": "PostgresqlBitString2",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlComposite",
+          "kind": "DataQuery",
+          "name": "PostgresqlComposite",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlDates",
+          "kind": "DataQuery",
+          "name": "PostgresqlDates",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlJSONB",
+          "kind": "DataQuery",
+          "name": "PostgresqlJSONB",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlNumeric",
+          "kind": "DataQuery",
+          "name": "PostgresqlNumeric",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlDouble",
+          "kind": "DataQuery",
+          "name": "PostgresqlDouble",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlReal",
+          "kind": "DataQuery",
+          "name": "PostgresqlReal",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlBigInt",
+          "kind": "DataQuery",
+          "name": "PostgresqlBigInt",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlNumericPrecision",
+          "kind": "DataQuery",
+          "name": "PostgresqlNumericPrecision",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlNumericPrecisionScale",
+          "kind": "DataQuery",
+          "name": "PostgresqlNumericPrecisionScale",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlSmallSerial",
+          "kind": "DataQuery",
+          "name": "PostgresqlSmallSerial",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlSerial",
+          "kind": "DataQuery",
+          "name": "PostgresqlSerial",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlBigSerial",
+          "kind": "DataQuery",
+          "name": "PostgresqlBigSerial",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlUUID",
+          "kind": "DataQuery",
+          "name": "PostgresqlUUID",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlXML",
+          "kind": "DataQuery",
+          "name": "PostgresqlXML",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlPatternsAll",
+          "kind": "DataQuery",
+          "name": "PostgresqlPatternsAll",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlIntTypePatternNone",
+          "kind": "DataQuery",
+          "name": "PostgresqlIntTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypeIntPatternOpMore",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypeIntPatternOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypeIntPatternOpMoreEq",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypeIntPatternOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypeIntPatternOpLessEq",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypeIntPatternOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypeIntPatternOpLess",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypeIntPatternOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypeIntPatternOpIn",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypeIntPatternOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypeIntPatternOpNotIn",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypeIntPatternOpNotIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypeIntPatternOpMinMax",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypeIntPatternOpMinMax",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypeIntPatternOpNotEq",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypeIntPatternOpNotEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlDoubleTypePatternNone",
+          "kind": "DataQuery",
+          "name": "PostgresqlDoubleTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypePatternDoubleOpMore",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypePatternDoubleOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypePatternDoubleOpMoreEq",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypePatternDoubleOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypePatternDoubleOpLess",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypePatternDoubleOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypePatternDoubleOpLessEq",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypePatternDoubleOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypePatternStringOpContains",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypePatternStringOpContains",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypePatternStringOpStartsWith",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypePatternStringOpStartsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypePatternStringOpEndsWith",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypePatternStringOpEndsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypePatternStringOpIn",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypePatternStringOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlStringTypePatternStringOpRegex",
+          "kind": "DataQuery",
+          "name": "PostgresqlStringTypePatternStringOpRegex",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlPatternsAllParams",
+          "kind": "DataQuery",
+          "name": "PostgresqlPatternsAllParams",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/postgres",
+          "kind": "DocPage",
+          "title": "Postgres",
+          "url": "/help/access/databases/connectors/postgres"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:snowflake-connector-tests",
+      "name": "Snowflake Connector Tests",
+      "description": "Validates Snowflake JDBC type mapping (binary, dates, geo, numeric, semi-structured JSON/VARIANT) and the full parameterized-pattern operator suite against a live Snowflake connection.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:SnowflakeBinaryType",
+          "kind": "DataQuery",
+          "name": "SnowflakeBinaryType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeDateTypes",
+          "kind": "DataQuery",
+          "name": "SnowflakeDateTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeGeoType",
+          "kind": "DataQuery",
+          "name": "SnowflakeGeoType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeNumericTypes",
+          "kind": "DataQuery",
+          "name": "SnowflakeNumericTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeSemiStructuredTypes",
+          "kind": "DataQuery",
+          "name": "SnowflakeSemiStructuredTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakePatternsAll",
+          "kind": "DataQuery",
+          "name": "SnowflakePatternsAll",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeIntTypePatternNone",
+          "kind": "DataQuery",
+          "name": "SnowflakeIntTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypeIntPatternOpMore",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypeIntPatternOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypeIntPatternOpMoreEq",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypeIntPatternOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypeIntPatternOpLessEq",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypeIntPatternOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypeIntPatternOpLess",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypeIntPatternOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypeIntPatternOpIn",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypeIntPatternOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypeIntPatternOpNotIn",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypeIntPatternOpNotIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypeIntPatternOpMinMax",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypeIntPatternOpMinMax",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypeIntPatternOpNotEq",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypeIntPatternOpNotEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeDoubleTypePatternNone",
+          "kind": "DataQuery",
+          "name": "SnowflakeDoubleTypePatternNone",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypePatternDoubleOpMore",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypePatternDoubleOpMore",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypePatternDoubleOpMoreEq",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypePatternDoubleOpMoreEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypePatternDoubleOpLess",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypePatternDoubleOpLess",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypePatternDoubleOpLessEq",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypePatternDoubleOpLessEq",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypePatternStringOpContains",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypePatternStringOpContains",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypePatternStringOpStartsWith",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypePatternStringOpStartsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypePatternStringOpEndsWith",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypePatternStringOpEndsWith",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypePatternStringOpIn",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypePatternStringOpIn",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeStringTypePatternStringOpRegex",
+          "kind": "DataQuery",
+          "name": "SnowflakeStringTypePatternStringOpRegex",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakePatternsAllParams",
+          "kind": "DataQuery",
+          "name": "SnowflakePatternsAllParams",
+          "description": null
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/snowflake",
+          "kind": "DocPage",
+          "title": "Snowflake",
+          "url": "/help/access/databases/connectors/snowflake"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:parameterized-query-by-input-type",
+      "name": "Parameterized Query Input Types",
+      "description": "Tests end-to-end query execution with typed input parameters (int, double, bool, datetime, string choices, string patterns) and realistic relational fixtures (Orders, Products) across MSSQL and PostgreSQL.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:MSSQLAll",
+          "kind": "DataQuery",
+          "name": "MSSQLAll",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLByInt",
+          "kind": "DataQuery",
+          "name": "MSSQLByInt",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLByStringPatternInt",
+          "kind": "DataQuery",
+          "name": "MSSQLByStringPatternInt",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLByDouble",
+          "kind": "DataQuery",
+          "name": "MSSQLByDouble",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLByStringChoices",
+          "kind": "DataQuery",
+          "name": "MSSQLByStringChoices",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLByStringPatternString",
+          "kind": "DataQuery",
+          "name": "MSSQLByStringPatternString",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLByDatetime",
+          "kind": "DataQuery",
+          "name": "MSSQLByDatetime",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLByStringPatternDatetime",
+          "kind": "DataQuery",
+          "name": "MSSQLByStringPatternDatetime",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLOrders",
+          "kind": "DataQuery",
+          "name": "MSSQLOrders",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLProducts",
+          "kind": "DataQuery",
+          "name": "MSSQLProducts",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresAll",
+          "kind": "DataQuery",
+          "name": "PostgresAll",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresByInt",
+          "kind": "DataQuery",
+          "name": "PostgresByInt",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresByStringPatternInt",
+          "kind": "DataQuery",
+          "name": "PostgresByStringPatternInt",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresByDouble",
+          "kind": "DataQuery",
+          "name": "PostgresByDouble",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresByStringChoices",
+          "kind": "DataQuery",
+          "name": "PostgresByStringChoices",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresByStringPatternString",
+          "kind": "DataQuery",
+          "name": "PostgresByStringPatternString",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresByBool",
+          "kind": "DataQuery",
+          "name": "PostgresByBool",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresByDatetime",
+          "kind": "DataQuery",
+          "name": "PostgresByDatetime",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresByStringPatternDatetime",
+          "kind": "DataQuery",
+          "name": "PostgresByStringPatternDatetime",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresOrders",
+          "kind": "DataQuery",
+          "name": "PostgresOrders",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresProducts",
+          "kind": "DataQuery",
+          "name": "PostgresProducts",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlAll",
+          "kind": "DataQuery",
+          "name": "PostgresqlAll",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlByInt",
+          "kind": "DataQuery",
+          "name": "PostgresqlByInt",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlByStringPatternInt",
+          "kind": "DataQuery",
+          "name": "PostgresqlByStringPatternInt",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlByDouble",
+          "kind": "DataQuery",
+          "name": "PostgresqlByDouble",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlByStringChoices",
+          "kind": "DataQuery",
+          "name": "PostgresqlByStringChoices",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlByStringPatternString",
+          "kind": "DataQuery",
+          "name": "PostgresqlByStringPatternString",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlByBool",
+          "kind": "DataQuery",
+          "name": "PostgresqlByBool",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlByDatetime",
+          "kind": "DataQuery",
+          "name": "PostgresqlByDatetime",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlByStringPatternDatetime",
+          "kind": "DataQuery",
+          "name": "PostgresqlByStringPatternDatetime",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlOrders",
+          "kind": "DataQuery",
+          "name": "PostgresqlOrders",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlProducts",
+          "kind": "DataQuery",
+          "name": "PostgresqlProducts",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgreScalarOutput",
+          "kind": "DataQuery",
+          "name": "PostgreScalarOutput",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:query-result-caching",
+      "name": "Query Result Caching",
+      "description": "Tests the platform's table-level and scalar caching layer, connection-scoped caching, cache invalidation, and wide-table cache behavior — all backed by PostgreSQL fixtures.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:PostgresqlTestCacheTableNormal",
+          "kind": "DataQuery",
+          "name": "PostgresqlTestCacheTableNormal",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlScalarCacheTest",
+          "kind": "DataQuery",
+          "name": "PostgresqlScalarCacheTest",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlCachedConnTest",
+          "kind": "DataQuery",
+          "name": "PostgresqlCachedConnTest",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlCacheInvalidateQueryTest",
+          "kind": "DataQuery",
+          "name": "PostgresqlCacheInvalidateQueryTest",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlScalarCacheInvalidationTest",
+          "kind": "DataQuery",
+          "name": "PostgresqlScalarCacheInvalidationTest",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlGetNow",
+          "kind": "DataQuery",
+          "name": "PostgresqlGetNow",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlScalarCacheTestClient",
+          "kind": "DataQuery",
+          "name": "PostgresqlScalarCacheTestClient",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlTestCacheTableNormalClient",
+          "kind": "DataQuery",
+          "name": "PostgresqlTestCacheTableNormalClient",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:TestConnCache",
+          "kind": "DataQuery",
+          "name": "TestConnCache",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlTableWideCachedClient",
+          "kind": "DataQuery",
+          "name": "PostgresqlTableWideCachedClient",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlTableWideCachedServer",
+          "kind": "DataQuery",
+          "name": "PostgresqlTableWideCachedServer",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:result-set-shape-validation",
+      "name": "Result-Set Shape Validation",
+      "description": "Tests that the connector correctly returns result sets of varying shapes — normal, wide-column, long-row, empty, and simple — ensuring column schemas are preserved even on empty results.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:PostgresqlTableNormal",
+          "kind": "DataQuery",
+          "name": "PostgresqlTableNormal",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlTableWide",
+          "kind": "DataQuery",
+          "name": "PostgresqlTableWide",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:PostgresqlTableLong",
+          "kind": "DataQuery",
+          "name": "PostgresqlTableLong",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:TestForColumnsOnEmptyResult",
+          "kind": "DataQuery",
+          "name": "TestForColumnsOnEmptyResult",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SimpleSelect",
+          "kind": "DataQuery",
+          "name": "SimpleSelect",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:query-performance",
+      "name": "Query Performance Benchmarks",
+      "description": "Measures raw throughput of the PostgreSQL JDBC connector under load, providing a performance baseline for regression detection.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:PostgresPerf",
+          "kind": "DataQuery",
+          "name": "PostgresPerf",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:geo-spatial-type-support",
+      "name": "Geo-Spatial Type Support (Cross-DB)",
+      "description": "Cross-provider view of geo and spatial type handling: ClickHouse Geo, MariaDB/MySQL Spatial, MSSQL Geography+Geometry, and Snowflake Geo — verifying that each connector correctly surfaces these types.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:ClickHouseGeoType",
+          "kind": "DataQuery",
+          "name": "ClickHouseGeoType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MariaDbSpatialTypes",
+          "kind": "DataQuery",
+          "name": "MariaDbSpatialTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MySqlSpatialTypes",
+          "kind": "DataQuery",
+          "name": "MySqlSpatialTypes",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLGeographyType",
+          "kind": "DataQuery",
+          "name": "MSSQLGeographyType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:MSSQLGeometryType",
+          "kind": "DataQuery",
+          "name": "MSSQLGeometryType",
+          "description": null
+        },
+        {
+          "id": "query:DBTests:SnowflakeGeoType",
+          "kind": "DataQuery",
+          "name": "SnowflakeGeoType",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:package-smoke-test",
+      "name": "Package Smoke Test",
+      "description": "A single query against the System:Datagrok connection that verifies the DBTests package itself loads and can execute a query, serving as a pre-flight health check.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "query:DBTests:PackageTest",
+          "kind": "DataQuery",
+          "name": "PackageTest",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:test-infrastructure-utilities",
+      "name": "Test Infrastructure Utilities",
+      "description": "Core TypeScript helpers used by all DB test suites: expectTable for tabular result assertion, info for package metadata, and changelog entries tracking test-suite maintenance.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:DBTests:expectTable",
+          "kind": "RegisteredFunction",
+          "name": "expectTable",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DBTests:info",
+          "kind": "RegisteredFunction",
+          "name": "info",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:DBTests:1.3.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DBTests:1.1.3:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DBTests:1.1.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DBTests:1.1.1:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DBTests:1.1.1:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DBTests:1.1.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DBTests:1.0.14:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DBTests/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:package-documentation",
+      "name": "Package Documentation",
+      "description": "The DBTests package-level README (describing purpose and usage) and the third-party credits file.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "doc:/packages/DBTests/readme.md",
+          "kind": "DocPage",
+          "title": "DB Tests",
+          "url": "/packages/DBTests/readme.md"
+        },
+        {
+          "id": "doc:/packages/DBTests/credits.md",
+          "kind": "DocPage",
+          "title": "DBTests — Third-Party Libraries",
+          "url": "/packages/DBTests/credits.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DBTests:internal-platform-test-guides",
+      "name": "Internal Platform Test Guides",
+      "description": "A collection of internal QA guide pages covering platform-wide test scenarios (dialogs, export, sorting, UI, connectors, etc.) that are bundled with DBTests as a reference for internal testers.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "doc:/help/_internal/tests/build-query-test",
+          "kind": "DocPage",
+          "title": "Tests: Join DB Tables",
+          "url": "/help/_internal/tests/build-query-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/collections-test",
+          "kind": "DocPage",
+          "title": "Tests: Collections",
+          "url": "/help/_internal/tests/collections-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/color-coding-test",
+          "kind": "DocPage",
+          "title": "Tests: Color Coding",
+          "url": "/help/_internal/tests/color-coding-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/datetime-extract-test",
+          "kind": "DocPage",
+          "title": "Tests: Datetime Extract",
+          "url": "/help/_internal/tests/datetime-extract-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/dialogs-input-fields-test",
+          "kind": "DocPage",
+          "title": "Tests: Dialogs Input Fields",
+          "url": "/help/_internal/tests/dialogs-input-fields-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/dialogs-test",
+          "kind": "DocPage",
+          "title": "Tests: Dialogs",
+          "url": "/help/_internal/tests/dialogs-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/elastic-search-test",
+          "kind": "DocPage",
+          "title": "Tests: Elastic search",
+          "url": "/help/_internal/tests/elastic-search-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/export-test",
+          "kind": "DocPage",
+          "title": "Tests: Export",
+          "url": "/help/_internal/tests/export-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/file-connector-test",
+          "kind": "DocPage",
+          "title": "Tests: File connector",
+          "url": "/help/_internal/tests/file-connector-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/help-test",
+          "kind": "DocPage",
+          "title": "Tests: Help",
+          "url": "/help/_internal/tests/help-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/hide-menus-test",
+          "kind": "DocPage",
+          "title": "Tests: Hide Menus",
+          "url": "/help/_internal/tests/hide-menus-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/inviting-a-friend-test",
+          "kind": "DocPage",
+          "title": "Tests: Inviting a friend",
+          "url": "/help/_internal/tests/inviting-a-friend-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/normalize-test",
+          "kind": "DocPage",
+          "title": "Tests: Normalize",
+          "url": "/help/_internal/tests/normalize-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/projects-browser-test",
+          "kind": "DocPage",
+          "title": "Tests: Projects Browser",
+          "url": "/help/_internal/tests/projects-browser-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/recently-open-test",
+          "kind": "DocPage",
+          "title": "Tests: Recently Open Views",
+          "url": "/help/_internal/tests/recently-open-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/registration-test",
+          "kind": "DocPage",
+          "title": "Tests: Registration",
+          "url": "/help/_internal/tests/registration-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/sorting-test",
+          "kind": "DocPage",
+          "title": "Tests: Sorting",
+          "url": "/help/_internal/tests/sorting-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/substructure-filter",
+          "kind": "DocPage",
+          "title": "Tests: Substructure Filter",
+          "url": "/help/_internal/tests/substructure-filter"
+        },
+        {
+          "id": "doc:/help/_internal/tests/tables-schema-test",
+          "kind": "DocPage",
+          "title": "Tests: Tables Schema",
+          "url": "/help/_internal/tests/tables-schema-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/tags-favorites-test",
+          "kind": "DocPage",
+          "title": "Tests: Tags",
+          "url": "/help/_internal/tests/tags-favorites-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/transformation-editor-test",
+          "kind": "DocPage",
+          "title": "Tests: Transformation Editor",
+          "url": "/help/_internal/tests/transformation-editor-test"
+        },
+        {
+          "id": "doc:/help/_internal/tests/web-connector-test",
+          "kind": "DocPage",
+          "title": "Tests: Web connector",
+          "url": "/help/_internal/tests/web-connector-test"
+        },
+        {
+          "id": "doc:/help/collaborate/project-gallery-test",
+          "kind": "DocPage",
+          "title": "Tests: Project Browser",
+          "url": "/help/collaborate/project-gallery-test"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

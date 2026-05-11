@@ -1,0 +1,182 @@
+{
+  "package_id": "pkg:ApiTests",
+  "features": [
+    {
+      "id": "feature:ApiTests:dataframe-column-api",
+      "implements": [
+        {
+          "path": "packages/ApiTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiTests/src/dataframe/dataframe.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiTests/src/dataframe/dataframe-link.ts",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/ApiTests/src/dataframe/dataframe-join.ts",
+          "confidence": 0.75
+        }
+      ],
+      "notes": "package.ts defines getTable/getColumn/getDT/getCell/expectTable/expectDate/dummyDataFrameFunction; dataframe/* tests exercise the DataFrame & Column API."
+    },
+    {
+      "id": "feature:ApiTests:function-output-annotations",
+      "implements": [
+        {
+          "path": "packages/ApiTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiTests/src/dapi/functions-annotations.ts",
+          "confidence": 0.98
+        }
+      ],
+      "notes": "package.ts hosts testOutputAnnotation* functions; functions-annotations.ts is the dedicated test suite."
+    },
+    {
+      "id": "feature:ApiTests:vector-functions",
+      "implements": [
+        {
+          "path": "packages/ApiTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiTests/src/dapi/vector-functions-and-scripts.ts",
+          "confidence": 0.98
+        }
+      ],
+      "notes": "package.ts declares testVectorFunc/testVectorFuncNonVectorizableParam; vector-functions-and-scripts.ts tests them plus the JS vector scripts."
+    },
+    {
+      "id": "feature:ApiTests:package-function-infra",
+      "implements": [
+        {
+          "path": "packages/ApiTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiTests/src/functions/functions.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiTests/src/dapi/packages.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiTests/src/property/property.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "package.ts declares dummyPackageFunction(WithDefaultValue)/testStringAsync; functions.ts and property.ts exercise dummyPackageScript/dummyPackageQuery; packages.ts validates package metadata."
+    },
+    {
+      "id": "feature:ApiTests:semantic-type-detection",
+      "implements": [],
+      "tests": [],
+      "notes": "Semantic type detector lives in detectors.js at package root (not in files.src); no in-listing implementation or dedicated test file."
+    },
+    {
+      "id": "feature:ApiTests:script-engine-properties",
+      "implements": [],
+      "tests": [
+        {
+          "path": "packages/ApiTests/src/property/property.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/ApiTests/src/dataframe/calculated-columns.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "property.ts tests propertyParsing header parsing; calculated-columns.ts invokes ApiTests:FormulaScript. Underlying scripts live under scripts/ (excluded by rules)."
+    },
+    {
+      "id": "feature:ApiTests:ui-input-forms",
+      "implements": [
+        {
+          "path": "packages/ApiTests/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/ApiTests/src/widgets/input-form.ts",
+          "confidence": 0.98
+        }
+      ],
+      "notes": "package.ts defines CustomStringInput; input-form.ts exercises ApiTests:InputFormTest and ValueLookup InputForm scenarios."
+    },
+    {
+      "id": "feature:ApiTests:file-connector-api",
+      "implements": [],
+      "tests": [
+        {
+          "path": "packages/ApiTests/src/dapi/files.ts",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/ApiTests/src/dapi/files-list.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/ApiTests/src/dapi/functions.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "Files API tests live in dapi/files*.ts; functions.ts evaluates ApiTests:FileFuncTest. Underlying script (call-with-file.js) is under scripts/ (excluded by rules)."
+    },
+    {
+      "id": "feature:ApiTests:data-query-api",
+      "implements": [],
+      "tests": [],
+      "notes": "Doc-only feature; no in-listing source/test files."
+    },
+    {
+      "id": "feature:ApiTests:data-transformation",
+      "implements": [],
+      "tests": [],
+      "notes": "Doc-only feature; no in-listing source/test files."
+    },
+    {
+      "id": "feature:ApiTests:data-export",
+      "implements": [],
+      "tests": [],
+      "notes": "Doc-only feature; no in-listing source/test files."
+    },
+    {
+      "id": "feature:ApiTests:projects-collaboration",
+      "implements": [],
+      "tests": [],
+      "notes": "Doc-only feature; no in-listing source/test files."
+    },
+    {
+      "id": "feature:ApiTests:ui-navigation-metadata",
+      "implements": [],
+      "tests": [],
+      "notes": "Doc-only feature; no in-listing source/test files."
+    },
+    {
+      "id": "feature:ApiTests:substructure-filter",
+      "implements": [],
+      "tests": [],
+      "notes": "Doc-only feature; no in-listing source/test files."
+    }
+  ]
+}

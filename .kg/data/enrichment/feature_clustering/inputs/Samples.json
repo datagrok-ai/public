@@ -1,0 +1,708 @@
+{
+  "package": {
+    "id": "pkg:Samples",
+    "name": "Samples",
+    "friendly_name": "Samples",
+    "version": "1.5.0",
+    "category": null,
+    "description": "*Samples* contains sample [data connectors](https://datagrok.ai/help/access/databases/connectors/) and demonstrates [scripting](https://datagrok.ai/help/compute/scripting) and [notebooks](https://datagrok.ai/help/compute/jupyter-notebook) functionality.",
+    "extras": {
+      "npm_name": "@datagrok/samples",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [],
+  "scripts": [
+    {
+      "id": "script:Samples:cars",
+      "name": "cars",
+      "language": "javascript",
+      "description": "Demonstrates value lookup"
+    },
+    {
+      "id": "script:Samples:Function Input",
+      "name": "Function Input",
+      "language": "javascript",
+      "description": "Embedding"
+    },
+    {
+      "id": "script:Samples:inputChoice",
+      "name": "inputChoice",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:Samples:validateEmail",
+      "name": "validateEmail",
+      "language": "javascript",
+      "description": null
+    },
+    {
+      "id": "script:Samples:JuliaDup",
+      "name": "JuliaDup",
+      "language": "julia",
+      "description": "Duplicates a string in Julia"
+    },
+    {
+      "id": "script:Samples:Scatter Plot Julia",
+      "name": "Scatter Plot Julia",
+      "language": "julia",
+      "description": null
+    },
+    {
+      "id": "script:Samples:t-test Julia",
+      "name": "t-test Julia",
+      "language": "julia",
+      "description": "Welch's t-test"
+    },
+    {
+      "id": "script:Samples:JSDup",
+      "name": "JSDup",
+      "language": "nodejs",
+      "description": "Duplicates a string in JS"
+    },
+    {
+      "id": "script:Samples:Octave Script 2",
+      "name": "Octave Script 2",
+      "language": "octave",
+      "description": null
+    },
+    {
+      "id": "script:Samples:Scottish hills contour plot",
+      "name": "Scottish hills contour plot",
+      "language": "pyodide",
+      "description": "Displays contour plot"
+    },
+    {
+      "id": "script:Samples:Scottish hills ridge plot",
+      "name": "Scottish hills ridge plot",
+      "language": "pyodide",
+      "description": "Displays ridge plot"
+    },
+    {
+      "id": "script:Samples:Scottish hills demo",
+      "name": "Scottish hills demo",
+      "language": "pyodide",
+      "description": "Displays simple scatter plot"
+    },
+    {
+      "id": "script:Samples:BMI",
+      "name": "BMI",
+      "language": "python",
+      "description": "Body Mass Index"
+    },
+    {
+      "id": "script:Samples:Cell Imaging Segmentation",
+      "name": "Cell Imaging Segmentation",
+      "language": "python",
+      "description": "Cell imaging segmentation based on Watershed algorithm"
+    },
+    {
+      "id": "script:Samples:DatawigTest",
+      "name": "DatawigTest",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:Samples:EXIF",
+      "name": "EXIF",
+      "language": "python",
+      "description": "Gets EXIF data from PNG, JPEG, WEBP"
+    },
+    {
+      "id": "script:Samples:GlomEnvTest",
+      "name": "GlomEnvTest",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:Samples:GlomEnvTestGlobal",
+      "name": "GlomEnvTestGlobal",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:Samples:GlomEnvTestInplace",
+      "name": "GlomEnvTestInplace",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:Samples:Image Classification",
+      "name": "Image Classification",
+      "language": "python",
+      "description": "Image classification based of Efficientnet model"
+    },
+    {
+      "id": "script:Samples:PythonDup",
+      "name": "PythonDup",
+      "language": "python",
+      "description": "Duplicates a string in Python"
+    },
+    {
+      "id": "script:Samples:PythonLibs",
+      "name": "PythonLibs",
+      "language": "python",
+      "description": "displays a list of locally installed python packages"
+    },
+    {
+      "id": "script:Samples:Scalogram Python",
+      "name": "Scalogram Python",
+      "language": "python",
+      "description": "CWT (Morlet wavelet) scalogram plot"
+    },
+    {
+      "id": "script:Samples:Scatter Plot Python",
+      "name": "Scatter Plot Python",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:Samples:t-test Python",
+      "name": "t-test Python",
+      "language": "python",
+      "description": "Welch's t-test"
+    },
+    {
+      "id": "script:Samples:Ulmo",
+      "name": "Ulmo",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:Samples:ANOVA",
+      "name": "ANOVA",
+      "language": "r",
+      "description": "One-way ANOVA"
+    },
+    {
+      "id": "script:Samples:ACF",
+      "name": "ACF",
+      "language": "r",
+      "description": "Autocorrelation function (ACF) plots"
+    },
+    {
+      "id": "script:Samples:BSA",
+      "name": "BSA",
+      "language": "r",
+      "description": "Body Surface Area"
+    },
+    {
+      "id": "script:Samples:Contour Plot",
+      "name": "Contour Plot",
+      "language": "r",
+      "description": "Contour plot"
+    },
+    {
+      "id": "script:Samples:Financial Chart",
+      "name": "Financial Chart",
+      "language": "r",
+      "description": "Charting tool to create standard financial charts given a time series"
+    },
+    {
+      "id": "script:Samples:Fitting DRC",
+      "name": "Fitting DRC",
+      "language": "r",
+      "description": "Fit dose-response curve with a 4-parameter model with no constrain"
+    },
+    {
+      "id": "script:Samples:IIR Filter",
+      "name": "IIR Filter",
+      "language": "r",
+      "description": "IIR Butterworth filter (high or low pass)"
+    },
+    {
+      "id": "script:Samples:KNN R",
+      "name": "KNN R",
+      "language": "r",
+      "description": "Imputes (numerical) missing values using the kNN algorithm"
+    },
+    {
+      "id": "script:Samples:KS Test",
+      "name": "KS Test",
+      "language": "r",
+      "description": "Kolmogorov–Smirnov test (K–S test or KS test)"
+    },
+    {
+      "id": "script:Samples:LDA",
+      "name": "LDA",
+      "language": "r",
+      "description": "Linear Discriminant Analysis"
+    },
+    {
+      "id": "script:Samples:Linear Regression",
+      "name": "Linear Regression",
+      "language": "r",
+      "description": "Linear regression"
+    },
+    {
+      "id": "script:Samples:ListPackages",
+      "name": "ListPackages",
+      "language": "r",
+      "description": "Body Mass Index"
+    },
+    {
+      "id": "script:Samples:LMER",
+      "name": "LMER",
+      "language": "r",
+      "description": "Mixed Effects Model (LMER)"
+    },
+    {
+      "id": "script:Samples:MANOVA",
+      "name": "MANOVA",
+      "language": "r",
+      "description": "MANOVA with 3 Dependent Variables ((x, y) ~ z)"
+    },
+    {
+      "id": "script:Samples:PCA R",
+      "name": "PCA R",
+      "language": "r",
+      "description": "Principal Component Analysis"
+    },
+    {
+      "id": "script:Samples:PLS",
+      "name": "PLS",
+      "language": "r",
+      "description": "Partial Least Squares (PLS)"
+    },
+    {
+      "id": "script:Samples:Predictive Model SVM",
+      "name": "Predictive Model SVM",
+      "language": "r",
+      "description": "Predictive model based on Support vector machine (SVM)"
+    },
+    {
+      "id": "script:Samples:RDup",
+      "name": "RDup",
+      "language": "r",
+      "description": "Duplicates a string in R"
+    },
+    {
+      "id": "script:Samples:renvSpellingExample",
+      "name": "renvSpellingExample",
+      "language": "r",
+      "description": "Simple Spell Checking"
+    },
+    {
+      "id": "script:Samples:Scalogram R",
+      "name": "Scalogram R",
+      "language": "r",
+      "description": "CWT (Morlet wavelet) scalogram plot"
+    },
+    {
+      "id": "script:Samples:Scatter Plot R",
+      "name": "Scatter Plot R",
+      "language": "r",
+      "description": null
+    },
+    {
+      "id": "script:Samples:Sentiment Classification",
+      "name": "Sentiment Classification",
+      "language": "r",
+      "description": "Sentiment classification of emotions and polarity"
+    },
+    {
+      "id": "script:Samples:Spectrogram",
+      "name": "Spectrogram",
+      "language": "r",
+      "description": "Spectrogram plot"
+    },
+    {
+      "id": "script:Samples:Surface Plot",
+      "name": "Surface Plot",
+      "language": "r",
+      "description": "Surface plot"
+    },
+    {
+      "id": "script:Samples:t-test R",
+      "name": "t-test R",
+      "language": "r",
+      "description": "Welch's t-test"
+    },
+    {
+      "id": "script:Samples:Ternary Plot",
+      "name": "Ternary Plot",
+      "language": "r",
+      "description": null
+    },
+    {
+      "id": "script:Samples:Time Series Decomposition",
+      "name": "Time Series Decomposition",
+      "language": "r",
+      "description": "Time series decomposition"
+    },
+    {
+      "id": "script:Samples:ARIMA Forecasting",
+      "name": "ARIMA Forecasting",
+      "language": "r",
+      "description": "Time series forecasting using ARIMA"
+    }
+  ],
+  "queries": [
+    {
+      "id": "query:Samples:Access Orders",
+      "name": "Access Orders",
+      "connection": "AccessNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:Access Products",
+      "name": "Access Products",
+      "connection": "AccessNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:click house states",
+      "name": "click house states",
+      "connection": "ClickHouseNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:click house countries",
+      "name": "click house countries",
+      "connection": "ClickHouseNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:click house products",
+      "name": "click house products",
+      "connection": "ClickHouseNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:click house employees",
+      "name": "click house employees",
+      "connection": "ClickHouseNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:click house customers",
+      "name": "click house customers",
+      "connection": "ClickHouseNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:click house order details by @quantity, @productName, @country",
+      "name": "click house order details by @quantity, @productName, @country",
+      "connection": "ClickHouseNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:click house customers in @country",
+      "name": "click house customers in @country",
+      "connection": "ClickHouseNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MariaDB Orders",
+      "name": "MariaDB Orders",
+      "connection": "MariaDBNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MariaDB Products",
+      "name": "MariaDB Products",
+      "connection": "MariaDBNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MSSQLAll",
+      "name": "MSSQLAll",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MSSQLByInt",
+      "name": "MSSQLByInt",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MSSQLByStringPatternInt",
+      "name": "MSSQLByStringPatternInt",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MSSQLByDouble",
+      "name": "MSSQLByDouble",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MSSQLByStringChoices",
+      "name": "MSSQLByStringChoices",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MSSQLByStringPatternString",
+      "name": "MSSQLByStringPatternString",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MSSQLByDatetime",
+      "name": "MSSQLByDatetime",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MSSQLByStringPatternDatetime",
+      "name": "MSSQLByStringPatternDatetime",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MSSQLOrders",
+      "name": "MSSQLOrders",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MSSQLProducts",
+      "name": "MSSQLProducts",
+      "connection": "MSSQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MySQL Orders",
+      "name": "MySQL Orders",
+      "connection": "MySQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:MySQL Products",
+      "name": "MySQL Products",
+      "connection": "MySQLNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:Oracle Orders",
+      "name": "Oracle Orders",
+      "connection": "OracleNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:Oracle Products",
+      "name": "Oracle Products",
+      "connection": "OracleNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:postgres states",
+      "name": "postgres states",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:postgres countries",
+      "name": "postgres countries",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:postgres products",
+      "name": "postgres products",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:postgres employees",
+      "name": "postgres employees",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:postgres customers",
+      "name": "postgres customers",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:postgres order details by @quantity, @productName, @country",
+      "name": "postgres order details by @quantity, @productName, @country",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:postgres customers in @country",
+      "name": "postgres customers in @country",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:postgres productLookup",
+      "name": "postgres productLookup",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:postgres productDetails",
+      "name": "postgres productDetails",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:OrdersByEmployee",
+      "name": "OrdersByEmployee",
+      "connection": "PostgresNorthwind",
+      "description": null,
+      "tags": []
+    },
+    {
+      "id": "query:Samples:domain usage",
+      "name": "domain usage",
+      "connection": "PostgresWorld",
+      "description": null,
+      "tags": []
+    }
+  ],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Samples/credits.md",
+      "title": "Samples — Third-Party Libraries",
+      "url": "/packages/Samples/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Samples/readme.md",
+      "title": "Demo",
+      "url": "/packages/Samples/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/concepts/functions/func-params-annotation",
+      "title": "Function annotations",
+      "url": "/help/datagrok/concepts/functions/func-params-annotation",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/ApiSamples/readme.md",
+      "title": "API Samples",
+      "url": "/packages/ApiSamples/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Samples:1.4.2:0",
+      "version": "1.4.2",
+      "released_at": "2025-09-22",
+      "ticket": "GROK-18923",
+      "text": "GROK-18923: Northwind: order details by @quantity, @productname, @Country: error"
+    },
+    {
+      "id": "clog:Samples:1.4.2:1",
+      "version": "1.4.2",
+      "released_at": "2025-09-22",
+      "ticket": null,
+      "text": "Samples: Notebooks: Use public python API"
+    },
+    {
+      "id": "clog:Samples:1.4.2:2",
+      "version": "1.4.2",
+      "released_at": "2025-09-22",
+      "ticket": null,
+      "text": "Samples: Deprecated more swager files"
+    },
+    {
+      "id": "clog:Samples:1.2.0:0",
+      "version": "1.2.0",
+      "released_at": "2024-10-24",
+      "ticket": null,
+      "text": "Queries auto tests"
+    },
+    {
+      "id": "clog:Samples:1.2.0:1",
+      "version": "1.2.0",
+      "released_at": "2024-10-24",
+      "ticket": null,
+      "text": "Pyodide samples"
+    },
+    {
+      "id": "clog:Samples:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2024-09-09",
+      "ticket": null,
+      "text": "Dependencies bump"
+    },
+    {
+      "id": "clog:Samples:1.0.4:0",
+      "version": "1.0.4",
+      "released_at": "2024-07-18",
+      "ticket": null,
+      "text": "Fixes demo swagger connections, projects, scripts"
+    },
+    {
+      "id": "clog:Samples:1.0.3:0",
+      "version": "1.0.3",
+      "released_at": "2024-06-05",
+      "ticket": null,
+      "text": "This release focuses on improving feature stability and usability."
+    },
+    {
+      "id": "clog:Samples:1.0.3:1",
+      "version": "1.0.3",
+      "released_at": "2024-06-05",
+      "ticket": null,
+      "text": "Dependency: datagrok-api >= 1.13.0*"
+    },
+    {
+      "id": "clog:Samples:1.0.3:2",
+      "version": "1.0.3",
+      "released_at": "2024-06-05",
+      "ticket": null,
+      "text": "Fixes demo projects"
+    }
+  ],
+  "stats": {
+    "functions": 0,
+    "scripts": 54,
+    "queries": 36,
+    "tutorials": 0,
+    "docs": 4,
+    "changelog": 10
+  }
+}

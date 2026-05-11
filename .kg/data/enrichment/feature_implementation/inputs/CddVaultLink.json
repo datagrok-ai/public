@@ -1,0 +1,335 @@
+{
+  "package": {
+    "id": "pkg:CddVaultLink",
+    "name": "CddVaultLink",
+    "friendly_name": "CDD Vault Link",
+    "category": "Cheminformatics",
+    "description": "Integration with CDD Vault registration system"
+  },
+  "files": {
+    "src": [
+      "packages/CddVaultLink/src/cdd-vault-api.ts",
+      "packages/CddVaultLink/src/constants.ts",
+      "packages/CddVaultLink/src/package.ts",
+      "packages/CddVaultLink/src/search-function-editor.ts",
+      "packages/CddVaultLink/src/utils.ts"
+    ],
+    "tests": [
+      "packages/CddVaultLink/src/package-test.ts",
+      "packages/CddVaultLink/src/tests/cdd-vault-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/CddVaultLink/CHANGELOG.md",
+      "packages/CddVaultLink/CLAUDE.md",
+      "packages/CddVaultLink/CREDITS.md",
+      "packages/CddVaultLink/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:CddVaultLink:vault-app",
+      "name": "CDD Vault App",
+      "description": "The top-level Datagrok application that surfaces CDD Vault data, handling routing, the app-tree browser entry point, and the tab-based preview UI (molecules, batches, protocols, collections). It is the shell that all…",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:CddVaultLink:CDD Vault",
+          "kind": "RegisteredFunction",
+          "name": "CDD Vault",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:cddVaultAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "cddVaultAppTreeBrowser",
+          "friendly_name": null,
+          "role": "appTreeBrowser",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:Databases | CDD Vault",
+          "kind": "RegisteredFunction",
+          "name": "Databases | CDD Vault",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/CddVaultLink/readme.md",
+          "kind": "DocPage",
+          "title": "CDD Vault Link",
+          "url": "/packages/CddVaultLink/readme.md"
+        },
+        {
+          "id": "clog:CddVaultLink:1.1.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:CddVaultLink:1.0.4:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:CddVaultLink:1.0.4:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:CddVaultLink:1.0.3:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:CddVaultLink:1.0.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:CddVaultLink:v.next:3",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/CddVaultLink/src/package-api.ts",
+          "packages/CddVaultLink/src/package.ts"
+        ],
+        "tests": [
+          "packages/CddVaultLink/src/tests/cdd-vault-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:CddVaultLink:vault-connection",
+      "name": "Vault Connection and Discovery",
+      "description": "Allows users to enumerate all CDD Vaults accessible under their credentials and retrieve high-level statistics for a chosen vault, forming the authentication/discovery layer before any data is loaded.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:CddVaultLink:Get Vaults",
+          "kind": "RegisteredFunction",
+          "name": "Get Vaults",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:Get Vault Stats",
+          "kind": "RegisteredFunction",
+          "name": "Get Vault Stats",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:CddVaultLink:1.0.5:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CddVaultLink:molecule-retrieval",
+      "name": "Molecule Retrieval",
+      "description": "Fetches registered molecule records from a CDD Vault as a Datagrok DataFrame, providing a synchronous quick-preview variant and an asynchronous full-load variant with pagination.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:CddVaultLink:Get Molecules",
+          "kind": "RegisteredFunction",
+          "name": "Get Molecules",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:Get Molecules Async",
+          "kind": "RegisteredFunction",
+          "name": "Get Molecules Async",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:CddVaultLink:v.next:5",
+          "kind": "other"
+        },
+        {
+          "id": "clog:CddVaultLink:v.next:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CddVaultLink:batch-retrieval",
+      "name": "Batch Retrieval",
+      "description": "Fetches batch records (synthesis/registration batches linked to parent molecules) from a CDD Vault as a DataFrame, with sync preview and async full-load modes.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:CddVaultLink:Get Batches",
+          "kind": "RegisteredFunction",
+          "name": "Get Batches",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:Get Batches Async",
+          "kind": "RegisteredFunction",
+          "name": "Get Batches Async",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:CddVaultLink:v.next:6",
+          "kind": "other"
+        },
+        {
+          "id": "clog:CddVaultLink:v.next:4",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CddVaultLink:compound-search",
+      "name": "Compound Search",
+      "description": "Provides chemical structure and property search against a CDD Vault — including substructure/similarity queries, saved-search recall, and a dedicated search-editor UI that constructs and runs vault search calls.",
+      "category": "chem-search",
+      "members": [
+        {
+          "id": "func:CddVaultLink:CDD Vault Search Async",
+          "kind": "RegisteredFunction",
+          "name": "CDD Vault Search Async",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:CDD Vault search 2",
+          "kind": "RegisteredFunction",
+          "name": "CDD Vault search 2",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:CDD Vault search",
+          "kind": "RegisteredFunction",
+          "name": "CDD Vault search",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:CDDVaultSearchEditor",
+          "kind": "RegisteredFunction",
+          "name": "CDDVaultSearchEditor",
+          "friendly_name": null,
+          "role": "editor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:Get Saved Searches",
+          "kind": "RegisteredFunction",
+          "name": "Get Saved Searches",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:Get Saved Search Results",
+          "kind": "RegisteredFunction",
+          "name": "Get Saved Search Results",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:CddVaultLink:v.next:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:CddVaultLink:v.next:7",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/CddVaultLink/src/cdd-vault-api.ts",
+          "packages/CddVaultLink/src/constants.ts",
+          "packages/CddVaultLink/src/package-api.ts",
+          "packages/CddVaultLink/src/package.ts",
+          "packages/CddVaultLink/src/search-function-editor.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:CddVaultLink:protocols-and-collections",
+      "name": "Protocols and Collections",
+      "description": "Exposes CDD Vault biological assay protocols and compound collections as browseable, loadable data within the CDD Vault app, surfaced as async API calls with sync wrapper counterparts.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:CddVaultLink:Get Protocols Async",
+          "kind": "RegisteredFunction",
+          "name": "Get Protocols Async",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:CddVaultLink:Get Collections Async",
+          "kind": "RegisteredFunction",
+          "name": "Get Collections Async",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:CddVaultLink:1.0.2:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:CddVaultLink:v.next:4",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

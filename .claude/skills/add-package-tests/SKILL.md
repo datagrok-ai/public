@@ -123,7 +123,7 @@ Tests can also be run from the Datagrok console or Test Manager in the platform 
 - Always register test files in `src/package-test.ts`
 - Use `skipReason` with a Jira key (e.g., `GROK-12345`) when skipping tests
 - The `//test:` annotation on functions is for simple input/output validation
-- For real examples, see the Chem package: `public/packages/Chem/`
+- For real examples, see the Chem package: `packages/Chem/`
 
 ## Behavior
 

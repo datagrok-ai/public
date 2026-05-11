@@ -1,0 +1,159 @@
+{
+  "package_id": "pkg:DiffStudio",
+  "features": [
+    {
+      "id": "feature:DiffStudio:ode-solver-ide",
+      "name": "ODE Solver IDE",
+      "description": "Interactive in-browser IDE for defining, solving, and visualizing systems of ordinary differential equations using a domain-specific language with multiple numerical methods.",
+      "category": "compute",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:DiffStudio:Diff Studio",        "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:solve",              "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:solveEquations",     "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:solveODE",           "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:init",               "weight": 0.6, "role": "core"},
+        {"id": "func:DiffStudio:dock",               "weight": 0.5, "role": "core"},
+        {"id": "func:DiffStudio:Diff Studio Demo",   "weight": 0.8, "role": "sample"},
+        {"id": "doc:/help/compute/diff-studio",      "weight": 1.0, "role": "doc"},
+        {"id": "doc:/packages/DiffStudio/readme.md", "weight": 0.9, "role": "doc"},
+        {"id": "clog:DiffStudio:1.5.0:0",            "weight": 0.7, "role": "related"},
+        {"id": "clog:DiffStudio:1.5.0:1",            "weight": 0.7, "role": "related"},
+        {"id": "clog:DiffStudio:1.5.0:2",            "weight": 0.7, "role": "related"},
+        {"id": "clog:DiffStudio:1.5.0:3",            "weight": 0.7, "role": "related"},
+        {"id": "clog:DiffStudio:1.5.0:4",            "weight": 0.7, "role": "related"},
+        {"id": "clog:DiffStudio:1.5.0:5",            "weight": 0.7, "role": "related"},
+        {"id": "clog:DiffStudio:1.5.0:6",            "weight": 0.7, "role": "related"}
+      ],
+      "evidence_summary": "The app entry point, all solve*/solveODE computational functions, the primary help doc, and seven 1.5.0 changelog entries on new numerical methods all converge on the ODE-solver IDE theme."
+    },
+    {
+      "id": "feature:DiffStudio:ivp-file-format",
+      "name": "IVP File Format",
+      "description": "Platform integration for .ivp (initial value problem) files: file-type handler that opens them in Diff Studio and a preview viewer for quick inspection without leaving the file browser.",
+      "category": "data-import",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:DiffStudio:ivpFileHandler", "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:previewIvp",     "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "ivpFileHandler (role: fileHandler, ext: ipv) and previewIvp (role: fileViewer, fileViewer: ivp) share the ivp file-format name root and complementary file-handling roles."
+    },
+    {
+      "id": "feature:DiffStudio:ode-serialization-api",
+      "name": "ODE Serialization API",
+      "description": "Developer-facing API for converting textual ODE definitions into structured objects or executable JavaScript code, enabling programmatic embedding of ODE models.",
+      "category": "infra",
+      "confidence": 0.8,
+      "members": [
+        {"id": "func:DiffStudio:serializeEquations", "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:odesToCode",         "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "serializeEquations ('Return serialized initial value problem') and odesToCode ('Perform ODEs serialization to JS-code') both convert ODE text to alternate representations, forming a paired serialization API."
+    },
+    {
+      "id": "feature:DiffStudio:domain-models",
+      "name": "Built-in Domain Models",
+      "description": "Curated library of ready-to-run ODE models covering pharmacokinetics (PK-PD), bioprocess engineering (Bioreactor, Acid Production), environmental chemistry (Pollution), and ballistics (Ball flight).",
+      "category": "compute",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:DiffStudio:PK-PD",                 "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:Bioreactor",             "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:Acid Production",        "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:Pollution",              "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:Ball flight",            "weight": 1.0, "role": "core"},
+        {"id": "func:DiffStudio:runModel",               "weight": 0.9, "role": "core"},
+        {"id": "func:DiffStudio:PK-PD Simulation Demo",  "weight": 0.8, "role": "sample"},
+        {"id": "func:DiffStudio:Bioreactor Demo",        "weight": 0.8, "role": "sample"},
+        {"id": "doc:/help/compute/models",               "weight": 0.7, "role": "doc"},
+        {"id": "clog:DiffStudio:1.5.2:0",                "weight": 0.6, "role": "related"}
+      ],
+      "evidence_summary": "Five functions share the 'model' tag with scientific descriptions; runModel drives any of them via the Diff Studio UI; Demo variants provide interactive samples."
+    },
+    {
+      "id": "feature:DiffStudio:model-hub-browser",
+      "name": "Model Hub Browser",
+      "description": "Tree-based browser for discovering and launching ODE models registered in the Diff Studio model hub, with an improved open-model menu.",
+      "category": "viz",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:DiffStudio:runDiffStudioTreeBrowser", "weight": 1.0, "role": "core"},
+        {"id": "clog:DiffStudio:1.5.1:0",                  "weight": 0.6, "role": "related"},
+        {"id": "clog:DiffStudio:1.4.7:0",                  "weight": 0.6, "role": "related"}
+      ],
+      "evidence_summary": "runDiffStudioTreeBrowser is the sole tree-browser entry point; changelog entries for 'Fixed Model Hub issue' (1.5.1) and 'Improved the open model menu' (1.4.7) confirm the feature."
+    },
+    {
+      "id": "feature:DiffStudio:parameter-fitting",
+      "name": "Parameter Fitting",
+      "description": "Optimization of ODE model parameters to fit experimental data, with target column selection, progress tracking, and configurable color scheme — surfaced in the Diff Studio UI, not as a separate registered function.",
+      "category": "ml",
+      "confidence": 0.6,
+      "members": [
+        {"id": "clog:DiffStudio:1.3.3:0",                   "weight": 0.8, "role": "related"},
+        {"id": "clog:DiffStudio:1.3.3:1",                   "weight": 0.7, "role": "related"},
+        {"id": "clog:DiffStudio:1.3.3:2",                   "weight": 0.7, "role": "related"},
+        {"id": "clog:DiffStudio:1.3.4:0",                   "weight": 0.6, "role": "related"},
+        {"id": "clog:DiffStudio:1.3.5:0",                   "weight": 0.8, "role": "related"},
+        {"id": "clog:DiffStudio:1.3.5:1",                   "weight": 0.6, "role": "related"},
+        {"id": "clog:DiffStudio:1.3.5:2",                   "weight": 0.6, "role": "related"},
+        {"id": "doc:/help/compute/function-analysis",        "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "Changelog entries across 1.3.3–1.3.5 explicitly name 'the Fitting feature' and 'parameters optimization'; no registered function exists, indicating a UI-only capability."
+    },
+    {
+      "id": "feature:DiffStudio:sensitivity-analysis",
+      "name": "Sensitivity Analysis",
+      "description": "Analysis of how ODE model outputs change with parameter variation, executed in web workers for non-blocking performance.",
+      "category": "compute",
+      "confidence": 0.55,
+      "members": [
+        {"id": "clog:DiffStudio:1.3.6:0", "weight": 0.8, "role": "related"}
+      ],
+      "evidence_summary": "Single changelog entry ('Sensitivity analysis in workers') confirms the feature exists; no registered function exposes it directly, suggesting it is a UI-only sub-tool."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:DiffStudio:ivp-file-format",       "to": "feature:DiffStudio:ode-solver-ide",    "kind": "related"},
+    {"from": "feature:DiffStudio:ode-serialization-api", "to": "feature:DiffStudio:ivp-file-format",   "kind": "related"},
+    {"from": "feature:DiffStudio:domain-models",         "to": "feature:DiffStudio:ode-solver-ide",    "kind": "related"},
+    {"from": "feature:DiffStudio:model-hub-browser",     "to": "feature:DiffStudio:domain-models",     "kind": "sibling"},
+    {"from": "feature:DiffStudio:parameter-fitting",     "to": "feature:DiffStudio:ode-solver-ide",    "kind": "subfeature"},
+    {"from": "feature:DiffStudio:sensitivity-analysis",  "to": "feature:DiffStudio:ode-solver-ide",    "kind": "subfeature"}
+  ],
+  "unassigned_member_ids": [
+    "func:DiffStudio:info",
+    "doc:/packages/DiffStudio/credits.md",
+    "doc:/packages/DiffStudio/claude.md",
+    "doc:/help/compute/compute",
+    "doc:/packages/Compute/credits.md",
+    "doc:/packages/Compute/readme.md",
+    "doc:/help/compute/jupyter-notebook",
+    "doc:/help/compute/scripting/getting-started",
+    "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+    "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+    "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+    "doc:/help/compute/scripting/scripting-features/complex-input-output",
+    "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+    "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+    "doc:/help/compute/scripting/scripting-features/scripting-features",
+    "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+    "doc:/help/datagrok/navigation/info-pane-reference",
+    "doc:/help/datagrok/navigation/panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/develop/how-to/ui/add-info-panel",
+    "clog:DiffStudio:1.4.10:0",
+    "clog:DiffStudio:1.4.9:0",
+    "clog:DiffStudio:1.4.8:0",
+    "clog:DiffStudio:1.4.6:0",
+    "clog:DiffStudio:1.4.5:0",
+    "clog:DiffStudio:1.4.4:0",
+    "clog:DiffStudio:1.4.3:0",
+    "clog:DiffStudio:1.4.3:1",
+    "clog:DiffStudio:1.4.3:2",
+    "clog:DiffStudio:1.4.2:0",
+    "clog:DiffStudio:1.4.1:0",
+    "clog:DiffStudio:1.4.0:0"
+  ]
+}

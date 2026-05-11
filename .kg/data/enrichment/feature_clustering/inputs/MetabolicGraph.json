@@ -1,0 +1,161 @@
+{
+  "package": {
+    "id": "pkg:MetabolicGraph",
+    "name": "MetabolicGraph",
+    "friendly_name": "Metabolic Graph",
+    "version": "1.1.0",
+    "category": null,
+    "description": "Metabolic graph visualizations and analysis",
+    "extras": {
+      "npm_name": "@datagrok/metabolicgraph",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:MetabolicGraph:MetabolicGraph",
+      "name": "MetabolicGraph",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": "Metabolic graph application",
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Misc"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MetabolicGraph:EscherFileViewer",
+      "name": "EscherFileViewer",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "json"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:MetabolicGraph:escherFileViewerCheck",
+      "name": "escherFileViewerCheck",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:MetabolicGraph:OptGpSampling",
+      "name": "OptGpSampling",
+      "language": "python",
+      "description": "Samples the metabolic map and returns binned values of samples"
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/MetabolicGraph/credits.md",
+      "title": "Metabolic Graph — Third-Party Libraries",
+      "url": "/packages/MetabolicGraph/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/MetabolicGraph/readme.md",
+      "title": "MetabolicGraph",
+      "url": "/packages/MetabolicGraph/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:MetabolicGraph:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2025-10-20",
+      "ticket": null,
+      "text": "New E. coli core metabolism map and model added."
+    },
+    {
+      "id": "clog:MetabolicGraph:1.1.0:1",
+      "version": "1.1.0",
+      "released_at": "2025-10-20",
+      "ticket": null,
+      "text": "New GLPK solver based on WebAssembly for FBA / Extreme points calculations."
+    },
+    {
+      "id": "clog:MetabolicGraph:1.1.0:2",
+      "version": "1.1.0",
+      "released_at": "2025-10-20",
+      "ticket": null,
+      "text": "Improved sampling dialog with more options."
+    },
+    {
+      "id": "clog:MetabolicGraph:1.1.0:3",
+      "version": "1.1.0",
+      "released_at": "2025-10-20",
+      "ticket": null,
+      "text": "Increased correlation limit for redundent edge removal"
+    },
+    {
+      "id": "clog:MetabolicGraph:1.1.0:4",
+      "version": "1.1.0",
+      "released_at": "2025-10-20",
+      "ticket": null,
+      "text": "Performance improvements and bug fixes."
+    },
+    {
+      "id": "clog:MetabolicGraph:1.0.1:0",
+      "version": "1.0.1",
+      "released_at": "2025-10-03",
+      "ticket": null,
+      "text": "New sampler and GLPK optimizer for FBA calculations."
+    },
+    {
+      "id": "clog:MetabolicGraph:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2025-09-06",
+      "ticket": null,
+      "text": "Initial release of `MetabolicGraph` package."
+    }
+  ],
+  "stats": {
+    "functions": 3,
+    "scripts": 1,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 2,
+    "changelog": 7
+  }
+}

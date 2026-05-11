@@ -1,0 +1,133 @@
+{
+  "package_id": "pkg:NLP",
+  "features": [
+    {
+      "id": "feature:NLP:sentence-similarity-search",
+      "name": "Sentence Similarity Search",
+      "description": "A viewer and widget set that lets users search a text column for semantically similar sentences, and inspect pairwise distances between them in real time.",
+      "category": "nlp-search",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:NLP:Sentence Similarity Search", "weight": 1.0,  "role": "core"},
+        {"id": "func:NLP:sentenceSearch",              "weight": 0.9,  "role": "core"},
+        {"id": "func:NLP:Similar",                    "weight": 0.85, "role": "core"},
+        {"id": "func:NLP:Distance",                   "weight": 0.85, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/nlp/nlp", "weight": 0.8, "role": "doc"},
+        {"id": "doc:/packages/NLP/readme.md",         "weight": 0.7,  "role": "doc"},
+        {"id": "clog:NLP:1.0.9:0",                   "weight": 0.5,  "role": "related"}
+      ],
+      "evidence_summary": "Four entities share 'Sentence'/'Similar'/'Distance' naming and viewer/widget roles, and the main NLP help page describes this as the package's primary interactive search capability."
+    },
+    {
+      "id": "feature:NLP:text-embeddings",
+      "name": "Text Embeddings",
+      "description": "Computes dense vector embeddings for text columns (UMAP-based and sentence-level), serving as the backbone for dimensionality reduction, clustering, and radial coloring of text data.",
+      "category": "ml",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:NLP:Sentence Embeddings",        "weight": 1.0,  "role": "core"},
+        {"id": "func:NLP:Compute Text Embeddings",    "weight": 0.95, "role": "core"},
+        {"id": "func:NLP:getEmbeddings",              "weight": 0.8,  "role": "core"},
+        {"id": "func:NLP:Radial Coloring",            "weight": 0.65, "role": "related"},
+        {"id": "clog:NLP:1.2.4:0",                   "weight": 0.75, "role": "related"},
+        {"id": "clog:NLP:1.0.7:2",                   "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "Three functions are named around 'Embeddings', share dimRedPreprocessingFunction / embedding retrieval roles, and changelog entries explicitly describe an SBS approach to embeddings computation and tuned clustering defaults."
+    },
+    {
+      "id": "feature:NLP:stemming-based-search",
+      "name": "Stemming-Based Search",
+      "description": "Adds stemming-aware search and filtering for text columns, including a Stem Column transform and context/distance edit panels introduced in v1.0.7.",
+      "category": "nlp-search",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:NLP:Stem Column",   "weight": 1.0,  "role": "core"},
+        {"id": "clog:NLP:1.0.7:0",      "weight": 0.9,  "role": "related"},
+        {"id": "clog:NLP:1.0.7:1",      "weight": 0.85, "role": "related"},
+        {"id": "clog:NLP:1.0.8:0",      "weight": 0.8,  "role": "related"},
+        {"id": "doc:/help/transform/functions/text-functions", "weight": 0.5, "role": "doc"}
+      ],
+      "evidence_summary": "The Stem Column function, three changelog entries exclusively describing 'SBS' (Stemming-Based Search) tools and their help documentation, form a self-contained release theme."
+    },
+    {
+      "id": "feature:NLP:sentiment-analysis",
+      "name": "Sentiment Analysis",
+      "description": "Detects polarity and emotion sentiment in text using multiple complementary approaches: rule-based VADER lexicon, ML-based polarity detection, and R-based emotion classification.",
+      "category": "nlp-analysis",
+      "confidence": 0.95,
+      "members": [
+        {"id": "script:NLP:Sentiment Analysis",            "weight": 1.0, "role": "core"},
+        {"id": "script:NLP:Sentiment Classification",      "weight": 1.0, "role": "core"},
+        {"id": "script:NLP:Rule-Based Sentiment Analysis", "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "All three scripts share 'Sentiment' in their names and their descriptions uniformly describe polar/emotion detection, forming an obvious thematic cluster."
+    },
+    {
+      "id": "feature:NLP:text-summarization",
+      "name": "Text Summarization",
+      "description": "Produces extractive summaries of documents using the TextRank graph-based algorithm.",
+      "category": "nlp-analysis",
+      "confidence": 0.9,
+      "members": [
+        {"id": "script:NLP:Summary", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Single script with an unambiguous description ('Extractive Text Summarization Using TextRank Algorithm') representing a standalone NLP capability."
+    },
+    {
+      "id": "feature:NLP:language-and-text-statistics",
+      "name": "Language Detection & Text Statistics",
+      "description": "Identifies the language of a text and provides readability/complexity statistics, giving users a quick profile of their text data quality.",
+      "category": "nlp-analysis",
+      "confidence": 0.82,
+      "members": [
+        {"id": "script:NLP:Language Detector", "weight": 1.0,  "role": "core"},
+        {"id": "script:NLP:Text Statistics",   "weight": 0.95, "role": "core"}
+      ],
+      "evidence_summary": "Both scripts operate on raw text at the metadata/quality level (language and readability) rather than on meaning, making them natural companions for a text-profiling workflow."
+    },
+    {
+      "id": "feature:NLP:translation",
+      "name": "Translation",
+      "description": "Provides an in-context translation widget that accepts a file input and renders translated text as a Datagrok panel.",
+      "category": "nlp-analysis",
+      "confidence": 0.8,
+      "members": [
+        {"id": "func:NLP:Translation", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Named 'Translation' with a file→widget signature; no other function overlaps with this capability."
+    },
+    {
+      "id": "feature:NLP:text-extraction",
+      "name": "Text Extraction",
+      "description": "Extracts plain text content from binary files (PDFs, Office documents, etc.) to feed downstream NLP scripts.",
+      "category": "data-import",
+      "confidence": 0.85,
+      "members": [
+        {"id": "script:NLP:Text Extractor", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Standalone Python script described explicitly as 'Extracts text from a file', serving as an ingestion pre-step for other NLP features."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:NLP:text-embeddings",      "to": "feature:NLP:sentence-similarity-search", "kind": "related"},
+    {"from": "feature:NLP:stemming-based-search", "to": "feature:NLP:sentence-similarity-search", "kind": "sibling"},
+    {"from": "feature:NLP:text-embeddings",      "to": "feature:NLP:stemming-based-search",       "kind": "sibling"},
+    {"from": "feature:NLP:text-extraction",      "to": "feature:NLP:text-summarization",          "kind": "related"},
+    {"from": "feature:NLP:text-extraction",      "to": "feature:NLP:sentiment-analysis",          "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:NLP:exportFunc",
+    "doc:/packages/NLP/credits.md",
+    "doc:/help/_internal/tests/elastic-search-test",
+    "doc:/help/compute/compute",
+    "doc:/help/datagrok/_deprecated/data-search",
+    "doc:/help/datagrok/_deprecated/data-search-patterns",
+    "doc:/help/datagrok/_deprecated/smart-search",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+    "doc:/help/explore/search-filter-select/data-search-test",
+    "doc:/help/transform/text-to-columns",
+    "doc:/packages/Compute/credits.md",
+    "doc:/packages/Compute/readme.md",
+    "clog:NLP:1.0.6:0"
+  ]
+}

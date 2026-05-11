@@ -1,0 +1,2185 @@
+{
+  "package": {
+    "id": "pkg:Bio",
+    "name": "Bio",
+    "friendly_name": "Bio",
+    "version": "2.27.8",
+    "category": "Bioinformatics",
+    "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
+    "extras": {
+      "npm_name": "@datagrok/bio",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [
+    {
+      "name": "FontSize",
+      "type": "int",
+      "choices": [],
+      "default": "12"
+    },
+    {
+      "name": "MaxMonomerLength",
+      "type": "string",
+      "choices": [],
+      "default": "4"
+    },
+    {
+      "name": "TooltipWebLogo",
+      "type": "bool",
+      "choices": [],
+      "default": "true"
+    },
+    {
+      "name": "DefaultSeparator",
+      "type": "string",
+      "choices": [],
+      "default": "."
+    }
+  ],
+  "functions": [
+    {
+      "id": "func:Bio:getMonomerLibHelper",
+      "name": "getMonomerLibHelper",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Returns an instance of the monomer library helper",
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:initBio",
+      "name": "initBio",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [
+        "init"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:sequenceTooltip",
+      "name": "sequenceTooltip",
+      "friendly_name": null,
+      "role": "tooltip",
+      "tags": [
+        "tooltip"
+      ],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "tooltip"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:standardiseMonomerLibrary",
+      "name": "standardiseMonomerLibrary",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:matchWithMonomerLibrary",
+      "name": "matchWithMonomerLibrary",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Matches molecules in a column with monomers from the selected library(s)",
+      "input_types": [
+        "dataframe",
+        "column",
+        "string"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:getBioLib",
+      "name": "getBioLib",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:getSeqHandler",
+      "name": "getSeqHandler",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Bioinformatics | Get Region",
+      "name": "Bioinformatics | Get Region",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [
+        "panel"
+      ],
+      "description": "Creates a new column with sequences of the region between start and end",
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Bioinformatics | Manage Monomer Libraries",
+      "name": "Bioinformatics | Manage Monomer Libraries",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [
+        "exclude-actions-panel"
+      ],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:GetRegionEditor",
+      "name": "GetRegionEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [
+        "editor"
+      ],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:SplitToMonomersEditor",
+      "name": "SplitToMonomersEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [
+        "editor"
+      ],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:SequenceSpaceEditor",
+      "name": "SequenceSpaceEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [
+        "editor"
+      ],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:SeqActivityCliffsEditor",
+      "name": "SeqActivityCliffsEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [
+        "editor"
+      ],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:customSequenceCellRenderer",
+      "name": "customSequenceCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:fastaSequenceCellRenderer",
+      "name": "fastaSequenceCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:separatorSequenceCellRenderer",
+      "name": "separatorSequenceCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:bilnSequenceCellRenderer",
+      "name": "bilnSequenceCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:refineNotationProviderForBiln",
+      "name": "refineNotationProviderForBiln",
+      "friendly_name": null,
+      "role": "notationRefiner",
+      "tags": [
+        "notationRefiner"
+      ],
+      "description": null,
+      "input_types": [
+        "column",
+        "object",
+        "string"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {
+        "role": "notationRefiner"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Bioinformatics | Sequence Renderer",
+      "name": "Bioinformatics | Sequence Renderer",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [
+        "panel"
+      ],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Composition analysis",
+      "name": "Composition analysis",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [
+        "bio",
+        "widgets",
+        "panel"
+      ],
+      "description": null,
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel",
+        "domain": "bio"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Monomer",
+      "name": "Monomer",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [
+        "bio",
+        "panel"
+      ],
+      "description": null,
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "domain": "bio",
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:MacromoleculeDifferenceCellRenderer",
+      "name": "MacromoleculeDifferenceCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:sequenceAlignment",
+      "name": "sequenceAlignment",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string",
+        "string",
+        "double",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:WebLogo",
+      "name": "WebLogo",
+      "friendly_name": null,
+      "role": "viewer,panel",
+      "tags": [
+        "viewer",
+        "panel"
+      ],
+      "description": "WebLogo",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:VdRegions",
+      "name": "VdRegions",
+      "friendly_name": null,
+      "role": "viewer,panel",
+      "tags": [
+        "viewer"
+      ],
+      "description": "V-Domain regions viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:getRegion",
+      "name": "getRegion",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Gets a new column with sequences of the region between start and end",
+      "input_types": [
+        "column",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Get Region Top Menu",
+      "name": "Get Region Top Menu",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Get sequences for a region specified from a Macromolecule",
+      "input_types": [
+        "dataframe",
+        "column",
+        "string",
+        "string",
+        "string"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Apply Numbering Scheme",
+      "name": "Apply Numbering Scheme",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Scan Liabilities",
+      "name": "Scan Liabilities",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Scans macromolecule sequences for deamidation, oxidation, and other liabilities",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Manage Annotations",
+      "name": "Manage Annotations",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "View and manage sequence annotations on macromolecule columns",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Sequence Column Input",
+      "name": "Sequence Column Input",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Creates a new input for sequence columns with ability to extract a region",
+      "input_types": [
+        "string",
+        "dynamic"
+      ],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Sequence Activity Cliffs",
+      "name": "Sequence Activity Cliffs",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Detects pairs of molecules with similar structure and significant difference in any given property",
+      "input_types": [
+        "dataframe",
+        "string",
+        "column",
+        "double",
+        "string",
+        "string",
+        "func",
+        "object",
+        "bool"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:seqActivityCliffsInitFunction",
+      "name": "seqActivityCliffsInitFunction",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "viewer"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:seqActivityCliffsTransform",
+      "name": "seqActivityCliffsTransform",
+      "friendly_name": null,
+      "role": "transform",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "column",
+        "double",
+        "string",
+        "string",
+        "string",
+        "bool",
+        null
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "transform"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Encode Sequences",
+      "name": "Encode Sequences",
+      "friendly_name": null,
+      "role": "dim-red-preprocessing-function",
+      "tags": [
+        "dim-red-preprocessing-function"
+      ],
+      "description": null,
+      "input_types": [
+        "column",
+        "string",
+        "double",
+        "double",
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {
+        "role": "dim-red-preprocessing-function"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Helm Fingerprints",
+      "name": "Helm Fingerprints",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column",
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Sequence Space",
+      "name": "Sequence Space",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Creates 2D sequence space with projected sequences by pairwise distance",
+      "input_types": [
+        "dataframe",
+        "column",
+        "string",
+        "string",
+        "bool",
+        "func",
+        "object",
+        "bool",
+        "bool"
+      ],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:sequenceSpaceTransform",
+      "name": "sequenceSpaceTransform",
+      "friendly_name": null,
+      "role": "transform",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "string",
+        "string",
+        "bool",
+        "string",
+        "bool",
+        null,
+        "string"
+      ],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "transform"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Molecules to HELM",
+      "name": "Molecules to HELM",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Converts Peptide molecules to HELM notation by matching with monomer library",
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Molecule to HELM Single",
+      "name": "Molecule to HELM Single",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Converts a single molecule to HELM notation without requiring a table or column",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:To Atomic Level",
+      "name": "To Atomic Level",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Converts sequences to molblocks",
+      "input_types": [
+        "dataframe",
+        "column",
+        "bool",
+        "bool"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:To Atomic Level...",
+      "name": "To Atomic Level...",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Molecular Structure",
+      "name": "Molecular Structure",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [
+        "bio",
+        "widgets",
+        "panel"
+      ],
+      "description": null,
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel",
+        "domain": "bio"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:To Atomic Level Single sequence",
+      "name": "To Atomic Level Single sequence",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Converts a single sequence to molblock",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Molecular 3D Structure",
+      "name": "Molecular 3D Structure",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [
+        "bio",
+        "widgets",
+        "panel"
+      ],
+      "description": null,
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel",
+        "domain": "bio"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:MSA",
+      "name": "MSA",
+      "friendly_name": null,
+      "role": "panel",
+      "tags": [
+        "bio",
+        "panel"
+      ],
+      "description": "Performs multiple sequence alignment",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "domain": "bio",
+        "role": "panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Multiple Sequence Alignment",
+      "name": "Multiple Sequence Alignment",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Multiple sequence alignment",
+      "input_types": [
+        "column",
+        "column",
+        "object"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {
+        "domain": "bio"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:PepSeA",
+      "name": "PepSeA",
+      "friendly_name": null,
+      "role": "sequenceMSA",
+      "tags": [],
+      "description": "Aligns non-canonical peptide sequences using PepSeA Docker container (MAFFT)",
+      "input_types": [
+        "column",
+        "string",
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {
+        "role": "sequenceMSA"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Immunum",
+      "name": "Immunum",
+      "friendly_name": null,
+      "role": "antibodyNumbering",
+      "tags": [],
+      "description": "Assigns antibody numbering (IMGT/Kabat) using the immunum WASM library",
+      "input_types": [
+        "dataframe",
+        "column",
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {
+        "role": "antibodyNumbering"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Compare Sequences",
+      "name": "Compare Sequences",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Composition Analysis",
+      "name": "Composition Analysis",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Visualizes sequence composition on a WebLogo plot",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:importFasta",
+      "name": "importFasta",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [
+        "fileHandler"
+      ],
+      "description": "Opens FASTA file",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "fasta, fna, ffn, faa, frn, fa, fst"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:importBam",
+      "name": "importBam",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [
+        "fileHandler"
+      ],
+      "description": "Opens Bam file",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "bam, bai"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:convertDialog",
+      "name": "convertDialog",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Convert Notation...",
+      "name": "Convert Notation...",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:monomerCellRenderer",
+      "name": "monomerCellRenderer",
+      "friendly_name": null,
+      "role": "cellRenderer",
+      "tags": [
+        "cellRenderer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "grid_cell_renderer"
+      ],
+      "meta": {
+        "role": "cellRenderer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:testDetectMacromolecule",
+      "name": "testDetectMacromolecule",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Split to Monomers",
+      "name": "Split to Monomers",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Bio: getHelmMonomers",
+      "name": "Bio: getHelmMonomers",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Sequence Similarity Search",
+      "name": "Sequence Similarity Search",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:similaritySearch",
+      "name": "similaritySearch",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Finds similar sequences",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Sequence Diversity Search",
+      "name": "Sequence Diversity Search",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [
+        "viewer"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:diversitySearch",
+      "name": "diversitySearch",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "Finds the most diverse sequences",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:SearchSubsequenceEditor",
+      "name": "SearchSubsequenceEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [
+        "editor"
+      ],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Subsequence Search",
+      "name": "Subsequence Search",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Identity",
+      "name": "Identity",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Adds a column with fraction of matching monomers",
+      "input_types": [
+        "dataframe",
+        "column",
+        "string"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Similarity",
+      "name": "Similarity",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities",
+      "input_types": [
+        "dataframe",
+        "column",
+        "string"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Manage Monomer Libraries",
+      "name": "Manage Monomer Libraries",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Manage HELM monomer libraries",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Manage Monomer Libraries View",
+      "name": "Manage Monomer Libraries View",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:manageMonomersView",
+      "name": "manageMonomersView",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Edit and create monomers",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Monomer Manager Tree Browser",
+      "name": "Monomer Manager Tree Browser",
+      "friendly_name": null,
+      "role": "appTreeBrowser",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "appTreeBrowser"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Monomer Collections",
+      "name": "Monomer Collections",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [
+        "app"
+      ],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Peptides"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:saveAsFasta",
+      "name": "saveAsFasta",
+      "friendly_name": null,
+      "role": "fileExporter",
+      "tags": [],
+      "description": "As FASTA...",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "fileExporter"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Bio Substructure Filter",
+      "name": "Bio Substructure Filter",
+      "friendly_name": null,
+      "role": "filter",
+      "tags": [
+        "filter"
+      ],
+      "description": "Substructure filter for macromolecules",
+      "input_types": [],
+      "output_types": [
+        "filter"
+      ],
+      "meta": {
+        "semType": "Macromolecule",
+        "role": "filter"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:Bio Substructure Filter Test",
+      "name": "Bio Substructure Filter Test",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Substructure filter for Helm package tests",
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:webLogoLargeApp",
+      "name": "webLogoLargeApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:webLogoAggApp",
+      "name": "webLogoAggApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:getRegionApp",
+      "name": "getRegionApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:getRegionHelmApp",
+      "name": "getRegionHelmApp",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:longSeqTableSeparator",
+      "name": "longSeqTableSeparator",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:longSeqTableFasta",
+      "name": "longSeqTableFasta",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:longSeqTableHelm",
+      "name": "longSeqTableHelm",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:addCopyMenu",
+      "name": "addCopyMenu",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object",
+        "object"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:demoBioSimilarityDiversity",
+      "name": "demoBioSimilarityDiversity",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Sequence similarity tracking and evaluation dataset diversity",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:demoBioSequenceSpace",
+      "name": "demoBioSequenceSpace",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Exploring sequence space of Macromolecules, comparison with hierarchical clustering results",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:demoBioActivityCliffs",
+      "name": "demoBioActivityCliffs",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Activity Cliffs analysis on Macromolecules data",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:demoBioAtomicLevel",
+      "name": "demoBioAtomicLevel",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Atomic level structure of Macromolecules",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:SDF to JSON Library",
+      "name": "SDF to JSON Library",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:seq2atomic",
+      "name": "seq2atomic",
+      "friendly_name": "seq2atomic",
+      "role": null,
+      "tags": [],
+      "description": "Converts a `Macromolecule` sequence to its atomic level `Molecule` representation",
+      "input_types": [
+        "string",
+        "bool"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:seqIdentity",
+      "name": "seqIdentity",
+      "friendly_name": "seqIdentity",
+      "role": null,
+      "tags": [],
+      "description": "Gets identity to a reference sequence",
+      "input_types": [
+        "string",
+        "string"
+      ],
+      "output_types": [
+        "double"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:detectMacromoleculeProbe",
+      "name": "detectMacromoleculeProbe",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file",
+        "string",
+        "double"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:getSeqHelper",
+      "name": "getSeqHelper",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:getMolFromHelm",
+      "name": "getMolFromHelm",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dataframe",
+        "column",
+        "bool"
+      ],
+      "output_types": [
+        "column"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:test1",
+      "name": "test1",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Bio:detectMacromoleculeEnableStore",
+      "name": "detectMacromoleculeEnableStore",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "js"
+    },
+    {
+      "id": "func:Bio:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": "semTypeDetector",
+      "tags": [
+        "semTypeDetector"
+      ],
+      "description": null,
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {
+        "role": "semTypeDetector"
+      },
+      "help_url": null,
+      "language": "js"
+    },
+    {
+      "id": "func:Bio:autostart",
+      "name": "autostart",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [
+        "autostart"
+      ],
+      "description": "Bio bootstrap",
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:Bio:Embed",
+      "name": "Embed",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:Bio:molToHelmConverterPy",
+      "name": "molToHelmConverterPy",
+      "language": "python",
+      "description": "Converts molecules to HELM notation based on monomer library"
+    },
+    {
+      "id": "script:Bio:read-tree-pkl",
+      "name": "read-tree-pkl",
+      "language": "python",
+      "description": null
+    },
+    {
+      "id": "script:Bio:Sequence generator",
+      "name": "Sequence generator",
+      "language": "python",
+      "description": "Create the model peptides/DNA sequences with peptides data"
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Bio/credits.md",
+      "title": "Bio — Third-Party Libraries",
+      "url": "/packages/Bio/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Bio/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Bio/readme.md",
+      "title": "Bio",
+      "url": "/packages/Bio/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/web-logo",
+      "title": "WebLogo",
+      "url": "/help/visualize/viewers/web-logo",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "title": "Oligonucleotide Sequence Design",
+      "url": "/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+      "title": "Bioinformatics",
+      "url": "/help/datagrok/solutions/domains/bio/bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/BioNeMo/credits.md",
+      "title": "BioNeMo — Third-Party Libraries",
+      "url": "/packages/BioNeMo/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Biologics/credits.md",
+      "title": "Biologics — Third-Party Libraries",
+      "url": "/packages/Biologics/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/BiostructureViewer/credits.md",
+      "title": "BiostructureViewer — Third-Party Libraries",
+      "url": "/packages/BiostructureViewer/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/credits.md",
+      "title": "Peptides — Third-Party Libraries",
+      "url": "/packages/Peptides/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+      "title": "FAQ: Peptides",
+      "url": "/help/datagrok/solutions/domains/bio/faq_bio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "title": "Oligo Toolkit",
+      "url": "/help/datagrok/solutions/domains/bio/oligo-toolkit",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+      "title": "Peptides SAR",
+      "url": "/help/datagrok/solutions/domains/bio/peptides-sar",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+      "title": "Polytool",
+      "url": "/help/datagrok/solutions/domains/bio/polytool",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/visualize/viewers/biostructure",
+      "title": "Biostructure viewer",
+      "url": "/help/visualize/viewers/biostructure",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/BioNeMo/readme.md",
+      "title": "BioNeMo",
+      "url": "/packages/BioNeMo/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Biologics/claude.md",
+      "title": "CLAUDE.md — Biologics package",
+      "url": "/packages/Biologics/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Biologics/readme.md",
+      "title": "Biologics",
+      "url": "/packages/Biologics/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/BiostructureViewer/readme.md",
+      "title": "Biostructure Viewer",
+      "url": "/packages/BiostructureViewer/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Peptides/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Peptides/readme.md",
+      "title": "Peptides",
+      "url": "/packages/Peptides/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_internal/tests/substructure-filter",
+      "title": "Tests: Substructure Filter",
+      "url": "/help/_internal/tests/substructure-filter",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+      "title": "Similarity maps using fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Helm/credits.md",
+      "title": "Helm — Third-Party Libraries",
+      "url": "/packages/Helm/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/_internal/tests/collections-test",
+      "title": "Tests: Collections",
+      "url": "/help/_internal/tests/collections-test",
+      "kind": "guide",
+      "audience": "internal"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Bio:2.27.4:0",
+      "version": "2.27.4",
+      "released_at": "2026-04-29",
+      "ticket": null,
+      "text": "Support for non canonical RNA and correct splitting in helm"
+    },
+    {
+      "id": "clog:Bio:2.27.0:0",
+      "version": "2.27.0",
+      "released_at": "2026-04-09",
+      "ticket": null,
+      "text": "Engine based MSA"
+    },
+    {
+      "id": "clog:Bio:2.26.5:0",
+      "version": "2.26.5",
+      "released_at": "2026-04-01",
+      "ticket": null,
+      "text": "Added monomer canonicalization support"
+    },
+    {
+      "id": "clog:Bio:2.26.5:1",
+      "version": "2.26.5",
+      "released_at": "2026-04-01",
+      "ticket": "GROK-19928",
+      "text": "GROK-19928: Sequence space and Activity cliffs now correctly save and restore in datasync projects"
+    },
+    {
+      "id": "clog:Bio:2.26.4:0",
+      "version": "2.26.4",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Liabilities: Added separator support"
+    },
+    {
+      "id": "clog:Bio:2.26.4:1",
+      "version": "2.26.4",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Sequence Difference Renderer: Added support for custom notations"
+    },
+    {
+      "id": "clog:Bio:2.26.4:2",
+      "version": "2.26.4",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Added draggable sequence column header"
+    },
+    {
+      "id": "clog:Bio:2.26.4:3",
+      "version": "2.26.4",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Improved explicit notation conversion and detection"
+    },
+    {
+      "id": "clog:Bio:2.26.4:4",
+      "version": "2.26.4",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Added sequence column input with region cutting"
+    },
+    {
+      "id": "clog:Bio:2.26.4:5",
+      "version": "2.26.4",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "VD Regions viewer no longer shows errors"
+    },
+    {
+      "id": "clog:Bio:2.26.4:6",
+      "version": "2.26.4",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Custom difference columns are now correctly restored"
+    },
+    {
+      "id": "clog:Bio:2.26.4:7",
+      "version": "2.26.4",
+      "released_at": "2026-03-20",
+      "ticket": null,
+      "text": "Tag pickup for datasync projects now works correctly"
+    },
+    {
+      "id": "clog:Bio:2.26.0:0",
+      "version": "2.26.0",
+      "released_at": "2026-03-04",
+      "ticket": null,
+      "text": "Antibodies support: Numbering schemes, highlighting, allignment, liabilities detection, extracting regions, and more."
+    },
+    {
+      "id": "clog:Bio:2.25.15:0",
+      "version": "2.25.15",
+      "released_at": "2026-02-26",
+      "ticket": null,
+      "text": "Monomer collections"
+    },
+    {
+      "id": "clog:Bio:2.25.15:1",
+      "version": "2.25.15",
+      "released_at": "2026-02-26",
+      "ticket": null,
+      "text": "Handling edge cases of r groups in monomer libraries"
+    },
+    {
+      "id": "clog:Bio:2.25.15:2",
+      "version": "2.25.15",
+      "released_at": "2026-02-26",
+      "ticket": null,
+      "text": "Fixing some issues with custom notation provider"
+    },
+    {
+      "id": "clog:Bio:2.25.12:0",
+      "version": "2.25.12",
+      "released_at": "2026-02-20",
+      "ticket": null,
+      "text": "Isotope support in monomers"
+    },
+    {
+      "id": "clog:Bio:2.25.12:1",
+      "version": "2.25.12",
+      "released_at": "2026-02-20",
+      "ticket": null,
+      "text": "More R group validation and auto fixing"
+    },
+    {
+      "id": "clog:Bio:2.25.12:2",
+      "version": "2.25.12",
+      "released_at": "2026-02-20",
+      "ticket": null,
+      "text": "Support for custom notation provider from-helm converter"
+    },
+    {
+      "id": "clog:Bio:2.25.11:0",
+      "version": "2.25.11",
+      "released_at": "2026-02-18",
+      "ticket": null,
+      "text": "Support for complex R-groups in monomer libraries, like allyls and others"
+    },
+    {
+      "id": "clog:Bio:2.25.10:0",
+      "version": "2.25.10",
+      "released_at": "2026-02-17",
+      "ticket": null,
+      "text": "Softer detectors for provider specific notations"
+    },
+    {
+      "id": "clog:Bio:2.25.10:1",
+      "version": "2.25.10",
+      "released_at": "2026-02-17",
+      "ticket": null,
+      "text": "HELM workflow for custom providers"
+    },
+    {
+      "id": "clog:Bio:2.25.9:0",
+      "version": "2.25.9",
+      "released_at": "2025-12-02",
+      "ticket": null,
+      "text": "Fix Substructure filter for datasync"
+    },
+    {
+      "id": "clog:Bio:2.25.2:0",
+      "version": "2.25.2",
+      "released_at": "2025-11-03",
+      "ticket": null,
+      "text": "Update Bio Lib API"
+    },
+    {
+      "id": "clog:Bio:2.25.2:1",
+      "version": "2.25.2",
+      "released_at": "2025-11-03",
+      "ticket": null,
+      "text": "Sequence header: Enable for shorter and non-MSA sequences"
+    },
+    {
+      "id": "clog:Bio:2.25.2:2",
+      "version": "2.25.2",
+      "released_at": "2025-11-03",
+      "ticket": null,
+      "text": "Monomer manager: Chech both capped and uncapped monomers when matching mols with libraries, provide multiple sources for matching"
+    },
+    {
+      "id": "clog:Bio:2.25.2:3",
+      "version": "2.25.2",
+      "released_at": "2025-11-03",
+      "ticket": null,
+      "text": "Mol-To-Helm converter: Add initial version of Molecules to sequence converter"
+    },
+    {
+      "id": "clog:Bio:2.25.1:0",
+      "version": "2.25.1",
+      "released_at": "2025-10-30",
+      "ticket": null,
+      "text": "Rework User lib settings storage to accomodate shortened duplicate preferences"
+    },
+    {
+      "id": "clog:Bio:2.25.1:1",
+      "version": "2.25.1",
+      "released_at": "2025-10-30",
+      "ticket": null,
+      "text": "Detectors: Improve BILN with SMILES/CHEMS detection"
+    },
+    {
+      "id": "clog:Bio:2.25.1:2",
+      "version": "2.25.1",
+      "released_at": "2025-10-30",
+      "ticket": null,
+      "text": "Support BILN with SMILES/CHEMS rendering, conversion and Helm converter"
+    }
+  ],
+  "stats": {
+    "functions": 97,
+    "scripts": 4,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 341
+  }
+}

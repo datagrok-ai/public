@@ -1,0 +1,110 @@
+{
+  "package": {
+    "id": "pkg:MLFlow",
+    "name": "MLFlow",
+    "friendly_name": "MLflow",
+    "category": "Machine Learning",
+    "description": "MLflow integration package"
+  },
+  "files": {
+    "src": [
+      "packages/MLFlow/src/package.ts"
+    ],
+    "tests": [
+      "packages/MLFlow/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/MLFlow/CHANGELOG.md",
+      "packages/MLFlow/CREDITS.md",
+      "packages/MLFlow/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:MLFlow:mlflow-model-tracking",
+      "name": "MLflow Model Tracking & Serving",
+      "description": "Integrates Datagrok with an MLflow server to run, track, and manage ML models, including containerized serving via a boto-enabled compute backend.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:MLFlow:info",
+          "kind": "RegisteredFunction",
+          "name": "info",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/learn/mlflow",
+          "kind": "DocPage",
+          "title": "Using MLFlow models",
+          "url": "/help/learn/mlflow"
+        },
+        {
+          "id": "doc:/packages/MLFlow/readme.md",
+          "kind": "DocPage",
+          "title": "MLflow",
+          "url": "/packages/MLFlow/readme.md"
+        },
+        {
+          "id": "clog:MLFlow:1.0.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:MLFlow:1.0.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:MLFlow:0.0.1:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/MLFlow/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:MLFlow:mlflow-info-panel",
+      "name": "MLflow Model Info Panel",
+      "description": "Surfaces MLflow model metadata (runs, metrics, parameters) as a Datagrok context/info panel displayed alongside data in the workspace.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "doc:/help/datagrok/navigation/info-pane-reference",
+          "kind": "DocPage",
+          "title": "Supported info panes",
+          "url": "/help/datagrok/navigation/info-pane-reference"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes",
+          "url": "/help/datagrok/navigation/panels/info-panels"
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/add-info-panel",
+          "kind": "DocPage",
+          "title": "Add an info panel",
+          "url": "/help/develop/how-to/ui/add-info-panel"
+        },
+        {
+          "id": "doc:/help/learn/mlflow",
+          "kind": "DocPage",
+          "title": "Using MLFlow models",
+          "url": "/help/learn/mlflow"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

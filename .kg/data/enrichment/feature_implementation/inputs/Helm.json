@@ -1,0 +1,315 @@
+{
+  "package": {
+    "id": "pkg:Helm",
+    "name": "Helm",
+    "friendly_name": "Helm",
+    "category": "Bioinformatics",
+    "description": "Provides support for HELM notation (importing, detecting, rendering, conversion)."
+  },
+  "files": {
+    "src": [
+      "packages/Helm/src/constants.ts",
+      "packages/Helm/src/helm-helper.ts",
+      "packages/Helm/src/helm-web-editor.ts",
+      "packages/Helm/src/package-utils.ts",
+      "packages/Helm/src/package.ts",
+      "packages/Helm/src/types/dojo.ts",
+      "packages/Helm/src/types/index.ts",
+      "packages/Helm/src/utils/err-info.ts",
+      "packages/Helm/src/utils/get-hovered.ts",
+      "packages/Helm/src/utils/get-monomer.ts",
+      "packages/Helm/src/utils/helm-grid-cell-renderer.ts",
+      "packages/Helm/src/utils/helm-service.ts",
+      "packages/Helm/src/utils/index.ts",
+      "packages/Helm/src/widgets/helm-input.ts",
+      "packages/Helm/src/widgets/properties-widget.ts"
+    ],
+    "tests": [
+      "packages/Helm/src/package-test.ts",
+      "packages/Helm/src/tests/_first-tests.ts",
+      "packages/Helm/src/tests/findMonomers-tests.ts",
+      "packages/Helm/src/tests/get-molfiles-tests.ts",
+      "packages/Helm/src/tests/get-monomer-tests.ts",
+      "packages/Helm/src/tests/helm-activity-cliffs.ts",
+      "packages/Helm/src/tests/helm-helper-tests.ts",
+      "packages/Helm/src/tests/helm-input-tests.ts",
+      "packages/Helm/src/tests/helm-service-tests.ts",
+      "packages/Helm/src/tests/helm-substructure-filter.ts",
+      "packages/Helm/src/tests/helm-tests.ts",
+      "packages/Helm/src/tests/helm-web-editor-tests.ts",
+      "packages/Helm/src/tests/parse-helm-tests.ts",
+      "packages/Helm/src/tests/properties-widget-tests.ts",
+      "packages/Helm/src/tests/renderers-tests.ts",
+      "packages/Helm/src/tests/to-atomic-level-ui-non-linear.ts",
+      "packages/Helm/src/tests/utils.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Helm/CHANGELOG.md",
+      "packages/Helm/CLAUDE.md",
+      "packages/Helm/CREDITS.md",
+      "packages/Helm/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Helm:helm-cell-rendering",
+      "name": "HELM Cell Rendering",
+      "description": "Renders HELM macromolecule notation as structural images in Datagrok grid cells, supporting async rendering, caching, and multi-type polymers.",
+      "category": "bio-rendering",
+      "members": [
+        {
+          "id": "func:Helm:helmCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "helmCellRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Helm:getHelmService",
+          "kind": "RegisteredFunction",
+          "name": "getHelmService",
+          "friendly_name": null,
+          "role": null,
+          "description": "Helm renderer service",
+          "tags": []
+        },
+        {
+          "id": "func:Helm:helmAsync",
+          "kind": "RegisteredFunction",
+          "name": "helmAsync",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Helm:measureCellRenderer",
+          "kind": "RegisteredFunction",
+          "name": "measureCellRenderer",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Helm/readme.md",
+          "kind": "DocPage",
+          "title": "HELM",
+          "url": "/packages/Helm/readme.md"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+          "kind": "DocPage",
+          "title": "Bioinformatics",
+          "url": "/help/datagrok/solutions/domains/bio/bio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Helm/src/package-utils.ts",
+          "packages/Helm/src/package.ts",
+          "packages/Helm/src/types/index.ts",
+          "packages/Helm/src/utils/get-hovered.ts",
+          "packages/Helm/src/utils/get-monomer.ts",
+          "packages/Helm/src/utils/helm-grid-cell-renderer.ts",
+          "packages/Helm/src/utils/helm-service.ts"
+        ],
+        "tests": [
+          "packages/Helm/src/tests/helm-service-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Helm:helm-editor",
+      "name": "HELM Macromolecule Editor",
+      "description": "Provides an interactive HELM Web Editor (HWE) for creating and modifying macromolecule sequences directly within the Datagrok grid and value inputs.",
+      "category": "bio-editing",
+      "members": [
+        {
+          "id": "func:Helm:editMoleculeCell",
+          "kind": "RegisteredFunction",
+          "name": "editMoleculeCell",
+          "friendly_name": null,
+          "role": "cellEditor",
+          "description": "Macromolecule",
+          "tags": []
+        },
+        {
+          "id": "func:Helm:helmInput",
+          "kind": "RegisteredFunction",
+          "name": "helmInput",
+          "friendly_name": null,
+          "role": "valueEditor",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Helm:Edit Helm...",
+          "kind": "RegisteredFunction",
+          "name": "Edit Helm...",
+          "friendly_name": null,
+          "role": null,
+          "description": "Adds editor",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+          "kind": "DocPage",
+          "title": "FAQ: Peptides",
+          "url": "/help/datagrok/solutions/domains/bio/faq_bio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Helm/src/package.ts"
+        ],
+        "tests": [
+          "packages/Helm/src/tests/helm-input-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Helm:molfile-conversion",
+      "name": "HELM to Molfile/Chemistry Format Conversion",
+      "description": "Converts HELM-encoded macromolecule columns to molfile format and supports SMILES/CHEMS notation, enabling downstream cheminformatics workflows.",
+      "category": "bio-conversion",
+      "members": [
+        {
+          "id": "func:Helm:getMolfiles",
+          "kind": "RegisteredFunction",
+          "name": "getMolfiles",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/polytool",
+          "kind": "DocPage",
+          "title": "Polytool",
+          "url": "/help/datagrok/solutions/domains/bio/polytool"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Helm/src/package.ts"
+        ],
+        "tests": [
+          "packages/Helm/src/tests/get-molfiles-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Helm:monomer-library",
+      "name": "Monomer Library Management",
+      "description": "Manages the monomer library used for HELM parsing, rendering, and gap handling, supporting multiple library providers and monomer highlighting.",
+      "category": "bio-infra",
+      "members": [
+        {
+          "id": "func:Helm:getHelmHelper",
+          "kind": "RegisteredFunction",
+          "name": "getHelmHelper",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Helm:Highlight Monomers",
+          "kind": "RegisteredFunction",
+          "name": "Highlight Monomers",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Helm/src/package.ts"
+        ],
+        "tests": [
+          "packages/Helm/src/tests/get-molfiles-tests.ts",
+          "packages/Helm/src/tests/get-monomer-tests.ts",
+          "packages/Helm/src/tests/helm-activity-cliffs.ts",
+          "packages/Helm/src/tests/helm-helper-tests.ts",
+          "packages/Helm/src/tests/helm-input-tests.ts",
+          "packages/Helm/src/tests/helm-service-tests.ts",
+          "packages/Helm/src/tests/helm-web-editor-tests.ts",
+          "packages/Helm/src/tests/parse-helm-tests.ts",
+          "packages/Helm/src/tests/utils.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Helm:properties-panel",
+      "name": "HELM Properties Panel",
+      "description": "Displays a context-panel widget with structural and bioinformatics properties for a selected HELM macromolecule.",
+      "category": "bio-rendering",
+      "members": [
+        {
+          "id": "func:Helm:Properties",
+          "kind": "RegisteredFunction",
+          "name": "Properties",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Helm:bootstrap",
+      "name": "Plugin Bootstrap and Initialization",
+      "description": "Handles plugin startup, HELM service registration, and dynamic loading of heavy dependencies for optimal performance.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Helm:initHelm",
+          "kind": "RegisteredFunction",
+          "name": "initHelm",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Helm:autostart",
+          "kind": "RegisteredFunction",
+          "name": "autostart",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": "Helm bootstrap",
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Helm/claude.md",
+          "kind": "DocPage",
+          "title": "CLAUDE.md",
+          "url": "/packages/Helm/claude.md"
+        },
+        {
+          "id": "doc:/packages/Helm/credits.md",
+          "kind": "DocPage",
+          "title": "Helm — Third-Party Libraries",
+          "url": "/packages/Helm/credits.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Helm/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,398 @@
+{
+  "package": {
+    "id": "pkg:GIS",
+    "name": "GIS",
+    "friendly_name": "GIS",
+    "version": "1.3.1",
+    "category": "Visualizations",
+    "description": "GIS (geographic information system) functionality, such as maps and geocoding.",
+    "extras": {
+      "npm_name": "@datagrok/gis",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:GIS:getCensusInfo",
+      "name": "getCensusInfo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:getCensusInfoTest UI",
+      "name": "getCensusInfoTest UI",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:GISGeocoding",
+      "name": "GISGeocoding",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "GIS geocoding - receive coordinates for address",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:gisReverseGeocoding",
+      "name": "gisReverseGeocoding",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "GIS geocoding - receive address for coordinates",
+      "input_types": [
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:gisBatchGeocoding",
+      "name": "gisBatchGeocoding",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "GIS geocoding - receive coordinates from address",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:Map",
+      "name": "Map",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": "GIS map viewer",
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:gisKMZAndKMLFileViewer",
+      "name": "gisKMZAndKMLFileViewer",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "kmz,kml"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:gisKMLFileHandler",
+      "name": "gisKMLFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "kml"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:gisKMZFileHandler",
+      "name": "gisKMZFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "list"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "kmz"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:gisGeoJSONFileViewer",
+      "name": "gisGeoJSONFileViewer",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "geojson, topojson"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:gisGeoJSONFileHandler",
+      "name": "gisGeoJSONFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "geojson, topojson"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:gisAreaWidget",
+      "name": "gisAreaWidget",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:mapDemo",
+      "name": "mapDemo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Map viewer shows geospatial data on a map as either markers, or a heat map.",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GIS:<anonymous>",
+      "name": "<anonymous>",
+      "friendly_name": null,
+      "role": "semTypeDetector",
+      "tags": [],
+      "description": "detect longitude/latitude coordinates",
+      "input_types": [
+        "column"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {
+        "role": "semTypeDetector"
+      },
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/GIS/credits.md",
+      "title": "GIS — Third-Party Libraries",
+      "url": "/packages/GIS/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/GIS/readme.md",
+      "title": "GIS",
+      "url": "/packages/GIS/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:GIS:1.3.1:0",
+      "version": "1.3.1",
+      "released_at": "2025-03-30",
+      "ticket": null,
+      "text": "Fixed build issues"
+    },
+    {
+      "id": "clog:GIS:1.2.1:0",
+      "version": "1.2.1",
+      "released_at": "2024-03-20",
+      "ticket": null,
+      "text": "Remove JSON handling leaving only geo/topo json."
+    },
+    {
+      "id": "clog:GIS:1.1.5:0",
+      "version": "1.1.5",
+      "released_at": "2024-03-01",
+      "ticket": null,
+      "text": "Fixed 'Cannot read properties of null (reading 'hasOwnProperty')' error when closing a viewer."
+    },
+    {
+      "id": "clog:GIS:1.1.4:0",
+      "version": "1.1.4",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "Fixed the test dataset location in the package."
+    },
+    {
+      "id": "clog:GIS:1.1.3:0",
+      "version": "1.1.3",
+      "released_at": "2023-06-13",
+      "ticket": null,
+      "text": "Removed zipcode detector since it's not used."
+    },
+    {
+      "id": "clog:GIS:v.next:0",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Fixed crash on closing Map viewer caused by pointer events firing after disposal"
+    },
+    {
+      "id": "clog:GIS:v.next:1",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Layers panel: Fixed page freeze when toggling layer visibility (e.g. Markers GL) — caused by exponential re-subscription of `onCurrentCellChanged` on every layers list refresh"
+    }
+  ],
+  "stats": {
+    "functions": 16,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 6,
+    "changelog": 7
+  }
+}

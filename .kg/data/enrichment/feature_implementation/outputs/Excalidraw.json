@@ -1,0 +1,49 @@
+{
+  "package_id": "pkg:Excalidraw",
+  "features": [
+    {
+      "id": "feature:Excalidraw:excalidraw-app",
+      "implements": [
+        {
+          "path": "packages/Excalidraw/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Excalidraw/src/excal-component.tsx",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Excalidraw/src/excal.css",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts declares the @app excalidrawApp under 'Misc' browse path; excal-component.tsx defines renderExcalidraw used by the app; excal.css provides styling. package-test.ts is boilerplate only."
+    },
+    {
+      "id": "feature:Excalidraw:file-viewer",
+      "implements": [
+        {
+          "path": "packages/Excalidraw/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Excalidraw/src/excal-component.tsx",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Excalidraw/src/excal.css",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts declares @fileViewer excalfileViewer for .excalidraw files, reusing renderExcalidraw from excal-component.tsx and updating the scene from parsed JSON."
+    }
+  ]
+}

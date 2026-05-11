@@ -1,0 +1,36 @@
+{
+  "package_id": "pkg:SQLite",
+  "features": [
+    {
+      "id": "feature:SQLite:sqlite-file-import",
+      "implements": [
+        {
+          "path": "packages/SQLite/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/SQLite/src/import.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/SQLite/src/sql-wasm.js",
+          "role": "support",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/SQLite/src/tests/sqlite-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/SQLite/src/package-test.ts",
+          "confidence": 0.6
+        }
+      ],
+      "notes": "package.ts registers sqlJsInit (init) and importSQLite (fileHandler ext=sqlite); import.ts has importSQLiteImpl using sql.js; sql-wasm.js is the bundled WASM glue. Tests live in tests/sqlite-tests.ts wired through package-test.ts."
+    }
+  ]
+}

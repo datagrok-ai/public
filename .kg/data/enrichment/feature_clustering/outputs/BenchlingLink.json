@@ -1,0 +1,132 @@
+{
+  "package_id": "pkg:BenchlingLink",
+  "features": [
+    {
+      "id": "feature:BenchlingLink:benchling-app",
+      "name": "Benchling App",
+      "description": "Top-level Datagrok application and tree-browser panel that surfaces all Benchling LIMS data through a unified UI entry point under the Chem menu.",
+      "category": "infra",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:BenchlingLink:Benchling",                    "weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:benchlingLinkAppTreeBrowser",  "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/BenchlingLink/readme.md",           "weight": 0.9, "role": "doc"},
+        {"id": "doc:/packages/BenchlingLink/claude.md",           "weight": 0.8, "role": "doc"},
+        {"id": "doc:/packages/BenchlingLink/credits.md",          "weight": 0.5, "role": "doc"}
+      ],
+      "evidence_summary": "Both functions share the 'Benchling' name root and explicit app/appTreeBrowser roles, plus the package-level readme and developer guide describe the same entry point."
+    },
+    {
+      "id": "feature:BenchlingLink:sequence-management",
+      "name": "Sequence Management",
+      "description": "Read and create amino-acid (AA) and DNA sequences stored in Benchling, returning structured dataframes for downstream analysis in Datagrok.",
+      "category": "bio-sequences",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:BenchlingLink:Get AA Sequences",   "weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:Get DNA Sequences",  "weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:Create AA Sequence", "weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:Create DNA Sequence","weight": 1.0, "role": "core"},
+        {"id": "doc:/help/visualize/viewers/sequence-variability-map", "weight": 0.55, "role": "related"}
+      ],
+      "evidence_summary": "All four functions share the 'AA Sequence' / 'DNA Sequence' name root and form a symmetric Get/Create CRUD pair for biological sequences."
+    },
+    {
+      "id": "feature:BenchlingLink:dna-oligo-management",
+      "name": "DNA Oligo Management",
+      "description": "Retrieve and register short DNA oligonucleotide entries in Benchling, enabling oligo inventory and design workflows from within Datagrok.",
+      "category": "bio-sequences",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:BenchlingLink:Get DNA Oligos",  "weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:Create DNA Oligo","weight": 1.0, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design", "weight": 0.65, "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",                 "weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "Functions share the 'DNA Oligo' name root with a Get/Create CRUD pattern, backed by platform oligo-toolkit and oligonucleotide-design help pages."
+    },
+    {
+      "id": "feature:BenchlingLink:assay-data-access",
+      "name": "Assay Data Access",
+      "description": "Fetch and create assay results and assay runs from Benchling, allowing scientists to pull experimental outcome data into Datagrok for visualization and analysis.",
+      "category": "assay-data",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:BenchlingLink:Get Assay Results",  "weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:Get Assay Runs",     "weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:Create Assay Result","weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:Create Assay Run",   "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "All four functions share the 'Assay' name root and form symmetric Get/Create CRUD pairs for Benchling assay objects."
+    },
+    {
+      "id": "feature:BenchlingLink:molecule-registry",
+      "name": "Molecule Registry",
+      "description": "Search and register small-molecule entities in the Benchling registry, bridging Benchling compound records with Datagrok chemical analytics.",
+      "category": "chem-registry",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:BenchlingLink:Get Molecules",   "weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:Create Molecule", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Get/Create Molecule pair with shared 'Molecule' name root targeting the Benchling registry, placed under the Chem browse path of the app."
+    },
+    {
+      "id": "feature:BenchlingLink:plate-management",
+      "name": "Plate Management",
+      "description": "Query and create lab plates in Benchling, giving Datagrok users visibility into physical sample containers and enabling plate-based workflows.",
+      "category": "lab-inventory",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:BenchlingLink:Get Plates",   "weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:Create Plate", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Plates/readme.md",  "weight": 0.55, "role": "related"},
+        {"id": "doc:/packages/Plates/credits.md", "weight": 0.4,  "role": "related"}
+      ],
+      "evidence_summary": "Get/Create Plate pair shares the 'Plate' name root; platform Plates package docs are loosely related as they describe analogous plate concepts."
+    },
+    {
+      "id": "feature:BenchlingLink:mixture-management",
+      "name": "Mixture Management",
+      "description": "Retrieve and create mixture (formulation) records from Benchling, supporting compound formulation and sample preparation tracking inside Datagrok.",
+      "category": "formulation",
+      "confidence": 0.90,
+      "members": [
+        {"id": "func:BenchlingLink:Get Mixtures",   "weight": 1.0, "role": "core"},
+        {"id": "func:BenchlingLink:Create Mixture", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "Get/Create Mixture pair shares the 'Mixture' name root targeting the Benchling Mixtures API."
+    },
+    {
+      "id": "feature:BenchlingLink:project-management",
+      "name": "Project Management",
+      "description": "List Benchling projects accessible to the authenticated user, enabling project-scoped browsing and filtering of LIMS entities within Datagrok.",
+      "category": "data-import",
+      "confidence": 0.80,
+      "members": [
+        {"id": "func:BenchlingLink:Get Projects",                              "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/_internal/tests/projects-browser-test",              "weight": 0.6, "role": "doc"},
+        {"id": "doc:/help/_internal/tutorials/projects",                       "weight": 0.6, "role": "doc"},
+        {"id": "doc:/help/datagrok/_deprecated/create-project",                "weight": 0.5, "role": "related"}
+      ],
+      "evidence_summary": "Get Projects function shares the 'Projects' name root with internal test and tutorial docs for project browsing; the deprecated create-project page is weakly related."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:BenchlingLink:sequence-management",  "to": "feature:BenchlingLink:dna-oligo-management",  "kind": "sibling"},
+    {"from": "feature:BenchlingLink:assay-data-access",    "to": "feature:BenchlingLink:molecule-registry",     "kind": "related"},
+    {"from": "feature:BenchlingLink:assay-data-access",    "to": "feature:BenchlingLink:plate-management",      "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/help/_access/_05-transform-query-results",
+    "doc:/help/access/databases/create-custom-connectors",
+    "doc:/help/datagrok/solutions/teams/it/stress-testing-results",
+    "doc:/help/develop/how-to/files/create-custom-file-viewers",
+    "doc:/help/develop/how-to/files/file-exporters",
+    "doc:/help/develop/how-to/functions/cache-function-results",
+    "doc:/help/develop/how-to/views/custom-views",
+    "doc:/packages/OligoBatchCalculator/credits.md",
+    "doc:/packages/OligoBatchCalculator/readme.md",
+    "doc:/packages/SequenceTranslator/readme.md"
+  ]
+}

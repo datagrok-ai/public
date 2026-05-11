@@ -1,0 +1,406 @@
+{
+  "package": {
+    "id": "pkg:NLP",
+    "name": "NLP",
+    "friendly_name": null,
+    "version": "1.2.4",
+    "category": "Machine Learning",
+    "description": "Natural Language Processing Package",
+    "extras": {
+      "npm_name": "@datagrok/nlp",
+      "fullName": "NLP",
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:NLP:Translation",
+      "name": "Translation",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NLP:exportFunc",
+      "name": "exportFunc",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NLP:Compute Text Embeddings",
+      "name": "Compute Text Embeddings",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Compute text embeddings using UMAP",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NLP:Stem Column",
+      "name": "Stem Column",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column",
+        "string",
+        "int"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NLP:Radial Coloring",
+      "name": "Radial Coloring",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column",
+        "column"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NLP:Distance",
+      "name": "Distance",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NLP:Similar",
+      "name": "Similar",
+      "friendly_name": null,
+      "role": "widget",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NLP:Sentence Embeddings",
+      "name": "Sentence Embeddings",
+      "friendly_name": null,
+      "role": "dimRedPreprocessingFunction",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "column",
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {
+        "role": "dimRedPreprocessingFunction"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NLP:getEmbeddings",
+      "name": "getEmbeddings",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        null
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NLP:Sentence Similarity Search",
+      "name": "Sentence Similarity Search",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {
+        "role": "viewer"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:NLP:sentenceSearch",
+      "name": "sentenceSearch",
+      "friendly_name": null,
+      "role": "viewer",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "viewer"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "script:NLP:Summary",
+      "name": "Summary",
+      "language": "python",
+      "description": "Extractive Text Summarization Using TextRank Algorithm"
+    },
+    {
+      "id": "script:NLP:Language Detector",
+      "name": "Language Detector",
+      "language": "python",
+      "description": "Detect the language in which a text is written"
+    },
+    {
+      "id": "script:NLP:Text Statistics",
+      "name": "Text Statistics",
+      "language": "python",
+      "description": "Check how easy your text is to understand"
+    },
+    {
+      "id": "script:NLP:Sentiment Analysis",
+      "name": "Sentiment Analysis",
+      "language": "python",
+      "description": "Detect polar sentiments in a text"
+    },
+    {
+      "id": "script:NLP:Sentiment Classification",
+      "name": "Sentiment Classification",
+      "language": "r",
+      "description": "Sentiment classification of emotions and polarity"
+    },
+    {
+      "id": "script:NLP:Text Extractor",
+      "name": "Text Extractor",
+      "language": "python",
+      "description": "Extracts text from a file"
+    },
+    {
+      "id": "script:NLP:Rule-Based Sentiment Analysis",
+      "name": "Rule-Based Sentiment Analysis",
+      "language": "python",
+      "description": "Detect polar sentiments in a text with the VADER lexicon"
+    }
+  ],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/NLP/credits.md",
+      "title": "NLP — Third-Party Libraries",
+      "url": "/packages/NLP/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/NLP/readme.md",
+      "title": "NLP",
+      "url": "/packages/NLP/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/nlp/nlp",
+      "title": "Natural language processing",
+      "url": "/help/datagrok/solutions/domains/nlp/nlp",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/_internal/tests/elastic-search-test",
+      "title": "Tests: Elastic search",
+      "url": "/help/_internal/tests/elastic-search-test",
+      "kind": "guide",
+      "audience": "internal"
+    },
+    {
+      "id": "doc:/help/compute/compute",
+      "title": "Compute",
+      "url": "/help/compute/compute",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/_deprecated/data-search",
+      "title": "Search data",
+      "url": "/help/datagrok/_deprecated/data-search",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/_deprecated/data-search-patterns",
+      "title": "Search patterns",
+      "url": "/help/datagrok/_deprecated/data-search-patterns",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/_deprecated/smart-search",
+      "title": "Smart search",
+      "url": "/help/datagrok/_deprecated/smart-search",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+      "title": "Similarity maps using fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/sim-maps",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/explore/search-filter-select/data-search-test",
+      "title": "Tests: Search",
+      "url": "/help/explore/search-filter-select/data-search-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/transform/functions/text-functions",
+      "title": "Text functions",
+      "url": "/help/transform/functions/text-functions",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/transform/text-to-columns",
+      "title": "Text to columns",
+      "url": "/help/transform/text-to-columns",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Compute/credits.md",
+      "title": "Compute — Third-Party Libraries",
+      "url": "/packages/Compute/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute/readme.md",
+      "title": "Compute",
+      "url": "/packages/Compute/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:NLP:1.2.4:0",
+      "version": "1.2.4",
+      "released_at": "2025-07-04",
+      "ticket": null,
+      "text": "Updated default params for text clustering"
+    },
+    {
+      "id": "clog:NLP:1.0.9:0",
+      "version": "1.0.9",
+      "released_at": "2024-04-05",
+      "ticket": null,
+      "text": "Fixed multiple filters creating."
+    },
+    {
+      "id": "clog:NLP:1.0.8:0",
+      "version": "1.0.8",
+      "released_at": "2024-02-23",
+      "ticket": null,
+      "text": "Updated help: stemming-based search tools description is added."
+    },
+    {
+      "id": "clog:NLP:1.0.7:0",
+      "version": "1.0.7",
+      "released_at": "2024-02-20",
+      "ticket": null,
+      "text": "Stemming-based search (SBS) tools for text columns are added:"
+    },
+    {
+      "id": "clog:NLP:1.0.7:1",
+      "version": "1.0.7",
+      "released_at": "2024-02-20",
+      "ticket": null,
+      "text": "SBS context & distance edit panels"
+    },
+    {
+      "id": "clog:NLP:1.0.7:2",
+      "version": "1.0.7",
+      "released_at": "2024-02-20",
+      "ticket": null,
+      "text": "SBS approach for text embeddings computation"
+    },
+    {
+      "id": "clog:NLP:1.0.6:0",
+      "version": "1.0.6",
+      "released_at": "2023-07-24",
+      "ticket": null,
+      "text": "Initial release of NLP package"
+    }
+  ],
+  "stats": {
+    "functions": 11,
+    "scripts": 7,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 14,
+    "changelog": 7
+  }
+}

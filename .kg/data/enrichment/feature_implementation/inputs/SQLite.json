@@ -1,0 +1,86 @@
+{
+  "package": {
+    "id": "pkg:SQLite",
+    "name": "SQLite",
+    "friendly_name": "SQLite",
+    "category": "Data Access",
+    "description": "Support for importing and previewing SQLite files."
+  },
+  "files": {
+    "src": [
+      "packages/SQLite/src/import.ts",
+      "packages/SQLite/src/package.ts",
+      "packages/SQLite/src/sql-wasm.js"
+    ],
+    "tests": [
+      "packages/SQLite/src/package-test.ts",
+      "packages/SQLite/src/tests/sqlite-tests.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/SQLite/CHANGELOG.md",
+      "packages/SQLite/CREDITS.md",
+      "packages/SQLite/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:SQLite:sqlite-file-import",
+      "name": "SQLite File Import",
+      "description": "Lets users open .sqlite database files directly in Datagrok, exposing each table as a dataframe. The integration runs client-side via the sql.js WASM library with no server round-trip required.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:SQLite:importSQLite",
+          "kind": "RegisteredFunction",
+          "name": "importSQLite",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens SQLite files",
+          "tags": []
+        },
+        {
+          "id": "func:SQLite:sqlJsInit",
+          "kind": "RegisteredFunction",
+          "name": "sqlJsInit",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/help/access/databases/connectors/sqlite",
+          "kind": "DocPage",
+          "title": "SQLite",
+          "url": "/help/access/databases/connectors/sqlite"
+        },
+        {
+          "id": "doc:/packages/SQLite/readme.md",
+          "kind": "DocPage",
+          "title": "SQLite",
+          "url": "/packages/SQLite/readme.md"
+        },
+        {
+          "id": "doc:/packages/SQLite/credits.md",
+          "kind": "DocPage",
+          "title": "SQLite — Third-Party Libraries",
+          "url": "/packages/SQLite/credits.md"
+        },
+        {
+          "id": "clog:SQLite:1.0.1:1",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/SQLite/src/import.ts",
+          "packages/SQLite/src/package.ts",
+          "packages/SQLite/src/sql-wasm.js"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

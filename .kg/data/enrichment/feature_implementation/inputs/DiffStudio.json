@@ -1,0 +1,494 @@
+{
+  "package": {
+    "id": "pkg:DiffStudio",
+    "name": "DiffStudio",
+    "friendly_name": "Diff Studio",
+    "category": "Compute",
+    "description": "Environment for in-browser modeling with ordinary differential equations."
+  },
+  "files": {
+    "src": [
+      "packages/DiffStudio/src/app.ts",
+      "packages/DiffStudio/src/callbacks/callback-base.ts",
+      "packages/DiffStudio/src/callbacks/callback-tools.ts",
+      "packages/DiffStudio/src/callbacks/iter-checker-callback.ts",
+      "packages/DiffStudio/src/callbacks/time-checker-callback.ts",
+      "packages/DiffStudio/src/constants.ts",
+      "packages/DiffStudio/src/demo/acid-production.ts",
+      "packages/DiffStudio/src/demo/ball-flight.ts",
+      "packages/DiffStudio/src/demo/bioreactor.ts",
+      "packages/DiffStudio/src/demo/pk-pd.ts",
+      "packages/DiffStudio/src/demo/pollution.ts",
+      "packages/DiffStudio/src/error-utils.ts",
+      "packages/DiffStudio/src/model.ts",
+      "packages/DiffStudio/src/package.ts",
+      "packages/DiffStudio/src/scripting-tools.ts",
+      "packages/DiffStudio/src/solver-tools.ts",
+      "packages/DiffStudio/src/templates.ts",
+      "packages/DiffStudio/src/ui-constants.ts",
+      "packages/DiffStudio/src/use-cases.ts",
+      "packages/DiffStudio/src/utils.ts"
+    ],
+    "tests": [
+      "packages/DiffStudio/src/package-test.ts",
+      "packages/DiffStudio/src/tests/demo-models-tests.ts",
+      "packages/DiffStudio/src/tests/features-tests.ts",
+      "packages/DiffStudio/src/tests/numerical-methods-tests.ts",
+      "packages/DiffStudio/src/tests/parser-tests.ts",
+      "packages/DiffStudio/src/tests/pipeline-tests.ts",
+      "packages/DiffStudio/src/tests/platform-funcs-tests.ts",
+      "packages/DiffStudio/src/tests/test-utils.ts"
+    ],
+    "scripts": [
+      "packages/DiffStudio/.claude/skills/create-demo-model/scripts/ivp-to-demo.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/DiffStudio/.claude/skills/create-demo-model-from-ivp-file/SKILL.md",
+      "packages/DiffStudio/.claude/skills/create-demo-model/SKILL.md",
+      "packages/DiffStudio/.claude/skills/create-tests-for-demo-model/SKILL.md",
+      "packages/DiffStudio/CHANGELOG.md",
+      "packages/DiffStudio/CLAUDE.md",
+      "packages/DiffStudio/CREDITS.md",
+      "packages/DiffStudio/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:DiffStudio:ode-solver-ide",
+      "name": "ODE Solver IDE",
+      "description": "Interactive in-browser IDE for defining, solving, and visualizing systems of ordinary differential equations using a domain-specific language with multiple numerical methods.",
+      "category": "compute",
+      "members": [
+        {
+          "id": "func:DiffStudio:Diff Studio",
+          "kind": "RegisteredFunction",
+          "name": "Diff Studio",
+          "friendly_name": null,
+          "role": "app",
+          "description": "Solver of ordinary differential equations systems",
+          "tags": []
+        },
+        {
+          "id": "func:DiffStudio:solve",
+          "kind": "RegisteredFunction",
+          "name": "solve",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DiffStudio:solveEquations",
+          "kind": "RegisteredFunction",
+          "name": "solveEquations",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DiffStudio:solveODE",
+          "kind": "RegisteredFunction",
+          "name": "solveODE",
+          "friendly_name": null,
+          "role": null,
+          "description": "Solve initial value problem for ordinary differential equations",
+          "tags": []
+        },
+        {
+          "id": "func:DiffStudio:init",
+          "kind": "RegisteredFunction",
+          "name": "init",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DiffStudio:dock",
+          "kind": "RegisteredFunction",
+          "name": "dock",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DiffStudio:Diff Studio Demo",
+          "kind": "RegisteredFunction",
+          "name": "Diff Studio Demo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Interactive solver of ordinary differential equations (ODE)",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/compute/diff-studio",
+          "kind": "DocPage",
+          "title": "Diff Studio",
+          "url": "/help/compute/diff-studio"
+        },
+        {
+          "id": "doc:/packages/DiffStudio/readme.md",
+          "kind": "DocPage",
+          "title": "Diff Studio",
+          "url": "/packages/DiffStudio/readme.md"
+        },
+        {
+          "id": "clog:DiffStudio:1.5.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.5.0:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.5.0:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.5.0:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.5.0:4",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.5.0:5",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.5.0:6",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/compute/models",
+          "kind": "DocPage",
+          "title": "Models",
+          "url": "/help/compute/models"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DiffStudio/src/app.ts",
+          "packages/DiffStudio/src/callbacks/callback-tools.ts",
+          "packages/DiffStudio/src/constants.ts",
+          "packages/DiffStudio/src/error-utils.ts",
+          "packages/DiffStudio/src/package.ts",
+          "packages/DiffStudio/src/scripting-tools.ts",
+          "packages/DiffStudio/src/solver-tools.ts",
+          "packages/DiffStudio/src/templates.ts",
+          "packages/DiffStudio/src/ui-constants.ts",
+          "packages/DiffStudio/src/use-cases.ts"
+        ],
+        "tests": [
+          "packages/DiffStudio/src/tests/features-tests.ts",
+          "packages/DiffStudio/src/tests/numerical-methods-tests.ts",
+          "packages/DiffStudio/src/tests/parser-tests.ts",
+          "packages/DiffStudio/src/tests/platform-funcs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:DiffStudio:ivp-file-format",
+      "name": "IVP File Format",
+      "description": "Platform integration for .ivp (initial value problem) files: file-type handler that opens them in Diff Studio and a preview viewer for quick inspection without leaving the file browser.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:DiffStudio:ivpFileHandler",
+          "kind": "RegisteredFunction",
+          "name": "ivpFileHandler",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:DiffStudio:previewIvp",
+          "kind": "RegisteredFunction",
+          "name": "previewIvp",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DiffStudio/src/app.ts",
+          "packages/DiffStudio/src/constants.ts",
+          "packages/DiffStudio/src/error-utils.ts",
+          "packages/DiffStudio/src/package.ts",
+          "packages/DiffStudio/src/solver-tools.ts",
+          "packages/DiffStudio/src/templates.ts",
+          "packages/DiffStudio/src/ui-constants.ts",
+          "packages/DiffStudio/src/use-cases.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DiffStudio:ode-serialization-api",
+      "name": "ODE Serialization API",
+      "description": "Developer-facing API for converting textual ODE definitions into structured objects or executable JavaScript code, enabling programmatic embedding of ODE models.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:DiffStudio:serializeEquations",
+          "kind": "RegisteredFunction",
+          "name": "serializeEquations",
+          "friendly_name": null,
+          "role": null,
+          "description": "Return serialized initial value problem for ordinary differential equations",
+          "tags": []
+        },
+        {
+          "id": "func:DiffStudio:odesToCode",
+          "kind": "RegisteredFunction",
+          "name": "odesToCode",
+          "friendly_name": null,
+          "role": null,
+          "description": "Perform ODEs serialization to JS-code",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DiffStudio/src/error-utils.ts",
+          "packages/DiffStudio/src/package.ts",
+          "packages/DiffStudio/src/scripting-tools.ts"
+        ],
+        "tests": [
+          "packages/DiffStudio/src/tests/platform-funcs-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:DiffStudio:domain-models",
+      "name": "Built-in Domain Models",
+      "description": "Curated library of ready-to-run ODE models covering pharmacokinetics (PK-PD), bioprocess engineering (Bioreactor, Acid Production), environmental chemistry (Pollution), and ballistics (Ball flight).",
+      "category": "compute",
+      "members": [
+        {
+          "id": "func:DiffStudio:PK-PD",
+          "kind": "RegisteredFunction",
+          "name": "PK-PD",
+          "friendly_name": null,
+          "role": null,
+          "description": "In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation",
+          "tags": [
+            "model"
+          ]
+        },
+        {
+          "id": "func:DiffStudio:Bioreactor",
+          "kind": "RegisteredFunction",
+          "name": "Bioreactor",
+          "friendly_name": null,
+          "role": null,
+          "description": "Controlled fab-arm exchange mechanism simulation",
+          "tags": [
+            "model"
+          ]
+        },
+        {
+          "id": "func:DiffStudio:Acid Production",
+          "kind": "RegisteredFunction",
+          "name": "Acid Production",
+          "friendly_name": null,
+          "role": null,
+          "description": "Gluconic acid (GA) production by Aspergillus niger modeling",
+          "tags": [
+            "model"
+          ]
+        },
+        {
+          "id": "func:DiffStudio:Pollution",
+          "kind": "RegisteredFunction",
+          "name": "Pollution",
+          "friendly_name": null,
+          "role": null,
+          "description": "The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection",
+          "tags": [
+            "model"
+          ]
+        },
+        {
+          "id": "func:DiffStudio:Ball flight",
+          "kind": "RegisteredFunction",
+          "name": "Ball flight",
+          "friendly_name": null,
+          "role": null,
+          "description": "Ball flight simulation",
+          "tags": [
+            "model"
+          ]
+        },
+        {
+          "id": "func:DiffStudio:runModel",
+          "kind": "RegisteredFunction",
+          "name": "runModel",
+          "friendly_name": null,
+          "role": null,
+          "description": "Run model with Diff Studio UI",
+          "tags": []
+        },
+        {
+          "id": "func:DiffStudio:PK-PD Simulation Demo",
+          "kind": "RegisteredFunction",
+          "name": "PK-PD Simulation Demo",
+          "friendly_name": null,
+          "role": null,
+          "description": "In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation",
+          "tags": []
+        },
+        {
+          "id": "func:DiffStudio:Bioreactor Demo",
+          "kind": "RegisteredFunction",
+          "name": "Bioreactor Demo",
+          "friendly_name": null,
+          "role": null,
+          "description": "In-browser simulation of controlled fab-arm exchange mechanism",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/compute/models",
+          "kind": "DocPage",
+          "title": "Models",
+          "url": "/help/compute/models"
+        },
+        {
+          "id": "clog:DiffStudio:1.5.2:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DiffStudio/src/app.ts",
+          "packages/DiffStudio/src/demo/acid-production.ts",
+          "packages/DiffStudio/src/demo/ball-flight.ts",
+          "packages/DiffStudio/src/demo/bioreactor.ts",
+          "packages/DiffStudio/src/demo/pk-pd.ts",
+          "packages/DiffStudio/src/demo/pollution.ts",
+          "packages/DiffStudio/src/model.ts",
+          "packages/DiffStudio/src/package.ts",
+          "packages/DiffStudio/src/solver-tools.ts",
+          "packages/DiffStudio/src/ui-constants.ts"
+        ],
+        "tests": [
+          "packages/DiffStudio/src/tests/demo-models-tests.ts",
+          "packages/DiffStudio/src/tests/pipeline-tests.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:DiffStudio:model-hub-browser",
+      "name": "Model Hub Browser",
+      "description": "Tree-based browser for discovering and launching ODE models registered in the Diff Studio model hub, with an improved open-model menu.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:DiffStudio:runDiffStudioTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "runDiffStudioTreeBrowser",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "clog:DiffStudio:1.5.1:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.4.7:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/DiffStudio/src/app.ts",
+          "packages/DiffStudio/src/constants.ts",
+          "packages/DiffStudio/src/error-utils.ts",
+          "packages/DiffStudio/src/package.ts",
+          "packages/DiffStudio/src/solver-tools.ts",
+          "packages/DiffStudio/src/templates.ts",
+          "packages/DiffStudio/src/use-cases.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DiffStudio:parameter-fitting",
+      "name": "Parameter Fitting",
+      "description": "Optimization of ODE model parameters to fit experimental data, with target column selection, progress tracking, and configurable color scheme — surfaced in the Diff Studio UI, not as a separate registered function.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "clog:DiffStudio:1.3.3:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.3.3:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.3.3:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.3.4:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.3.5:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.3.5:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:DiffStudio:1.3.5:2",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/compute/function-analysis",
+          "kind": "DocPage",
+          "title": "Model optimization tools",
+          "url": "/help/compute/function-analysis"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:DiffStudio:sensitivity-analysis",
+      "name": "Sensitivity Analysis",
+      "description": "Analysis of how ODE model outputs change with parameter variation, executed in web workers for non-blocking performance.",
+      "category": "compute",
+      "members": [
+        {
+          "id": "clog:DiffStudio:1.3.6:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/compute/function-analysis",
+          "kind": "DocPage",
+          "title": "Model optimization tools",
+          "url": "/help/compute/function-analysis"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

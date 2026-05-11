@@ -1,0 +1,245 @@
+{
+  "slice_id": "help-compute",
+  "links": [
+    {
+      "doc_id": "doc:/help/compute/compute",
+      "target_id": "pkg:Compute2",
+      "confidence": 0.92,
+      "evidence": "Compute2 description explicitly references https://datagrok.ai/help/compute/ as its documentation URL; this page is the top-level overview for that subtree"
+    },
+    {
+      "doc_id": "doc:/help/compute/compute",
+      "target_id": "pkg:Compute",
+      "confidence": 0.82,
+      "evidence": "Legacy modeling UI; overview page covers both the legacy and current Compute ecosystem"
+    },
+    {
+      "doc_id": "doc:/help/compute/compute",
+      "target_id": "feature:Compute:scripting",
+      "confidence": 0.80,
+      "evidence": "Overview page mentions scripting as a core compute capability"
+    },
+    {
+      "doc_id": "doc:/help/compute/diff-studio",
+      "target_id": "pkg:DiffStudio",
+      "confidence": 0.95,
+      "evidence": "Title 'Diff Studio' exactly matches the DiffStudio package (ODE modeling environment)"
+    },
+    {
+      "doc_id": "doc:/help/compute/diff-studio",
+      "target_id": "feature:DiffStudio:ode-solver-ide",
+      "confidence": 0.92,
+      "evidence": "Doc describes the interactive in-browser ODE IDE that is the core DiffStudio feature"
+    },
+    {
+      "doc_id": "doc:/help/compute/diff-studio",
+      "target_id": "feature:Compute2:diff-studio",
+      "confidence": 0.82,
+      "evidence": "Compute2 surfaces Diff Studio through its documentation and help system; this page is the linked doc"
+    },
+    {
+      "doc_id": "doc:/help/compute/diff-studio",
+      "target_id": "feature:Compute:diff-studio-ode-models",
+      "confidence": 0.78,
+      "evidence": "Compute package includes ODE model demos and links into Diff Studio"
+    },
+    {
+      "doc_id": "doc:/help/compute/function-analysis",
+      "target_id": "feature:Compute:model-optimization",
+      "confidence": 0.93,
+      "evidence": "Feature name 'Model Optimization Tools' matches title 'Model optimization tools' exactly; description covers parameter fitting and sensitivity analysis for Compute models"
+    },
+    {
+      "doc_id": "doc:/help/compute/function-analysis",
+      "target_id": "feature:Compute2:sensitivity-analysis-fitting",
+      "confidence": 0.90,
+      "evidence": "Feature description says 'core fitting and SA capabilities have migrated to Compute2'; doc covers both fitting and sensitivity analysis"
+    },
+    {
+      "doc_id": "doc:/help/compute/function-analysis",
+      "target_id": "feature:DiffStudio:parameter-fitting",
+      "confidence": 0.82,
+      "evidence": "Snippet explicitly mentions ODE models as the target of optimization; DiffStudio Parameter Fitting is the ODE-specific implementation"
+    },
+    {
+      "doc_id": "doc:/help/compute/function-analysis",
+      "target_id": "feature:DiffStudio:sensitivity-analysis",
+      "confidence": 0.82,
+      "evidence": "Snippet mentions sensitivity analysis for ODE models; DiffStudio has a dedicated sensitivity analysis feature"
+    },
+    {
+      "doc_id": "doc:/help/compute/jupyter-notebook",
+      "target_id": "pkg:Notebooks",
+      "confidence": 0.95,
+      "evidence": "Title 'Jupyter Notebook' directly matches the Notebooks package (JupyterLab Notebooks integration)"
+    },
+    {
+      "doc_id": "doc:/help/compute/jupyter-notebook",
+      "target_id": "feature:Notebooks:jupyter-notebook-view",
+      "confidence": 0.95,
+      "evidence": "Feature 'Jupyter Notebook View' exactly matches the doc subject; description matches the doc content about embedded JupyterLab"
+    },
+    {
+      "doc_id": "doc:/help/compute/jupyter-notebook",
+      "target_id": "feature:Compute:jupyter-notebook",
+      "confidence": 0.85,
+      "evidence": "Compute package exposes Jupyter notebooks as compute artefacts; this feature bridges notebook-based workflows with the model execution UI"
+    },
+    {
+      "doc_id": "doc:/help/compute/models",
+      "target_id": "pkg:DiffStudio",
+      "confidence": 0.90,
+      "evidence": "Snippet explicitly references Diff Studio and its ODE model examples as the content of this page"
+    },
+    {
+      "doc_id": "doc:/help/compute/models",
+      "target_id": "feature:DiffStudio:domain-models",
+      "confidence": 0.92,
+      "evidence": "'Built-in Domain Models' feature matches the doc page listing canonical ODE model examples including chem-react"
+    },
+    {
+      "doc_id": "doc:/help/compute/models",
+      "target_id": "feature:DiffStudio:ode-solver-ide",
+      "confidence": 0.82,
+      "evidence": "Models are defined and run in the ODE Solver IDE; doc covers the full range of DiffStudio capabilities"
+    },
+    {
+      "doc_id": "doc:/help/compute/models",
+      "target_id": "feature:Compute:diff-studio-ode-models",
+      "confidence": 0.80,
+      "evidence": "Compute package bundles canonical ODE model examples referenced in this doc"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+      "target_id": "feature:Compute:scripting",
+      "confidence": 0.83,
+      "evidence": "Doc covers parameter suggestion/autocomplete features within the Datagrok scripting platform"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+      "target_id": "feature:Python:scripting-framework",
+      "confidence": 0.80,
+      "evidence": "Platform-wide scripting framework description includes advanced input/output handling, which encompasses parameter suggestions"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+      "target_id": "feature:Compute:scripting",
+      "confidence": 0.85,
+      "evidence": "Scripting Platform feature description includes REST invocation, matching the doc topic exactly"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+      "target_id": "feature:Python:scripting-framework",
+      "confidence": 0.82,
+      "evidence": "Scripting Framework feature description explicitly lists 'REST invocation' as a key capability"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+      "target_id": "feature:Compute2:rich-function-view",
+      "confidence": 0.95,
+      "evidence": "Feature name 'Rich Function View' exactly matches the doc title; Compute2 is the current implementation"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+      "target_id": "feature:Compute:rich-function-view",
+      "confidence": 0.90,
+      "evidence": "Compute also has a 'Rich Function View' feature (legacy version); the doc covers the concept broadly"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/getting-started",
+      "target_id": "feature:Compute:scripting",
+      "confidence": 0.92,
+      "evidence": "Doc title 'Getting started with scripting' directly introduces the Scripting Platform feature with examples in Python and JS"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/getting-started",
+      "target_id": "feature:Python:scripting-framework",
+      "confidence": 0.85,
+      "evidence": "Scripting Framework covers the platform-wide scripting environment; getting-started doc uses Python as the primary example language"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/getting-started",
+      "target_id": "pkg:Python",
+      "confidence": 0.82,
+      "evidence": "Python is the primary language demonstrated in this getting-started guide; Python package provides the server-side execution environment"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/getting-started",
+      "target_id": "pkg:Pyodide",
+      "confidence": 0.75,
+      "evidence": "In-browser Python via Pyodide is one of the scripting modes described in the getting-started flow"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+      "target_id": "feature:Compute:scripting",
+      "confidence": 0.83,
+      "evidence": "Complex I/O types (dataframe, column, column list) are part of the Scripting Platform feature"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+      "target_id": "feature:Pyodide:dataframe-io",
+      "confidence": 0.82,
+      "evidence": "Feature 'DataFrame Input/Output' directly matches the doc content about passing dataframes and columns as script parameters"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+      "target_id": "feature:Pyodide:type-marshaling",
+      "confidence": 0.80,
+      "evidence": "Primitive type marshaling feature maps to the doc's coverage of supported parameter types (dataframe, column, primitives)"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "target_id": "feature:Compute:scripting",
+      "confidence": 0.90,
+      "evidence": "Scripting Platform includes a rich script editor; the doc specifically describes how to use it"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "target_id": "feature:Python:scripting-framework",
+      "confidence": 0.82,
+      "evidence": "Scripting Framework description mentions 'built-in editor' as a key capability"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+      "target_id": "feature:Compute:scripting",
+      "confidence": 0.83,
+      "evidence": "Scripting Platform supports custom input widgets; this doc covers GUI-related options for script views"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+      "target_id": "feature:Python:scripting-framework",
+      "confidence": 0.80,
+      "evidence": "Scripting Framework description lists 'UI customization' as a capability covered by this doc"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+      "target_id": "feature:Compute:scripting",
+      "confidence": 0.92,
+      "evidence": "Doc title 'Scripting features' is the index page for the Scripting Platform's advanced capabilities"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+      "target_id": "feature:Python:scripting-framework",
+      "confidence": 0.88,
+      "evidence": "Scripting Framework description — 'Platform-wide scripting environment... applicable to all scripting languages' — is essentially the subject of this index page"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+      "target_id": "feature:Compute:scripting",
+      "confidence": 0.83,
+      "evidence": "Scripting Platform supports output viewers for dataframes; this doc covers specifying viewers for output data"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+      "target_id": "feature:Pyodide:graphics-output",
+      "confidence": 0.82,
+      "evidence": "Feature 'Graphics Output' renders visual output from Python scripts; doc covers how to specify viewers for output dataframes including graphics"
+    },
+    {
+      "doc_id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+      "target_id": "feature:Python:scripting-framework",
+      "confidence": 0.80,
+      "evidence": "Scripting Framework includes output visualization as a core capability covered by this doc"
+    }
+  ]
+}

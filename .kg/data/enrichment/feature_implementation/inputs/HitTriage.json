@@ -1,0 +1,417 @@
+{
+  "package": {
+    "id": "pkg:HitTriage",
+    "name": "HitTriage",
+    "friendly_name": "Hit Triage",
+    "category": "Cheminformatics",
+    "description": "Hit Triage helps chemists assess the quality of hits and decide which compounds should make it to the next stage."
+  },
+  "files": {
+    "src": [
+      "packages/HitTriage/src/app/accordeons/layout-input.ts",
+      "packages/HitTriage/src/app/accordeons/new-campaign-accordeon.ts",
+      "packages/HitTriage/src/app/accordeons/new-hit-design-campaign-accordeon.ts",
+      "packages/HitTriage/src/app/accordeons/new-hit-design-template-accordeon.ts",
+      "packages/HitTriage/src/app/accordeons/new-pep-triage-template-accordeon.ts",
+      "packages/HitTriage/src/app/accordeons/new-template-accordeon.ts",
+      "packages/HitTriage/src/app/base-view.ts",
+      "packages/HitTriage/src/app/consts.ts",
+      "packages/HitTriage/src/app/dialogs/functions-dialog.ts",
+      "packages/HitTriage/src/app/dialogs/merge-table-dialog.ts",
+      "packages/HitTriage/src/app/dialogs/permissions-dialog.ts",
+      "packages/HitTriage/src/app/dialogs/save-campaign-dialog.ts",
+      "packages/HitTriage/src/app/hit-app-base.ts",
+      "packages/HitTriage/src/app/hit-design-app.ts",
+      "packages/HitTriage/src/app/hit-design-views/info-view.ts",
+      "packages/HitTriage/src/app/hit-design-views/submit-view.ts",
+      "packages/HitTriage/src/app/hit-design-views/tiles-view.ts",
+      "packages/HitTriage/src/app/hit-design-views/utils.css",
+      "packages/HitTriage/src/app/hit-triage-app.ts",
+      "packages/HitTriage/src/app/hit-triage-views/info-view.ts",
+      "packages/HitTriage/src/app/hit-triage-views/submit-view.ts",
+      "packages/HitTriage/src/app/index.ts",
+      "packages/HitTriage/src/app/pep-triage-app.ts",
+      "packages/HitTriage/src/app/pep-triage-views/info-view.ts",
+      "packages/HitTriage/src/app/pepti-hit-app.ts",
+      "packages/HitTriage/src/app/pepti-hits-views/info-view.ts",
+      "packages/HitTriage/src/app/types.ts",
+      "packages/HitTriage/src/app/utils.ts",
+      "packages/HitTriage/src/app/utils/calculate-single-cell.ts",
+      "packages/HitTriage/src/app/utils/merge-table.ts",
+      "packages/HitTriage/src/app/utils/molreg.ts",
+      "packages/HitTriage/src/package.ts",
+      "packages/HitTriage/src/packageSettingsEditor.ts",
+      "packages/HitTriage/src/pngRenderers.ts"
+    ],
+    "tests": [
+      "packages/HitTriage/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [
+      "packages/HitTriage/queries/locks.sql",
+      "packages/HitTriage/queries/vid.sql"
+    ],
+    "docs": [
+      "packages/HitTriage/CHANGELOG.md",
+      "packages/HitTriage/CLAUDE.md",
+      "packages/HitTriage/CREDITS.md",
+      "packages/HitTriage/README.md",
+      "packages/HitTriage/README_HD.md",
+      "packages/HitTriage/README_HT.md",
+      "packages/HitTriage/README_OLD.md",
+      "packages/HitTriage/files/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:HitTriage:hit-triage-workflow",
+      "name": "Hit Triage Workflow",
+      "description": "Application for loading compound sets into campaigns, applying configurable scoring functions, and deciding which hits advance to the next stage.",
+      "category": "chem-campaign",
+      "members": [
+        {
+          "id": "func:HitTriage:Hit Triage",
+          "kind": "RegisteredFunction",
+          "name": "Hit Triage",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:HitTriage:hitTriageAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "hitTriageAppTreeBrowser",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:HitTriage:Demo Molecules 100",
+          "kind": "RegisteredFunction",
+          "name": "Demo Molecules 100",
+          "friendly_name": null,
+          "role": "hitTriageDataSource",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:HitTriage:Demo Molecules 5000",
+          "kind": "RegisteredFunction",
+          "name": "Demo Molecules 5000",
+          "friendly_name": null,
+          "role": "hitTriageDataSource",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:HitTriage:Demo Molecules variable",
+          "kind": "RegisteredFunction",
+          "name": "Demo Molecules variable",
+          "friendly_name": null,
+          "role": "hitTriageDataSource",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:HitTriage:Demo File Submit",
+          "kind": "RegisteredFunction",
+          "name": "Demo File Submit",
+          "friendly_name": null,
+          "role": "hitTriageSubmitFunction",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/HitTriage/readme.md",
+          "kind": "DocPage",
+          "title": "Hit Triage",
+          "url": "/packages/HitTriage/readme.md"
+        },
+        {
+          "id": "doc:/help/develop/domains/chem/hit_triage_system",
+          "kind": "DocPage",
+          "title": "Building light-weighted hit triage system",
+          "url": "/help/develop/domains/chem/hit_triage_system"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/HitTriage/src/app/base-view.ts",
+          "packages/HitTriage/src/app/dialogs/functions-dialog.ts",
+          "packages/HitTriage/src/app/dialogs/permissions-dialog.ts",
+          "packages/HitTriage/src/app/dialogs/save-campaign-dialog.ts",
+          "packages/HitTriage/src/app/hit-app-base.ts",
+          "packages/HitTriage/src/app/hit-triage-app.ts",
+          "packages/HitTriage/src/app/hit-triage-views/info-view.ts",
+          "packages/HitTriage/src/app/hit-triage-views/submit-view.ts",
+          "packages/HitTriage/src/app/utils.ts",
+          "packages/HitTriage/src/app/utils/calculate-single-cell.ts",
+          "packages/HitTriage/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:HitTriage:hit-design-workflow",
+      "name": "Hit Design Workflow",
+      "description": "Application for designing and registering new compounds within an active campaign, with per-molecule VID tracking and integration with compute functions.",
+      "category": "chem-campaign",
+      "members": [
+        {
+          "id": "func:HitTriage:Hit Design",
+          "kind": "RegisteredFunction",
+          "name": "Hit Design",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:HitTriage:hitDesignAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "hitDesignAppTreeBrowser",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:HitTriage:Hit Design V-iD",
+          "kind": "RegisteredFunction",
+          "name": "Hit Design V-iD",
+          "friendly_name": null,
+          "role": "panel",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/HitTriage/src/app/base-view.ts",
+          "packages/HitTriage/src/app/consts.ts",
+          "packages/HitTriage/src/app/dialogs/functions-dialog.ts",
+          "packages/HitTriage/src/app/dialogs/merge-table-dialog.ts",
+          "packages/HitTriage/src/app/dialogs/permissions-dialog.ts",
+          "packages/HitTriage/src/app/hit-app-base.ts",
+          "packages/HitTriage/src/app/hit-design-app.ts",
+          "packages/HitTriage/src/app/hit-design-views/info-view.ts",
+          "packages/HitTriage/src/app/hit-design-views/submit-view.ts",
+          "packages/HitTriage/src/app/hit-design-views/tiles-view.ts",
+          "packages/HitTriage/src/app/types.ts",
+          "packages/HitTriage/src/app/utils.ts",
+          "packages/HitTriage/src/app/utils/calculate-single-cell.ts",
+          "packages/HitTriage/src/app/utils/merge-table.ts",
+          "packages/HitTriage/src/app/utils/molreg.ts",
+          "packages/HitTriage/src/package-api.ts",
+          "packages/HitTriage/src/package.ts",
+          "packages/HitTriage/src/packageSettingsEditor.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:HitTriage:peptide-triage-workflows",
+      "name": "Peptide Triage Workflows",
+      "description": "Peptide-focused variants of the triage framework — PeptiHit for hit triage and PepTriage for broader peptide campaign management.",
+      "category": "peptide-campaign",
+      "members": [
+        {
+          "id": "func:HitTriage:PeptiHit",
+          "kind": "RegisteredFunction",
+          "name": "PeptiHit",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:HitTriage:peptiHitAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "peptiHitAppTreeBrowser",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:HitTriage:PepTriage",
+          "kind": "RegisteredFunction",
+          "name": "PepTriage",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": [
+            "app"
+          ]
+        },
+        {
+          "id": "func:HitTriage:pepTriageAppTreeBrowser",
+          "kind": "RegisteredFunction",
+          "name": "pepTriageAppTreeBrowser",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:HitTriage:Demo Peptide Sequences",
+          "kind": "RegisteredFunction",
+          "name": "Demo Peptide Sequences",
+          "friendly_name": null,
+          "role": "pepTriageDataSource",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/HitTriage/src/app/consts.ts",
+          "packages/HitTriage/src/app/hit-design-app.ts",
+          "packages/HitTriage/src/app/hit-triage-app.ts",
+          "packages/HitTriage/src/app/pep-triage-app.ts",
+          "packages/HitTriage/src/app/pep-triage-views/info-view.ts",
+          "packages/HitTriage/src/app/pepti-hit-app.ts",
+          "packages/HitTriage/src/app/pepti-hits-views/info-view.ts",
+          "packages/HitTriage/src/app/types.ts",
+          "packages/HitTriage/src/app/utils/molreg.ts",
+          "packages/HitTriage/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:HitTriage:molecule-registry-vid",
+      "name": "Molecule Registry (VID System)",
+      "description": "A global virtual-ID registry that assigns canonical VIDs to molecules and tracks their presence across multiple campaigns.",
+      "category": "chem-registry",
+      "members": [
+        {
+          "id": "func:HitTriage:registerMoleculesToViD",
+          "kind": "RegisteredFunction",
+          "name": "registerMoleculesToViD",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "query:HitTriage:addMolecule",
+          "kind": "DataQuery",
+          "name": "addMolecule",
+          "description": "Add a molecule to the dictionary. Returns VID for new or existing molecule."
+        },
+        {
+          "id": "query:HitTriage:addMolecules",
+          "kind": "DataQuery",
+          "name": "addMolecules",
+          "description": "Add multiple molecules to the dictionary. Returns VIDs for new or existing molecules."
+        },
+        {
+          "id": "query:HitTriage:getMoleculeByVid",
+          "kind": "DataQuery",
+          "name": "getMoleculeByVid",
+          "description": "Get a molecule's canonical SMILES by its VID."
+        },
+        {
+          "id": "query:HitTriage:getCampaignsByVid",
+          "kind": "DataQuery",
+          "name": "getCampaignsByVid",
+          "description": "Get all campaigns and creators for a given VID."
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/HitTriage/src/app/consts.ts",
+          "packages/HitTriage/src/app/types.ts",
+          "packages/HitTriage/src/app/utils/molreg.ts",
+          "packages/HitTriage/src/package-api.ts",
+          "packages/HitTriage/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:HitTriage:campaign-management",
+      "name": "Campaign Management",
+      "description": "Infrastructure for creating, organizing, locking, and collaborating on campaigns — covering grouping, sorting, column visibility, file storage, and multi-user change signaling.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:HitTriage:Hit Triage package settings editor",
+          "kind": "RegisteredFunction",
+          "name": "Hit Triage package settings editor",
+          "friendly_name": null,
+          "role": "packageSettingsEditor",
+          "description": null,
+          "tags": [
+            "packageSettingsEditor"
+          ]
+        },
+        {
+          "id": "query:HitTriage:acquireCampaignLock",
+          "kind": "DataQuery",
+          "name": "acquireCampaignLock",
+          "description": "Acquire a lock for a campaign. If the lock is expired, it will be removed and a new lock will be created."
+        },
+        {
+          "id": "query:HitTriage:releaseCampaignLock",
+          "kind": "DataQuery",
+          "name": "releaseCampaignLock",
+          "description": "Release a lock for a campaign."
+        },
+        {
+          "id": "query:HitTriage:getLastModified",
+          "kind": "DataQuery",
+          "name": "getLastModified",
+          "description": "Get the last modified time of a campaign lock release (same as save)."
+        },
+        {
+          "id": "doc:/packages/HitTriage/claude.md",
+          "kind": "DocPage",
+          "title": "CLAUDE.md",
+          "url": "/packages/HitTriage/claude.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/HitTriage/src/package.ts",
+          "packages/HitTriage/src/packageSettingsEditor.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:HitTriage:gasteiger-charge-renderer",
+      "name": "Gasteiger Charge Cell Renderer",
+      "description": "A custom grid cell renderer that visualizes Gasteiger partial charges on molecule structures within campaign tables.",
+      "category": "chem-rendering",
+      "members": [
+        {
+          "id": "func:HitTriage:gasteigerRenderer",
+          "kind": "RegisteredFunction",
+          "name": "gasteigerRenderer",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/HitTriage/src/package.ts",
+          "packages/HitTriage/src/pngRenderers.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,489 @@
+{
+  "package": {
+    "id": "pkg:Peptides",
+    "name": "Peptides",
+    "friendly_name": "Peptides",
+    "category": "Bioinformatics",
+    "description": "Advanced tools for analyzing collections of peptides."
+  },
+  "files": {
+    "src": [
+      "packages/Peptides/src/demo/fasta.ts",
+      "packages/Peptides/src/model.ts",
+      "packages/Peptides/src/package.ts",
+      "packages/Peptides/src/peptideUtils.ts",
+      "packages/Peptides/src/styles.css",
+      "packages/Peptides/src/utils/algorithms.ts",
+      "packages/Peptides/src/utils/cell-renderer.ts",
+      "packages/Peptides/src/utils/constants.ts",
+      "packages/Peptides/src/utils/misc.ts",
+      "packages/Peptides/src/utils/parallel-mutation-cliffs.ts",
+      "packages/Peptides/src/utils/statistics.ts",
+      "packages/Peptides/src/utils/tooltips.ts",
+      "packages/Peptides/src/utils/types.ts",
+      "packages/Peptides/src/viewers/cluster-max-activity-viewer.ts",
+      "packages/Peptides/src/viewers/logo-summary.ts",
+      "packages/Peptides/src/viewers/mutation-cliffs-viewer.ts",
+      "packages/Peptides/src/viewers/position-statistics-viewer.ts",
+      "packages/Peptides/src/viewers/sar-viewer.ts",
+      "packages/Peptides/src/widgets/distribution.ts",
+      "packages/Peptides/src/widgets/manual-alignment.ts",
+      "packages/Peptides/src/widgets/mutation-cliffs.ts",
+      "packages/Peptides/src/widgets/peptides.ts",
+      "packages/Peptides/src/widgets/selection.ts",
+      "packages/Peptides/src/widgets/settings.ts",
+      "packages/Peptides/src/workers/mutation-cliffs-worker.ts"
+    ],
+    "tests": [
+      "packages/Peptides/src/package-test.ts",
+      "packages/Peptides/src/tests/benchmarks.ts",
+      "packages/Peptides/src/tests/core.ts",
+      "packages/Peptides/src/tests/misc.ts",
+      "packages/Peptides/src/tests/model.ts",
+      "packages/Peptides/src/tests/table-view.ts",
+      "packages/Peptides/src/tests/utils.ts",
+      "packages/Peptides/src/tests/viewers.ts",
+      "packages/Peptides/src/tests/widgets.ts"
+    ],
+    "scripts": [
+      "packages/Peptides/scripts/smiles-to-3D.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/Peptides/CHANGELOG.md",
+      "packages/Peptides/CLAUDE.md",
+      "packages/Peptides/CREDITS.md",
+      "packages/Peptides/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Peptides:peptide-sar-analysis",
+      "name": "Peptide SAR Analysis",
+      "description": "The core analysis app that coordinates all SAR viewers over a peptide collection, enabling multi-viewer exploration of structure–activity relationships across positions, monomers, and activity distributions.",
+      "category": "bio-sar",
+      "members": [
+        {
+          "id": "func:Peptides:Peptides",
+          "kind": "RegisteredFunction",
+          "name": "Peptides",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Peptides:Peptide SAR",
+          "kind": "RegisteredFunction",
+          "name": "Peptide SAR",
+          "friendly_name": null,
+          "role": null,
+          "description": "Peptide SAR Analysis demo on peptide sequences in FASTA format",
+          "tags": []
+        },
+        {
+          "id": "func:Peptides:initPeptides",
+          "kind": "RegisteredFunction",
+          "name": "initPeptides",
+          "friendly_name": null,
+          "role": "init",
+          "description": null,
+          "tags": [
+            "init"
+          ]
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+          "kind": "DocPage",
+          "title": "Peptides SAR",
+          "url": "/help/datagrok/solutions/domains/bio/peptides-sar"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+          "kind": "DocPage",
+          "title": "FAQ: Peptides",
+          "url": "/help/datagrok/solutions/domains/bio/faq_bio"
+        },
+        {
+          "id": "doc:/packages/Peptides/readme.md",
+          "kind": "DocPage",
+          "title": "Peptides",
+          "url": "/packages/Peptides/readme.md"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/bio",
+          "kind": "DocPage",
+          "title": "Bioinformatics",
+          "url": "/help/datagrok/solutions/domains/bio/bio"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Peptides/src/demo/fasta.ts",
+          "packages/Peptides/src/model.ts",
+          "packages/Peptides/src/package.ts",
+          "packages/Peptides/src/peptideUtils.ts",
+          "packages/Peptides/src/utils/constants.ts",
+          "packages/Peptides/src/utils/misc.ts",
+          "packages/Peptides/src/utils/types.ts",
+          "packages/Peptides/src/viewers/logo-summary.ts",
+          "packages/Peptides/src/widgets/peptides.ts",
+          "packages/Peptides/src/widgets/settings.ts"
+        ],
+        "tests": [
+          "packages/Peptides/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Peptides:sequence-variability-map",
+      "name": "Sequence Variability Map",
+      "description": "A viewer that visualises the positional variability of monomers across a peptide collection, with filter reactivity to highlight how variability changes as subsets are selected.",
+      "category": "bio-sar",
+      "members": [
+        {
+          "id": "func:Peptides:Sequence Variability Map",
+          "kind": "RegisteredFunction",
+          "name": "Sequence Variability Map",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Peptides Sequence Variability Map Viewer",
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "doc:/help/visualize/viewers/sequence-variability-map",
+          "kind": "DocPage",
+          "title": "Sequence Variability Map viewer",
+          "url": "/help/visualize/viewers/sequence-variability-map"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+          "kind": "DocPage",
+          "title": "Peptides SAR",
+          "url": "/help/datagrok/solutions/domains/bio/peptides-sar"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Peptides/src/model.ts",
+          "packages/Peptides/src/package.ts",
+          "packages/Peptides/src/peptideUtils.ts",
+          "packages/Peptides/src/utils/algorithms.ts",
+          "packages/Peptides/src/utils/cell-renderer.ts",
+          "packages/Peptides/src/utils/constants.ts",
+          "packages/Peptides/src/utils/misc.ts",
+          "packages/Peptides/src/utils/tooltips.ts",
+          "packages/Peptides/src/utils/types.ts",
+          "packages/Peptides/src/viewers/logo-summary.ts",
+          "packages/Peptides/src/viewers/sar-viewer.ts"
+        ],
+        "tests": [
+          "packages/Peptides/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Peptides:most-potent-residues",
+      "name": "Most Potent Residues",
+      "description": "A viewer that ranks residues at each sequence position by their association with potent activity values, helping identify which monomers drive SAR.",
+      "category": "bio-sar",
+      "members": [
+        {
+          "id": "func:Peptides:Most Potent Residues",
+          "kind": "RegisteredFunction",
+          "name": "Most Potent Residues",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Peptides Most Potent Residues Viewer",
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "doc:/help/visualize/viewers/most-potent-residues",
+          "kind": "DocPage",
+          "title": "Most Potent Residues",
+          "url": "/help/visualize/viewers/most-potent-residues"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Peptides/src/model.ts",
+          "packages/Peptides/src/package.ts",
+          "packages/Peptides/src/peptideUtils.ts",
+          "packages/Peptides/src/utils/algorithms.ts",
+          "packages/Peptides/src/utils/cell-renderer.ts",
+          "packages/Peptides/src/utils/constants.ts",
+          "packages/Peptides/src/utils/misc.ts",
+          "packages/Peptides/src/utils/tooltips.ts",
+          "packages/Peptides/src/utils/types.ts",
+          "packages/Peptides/src/viewers/logo-summary.ts",
+          "packages/Peptides/src/viewers/sar-viewer.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Peptides:mutation-cliffs",
+      "name": "Mutation Cliffs",
+      "description": "A line-chart viewer that identifies sequence pairs differing by a single-position mutation with large activity differences, revealing SAR cliffs in the peptide dataset.",
+      "category": "bio-sar",
+      "members": [
+        {
+          "id": "func:Peptides:Sequence Mutation Cliffs",
+          "kind": "RegisteredFunction",
+          "name": "Sequence Mutation Cliffs",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Mutation Cliffs Line Chart",
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "doc:/help/visualize/viewers/sequence-mutation-cliffs",
+          "kind": "DocPage",
+          "title": "Mutation Cliffs Viewer",
+          "url": "/help/visualize/viewers/sequence-mutation-cliffs"
+        },
+        {
+          "id": "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+          "kind": "DocPage",
+          "title": "Peptides SAR",
+          "url": "/help/datagrok/solutions/domains/bio/peptides-sar"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Peptides/src/model.ts",
+          "packages/Peptides/src/package.ts",
+          "packages/Peptides/src/peptideUtils.ts",
+          "packages/Peptides/src/utils/misc.ts",
+          "packages/Peptides/src/utils/parallel-mutation-cliffs.ts",
+          "packages/Peptides/src/utils/types.ts",
+          "packages/Peptides/src/viewers/mutation-cliffs-viewer.ts"
+        ],
+        "tests": [
+          "packages/Peptides/src/tests/table-view.ts",
+          "packages/Peptides/src/tests/widgets.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Peptides:logo-summary-table",
+      "name": "Logo Summary Table",
+      "description": "A summary viewer that renders a WebLogo-style sequence logo alongside per-position monomer statistics, with a pie-chart cell renderer for compact in-grid display.",
+      "category": "bio-sar",
+      "members": [
+        {
+          "id": "func:Peptides:Logo Summary Table",
+          "kind": "RegisteredFunction",
+          "name": "Logo Summary Table",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "func:Peptides:LST Pie Chart",
+          "kind": "RegisteredFunction",
+          "name": "LST Pie Chart",
+          "friendly_name": null,
+          "role": "cellRenderer",
+          "description": null,
+          "tags": [
+            "cellRenderer"
+          ]
+        },
+        {
+          "id": "doc:/help/visualize/viewers/logo-summary-table",
+          "kind": "DocPage",
+          "title": "Logo Summary Table",
+          "url": "/help/visualize/viewers/logo-summary-table"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Peptides/src/model.ts",
+          "packages/Peptides/src/package.ts",
+          "packages/Peptides/src/peptideUtils.ts",
+          "packages/Peptides/src/utils/algorithms.ts",
+          "packages/Peptides/src/utils/cell-renderer.ts",
+          "packages/Peptides/src/utils/constants.ts",
+          "packages/Peptides/src/utils/statistics.ts",
+          "packages/Peptides/src/utils/tooltips.ts",
+          "packages/Peptides/src/utils/types.ts",
+          "packages/Peptides/src/viewers/logo-summary.ts",
+          "packages/Peptides/src/viewers/sar-viewer.ts",
+          "packages/Peptides/src/widgets/distribution.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Peptides:position-statistics",
+      "name": "Sequence Position Statistics",
+      "description": "A viewer that shows statistical distributions (mean, SD, significance) for activity values grouped by monomer identity at each sequence position.",
+      "category": "bio-sar",
+      "members": [
+        {
+          "id": "func:Peptides:Sequence Position Statistics",
+          "kind": "RegisteredFunction",
+          "name": "Sequence Position Statistics",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": [
+            "viewer"
+          ]
+        },
+        {
+          "id": "doc:/help/visualize/viewers/position-statistics-viewer",
+          "kind": "DocPage",
+          "title": "Position Statistics",
+          "url": "/help/visualize/viewers/position-statistics-viewer"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Peptides/src/package.ts",
+          "packages/Peptides/src/peptideUtils.ts",
+          "packages/Peptides/src/viewers/position-statistics-viewer.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Peptides:active-peptide-selection",
+      "name": "Active Peptide Selection",
+      "description": "An interactive selection viewer that lets users pick subsets of peptides for focused SAR exploration based on activity or cluster membership.",
+      "category": "bio-sar",
+      "members": [
+        {
+          "id": "func:Peptides:Active peptide selection",
+          "kind": "RegisteredFunction",
+          "name": "Active peptide selection",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": null,
+          "tags": [
+            "viewer"
+          ]
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Peptides/src/model.ts",
+          "packages/Peptides/src/package.ts",
+          "packages/Peptides/src/utils/constants.ts",
+          "packages/Peptides/src/viewers/cluster-max-activity-viewer.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Peptides:manual-alignment",
+      "name": "Manual Alignment",
+      "description": "A panel widget that allows users to manually align peptide sequences before feeding them into SAR analysis, useful when automatic alignment is insufficient.",
+      "category": "bio-sar",
+      "members": [
+        {
+          "id": "func:Peptides:Manual Alignment",
+          "kind": "RegisteredFunction",
+          "name": "Manual Alignment",
+          "friendly_name": null,
+          "role": "widgets,panel",
+          "description": null,
+          "tags": [
+            "widgets",
+            "panel"
+          ]
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Peptides/src/model.ts",
+          "packages/Peptides/src/package.ts",
+          "packages/Peptides/src/peptideUtils.ts",
+          "packages/Peptides/src/utils/algorithms.ts",
+          "packages/Peptides/src/utils/cell-renderer.ts",
+          "packages/Peptides/src/utils/constants.ts",
+          "packages/Peptides/src/utils/statistics.ts",
+          "packages/Peptides/src/utils/types.ts",
+          "packages/Peptides/src/viewers/cluster-max-activity-viewer.ts",
+          "packages/Peptides/src/viewers/logo-summary.ts",
+          "packages/Peptides/src/viewers/sar-viewer.ts",
+          "packages/Peptides/src/widgets/distribution.ts",
+          "packages/Peptides/src/widgets/manual-alignment.ts",
+          "packages/Peptides/src/widgets/mutation-cliffs.ts",
+          "packages/Peptides/src/widgets/selection.ts",
+          "packages/Peptides/src/widgets/settings.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Peptides:smiles-to-3d",
+      "name": "SMILES to 3D Structure",
+      "description": "A Python script that converts SMILES representations of peptide-related molecules to 3D coordinates, supporting 3D structure visualisation within the platform.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "script:Peptides:smiTo3D",
+          "kind": "Script",
+          "name": "smiTo3D",
+          "language": "python",
+          "description": null
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Peptides:bio-integration",
+      "name": "Bio Package Integration",
+      "description": "Infrastructure that wires Peptides SAR viewers into the Datagrok Bio package ecosystem, enabling the plugin to operate on Bio-registered sequence column types.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:Peptides:Bio Peptides",
+          "kind": "RegisteredFunction",
+          "name": "Bio Peptides",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Bio/readme.md",
+          "kind": "DocPage",
+          "title": "Bio",
+          "url": "/packages/Bio/readme.md"
+        },
+        {
+          "id": "doc:/packages/Bio/claude.md",
+          "kind": "DocPage",
+          "title": "CLAUDE.md",
+          "url": "/packages/Bio/claude.md"
+        },
+        {
+          "id": "doc:/packages/Bio/credits.md",
+          "kind": "DocPage",
+          "title": "Bio — Third-Party Libraries",
+          "url": "/packages/Bio/credits.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

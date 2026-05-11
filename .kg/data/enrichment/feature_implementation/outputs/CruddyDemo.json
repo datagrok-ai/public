@@ -1,0 +1,104 @@
+{
+  "package_id": "pkg:CruddyDemo",
+  "features": [
+    {
+      "id": "feature:CruddyDemo:northwind-demo",
+      "implements": [
+        {
+          "path": "packages/CruddyDemo/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CruddyDemo/src/apps/northwind-app.ts",
+          "role": "demo",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/app.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/cruddy.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/crud.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/entity.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/filters.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/table.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CruddyDemo/src/cruddy-test.ts",
+          "confidence": 0.7
+        }
+      ],
+      "notes": "northwindDemo registered in package.ts wires the Northwind schema/config from apps/northwind-app.ts into the shared CruddyApp framework (cruddy/*). cruddy-test.ts validates the underlying SQL CRUD using a Northwind-style customers table."
+    },
+    {
+      "id": "feature:CruddyDemo:chembl-demo",
+      "implements": [
+        {
+          "path": "packages/CruddyDemo/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CruddyDemo/src/apps/chembl-app.ts",
+          "role": "demo",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/app.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/cruddy.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/crud.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/entity.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/filters.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/CruddyDemo/src/cruddy/table.ts",
+          "role": "core",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [],
+      "notes": "chemblDemo in package.ts launches CruddyApp with the ChEMBL schema/config defined in apps/chembl-app.ts; shares the cruddy/* framework. No ChEMBL-specific tests exist."
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "package": {
+    "id": "pkg:GenomeBrowser",
+    "name": "GenomeBrowser",
+    "friendly_name": "GenomeBrowser",
+    "version": "1.0.1",
+    "category": null,
+    "description": "Provides visualization of genomic data along with its annotations",
+    "extras": {
+      "npm_name": "@datagrok/genome-browser",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:GenomeBrowser:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GenomeBrowser:previewGenomeBrowse",
+      "name": "previewGenomeBrowse",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "json"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:GenomeBrowser:autostartChecker",
+      "name": "autostartChecker",
+      "friendly_name": null,
+      "role": "autostart",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "autostart"
+      },
+      "help_url": null,
+      "language": "js"
+    },
+    {
+      "id": "func:GenomeBrowser:checkGenomeConfig",
+      "name": "checkGenomeConfig",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "bool"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "js"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/GenomeBrowser/credits.md",
+      "title": "GenomeBrowser — Third-Party Libraries",
+      "url": "/packages/GenomeBrowser/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/GenomeBrowser/readme.md",
+      "title": "GenomeBrowser",
+      "url": "/packages/GenomeBrowser/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:GenomeBrowser:1.0.1:0",
+      "version": "1.0.1",
+      "released_at": "2026-01-13",
+      "ticket": null,
+      "text": "Corrected repository information in package.json"
+    },
+    {
+      "id": "clog:GenomeBrowser:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2025-07-25",
+      "ticket": null,
+      "text": "Initial release, visualization of genomic data along with its annotations"
+    }
+  ],
+  "stats": {
+    "functions": 4,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 6,
+    "changelog": 2
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "package_id": "pkg:KetcherSketcher",
+  "features": [
+    {
+      "id": "feature:KetcherSketcher:molecule-sketcher",
+      "implements": [
+        {
+          "path": "packages/KetcherSketcher/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/KetcherSketcher/src/ketcher.tsx",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/KetcherSketcher/src/constants.ts",
+          "role": "support",
+          "confidence": 0.85
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/KetcherSketcher/src/tests/ketcher-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/KetcherSketcher/src/tests/ketcher-utils.ts",
+          "confidence": 0.9
+        }
+      ],
+      "notes": "package.ts registers the Ketcher moleculeSketcher function; ketcher.tsx implements the SketcherBase widget; constants.ts provides molfile version constants; tests exercise SMILES/molfile/SMARTS round-trips."
+    }
+  ]
+}

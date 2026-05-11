@@ -1,0 +1,746 @@
+{
+  "package": {
+    "id": "pkg:DiffStudio",
+    "name": "DiffStudio",
+    "friendly_name": "Diff Studio",
+    "version": "1.5.2",
+    "category": "Compute",
+    "description": "Environment for in-browser modeling with ordinary differential equations.",
+    "extras": {
+      "npm_name": "@datagrok/diff-studio",
+      "fullName": null,
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:DiffStudio:init",
+      "name": "init",
+      "friendly_name": null,
+      "role": "init",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {
+        "role": "init"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:dock",
+      "name": "dock",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:solve",
+      "name": "solve",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:solveEquations",
+      "name": "solveEquations",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "object",
+        "object"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:Diff Studio",
+      "name": "Diff Studio",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": "Solver of ordinary differential equations systems",
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "app",
+        "browsePath": "Compute"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:Diff Studio Demo",
+      "name": "Diff Studio Demo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Interactive solver of ordinary differential equations (ODE)",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:ivpFileHandler",
+      "name": "ivpFileHandler",
+      "friendly_name": null,
+      "role": "fileHandler",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "string"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "fileHandler",
+        "ext": "ipv"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:previewIvp",
+      "name": "previewIvp",
+      "friendly_name": null,
+      "role": "fileViewer",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "file"
+      ],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "role": "fileViewer",
+        "fileViewer": "ivp"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:runDiffStudioTreeBrowser",
+      "name": "runDiffStudioTreeBrowser",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:Ball flight",
+      "name": "Ball flight",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "model"
+      ],
+      "description": "Ball flight simulation",
+      "input_types": [
+        "double",
+        "double",
+        "double",
+        "double"
+      ],
+      "output_types": [
+        "double",
+        "double",
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:serializeEquations",
+      "name": "serializeEquations",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Return serialized initial value problem for ordinary differential equations",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "object"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:odesToCode",
+      "name": "odesToCode",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Perform ODEs serialization to JS-code",
+      "input_types": [
+        "dynamic"
+      ],
+      "output_types": [
+        "string"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:solveODE",
+      "name": "solveODE",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Solve initial value problem for ordinary differential equations",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:PK-PD",
+      "name": "PK-PD",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "model"
+      ],
+      "description": "In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:PK-PD Simulation Demo",
+      "name": "PK-PD Simulation Demo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation",
+      "input_types": [],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:Bioreactor",
+      "name": "Bioreactor",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "model"
+      ],
+      "description": "Controlled fab-arm exchange mechanism simulation",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:Bioreactor Demo",
+      "name": "Bioreactor Demo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "In-browser simulation of controlled fab-arm exchange mechanism",
+      "input_types": [],
+      "output_types": [
+        "dynamic"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:Acid Production",
+      "name": "Acid Production",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "model"
+      ],
+      "description": "Gluconic acid (GA) production by Aspergillus niger modeling",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:Pollution",
+      "name": "Pollution",
+      "friendly_name": null,
+      "role": null,
+      "tags": [
+        "model"
+      ],
+      "description": "The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:runModel",
+      "name": "runModel",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Run model with Diff Studio UI",
+      "input_types": [
+        "string",
+        "int",
+        "int"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:DiffStudio:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/DiffStudio/credits.md",
+      "title": "Diff Studio — Third-Party Libraries",
+      "url": "/packages/DiffStudio/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/DiffStudio/readme.md",
+      "title": "Diff Studio",
+      "url": "/packages/DiffStudio/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/DiffStudio/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/DiffStudio/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/diff-studio",
+      "title": "Diff Studio",
+      "url": "/help/compute/diff-studio",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/compute",
+      "title": "Compute",
+      "url": "/help/compute/compute",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/packages/Compute/credits.md",
+      "title": "Compute — Third-Party Libraries",
+      "url": "/packages/Compute/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Compute/readme.md",
+      "title": "Compute",
+      "url": "/packages/Compute/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/compute/function-analysis",
+      "title": "Model optimization tools",
+      "url": "/help/compute/function-analysis",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/jupyter-notebook",
+      "title": "Jupyter Notebook",
+      "url": "/help/compute/jupyter-notebook",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/models",
+      "title": "Models",
+      "url": "/help/compute/models",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+      "title": "Automate inputs",
+      "url": "/help/compute/scripting/advanced-scripting/automate-inputs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+      "title": "Call via REST",
+      "url": "/help/compute/scripting/advanced-scripting/call-via-rest",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+      "title": "Rich Function View",
+      "url": "/help/compute/scripting/advanced-scripting/rich-function-view",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/getting-started",
+      "title": "Getting started with scripting",
+      "url": "/help/compute/scripting/getting-started",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/complex-input-output",
+      "title": "Complex data types",
+      "url": "/help/compute/scripting/scripting-features/complex-input-output",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "title": "Work with the Datagrok script editor",
+      "url": "/help/compute/scripting/scripting-features/datagrok-script-editor",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+      "title": "Enhance input UI",
+      "url": "/help/compute/scripting/scripting-features/enhance-input-ui",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/scripting-features",
+      "title": "Scripting features",
+      "url": "/help/compute/scripting/scripting-features/scripting-features",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/compute/scripting/scripting-features/visualize-output-data",
+      "title": "Visualize output data",
+      "url": "/help/compute/scripting/scripting-features/visualize-output-data",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/info-pane-reference",
+      "title": "Supported info panes",
+      "url": "/help/datagrok/navigation/info-pane-reference",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/navigation/panels/info-panels",
+      "title": "Info panes",
+      "url": "/help/datagrok/navigation/panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/how-to/ui/add-info-panel",
+      "title": "Add an info panel",
+      "url": "/help/develop/how-to/ui/add-info-panel",
+      "kind": "guide",
+      "audience": "developer"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:DiffStudio:1.5.2:0",
+      "version": "1.5.2",
+      "released_at": "2026-03-14",
+      "ticket": null,
+      "text": "Updated the bioreactor model"
+    },
+    {
+      "id": "clog:DiffStudio:1.5.1:0",
+      "version": "1.5.1",
+      "released_at": "2026-03-14",
+      "ticket": null,
+      "text": "Fixed Model Hub issue"
+    },
+    {
+      "id": "clog:DiffStudio:1.5.0:0",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Implemented new methods:"
+    },
+    {
+      "id": "clog:DiffStudio:1.5.0:1",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Runge-Kutta for non-stiff ODEs:"
+    },
+    {
+      "id": "clog:DiffStudio:1.5.0:2",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Bogacki-Shampine 3(2)"
+    },
+    {
+      "id": "clog:DiffStudio:1.5.0:3",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Runge-Kutta-Fehlberg 4(5)"
+    },
+    {
+      "id": "clog:DiffStudio:1.5.0:4",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Dormand-Prince 5(4)"
+    },
+    {
+      "id": "clog:DiffStudio:1.5.0:5",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "Adams-Bashforth - multistep predictor-correctors of order 4 and 5"
+    },
+    {
+      "id": "clog:DiffStudio:1.5.0:6",
+      "version": "1.5.0",
+      "released_at": "2026-03-13",
+      "ticket": null,
+      "text": "LSODA, CVODE - automatic stiffness detection solvers"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.10:0",
+      "version": "1.4.10",
+      "released_at": "2026-01-14",
+      "ticket": null,
+      "text": "Path update"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.9:0",
+      "version": "1.4.9",
+      "released_at": "2025-10-03",
+      "ticket": null,
+      "text": "Updated compute-utils"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.8:0",
+      "version": "1.4.8",
+      "released_at": "2025-10-03",
+      "ticket": null,
+      "text": "Updated diff grok and utils versions"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.7:0",
+      "version": "1.4.7",
+      "released_at": "2025-10-01",
+      "ticket": null,
+      "text": "Improved the open model menu"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.6:0",
+      "version": "1.4.6",
+      "released_at": "2025-09-29",
+      "ticket": null,
+      "text": "Fixed webpack"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.5:0",
+      "version": "1.4.5",
+      "released_at": "2025-09-29",
+      "ticket": null,
+      "text": "Fixed build"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.4:0",
+      "version": "1.4.4",
+      "released_at": "2025-09-29",
+      "ticket": null,
+      "text": "Fixed dayjs issue"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.3:0",
+      "version": "1.4.3",
+      "released_at": "2025-09-25",
+      "ticket": null,
+      "text": "Fixed"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.3:1",
+      "version": "1.4.3",
+      "released_at": "2025-09-25",
+      "ticket": null,
+      "text": "inconsistency in input captions"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.3:2",
+      "version": "1.4.3",
+      "released_at": "2025-09-25",
+      "ticket": null,
+      "text": "rearranged tabs behavior"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.2:0",
+      "version": "1.4.2",
+      "released_at": "2025-09-22",
+      "ticket": null,
+      "text": "Version update"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.1:0",
+      "version": "1.4.1",
+      "released_at": "2025-09-18",
+      "ticket": null,
+      "text": "Datagrok utils update"
+    },
+    {
+      "id": "clog:DiffStudio:1.4.0:0",
+      "version": "1.4.0",
+      "released_at": "2025-07-28",
+      "ticket": null,
+      "text": "JS-api 1.26.0 release"
+    },
+    {
+      "id": "clog:DiffStudio:1.3.6:0",
+      "version": "1.3.6",
+      "released_at": "2025-05-12",
+      "ticket": null,
+      "text": "Sensitivity analysis in workers"
+    },
+    {
+      "id": "clog:DiffStudio:1.3.5:0",
+      "version": "1.3.5",
+      "released_at": "2025-04-22",
+      "ticket": null,
+      "text": "Updated parameters optimization:"
+    },
+    {
+      "id": "clog:DiffStudio:1.3.5:1",
+      "version": "1.3.5",
+      "released_at": "2025-04-22",
+      "ticket": null,
+      "text": "Improved color scheme"
+    },
+    {
+      "id": "clog:DiffStudio:1.3.5:2",
+      "version": "1.3.5",
+      "released_at": "2025-04-22",
+      "ticket": null,
+      "text": "Fixed target column selection input"
+    },
+    {
+      "id": "clog:DiffStudio:1.3.4:0",
+      "version": "1.3.4",
+      "released_at": "2025-04-14",
+      "ticket": null,
+      "text": "Improved inputs precision when using lookup tables"
+    },
+    {
+      "id": "clog:DiffStudio:1.3.3:0",
+      "version": "1.3.3",
+      "released_at": "2025-04-10",
+      "ticket": null,
+      "text": "Updated the Fitting feature:"
+    },
+    {
+      "id": "clog:DiffStudio:1.3.3:1",
+      "version": "1.3.3",
+      "released_at": "2025-04-10",
+      "ticket": null,
+      "text": "Added progress bar;"
+    },
+    {
+      "id": "clog:DiffStudio:1.3.3:2",
+      "version": "1.3.3",
+      "released_at": "2025-04-10",
+      "ticket": null,
+      "text": "Target columns selection"
+    }
+  ],
+  "stats": {
+    "functions": 21,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 23,
+    "changelog": 114
+  }
+}

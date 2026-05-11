@@ -1,0 +1,173 @@
+{
+  "package_id": "pkg:MetabolicGraph",
+  "features": [
+    {
+      "id": "feature:MetabolicGraph:metabolic-pathway-visualization",
+      "implements": [
+        {
+          "path": "packages/MetabolicGraph/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/MetabolicGraph/src/utils.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/MetabolicGraph/src/maps/E_coli_Core_metabolism_map.json",
+          "role": "config",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MetabolicGraph/src/maps/E_coli_core_cobra.json",
+          "role": "config",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MetabolicGraph/escher_src/src/Builder.tsx",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MetabolicGraph/escher_src/src/renderWrapper.tsx",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/MetabolicGraph/escher_src/src/ts/main.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MetabolicGraph/escher_src/src/ts/escherMap.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/MetabolicGraph/escher_src/src/ts/build.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "metabolicGraphApp in package.ts wires the Escher Builder (escher_src/Builder.tsx + ts/main.ts) over the bundled E. coli map/model and uses utils.ts for save/load/sampling/FBA dialogs."
+    },
+    {
+      "id": "feature:MetabolicGraph:escher-map-file-viewer",
+      "implements": [
+        {
+          "path": "packages/MetabolicGraph/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/MetabolicGraph/src/utils.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/MetabolicGraph/escher_src/src/Builder.tsx",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/MetabolicGraph/escher_src/src/ts/main.ts",
+          "role": "support",
+          "confidence": 0.75
+        }
+      ],
+      "tests": [],
+      "notes": "escherFileViewer + escherFileViewerCheck live in package.ts; both reuse the Escher Builder for rendering and utils.ts dialogs."
+    },
+    {
+      "id": "feature:MetabolicGraph:flux-balance-analysis",
+      "implements": [
+        {
+          "path": "packages/MetabolicGraph/src/utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MetabolicGraph/src/cobra/glpkJS.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MetabolicGraph/src/cobra/glpk-js-fba-worker.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MetabolicGraph/src/cobra/glpk-js-extreme-worker.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MetabolicGraph/src/cobra/index.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MetabolicGraph/src/FBA/cobra-model.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/MetabolicGraph/src/FBA/cobraSolver.ts",
+          "role": "support",
+          "confidence": 0.5
+        },
+        {
+          "path": "packages/MetabolicGraph/src/FBA/index.ts",
+          "role": "support",
+          "confidence": 0.5
+        }
+      ],
+      "tests": [],
+      "notes": "runFBADialog in utils.ts drives WorkerCobraSolver (cobra/index.ts), which dispatches to GLPK web workers backed by cobra/glpkJS.ts; src/FBA is the older deprecated path retained for solveUsingGLPKJvail/extreme-points types."
+    },
+    {
+      "id": "feature:MetabolicGraph:metabolic-flux-sampling",
+      "implements": [
+        {
+          "path": "packages/MetabolicGraph/scripts/OptGpSampling.py",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/MetabolicGraph/src/utils.ts",
+          "role": "core",
+          "confidence": 0.92
+        },
+        {
+          "path": "packages/MetabolicGraph/src/cobra/sampler-wrapper.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MetabolicGraph/src/cobra/sampler-worker.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MetabolicGraph/src/cobra/sampler.js",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/MetabolicGraph/src/cobra/index.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/MetabolicGraph/src/package.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "sampleReactions / runReactionSampling{,Python} in utils.ts open the sampling dialog, call WorkerCobraSolver.runSampling (cobra/index.ts -> sampler-worker.ts -> sampler-wrapper.ts WASM) or the OptGpSampling.py Datagrok script."
+    }
+  ]
+}

@@ -1,0 +1,183 @@
+{
+  "package_id": "pkg:SequenceTranslator",
+  "features": [
+    {
+      "id": "feature:SequenceTranslator:oligo-sequence-translation",
+      "name": "Oligo Sequence Translation",
+      "description": "Translates oligonucleotide sequences between notation formats accepted by different synthesizers, with format validation and a monomer-weight-code mapping for modifications.",
+      "category": "bio-translation",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:SequenceTranslator:Oligo Translator",                     "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:translateOligonucleotideSequence",      "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:getTranslationHelper",                  "weight": 0.85, "role": "core"},
+        {"id": "func:SequenceTranslator:validateSequence",                      "weight": 0.85, "role": "core"},
+        {"id": "func:SequenceTranslator:getCodeToWeightsMap",                   "weight": 0.75, "role": "core"},
+        {"id": "func:SequenceTranslator:demoOligoTranslator",                   "weight": 0.9,  "role": "sample"},
+        {"id": "func:SequenceTranslator:Oligo Toolkit",                         "weight": 0.65, "role": "related"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",        "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/_stash/oligonucleotide-design", "weight": 0.75, "role": "doc"},
+        {"id": "doc:/packages/SequenceTranslator/readme.md",                   "weight": 0.8,  "role": "doc"}
+      ],
+      "evidence_summary": "Oligo Translator app, translateOligonucleotideSequence, getTranslationHelper, validateSequence, and demoOligoTranslator share the 'Oligo Translator' name root, are grouped under the 'Peptides | Oligo Toolkit' browse path, and together implement the full translation pipeline."
+    },
+    {
+      "id": "feature:SequenceTranslator:oligo-modification-pattern",
+      "name": "Oligo Modification Pattern Design",
+      "description": "Provides an interactive designer for specifying and visualising chemical modification patterns on oligonucleotide sequences.",
+      "category": "bio-design",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:SequenceTranslator:Oligo Pattern",                       "weight": 1.0, "role": "core"},
+        {"id": "func:SequenceTranslator:demoOligoPattern",                    "weight": 0.9, "role": "sample"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",      "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "Oligo Pattern app and its demo function share the 'Oligo Pattern' name root under the Oligo Toolkit browse path; the demo description explicitly references 'modification pattern'."
+    },
+    {
+      "id": "feature:SequenceTranslator:oligo-duplex-rendering",
+      "name": "Oligo Duplex Rendering",
+      "description": "Renders siRNA/ASO duplex views in grid cells and property panels, showing modifications, lengths, conjugates, and full sense/antisense molecular structures exportable as SDF.",
+      "category": "bio-rendering",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:SequenceTranslator:oligoNucleotideCellRenderer",                "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:Oligo-Nucleotide",                           "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:Oligo Structures",                           "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:Oligo Structure",                            "weight": 0.9,  "role": "core"},
+        {"id": "func:SequenceTranslator:convertHelmToOligoNucleotide",               "weight": 0.85, "role": "core"},
+        {"id": "func:SequenceTranslator:combineSenseAntisenseToOligoNucleotide",     "weight": 0.85, "role": "core"},
+        {"id": "func:SequenceTranslator:harmonizedSequenceNotationProviderConstructor", "weight": 0.7, "role": "core"},
+        {"id": "func:SequenceTranslator:applyNotationProviderForHarmonizedSequence", "weight": 0.7,  "role": "core"},
+        {"id": "func:SequenceTranslator:refineNotationProviderForHarmonizedSequence","weight": 0.65, "role": "core"},
+        {"id": "func:SequenceTranslator:demoOligoStructure",                         "weight": 0.85, "role": "sample"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/oligo-toolkit",             "weight": 0.7,  "role": "doc"},
+        {"id": "clog:SequenceTranslator:1.6.2:1",                                    "weight": 0.65, "role": "related"}
+      ],
+      "evidence_summary": "oligoNucleotideCellRenderer, Oligo-Nucleotide widget, Oligo Structures widget, and the HELM-to-OligoNucleotide helpers all implement the duplex rendering pipeline; notation provider functions supply the semantic tagging that drives the renderer."
+    },
+    {
+      "id": "feature:SequenceTranslator:polytool-notation-to-molfile",
+      "name": "PolyTool Notation to Molfile Conversion",
+      "description": "Converts sequences expressed in custom monomer notations to molfile (SDF) chemical structures, with a rule manager for defining synthesis transformations on modified and synthetic monomers.",
+      "category": "bio-cheminformatics",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:SequenceTranslator:polyToolConvert",                 "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:getPolyToolConvertEditor",        "weight": 0.9,  "role": "core"},
+        {"id": "func:SequenceTranslator:polyToolConvert2",                "weight": 0.95, "role": "core"},
+        {"id": "func:SequenceTranslator:createMonomerLibraryForPolyTool", "weight": 0.8,  "role": "core"},
+        {"id": "func:SequenceTranslator:polyToolColumnChoice",            "weight": 0.65, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/polytool",       "weight": 0.95, "role": "doc"},
+        {"id": "clog:SequenceTranslator:1.10.14:2",  "weight": 0.9,  "role": "related"},
+        {"id": "clog:SequenceTranslator:1.10.5:0",   "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.10.3:0",   "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.10.2:1",   "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.10.2:2",   "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.9.5:0",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.9.4:0",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.8.0:1",    "weight": 0.8,  "role": "related"},
+        {"id": "clog:SequenceTranslator:1.8.0:2",    "weight": 0.75, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.6.5:0",    "weight": 0.8,  "role": "related"},
+        {"id": "clog:SequenceTranslator:1.6.5:1",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.6.5:2",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.6.4:0",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.6.3:0",    "weight": 0.65, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.6.2:0",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.6.1:0",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.6.1:1",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.6.0:0",    "weight": 0.9,  "role": "related"},
+        {"id": "clog:SequenceTranslator:1.5.3:0",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.5.2:0",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.5.1:0",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.5.1:1",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.5.0:0",    "weight": 0.9,  "role": "related"}
+      ],
+      "evidence_summary": "polyToolConvert, polyToolConvert2, getPolyToolConvertEditor, and createMonomerLibraryForPolyTool share the 'polyTool' prefix and convert custom notation to molfiles; the majority of the changelog from v1.5.0 onward tracks PolyTool rule management and synthetic-monomer handling."
+    },
+    {
+      "id": "feature:SequenceTranslator:helm-sequence-enumeration",
+      "name": "HELM Sequence Enumeration",
+      "description": "Enumerates HELM sequences by substituting specified positions with selected monomers (including natural amino acids), generating a new table of sequence variants with optional molfile output.",
+      "category": "bio-enumeration",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:SequenceTranslator:HELM Enumerator",                                     "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:polyToolEnumerateHelm",                               "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:Polytool Helm Enumerator dialog",                     "weight": 0.9,  "role": "core"},
+        {"id": "func:SequenceTranslator:Enumerate Single HELM Sequence",                      "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:Enumerate Single HELM Sequence with natural amino acids", "weight": 1.0, "role": "core"},
+        {"id": "doc:/help/datagrok/solutions/domains/bio/polytool",                           "weight": 0.7,  "role": "doc"},
+        {"id": "clog:SequenceTranslator:1.10.14:1",  "weight": 0.9,  "role": "related"},
+        {"id": "clog:SequenceTranslator:1.8.0:0",    "weight": 0.85, "role": "related"},
+        {"id": "clog:SequenceTranslator:1.6.4:1",    "weight": 0.85, "role": "related"}
+      ],
+      "evidence_summary": "HELM Enumerator app, polyToolEnumerateHelm, and the two Enumerate Single HELM Sequence functions all generate variant tables by enumerating HELM positions; grouped under the 'Peptides | PolyTool' browse path."
+    },
+    {
+      "id": "feature:SequenceTranslator:chem-enumeration",
+      "name": "Chem Enumeration",
+      "description": "Enumerates molecules using fragment substitutions at specified positions or via reaction enumeration (Zip or Cartesian product of cores and R-group lists), producing a molecule table.",
+      "category": "chem-enumeration",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:SequenceTranslator:Chem Enumerator",              "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:polyToolEnumerateChem",        "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:chemEnumerateReactions",       "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:Polytool Chem Enumerator dialog", "weight": 0.9, "role": "core"},
+        {"id": "clog:SequenceTranslator:1.10.14:0",                    "weight": 0.9,  "role": "related"}
+      ],
+      "evidence_summary": "Chem Enumerator app, polyToolEnumerateChem, and chemEnumerateReactions enumerate at the chemical (small-molecule) level using fragment/R-group substitution; grouped under the 'Chem | PolyTool' browse path."
+    },
+    {
+      "id": "feature:SequenceTranslator:sequence-combination",
+      "name": "Sequence Combination",
+      "description": "Combines separate sequence sets or dual strands (sense + antisense) into unified tables or linked oligo representations for downstream analysis.",
+      "category": "bio-design",
+      "confidence": 0.78,
+      "members": [
+        {"id": "func:SequenceTranslator:Combine Sequences",               "weight": 1.0,  "role": "core"},
+        {"id": "func:SequenceTranslator:Polytool Oligo Enumerator dialog","weight": 0.7,  "role": "core"},
+        {"id": "func:SequenceTranslator:linkStrands",                     "weight": 0.8,  "role": "core"},
+        {"id": "clog:SequenceTranslator:1.9.1:0",                        "weight": 0.9,  "role": "related"}
+      ],
+      "evidence_summary": "Combine Sequences, linkStrands, and the Oligo Enumerator dialog all combine or link multiple oligonucleotide strands or sequence sets; changelog 1.9.1 explicitly describes the 'Combination of sequence sets dialog'."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:SequenceTranslator:oligo-sequence-translation",    "to": "feature:SequenceTranslator:oligo-modification-pattern", "kind": "sibling"},
+    {"from": "feature:SequenceTranslator:oligo-sequence-translation",    "to": "feature:SequenceTranslator:oligo-duplex-rendering",     "kind": "sibling"},
+    {"from": "feature:SequenceTranslator:oligo-modification-pattern",    "to": "feature:SequenceTranslator:oligo-duplex-rendering",     "kind": "sibling"},
+    {"from": "feature:SequenceTranslator:polytool-notation-to-molfile",  "to": "feature:SequenceTranslator:helm-sequence-enumeration",  "kind": "related"},
+    {"from": "feature:SequenceTranslator:polytool-notation-to-molfile",  "to": "feature:SequenceTranslator:chem-enumeration",           "kind": "related"},
+    {"from": "feature:SequenceTranslator:helm-sequence-enumeration",     "to": "feature:SequenceTranslator:chem-enumeration",           "kind": "sibling"},
+    {"from": "feature:SequenceTranslator:sequence-combination",          "to": "feature:SequenceTranslator:oligo-duplex-rendering",     "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:SequenceTranslator:init",
+    "func:SequenceTranslator:autostart",
+    "func:SequenceTranslator:getSpecifiedAppView",
+    "clog:SequenceTranslator:1.10.2:0",
+    "doc:/packages/SequenceTranslator/claude.md",
+    "doc:/packages/SequenceTranslator/credits.md",
+    "doc:/help/datagrok/solutions/domains/bio/bio",
+    "doc:/help/datagrok/solutions/domains/bio/faq_bio",
+    "doc:/help/datagrok/solutions/domains/bio/peptides-sar",
+    "doc:/packages/Bio/claude.md",
+    "doc:/packages/Bio/credits.md",
+    "doc:/packages/Bio/readme.md",
+    "doc:/packages/Peptides/claude.md",
+    "doc:/packages/Peptides/credits.md",
+    "doc:/packages/Peptides/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/nlp/nlp",
+    "doc:/help/deploy/k8s/install-helm-chart",
+    "doc:/help/develop/help-pages/_stash/single-source-of-truth",
+    "doc:/help/visualize/viewers/sequence-variability-map",
+    "doc:/packages/Chem/claude.md",
+    "doc:/packages/Chem/contrib.md",
+    "doc:/packages/Chem/credits.md",
+    "doc:/packages/Helm/credits.md",
+    "doc:/packages/Helm/readme.md"
+  ]
+}

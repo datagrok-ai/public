@@ -1,0 +1,70 @@
+{
+  "package": {
+    "id": "pkg:EpsViewer",
+    "name": "EpsViewer",
+    "friendly_name": "EPS Viewer",
+    "category": "Data Access",
+    "description": "File viewer for Encapsulated PostScript (EPS) files"
+  },
+  "files": {
+    "src": [
+      "packages/EpsViewer/src/package.ts"
+    ],
+    "tests": [
+      "packages/EpsViewer/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/EpsViewer/CHANGELOG.md",
+      "packages/EpsViewer/CREDITS.md",
+      "packages/EpsViewer/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:EpsViewer:eps-file-preview",
+      "name": "EPS File Preview",
+      "description": "Renders Encapsulated PostScript (EPS) files directly inside Datagrok using a built-in file viewer powered by UDOC.js. Users can open any .eps file from the file browser and see a rendered preview without leaving the…",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:EpsViewer:previewEps",
+          "kind": "RegisteredFunction",
+          "name": "previewEps",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/EpsViewer/readme.md",
+          "kind": "DocPage",
+          "title": "EpsViewer",
+          "url": "/packages/EpsViewer/readme.md"
+        },
+        {
+          "id": "doc:/packages/EpsViewer/credits.md",
+          "kind": "DocPage",
+          "title": "EpsViewer — Third-Party Libraries",
+          "url": "/packages/EpsViewer/credits.md"
+        },
+        {
+          "id": "clog:EpsViewer:1.0.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:EpsViewer:v.next:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/EpsViewer/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

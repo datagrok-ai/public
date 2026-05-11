@@ -1,0 +1,190 @@
+{
+  "package_id": "pkg:Tutorials",
+  "features": [
+    {
+      "id": "feature:Tutorials:tutorial-framework",
+      "name": "Tutorial Framework & Learning App",
+      "description": "The interactive step-by-step tutorial engine and Learn widget that guides users through Datagrok features; also provides the developer API for authoring new tutorials.",
+      "category": "infra",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Tutorials:Tutorials",             "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:tutorialWidget",        "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:tutorialsAutostart",    "weight": 0.9,  "role": "core"},
+        {"id": "func:Tutorials:tutorialsInit",         "weight": 0.9,  "role": "core"},
+        {"id": "doc:/packages/Tutorials/readme.md",                   "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/packages/Tutorials/credits.md",                  "weight": 0.6,  "role": "doc"},
+        {"id": "doc:/help/_internal/tutorials/tutorials",             "weight": 0.95, "role": "doc"},
+        {"id": "doc:/help/develop/how-to/misc/write-tutorials",       "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/_internal/tutorials/platform-navigation",   "weight": 0.7,  "role": "doc"},
+        {"id": "doc:/help/_internal/tutorials/projects",              "weight": 0.65, "role": "doc"},
+        {"id": "doc:/help/_internal/tutorials/miscellaneous",         "weight": 0.6,  "role": "doc"}
+      ],
+      "evidence_summary": "The four lifecycle functions (app, widget, autostart, init) are the tutorial engine itself; the write-tutorials dev guide and internal tutorial docs directly document this framework."
+    },
+    {
+      "id": "feature:Tutorials:demo-app",
+      "name": "Interactive Demo App",
+      "description": "A browseable gallery app that showcases major Datagrok capabilities through live, runnable demos organized in a tree hierarchy.",
+      "category": "infra",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Tutorials:Demo",                 "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:demoAppTreeBrowser",   "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:demoAppWidget",        "weight": 0.95, "role": "core"},
+        {"id": "func:Tutorials:getDemoAppHierarchy",  "weight": 0.9,  "role": "core"},
+        {"id": "doc:/help/_internal/tutorials/chika-mexicana-demo",            "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/_internal/tutorials/selecting-franchise-locations",  "weight": 0.75, "role": "doc"}
+      ],
+      "evidence_summary": "All four functions share the 'Demo'/'demoApp' name root and together implement the Demo app entry point, browser widget, tree browser, and hierarchy API."
+    },
+    {
+      "id": "feature:Tutorials:viewer-demos",
+      "name": "Viewer Demo Gallery",
+      "description": "Individual runnable demos for every built-in Datagrok viewer (scatter plot, histogram, bar/pie/line charts, 3D, network, density, PC plot, tree map, etc.) hosted inside the Demo app.",
+      "category": "viz",
+      "confidence": 0.93,
+      "members": [
+        {"id": "func:Tutorials:scatterPlotDemo",    "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:histogramDemo",      "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:lineChartDemo",      "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:barChartDemo",       "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:pieChartDemo",       "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:trellisPlotDemo",    "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:matrixPlotDemo",     "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:scatterPlot3DDemo",  "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:densityPlotDemo",    "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:pcPlotDemo",         "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:networkDiagramDemo", "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:boxPlotDemo",        "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:treeMapDemo",        "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:statisticsDemo",     "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:correlationPlotDemo","weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:calendarDemo",       "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:gridDemo",           "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:markupDemo",         "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:tileViewerDemo",     "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:formDemo",           "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:pivotTableDemo",     "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:filtersDemo",        "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:tableLinkingDemo",   "weight": 1.0,  "role": "core"}
+      ],
+      "evidence_summary": "All 23 functions share the 'Demo' suffix and each wraps a single Datagrok viewer, forming a cohesive gallery of viewer demonstrations inside the Demo app."
+    },
+    {
+      "id": "feature:Tutorials:eda-tutorials",
+      "name": "EDA & Visualization Tutorials",
+      "description": "Interactive tutorials that teach users data exploration with Datagrok viewers (scatter plot, filters, grid, trellis, dashboards, sticky metadata, embedded viewers).",
+      "category": "viz",
+      "confidence": 0.92,
+      "members": [
+        {"id": "tutorial:Tutorials:ScatterPlotTutorial",     "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:ViewersTutorial",         "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:FiltersTutorial",         "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:GridTutorial",            "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:DashboardTutorial",       "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:EmbeddedViewersTutorial", "weight": 0.9,  "role": "core"},
+        {"id": "tutorial:Tutorials:StickyMetaTutorial",      "weight": 0.85, "role": "core"},
+        {"id": "doc:/help/_internal/tutorials/creating-dashboards", "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tutorials/data-tools",          "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "All tutorials cover interactive data analysis and viewer use, matching the 'dataAnalysisTrack' property; the dashboards and data-tools internal docs directly accompany them."
+    },
+    {
+      "id": "feature:Tutorials:data-transformation-tutorials",
+      "name": "Data Transformation Tutorials",
+      "description": "Tutorials covering calculated columns and data aggregation to teach users how to reshape and enrich datasets within Datagrok.",
+      "category": "data-import",
+      "confidence": 0.9,
+      "members": [
+        {"id": "tutorial:Tutorials:CalculatedColumnsTutorial", "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:AggregationTutorial",       "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/_internal/tutorials/data-manipulation", "weight": 0.85, "role": "doc"}
+      ],
+      "evidence_summary": "Both tutorials align to the 'dataTransformation' track property; the data-manipulation internal guide accompanies them."
+    },
+    {
+      "id": "feature:Tutorials:machine-learning-tutorials",
+      "name": "Machine Learning Tutorials",
+      "description": "Tutorials walking users through multivariate analysis and predictive modeling workflows in Datagrok.",
+      "category": "ml",
+      "confidence": 0.93,
+      "members": [
+        {"id": "tutorial:Tutorials:MultivariateAnalysisTutorial", "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:PredictiveModelingTutorial",   "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/_internal/tutorials/predictive-modeling", "weight": 0.9, "role": "doc"}
+      ],
+      "evidence_summary": "Both tutorials map to the 'machineLearningTrack' property and the predictive-modeling internal guide."
+    },
+    {
+      "id": "feature:Tutorials:data-access-tutorials",
+      "name": "Data Access Tutorials",
+      "description": "Tutorial and demos covering data connectors, file manager, and database browsing to teach users how to connect Datagrok to external data sources.",
+      "category": "data-import",
+      "confidence": 0.9,
+      "members": [
+        {"id": "tutorial:Tutorials:DataConnectorsTutorial",      "weight": 1.0,  "role": "core"},
+        {"id": "func:Tutorials:filesDemo",                       "weight": 0.9,  "role": "core"},
+        {"id": "func:Tutorials:databasesDemo",                   "weight": 0.9,  "role": "core"},
+        {"id": "doc:/help/_internal/tutorials/accessing-databases", "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tutorials/importing-data",      "weight": 0.85, "role": "doc"},
+        {"id": "doc:/help/_internal/tutorials/access-management",   "weight": 0.7,  "role": "doc"}
+      ],
+      "evidence_summary": "DataConnectorsTutorial and the two demo functions all address connecting to external sources, matching the 'dataAccessTrack' property."
+    },
+    {
+      "id": "feature:Tutorials:cheminformatics-tutorials",
+      "name": "Cheminformatics Tutorials",
+      "description": "Tutorials covering key cheminformatics workflows: substructure search, activity cliffs, R-group analysis, similarity/diversity search, and virtual screening.",
+      "category": "chem-search",
+      "confidence": 0.95,
+      "members": [
+        {"id": "tutorial:Tutorials:ActivityCliffsTutorial",            "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:RGroupsAnalysisTutorial",           "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:SimilarityDiversitySearchTutorial", "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:SubstructureSearchFilteringTutorial","weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:VirtualScreeningTutorial",          "weight": 1.0,  "role": "core"}
+      ],
+      "evidence_summary": "All five tutorials address molecule-centric workflows and map to the 'cheminformaticsTrack' property; changelog also references 'Cheminformatics tutorials'."
+    },
+    {
+      "id": "feature:Tutorials:bioinformatics-tutorials",
+      "name": "Bioinformatics Tutorials",
+      "description": "Tutorial covering peptide sequence activity-relationship (SAR) analysis, representing the bioinformatics learning track.",
+      "category": "bio",
+      "confidence": 0.88,
+      "members": [
+        {"id": "tutorial:Tutorials:PeptidesSarTutorial", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "PeptidesSarTutorial maps to the 'bioinformaticsTrack' property; changelog entry 'Added Peptides tutorial' confirms it was added as the bio track entry."
+    },
+    {
+      "id": "feature:Tutorials:scientific-computing-tutorials",
+      "name": "Scientific Computing Tutorials",
+      "description": "Tutorials for scripting, differential equations (Diff Studio), parameter optimization, and sensitivity analysis, covering the scientific computing learning track.",
+      "category": "ml",
+      "confidence": 0.93,
+      "members": [
+        {"id": "tutorial:Tutorials:ScriptingTutorial",             "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:DifferentialEquationsTutorial", "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:FittingTutorial",               "weight": 1.0,  "role": "core"},
+        {"id": "tutorial:Tutorials:SensitivityAnalysisTutorial",   "weight": 1.0,  "role": "core"},
+        {"id": "doc:/help/_internal/tutorials/scripting",  "weight": 0.9, "role": "doc"},
+        {"id": "doc:/help/_internal/tutorials/functions",  "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "All four tutorials map to the 'scientificComputing' property; changelog v1.7.3 explicitly adds 'Differential equations, Sensitivity analysis, Parameters optimization' as scientific computing tutorials."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Tutorials:viewer-demos",                    "to": "feature:Tutorials:demo-app",            "kind": "subfeature"},
+    {"from": "feature:Tutorials:eda-tutorials",                   "to": "feature:Tutorials:tutorial-framework",  "kind": "subfeature"},
+    {"from": "feature:Tutorials:data-transformation-tutorials",   "to": "feature:Tutorials:tutorial-framework",  "kind": "subfeature"},
+    {"from": "feature:Tutorials:machine-learning-tutorials",      "to": "feature:Tutorials:tutorial-framework",  "kind": "subfeature"},
+    {"from": "feature:Tutorials:data-access-tutorials",          "to": "feature:Tutorials:tutorial-framework",  "kind": "subfeature"},
+    {"from": "feature:Tutorials:cheminformatics-tutorials",       "to": "feature:Tutorials:tutorial-framework",  "kind": "subfeature"},
+    {"from": "feature:Tutorials:bioinformatics-tutorials",        "to": "feature:Tutorials:tutorial-framework",  "kind": "subfeature"},
+    {"from": "feature:Tutorials:scientific-computing-tutorials",  "to": "feature:Tutorials:tutorial-framework",  "kind": "subfeature"},
+    {"from": "feature:Tutorials:tutorial-framework",              "to": "feature:Tutorials:demo-app",            "kind": "sibling"}
+  ],
+  "unassigned_member_ids": []
+}

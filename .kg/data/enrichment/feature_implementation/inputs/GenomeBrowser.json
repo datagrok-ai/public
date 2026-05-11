@@ -1,0 +1,122 @@
+{
+  "package": {
+    "id": "pkg:GenomeBrowser",
+    "name": "GenomeBrowser",
+    "friendly_name": "GenomeBrowser",
+    "category": null,
+    "description": "Provides visualization of genomic data along with its annotations"
+  },
+  "files": {
+    "src": [
+      "packages/GenomeBrowser/src/genome-file-browse-viewer-wrapper.tsx",
+      "packages/GenomeBrowser/src/package.ts"
+    ],
+    "tests": [
+      "packages/GenomeBrowser/src/package-test.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/GenomeBrowser/CHANGELOG.md",
+      "packages/GenomeBrowser/CREDITS.md",
+      "packages/GenomeBrowser/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:GenomeBrowser:genomic-data-viewer",
+      "name": "Genomic Data Viewer",
+      "description": "Interactive visualization of genomic data files and their annotations, surfaced as a JSON file viewer and info panel within the Datagrok platform.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:GenomeBrowser:previewGenomeBrowse",
+          "kind": "RegisteredFunction",
+          "name": "previewGenomeBrowse",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:GenomeBrowser:info",
+          "kind": "RegisteredFunction",
+          "name": "info",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/GenomeBrowser/readme.md",
+          "kind": "DocPage",
+          "title": "GenomeBrowser",
+          "url": "/packages/GenomeBrowser/readme.md"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/info-pane-reference",
+          "kind": "DocPage",
+          "title": "Supported info panes",
+          "url": "/help/datagrok/navigation/info-pane-reference"
+        },
+        {
+          "id": "doc:/help/datagrok/navigation/panels/info-panels",
+          "kind": "DocPage",
+          "title": "Info panes",
+          "url": "/help/datagrok/navigation/panels/info-panels"
+        },
+        {
+          "id": "doc:/help/develop/how-to/ui/add-info-panel",
+          "kind": "DocPage",
+          "title": "Add an info panel",
+          "url": "/help/develop/how-to/ui/add-info-panel"
+        },
+        {
+          "id": "clog:GenomeBrowser:1.0.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:GenomeBrowser:1.0.1:0",
+          "kind": "other"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/GenomeBrowser/src/package.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:GenomeBrowser:genome-config-validation",
+      "name": "Genome Config Validation",
+      "description": "Plugin startup check and genome configuration validation that guards activation of visualization features until a valid genome config is confirmed.",
+      "category": "infra",
+      "members": [
+        {
+          "id": "func:GenomeBrowser:autostartChecker",
+          "kind": "RegisteredFunction",
+          "name": "autostartChecker",
+          "friendly_name": null,
+          "role": "autostart",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:GenomeBrowser:checkGenomeConfig",
+          "kind": "RegisteredFunction",
+          "name": "checkGenomeConfig",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [],
+        "tests": []
+      }
+    }
+  ]
+}

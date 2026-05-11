@@ -1,0 +1,17 @@
+{
+  "package_id": "pkg:SignalsLink",
+  "features": [
+    {
+      "id": "feature:SignalsLink:eln-app-browser",
+      "implements": [
+        {
+          "path": "packages/SignalsLink/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        }
+      ],
+      "tests": [],
+      "notes": "Single-file package: package.ts hosts signalsApp (#app) and signalsAppTreeBrowser (#appTreeBrowser); no feature-specific tests in package-test.ts (only generic test runner)."
+    }
+  ]
+}

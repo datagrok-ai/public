@@ -1,0 +1,63 @@
+{
+  "package_id": "pkg:Arrow",
+  "features": [
+    {
+      "id": "feature:Arrow:parquet-io",
+      "name": "Parquet File Import/Export",
+      "description": "Lets users open, read, and save Datagrok DataFrames as Apache Parquet files, with WASM-based columnar encoding/decoding. Registered as a platform file handler for .parquet files and as a file exporter menu entry.",
+      "category": "data-import",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Arrow:fromParquet",       "weight": 1.0, "role": "core"},
+        {"id": "func:Arrow:toParquet",         "weight": 1.0, "role": "core"},
+        {"id": "func:Arrow:parquetFileHandler","weight": 1.0, "role": "core"},
+        {"id": "func:Arrow:saveAsParquet",     "weight": 1.0, "role": "core"},
+        {"id": "func:Arrow:parquetInit",       "weight": 0.8, "role": "core"},
+        {"id": "doc:/packages/Arrow/readme.md","weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "fromParquet/toParquet/parquetFileHandler/saveAsParquet all share the 'parquet' name root, ext='parquet' meta, and changelog history; parquetInit is the autostart WASM loader that backs them."
+    },
+    {
+      "id": "feature:Arrow:feather-io",
+      "name": "Feather File Import/Export",
+      "description": "Lets users open, read, and save Datagrok DataFrames as Feather (Arrow IPC stream) files. Registered as a platform file handler for .feather files and as a file exporter menu entry.",
+      "category": "data-import",
+      "confidence": 0.97,
+      "members": [
+        {"id": "func:Arrow:fromFeather",       "weight": 1.0, "role": "core"},
+        {"id": "func:Arrow:toFeather",         "weight": 1.0, "role": "core"},
+        {"id": "func:Arrow:featherFileHandler","weight": 1.0, "role": "core"},
+        {"id": "func:Arrow:saveAsFeather",     "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "fromFeather/toFeather/featherFileHandler/saveAsFeather share the 'feather' name root and ext='feather' meta, covering the full read-write lifecycle for the Arrow IPC format."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Arrow:parquet-io", "to": "feature:Arrow:feather-io", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "func:Arrow:initPackage",
+    "func:Arrow:info",
+    "doc:/packages/Arrow/credits.md",
+    "doc:/help/datagrok/navigation/info-pane-reference",
+    "doc:/help/datagrok/navigation/panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/develop/how-to/ui/add-info-panel",
+    "clog:Arrow:1.5.0:0",
+    "clog:Arrow:1.4.2:0",
+    "clog:Arrow:1.4.1:0",
+    "clog:Arrow:1.4.1:1",
+    "clog:Arrow:1.4.0:0",
+    "clog:Arrow:1.1.2:0",
+    "clog:Arrow:1.1.1:0",
+    "clog:Arrow:1.1.0:0",
+    "clog:Arrow:1.0.7:0",
+    "clog:Arrow:1.0.6:0",
+    "clog:Arrow:1.0.5:0",
+    "clog:Arrow:1.0.5:1",
+    "clog:Arrow:1.0.4:0",
+    "clog:Arrow:1.0.2:0",
+    "clog:Arrow:1.0.2:1",
+    "clog:Arrow:1.0.2:2"
+  ]
+}

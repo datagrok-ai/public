@@ -1,0 +1,101 @@
+{
+  "package": {
+    "id": "pkg:Alation",
+    "name": "Alation",
+    "friendly_name": "Alation",
+    "category": "Data Access",
+    "description": "Integration with the Alation data catalog."
+  },
+  "files": {
+    "src": [
+      "packages/Alation/src/alation-api.ts",
+      "packages/Alation/src/const.ts",
+      "packages/Alation/src/package.ts",
+      "packages/Alation/src/types.ts",
+      "packages/Alation/src/utils.ts",
+      "packages/Alation/src/view.ts"
+    ],
+    "tests": [
+      "packages/Alation/src/package-test.ts",
+      "packages/Alation/src/tests/core.ts"
+    ],
+    "scripts": [],
+    "queries": [],
+    "docs": [
+      "packages/Alation/CHANGELOG.md",
+      "packages/Alation/CREDITS.md",
+      "packages/Alation/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Alation:catalog-app",
+      "name": "Alation Catalog Browser",
+      "description": "Embedded Datagrok app that connects to a configured Alation data catalog instance, letting users browse catalogued data sources, tables, and queries and bring them into Datagrok workflows.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Alation:Alation",
+          "kind": "RegisteredFunction",
+          "name": "Alation",
+          "friendly_name": null,
+          "role": "app",
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "doc:/packages/Alation/readme.md",
+          "kind": "DocPage",
+          "title": "Alation",
+          "url": "/packages/Alation/readme.md"
+        },
+        {
+          "id": "doc:/packages/Alation/credits.md",
+          "kind": "DocPage",
+          "title": "Alation — Third-Party Libraries",
+          "url": "/packages/Alation/credits.md"
+        },
+        {
+          "id": "clog:Alation:1.1.5:1",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Alation:1.1.5:2",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Alation:1.1.5:3",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Alation:1.1.5:0",
+          "kind": "other"
+        },
+        {
+          "id": "clog:Alation:1.3.0:0",
+          "kind": "other"
+        },
+        {
+          "id": "doc:/help/access/access",
+          "kind": "DocPage",
+          "title": "Access",
+          "url": "/help/access/access"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Alation/src/alation-api.ts",
+          "packages/Alation/src/const.ts",
+          "packages/Alation/src/package.ts",
+          "packages/Alation/src/types.ts",
+          "packages/Alation/src/utils.ts",
+          "packages/Alation/src/view.ts"
+        ],
+        "tests": [
+          "packages/Alation/src/tests/core.ts"
+        ]
+      }
+    }
+  ]
+}

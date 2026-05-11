@@ -1,0 +1,34 @@
+{
+  "package_id": "pkg:Prism",
+  "features": [
+    {
+      "id": "feature:Prism:file-import",
+      "name": "Prism File Import",
+      "description": "Registers a file handler for .prism (GraphPad Prism) files, allowing users to open and import them directly into the Datagrok platform.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:Prism:importPrism", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Prism/readme.md", "weight": 0.8, "role": "doc"}
+      ],
+      "evidence_summary": "importPrism carries role=fileHandler and ext=prism, directly implementing .prism file opening; the readme documents overall package usage."
+    },
+    {
+      "id": "feature:Prism:file-preview",
+      "name": "Prism File Preview",
+      "description": "Provides an in-place file viewer for .prism files, rendering a preview view when browsing or selecting Prism files without a full import.",
+      "category": "data-import",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Prism:previewPrism", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "previewPrism carries role=fileViewer and fileViewer=prism, purpose distinct from the importer — it surfaces a view for in-browser file inspection."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Prism:file-import", "to": "feature:Prism:file-preview", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/Prism/credits.md"
+  ]
+}

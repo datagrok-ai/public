@@ -1,0 +1,161 @@
+{
+  "package_id": "pkg:PowerGrid",
+  "features": [
+    {
+      "id": "feature:PowerGrid:sparklines",
+      "name": "Sparklines and Mini-Charts in Grid Cells",
+      "description": "Renders compact multi-column charts (sparklines, bar, pie, radar, scatter) directly inside grid cells, letting users compare row-level distributions at a glance. The summarizeColumns action creates a summary column automatically from a selection.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:PowerGrid:Sparklines",       "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:Bar Chart",         "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:Pie Chart",         "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:Radar",             "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:Scatter Plot",      "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:summarizeColumns",  "weight": 0.95, "role": "core"},
+        {"id": "clog:PowerGrid:1.8.0:3",           "weight": 0.8,  "role": "related"},
+        {"id": "clog:PowerGrid:1.8.0:4",           "weight": 0.8,  "role": "related"},
+        {"id": "clog:PowerGrid:1.8.0:5",           "weight": 0.75, "role": "related"},
+        {"id": "clog:PowerGrid:1.8.0:13",          "weight": 0.75, "role": "related"},
+        {"id": "clog:PowerGrid:1.7.5:0",           "weight": 0.8,  "role": "related"},
+        {"id": "doc:/packages/PowerGrid/readme.md","weight": 0.65, "role": "doc"}
+      ],
+      "evidence_summary": "All five cellRenderer functions are named after multi-series chart types; summarizeColumns is explicitly described as 'adds a sparkline column'; changelog groups radar, Tags-in-summary, and summary-column lifecycle fixes under a 'Sparklines' section header."
+    },
+    {
+      "id": "feature:PowerGrid:image-renderers",
+      "name": "Image Cell Renderers",
+      "description": "Renders image content directly inside grid cells from binary data, URL strings, SVG markup, or raw PNG bytes; also provides a context-panel widget that previews image column content for the current row.",
+      "category": "viz",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:PowerGrid:binaryImageCellRenderer",       "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:imageUrlCellRenderer",          "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:svgCellRenderer",               "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:rawPng",                        "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:Content",                       "weight": 0.8,  "role": "core"},
+        {"id": "clog:PowerGrid:1.7.15:0",                     "weight": 0.85, "role": "related"},
+        {"id": "doc:/help/develop/help-pages/_stash/content-types", "weight": 0.5,  "role": "doc"}
+      ],
+      "evidence_summary": "Four cellRenderer functions embed 'image', 'binary', 'svg', or 'png' in their names; Content widget is described as 'Image content'; changelog entry 'Raw PNG Renderer' in 1.7.15 explicitly names this renderer type."
+    },
+    {
+      "id": "feature:PowerGrid:forms-viewer",
+      "name": "Forms Viewer and Smart Form",
+      "description": "Displays each grid row as a rich configurable form (the standalone Forms viewer), and allows embedding a smart-form cell renderer inline in the grid itself; supports sorting, substructure highlighting, and styling synchronized with the grid.",
+      "category": "viz",
+      "confidence": 0.96,
+      "members": [
+        {"id": "func:PowerGrid:Forms",            "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:Smart Form",       "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:addFormColumn",    "weight": 0.95, "role": "core"},
+        {"id": "doc:/help/visualize/viewers/forms",      "weight": 0.95, "role": "doc"},
+        {"id": "doc:/help/visualize/viewers/form",       "weight": 0.9,  "role": "doc"},
+        {"id": "doc:/help/visualize/add-custom-form",    "weight": 0.8,  "role": "doc"},
+        {"id": "clog:PowerGrid:1.8.0:7",          "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.8.0:12",         "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.8.0:14",         "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.7.20:0",         "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.7.18:0",         "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.7.18:1",         "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.7.18:2",         "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.7.10:0",         "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.7.9:0",          "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.7.5:1",          "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.7.2:0",          "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.7.2:1",          "weight": 0.85, "role": "related"}
+      ],
+      "evidence_summary": "Forms viewer (role:viewer) and Smart Form (role:cellRenderer) are the two entry-points for the same capability; addFormColumn creates a form-type summary column; three dedicated help docs and the heaviest changelog volume in the plugin (12+ entries labelled 'Forms viewer' or 'Smartform') confirm the cluster."
+    },
+    {
+      "id": "feature:PowerGrid:data-display-cell-renderers",
+      "name": "Data Display Cell Renderers",
+      "description": "A collection of specialized cell renderers that visualize non-chart data types in the grid: color swatches, star ratings, multi-choice badges, tag chips, confidence intervals, inline progress bars, and hyperlinks.",
+      "category": "viz",
+      "confidence": 0.87,
+      "members": [
+        {"id": "func:PowerGrid:Color",               "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:Stars",               "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:Multi Choice",        "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:Tags",                "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:Confidence Interval", "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:barCellRenderer",     "weight": 0.9,  "role": "core"},
+        {"id": "func:PowerGrid:hyperlinkCellRenderer","weight": 0.9,  "role": "core"},
+        {"id": "clog:PowerGrid:1.8.0:1",             "weight": 0.85, "role": "related"},
+        {"id": "clog:PowerGrid:1.8.0:2",             "weight": 0.85, "role": "related"},
+        {"id": "doc:/help/govern/catalog/tags",      "weight": 0.6,  "role": "doc"},
+        {"id": "doc:/help/_internal/tests/color-coding-test",   "weight": 0.5, "role": "test"},
+        {"id": "doc:/help/_internal/tests/tags-favorites-test", "weight": 0.5, "role": "test"},
+        {"id": "doc:/help/develop/how-to/grid/customize-grid",  "weight": 0.6, "role": "doc"}
+      ],
+      "evidence_summary": "All seven functions are cellRenderers representing distinct non-chart data-type visualizations; changelog section 'Cell Renderers' in 1.8.0 explicitly introduces Stars and Confidence Interval as a named group."
+    },
+    {
+      "id": "feature:PowerGrid:pinned-columns",
+      "name": "Pinned Columns",
+      "description": "Allowed freezing specific columns to the left side of the grid so they remain visible during horizontal scrolling; removed in v1.8.0 because column freezing became a native platform capability.",
+      "category": "viz",
+      "confidence": 0.75,
+      "members": [
+        {"id": "func:PowerGrid:addPinnedColumn", "weight": 1.0,  "role": "core"},
+        {"id": "clog:PowerGrid:1.8.0:8",         "weight": 0.9,  "role": "related"},
+        {"id": "clog:PowerGrid:1.7.4:0",         "weight": 0.9,  "role": "related"},
+        {"id": "clog:PowerGrid:1.7.3:0",         "weight": 0.9,  "role": "related"}
+      ],
+      "evidence_summary": "addPinnedColumn is the sole entry-point; three changelog entries cover pinned-column restoration, fixes, and the 1.8.0 removal notice referencing GROK-1255."
+    },
+    {
+      "id": "feature:PowerGrid:webgpu-rendering",
+      "name": "WebGPU-Accelerated Grid Rendering",
+      "description": "Provides GPU-accelerated rendering of grid cell content via the WebGPU API, with availability detection and render-validity checks enabling graceful fallback on unsupported hardware.",
+      "category": "infra",
+      "confidence": 0.82,
+      "members": [
+        {"id": "func:PowerGrid:_scWebGPURender",       "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:_scWebGPUPointHitTest", "weight": 0.9,  "role": "core"},
+        {"id": "func:PowerGrid:isWebGPUAvailable",     "weight": 1.0,  "role": "core"},
+        {"id": "func:PowerGrid:isWebGPURenderValid",   "weight": 0.9,  "role": "core"},
+        {"id": "clog:PowerGrid:1.8.0:11",              "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "All four functions share the '_scWebGPU' / 'isWebGPU' naming prefix and relate to WebGPU detection and scene-level rendering; changelog entry 'Updated WebGPU cache invalidation logic' in 1.8.0 confirms active development."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:PowerGrid:sparklines",               "to": "feature:PowerGrid:data-display-cell-renderers", "kind": "sibling"},
+    {"from": "feature:PowerGrid:image-renderers",          "to": "feature:PowerGrid:data-display-cell-renderers", "kind": "sibling"},
+    {"from": "feature:PowerGrid:forms-viewer",             "to": "feature:PowerGrid:data-display-cell-renderers", "kind": "sibling"},
+    {"from": "feature:PowerGrid:webgpu-rendering",         "to": "feature:PowerGrid:sparklines",                  "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "func:PowerGrid:_autoPowerGrid",
+    "func:PowerGrid:htestCellRenderer",
+    "func:PowerGrid:testUnitsKgCellRenderer",
+    "func:PowerGrid:testUnitsTonCellRenderer",
+    "func:PowerGrid:demoTestUnitsCellRenderer",
+    "func:PowerGrid:demoCellTypes",
+    "func:PowerGrid:<anonymous>",
+    "doc:/packages/PowerGrid/credits.md",
+    "doc:/packages/PowerGrid/claude.md",
+    "doc:/help/visualize/viewers/3d-scatter-plot",
+    "doc:/help/datagrok/_deprecated/smart-search",
+    "doc:/help/datagrok/navigation/basic-tasks/_smart-bar",
+    "doc:/help/develop/how-to/files/folder-content-preview",
+    "doc:/help/visualize/viewers/bar-chart",
+    "doc:/help/visualize/viewers/box-plot",
+    "doc:/help/visualize/viewers/correlation-plot",
+    "doc:/help/visualize/viewers/density-plot",
+    "doc:/help/visualize/viewers/grid",
+    "doc:/help/visualize/viewers/line-chart",
+    "doc:/help/visualize/viewers/matrix-plot",
+    "doc:/help/visualize/viewers/multi-curve-viewer",
+    "doc:/help/visualize/viewers/pc-plot",
+    "doc:/help/visualize/viewers/pie-chart",
+    "clog:PowerGrid:1.8.0:0",
+    "clog:PowerGrid:1.8.0:6",
+    "clog:PowerGrid:1.8.0:9",
+    "clog:PowerGrid:1.8.0:10",
+    "clog:PowerGrid:1.8.0:15",
+    "clog:PowerGrid:1.6.2:0"
+  ]
+}

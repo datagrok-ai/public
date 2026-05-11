@@ -1,0 +1,29 @@
+{
+  "package_id": "pkg:Media",
+  "features": [
+    {
+      "id": "feature:Media:audio-viewer",
+      "implements": [
+        {
+          "path": "packages/Media/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "audioViewer function and shared mediaView() helper live entirely in package.ts; package-test.ts exports an empty tests object so there is no real test for this feature."
+    },
+    {
+      "id": "feature:Media:video-viewer",
+      "implements": [
+        {
+          "path": "packages/Media/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        }
+      ],
+      "tests": [],
+      "notes": "videoViewer function and shared mediaView() helper live entirely in package.ts; package-test.ts exports an empty tests object so there is no real test for this feature."
+    }
+  ]
+}

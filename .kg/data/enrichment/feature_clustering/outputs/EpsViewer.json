@@ -1,0 +1,22 @@
+{
+  "package_id": "pkg:EpsViewer",
+  "features": [
+    {
+      "id": "feature:EpsViewer:eps-file-preview",
+      "name": "EPS File Preview",
+      "description": "Renders Encapsulated PostScript (EPS) files directly inside Datagrok using a built-in file viewer powered by UDOC.js. Users can open any .eps file from the file browser and see a rendered preview without leaving the platform.",
+      "category": "viz",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:EpsViewer:previewEps",             "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/EpsViewer/readme.md",     "weight": 0.8, "role": "doc"},
+        {"id": "doc:/packages/EpsViewer/credits.md",    "weight": 0.6, "role": "doc"},
+        {"id": "clog:EpsViewer:1.0.0:0",                "weight": 0.7, "role": "related"},
+        {"id": "clog:EpsViewer:v.next:0",               "weight": 0.3, "role": "related"}
+      ],
+      "evidence_summary": "The sole registered function (fileViewer role, extension 'eps'), the readme, the UDOC.js credits, and the initial-release changelog entry all directly describe the same single capability: in-platform EPS rendering."
+    }
+  ],
+  "feature_relations": [],
+  "unassigned_member_ids": []
+}

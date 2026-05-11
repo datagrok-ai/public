@@ -1,0 +1,332 @@
+{
+  "package": {
+    "id": "pkg:Dendrogram",
+    "name": "Dendrogram",
+    "friendly_name": "Dendrogram",
+    "category": "Visualizations",
+    "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)"
+  },
+  "files": {
+    "src": [
+      "packages/Dendrogram/src/apps/dendrogram-app.ts",
+      "packages/Dendrogram/src/apps/hierarchical-clustering-app.ts",
+      "packages/Dendrogram/src/apps/hierarchical-clustering-sequences-app.ts",
+      "packages/Dendrogram/src/apps/tree-for-grid-app.ts",
+      "packages/Dendrogram/src/apps/tree-for-grid-cut-app.ts",
+      "packages/Dendrogram/src/apps/tree-for-grid-filter-app.ts",
+      "packages/Dendrogram/src/css/injected-dendrogram.css",
+      "packages/Dendrogram/src/demos/heatmapDemo.ts",
+      "packages/Dendrogram/src/package-types.ts",
+      "packages/Dendrogram/src/package.ts",
+      "packages/Dendrogram/src/utils/dendrogram-service.ts",
+      "packages/Dendrogram/src/utils/hierarchical-clustering.ts",
+      "packages/Dendrogram/src/utils/index.ts",
+      "packages/Dendrogram/src/utils/tree-helper.ts",
+      "packages/Dendrogram/src/viewers/dendrogram.ts",
+      "packages/Dendrogram/src/viewers/inject-tree-for-grid2.ts",
+      "packages/Dendrogram/src/viewers/tree-renderers/canvas-tree-renderer.ts",
+      "packages/Dendrogram/src/viewers/tree-renderers/dendrogram-tree-styler.ts",
+      "packages/Dendrogram/src/viewers/tree-renderers/grid-tree-placer.ts",
+      "packages/Dendrogram/src/viewers/tree-renderers/grid-tree-renderer-base.ts",
+      "packages/Dendrogram/src/viewers/tree-renderers/grid-tree-renderer.ts",
+      "packages/Dendrogram/src/viewers/tree-renderers/markup.ts",
+      "packages/Dendrogram/src/viewers/tree-renderers/rectangle-tree-placer.ts",
+      "packages/Dendrogram/src/viewers/tree-renderers/tree-renderer-base.ts"
+    ],
+    "tests": [
+      "packages/Dendrogram/src/package-test.ts",
+      "packages/Dendrogram/src/tests/calc-matrix-tests.ts",
+      "packages/Dendrogram/src/tests/cluster-matrix-tests.ts",
+      "packages/Dendrogram/src/tests/distance-matrix-tests.ts",
+      "packages/Dendrogram/src/tests/grid-with-tree-tests.ts",
+      "packages/Dendrogram/src/tests/hierarchical-clustering-tests.ts",
+      "packages/Dendrogram/src/tests/tree-cut-tests.ts",
+      "packages/Dendrogram/src/tests/tree-for-grid-tests.ts",
+      "packages/Dendrogram/src/tests/tree-helper-tests.ts",
+      "packages/Dendrogram/src/tests/utils/array-utils.ts",
+      "packages/Dendrogram/src/tests/utils/index.ts",
+      "packages/Dendrogram/src/tests/viewers.ts"
+    ],
+    "scripts": [
+      "packages/Dendrogram/scripts/distance.py",
+      "packages/Dendrogram/scripts/hierarchicalClustering.py",
+      "packages/Dendrogram/scripts/hierarchicalClusteringByDistance.py"
+    ],
+    "queries": [],
+    "docs": [
+      "packages/Dendrogram/CHANGELOG.md",
+      "packages/Dendrogram/CREDITS.md",
+      "packages/Dendrogram/README.md"
+    ],
+    "config": []
+  },
+  "features": [
+    {
+      "id": "feature:Dendrogram:dendrogram-viewer",
+      "name": "Dendrogram Viewer",
+      "description": "An interactive tree viewer for hierarchical data, supporting zoom, pan, node selection, and row-highlight synced with the grid.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Dendrogram:Dendrogram",
+          "kind": "RegisteredFunction",
+          "name": "Dendrogram",
+          "friendly_name": null,
+          "role": "viewer",
+          "description": "Dendrogram tree visualization",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:getDendrogramService",
+          "kind": "RegisteredFunction",
+          "name": "getDendrogramService",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:getTreeHelper",
+          "kind": "RegisteredFunction",
+          "name": "getTreeHelper",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:dendrogramApp",
+          "kind": "RegisteredFunction",
+          "name": "dendrogramApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for Dendrogram",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:dendrogramLargeApp",
+          "kind": "RegisteredFunction",
+          "name": "dendrogramLargeApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for Dendrogram Large",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:heatMapDemo",
+          "kind": "RegisteredFunction",
+          "name": "heatMapDemo",
+          "friendly_name": null,
+          "role": null,
+          "description": "Heatmap is a spreadsheet (grid) that contains colors instead of numbers and strings. For numerical data, the higher values are colored red, and the lower ones…",
+          "tags": []
+        },
+        {
+          "id": "doc:/help/visualize/viewers/dendrogram",
+          "kind": "DocPage",
+          "title": "Dendrogram",
+          "url": "/help/visualize/viewers/dendrogram"
+        },
+        {
+          "id": "doc:/packages/Dendrogram/readme.md",
+          "kind": "DocPage",
+          "title": "Dendrogram",
+          "url": "/packages/Dendrogram/readme.md"
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Dendrogram/src/apps/dendrogram-app.ts",
+          "packages/Dendrogram/src/package.ts",
+          "packages/Dendrogram/src/utils/dendrogram-service.ts",
+          "packages/Dendrogram/src/utils/tree-helper.ts",
+          "packages/Dendrogram/src/viewers/inject-tree-for-grid2.ts"
+        ],
+        "tests": [
+          "packages/Dendrogram/src/tests/viewers.ts"
+        ]
+      }
+    },
+    {
+      "id": "feature:Dendrogram:hierarchical-clustering",
+      "name": "Hierarchical Clustering",
+      "description": "Computes hierarchical clustering on tabular data (numeric features, sequences, or molecules) via Python scripts and injects the resulting Newick tree into the grid.",
+      "category": "ml",
+      "members": [
+        {
+          "id": "func:Dendrogram:Hierarchical Clustering",
+          "kind": "RegisteredFunction",
+          "name": "Hierarchical Clustering",
+          "friendly_name": null,
+          "role": null,
+          "description": "Calculates hierarchical clustering on features and injects tree to grid",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:Hierarchical Clustering (Sequences)",
+          "kind": "RegisteredFunction",
+          "name": "Hierarchical Clustering (Sequences)",
+          "friendly_name": null,
+          "role": null,
+          "description": "Calculates hierarchical clustering on features and injects tree to grid",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:Hierarchical Clustering (Molecules)",
+          "kind": "RegisteredFunction",
+          "name": "Hierarchical Clustering (Molecules)",
+          "friendly_name": null,
+          "role": null,
+          "description": "Calculates hierarchical clustering on features and injects tree to grid",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:Hierarchical Clustering (All)",
+          "kind": "RegisteredFunction",
+          "name": "Hierarchical Clustering (All)",
+          "friendly_name": null,
+          "role": null,
+          "description": "Calculates hierarchical clustering on features and injects tree to grid",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:generateTreeDialog",
+          "kind": "RegisteredFunction",
+          "name": "generateTreeDialog",
+          "friendly_name": null,
+          "role": null,
+          "description": null,
+          "tags": []
+        },
+        {
+          "id": "script:Dendrogram:hierarchicalClusteringScript",
+          "kind": "Script",
+          "name": "hierarchicalClusteringScript",
+          "language": "python",
+          "description": "Returns the newick representation of the tree for given dataset"
+        },
+        {
+          "id": "script:Dendrogram:hierarchicalClusteringByDistanceScript",
+          "kind": "Script",
+          "name": "hierarchicalClusteringByDistanceScript",
+          "language": "python",
+          "description": "Returns the newick representation of the tree for given distance matrix"
+        },
+        {
+          "id": "script:Dendrogram:distanceScript",
+          "kind": "Script",
+          "name": "distanceScript",
+          "language": "python",
+          "description": "Returns distance matrix condensed"
+        },
+        {
+          "id": "func:Dendrogram:hierarchicalClusteringApp",
+          "kind": "RegisteredFunction",
+          "name": "hierarchicalClusteringApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for hierarchical clustering (inject tree to grid)",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:hierarchicalClusteringSequencesApp",
+          "kind": "RegisteredFunction",
+          "name": "hierarchicalClusteringSequencesApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for hierarchical clustering (inject tree to grid)",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Dendrogram/src/apps/hierarchical-clustering-app.ts",
+          "packages/Dendrogram/src/apps/hierarchical-clustering-sequences-app.ts",
+          "packages/Dendrogram/src/package.ts",
+          "packages/Dendrogram/src/utils/hierarchical-clustering.ts",
+          "packages/Dendrogram/src/utils/tree-helper.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Dendrogram:tree-in-grid",
+      "name": "Tree-in-Grid Rendering",
+      "description": "Renders a dendrogram as a resizable neighbor panel alongside the data grid, with an interactive cut-off slider that assigns rows to clusters.",
+      "category": "viz",
+      "members": [
+        {
+          "id": "func:Dendrogram:treeForGridApp",
+          "kind": "RegisteredFunction",
+          "name": "treeForGridApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for TreeForGrid (custom renderer)",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:treeForGridFilterApp",
+          "kind": "RegisteredFunction",
+          "name": "treeForGridFilterApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for TreeForGridFilter (custom renderer)",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:treeForGridCutApp",
+          "kind": "RegisteredFunction",
+          "name": "treeForGridCutApp",
+          "friendly_name": null,
+          "role": null,
+          "description": "Test/demo app for TreeForGridCutApp (custom renderer, cutting slider)",
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Dendrogram/src/apps/tree-for-grid-app.ts",
+          "packages/Dendrogram/src/apps/tree-for-grid-cut-app.ts",
+          "packages/Dendrogram/src/apps/tree-for-grid-filter-app.ts",
+          "packages/Dendrogram/src/package.ts",
+          "packages/Dendrogram/src/utils/tree-helper.ts",
+          "packages/Dendrogram/src/viewers/inject-tree-for-grid2.ts",
+          "packages/Dendrogram/src/viewers/tree-renderers/markup.ts"
+        ],
+        "tests": []
+      }
+    },
+    {
+      "id": "feature:Dendrogram:newick-file-support",
+      "name": "Newick File Import and Preview",
+      "description": "Registers file handlers for .nwk/.newick files, enabling import into Datagrok and inline preview of Newick-format phylogenetic trees.",
+      "category": "data-import",
+      "members": [
+        {
+          "id": "func:Dendrogram:importNwk",
+          "kind": "RegisteredFunction",
+          "name": "importNwk",
+          "friendly_name": null,
+          "role": "fileHandler",
+          "description": "Opens Newick file",
+          "tags": []
+        },
+        {
+          "id": "func:Dendrogram:previewNewick",
+          "kind": "RegisteredFunction",
+          "name": "previewNewick",
+          "friendly_name": null,
+          "role": "fileViewer",
+          "description": null,
+          "tags": []
+        }
+      ],
+      "ast_baseline": {
+        "implements": [
+          "packages/Dendrogram/src/package.ts"
+        ],
+        "tests": []
+      }
+    }
+  ]
+}

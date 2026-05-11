@@ -1,0 +1,215 @@
+{
+  "package_id": "pkg:MolTrack",
+  "features": [
+    {
+      "id": "feature:MolTrack:application-shell",
+      "implements": [
+        {
+          "path": "packages/MolTrack/src/package.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/MolTrack/src/utils/view-utils.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MolTrack/src/widgets/moltrack-property-panel.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MolTrack/src/utils/detectors.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/MolTrack/src/views/search.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/MolTrack/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.8
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts registers app/appTreeBrowser/panel; view-utils builds the statistics + quick-actions widgets; property-panel implements 'Databases | MolTrack'; search.ts contributes the search nodes wired into the app tree."
+    },
+    {
+      "id": "feature:MolTrack:compound-registration",
+      "implements": [
+        {
+          "path": "packages/MolTrack/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MolTrack/src/services/moltrack-docker-service.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MolTrack/src/views/registration-view-base.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MolTrack/src/views/registration-entity-base.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MolTrack/src/views/registration-tab.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MolTrack/src/views/registration-assay-tab.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MolTrack/src/components/mapping_editor.ts",
+          "role": "core",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/MolTrack/src/utils/registration-utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/MolTrack/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/MolTrack/src/utils/types.ts",
+          "role": "support",
+          "confidence": 0.65
+        }
+      ],
+      "tests": [],
+      "notes": "package.ts wraps registerMolTrackProperties/registerAssays/registerBulk; the registration-* views and mapping_editor implement the UI; registration-utils + fetch-utils drive bulk seeding."
+    },
+    {
+      "id": "feature:MolTrack:compound-search",
+      "implements": [
+        {
+          "path": "packages/MolTrack/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MolTrack/src/services/moltrack-docker-service.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MolTrack/src/views/search.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MolTrack/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/MolTrack/src/utils/layout.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/MolTrack/src/utils/types.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/MolTrack/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "search.ts implements the QueryBuilder UI and saved-search store; docker-service.search/getCompoundByCorporateId/getBatchByCorporateId/retrieveEntity power lookups; utils.ts hosts flattened/getBatchInfoBySynonym helpers."
+    },
+    {
+      "id": "feature:MolTrack:schema-management",
+      "implements": [
+        {
+          "path": "packages/MolTrack/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MolTrack/src/services/moltrack-docker-service.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MolTrack/src/views/schema-view.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MolTrack/src/utils/utils.ts",
+          "role": "support",
+          "confidence": 0.6
+        },
+        {
+          "path": "packages/MolTrack/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.65
+        },
+        {
+          "path": "packages/MolTrack/src/utils/types.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "docker-service exposes /v1/schema endpoints (compound/batch/dynamic/static); package.ts wraps them; PropertySchemaView edits and re-registers them via fetchSchema/registerMolTrackProperties."
+    },
+    {
+      "id": "feature:MolTrack:database-initialization",
+      "implements": [
+        {
+          "path": "packages/MolTrack/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/MolTrack/src/utils/registration-utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MolTrack/src/utils/fetch-utils.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/MolTrack/src/utils/detectors.ts",
+          "role": "support",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/MolTrack/src/utils/constants.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/MolTrack/src/services/moltrack-docker-service.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "init() runs setup queries (insertAdminUser/insertSettings/insertSemanticTypeSynonym/insertStandartization) gated on checkDBInitialized and registers detectors; initDB() calls registration-utils to seed schema + data via GitHub-hosted CSV/JSON fetched by fetch-utils."
+    }
+  ]
+}

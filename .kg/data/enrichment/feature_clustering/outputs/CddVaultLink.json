@@ -1,0 +1,136 @@
+{
+  "package_id": "pkg:CddVaultLink",
+  "features": [
+    {
+      "id": "feature:CddVaultLink:vault-app",
+      "name": "CDD Vault App",
+      "description": "The top-level Datagrok application that surfaces CDD Vault data, handling routing, the app-tree browser entry point, and the tab-based preview UI (molecules, batches, protocols, collections). It is the shell that all other features live inside.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:CddVaultLink:CDD Vault",              "weight": 1.0,  "role": "core"},
+        {"id": "func:CddVaultLink:cddVaultAppTreeBrowser", "weight": 0.95, "role": "core"},
+        {"id": "func:CddVaultLink:Databases | CDD Vault",  "weight": 0.8,  "role": "core"},
+        {"id": "doc:/packages/CddVaultLink/readme.md",     "weight": 0.9,  "role": "doc"},
+        {"id": "clog:CddVaultLink:1.1.0:0",                "weight": 0.85, "role": "related"},
+        {"id": "clog:CddVaultLink:1.0.4:0",                "weight": 0.7,  "role": "related"},
+        {"id": "clog:CddVaultLink:1.0.4:1",                "weight": 0.7,  "role": "related"},
+        {"id": "clog:CddVaultLink:1.0.3:1",                "weight": 0.7,  "role": "related"},
+        {"id": "clog:CddVaultLink:1.0.0:0",                "weight": 0.9,  "role": "related"},
+        {"id": "clog:CddVaultLink:v.next:3",               "weight": 0.75, "role": "related"}
+      ],
+      "evidence_summary": "The 'CDD Vault' app function, appTreeBrowser decorator, and Databases panel share the same app identity and browse path; changelog entries track routing, UI, and tab-loading improvements to the same shell."
+    },
+    {
+      "id": "feature:CddVaultLink:vault-connection",
+      "name": "Vault Connection and Discovery",
+      "description": "Allows users to enumerate all CDD Vaults accessible under their credentials and retrieve high-level statistics for a chosen vault, forming the authentication/discovery layer before any data is loaded.",
+      "category": "data-import",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:CddVaultLink:Get Vaults",     "weight": 1.0,  "role": "core"},
+        {"id": "func:CddVaultLink:Get Vault Stats", "weight": 1.0,  "role": "core"},
+        {"id": "clog:CddVaultLink:1.0.5:0",         "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "Both functions operate at vault-level scope (no molecule/batch/search inputs) and the 1.0.5 changelog entry fixes a stats fetch failure — all three concern vault-level connection and discovery."
+    },
+    {
+      "id": "feature:CddVaultLink:molecule-retrieval",
+      "name": "Molecule Retrieval",
+      "description": "Fetches registered molecule records from a CDD Vault as a Datagrok DataFrame, providing a synchronous quick-preview variant and an asynchronous full-load variant with pagination.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:CddVaultLink:Get Molecules",       "weight": 1.0,  "role": "core"},
+        {"id": "func:CddVaultLink:Get Molecules Async", "weight": 1.0,  "role": "core"},
+        {"id": "clog:CddVaultLink:v.next:5",            "weight": 0.8,  "role": "related"},
+        {"id": "clog:CddVaultLink:v.next:0",            "weight": 0.65, "role": "related"}
+      ],
+      "evidence_summary": "Both functions share the 'Get Molecules' name root and the same return type (DataFrame); the v.next:5 entry adds molecule-type fields, and v.next:0 includes getMolecules smoke tests."
+    },
+    {
+      "id": "feature:CddVaultLink:batch-retrieval",
+      "name": "Batch Retrieval",
+      "description": "Fetches batch records (synthesis/registration batches linked to parent molecules) from a CDD Vault as a DataFrame, with sync preview and async full-load modes.",
+      "category": "data-import",
+      "confidence": 0.95,
+      "members": [
+        {"id": "func:CddVaultLink:Get Batches",       "weight": 1.0,  "role": "core"},
+        {"id": "func:CddVaultLink:Get Batches Async", "weight": 1.0,  "role": "core"},
+        {"id": "clog:CddVaultLink:v.next:6",          "weight": 0.85, "role": "related"},
+        {"id": "clog:CddVaultLink:v.next:4",          "weight": 0.7,  "role": "related"}
+      ],
+      "evidence_summary": "Both functions share the 'Get Batches' name root; v.next:6 adds the Batches tab UI and v.next:4 adds the sync queryBatches wrapper, all scoped to batch-level data."
+    },
+    {
+      "id": "feature:CddVaultLink:compound-search",
+      "name": "Compound Search",
+      "description": "Provides chemical structure and property search against a CDD Vault — including substructure/similarity queries, saved-search recall, and a dedicated search-editor UI that constructs and runs vault search calls.",
+      "category": "chem-search",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:CddVaultLink:CDD Vault Search Async",   "weight": 1.0,  "role": "core"},
+        {"id": "func:CddVaultLink:CDD Vault search 2",       "weight": 1.0,  "role": "core"},
+        {"id": "func:CddVaultLink:CDD Vault search",         "weight": 0.85, "role": "core"},
+        {"id": "func:CddVaultLink:CDDVaultSearchEditor",     "weight": 0.9,  "role": "core"},
+        {"id": "func:CddVaultLink:Get Saved Searches",       "weight": 0.8,  "role": "core"},
+        {"id": "func:CddVaultLink:Get Saved Search Results", "weight": 0.8,  "role": "core"},
+        {"id": "clog:CddVaultLink:v.next:1",                 "weight": 0.75, "role": "related"},
+        {"id": "clog:CddVaultLink:v.next:7",                 "weight": 0.8,  "role": "related"}
+      ],
+      "evidence_summary": "All six functions share the 'CDD Vault search' name root or are the editor/saved-search support for those functions; changelogs track search-function renames and per-vault search history."
+    },
+    {
+      "id": "feature:CddVaultLink:protocols-and-collections",
+      "name": "Protocols and Collections",
+      "description": "Exposes CDD Vault biological assay protocols and compound collections as browseable, loadable data within the CDD Vault app, surfaced as async API calls with sync wrapper counterparts.",
+      "category": "data-import",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:CddVaultLink:Get Protocols Async",   "weight": 1.0,  "role": "core"},
+        {"id": "func:CddVaultLink:Get Collections Async", "weight": 1.0,  "role": "core"},
+        {"id": "clog:CddVaultLink:1.0.2:0",               "weight": 0.85, "role": "related"},
+        {"id": "clog:CddVaultLink:v.next:4",              "weight": 0.65, "role": "related"}
+      ],
+      "evidence_summary": "The two functions cover protocols and collections respectively; 1.0.2 changelog added navigation links to both, and v.next:4 adds the queryCollections sync wrapper alongside queryBatches."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:CddVaultLink:vault-connection",       "to": "feature:CddVaultLink:vault-app",           "kind": "subfeature"},
+    {"from": "feature:CddVaultLink:molecule-retrieval",     "to": "feature:CddVaultLink:vault-app",           "kind": "subfeature"},
+    {"from": "feature:CddVaultLink:batch-retrieval",        "to": "feature:CddVaultLink:vault-app",           "kind": "subfeature"},
+    {"from": "feature:CddVaultLink:compound-search",        "to": "feature:CddVaultLink:vault-app",           "kind": "subfeature"},
+    {"from": "feature:CddVaultLink:protocols-and-collections", "to": "feature:CddVaultLink:vault-app",        "kind": "subfeature"},
+    {"from": "feature:CddVaultLink:molecule-retrieval",     "to": "feature:CddVaultLink:batch-retrieval",     "kind": "sibling"},
+    {"from": "feature:CddVaultLink:compound-search",        "to": "feature:CddVaultLink:molecule-retrieval",  "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/CddVaultLink/credits.md",
+    "doc:/packages/CddVaultLink/claude.md",
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+    "clog:CddVaultLink:1.0.3:0",
+    "clog:CddVaultLink:1.0.1:0",
+    "clog:CddVaultLink:v.next:2"
+  ]
+}

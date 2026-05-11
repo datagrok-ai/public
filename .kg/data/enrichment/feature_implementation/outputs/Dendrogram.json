@@ -1,0 +1,219 @@
+{
+  "package_id": "pkg:Dendrogram",
+  "features": [
+    {
+      "id": "feature:Dendrogram:dendrogram-viewer",
+      "implements": [
+        {
+          "path": "packages/Dendrogram/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/dendrogram.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Dendrogram/src/utils/dendrogram-service.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Dendrogram/src/utils/tree-helper.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/tree-renderers/canvas-tree-renderer.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/tree-renderers/dendrogram-tree-styler.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/tree-renderers/rectangle-tree-placer.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/tree-renderers/markup.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Dendrogram/src/apps/dendrogram-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/demos/heatmapDemo.ts",
+          "role": "demo",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Dendrogram/src/tests/viewers.ts",
+          "confidence": 0.4
+        }
+      ],
+      "notes": "Dendrogram viewer class plus its renderer/placer/styler stack; DendrogramService wraps inject for external callers; TreeHelper used inside the viewer; demos cover dendrogramApp and heatMapDemo."
+    },
+    {
+      "id": "feature:Dendrogram:hierarchical-clustering",
+      "implements": [
+        {
+          "path": "packages/Dendrogram/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Dendrogram/src/utils/hierarchical-clustering.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Dendrogram/src/utils/tree-helper.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/utils/index.ts",
+          "role": "support",
+          "confidence": 0.7
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/inject-tree-for-grid2.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Dendrogram/src/apps/hierarchical-clustering-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/apps/hierarchical-clustering-sequences-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Dendrogram/src/tests/hierarchical-clustering-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Dendrogram/src/tests/calc-matrix-tests.ts",
+          "confidence": 0.8
+        },
+        {
+          "path": "packages/Dendrogram/src/tests/cluster-matrix-tests.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "hierarchicalClusteringDialog/UI computes distance + cluster matrices via TreeHelper, then injects the resulting tree via inject-tree-for-grid2; calc/cluster matrix tests cover its core helpers."
+    },
+    {
+      "id": "feature:Dendrogram:tree-in-grid",
+      "implements": [
+        {
+          "path": "packages/Dendrogram/src/package.ts",
+          "role": "core",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/inject-tree-for-grid2.ts",
+          "role": "core",
+          "confidence": 0.98
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/tree-renderers/grid-tree-renderer.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/tree-renderers/grid-tree-renderer-base.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/tree-renderers/grid-tree-placer.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/viewers/tree-renderers/markup.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Dendrogram/src/utils/tree-helper.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Dendrogram/src/utils/index.ts",
+          "role": "support",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Dendrogram/src/apps/tree-for-grid-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/apps/tree-for-grid-cut-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/apps/tree-for-grid-filter-app.ts",
+          "role": "demo",
+          "confidence": 0.9
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/Dendrogram/src/tests/grid-with-tree-tests.ts",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Dendrogram/src/tests/tree-for-grid-tests.ts",
+          "confidence": 0.85
+        },
+        {
+          "path": "packages/Dendrogram/src/tests/tree-cut-tests.ts",
+          "confidence": 0.8
+        }
+      ],
+      "notes": "injectTreeForGridUI2 attaches the GridNeighbor with grid tree renderer/placer plus the cluster-cut slider/dialog; demo apps exercise each grid-tree variant."
+    },
+    {
+      "id": "feature:Dendrogram:newick-file-support",
+      "implements": [
+        {
+          "path": "packages/Dendrogram/src/package.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/Dendrogram/src/utils/tree-helper.ts",
+          "role": "support",
+          "confidence": 0.9
+        },
+        {
+          "path": "packages/Dendrogram/src/apps/dendrogram-app.ts",
+          "role": "support",
+          "confidence": 0.7
+        }
+      ],
+      "tests": [],
+      "notes": "importNwk/previewNewick are wired in package.ts; both rely on TreeHelper.newickToDf; importNwk also opens DendrogramApp."
+    }
+  ]
+}

@@ -1,0 +1,559 @@
+{
+  "package": {
+    "id": "pkg:Admetica",
+    "name": "Admetica",
+    "friendly_name": "Admetica",
+    "version": "1.3.1",
+    "category": "Cheminformatics",
+    "description": "Assessment of ADMET Properties",
+    "extras": {
+      "npm_name": "@datagrok/admetica",
+      "fullName": "Admetica",
+      "browserFeatures": null
+    }
+  },
+  "properties": [],
+  "functions": [
+    {
+      "id": "func:Admetica:info",
+      "name": "info",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Admetica:Biology | Admetica",
+      "name": "Biology | Admetica",
+      "friendly_name": null,
+      "role": "widgets,panel",
+      "tags": [],
+      "description": "Panel with ADMET predictions for a molecule.",
+      "input_types": [
+        "semantic_value"
+      ],
+      "output_types": [
+        "widget"
+      ],
+      "meta": {
+        "role": "widgets,panel",
+        "domain": "chem"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Admetica:getModels",
+      "name": "getModels",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Lists available ADMET properties.",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        null
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Admetica:AdmeticaHT",
+      "name": "AdmeticaHT",
+      "friendly_name": null,
+      "role": "hitTriageFunction",
+      "tags": [],
+      "description": "Runs ADMET predictions for Hit Triage.",
+      "input_types": [
+        "dataframe",
+        "column",
+        null,
+        null,
+        null,
+        null
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "hitTriageFunction"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Admetica:AdmeticaEditor",
+      "name": "AdmeticaEditor",
+      "friendly_name": null,
+      "role": "editor",
+      "tags": [],
+      "description": null,
+      "input_types": [
+        "funccall"
+      ],
+      "output_types": [],
+      "meta": {
+        "role": "editor"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Admetica:AdmeticaMenu",
+      "name": "AdmeticaMenu",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Predicts ADMET properties and appends result columns.",
+      "input_types": [
+        "dataframe",
+        "column",
+        "string",
+        null,
+        "bool",
+        "bool"
+      ],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Admetica:getAdmeProperties",
+      "name": "getAdmeProperties",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Predicts ADMET properties for a molecule column.",
+      "input_types": [
+        "dataframe",
+        "column",
+        null
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Admetica:getAdmePropertiesSingle",
+      "name": "getAdmePropertiesSingle",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Predicts ADMET properties for a given molecule.",
+      "input_types": [
+        "string"
+      ],
+      "output_types": [
+        "dataframe"
+      ],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Admetica:Admetica",
+      "name": "Admetica",
+      "friendly_name": null,
+      "role": "app",
+      "tags": [],
+      "description": null,
+      "input_types": [],
+      "output_types": [
+        "view"
+      ],
+      "meta": {
+        "browsePath": "Chem",
+        "role": "app"
+      },
+      "help_url": null,
+      "language": "ts"
+    },
+    {
+      "id": "func:Admetica:Admetica Demo",
+      "name": "Admetica Demo",
+      "friendly_name": null,
+      "role": null,
+      "tags": [],
+      "description": "Evaluating ADMET properties",
+      "input_types": [],
+      "output_types": [],
+      "meta": {},
+      "help_url": null,
+      "language": "ts"
+    }
+  ],
+  "scripts": [],
+  "queries": [],
+  "tutorials": [],
+  "docs": [
+    {
+      "id": "doc:/packages/Admetica/credits.md",
+      "title": "Admetica — Third-Party Libraries",
+      "url": "/packages/Admetica/credits.md",
+      "kind": "credits",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Admetica/readme.md",
+      "title": "Admetica",
+      "url": "/packages/Admetica/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Admetica/claude.md",
+      "title": "CLAUDE.md",
+      "url": "/packages/Admetica/claude.md",
+      "kind": "claude-guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chem",
+      "title": "Cheminformatics",
+      "url": "/help/datagrok/solutions/domains/chem/chem",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "title": "Info panes for chemical data",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/cheminformatics",
+      "title": "Cheminformatics",
+      "url": "/help/develop/domains/chem/cheminformatics",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/develop/domains/chem/intro",
+      "title": "Cheminformatics concepts",
+      "url": "/help/develop/domains/chem/intro",
+      "kind": "guide",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/packages/Chem/readme.md",
+      "title": "Cheminformatics support",
+      "url": "/packages/Chem/readme.md",
+      "kind": "readme",
+      "audience": "developer"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "title": "Scaffold tree",
+      "url": "/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "title": "Chemically-aware viewers",
+      "url": "/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/chemprop",
+      "title": "Chemprop",
+      "url": "/help/datagrok/solutions/domains/chem/chemprop",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors",
+      "title": "Supported descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+      "title": "Tests: Chem descriptors",
+      "url": "/help/datagrok/solutions/domains/chem/descriptors-test",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+      "title": "Supported fingerprints",
+      "url": "/help/datagrok/solutions/domains/chem/fingerprints",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "title": "Drug likeness",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "title": "Structural alerts",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "title": "SureChEMBL integration",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "title": "Toxicity risks",
+      "url": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/mpo",
+      "title": "Multiparameter optimization",
+      "url": "/help/datagrok/solutions/domains/chem/mpo",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "title": "Butina cluster",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "title": "Chemical scripts",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "title": "Filter by catalogs",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "title": "Gasteiger Partial Charges",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "title": "Murcko Scaffolds",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+      "kind": "guide",
+      "audience": "user"
+    },
+    {
+      "id": "doc:/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "title": "Mutate",
+      "url": "/help/datagrok/solutions/domains/chem/scripts/mutate",
+      "kind": "guide",
+      "audience": "user"
+    }
+  ],
+  "changelog": [
+    {
+      "id": "clog:Admetica:1.3.1:0",
+      "version": "1.3.1",
+      "released_at": "2025-09-17",
+      "ticket": null,
+      "text": "Admetica: Resolved issue with empty string conversion causing `Could not convert '' with type str: tried to convert to double`"
+    },
+    {
+      "id": "clog:Admetica:1.1.0:0",
+      "version": "1.1.0",
+      "released_at": "2025-03-07",
+      "ticket": null,
+      "text": "Admetica: Demo application showcasing main functionality"
+    },
+    {
+      "id": "clog:Admetica:1.1.0:1",
+      "version": "1.1.0",
+      "released_at": "2025-03-07",
+      "ticket": null,
+      "text": "Admetica: Form: Wraps content properly when space is limited"
+    },
+    {
+      "id": "clog:Admetica:1.1.0:2",
+      "version": "1.1.0",
+      "released_at": "2025-03-07",
+      "ticket": null,
+      "text": "Admetica: Added units to the calculated ADMET values for cell"
+    },
+    {
+      "id": "clog:Admetica:1.1.0:3",
+      "version": "1.1.0",
+      "released_at": "2025-03-07",
+      "ticket": null,
+      "text": "Admetica: Fixed issue with the summary pane not working for molblocks"
+    },
+    {
+      "id": "clog:Admetica:1.1.0:4",
+      "version": "1.1.0",
+      "released_at": "2025-03-07",
+      "ticket": null,
+      "text": "Admetica: Grid groups for property organization"
+    },
+    {
+      "id": "clog:Admetica:1.0.2:0",
+      "version": "1.0.2",
+      "released_at": "2024-10-18",
+      "ticket": null,
+      "text": "Admetica: Fixed tests"
+    },
+    {
+      "id": "clog:Admetica:1.0.2:1",
+      "version": "1.0.2",
+      "released_at": "2024-10-18",
+      "ticket": null,
+      "text": "Admetica: Support CPU usage when no GPU is available"
+    },
+    {
+      "id": "clog:Admetica:1.0.1:0",
+      "version": "1.0.1",
+      "released_at": "2024-09-30",
+      "ticket": null,
+      "text": "Admetica: Introduced toxicity models (hERG and LD50 for acute toxicity)"
+    },
+    {
+      "id": "clog:Admetica:1.0.1:1",
+      "version": "1.0.1",
+      "released_at": "2024-09-30",
+      "ticket": null,
+      "text": "Admetica: Fixed an issue where the pie chart in the summary pane failed to generate when editing the structure in the sketcher"
+    },
+    {
+      "id": "clog:Admetica:1.0.1:2",
+      "version": "1.0.1",
+      "released_at": "2024-09-30",
+      "ticket": null,
+      "text": "Admetica: Added color coding for calculated values in the property panel for improved clarity"
+    },
+    {
+      "id": "clog:Admetica:1.0.1:3",
+      "version": "1.0.1",
+      "released_at": "2024-09-30",
+      "ticket": null,
+      "text": "Admetica: Introduced a new input for selecting color coding rules from templates"
+    },
+    {
+      "id": "clog:Admetica:1.0.1:4",
+      "version": "1.0.1",
+      "released_at": "2024-09-30",
+      "ticket": null,
+      "text": "Admetica: Added missing color coding rules for Half-Life model"
+    },
+    {
+      "id": "clog:Admetica:1.0.1:5",
+      "version": "1.0.1",
+      "released_at": "2024-09-30",
+      "ticket": null,
+      "text": "Admetica: Resolved an issue with classification models (e.g., metabolism models) incorrectly returning absolute zero as a result"
+    },
+    {
+      "id": "clog:Admetica:1.0.1:6",
+      "version": "1.0.1",
+      "released_at": "2024-09-30",
+      "ticket": null,
+      "text": "Admetica: Updated the color scheme by switching to a categorical palette for better visual distinction"
+    },
+    {
+      "id": "clog:Admetica:1.0.0:0",
+      "version": "1.0.0",
+      "released_at": "2024-09-18",
+      "ticket": null,
+      "text": "Admetica: Ability to calculate ADMET properties for the entire column"
+    },
+    {
+      "id": "clog:Admetica:1.0.0:1",
+      "version": "1.0.0",
+      "released_at": "2024-09-18",
+      "ticket": null,
+      "text": "Admetica: Ability to calculate ADMET properties for individual cells"
+    },
+    {
+      "id": "clog:Admetica:1.0.0:2",
+      "version": "1.0.0",
+      "released_at": "2024-09-18",
+      "ticket": null,
+      "text": "Admetica: Seamless transition from Chemprop v1 to v2"
+    },
+    {
+      "id": "clog:Admetica:1.0.0:3",
+      "version": "1.0.0",
+      "released_at": "2024-09-18",
+      "ticket": null,
+      "text": "Admetica: Update models aligned with the latest Chemprop v2 features"
+    },
+    {
+      "id": "clog:Admetica:1.0.0:4",
+      "version": "1.0.0",
+      "released_at": "2024-09-18",
+      "ticket": "GROK-16464",
+      "text": "GROK-16464: Chem | Adme: Form does not work in the demo"
+    },
+    {
+      "id": "clog:Admetica:1.0.0:5",
+      "version": "1.0.0",
+      "released_at": "2024-09-18",
+      "ticket": "GROK-14645",
+      "text": "GROK-14645: Chem | Adme: Errors when trying to calculate Adme/Tox on the Context pane"
+    },
+    {
+      "id": "clog:Admetica:1.0.0:6",
+      "version": "1.0.0",
+      "released_at": "2024-09-18",
+      "ticket": "GROK-13458",
+      "text": "GROK-13458: Chem | Adme: Incorrect handling of malformed data"
+    },
+    {
+      "id": "clog:Admetica:1.0.0:7",
+      "version": "1.0.0",
+      "released_at": "2024-09-18",
+      "ticket": "GROK-13456",
+      "text": "GROK-13456: Chem | Adme: Pgp-substrate wrong color coding"
+    },
+    {
+      "id": "clog:Admetica:1.0.0:8",
+      "version": "1.0.0",
+      "released_at": "2024-09-18",
+      "ticket": "GROK-13024",
+      "text": "GROK-13024: Chem | Adme: Multiple errors in the property panel"
+    },
+    {
+      "id": "clog:Admetica:v.next:0",
+      "version": "v.next",
+      "released_at": null,
+      "ticket": null,
+      "text": "Admetica: App view function returns the view directly instead of calling `grok.shell.addPreview`, letting the platform host place it"
+    }
+  ],
+  "stats": {
+    "functions": 10,
+    "scripts": 0,
+    "queries": 0,
+    "tutorials": 0,
+    "docs": 25,
+    "changelog": 25
+  }
+}

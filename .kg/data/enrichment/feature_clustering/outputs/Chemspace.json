@@ -1,0 +1,95 @@
+{
+  "package_id": "pkg:Chemspace",
+  "features": [
+    {
+      "id": "feature:Chemspace:catalog-browser",
+      "name": "Chemspace Catalog Browser",
+      "description": "Standalone application (browsePath: Chem) for searching and browsing the Chemspace virtual compound catalog directly within Datagrok.",
+      "category": "chem-search",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:Chemspace:Chemspace", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Chemspace/readme.md", "weight": 0.85, "role": "doc"}
+      ],
+      "evidence_summary": "The app function (role=app, browsePath=Chem) is the sole entry point for catalog browsing; changelog 1.2.1 explicitly moved it under the Chem browse section."
+    },
+    {
+      "id": "feature:Chemspace:molecule-availability-panel",
+      "name": "Molecule Availability Panel",
+      "description": "Context panel that shows similar molecules available for purchase in Chemspace for the currently selected compound, including similarity scores.",
+      "category": "chem-search",
+      "confidence": 0.88,
+      "members": [
+        {"id": "func:Chemspace:Databases | Chemspace", "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/Chemspace/claude.md", "weight": 0.7, "role": "doc"}
+      ],
+      "evidence_summary": "'Databases | Chemspace' (role=widgets,panel, description=Chemspace Samples) provides per-molecule availability lookup; changelog v1.0.2 added similarity scores and GROK-17022 fixed errors in this panel."
+    },
+    {
+      "id": "feature:Chemspace:compound-pricing",
+      "name": "Compound Pricing",
+      "description": "Panel and batch function that surface Chemspace pricing by country and supplier for individual molecules and entire datasets.",
+      "category": "data-import",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Chemspace:Chemspace Prices", "weight": 1.0, "role": "core"},
+        {"id": "func:Chemspace:getChemspacePrices", "weight": 0.95, "role": "core"}
+      ],
+      "evidence_summary": "Both functions share 'Prices' in name and description — one is a context panel, the other a batch retrieval function; changelog v.next tracks multiple pricing fixes including caching and undefined-price fallthrough."
+    },
+    {
+      "id": "feature:Chemspace:chemspace-id-resolution",
+      "name": "Chemspace ID Resolution",
+      "description": "Resolves molecules to their Chemspace identifiers and highlights columns carrying the chemspace_id semantic type, enabling enrichment via the 'Add new column' dialog.",
+      "category": "infra",
+      "confidence": 0.85,
+      "members": [
+        {"id": "func:Chemspace:getChemspaceIds", "weight": 1.0, "role": "core"},
+        {"id": "func:Chemspace:<anonymous>", "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "getChemspaceIds maps molecules to Chemspace IDs; the semValueExtractor highlights the chemspace_id semantic type — changelog 1.1.4 explicitly introduced both together."
+    },
+    {
+      "id": "feature:Chemspace:api-client",
+      "name": "Chemspace API Client",
+      "description": "Low-level HTTP utility handling multipart form requests, OAuth token refresh, and retry logic against the Chemspace API v4.",
+      "category": "infra",
+      "confidence": 0.75,
+      "members": [
+        {"id": "func:Chemspace:queryMultipart", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "queryMultipart is the sole infrastructure function for Chemspace HTTP calls; changelog v.next describes token-refresh and retry rewrites that are scoped entirely to this layer."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Chemspace:catalog-browser", "to": "feature:Chemspace:api-client", "kind": "related"},
+    {"from": "feature:Chemspace:molecule-availability-panel", "to": "feature:Chemspace:api-client", "kind": "related"},
+    {"from": "feature:Chemspace:compound-pricing", "to": "feature:Chemspace:api-client", "kind": "related"},
+    {"from": "feature:Chemspace:chemspace-id-resolution", "to": "feature:Chemspace:molecule-availability-panel", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/packages/Chemspace/credits.md",
+    "doc:/help/datagrok/solutions/domains/chem/chem",
+    "doc:/help/develop/domains/chem/cheminformatics",
+    "doc:/help/develop/domains/chem/intro",
+    "doc:/packages/Chem/readme.md",
+    "doc:/help/datagrok/solutions/domains/chem/_deprecated/scaffold-tree",
+    "doc:/help/datagrok/solutions/domains/chem/chemically-aware-viewers",
+    "doc:/help/datagrok/solutions/domains/chem/chemprop",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors",
+    "doc:/help/datagrok/solutions/domains/chem/descriptors-test",
+    "doc:/help/datagrok/solutions/domains/chem/fingerprints",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/drug-likeness",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/info-panels",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/structural-alerts",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/surechembl",
+    "doc:/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks",
+    "doc:/help/datagrok/solutions/domains/chem/mpo",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/butina-cluster",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/chem-functions",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/filter-catalogs",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/gasteiger-charges",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds",
+    "doc:/help/datagrok/solutions/domains/chem/scripts/mutate"
+  ]
+}

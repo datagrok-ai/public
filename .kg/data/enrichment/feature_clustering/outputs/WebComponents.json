@@ -1,0 +1,67 @@
+{
+  "package_id": "pkg:WebComponents",
+  "features": [
+    {
+      "id": "feature:WebComponents:web-component-runtime",
+      "name": "Web Component Runtime",
+      "description": "Provides the core initialization and runtime infrastructure that registers and bootstraps custom HTML elements (web components) within the Datagrok platform. This is the entry point that makes all other web components in the package available.",
+      "category": "infra",
+      "confidence": 0.9,
+      "members": [
+        {"id": "func:WebComponents:init",                    "weight": 1.0, "role": "core"},
+        {"id": "doc:/packages/WebComponents/readme.md",     "weight": 0.9, "role": "doc"},
+        {"id": "doc:/packages/WebComponents/credits.md",    "weight": 0.6, "role": "doc"},
+        {"id": "clog:WebComponents:1.0.0:0",                "weight": 0.7, "role": "related"},
+        {"id": "clog:WebComponents:1.2.4:0",                "weight": 0.6, "role": "related"}
+      ],
+      "evidence_summary": "The single init function, readme, and credits doc all describe the package-level bootstrap runtime; the initial release and access-policy changelog entries mark its lifecycle milestones."
+    },
+    {
+      "id": "feature:WebComponents:dock-web-component",
+      "name": "Dock Spawn Web Component",
+      "description": "Custom element wrapper over the dock-spawn panel and tab system, exposing a web-component API for programmatic panel management including focused-tab restoration across sessions.",
+      "category": "viz",
+      "confidence": 0.78,
+      "members": [
+        {"id": "clog:WebComponents:1.2.10:1", "weight": 0.9, "role": "core"},
+        {"id": "clog:WebComponents:1.2.8:0",  "weight": 0.9, "role": "core"}
+      ],
+      "evidence_summary": "Two changelog entries share the 'dock spawn' / 'dock' naming root and both describe tab/panel API behaviour, forming a coherent dock-management capability."
+    },
+    {
+      "id": "feature:WebComponents:form-consistency-icons",
+      "name": "Form Consistency Icons",
+      "description": "Custom web components that render consistency-state indicator icons inside Datagrok forms, giving users immediate visual feedback on field or record validity.",
+      "category": "viz",
+      "confidence": 0.65,
+      "members": [
+        {"id": "clog:WebComponents:1.2.10:0", "weight": 0.85, "role": "core"}
+      ],
+      "evidence_summary": "Changelog entry explicitly names 'consistency icons in forms' as a distinct UI component tweak, suggesting a dedicated form-feedback web component."
+    },
+    {
+      "id": "feature:WebComponents:compute2-integration",
+      "name": "Compute2 Integration",
+      "description": "Web component adaptations that align with the Compute2 computation framework, enabling compute-aware UI elements to function correctly within the updated compute pipeline.",
+      "category": "infra",
+      "confidence": 0.55,
+      "members": [
+        {"id": "clog:WebComponents:1.2.6:0", "weight": 0.8, "role": "core"}
+      ],
+      "evidence_summary": "Single changelog entry explicitly references 'Compute2 related updates', indicating a specific integration surface distinct from general platform-version bumps."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:WebComponents:dock-web-component",       "to": "feature:WebComponents:web-component-runtime", "kind": "subfeature"},
+    {"from": "feature:WebComponents:form-consistency-icons",   "to": "feature:WebComponents:web-component-runtime", "kind": "subfeature"},
+    {"from": "feature:WebComponents:compute2-integration",     "to": "feature:WebComponents:web-component-runtime", "kind": "related"}
+  ],
+  "unassigned_member_ids": [
+    "clog:WebComponents:1.2.9:0",
+    "clog:WebComponents:1.2.7:0",
+    "clog:WebComponents:1.2.5:0",
+    "clog:WebComponents:1.2.0:0",
+    "clog:WebComponents:1.3.0:0",
+    "clog:WebComponents:1.1.0:0"
+  ]
+}

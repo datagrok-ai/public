@@ -1,0 +1,143 @@
+{
+  "package_id": "pkg:CVMTests",
+  "features": [
+    {
+      "id": "feature:CVMTests:python-scripting",
+      "implements": [
+        {
+          "path": "packages/CVMTests/src/scripts/scripts_tests.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CVMTests/src/package.ts",
+          "role": "support",
+          "confidence": 0.4
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CVMTests/src/package-test.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "scripts_tests.ts loops over languages including 'Python' and exercises every Python script via grok.functions.call('CVMTests:Python*'); package-test.ts is the test entry that registers it."
+    },
+    {
+      "id": "feature:CVMTests:python-environment-management",
+      "implements": [
+        {
+          "path": "packages/CVMTests/src/scripts/scripts_tests.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CVMTests/src/package.ts",
+          "role": "support",
+          "confidence": 0.3
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CVMTests/src/package-test.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "scripts_tests.ts contains the dedicated Python-only Env tests (PythonEnvNumpyCompat, PythonEnvPipOnly, PythonEnvCondaExtras, PythonEnvMixedDeps, PythonEnvPy312, PythonEnvReuse)."
+    },
+    {
+      "id": "feature:CVMTests:r-scripting",
+      "implements": [
+        {
+          "path": "packages/CVMTests/src/scripts/scripts_tests.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CVMTests/src/package.ts",
+          "role": "support",
+          "confidence": 0.3
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CVMTests/src/package-test.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "scripts_tests.ts language loop covers 'R' (full I/O matrix plus REnvStringReverse / REnvFileStringReverse env tests)."
+    },
+    {
+      "id": "feature:CVMTests:octave-scripting",
+      "implements": [
+        {
+          "path": "packages/CVMTests/src/scripts/scripts_tests.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CVMTests/src/package.ts",
+          "role": "support",
+          "confidence": 0.3
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CVMTests/src/package-test.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "scripts_tests.ts language loop covers 'Octave' plus the dedicated Stdout category invoking OctaveStdout."
+    },
+    {
+      "id": "feature:CVMTests:julia-scripting",
+      "implements": [],
+      "tests": [],
+      "notes": "scripts_tests.ts explicitly `continue`s on lang === 'Julia'; no implementation/test file under files.src or files.tests actually exercises the Julia scripts."
+    },
+    {
+      "id": "feature:CVMTests:javascript-scripting",
+      "implements": [
+        {
+          "path": "packages/CVMTests/src/scripts/scripts_tests.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CVMTests/src/package.ts",
+          "role": "support",
+          "confidence": 0.3
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CVMTests/src/package-test.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "scripts_tests.ts language loop covers 'JavaScript' (subset: skips graphics/file/intColumn/listString)."
+    },
+    {
+      "id": "feature:CVMTests:nodejs-scripting",
+      "implements": [
+        {
+          "path": "packages/CVMTests/src/scripts/scripts_tests.ts",
+          "role": "core",
+          "confidence": 0.95
+        },
+        {
+          "path": "packages/CVMTests/src/package.ts",
+          "role": "support",
+          "confidence": 0.3
+        }
+      ],
+      "tests": [
+        {
+          "path": "packages/CVMTests/src/package-test.ts",
+          "confidence": 0.85
+        }
+      ],
+      "notes": "scripts_tests.ts language loop covers 'NodeJS' across the full I/O matrix and benchmarks."
+    }
+  ]
+}

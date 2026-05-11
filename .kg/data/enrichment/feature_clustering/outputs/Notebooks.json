@@ -1,0 +1,55 @@
+{
+  "package_id": "pkg:Notebooks",
+  "features": [
+    {
+      "id": "feature:Notebooks:jupyter-notebook-view",
+      "name": "Jupyter Notebook View",
+      "description": "Embeds a full JupyterLab interface inside Datagrok as a first-class view, spinning up a Docker-hosted Jupyter server so users can write and run notebooks without leaving the platform.",
+      "category": "compute",
+      "confidence": 0.92,
+      "members": [
+        {"id": "func:Notebooks:Notebook",       "weight": 1.0,  "role": "core"},
+        {"id": "func:Notebooks:initContainer",  "weight": 0.85, "role": "core"},
+        {"id": "doc:/help/compute/jupyter-notebook", "weight": 0.95, "role": "doc"},
+        {"id": "doc:/packages/Notebooks/readme.md",  "weight": 0.75, "role": "doc"},
+        {"id": "doc:/packages/Notebooks/credits.md", "weight": 0.4,  "role": "doc"},
+        {"id": "clog:Notebooks:1.4.0:0", "weight": 0.6,  "role": "related"},
+        {"id": "clog:Notebooks:1.3.0:0", "weight": 0.65, "role": "related"},
+        {"id": "clog:Notebooks:1.2.0:0", "weight": 0.6,  "role": "related"},
+        {"id": "clog:Notebooks:1.0.1:0", "weight": 0.5,  "role": "related"}
+      ],
+      "evidence_summary": "func:Notebooks:Notebook (tagged 'view') creates the notebook UI surface, func:Notebooks:initContainer (tagged 'init') provisions the Docker JupyterLab server it depends on, and doc:/help/compute/jupyter-notebook is the dedicated user guide for this workflow."
+    },
+    {
+      "id": "feature:Notebooks:notebook-export",
+      "name": "Notebook Export",
+      "description": "Converts a notebook file's content to a specified output format (e.g., HTML, script), enabling downstream sharing or archiving of notebook results outside Datagrok.",
+      "category": "compute",
+      "confidence": 0.80,
+      "members": [
+        {"id": "func:Notebooks:convertNotebook", "weight": 1.0, "role": "core"}
+      ],
+      "evidence_summary": "func:Notebooks:convertNotebook is the sole implementation of format conversion for notebook files and is distinct from the view/render workflow."
+    }
+  ],
+  "feature_relations": [
+    {"from": "feature:Notebooks:notebook-export", "to": "feature:Notebooks:jupyter-notebook-view", "kind": "sibling"}
+  ],
+  "unassigned_member_ids": [
+    "doc:/help/compute/compute",
+    "doc:/packages/Compute/credits.md",
+    "doc:/packages/Compute/readme.md",
+    "doc:/help/compute/diff-studio",
+    "doc:/help/compute/function-analysis",
+    "doc:/help/compute/models",
+    "doc:/help/compute/scripting/advanced-scripting/automate-inputs",
+    "doc:/help/compute/scripting/advanced-scripting/call-via-rest",
+    "doc:/help/compute/scripting/advanced-scripting/rich-function-view",
+    "doc:/help/compute/scripting/getting-started",
+    "doc:/help/compute/scripting/scripting-features/complex-input-output",
+    "doc:/help/compute/scripting/scripting-features/datagrok-script-editor",
+    "doc:/help/compute/scripting/scripting-features/enhance-input-ui",
+    "doc:/help/compute/scripting/scripting-features/scripting-features",
+    "doc:/help/compute/scripting/scripting-features/visualize-output-data"
+  ]
+}
