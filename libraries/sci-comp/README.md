@@ -34,7 +34,7 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
   * 4 BLQ-handling rules × 4 phases
   * λz auto best-fit (subset search by adjusted R²) + manual
   * IV bolus `c0` back-extrapolation (`logslope` / `c1` / `cmin` / `set0` chain), extravascular pre-dose insertion
-  * validated against [PKNCA](https://billdenney.github.io/pknca/) on 26 reference profiles (theophylline, indomethacin, synthetic rat)
+  * validated against [PKNCA](https://humanpred.github.io/pknca/) on 26 reference profiles (theophylline, indomethacin, synthetic rat)
 
 ## Installation
 
