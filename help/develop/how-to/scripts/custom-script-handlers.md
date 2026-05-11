@@ -14,7 +14,7 @@ This function should execute the call and set the corresponding output parameter
 You may choose to use [WebAssembly](https://webassembly.org/) solutions or execute code in a [Docker container](../packages/docker-containers.md).
 
 ```typescript
-export async function myCustomScriptHandler(call: DG.FuncCall): Promise<void> {
+export async function myCustomScriptHandler(scriptCall: DG.FuncCall): Promise<void> {
     // implement handler
 }
 ```
@@ -33,7 +33,10 @@ There are other optional annotations as well:
 * `meta.scriptHandler.templateScript` - defines template code that will be added to all [newly created scripts](../../../compute/scripting/getting-started.md#create-a-script).
 * `meta.scriptHandler.codeEditorMode` - defines code editor mode. Datagrok uses [CodeMirror](https://codemirror.net/) to display and edit scripts in UI. You can get the list of available modes [here](https://codemirror.net/5/mode/).
 * `meta.icon` - defines path to the icon inside the [package files](../packages/work-with-package-files.md). This icon will be used in UI for all scripts created with the language of your handler.
-* `meta.scriptHandler.vectorizationFunction` - defines function in the form of `<namespace>:<function name>` that will perform vectorization of DG.Script. This function should accept DG.Script and return string with vectorized code.
+* `meta.scriptHandler.commentStart` - defines the comment start character(s) used by the language. Defaults to `#`.
+* `meta.scriptHandler.friendlyName` - defines a UI label override for the language. Defaults to the value of `language`.
+* `meta.scriptHandler.vectorizationFunction` - defines function in the form of `<namespace>:<function name>` that will perform vectorization of DG.Script. This function should accept DG.Script and return string with vectorized code. The target function itself must declare `//input: script script` and `//output: string result` annotations so codegen registers it; otherwise the lookup fails silently at handler construction.
+* `meta.scriptHandler.parserFunction` - defines function in the form of `<namespace>:<function name>` that parses script text into a `DG.Script` object.
 
 Let's say we want to register handler for [Clojure](https://clojure.org/) language. The function could be annotated as follows:
 
@@ -42,7 +45,7 @@ Let's say we want to register handler for [Clojure](https://clojure.org/) langua
 //meta.scriptHandler.language: clojure
 //meta.scriptHandler.extensions: clj,cljs,cljr 
 //meta.scriptHandler.commentStart: ;
-export async function clojureScriptHandler(call: DG.FuncCall): Promise<void> {
+export async function clojureScriptHandler(scriptCall: DG.FuncCall): Promise<void> {
     // implement handler
 }
 ```
