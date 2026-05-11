@@ -7,7 +7,7 @@ Developers can extend Datagrok with custom filters. This could be done by defini
 [example](https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio-button-filter.ts) of such
 class can be found in the [Widgets](https://github.com/datagrok-ai/public/tree/master/packages/Widgets) package.
 
-The filter then must be registered in the `package.js` file:
+The filter then must be registered in the `package.ts` file:
 
 ```js
 //name: Single Choice
@@ -26,6 +26,8 @@ If you are on version `^4.12.x` of `datagrok-tools`, you can use class decorator
 
 ```ts
 @grok.decorators.filter({
+  name: 'Single Choice',
+  description: 'A filter that lets you select exactly one category',
   semType: 'Country',
 })
 export class RadioButtonFilter extends DG.Filter {
@@ -44,9 +46,9 @@ The filter then can be invoked in the package with JS API as shown in
 
 ```js
 let tv = grok.shell.addTableView(grok.data.demo.demog());
-tv.filters({filters: [
+tv.addViewer(DG.Viewer.filters({filters: [
   {type: 'Widgets:radioButtonFilter', columnName: 'race'},
-]});
+]}));
 
 ```
 
