@@ -127,7 +127,7 @@ export class AwesomeViewer extends DG.JsViewer {
     // Register properties and define fields initialized to properties' default values
     // Properties that represent columns should end with the 'ColumnName' postfix
     this.splitColumnName = this.string('splitColumnName', 'site');
-    this.valueColumnName = this.int('valueColumnName', 'age');
+    this.valueColumnName = this.string('valueColumnName', 'age');
 
     // Provide a list of acceptable values in the field `choices`
     this.valueAggrType = this.string('valueAggrType', 'avg', { choices: ['avg', 'count', 'sum'] });
@@ -494,7 +494,7 @@ import {AwesomeViewer} from './awesome-viewer.js'
 
 //name: AwesomeViewer
 //description: Creates an awesome viewer
-//tags: viewer
+//meta.role: viewer
 //meta.icon: images/icon.svg
 //meta.toolbox: true
 //meta.trellisable: true
