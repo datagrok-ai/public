@@ -13,8 +13,8 @@ the [repository master branch](../../../collaborate/public-repository.md). Then 
 1) Clone public [repository](../../../collaborate/public-repository.md)
 2) Make changes in the package or create a new package in the `packages/` directory
 3) [Test your changes locally](../tests/test-packages.md#local-testing)
-4) Bump version for a package in `package.json`. The package version must comply with Semantic Versioning. All packages
-   in the [repository](../../../collaborate/public-repository.md) must be located in `@datagrok` scope.
+4) Bump version for a package in `package.json`. The package version must comply with Semantic Versioning. By convention,
+   packages in the [repository](../../../collaborate/public-repository.md) should be located in the `@datagrok` scope.
 5) Commit and push all changes, including `package.json`, to the [repository](../../../collaborate/public-repository.md)
 6) On the push action GitHub Actions will run workflow:
     1) Build the package first
