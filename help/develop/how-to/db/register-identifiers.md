@@ -47,7 +47,7 @@ export class ChemblIdHandler extends DG.ObjectHandler {
   }
 
   renderInnerCard(x: any) {// inner function for querying the database and rendering the card
-    const id = (x as SemanticValue).value;
+    const id = (x as DG.SemanticValue).value;
     return ui.divV([
       ui.h3(id),
       ui.wait(async () =>
@@ -74,7 +74,7 @@ export class ChemblIdHandler extends DG.ObjectHandler {
 Then you need to register the handler in the `package.ts` file of your package, specifically in the function that autostarts the package:
 
 ```typescript
-//meta.role: init, autostart
+//meta.role: autostart
 export function init() {
   //Register handlers
   DG.ObjectHandler.register(new ChemblIdHandler());
@@ -243,7 +243,7 @@ export const explorerConfig = {
   // Database connection details
   'connectionName': 'CHEMBL',          // Name of your database connection in Datagrok
   'schemaName': 'public',              // Database schema name where the identifiers are located
-  'nqName': 'CHEMBL',                   // Optional: fully-qualified connection name (namespace-qualified)
+  'nqName': 'Chembl:Chembl',            // Optional: fully-qualified connection name (<namespace>:<shortName>)
   'dataSourceName': 'postgres',        // Data source type (postgres, oracle, mysql, etc.)
   
   // Entry points: Define identifiers that trigger exploration
