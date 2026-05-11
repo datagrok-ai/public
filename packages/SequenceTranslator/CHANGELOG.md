@@ -1,6 +1,6 @@
 # Sequence Translator changelog
 
-## v.next
+## 1.10.18 (2026-05-11)
 
 * OligoNucleotide cell renderer: Fixed bracketed monomer base parsing (e.g. `[5Br-dC]` inside `(...)`) so renderer/resolver pick up modification colors and structures correctly.
 * OligoNucleotide: Added double-click HELM Web Editor for OligoNucleotide cells; OK saves the edited HELM back to the cell
