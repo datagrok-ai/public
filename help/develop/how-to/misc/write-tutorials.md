@@ -20,16 +20,25 @@ tutorial in a package, we need to install `@datagrok-libraries/tutorials`.
 The first step is to declare a subclass of `Tutorial`:
 
 ```typescript
-class CustomTutorial extends Tutorial {
-  // ...
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+
+export class CustomTutorial extends Tutorial {
+  get name() { return 'Custom Tutorial'; }
+  get description() { return 'A short description of the tutorial'; }
+  get icon() { return '📘'; }
+  get steps() { return 1; }
+
+  protected async _run() {
+    // define steps here
+  }
 }
 ```
 
-Each tutorial should have `name` and `description` as well as an implementation
-of the `_run` method, where you should define a number of steps. Steps are the
-key units in every tutorial, and they correspond to the `action` method or
-helper methods calling it internally. Steps can come with interactive hints or
-more detailed description.
+Each tutorial must override the abstract getters `name`, `description`, `icon`,
+and `steps`, as well as implement the `_run` method, where you should define a
+number of steps. Steps are the key units in every tutorial, and they correspond
+to the `action` method or helper methods calling it internally. Steps can come
+with interactive hints or more detailed description.
 
 ## Registering a tutorial
 
