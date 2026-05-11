@@ -163,6 +163,13 @@ export namespace funcs {
   }
 
   /**
+  OligoNucleotide
+  */
+  export async function editOligoNucleotideCell(cell: any ): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:EditOligoNucleotideCell', { cell });
+  }
+
+  /**
   Modifications, lengths, conjugates and color legend for an OligoNucleotide cell
   */
   export async function oligoNucleotidePanel(value: any ): Promise<any> {

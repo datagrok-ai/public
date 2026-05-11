@@ -239,6 +239,14 @@ export function oligoNucleotideCellRenderer() : any {
   return PackageFunctions.oligoNucleotideCellRenderer();
 }
 
+//description: OligoNucleotide
+//tags: cellEditor
+//input: grid_cell cell 
+//meta.role: cellEditor
+export async function editOligoNucleotideCell(cell: any) : Promise<void> {
+  await PackageFunctions.editOligoNucleotideCell(cell);
+}
+
 //name: Oligo-Nucleotide
 //description: Modifications, lengths, conjugates and color legend for an OligoNucleotide cell
 //tags: panel, widgets

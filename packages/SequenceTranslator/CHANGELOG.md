@@ -3,6 +3,7 @@
 ## v.next
 
 * OligoNucleotide cell renderer: Fixed bracketed monomer base parsing (e.g. `[5Br-dC]` inside `(...)`) so renderer/resolver pick up modification colors and structures correctly.
+* OligoNucleotide: Added double-click HELM Web Editor for OligoNucleotide cells; OK saves the edited HELM back to the cell
 
 ## 1.10.14 (2026-04-21)
 

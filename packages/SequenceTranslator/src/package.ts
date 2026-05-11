@@ -451,6 +451,34 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'editOligoNucleotideCell',
+    description: 'OligoNucleotide',
+    tags: ['cellEditor'],
+    meta: {
+      role: 'cellEditor',
+    },
+  })
+  static async editOligoNucleotideCell(
+    @grok.decorators.param({type: 'grid_cell'}) cell: DG.GridCell,
+  ): Promise<void> {
+    // Helm:editMoleculeCell can't be reused: it calls seqHelper.getSeqHandler(col),
+    // which throws unless semType === Macromolecule. OligoNucleotide columns have
+    // semType=OligoNucleotide, so we open the HELM Web Editor directly.
+    const helmHelper = await getHelmHelper();
+    const view = ui.div();
+    const app = helmHelper.createWebEditorApp(view, (cell.cell.value as string | null) ?? '');
+    ui.dialog({showHeader: false, showFooter: true})
+      .add(view)
+      .onOK(() => {
+        const helmValue = app.canvas!.getHelm(true)
+          .replace(/<\/span>/g, '')
+          .replace(/<span style='background:#bbf;'>/g, '');
+        cell.setValue(helmValue);
+      })
+      .show({modal: true, fullScreen: true});
+  }
+
+  @grok.decorators.func({
     name: 'Oligo-Nucleotide',
     description: 'Modifications, lengths, conjugates and color legend for an OligoNucleotide cell',
     tags: ['panel', 'widgets'],
