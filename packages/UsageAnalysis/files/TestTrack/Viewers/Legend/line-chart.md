@@ -68,7 +68,7 @@ related_bugs:
   - GROK-17278 ("Linechart: changed colors are not saved to the layout and project") — direct title match. This scenario does not change colors via legend (the bug repro changes a category color); covered by the bug-focused spec `legend-grok-17278-spec.ts`.
   - GROK-19083 (markers ↔ legend sync) — column intersection only; line chart does not use markers. Weak match.
 - Helpers: `loginToDatagrok`, `softStep`, `specTestOptions`, `stepErrors` from `spec-login`. No new helpers proposed.
-- Visual / pixel-level checks split into companion `legend-ui.md` (`target_layer: ui-only`, manual QA) on 2026-05-08: §1 «distinct palette colors», §2 «each Y line own subplot», §3 «per-Y legend block updates». Spec body retains JS-API proxy invariants (legend item count, prop equality) for these flows.
+- Visual / pixel-level checks split into companion `legend-ui.md` (`target_layer: manual-only`, manual QA) on 2026-05-08: §1 «distinct palette colors», §2 «each Y line own subplot», §3 «per-Y legend block updates». Spec body retains JS-API proxy invariants (legend item count, prop equality) for these flows.
 
 ---
 {

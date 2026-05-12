@@ -6,7 +6,7 @@ sub_features_covered:
   - projects.api.list
   - projects.api.delete
   - projects.api.count
-target_layer: api-contract
+target_layer: apitest
 coverage_type: regression
 pyramid_layer: integration
 ui_coverage_responsibility: []

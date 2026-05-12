@@ -129,7 +129,7 @@ Verification: `expect(propNames).toEqual(expect.arrayContaining([<expected>]))`.
   `stepErrors` from `../spec-login.ts`. No new helpers needed.
 - **Authority + scope:** atlas-driven scenario; closes a documented gap
   (no apitest-layer .md scenario existed for Charts viewers). Sister
-  to `Projects/lifecycle-api.md` precedent (target_layer: api-contract).
+  to `Projects/lifecycle-api.md` precedent (target_layer: apitest).
 
 ## Dataset metadata
 

@@ -33,9 +33,10 @@ atlas rev 11 `sub_features`.
 
 ## Decisions
 
-- **Why this `target_layer`:** chose `api-contract` per chain rev 3
+- **Why this `target_layer`:** chose `apitest` (legacy chain value `api-contract`
+  translated 2026-05-11 per Phase 2 Prompt A) per chain rev 3
   `output_plan` entry for lifecycle-api.md
-  (`target_layer: api-contract`, `strategy: simple`). Per
+  (`target_layer: api-contract` → `apitest`, `strategy: simple`). Per
   migration-prompt.md "Migrated scenario shape" decision tree, rule
   #3 applies (scenario is purely REST-call shape — every step is a
   `grok.dapi.projects.*` call with no UI surface). No persistence

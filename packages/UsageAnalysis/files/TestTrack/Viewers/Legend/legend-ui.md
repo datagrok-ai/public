@@ -2,7 +2,7 @@
 feature: legend
 sub_features_covered:
   - legend.color-scale.numerical
-target_layer: ui-only
+target_layer: manual-only
 coverage_type: regression
 priority: p2
 pyramid_layer: manual
@@ -25,8 +25,8 @@ the DOM on `dev.datagrok.ai` (2026-05-08).
 Each section is self-contained and includes the preceding setup steps so a
 manual QA can reproduce end-to-end.
 
-`target_layer: ui-only` — no `.ts` spec is generated for this file
-(per E-LAYER-COMPLIANCE-01: ui-only scenarios must not have a `.ts` body).
+`target_layer: manual-only` — no `.ts` spec is generated for this file
+(per E-LAYER-COMPLIANCE-01: manual-only scenarios must not have a `.ts` body).
 
 ## Setup (shared)
 
@@ -106,7 +106,7 @@ gradient swatch appearance.
 
 ## Notes
 
-- `target_layer: ui-only` — no `.ts` spec is generated for this file.
+- `target_layer: manual-only` — no `.ts` spec is generated for this file.
 - `pyramid_layer: manual` — visual verification by human QA.
 - These scenarios are NOT redundant with their source `.md` files: the
   source files retain JS-API / Playwright proxy assertions (legend item

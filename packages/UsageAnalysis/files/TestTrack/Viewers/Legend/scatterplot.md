@@ -118,7 +118,7 @@ Each Scenario is independent (starts with "Open SPGI" and ends with "Close All" 
   - GROK-17278 (linechart colors not saved to layout/project) — Scenario 1 steps 6–9 (positive baseline; linechart-specific in line-chart.md).
   - GROK-19083 (markers deselect ↔ legend sync) — Scenario 1 step 11 (Color=ID, Marker=Core); Scenario 3 step 3 (Marker=Stereo Category).
 - Helpers: `loginToDatagrok`, `softStep`, `specTestOptions`, `stepErrors` from `spec-login`. No new helpers proposed.
-- Visual / pixel-level check split into companion `legend-ui.md` (`target_layer: ui-only`, manual QA) on 2026-05-08: §4 «numerical color gradient swatch in scatter legend» (Sc 1 step 10 first sub-bullet). Spec body retains JS-API state assertions (`colorCodingType: 'Linear'`, `colorColumnName` round-trip) for the related flows.
+- Visual / pixel-level check split into companion `legend-ui.md` (`target_layer: manual-only`, manual QA) on 2026-05-08: §4 «numerical color gradient swatch in scatter legend» (Sc 1 step 10 first sub-bullet). Spec body retains JS-API state assertions (`colorCodingType: 'Linear'`, `colorColumnName` round-trip) for the related flows.
 
 ---
 {
