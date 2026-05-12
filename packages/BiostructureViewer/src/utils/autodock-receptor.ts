@@ -1,22 +1,18 @@
-// AutoDock pose → receptor lookup. Mirrors the helpers in the Docking
-// package's `utils/utils.ts` so BSV can resolve receptors locally for the
-// AutoDock-pose context panel (`dockingInteractionsWidget` in `package.ts`)
-// without having to call back into the Docking package.
+// AutoDock pose → receptor lookup. Used by BSV's `dockingInteractionsWidget`
+// to resolve the receptor for a pose cell.
 //
-// The receptor lookup convention is:
-//   1. Parse the `REMARK 1 receptor.<name> J.` line from the pose to get
-//      the receptor name (set by AutoDock when it writes a pose file).
+// Lookup steps:
+//   1. Parse the `REMARK 1 receptor.<name> J.` line from the pose (AutoDock
+//      writes this into every pose file).
 //   2. Look in `System:AppData/Docking/targets/<receptorName>/` for a
-//      `.pdbqt` or `.pdb` file (deposited by the Docking package's own
-//      `files/targets/` content on install).
-//   3. If not found locally (the user has BSV without Docking installed,
-//      or the targets folder was wiped), fall back to fetching the PDB by
-//      ID from RCSB.
+//      `.pdbqt` or `.pdb` file. The Docking package deposits these on
+//      install from its `files/targets/`.
+//   3. Fall back to fetching the PDB by ID from RCSB if the local file
+//      isn't there (BSV without Docking installed, or targets folder wiped).
 //
-// The `System:AppData/Docking/targets` path is hard-coded for now because
-// that's where AutoDock poses reference receptors — making it configurable
-// would only matter if a non-AutoDock docking tool emitted poses with the
-// same `REMARK 1 receptor.` convention. Not a realistic scenario today.
+// The `System:AppData/Docking/targets` path is hardcoded — making it
+// configurable would only matter if a non-AutoDock tool emitted poses with
+// the same `REMARK 1 receptor.` convention, which isn't realistic today.
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';

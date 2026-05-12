@@ -8,6 +8,7 @@ import {
   detectNonWaterHetatmInstances,
   getPlHtmlForRow,
   interactionsColForDiagram,
+  renderInteractionBreakdown,
   runPlBatch,
   PL_DIAGRAM_SEM_TYPE,
   type ProlifBatchCtx,
@@ -132,6 +133,46 @@ category('PLBatch', () => {
       DG.Column.string('PL Diagram', 1),
     ]);
     expect(interactionsColForDiagram(df, 'PL Diagram'), null);
+  });
+
+  // ------------------------------------------------------------------------
+  // renderInteractionBreakdown — parses the comma-separated `RESNAME+RESID_CODE`
+  // string the Python script emits and groups residues by interaction type
+  // for the post-batch context panel. Three contracts: (1) empty input
+  // shows the empty-state message; (2) known codes get human-readable
+  // labels and residues sort by numeric id within a code; (3) unknown
+  // codes surface under their raw name rather than being silently dropped.
+  // ------------------------------------------------------------------------
+  test('renderInteractionBreakdown: empty string shows empty-state message', async () => {
+    const host = renderInteractionBreakdown('');
+    expect(host.textContent!.includes('No interactions detected'), true);
+    expect(host.textContent!.includes('(0)'), true);
+  });
+
+  test('renderInteractionBreakdown: groups by code, sorts residues by numeric id', async () => {
+    // Mixed input: 3 hydrophobic residues out of numeric order + 2 H-bond
+    // donors. Locks in (a) labels use the human-readable form ("Hydrophobic"
+    // not "HY") and (b) numeric residue sort beats alphabetic (GLY3 before
+    // GLN21 before TYR123 — plain string sort would give GLN21 first).
+    const host = renderInteractionBreakdown(
+      'TYR123_HY, GLN21_HY, GLY3_HY, ASP40_HD, GLU50_HD');
+    const text = host.textContent!;
+    expect(text.includes('Hydrophobic'), true);
+    expect(text.includes('H-bond donors'), true);
+    const gly3 = text.indexOf('GLY3');
+    const gln21 = text.indexOf('GLN21');
+    const tyr123 = text.indexOf('TYR123');
+    expect(gly3 > 0 && gly3 < gln21 && gln21 < tyr123, true);
+  });
+
+  test('renderInteractionBreakdown: unknown code surfaces under its raw name', async () => {
+    // Defensive: if Python adds a new interaction type before TS knows
+    // about it, the residue must still show up — under the raw code —
+    // rather than being silently dropped.
+    const host = renderInteractionBreakdown('ASP40_NOVEL');
+    const text = host.textContent!;
+    expect(text.includes('NOVEL'), true);
+    expect(text.includes('ASP40'), true);
   });
 
   // ------------------------------------------------------------------------

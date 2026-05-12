@@ -1,20 +1,13 @@
 // Protein-Ligand interaction (ProLIF) context panel + batch handler.
 //
-// Owned by the BiostructureViewer package. Used by:
-//   * BSV's `pdbInteractionsWidget` panel (regular PDB Molecule3D cells)
-//   * BSV's `pdbIdInteractionsWidget` panel (PDB_ID strings, fetches from RCSB)
-//   * BSV's `plDiagramInteractionsWidget` panel (`PL Diagram` cells with
-//     semType `PL.LigNetwork`, fires after a batch run)
-//   * BSV's `dockingInteractionsWidget` panel (AutoDock-pose cells), via
-//     the Docking-flavour wrapper in `./docking-pose-prolif.ts` that
-//     supplies the receptor pre-fetch + `isAutoDockPose` gate as
-//     `RunPlBatchOptions` callbacks.
-//
-// Originally extracted into `@datagrok-libraries/bio/src/prolif/` per PR
-// review (https://github.com/datagrok-ai/public/pull/3783, comment #11)
-// when both BSV and Docking had a duplicated copy. Since then ALL of
-// Docking's ProLIF code has moved into BSV, so the bio-library detour
-// was no longer earning its keep and the module moved back into BSV.
+// Used by:
+//   * `pdbInteractionsWidget` panel — regular PDB Molecule3D cells
+//   * `pdbIdInteractionsWidget` panel — PDB_ID strings, fetches from RCSB
+//   * `PlDiagramObjectHandler` — `PL Diagram` cells, registered in `init()`
+//     and keyed off the `%prolifSource` column tag
+//   * `dockingInteractionsWidget` panel — AutoDock-pose cells, via the
+//     `./docking-pose-prolif.ts` wrapper that supplies the receptor
+//     pre-fetch + `isAutoDockPose` gate as `RunPlBatchOptions` callbacks
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -28,7 +21,7 @@ import * as DG from 'datagrok-api/dg';
 // Common biological cofactors (HEM, NAD, FAD, ATP, etc.) are listed because
 // they outvote a small inhibitor on the most-common-HETATM heuristic and
 // would otherwise silently steer ProLIF onto the wrong ligand.
-export const PROLIF_SKIP_RESNAMES: ReadonlySet<string> = new Set([
+const PROLIF_SKIP_RESNAMES: ReadonlySet<string> = new Set([
   // waters
   'HOH', 'WAT', 'H2O', 'D2O', 'DOD',
   // ions / metals
@@ -51,8 +44,8 @@ export const PROLIF_SKIP_RESNAMES: ReadonlySet<string> = new Set([
 
 /** Single source of truth for "looks like an AutoDock pose" — the
  *  `binding energy` REMARK line is what AutoDock writes into every pose
- *  output. BSV uses this to *reject* such inputs (Docking's panel handles
- *  them); Docking uses it as the per-row applicability gate. */
+ *  output. BSV uses this to *reject* such inputs from `hasNonWaterHetatm`
+ *  (BSV's `dockingInteractionsWidget` handles them instead). */
 export function isAutoDockPose(molecule: string): boolean {
   return molecule.includes('binding energy');
 }
@@ -64,8 +57,8 @@ export function isAutoDockPose(molecule: string): boolean {
  *  use it as a condition. */
 export function hasNonWaterHetatm(molecule: string): boolean {
   if (!molecule) return false;
-  // AutoDock poses are handled by Docking's panel — and they don't carry
-  // a full receptor in the cell value anyway, so the script would fail.
+  // AutoDock poses are handled by BSV's `dockingInteractionsWidget` panel
+  // (they don't carry a full receptor in the cell value; the script would fail).
   if (isAutoDockPose(molecule)) return false;
   if (!/^ATOM/m.test(molecule)) return false;
   return /^HETATM.{11}(?!HOH|WAT|H2O)/m.test(molecule);
@@ -94,7 +87,7 @@ export function detectNonWaterHetatmInstances(pdbText: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Per-row HTML cache (shared via window for cross-package consistency)
+// Per-row HTML cache
 // ---------------------------------------------------------------------------
 
 // Stored on `window` rather than at module level so the cache survives a
@@ -219,10 +212,13 @@ const PL_COL_NAMES_FIXED = {
   diagram: 'PL Diagram',
 } as const;
 
-/** Semantic type stamped on the `PL Diagram` column so a dedicated context
- *  panel (registered in `BiostructureViewer/src/package.ts` via
- *  `@grok.decorators.panel`) fires when the user clicks any of its cells. */
-export const PL_DIAGRAM_SEM_TYPE = 'PL.LigNetwork';
+/** Semantic type stamped on the `PL Diagram` column. PowerGrid's built-in
+ *  `RawPNGRenderer` (registered for `cellType: 'rawPng'`) picks columns up
+ *  via this semType and draws the base64 PNG values directly — we no
+ *  longer ship a custom cell renderer. The context panel is wired
+ *  separately through `DG.ObjectHandler.register(new PlDiagramObjectHandler())`
+ *  in BSV/package.ts's `init`, keyed off the `%prolifSource` column tag. */
+export const PL_DIAGRAM_SEM_TYPE = 'rawPng';
 
 /** Given a `PL Diagram` column name, find the matching `PL Interactions`
  *  column. Modern runs always use canonical names (`PL Diagram` paired with
@@ -291,8 +287,8 @@ function _dropPriorPlColumns(df: DG.DataFrame): void {
 }
 
 // Set grid row height + column width for the diagram after the batch
-// finishes. The actual cell rendering is handled by `PlLigNetworkPngRenderer`
-// (registered in BSV/package.ts), which picks up the column via semType.
+// finishes. The actual cell rendering is handled by PowerGrid's built-in
+// `RawPNGRenderer` (semType `rawPng`), registered platform-wide via PowerGrid.
 function _adjustGridForDiagrams(df: DG.DataFrame, colName: string): void {
   const tv = grok.shell.getTableView(df.name);
   if (tv == null) return;
@@ -545,17 +541,17 @@ export function resolveBatchCtxFromSemValue(
  *  Molecule3D / PDB_ID / docking-pose cell. Just shows a brief ligand
  *  summary and the "Compute for whole dataset" button — the interactive
  *  LigNetwork diagram + breakdown live in the post-batch panel
- *  (`plDiagramInteractionsWidget` in BSV/package.ts), which fires on
+ *  (`PlDiagramObjectHandler` registered in BSV's `init`), which fires on
  *  `PL Diagram` cell clicks.
  *
  *  `runBatch` overrides what the button does. The default runs `runPlBatch`
- *  with the BSV-style gate (`hasNonWaterHetatm`). The Docking package
- *  supplies its own runner that pre-fetches the receptor and gates rows
- *  with `isApplicableAutodock`. */
+ *  with the BSV-style gate (`hasNonWaterHetatm`). The Docking-flavour runner
+ *  (`docking-pose-prolif.ts`) pre-fetches the receptor and gates rows
+ *  with `isAutoDockPose`. */
 export interface ProlifWidgetOptions {
   /** Override the batch button's click handler. The default runs `runPlBatch`
-   *  with the BSV-style gate (`hasNonWaterHetatm`). Docking supplies its own
-   *  runner that pre-fetches the receptor and gates rows with `isAutoDockPose`. */
+   *  with the BSV-style gate (`hasNonWaterHetatm`). The Docking-flavour runner
+   *  in `docking-pose-prolif.ts` pre-fetches the receptor and gates rows with `isAutoDockPose`. */
   runBatch?: () => void | Promise<void>;
   /** When true, compute and mount the interactive LigNetwork iframe + the
    *  per-residue interaction breakdown inline on panel open (between the
@@ -724,9 +720,9 @@ export interface RunPlBatchOptions {
  *       OK row with value > 0 (skipping types with no observed instances —
  *       e.g. metal columns vanish for purely organic-ligand datasets).
  *
- *  Diagram columns are stamped with `PL_DIAGRAM_SEM_TYPE` so both
- *  `PlLigNetworkPngRenderer` (cell renderer) and `plDiagramInteractionsWidget`
- *  (post-batch panel) light up automatically. */
+ *  Diagram columns are stamped with `PL_DIAGRAM_SEM_TYPE` (`rawPng`) so
+ *  PowerGrid's built-in renderer draws the thumbnails and
+ *  `PlDiagramObjectHandler` fires the context panel on cell click. */
 export async function runPlBatch(opts: RunPlBatchOptions): Promise<void> {
   const {ctx, buildRowArgs, prepare} = opts;
   const {df} = ctx;
@@ -739,9 +735,17 @@ export async function runPlBatch(opts: RunPlBatchOptions): Promise<void> {
 
   // PL Diagram added BEFORE PL Interactions so it appears to the left in
   // the grid — the diagram is the primary visual artefact, the interaction
-  // string is supporting detail.
+  // string is supporting detail. semType `rawPng` lights up PowerGrid's
+  // built-in PNG renderer; the `%prolifSource` tag links each cell back to
+  // the source ligand/PDB column and is what `PlDiagramObjectHandler`
+  // uses to claim the cell for its context panel.
   const diagramCol = df.columns.addNewString(PL_COL_NAMES_FIXED.diagram) as DG.Column<string>;
   diagramCol.semType = PL_DIAGRAM_SEM_TYPE;
+  // Linking tag — must match `PROLIF_SOURCE_TAG` in `./pl-object-handler.ts`.
+  // Inlined here as a string literal (rather than imported) to avoid a
+  // circular import between the two files. `%`-prefixed tags are surfaced
+  // by Datagrok as cross-column references in the column info panel.
+  diagramCol.tags['%prolifSource'] = ctx.pdbCol.name;
   const interactionsCol = df.columns.addNewString(PL_COL_NAMES_FIXED.interactions) as DG.Column<string>;
   const dropFixedCols = () => {
     df.columns.remove(interactionsCol.name);

@@ -18,7 +18,7 @@ import {BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
 import {PdbGridCellRenderer, PdbGridCellRendererBack, PdbIdGridCellRenderer} from './utils/pdb-grid-cell-renderer';
-import {PlLigNetworkPngRenderer} from './utils/pl-png-cell-renderer';
+import {PlDiagramObjectHandler} from './utils/pl-object-handler';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
 import {NglViewer} from './viewers/ngl-viewer';
@@ -50,9 +50,6 @@ import {
   isAutoDockPose as _isAutoDockPose,
   makeProlifWidget,
   resolveBatchCtxFromSemValue,
-  getPlHtmlForRow,
-  renderInteractionBreakdown,
-  interactionsColForDiagram,
 } from './utils/prolif-panel';
 import {makeDockingProlifWidget} from './utils/docking-pose-prolif';
 import {getReceptorData} from './utils/autodock-receptor';
@@ -73,6 +70,13 @@ export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
     _package.logger.debug('BiostructureViewer.initBiostructureViewer() init package start');
+    // Register the `PL Diagram` cell context-panel handler. Has to be in
+    // `init` (runs once at package load) rather than at module top level,
+    // because `DG.ObjectHandler.register` needs the Datagrok core to be
+    // fully initialised. The handler claims cells with the `%prolifSource`
+    // column tag set by `runPlBatch` and shows the cached interactive
+    // LigNetwork iframe + per-residue breakdown.
+    DG.ObjectHandler.register(new PlDiagramObjectHandler());
   }
 
   @grok.decorators.func({
@@ -94,22 +98,6 @@ export class PackageFunctions {
   })
   static pdbIdCellRenderer(): PdbIdGridCellRenderer {
     return new PdbIdGridCellRenderer();
-  }
-
-  // Cell renderer for `PL Diagram` cells (base64 PNG of the captured
-  // LigNetwork canvas, written by `runPlBatch` in `./utils/prolif-panel`).
-  // Bound to semType `PL.LigNetwork` — the same semType the context panel
-  // `plDiagramInteractionsWidget` binds to, so one semType drives both
-  // display and click-to-open-panel. See `./utils/pl-png-cell-renderer.ts`
-  // for why we bundle our own renderer rather than depending on PowerGrid's
-  // `rawPng`.
-  @grok.decorators.func({
-    name: 'plLigNetworkPngCellRenderer',
-    meta: {cellType: 'PL.LigNetwork', role: 'cellRenderer'},
-    outputs: [{type: 'grid_cell_renderer', name: 'result'}],
-  })
-  static plLigNetworkPngCellRenderer(): PlLigNetworkPngRenderer {
-    return new PlLigNetworkPngRenderer();
   }
 
   @grok.decorators.func()
@@ -341,43 +329,11 @@ export class PackageFunctions {
     }
   }
 
-  // Context panel that fires when the user clicks a `PL Diagram` cell
-  // (semType `PL.LigNetwork`, stamped by the batch handler). The cell holds
-  // the captured PNG; the interactive LigNetwork HTML is in
-  // `window.__prolifCache`, keyed by `(df.name, rowIdx)` — opening this
-  // panel costs one iframe mount, no script re-run.
-  @grok.decorators.panel({name: 'Protein-Ligand Interactions'})
-  static async plDiagramInteractionsWidget(
-    @grok.decorators.param({options: {semType: 'PL.LigNetwork'}}) cell: DG.SemanticValue
-  ): Promise<DG.Widget> {
-    // `SemanticValue.cell` is the typical path; `grok.shell.o` is the
-    // panel system's actual current object, used as fallback when the
-    // panel re-fires without a fresh cell on the SemanticValue.
-    const dgCell = cell.cell ?? (grok.shell.o as DG.Cell | null);
-    const df = dgCell?.dataFrame ?? grok.shell.t ?? null;
-    const rowIdx = dgCell?.rowIndex ?? df?.currentRowIdx ?? -1;
-    if (df == null || rowIdx < 0)
-      return new DG.Widget(ui.divText('No row context.'));
-    const html = getPlHtmlForRow(df, rowIdx);
-    if (!html) {
-      return new DG.Widget(ui.divText(
-        `LigNetwork HTML not cached for ${df.name} row ${rowIdx} — ` +
-        `re-run "Compute for whole dataset" to refresh.`,
-      ));
-    }
-    const iframe = ui.element('iframe') as HTMLIFrameElement;
-    iframe.srcdoc = html;
-    iframe.classList.add('bsv-pl-panel-iframe');
-    // No sandbox — we control the HTML, and same-origin lets vis.js read
-    // its own canvas cleanly. Same rationale as the cell renderer iframe.
-    iframe.onload = () => iframe.classList.add('bsv-pl-panel-iframe-loaded');
-    // Per-interaction-type residue breakdown below the diagram, sourced
-    // from the matching `PL Interactions` column (same suffix as the
-    // clicked diagram column). Empty string falls back to empty-state.
-    const interactionsCol = dgCell?.column?.name != null ? interactionsColForDiagram(df, dgCell.column.name) : null;
-    const interactionsStr = (interactionsCol?.get(rowIdx) as string | null) ?? '';
-    return new DG.Widget(ui.div([iframe, renderInteractionBreakdown(interactionsStr)], 'd4-empty-parent'));
-  }
+  // The `PL Diagram` cell context panel is registered via
+  // `DG.ObjectHandler.register(new PlDiagramObjectHandler())` in `init()`
+  // above. The old `@grok.decorators.panel`-based registration was replaced
+  // because the ObjectHandler API is more flexible (matches on column tags
+  // rather than semType — leaves the semType free for PowerGrid's renderer).
 
   // -- Test apps --
 

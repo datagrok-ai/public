@@ -1,16 +1,10 @@
 // AutoDock-pose flavour of the ProLIF widget + batch.
 //
-// Mirrors what used to live in `Docking/src/utils/prolif-panel.ts` —
-// moved here so the entire ProLIF feature for poses (lookup, batch,
-// widget) is owned by BSV. The Docking package no longer ships any
-// ProLIF code; this file is the AutoDock-specific glue between BSV's
-// panel system and the generic ProLIF batch handler in `./prolif-panel`.
-//
-// The pieces that ARE AutoDock-specific (and therefore live here rather
-// than in the generic `prolif-panel.ts`):
-//   * Pre-fetching the receptor from `System:AppData/Docking/targets/`
+// The AutoDock-specific bits (everything else is shared via the generic
+// batch handler in `./prolif-panel`):
+//   * Pre-fetches the receptor from `System:AppData/Docking/targets/`
 //     via `getReceptorData` — poses don't carry the receptor themselves.
-//   * Gating per-row work by `isAutoDockPose` (the `binding energy`
+//   * Gates per-row work by `isAutoDockPose` (the `binding energy`
 //     REMARK heuristic).
 
 import * as grok from 'datagrok-api/grok';
@@ -79,7 +73,7 @@ async function runDockingPlBatch(ctx: ProlifBatchCtx): Promise<void> {
   });
 }
 
-/** Docking-flavour wrapper around bio's `makeProlifWidget`. Wires the
+/** Docking-flavour wrapper around BSV's `makeProlifWidget`. Wires the
  *  Docking-specific `runDockingPlBatch` runner; extra options pass
  *  through (e.g. `showInlineDiagram` to mount the LigNetwork iframe). */
 export function makeDockingProlifWidget(params: {

@@ -41,9 +41,9 @@
 }
 
 /* Iframe used to render the interactive PL LigNetwork in the context-panel
-   widget. The 600px height is fixed because the sandbox attribute prevents
-   the parent from reading the iframe's contentDocument to measure
-   rendered content. Starts at opacity 0 and fades in once `bsv-pl-panel-iframe-loaded`
+   widget. The 600px height is fixed — the srcdoc content is dynamically sized
+   by vis.js and polling contentDocument for the final height would add a
+   layout flash. Starts at opacity 0 and fades in once `bsv-pl-panel-iframe-loaded`
    is added by the `onload` handler — keeps the visual pop from a half-rendered
    network out of view. */
 .bsv-pl-panel-iframe {
