@@ -3,6 +3,7 @@
 ## v.next
 
 * Scaffold tree: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
+* Chem: Scaffold Tree: Fixed `Array.from(undefined)` crash in `getPeerViewers` when the active view is not a TableView
 
 ## 1.17.5 (2026-04-15)
 
