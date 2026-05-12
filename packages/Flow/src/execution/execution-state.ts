@@ -1,4 +1,7 @@
-/** Execution state tracking for instrumented Flow runs */
+/** Execution state tracking for instrumented Flow runs.
+ *
+ * Node IDs are strings (Rete uses UUID-style strings, not LiteGraph's integer
+ * IDs). The instrumented script emits events keyed by these strings. */
 
 export enum NodeExecStatus {
   idle = 'idle',
@@ -22,11 +25,10 @@ export interface NodeExecState {
   stack?: string;
 }
 
-/** Execution event payloads fired by instrumented scripts */
 export interface ExecEvent {
   type: 'run-start' | 'node-start' | 'node-complete' | 'node-error' |
         'breakpoint-hit' | 'run-complete';
-  nodeId: number;
+  nodeId: string;
   timestamp: number;
   outputs?: Record<string, ValueSummary>;
   error?: string;
@@ -34,10 +36,9 @@ export interface ExecEvent {
   success?: boolean;
 }
 
-/** Tracks execution state for all nodes in a single run */
 export class ExecutionState {
   runId: string = '';
-  nodeStates: Map<number, NodeExecState> = new Map();
+  nodeStates: Map<string, NodeExecState> = new Map();
   isRunning: boolean = false;
   graphVersionAtRun: number = 0;
 
@@ -58,20 +59,20 @@ export class ExecutionState {
     this.isRunning = false;
   }
 
-  setNodeStatus(nodeId: number, status: NodeExecStatus, data?: Partial<NodeExecState>): void {
-    const existing = this.nodeStates.get(nodeId) || {status: NodeExecStatus.idle};
+  setNodeStatus(nodeId: string, status: NodeExecStatus, data?: Partial<NodeExecState>): void {
+    const existing = this.nodeStates.get(nodeId) ?? {status: NodeExecStatus.idle};
     this.nodeStates.set(nodeId, {...existing, status, ...data});
   }
 
-  getNodeState(nodeId: number): NodeExecState | undefined {
+  getNodeState(nodeId: string): NodeExecState | undefined {
     return this.nodeStates.get(nodeId);
   }
 
-  /** Mark all completed/errored nodes as stale (graph changed since run) */
+  /** Mark all completed/errored nodes as stale (graph changed since last run). */
   markAllStale(): void {
-    for (const [nodeId, state] of this.nodeStates) {
+    for (const [id, state] of this.nodeStates) {
       if (state.status === NodeExecStatus.completed || state.status === NodeExecStatus.errored)
-        this.nodeStates.set(nodeId, {...state, status: NodeExecStatus.stale});
+        this.nodeStates.set(id, {...state, status: NodeExecStatus.stale});
     }
   }
 

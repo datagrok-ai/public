@@ -197,6 +197,12 @@ export async function getPtChemEnumeratorDialog(cell?: any) : Promise<void> {
   await PackageFunctions.getPtChemEnumeratorDialog(cell);
 }
 
+//name: Polytool Oligo Enumerator dialog
+//input: object cell { nullable: true }
+export async function getPtOligoEnumeratorDialog(cell?: any) : Promise<void> {
+  await PackageFunctions.getPtOligoEnumeratorDialog(cell);
+}
+
 //name: Enumerate Single HELM Sequence
 //description: Enumerate provided HELM sequence on provided positions with provided monomers and generates new table
 //input: string helmSequence 
@@ -231,6 +237,14 @@ export async function getPolyToolCombineDialog() : Promise<void> {
 //meta.role: cellRenderer
 export function oligoNucleotideCellRenderer() : any {
   return PackageFunctions.oligoNucleotideCellRenderer();
+}
+
+//description: OligoNucleotide
+//tags: cellEditor
+//input: grid_cell cell 
+//meta.role: cellEditor
+export async function editOligoNucleotideCell(cell: any) : Promise<void> {
+  await PackageFunctions.editOligoNucleotideCell(cell);
 }
 
 //name: Oligo-Nucleotide

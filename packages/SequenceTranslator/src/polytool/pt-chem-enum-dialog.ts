@@ -45,6 +45,7 @@ interface CardOpts {
   subtitle: string;
   error?: string;
   onEdit?: () => void;
+  onDuplicate?: () => void;
   onRemove?: () => void;
 }
 
@@ -108,15 +109,22 @@ function buildCard(opts: CardOpts): HTMLElement {
   }});
   if (opts.onEdit) {
     const editBtn = ui.icons.edit((e: MouseEvent) => { e.stopPropagation(); opts.onEdit!(); }, 'Edit');
+    editBtn.style.color = 'var(--blue-3)';
     actions.appendChild(editBtn);
+  }
+  if (opts.onDuplicate) {
+    const dupBtn = ui.icons.copy((e: MouseEvent) => { e.stopPropagation(); opts.onDuplicate!(); }, 'Duplicate');
+    dupBtn.style.color = 'var(--blue-3)';
+    actions.appendChild(dupBtn);
   }
   if (opts.onRemove) {
     const delBtn = ui.icons.delete((e: MouseEvent) => { e.stopPropagation(); opts.onRemove!(); }, 'Remove');
+    delBtn.style.color = 'var(--red-3)';
     actions.appendChild(delBtn);
   }
   card.addEventListener('mouseenter', () => { actions.style.display = 'flex'; });
   card.addEventListener('mouseleave', () => { actions.style.display = 'none'; });
-  if (opts.onEdit || opts.onRemove) card.appendChild(actions);
+  if (opts.onEdit || opts.onDuplicate || opts.onRemove) card.appendChild(actions);
 
   return card;
 }
@@ -197,25 +205,38 @@ async function openRGroupSketchDialog(rdkit: RDModule, initialMolfile?: string, 
     const status = ui.divText('', {style: {fontSize: '11px', padding: '4px 0', minHeight: '18px'}});
     let currentSmiles: string | null = null;
     let detectedRs: number[] = [];
+    let isSingleAtom = false;
     let okBtn: HTMLButtonElement | null = null;
     let userTouchedR = false;
     rNumberInput.onChanged.subscribe(() => { userTouchedR = true; updateOk(); });
 
     const updateOk = () => {
       const n = rNumberInput.value;
-      const ok = currentSmiles != null && n != null && n >= 1 && detectedRs.length === 1;
+      const ok = currentSmiles != null && n != null && n >= 1 &&
+        (detectedRs.length === 1 || isSingleAtom);
       if (okBtn) okBtn.disabled = !ok;
     };
 
     const revalidate = async () => {
       currentSmiles = await smilesFromSketcher(sk, rdkit);
       detectedRs = currentSmiles ? extractRNumbers(currentSmiles) : [];
+      // Probe single-atom mode only when there's no R-label — keeps the
+      // common labeled path free of an extra RDKit parse.
+      isSingleAtom = false;
+      if (currentSmiles && detectedRs.length === 0) {
+        const probe = makeRGroup(currentSmiles, rNumberInput.value ?? 1, '', rdkit);
+        isSingleAtom = !!probe.isSingleAtom;
+      }
       if (!currentSmiles) {
-        status.innerText = 'Draw an R-group with exactly one attachment point.';
+        status.innerText = 'Draw an R-group with one attachment point, or a single atom (e.g. N, O, Cl).';
         status.style.color = 'var(--grey-4)';
-      } else if (detectedRs.length === 0) {
-        status.innerText = 'No R-group detected — add [*:N] to mark the attachment point.';
+      } else if (detectedRs.length === 0 && !isSingleAtom) {
+        status.innerText = 'No R-group detected — add [*:N] to mark the attachment point, or draw a single atom (e.g. N, O, Cl).';
         status.style.color = 'var(--red-3)';
+      } else if (detectedRs.length === 0 && isSingleAtom) {
+        const targetN = rNumberInput.value;
+        status.innerText = `Single atom — will be substituted into [*:${targetN ?? '?'}] in the core.`;
+        status.style.color = 'var(--green-2)';
       } else if (detectedRs.length > 1) {
         status.innerText = `R-group must contain exactly one attachment point. Found ${detectedRs.length}: ${detectedRs.map((n) => 'R' + n).join(', ')}.`;
         status.style.color = 'var(--red-3)';
@@ -266,6 +287,10 @@ async function openImportWizard(
     const columnInput = ui.input.choice<string>('Column', {items: [] as string[], nullable: true});
     const rNumberInput = kind === 'rgroups' ?
       ui.input.int('Target R#', {value: 1, min: 1}) : null;
+    if (rNumberInput) {
+      ui.tooltip.bind(rNumberInput.input,
+        'Target R-number for these R-groups. Single-atom rows (no [*:N] label, e.g. just N or O) get substituted into the core\'s R# slot directly.');
+    }
     const dedupInput = ui.input.bool('Remove duplicates', {value: defaultDedup});
     ui.tooltip.bind(dedupInput.input,
       kind === 'cores' ?
@@ -361,10 +386,10 @@ async function openImportWizard(
         built.rGroups = rGroups;
         rGroups.forEach((rg, i) => {
           if (rg.error) errs.push(`R-group ${i + 1}: ${rg.error}`);
-          items.push({
-            smi: rg.error ? '' : rg.smiles, err: rg.error,
-            subtitle: rg.error ? 'invalid' : `R${rg.rNumber}${rg.sourceRNumber != null && rg.sourceRNumber !== rg.rNumber ? ` (from R${rg.sourceRNumber})` : ''}`,
-          });
+          const subtitle = rg.error ? 'invalid' :
+            rg.isSingleAtom ? `R${rg.rNumber} · atom` :
+              `R${rg.rNumber}${rg.sourceRNumber != null && rg.sourceRNumber !== rg.rNumber ? ` (from R${rg.sourceRNumber})` : ''}`;
+          items.push({smi: rg.error ? '' : rg.smiles, err: rg.error, subtitle});
         });
         countText.innerText = `${rGroups.length} R-group${rGroups.length === 1 ? '' : 's'} for R${n}` +
           (dedup && dupCount ? ` (${dupCount} duplicate${dupCount === 1 ? '' : 's'} skipped)` : '') + '.';
@@ -558,6 +583,10 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
         const edited = await openCoreSketchDialog(rdkit, c.smiles);
         if (edited) { state.cores[i] = edited; refresh(); }
       },
+      onDuplicate: async () => {
+        const dup = await openCoreSketchDialog(rdkit, c.smiles);
+        if (dup) { state.cores.push(dup); refresh(); }
+      },
       onRemove: () => { state.cores.splice(i, 1); refresh(); },
     });
   };
@@ -625,9 +654,12 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
       const renderer = (i: number): HTMLElement => {
         const rg = list[i];
         const remap = rg.sourceRNumber != null && rg.sourceRNumber !== rg.rNumber ? ` (from R${rg.sourceRNumber})` : '';
+        const subtitle = rg.error ? 'invalid' :
+          rg.isSingleAtom ? `r group ${i + 1} · R${rg.rNumber} · atom` :
+            `r group ${i + 1} · R${rg.rNumber}${remap}`;
         return buildCard({
           smiles: rg.error ? '' : rg.smiles,
-          subtitle: rg.error ? 'invalid' : `r group ${i + 1} · R${rg.rNumber}${remap}`,
+          subtitle,
           error: rg.error,
           onEdit: async () => {
             const edited = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
@@ -642,6 +674,14 @@ function buildChemEnumPanel(rdkit: RDModule, preloadCore: ChemEnumCore | null): 
             } else {
               list[i] = edited;
             }
+            refresh();
+          },
+          onDuplicate: async () => {
+            const dup = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
+            if (!dup) return;
+            const target = state.rGroupsByNum.get(dup.rNumber) ?? [];
+            target.push(dup);
+            state.rGroupsByNum.set(dup.rNumber, target);
             refresh();
           },
           onRemove: () => {

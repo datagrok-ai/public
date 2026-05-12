@@ -1,0 +1,1379 @@
+/** FlowEditor — owns the NodeEditor + AreaPlugin + ConnectionPlugin pipeline.
+ *
+ * Replaces LiteGraph's `CanvasController` and `GraphManager`. The host view
+ * supplies a container; we build the editor inside it and expose just enough
+ * surface for the rest of the package (compiler, view, property panel) to
+ * operate on a Rete editor without knowing what's underneath. */
+
+import {NodeEditor} from 'rete';
+import {AreaExtensions, AreaPlugin} from 'rete-area-plugin';
+import {
+  ClassicFlow,
+  ConnectionPlugin,
+  SocketData,
+} from 'rete-connection-plugin';
+import {Presets as ReactPresets, ReactArea2D, ReactPlugin} from 'rete-react-plugin';
+import {
+  HistoryActions, HistoryExtensions, HistoryPlugin,
+  Presets as HistoryPresets,
+} from 'rete-history-plugin';
+import {getDOMSocketPosition} from 'rete-render-utils';
+import {createRoot} from 'react-dom/client';
+import * as DG from 'datagrok-api/dg';
+
+import {FlowConnection, FlowNode, FlowScheme} from './scheme';
+import {TypedSocket} from './sockets';
+import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
+import {getSlotColor} from '../types/type-map';
+import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
+
+export interface FlowEditorCallbacks {
+  onNodeSelected?: (node: FlowNode) => void;
+  onNodeDeselected?: (node: FlowNode) => void;
+  onGraphChanged?: () => void;
+}
+
+export type ConnectionStatus = 'idle' | 'active' | 'completed' | 'errored' | 'stale';
+
+export class FlowEditor {
+  readonly editor = new NodeEditor<FlowScheme>();
+  readonly area: AreaPlugin<FlowScheme>;
+  readonly connection = new ConnectionPlugin<FlowScheme>();
+  readonly render: ReactPlugin<FlowScheme, ReactArea2D<FlowScheme>>;
+  readonly history = new HistoryPlugin<FlowScheme, HistoryActions<FlowScheme>>();
+  readonly container: HTMLElement;
+
+  private selector = AreaExtensions.selector();
+  /** Tracks which node is under the cursor at the moment of pointerdown.
+   *  Read by `accumulating.active()` to decide whether to *preserve* an
+   *  existing multi-selection when one of the already-selected nodes is
+   *  clicked — required for KNIME/Figma-style group-drag. */
+  private lastPointerDownNodeId: string | null = null;
+  /** Mouse/pointer button last pressed (0 = primary, 2 = secondary).
+   *  Several plugins (notably rete-connection-plugin) don't filter by button;
+   *  right-clicking an output socket would otherwise start a fake connection
+   *  drag that ends with `created:false`, accidentally triggering the
+   *  suggestion menu. Handlers that should be left-click-only consult this. */
+  private lastPointerButton = 0;
+  /** Underlying ctrl-held accumulator from rete; we wrap it to also accumulate
+   *  when the click landed on an already-selected node. */
+  private ctrlAccumulating = AreaExtensions.accumulateOnCtrl();
+  private accumulating = {
+    active: (): boolean => {
+      if (this.ctrlAccumulating.active()) return true;
+      const id = this.lastPointerDownNodeId;
+      if (!id) return false;
+      const node = this.editor.getNode(id) as {selected?: boolean} | undefined;
+      return node?.selected === true;
+    },
+  };
+  /** Returned by `AreaExtensions.selectableNodes` — gives us programmatic
+   *  select/unselect on top of the click-to-select that the extension wires
+   *  up automatically. Used by `selectNode` (e.g. for auto-select on
+   *  run-complete) and the rectangle-select tool. */
+  private selectableApi!: {
+    select: (nodeId: string, accumulate: boolean) => Promise<void>;
+    unselect: (nodeId: string) => Promise<void>;
+  };
+  private callbacks: FlowEditorCallbacks;
+  private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  private pointerDownTracker: ((e: PointerEvent) => void) | null = null;
+  /** Per-connection status (for execution coloring). */
+  private connectionStatuses = new Map<string, ConnectionStatus>();
+
+  /** Workflow annotations — colored frames behind the graph (KNIME pattern).
+   *  Owned by the editor (not by Rete), persisted alongside the graph. */
+  private annotations = new Map<string, FlowAnnotation>();
+
+  /** Snap-to-grid step in canvas units; alignment guides override grid when within threshold. */
+  private readonly gridSize = 20;
+  /** Distance (canvas units) within which a node edge/center snaps to another node's edge/center. */
+  private readonly alignThreshold = 6;
+  private guideOverlay: HTMLElement | null = null;
+  private vGuide: HTMLElement | null = null;
+  private hGuide: HTMLElement | null = null;
+
+  /** Suggestion-menu drag state. Set on `connectionpick` for an output
+   *  socket; cleared on `connectiondrop`. If the drop didn't create a
+   *  connection AND wasn't on a target socket, the suggestion popup opens. */
+  private dragOutSource: {nodeId: string; outputKey: string; dgType: string} | null = null;
+
+  constructor(container: HTMLElement, callbacks: FlowEditorCallbacks = {}) {
+    this.callbacks = callbacks;
+    this.container = container;
+    this.area = new AreaPlugin<FlowScheme>(container);
+    this.render = new ReactPlugin<FlowScheme, ReactArea2D<FlowScheme>>({createRoot});
+
+    this.render.addPreset(ReactPresets.classic.setup({
+      // No arrow markers anymore — direction comes from the dash-flow CSS
+      // animation. The line just needs to land on the dot edge, so a small
+      // symmetric offset that puts both endpoints just inside the socket dot
+      // (radius 4.5 px) keeps everything visually attached.
+      socketPositionWatcher: getDOMSocketPosition({
+        offset: (pos, _id, side) => ({
+          x: pos.x + (side === 'output' ? 2 : -2),
+          y: pos.y,
+        }),
+      }) as never,
+      customize: {
+        node: () => FlowNodeComponent as never,
+        socket: () => FlowSocketComponent as never,
+        connection: () => FlowConnectionComponent as never,
+      },
+    }));
+
+    this.installTypeValidation();
+
+    this.editor.use(this.area);
+    // Casts: Rete's `Scope.use` does a structural variance check that gets
+    // pessimistic with our narrowed schemes. Runtime contracts are exact.
+    this.area.use(this.connection as never);
+    this.area.use(this.render as never);
+
+    this.selectableApi = AreaExtensions.selectableNodes(this.area, this.selector, {
+      accumulating: this.accumulating,
+    });
+    AreaExtensions.simpleNodesOrder(this.area);
+    AreaExtensions.restrictor(this.area, {
+      scaling: () => ({min: 0.2, max: 2.5}),
+    });
+
+    // Undo/redo: history-plugin tracks add/remove/drag of nodes & connections.
+    this.history.addPreset(HistoryPresets.classic.setup());
+    this.area.use(this.history as never);
+    HistoryExtensions.keyboard(this.history); // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y
+
+    this.installPointerDownTracker();
+    this.wireEvents();
+    this.installGuideOverlay();
+    this.installContextMenu();
+    this.installKeyboardShortcuts();
+    this.installDoubleClickToFit();
+    this.installSuggestionMenu();
+    this.installRectSelect();
+    this.installHoverDocs();
+    this.installWaypointInteractions();
+
+    // Expose a narrow callback surface to React components that need to talk
+    // back into the editor.
+    (window as unknown as {__ff_editor: {
+      toggleCollapsed(id: string): void;
+      isSocketConnected(nodeId: string, side: 'input' | 'output', key: string): boolean;
+    }}).__ff_editor = {
+      toggleCollapsed: (id) => void this.toggleCollapsed(id),
+      isSocketConnected: (nodeId, side, key) => this.isSocketConnected(nodeId, side, key),
+    };
+  }
+
+  /** Configure ClassicFlow to reject incompatible socket connections at pick
+   *  time, before any connection ever enters the editor's data layer. */
+  private installTypeValidation(): void {
+    this.connection.addPreset(() =>
+      new ClassicFlow<FlowScheme, never[]>({
+        canMakeConnection: (from, to) => this.canConnect(from, to),
+        makeConnection: (from, to) => {
+          const [out, inp] = from.side === 'output' ? [from, to] : [to, from];
+          if (out.side !== 'output' || inp.side !== 'input') return false;
+          const outNode = this.editor.getNode(out.nodeId);
+          const inNode = this.editor.getNode(inp.nodeId);
+          if (!outNode || !inNode) return false;
+          void this.editor.addConnection(new FlowConnection(
+            outNode as never, out.key, inNode as never, inp.key,
+          ));
+          return true;
+        },
+      }),
+    );
+  }
+
+  /** When a connection lands on a ValueOutput node and the source slot has a
+   *  meaningful type, copy that type into the output node's `outputType`. */
+  private maybeAutoTypeValueOutput(connection: FlowScheme['Connection']): void {
+    const targetNode = this.editor.getNode(connection.target) as FlowNode | undefined;
+    if (!targetNode || targetNode.label !== 'Value Output') return;
+    const sourceNode = this.editor.getNode(connection.source) as FlowNode | undefined;
+    if (!sourceNode) return;
+    const sourceOutput = sourceNode.outputs[String(connection.sourceOutput)] as
+      {socket: TypedSocket} | undefined;
+    if (!sourceOutput) return;
+    const detected = sourceOutput.socket.dgType;
+    if (detected && detected !== 'dynamic' && detected !== 'object') {
+      targetNode.properties['outputType'] = detected;
+      void this.area.update('node', targetNode.id);
+    }
+  }
+
+  private canConnect(from: SocketData, to: SocketData): boolean {
+    if (from.nodeId === to.nodeId) return false;
+    if (from.side === to.side) return false;
+    const [out, inp] = from.side === 'output' ? [from, to] : [to, from];
+    const outNode = this.editor.getNode(out.nodeId);
+    const inNode = this.editor.getNode(inp.nodeId);
+    if (!outNode || !inNode) return false;
+    const outSocket = outNode.outputs[out.key]?.socket as TypedSocket | undefined;
+    const inSocket = inNode.inputs[inp.key]?.socket as TypedSocket | undefined;
+    if (!outSocket || !inSocket) return false;
+    return outSocket.isCompatibleWith(inSocket);
+  }
+
+  private wireEvents(): void {
+    this.editor.addPipe((context) => {
+      // Stamp `_color` on every new connection BEFORE the area-plugin emits
+      // 'render', so the React Connection component picks up the right color
+      // on its very first render.
+      if (context.type === 'connectioncreate')
+        this.decorateConnection(context.data);
+      if (context.type === 'connectioncreated')
+        this.maybeAutoTypeValueOutput(context.data);
+      if (context.type === 'connectionremoved')
+        this.connectionStatuses.delete(context.data.id);
+      if (
+        context.type === 'nodecreated' || context.type === 'noderemoved' ||
+        context.type === 'connectioncreated' || context.type === 'connectionremoved' ||
+        context.type === 'cleared'
+      )
+        this.callbacks.onGraphChanged?.();
+      return context;
+    });
+
+    let lastPickedId: string | null = null;
+    this.area.addPipe((context) => {
+      if (context.type === 'nodepicked') {
+        const node = this.editor.getNode(context.data.id);
+        if (node) {
+          if (lastPickedId && lastPickedId !== node.id) {
+            const prev = this.editor.getNode(lastPickedId);
+            if (prev) this.callbacks.onNodeDeselected?.(prev);
+          }
+          lastPickedId = node.id;
+          this.callbacks.onNodeSelected?.(node);
+        }
+      }
+      // Intercept the during-drag translate intent: snap position and show guides.
+      // Mutating `data.position` in-place propagates to the actual translate.
+      // Only snap the *picked* node — when several nodes are selected and one
+      // is dragged, the selectable extension translates the rest by the same
+      // delta to preserve relative offsets. Snapping each follower would
+      // recompute their positions independently and break the group geometry.
+      if (context.type === 'nodetranslate') {
+        const data = context.data as {id: string; position: {x: number; y: number}};
+        if (this.selector.isPicked({id: data.id, label: 'node'})) {
+          const snap = this.computeSnap(data.id, data.position);
+          data.position.x = snap.x;
+          data.position.y = snap.y;
+          this.showGuides(snap.guideX, snap.guideY);
+        }
+      }
+      if (context.type === 'nodetranslated') {
+        const node = this.editor.getNode(context.data.id);
+        if (node) node.pos = {...context.data.position};
+      }
+      if (context.type === 'nodedragged') this.hideGuides();
+      // Keep the CSS dot-grid background aligned to the area transform — the
+      // grid is screen-space, the canvas content lives in a transformed
+      // space, so we rescale and shift the bg whenever pan/zoom changes.
+      if (context.type === 'translated' || context.type === 'zoomed' ||
+          context.type === 'render')
+        this.updateGridTransform();
+      // Tag each rendered connection wrapper with its id + status for the
+      // CSS-driven execution-state animations (`[data-status="active"]` etc).
+      if (context.type === 'rendered' && (context.data as {type?: string}).type === 'connection')
+        this.tagConnectionElement(context.data as {element: HTMLElement; payload: FlowConnection});
+      return context;
+    });
+  }
+
+  /** Update the canvas dot-grid background to track the AreaPlugin transform.
+   *  Without this, panning would drift the dots out of alignment with snapped
+   *  nodes. Called from translate/zoom events in the area pipe. */
+  private updateGridTransform(): void {
+    const t = this.area.area.transform;
+    const size = 20 * t.k;
+    this.container.style.backgroundSize = `${size}px ${size}px`;
+    this.container.style.backgroundPosition = `${t.x}px ${t.y}px`;
+  }
+
+  // ---------- snap + alignment guides ----------
+
+  /** Build a screen-space overlay layer for the alignment guides. The two
+   *  `<div>` rules act as 1px dashed crosshair lines that we move on demand. */
+  private installGuideOverlay(): void {
+    if (this.container.style.position === '') this.container.style.position = 'relative';
+    const overlay = document.createElement('div');
+    overlay.className = 'ff-guide-overlay';
+    this.guideOverlay = overlay;
+    const v = document.createElement('div');
+    v.className = 'ff-guide-v';
+    overlay.appendChild(v);
+    this.vGuide = v;
+    const h = document.createElement('div');
+    h.className = 'ff-guide-h';
+    overlay.appendChild(h);
+    this.hGuide = h;
+    this.container.appendChild(overlay);
+  }
+
+  /** Measure a node's rendered size in canvas units (DOM / scale). */
+  private measureNode(id: string): {w: number; h: number} {
+    // `nodeViews` is a public Map<id, {element}> on AreaPlugin.
+    const views = (this.area as unknown as {nodeViews: Map<string, {element: HTMLElement}>}).nodeViews;
+    const view = views?.get(id);
+    if (!view) return {w: 220, h: 80};
+    const r = view.element.getBoundingClientRect();
+    const k = this.area.area.transform.k || 1;
+    return {w: r.width / k, h: r.height / k};
+  }
+
+  /** Given the dragged node's id and its proposed position, decide where it
+   *  should actually land. Alignment with another node's edge/center wins
+   *  over the grid; otherwise the position snaps to the grid. */
+  private computeSnap(
+    draggedId: string, pos: {x: number; y: number},
+  ): {x: number; y: number; guideX: number | null; guideY: number | null} {
+    const dragged = this.measureNode(draggedId);
+    const dxFrom = [pos.x, pos.x + dragged.w / 2, pos.x + dragged.w]; // left, cx, right
+    const dyFrom = [pos.y, pos.y + dragged.h / 2, pos.y + dragged.h]; // top, cy, bottom
+
+    let bestX: {delta: number; guide: number} | null = null;
+    let bestY: {delta: number; guide: number} | null = null;
+
+    for (const other of this.editor.getNodes()) {
+      if (other.id === draggedId) continue;
+      const sz = this.measureNode(other.id);
+      const ox = [other.pos.x, other.pos.x + sz.w / 2, other.pos.x + sz.w];
+      const oy = [other.pos.y, other.pos.y + sz.h / 2, other.pos.y + sz.h];
+      for (const f of dxFrom) for (const t of ox) {
+        const d = t - f;
+        if (Math.abs(d) <= this.alignThreshold && (!bestX || Math.abs(d) < Math.abs(bestX.delta)))
+          bestX = {delta: d, guide: t};
+      }
+      for (const f of dyFrom) for (const t of oy) {
+        const d = t - f;
+        if (Math.abs(d) <= this.alignThreshold && (!bestY || Math.abs(d) < Math.abs(bestY.delta)))
+          bestY = {delta: d, guide: t};
+      }
+    }
+
+    const x = bestX ? pos.x + bestX.delta : Math.round(pos.x / this.gridSize) * this.gridSize;
+    const y = bestY ? pos.y + bestY.delta : Math.round(pos.y / this.gridSize) * this.gridSize;
+    return {x, y, guideX: bestX?.guide ?? null, guideY: bestY?.guide ?? null};
+  }
+
+  /** Position the dashed guide lines (canvas-space coords → screen-space px). */
+  private showGuides(canvasX: number | null, canvasY: number | null): void {
+    if (!this.vGuide || !this.hGuide) return;
+    const t = this.area.area.transform;
+    if (canvasX !== null) {
+      this.vGuide.style.left = `${t.x + canvasX * t.k}px`;
+      this.vGuide.style.display = 'block';
+    } else this.vGuide.style.display = 'none';
+    if (canvasY !== null) {
+      this.hGuide.style.top = `${t.y + canvasY * t.k}px`;
+      this.hGuide.style.display = 'block';
+    } else this.hGuide.style.display = 'none';
+  }
+
+  private hideGuides(): void {
+    if (this.vGuide) this.vGuide.style.display = 'none';
+    if (this.hGuide) this.hGuide.style.display = 'none';
+  }
+
+  // ---------- drag-output-to-empty suggestion menu ----------
+
+  /** Hook into the connection plugin's own `connectionpick` / `connectiondrop`
+   *  signals — these fire reliably regardless of how the plugin captures
+   *  pointer events. (Earlier we tried watching raw DOM pointerup, but the
+   *  connection plugin captures the gesture first and the bubbling never
+   *  reached our handler.) `connectiondrop` carries `created: boolean` so
+   *  we know exactly when a real connection didn't happen. */
+  private installSuggestionMenu(): void {
+    let lastPointer = {x: 0, y: 0};
+    const trackPointer = (e: PointerEvent): void => {
+      lastPointer = {x: e.clientX, y: e.clientY};
+    };
+    // Always track — cheap, and lets us fall back without the listener
+    // dance per-pick.
+    window.addEventListener('pointermove', trackPointer, true);
+
+    this.connection.addPipe((context) => {
+      const c = context as {type: string; data: any};
+      if (c.type === 'connectionpick') {
+        // Right-click also fires connectionpick (the plugin doesn't filter
+        // by button). Without this guard, a right-click on an output socket
+        // would arm the suggestion menu, then drop with no connection,
+        // opening it accidentally.
+        if (this.lastPointerButton !== 0) {
+          this.dragOutSource = null;
+          return context;
+        }
+        const sock = c.data.socket as {nodeId: string; key: string; side: 'input' | 'output'};
+        // Suggestions are output-driven only — input-side picks (drag the
+        // tail of an existing connection) shouldn't open the menu.
+        if (sock.side !== 'output') {
+          this.dragOutSource = null;
+          return context;
+        }
+        const node = this.editor.getNode(sock.nodeId);
+        const slot = node?.outputs[sock.key] as {socket: TypedSocket} | undefined;
+        if (node && slot)
+          this.dragOutSource = {nodeId: sock.nodeId, outputKey: sock.key, dgType: slot.socket.dgType};
+      }
+      if (c.type === 'connectiondrop') {
+        const data = c.data as {created: boolean; socket: {nodeId: string} | null};
+        const src = this.dragOutSource;
+        this.dragOutSource = null;
+        if (!src) return context;
+        // A real connection happened, or the user dropped on a socket the
+        // plugin didn't accept (e.g. type mismatch). Either way they were
+        // aiming at something specific — don't second-guess them.
+        if (data.created || data.socket) return context;
+        void this.openSuggestionMenu(lastPointer.x, lastPointer.y, src);
+      }
+      return context;
+    });
+  }
+
+  private async openSuggestionMenu(
+    clientX: number, clientY: number,
+    source: {nodeId: string; outputKey: string; dgType: string},
+  ): Promise<void> {
+    const {findNodeTypesAcceptingInput, createNode} = await import('./node-factory');
+    const candidates = findNodeTypesAcceptingInput(source.dgType);
+    if (candidates.length === 0) return;
+
+    const choice = await this.promptSuggestion(clientX, clientY, candidates);
+    if (!choice) return;
+
+    const node = createNode(choice);
+    if (!node) return;
+    const {x, y} = this.screenToCanvas(clientX, clientY);
+    await this.addNodeAt(node, x, y);
+
+    // Auto-connect: pick the first input on the new node whose socket the
+    // dragged source can drive.
+    const sourceSocket = (this.editor.getNode(source.nodeId)?.outputs[source.outputKey] as
+      {socket: TypedSocket} | undefined)?.socket;
+    if (!sourceSocket) return;
+    let connectedKey: string | null = null;
+    for (const [key, input] of Object.entries(node.inputs) as Array<[string, {socket: TypedSocket} | undefined]>) {
+      if (!input) continue;
+      if (sourceSocket.isCompatibleWith(input.socket)) {connectedKey = key; break;}
+    }
+    if (connectedKey)
+      await this.addConnectionByKeys(source.nodeId, source.outputKey, node.id, connectedKey);
+  }
+
+  // ---------- hover docs ----------
+
+  private hoverDocsEl: HTMLElement | null = null;
+  private hoverDocsTimer: number | null = null;
+  private hoverDocsNodeId: string | null = null;
+
+  /** KNIME-style hover popup: a card next to the node with description,
+   *  type, and (for func nodes) the input/output list. Shows after a short
+   *  delay so flicking through the canvas doesn't spam. Stays open while
+   *  the cursor is on the popup itself. */
+  private installHoverDocs(): void {
+    const popup = document.createElement('div');
+    popup.className = 'ff-hover-docs';
+    popup.style.display = 'none';
+    document.body.appendChild(popup);
+    this.hoverDocsEl = popup;
+
+    popup.addEventListener('mouseenter', () => {
+      if (this.hoverDocsTimer !== null) {
+        clearTimeout(this.hoverDocsTimer);
+        this.hoverDocsTimer = null;
+      }
+    });
+    popup.addEventListener('mouseleave', () => this.hideHoverDocs());
+
+    // Hover trigger is the status circle in the title bar — narrow target so
+    // the docs don't pop up every time the cursor passes over a node.
+    this.container.addEventListener('mouseover', (ev) => {
+      const target = ev.target as HTMLElement | null;
+      if (!target?.classList?.contains('ff-node-status')) return;
+      const nodeEl = target.closest('.ff-node') as HTMLElement | null;
+      if (!nodeEl) return;
+      const nodeId = nodeEl.dataset.nodeId;
+      if (!nodeId || nodeId === this.hoverDocsNodeId) return;
+      this.scheduleHoverDocs(nodeId, nodeEl);
+    });
+
+    this.container.addEventListener('mouseout', (ev) => {
+      const fromEl = ev.target as HTMLElement | null;
+      if (!fromEl?.classList?.contains('ff-node-status')) return;
+      const toEl = ev.relatedTarget as HTMLElement | null;
+      // Cursor moved onto the popup → keep it open.
+      if (toEl && popup.contains(toEl)) return;
+      this.hideHoverDocs();
+    });
+  }
+
+  private scheduleHoverDocs(nodeId: string, nodeEl: HTMLElement): void {
+    if (this.hoverDocsTimer !== null) clearTimeout(this.hoverDocsTimer);
+    this.hoverDocsNodeId = nodeId;
+    this.hoverDocsTimer = window.setTimeout(() => {
+      this.showHoverDocs(nodeId, nodeEl);
+    }, 500);
+  }
+
+  private showHoverDocs(nodeId: string, nodeEl: HTMLElement): void {
+    const popup = this.hoverDocsEl;
+    if (!popup) return;
+    const node = this.editor.getNode(nodeId);
+    if (!node) return;
+
+    popup.innerHTML = '';
+
+    const title = document.createElement('div');
+    title.className = 'ff-hover-title';
+    title.textContent = node.label;
+    popup.appendChild(title);
+
+    const badge = document.createElement('div');
+    badge.className = 'ff-hover-badge';
+    badge.textContent = node.dgNodeType ?? 'function';
+    popup.appendChild(badge);
+
+    const description = node.description ||
+      (node.dgFunc?.description ?? '');
+    if (description) {
+      const desc = document.createElement('div');
+      desc.className = 'ff-hover-desc';
+      desc.textContent = description;
+      popup.appendChild(desc);
+    }
+
+    if (node.dgFunc) {
+      const fn = node.dgFunc;
+      this.appendHoverParamSection(popup, 'Inputs', fn.inputs);
+      this.appendHoverParamSection(popup, 'Outputs', fn.outputs);
+    }
+
+    // Position next to the node — right side preferred, left if no room.
+    popup.style.display = 'block';
+    const nodeRect = nodeEl.getBoundingClientRect();
+    const popupRect = popup.getBoundingClientRect();
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let left = nodeRect.right + 12;
+    if (left + popupRect.width > vw - 8)
+      left = nodeRect.left - popupRect.width - 12;
+    if (left < 8) left = 8;
+    let top = nodeRect.top;
+    if (top + popupRect.height > vh - 8)
+      top = vh - popupRect.height - 8;
+    if (top < 8) top = 8;
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+  }
+
+  private appendHoverParamSection(
+    popup: HTMLElement, title: string, params: Array<DG.Property>,
+  ): void {
+    if (params.length === 0) return;
+    const sec = document.createElement('div');
+    sec.className = 'ff-hover-section';
+    const h = document.createElement('div');
+    h.className = 'ff-hover-section-title';
+    h.textContent = title;
+    sec.appendChild(h);
+    for (const p of params) {
+      const row = document.createElement('div');
+      row.className = 'ff-hover-row';
+      row.textContent = `${p.name}: ${String(p.propertyType)}`;
+      if (p.description) row.title = p.description;
+      sec.appendChild(row);
+    }
+    popup.appendChild(sec);
+  }
+
+  private hideHoverDocs(): void {
+    if (this.hoverDocsTimer !== null) {
+      clearTimeout(this.hoverDocsTimer);
+      this.hoverDocsTimer = null;
+    }
+    this.hoverDocsNodeId = null;
+    if (this.hoverDocsEl) this.hoverDocsEl.style.display = 'none';
+  }
+
+  // ---------- workflow annotations ----------
+
+  /** Create a new annotation, mount its element in the transformed canvas
+   *  layer (so it pans/zooms with the graph), and wire interactions. */
+  addAnnotation(opts: Partial<AnnotationDoc> = {}): FlowAnnotation {
+    const ann = new FlowAnnotation(opts);
+    this.annotations.set(ann.id, ann);
+    const content = this.area.area.content;
+    content.add(ann.element);
+    // Send to back: insert at the start of the holder's children list. With
+    // `simpleNodesOrder` driving picked nodes to the end, this guarantees
+    // every node and every existing connection paints on top of new
+    // annotations (later DOM children paint over earlier ones in absolute-
+    // positioned siblings, and z-index alone wasn't enough across stacking
+    // contexts established by transforms).
+    const firstChild = content.holder.firstChild;
+    if (firstChild && firstChild !== ann.element)
+      void content.reorder(ann.element, firstChild);
+    this.installAnnotationInteractions(ann);
+    this.callbacks.onGraphChanged?.();
+    return ann;
+  }
+
+  removeAnnotation(id: string): void {
+    const ann = this.annotations.get(id);
+    if (!ann) return;
+    this.annotations.delete(id);
+    this.area.area.content.remove(ann.element);
+    this.callbacks.onGraphChanged?.();
+  }
+
+  getAnnotations(): FlowAnnotation[] {
+    return Array.from(this.annotations.values());
+  }
+
+  /** Drag-to-move on the body, drag-to-resize on the corner handle, custom
+   *  contextmenu (Color · Delete), inline contenteditable for the title.
+   *  Pointer deltas are divided by zoom so visible movement matches cursor. */
+  private installAnnotationInteractions(ann: FlowAnnotation): void {
+    const el = ann.element;
+    const handle = ann.resizeHandle;
+    const title = ann.titleEl;
+
+    // ---- contextmenu: color palette + delete ----
+    el.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const menu = DG.Menu.popup();
+      const colorMenu = menu.group('Color');
+      for (const c of ANNOTATION_COLORS) {
+        colorMenu.item(c.name, () => {
+          ann.color = c.bg;
+          ann.applyColor();
+        });
+      }
+      colorMenu.endGroup()
+        .separator()
+        .item('Delete', () => this.removeAnnotation(ann.id))
+        .show({causedBy: ev});
+    });
+
+    // ---- title editing: stopPropagation so AreaPlugin doesn't pan ----
+    title.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+
+    // ---- drag-to-move (body, not title, not handle) ----
+    el.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return;
+      const target = ev.target as HTMLElement | null;
+      if (target && (target === title || title.contains(target))) return;
+      if (target === handle) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const startPos = {...ann.pos};
+      const startClient = {x: ev.clientX, y: ev.clientY};
+      el.setPointerCapture(ev.pointerId);
+      const onMove = (e: PointerEvent): void => {
+        const k = this.area.area.transform.k || 1;
+        ann.pos.x = startPos.x + (e.clientX - startClient.x) / k;
+        ann.pos.y = startPos.y + (e.clientY - startClient.y) / k;
+        ann.applyPos();
+      };
+      const onUp = (): void => {
+        el.removeEventListener('pointermove', onMove);
+        el.removeEventListener('pointerup', onUp);
+        el.removeEventListener('pointercancel', onUp);
+      };
+      el.addEventListener('pointermove', onMove);
+      el.addEventListener('pointerup', onUp);
+      el.addEventListener('pointercancel', onUp);
+    });
+
+    // ---- drag-to-resize (bottom-right handle) ----
+    handle.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const startSize = {...ann.size};
+      const startClient = {x: ev.clientX, y: ev.clientY};
+      handle.setPointerCapture(ev.pointerId);
+      // Tiny floor only so the resize handle stays grabbable; the user
+      // explicitly wanted no real lower bound.
+      const minSize = 8;
+      const onMove = (e: PointerEvent): void => {
+        const k = this.area.area.transform.k || 1;
+        ann.size.w = Math.max(minSize, startSize.w + (e.clientX - startClient.x) / k);
+        ann.size.h = Math.max(minSize, startSize.h + (e.clientY - startClient.y) / k);
+        ann.applySize();
+      };
+      const onUp = (): void => {
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onUp);
+      };
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
+    });
+  }
+
+  // ---------- connection waypoints ----------
+
+  /** Right-click → "Add waypoint here" inserts a routing point on the
+   *  connection. The React component chains classicConnectionPath segments
+   *  through `start → waypoints → end`. */
+  addWaypoint(conn: FlowConnection, at: {x: number; y: number}): void {
+    if (!conn.waypoints) conn.waypoints = [];
+    // Insert in the position closest to where the user clicked: pick the
+    // segment whose midpoint is nearest, and insert after that endpoint.
+    const insertIndex = this.bestWaypointInsertIndex(conn, at);
+    conn.waypoints.splice(insertIndex, 0, {x: at.x, y: at.y});
+    void this.area.update('connection', conn.id);
+  }
+
+  removeWaypoint(connId: string, index: number): void {
+    const conn = this.editor.getConnections().find((c) => c.id === connId) as FlowConnection | undefined;
+    if (!conn || !conn.waypoints) return;
+    conn.waypoints.splice(index, 1);
+    if (conn.waypoints.length === 0) delete conn.waypoints;
+    void this.area.update('connection', conn.id);
+  }
+
+  /** Pick the segment whose endpoints sandwich the click best. Walk the
+   *  start→…→end polyline, and for each segment compute distance from the
+   *  click to the segment midpoint; insert the new waypoint after the
+   *  start of the closest segment. Keeps the path geometry monotonic. */
+  private bestWaypointInsertIndex(conn: FlowConnection, at: {x: number; y: number}): number {
+    const waypoints = conn.waypoints ?? [];
+    if (waypoints.length === 0) return 0;
+    const sourceNode = this.editor.getNode(conn.source);
+    const targetNode = this.editor.getNode(conn.target);
+    if (!sourceNode || !targetNode) return waypoints.length;
+    // We don't have exact socket positions here, so approximate with node
+    // centers — good enough for picking which segment to split.
+    const sSize = this.measureNode(sourceNode.id);
+    const tSize = this.measureNode(targetNode.id);
+    const start = {x: sourceNode.pos.x + sSize.w, y: sourceNode.pos.y + sSize.h / 2};
+    const end = {x: targetNode.pos.x, y: targetNode.pos.y + tSize.h / 2};
+    const points = [start, ...waypoints, end];
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < points.length - 1; i++) {
+      const mx = (points[i].x + points[i + 1].x) / 2;
+      const my = (points[i].y + points[i + 1].y) / 2;
+      const d = (mx - at.x) ** 2 + (my - at.y) ** 2;
+      if (d < bestDist) {bestDist = d; bestIdx = i;}
+    }
+    return bestIdx; // insert at this index (between point i and point i+1)
+  }
+
+  /** Wire pointerdown/contextmenu on every rendered waypoint circle. We use
+   *  delegation on the canvas container since the React component re-creates
+   *  circles whenever waypoints change. */
+  private installWaypointInteractions(): void {
+    this.container.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return;
+      const target = ev.target as Element | null;
+      if (!target || !(target as HTMLElement).classList?.contains('ff-waypoint')) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const connId = (target as HTMLElement).dataset.connectionId!;
+      const wpIdx = parseInt((target as HTMLElement).dataset.waypointIndex!, 10);
+      const conn = this.editor.getConnections().find((c) => c.id === connId) as FlowConnection | undefined;
+      if (!conn || !conn.waypoints) return;
+      const wp = conn.waypoints[wpIdx];
+      if (!wp) return;
+      const startWP = {...wp};
+      const startClient = {x: ev.clientX, y: ev.clientY};
+      const onMove = (e: PointerEvent): void => {
+        const k = this.area.area.transform.k || 1;
+        wp.x = startWP.x + (e.clientX - startClient.x) / k;
+        wp.y = startWP.y + (e.clientY - startClient.y) / k;
+        void this.area.update('connection', conn.id);
+      };
+      const onUp = (): void => {
+        window.removeEventListener('pointermove', onMove, true);
+        window.removeEventListener('pointerup', onUp, true);
+      };
+      window.addEventListener('pointermove', onMove, true);
+      window.addEventListener('pointerup', onUp, true);
+    }, true);
+
+    this.container.addEventListener('contextmenu', (ev) => {
+      const target = ev.target as Element | null;
+      if (!target || !(target as HTMLElement).classList?.contains('ff-waypoint')) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const connId = (target as HTMLElement).dataset.connectionId!;
+      const wpIdx = parseInt((target as HTMLElement).dataset.waypointIndex!, 10);
+      DG.Menu.popup()
+        .item('Delete waypoint', () => this.removeWaypoint(connId, wpIdx))
+        .show({causedBy: ev});
+    }, true);
+  }
+
+  // ---------- ctrl+drag rectangle multi-select ----------
+
+  /** Ctrl+drag (or Cmd+drag on macOS) on empty canvas → draw a marquee and
+   *  select every node whose bounding box intersects it. Hold Shift to add
+   *  to the existing selection instead of replacing it. */
+  private installRectSelect(): void {
+    let startClient: {x: number; y: number} | null = null;
+    let rectEl: HTMLElement | null = null;
+
+    const updateRect = (x: number, y: number): void => {
+      if (!startClient || !rectEl) return;
+      const containerRect = this.container.getBoundingClientRect();
+      const left = Math.min(startClient.x, x) - containerRect.left;
+      const top = Math.min(startClient.y, y) - containerRect.top;
+      rectEl.style.left = `${left}px`;
+      rectEl.style.top = `${top}px`;
+      rectEl.style.width = `${Math.abs(startClient.x - x)}px`;
+      rectEl.style.height = `${Math.abs(startClient.y - y)}px`;
+    };
+
+    const onMove = (e: PointerEvent): void => updateRect(e.clientX, e.clientY);
+    const onUp = (e: PointerEvent): void => {
+      window.removeEventListener('pointermove', onMove, true);
+      window.removeEventListener('pointerup', onUp, true);
+      const sc = startClient;
+      startClient = null;
+      if (rectEl) {rectEl.remove(); rectEl = null;}
+      if (!sc) return;
+      void this.completeRectSelect(sc, {x: e.clientX, y: e.clientY}, e.shiftKey);
+    };
+
+    // Capture phase so we beat the AreaPlugin's pan handler — the user's
+    // Ctrl+drag must produce a rectangle, not a canvas pan.
+    this.container.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return;
+      if (!ev.ctrlKey && !ev.metaKey) return;
+      const target = ev.target as HTMLElement | null;
+      if (target?.closest('.ff-node, .ff-socket')) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      startClient = {x: ev.clientX, y: ev.clientY};
+      rectEl = document.createElement('div');
+      rectEl.className = 'ff-rect-select';
+      this.guideOverlay?.appendChild(rectEl);
+      updateRect(ev.clientX, ev.clientY);
+
+      window.addEventListener('pointermove', onMove, true);
+      window.addEventListener('pointerup', onUp, true);
+    }, true);
+  }
+
+  /** Hit-test every node's canvas-space bounding box against the marquee
+   *  (also in canvas space). Replaces the existing selection unless `additive`. */
+  private async completeRectSelect(
+    startClient: {x: number; y: number},
+    endClient: {x: number; y: number},
+    additive: boolean,
+  ): Promise<void> {
+    const a = this.screenToCanvas(startClient.x, startClient.y);
+    const b = this.screenToCanvas(endClient.x, endClient.y);
+    const rx1 = Math.min(a.x, b.x), ry1 = Math.min(a.y, b.y);
+    const rx2 = Math.max(a.x, b.x), ry2 = Math.max(a.y, b.y);
+    if (rx2 - rx1 < 3 || ry2 - ry1 < 3) return; // ignore fat-finger clicks
+
+    if (!additive) await this.selector.unselectAll();
+
+    for (const node of this.editor.getNodes()) {
+      const sz = this.measureNode(node.id);
+      const nx1 = node.pos.x, ny1 = node.pos.y;
+      const nx2 = nx1 + sz.w, ny2 = ny1 + sz.h;
+      const intersects = rx1 < nx2 && nx1 < rx2 && ry1 < ny2 && ny1 < ry2;
+      if (intersects) await this.selectableApi.select(node.id, true);
+    }
+  }
+
+  /** Build a transient floating popup with a search input and a scrollable
+   *  list of candidates. Resolves with the chosen typeName (or null on
+   *  dismiss / Escape / click-outside). Keyboard nav: Up/Down/Enter. */
+  private promptSuggestion(
+    clientX: number, clientY: number,
+    candidates: Array<{typeName: string; label: string; isBuiltin: boolean}>,
+  ): Promise<string | null> {
+    return new Promise((resolve) => {
+      let resolved = false;
+      const close = (val: string | null): void => {
+        if (resolved) return;
+        resolved = true;
+        document.removeEventListener('mousedown', onDocMouseDown, true);
+        document.removeEventListener('keydown', onKeyDown, true);
+        popup.remove();
+        resolve(val);
+      };
+
+      const popup = document.createElement('div');
+      popup.className = 'ff-suggest-popup';
+      popup.style.left = `${clientX}px`;
+      popup.style.top = `${clientY}px`;
+
+      const search = document.createElement('input');
+      search.type = 'text';
+      search.placeholder = 'Add node…';
+      search.className = 'ff-suggest-search';
+      popup.appendChild(search);
+
+      const list = document.createElement('div');
+      list.className = 'ff-suggest-list';
+      popup.appendChild(list);
+
+      let filtered = candidates;
+      let activeIdx = 0;
+
+      const renderList = (): void => {
+        list.innerHTML = '';
+        filtered.forEach((c, i) => {
+          const row = document.createElement('div');
+          row.className = 'ff-suggest-item' + (i === activeIdx ? ' ff-suggest-item-active' : '');
+          row.textContent = c.label;
+          if (c.isBuiltin) row.classList.add('ff-suggest-item-builtin');
+          row.addEventListener('mouseenter', () => {
+            activeIdx = i;
+            for (const el of Array.from(list.children))
+              (el as HTMLElement).classList.remove('ff-suggest-item-active');
+            row.classList.add('ff-suggest-item-active');
+          });
+          row.addEventListener('mousedown', (ev) => {
+            if (ev.button !== 0) return;
+            ev.preventDefault();
+            close(c.typeName);
+          });
+          list.appendChild(row);
+        });
+      };
+
+      search.addEventListener('input', () => {
+        const q = search.value.toLowerCase().trim();
+        filtered = q === '' ? candidates :
+          candidates.filter((c) => c.label.toLowerCase().includes(q) || c.typeName.toLowerCase().includes(q));
+        activeIdx = 0;
+        renderList();
+      });
+
+      const onKeyDown = (ev: KeyboardEvent): void => {
+        if (ev.key === 'Escape') {ev.preventDefault(); close(null);}
+        else if (ev.key === 'Enter') {
+          ev.preventDefault();
+          const c = filtered[activeIdx];
+          if (c) close(c.typeName);
+        } else if (ev.key === 'ArrowDown') {
+          ev.preventDefault();
+          activeIdx = Math.min(filtered.length - 1, activeIdx + 1);
+          renderList();
+          (list.children[activeIdx] as HTMLElement | undefined)?.scrollIntoView({block: 'nearest'});
+        } else if (ev.key === 'ArrowUp') {
+          ev.preventDefault();
+          activeIdx = Math.max(0, activeIdx - 1);
+          renderList();
+          (list.children[activeIdx] as HTMLElement | undefined)?.scrollIntoView({block: 'nearest'});
+        }
+      };
+
+      const onDocMouseDown = (ev: MouseEvent): void => {
+        if (!popup.contains(ev.target as Node)) close(null);
+      };
+
+      document.body.appendChild(popup);
+      // Clamp to viewport.
+      const r = popup.getBoundingClientRect();
+      const vw = window.innerWidth, vh = window.innerHeight;
+      if (r.right > vw) popup.style.left = `${Math.max(8, vw - r.width - 8)}px`;
+      if (r.bottom > vh) popup.style.top = `${Math.max(8, vh - r.height - 8)}px`;
+
+      renderList();
+      search.focus();
+
+      document.addEventListener('mousedown', onDocMouseDown, true);
+      document.addEventListener('keydown', onKeyDown, true);
+    });
+  }
+
+  // ---------- connection styling ----------
+
+  /** Look up the type color for a connection's source slot. */
+  private connectionColor(conn: FlowConnection): string {
+    const sourceNode = this.editor.getNode(conn.source);
+    const sourceSlot = sourceNode?.outputs[String(conn.sourceOutput)] as
+      {socket: TypedSocket} | undefined;
+    return sourceSlot ? getSlotColor(sourceSlot.socket.dgType) : '#8892a0';
+  }
+
+  /** Stamp `_color` and a stable element id on a freshly-created connection
+   *  so the React `<FlowConnectionComponent>` can paint it the right color
+   *  without us touching the DOM. We also tag the connection wrapper element
+   *  with `data-connection-id` so status-driven CSS in `funcflow.css` works. */
+  private decorateConnection(conn: FlowConnection): void {
+    (conn as FlowConnection & {_color?: string})._color = this.connectionColor(conn);
+    // Tag the wrapper element after AreaPlugin mounts it. The 'rendered' signal
+    // we listen to in wireEvents handles connection status; we only need to
+    // stamp data-connection-id once when the area emits the render.
+  }
+
+  /** Stamp the wrapper with data attributes used by status-driven CSS. */
+  private tagConnectionElement(data: {element: HTMLElement; payload: FlowConnection}): void {
+    data.element.dataset.connectionId = data.payload.id;
+    data.element.dataset.status = this.connectionStatuses.get(data.payload.id) ?? 'idle';
+  }
+
+  /** Set the status of a connection (drives the data-flow animation). */
+  setConnectionStatus(connectionId: string, status: ConnectionStatus): void {
+    this.connectionStatuses.set(connectionId, status);
+    const el = this.container.querySelector<HTMLElement>(`[data-connection-id="${connectionId}"]`);
+    if (el) el.dataset.status = status;
+  }
+
+  /** Reset all connections to the idle styling (used between runs). */
+  resetConnectionStatuses(): void {
+    for (const id of this.connectionStatuses.keys())
+      this.setConnectionStatus(id, 'idle');
+    this.connectionStatuses.clear();
+  }
+
+  // ---------- context menu + delete key ----------
+
+  /** Right-click on a node or connection opens a `DG.Menu` popup with the
+   *  appropriate actions. The platform menu handles positioning, dismissal,
+   *  styling, and z-index for us. */
+  private installContextMenu(): void {
+    this.area.addPipe((context) => {
+      if (context.type !== 'contextmenu') return context;
+      // The DOM event bubbles from connection-wrapper → container, and the
+      // area-plugin's emit-on-bubble fires on EACH listener — so a single
+      // right-click on a connection produces two `contextmenu` signals: one
+      // with `context: connection`, then one with `context: 'root'`. Without
+      // this guard, the second (root) menu would clobber the first.
+      const data = context.data as {
+        event: MouseEvent & {_ffHandled?: boolean};
+        context: 'root' | FlowNode | FlowConnection;
+      };
+      data.event.preventDefault();
+      if (data.context === 'root') {
+        if (data.event._ffHandled) return context; // already shown specific menu
+        data.event._ffHandled = true;
+        this.showRootContextMenu(data.event);
+        return context;
+      }
+      data.event._ffHandled = true;
+      // FlowNode has `inputs` (a Record of Inputs); FlowConnection has `source`/`target` ids.
+      if ((data.context as FlowNode).inputs !== undefined)
+        this.showNodeContextMenu(data.event, data.context as FlowNode);
+      else
+        this.showConnectionContextMenu(data.event, data.context as FlowConnection);
+      return context;
+    });
+  }
+
+  private showNodeContextMenu(event: MouseEvent, node: FlowNode): void {
+    DG.Menu.popup()
+      .item(node.collapsed ? 'Expand' : 'Collapse', () => void this.toggleCollapsed(node.id))
+      .item('Duplicate', () => void this.duplicateNode(node.id))
+      .separator()
+      .item('Delete', () => void this.removeNode(node.id))
+      .show({causedBy: event});
+  }
+
+  private showConnectionContextMenu(event: MouseEvent, conn: FlowConnection): void {
+    const canvasPt = this.screenToCanvas(event.clientX, event.clientY);
+    DG.Menu.popup()
+      .item('Add waypoint here', () => this.addWaypoint(conn, canvasPt))
+      .separator()
+      .item('Delete connection', () => void this.editor.removeConnection(conn.id))
+      .show({causedBy: event});
+  }
+
+  /** Right-click on empty canvas (or canvas background between nodes). */
+  private showRootContextMenu(event: MouseEvent): void {
+    const canvasPt = this.screenToCanvas(event.clientX, event.clientY);
+    DG.Menu.popup()
+      .item('Add annotation here', () => void this.addAnnotation({
+        pos: {x: canvasPt.x - 120, y: canvasPt.y - 70},
+      }))
+      .show({causedBy: event});
+  }
+
+  /** Capture-phase listener that records which canvas node was under the
+   *  cursor at pointerdown. Read by `accumulating.active()` to preserve a
+   *  multi-selection when the click lands on an already-selected node — the
+   *  selectable extension calls `accumulating.active()` synchronously inside
+   *  its `nodepicked` handler, so the value must be set before that fires. */
+  private installPointerDownTracker(): void {
+    this.pointerDownTracker = (ev: PointerEvent): void => {
+      this.lastPointerButton = ev.button;
+      const target = ev.target as HTMLElement | null;
+      const nodeEl = target?.closest('.ff-node') as HTMLElement | null;
+      this.lastPointerDownNodeId = nodeEl?.dataset.nodeId ?? null;
+    };
+    window.addEventListener('pointerdown', this.pointerDownTracker, true);
+
+    // Block right- or middle-click pointerdown from reaching the connection
+    // plugin's socket handler. The plugin doesn't filter by button; without
+    // this guard, a right-click on an output socket starts a fake
+    // pseudoconnection drag that follows the cursor until pointerup.
+    // We only stop the event when it landed inside a socket — pan, rect-
+    // select, and contextmenu emission elsewhere are unaffected.
+    this.container.addEventListener('pointerdown', (ev) => {
+      if (ev.button === 0) return;
+      const target = ev.target as HTMLElement | null;
+      if (target?.closest('.ff-socket-row-input, .ff-socket-row-output, .ff-socket'))
+        ev.stopPropagation();
+    }, true);
+  }
+
+  private installKeyboardShortcuts(): void {
+    this.keydownHandler = (e: KeyboardEvent) => {
+      // Ignore key events while typing in form controls.
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName ?? '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+          target?.isContentEditable) return;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const selectedIds = this.getSelectedNodeIds();
+        if (selectedIds.length > 0) {
+          e.preventDefault();
+          void this.removeNodes(selectedIds);
+        }
+      }
+    };
+    window.addEventListener('keydown', this.keydownHandler);
+  }
+
+  private getSelectedNodeIds(): string[] {
+    return this.editor.getNodes().filter((n) => (n as {selected?: boolean}).selected === true).map((n) => n.id);
+  }
+
+  /** Double-click on empty canvas → zoom to fit all nodes. Clicks that hit a
+   *  node, socket, control, or context menu are ignored. */
+  private installDoubleClickToFit(): void {
+    this.container.addEventListener('dblclick', (e) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest('.ff-node, .ff-socket, .ff-control, .d4-menu-item, input, textarea, select'))
+        return;
+      e.preventDefault();
+      void this.zoomToFit();
+    });
+  }
+
+  // ---------- undo / redo ----------
+
+  async undo(): Promise<void> {await this.history.undo();}
+  async redo(): Promise<void> {await this.history.redo();}
+
+  // ---------- node operations ----------
+
+  /** Programmatic selection — fires the same callback chain a click would.
+   *  `accumulate=true` keeps existing selection (additive), false clears
+   *  first. Used by auto-select-on-run-complete and the rectangle tool. */
+  async selectNode(nodeId: string, accumulate = false): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node) return;
+    await this.selectableApi.select(nodeId, accumulate);
+    this.callbacks.onNodeSelected?.(node);
+  }
+
+  async unselectAllNodes(): Promise<void> {
+    await this.selector.unselectAll();
+  }
+
+  /** Toggle a node's collapsed flag and re-render. */
+  async toggleCollapsed(nodeId: string): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node) return;
+    node.collapsed = !node.collapsed;
+    await this.area.update('node', nodeId);
+  }
+
+  /** Remove a node and any connections touching it. */
+  async removeNode(nodeId: string): Promise<void> {
+    const conns = this.editor.getConnections().filter(
+      (c) => c.source === nodeId || c.target === nodeId,
+    );
+    for (const c of conns) await this.editor.removeConnection(c.id);
+    await this.editor.removeNode(nodeId);
+  }
+
+  /** Batch-remove multiple nodes and their connections. Safer than calling
+   *  `removeNode` in a loop without awaiting — when two selected nodes share
+   *  a connection, the second call would otherwise try to remove an already-
+   *  gone connection. We dedupe connections first, then remove sequentially. */
+  async removeNodes(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    const idSet = new Set(ids);
+    const seen = new Set<string>();
+    const connIds: string[] = [];
+    for (const c of this.editor.getConnections()) {
+      if (!seen.has(c.id) && (idSet.has(c.source) || idSet.has(c.target))) {
+        seen.add(c.id);
+        connIds.push(c.id);
+      }
+    }
+    for (const cid of connIds) {
+      try { await this.editor.removeConnection(cid); } catch { /* already gone */ }
+    }
+    for (const nid of ids) {
+      try { await this.editor.removeNode(nid); } catch { /* already gone */ }
+    }
+  }
+
+  /** Duplicate a node next to the original (no connections copied). */
+  async duplicateNode(nodeId: string): Promise<FlowNode | null> {
+    const original = this.editor.getNode(nodeId);
+    if (!original || !original.dgTypeName) return null;
+    // Lazy require to avoid a circular import.
+    const {createNode} = await import('./node-factory');
+    const fresh = createNode(original.dgTypeName);
+    if (!fresh) return null;
+    fresh.label = original.label;
+    fresh.properties = JSON.parse(JSON.stringify(original.properties));
+    fresh.inputValues = JSON.parse(JSON.stringify(original.inputValues));
+    await this.editor.addNode(fresh);
+    const offset = 30;
+    fresh.pos = {x: original.pos.x + offset, y: original.pos.y + offset};
+    await this.area.translate(fresh.id, fresh.pos);
+    return fresh;
+  }
+
+  // ---------- public API consumed by the rest of the package ----------
+
+  async addNodeAtCenter(node: FlowNode): Promise<FlowNode> {
+    await this.editor.addNode(node);
+    const center = this.viewportCenter();
+    node.pos = center;
+    await this.area.translate(node.id, center);
+    await this.panToNode(node.id);
+    return node;
+  }
+
+  async addNodeAt(node: FlowNode, x: number, y: number): Promise<FlowNode> {
+    await this.editor.addNode(node);
+    node.pos = {x, y};
+    await this.area.translate(node.id, {x, y});
+    return node;
+  }
+
+  /** Pan the canvas so the given node sits at the viewport center. Zoom is
+   *  preserved — this is purely a translate. Wait one rAF so the node is
+   *  rendered and measurable before we read its size. */
+  async panToNode(id: string): Promise<void> {
+    const node = this.editor.getNode(id);
+    if (!node) return;
+    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    const sz = this.measureNode(id);
+    const cx = node.pos.x + sz.w / 2;
+    const cy = node.pos.y + sz.h / 2;
+    const rect = this.area.container.getBoundingClientRect();
+    const k = this.area.area.transform.k;
+    await this.area.area.translate(rect.width / 2 - cx * k, rect.height / 2 - cy * k);
+  }
+
+  async addConnectionByKeys(
+    sourceId: string, sourceKey: string,
+    targetId: string, targetKey: string,
+  ): Promise<boolean> {
+    const source = this.editor.getNode(sourceId);
+    const target = this.editor.getNode(targetId);
+    if (!source || !target) return false;
+    return this.editor.addConnection(new FlowConnection(
+      source as never, sourceKey, target as never, targetKey,
+    ));
+  }
+
+  async translate(nodeId: string, x: number, y: number): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node) return;
+    node.pos = {x, y};
+    await this.area.translate(nodeId, {x, y});
+  }
+
+  getNodes(): FlowNode[] {return this.editor.getNodes();}
+  getConnections(): FlowConnection[] {return this.editor.getConnections();}
+  getNodeById(id: string): FlowNode | undefined {return this.editor.getNode(id);}
+  getNodeCount(): number {return this.editor.getNodes().length;}
+  getConnectionCount(): number {return this.editor.getConnections().length;}
+
+  getInputSource(nodeId: string, inputKey: string): {node: FlowNode; outputKey: string} | undefined {
+    for (const c of this.editor.getConnections()) {
+      if (c.target === nodeId && c.targetInput === inputKey) {
+        const src = this.editor.getNode(c.source);
+        if (src) return {node: src, outputKey: String(c.sourceOutput)};
+      }
+    }
+    return undefined;
+  }
+
+  isInputConnected(nodeId: string, inputKey: string): boolean {
+    return this.getInputSource(nodeId, inputKey) !== undefined;
+  }
+
+  /** Whether a node's slot has at least one connection touching it. */
+  isSocketConnected(nodeId: string, side: 'input' | 'output', key: string): boolean {
+    for (const c of this.editor.getConnections()) {
+      if (side === 'input' && c.target === nodeId && String(c.targetInput) === key) return true;
+      if (side === 'output' && c.source === nodeId && String(c.sourceOutput) === key) return true;
+    }
+    return false;
+  }
+
+  /** Find every connection going *out* of a given node output. */
+  getOutgoingConnections(nodeId: string, outputKey?: string): FlowConnection[] {
+    return this.editor.getConnections().filter((c) =>
+      c.source === nodeId && (outputKey === undefined || String(c.sourceOutput) === outputKey),
+    );
+  }
+
+  async updateNode(nodeId: string): Promise<void> {
+    await this.area.update('node', nodeId);
+  }
+
+  // ---------- viewport ----------
+
+  private viewportCenter(): {x: number; y: number} {
+    const t = this.area.area.transform;
+    const rect = this.area.container.getBoundingClientRect();
+    return {
+      x: (rect.width / 2 - t.x) / t.k,
+      y: (rect.height / 2 - t.y) / t.k,
+    };
+  }
+
+  /** Convert a (clientX, clientY) point — e.g. from a pointer event — into
+   *  canvas-space coords matching `node.pos`. Used by drop handlers and the
+   *  drag-out suggestion menu. */
+  screenToCanvas(clientX: number, clientY: number): {x: number; y: number} {
+    const r = this.container.getBoundingClientRect();
+    const t = this.area.area.transform;
+    return {
+      x: (clientX - r.left - t.x) / t.k,
+      y: (clientY - r.top - t.y) / t.k,
+    };
+  }
+
+  zoomIn(): void {void this.area.area.zoom(this.area.area.transform.k * 1.2);}
+  zoomOut(): void {void this.area.area.zoom(this.area.area.transform.k * 0.8);}
+
+  async zoomToFit(): Promise<void> {
+    await AreaExtensions.zoomAt(this.area, this.editor.getNodes(), {scale: 0.9});
+  }
+
+  // ---------- lifecycle ----------
+
+  async clear(): Promise<void> {
+    this.connectionStatuses.clear();
+    for (const ann of Array.from(this.annotations.values()))
+      this.removeAnnotation(ann.id);
+    await this.editor.clear();
+  }
+
+  destroy(): void {
+    if (this.keydownHandler) window.removeEventListener('keydown', this.keydownHandler);
+    if (this.pointerDownTracker)
+      window.removeEventListener('pointerdown', this.pointerDownTracker, true);
+    if (this.hoverDocsEl) this.hoverDocsEl.remove();
+    this.area.destroy();
+    delete (window as unknown as {__ff_editor?: unknown}).__ff_editor;
+  }
+}

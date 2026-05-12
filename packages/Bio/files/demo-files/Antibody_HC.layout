@@ -1,0 +1,516 @@
+{
+    "#type": "ViewLayout",
+    "viewStateMap": {
+        "containerType": "vertical",
+        "state": {
+            "width": 379,
+            "height": 830
+        },
+        "children": [
+            {
+                "containerType": "horizontal",
+                "state": {
+                    "width": 379,
+                    "height": 491
+                },
+                "children": [
+                    {
+                        "containerType": "fill",
+                        "state": {
+                            "width": 255,
+                            "height": 491,
+                            "documentManager": true
+                        },
+                        "children": [
+                            {
+                                "containerType": "panel",
+                                "state": {
+                                    "width": 255,
+                                    "height": 491,
+                                    "element": {
+                                        "id": "2c4d0520-48b0-11f1-868a-87e9d65e7e1f",
+                                        "type": "Grid",
+                                        "look": {
+                                            "#type": "GridLook",
+                                            "showAddNewRowIcon": true,
+                                            "addNewRowOnLastRowEdit": true,
+                                            "colHeaderHeight": 180,
+                                            "rowHeight": 30,
+                                            "topLevelDefaultMenu": true,
+                                            "allowColumnMenu": true,
+                                            "columns": [
+                                                {
+                                                    "width": 36,
+                                                    "backgroundColor": 4294440951,
+                                                    "customName": "",
+                                                    "cellType": "row header",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "width": 95,
+                                                    "columnName": "Antibody_ID",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "width": 400,
+                                                    "columnName": "AntibodyHC",
+                                                    "cellType": "sequence",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "width": 400,
+                                                    "columnName": "AntibodyHC (aligned)",
+                                                    "cellType": "sequence",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "visible": false,
+                                                    "width": 0,
+                                                    "columnName": "~AntibodyHC_annotations",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "visible": false,
+                                                    "width": 0,
+                                                    "columnName": "~AntibodyLC_annotations",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "visible": false,
+                                                    "width": 0,
+                                                    "columnName": "~AntibodyHC (aligned)_annotations",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "width": 70,
+                                                    "columnName": "Activity",
+                                                    "cellType": "number",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "visible": false,
+                                                    "width": 40,
+                                                    "columnName": "~sequence_position_monomers",
+                                                    "cellType": "Monomer",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "width": 230,
+                                                    "columnName": "AntibodyHC (aligned)(CDR2)",
+                                                    "cellType": "sequence",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "visible": false,
+                                                    "width": 40,
+                                                    "columnName": "~sequence_position_monomers (4)",
+                                                    "cellType": "Monomer",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "width": 67,
+                                                    "columnName": "Embed_X_1",
+                                                    "cellType": "number",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "width": 67,
+                                                    "columnName": "Embed_Y_1",
+                                                    "cellType": "number",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                },
+                                                {
+                                                    "width": 78,
+                                                    "columnName": "Cluster (DBSCAN)",
+                                                    "headerCellStyle": {
+                                                        "textWrap": "words"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "title": "Grid",
+                                        "default": true
+                                    }
+                                },
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "containerType": "panel",
+                        "state": {
+                            "width": 122,
+                            "height": 491,
+                            "element": {
+                                "id": "2c4d2c30-48b0-11f1-8a52-6fdf9ce7c039",
+                                "type": "Scatter plot",
+                                "look": {
+                                    "#type": "ScatterPlotLook",
+                                    "xColumnName": "Embed_X_1",
+                                    "yColumnName": "Embed_Y_1",
+                                    "colorColumnName": "Cluster (DBSCAN)",
+                                    "markerMinSize": 3,
+                                    "markerMaxSize": 20,
+                                    "legendPosition": "RightTop",
+                                    "title": "Sequence Space (HC CDR2)",
+                                    "description": "Molecules column: AntibodyHC (aligned)(CDR2), method: UMAP, options: {\"learningRate\":1,\"nEpochs\":0,\"nNeighbors\":15,\"spread\":1,\"minDist\":0.1,\"useWebGPU\":true,\"dbScanEpsilon\":0.01,\"dbScanMinPts\":4,\"preprocessingFuncArgs\":{}}, similarity: Monomer chemical distance",
+                                    "descriptionVisibilityMode": "Never"
+                                },
+                                "title": "Sequence Space (HC CDR2)"
+                            }
+                        },
+                        "children": []
+                    }
+                ]
+            },
+            {
+                "containerType": "horizontal",
+                "state": {
+                    "width": 379,
+                    "height": 338
+                },
+                "children": [
+                    {
+                        "containerType": "panel",
+                        "state": {
+                            "width": 223,
+                            "height": 338,
+                            "element": {
+                                "id": "2c4d2c30-48b0-11f1-b042-618e5e39a6e2",
+                                "type": "Sequence Position Statistics",
+                                "look": {
+                                    "#type": "JsViewerHostLook",
+                                    "positions": "208",
+                                    "sequenceColumnName": "AntibodyHC (aligned)",
+                                    "valueColumnName": "Activity",
+                                    "showPositionInfo": true
+                                },
+                                "title": "Sequence Position Statistics"
+                            }
+                        },
+                        "children": []
+                    },
+                    {
+                        "containerType": "panel",
+                        "state": {
+                            "width": 154,
+                            "height": 338,
+                            "element": {
+                                "id": "2c4d2c30-48b0-11f1-df1a-b15cab6cbcd9",
+                                "type": "Logo Summary Table",
+                                "look": {
+                                    "#type": "JsViewerHostLook",
+                                    "sequenceColumnName": "AntibodyHC (aligned)(CDR2)",
+                                    "clustersColumnName": "Cluster (DBSCAN)",
+                                    "activityColumnName": "Activity",
+                                    "activityScaling": "none",
+                                    "webLogoMode": "Entropy",
+                                    "membersRatioThreshold": 0,
+                                    "webLogoAggregationType": "count",
+                                    "webLogoAggregationColumnNameColumnName": null,
+                                    "columns": [],
+                                    "aggregation": "avg"
+                                },
+                                "title": "Logo Summary Table (HC CDR2)"
+                            }
+                        },
+                        "children": []
+                    }
+                ]
+            }
+        ],
+        "floating": [],
+        "tableId": "c35578e0-48b0-11f1-c38b-9bf505e2ed7f",
+        "tableName": "Antibody_HC"
+    },
+    "userData": {
+        ".columnTags": {
+            "AntibodyHC": {
+                "units": "fasta",
+                "cell.renderer": "sequence",
+                "quality": "Macromolecule"
+            },
+            "AntibodyHC (aligned)": {
+                "quality": "Macromolecule",
+                "units": "fasta",
+                "cell.renderer": "sequence"
+            },
+            "Activity": {
+                "formula": "RandBetween(1000,100000) / 10000"
+            },
+            "~sequence_position_monomers": {
+                "quality": "Monomer",
+                "cell.renderer": "Monomer"
+            },
+            "AntibodyHC (aligned)(CDR2)": {
+                "quality": "Macromolecule",
+                "units": "fasta",
+                "cell.renderer": "sequence",
+                ".%initialName": "fasta(AntibodyHC (aligned))"
+            },
+            "~sequence_position_monomers (4)": {
+                "quality": "Monomer",
+                "cell.renderer": "Monomer"
+            }
+        }
+    },
+    "type": "TableView",
+    "columns": [
+        {
+            "name": "AntibodyHC (aligned)",
+            "type": "string",
+            "semType": "Macromolecule",
+            "id": "8e40d0a0-48b0-11f1-9bba-1b778b988da5",
+            "friendlyName": "AntibodyHC (aligned)",
+            "entityTags": [
+                {
+                    "tag": "quality",
+                    "id": "2c4d5340-48b0-11f1-c8f8-db72d7d5f4d6"
+                },
+                {
+                    "tag": "aligned",
+                    "id": "2c4d5340-48b0-11f1-b3a4-896f678ccebe"
+                },
+                {
+                    "tag": "alphabet",
+                    "id": "2c4d7a50-48b0-11f1-b8f2-8532b03c4131"
+                },
+                {
+                    "tag": "units",
+                    "id": "2c4d7a50-48b0-11f1-a819-fbcd7f330e3f"
+                },
+                {
+                    "tag": "cell.renderer",
+                    "id": "2c4d7a50-48b0-11f1-de90-19da3160bf33"
+                },
+                {
+                    "tag": ".positionNames",
+                    "id": "2c4d7a50-48b0-11f1-d1e1-519a2ff1cc2d"
+                },
+                {
+                    "tag": ".numberingScheme",
+                    "id": "2c4d7a50-48b0-11f1-c148-038b41f75379"
+                },
+                {
+                    "tag": ".annotations",
+                    "id": "2c4da160-48b0-11f1-e94f-21319c996f52"
+                },
+                {
+                    "tag": ".regions",
+                    "id": "2c4da160-48b0-11f1-9d0a-2dba225e3694"
+                },
+                {
+                    "tag": ".semantic-detection-duration",
+                    "id": "2c4da160-48b0-11f1-ddca-5dbef0e53072"
+                },
+                {
+                    "tag": ".positionShift",
+                    "id": "2c4da160-48b0-11f1-cb2c-4bc16e0aef2c"
+                },
+                {
+                    "tag": ".annotationColumnName",
+                    "id": "2c4da160-48b0-11f1-844a-03e0e67952ad"
+                },
+                {
+                    "tag": ".selectedPosition",
+                    "id": "2c4da160-48b0-11f1-816d-a92a22f16c79"
+                },
+                {
+                    "tag": ".id",
+                    "id": "2c4da160-48b0-11f1-deb7-a718365d1e43"
+                }
+            ],
+            "metaParams": {
+                "quality": "Macromolecule",
+                "aligned": "SEQ.MSA",
+                "alphabet": "PT",
+                "units": "fasta",
+                "cell.renderer": "sequence",
+                ".positionNames": "N-136, N-135, N-134, N-133, N-132, N-131, N-130, N-129, N-128, N-127, N-126, N-125, N-124, N-123, N-122, N-121, N-120, N-119, N-118, N-117, N-116, N-115, N-114, N-113, N-112, N-111, N-110, N-109, N-108, N-107, N-106, N-105, N-104, N-103, N-102, N-101, N-100, N-99, N-98, N-97, N-96, N-95, N-94, N-93, N-92, N-91, N-90, N-89, N-88, N-87, N-86, N-85, N-84, N-83, N-82, N-81, N-80, N-79, N-78, N-77, N-76, N-75, N-74, N-73, N-72, N-71, N-70, N-69, N-68, N-67, N-66, N-65, N-64, N-63, N-62, N-61, N-60, N-59, N-58, N-57, N-56, N-55, N-54, N-53, N-52, N-51, N-50, N-49, N-48, N-47, N-46, N-45, N-44, N-43, N-42, N-41, N-40, N-39, N-38, N-37, N-36, N-35, N-34, N-33, N-32, N-31, N-30, N-29, N-28, N-27, N-26, N-25, N-24, N-23, N-22, N-21, N-20, N-19, N-18, N-17, N-16, N-15, N-14, N-13, N-12, N-11, N-10, N-9, N-8, N-7, N-6, N-5, N-4, N-3, N-2, N-1, 1, 2, 3, 4, 5, 6, 6A, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 35A, 35B, 35C, 35D, 35E, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 52A, 52B, 52C, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 82A, 82B, 82C, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 100A, 100B, 100C, 100D, 100E, 100F, 100G, 100H, 100I, 100J, 100K, 100L, 100M, 100N, 100O, 100P, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, C+1, C+2, C+3, C+4, C+5, C+6, C+7, C+8, C+9, C+10, C+11, C+12, C+13, C+14, C+15, C+16, C+17, C+18, C+19, C+20, C+21, C+22, C+23, C+24, C+25, C+26, C+27, C+28, C+29, C+30, C+31, C+32, C+33, C+34, C+35, C+36, C+37, C+38, C+39, C+40, C+41, C+42, C+43, C+44, C+45, C+46, C+47, C+48, C+49, C+50, C+51, C+52, C+53, C+54, C+55, C+56, C+57, C+58, C+59, C+60, C+61, C+62, C+63, C+64, C+65, C+66, C+67, C+68, C+69, C+70, C+71, C+72, C+73, C+74, C+75, C+76, C+77, C+78, C+79, C+80, C+81, C+82, C+83, C+84, C+85, C+86, C+87, C+88, C+89, C+90, C+91, C+92, C+93, C+94, C+95, C+96, C+97, C+98, C+99, C+100, C+101, C+102, C+103, C+104, C+105, C+106, C+107, C+108, C+109, C+110, C+111, C+112, C+113, C+114, C+115, C+116, C+117, C+118, C+119, C+120, C+121, C+122, C+123, C+124, C+125, C+126, C+127, C+128, C+129, C+130, C+131, C+132, C+133, C+134, C+135, C+136, C+137, C+138, C+139, C+140, C+141, C+142, C+143, C+144, C+145, C+146, C+147, C+148, C+149, C+150, C+151, C+152, C+153, C+154, C+155, C+156, C+157, C+158, C+159, C+160, C+161, C+162, C+163, C+164, C+165, C+166, C+167, C+168, C+169, C+170, C+171, C+172, C+173, C+174, C+175, C+176, C+177, C+178, C+179, C+180, C+181, C+182, C+183, C+184, C+185, C+186, C+187, C+188, C+189, C+190, C+191, C+192, C+193, C+194, C+195, C+196, C+197, C+198, C+199, C+200, C+201, C+202, C+203, C+204, C+205, C+206, C+207, C+208, C+209, C+210, C+211, C+212, C+213, C+214, C+215, C+216, C+217, C+218, C+219, C+220, C+221, C+222, C+223, C+224, C+225, C+226, C+227, C+228, C+229, C+230, C+231, C+232, C+233, C+234, C+235, C+236, C+237, C+238, C+239, C+240, C+241, C+242, C+243, C+244, C+245, C+246, C+247, C+248, C+249, C+250, C+251, C+252, C+253, C+254, C+255, C+256, C+257, C+258, C+259, C+260, C+261, C+262, C+263, C+264, C+265, C+266, C+267, C+268, C+269, C+270, C+271, C+272, C+273, C+274, C+275, C+276, C+277, C+278, C+279, C+280, C+281, C+282, C+283, C+284, C+285, C+286, C+287, C+288, C+289, C+290, C+291, C+292, C+293, C+294, C+295, C+296, C+297, C+298, C+299, C+300, C+301, C+302, C+303, C+304, C+305, C+306, C+307, C+308, C+309, C+310, C+311, C+312, C+313, C+314, C+315, C+316, C+317, C+318, C+319, C+320, C+321, C+322, C+323, C+324, C+325, C+326, C+327, C+328, C+329, C+330, C+331, C+332, C+333, C+334, C+335, C+336",
+                ".numberingScheme": "kabat",
+                ".annotations": "[{\"id\":\"kabat-heavy-fr1\",\"name\":\"FR1\",\"description\":\"FR1 (KABAT 1-30)\",\"start\":\"1\",\"end\":\"30\",\"visualType\":\"region\",\"category\":\"structure\",\"sourceScheme\":\"KABAT\",\"autoGenerated\":true},{\"id\":\"kabat-heavy-cdr1\",\"name\":\"CDR1\",\"description\":\"CDR1 (KABAT 31-35)\",\"start\":\"31\",\"end\":\"35\",\"visualType\":\"region\",\"category\":\"structure\",\"sourceScheme\":\"KABAT\",\"autoGenerated\":true},{\"id\":\"kabat-heavy-fr2\",\"name\":\"FR2\",\"description\":\"FR2 (KABAT 36-49)\",\"start\":\"36\",\"end\":\"49\",\"visualType\":\"region\",\"category\":\"structure\",\"sourceScheme\":\"KABAT\",\"autoGenerated\":true},{\"id\":\"kabat-heavy-cdr2\",\"name\":\"CDR2\",\"description\":\"CDR2 (KABAT 50-65)\",\"start\":\"50\",\"end\":\"65\",\"visualType\":\"region\",\"category\":\"structure\",\"sourceScheme\":\"KABAT\",\"autoGenerated\":true},{\"id\":\"kabat-heavy-fr3\",\"name\":\"FR3\",\"description\":\"FR3 (KABAT 66-94)\",\"start\":\"66\",\"end\":\"94\",\"visualType\":\"region\",\"category\":\"structure\",\"sourceScheme\":\"KABAT\",\"autoGenerated\":true},{\"id\":\"kabat-heavy-cdr3\",\"name\":\"CDR3\",\"description\":\"CDR3 (KABAT 95-102)\",\"start\":\"95\",\"end\":\"102\",\"visualType\":\"region\",\"category\":\"structure\",\"sourceScheme\":\"KABAT\",\"autoGenerated\":true},{\"id\":\"kabat-heavy-fr4\",\"name\":\"FR4\",\"description\":\"FR4 (KABAT 103-113)\",\"start\":\"103\",\"end\":\"113\",\"visualType\":\"region\",\"category\":\"structure\",\"sourceScheme\":\"KABAT\",\"autoGenerated\":true},{\"id\":\"deamid-ng\",\"name\":\"Deamidation (NG)\",\"description\":\"deamidation liability pattern (107 hits)\",\"start\":null,\"end\":null,\"visualType\":\"motif\",\"category\":\"liability\",\"color\":\"#E53935\",\"severity\":\"high\",\"motifPattern\":\"NG\",\"autoGenerated\":true},{\"id\":\"deamid-ns\",\"name\":\"Deamidation (NS)\",\"description\":\"deamidation liability pattern (855 hits)\",\"start\":null,\"end\":null,\"visualType\":\"motif\",\"category\":\"liability\",\"color\":\"#E53935\",\"severity\":\"medium\",\"motifPattern\":\"NS\",\"autoGenerated\":true},{\"id\":\"deamid-na\",\"name\":\"Deamidation (NA)\",\"description\":\"deamidation liability pattern (68 hits)\",\"start\":null,\"end\":null,\"visualType\":\"motif\",\"category\":\"liability\",\"color\":\"#E53935\",\"severity\":\"low\",\"motifPattern\":\"NA\",\"autoGenerated\":true},{\"id\":\"deamid-nd\",\"name\":\"Deamidation (ND)\",\"description\":\"deamidation liability pattern (15 hits)\",\"start\":null,\"end\":null,\"visualType\":\"motif\",\"category\":\"liability\",\"color\":\"#E53935\",\"severity\":\"low\",\"motifPattern\":\"ND\",\"autoGenerated\":true},{\"id\":\"deamid-nt\",\"name\":\"Deamidation (NT)\",\"description\":\"deamidation liability pattern (542 hits)\",\"start\":null,\"end\":null,\"visualType\":\"motif\",\"category\":\"liability\",\"color\":\"#E53935\",\"severity\":\"low\",\"motifPattern\":\"NT\",\"autoGenerated\":true},{\"id\":\"isom-dg\",\"name\":\"Isomerization (DG)\",\"description\":\"isomerization liability pattern (113 hits)\",\"start\":null,\"end\":null,\"visualType\":\"motif\",\"category\":\"liability\",\"color\":\"#FF9800\",\"severity\":\"high\",\"motifPattern\":\"DG\",\"autoGenerated\":true},{\"id\":\"isom-ds\",\"name\":\"Isomerization (DS)\",\"description\":\"isomerization liability pattern (305 hits)\",\"start\":null,\"end\":null,\"visualType\":\"motif\",\"category\":\"liability\",\"color\":\"#FF9800\",\"severity\":\"medium\",\"motifPattern\":\"DS\",\"autoGenerated\":true},{\"id\":\"oxid-m\",\"name\":\"Oxidation (Met)\",\"description\":\"oxidation liability pattern (1211 hits)\",\"start\":null,\"end\":null,\"visualType\":\"point\",\"category\":\"liability\",\"color\":\"#9C27B0\",\"severity\":\"medium\",\"motifPattern\":\"M\",\"autoGenerated\":true},{\"id\":\"oxid-w\",\"name\":\"Oxidation (Trp)\",\"description\":\"oxidation liability pattern (2582 hits)\",\"start\":null,\"end\":null,\"visualType\":\"point\",\"category\":\"liability\",\"color\":\"#9C27B0\",\"severity\":\"low\",\"motifPattern\":\"W\",\"autoGenerated\":true},{\"id\":\"glyco-nxst\",\"name\":\"N-glycosylation\",\"description\":\"glycosylation liability pattern (34 hits)\",\"start\":null,\"end\":null,\"visualType\":\"motif\",\"category\":\"liability\",\"color\":\"#4CAF50\",\"severity\":\"high\",\"motifPattern\":\"N[^P][ST]\",\"autoGenerated\":true},{\"id\":\"free-cys\",\"name\":\"Free Cysteine\",\"description\":\"freeCysteine liability pattern (2316 hits)\",\"start\":null,\"end\":null,\"visualType\":\"point\",\"category\":\"liability\",\"color\":\"#607D8B\",\"severity\":\"info\",\"motifPattern\":\"C\",\"autoGenerated\":true}]",
+                ".regions": "[{\"name\":\"FR1\",\"description\":\"FR1 (KABAT 1-30)\",\"start\":\"1\",\"end\":\"30\"},{\"name\":\"CDR1\",\"description\":\"CDR1 (KABAT 31-35)\",\"start\":\"31\",\"end\":\"35\"},{\"name\":\"FR2\",\"description\":\"FR2 (KABAT 36-49)\",\"start\":\"36\",\"end\":\"49\"},{\"name\":\"CDR2\",\"description\":\"CDR2 (KABAT 50-65)\",\"start\":\"50\",\"end\":\"65\"},{\"name\":\"FR3\",\"description\":\"FR3 (KABAT 66-94)\",\"start\":\"66\",\"end\":\"94\"},{\"name\":\"CDR3\",\"description\":\"CDR3 (KABAT 95-102)\",\"start\":\"95\",\"end\":\"102\"},{\"name\":\"FR4\",\"description\":\"FR4 (KABAT 103-113)\",\"start\":\"103\",\"end\":\"113\"}]",
+                ".semantic-detection-duration": "0",
+                ".positionShift": "178",
+                ".annotationColumnName": "~AntibodyHC (aligned)_annotations",
+                ".selectedPosition": "208",
+                ".id": "8e40d0a0-48b0-11f1-9bba-1b778b988da5"
+            }
+        },
+        {
+            "name": "Activity",
+            "type": "double",
+            "id": "8e40f7b0-48b0-11f1-9442-2ff2eac1c4f4",
+            "friendlyName": "Activity",
+            "entityTags": [
+                {
+                    "tag": "formula",
+                    "id": "2c4da160-48b0-11f1-dad3-5d7398c8ac9a"
+                },
+                {
+                    "tag": ".semantic-detection-duration",
+                    "id": "2c4da160-48b0-11f1-eea5-5f4bef88fdea"
+                },
+                {
+                    "tag": ".id",
+                    "id": "2c4dc870-48b0-11f1-d30d-45d793626666"
+                }
+            ],
+            "metaParams": {
+                "formula": "RandBetween(1000,100000) / 10000",
+                ".semantic-detection-duration": "0",
+                ".id": "8e40f7b0-48b0-11f1-9442-2ff2eac1c4f4"
+            }
+        },
+        {
+            "name": "AntibodyHC (aligned)(CDR2)",
+            "type": "string",
+            "semType": "Macromolecule",
+            "id": "8e411ec0-48b0-11f1-91bf-cf6e9328f406",
+            "friendlyName": "AntibodyHC (aligned)(CDR2)",
+            "entityTags": [
+                {
+                    "tag": "quality",
+                    "id": "2c4dc870-48b0-11f1-f3f5-e7d5f9292883"
+                },
+                {
+                    "tag": "units",
+                    "id": "2c4dc870-48b0-11f1-a04d-ddff435bb705"
+                },
+                {
+                    "tag": "cell.renderer",
+                    "id": "2c4dc870-48b0-11f1-d96a-81529367483e"
+                },
+                {
+                    "tag": "aligned",
+                    "id": "2c4dc870-48b0-11f1-be28-99068c9b6dae"
+                },
+                {
+                    "tag": "alphabet",
+                    "id": "2c4dc870-48b0-11f1-bb57-b5388e644b24"
+                },
+                {
+                    "tag": ".alphabetIsMultichar",
+                    "id": "2c4dc870-48b0-11f1-af59-2b36cbd4a5cf"
+                },
+                {
+                    "tag": ".%initialName",
+                    "id": "2c4dc870-48b0-11f1-a891-55997d67e80b"
+                },
+                {
+                    "tag": ".positionNames",
+                    "id": "2c4dc870-48b0-11f1-bebc-292fce7a4321"
+                },
+                {
+                    "tag": ".semantic-detection-duration",
+                    "id": "2c4def80-48b0-11f1-b521-2f849b001a36"
+                },
+                {
+                    "tag": ".id",
+                    "id": "2c4def80-48b0-11f1-be2a-b505451ed964"
+                }
+            ],
+            "metaParams": {
+                "quality": "Macromolecule",
+                "units": "fasta",
+                "cell.renderer": "sequence",
+                "aligned": "SEQ.MSA",
+                "alphabet": "PT",
+                ".alphabetIsMultichar": null,
+                ".%initialName": "fasta(AntibodyHC (aligned))",
+                ".positionNames": "50, 51, 52, 52A, 52B, 52C, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65",
+                ".semantic-detection-duration": "0",
+                ".id": "8e411ec0-48b0-11f1-91bf-cf6e9328f406"
+            }
+        },
+        {
+            "name": "Cluster (DBSCAN)",
+            "type": "string",
+            "id": "8e411ec0-48b0-11f1-bb9d-33d144aa9f96",
+            "friendlyName": "Cluster (DBSCAN)",
+            "entityTags": [
+                {
+                    "tag": ".semantic-detection-duration",
+                    "id": "2c4def80-48b0-11f1-b4e7-d7e775fc537e"
+                },
+                {
+                    "tag": ".id",
+                    "id": "2c4def80-48b0-11f1-ed11-51fcba365faf"
+                }
+            ],
+            "metaParams": {
+                ".semantic-detection-duration": "0",
+                ".id": "8e411ec0-48b0-11f1-bb9d-33d144aa9f96"
+            }
+        },
+        {
+            "name": "Embed_X_1",
+            "type": "double",
+            "id": "8e411ec0-48b0-11f1-97da-0511b2150d88",
+            "friendlyName": "Embed_ X_1",
+            "entityTags": [
+                {
+                    "tag": ".semantic-detection-duration",
+                    "id": "2c4def80-48b0-11f1-9dd6-53aaac02090d"
+                },
+                {
+                    "tag": ".id",
+                    "id": "2c4def80-48b0-11f1-9975-f1c2f58b9ebd"
+                }
+            ],
+            "metaParams": {
+                ".semantic-detection-duration": "0",
+                ".id": "8e411ec0-48b0-11f1-97da-0511b2150d88"
+            }
+        },
+        {
+            "name": "Embed_Y_1",
+            "type": "double",
+            "id": "8e411ec0-48b0-11f1-a698-cddec627a631",
+            "friendlyName": "Embed_ Y_1",
+            "entityTags": [
+                {
+                    "tag": ".semantic-detection-duration",
+                    "id": "2c4def80-48b0-11f1-d904-c5b8793b7489"
+                },
+                {
+                    "tag": ".id",
+                    "id": "2c4def80-48b0-11f1-b278-e16a9df61674"
+                }
+            ],
+            "metaParams": {
+                ".semantic-detection-duration": "0",
+                ".id": "8e411ec0-48b0-11f1-a698-cddec627a631"
+            }
+        }
+    ],
+    "id": "2c4d5340-48b0-11f1-eba1-8b35f34999b3",
+    "name": "AntibodyHC",
+    "friendlyName": "Antibody_HC"
+}

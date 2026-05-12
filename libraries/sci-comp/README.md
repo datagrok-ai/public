@@ -28,6 +28,14 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
   * dose-response: [PAVA isotonic regression](https://en.wikipedia.org/wiki/Isotonic_regression), [Williams step-down](https://doi.org/10.2307/2528930) with 1971/1972 critical-value tables
   * covariate-adjusted analysis: ANCOVA (LS means, slope homogeneity, effect decomposition)
 
+* **[NCA (Non-Compartmental Analysis)](./src/nca/README.md):**
+  * 8 PK parameters: Cmax, Tmax, AUClast, AUCinf, %AUCextrap, λz, t½, CL, Vz
+  * 3 AUC methods (linear, log-linear, linear-up/log-down) × naive Float64 + Neumaier-compensated summation
+  * 4 BLQ-handling rules × 4 phases
+  * λz auto best-fit (subset search by adjusted R²) + manual
+  * IV bolus `c0` back-extrapolation (`logslope` / `c1` / `cmin` / `set0` chain), extravascular pre-dose insertion
+  * validated against [PKNCA](https://humanpred.github.io/pknca/) on 26 reference profiles (theophylline, indomethacin, synthetic rat)
+
 ## Installation
 
 ```bash
@@ -133,3 +141,51 @@ See [statistics docs](./src/stats/README.md) for
 * NaN handling (NaN as missing-value sentinel, stripped per-method)
 * worked examples reproducing published references (Dunnett 1955, NIST Iris, Williams 1971/1972, Young 1985, Montgomery 15.10 vs SAS PROC GLM)
 * validation against scipy via JSON fixtures (179 cases, 14 fixture files)
+
+### NCA
+
+Run the full Non-Compartmental Analysis pipeline on one PK profile:
+
+```typescript
+import {nca} from '@datagrok-libraries/sci-comp';
+
+const inputs: nca.ProfileInputs = {
+  time:    new Float64Array([0, 0.25, 0.5, 1, 2, 4, 8, 12]),
+  conc:    new Float64Array([0, 1.5,  2.4, 3.0, 1.8, 0.9, 0.3, 0.1]),
+  blqMask: new Uint8Array(8),
+  lloq:    0.05,
+  dose:               2.5,
+  doseUnits:          'mg',
+  concentrationUnits: 'mg/L',
+  timeUnits:          'h',
+  route:              nca.ROUTE_PO,
+  infusionDuration:   null,
+  bodyWeight:         null,
+};
+
+const rules: nca.NcaRules = {
+  aucMethod: 'linear-up-log-down',
+  blq: {
+    preFirstMeasurable: 'set-zero', embedded: 'set-zero',
+    afterLast: 'set-zero', consecutiveAfterLast: 'set-zero',
+  },
+  lambdaZ: {
+    mode: 'auto-best-fit',
+    minPoints: 3, minRSquared: 0.85, excludeCmax: true,
+    adjRSquaredFactor: 1e-4,
+  },
+  extrapWarnPct: 20, extrapErrorPct: 50,
+  compensatedSummation: false,
+};
+
+const result = nca.computeNca(inputs, rules);
+// result.values: Cmax, Tmax, AUClast, AUCinf, lambdaZ, halfLife, cl, vz, pctExtrap
+// result.provenance: lambda_z fit details, BLQ trace, AUC method, warnings
+// result.status: 'ok' | 'partial' | 'failed'
+```
+
+See [NCA docs](./src/nca/README.md) for
+
+* algorithm details (BLQ phasing, lambda_z best-fit search, IV bolus c0 back-extrapolation)
+* parameter contract (`ProfileInputs`, `NcaRules`, `ComputeResult`)
+* validation against fixtures (26 profiles across 3 datasets, all within §9.2 tolerances)

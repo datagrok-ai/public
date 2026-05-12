@@ -14,9 +14,12 @@ import * as ui from 'datagrok-api/ui';
 
 import {parseHelmDuplex} from './helm-parser';
 import {
+  BASE_COLORS, FALLBACK_COLOR,
   canonicalPhosphateSymbol, canonicalSugarSymbol,
+  isCanonicalBase,
   ParsedNucleotide, resolveConjugate, resolvePhosphate, resolveSugar,
 } from './types';
+import {getNaturalAnalog} from './analog-cache';
 
 export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
   const helm: string = value.value ?? '';
@@ -29,12 +32,16 @@ export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
   const sugarCounts = new Map<string, number>();
   const phosCounts = new Map<string, number>();
   const conjCounts = new Map<string, number>();
+  /** Custom (non-canonical) base symbols, e.g. `cpm6A`, `5BrU`, `psiU`. */
+  const baseCounts = new Map<string, number>();
   const allMonomers = [...model.sense.monomers, ...(model.antisense?.monomers ?? [])];
   for (const m of allMonomers) {
     if (m.kind === 'nucleotide') {
       const nt = m as ParsedNucleotide;
       bump(sugarCounts, nt.sugar);
       if (nt.phosphate) bump(phosCounts, nt.phosphate);
+      if (nt.base && !isCanonicalBase(nt.base))
+        bump(baseCounts, nt.base);
     } else {
       bump(conjCounts, m.symbol);
     }
@@ -46,7 +53,7 @@ export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
   root.appendChild(section('Summary', ui.tableFromMap({
     'Sense length': `${sLen} nt`,
     'Antisense length': aLen ? `${aLen} nt` : 'single-strand',
-    'Modifications used': humanizeModSet(sugarCounts, phosCounts),
+    'Modifications used': humanizeModSet(sugarCounts, phosCounts, baseCounts),
     'Conjugates': conjCounts.size ?
       Array.from(conjCounts.entries()).map(([s, n]) => `${resolveConjugate(s).meta.name} ×${n}`).join(', ') :
       '—',
@@ -55,7 +62,7 @@ export function buildOligoPanel(value: DG.SemanticValue): DG.Widget {
   // Legend — only modifications actually present in this cell.
   // Note: there's no "Copy" section here — the platform already adds a
   // default "Actions | Copy value" entry for any cell.
-  root.appendChild(section('Legend', buildCellLegend(sugarCounts, phosCounts, conjCounts)));
+  root.appendChild(section('Legend', buildCellLegend(sugarCounts, phosCounts, conjCounts, baseCounts)));
 
   return DG.Widget.fromRoot(root);
 }
@@ -64,7 +71,9 @@ function bump(map: Map<string, number>, key: string): void {
   map.set(key, (map.get(key) ?? 0) + 1);
 }
 
-function humanizeModSet(sugars: Map<string, number>, phos: Map<string, number>): string {
+function humanizeModSet(
+  sugars: Map<string, number>, phos: Map<string, number>, bases: Map<string, number>,
+): string {
   const parts: string[] = [];
   // Aggregate by canonical name so legacy + canonical symbols collapse correctly
   const sugarByName = new Map<string, number>();
@@ -83,6 +92,9 @@ function humanizeModSet(sugars: Map<string, number>, phos: Map<string, number>):
   }
   for (const [name, n] of phosByName.entries()) parts.push(`${name} ×${n}`);
 
+  // Custom bases — list each by its raw HELM symbol
+  for (const [sym, n] of bases.entries()) parts.push(`${sym} ×${n}`);
+
   return parts.length ? parts.join(', ') : 'unmodified';
 }
 
@@ -98,14 +110,17 @@ function section(title: string, body: HTMLElement): HTMLElement {
 
 /** Build a legend filtered to modifications actually present in this cell.
  * One row per unique mod, with the count to the right. Items collapse by
- * canonical symbol so legacy/canonical aliases share a row. */
+ * canonical symbol so legacy/canonical aliases share a row. Custom bases
+ * (non-A/C/G/U/T HELM symbols) are listed with their natural-analog color
+ * — resolved async via the central Bio monomer library. */
 function buildCellLegend(
-  sugars: Map<string, number>, phos: Map<string, number>, conjs: Map<string, number>,
+  sugars: Map<string, number>, phos: Map<string, number>,
+  conjs: Map<string, number>, bases: Map<string, number>,
 ): HTMLElement {
   type Item = { label: string; color: string; count: number };
   const items: Item[] = [];
 
-  // Collapse by canonical symbol so e.g. mR + m → one row
+  // Sugar mods — collapse by canonical symbol so e.g. mR + m → one row
   const sugarByCanon = new Map<string, number>();
   for (const [sym, n] of sugars.entries()) {
     const c = canonicalSugarSymbol(sym);
@@ -117,6 +132,7 @@ function buildCellLegend(
     items.push({label: meta.name, color: meta.color, count: n});
   }
 
+  // Phosphate / linkage mods
   const phosByCanon = new Map<string, number>();
   for (const [sym, n] of phos.entries()) {
     const c = canonicalPhosphateSymbol(sym);
@@ -128,6 +144,15 @@ function buildCellLegend(
     items.push({label: `${meta.name} (linkage)`, color: meta.color, count: n});
   }
 
+  // Custom bases — color via natural analog from the central Bio lib (sync).
+  for (const [sym, n] of bases.entries()) {
+    const analog = getNaturalAnalog(sym);
+    const color = (analog && BASE_COLORS[analog]) ? BASE_COLORS[analog] : FALLBACK_COLOR;
+    const label = analog ? `${sym} (base, analog ${analog})` : `${sym} (base)`;
+    items.push({label, color, count: n});
+  }
+
+  // Conjugates
   for (const [sym, n] of conjs.entries()) {
     const meta = resolveConjugate(sym).meta;
     items.push({label: meta.name, color: meta.color, count: n});

@@ -3,7 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {applyCodeMirror} from "./utils/code-mirror-check";
 
+const SCRIPT_RIBBON_SELECTOR = 'i.fa-window-maximize[aria-label="Views"]';
+
 export function initScriptEditor(view: DG.View): void {
+  if (view.root?.parentElement?.querySelector(SCRIPT_RIBBON_SELECTOR) != null)
+    return;
   applyCodeMirror(view, (editor) => {
     const doc = editor.getDoc();
     const lineCount = doc.lineCount();

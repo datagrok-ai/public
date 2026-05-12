@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../../package';
 import {dartLike, fireAIAbortEvent} from '../../utils';
-import {ClaudeRuntimeClient} from '../../claude/runtime-client';
+import {ClaudeRuntimeClient, ClaudeModel} from '../../claude/runtime-client';
 import {RENDERED_EVENT} from '../ui';
 
 export interface QueryMatchResult {
@@ -141,7 +141,7 @@ Analyze the user request and return a JSON object with:
 `;
 
   try {
-    const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`, {outputSchema: schema});
+    const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`, {outputSchema: schema, model: ClaudeModel.Haiku});
     const parametersRecord: Record<string, string> = {};
     for (const param of rawResult.parameters)
       parametersRecord[param.key] = param.value;

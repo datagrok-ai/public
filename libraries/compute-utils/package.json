@@ -31,6 +31,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@datagrok-libraries/codegen-async-to-sync": "^0.1.0",
     "@types/lodash.isequal": "^4.5.8",
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.13.0",
@@ -50,7 +51,9 @@
     "clean": "tsc --build --clean",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build",
+    "update-codegen": "codegen-async-to-sync --roots function-views webworkers shared-utils shared-components",
+    "codegen:check": "codegen-async-to-sync --check --roots function-views webworkers shared-utils shared-components"
   },
   "repository": {
     "type": "git",

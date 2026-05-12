@@ -32,6 +32,7 @@ import {CyclizedNotationProvider} from './utils/cyclized';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {PolyToolDataRole, PolyToolTags} from './consts';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getPTCombineDialog} from './polytool/pt-combine-dialog';
 import {PolyToolEnumeratorTypes} from './polytool/types';
 import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -74,10 +75,11 @@ export const _package: OligoToolkitPackage = new OligoToolkitPackage({debug: tru
 let initSequenceTranslatorPromise: Promise<void> | null = null;
 
 async function initSequenceTranslatorInt(): Promise<void> {
-  const [helmHelper] = await Promise.all([
+  const [helmHelper, bioLibHelper] = await Promise.all([
     getHelmHelper(),
+    getMonomerLibHelper(),
   ]);
-  _package.completeInit(helmHelper);
+  _package.completeInit(helmHelper, bioLibHelper.getMonomerLib());
 }
 
 export class PackageFunctions {
@@ -358,6 +360,34 @@ export class PackageFunctions {
     return polyToolEnumerateChemUI(cell);
   }
 
+
+  /** Enumerator entry for OligoNucleotide cells.
+   *
+   * The cell value is HELM (under the hood). The enumerator dialog is built
+   * around `Macromolecule` cells, so we wrap the oligo HELM in a temp
+   * Macromolecule column and pass that cell in. The `outputAsOligo` flag
+   * makes the dialog tag the enumerated result column as OligoNucleotide so
+   * the duplex renderer picks it up automatically. */
+  @grok.decorators.func({
+    name: 'Polytool Oligo Enumerator dialog'
+  })
+  static async getPtOligoEnumeratorDialog(
+    @grok.decorators.param({type: 'object', options: {nullable: true}}) cell?: DG.Cell) {
+    if (!cell || cell.value == null)
+      return polyToolEnumerateHelmUI(undefined, true);
+
+    const helm = String(cell.value);
+    const tempCol = DG.Column.fromStrings('helm', [helm]);
+    tempCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    tempCol.meta.units = 'helm';
+    tempCol.setTag('aligned', 'SEQ');
+    tempCol.setTag('alphabet', 'RNA');
+    tempCol.setTag('cell.renderer', 'helm');
+    const tempDf = DG.DataFrame.fromColumns([tempCol]);
+    const tempCell = tempDf.cell(0, 'helm');
+    return polyToolEnumerateHelmUI(tempCell, true);
+  }
+
   @grok.decorators.func({
     name: 'Enumerate Single HELM Sequence',
     description: 'Enumerate provided HELM sequence on provided positions with provided monomers and generates new table',
@@ -418,6 +448,34 @@ export class PackageFunctions {
   })
   static oligoNucleotideCellRenderer(): DG.GridCellRenderer {
     return new OligoNucleotideCellRenderer();
+  }
+
+  @grok.decorators.func({
+    name: 'editOligoNucleotideCell',
+    description: 'OligoNucleotide',
+    tags: ['cellEditor'],
+    meta: {
+      role: 'cellEditor',
+    },
+  })
+  static async editOligoNucleotideCell(
+    @grok.decorators.param({type: 'grid_cell'}) cell: DG.GridCell,
+  ): Promise<void> {
+    // Helm:editMoleculeCell can't be reused: it calls seqHelper.getSeqHandler(col),
+    // which throws unless semType === Macromolecule. OligoNucleotide columns have
+    // semType=OligoNucleotide, so we open the HELM Web Editor directly.
+    const helmHelper = await getHelmHelper();
+    const view = ui.div();
+    const app = helmHelper.createWebEditorApp(view, (cell.cell.value as string | null) ?? '');
+    ui.dialog({showHeader: false, showFooter: true})
+      .add(view)
+      .onOK(() => {
+        const helmValue = app.canvas!.getHelm(true)
+          .replace(/<\/span>/g, '')
+          .replace(/<span style='background:#bbf;'>/g, '');
+        cell.setValue(helmValue);
+      })
+      .show({modal: true, fullScreen: true});
   }
 
   @grok.decorators.func({

@@ -1,0 +1,3 @@
+reaction_smarts,blocking_fg,reaction_name
+"[NX3;H2,H1;!$(N=*);!$(N[#6]=[O,S,N]):1].[#6:2][C:3](=[O:4])[OH,O-]>>[N:1][C:3](=[O:4])[#6:2]",,Peptide coupling
+"[#6:1][S;H1:2].[#6:3][S;H1:4]>>[#6:1][S:2][S:4][#6:3]",,Disulfide formation

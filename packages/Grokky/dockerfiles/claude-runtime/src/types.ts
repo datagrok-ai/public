@@ -26,6 +26,13 @@ export interface McpInputs {
 export type ToolName = keyof ToolInputs;
 export type McpName = keyof McpInputs;
 
+export const ClaudeModel = {
+  Haiku: 'haiku',
+  Sonnet: 'sonnet',
+  Opus: 'opus',
+} as const;
+export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
+
 export interface UserMessage {
   type: 'user_message';
   sessionId: string;
@@ -34,6 +41,7 @@ export interface UserMessage {
   mcpServerUrl?: string;
   outputSchema?: object;
   systemPromptMode?: 'datagrok' | 'bash' | 'none';
+  model?: ClaudeModel;
 }
 
 export interface AbortMessage {

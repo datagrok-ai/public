@@ -13,6 +13,7 @@
  *    (see Apr 2026 commits around RNA triplet splitting)
  */
 
+import {cleanupHelmSymbol} from '@datagrok-libraries/bio/src/helm/utils';
 import {
   canonicalPhosphateSymbol, canonicalSugarSymbol,
   ParsedConjugate, ParsedDuplex, ParsedMonomer, ParsedNucleotide, ParsedStrand,
@@ -84,7 +85,7 @@ function parseMonomer(s: string, position: number): ParsedMonomer {
   // base in parens (optional)
   if (s[i] === '(') {
     const end = s.indexOf(')', i);
-    base = s.substring(i + 1, end);
+    base = cleanupHelmSymbol(s.substring(i + 1, end));
     i = end + 1;
   }
 
@@ -131,7 +132,7 @@ function serializeCanonicalMonomer(m: ParsedMonomer): string {
   const phos = canonicalPhosphateSymbol(nt.phosphate);
   const sugarPart = sugar.length === 1 ? sugar : `[${sugar}]`;
   const phosPart = !phos ? '' : (phos.length === 1 ? phos : `[${phos}]`);
-  const baseStr = nt.base ? `(${nt.base})` : '';
+  const baseStr = !nt.base ? '' : (nt.base.length === 1 ? `(${nt.base})` : `([${nt.base}])`);
   return `${sugarPart}${baseStr}${phosPart}`;
 }
 

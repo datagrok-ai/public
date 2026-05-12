@@ -33,6 +33,7 @@ import {Chain} from './conversion/pt-chain';
 import {polyToolConvert} from './pt-dialog';
 
 import {_package, applyNotationProviderForCyclized, PackageFunctions} from '../package';
+import {tagAsOligoNucleotide} from '../oligo-renderer/converters';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
@@ -84,8 +85,12 @@ type PolyToolEnumerateHelmSerialized = {
   rules: string[],
 };
 
-/** Entry point: creates, sizes, and shows the enumeration dialog. */
-export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
+/** Entry point: creates, sizes, and shows the enumeration dialog.
+ * @param outputAsOligo If true, the enumerated HELM column in the result df
+ *   is tagged as `OligoNucleotide` (semType + units=helm + cellRenderer hints)
+ *   so the duplex cell renderer picks it up. Used when the source cell was an
+ *   OligoNucleotide column. */
+export async function polyToolEnumerateHelmUI(cell?: DG.Cell, outputAsOligo: boolean = false): Promise<void> {
   await _package.initPromise;
 
   // Capture viewport dimensions for dialog sizing
@@ -122,7 +127,7 @@ export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
         }
       }
     };
-    dialog = await getPolyToolEnumerateDialog(cell, resizeInputs);
+    dialog = await getPolyToolEnumerateDialog(cell, resizeInputs, outputAsOligo);
 
     // On first show, center the dialog at 70% of viewport; on subsequent resizes, just reflow inputs
     let isFirstShow = true;
@@ -155,7 +160,7 @@ export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
 
 /** Builds and configures the enumeration dialog with all inputs, validators, and event handlers. */
 async function getPolyToolEnumerateDialog(
-  cell?: DG.Cell, resizeInputs?: () => void
+  cell?: DG.Cell, resizeInputs?: () => void, outputAsOligo: boolean = false,
 ): Promise<DG.Dialog> {
   const logPrefix = `ST: PT: HelmDialog()`;
   let inputs: PolyToolEnumerateInputs;
@@ -712,6 +717,15 @@ async function getPolyToolEnumerateDialog(
               rules: await ruleInputs.getActive()
             } : false,
             helmHelper);
+
+          // When the source was an OligoNucleotide cell, tag the enumerated
+          // HELM column as OligoNucleotide so the duplex renderer picks it up.
+          if (outputAsOligo) {
+            const enumCol = enumeratorResDf.col('Enumerated');
+            if (enumCol && enumCol.type === DG.COLUMN_TYPE.STRING)
+              tagAsOligoNucleotide(enumCol as DG.Column<string>);
+          }
+
           const appendTarget = inputs.appendToTable.value;
           if (appendTarget) {
             appendTarget.append(enumeratorResDf, true);

@@ -134,6 +134,7 @@ For all parameters:
 
 | Option     | Value  | Description                                                               |
 |------------|--------|---------------------------------------------------------------------------|
+| validator  | string | Single [validator](#validation): a Grok expression or a regex literal     |
 | validators | string | Comma-separated list of [validators](#validation)                         |
 | caption    | string | Custom field caption                                                      |
 | postfix    | string | Field postfix                                                             |
@@ -440,6 +441,9 @@ Result `true` or `null` means that the input is valid. `false` or a string error
 it gets highlighted and the validation message is shown in the tooltip. Note that the expression can depend not only on the
 value of the parameter the expression applied to, but on other parameters as well.
 
+Inside the expression, `value` always refers to the current input's value, so the same validator can be reused across
+parameters without rewriting the parameter name.
+
 <details>
 <summary> Example: Inline validation dependent on the value of other parameters </summary>
 <div>
@@ -447,6 +451,7 @@ value of the parameter the expression applied to, but on other parameters as wel
 ```js
 //input: int foo = 5 { validator: bar > 3 }
 //input: double bar = 2 { min: 0; max: 10 }
+//input: string code = "1234" { validator: startsWith(value, "12") }
 ```
 
 ![](param-visible-enabled-expressions.gif)
@@ -455,10 +460,12 @@ value of the parameter the expression applied to, but on other parameters as wel
 </details>
 
 
-The second option involves using a custom validation function and referencing it.
-A validation function accepts one parameter
-(a string that user enters), and returns null if the string is valid, or the reason for being invalid,
-otherwise.
+The second option involves using a custom validation function and referencing it. A validation
+function accepts one parameter (the value the user enters) and returns either `null` (valid) or
+the reason it's invalid (a string). It can also return a `boolean` — `true` is valid, `false`
+shows a generic message naming the function.
+
+To reference a function from another package, prefix the name with the package: `Pkg:FuncName`.
 
 :::important
 Validators must be synchronous. Only `package.ts` exports and `grok.functions.register({...})`
@@ -490,7 +497,29 @@ valid = input < 11 ? null : "Error val1";
 #input: int count1 {validators: ["jsval1"]
 ```
 
+Cross-package, bool-returning predicates work directly:
+
+```
+//input: string smiles = "CCO"  {validators: ["Chem:isSmiles"]}
+//input: string smarts = "[#6]" {validators: ["Chem:isSmarts"]}
+```
+
 ![Script Parameter Validators](../../../uploads/features/script-param-validators.gif "Script Parameter Validators")
+
+</div>
+</details>
+
+The third option is a regex literal in JavaScript form `/pattern/flags`. The input is valid when
+the value matches the pattern. Supported flags are `i` (case-insensitive) and `m` (multi-line).
+
+<details>
+<summary> Example: Regex validator </summary>
+<div>
+
+```
+//input: string code = "1234" {validator: /^[0-9]{4}$/}
+//input: string country = "US"  {validator: /^[A-Z]{2}$/i}
+```
 
 </div>
 </details>

@@ -31,6 +31,17 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
     return this._helmHelper.seqHelper;
   }
 
+  /** Central Bio monomer library (HELMCore + any extra libraries the user has
+   * loaded, including our oligo-conjugates set). Populated synchronously from
+   * `getMonomerLibHelper()` during package init — guaranteed available the
+   * moment any other package function (cell renderer, panels, …) can run. */
+  private _bioMonomerLib?: IMonomerLib;
+  get bioMonomerLib(): IMonomerLib {
+    if (!this._bioMonomerLib)
+      throw new Error('Package SequenceTranslator .bioMonomerLib is not initialized');
+    return this._bioMonomerLib;
+  }
+
   private _monomerLib?: IMonomerLib;
   get monomerLib(): IMonomerLib {
     if (!this._monomerLib)
@@ -65,8 +76,9 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
     this._initPromise = initPromise;
   }
 
-  completeInit(helmHelper: IHelmHelper): void {
+  completeInit(helmHelper: IHelmHelper, bioMonomerLib: IMonomerLib): void {
     this._helmHelper = helmHelper;
+    this._bioMonomerLib = bioMonomerLib;
   }
 
   private initLibDataPromise?: Promise<void>;

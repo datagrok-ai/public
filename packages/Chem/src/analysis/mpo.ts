@@ -15,10 +15,14 @@ import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/ut
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {MpoProfileManager} from '../mpo/mpo-profile-manager';
 import {PackageFunctions} from '../package';
-import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles, isEdaPackageInstalled, UNTITLED_PROFILE} from '../mpo/utils';
+import {
+  computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles,
+  isEdaPackageInstalled, MpoMethod, UNTITLED_PROFILE,
+} from '../mpo/utils';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 
 const CREATE_NEW_PROFILE_ITEM = '+ Create New...';
+
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
   mpoProfileEditor: MpoProfileEditor;
@@ -42,6 +46,8 @@ export class MpoProfileDialog {
 
   private pmpoSettingsIcon: HTMLElement;
   private methodInput: DG.ChoiceInput<string | null>;
+  private nameInput: DG.InputBase<string>;
+  private descriptionInput: DG.InputBase<string>;
   private pmpoSettingsContainer: HTMLElement;
   private pmpoSettingsOpened = false;
 
@@ -82,23 +88,55 @@ export class MpoProfileDialog {
     this.saveButton.classList.add('chem-mpo-dialog-manage-button', 'chem-mpo-d-none');
 
     this.methodInput = ui.input.choice('Method', {
-      items: ['Manual', 'Probabilistic'],
+      items: [MpoMethod.Manual, MpoMethod.DataDriven],
       nullable: false,
-      value: 'Manual',
+      value: MpoMethod.Manual,
       onValueChanged: async (value) => {
-        if (value === 'Probabilistic')
-          await this.createProbabilisticProfile();
+        if (value === MpoMethod.DataDriven)
+          await this.createDataDrivenProfile();
         else
           this.createManualProfile();
       },
     });
 
-    this.pmpoSettingsContainer = ui.divV([this.methodInput.root], 'chem-mpo-d-none');
+    this.nameInput = ui.input.string('Name', {
+      nullable: false,
+      onValueChanged: () => {
+        const newName = this.nameInput.value;
+        const oldName = this.currentProfile?.name;
+        if (this.currentProfile)
+          this.currentProfile.name = newName;
+        if (oldName && newName && oldName !== newName) {
+          const oldCol = this.dataFrame.col(oldName);
+          if (oldCol && !this.dataFrame.col(newName))
+            oldCol.name = newName;
+        }
+        this.updateOkButtonState();
+      },
+    });
+    this.nameInput.addValidator((name) => {
+      if (this.mpoProfiles.some((p) => p.name === name && p.fileName !== this.currentProfileFileName))
+        return 'A profile with this name already exists';
+      return null;
+    });
+
+    this.descriptionInput = ui.input.textArea('Description', {
+      nullable: true,
+      onValueChanged: () => {
+        if (this.currentProfile)
+          this.currentProfile.description = this.descriptionInput.value;
+      },
+    });
+
+    this.pmpoSettingsContainer = ui.divV(
+      [this.nameInput.root, this.descriptionInput.root, this.methodInput.root],
+      'chem-mpo-new-profile-box chem-mpo-d-none',
+    );
 
     this.pmpoSettingsIcon = ui.icons.settings(() => {
       this.pmpoSettingsOpened = !this.pmpoSettingsOpened;
       this.pmpoSettingsContainer.classList.toggle('chem-mpo-d-none', !this.pmpoSettingsOpened);
-    }, 'Generate from data (pMPO)');
+    }, 'Profile settings');
     this.pmpoSettingsIcon.classList.add('chem-mpo-d-none');
   }
 
@@ -165,10 +203,6 @@ export class MpoProfileDialog {
     this.pmpoSettingsIcon.classList.add('chem-mpo-d-none');
     this.pmpoSettingsContainer.classList.add('chem-mpo-d-none');
 
-    const select = this.profileInput.input as HTMLSelectElement;
-    if (select.options.length > 0)
-      select.options[0].textContent = CREATE_NEW_PROFILE_ITEM;
-
     this.currentProfileFileName = profileInfo.fileName;
     this.currentProfile = structuredClone(profileInfo);
     this.designModeInput.value = false;
@@ -182,16 +216,19 @@ export class MpoProfileDialog {
     this.isNewProfile = true;
     this.pmpoSettingsOpened = false;
     this.pmpoSettingsContainer.classList.add('chem-mpo-d-none');
-    this.methodInput.value = 'Manual';
+    this.methodInput.value = MpoMethod.Manual;
 
-    const select = this.profileInput.input as HTMLSelectElement;
-    if (select.options.length > 0)
-      select.options[0].textContent = UNTITLED_PROFILE;
-
-    const hasBoolColumns = [...this.dataFrame.columns].some((c) => c.type === DG.COLUMN_TYPE.BOOL);
-    this.pmpoSettingsIcon.classList.toggle('chem-mpo-d-none', !hasBoolColumns);
+    this.pmpoSettingsIcon.classList.remove('chem-mpo-d-none');
 
     this.createManualProfile();
+
+    this.nameInput.value = this.currentProfile!.name;
+    this.descriptionInput.value = this.currentProfile!.description ?? '';
+  }
+
+  private applyNameAndDescription(profile: DesirabilityProfile): void {
+    profile.name = this.nameInput.value || UNTITLED_PROFILE;
+    profile.description = this.descriptionInput.value ?? '';
   }
 
   private createManualProfile(): void {
@@ -199,7 +236,8 @@ export class MpoProfileDialog {
     for (const col of this.dataFrame.columns.numerical)
       props[col.name] = createDefaultNumerical(1, col.min, col.max);
 
-    this.currentProfile = {type: DESIRABILITY_PROFILE_TYPE, name: UNTITLED_PROFILE, description: '', properties: props};
+    this.currentProfile = {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
+    this.applyNameAndDescription(this.currentProfile);
     this.currentProfileFileName = null;
     this.originalProfile = null;
     this.isNewProfile = true;
@@ -210,7 +248,7 @@ export class MpoProfileDialog {
     this.updateOkButtonState();
   }
 
-  private async createProbabilisticProfile(): Promise<void> {
+  private async createDataDrivenProfile(): Promise<void> {
     const tableView = grok.shell.getTableView(this.dataFrame.name);
     if (!tableView) {
       grok.shell.error('No table view found for the current dataframe');
@@ -223,11 +261,12 @@ export class MpoProfileDialog {
     try {
       const pMpoItems = await grok.functions.call('EDA:getPmpoAppItems', {view: tableView});
       if (!pMpoItems?.profile) {
-        grok.shell.warning('pMPO is not applicable for this dataset');
+        grok.shell.warning('Data-driven MPO is not applicable for this dataset');
         return;
       }
 
       this.currentProfile = pMpoItems.profile;
+      this.applyNameAndDescription(this.currentProfile!);
       this.currentProfileFileName = null;
       this.originalProfile = null;
       this.isNewProfile = true;
@@ -236,7 +275,7 @@ export class MpoProfileDialog {
       this.saveButton.classList.remove('chem-mpo-d-none');
       this.updateOkButtonState();
     } catch (e) {
-      grok.shell.warning(`pMPO training failed: ${e instanceof Error ? e.message : e}`);
+      grok.shell.warning(`Data-driven MPO training failed: ${e instanceof Error ? e.message : e}`);
     }
   }
 
@@ -272,9 +311,10 @@ export class MpoProfileDialog {
 
   private updateOkButtonState(): void {
     const isApplicable = this.isProfileApplicable();
+    const nameValid = !this.isNewProfile || this.nameInput.validate();
     const okButton = this.dialog?.getButton('OK');
     if (okButton)
-      okButton.disabled = !isApplicable;
+      okButton.disabled = !isApplicable || !nameValid;
     this.updateFooterWarning(!isApplicable);
   }
 

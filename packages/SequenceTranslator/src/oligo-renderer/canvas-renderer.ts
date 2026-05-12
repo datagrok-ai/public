@@ -26,9 +26,11 @@
 import {
   BASE_COLORS, FALLBACK_COLOR,
   canonicalPhosphateSymbol, canonicalSugarSymbol,
+  displayBase, isCanonicalBase,
   ParsedDuplex, ParsedMonomer, ParsedNucleotide, ParsedStrand,
   resolveConjugate, resolvePhosphate, resolveSugar,
 } from './types';
+import {getNaturalAnalog} from './analog-cache';
 
 export interface RenderOpts {
   /** Show base letter inside chip. False at very small sizes. */
@@ -159,10 +161,28 @@ export function computeLayout(
   const senseStartX = seqX + (alignAt - senseLeadW);
   const antiStartX = seqX + (alignAt - antiLeadW);
 
-  const senseRes = placeStrand(model.sense, false, senseY, senseStartX, seqEndX, layoutBase, 'sense');
-  const antiRes = hasAnti ?
-    placeStrand(model.antisense!, antiReversed, antiY, antiStartX, seqEndX, layoutBase, 'antisense') :
-    {chips: [], links: []};
+  // Per-chip widths: nucleotides with multi-char bases (e.g. `cpm6A`) want a
+  // wider chip so the full symbol fits. We try the wide layout first; if the
+  // total doesn't fit in the cell, we fall back to uniform chipW + ellipsis.
+  // For pair alignment, columns sync across strands (pair-aligned column
+  // takes the max width of the two strands' chips at that pair-index).
+  const senseDisplay = model.sense.monomers;
+  const antiDisplay = hasAnti ?
+    (antiReversed ? model.antisense!.monomers.slice().reverse() : model.antisense!.monomers) :
+    [];
+  let widths = computePairSyncedWidths(senseDisplay, antiDisplay, chipW, fontSize);
+  // Falls back to uniform chipW if either strand's chips don't fit.
+  const widthBudget = seqEndX - (seqX + alignAt);
+  if (!fitsInBudget(widths.sense, senseLeadW, chipGap, widthBudget) ||
+      !fitsInBudget(widths.anti, antiLeadW, chipGap, widthBudget)) {
+    widths = uniformWidths(senseDisplay, antiDisplay, chipW, fontSize);
+  }
+
+  const senseRes = placeStrand(
+    model.sense, false, senseY, senseStartX, seqEndX, layoutBase, 'sense', widths.sense);
+  const antiRes = hasAnti ? placeStrand(
+    model.antisense!, antiReversed, antiY, antiStartX, seqEndX, layoutBase, 'antisense', widths.anti,
+  ) : {chips: [], links: []};
 
   return {
     ...layoutBase,
@@ -174,11 +194,14 @@ export function computeLayout(
   };
 }
 
-/** Place chips for one strand, optionally reversed. Returns chip and linkage positions. */
+/** Place chips for one strand, optionally reversed. Returns chip and linkage positions.
+ * `chipWidths` is per-display-monomer (i.e. matches the order of `strand.monomers` after
+ * reversal if `reverse=true`). */
 function placeStrand(
   strand: ParsedStrand, reverse: boolean, y: number, startX: number, endX: number,
   layout: Omit<DuplexLayout, 'senseChips' | 'antiChips' | 'senseLinks' | 'antiLinks' | 'antiReversed'>,
   side: StrandSide,
+  chipWidths: number[],
 ): { chips: ChipPos[]; links: LinkagePos[] } {
   const monomers = reverse ? strand.monomers.slice().reverse() : strand.monomers;
   const chips: ChipPos[] = [];
@@ -187,9 +210,7 @@ function placeStrand(
 
   for (let i = 0; i < monomers.length; i++) {
     const m = monomers[i];
-    const w = m.kind === 'conjugate' ?
-      estimateConjugateWidth(m.symbol, layout.chipW, layout.fontSize) :
-      layout.chipW;
+    const w = chipWidths[i] ?? layout.chipW;
 
     if (x + w > endX) break; // truncate at cell edge
 
@@ -239,6 +260,66 @@ function leadingConjugateWidth(
     w += estimateConjugateWidth(m.symbol, chipW, fontSize) + chipGap;
   }
   return w;
+}
+
+/** Desired width for one monomer if we render its base label in full (no
+ * ellipsis). Conjugates get their pill width. Single/two-char bases just use
+ * `chipW`; multi-char bases widen to fit the full label, capped at 3× chipW. */
+function desiredChipWidth(m: ParsedMonomer, chipW: number, fontSize: number): number {
+  if (m.kind === 'conjugate') return estimateConjugateWidth(m.symbol, chipW, fontSize);
+  const base = (m as ParsedNucleotide).base ?? '';
+  if (base.length <= 2) return chipW;
+  // Empirical: glyph width ≈ fontSize * 0.55 for system-ui at our weights.
+  const charW = fontSize * 0.55;
+  const textW = base.length * charW;
+  const padding = chipW * 0.4;
+  return Math.max(chipW, Math.min(chipW * 3, textW + padding));
+}
+
+interface SyncedWidths { sense: number[]; anti: number[]; }
+
+/** For each strand returns a per-chip width array; when both strands have a
+ * chip at the same pair-index (counted past leading conjugates), the column
+ * width is `max(senseDesired, antiDesired)` so pair-aligned positions stay
+ * column-locked even when one side has a long base name. */
+function computePairSyncedWidths(
+  senseDisplay: ParsedMonomer[], antiDisplay: ParsedMonomer[], chipW: number, fontSize: number,
+): SyncedWidths {
+  const senseW = senseDisplay.map((m) => desiredChipWidth(m, chipW, fontSize));
+  const antiW = antiDisplay.map((m) => desiredChipWidth(m, chipW, fontSize));
+
+  // Strip leading conjugates: the first non-conjugate in display order.
+  const senseStart = senseDisplay.findIndex((m) => m.kind === 'nucleotide');
+  const antiStart = antiDisplay.findIndex((m) => m.kind === 'nucleotide');
+  if (senseStart >= 0 && antiStart >= 0) {
+    const pairLen = Math.min(senseDisplay.length - senseStart, antiDisplay.length - antiStart);
+    for (let i = 0; i < pairLen; i++) {
+      const si = senseStart + i;
+      const ai = antiStart + i;
+      const w = Math.max(senseW[si], antiW[ai]);
+      senseW[si] = w; antiW[ai] = w;
+    }
+  }
+  return {sense: senseW, anti: antiW};
+}
+
+/** Uniform-width fallback (every chip = chipW; conjugates still pill-wide). */
+function uniformWidths(
+  senseDisplay: ParsedMonomer[], antiDisplay: ParsedMonomer[], chipW: number, fontSize: number,
+): SyncedWidths {
+  const map = (m: ParsedMonomer) => m.kind === 'conjugate' ?
+    estimateConjugateWidth(m.symbol, chipW, fontSize) : chipW;
+  return {sense: senseDisplay.map(map), anti: antiDisplay.map(map)};
+}
+
+/** Whether the per-chip widths array fits in `budget` (after the leading shift). */
+function fitsInBudget(widths: number[], leadW: number, chipGap: number, budget: number): boolean {
+  let total = leadW;
+  for (let i = 0; i < widths.length; i++) {
+    total += widths[i];
+    if (i < widths.length - 1) total += chipGap;
+  }
+  return total <= budget;
 }
 
 /* ---------------------------------------------------------------- *
@@ -324,11 +405,11 @@ function drawChip(
   w: number, h: number, fontSize: number, opts: RenderOpts,
 ): void {
   const sugarRes = resolveSugar(m.sugar, m.base);
-  const baseColor = BASE_COLORS[m.base ?? ''] ?? FALLBACK_COLOR;
+  const baseColor = resolveBaseColor(m.base);
   const isModSugar = isModifiedSugar(m.sugar);
   const r = Math.min(2.5, w / 4);
 
-  // Chip body — base-canonical pale color
+  // Chip body — base-canonical pale color (or analog's color for custom bases)
   drawRoundRect(g, x, y, w, h, r);
   g.fillStyle = withAlpha(baseColor, CHIP_FILL_ALPHA);
   g.fill();
@@ -347,15 +428,43 @@ function drawChip(
     g.restore();
   }
 
-  // Base letter — biased upward to leave room for stripe
+  // Base label — biased upward to leave room for stripe.
+  // Pick full label or shortened (`X…`) based on whether the chip is wide
+  // enough at the current fontSize. This way, when the layout granted us a
+  // wider chip, the user sees the full HELM symbol; otherwise it's clipped
+  // to first-letter + ellipsis for legibility.
   if (opts.showLetters && m.base && fontSize >= 8) {
     const stripeH = isModSugar ? Math.max(2, h * SUGAR_STRIPE_RATIO) : 0;
+    const label = pickBaseLabel(m.base, w, fontSize);
     g.fillStyle = '#1a1a1a';
     g.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
     g.textBaseline = 'middle';
     g.textAlign = 'center';
-    g.fillText(m.base, x + w / 2, y + (h - stripeH) / 2 + 0.5);
+    g.fillText(label, x + w / 2, y + (h - stripeH) / 2 + 0.5);
   }
+}
+
+/** Resolve a chip background color for any base, including custom (multi-char)
+ * symbols whose color follows their natural analog (`A` / `C` / `G` / `U` / `T`).
+ * Sync — backed by the central Bio monomer library that's wired up at
+ * package init. */
+function resolveBaseColor(base: string | null): string {
+  if (!base) return FALLBACK_COLOR;
+  if (BASE_COLORS[base]) return BASE_COLORS[base];
+  if (isCanonicalBase(base)) return BASE_COLORS[base] ?? FALLBACK_COLOR;
+  const analog = getNaturalAnalog(base);
+  if (analog && BASE_COLORS[analog]) return BASE_COLORS[analog];
+  return FALLBACK_COLOR;
+}
+
+/** Decide the on-chip label given the chip's actual width: full base symbol
+ * if it fits, else `firstLetter + …`. Single/two-char bases always show fully. */
+function pickBaseLabel(base: string, chipW: number, fontSize: number): string {
+  if (base.length <= 2) return base;
+  const charW = fontSize * 0.55;
+  const fullW = base.length * charW + 4; // small horizontal padding
+  if (fullW <= chipW) return base;
+  return displayBase(base);
 }
 
 function isModifiedSugar(sugar: string): boolean {

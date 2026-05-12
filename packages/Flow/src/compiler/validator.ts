@@ -1,131 +1,97 @@
 /* eslint-disable max-len */
-import {LGraph} from 'litegraph.js';
+/** Pre-compilation validation. Runs against the FlowEditor data layer. */
+
+import {FlowEditor} from '../rete/flow-editor';
+import {FlowNode} from '../rete/scheme';
 import {topologicalSort} from './topological-sort';
-import {getGraphNodes} from './graph-utils';
-import {FuncFlowNode} from '../types/funcflow-node';
 
 export type ValidationSeverity = 'error' | 'warning';
 
 export interface ValidationResult {
   severity: ValidationSeverity;
   message: string;
-  nodeId?: number;
+  nodeId?: string;
 }
 
-/** Validates the graph before compilation */
-export function validateGraph(graph: LGraph): ValidationResult[] {
+export function validateGraph(flow: FlowEditor): ValidationResult[] {
   const results: ValidationResult[] = [];
-  const nodes = getGraphNodes(graph) as FuncFlowNode[];
+  const nodes = flow.getNodes();
 
   if (nodes.length === 0) {
-    results.push({severity: 'warning', message: 'Graph is empty \u2014 nothing to generate'});
+    results.push({severity: 'warning', message: 'Graph is empty — nothing to generate'});
     return results;
   }
 
   try {
-    topologicalSort(graph);
-  } catch (e: any) {
-    results.push({severity: 'error', message: e.message});
+    topologicalSort(flow);
+  } catch (e: unknown) {
+    results.push({severity: 'error', message: (e as Error).message});
     return results;
   }
 
-  const hasTableInput = nodes.some((n) => n.dgNodeType === 'input' && n.dgOutputType === 'dataframe');
+  const hasTableInput = nodes.some(
+    (n) => n.dgNodeType === 'input' && n.dgOutputType === 'dataframe',
+  );
 
   for (const node of nodes) {
-    if (node.dgNodeType === 'input' && node.dgOutputType === 'column') {
-      if (!hasTableInput) {
-        results.push({
-          severity: 'error',
-          message: `Column input '${node.properties['paramName']}' requires a Table input in the graph`,
-          nodeId: node.id,
-        });
-      }
+    if (node.dgNodeType === 'input' && node.dgOutputType === 'column' && !hasTableInput) {
+      results.push({
+        severity: 'error',
+        message: `Column input '${node.properties['paramName']}' requires a Table input in the graph`,
+        nodeId: node.id,
+      });
     }
 
-    if (node.dgFunc && node.inputs) {
-      const func = node.dgFunc;
-      for (let i = 0; i < node.inputs.length; i++) {
-        const inp = node.inputs[i];
-        const connected = node.isInputConnected(i);
-        if (!connected) {
-          const propKey = `_input_${inp.name}`;
-          const storedVal = node.properties[propKey];
-          // 0 and false are valid values; only undefined/null/empty-string mean "no value"
-          const hasValue = storedVal !== undefined && storedVal !== null &&
-            (typeof storedVal !== 'string' || storedVal !== '');
+    // Disconnected-node warning (skip pure inputs).
+    if (node.dgNodeType !== 'input' && isDisconnected(node, flow))
+      results.push({
+        severity: 'warning',
+        message: `Node '${node.label}' is disconnected from the graph`,
+        nodeId: node.id,
+      });
 
-          // Check if the function parameter is nullable
-          const funcParam = func.inputs.find((p: any) => p.name === inp.name);
-          const isNullable = funcParam?.nullable === true || funcParam?.options?.optional === true || funcParam?.options?.nullable === true;
-
-          if (false && !hasValue && !isNullable) { // not working for now, bunch of functions have falsly non-nullable params
-            results.push({
-              severity: 'error',
-              message: `Required input '${inp.name}' on node '${node.title}' is not connected and has no value`,
-              nodeId: node.id,
-            });
-          } else if (!hasValue)
-            node.properties[propKey] = node.properties[propKey] ?? null;
-        }
-      }
-    }
-
-    if (node.inputs && node.outputs) {
-      const anyInputConnected = node.inputs.some((_, idx) => node.isInputConnected(idx));
-      const anyOutputConnected = node.outputs.some((_, idx) => node.isOutputConnected(idx));
-      if (!anyInputConnected && !anyOutputConnected && node.dgNodeType !== 'input') {
-        results.push({
-          severity: 'warning',
-          message: `Node '${node.title}' is disconnected from the graph`,
-          nodeId: node.id,
-        });
-      }
-    }
-
-    if (node.dgNodeType === 'output') {
-      const anyConnected = node.inputs && node.inputs.some((_, idx) => node.isInputConnected(idx));
-      if (!anyConnected) {
-        results.push({
-          severity: 'warning',
-          message: `Output node '${node.title}' has no incoming connection`,
-          nodeId: node.id,
-        });
-      }
-    }
+    if (node.dgNodeType === 'output' && !hasIncoming(node, flow))
+      results.push({
+        severity: 'warning',
+        message: `Output node '${node.label}' has no incoming connection`,
+        nodeId: node.id,
+      });
 
     if (node.dgNodeType === 'input' || node.dgNodeType === 'output') {
-      const paramName = node.properties['paramName'];
-      if (!paramName || paramName.trim() === '') {
-        results.push({
-          severity: 'error',
-          message: `Node '${node.title}' has an empty parameter name`,
-          nodeId: node.id,
-        });
-      }
-      if (paramName && !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(paramName)) {
-        results.push({
-          severity: 'error',
-          message: `Node '${node.title}' has an invalid parameter name '${paramName}' (must be a valid JS identifier)`,
-          nodeId: node.id,
-        });
-      }
+      const paramName = String(node.properties['paramName'] ?? '');
+      if (!paramName.trim())
+        results.push({severity: 'error', message: `Node '${node.label}' has an empty parameter name`, nodeId: node.id});
+      else if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(paramName))
+        results.push({severity: 'error', message: `Node '${node.label}' has an invalid parameter name '${paramName}' (must be a valid JS identifier)`, nodeId: node.id});
     }
   }
 
-  const paramNames = new Map<string, string>();
+  // Duplicate input/output param names.
+  const seen = new Map<string, string>();
   for (const node of nodes) {
-    if (node.dgNodeType === 'input' || node.dgNodeType === 'output') {
-      const name = node.properties['paramName'];
-      if (name && paramNames.has(name)) {
-        results.push({
-          severity: 'error',
-          message: `Duplicate parameter name '${name}' used by '${node.title}' and '${paramNames.get(name)}'`,
-          nodeId: node.id,
-        });
-      } else if (name)
-        paramNames.set(name, node.title);
-    }
+    if (node.dgNodeType !== 'input' && node.dgNodeType !== 'output') continue;
+    const name = String(node.properties['paramName'] ?? '');
+    if (!name) continue;
+    if (seen.has(name))
+      results.push({
+        severity: 'error',
+        message: `Duplicate parameter name '${name}' used by '${node.label}' and '${seen.get(name)}'`,
+        nodeId: node.id,
+      });
+    else seen.set(name, node.label);
   }
 
   return results;
+}
+
+function isDisconnected(node: FlowNode, flow: FlowEditor): boolean {
+  for (const c of flow.getConnections())
+    if (c.source === node.id || c.target === node.id) return false;
+  return true;
+}
+
+function hasIncoming(node: FlowNode, flow: FlowEditor): boolean {
+  for (const c of flow.getConnections())
+    if (c.target === node.id) return true;
+  return false;
 }
