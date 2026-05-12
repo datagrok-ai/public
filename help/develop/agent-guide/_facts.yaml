@@ -2009,3 +2009,87 @@
   contradicts: []
   confidence: high
 
+- id: DG-FACT-095
+  kind: enum
+  scope: column-tooltip
+  value: The role string for a custom column tooltip is `tooltip` (camelCase). Defined as `FUNC_TYPES.TOOLTIP = 'tooltip'` (`js-api/src/const.ts:418`). Function-role descriptor at `js-api/src/const.ts:586-591` declares `{role: FUNC_TYPES.TOOLTIP, description: 'Provides a custom tooltip for columns', header: 'tags', signature: 'tooltip(col: Column): Widget'}`.
+  derives_from:
+    - article: help/develop/how-to/grid/column-tooltip.md:7
+    - code: js-api/src/const.ts:418
+    - code: js-api/src/const.ts:586-591
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-096
+  kind: namespace
+  scope: column-tooltip
+  value: A custom column tooltip is a function with header annotations `//meta.role: tooltip` + `//input: column col { semType: <Type> }` + `//output: widget result`. The `semType` constraint on the `column` input is what binds the tooltip to columns of a given semantic type — the platform calls the function only for columns whose `semType` matches. Auto-emitted `package.g.ts` examples: `packages/Bio/src/package.g.ts:16-22` (`semType: Macromolecule`) and `packages/Chem/src/package.g.ts:38-44` (`semType: Molecule`).
+  derives_from:
+    - article: help/develop/how-to/grid/column-tooltip.md:11-21
+    - code: packages/Bio/src/package.g.ts:16-22
+    - code: packages/Chem/src/package.g.ts:38-44
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-097
+  kind: namespace
+  scope: column-tooltip
+  value: There is NO specialized `@grok.decorators.tooltip()` decorator (unlike `fileViewer`, `fileHandler`, `folderViewer`). Production packages use the generic `@grok.decorators.func({meta: {role: 'tooltip'}})` on a static method inside `PackageFunctions`, with the column input typed via `@grok.decorators.param({options: {semType: '<Type>'}}) col: DG.Column`. Bio additionally adds `tags: ['tooltip']` (which auto-emits `//tags: tooltip`); Chem omits the explicit `tags` and relies on `meta.role` alone — both produce a working tooltip registration.
+  derives_from:
+    - code: packages/Bio/src/package.ts:146-159
+    - code: packages/Chem/src/package.ts:263-268
+    - code: js-api/src/decorators/functions.ts  # no tooltip export
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-098
+  kind: namespace
+  scope: column-tooltip
+  value: A column tooltip returns `DG.Widget` (or `Promise<DG.Widget | undefined>`). Returning `undefined` (or omitting the return) signals "no tooltip applies for this column value" — the platform falls back to the default tooltip. Chem uses this — `chemTooltip` returns `undefined` early when any of the first 100 categories is a SMARTS pattern (`packages/Chem/src/package.ts:267-277`).
+  derives_from:
+    - article: help/develop/how-to/grid/column-tooltip.md:7
+    - code: js-api/src/const.ts:590  # signature: tooltip(col: Column): Widget
+    - code: packages/Chem/src/package.ts:267-277
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-428
+  kind: naming
+  scope: custom-cell-renderers
+  value: |
+    `meta.gridChart: 'true'` is a distinct boolean tag from `meta.virtual:
+    'true'` — it marks the renderer as a chart-style summary cell so the
+    platform offers it in the "Add summary column" picker alongside the
+    other sparkline charts. The two are usually paired (every PowerGrid
+    chart renderer sets BOTH), but they are NOT synonyms: `virtual: true`
+    means "no underlying data column"; `gridChart: true` means "show in the
+    summary-column chart picker". CRITICAL ASYMMETRY: the class-decorator
+    option type `CellRendererOptions` (`js-api/src/decorators/functions.ts:72-80`)
+    exposes only `{name?, description?, cellType, columnTags?, virtual?}`
+    — there is no `gridChart` field. A chart-style renderer authored via
+    `@grok.decorators.cellRenderer({...})` must therefore either (a) use
+    the function-decorator form `@grok.decorators.func({meta: {gridChart:
+    'true', virtual: 'true', cellType: ..., role: 'cellRenderer'}, tags:
+    ['cellRenderer'], outputs: [{type: 'grid_cell_renderer', name:
+    'result'}]})` so `gridChart` lands in the generic meta map (where it
+    IS declared at `functions.ts:147` as `Meta.gridChart?: string`), or
+    (b) keep the class decorator and append `gridChart` post-hoc via a
+    `tags`-style escape hatch with `@ts-ignore` (PowerGrid does this with
+    `tags: ['cellRenderer']`, lines like `png-renderer.ts:8-10`). The
+    article shows option (a) in its "if you prefer" tip
+    (`custom-cell-renderers.md:33-48`) — `gridChart: 'true'` is set
+    through `meta`, not as a top-level field. Skill output that teaches a
+    sparkline / piechart / barchart-style renderer must use the function-
+    decorator form OR explicitly call out the class-decorator type-gap;
+    teaching `@grok.decorators.cellRenderer({cellType: 'foo', gridChart:
+    'true'})` would produce a TS error and silently drop the metadata.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:33-48,52-63
+    - code: js-api/src/decorators/functions.ts:72-80           # CellRendererOptions — NO gridChart
+    - code: js-api/src/decorators/functions.ts:117-149         # Meta interface — gridChart?: string
+    - code: packages/PowerGrid/src/package.ts:34-160           # every PowerGrid chart sets gridChart: 'true' in meta
+    - code: packages/PowerGrid/src/package.g.ts:109,120,131    # auto-emitted //meta.gridChart: true alongside virtual + role
+    - code: packages/Peptides/src/package.ts:278               # second consumer outside PowerGrid
+  contradicts: []
+  confidence: high
+
