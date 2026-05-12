@@ -44,7 +44,21 @@ function parseDirectives(sourceText: string): Directives | null {
     const asyncSource = /@async-source:\s*(\S+)/.exec(line);
     if (asyncSource) outputPath = asyncSource[1];
     const renameMatch = /@codegen-rename:\s*([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)/.exec(line);
-    if (renameMatch) renames.set(renameMatch[1], renameMatch[2]);
+    if (renameMatch) {
+      const [, src, dst] = renameMatch;
+      if (src === dst)
+        throw new Error(`@codegen-rename: '${src}=${dst}' is a no-op (source equals target)`);
+      // Detect duplicate targets: two different sources renamed to the same
+      // name produce ambiguous output (both references would resolve to the
+      // same identifier). Catches typo-style mistakes early.
+      for (const [otherSrc, otherDst] of renames) {
+        if (otherDst === dst && otherSrc !== src)
+          throw new Error(
+            `@codegen-rename: target '${dst}' is already used by ` +
+            `'${otherSrc}=${otherDst}' — two sources cannot share a target`);
+      }
+      renames.set(src, dst);
+    }
   }
   return outputPath ? {outputPath, renames} : null;
 }

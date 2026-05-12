@@ -410,6 +410,23 @@ export function nothingAsync() { return 1; }
     const src = `export async function foo() { return 1; }\n`;
     expect(transformText(src, 'src')).toBeNull();
   });
+
+  test('@codegen-rename with source === target throws', () => {
+    const src = `// @async-source: out.ts
+// @codegen-rename: foo=foo
+export async function foo(): Promise<number> { return 1; }
+`;
+    expect(() => transformText(src, 'src')).toThrow(/no-op.*source equals target/);
+  });
+
+  test('@codegen-rename with duplicate targets throws', () => {
+    const src = `// @async-source: out.ts
+// @codegen-rename: foo=shared
+// @codegen-rename: bar=shared
+export async function foo(): Promise<number> { return 1; }
+`;
+    expect(() => transformText(src, 'src')).toThrow(/target 'shared' is already used/);
+  });
 });
 
 describe('regression — NM optimizer fixture', () => {
