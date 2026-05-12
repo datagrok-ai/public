@@ -71,21 +71,19 @@ function getDeclaredNames(stmt: Statement): string[] {
 
 // Unmatched `@async-only-begin` strips to EOF on purpose: surfaces as a
 // downstream parse error rather than silently dropping less than intended.
+const ASYNC_ONLY_RE = /\/\/\s*@async-only(-begin|-end)?\b/;
 function stripAsyncOnlyLines(text: string): string {
   const lines = text.split('\n');
   const out: string[] = [];
   let inBlock = false;
   for (const line of lines) {
-    if (/\/\/\s*@async-only-begin\b/.test(line)) {
-      inBlock = true;
-      continue;
-    }
-    if (/\/\/\s*@async-only-end\b/.test(line)) {
-      inBlock = false;
+    const m = ASYNC_ONLY_RE.exec(line);
+    if (m) {
+      if (m[1] === '-begin') inBlock = true;
+      else if (m[1] === '-end') inBlock = false;
       continue;
     }
     if (inBlock) continue;
-    if (/\/\/\s*@async-only\b/.test(line)) continue;
     out.push(line);
   }
   return out.join('\n');
