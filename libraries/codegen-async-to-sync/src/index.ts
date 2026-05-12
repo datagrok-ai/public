@@ -69,6 +69,8 @@ function getDeclaredName(stmt: Statement): string | null {
     const decls = stmt.getDeclarations();
     return decls.length === 1 ? decls[0].getName() : null;
   }
+  if (Node.isInterfaceDeclaration(stmt) || Node.isTypeAliasDeclaration(stmt))
+    return stmt.getName();
   return null;
 }
 
@@ -251,7 +253,8 @@ export function transformText(srcText: string, srcStem: string): TransformResult
   for (const stmt of work.getStatements()) {
     if (isAsyncTopLevel(stmt)) {
       asyncStmts.push(stmt);
-    } else if (Node.isFunctionDeclaration(stmt) || Node.isVariableStatement(stmt)) {
+    } else if (Node.isFunctionDeclaration(stmt) || Node.isVariableStatement(stmt) ||
+               Node.isInterfaceDeclaration(stmt) || Node.isTypeAliasDeclaration(stmt)) {
       const nm = getDeclaredName(stmt);
       if (nm != null) siblingNames.add(nm);
       if (Node.isVariableStatement(stmt)) {

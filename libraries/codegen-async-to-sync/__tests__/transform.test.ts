@@ -231,6 +231,37 @@ export async function foo(): Promise<number> { return A + helper(1); }
     expect(out).toMatch(/import \{A\} from 'mod'/);
     expect(out).toMatch(/import \{helper\} from '\.\/my-mod'/);
   });
+
+  test('sibling interface referenced by sync body — imported from source stem', () => {
+    const src = `// @async-source: out.ts
+export interface Result { ok: boolean; value: number }
+export async function run(): Promise<Result> { return {ok: true, value: 1}; }
+`;
+    const out = run(src, 'my-mod');
+    expect(out).toMatch(/import \{Result\} from '\.\/my-mod'/);
+    expect(out).toMatch(/function run\(\): Result/);
+    expect(out).not.toContain('export interface Result');
+  });
+
+  test('sibling type alias referenced by sync body — imported from source stem', () => {
+    const src = `// @async-source: out.ts
+export type Status = 'ok' | 'fail';
+export async function run(): Promise<Status> { return 'ok'; }
+`;
+    const out = run(src, 'my-mod');
+    expect(out).toMatch(/import \{Status\} from '\.\/my-mod'/);
+    expect(out).toMatch(/function run\(\): Status/);
+  });
+
+  test('sibling type used inside a generic position is still imported', () => {
+    const src = `// @async-source: out.ts
+export interface Item { x: number }
+export async function run(): Promise<Map<string, Item>> { return new Map(); }
+`;
+    const out = run(src, 'm');
+    expect(out).toMatch(/import \{Item\} from '\.\/m'/);
+    expect(out).toMatch(/function run\(\): Map<string, Item>/);
+  });
 });
 
 describe('import-binding renames', () => {
