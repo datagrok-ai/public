@@ -2638,3 +2638,86 @@
   contradicts: []
   confidence: high
 
+- id: DG-FACT-122
+  kind: naming
+  scope: data-enrichments
+  value: A package ships data enrichments as JSON files placed under `<PackageRoot>/enrichments/`. One enrichment per file. The Datagrok platform loads them automatically when the plugin is published. Production packages use this layout — `packages/Chembl/enrichments/` (17 files) and `packages/DBTests/enrichments/` (3 files). PowerPack must be installed in the target Datagrok instance for the feature to surface in the column context panel.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:11,15-23
+    - code: packages/Chembl/enrichments
+    - code: packages/DBTests/enrichments
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-123
+  kind: enum
+  scope: data-enrichments
+  value: A bundled enrichment JSON has six required keys plus one array. Required — `name` (display label), `connection` (target connection nqName, e.g. `Chembl:Chembl` or `Dbtests:PostgresTest`), `keySchema` (always `public` in the canonical examples), `keyTable` (the table the key column lives on), `keyColumn` (the column whose value drives the lookup), `fields` (string[] of fully-qualified `schema.table.column` selectors). One required array — `joins` (one or more join descriptors). Every shipping enrichment in `packages/Chembl/enrichments/` and `packages/DBTests/enrichments/` carries exactly these keys.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:29-50,54-62
+    - code: packages/DBTests/enrichments/company_info.json
+    - code: packages/Chembl/enrichments/activities_assays.json
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-124
+  kind: naming
+  scope: data-enrichments
+  value: A `joins[]` entry has five keys — `leftTableName` (fully-qualified `schema.table`), `rightTableName` (fully-qualified `schema.table`), `joinType` (string), `leftTableKeys` (string[]), `rightTableKeys` (string[]). The two key arrays must be the same length; positional pairs form the join condition. Every shipping enrichment uses single-element key arrays (no production composite-key example seen).
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:40-49,66-71
+    - code: packages/Chembl/enrichments/activities_assays.json:15-22
+    - code: packages/DBTests/enrichments/company_info.json:12-23
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-125
+  kind: enum
+  scope: data-enrichments
+  value: `joinType` accepts `left`, `inner`, `right` (per article). Every shipping enrichment in the public repo uses `left`; `inner` and `right` are documented but no production example was found in `packages/Chembl/enrichments/` or `packages/DBTests/enrichments/`. Skill output should default to `left` and call out the other two as documented alternatives.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:69
+    - code: packages/Chembl/enrichments  # all 17 use "joinType": "left"
+    - code: packages/DBTests/enrichments  # all 3 use "joinType": "left"
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-126
+  kind: naming
+  scope: data-enrichments
+  value: Every entry in `fields[]` is a 3-segment dot-qualified string `<schema>.<table>.<column>` (e.g. `public.customers.companyname`). Both the source table's columns AND the joined table's columns may appear; the `keyTable.keyColumn` itself is typically included so the result row carries the lookup key. There is no per-field rename / alias syntax.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:36-40,61
+    - code: packages/Chembl/enrichments/compound_core_with_properties.json:7-15
+    - code: packages/DBTests/enrichments/customer_orders_summary.json:7-13
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-127
+  kind: enum
+  scope: data-enrichments
+  value: PowerPack restricts which COLUMN types can be enriched. Allowed — `STRING`, `BIG_INT`, `INT`, `FLOAT` (the `DG.COLUMN_TYPE` constants). Disallowed — `BOOL` and `DATE_TIME`; the column context panel renders an inline message ("Cannot use column of <type> type for enrichment") instead of the enrichment editor. Source — `packages/PowerPack/src/db-explorer.ts:396-398`.
+  derives_from:
+    - code: packages/PowerPack/src/db-explorer.ts:396-398
+    - code: js-api/src/const.ts (COLUMN_TYPE enum)
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-448
+  kind: namespace
+  scope: data-enrichments
+  value: |
+    The enrichments feature is owned by the PowerPack plugin
+    (`packages/PowerPack/src/db-explorer.ts`). The function
+    `PowerPack:runEnrichment` (located via
+    `DG.Func.find({package: 'PowerPack', name: 'runEnrichment'})`)
+    materializes an enrichment JSON into a `DG.TableQuery`:
+    `query.table = "<keySchema>.<keyTable>"`,
+    `query.fields = e.fields`, `query.joins = e.joins`. Without
+    PowerPack installed, plugin-bundled enrichment JSON has no consumer.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:11
+    - code: packages/PowerPack/src/db-explorer.ts:531,683-689,691-697
+  contradicts: []
+  confidence: high
+
