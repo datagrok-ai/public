@@ -1,152 +1,200 @@
 ---
 name: user-settings-storage
-description: Persist key-value settings per user (or shared across users) via grok.userSettings
+version: 0.2.1
+description: |
+  Persist small key-value blobs from a Datagrok package via
+  `grok.userSettings` — last-used inputs, the row a user had selected,
+  a theme choice, a per-vault search payload — so state survives page
+  reload and (optionally) is shared across users. For plugin authors
+  who need lightweight, platform-managed per-user state without
+  standing up a database or hitting `localStorage`.
+  Use when asked to "persist a filter selection across sessions",
+  "remember the last compound a user looked at", or "stash a small
+  per-user JSON blob the platform syncs".
+triggers:
+  - persist state between sessions
+  - remember last user selection
+  - stash per-user json blob
+  - save preferences across reloads
+  - share a value across packages
+  - keep settings after refresh
+allowed-tools:
+  - Read
+  - Edit
+  - Bash
+harness-authored: true
 ---
 
 # user-settings-storage
 
 ## When to use
 
-Your package needs to remember a small piece of state across sessions —
-last-used inputs, a saved layout, a per-vault search payload, a daily usage
-counter. Triggers: "save user preferences", "remember last selection",
-"share a setting across packages", "store JSON in user storage".
+Your Datagrok package needs a tiny piece of state — a saved filter, the
+last-opened compound, a theme choice — that must outlive page reloads
+and follow the user across devices, with no separate database.
 
 ## Prerequisites
 
-- A package importing `datagrok-api/grok` (`grok.userSettings` is the entry
-  point — knowledge `DG-FACT-014`).
-- Each value serialises to ≤5000 characters; longer payloads must be chunked
-  (knowledge `DG-FACT-015`).
-- Decide up front whether the data is private to the current user or shared
-  across all users (knowledge `DG-FACT-016`). The flag is the same on every
-  read and write — if you write with `isPrivate: false` you must read with
-  `isPrivate: false`.
+- A package with `import * as grok from 'datagrok-api/grok';` —
+  `grok.userSettings` is the singleton entry point (`DG-FACT-394`).
+- Decide upfront whether the record is private to the user (default)
+  or shared; `isPrivate` must match on every read and write of it.
+- Each `value` is a `string` ≤ 5000 characters; pass structured data
+  through `JSON.stringify` / `JSON.parse` (`DG-FACT-395`, `DG-FACT-398`).
 
 ## Steps
 
-1. **Pick a stable storage name and serialise the value.**
-   `grok.userSettings` only stores strings; structured data must be
-   `JSON.stringify`-ed on write and `JSON.parse`-ed on read
-   (knowledge `DG-FACT-019`).
+1. **Pick a stable, package-scoped storage name.** Namespace by package
+   so two plugins don't clobber each other's keys. The singleton lives
+   at `js-api/grok.ts:29`, typed in `js-api/src/user_settings_storage.ts:12-75`.
    ```typescript
    import * as grok from 'datagrok-api/grok';
-
-   const STORAGE_NAME = 'MyPackage.lastSearch';   // namespace by package
-   const inputObj = {x: 1, y: 2, z: 3};
-   grok.userSettings.add(STORAGE_NAME, 'coords', JSON.stringify(inputObj));
+   const STORAGE_NAME = 'MyPackage.lastSearch';
    ```
-   Expected: no exception; the entry is in memory and will be flushed to the
-   server within ~10 seconds (knowledge `DG-FACT-018`).
+   Expected: a constant used by every read/write call site below.
 
-2. **Read a single value back.**
-   `getValue` returns `string | undefined`. Always handle `undefined` — the
-   key may not exist yet, or you may be on a fresh device before the first
-   server sync. Knowledge `DG-FACT-017` (synchronous, no `await` needed).
+2. **Write a single value with `add` (string only).** Synchronous,
+   returns `void`, appends to (does not replace) the record at
+   `STORAGE_NAME`. `JSON.stringify` structured data first. Signature at
+   `js-api/src/user_settings_storage.ts:23`. Knowledge: `DG-FACT-398`.
    ```typescript
-   const raw = grok.userSettings.getValue(STORAGE_NAME, 'coords');
-   const coords = raw ? JSON.parse(raw) as {x: number; y: number; z: number} : null;
+   const payload = {protocol: 'A12', similarity: 0.7};
+   grok.userSettings.add(STORAGE_NAME, 'vault-42', JSON.stringify(payload));
    ```
-   Expected: `coords` is your object, or `null` on first run.
+   Expected: no exception. The platform flushes to the server within
+   ~10 seconds (knowledge `DG-FACT-396`). Pattern:
+   `packages/CddVaultLink/src/search-function-editor.ts:144-154`.
 
-3. **Replace a whole record atomically with `put`.**
-   `put` overwrites the record at `name`; `addAll` merges into it. Both take
-   a plain `{[key: string]: string}` object — NOT a JS `Map`
-   (knowledge `DG-FACT-020`, drift `DG-FACT-DRIFT-006`).
+3. **Read a single value back with `getValue`.** Returns
+   `string | undefined` — always handle `undefined` (key may not exist
+   yet, or the sync window hasn't elapsed on a fresh device). Signature
+   at `js-api/src/user_settings_storage.ts:62`.
+   ```typescript
+   const raw = grok.userSettings.getValue(STORAGE_NAME, 'vault-42');
+   const stored = raw ? JSON.parse(raw) as {protocol: string; similarity: number} : null;
+   ```
+   Expected: `stored` is the parsed object, or `null` on first run.
+   Pattern: `packages/CddVaultLink/src/search-function-editor.ts:113-119`.
+
+4. **Overwrite the whole record atomically with `put`.** Takes a plain
+   `{[key: string]: string}` object — not a JS `Map` (knowledge
+   `DG-FACT-DRIFT-USS-002`). Every existing key at `STORAGE_NAME` is
+   discarded. Signature at `js-api/src/user_settings_storage.ts:43`.
    ```typescript
    grok.userSettings.put(STORAGE_NAME, {
-     date: '2025-01-15',
+     date: '2026-05-12',
      count: '42',
    });
    ```
-   Expected: the previous record at `STORAGE_NAME` is gone; only the two keys
-   above remain.
+   Expected: previous record at `STORAGE_NAME` is gone; only the two
+   keys above remain. Pattern: `packages/KnimeLink/src/function-cache.ts:29-34`.
 
-4. **Iterate the whole record.**
-   You cannot list keys without first fetching the record. `get` returns
-   `{[key: string]: string} | undefined` (article calls it a "Map" — that is
-   the drift in `DG-FACT-DRIFT-006`).
+5. **Merge keys into the record with `addAll`.** Same `{[key: string]:
+   string}` shape as `put`, but existing keys are preserved; only the
+   argument's keys are added or overwritten. Signature at
+   `js-api/src/user_settings_storage.ts:33`. Knowledge: `DG-FACT-397`.
+   ```typescript
+   grok.userSettings.addAll(STORAGE_NAME, {
+     lastVault: 'vault-42',
+     lastQuery: 'CCO',
+   });
+   ```
+   Expected: `get(STORAGE_NAME)` returns prior keys plus `lastVault`
+   and `lastQuery`.
+
+6. **Iterate the whole record.** There is no `keys()` / `has()` /
+   `list()`; call `get(name)` then `Object.keys(...)`. `get` returns
+   `{[key: string]: string} | undefined`. An empty namespace returns
+   `{}` (the article's `entries !== null` check misleads — knowledge
+   `DG-FACT-DRIFT-USS-001`).
    ```typescript
    const entries = grok.userSettings.get(STORAGE_NAME) ?? {};
    for (const [key, raw] of Object.entries(entries)) {
      const value = JSON.parse(raw);
-     // do something with key, value
+     // ... do something with key, value
    }
    ```
-   Expected: empty record (`{}`) when nothing is stored, never `null`.
+   Expected: empty object `{}` when nothing is stored; never `null`.
+   Pattern: `packages/PowerPack/src/utils.ts:24-39`.
 
-5. **Choose private vs shared explicitly.**
-   `isPrivate` is the third (or fourth) argument and defaults to `true`
-   (knowledge `DG-FACT-016`, drift `DG-FACT-DRIFT-005`). If you need a
-   shared store, pass `false` on every read AND every write.
+7. **Choose private vs shared explicitly.** `isPrivate` is the last
+   argument on every method, defaults to `true`, and is part of the
+   lookup key — pass `false` on every read AND every write for a shared
+   store. Knowledge: `DG-FACT-394`, `DG-FACT-397`.
    ```typescript
-   // Shared across all users:
    grok.userSettings.add(STORAGE_NAME, 'theme', 'dark', false);
    const theme = grok.userSettings.getValue(STORAGE_NAME, 'theme', false);
    ```
-   Expected: a different user logging in sees the same `theme` value.
+   Expected: a different signed-in user sees the same `theme` value.
 
-6. **Delete a single key, or wipe the whole storage.**
-   The TypeScript signature is `delete(name, key, isPrivate?)`. Passing
-   `null` for `key` wipes the storage at runtime, but TS rejects `null` —
-   cast or use a no-key call site (drift `DG-FACT-DRIFT-007`).
+8. **Delete a single key.** Leaves the rest of the record intact.
+   Signature at `js-api/src/user_settings_storage.ts:72`.
    ```typescript
-   grok.userSettings.delete(STORAGE_NAME, 'coords');           // one key
-   grok.userSettings.delete(STORAGE_NAME, null as any);         // wipe all
+   grok.userSettings.delete(STORAGE_NAME, 'vault-42');
    ```
-   Expected: subsequent `get(STORAGE_NAME)` returns `{}` after the wipe.
+   Expected: `getValue(STORAGE_NAME, 'vault-42')` returns `undefined`;
+   sibling keys still resolve.
 
-7. **(Optional) Chunk values over 5000 characters.**
-   When a single value would exceed the limit (knowledge `DG-FACT-015`),
-   split into N parts plus a metadata key. Reference pattern:
-   `packages/ClinicalCase/src/utils/layout-utils.ts:18-35`.
+9. **Wipe the whole namespace.** The signature declares `key: string`,
+   but the runtime accepts `null` — cast it, since the article's
+   `delete(name, null)` form fails strict TS (knowledge
+   `DG-FACT-DRIFT-USS-003`).
    ```typescript
-   const MAX = 5000;
-   for (let i = 0, n = 0; i < blob.length; i += MAX, n++)
-     grok.userSettings.add(STORAGE_NAME, `${id}|${n}`, blob.slice(i, i + MAX));
-   grok.userSettings.add(STORAGE_NAME, `${id}|meta`, JSON.stringify({parts: Math.ceil(blob.length / MAX)}));
+   grok.userSettings.delete(STORAGE_NAME, null as unknown as string);
    ```
-   Expected: load path reads `meta`, then concatenates the N parts.
+   Expected: subsequent `get(STORAGE_NAME)` returns `{}`.
+
+10. **(Optional) Chunk values that would exceed 5000 chars.** A single
+    `value` over the cap is silently rejected (knowledge `DG-FACT-395`).
+    Split into N parts plus a metadata key; reconstruct on read.
+    Reference pattern: `packages/ClinicalCase/src/utils/layout-utils.ts:14-72`.
+    ```typescript
+    const MAX = 5000;
+    const totalParts = Math.ceil(blob.length / MAX);
+    for (let i = 0, n = 0; i < blob.length; i += MAX, n++)
+      grok.userSettings.add(STORAGE_NAME, `${id}|${n}`, blob.slice(i, i + MAX));
+    if (totalParts > 1)
+      grok.userSettings.add(STORAGE_NAME, `${id}|meta`, JSON.stringify({parts: totalParts}));
+    ```
+    Expected: the load path reads `|meta`, then concatenates the N parts
+    back into the original blob.
 
 ## Common failure modes
 
-- **Reload immediately after `add()` shows old/missing data.** Writes are
-  in-memory and synced to the server every ~10 seconds (knowledge
-  `DG-FACT-018`, drift `DG-FACT-DRIFT-008`). Fix: avoid forcing a reload
-  right after a write, or store the value in component state too.
-- **`JSON.parse: unexpected token` on `getValue` result.** You stored an
-  object without `JSON.stringify`. The platform stores `[object Object]`
-  literally. Fix: always `JSON.stringify` non-string values on write
-  (knowledge `DG-FACT-019`).
-- **TypeScript error on `delete(name, null)`.** The signature is
-  `key: string`; `null` is not assignable (drift `DG-FACT-DRIFT-007`). Fix:
-  cast (`null as any`) or migrate the wipe call into a helper that does
-  the cast in one place.
-- **Value lost silently when longer than 5000 chars.** The platform
-  truncates / rejects (knowledge `DG-FACT-015`). Fix: chunk per step 7.
-- **Shared data appears empty for other users.** A read used the default
-  `isPrivate: true`. Pass `false` on the read too — the flag must match
-  the write (knowledge `DG-FACT-016`).
-- **Used `grok.dapi.userDataStorage` instead.** That class is
-  `@deprecated` (knowledge `DG-FACT-021`); it is async and does not share
-  data with `userSettings`. Fix: migrate to `grok.userSettings`.
+- **`JSON.parse: unexpected token` on a `getValue` result.** Object
+  stored without `JSON.stringify` — platform serialised it as
+  `"[object Object]"`. Fix: `JSON.stringify` non-string values on write
+  (`DG-FACT-398`).
+- **Page reload right after `add()` shows old or missing data.** Writes
+  flush every ~10 seconds (`DG-FACT-396`). Fix: don't force a reload
+  immediately after a write, or mirror in component state.
+- **TypeScript error on `delete(name, null)`.** Signature is
+  `key: string` (`DG-FACT-DRIFT-USS-003`). Fix: cast to
+  `null as unknown as string`, or wrap the wipe in a helper.
+- **Shared value appears empty for other users.** The read used default
+  `isPrivate: true`. Fix: pass `false` on the read — the flag is part
+  of the storage key (`DG-FACT-397`).
+- **Silent truncation of a long value.** Value exceeded 5000 chars
+  (`DG-FACT-395`). Fix: chunk per step 10.
+- **Used `grok.dapi.userDataStorage` instead.** Class is `@deprecated`
+  (`js-api/src/dapi.ts:168,712,716`), async, and does not share data
+  with `grok.userSettings`. Fix: migrate to `grok.userSettings`
+  (`DG-FACT-394`).
 
 ## Verification
 
-- After step 1, run `JSON.parse(grok.userSettings.getValue(STORAGE_NAME,
-  'coords')!)` in the Datagrok console — it returns your object.
-- Reload the page after waiting >10 seconds, repeat the read — value
-  persists across the reload.
-- Open the same package as a different user (or in an incognito session
-  signed in as another account): private values are absent; shared values
-  (written with `isPrivate: false`) are present.
+- In the Datagrok JS console after step 2,
+  `JSON.parse(grok.userSettings.getValue('MyPackage.lastSearch', 'vault-42')!)`
+  returns your object.
+- Wait > 10s, reload, repeat the read — the value persists.
+- Sign in as a different user (or open an incognito session): private
+  values are absent; `isPrivate: false` values are visible.
 
 ## See also
 
-- Source articles:
-  - `help/develop/how-to/data/user-settings-storage.md`
-- Knowledge:
-  - `docs/_internal/knowledge/knowledge-graph.md` — facts `DG-FACT-014`
-    through `DG-FACT-021` and drifts `DG-FACT-DRIFT-005..008`.
-- Related skills:
-  - `build-an-app` (apps are the most common consumer of saved settings).
+- Source articles: `help/develop/how-to/data/user-settings-storage.md`
+- Knowledge: `docs/_internal/knowledge/knowledge-graph.md` — facts
+  `DG-FACT-394`..`DG-FACT-398` and drifts `DG-FACT-DRIFT-USS-001`..`003`.
+- Related skills: `build-an-app` (the most common consumer of saved
+  settings); `custom-package-settings-editors` (when the saved value
+  should surface as a tunable knob in the Settings panel).
