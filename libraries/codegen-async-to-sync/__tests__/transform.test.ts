@@ -233,6 +233,36 @@ export async function foo(): Promise<number> { return A + helper(1); }
   });
 });
 
+describe('import-binding renames', () => {
+  test('@codegen-rename rewrites a named-import binding and its call sites', () => {
+    const src = `// @async-source: out.ts
+// @codegen-rename: fooAsync=foo
+import {fooAsync} from './sib';
+export async function run(): Promise<number> { return await fooAsync(); }
+`;
+    const out = run(src);
+    expect(out).toMatch(/import \{foo\} from '\.\/sib'/);
+    expect(out).toContain('return foo();');
+    expect(out).not.toMatch(/\bfooAsync\b/);
+  });
+
+  test('import-rebuild filter routes the renamed name through, drops siblings only used pre-rename', () => {
+    const src = `// @async-source: out.ts
+// @codegen-rename: fooAsync=foo
+import {fooAsync, unused} from './sib';
+export async function run(): Promise<number> { return await fooAsync(); }
+`;
+    const out = run(src);
+    expect(out).toMatch(/import \{foo\} from '\.\/sib'/);
+    expect(out).not.toMatch(/\bunused\b/);
+  });
+
+  // NOTE: aliased-import + rename (e.g. `import {fooAsync as f}` + rename
+  // `f=foo`) is intentionally not covered yet — the import-rebuild filter
+  // doesn't track local bindings, so the alias case needs a separate fix.
+  // Tracked as a deferred edge case.
+});
+
 describe('banner & directive stripping', () => {
   test('output starts with GENERATED banner', () => {
     const out = run(`${HEADER}export async function foo() { return 1; }\n`, 'src');

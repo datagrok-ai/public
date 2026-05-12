@@ -158,6 +158,27 @@ function applyRenames(file: SourceFile, renames: Map<string, string>): void {
         if (decl.getName() === oldName) decl.rename(newName);
       }
     }
+    // Import specifiers: renaming the local binding of an imported name lets
+    // a directive like `@codegen-rename: fooAsync=foo` route a sibling-module
+    // async import to its sync sibling. ts-morph's rename on the binding node
+    // produces `{fooAsync as foo}` in the source (body refs become `foo`),
+    // and the import-rebuild step downstream maps the original imported name
+    // through the rename map so the sync output's import line uses `foo`.
+    for (const imp of file.getImportDeclarations()) {
+      for (const ni of imp.getNamedImports()) {
+        const aliasNode = ni.getAliasNode();
+        const nameNode = ni.getNameNode();
+        // The local binding is the alias if present, otherwise the name.
+        // String-literal imported names (TS 5+ `import {"x" as y}`) aren't
+        // renameable in our use case; skip those.
+        if (aliasNode) {
+          if (aliasNode.getText() === oldName) aliasNode.rename(newName);
+        } else if (nameNode.getKind() === SyntaxKind.Identifier) {
+          const id = nameNode.asKindOrThrow(SyntaxKind.Identifier);
+          if (id.getText() === oldName) id.rename(newName);
+        }
+      }
+    }
   }
 }
 
@@ -276,9 +297,21 @@ export function transformText(srcText: string, srcStem: string): TransformResult
     if (nm) declaredInOutput.add(nm);
   }
 
+  // When the source imports an async-named symbol (e.g. `runLineSearchAsync`)
+  // that the sync body should resolve to its sync sibling (`runLineSearch`), a
+  // `@codegen-rename` directive on the async name routes the import through
+  // the rename: we ask the sibling module for the *renamed* name. The sibling
+  // module is expected to export it (this is the standard pattern when an
+  // async source file imports from a peer file that itself follows the
+  // async/sync-twin convention).
   const rebuiltImports: ImportInfo[] = [];
   for (const imp of sourceImports) {
-    const used = imp.named.filter((n) => referenced.has(n) && !declaredInOutput.has(n));
+    const used: string[] = [];
+    for (const n of imp.named) {
+      const resolved = directives.renames.get(n) ?? n;
+      if (referenced.has(resolved) && !declaredInOutput.has(resolved))
+        used.push(resolved);
+    }
     if (used.length === 0) continue;
     rebuiltImports.push({moduleSpecifier: imp.moduleSpecifier, named: used});
   }
