@@ -21,6 +21,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   _sketcher: Ketcher | null = null;
   ketcherHost: HTMLDivElement;
   reactRoot: ReactDOM.Root | null = null;
+  private _editorComponent: React.ReactElement | null = null;
+  private _editorMounted = false;
+  private _resizeObserver: ResizeObserver | null = null;
 
   constructor() {
     super();
@@ -36,7 +39,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
       onInit: (ketcher: Ketcher) => {
         this._sketcher = ketcher;
-        if (this.host && this.host.isInPopupContainer()) { //workaround for sketcher not to be truncated when showed in a popup menu in the end of the screen (on last dataframe column)
+        // workaround for sketcher not to be truncated when showed in a popup menu
+        // in the end of the screen (on last dataframe column)
+        if (this.host && this.host.isInPopupContainer()) {
           const ketcherRoot = this.ketcherHost.querySelector('.Ketcher-root');
           if (ketcherRoot)
             (ketcherRoot as HTMLElement).style.minWidth = '0px';
@@ -67,12 +72,43 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     };
 
     this.ketcherHost = ui.div([], 'ketcher-host');
-
-    const component = React.createElement(Editor, props, null);
-    this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
-    this.reactRoot.render(component);
-
+    this._editorComponent = React.createElement(Editor, props, null);
     this.root.appendChild(this.ketcherHost);
+
+    // Mounting Ketcher's <Editor> into a zero-sized or detached host causes
+    // <RulerArea> to throw NotSupportedError reading SVGLength.value
+    // ('Could not resolve relative length') because the canvas SVG uses
+    // width/height="100%" and cannot resolve relative units without a sized
+    // containing block. Defer the React mount until the host actually has
+    // non-zero dimensions. (Adopted from PR #3789.)
+    this._mountEditorWhenSized();
+  }
+
+  private _mountEditorWhenSized(): void {
+    if (this._editorMounted) return;
+    const rect = this.ketcherHost.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      this._mountEditor();
+      return;
+    }
+    this._resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          this._mountEditor();
+          break;
+        }
+      }
+    });
+    this._resizeObserver.observe(this.ketcherHost);
+  }
+
+  private _mountEditor(): void {
+    if (this._editorMounted || !this._editorComponent) return;
+    this._editorMounted = true;
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = null;
+    this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
+    this.reactRoot.render(this._editorComponent);
   }
 
   async init(host: grok.chem.Sketcher) {
@@ -184,6 +220,13 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   private _setNotation(notation: NotationKey, value: string): void {
+    //in case kecther is closed and we reset value from outside - only possible when clearing filter from filter panel
+    if (this.isDetached && !value) {
+      this._smiles = '';
+      this._smarts = '';
+      this._molV2000 = DG.WHITE_MOLBLOCK;
+      this._molV3000 = DG.WHITE_MOLBLOCK_V_3000;
+    }
     this.setKetcherMolecule(value);
     if (notation !== 'smarts')
       this.explicitMol = {notation, value};
@@ -191,6 +234,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
   detach() {
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = null;
+    this._editorComponent = null;
     this.reactRoot?.unmount();
     this.reactRoot = null;
     super.detach();
