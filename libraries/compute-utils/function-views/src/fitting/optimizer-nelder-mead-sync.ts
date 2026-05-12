@@ -1,14 +1,11 @@
-// Sync mirror of ./optimizer-nelder-mead.ts — used by the fitting worker's
-// sync path so the NM loop never yields to the microtask queue when the
-// user script body is synchronous. Keep the algorithm in sync with the
-// async version; the only deltas are dropping async/await and changing
-// Promise<X> to X on the objective and return types.
-
+// GENERATED — do not edit by hand.
+// Run `npm run update-codegen` (in libraries/compute-utils) to regenerate.
+// Source: ./optimizer-nelder-mead.ts
 import {Extremum} from './optimizer-misc';
 import {fillCentroid, fillPoint} from './optimizer-nelder-mead';
 
 function getInitialParams(
-  objectiveFunc: (x: Float64Array) => number | undefined,
+  objectiveFunc: (x: Float64Array) => number|undefined,
   settings: Map<string, number>,
   paramsInitial: Float64Array,
   costOutside: number,
@@ -39,12 +36,13 @@ function getInitialParams(
   return [optParams, pointObjectives];
 }
 
-export function optimizeNMSync(
-  objectiveFunc: (x: Float64Array) => number | undefined,
+export const optimizeNMSync = function(
+  objectiveFunc: (x: Float64Array) => number|undefined,
   paramsInitial: Float64Array,
   settings: Map<string, number>,
   threshold?: number,
-): Extremum {
+) : Extremum {
+  // Settings initialization
   const tolerance = settings.get('tolerance')!;
   const maxIter = settings.get('maxIter')!;
   const scaleReflection = settings.get('scaleReflaction')!;
@@ -108,12 +106,15 @@ export function optimizeNMSync(
 
       previousBest = best;
 
+      //centroid
       fillCentroid(centroid, dimParams, indexes[lastIndex], optParams);
 
+      // reflection
       fillPoint(centroid, reflectionPoint, indexes[lastIndex],
         optParams, scaleReflection, dimParams);
       const reflectionScore = objectiveFunc(reflectionPoint) ?? costOutside;
 
+      // expansion
       if (reflectionScore < pointObjectives[indexes[lastIndex]]) {
         fillPoint(centroid, expansionPoint, indexes[lastIndex],
           optParams, scaleExpansion, dimParams);
@@ -137,6 +138,7 @@ export function optimizeNMSync(
         }
       }
 
+      // Contraction
       fillPoint(centroid, contractionPoint, indexes[lastIndex],
         optParams, scaleContraction, dimParams);
 
@@ -164,4 +166,4 @@ export function optimizeNMSync(
     iterCosts: costs,
     iterCount: iteration - 1,
   };
-}
+};

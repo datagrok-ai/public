@@ -1,3 +1,6 @@
+// @async-source: optimizer-nelder-mead-sync.ts
+// @codegen-rename: optimizeNM=optimizeNMSync
+
 import {Extremum, IOptimizer, Setting} from './optimizer-misc';
 
 /** The Nelder Mead seetings vals */
