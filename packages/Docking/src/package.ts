@@ -14,19 +14,9 @@ import {_runAutodock, AutoDockService, _runAutodock2, ensureNoDockingError} from
 import {TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
 import { _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
-import {
-  addColorCoding, buildComparisonTable, formatColumns, getRemarksFromPdb, getRemarksFromPdbs,
-  getReceptorData, processAutodockResults, prop,
-} from './utils/utils';
+import { addColorCoding, buildComparisonTable, formatColumns, getRemarksFromPdb, getRemarksFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
 export * from './package.g';
 export const _package = new DG.Package();
-
-// The Protein-Ligand Interactions panel + batch handler for AutoDock poses
-// now lives in the BiostructureViewer package (BSV/src/utils/docking-pose-prolif.ts
-// + BSV/src/package.ts `dockingInteractionsWidget`). BSV resolves the
-// receptor by reading `System:AppData/Docking/targets/` directly. Docking
-// keeps just the docking computation itself (`runAutodock`, `autodockWidget`,
-// hover-comparison panel).
 
 
 export class PackageFunctions{
@@ -182,9 +172,6 @@ export class PackageFunctions{
 
   @grok.decorators.func()
   static isApplicableAutodock(molecule: string): boolean {
-    // AutoDock writes a `REMARK ... binding energy` line into every pose.
-    // BSV's `isAutoDockPose` uses the same one-line heuristic — duplicated
-    // here so the Docking package has zero ProLIF / bio dependencies.
     return molecule.includes('binding energy');
   }
 
@@ -197,11 +184,6 @@ export class PackageFunctions{
     @grok.decorators.param({'options':{'semType':'Molecule3D'}}) molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
     return await PackageFunctions.getAutodockSingle(molecule);
   }
-
-  // The "Protein-Ligand Interactions" panel for AutoDock poses lives in
-  // `BiostructureViewer/src/package.ts` as `dockingInteractionsWidget`.
-  // It owns the receptor lookup (via `utils/autodock-receptor.ts`) and the
-  // batch handler — Docking just provides the docking computation itself.
 
   @grok.decorators.func()
   static async getAutodockSingle(

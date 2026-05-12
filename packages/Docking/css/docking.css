@@ -52,10 +52,3 @@
   text-align: left;
   font-size: 11px;
 }
-
-/* `.bsv-pl-batch-btn`, `.bsv-pl-panel-iframe`, `.bsv-pl-capture-container`,
- * `.bsv-pl-capture-iframe` are defined in BiostructureViewer's `viewer.css`.
- * Both packages must be installed for the PL panel to work (Docking calls
- * `BiostructureViewer:ProteinLigandInteractionDiagram`), and Datagrok loads
- * CSS from every installed package globally — so the BSV rules apply here
- * without re-declaration. */

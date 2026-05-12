@@ -1,6 +1,6 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {getRemarksFromPdb, buildComparisonTable, RECEPTOR_NAME_RE} from '../utils/utils';
+import {getRemarksFromPdb, buildComparisonTable} from '../utils/utils';
 
 const SAMPLE_PDB = `REMARK  1  receptor. 1bdq J.
 REMARK  2  binding energy.  -12.70
@@ -41,16 +41,5 @@ category('Utils', () => {
   test('buildComparisonTable: handles missing hovered property', async () => {
     const table = buildComparisonTable(EXPECTED_VALUES, {'binding energy': -10.50});
     expect(table instanceof HTMLElement, true);
-  });
-
-  // The PL batch handler uses RECEPTOR_NAME_RE as a cheap pre-screen — to
-  // resolve the shared receptor file once before fetching, it scans poses
-  // for the AutoDock REMARK header. The format is fragile (hardcoded `J.`
-  // separator + whitespace), and a silent parse failure surfaces only as
-  // "no usable poses found" in the batch warning. Lock in the contract.
-  test('RECEPTOR_NAME_RE: extracts receptor name from AutoDock REMARK', async () => {
-    const m = SAMPLE_PDB.match(RECEPTOR_NAME_RE);
-    expect(m != null, true);
-    expect(m![1], '1bdq');
   });
 }, {owner: 'oserhiienko@datagrok.ai'});
