@@ -30,12 +30,12 @@ function parseDirectives(sourceText: string): Directives | null {
     if (renameMatch) {
       const [, src, dst] = renameMatch;
       if (src === dst)
-        throw new Error(`@codegen-rename: '${src}=${dst}' is a no-op (source equals target)`);
+        throw new Error(`rename '${src}=${dst}' is a no-op (source equals target)`);
       for (const [otherSrc, otherDst] of renames) {
         if (otherDst === dst && otherSrc !== src)
           throw new Error(
-            `@codegen-rename: target '${dst}' is already used by ` +
-            `'${otherSrc}=${otherDst}' — two sources cannot share a target`);
+            `rename target '${dst}' is already used by '${otherSrc}=${otherDst}' ` +
+            `— two sources cannot share a target`);
       }
       renames.set(src, dst);
     }
@@ -261,7 +261,7 @@ export function transformText(srcText: string, srcStem: string): TransformResult
     }
   }
   if (asyncStmts.length === 0)
-    throw new Error(`${srcStem}: @async-source declared but no async top-level declarations found`);
+    throw new Error(`${srcStem}: @async-source set, but no async top-level declarations found`);
 
   const sourceImports = collectImports(work);
 
