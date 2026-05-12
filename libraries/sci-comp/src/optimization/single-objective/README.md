@@ -224,6 +224,17 @@ const result = await nm.minimizeAsync(asyncObjective, new Float64Array([-1.2, 1.
 
 Async penalty wrappers are also available via `applyPenaltyAsync`.
 
+### Sync/async parity
+
+The sync and async paths are not separately maintained: each optimizer's
+algorithm lives in a top-level `async function run<X>Async(...)` inside
+`<x>-driver.ts`, and the matching `run<X>Sync` is **generated** by
+`@datagrok-libraries/codegen-async-to-sync` into `<x>-driver-sync.ts`.
+The class itself is a thin shim. Don't edit the `*-sync.ts` files —
+change the async source and run `npm run update-codegen`. The
+`__tests__/sync-async-equality.test.ts` suite asserts bit-equal results
+between the two paths on every problem.
+
 ## Iteration callback
 
 Use `onIteration` to monitor progress or stop early:
