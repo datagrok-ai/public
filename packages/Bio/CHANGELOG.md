@@ -1,5 +1,9 @@
 # Bio changelog
 
+## v.next
+
+* Sequence Space / Sequence Activity Cliffs editors: bail with a clear error when no current table or Macromolecule column is available (prevents NullError in DimReductionBaseEditor)
+
 ## 2.27.4 (2026-04-29)
 
 * Support for non canonical RNA and correct splitting in helm
