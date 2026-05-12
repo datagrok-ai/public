@@ -332,6 +332,7 @@ export function transformText(srcText: string, srcStem: string): TransformResult
   }
 
   const banner = [
+    `/* eslint-disable */`,
     `// GENERATED — do not edit by hand.`,
     `// Run \`npm run update-codegen\` to regenerate.`,
     `// Source: ./${srcStem}.ts`,

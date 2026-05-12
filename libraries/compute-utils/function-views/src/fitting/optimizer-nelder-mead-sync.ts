@@ -1,3 +1,4 @@
+/* eslint-disable */
 // GENERATED — do not edit by hand.
 // Run `npm run update-codegen` to regenerate.
 // Source: ./optimizer-nelder-mead.ts

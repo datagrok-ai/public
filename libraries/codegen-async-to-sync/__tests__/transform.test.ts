@@ -295,9 +295,10 @@ export async function run(): Promise<number> { return await fooAsync(); }
 });
 
 describe('banner & directive stripping', () => {
-  test('output starts with GENERATED banner', () => {
+  test('output starts with eslint-disable + GENERATED banner', () => {
     const out = run(`${HEADER}export async function foo() { return 1; }\n`, 'src');
-    expect(out.startsWith('// GENERATED — do not edit by hand.\n')).toBe(true);
+    expect(out.startsWith('/* eslint-disable */\n')).toBe(true);
+    expect(out).toContain('// GENERATED — do not edit by hand.');
     expect(out).toContain('// Source: ./src.ts');
   });
 
