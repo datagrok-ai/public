@@ -3162,3 +3162,86 @@
   confidence: high
 ```
 
+- id: DG-FACT-157
+  kind: namespace
+  scope: python-functions
+  value: A "Python application" is a Celery worker shipped with a plugin. Each app folder contains one or more `.py` files with annotated functions, optional `requirements.in` OR `environment.yaml` for Python deps, optional `container.json` for resources. Production canonical reference is `packages/Samples/dockerfiles/` (app.py + train.py + predict.py + environment.yaml + container.json + Dockerfile).
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:15-35
+    - code: packages/Samples/dockerfiles
+  contradicts:
+    - DG-FACT-DRIFT-060
+  confidence: high
+
+- id: DG-FACT-158
+  kind: enum
+  scope: python-functions
+  value: Function metadata is the same Datagrok header-comment grammar used by every script — `#name:`, `#description:`, `#language: python`, `#input: <type> <name>[=<default>] [{options}]`, `#output: <type> <name>`, plus `#meta.*` keys. Production reference uses `dataframe`, `string`, `int`, `bool`, `blob` types and per-input options like `category`, `choices: ["a","b"]`, `range: 1-2`. Inputs without options accept a free-text label in square brackets after the name (e.g., `#input: string nameskeys [Original features' names]`).
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:43-52
+    - code: packages/Samples/dockerfiles/app.py:18-31,47-56,63-70
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-159
+  kind: namespace
+  scope: python-functions
+  value: Each annotated function in production is wrapped with `@app.task(name='<celery_task_name>', bind=True, base=DatagrokTask)` where `app = Celery(settings.celery_name, broker=settings.broker_url)`. `Settings`, `DatagrokTask`, and `get_logger` are imported from `datagrok-celery-task`. The Celery task `name=` argument is the queue-routing identifier and is independent of the Datagrok function `#name:` header. The Datagrok function dispatcher resolves `<Package>:<HeaderName>` to the underlying Celery task at registration time.
+  derives_from:
+    - code: packages/Samples/dockerfiles/app.py:14-17,32-32,57-57,71-71
+  contradicts:
+    - DG-FACT-DRIFT-061
+  confidence: high
+
+- id: DG-FACT-160
+  kind: namespace
+  scope: python-functions
+  value: The `datagrok-celery-task` Python package is REQUIRED at runtime — without it, `Settings`, `DatagrokTask`, and `get_logger` cannot be imported and the task base class is missing. Canonical pinned version in production is `datagrok-celery-task==0.1.8` (declared under the `pip:` block of `environment.yaml`). When using `requirements.in`, list it there instead.
+  derives_from:
+    - code: packages/Samples/dockerfiles/environment.yaml:11-13
+  contradicts:
+    - DG-FACT-DRIFT-062
+  confidence: high
+
+- id: DG-FACT-161
+  kind: threshold
+  scope: python-functions
+  value: `container.json` defaults for Celery containers — `cpu` minimum and default = 1 (article-asserted); article also asserts worker process count = `cpu * 2` via the Celery prefork pool. This is distinct from the general non-Celery `dockerfiles/container.json` defaults documented in `docker-containers.md` (`cpu: 0.25`, `memory: 512`, `on_demand: false`).
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:84-96
+  contradicts:
+    - DG-FACT-DRIFT-064
+  confidence: medium
+
+- id: DG-FACT-162
+  kind: namespace
+  scope: python-functions
+  value: The Dockerfile must run a Celery worker bound to the platform-injected queue. Canonical ENTRYPOINT — `celery -A app worker --loglevel=info --hostname=$CELERY_HOSTNAME --concurrency=1 -Q $TASK_QUEUE_NAME`. `$CELERY_HOSTNAME` and `$TASK_QUEUE_NAME` are runtime env vars set by the Datagrok platform (grok_spawner) when the container starts. `-A app` means the Celery app object lives in `app.py` at module-level — so `app.py` is the de facto entrypoint filename.
+  derives_from:
+    - code: packages/Samples/dockerfiles/Dockerfile:27-31
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-163
+  kind: namespace
+  scope: python-functions
+  value: Dependencies install path — when `requirements.in` is used, deps install via `uv` (article line 62). When `environment.yaml` is used, conda/micromamba creates the env first and pip-level entries inside `pip:` are then installed via uv (article line 72). Production reference `Samples/dockerfiles/Dockerfile` uses `mambaorg/micromamba:1.5.3` as the base image and runs `micromamba create -n <name> -f environment.yaml`.
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:60-82
+    - code: packages/Samples/dockerfiles/Dockerfile:1-21
+    - code: packages/Samples/dockerfiles/environment.yaml:1-13
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-164
+  kind: namespace
+  scope: python-functions
+  value: Once registered, a Python function is invoked from JS via the standard function dispatcher — `await grok.functions.call('<Package>:<HeaderName>', { paramA, paramB })` returns a `Promise<result>`. `<HeaderName>` is the value from the function's `#name:` header (NOT the Python `def` name nor the Celery `@app.task(name=...)` name). Article example shows `Plugin:add` — read `Plugin` as a placeholder for the actual package name.
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:114-118
+    - code: packages/Samples/dockerfiles/app.py:18,32,47,57
+  contradicts: []
+  confidence: high
+
+# DRIFTS for python-functions
+
