@@ -88,3 +88,102 @@
   contradicts: []
   confidence: high
 
+- id: DG-FACT-339
+  kind: naming
+  scope: viewers
+  value: |
+    `view.boxPlot(options)` / `DG.Viewer.boxPlot(df, options)` typed
+    options follow `Partial<IBoxPlotSettings>` — the categorical-axis key
+    is `category1` (not `category`); the second optional categorical is
+    `category2`. Using `{category: 'X', value: 'Y'}` raises TS2561
+    "Did you mean to write 'category1'?". Canonical form:
+    `view.boxPlot({category1: 'ARM', value: 'AGE'})`. Same shape applies
+    to `categoryColumnNames`, `category1ColumnName`, `valueColumnName`.
+  derives_from:
+    - code: js-api/src/interfaces/d4.ts:1019-1048
+    - runtime: verify-e2e/build-an-app (executor-invented clinical-study.ts)
+  contradicts: []
+  confidence: high
+```
+
+### DRIFT findings (article vs. code) — build-an-app
+
+```yaml
+- id: DG-FACT-DRIFT-BUILD-APP-001
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article frames decorators as THE way to register an app
+    (`build-an-app.md:37-69`, "Modern Datagrok applications use Decorators
+    to define the application entry point"). Reality: the legacy
+    bare-function form with header-comment metadata still works and is in
+    active use by production packages. Pattern: top-level
+    `export function <Name>(): void { ... }` preceded by `//name: <Name>`
+    + `//meta.role: app` (+ optional `//top-menu: ...`). Hand-written usage
+    in Alation/MetabolicGraph/NodeJSDemo/RevvitySignalsLink confirms it's
+    not just codegen output (`grok add app` also emits this style). Skills
+    must recognize both forms when reading existing `src/package.ts`; new
+    code should prefer the decorator form per FACT-330.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:37-69,827-844
+    - code: packages/Alation/src/package.ts:31-34
+    - code: packages/MetabolicGraph/src/package.ts
+    - code: packages/NodeJSDemo/src/package.ts
+    - code: packages/RevvitySignalsLink/src/package.ts
+    - code: tools/entity-template/app.js
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-BUILD-APP-002
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article's `@param` snippet (`build-an-app.md:62-67`) uses the
+    string-keyed dotted form `{options: {metaUrl: true, optional: true}}`
+    — but actually shows the camelCase `metaUrl` and is consistent with
+    production. The string-keyed `'meta.url'` form is ALSO accepted (both
+    keys are declared in `InputOptions`, `js-api/src/decorators/functions.ts:
+    101-102`) but no production package uses it. Skills should emit the
+    camelCase form (`metaUrl`); if encountered in legacy code, treat the
+    dotted form as equivalent and do not "fix" it without reason.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:62-67
+    - code: js-api/src/decorators/functions.ts:101-102
+    - code: packages/Chem/src/package.ts:2923-2924
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-BUILD-APP-003
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article instructs `import * as DG from 'datagrok-api/DG'` (uppercase `DG`
+    in the module path) for use inside webpack packages
+    (`build-an-app.md:341-343`). The published npm module path is lowercase
+    — every production package imports `from 'datagrok-api/dg'`. The
+    uppercase form does not resolve on case-sensitive filesystems (Linux CI).
+    Treat the article snippet as a typo; always use lowercase `dg`.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:341-343
+    - code: packages/Chem/src/utils/reaction-enumeration/enumerator-app.ts (and 100+ peers)
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-BUILD-APP-004
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article's "modern decorator" example (`build-an-app.md:48-69`) declares
+    `export const _package = new DG.Package();` but the import block only
+    pulls `grok` (`import * as grok from 'datagrok-api/grok'`); `DG` is
+    never imported. Treat the snippet as incomplete — the working production
+    pattern is the dual import: `import * as grok from 'datagrok-api/grok';
+    import * as DG from 'datagrok-api/dg';` (and `import * as ui from
+    'datagrok-api/ui'` when UI primitives are used).
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:48-69
+    - code: packages/Chem/src/package.ts:1-12
+  contradicts: []
+  confidence: high
+```
+
