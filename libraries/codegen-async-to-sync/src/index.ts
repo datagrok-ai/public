@@ -74,11 +74,35 @@ function getDeclaredName(stmt: Statement): string | null {
   return null;
 }
 
+// Strip `@async-only` regions. Two forms:
+//   - Line form: `// @async-only` on any line drops that single line.
+//   - Block form: `// @async-only-begin` … `// @async-only-end` drops the
+//     two marker lines AND everything between them. Useful when the
+//     async-only logic spans multiple lines and a single-line strip would
+//     leave a syntactically broken tail (e.g. `else if (...)` after the
+//     preceding `if` block was removed).
+//
+// Unmatched `-begin` strips everything to EOF (intentional — surfaces as a
+// parse error downstream, which is better than silently dropping less than
+// intended). Unmatched `-end` is a no-op (also safe).
 function stripAsyncOnlyLines(text: string): string {
-  return text
-    .split('\n')
-    .filter((line) => !/\/\/\s*@async-only\b/.test(line))
-    .join('\n');
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let inBlock = false;
+  for (const line of lines) {
+    if (/\/\/\s*@async-only-begin\b/.test(line)) {
+      inBlock = true;
+      continue;
+    }
+    if (/\/\/\s*@async-only-end\b/.test(line)) {
+      inBlock = false;
+      continue;
+    }
+    if (inBlock) continue;
+    if (/\/\/\s*@async-only\b/.test(line)) continue;
+    out.push(line);
+  }
+  return out.join('\n');
 }
 
 function stripDirectiveLines(text: string): string {

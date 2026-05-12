@@ -166,6 +166,47 @@ describe('@async-only', () => {
     expect(out).not.toContain('const debug = true');
     expect(out).toContain('return 1;');
   });
+
+  test('@async-only-begin / -end block strips multi-line region inclusive', () => {
+    const src = `${HEADER}export async function foo(): Promise<number> {
+  const x = 1;
+  // @async-only-begin
+  if (asyncOnlyFlag)
+    return 999;
+  console.log('async path');
+  // @async-only-end
+  return x;
+}
+`;
+    const out = run(src);
+    expect(out).not.toContain('asyncOnlyFlag');
+    expect(out).not.toContain("console.log('async path')");
+    expect(out).not.toContain('@async-only');
+    expect(out).toContain('const x = 1;');
+    expect(out).toContain('return x;');
+  });
+
+  test('block markers do not collide with single-line @async-only', () => {
+    const src = `${HEADER}export async function foo(): Promise<number> {
+  const debug = true; // @async-only
+  // @async-only-begin
+  doAsync();
+  // @async-only-end
+  const kept = 2; // @async-only-suffix-doesnt-trigger
+  return kept;
+}
+`;
+    // Last line: @async-only-suffix-doesnt-trigger has \b after 'only', then
+    // '-suffix' — the single-line regex requires @async-only followed by a
+    // word boundary; '-suffix' satisfies it, so the line IS stripped.
+    // This test pins that historical behaviour; if you change the regex to
+    // be stricter, update this expectation.
+    const out = run(src);
+    expect(out).not.toContain('const debug = true');
+    expect(out).not.toContain('doAsync()');
+    expect(out).not.toContain('const kept = 2');
+    expect(out).toContain('return kept;');
+  });
 });
 
 describe('const type annotation', () => {
