@@ -3245,3 +3245,173 @@
 
 # DRIFTS for python-functions
 
+- id: DG-FACT-165
+  kind: naming
+  scope: package-files
+  value: Two package-root directories are reserved by Datagrok for bundled data — `files/` (any binary/text/JSON/CSV) and `tables/` (specifically tabular). Both allow arbitrary subdirectories. Convention is honored by 25+ shipping packages (`Bio/files`, `HitTriage/files`, `EDA/files`, `Chem/files`, `ClinicalCase/tables`, …); arbitrary other folders are also legal, but `files/` is the only one wired to `_package.files` (the AppData FilesDataSource).
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:12-14
+    - code: packages/Bio/files
+    - code: packages/HitTriage/files
+    - code: packages/ClinicalCase/tables
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-166
+  kind: naming
+  scope: package-files
+  value: The conventional package entrypoint exports a module-level `_package` symbol — `export const _package = new DG.Package();` (Chem) or `export const _package = new <Subclass>();` for custom subclasses (Bio's `BioPackage`, HitTriage's `HTPackage`). All `_package.webRoot` / `_package.files.*` examples in the public repo dereference this exported symbol; subclassing is supported via `class X extends DG.Package`.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:38-40
+    - code: packages/Chem/src/package.ts:1
+    - code: packages/Bio/src/package.ts
+    - code: packages/HitTriage/src/package.ts
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-167
+  kind: namespace
+  scope: package-files
+  value: `_package.webRoot` is a string getter (settable) that returns the URL prefix under which the package's static assets are served by the platform. Implementation calls `api.grok_Package_Get_WebRoot(this.dart)` when the package was loaded from dart, otherwise returns the locally-set value. Trailing slash IS included in the value, so usage is `_package.webRoot + 'images/foo.png'` (no leading slash on the suffix). Anything physically in the package source tree (README, images/, even files/, tables/) is fetchable via this URL — it's literally an HTTP GET against the package's web root.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:34-48
+    - code: js-api/src/entities/misc.ts:79-88
+    - code: packages/HitTriage/src/app/pep-triage-views/info-view.ts:22,32
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-168
+  kind: namespace
+  scope: package-files
+  value: `_package.files` is a getter that returns a fresh `FilesDataSource` rooted at `System:AppData/<PackageName>` (the AppData connection — see `Package.files` getter, `js-api/src/entities/misc.ts:193-195`). When a package is published, the contents of its source-tree `files/` directory are uploaded to the storage backend specified by `GROK_PARAMETERS` (e.g., S3) and surfaced under `Files | App Data | <Package>` in the UI. Therefore `_package.files.readAsText('templates/x.json')` resolves to `System:AppData/<PackageName>/templates/x.json` — paths passed to FilesDataSource methods are relative to the package's `files/` subtree, NOT to the package source root.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:50-72
+    - code: js-api/src/entities/misc.ts:193-195
+    - code: js-api/src/dapi.ts:1292-1296,1305-1312
+    - code: packages/HitTriage/src/app/utils.ts:162
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-169
+  kind: namespace
+  scope: package-files
+  value: `FilesDataSource.list(file: FileInfo|string, recursive: boolean = false, searchPattern: string|null = null): Promise<FileInfo[]>` — three positional args; pass `recursive=true` for nested directories. Article example `_package.files.list('templates/', true)` matches. Returned `FileInfo` objects expose `.name`, `.fullPath`, `.fileName` etc., used by HitTriage to map a folder to a list of campaign / template names.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:60-61
+    - code: js-api/src/dapi.ts:1340-1348
+    - code: packages/HitTriage/src/app/utils.ts:162
+    - code: packages/HitTriage/src/app/accordeons/new-template-accordeon.ts:21
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-170
+  kind: namespace
+  scope: package-files
+  value: FilesDataSource read methods — `readAsText(path): Promise<string>` (text/CSV/JSON), `readAsBytes(path): Promise<Uint8Array>` (binary), `readBinaryDataFrames(path): Promise<DataFrame[]>` (`.d42` archive of one-or-more dataframes; index `[0]` for the first), `readCsv(path, options?): Promise<DataFrame>` (convenience that wraps `DataFrame.fromCsv(await readAsText(path))`). For JSON, callers do `JSON.parse(await _package.files.readAsText('x.json'))` (no built-in `readAsJson` for individual files; folder-bulk variants `readFilesAsJson` / `readFilesAsString` / `readFilesAsBlobs` exist but are not in the article).
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:63-67
+    - code: js-api/src/dapi.ts:1418-1440
+    - code: js-api/src/dapi.ts:1386-1413
+    - code: packages/Bio/src/tests/utils.ts:11
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-171
+  kind: namespace
+  scope: package-files
+  value: `grok.data.loadTable(csvUrl: string): Promise<DataFrame>` loads a CSV from any URL into a DataFrame — the canonical pairing for `_package.webRoot` + a CSV path inside `tables/`. Article example: `grok.data.loadTable(\`${_package.webRoot}tables/test.csv\`).then((t) => grok.shell.addTableView(t))`. Backed by `api.grok_LoadDataFrame(csvUrl)`. For files inside `files/`, prefer `_package.files.readCsv` (DG-FACT-170) — both work, but `loadTable`'s URL form is right when the file is webRoot-served (e.g., from the source `tables/` dir).
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:42-43
+    - code: js-api/src/data.ts:170-175
+    - code: js-api/src/shell.ts:258
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-172
+  kind: naming
+  scope: package-files
+  value: The class name for the `_package.files` getter is `FilesDataSource` — `FileSource` is a deprecated alias retained for backward compatibility (`export const FileSource = FilesDataSource;`, `js-api/src/dapi.ts:1473-1475`). Skill output and new code should reference `DG.FilesDataSource`. The article's link to `dg/classes/FileSource` (still resolves on the docs site) is the legacy name.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:52
+    - code: js-api/src/dapi.ts:1472-1475
+    - code: js-api/src/entities/misc.ts:194
+  contradicts: []
+  confidence: high
+
+# DRIFTS for work-with-package-files
+
+- id: DG-FACT-DRIFT-066
+  kind: naming
+  scope: work-with-package-files
+  value: |
+    RESOLVED 2026-05-12. Earlier article revision wrote
+    `// _package is defined in package.js` inside the
+    snippet introducing `_package.webRoot`. Current
+    article (lines 37-39, 55-57) consistently says
+    `package.ts` — matches every shipping package
+    (`packages/Chem/src/package.ts`,
+    `packages/Bio/src/package.ts`,
+    `packages/HitTriage/src/package.ts`, …). Kept as a
+    tombstone because `.claude/skills/work-with-package-files/SKILL.md`
+    (step 2, line 24) still cites this ID; clean up at
+    next skill revision.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:37-39,55-57
+    - code: packages/Chem/src/package.ts:1
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-067
+  kind: naming
+  scope: work-with-package-files
+  value: |
+    Article (lines 27-29) claims that, for tables under
+    the `tables/` reserved directory, "import options
+    from an additional file `<table_name>_csv_options.json`,
+    if present, are taken into account." Code disagrees.
+    Searches across the public repo for
+    `_csv_options` / `csvOptions` return zero hits in
+    `js-api/`, every `packages/*/` subtree, and the
+    bundled `js-api/src/datagrok/build/web/grok_shared.dart.js`.
+    No shipping package ships such a sidecar; no JS or
+    Dart code parses the filename pattern. The
+    convention is either Dart-side platform-internal
+    (not exposed and not findable in the shipped
+    bundle) or stale. Fix in article: either show a
+    concrete example with the surfacing API, or drop
+    the sentence. Skill-side workaround: pass
+    `options` per-call to `_package.files.readCsv(name, options)`
+    or `grok.data.parseCsv(text, options)` — both are
+    real and verified.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:27-29
+    - code: js-api/src/dapi.ts:1418-1440  # FilesDataSource read methods, no sidecar lookup
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js  # 0 occurrences of _csv_options
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-068
+  kind: naming
+  scope: work-with-package-files
+  value: |
+    RESOLVED 2026-05-12. Earlier article revision linked
+    the `_package.files` example to
+    `https://datagrok.ai/api/js/dg/classes/FileSource`
+    (the deprecated alias). Current article (line 52)
+    links to `FilesDataSource`, matching the live class
+    name in `js-api/src/dapi.ts:1292` and the package
+    getter at `js-api/src/entities/misc.ts:193-195`.
+    `FileSource = FilesDataSource` is retained as a
+    backward-compatibility alias only
+    (`js-api/src/dapi.ts:1472-1475`); see DG-FACT-172.
+    Kept as a tombstone because
+    `.claude/skills/work-with-package-files/SKILL.md`
+    (step 4, line 92, and Common failure modes line
+    158) still cites this ID; clean up at next skill
+    revision.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:52
+    - code: js-api/src/dapi.ts:1292-1296,1472-1475
+  contradicts: []
+  confidence: high
+
