@@ -119,37 +119,42 @@ function stripOneAsyncModifier(file: SourceFile): boolean {
 }
 
 // `replaceWithText` re-parses the file and forgets every descendant node, so
-// search from the SourceFile and re-search each pass until nothing matches.
-function stripAwaits(file: SourceFile): void {
+// search from the SourceFile and re-search each pass until `match` finds
+// nothing. The callback returns the replacement text, or `undefined` for
+// a non-match.
+function replaceUntilFixedPoint(
+  file: SourceFile,
+  match: (node: Node) => string | undefined,
+): void {
   while (true) {
     let target: Node | undefined;
+    let replacement: string | undefined;
     file.forEachDescendant((node, traversal) => {
-      if (node.isKind(SyntaxKind.AwaitExpression)) {
+      const r = match(node);
+      if (r !== undefined) {
         target = node;
+        replacement = r;
         traversal.stop();
       }
     });
     if (!target) break;
-    const expr = target.asKindOrThrow(SyntaxKind.AwaitExpression).getExpression();
-    target.replaceWithText(expr.getText());
+    target.replaceWithText(replacement!);
   }
 }
 
+function stripAwaits(file: SourceFile): void {
+  replaceUntilFixedPoint(file, (node) =>
+    Node.isAwaitExpression(node) ? node.getExpression().getText() : undefined,
+  );
+}
+
 function unwrapPromiseTypes(file: SourceFile): void {
-  while (true) {
-    let target: Node | undefined;
-    file.forEachDescendant((node, traversal) => {
-      if (!node.isKind(SyntaxKind.TypeReference)) return;
-      const tr = node.asKindOrThrow(SyntaxKind.TypeReference);
-      if (tr.getTypeName().getText() !== 'Promise') return;
-      if (tr.getTypeArguments().length !== 1) return;
-      target = node;
-      traversal.stop();
-    });
-    if (!target) break;
-    const tr = target.asKindOrThrow(SyntaxKind.TypeReference);
-    target.replaceWithText(tr.getTypeArguments()[0].getText());
-  }
+  replaceUntilFixedPoint(file, (node) => {
+    if (!Node.isTypeReference(node)) return undefined;
+    if (node.getTypeName().getText() !== 'Promise') return undefined;
+    const args = node.getTypeArguments();
+    return args.length === 1 ? args[0].getText() : undefined;
+  });
 }
 
 function applyRenames(file: SourceFile, renames: Map<string, string>): void {
