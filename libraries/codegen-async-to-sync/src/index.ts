@@ -235,12 +235,87 @@ export interface TransformResult {
   outputText: string;
 }
 
+function pruneNonAsyncStatements(file: SourceFile, asyncStmts: Statement[]): void {
+  for (const stmt of [...file.getStatements()]) {
+    if (Node.isImportDeclaration(stmt)) continue;
+    if (asyncStmts.includes(stmt)) continue;
+    stmt.remove();
+  }
+}
+
+// Order: awaits FIRST. After `async` is stripped, `await x` re-parses as
+// the call `await(x)` (since `await` is only a keyword in async functions).
+function eraseAsyncSyntax(file: SourceFile): void {
+  stripAwaits(file);
+  unwrapPromiseTypes(file);
+  while (stripOneAsyncModifier(file)) {}
+}
+
+function rebuildImports(
+  file: SourceFile,
+  sourceImports: ImportInfo[],
+  renames: Map<string, string>,
+  siblingNames: Set<string>,
+  srcStem: string,
+): ImportInfo[] {
+  for (const imp of [...file.getImportDeclarations()]) imp.remove();
+
+  const referenced = new Set<string>();
+  for (const stmt of file.getStatements()) {
+    for (const name of collectReferencedNames(stmt)) referenced.add(name);
+  }
+  const declaredInOutput = collectDeclaredNames(file.getStatements());
+
+  // Async-named imports route through the rename map: the sibling module
+  // is expected to export the renamed (sync) name.
+  const rebuilt: ImportInfo[] = [];
+  for (const imp of sourceImports) {
+    // Namespace imports aren't subject to @codegen-rename.
+    if (imp.namespace && referenced.has(imp.namespace) && !declaredInOutput.has(imp.namespace)) {
+      rebuilt.push({moduleSpecifier: imp.moduleSpecifier, named: [], namespace: imp.namespace});
+      continue;
+    }
+    const used: string[] = [];
+    for (const n of imp.named) {
+      const resolved = renames.get(n) ?? n;
+      if (referenced.has(resolved) && !declaredInOutput.has(resolved)) used.push(resolved);
+    }
+    if (used.length > 0)
+      rebuilt.push({moduleSpecifier: imp.moduleSpecifier, named: used});
+  }
+
+  const siblings = [...referenced]
+    .filter((n) => !declaredInOutput.has(n) && siblingNames.has(n))
+    .sort();
+  if (siblings.length > 0)
+    rebuilt.push({moduleSpecifier: `./${srcStem}`, named: siblings});
+
+  return rebuilt;
+}
+
+function renderBanner(srcStem: string): string {
+  return [
+    `/* eslint-disable */`,
+    `// GENERATED — do not edit by hand.`,
+    `// Run \`npm run update-codegen\` to regenerate.`,
+    `// Source: ./${srcStem}.ts`,
+    ``,
+  ].join('\n');
+}
+
+function renderImports(rebuilt: ImportInfo[]): string {
+  return rebuilt.map((imp) =>
+    imp.namespace
+      ? `import * as ${imp.namespace} from '${imp.moduleSpecifier}';`
+      : `import {${imp.named.join(', ')}} from '${imp.moduleSpecifier}';`,
+  ).join('\n');
+}
+
 export function transformText(srcText: string, srcStem: string): TransformResult | null {
   const directives = parseDirectives(srcText);
   if (!directives) return null;
 
   const cleanedText = stripDirectiveLines(stripAsyncOnlyLines(srcText));
-
   const project = new Project({
     compilerOptions: {target: 99, module: 99, strict: false, skipLibCheck: true},
     useInMemoryFileSystem: true,
@@ -255,82 +330,19 @@ export function transformText(srcText: string, srcStem: string): TransformResult
 
   const sourceImports = collectImports(work);
 
-  for (const stmt of [...work.getStatements()]) {
-    if (Node.isImportDeclaration(stmt)) continue;
-    if (asyncStmts.includes(stmt)) continue;
-    stmt.remove();
-  }
-
-  // Order: awaits FIRST. After `async` is stripped, `await x` re-parses as
-  // the call `await(x)` (since `await` is only a keyword in async functions).
-  stripAwaits(work);
-  unwrapPromiseTypes(work);
-  while (stripOneAsyncModifier(work)) {}
-
+  pruneNonAsyncStatements(work, asyncStmts);
+  eraseAsyncSyntax(work);
   dropAsyncConstAnnotations(work);
   applyRenames(work, directives.renames);
 
-  for (const imp of [...work.getImportDeclarations()]) imp.remove();
-
-  const referenced = new Set<string>();
-  for (const stmt of work.getStatements()) {
-    for (const name of collectReferencedNames(stmt)) referenced.add(name);
-  }
-
-  const declaredInOutput = collectDeclaredNames(work.getStatements());
-
-  // Async-named imports route through the rename map: the sibling module is
-  // expected to export the renamed (sync) name.
-  const rebuiltImports: ImportInfo[] = [];
-  for (const imp of sourceImports) {
-    // Namespace imports aren't subject to `@codegen-rename` — the binding is
-    // a local alias.
-    if (imp.namespace && referenced.has(imp.namespace) && !declaredInOutput.has(imp.namespace)) {
-      rebuiltImports.push({moduleSpecifier: imp.moduleSpecifier, named: [], namespace: imp.namespace});
-      continue;
-    }
-    const used: string[] = [];
-    for (const n of imp.named) {
-      const resolved = directives.renames.get(n) ?? n;
-      if (referenced.has(resolved) && !declaredInOutput.has(resolved))
-        used.push(resolved);
-    }
-    if (used.length === 0) continue;
-    rebuiltImports.push({moduleSpecifier: imp.moduleSpecifier, named: used});
-  }
-
-  const siblingsImported: string[] = [];
-  for (const name of referenced) {
-    if (declaredInOutput.has(name)) continue;
-    if (siblingNames.has(name)) siblingsImported.push(name);
-  }
-  if (siblingsImported.length > 0) {
-    rebuiltImports.push({
-      moduleSpecifier: `./${srcStem}`,
-      named: siblingsImported.sort(),
-    });
-  }
-
-  const banner = [
-    `/* eslint-disable */`,
-    `// GENERATED — do not edit by hand.`,
-    `// Run \`npm run update-codegen\` to regenerate.`,
-    `// Source: ./${srcStem}.ts`,
-    ``,
-  ].join('\n');
-
-  const importLines = rebuiltImports.map((imp) =>
-    imp.namespace
-      ? `import * as ${imp.namespace} from '${imp.moduleSpecifier}';`
-      : `import {${imp.named.join(', ')}} from '${imp.moduleSpecifier}';`,
-  ).join('\n');
+  const rebuilt = rebuildImports(work, sourceImports, directives.renames, siblingNames, srcStem);
 
   const bodyLines = work.getStatements()
     .filter((s) => !Node.isImportDeclaration(s))
     .map((s) => s.getText())
     .join('\n\n');
 
-  const outputText = `${banner}${importLines}\n\n${bodyLines}\n`;
+  const outputText = `${renderBanner(srcStem)}${renderImports(rebuilt)}\n\n${bodyLines}\n`;
   return {outputPath: directives.outputPath, outputText};
 }
 
