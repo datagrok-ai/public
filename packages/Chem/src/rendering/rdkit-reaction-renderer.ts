@@ -2,7 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {RDModule, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {drawErrorCross, drawRdKitReactionToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {USE_RDKIT_REACTION_RENDERER} from '../utils/reactions/consts';
-import { _convertMolNotation } from '../utils/convert-notation-utils';
+import {_convertMolNotation, MALFORMED_MOL_V2000} from '../utils/convert-notation-utils';
+import {MESSAGE_MALFORMED} from '../constants';
 
 /** Width in pixels reserved for the arrow drawn between consecutive reaction steps. */
 const STEP_ARROW_WIDTH = 30;
@@ -195,7 +196,9 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
           try {
             if (p.includes('M  END') || p.includes('#') || p.includes('$'))
               return p;
-            return _convertMolNotation(p, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, this.rdKitModule, false);
+            const res =
+              _convertMolNotation(p, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, this.rdKitModule, false);
+            return !!res && res !== MESSAGE_MALFORMED ? res : p;
           } catch (e) {
             return p;
           }

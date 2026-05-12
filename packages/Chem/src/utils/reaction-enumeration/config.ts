@@ -27,6 +27,7 @@ export interface EnumerationSpecs {
   bb_file: string;
   bb_smiles_column: string;
   reagent_file: string | null;
+  reagent_smiles_column: string;
   output_file: string;
   reaction_name_col: string;
   delimiter: string;
@@ -74,6 +75,7 @@ export const DEFAULT_CONFIG: EnumeratorConfig = {
     bb_file: 'bb.csv',
     bb_smiles_column: 'SMILES',
     reagent_file: null,
+    reagent_smiles_column: 'SMILES',
     output_file: 'enumeration_output.csv',
     reaction_name_col: 'reaction_name',
     delimiter: ',',
