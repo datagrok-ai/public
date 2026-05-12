@@ -63,6 +63,18 @@ function getDeclaredNames(stmt: Statement): string[] {
   return [];
 }
 
+function collectDeclaredNames(
+  stmts: Statement[],
+  filter?: (s: Statement) => boolean,
+): Set<string> {
+  const out = new Set<string>();
+  for (const stmt of stmts) {
+    if (filter && !filter(stmt)) continue;
+    for (const n of getDeclaredNames(stmt)) out.add(n);
+  }
+  return out;
+}
+
 // Unmatched `@async-only-begin` strips to EOF on purpose: surfaces as a
 // downstream parse error rather than silently dropping less than intended.
 const ASYNC_ONLY_RE = /\/\/\s*@async-only(-begin|-end)?\b/;
@@ -235,15 +247,9 @@ export function transformText(srcText: string, srcStem: string): TransformResult
   });
   const work = project.createSourceFile('work.ts', cleanedText);
 
-  const asyncStmts: Statement[] = [];
-  const siblingNames = new Set<string>();
-  for (const stmt of work.getStatements()) {
-    if (isAsyncTopLevel(stmt)) {
-      asyncStmts.push(stmt);
-    } else {
-      for (const n of getDeclaredNames(stmt)) siblingNames.add(n);
-    }
-  }
+  const allStmts = work.getStatements();
+  const asyncStmts = allStmts.filter(isAsyncTopLevel);
+  const siblingNames = collectDeclaredNames(allStmts, (s) => !isAsyncTopLevel(s));
   if (asyncStmts.length === 0)
     throw new Error(`${srcStem}: @async-source set, but no async top-level declarations found`);
 
@@ -271,10 +277,7 @@ export function transformText(srcText: string, srcStem: string): TransformResult
     for (const name of collectReferencedNames(stmt)) referenced.add(name);
   }
 
-  const declaredInOutput = new Set<string>();
-  for (const stmt of work.getStatements()) {
-    for (const n of getDeclaredNames(stmt)) declaredInOutput.add(n);
-  }
+  const declaredInOutput = collectDeclaredNames(work.getStatements());
 
   // Async-named imports route through the rename map: the sibling module is
   // expected to export the renamed (sync) name.
