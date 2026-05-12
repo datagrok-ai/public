@@ -1,13 +1,7 @@
 // Async→sync TypeScript codegen via ts-morph AST transform.
 // Directive grammar and transformation rules: see README.md.
 
-import {
-  Project,
-  SyntaxKind,
-  Node,
-  SourceFile,
-  Statement,
-} from 'ts-morph';
+import {Project, Node, SourceFile, Statement} from 'ts-morph';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -174,9 +168,8 @@ function applyRenames(file: SourceFile, renames: Map<string, string>): void {
         const nameNode = ni.getNameNode();
         if (aliasNode) {
           if (aliasNode.getText() === oldName) aliasNode.rename(newName);
-        } else if (nameNode.getKind() === SyntaxKind.Identifier) {
-          const id = nameNode.asKindOrThrow(SyntaxKind.Identifier);
-          if (id.getText() === oldName) id.rename(newName);
+        } else if (Node.isIdentifier(nameNode)) {
+          if (nameNode.getText() === oldName) nameNode.rename(newName);
         }
       }
     }
@@ -198,22 +191,15 @@ function dropAsyncConstAnnotations(file: SourceFile): void {
 function collectReferencedNames(scope: Node): Set<string> {
   const out = new Set<string>();
   scope.forEachDescendant((node) => {
-    if (node.isKind(SyntaxKind.Identifier)) {
-      const parent = node.getParent();
-      if (parent && parent.isKind(SyntaxKind.PropertyAccessExpression)) {
-        if (parent.asKindOrThrow(SyntaxKind.PropertyAccessExpression).getNameNode() === node)
-          return;
-      }
-      if (parent && (
-        parent.isKind(SyntaxKind.PropertyAssignment) ||
-        parent.isKind(SyntaxKind.PropertySignature) ||
-        parent.isKind(SyntaxKind.ShorthandPropertyAssignment)
-      )) {
-        const nameNode = (parent as any).getNameNode?.();
-        if (nameNode === node) return;
-      }
-      out.add(node.getText());
+    if (!Node.isIdentifier(node)) return;
+    const parent = node.getParent();
+    if (Node.isPropertyAccessExpression(parent) && parent.getNameNode() === node)
+      return;
+    if (Node.isPropertyAssignment(parent) || Node.isPropertySignature(parent) ||
+        Node.isShorthandPropertyAssignment(parent)) {
+      if (parent.getNameNode() === node) return;
     }
+    out.add(node.getText());
   });
   return out;
 }
