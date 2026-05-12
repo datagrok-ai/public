@@ -2440,3 +2440,157 @@
   contradicts: []
   confidence: high
 
+- id: DG-FACT-434
+  kind: pattern
+  scope: write-tutorials
+  value: |
+    A tutorial is a subclass of `Tutorial`, imported from
+    `@datagrok-libraries/tutorials/src/tutorial` (full subpath — the
+    library has no package-root entry). The class is declared abstract
+    with FOUR mandatory getters AND one protected method:
+    `get name(): string`, `get description(): string`,
+    `get icon(): string`, `get steps(): number`, and
+    `protected async _run(): Promise<void>`. `Tutorial` itself extends
+    `DG.Widget`. `steps` is the declared total used to drive the
+    progress bar; it should match the number of `action(...)` calls
+    that resolve inside `_run`. Mismatched `steps` doesn't crash but
+    leaves the bar inaccurate.
+  derives_from:
+    - article: help/develop/how-to/misc/write-tutorials.md:22-41
+    - code: libraries/tutorials/src/tutorial.ts:12-21,97
+    - code: packages/Tutorials/src/tracks/eda/tutorials/grid.ts:11-31
+    - code: packages/Tutorials/src/tracks/eda/tutorials/filters.ts:10-37
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-435
+  kind: pattern
+  scope: write-tutorials
+  value: |
+    Steps inside `_run()` are built around
+    `await this.action(instructions, completed, hint?, description?)`
+    (libraries/tutorials/src/tutorial.ts:371). `completed` is either
+    an RxJS `Observable<any>` (the action resolves on its first
+    emission) or a `Promise<void>`. Typical sources: a DataFrame event
+    like `this.t!.onFilterChanged.pipe(filter(...))`, a grok shell
+    event like `grok.events.onDialogShown.pipe(filter(...))`, or an
+    `interval(...)` polling the DOM. `hint` (HTMLElement or array)
+    decorates the target widget with a hint blob; `description` is
+    rich HTML shown under the step label. Higher-level helpers wrap
+    `action`: `openPlot(name, check)` (libraries/tutorials/src/
+    tutorial.ts:496), `openDialog(instructions, title, hint?, desc?)`
+    (`:630`), plus per-tutorial helpers (`dlgInputAction`,
+    `buttonClickAction`). Use them where they fit — they encode the
+    correct event source.
+  derives_from:
+    - article: help/develop/how-to/misc/write-tutorials.md:37-41
+    - code: libraries/tutorials/src/tutorial.ts:371,496,630
+    - code: packages/Tutorials/src/tracks/eda/tutorials/filters.ts:65-79
+    - code: packages/Tutorials/src/tracks/eda/tutorials/grid.ts:41-55
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-436
+  kind: pattern
+  scope: write-tutorials
+  value: |
+    The base `Tutorial` auto-loads a demo DataFrame BEFORE `_run()`
+    executes: `demoTable` defaults to `'demog.csv'`, and the runner
+    calls `this._t = await grok.data.getDemoTable(this.demoTable);
+    grok.shell.addTableView(this._t);` (libraries/tutorials/src/
+    tutorial.ts:163-166). Inside `_run` the loaded frame is reachable
+    as `this.t!`. To skip the auto-load (the dashboard tutorial
+    doesn't want a default table) override `demoTable = ''`
+    (packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:24).
+    The article doesn't mention this — it shows only the bare class.
+    Real tutorials rely on `this.t!` heavily, so a subclass that
+    keeps the default and assumes no table will see one already on
+    screen.
+  derives_from:
+    - code: libraries/tutorials/src/tutorial.ts:24,163-166
+    - code: packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:24
+    - code: packages/Tutorials/src/tracks/eda/tutorials/filters.ts:60-79
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-437
+  kind: enum
+  scope: write-tutorials
+  value: |
+    A tutorial defined OUTSIDE the public Tutorials package must
+    register itself via a package.ts factory function with this exact
+    annotation set: `//tags: tutorial`, `//meta.name: <Display Name>`,
+    `//output: object`. Optional: `//meta.track: <Track Name>` (joins
+    an existing track or creates one named exactly so;
+    omitted → the track named after `func.package.friendlyName`),
+    `//meta.icon: <path/relative/to/package/root>` (omitted → the
+    Tutorials package's default `package.png` is used), `//description:
+    <text>` (omitted → empty description in the UI). The function
+    body returns `new YourTutorial()` and the Tutorials package
+    discovers it via `DG.Func.find({tags: ['tutorial']})`
+    (packages/Tutorials/src/package.ts:79). The decorator form
+    `@grok.decorators.func({tags: ['tutorial'], meta: {name: '...',
+    track: '...', icon: '...'}})` is equivalent — codegen emits the
+    same header into package.g.ts.
+  derives_from:
+    - article: help/develop/how-to/misc/write-tutorials.md:43-67
+    - code: packages/Tutorials/src/package.ts:79,102-124
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-438
+  kind: pattern
+  scope: write-tutorials
+  value: |
+    Registering a Track via package.ts annotation has a subtle
+    contract gap. Required header: `//tags: track`, `//meta.name:
+    <Track Name>`, `//help-url: <url>`, `//output: object`. BUT the
+    Tutorials package does NOT invoke the registered function — it
+    constructs a fresh empty Track from metadata:
+    `tracks.push(new Track(func.options['name'], [],
+    func.helpUrl ?? ''))` (packages/Tutorials/src/package.ts:97).
+    Consequence: any logic the article's example puts INSIDE the
+    function body (including `return new Track(...)`) is dead code —
+    only the function's tags / `meta.name` / `help-url` are read.
+    The function must still type-check and declare `output: object`
+    so the platform's function-loader accepts it. Track registration
+    is OPTIONAL — a tutorial whose `meta.track` references an
+    unregistered track name will create that track implicitly with an
+    empty `help-url`.
+  derives_from:
+    - article: help/develop/how-to/misc/write-tutorials.md:75-89
+    - code: packages/Tutorials/src/package.ts:80,94-100
+  contradicts:
+    - The article example "It is also possible to register a track"
+      implies the returned Track object's contents are used. In the
+      live Tutorials package they are NOT — the function body is
+      ignored. Live execution wins.
+  confidence: high
+
+- id: DG-FACT-439
+  kind: enum
+  scope: write-tutorials
+  value: |
+    A subclass may declare service or package prerequisites by
+    overriding the `prerequisites` field of type
+    `TutorialPrerequisites = {packages?: string[], jupyter?: boolean,
+    grokCompute?: boolean, grokConnect?: boolean, h2o?: boolean}`
+    (libraries/tutorials/src/tutorial.ts:672-678). The runner enforces
+    them in `run()` BEFORE `_run`: each name in `packages[]` is queried
+    via `grok.dapi.packages.list({filter: 'shortName = "<p>"'})`;
+    missing entries trigger `grok.shell.error('Please install
+    package... ')` and the tutorial aborts. Each `*: true` service
+    flag is looked up via `grok.dapi.admin.getServiceInfos()` and the
+    tutorial aborts if the service isn't `enabled && status ===
+    'Running'`. The article doesn't mention this surface — it's the
+    correct way to express "needs Jupyter" or "needs ChemPackage"
+    without throwing partway through `_run`. Example —
+    packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:26
+    declares `{grokConnect: true}`.
+  derives_from:
+    - code: libraries/tutorials/src/tutorial.ts:23,135-159,672-678
+    - code: packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:26
+  contradicts: []
+  confidence: high
+```
+
