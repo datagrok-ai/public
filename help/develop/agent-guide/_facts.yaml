@@ -757,3 +757,84 @@
   confidence: medium
 ```
 
+- id: DG-FACT-073
+  kind: naming
+  scope: file-viewers
+  value: A custom file viewer is a function with `//meta.role: fileViewer`, `//input: file file` (a `FileInfo`), and `//output: view v` (a `DG.View`, possibly Promise-wrapped). The platform invokes it from the file-share browser when the user opens a file with a registered extension. The `fileViewer` role token is canonicalized in `js-api/src/const.ts` as `FILE_VIEWER: 'fileViewer'`.
+  derives_from:
+    - article: help/develop/how-to/files/create-custom-file-viewers.md:5-31
+    - code: js-api/src/const.ts:372-376
+    - code: packages/EpsViewer/src/package.g.ts:6-7
+    - code: packages/Plates/src/package.g.ts:27-31
+    - code: packages/FileEditors/src/package.g.ts:11-15
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-074
+  kind: naming
+  scope: file-viewers
+  value: Supported file extensions are declared via `//meta.fileViewer: <ext>[,<ext>…]` — comma-separated list, optional whitespace tolerated. Single-extension form (`mol`, `eps`, `pdf`) and multi-extension form (`mol,sdf,cif`, `kmz,kml`, `mp3, wav, flac, ogg, oga, opus, m4a, aac, weba`) both work. Multiple `fileViewer` functions in the same package may register the same extension when each one declares a `meta.fileViewerCheck` to disambiguate.
+  derives_from:
+    - article: help/develop/how-to/files/create-custom-file-viewers.md:7,16
+    - code: packages/BiostructureViewer/src/package.g.ts:89,97,105,113   # multi-ext, no spaces
+    - code: packages/Media/src/package.ts:73,83                          # multi-ext, with spaces
+    - code: packages/EpsViewer/src/package.g.ts:7                        # single-ext
+    - code: packages/Plates/src/package.g.ts:28,38,53,62                 # same ext (txt, xlsx) reused with different fileViewerCheck
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-075
+  kind: naming
+  scope: file-viewers
+  value: `//meta.fileViewerCheck: <Package>:<Function>` is the optional content-disambiguation hook. The platform calls the named function with the file's content (input is `string` for text payloads, `blob` / `Uint8Array` for binary) and expects a `bool` return; truthy means "this viewer is applicable". Used to register multiple viewers for the same extension or to gate a viewer on file-content patterns. `FileViewerOptions.fileViewerCheck` is the decorator-form key.
+  derives_from:
+    - code: js-api/src/decorators/functions.ts:220-223,342-348
+    - code: packages/Plates/src/package.ts:56,176                        # @grok.decorators.fileViewer({fileViewer, fileViewerCheck})
+    - code: packages/Chem/src/package.ts:2850-2853                       # Chem:checkJsonMpoProfile
+    - code: packages/MetabolicGraph/src/package.ts:79,103-108            # checks string content < 1e7 chars
+    - code: packages/Plates/src/package.ts:226                           # checkFileIsPlate(content: string): boolean
+    - code: packages/Plates/src/package.ts:120-132                       # checkExcelIsPlate(content: Uint8Array): Promise<boolean>
+  contradicts:
+    - DG-FACT-DRIFT-025                                                  # article never mentions fileViewerCheck
+  confidence: high
+
+- id: DG-FACT-076
+  kind: namespace
+  scope: file-viewers
+  value: Decorator form is `@grok.decorators.fileViewer({fileViewer: '<ext>[,<ext>…]', fileViewerCheck?: '<Pkg>:<Fn>'})` on a static `PackageFunctions` method `(file: DG.FileInfo) => DG.View | Promise<DG.View>`. `FileViewerOptions.fileViewer` is REQUIRED in the decorator form (TS type `string`, NOT optional). The wrapper signature in `package.g.ts` is `static <method>(file: DG.FileInfo): DG.View` (or `Promise<DG.View>` / `Promise<any>`).
+  derives_from:
+    - code: js-api/src/decorators/functions.ts:220-223                   # FileViewerOptions: fileViewer (required) + fileViewerCheck (optional)
+    - code: js-api/src/decorators/functions.ts:342-348                   # export function fileViewer(config?: FileViewerOptions)
+    - code: packages/EpsViewer/src/package.ts:123-125                    # @grok.decorators.fileViewer({fileViewer: 'eps'})
+    - code: packages/Plates/src/package.ts:56-66                         # decorator + fileViewerCheck
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-077
+  kind: namespace
+  scope: file-viewers
+  value: A file viewer function may be SYNCHRONOUS or ASYNCHRONOUS. Sync — return the `DG.View` immediately and chain `file.readAsBytes().then(...)` to mutate the view's DOM after the read settles (article example, EpsViewer.previewEps). Async — declare `async` and `return view` after `await file.readAsString()` (FileEditors.previewPdf, MetabolicGraph.escherFileViewer). Both reach the same end state; sync wins when the user-visible view should appear before the bytes load.
+  derives_from:
+    - article: help/develop/how-to/files/create-custom-file-viewers.md:20-31
+    - code: packages/EpsViewer/src/package.ts:124-145                    # sync: returns view, then file.readAsBytes().then(...)
+    - code: packages/Plates/src/package.ts:57-66                         # sync: returns view immediately
+    - code: packages/FileEditors/src/package.g.ts:13-15                  # async function previewPdf(...): Promise<any>
+    - code: packages/MetabolicGraph/src/package.ts:82-101                # async, awaits file.readAsString()
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-078
+  kind: namespace
+  scope: file-viewers
+  value: Inside the viewer, `DG.View.create(options?)` mints a fresh view; `options` is `string | ElementOptions | null` (CSS class name or `_options` payload). Common patterns — `DG.View.create()` (no args, default panel), `DG.View.create('d4-escher-container')` (CSS class). Mount custom DOM with `view.append(host)` (where `host` is built via `ui.div(...)`); set `view.name = file.name` so the tab caption reflects the file. The `FileInfo` input exposes `readAsString(): Promise<string>` and `readAsBytes(): Promise<Uint8Array>` for content access.
+  derives_from:
+    - article: help/develop/how-to/files/create-custom-file-viewers.md:20-31
+    - code: js-api/src/views/view.ts:243-251                             # static create(options?: string | {} | null)
+    - code: js-api/src/entities/table-info.ts:107-114                    # FileInfo.readAsString / readAsBytes
+    - code: packages/EpsViewer/src/package.ts:125-126                    # view.name = file.name; view.append(host)
+    - code: packages/MetabolicGraph/src/package.ts:83-84                 # DG.View.create('d4-escher-container'); view.name = ...
+  contradicts: []
+  confidence: high
+
+# DRIFTS for file-viewers
+
