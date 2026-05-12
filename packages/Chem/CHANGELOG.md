@@ -3,6 +3,7 @@
 ## v.next
 
 * Scaffold tree: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
+* Chem: Toxicity Risks: Make `addChemRisksColumns` idempotent — skip risk columns whose name already exists (fixes "Column named 'Mutagenicity' already exists" when MPO transform and a mutagenicity-enabled MPO profile both apply)
 
 ## 1.17.5 (2026-04-15)
 

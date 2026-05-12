@@ -2264,7 +2264,10 @@ export class PackageFunctions {
     const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
     try {
       const toxCols = await getToxicityRisksColumns(molecules, {mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects});
-      toxCols.forEach((col) => table.columns.add(col));
+      toxCols.forEach((col) => {
+        if (!table.columns.contains(col.name))
+          table.columns.add(col);
+      });
     } finally {
       pb.close();
     }
