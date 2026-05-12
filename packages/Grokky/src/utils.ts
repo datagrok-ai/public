@@ -146,6 +146,41 @@ export type AbortPointer = {
   aborted: boolean;
 }
 
+/** True for the Enter / numpad-Enter key. Falls back to `keyCode` because Dartium and
+ * Chrome ≤ 50 predate the `KeyboardEvent.key` property (it returns `undefined` there). */
+export function isEnterKey(e: KeyboardEvent): boolean {
+  return e.key === 'Enter' || e.keyCode === 13;
+}
+
+/** Copies text to the clipboard, resolving to whether it succeeded (never rejects).
+ * Falls back to `document.execCommand('copy')` when `navigator.clipboard` is unavailable —
+ * Dartium / Chrome ≤ 65 / insecure contexts. */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      console.warn('clipboard.writeText failed, falling back to execCommand', e);
+    }
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.setAttribute('readonly', '');
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) {
+    console.error('copyToClipboard failed', e);
+    return false;
+  }
+}
+
 export function dartLike<T extends any>(obj: T) {
   return {
     set: function<K extends keyof T>(key: K, value: T[K]) {
@@ -212,10 +247,14 @@ export function createStyledMarkdown(content: string): HTMLElement {
         const header = markDown.children[0];
         if (header && header.tagName?.toLowerCase() !== 'pre')
           (header as HTMLElement).style.marginRight = '16px';
-        navigator.clipboard.writeText(codeElement.textContent || '').then(() => {
+        copyToClipboard(codeElement.textContent || '').then((ok) => {
+          if (!ok) {
+            grok.shell.error('Failed to copy code to clipboard.');
+            return;
+          }
           copyButton.classList.add('d4-ai-copy-code-button-copied');
           setTimeout(() => copyButton.classList.remove('d4-ai-copy-code-button-copied'), 600);
-        }).catch(() => grok.shell.error('Failed to copy code to clipboard.'));
+        });
       }
     });
   }

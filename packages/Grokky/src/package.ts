@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+import './polyfills'; // must run before anything else — Chrome 50 / Dartium support, see polyfills.ts
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';

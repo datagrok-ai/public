@@ -7,7 +7,7 @@ import * as rxjs from 'rxjs';
 
 import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
-  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown} from '../utils';
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
 import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
@@ -200,7 +200,7 @@ export function setupSearchUI() {
     }
 
     searchInput.addEventListener('keyup', (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && searchInput.value?.trim()) {
+      if (isEnterKey(event) && searchInput.value?.trim()) {
         event.preventDefault();
         setTimeout(() => aiCombinedSearch(searchInput.value), 400); // timeout needed to allow other enter handlers to run first
       }
@@ -285,9 +285,8 @@ export async function runPromptWithLifecycle(
     session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
 
     if (await grok.ai.processPrompt(prompt)) {
-      session.session.addUiMessage(
-        'Handled by Datagrok\'s built-in handler — see the current view for the result.',
-        false);
+      // Built-in handler claimed the prompt — no AI response, just a green check next to it.
+      session.session.markHandledNatively();
       session.endSession();
       return;
     }
@@ -443,7 +442,7 @@ export async function setupTableViewAIPanelUI() {
     if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
       return;
     // setup ribbon panel icon
-    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
+    const iconFse = ui.iconFA('user-robot', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
     iconFse.style.width = iconFse.style.height = '18px';
     tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
     // setup the panel itself

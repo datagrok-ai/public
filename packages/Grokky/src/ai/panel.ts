@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMarkdown} from '../utils';
+import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMarkdown, isEnterKey, copyToClipboard} from '../utils';
 import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
@@ -58,6 +58,8 @@ export type UIMessageOptions = {
   finalResult?: string,
   /** if set, will show a confirmation dialog with the given message before adding the message */
   confirm?: {confirmResult?: boolean, message?: string},
+  /** if set on a user message, shows a small green check ("Handled natively") instead of a response block */
+  handledNatively?: boolean,
 }
 
 export interface UIMessage {
@@ -80,6 +82,8 @@ export type AIPanelFuncs<T extends MessageType = MessageType> = {
   addEngineMessage: (aiMsg: T) => void,
   /** Adds @msg to the UI without adding it to the AI message stack */
   addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => void
+  /** Marks the last user prompt as handled by Datagrok's built-in handler: shows a green check, no response block */
+  markHandledNatively: () => void,
   /**Adds confirmation section to the panel and awaits result */
   addConfirmMessage: (msg?: string) => Promise<boolean>,
   /** Shows options to the user and returns their selection */
@@ -143,6 +147,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
+  /** Index into {@link promptHistory} while cycling with Ctrl+[ / Ctrl+]; `null` means the live draft is shown. */
+  private _promptHistoryIndex: number | null = null;
+  /** The unsubmitted draft saved when the user starts cycling, restored when they cycle back past the newest entry. */
+  private _promptDraft: string = '';
 
   get sessionId(): string { return this._sessionId; }
 
@@ -171,13 +179,24 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this._skillMenu = null;
         return;
       }
-      if (event.key === 'Enter' && (!event.ctrlKey && !event.metaKey)) {
+      // Ctrl+[ / Ctrl+] cycle through this session's prompt history (keyCode fallback for Chrome ≤ 50).
+      if (event.ctrlKey && (event.key === '[' || event.keyCode === 219)) {
+        event.preventDefault();
+        this.navigatePromptHistory(-1);
+        return;
+      }
+      if (event.ctrlKey && (event.key === ']' || event.keyCode === 221)) {
+        event.preventDefault();
+        this.navigatePromptHistory(1);
+        return;
+      }
+      if (isEnterKey(event) && (!event.ctrlKey && !event.metaKey)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         this.handleRun();
       }
     });
-    this.textArea.addEventListener('input', () => this._updateSkillMenu());
+    this.textArea.addEventListener('input', () => { this._promptHistoryIndex = null; this._updateSkillMenu(); });
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
@@ -307,15 +326,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   async copyConversationToClipboard() {
-    const formattedText = this.formatConversation();
-
-    try {
-      await navigator.clipboard.writeText(formattedText);
-      return true;
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      return false;
-    }
+    return copyToClipboard(this.formatConversation());
   }
 
   toggle() {
@@ -337,20 +348,47 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected _aiMessagesAccordionPane: HTMLElement | null = null;
+  private _lastUserPromptContainer: HTMLElement | null = null;
 
-  protected ensureAccordionPane(): void {
+  /** Ensures there is an open response block for the current turn. The block holds all consecutive
+   * AI messages and exposes a hover-only minimize icon on its left that collapses it to one line. */
+  protected ensureResponseBlock(): void {
     if (this._aiMessagesAccordionPane)
       return;
-    const acord = ui.accordion();
     this._aiMessagesAccordionPane = ui.divV([], 'd4-ai-messages-accordion-pane');
-    const pane = acord.addPane('Responses', () => this._aiMessagesAccordionPane!, true, undefined, false);
-    pane.expanded = true;
-    acord.root.style.width = 'calc(100% - 35px)';
-    this.outputArea.appendChild(acord.root);
+    const minimizeIcon = ui.iconFA('window-minimize', null, 'Minimize');
+    minimizeIcon.classList.add('d4-ai-response-minimize-icon');
+    const block = ui.divH([minimizeIcon, this._aiMessagesAccordionPane], 'd4-ai-response-block');
+    let collapsed = false;
+    minimizeIcon.onclick = () => {
+      collapsed = !collapsed;
+      block.classList.toggle('d4-ai-response-block-collapsed', collapsed);
+      minimizeIcon.classList.toggle('fa-window-minimize', !collapsed);
+      minimizeIcon.classList.toggle('fa-window-maximize', collapsed);
+    };
+    ui.tooltip.bind(minimizeIcon, () => collapsed ? 'Expand' : 'Minimize');
+    this.outputArea.appendChild(block);
   }
 
   protected createStyledMarkdown(content: string): HTMLElement {
     return createStyledMarkdown(content);
+  }
+
+  private createHandledNativelyIcon(): HTMLElement {
+    const icon = ui.iconFA('check', null, 'Handled natively');
+    icon.classList.add('d4-ai-handled-natively-icon');
+    return icon;
+  }
+
+  /** Marks the most recent user prompt as handled by Datagrok's built-in handler:
+   * shows a small green check (tooltip "Handled natively") and skips the response block entirely. */
+  public markPromptHandledNatively(): void {
+    const last = this._uiMessages[this._uiMessages.length - 1];
+    if (!last?.fromUser)
+      return;
+    last.messageOptions = {...last.messageOptions, handledNatively: true};
+    if (this._lastUserPromptContainer && !this._lastUserPromptContainer.querySelector('.d4-ai-handled-natively-icon'))
+      this._lastUserPromptContainer.insertBefore(this.createHandledNativelyIcon(), this._lastUserPromptContainer.firstChild);
   }
 
   protected appendFeedbackButtons(markDown: HTMLElement, onFeedback?: (helpful: boolean) => void): void {
@@ -364,8 +402,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       handleFeedback(false);
     }, 'Not Helpful');
     const copyMsg = ui.iconFA('copy', () => {
-      navigator.clipboard.writeText(markDown.textContent || '').then(() =>
-        grok.shell.info('Message copied to clipboard'));
+      copyToClipboard(markDown.textContent || '').then((ok) =>
+        ok ? grok.shell.info('Message copied to clipboard') : grok.shell.error('Failed to copy message'));
     }, 'Copy Message');
     [copyMsg, thumbsUp, thumbsDown].forEach((el) => dartLike(el.style).set('padding', '2px').set('borderRadius', '6px'));
     function handleFeedback(helpful: boolean) {
@@ -376,7 +414,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     feedbackDiv.appendChild(copyMsg);
     feedbackDiv.appendChild(thumbsUp);
     feedbackDiv.appendChild(thumbsDown);
-    dartLike(feedbackDiv.style).set('gap', '8px').set('alignItems', 'center').set('width', '100%').set('paddingBottom', '8px').set('paddingLeft', '4px');
+    dartLike(feedbackDiv.style).set('alignItems', 'center').set('width', '100%').set('paddingBottom', '8px').set('paddingLeft', '4px');
     markDown.appendChild(feedbackDiv);
   }
 
@@ -393,11 +431,15 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     // from this point we know that message is also in the ui.
     this._uiMessages.push({fromUser: !!uiMessage.fromUser, text: uiMessage.content, title: uiMessage.title, messageOptions: uiMessage.messageOptions});
     if (uiMessage.fromUser) {
-      const userDiv = ui.div(ui.divText(uiMessage.content, 'd4-ai-user-prompt-divtext'), 'd4-ai-user-prompt-container');
+      const promptText = ui.divText(uiMessage.content, 'd4-ai-user-prompt-divtext');
+      const userDiv = ui.div(
+        uiMessage.messageOptions?.handledNatively ? [this.createHandledNativelyIcon(), promptText] : [promptText],
+        'd4-ai-user-prompt-container');
       this.outputArea.appendChild(userDiv);
+      this._lastUserPromptContainer = userDiv;
       this._aiMessagesAccordionPane = null; // reset accordion pane so that next AI message creates a new one
     } else {
-      this.ensureAccordionPane();
+      this.ensureResponseBlock();
       const markDown = this.createStyledMarkdown(uiMessage.content);
 
       if (uiMessage?.messageOptions?.finalResult && !uiMessage.fromUser) {
@@ -469,6 +511,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         addAIMessage: (aiMessage, title, content) => this.appendMessage(aiMessage, {title: title, content: content, fromUser: false}, loader),
         addEngineMessage: (aiMessage) => this.appendMessage(aiMessage, {title: '', content: '', fromUser: false, onlyAddToMessages: true}, loader),
         addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => this.appendMessage('' as any, {title: '', content: msg, fromUser: fromUser, uiOnly: true, messageOptions: messageOptions}, loader),
+        markHandledNatively: () => this.markPromptHandledNatively(),
         addUserMessage: (aiMsg, content) => this.appendMessage(aiMsg, {title: '', content: content, fromUser: true}, loader),
         addConfirmMessage: (msg?: string) => this.appendMessage('' as any, {title: '', content: '', fromUser: false, uiOnly: true, messageOptions: {confirm: {message: msg}}}, loader)!.confirmPromise,
         showInputRequest: (input: AskUserInput) => this.showInputRequest(input),
@@ -539,7 +582,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   updateStreaming(content: string, loader: HTMLElement): void {
     if (!this._streamingContainer) {
       loader.style.display = 'none';
-      this.ensureAccordionPane();
+      this.ensureResponseBlock();
       this._streamingMarkdownEl = this.createStreamingEl(content);
       this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
@@ -561,7 +604,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.renderFinalContent(content);
     const results = await executeDatagrokBlocks(content, view);
     for (const el of results) {
-      this.ensureAccordionPane();
+      this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
     }
   }
@@ -576,7 +619,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
     } else {
-      this.ensureAccordionPane();
+      this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([markDown], 'd4-ai-assistant-response-container'));
     }
 
@@ -619,7 +662,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       }));
 
       this._pendingInputResolve = doResolve;
-      this.ensureAccordionPane();
+      this.ensureResponseBlock();
       const wrapper = ui.divV([form], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(wrapper);
       this.outputArea.scrollTop = this.outputArea.scrollHeight;
@@ -650,6 +693,36 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     fireAIAbortEvent();
   }
 
+  /** Prompts the user submitted in this session, oldest first — the navigable input history. */
+  private get promptHistory(): string[] {
+    return this._uiMessages.filter((m) => m.fromUser).map((m) => m.text);
+  }
+
+  /** Replaces the input with the previous (-1) or next (+1) prompt from this session's history. */
+  private navigatePromptHistory(direction: -1 | 1): void {
+    const hist = this.promptHistory;
+    if (hist.length === 0)
+      return;
+    if (this._promptHistoryIndex === null) {
+      if (direction === 1)
+        return; // already at the live draft — nothing newer
+      this._promptDraft = this.textArea.value;
+      this._promptHistoryIndex = hist.length;
+    }
+    const next = this._promptHistoryIndex + direction;
+    if (next < 0)
+      return; // already at the oldest entry
+    if (next >= hist.length) {
+      this._promptHistoryIndex = null;
+      this.textArea.value = this._promptDraft;
+    } else {
+      this._promptHistoryIndex = next;
+      this.textArea.value = hist[next];
+    }
+    this.textArea.selectionStart = this.textArea.selectionEnd = this.textArea.value.length;
+    this._updateSkillMenu();
+  }
+
   protected handleRun() {
     if (this._pendingInputResolve)
       return;
@@ -659,6 +732,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return;
     const inputs = this.getCurrentInputs();
     this.textArea.value = '';
+    this._promptHistoryIndex = null;
     this._onRunRequest.next({
       prevMessages: this._messages,
       currentPrompt: inputs,
@@ -714,6 +788,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected handleClear() {
     this._messages = [];
     this._uiMessages = [];
+    this._promptHistoryIndex = null;
+    this._lastUserPromptContainer = null;
     this.outputArea.innerHTML = '';
     this._onClearChatRequest.next();
     this.hideContentIcons();
@@ -775,6 +851,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       // Clear and rebuild UI from messages
       this.outputArea.innerHTML = '';
       this._uiMessages = [];
+      this._promptHistoryIndex = null;
+      this._lastUserPromptContainer = null;
       conv.uiMessages.forEach((msg) => {
         this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions}); // no loader
       });
