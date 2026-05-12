@@ -3415,3 +3415,110 @@
   contradicts: []
   confidence: high
 
+- id: DG-FACT-284
+  kind: namespace
+  scope: add-package-tests
+  value: The canonical test-framework import is `@datagrok-libraries/test/src/test` — 221 of 222 active test files under `packages/*/src/tests/*.ts` use this path. The exports are `category`, `test`, `expect`, `expectFloat`, `expectTable`, `expectObject`, `expectArray`, `before`, `after`, `delay`, `runTests`, `TestContext`, `tests`, `initAutoTests`, `testEvent`, `testEventAsync`, plus the `TestOptions` / `CategoryOptions` / `TestResult` interfaces. The `@datagrok-libraries/utils/src/test` module exists with identical content (the file was duplicated, not symlinked) but is the legacy path — three packages still use it (EpsViewer, Flow, PreclinicalCase).
+  derives_from:
+    - code: libraries/test/src/test.ts:205-304            # canonical exports
+    - code: packages/Chem/src/tests/chemprop-tests.ts:4   # canonical import
+    - code: tools/package-template/src/package-test.ts:1  # template uses test/
+  contradicts:
+    - DG-FACT-DRIFT-APT-001  # article still teaches utils/
+  confidence: high
+
+- id: DG-FACT-285
+  kind: naming
+  scope: add-package-tests
+  value: CLI scaffolding has two entry points — (a) `grok create <name> --test` invokes `tools/bin/commands/create.js` which copies `tools/package-template/` (correctly depends on `@datagrok-libraries/test ^1.1.0` in package.json); (b) `grok add tests` (run from inside an existing package dir) invokes `tools/bin/commands/add.js` case `'tests'` — appends a `test:` entry to `webpack.config.js`, sets `package.json` script `"test": "grok test"`, writes `src/package-test.ts` from `package-template/src/package-test.ts`, creates `src/tests/test-examples.ts` from `entity-template/test.ts`, and prepends `import './tests/test-examples';` to `package-test.ts`.
+  derives_from:
+    - article: help/develop/how-to/tests/add-package-tests.md:14-26
+    - code: tools/bin/commands/create.js:80-94,189
+    - code: tools/bin/commands/add.js:244-277
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-286
+  kind: enum
+  scope: add-package-tests
+  value: `TestOptions` interface fields (third arg to `test()`) — `timeout?: number` (default `30000` ms = `STANDART_TIMEOUT`, sic — the constant is misspelled in source), `benchmarkWarnTimeout?: number`, `benchmarkTimeout?: number` (default 10_800_000 ms = 3 h, applied when `DG.Test.isInBenchmark` is true), `unhandledExceptionTimeout?: number`, `skipReason?: string`, `isAggregated?: boolean`, `benchmark?: boolean`, `stressTest?: boolean`, `owner?: string`, `tags?: string[]`. `CategoryOptions` (third arg to `category()`) — `clear?` (default true), `timeout?`, `benchmarks?`, `stressTests?`, `owner?`.
+  derives_from:
+    - code: libraries/test/src/test.ts:36-47,68-74,10-11
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-287
+  kind: namespace
+  scope: add-package-tests
+  value: `expect(actual, expected = true, error?)` uses STRICT inequality (`!==`) and throws `Error('${error}Expected "${expected}", got "${actual}"')` on mismatch. Article example `expect(1, 1)` passes; `expect(1, 11)` fails. The default `expected = true` means `expect(someBool)` asserts truthy via `someBool !== true`, NOT a JS-style truthiness check (so `expect(1)` fails because `1 !== true`). Use `expectFloat(actual, expected, tolerance = 0.001, error?)` for floats — tolerance compare via `Math.abs(actual - expected) < tolerance`. `expectTable(actual, expected)` walks columns row-by-row (`TYPE.FLOAT` → `expectFloat` with tol `0.0001`; `TYPE.DATE_TIME` → `isSame`; otherwise `expect`). `expectObject` / `expectArray` recurse and route float-valued leaves through `expectFloat`.
+  derives_from:
+    - code: libraries/test/src/test.ts:214-291
+    - article: help/develop/how-to/tests/add-package-tests.md:42-50,67-75
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-288
+  kind: naming
+  scope: add-package-tests
+  value: `skipReason: string` on `TestOptions` propagates into the `Test` record's `options.skipReason`; the runner reports the test as skipped (not failed) and surfaces the reason string in the result row. Convention in production tests — Jira issue key (`'GROK-19084'` in Chem/chemprop-tests.ts:31; `'GROK-18029'` in Chem/menu-tests-script-based.ts:38) OR free-form short string (`'Fails in docker'` in Bio/msa-tests.ts:91; `'depends on 1.18'` in Bio/WebLogo-project-tests.ts:46; `'Fails'` in Bio/activity-cliffs-tests.ts:55). Article suggests "Jira issue key or GitHub issue number" — only Jira-style keys are observed in-tree.
+  derives_from:
+    - article: help/develop/how-to/tests/add-package-tests.md:67-75
+    - code: libraries/test/src/test.ts:36-47,341
+    - code: packages/Chem/src/tests/chemprop-tests.ts:31,39
+    - code: packages/Bio/src/tests/msa-tests.ts:91-95
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-289
+  kind: naming
+  scope: add-package-tests
+  value: Test-file directory convention — `<package>/src/tests/<name>-tests.ts` (one file per category, usually). Each file must be `import`-ed (side-effect, no symbol) from `src/package-test.ts` so that the `category(...)` call at module-load time registers tests into the shared `tests` registry exported by the test library. Without the import, `runTests` finds zero tests for that category. Chem's `package-test.ts` lists 30+ such side-effect imports.
+  derives_from:
+    - article: help/develop/how-to/tests/add-package-tests.md:29-55
+    - code: packages/Chem/src/package-test.ts:4-30
+    - code: libraries/test/src/test.ts:18-20,205-211,294-303
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-290
+  kind: namespace
+  scope: add-package-tests
+  value: `src/package-test.ts` is the platform-callable test entry point — it must export `_package = new DG.Package()` and `tests`, and declare a `//name: test //input: string category {optional:true} //input: string test {optional:true} //input: object testContext {optional:true} //output: dataframe result` function that calls `runTests({ category, test, testContext })` and converts the resulting `TestResult[]` to a DataFrame via `DG.DataFrame.fromObjects(data)`. It must also declare a `//name: initAutoTests` function that calls `initAutoTests(_package, _package.getModule('package-test.js'))`. Both functions are codegen-readable annotations the platform invokes.
+  derives_from:
+    - code: tools/package-template/src/package-test.ts:1-21
+    - code: libraries/test/src/test.ts:325-330,433-465
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-291
+  kind: namespace
+  scope: add-package-tests
+  value: Function-level `//test:` annotation — one line per assertion, value is a Grok-script expression evaluated via `grok.functions.eval(addNamespace(<expr>, f))`. Result must be boolean — `false` throws `'Failed: <expr>, expected true, got <res>'`. Multiple `//test:` lines on the same function create numbered tests (`${funcName} 1`, `${funcName} 2`, …). The expression is parsed in `initAutoTests` from `f.options['test']` (typed in the JS-API as `test?: string` on `FunctionOptions` indirectly, exposed as `string[]` on `Function.options` at runtime).
+  derives_from:
+    - article: help/develop/how-to/tests/add-package-tests.md:78-95
+    - code: libraries/test/src/test.ts:350-380
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-292
+  kind: enum
+  scope: add-package-tests
+  value: `//test:` line supports inline sub-options after the expression, comma-separated — `skip: <reason>`, `wait: <ms>`, `cat: <category>`, `timeout: <ms>`. Parsed by the regex `/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)|timeout:\s*(\d+)/g` in `initAutoTests`. Tests with no `cat:` register under `'Auto Tests'`; with `cat:` they register under that custom category. `wait: N` inserts `await delay(N)` AFTER the expression evaluates. `skip:` maps to `TestOptions.skipReason`. In demo functions (separate path), the `//test:` line takes the `demo` runner shape `demoFunc() //wait: N, timeout: M` rather than a boolean expression — see `packages/BiostructureViewer/src/package.g.ts:274,283`.
+  derives_from:
+    - code: libraries/test/src/test.ts:348,353-368
+    - code: packages/BiostructureViewer/src/package.g.ts:274,283
+    - code: packages/Curves/src/package.g.ts:28
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-293
+  kind: enum
+  scope: add-package-tests
+  value: `//test:` annotation parameter-type support matrix (article ground truth, schema not re-derivable from code — the matrix is article-canonical) — `int` ✓ (`test: f(123) == 246`), `double` ✓ (`test: 10 < f(12.5) && f(12.5) < 20`), `bool` ✓ (`test: f(true)`, `test: returnsBool()`), `string` ✓ (use `""` literals: `test: f("a") == "b"`), `datetime` ✓ via `Date(YYYY, MM, DD)` constructor and `DateDiff(DateTime(YYYY, MM, DD, h, m, s, ms), "<iso>")` (returns ms — `DateDiff(DateTime(2020,1,1,3,0,0,0), "2020-01-01")` = 10800000). For `dataframe`, `column_list`, `column`, `file`, `blob` — testable only via a helper function call that constructs the input (e.g., `f(getDataframe())`, `f(getDataframe(), ["c1","c2"])`).
+  derives_from:
+    - article: help/develop/how-to/tests/add-package-tests.md:96-112
+  contradicts: []
+  confidence: medium
+
+# DRIFT entries — article vs. code disagreements (add-package-tests)
+
