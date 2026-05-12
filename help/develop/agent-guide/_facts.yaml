@@ -1137,3 +1137,194 @@
   confidence: medium
 ```
 
+- id: DG-FACT-340
+  kind: enum
+  scope: cache
+  value: The function-level `meta.cache` annotation accepts EXACTLY four values, validated by the CLI checker (`tools/bin/utils/utils.ts:191`) — `'all'`, `'server'`, `'client'`, `'true'`. As of the 2026-05 article update, all four are documented (`cache-function-results.md:40-44`) with `true` explicitly labeled "legacy synonym for `all`; prefer the explicit values above in new code." The legacy `true` value is still accepted by the validator and is in active production use (e.g. `packages/ApiSamples/scripts/functions/caching-results.js:16,22` for dynamically-registered functions and `packages/Chembl/queries/activityDetailsForTarget.sql:7` `--meta.cache: true`). Skill output should prefer the three explicit forms; treat `true` as the legacy synonym.
+  derives_from:
+    - article: help/develop/how-to/functions/cache-function-results.md:40-43
+    - code: tools/bin/utils/utils.ts:191
+    - code: tools/bin/commands/check.ts:448-449
+    - code: packages/ApiSamples/scripts/functions/caching-results.js:16,22
+    - code: packages/Chembl/queries/activityDetailsForTarget.sql:7
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-341
+  kind: threshold
+  scope: cache
+  value: Client-side cache is backed by IndexedDB and has THREE hard limits (article-asserted; not surfaced as JS-API constants): (a) per-function total size ≤ 100 MB across all input-parameter variants of one function, (b) total records across all cached functions ≤ 100,000, (c) cacheable output parameter types restricted to scalar (int / float / string), `dataframe`, `graphics`, and `datetime` (any other output type must use server-side cache). Server-side cache has NO documented limits on size or parameter type. Both caches can be active simultaneously and stack (a client-cache miss falls through to server cache).
+  derives_from:
+    - article: help/develop/how-to/functions/cache-function-results.md:7-13,23-26
+  contradicts: []
+  confidence: medium  # numeric thresholds enforced by Dart runtime; no JS-API constants to grep
+
+- id: DG-FACT-342
+  kind: naming
+  scope: cache
+  value: The `meta.cache.invalidateOn` header (and its decorator-meta camelCase alias `cacheInvalidateOn`) accepts a standard 5-field unix cron expression (minute / hour / day-of-month / month / day-of-week) — same syntax as `crontab`. Validated by `utils.isValidCron(...)` in the CLI checker (`tools/bin/commands/check.ts:450-451`). If omitted, the cache never auto-invalidates and the entry only ages out under the size/record-count limits. Production examples: `0 * * * *` (hourly — Chem `synthonSearchFunc`, BioNeMo, CddVaultLink legacy), `0 0 * * *` (daily — CddVaultLink production), `0 0 1 * *` (monthly — Reinvent4, MolTrack). USING `meta.invalidateOn` WITHOUT the `cache.` segment IS A VALIDATOR ERROR (`check.ts:446-447`: "Can't use invalidateOn without cache") — the only correct form is `meta.cache.invalidateOn`.
+  derives_from:
+    - article: help/develop/how-to/functions/cache-function-results.md:45,53
+    - code: js-api/src/decorators/functions.ts:119-120,179-180
+    - code: tools/bin/commands/check.ts:446-447,450-451,756-762
+    - code: packages/Chem/src/package.g.ts:719-720
+    - code: packages/Reinvent4/src/package.g.ts:25-26
+    - code: packages/MolTrack/src/package.ts:159
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-343
+  kind: namespace
+  scope: cache
+  value: The `meta.cache` / `meta.cache.invalidateOn` header annotations have THREE equivalent emission paths into a function's metadata. (1) Script-header form — comment line `//meta.cache: client` / `//meta.cache.invalidateOn: 0 * * * *` directly in the script body (only documented form in the article; works for `.py`, `.js`, `.sql`, etc.). (2) Decorator-`meta` form — `@grok.decorators.func({meta: {cache: 'client', cacheInvalidateOn: '0 * * * *'}})` (e.g. Chem `synthonSearchFunc`, `packages/Chem/src/package.ts:1669-1675`). (3) Decorator-top-level form — `@grok.decorators.func({cache: 'all', cacheInvalidateOn: '0 0 1 * *'})` WITHOUT the `meta:` wrapper (e.g. MolTrack `fetchCompoundProperties`, `packages/MolTrack/src/package.ts:155-161`). Codegen routes (2) to `//meta.cache: ...` and (3) to `//cache: ...` in `package.g.ts` — both forms are accepted by the runtime. Both `cacheInvalidateOn` (camelCase, canonical) and `['cache.invalidateOn']` (string-keyed dotted) are declared on `Meta` AND `FunctionOptions` (`js-api/src/decorators/functions.ts:118-120,178-180`).
+  derives_from:
+    - article: help/develop/how-to/functions/cache-function-results.md:40-58
+    - code: js-api/src/decorators/functions.ts:117-120,168-187
+    - code: packages/Chem/src/package.ts:1669-1675
+    - code: packages/Chem/src/package.g.ts:719-720
+    - code: packages/MolTrack/src/package.ts:155-161
+    - code: packages/MolTrack/src/package.g.ts:31-46
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-344
+  kind: namespace
+  scope: cache
+  value: Connection-level caching is set in the `parameters` block of a `connections/<name>.json` file via three keys defined on `DataConnectionCacheProperties` (`js-api/src/entities/types.ts:33-40`) — `cacheResults?: boolean`, `cacheSchema?: boolean`, `cacheInvalidateSchedule?: string` (cron). The article example (`cache-function-results.md:69-82`) shows only `cacheResults` + `cacheSchema` and never demonstrates `cacheInvalidateSchedule` even though the UI's "Invalidate On" field maps to it (`packages/DBTests/connections/cached-postgresql-test.json:9-10` is the canonical production reference). Setting `cacheResults: true` activates BOTH client and server side caches for every query under that connection (article asserts; not toggleable per-side at the connection level).
+  derives_from:
+    - article: help/develop/how-to/functions/cache-function-results.md:60-82
+    - code: js-api/src/entities/types.ts:33-40
+    - code: packages/DBTests/connections/cached-postgresql-test.json:5-11
+    - code: packages/Chembl/connections/chembl.json:1-12
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-345
+  kind: namespace
+  scope: cache
+  value: Client-side cache exposes a runtime control surface via `grok.functions.clientCache` (`js-api/src/functions.ts:134`) — an instance of `ClientCache` (`functions.ts:193-212`). Methods: `clear(metaId?: string): Promise<void>` (drop all entries, or just entries for one function id), `start(): Promise<void>` / `stop(): void` (toggle the IndexedDB-backed service — same as the Settings UI "Client-side cache" switch), `cleanup(): Promise<void>` (remove expired records — runtime does this automatically as needed), `getRecordCount(): Promise<number>`, `isRunning: boolean` (getter). The article documents only the UI path (Settings > Cache > "Clear client cache" button) and never names this API surface — useful escape hatch for skills that want to invalidate after a known event.
+  derives_from:
+    - article: help/develop/how-to/functions/cache-function-results.md:15-21
+    - code: js-api/src/functions.ts:134,193-212
+    - code: packages/ApiSamples/scripts/functions/caching-results.js:7
+  contradicts: []
+  confidence: high
+
+# DRIFT entries — article vs. code disagreements (cache)
+
+- id: DG-FACT-427
+  kind: pattern
+  scope: cache
+  value: |
+    The JSDoc-style header form (`//name:`, `//meta.cache: <mode>`,
+    `//meta.cache.invalidateOn: <cron>` placed as line comments directly
+    above the function) is the canonical, lowest-friction way to annotate
+    a TypeScript function in `src/package.ts` for caching — `grok api`
+    parses these comment headers and emits the same `//meta.cache:` lines
+    into `src/package.g.ts`. RevvitySignalsLink uses this form on every
+    cached function (`getUsers`, `getLibraries`, `getTerms`, `getTags`,
+    `queryStructureById`) at `packages/RevvitySignalsLink/src/package.ts:199-200,215-216,245-246,289-290,324-325`.
+    The `@grok.decorators.func({meta: {cache, cacheInvalidateOn}})` form
+    (DG-FACT-343) is interchangeable but heavier — prefer the header form
+    when adding cache to an existing TS function with no other decorator
+    metadata. The header form is what discovery-by-fingerprint expects to
+    see in skill bodies that teach TS caching (otherwise a writer who
+    omits this code block will produce a skill that builds cleanly but
+    fails the fingerprint check when Claude naturally reaches for the
+    minimal header form).
+  derives_from:
+    - code: packages/RevvitySignalsLink/src/package.ts:198-211            # getUsers — header-form with daily invalidateOn
+    - code: packages/RevvitySignalsLink/src/package.ts:213-231            # getLibraries — same pattern, neighboring function
+    - code: packages/RevvitySignalsLink/src/package.ts:243-260            # getTerms — same pattern
+    - code: tools/bin/utils/utils.ts:191                                  # validator accepts //meta.cache: <mode>
+    - runtime: verify-e2e/cache-function-results                          # round 1 discovery failure: Claude wrote header form, skill body taught only decorator form
+  contradicts: []
+  confidence: high
+```
+
+### DRIFT findings (article vs. code) — db-in-plugin
+
+```yaml
+- id: DG-FACT-DRIFT-DBPLUGIN-001
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article says "compounds is the name of the PostgreSQL database"
+    (`db-in-plugin.md:56`). This is terminologically wrong — `<Name>` is
+    a Postgres SCHEMA inside the platform's single shared database, not
+    a standalone Postgres database. The platform's metadata Postgres has
+    ONE actual database; every plugin DB lives there as a schema. The
+    article's own SQL example proves it — `create table compounds.list`
+    uses schema-qualified table notation, which only makes sense if
+    `compounds` is a schema. Skills must use "schema" wording to avoid
+    confusing readers familiar with Postgres terminology.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:48,56
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:2
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-002
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article's worked example (`db-in-plugin.md:47-54`) ends with a
+    single-table GRANT — `GRANT ALL ON TABLE compounds.list to :LOGIN;`
+    — and no schema/sequence grants. This works ONLY for that one
+    hand-rolled `int primary key` table. Production canonical (FACT-423)
+    is schema-wide:
+      GRANT ALL PRIVILEGES ON ALL TABLES   IN SCHEMA <name> TO :LOGIN;
+      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA <name> TO :LOGIN;
+    The single-table form silently fails to cover SERIAL-induced
+    sequences (which any `id SERIAL PRIMARY KEY` table needs) and
+    leaves future tables in the same schema without grants. Skills
+    must emit the schema-wide form even for the smallest example.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:48-54
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:18-20
+    - code: packages/Plates/databases/plts/0000_init.sql:188-191
+    - code: packages/MolTrack/databases/moltrack/0000.sql:277-279
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-003
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article's worked example assigns IDs as `(floor(random() * 1000 +
+    1)::int, @smiles)` (`db-in-plugin.md:64`). This collides with
+    birthday-paradox probability after ~37 inserts (sqrt(1000)), and is
+    guaranteed to collide on the PRIMARY KEY past ~1000 rows. Production
+    canonical is `id SERIAL PRIMARY KEY` (every observed example —
+    HitTriage, Plates, MolTrack, NodeJSDemo, Biologics). The article's
+    pattern is a self-defeating demo; skills must NOT propagate it.
+    SERIAL requires the sequences GRANT (FACT-423), which is the
+    second-order reason DRIFT-002 above matters.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:47-64
+    - code: packages/HitTriage/databases/hitdesign/0001_dict.sql:3
+    - code: packages/Plates/databases/plts/0000_init.sql:5,13,38
+    - code: packages/NodeJSDemo/databases/todo/000_init.sql:2
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-004
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article does not document what happens if an already-applied
+    migration file is edited or renamed post-release — the platform
+    tracks applied migrations by filename, so editing a published file
+    produces silent drift (publisher sees the new SQL, other users keep
+    the old applied state). Article also omits `:LOGIN` token semantics
+    (substitution at deploy) and the `CURRENT_USER` vs `:LOGIN`
+    distinction, even though every production migration uses both.
+    Skills must teach both points explicitly because the article's
+    example happens to work without them.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md (full)
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:18-20
+  contradicts: []
+  confidence: medium
+```
+
