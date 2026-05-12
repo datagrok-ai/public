@@ -1,191 +1,199 @@
 ---
 name: db-in-plugin
-description: Add a custom Postgres database to a Datagrok package using the platform-managed instance
+version: 0.1.0
+description: |
+  Give a Datagrok package its own persistent SQL tables that live in the
+  platform's shared Postgres instance, isolated by schema. For plugin
+  authors who need a small CRUD backend for user-generated data
+  (annotations, locks, lookup dictionaries) without standing up a
+  separate database server. Produces a `databases/<name>/*.sql`
+  migration directory and a `queries/*.sql` file that reads/writes
+  through the auto-registered `<Pkg>:<name>` connection.
+  Use when asked to "persist user annotations server-side", "add a
+  small CRUD store to my package", or "give my plugin its own SQL
+  tables without managing a server".
+triggers:
+  - persist annotations server-side
+  - small crud backend for a package
+  - package-owned sql tables
+  - server-side storage for user-generated rows
+  - shared sql tables for users
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+harness-authored: true
 ---
 
 # db-in-plugin
 
 ## When to use
 
-Your package needs persistent server-side storage and an empty Postgres
-schema is enough — CRUD app, lookup tables, app state. Triggers: "give my
-plugin its own DB", "store records that survive page reload", "build a
-compound registry / lock table / dictionary inside Datagrok". For a
-non-Postgres engine, a Postgres extension RDS doesn't ship, or seeded data
-baked into an image, use `db-in-docker` instead (knowledge `DG-FACT-052`).
+Your package needs a place to put rows that survive page reloads and
+are visible to every authorized user — a notes table, a lock table, a
+seed dictionary — but you don't want to ship a sidecar database
+container. The platform hosts your tables as a Postgres schema in its
+own metadata DB and auto-registers the connection (knowledge
+`DG-FACT-419`, `DG-FACT-420`). For an own-engine/own-extensions case,
+use `db-in-docker` instead.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`). Paths below are relative to
-  the package root.
-- Knowledge of SQL DDL — every file under `databases/<Name>/` is plain
-  Postgres SQL the platform applies in lexicographical order.
-- Familiarity with package query files (`queries/*.sql`) — see the
-  `access-data` skill (knowledge `DG-FACT-035`, `DG-FACT-036`).
-- `grok publish ... --release` access for the target Datagrok instance —
-  dev publishes don't propagate migrations to other users (knowledge
-  `DG-FACT-055`).
+- A package scaffold (`grok create <PackageName>`). All paths below
+  are relative to the package root.
+- A Datagrok server you can publish to with `--release` (debug
+  publishes do NOT apply migrations — knowledge `DG-FACT-424`).
+- Query-authoring conventions from `access-data` — this skill consumes
+  the tables via `grok.data.query(...)` (knowledge `DG-FACT-425`).
 
 ## Steps
 
-1. **Create the database directory.**
-   The directory name `<Name>` becomes BOTH the connection name AND the
-   Postgres schema name (knowledge `DG-FACT-051`). Use lowercase to match
-   every canonical package (`hitdesign`, `plts`, `moltrack`, `biologics`).
-   No `connections/<name>.json` file is needed — the platform
-   auto-registers the connection at deploy (knowledge `DG-FACT-050`).
+1. **Pick a schema name and create the directory.**
+   The directory name becomes the Postgres schema, the connection
+   (`<Pkg>:<name>`), and the namespace prefix in query headers
+   (knowledge `DG-FACT-419`). Use a short lowercase identifier — no
+   hyphens, no mixed case (production: `hitdesign`, `plts`, `todo`).
    ```bash
-   mkdir -p databases/compounds
+   mkdir -p packages/<PackageName>/databases/<name>
    ```
-   Expected: `databases/compounds/` directory at the package root.
+   Expected: an empty directory. No JSON file is required — the
+   platform scans `databases/` on release.
 
-2. **Author the initial migration `0000_init.sql`.**
-   Always namespace into a schema named after the directory — never use
-   `public`. The plugin DB lives in the SAME Postgres instance as
-   Datagrok's metadata and other plugins; unprefixed objects collide
-   (knowledge `DG-FACT-052`, drift `DG-FACT-DRIFT-019`).
+2. **Write the initial migration.**
+   Create `0000_init.sql`. Use a 4-digit zero-padded prefix; mixing
+   widths inside one directory sorts wrong (knowledge `DG-FACT-421`).
+   Use `id SERIAL PRIMARY KEY` — the article's `floor(random()*1000)`
+   pattern collides after ~37 rows (drift `DG-FACT-DRIFT-DBPLUGIN-003`).
    ```sql
-   CREATE SCHEMA IF NOT EXISTS compounds;
-
-   CREATE TABLE compounds.list (
+   CREATE TABLE <name>.notes (
        id SERIAL PRIMARY KEY,
-       smiles VARCHAR(512) NOT NULL,
-       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+       author TEXT NOT NULL,
+       body TEXT NOT NULL,
+       created_at TIMESTAMPTZ DEFAULT NOW()
    );
 
-   GRANT ALL PRIVILEGES ON SCHEMA compounds TO CURRENT_USER;
-   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA compounds TO :LOGIN;
-   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA compounds TO :LOGIN;
+   GRANT ALL PRIVILEGES ON SCHEMA <name> TO CURRENT_USER;
+   GRANT ALL PRIVILEGES ON ALL TABLES   IN SCHEMA <name> TO :LOGIN;
+   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA <name> TO :LOGIN;
    ```
-   Expected: `databases/compounds/0000_init.sql` exists. The `:LOGIN`
-   placeholder is mandatory — Datagrok substitutes the auto-issued
-   Postgres role at apply-time; without these GRANTs queries get
-   `permission denied` at runtime (knowledge `DG-FACT-056`, drift
-   `DG-FACT-DRIFT-017`).
+   Expected: a single file at
+   `packages/<PackageName>/databases/<name>/0000_init.sql`. The
+   `:LOGIN` token is substituted at deploy time by the runtime user;
+   the schema-wide GRANT (not single-table) covers SERIAL sequences
+   and future tables in the same migration directory (knowledge
+   `DG-FACT-423`, drift `DG-FACT-DRIFT-DBPLUGIN-002`).
 
-3. **Add forward-only migrations as the schema evolves.**
-   Use a 4-digit zero-padded prefix + underscore + descriptive name. Files
-   apply in lexicographical filename order — `0000_init.sql` before
-   `0001_add_optional_column.sql` (knowledge `DG-FACT-054`). Migrations
-   are forward-only: ADD COLUMN works; DROP COLUMN, ALTER TYPE that loses
-   data, or DROP TABLE break previously-deployed instances. There is NO
-   rollback (knowledge `DG-FACT-053`).
+3. **Write a query against the new tables.**
+   Queries live under `queries/`, NOT `databases/`. Reference the
+   connection as `<PackageName>:<name>` — the platform auto-registers
+   it at install time (knowledge `DG-FACT-425`).
    ```sql
-   -- databases/compounds/0001_add_supplier.sql
-   ALTER TABLE compounds.list
-       ADD COLUMN IF NOT EXISTS supplier VARCHAR(255);
-   ```
-   Expected: filename sorts AFTER `0000_init.sql`; new column visible
-   after the next `--release` publish.
-
-4. **Author queries against the connection.**
-   Place SQL query files under `queries/`. Use the fully-qualified
-   `--connection: <Package>:<Name>` grammar — capitals in `<Package>`
-   match `package.json`, `<Name>` matches the directory name (knowledge
-   `DG-FACT-057`). The article tutorial uses the looser `--connection:
-   Compounds` short form, but every canonical package
-   (`HitTriage:hitdesign`, `Plates:plts`) uses the namespaced form (drift
-   `DG-FACT-DRIFT-018`).
-   ```sql
-   --name: insertCompound
-   --connection: CompoundRegistrator:compounds
-   --input: string smiles
-   INSERT INTO compounds.list (smiles) VALUES (@smiles)
-   RETURNING id, smiles;
+   --name: insertNote
+   --connection: <PackageName>:<name>
+   --input: string author
+   --input: string body
+   INSERT INTO <name>.notes (author, body)
+   VALUES (@author, @body)
+   RETURNING id;
    --end
 
-   --name: getCompounds
-   --connection: CompoundRegistrator:compounds
-   SELECT id, smiles, created_at FROM compounds.list ORDER BY id DESC;
+   --name: getNotes
+   --connection: <PackageName>:<name>
+   SELECT id, author, body, created_at FROM <name>.notes
+   ORDER BY created_at DESC;
    --end
    ```
-   Expected: `queries/compounds.sql` exists; query namespace shows up
-   under `Functions → Queries → CompoundRegistrator` after publish.
+   Expected: a file under `packages/<PackageName>/queries/notes.sql`.
+   `--end` is required between queries in a multi-query file. If a
+   query needs a sibling `.js` post-process or `.layout`, put it in
+   its own one-query file (knowledge `DG-FACT-403`).
 
-5. **Call the queries from package code.**
-   Use `grok.data.query('<Package>:<QueryName>', params)`. Returns a
-   `Promise<DataFrame>` — see `access-data` knowledge `DG-FACT-022`.
+4. **Call the queries from the package.**
+   The same dispatcher as any other Datagrok query — there is no
+   plugin-DB-specific JS API (knowledge `DG-FACT-425`).
    ```typescript
    import * as grok from 'datagrok-api/grok';
-   import * as ui from 'datagrok-api/ui';
 
-   const smilesInput = ui.input.molecule('Molecule');
-   const addButton = ui.button('Add Compound', async () => {
-     await grok.data.query(
-       `${_package.name}:insertCompound`,
-       {smiles: smilesInput.value!},
-     );
-     grok.shell.info('Compound added.');
-     const df = await grok.data.query(`${_package.name}:getCompounds`);
-     grok.shell.addTableView(df);
-   });
+   const id = await grok.data.query<number>(
+     `${_package.name}:insertNote`,
+     {author: grok.shell.user.login, body: 'hello'},
+   );
+   const df = await grok.data.query(`${_package.name}:getNotes`);
+   grok.shell.addTableView(df);
    ```
-   Expected: clicking the button inserts a row and re-renders the table
-   view with the new entry.
+   Expected: `insertNote` returns the new row's `id`; `getNotes` opens
+   a TableView showing all rows.
 
-6. **Publish in `--release` mode to apply the migration.**
-   Each new migration requires a release publish to propagate to other
-   users on the shared server (knowledge `DG-FACT-055`). Dev publishes
-   only update your own session.
+5. **Release-publish to apply migrations.**
+   Debug publishes do not run migrations — only `--release` does
+   (knowledge `DG-FACT-424`). Migrations are applied in lexicographic
+   filename order; the platform tracks applied files by NAME, not
+   content (knowledge `DG-FACT-421`, drift `DG-FACT-DRIFT-DBPLUGIN-004`).
    ```bash
-   webpack
-   grok publish <host> --release
+   cd packages/<PackageName>
+   grok publish <server> --release
    ```
-   Expected: publish exits `0`. The connection appears under **Browse →
-   Databases → CompoundRegistrator:compounds** with the new column
-   visible in the schema browser.
+   Expected: the build succeeds and the server log shows the
+   migration was applied. The new connection appears under
+   `Browse > Databases > <PackageName>:<name>`.
+
+6. **Add a forward-only follow-up migration.**
+   Bump the prefix; only additive changes are safe (knowledge
+   `DG-FACT-422`). Never edit or rename a published migration — the
+   platform sees the filename as already-applied and skips it, so the
+   new SQL never reaches existing installs (drift
+   `DG-FACT-DRIFT-DBPLUGIN-004`).
+   ```sql
+   -- 0001_add_tags.sql
+   ALTER TABLE <name>.notes ADD COLUMN IF NOT EXISTS tags TEXT[];
+   ```
+   Expected: a new file `databases/<name>/0001_add_tags.sql`. Re-run
+   `grok publish <server> --release` to roll it out.
 
 ## Common failure modes
 
-- **`permission denied for table compounds.list` at query time.** The
-  migration created the table but never granted to `:LOGIN`. The
-  platform-issued login is a different role from the schema owner
-  (knowledge `DG-FACT-056`, drift `DG-FACT-DRIFT-017`). Fix: append
-  `GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA <name> TO :LOGIN;` (and
-  the same for `ALL SEQUENCES`) at the end of the migration that creates
-  them. Mirror the pattern from
-  `packages/HitTriage/databases/hitdesign/0000_init.sql:18-20`.
-- **Migration silently doesn't apply.** Filename prefix doesn't sort
-  after the previous one, or `--release` was skipped (knowledge
-  `DG-FACT-054`, `DG-FACT-055`). Fix: re-check lexicographical order
-  (`ls databases/<name>/` should print files in apply order); republish
-  with `--release`.
-- **Migration breaks existing deployments.** Used `DROP COLUMN`, `ALTER
-  TYPE` that loses data, or `DROP TABLE` — the platform has no rollback
-  and rejects backwards-incompatible changes (knowledge `DG-FACT-053`).
-  Fix: write a forward-compatible migration (add a new column, dual-write
-  during transition, deprecate the old column without dropping it).
-- **Query 404s with `connection not found`.** `--connection` value
-  doesn't match `<Package>:<directoryName>` (knowledge `DG-FACT-057`,
-  drift `DG-FACT-DRIFT-018`). Fix: use the fully-qualified form —
-  `--connection: CompoundRegistrator:compounds`, not `--connection:
-  Compounds`.
-- **Schema collision with another plugin or platform metadata.** Tables
-  created in `public` instead of a namespaced schema (drift
-  `DG-FACT-DRIFT-019`). Fix: prefix every DDL object with `<name>.` and
-  add `CREATE SCHEMA IF NOT EXISTS <name>;` at the top of `0000_init.sql`.
+- **`permission denied for relation <name>.<table>`** at first query.
+  The migration ran as the install user but never granted access to
+  the runtime user. Fix: end every migration with the schema-wide
+  `GRANT ... TO :LOGIN` lines from step 2 — the article's single-table
+  `GRANT ALL ON TABLE ...` form silently misses sequences and future
+  tables (drift `DG-FACT-DRIFT-DBPLUGIN-002`).
+- **`duplicate key value violates unique constraint` on the primary
+  key.** You followed the article's `floor(random()*1000)::int` pattern;
+  it collides after ~37 inserts. Fix: use `id SERIAL PRIMARY KEY`
+  (drift `DG-FACT-DRIFT-DBPLUGIN-003`).
+- **Edited an already-published migration; the change isn't visible
+  on installed clients.** The platform tracks applied migrations by
+  filename. Fix: revert the edit, add a new file with the next prefix
+  (drift `DG-FACT-DRIFT-DBPLUGIN-004`).
+- **`grok publish` succeeded but the migration didn't run.** You
+  published without `--release` — debug mode deploys per-user and
+  skips migrations. Fix: republish with `--release` (knowledge
+  `DG-FACT-424`).
+- **Filenames sort wrong (`10_x.sql` before `2_x.sql`).** Mixed prefix
+  widths. Fix: zero-pad consistently (`0010_x.sql`, `0002_x.sql`) —
+  knowledge `DG-FACT-421`.
 
 ## Verification
 
-- `ls databases/<name>/` lists all migrations in apply order.
-- `grok publish <host> --release` exits `0`.
-- **Browse → Databases** lists `<Package>:<name>`; clicking it opens the
-  schema browser and the table you just created is visible.
-- A read query (`grok.data.query('<Package>:getCompounds')`) returns a
-  `DataFrame` without permission errors.
-- A write query (`grok.data.query('<Package>:insertCompound', {...})`)
-  returns the inserted row's `id` and a follow-up read sees the new row.
+- After step 5, in the Datagrok UI open `Browse > Databases` and
+  confirm `<PackageName>:<name>` appears with the expected schema.
+- After step 4, run `await grok.data.query('<PackageName>:getNotes')`
+  in the console — a non-empty DataFrame returns once `insertNote`
+  has run.
+- After step 6, `SELECT tags FROM <name>.notes LIMIT 1;` in
+  `Browse > Databases` succeeds.
 
 ## See also
 
 - Source articles:
   - `help/develop/how-to/db/db-in-plugin.md`
-- Knowledge:
-  - `docs/_internal/knowledge/knowledge-graph.md` — facts `DG-FACT-050`
-    through `DG-FACT-057` and drifts `DG-FACT-DRIFT-016..019`.
-- Related skills:
-  - `access-data` (sibling — covers query file headers, parameter
-    grammar, `grok.data.query` JS-API).
-  - `db-in-docker` (alternative — when a non-Postgres engine, a Postgres
-    extension RDS doesn't ship, or seeded data baked into an image is
-    required).
+  - `help/develop/how-to/db/db-in-docker.md` (alternative)
+- Knowledge: `docs/_internal/knowledge/knowledge-graph.md` — facts
+  `DG-FACT-419..425`, drifts `DG-FACT-DRIFT-DBPLUGIN-001..004`. Also
+  `DG-FACT-403` (query basename binding), `DG-FACT-424` (debug vs
+  release publish).
+- Related skills: `access-data` (query authoring + credentials),
+  `db-in-docker` (own DB engine), `publish-packages` (release
+  lifecycle).
