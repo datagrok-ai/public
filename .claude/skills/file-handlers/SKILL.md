@@ -1,197 +1,200 @@
 ---
 name: file-handlers
-description: Register a file-handler function so a Datagrok package imports a custom file format and opens its contents as one or more tables
+version: 0.1.0
+description: |
+  Claim a file extension (e.g. `.fasta`, `.sdf`, `.bam`) so that when a
+  user opens such a file in Datagrok, your package parses it and the
+  platform opens the resulting `DataFrame[]` as TableViews — instead of
+  the generic text/binary fallback. For plugin authors whose users keep
+  dragging in domain-specific files they want imported as tables.
+  Produces a `static` method on `PackageFunctions` decorated with
+  `@grok.decorators.fileHandler({ext})`, plus the regenerated
+  `package.g.ts` wrapper the platform auto-registers at startup.
+  Use when asked to "import a domain file as a table", "open our `.sdf`
+  files as DataFrames", or "make Datagrok parse a custom format on
+  drop".
+triggers:
+  - import a domain file as a table
+  - parse a custom format on drop
+  - open our sdf as dataframes
+  - claim a file extension for import
+  - turn a fasta drop into tables
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+harness-authored: true
 ---
 
 # file-handlers
 
 ## When to use
 
-Your package owns one or more file extensions (`.fasta`, `.sdf`, `.bam`,
-`.parquet`, an in-house text dump, …) and you want the platform to invoke
-your parser whenever a user opens a file with that extension, returning
-`DG.DataFrame[]` for the platform to display as TableViews. Triggers:
-"open `.fasta` as a table", "import our custom binary format", "register
-a parser for `.foo`". For *previewing* a file without importing as a
-table (3D structures, NMR spectra), use `create-custom-file-viewers`
-instead. For *exporting* the open table back out, use `file-exporters`.
+Your package owns a tabular-ish file format and you want a user dropping
+a `.fasta` / `.sdf` / in-house file into Datagrok to get one or more
+`DataFrame` tables opened automatically. A handler IMPORTS — not a
+preview (`create-custom-file-viewers`), not a writer (`file-exporters`).
+The three "open this file" roles are distinct (knowledge `DG-FACT-086`).
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from the package root.
-- `datagrok-api` available (`import * as grok / DG`); the article omits
-  imports and won't compile as written (drift `DG-FACT-DRIFT-032`).
-- Familiarity with `DG.DataFrame` construction from
-  `grok.data.parseCsv(...)` or your own parser.
+- A package scaffold (`grok create <Name>`); paths are relative to the
+  package root.
+- `datagrok-api` imported as `import * as grok from 'datagrok-api/grok'`
+  and `import * as DG from 'datagrok-api/dg'`.
+- A working parser that returns `DG.DataFrame[]`.
 
 ## Steps
 
-1. **Pick a registration form (decorator vs. header comments).**
+1. **Add a `static` method on `PackageFunctions` and decorate it.**
    The platform discovers handlers via the function role `fileHandler`
-   (`DG-FACT-083`). The role token is camelCase in every production
-   package and in the article; the kebab form `file-handler` exists in
-   `js-api/src/const.ts` but is not what gets emitted (drift
-   `DG-FACT-DRIFT-031`). Two equivalent surfaces:
-   - **Decorator (canonical, used by every recent package):** put a
-     `static` method on `PackageFunctions` decorated with
-     `@grok.decorators.fileHandler({ext: '<csv-of-extensions>', description: '<label>'})`.
-   - **Header comments (article form):** annotate an exported function
-     with `//meta.role: fileHandler` and `//meta.ext: <csv-of-extensions>`.
-     This form survives only in generated `package.g.ts` files
-     (drift `DG-FACT-DRIFT-032`).
-
-2. **Declare the extensions in `meta.ext` as a comma-separated list.**
-   One handler entry can claim many extensions:
-   `meta.ext: fasta, fna, ffn, faa, frn, fa, fst` (Bio FASTA),
-   `meta.ext: sdf,mol` (Chem SDF), `meta.ext: bam, bai` (Bio BAM)
-   (`DG-FACT-084`). Whitespace around commas is tolerated. The `ext`
-   field is REQUIRED on `FileHandlerOptions` — there is no default
-   (`DG-FACT-085`). When per-extension bodies differ, write one
-   decorator per extension (the nmrium `.jdx` / `.dx` / `.nmrium`
-   pattern at `packages/nmrium/src/package.ts:20-46`).
-
-3. **Pick the input type — `string` for text, `Uint8Array` for binary.**
-   The codegen default is `inputs: [{name: 'content', type: 'string'}]`
-   (`DG-FACT-087`). For binary formats override with `@grok.decorators.param({type: 'list'})`
-   on a `Uint8Array` parameter — silently using the string default on a
-   binary file corrupts the payload (drift `DG-FACT-DRIFT-033`).
+   — exactly that camelCase token in the emitted `package.g.ts`
+   (knowledge `DG-FACT-083`). The decorator's options bag is
+   `FileHandlerOptions { ext: string; fileViewerCheck?: string }` and
+   `ext` is REQUIRED — `config` itself is non-optional, unlike
+   `fileViewer(config?)` (knowledge `DG-FACT-085`). The handler signature
+   is `(content: string | Uint8Array) => DG.DataFrame[]`.
    ```typescript
-   // src/package.ts — text format (FASTA)
+   // src/package.ts
    import * as grok from 'datagrok-api/grok';
-   import * as DG   from 'datagrok-api/dg';
+   import * as DG from 'datagrok-api/dg';
    export const _package = new DG.Package();
 
    export class PackageFunctions {
      @grok.decorators.fileHandler({
-       ext: 'fasta, fna, ffn, faa, frn, fa, fst',
        description: 'Opens FASTA file',
+       ext: 'fasta, fna, ffn, faa, frn, fa, fst',
      })
-     static importFasta(content: string): DG.DataFrame[] {
-       return parseFasta(content);   // your parser → DG.DataFrame[]
+     static importFasta(fileContent: string): DG.DataFrame[] {
+       return new FastaFileHandler(fileContent).importFasta();
      }
    }
    ```
-   Expected: build succeeds; `src/package.g.ts` gains a wrapper with
-   `//input: string content`, `//output: list<dataframe> result`,
-   `//meta.role: fileHandler`, `//meta.ext: fasta, fna, ...`
-   (compare `packages/Bio/src/package.g.ts:486-503`).
+   Expected: after `npm run build`, `src/package.g.ts` carries
+   `//meta.role: fileHandler` and `//meta.ext: <your-list>` — same
+   shape as `packages/Bio/src/package.g.ts:486-494`.
 
-4. **Override to bytes for binary formats.**
+2. **Declare every extension you claim in `meta.ext`.**
+   `ext` is a single comma-separated string; whitespace around commas
+   is tolerated (knowledge `DG-FACT-084`). One handler entry, many
+   extensions — `'fasta, fna, ffn, faa, frn, fa, fst'`
+   (`packages/Bio/src/package.ts:1089-1094`), `'sdf,mol'`
+   (`packages/Chem/src/package.ts:1908-1911`). Repeating `//meta.ext:`
+   does NOT additively merge — the parser keeps only the last. If two
+   extensions need different bodies, register two decorators — the
+   per-extension dispatch pattern at
+   `packages/nmrium/src/package.ts:20-46`.
+
+3. **Pick the input type to match your payload — text or binary.**
+   The default codegen contract is text:
+   `inputs: [{name: 'content', type: 'string'}], outputs: [{name: 'tables', type: 'list'}]`
+   (knowledge `DG-FACT-087`). For binary formats override the input
+   shape with a `@grok.decorators.param({type: 'list'})` annotation on
+   the parameter and type it as `Uint8Array` — the Chem SDF pattern at
+   `packages/Chem/src/package.ts:1908-1920`. The regenerated wrapper
+   then carries `//input: list bytes` (compare
+   `packages/Chem/src/package.g.ts:793-799`).
    ```typescript
    @grok.decorators.fileHandler({description: 'Opens SDF file', ext: 'sdf,mol'})
    static importSdf(
      @grok.decorators.param({type: 'list'}) bytes: Uint8Array
    ): DG.DataFrame[] | void {
      try { return _importSdf(Uint8Array.from(bytes)); }
-     catch (e: any) { grok.shell.warning('file is not supported or malformed'); grok.shell.error(e); }
+     catch (e: any) {
+       grok.shell.warning('file is not supported or malformed');
+       grok.shell.error(e);
+     }
    }
    ```
-   Expected: `package.g.ts` emits `//input: list bytes` (NOT
-   `//input: string content`) — confirms the override took effect
-   (compare `packages/Chem/src/package.g.ts:793-799`,
-   `DG-FACT-087`,`DG-FACT-DRIFT-033`).
+   Expected: the emitted wrapper has `//input: list bytes` (NOT
+   `//input: string content`) and your parser receives raw bytes.
 
-5. **Disambiguate ambiguous extensions with `fileViewerCheck`.**
-   Several packages legitimately claim the same extension (`.json`,
-   `.txt`, `.xml`, `.dx`). Set `fileViewerCheck: '<Pkg>:<Fn>'` on the
-   options bag — the platform calls the named check function with the
-   file content and routes to this handler only on truthy return
-   (`DG-FACT-085`, drift `DG-FACT-DRIFT-034`).
+4. **Return `DG.DataFrame[]`; the platform opens one TableView per
+   element.** Empty `[]` is legal — nmrium returns `[]` after
+   side-effect-opening its own view (`packages/nmrium/src/package.ts:12-17,25-46`).
+   Use that pattern only when an accompanying `fileViewer` provides the
+   visualization (knowledge `DG-FACT-086`).
+
+5. **(Optional) Disambiguate ambiguous extensions with `fileViewerCheck`.**
+   When the same extension is shared with another tool (e.g. `.jdx`,
+   `.dx` JCAMP-DX), gate your handler on a content probe by setting
+   `fileViewerCheck: '<Package>:<Function>'` — the platform calls the
+   named function with file content (`string` for text,
+   `Uint8Array` for binary) and routes only on truthy return
+   (knowledge `DG-FACT-085`). The probe must itself be a Datagrok
+   function — decorate it with plain `@grok.decorators.func()`. Pattern
+   at `packages/nmrium/src/package.ts:20-40, 70-73`.
    ```typescript
-   @grok.decorators.fileHandler({
-     fileViewerCheck: 'Nmrium:checkNmriumJdx',
-     ext: 'jdx',
-     outputs: [{name: 'tables', type: 'list'}],
-   })
-   static async jdxFileHandler(bytes: string) {
-     return await addNmriumView('jdx', bytes);   // returns []; view added as side effect
-   }
+   @grok.decorators.fileHandler({fileViewerCheck: 'Nmrium:checkNmriumJdx', ext: 'jdx'})
+   static async jdxFileHandler(bytes: string) { return await addNmriumView('jdx', bytes); }
+
+   @grok.decorators.func()
+   static checkNmriumJdx(content: string): boolean { return content.includes('NMR SPECTRUM'); }
    ```
-   Expected: opening a `.jdx` file that fails `checkNmriumJdx` is
-   handled by another package; one that passes is routed here.
 
-6. **Returning `[]` is legal — handler may open a custom view as a side effect.**
-   The "side-effect view" pattern is canonical: call
-   `grok.shell.addView(...)` from inside the handler and return `[]`.
-   nmrium does this so the platform opens no extra empty TableView on
-   top of the custom NMR view (`DG-FACT-087`, drift `DG-FACT-DRIFT-035`,
-   `packages/nmrium/src/package.ts:25-46`).
-
-7. **Build, publish, and let the platform auto-register.**
+6. **Build, publish, let the platform auto-register.**
    ```bash
    npm install
-   grok check                     # exits 0
+   grok check
    grok publish <host>            # add --release once stable
    ```
-   No explicit `register(...)` call is needed — the function role
-   `fileHandler` IS the registration; opening any matching file in
-   Datagrok dispatches into your function (`DG-FACT-083`).
+   No explicit `register(...)` call is needed — the `fileHandler` role
+   plus `meta.ext` IS the registration; the platform invokes the
+   function whenever a user opens a matching file (knowledge
+   `DG-FACT-083`).
 
 ## Common failure modes
 
-- **Handler never fires; the platform falls back to the built-in
-  importer.** The role token is wrong or missing. Inspect
-  `src/package.g.ts`: it MUST contain `//meta.role: fileHandler`
-  (camelCase) and a `//meta.ext: <ext>` line for each claimed extension
-  (`DG-FACT-083`,`DG-FACT-084`). The token is case-sensitive —
-  `filehandler` / `FileHandler` won't register; the kebab variant
-  `file-handler` is not what packages emit (drift `DG-FACT-DRIFT-031`).
-- **Binary file is mangled to mojibake.** You took the string default
-  on a binary format. Override with
-  `@grok.decorators.param({type: 'list'}) bytes: Uint8Array` (decorator
-  form) or `//input: list bytes` (header form), and confirm
-  `src/package.g.ts` shows `//input: list bytes` (drift
-  `DG-FACT-DRIFT-033`,`DG-FACT-087`).
-- **Two packages fight over the same extension.** Both register a
-  handler for `.json` / `.txt` / `.dx` and the platform picks
-  unpredictably. Add `fileViewerCheck: '<Pkg>:<Fn>'` to your
-  `FileHandlerOptions` so the platform routes by content (drift
-  `DG-FACT-DRIFT-034`,`DG-FACT-085`).
-- **TypeScript error: `Property 'ext' is missing`.** `ext` is REQUIRED
-  on `FileHandlerOptions` (no `?`); the decorator's `config` argument
-  is itself non-optional unlike `fileViewer(config?)` (`DG-FACT-085`).
-  Always pass at least `{ext: '<csv>'}`.
-- **Article snippet copy-pasted, won't compile.** The article shows a
-  bare JS function with header comments and no imports, and uses
-  `return tables;` against an undefined variable (drift
-  `DG-FACT-DRIFT-032`,`DG-FACT-DRIFT-035`). Translate to the decorator
-  form on `PackageFunctions` with explicit
-  `import * as grok from 'datagrok-api/grok';` and
-  `import * as DG from 'datagrok-api/dg';`, and build a real
-  `DG.DataFrame[]` from your parser before returning.
+- **Nothing happens on file open.** The regenerated `src/package.g.ts`
+  is missing `//meta.role: fileHandler` or `//meta.ext: <ext>`. Both
+  lines MUST be present; the role token is camelCase as emitted
+  (knowledge `DG-FACT-083`). Re-run `npm install` if it looks stale.
+- **Build error: `Property 'ext' is missing` / `Expected 1 argument, but got 0`.**
+  You wrote `@grok.decorators.fileHandler()` or `({})`. `config` and
+  its `ext` field are both REQUIRED (knowledge `DG-FACT-085`).
+- **Handler runs but the parsed binary is garbled.** You took the
+  default text input (`content: string`) for a binary format. Add
+  `@grok.decorators.param({type: 'list'})` to the parameter and type
+  it `Uint8Array` (knowledge `DG-FACT-087`). The wrapper should then
+  show `//input: list bytes`.
+- **Only one of two `meta.ext:` lines applies.** Repeating the
+  annotation does NOT additively merge — the parser keeps only the
+  last entry (knowledge `DG-FACT-084`). Comma-separate into one entry
+  or register one decorator per extension when bodies differ.
+- **Two handlers fight over `.jdx`.** Both claim the same extension
+  with no `fileViewerCheck`; the platform picks one non-deterministically.
+  Add `fileViewerCheck: '<Pkg>:<Fn>'` to each (knowledge `DG-FACT-085`).
 
 ## Verification
 
 - `grok check` exits `0`; `grok publish <host>` exits `0`.
-- The regenerated `src/package.g.ts` contains, for each claimed
-  extension, a wrapper with `//meta.role: fileHandler`,
-  `//meta.ext: <your csv>`, and the right input line — `//input: string content`
-  (text) or `//input: list bytes` (binary).
+- `src/package.g.ts` contains the exported wrapper with
+  `//meta.role: fileHandler` and `//meta.ext: <your-list>` (compare
+  `packages/Bio/src/package.g.ts:486-503` or
+  `packages/Chem/src/package.g.ts:793-799`).
 - In Datagrok, drag-drop or open a file with one of the registered
-  extensions: the platform invokes your handler, and the returned
-  `DG.DataFrame[]` opens as one TableView per dataframe. (For the
-  side-effect-view / `return []` pattern, the custom view appears
-  instead of a TableView.)
-- Open a file whose extension is shared with another package and the
-  `fileViewerCheck` returns falsy: another package handles it; truthy
-  returns route here.
+  extensions: a TableView appears for each returned `DG.DataFrame` in
+  the order your handler returned them.
+- Open an unrelated file (`.csv`, `.txt`): your handler is NOT invoked
+  — the generic importer takes over.
 
 ## See also
 
 - Source articles:
   - `help/develop/how-to/files/file-handlers.md`
 - Knowledge: `docs/_internal/knowledge/knowledge-graph.md` — facts
-  `DG-FACT-083` … `DG-FACT-087` and drifts
-  `DG-FACT-DRIFT-031..035`.
+  `DG-FACT-083` (role + signature), `DG-FACT-084` (`meta.ext`
+  comma-list), `DG-FACT-085` (`FileHandlerOptions` + `fileViewerCheck`),
+  `DG-FACT-086` (handler vs viewer vs exporter), `DG-FACT-087` (codegen
+  contract + binary input override).
 - Reference packages:
-  - `packages/Chem/src/package.ts:1908-1934` — decorator + bytes
-    override for `.sdf`, `.mol`, `.smi`.
-  - `packages/Bio/src/package.ts:1089-1111` — multi-extension `ext`
-    list for `.fasta` family; bytes form for `.bam`, `.bai`.
-  - `packages/nmrium/src/package.ts:19-46` — `fileViewerCheck` to
-    disambiguate `.jdx`/`.dx` and the `return []` side-effect-view
-    pattern.
+  - `packages/Bio/src/package.ts:1089-1099` — text handler, comma-list.
+  - `packages/Chem/src/package.ts:1908-1920` — binary handler with
+    `@grok.decorators.param({type: 'list'})`.
+  - `packages/nmrium/src/package.ts:20-46, 70-73` — per-extension
+    decorators + `fileViewerCheck`.
 - Related skills:
-  - `create-custom-file-viewers` (sibling — preview the file as a
-    custom view without importing as a table).
-  - `file-exporters` (inverse — push the open table out as a file).
+  - `create-custom-file-viewers` — visualize a file without importing
+    it as a table.
+  - `file-exporters` — write the active table out via the Export menu.
