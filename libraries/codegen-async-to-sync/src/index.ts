@@ -57,15 +57,16 @@ function isAsyncTopLevel(stmt: Statement): boolean {
   return false;
 }
 
-function getDeclaredName(stmt: Statement): string | null {
-  if (Node.isFunctionDeclaration(stmt)) return stmt.getName() ?? null;
-  if (Node.isVariableStatement(stmt)) {
-    const decls = stmt.getDeclarations();
-    return decls.length === 1 ? decls[0].getName() : null;
+function getDeclaredNames(stmt: Statement): string[] {
+  if (Node.isFunctionDeclaration(stmt)) {
+    const n = stmt.getName();
+    return n ? [n] : [];
   }
+  if (Node.isVariableStatement(stmt))
+    return stmt.getDeclarations().map((d) => d.getName());
   if (Node.isInterfaceDeclaration(stmt) || Node.isTypeAliasDeclaration(stmt))
-    return stmt.getName();
-  return null;
+    return [stmt.getName()];
+  return [];
 }
 
 // Unmatched `@async-only-begin` strips to EOF on purpose: surfaces as a
@@ -250,13 +251,8 @@ export function transformText(srcText: string, srcStem: string): TransformResult
   for (const stmt of work.getStatements()) {
     if (isAsyncTopLevel(stmt)) {
       asyncStmts.push(stmt);
-    } else if (Node.isFunctionDeclaration(stmt) || Node.isVariableStatement(stmt) ||
-               Node.isInterfaceDeclaration(stmt) || Node.isTypeAliasDeclaration(stmt)) {
-      const nm = getDeclaredName(stmt);
-      if (nm != null) siblingNames.add(nm);
-      if (Node.isVariableStatement(stmt)) {
-        for (const d of stmt.getDeclarations()) siblingNames.add(d.getName());
-      }
+    } else {
+      for (const n of getDeclaredNames(stmt)) siblingNames.add(n);
     }
   }
   if (asyncStmts.length === 0)
@@ -288,8 +284,7 @@ export function transformText(srcText: string, srcStem: string): TransformResult
 
   const declaredInOutput = new Set<string>();
   for (const stmt of work.getStatements()) {
-    const nm = getDeclaredName(stmt);
-    if (nm) declaredInOutput.add(nm);
+    for (const n of getDeclaredNames(stmt)) declaredInOutput.add(n);
   }
 
   // Async-named imports route through the rename map: the sibling module is
