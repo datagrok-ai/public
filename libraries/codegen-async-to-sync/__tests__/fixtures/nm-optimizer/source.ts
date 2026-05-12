@@ -1,15 +1,74 @@
-// GENERATED — do not edit by hand.
-// Run `npm run update-codegen` to regenerate.
-// Source: ./optimizer-nelder-mead.ts
-import {Extremum} from './optimizer-misc';
-import {fillCentroid, fillPoint} from './optimizer-nelder-mead';
+// @async-source: optimizer-nelder-mead-sync.ts
+// @codegen-rename: optimizeNM=optimizeNMSync
 
-function getInitialParams(
-  objectiveFunc: (x: Float64Array) => number|undefined,
+import {Extremum, IOptimizer, Setting} from './optimizer-misc';
+
+/** The Nelder Mead seetings vals */
+export const nelderMeadSettingsOpts = new Map<string, Setting>([
+  ['tolerance', {
+    default: 0.000001,
+    min: 1e-20,
+    max: 1e-1,
+    caption: 'tolerance',
+    tooltipText: 'How precise the result should be. Lower value = more accurate result, but longer computation',
+    inputType: 'Float',
+  }],
+  ['maxIter', {
+    default: 50,
+    min: 1,
+    max: 10000,
+    caption: 'max iterations',
+    tooltipText: 'Maximum number of iterations. Higher = better fit',
+    inputType: 'Int',
+  }],
+  ['nonZeroParam', {
+    default: 0.0001,
+    min: 1e-20,
+    max: 1e-1,
+    caption: 'non-zero param',
+    tooltipText: 'Minimum parameter value (to avoid zero values)',
+    inputType: 'Float',
+  }],
+  ['initialScale', {
+    default: 0.02,
+    min: 1e-20,
+    max: 1e-1,
+    caption: 'initial scale',
+    tooltipText: 'Size of the initial search area. Higher value = wider search area',
+    inputType: 'Float',
+  }],
+  ['scaleReflaction', {
+    default: 1,
+    min: 1,
+    max: 2,
+    caption: 'scale reflection',
+    tooltipText: 'How far the algorithm \'bounces back\' from failed attempts',
+    inputType: 'Float',
+  }],
+  ['scaleExpansion', {
+    default: 2,
+    min: 1,
+    max: 2,
+    caption: 'scale expansion',
+    tooltipText: 'How much the algorithm expands search in a promising direction',
+    inputType: 'Float',
+  }],
+  ['scaleContraction', {
+    default: -0.5,
+    min: -0.5,
+    max: 0,
+    caption: 'scale contraction',
+    tooltipText: 'How much the algorithm narrows the search area when approaching the result',
+    inputType: 'Float',
+  }],
+]);
+
+async function getInitialParams(
+  objectiveFunc: (x: Float64Array) => Promise<number|undefined>,
   settings: Map<string, number>,
   paramsInitial: Float64Array,
   costOutside: number,
-): [Float64Array[], number[]] {
+): Promise<[Float64Array[], number[]]> {
   const dim = paramsInitial.length + 1;
   const dimParams = paramsInitial.length;
   const nonZeroParam = settings.get('nonZeroParam')!;
@@ -30,18 +89,41 @@ function getInitialParams(
       }
     }
 
-    pointObjectives[i] = objectiveFunc(optParams[i]) ?? costOutside;
+    pointObjectives[i] = await objectiveFunc(optParams[i]) ?? costOutside;
   }
 
   return [optParams, pointObjectives];
 }
 
-export const optimizeNMSync = function(
-  objectiveFunc: (x: Float64Array) => number|undefined,
+export function fillCentroid(centroid: Float64Array, dimParams: number, lastIndex: number, optParams: Float64Array[]) {
+  for (let i = 0; i < dimParams; i++) {
+    let val = 0;
+    for (let j = 0; j < dimParams + 1; j++) {
+      if (j != lastIndex)
+        val += optParams[j][i];
+    }
+
+    centroid[i] = val / dimParams;
+  }
+}
+
+export function fillPoint(
+  centroid: Float64Array, point: Float64Array,
+  lastIndex: number, optParams: Float64Array[],
+  scale: number, dimParams: number,
+) {
+  for (let i = 0; i < dimParams; i++) {
+    point[i] = centroid[i];
+    point[i] += scale * (centroid[i] - optParams[lastIndex][i]);
+  }
+}
+
+export const optimizeNM: IOptimizer = async function(
+  objectiveFunc: (x: Float64Array) => Promise<number|undefined>,
   paramsInitial: Float64Array,
   settings: Map<string, number>,
   threshold?: number,
-) : Extremum {
+) : Promise<Extremum> {
   // Settings initialization
   const tolerance = settings.get('tolerance')!;
   const maxIter = settings.get('maxIter')!;
@@ -52,10 +134,10 @@ export const optimizeNMSync = function(
   const dim = paramsInitial.length + 1;
   const dimParams = paramsInitial.length;
 
-  const costOutside = 2*(objectiveFunc(paramsInitial) ?? Infinity);
+  const costOutside = 2*(await objectiveFunc(paramsInitial) ?? Infinity);
 
   const [optParams, pointObjectives] =
-    getInitialParams(objectiveFunc, settings, paramsInitial, costOutside);
+    await getInitialParams(objectiveFunc, settings, paramsInitial, costOutside);
 
   const indexes = new Array<number>(dim);
   for (let i = 0; i < dim; i++)
@@ -112,14 +194,14 @@ export const optimizeNMSync = function(
       // reflection
       fillPoint(centroid, reflectionPoint, indexes[lastIndex],
         optParams, scaleReflection, dimParams);
-      const reflectionScore = objectiveFunc(reflectionPoint) ?? costOutside;
+      const reflectionScore = await objectiveFunc(reflectionPoint) ?? costOutside;
 
       // expansion
       if (reflectionScore < pointObjectives[indexes[lastIndex]]) {
         fillPoint(centroid, expansionPoint, indexes[lastIndex],
           optParams, scaleExpansion, dimParams);
 
-        const expansionScore = objectiveFunc(expansionPoint) ?? costOutside;
+        const expansionScore = await objectiveFunc(expansionPoint) ?? costOutside;
 
         if (expansionScore < reflectionScore) {
           pointObjectives[indexes[lastIndex]] = expansionScore;
@@ -142,7 +224,7 @@ export const optimizeNMSync = function(
       fillPoint(centroid, contractionPoint, indexes[lastIndex],
         optParams, scaleContraction, dimParams);
 
-      const contractionScore = objectiveFunc(contractionPoint) ?? costOutside;
+      const contractionScore = await objectiveFunc(contractionPoint) ?? costOutside;
 
       if (contractionScore < pointObjectives[indexes[lastIndex]]) {
         pointObjectives[indexes[lastIndex]] = contractionScore;
