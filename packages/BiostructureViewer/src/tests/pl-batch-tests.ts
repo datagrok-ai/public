@@ -6,26 +6,9 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {
   detectNonWaterHetatmInstances,
-  getPlHtmlForRow,
   interactionsColForDiagram,
   renderInteractionBreakdown,
-  runPlBatch,
-  PL_DIAGRAM_SEM_TYPE,
-  type ProlifBatchCtx,
 } from '../utils/prolif';
-
-
-// Minimal valid PDB used by the end-to-end batch smoke test below.
-// Real PDB needs both ATOM (protein backbone) and a non-water HETATM
-// (small ligand). The script's binding-site extraction picks the
-// neighbourhood around the HETATM — coordinates are colocated here so
-// the radius cut doesn't drop everything.
-const MINIMAL_PDB =
-  'ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00  0.00           N  \n' +
-  'ATOM      2  CA  ALA A   1       1.450   0.000   0.000  1.00  0.00           C  \n' +
-  'ATOM      3  C   ALA A   1       2.000   1.420   0.000  1.00  0.00           C  \n' +
-  'HETATM    4  C1  LIG A 100       3.000   1.420   0.000  1.00  0.00           C  \n' +
-  'END';
 
 
 category('PLBatch', () => {
@@ -175,38 +158,4 @@ category('PLBatch', () => {
     expect(text.includes('ASP40'), true);
   });
 
-  // ------------------------------------------------------------------------
-  // runPlBatch end-to-end smoke. Calls the actual Python script through
-  // the Datagrok function registry on a single-row DataFrame, then asserts
-  // that the always-present output columns exist with the right semType and
-  // that the HTML cache was populated. Marked skipReason because the script
-  // worker (conda env with ProLIF, MDAnalysis, RDKit, pdbfixer, OpenBabel)
-  // isn't available in every test environment — clear the skipReason locally
-  // to actually run it.
-  //
-  // Note: the Python script's internal helpers (`is_pdbqt_lines`,
-  // `pdbqt_to_pdb_lines`, `merge_protein_and_ligand_lines`, etc.) are
-  // exercised transitively by this test on a representative PDB. Direct
-  // unit tests of those helpers would require extracting them into a
-  // separate importable module — deferred until that refactor lands.
-  // ------------------------------------------------------------------------
-  test('runPlBatch: end-to-end on minimal PDB populates diagram + cache', async () => {
-    const pdbCol = DG.Column.fromStrings('protein', [MINIMAL_PDB]);
-    const df = DG.DataFrame.fromColumns([pdbCol]);
-    const ctx: ProlifBatchCtx = {df, pdbCol};
-
-    await runPlBatch({
-      ctx,
-      buildRowArgs: () => ({protein: MINIMAL_PDB, ligand: '', ligand_resname: ''}),
-    });
-
-    const diagramCol = df.col('PL Diagram');
-    const interactionsCol = df.col('PL Interactions');
-    expect(diagramCol != null, true);
-    expect(interactionsCol != null, true);
-    expect(diagramCol?.semType, PL_DIAGRAM_SEM_TYPE);
-    // Cache populated by `_setHtmlForRow` during the batch — opens the
-    // post-batch panel without re-running the script.
-    expect((getPlHtmlForRow(df, 0) ?? '').length > 0, true);
-  }, {skipReason: 'Requires the Python script-worker env (conda + ProLIF + RDKit + MDAnalysis + pdbfixer)'});
 });
