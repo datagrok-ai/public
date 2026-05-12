@@ -1922,3 +1922,90 @@
   contradicts: []
   confidence: high
 
+- id: DG-FACT-255
+  kind: naming
+  scope: define-semantic-type-detectors
+  value: A package's data-shape semantic-type detectors live in a single fixed-name file at the package root — `<PackageRoot>/detectors.js`. The file is uploaded to the platform separately from the rest of the package bundle, so webpack syntax errors in `detectors.js` do not surface as build warnings — failures only manifest at runtime when the detector class fails to load. Distinct from `package.json` `meta.semanticTypes` (DG-FACT-094), which registers regex-based string-content detectors declaratively; `detectors.js` is for shape/statistics-driven detection that needs JS logic.
+  derives_from:
+    - article: help/develop/how-to/functions/define-semantic-type-detectors.md:16-19,51-54
+    - code: tools/bin/commands/add.ts:19,272-289
+    - code: tools/package-template/detectors.js
+    - code: packages/BiostructureViewer/detectors.js:1-8
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-256
+  kind: naming
+  scope: define-semantic-type-detectors
+  value: The detectors-class name is mechanically derived from the package name — `<PackageName>PackageDetectors extends DG.Package`. The naming convention is load-bearing — the platform's detector loader resolves the class by appending the literal `PackageDetectors` suffix to the camel-cased package name. The boilerplate header in the template explicitly warns "Follow this naming convention to ensure that your detectors are properly loaded." The class extends `DG.Package` so detector methods can reach `this.logger` and other package-scoped APIs.
+  derives_from:
+    - article: help/develop/how-to/functions/define-semantic-type-detectors.md:17-22
+    - code: tools/package-template/detectors.js:5-8
+    - code: packages/BiostructureViewer/detectors.js:5-8  # "The class name is comprised of <PackageName> and the `PackageDetectors` suffix. Follow this naming convention to ensure that your detectors are properly loaded."
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-257
+  kind: enum
+  scope: define-semantic-type-detectors
+  value: A semantic-type detector is a regular package function tagged with the `semTypeDetector` role, signature `(col: Column) => string | null`. Header form (canonical for `detectors.js`, since `.js` files have no decorators) — `//meta.role: semTypeDetector` + `//input: column col` + `//output: string semType`. The role string is the value of `DG.FUNC_TYPES.SEM_TYPE_DETECTOR = 'semTypeDetector'`. The platform invokes every registered detector on every column each time a new dataframe is imported (article line 53 — "Datagrok calls detectors each time the user opens a table"), so detectors must be lightweight — typical body is a `col.type` + `col.name`-regex check, optionally followed by `DG.Detector.sampleCategories` (DG-FACT-258).
+  derives_from:
+    - article: help/develop/how-to/functions/define-semantic-type-detectors.md:13-15,24-26,52-55
+    - code: js-api/src/const.ts:367-370  # FUNC_TYPES.SEM_TYPE_DETECTOR: 'semTypeDetector'
+    - code: js-api/src/decorators/functions.ts:471-477  # description + signature 'semTypeDetector(col: Column): string'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-258
+  kind: namespace
+  scope: define-semantic-type-detectors
+  value: `DG.Detector.sampleCategories(column: Column, check: (s: string) => boolean, min: number = 5, max: number = 10, ratio: number = 1, minStringLength: number = 1): boolean` — runs `check` against a sampled subset of the column's distinct categories, returns `true` only if at least `ratio * max` of `max` checks pass. SILENT FAIL-CLOSED: if `column.type !== TYPE.STRING` it returns `false` immediately (no exception, no warning). Also returns `false` if `categories.length < min`, or if no category meets `minStringLength`. The implementation samples every `categories.length / max`-th category — order-deterministic, not random despite the method name. Use this for SMILES/PDB/sequence-shape detection where checking every value would be O(N) on huge columns.
+  derives_from:
+    - article: help/develop/how-to/functions/define-semantic-type-detectors.md:79-82,100-115
+    - code: js-api/src/data.ts:278-313  # class Detector + static sampleCategories
+    - code: packages/BiostructureViewer/detectors.js:14-30
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-261
+  kind: enum
+  scope: define-semantic-type-detectors
+  value: Three header tags govern the platform's auto-test for a detector — (1) `//meta.skipTest: <reason>` skips the auto-test entirely (reason string is free-form, conventionally a ticket reference like `#2596, Fix for test data in the utils library`); (2) `//meta.testData: <csv-path>` points at a fixture CSV shipped with the package — there must be exactly one column in that CSV that the detector should match; (3) `//meta.testDataColumnName: <name>` — together with `meta.testData`, asserts that the detector picks that specific column out of the fixture (catches false positives on sibling columns). All three are tags only — they do not change the detector's runtime behavior; they only configure the auto-test that fires per-detector in CI.
+  derives_from:
+    - article: help/develop/how-to/functions/define-semantic-type-detectors.md:90-99,120-127
+    - code: packages/BiostructureViewer/detectors.js:9-13  # //meta.skipTest: #2596, Fix for test data in the utils library
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-262
+  kind: naming
+  scope: define-semantic-type-detectors
+  value: A column has at most ONE semType — when several detectors match, the FIRST detector to return non-null wins (article line 46-47 — "its semantic type depends on the order in which the detectors were triggered"). Standard platform detectors do NOT get preference over package detectors — the iteration order is package-load order plus declaration order within each `<Pkg>PackageDetectors` class. Practical consequence: a too-loose package detector can shadow a stricter platform detector. Mitigations — (a) add the strictest checks first inside the detector (data type, name pattern, regex shape) before reaching for `DG.Detector.sampleCategories`, and (b) if the detector aliases a known platform semType, return `null` and let the platform detector handle it.
+  derives_from:
+    - article: help/develop/how-to/functions/define-semantic-type-detectors.md:46-47
+    - code: js-api/src/const.ts:367-370  # platform invokes each detector once per column on import
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-263
+  kind: naming
+  scope: define-semantic-type-detectors
+  value: Empty / null values must be excluded from detector match logic — empty strings should NOT match the detector's regex (article line 84-86 — "Otherwise, this type might be assigned to a column consisting solely of nulls, which won't add any helpful insights to the data profile"). `DG.Detector.sampleCategories` already enforces a `minStringLength: number = 1` floor (DG-FACT-258) which blocks empty-string categories, but if the detector iterates `col.categories` or `col.toList()` directly, it must `if (!s) continue;` or its regex must include a non-empty assertion (e.g., `^.+$`). All-null columns are common in joined data; an over-eager detector pollutes the data profile across the whole platform session.
+  derives_from:
+    - article: help/develop/how-to/functions/define-semantic-type-detectors.md:84-86
+    - code: js-api/src/data.ts:298-299  # !categories.some(cat => cat.length >= minStringLength) -> false
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-264
+  kind: namespace
+  scope: define-semantic-type-detectors
+  value: `col.meta.units = '<unit>'` writes the `units` tag on the column (`DG.TAGS.UNITS = 'units'`, getter/setter at `js-api/src/dataframe/column-helpers.ts:232-234`). Canonical pairing inside a detector — when a single semType covers multiple physical formats (e.g., `Molecule3D` for both `pdb` and `pdbqt`), set `col.meta.units` to disambiguate alongside the returned semType. Renderers and viewers downstream branch on the units tag to pick the right parser (BiostructureViewer's `detectPdb` writes `col.meta.units = 'pdb'` vs `'pdbqt'` for the same `Molecule3D` semType). Setting `units = null` removes the tag (`setNonNullTag` short-circuits via `grok_Column_Remove_Tag`).
+  derives_from:
+    - article: help/develop/how-to/functions/define-semantic-type-detectors.md:103-115
+    - code: js-api/src/dataframe/column-helpers.ts:232-234
+    - code: js-api/src/const.ts:331  # TAGS.UNITS: 'units'
+    - code: packages/BiostructureViewer/detectors.js:19,26
+  contradicts: []
+  confidence: high
+
