@@ -1,7 +1,7 @@
 // AutoDock-pose flavour of the ProLIF widget + batch.
 //
 // The AutoDock-specific bits (everything else is shared via the generic
-// batch handler in `./prolif-panel`):
+// batch handler in `./prolif`):
 //   * Pre-fetches the receptor from `System:AppData/Docking/targets/`
 //     via `getReceptorData` — poses don't carry the receptor themselves.
 //   * Gates per-row work by `isAutoDockPose` (the `binding energy`
@@ -16,7 +16,7 @@ import {
   runPlBatch,
   ProlifBatchCtx,
   ProlifWidgetOptions,
-} from './prolif-panel';
+} from './prolif';
 
 import {getReceptorData, RECEPTOR_NAME_RE} from './autodock-receptor';
 

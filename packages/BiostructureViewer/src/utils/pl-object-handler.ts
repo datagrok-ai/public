@@ -5,21 +5,25 @@
 // in BSV's `init()`. The platform routes cell clicks through every
 // applicable handler's `renderProperties` and merges results into the
 // right sidebar. Claims ownership of cells whose column carries the
-// `%prolifSource` tag (value = name of the source ligand/PDB column,
+// `.%prolif-source` tag (value = name of the source ligand/PDB column,
 // set by `runPlBatch`). Cell rendering itself is delegated to PowerGrid's
 // built-in `rawPng` renderer via `semType: 'rawPng'` on the column.
+//
+// Tag naming: `.%`-prefixed kebab-case matches the Datagrok convention
+// for column-linking tags (see Chem's `.%chem-scaffold-align`,
+// `.%chem-space-embedding-col`, Curves' `.%curve-format`).
 
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {getPlHtmlForRow, interactionsColForDiagram, renderInteractionBreakdown} from './prolif-panel';
+import {getPlHtmlForRow, interactionsColForDiagram, renderInteractionBreakdown} from './prolif';
 
 /** Tag set on every `PL Diagram` column by the batch handler. Its value is
  *  the name of the source ligand/PDB column the diagrams were computed
  *  from. Presence of this tag is what `PlDiagramObjectHandler.isApplicable`
  *  uses to claim ownership of the cell. */
-export const PROLIF_SOURCE_TAG = '%prolifSource';
+export const PROLIF_SOURCE_TAG = '.%prolif-source';
 
 export class PlDiagramObjectHandler extends DG.ObjectHandler {
   get type(): string { return 'pl-diagram'; }

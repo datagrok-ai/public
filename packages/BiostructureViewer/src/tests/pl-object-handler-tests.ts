@@ -11,12 +11,12 @@ import {PlDiagramObjectHandler, PROLIF_SOURCE_TAG} from '../utils/pl-object-hand
 // claims a clicked cell. If it ever returns true for non-PL cells, the
 // panel fires everywhere; if it returns false for our own cells, the
 // panel never fires. The three tests below lock in: (1) the positive case
-// keyed off the `%prolifSource` tag set by `runPlBatch`; (2) the negative
+// keyed off the `.%prolif-source` tag set by `runPlBatch`; (2) the negative
 // case for cells without the tag — critical because we share the
 // `rawPng` semType with PowerGrid's generic renderer; (3) safe rejection
 // of any non-SemanticValue input the platform may pass.
 category('PLObjectHandler', () => {
-  test('isApplicable: matches cells whose column has %prolifSource tag', async () => {
+  test('isApplicable: matches cells whose column has .%prolif-source tag', async () => {
     const handler = new PlDiagramObjectHandler();
     const df = DG.DataFrame.fromColumns([DG.Column.string('PL Diagram', 1)]);
     df.col('PL Diagram')!.tags[PROLIF_SOURCE_TAG] = 'protein';
@@ -27,7 +27,7 @@ category('PLObjectHandler', () => {
   test('isApplicable: rejects cells without the tag', async () => {
     // Cell is a real Datagrok cell with a non-null dart and column — the
     // SemType could even be `rawPng` (shared with PowerGrid) — but the
-    // absence of `%prolifSource` is what keeps the handler from claiming
+    // absence of `.%prolif-source` is what keeps the handler from claiming
     // unrelated rawPng cells from other features.
     const handler = new PlDiagramObjectHandler();
     const df = DG.DataFrame.fromColumns([DG.Column.string('something else', 1)]);

@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {runPlBatch} from '../utils/prolif-panel';
+import {runPlBatch} from '../utils/prolif';
 
 
 // The AutoDock-pose panel + batch handler used to live in the Docking

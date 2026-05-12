@@ -29,10 +29,6 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:PdbIdCellRenderer', {});
   }
 
-  export async function plLigNetworkPngCellRenderer(): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PlLigNetworkPngCellRenderer', {});
-  }
-
   export async function viewPdbById(pdbId: string ): Promise<void> {
     return await grok.functions.call('BiostructureViewer:ViewPdbById', { pdbId });
   }
@@ -131,10 +127,6 @@ export namespace funcs {
 
   export async function pdbIdInteractionsWidget(pdbId: string ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:PdbIdInteractionsWidget', { pdbId });
-  }
-
-  export async function plDiagramInteractionsWidget(cell: any ): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PlDiagramInteractionsWidget', { cell });
   }
 
   /**

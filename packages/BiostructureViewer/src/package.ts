@@ -50,7 +50,7 @@ import {
   isAutoDockPose as _isAutoDockPose,
   makeProlifWidget,
   resolveBatchCtxFromSemValue,
-} from './utils/prolif-panel';
+} from './utils/prolif';
 import {makeDockingProlifWidget} from './utils/docking-pose-prolif';
 import {getReceptorData} from './utils/autodock-receptor';
 
@@ -60,10 +60,10 @@ export const _package: BsvPackage = new BsvPackage();
 
 const dataDir = 'Admin:Data/PDB/CHEMBL2366517/';
 
-// ProLIF panel + batch handler live in `./utils/prolif-panel.ts`. The
+// ProLIF panel + batch handler live in `./utils/prolif.ts`. The
 // AutoDock-pose flavour (receptor pre-fetch + `isAutoDockPose` gate) is
 // glued in via `./utils/docking-pose-prolif.ts`. Docking package has no
-// ProLIF code anymore — see header of `./utils/prolif-panel.ts`.
+// ProLIF code anymore — see header of `./utils/prolif.ts`.
 
 
 export class PackageFunctions {
@@ -73,7 +73,7 @@ export class PackageFunctions {
     // Register the `PL Diagram` cell context-panel handler. Has to be in
     // `init` (runs once at package load) rather than at module top level,
     // because `DG.ObjectHandler.register` needs the Datagrok core to be
-    // fully initialised. The handler claims cells with the `%prolifSource`
+    // fully initialised. The handler claims cells with the `.%prolif-source`
     // column tag set by `runPlBatch` and shows the cached interactive
     // LigNetwork iframe + per-residue breakdown.
     DG.ObjectHandler.register(new PlDiagramObjectHandler());
@@ -250,7 +250,7 @@ export class PackageFunctions {
   }
 
   // Datagrok-function wrapper around the plain `hasNonWaterHetatm` helper
-  // in `./utils/prolif-panel.ts`. Kept here because `@grok.decorators.func`
+  // in `./utils/prolif.ts`. Kept here because `@grok.decorators.func`
   // requires the function to be a class method; the panel `condition` below
   // looks up `BiostructureViewer:hasNonWaterHetatm` at runtime.
   @grok.decorators.func()

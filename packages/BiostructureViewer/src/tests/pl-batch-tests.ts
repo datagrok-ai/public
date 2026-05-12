@@ -12,7 +12,7 @@ import {
   runPlBatch,
   PL_DIAGRAM_SEM_TYPE,
   type ProlifBatchCtx,
-} from '../utils/prolif-panel';
+} from '../utils/prolif';
 
 
 // Minimal valid PDB used by the end-to-end batch smoke test below.

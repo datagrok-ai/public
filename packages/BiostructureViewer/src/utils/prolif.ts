@@ -4,7 +4,7 @@
 //   * `pdbInteractionsWidget` panel — regular PDB Molecule3D cells
 //   * `pdbIdInteractionsWidget` panel — PDB_ID strings, fetches from RCSB
 //   * `PlDiagramObjectHandler` — `PL Diagram` cells, registered in `init()`
-//     and keyed off the `%prolifSource` column tag
+//     and keyed off the `.%prolif-source` column tag
 //   * `dockingInteractionsWidget` panel — AutoDock-pose cells, via the
 //     `./docking-pose-prolif.ts` wrapper that supplies the receptor
 //     pre-fetch + `isAutoDockPose` gate as `RunPlBatchOptions` callbacks
@@ -217,7 +217,7 @@ const PL_COL_NAMES_FIXED = {
  *  via this semType and draws the base64 PNG values directly — we no
  *  longer ship a custom cell renderer. The context panel is wired
  *  separately through `DG.ObjectHandler.register(new PlDiagramObjectHandler())`
- *  in BSV/package.ts's `init`, keyed off the `%prolifSource` column tag. */
+ *  in BSV/package.ts's `init`, keyed off the `.%prolif-source` column tag. */
 export const PL_DIAGRAM_SEM_TYPE = 'rawPng';
 
 /** Given a `PL Diagram` column name, find the matching `PL Interactions`
@@ -233,14 +233,12 @@ export function interactionsColForDiagram(df: DG.DataFrame, diagramColName: stri
   return (df.col(`PL Interactions${suffix}`) ?? null) as DG.Column<string> | null;
 }
 
-// Conditional per-type-count columns. Each entry maps a TS-side key to the
-// Python script's column name plus the grid display name. HBDonor /
-// HBAcceptor are kept separate because the chemistry distinction matters and
-// a residue can be both (e.g. SER hydroxyl on different groups). CationPi/PiCation,
-// XBDonor/XBAcceptor, MetalDonor/MetalAcceptor still collapse via INT_CODES on
-// the Python side. Display names use short codes (HBD/HBA/Hyd/...) to keep
-// the grid columns narrow — the full names appear in the per-residue
-// breakdown UI in the context panel where there's more horizontal room.
+// Conditional per-type-count columns. Each entry maps TS key → Python
+// script column → grid display name. HBDonor/HBAcceptor stay separate
+// because the chemistry distinction matters (a residue can be both);
+// other symmetric pairs collapse on the Python side via INT_CODES. Short
+// display codes keep grid columns narrow; full names appear in the
+// breakdown UI where there's room.
 const PL_INT_COLS: ReadonlyArray<{key: string; pythonKey: string; displayName: string}> = [
   {key: 'nHBondDonor',    pythonKey: 'n_hbond_donor',    displayName: 'PL HBD'},
   {key: 'nHBondAcceptor', pythonKey: 'n_hbond_acceptor', displayName: 'PL HBA'},
@@ -255,17 +253,11 @@ const PL_INT_COLS: ReadonlyArray<{key: string; pythonKey: string; displayName: s
   {key: 'nTotal',         pythonKey: 'n_total',          displayName: 'PL Total'},
 ];
 
-// Matches any PL output column produced by this batch handler. Includes:
-//   * The two canonical text columns (`PL Diagram`, `PL Interactions`)
-//   * The current short-code count columns (`PL HBD`, `PL Hyd`, ...) —
-//     derived from `PL_INT_COLS` so renames there propagate automatically
-//   * The legacy long-form count columns (`PL #H-bond donor`, ...) that
-//     older versions produced — kept so a re-batch on stale DataFrames
-//     still cleans them up
-//   * Any `(N)` suffixed variants from even older versions that appended
-//     on re-run
-// `interactionsColForDiagram` still does suffix-aware lookups separately so
-// stale `PL Diagram (2)` state in user DataFrames keeps working.
+// Matches any PL output column we've ever produced — canonical names
+// (`PL Diagram`, `PL Interactions`, `PL HBD` from `PL_INT_COLS`), legacy
+// long-form names (`PL #H-bond donor`) from older versions, and any
+// `(N)`-suffixed variants. `_dropPriorPlColumns` uses this to clean up
+// stale state on a re-batch.
 const _PL_COUNT_DISPLAY_NAMES = PL_INT_COLS.map((c) => c.displayName.replace(/^PL /, ''));
 const PL_COLUMN_PATTERN = new RegExp(
   `^PL (?:Diagram|Interactions|${_PL_COUNT_DISPLAY_NAMES.join('|')}|#[A-Za-z][\\w -]*)( \\(\\d+\\))?$`,
@@ -302,34 +294,16 @@ function _adjustGridForDiagrams(df: DG.DataFrame, colName: string): void {
 // Offscreen vis.js canvas capture
 // ---------------------------------------------------------------------------
 //
-// Capture-iframe hosting strategy: **30x30 container with overflow:hidden,
-// full-size 600x520 iframe inside.**
-//
-// Why this and not the obvious approaches:
-//   * `opacity: 0` / `opacity: 0.01` — Chrome's "visually imperceptible"
-//     heuristic kicks in and throttles script execution inside the iframe.
-//     vis.js never finishes drawing.
-//   * `position: fixed; left: -99999px` — element is outside the viewport
-//     bounds, Chrome's intersection-with-viewport heuristic flags it as
-//     not visible, scripts throttle. vis.js never inserts the canvas.
-//   * `visibility: hidden` / `display: none` — both block rendering
-//     entirely; scripts may run but no canvas backing buffer exists.
-//
-// A 30x30 container + overflow:hidden works because the iframe's bounding
-// rect is AT (0,0) with full 600x520 size, so Chrome's "in viewport" check
-// passes. The parent container clips everything except a small visible
-// region. Users see a small flickering thumbnail in the corner during a
-// batch; auto-cleanup is via iframe.remove() in finish().
-//
-// No sandbox attribute on the iframe — we control the HTML (it's our own
-// injected ProLIF output), so postMessage works and `iframe.contentDocument`
-// is readable for the polling fallback.
-//
-// Capture concurrency = 3. Empirically, a SINGLE iframe in the small visible
-// region gets throttled by Chrome's "visually imperceptible" heuristic
-// (vis.js produces only a blank 10.3KB canvas). With multiple concurrent
-// iframes Chrome stops throttling — each renders normally, and the 11KB-byte
-// threshold below filters any blank captures that slip through.
+// Strategy: 30x30 container with `overflow:hidden`, full-size 600x520 iframe
+// inside. Chrome throttles "visually imperceptible" iframes — `opacity:0`,
+// off-viewport positioning, `visibility:hidden`, `display:none` all stop
+// vis.js from drawing. A small but on-screen container slips past the
+// heuristic; the full-size iframe is clipped to 30px but vis.js still draws
+// at production resolution. Users see a brief thumbnail flicker during a
+// batch. Concurrency = 3 because a SOLO iframe in the small region still
+// gets throttled empirically. The 11KB threshold on the polled canvas
+// rejects blank captures.
+// No sandbox — we control the HTML, so postMessage + canvas access work.
 const PL_CAPTURE_CONCURRENCY = 3;
 
 let _captureContainer: HTMLDivElement | null = null;
@@ -578,24 +552,17 @@ export function makeProlifWidget(params: {
       : `${ligands.length} ligands found: ${ligands.join(', ')}`;
   host.append(ui.divText(summaryText, 'bsv-pl-summary'));
 
-  // Optional inline LigNetwork. Three branches:
-  //   * 0 ligands AND no explicit `params.ligand`: nothing — script would
-  //     have nothing to compute against.
-  //   * 1 ligand, OR caller passed an explicit ligand / ligand_resname:
-  //     auto-compute and mount the diagram immediately.
-  //   * N>1 ligands and no explicit selection: show a "Ligand" picker
-  //     (`ui.input.choice`) and wait for the user to pick before
-  //     computing. Diagram replaces any prior one on selection change.
+  // Optional inline LigNetwork: 0 ligands / no explicit ligand → nothing;
+  // 1 ligand or caller-supplied → auto-compute; N>1 without selection →
+  // show a "Ligand" picker and wait for the user.
   const hasExplicitLigand =
     (params.ligand != null && params.ligand.trim().length > 0) ||
     (params.ligand_resname != null && params.ligand_resname.trim().length > 0);
   if (opts?.showInlineDiagram && (ligands.length > 0 || hasExplicitLigand)) {
     const diagramHost = ui.div([], 'bsv-pl-inline-diagram');
     if (ligands.length > 1 && !hasExplicitLigand) {
-      // Picker case — `nullable: true` + `value: null` means the user has
-      // to pick intentionally rather than getting the most-common-HETATM
-      // heuristic's guess. Selecting a value clears any prior diagram and
-      // re-runs the compute for the new resname.
+      // `nullable: true` + `value: null` forces an intentional pick rather
+      // than guessing via the most-common-HETATM heuristic.
       const picker = ui.input.choice('Ligand', {
         value: null,
         items: ligands,
@@ -734,18 +701,14 @@ export async function runPlBatch(opts: RunPlBatchOptions): Promise<void> {
   _dropPriorPlColumns(df);
 
   // PL Diagram added BEFORE PL Interactions so it appears to the left in
-  // the grid — the diagram is the primary visual artefact, the interaction
-  // string is supporting detail. semType `rawPng` lights up PowerGrid's
-  // built-in PNG renderer; the `%prolifSource` tag links each cell back to
-  // the source ligand/PDB column and is what `PlDiagramObjectHandler`
-  // uses to claim the cell for its context panel.
+  // the grid. semType `rawPng` lights up PowerGrid's built-in PNG
+  // renderer; the `.%prolif-source` tag links each cell to the source
+  // ligand/PDB column and is what `PlDiagramObjectHandler` keys off.
+  // Tag literal must match `PROLIF_SOURCE_TAG` in `./pl-object-handler.ts`
+  // (inlined to avoid a circular import).
   const diagramCol = df.columns.addNewString(PL_COL_NAMES_FIXED.diagram) as DG.Column<string>;
   diagramCol.semType = PL_DIAGRAM_SEM_TYPE;
-  // Linking tag — must match `PROLIF_SOURCE_TAG` in `./pl-object-handler.ts`.
-  // Inlined here as a string literal (rather than imported) to avoid a
-  // circular import between the two files. `%`-prefixed tags are surfaced
-  // by Datagrok as cross-column references in the column info panel.
-  diagramCol.tags['%prolifSource'] = ctx.pdbCol.name;
+  diagramCol.tags['.%prolif-source'] = ctx.pdbCol.name;
   const interactionsCol = df.columns.addNewString(PL_COL_NAMES_FIXED.interactions) as DG.Column<string>;
   const dropFixedCols = () => {
     df.columns.remove(interactionsCol.name);
@@ -763,11 +726,9 @@ export async function runPlBatch(opts: RunPlBatchOptions): Promise<void> {
     }
   }
 
-  // Per-row buffers. NOTHING is written into the columns during the row pool;
-  // all writes happen in a single bulk pass after Promise.all below. This
-  // way the user sees the progress bar tick through rows while the PL
-  // columns stay empty, then all data (interactions string + per-type
-  // counts + diagram PNG) appears at once when the batch finishes.
+  // Per-row buffers — column writes happen in a single bulk pass after
+  // Promise.all below, so all PL columns populate at once when the batch
+  // finishes (instead of trickling in row-by-row).
   const interactionsValues = new Array<string>(rowCount).fill('');
   const counts: {[key: string]: Int32Array} = {};
   for (const c of PL_INT_COLS)
