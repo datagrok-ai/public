@@ -47,12 +47,15 @@ import {extractSequenceColumns} from './utils/sequence-handler';
 import {getMol3DAtomPickerLinkWidget} from './panels/mol3d-atom-picker-link-panel';
 import {
   hasNonWaterHetatm as _hasNonWaterHetatm,
+  isAutoDockPose as _isAutoDockPose,
   makeProlifWidget,
-  ProlifBatchCtx,
+  resolveBatchCtxFromSemValue,
   getPlHtmlForRow,
   renderInteractionBreakdown,
   interactionsColForDiagram,
 } from './utils/prolif-panel';
+import {makeDockingProlifWidget} from './utils/docking-pose-prolif';
+import {getReceptorData} from './utils/autodock-receptor';
 
 export * from './package.g';
 export const _package: BsvPackage = new BsvPackage();
@@ -60,10 +63,10 @@ export const _package: BsvPackage = new BsvPackage();
 
 const dataDir = 'Admin:Data/PDB/CHEMBL2366517/';
 
-// ProLIF panel + batch handler live in `@datagrok-libraries/bio/src/prolif/prolif-panel`;
-// `./utils/prolif-panel.ts` is now a thin re-export shim. The Docking
-// package wraps the same shared module with its own per-row gate
-// (`isApplicableAutodock`) and receptor pre-fetch.
+// ProLIF panel + batch handler live in `./utils/prolif-panel.ts`. The
+// AutoDock-pose flavour (receptor pre-fetch + `isAutoDockPose` gate) is
+// glued in via `./utils/docking-pose-prolif.ts`. Docking package has no
+// ProLIF code anymore — see header of `./utils/prolif-panel.ts`.
 
 
 export class PackageFunctions {
@@ -94,13 +97,12 @@ export class PackageFunctions {
   }
 
   // Cell renderer for `PL Diagram` cells (base64 PNG of the captured
-  // LigNetwork canvas, written by `runPlBatch` in
-  // `@datagrok-libraries/bio/src/prolif/prolif-panel`). Bound to semType
-  // `PL.LigNetwork` — the same semType the context panel
+  // LigNetwork canvas, written by `runPlBatch` in `./utils/prolif-panel`).
+  // Bound to semType `PL.LigNetwork` — the same semType the context panel
   // `plDiagramInteractionsWidget` binds to, so one semType drives both
-  // display and click-to-open-panel. See `pl-png-cell-renderer.ts` in
-  // the shared module for why we bundle our own renderer rather than
-  // depending on PowerGrid's `rawPng`.
+  // display and click-to-open-panel. See `./utils/pl-png-cell-renderer.ts`
+  // for why we bundle our own renderer rather than depending on PowerGrid's
+  // `rawPng`.
   @grok.decorators.func({
     name: 'plLigNetworkPngCellRenderer',
     meta: {cellType: 'PL.LigNetwork', role: 'cellRenderer'},
@@ -275,34 +277,52 @@ export class PackageFunctions {
   static async pdbInteractionsWidget(
     @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
   ): Promise<DG.Widget> {
-    // The cell.dart check matches the Bio package's pattern at
-    // packages/Bio/src/widgets/to-atomic-level-widget.ts:17 — without it,
-    // cell.dataFrame returns a wrapper around a null dart (non-null but
-    // unusable), and our batchCtx guard would let bad data through.
-    const cell = molecule.cell;
-    const hasValidCell =
-      cell != null && cell.dart != null && cell.dataFrame != null && cell.column != null;
-    let df: DG.DataFrame | null = null;
-    let pdbCol: DG.Column<string> | null = null;
-    if (hasValidCell) {
-      df = cell.dataFrame;
-      pdbCol = cell.column as DG.Column<string>;
-    } else {
-      // Fallback: use the current table view's DataFrame. Lets the button
-      // work even when the panel is invoked without a usable cell context
-      // (e.g. the panel was opened from the menu rather than a grid click).
-      const t = grok.shell.t;
-      if (t != null) {
-        df = t;
-        const m3dCols = t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE3D);
-        pdbCol = (m3dCols[0] ?? null) as DG.Column<string> | null;
-        if (m3dCols.length > 1)
-          grok.shell.warning(`Multiple Molecule3D columns found; PL batch will use "${m3dCols[0].name}".`);
-      }
-    }
-    const batchCtx: ProlifBatchCtx | undefined = (df != null && pdbCol != null) ?
-      {df, pdbCol} : undefined;
-    return makeProlifWidget({protein: molecule.value as string}, batchCtx);
+    return makeProlifWidget(
+      {protein: molecule.value as string},
+      resolveBatchCtxFromSemValue(molecule),
+      {showInlineDiagram: true});
+  }
+
+  // Predicate function for the AutoDock-pose panel condition below. Datagrok
+  // panels reference predicates by their package-qualified name in the
+  // `condition` string; this decorator makes `BiostructureViewer:isAutoDockPose`
+  // resolvable at registration time. Delegates to bio's shared one-line
+  // `'binding energy'`-substring heuristic.
+  @grok.decorators.func()
+  static isAutoDockPose(molecule: string): boolean {
+    return _isAutoDockPose(molecule);
+  }
+
+  // Protein-Ligand Interactions panel for AutoDock poses (the cell value
+  // is a pose PDB containing a `REMARK ... binding energy` line). The
+  // receptor isn't carried in the pose cell — it lives in
+  // `System:AppData/Docking/targets/<receptor>/` (deposited by the
+  // Docking package's `files/` on install). This widget pre-fetches the
+  // receptor on mount and shows the interactive LigNetwork.
+  //
+  // The whole-dataset batch button uses a Docking-flavour `runPlBatch`
+  // (pre-fetch the receptor once, gate per-row by `isAutoDockPose`) —
+  // wired via `makeDockingProlifWidget`.
+  @grok.decorators.panel({
+    name: 'Protein-Ligand Interactions',
+    condition: 'BiostructureViewer:isAutoDockPose(molecule)',
+  })
+  static async dockingInteractionsWidget(
+    @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
+  ): Promise<DG.Widget> {
+    const pose = molecule.value as string;
+    const receptorData = await getReceptorData(pose);
+    const receptor = typeof receptorData.data === 'string'
+      ? receptorData.data
+      : new TextDecoder().decode(receptorData.data as Uint8Array);
+    // `asDockingPose=true` routes the resolved Molecule3D column as both
+    // pdbCol (drives the loop) and ligandCol — that tells the shared batch
+    // handler to treat each row's value as the ligand and use a pre-fetched
+    // receptor as `protein`.
+    return makeDockingProlifWidget(
+      {protein: receptor, ligand: pose},
+      resolveBatchCtxFromSemValue(molecule, true),
+      {showInlineDiagram: true});
   }
 
   @grok.decorators.panel({name: 'Protein-Ligand Interactions'})
@@ -313,7 +333,7 @@ export class PackageFunctions {
       const resp = await grok.dapi.fetchProxy(`https://files.rcsb.org/download/${pdbId}.pdb`);
       if (!resp.ok)
         return new DG.Widget(ui.divText(`Could not fetch PDB ${pdbId}`));
-      return makeProlifWidget({protein: await resp.text()});
+      return makeProlifWidget({protein: await resp.text()}, undefined, {showInlineDiagram: true});
     } catch (err) {
       return new DG.Widget(ui.divText(
         `Error fetching ${pdbId}: ${err instanceof Error ? err.message : String(err)}`

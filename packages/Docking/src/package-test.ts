@@ -6,7 +6,6 @@ import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagr
 
 import './tests/autodock-tests';
 import './tests/utils-tests';
-import './tests/prolif-batch-tests';
 
 export let _package = new DG.Package();
 export {tests};

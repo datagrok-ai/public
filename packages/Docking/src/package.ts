@@ -18,14 +18,15 @@ import {
   addColorCoding, buildComparisonTable, formatColumns, getRemarksFromPdb, getRemarksFromPdbs,
   getReceptorData, processAutodockResults, prop,
 } from './utils/utils';
-import {makeProlifWidget, ProlifBatchCtx} from './utils/prolif-panel';
 export * from './package.g';
 export const _package = new DG.Package();
 
-// ProLIF panel + batch handler live in `@datagrok-libraries/bio/src/prolif/prolif-panel`.
-// `./utils/prolif-panel.ts` is a thin Docking-specific wrapper that supplies
-// the receptor pre-fetch and `isApplicableAutodock` per-row gate to the
-// shared `runPlBatch`.
+// The Protein-Ligand Interactions panel + batch handler for AutoDock poses
+// now lives in the BiostructureViewer package (BSV/src/utils/docking-pose-prolif.ts
+// + BSV/src/package.ts `dockingInteractionsWidget`). BSV resolves the
+// receptor by reading `System:AppData/Docking/targets/` directly. Docking
+// keeps just the docking computation itself (`runAutodock`, `autodockWidget`,
+// hover-comparison panel).
 
 
 export class PackageFunctions{
@@ -181,6 +182,9 @@ export class PackageFunctions{
 
   @grok.decorators.func()
   static isApplicableAutodock(molecule: string): boolean {
+    // AutoDock writes a `REMARK ... binding energy` line into every pose.
+    // BSV's `isAutoDockPose` uses the same one-line heuristic — duplicated
+    // here so the Docking package has zero ProLIF / bio dependencies.
     return molecule.includes('binding energy');
   }
 
@@ -194,56 +198,10 @@ export class PackageFunctions{
     return await PackageFunctions.getAutodockSingle(molecule);
   }
 
-  @grok.decorators.panel({
-    name: 'Protein-Ligand Interactions',
-    condition: 'Docking:isApplicableAutodock(molecule)',
-  })
-  static async dockingInteractionsWidget(
-    @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
-  ): Promise<DG.Widget> {
-    const pose = molecule.value as string;
-    const receptorData = await getReceptorData(pose);
-    const receptor = typeof receptorData.data === 'string'
-      ? receptorData.data
-      : new TextDecoder().decode(receptorData.data as Uint8Array);
-    // cell.dart guard matches Bio package precedent — without it cell.dataFrame
-    // returns a wrapper around a null dart that would let bad data through.
-    const cell = molecule.cell;
-    const hasValidCell =
-      cell != null && cell.dart != null && cell.dataFrame != null && cell.column != null;
-    let df: DG.DataFrame | null = null;
-    let poseCol: DG.Column<string> | null = null;
-    if (hasValidCell) {
-      df = cell.dataFrame;
-      poseCol = cell.column as DG.Column<string>;
-    } else {
-      // Fallback: scan the current table view for an AutoDock-pose column.
-      const t = grok.shell.t;
-      if (t != null) {
-        df = t;
-        const m3dCols = t.columns.toList()
-          .filter((c) => c.semType === 'Molecule3D' || c.tags['quality'] === 'Molecule3D');
-        poseCol = (m3dCols[0] ?? null) as DG.Column<string> | null;
-        if (m3dCols.length > 1)
-          grok.shell.warning(`Multiple Molecule3D columns found; PL batch will use "${m3dCols[0].name}".`);
-      }
-    }
-    // For the Docking case the same column carries the per-row pose; route
-    // it as both pdbCol (drives the loop) and ligandCol. Presence of
-    // ligandCol signals the batch handler to pre-fetch the receptor once
-    // before the loop and route receptor as `protein`, pose as `ligand`.
-    const batchCtx: ProlifBatchCtx | undefined = (df != null && poseCol != null) ? {
-      df, pdbCol: poseCol, ligandCol: poseCol,
-    } : undefined;
-    return makeProlifWidget({protein: receptor, ligand: pose}, batchCtx);
-  }
-
-  // NOTE: the context panel that fires on `PL Diagram` cells is registered
-  // ONCE in `BiostructureViewer/src/package.ts` as `plDiagramInteractionsWidget`.
-  // Registering it again here would mean both fire on the same cell click and
-  // the user sees the panel twice in the right sidebar. The BSV widget reads
-  // from the shared `window.__prolifCache` populated by either package's batch
-  // handler, so it works for both Docking and BSV datasets.
+  // The "Protein-Ligand Interactions" panel for AutoDock poses lives in
+  // `BiostructureViewer/src/package.ts` as `dockingInteractionsWidget`.
+  // It owns the receptor lookup (via `utils/autodock-receptor.ts`) and the
+  // batch handler — Docking just provides the docking computation itself.
 
   @grok.decorators.func()
   static async getAutodockSingle(

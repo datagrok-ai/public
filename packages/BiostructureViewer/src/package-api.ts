@@ -7,6 +7,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+export namespace scripts {
+  /**
+  Interactive 2D protein-ligand interaction diagram via ProLIF
+  */
+  export async function proteinLigandInteractionDiagram(protein: string , ligand: string , ligand_resname: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('BiostructureViewer:ProteinLigandInteractionDiagram', { protein, ligand, ligand_resname });
+  }
+}
+
 export namespace funcs {
   export async function init(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:Init', {});
@@ -18,6 +27,10 @@ export namespace funcs {
 
   export async function pdbIdCellRenderer(): Promise<any> {
     return await grok.functions.call('BiostructureViewer:PdbIdCellRenderer', {});
+  }
+
+  export async function plLigNetworkPngCellRenderer(): Promise<any> {
+    return await grok.functions.call('BiostructureViewer:PlLigNetworkPngCellRenderer', {});
   }
 
   export async function viewPdbById(pdbId: string ): Promise<void> {
@@ -98,6 +111,30 @@ export namespace funcs {
 
   export async function pdbInfoPanel(pdbId: string ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:PdbInfoPanel', { pdbId });
+  }
+
+  export async function hasNonWaterHetatm(molecule: string ): Promise<boolean> {
+    return await grok.functions.call('BiostructureViewer:HasNonWaterHetatm', { molecule });
+  }
+
+  export async function pdbInteractionsWidget(molecule: any ): Promise<any> {
+    return await grok.functions.call('BiostructureViewer:PdbInteractionsWidget', { molecule });
+  }
+
+  export async function isAutoDockPose(molecule: string ): Promise<boolean> {
+    return await grok.functions.call('BiostructureViewer:IsAutoDockPose', { molecule });
+  }
+
+  export async function dockingInteractionsWidget(molecule: any ): Promise<any> {
+    return await grok.functions.call('BiostructureViewer:DockingInteractionsWidget', { molecule });
+  }
+
+  export async function pdbIdInteractionsWidget(pdbId: string ): Promise<any> {
+    return await grok.functions.call('BiostructureViewer:PdbIdInteractionsWidget', { pdbId });
+  }
+
+  export async function plDiagramInteractionsWidget(cell: any ): Promise<any> {
+    return await grok.functions.call('BiostructureViewer:PlDiagramInteractionsWidget', { cell });
   }
 
   /**
