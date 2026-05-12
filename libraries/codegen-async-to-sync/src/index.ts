@@ -86,27 +86,31 @@ function stripDirectiveLines(text: string): string {
     .join('\n');
 }
 
-// Find the first async top-level declaration (function or async function-init
-// const) and strip its `async` modifier. Returns false when nothing left to
-// strip. Re-walks from the SourceFile each call because every previous edit
-// has invalidated descendant node references.
+// Find any async function-like node (function decl, function expression, or
+// arrow), top-level or nested, and strip its `async` modifier. Returns false
+// when nothing left to strip. Re-walks from the SourceFile each call because
+// every previous edit has invalidated descendant node references.
+//
+// Nested async closures are common in async source code (local helpers like
+// `const evalF = async (p) => { ... }`); since `stripAwaits` removes their
+// awaits regardless of nesting, their `async` keyword must come off too — else
+// they'd still return Promises in the generated sync output.
 function stripOneAsyncModifier(file: SourceFile): boolean {
-  for (const stmt of file.getStatements()) {
-    if (Node.isFunctionDeclaration(stmt) && stmt.isAsync()) {
-      stmt.setIsAsync(false);
-      return true;
+  let target: Node | undefined;
+  file.forEachDescendant((node, traversal) => {
+    if (Node.isFunctionDeclaration(node) && node.isAsync()) {
+      target = node;
+      traversal.stop();
+    } else if ((Node.isFunctionExpression(node) || Node.isArrowFunction(node)) && node.isAsync()) {
+      target = node;
+      traversal.stop();
     }
-    if (Node.isVariableStatement(stmt)) {
-      for (const decl of stmt.getDeclarations()) {
-        const init = decl.getInitializer();
-        if (init && (Node.isFunctionExpression(init) || Node.isArrowFunction(init)) && init.isAsync()) {
-          init.setIsAsync(false);
-          return true;
-        }
-      }
-    }
-  }
-  return false;
+  });
+  if (!target) return false;
+  if (Node.isFunctionDeclaration(target)) target.setIsAsync(false);
+  else if (Node.isFunctionExpression(target)) target.setIsAsync(false);
+  else if (Node.isArrowFunction(target)) target.setIsAsync(false);
+  return true;
 }
 
 // One replacement per pass — `replaceWithText` re-parses the source file, which

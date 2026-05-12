@@ -27,6 +27,45 @@ describe('async strip', () => {
     expect(out).toContain('const x = 1');
     expect(out).toContain('return x');
   });
+
+  test('nested async arrow inside outer async fn — both stripped', () => {
+    const src = `${HEADER}export async function foo() {
+  const evalF = async (p: number): Promise<number> => await bar(p);
+  return await evalF(1);
+}
+`;
+    const out = run(src);
+    expect(out).not.toMatch(/\basync\b/);
+    expect(out).not.toMatch(/\bawait\b/);
+    expect(out).toContain('const evalF = (p: number): number => bar(p);');
+    expect(out).toContain('return evalF(1);');
+  });
+
+  test('nested async function expression — async stripped', () => {
+    const src = `${HEADER}export async function foo() {
+  const inner = async function(): Promise<number> { return await bar(); };
+  return await inner();
+}
+`;
+    const out = run(src);
+    expect(out).not.toMatch(/\basync\b/);
+    expect(out).not.toMatch(/\bawait\b/);
+    expect(out).toMatch(/const inner = function\(\): number/);
+  });
+
+  test('doubly-nested async closure (inner inside inner) — both stripped', () => {
+    const src = `${HEADER}export async function foo() {
+  const outer = async () => {
+    const inner = async () => await bar();
+    return await inner();
+  };
+  return await outer();
+}
+`;
+    const out = run(src);
+    expect(out).not.toMatch(/\basync\b/);
+    expect(out).not.toMatch(/\bawait\b/);
+  });
 });
 
 describe('await strip', () => {
