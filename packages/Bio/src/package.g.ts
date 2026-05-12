@@ -765,6 +765,13 @@ export async function sdfToJsonLib(table: DG.DataFrame) : Promise<void> {
   await PackageFunctions.sdfToJsonLib(table);
 }
 
+//description: Antibody sequences, numbering, liabilities, extraction and SAR
+//meta.demoPath: Bioinformatics | Antibodies
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Antibodies
+export async function demoAntibodies() : Promise<void> {
+  await PackageFunctions.demoAntibodies();
+}
+
 //description: Converts a `Macromolecule` sequence to its atomic level `Molecule` representation
 //input: string seq { semType: Macromolecule }
 //input: bool nonlinear 

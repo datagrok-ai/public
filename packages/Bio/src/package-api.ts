@@ -503,6 +503,13 @@ export namespace funcs {
   }
 
   /**
+  Antibody sequences, numbering, liabilities, extraction and SAR
+  */
+  export async function demoAntibodies(): Promise<void> {
+    return await grok.functions.call('Bio:DemoAntibodies', {});
+  }
+
+  /**
   Converts a `Macromolecule` sequence to its atomic level `Molecule` representation
   */
   export async function seq2atomic(seq: string , nonlinear: boolean ): Promise<string> {
