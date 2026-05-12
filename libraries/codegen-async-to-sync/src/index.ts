@@ -222,12 +222,15 @@ function collectReferencedNames(scope: Node): Set<string> {
 interface ImportInfo {
   moduleSpecifier: string;
   named: string[];
+  /** Local binding for `import * as X from '...'` (undefined for named-only imports). */
+  namespace?: string;
 }
 
 function collectImports(file: SourceFile): ImportInfo[] {
   return file.getImportDeclarations().map((imp) => ({
     moduleSpecifier: imp.getModuleSpecifierValue(),
     named: imp.getNamedImports().map((ni) => ni.getName()),
+    namespace: imp.getNamespaceImport()?.getText(),
   }));
 }
 
@@ -309,6 +312,14 @@ export function transformText(srcText: string, srcStem: string): TransformResult
   // async/sync-twin convention).
   const rebuiltImports: ImportInfo[] = [];
   for (const imp of sourceImports) {
+    // Namespace imports (`import * as X from 'mod'`) — pass through unchanged
+    // if the local binding is referenced anywhere in the sync body. They
+    // aren't subject to `@codegen-rename` (the namespace name is a local
+    // alias, not an imported symbol the rename map targets).
+    if (imp.namespace && referenced.has(imp.namespace) && !declaredInOutput.has(imp.namespace)) {
+      rebuiltImports.push({moduleSpecifier: imp.moduleSpecifier, named: [], namespace: imp.namespace});
+      continue;
+    }
     const used: string[] = [];
     for (const n of imp.named) {
       const resolved = directives.renames.get(n) ?? n;
@@ -340,7 +351,10 @@ export function transformText(srcText: string, srcStem: string): TransformResult
   ].join('\n');
 
   const importLines = rebuiltImports.map((imp) =>
-    `import {${imp.named.join(', ')}} from '${imp.moduleSpecifier}';`).join('\n');
+    imp.namespace
+      ? `import * as ${imp.namespace} from '${imp.moduleSpecifier}';`
+      : `import {${imp.named.join(', ')}} from '${imp.moduleSpecifier}';`,
+  ).join('\n');
 
   const bodyLines = work.getStatements()
     .filter((s) => !Node.isImportDeclaration(s))

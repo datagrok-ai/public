@@ -232,6 +232,25 @@ export async function foo(): Promise<number> { return A + helper(1); }
     expect(out).toMatch(/import \{helper\} from '\.\/my-mod'/);
   });
 
+  test('namespace import preserved when binding is referenced', () => {
+    const src = `// @async-source: out.ts
+import * as math from 'math-lib';
+export async function foo(): Promise<number> { return math.sqrt(4); }
+`;
+    const out = run(src);
+    expect(out).toContain("import * as math from 'math-lib';");
+    expect(out).toContain('return math.sqrt(4);');
+  });
+
+  test('namespace import dropped when unused', () => {
+    const src = `// @async-source: out.ts
+import * as unused from 'math-lib';
+export async function foo(): Promise<number> { return 1; }
+`;
+    const out = run(src);
+    expect(out).not.toContain("from 'math-lib'");
+  });
+
   test('sibling interface referenced by sync body — imported from source stem', () => {
     const src = `// @async-source: out.ts
 export interface Result { ok: boolean; value: number }
