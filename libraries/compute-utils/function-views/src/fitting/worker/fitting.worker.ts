@@ -10,13 +10,14 @@
 import dayjs from 'dayjs/esm/index.js';
 (globalThis as any).dayjs = dayjs;
 import {optimizeNM} from '../optimizer-nelder-mead';
+import {optimizeNMSync} from '../optimizer-nelder-mead-sync';
 import {LOSS} from '../constants';
 import {makeBoundsChecker} from '../bounds-checker';
 import {arrowIpcToLite} from '../../../../webworkers/dg-lite/arrow-to-lite';
 import type {LiteDataFrame} from '../../../../webworkers/dg-lite/types';
 import {ColLike, DfLike, FrameTarget, ScalarTarget, accumulateLoss, InconsistentTablesError}
   from './cost-math';
-import {createWorkerFuncCall, WorkerFuncCall}
+import {createWorkerFuncCall, WorkerFuncCall, SyncWorkerFuncCall, AsyncWorkerFuncCall}
   from '../../../../webworkers/script-runner/func-call-shim';
 import type {
   FitSessionSetup,
@@ -99,28 +100,44 @@ function reifyFixedInputs(
   return out;
 }
 
-type Session = {
+// Two variants so the sync path stays fully synchronous from `handleRun`
+// down to `compiled()` — no microtask hops per cost evaluation. The async
+// variant only exists when the user script body contains top-level
+// `await`; in that case `fc.call` returns a Promise and `cost` awaits it.
+type SyncSession = {
+  kind: 'sync';
   costFunc: (x: Float64Array) => number | undefined;
   nmSettings: Map<string, number>;
   threshold?: number;
   // Strong reference to the funcCall so V8 keeps the compiled body and
   // decoded LiteDataFrames alive across runs.
-  fc: WorkerFuncCall;
+  fc: SyncWorkerFuncCall;
 };
+
+type AsyncSession = {
+  kind: 'async';
+  costFunc: (x: Float64Array) => Promise<number | undefined>;
+  nmSettings: Map<string, number>;
+  threshold?: number;
+  fc: AsyncWorkerFuncCall;
+};
+
+type Session = SyncSession | AsyncSession;
 
 const sessions: Map<SessionId, Session> = new Map();
 
-function buildCostFunc(setup: FitSessionSetup): {
-  cost: (x: Float64Array) => number | undefined;
-  fc: WorkerFuncCall;
-} {
+type BuildResult =
+  | {kind: 'sync'; cost: (x: Float64Array) => number | undefined; fc: SyncWorkerFuncCall}
+  | {kind: 'async'; cost: (x: Float64Array) => Promise<number | undefined>; fc: AsyncWorkerFuncCall};
+
+function buildCostFunc(setup: FitSessionSetup): BuildResult {
   const targets = buildTargetEntries(setup.outputTargets);
   // Shared by FuncCall body and bounds-checker formula context.
   const merged: Record<string, any> = {
     ...reifyFixedInputs(setup.fixedInputs, setup.fixedInputTypes),
     ...reifyFixedDataFrames(setup.fixedDataFrames),
   };
-  const fc = createWorkerFuncCall({
+  const fc: WorkerFuncCall = createWorkerFuncCall({
     source: setup.fnSource,
     paramList: setup.paramList,
     outputNames: setup.outputParamNames,
@@ -130,6 +147,23 @@ function buildCostFunc(setup: FitSessionSetup): {
   const variedNames = setup.variedInputNames;
   const checker = makeBoundsChecker(setup.bounds, variedNames, merged);
   const useRmse = setup.lossType === LOSS.RMSE;
+
+  if (fc.kind === 'async') {
+    const cost = async (x: Float64Array): Promise<number | undefined> => {
+      if (!checker(x)) return undefined;
+      const varied: Record<string, number> = {};
+      for (let i = 0; i < variedNames.length; ++i)
+        varied[variedNames[i]] = x[i];
+      await fc.call(varied);
+
+      const scalars: ScalarTarget[] = targets.scalars.map((s) =>
+        ({target: s.target, sim: fc.getParamValue(s.propName) as number}));
+      const frames: FrameTarget[] = targets.dataFrames.map((d) =>
+        ({argCol: d.argCol, funcCols: d.funcCols, simDf: fc.getParamValue(d.propName) as DfLike}));
+      return accumulateLoss(useRmse, scalars, frames);
+    };
+    return {kind: 'async', cost, fc};
+  }
 
   const cost = (x: Float64Array): number | undefined => {
     if (!checker(x)) return undefined;
@@ -144,18 +178,30 @@ function buildCostFunc(setup: FitSessionSetup): {
       ({argCol: d.argCol, funcCols: d.funcCols, simDf: fc.getParamValue(d.propName) as DfLike}));
     return accumulateLoss(useRmse, scalars, frames);
   };
-  return {cost, fc};
+  return {kind: 'sync', cost, fc};
 }
 
 function handleSetup(setup: FitSessionSetup): SetupAck {
   try {
-    const {cost, fc} = buildCostFunc(setup);
-    sessions.set(setup.sessionId, {
-      costFunc: cost,
-      nmSettings: new Map<string, number>(setup.nmSettings),
-      threshold: setup.threshold,
-      fc,
-    });
+    const built = buildCostFunc(setup);
+    const nmSettings = new Map<string, number>(setup.nmSettings);
+    if (built.kind === 'async') {
+      sessions.set(setup.sessionId, {
+        kind: 'async',
+        costFunc: built.cost,
+        nmSettings,
+        threshold: setup.threshold,
+        fc: built.fc,
+      });
+    } else {
+      sessions.set(setup.sessionId, {
+        kind: 'sync',
+        costFunc: built.cost,
+        nmSettings,
+        threshold: setup.threshold,
+        fc: built.fc,
+      });
+    }
     return {kind: 'setup-ack', sessionId: setup.sessionId, ok: true};
   } catch (e: any) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -175,8 +221,11 @@ async function handleRun(run: RunDispatch): Promise<WorkerSuccess | WorkerFailur
     };
   }
   try {
-    const objective = async (x: Float64Array): Promise<number | undefined> => session.costFunc(x);
-    const ext = await optimizeNM(objective, run.seed, session.nmSettings, session.threshold);
+    // Sync path: fully synchronous call chain into optimizeNMSync — no
+    // microtask hops per NM cost evaluation. Async path: existing async NM.
+    const ext = session.kind === 'sync'
+      ? optimizeNMSync(session.costFunc, run.seed, session.nmSettings, session.threshold)
+      : await optimizeNM(session.costFunc, run.seed, session.nmSettings, session.threshold);
     return {
       kind: 'success',
       seedIndex: run.seedIndex,
