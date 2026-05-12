@@ -1,6 +1,6 @@
 ---
 name: db-in-docker
-version: 0.3.0
+version: 0.3.1
 description: |
   Ship a database engine (Postgres with custom extensions, MariaDB,
   ClickHouse, Oracle, ...) inside a sibling container alongside a Datagrok
@@ -40,9 +40,8 @@ platform RDS won't run:
 - required DBA-level isolation from other tenants (`DG-FACT-418`).
 
 For ordinary CRUD storage that fits in the shared Postgres, prefer
-[[db-in-plugin]] — it's simpler, the platform manages migrations and
-lifecycle, and it uses far fewer resources. If none of the three
-bullets above apply, stop and use that path instead.
+[[db-in-plugin]] — simpler, platform-managed, far fewer resources. If
+none of the three bullets above apply, stop and use that path instead.
 
 ## Prerequisites
 
@@ -79,11 +78,11 @@ bullets above apply, stop and use that path instead.
 2. **Add `dockerfiles/container.json` for resource allocation.** The
    article omits this file, but every production db-in-docker package
    ships one — without it the platform applies defaults (`memory: 512`,
-   `cpu: 0.25`, `on_demand: false`) that are usually too small for a
-   real DB (`DG-FACT-DRIFT-DBDOCKER-001`). Use the documented keys
-   only — `shutdown_timeout` is in minutes; the variant
-   `timeout_minutes` seen in `SureChembl/dockerfiles/container.json`
-   is unsupported and silently ignored, do not propagate it.
+   `cpu: 0.25`, `on_demand: false`) usually too small for a real DB
+   (`DG-FACT-DRIFT-DBDOCKER-001`). Use documented keys only —
+   `shutdown_timeout` is in minutes; the variant `timeout_minutes`
+   seen in `SureChembl/dockerfiles/container.json` is unsupported and
+   silently ignored, do not propagate it.
    ```json
    {"cpu": 1, "memory": 2048, "on_demand": true, "shutdown_timeout": 30}
    ```
@@ -96,16 +95,16 @@ bullets above apply, stop and use that path instead.
    placeholder.** The platform recognizes the connection as
    container-bound by the `parameters.server` value. Emit the
    two-segment form `${<Package>:<Friendly><DockerContainer>}`
-   (`DG-FACT-412`). Normalize BOTH the package and friendly segments
-   to first-letter capitalization with the rest lowercased — package
+   (`DG-FACT-412`). Normalize BOTH package and friendly segments to
+   first-letter capitalization with the rest lowercased — package
    `DBTests` becomes `Dbtests`; `SureChembl` becomes `Surechembl`.
    Literal `${DBTests:DBTests<DockerContainer>}` will NOT resolve
    (`DG-FACT-413`, `DG-FACT-DRIFT-DBDOCKER-002`). `db` pins the
    schema/database inside the image and must equal the Dockerfile's
    `ENV POSTGRES_DB`. Credentials go under `credentials.parameters`
-   and must match the Dockerfile's `ENV POSTGRES_USER` /
-   `ENV POSTGRES_PASSWORD`. NEVER add `port` — the platform resolves
-   it from the running container (`DG-FACT-415`).
+   and must match `ENV POSTGRES_USER` / `ENV POSTGRES_PASSWORD`. NEVER
+   add `port` — the platform resolves it from the running container
+   (`DG-FACT-415`).
    ```json
    {
      "#type": "DataConnection",
@@ -137,9 +136,9 @@ bullets above apply, stop and use that path instead.
 
 5. **(Production only) Move credentials out of the JSON.** For a
    throwaway DB the JSON-embedded credentials in step 3 suffice. For
-   production, leave the JSON's `credentials.parameters` empty and
-   POST the real login/password once after deploy so they route
-   through the credentials store (`DG-FACT-409`).
+   production, leave `credentials.parameters` empty and POST the real
+   login/password once after deploy so they route through the
+   credentials store (`DG-FACT-409`).
    ```bash
    curl -X POST "$GROK_HOST/api/credentials/for/$PACKAGE.$CONNECTION" \
      -H "Authorization: $API_KEY" -H "Content-Type: application/json" \
@@ -150,15 +149,17 @@ bullets above apply, stop and use that path instead.
 
 ## Common failure modes
 
-- **Connection deploys but queries fail with "unknown server".** The
-  `server` placeholder used the original mixed-case package or friendly
-  name (e.g. `${DBTests:DBTests<DockerContainer>}`). Normalize to
-  first-letter-capitalized form: `Dbtests`, `Surechembl`
-  (`DG-FACT-413`, `DG-FACT-DRIFT-DBDOCKER-002`).
+- **"Unknown server" at query time.** Either the `server` placeholder
+  kept the original mixed-case package/friendly name (e.g.
+  `${DBTests:DBTests<DockerContainer>}` — must be `Dbtests`,
+  `Surechembl`; `DG-FACT-413`, `DG-FACT-DRIFT-DBDOCKER-002`), or the
+  friendly-name segment is wrong: with one Dockerfile directly in
+  `dockerfiles/` it equals the normalized package name; with
+  sub-folders it becomes `<package>-<folder>` (`DG-FACT-414`).
 - **Container never accepts traffic / build queue stalls.** The
   Dockerfile has zero or multiple `EXPOSE` directives. Exactly one
   internal port is allowed; remove extras (`DG-FACT-416`).
-- **Container is OOM-killed or evicted on first real query.** No
+- **Container OOM-killed or evicted on first real query.** No
   `container.json` was shipped, so the platform applied 512 MB / 0.25
   CPU defaults. Add `dockerfiles/container.json` with realistic
   `memory` / `cpu` (`DG-FACT-DRIFT-DBDOCKER-001`).
@@ -170,37 +171,29 @@ bullets above apply, stop and use that path instead.
   block is world-readable; the credentials store is bypassed. Move
   them under `credentials.parameters` and POST per step 5
   (`DG-FACT-409`).
-- **Friendly-name segment is wrong.** With one Dockerfile directly in
-  `dockerfiles/`, the friendly name equals the (normalized) package
-  name. With sub-folders, it becomes `<package>-<folder>`. Mismatch →
-  "unknown server" at query time (`DG-FACT-414`).
 
 ## Verification
 
 - `grok publish` returns success and lists the new connection.
 - In Datagrok, **Browse > Databases > `<Package>:<Name>`** opens; its
   schema tree populates after the first query.
-- Fetch the connection object via `grok.functions.eval` (preserves
-  the original package case — normalization applies ONLY inside the
+- Fetch the connection via `grok.functions.eval` (preserves the
+  original package case — normalization applies ONLY inside the
   `${...}` placeholder) and call `.test()`. Pass: the dispatcher
   treats it as a normal Postgres/MariaDB connection (`DG-FACT-417`).
   ```typescript
   const conn = await grok.functions.eval('DbTests:PostgresDocker');
   await conn.test();
   ```
-  Reference pattern: `packages/DBTests/src/connections/queries-test.ts:43-50`.
+  Reference: `packages/DBTests/src/connections/queries-test.ts:43-50`.
 
 ## See also
 
 - Source: `{{ lattice.harness.help_develop_root }}/how-to/db/db-in-docker.md`
-  (mirror: `docs/_internal/articles-mirror/how-to/db/db-in-docker.md`).
-- Related: `{{ lattice.harness.help_develop_root }}/how-to/packages/docker-containers.md`
-  (container.json schema), `db-in-plugin.md` (simpler alternative),
-  `access-data.md` (connection-and-query spine this plugs into).
+  (mirror: `docs/_internal/articles-mirror/how-to/db/db-in-docker.md`);
+  related article `how-to/packages/docker-containers.md` (container.json schema).
 - Knowledge (`docs/_internal/knowledge/knowledge-graph.md`):
-  `DG-FACT-412` – `DG-FACT-418`,
-  `DG-FACT-DRIFT-DBDOCKER-001`, `DG-FACT-DRIFT-DBDOCKER-002`,
-  `DG-FACT-409` (credentials POST).
-- Related skills: [[create-package]], [[docker-containers]] (general
-  container packaging), [[db-in-plugin]] (managed Postgres alternative),
-  [[access-data]] (TS dispatcher), [[manage-credentials]] (step 5 POST).
+  `DG-FACT-412`–`DG-FACT-418`, `DG-FACT-DRIFT-DBDOCKER-001`,
+  `DG-FACT-DRIFT-DBDOCKER-002`, `DG-FACT-409`.
+- Related skills: [[create-package]], [[docker-containers]],
+  [[db-in-plugin]], [[access-data]], [[manage-credentials]].
