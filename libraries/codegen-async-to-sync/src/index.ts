@@ -1,22 +1,5 @@
 // Async→sync TypeScript codegen via ts-morph AST transform.
-//
-// Public surface:
-//   transformText(srcText, srcStem) → { outputPath, outputText } | null
-//     Pure transform. Returns null if the source has no @async-source directive.
-//   processFile(srcPath) → { outputPath, wrote }
-//     Reads srcPath, transforms, writes the generated sibling. No-op (returns
-//     wrote=false) if the source is not a codegen source.
-//   checkFile(srcPath) → { outputPath, drift }
-//     Reads srcPath, transforms in memory, compares with what's on disk. Does
-//     not write. drift=true if the existing sync file differs from generated.
-//   findCodegenSources(roots) → string[]
-//     Walks the given root directories and returns absolute paths of files
-//     whose leading comment block contains `@async-source`.
-//
-// Directive grammar (in the source's leading comment block):
-//   // @async-source: <output-filename>
-//   // @codegen-rename: <old>=<new>          (repeatable)
-//   // @async-only                           (end-of-line — drops the host line)
+// Directive grammar and transformation rules: see README.md.
 
 import {
   Project,
@@ -48,9 +31,6 @@ function parseDirectives(sourceText: string): Directives | null {
       const [, src, dst] = renameMatch;
       if (src === dst)
         throw new Error(`@codegen-rename: '${src}=${dst}' is a no-op (source equals target)`);
-      // Detect duplicate targets: two different sources renamed to the same
-      // name produce ambiguous output (both references would resolve to the
-      // same identifier). Catches typo-style mistakes early.
       for (const [otherSrc, otherDst] of renames) {
         if (otherDst === dst && otherSrc !== src)
           throw new Error(
@@ -88,17 +68,8 @@ function getDeclaredName(stmt: Statement): string | null {
   return null;
 }
 
-// Strip `@async-only` regions. Two forms:
-//   - Line form: `// @async-only` on any line drops that single line.
-//   - Block form: `// @async-only-begin` … `// @async-only-end` drops the
-//     two marker lines AND everything between them. Useful when the
-//     async-only logic spans multiple lines and a single-line strip would
-//     leave a syntactically broken tail (e.g. `else if (...)` after the
-//     preceding `if` block was removed).
-//
-// Unmatched `-begin` strips everything to EOF (intentional — surfaces as a
-// parse error downstream, which is better than silently dropping less than
-// intended). Unmatched `-end` is a no-op (also safe).
+// Unmatched `@async-only-begin` strips to EOF on purpose: surfaces as a
+// downstream parse error rather than silently dropping less than intended.
 function stripAsyncOnlyLines(text: string): string {
   const lines = text.split('\n');
   const out: string[] = [];
@@ -126,15 +97,8 @@ function stripDirectiveLines(text: string): string {
     .join('\n');
 }
 
-// Find any async function-like node (function decl, function expression, or
-// arrow), top-level or nested, and strip its `async` modifier. Returns false
-// when nothing left to strip. Re-walks from the SourceFile each call because
-// every previous edit has invalidated descendant node references.
-//
-// Nested async closures are common in async source code (local helpers like
-// `const evalF = async (p) => { ... }`); since `stripAwaits` removes their
-// awaits regardless of nesting, their `async` keyword must come off too — else
-// they'd still return Promises in the generated sync output.
+// One async-modifier removal per call. Re-walks from the SourceFile each
+// call: previous edits invalidated descendant references.
 function stripOneAsyncModifier(file: SourceFile): boolean {
   let target: Node | undefined;
   file.forEachDescendant((node, traversal) => {
@@ -153,9 +117,8 @@ function stripOneAsyncModifier(file: SourceFile): boolean {
   return true;
 }
 
-// One replacement per pass — `replaceWithText` re-parses the source file, which
-// forgets every Node reference except the SourceFile itself. So traverse from
-// the SourceFile (stable identity) and re-search each pass until nothing matches.
+// `replaceWithText` re-parses the file and forgets every descendant node, so
+// search from the SourceFile and re-search each pass until nothing matches.
 function stripAwaits(file: SourceFile): void {
   while (true) {
     let target: Node | undefined;
@@ -198,19 +161,13 @@ function applyRenames(file: SourceFile, renames: Map<string, string>): void {
         if (decl.getName() === oldName) decl.rename(newName);
       }
     }
-    // Import specifiers: renaming the local binding of an imported name lets
-    // a directive like `@codegen-rename: fooAsync=foo` route a sibling-module
-    // async import to its sync sibling. ts-morph's rename on the binding node
-    // produces `{fooAsync as foo}` in the source (body refs become `foo`),
-    // and the import-rebuild step downstream maps the original imported name
-    // through the rename map so the sync output's import line uses `foo`.
+    // Routes an async import to its sync sibling: rename the local binding
+    // here, the import-rebuild step downstream maps the original name through
+    // the rename map. String-literal import names (TS 5+) are skipped.
     for (const imp of file.getImportDeclarations()) {
       for (const ni of imp.getNamedImports()) {
         const aliasNode = ni.getAliasNode();
         const nameNode = ni.getNameNode();
-        // The local binding is the alias if present, otherwise the name.
-        // String-literal imported names (TS 5+ `import {"x" as y}`) aren't
-        // renameable in our use case; skip those.
         if (aliasNode) {
           if (aliasNode.getText() === oldName) aliasNode.rename(newName);
         } else if (nameNode.getKind() === SyntaxKind.Identifier) {
@@ -260,7 +217,6 @@ function collectReferencedNames(scope: Node): Set<string> {
 interface ImportInfo {
   moduleSpecifier: string;
   named: string[];
-  /** Local binding for `import * as X from '...'` (undefined for named-only imports). */
   namespace?: string;
 }
 
@@ -314,16 +270,11 @@ export function transformText(srcText: string, srcStem: string): TransformResult
     stmt.remove();
   }
 
-  // Order matters here. `await` is only a keyword inside async functions; once
-  // we strip the `async` modifier, `await x` re-parses as the call expression
-  // `await(x)`. So strip awaits FIRST (while the host functions are still
-  // async), then unwrap Promise<>, then strip the async modifiers.
-  // Each edit re-parses the SourceFile and forgets descendant references, so
-  // these helpers traverse from the SourceFile (whose identity survives) and
-  // iterate to a fixed point.
+  // Order: awaits FIRST. After `async` is stripped, `await x` re-parses as
+  // the call `await(x)` (since `await` is only a keyword in async functions).
   stripAwaits(work);
   unwrapPromiseTypes(work);
-  while (stripOneAsyncModifier(work)) { /* iterate to fixed point */ }
+  while (stripOneAsyncModifier(work)) {}
 
   dropAsyncConstAnnotations(work);
   applyRenames(work, directives.renames);
@@ -341,19 +292,12 @@ export function transformText(srcText: string, srcStem: string): TransformResult
     if (nm) declaredInOutput.add(nm);
   }
 
-  // When the source imports an async-named symbol (e.g. `runLineSearchAsync`)
-  // that the sync body should resolve to its sync sibling (`runLineSearch`), a
-  // `@codegen-rename` directive on the async name routes the import through
-  // the rename: we ask the sibling module for the *renamed* name. The sibling
-  // module is expected to export it (this is the standard pattern when an
-  // async source file imports from a peer file that itself follows the
-  // async/sync-twin convention).
+  // Async-named imports route through the rename map: the sibling module is
+  // expected to export the renamed (sync) name.
   const rebuiltImports: ImportInfo[] = [];
   for (const imp of sourceImports) {
-    // Namespace imports (`import * as X from 'mod'`) — pass through unchanged
-    // if the local binding is referenced anywhere in the sync body. They
-    // aren't subject to `@codegen-rename` (the namespace name is a local
-    // alias, not an imported symbol the rename map targets).
+    // Namespace imports aren't subject to `@codegen-rename` — the binding is
+    // a local alias.
     if (imp.namespace && referenced.has(imp.namespace) && !declaredInOutput.has(imp.namespace)) {
       rebuiltImports.push({moduleSpecifier: imp.moduleSpecifier, named: [], namespace: imp.namespace});
       continue;
