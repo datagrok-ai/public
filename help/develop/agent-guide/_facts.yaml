@@ -2906,3 +2906,259 @@
 
 # DRIFT entries — article vs. code disagreements (manage-credentials)
 
+- id: DG-FACT-150
+  kind: namespace
+  scope: publish-packages
+  value: Manual publication is done from `Packages` workflow → `Run workflow` (UI) on branch `master`, with the `packages` input set to a space-separated list of package directory names (e.g. `Demo Tutorials`). Same scheme applies to the `Libraries`, `Tools` (`datagrok-tools`), and `JS-API` (`datagrok-api`) workflows.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:33-41
+    - code: .github/workflows/packages.yaml:3-8
+    - code: .github/workflows/libraries.yaml
+    - code: .github/workflows/tools.yml
+    - code: .github/workflows/js-api.yml
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-151
+  kind: enum
+  scope: publish-packages
+  value: Four sibling publish workflows live under `.github/workflows/`. Each maps to one shippable artifact group — `packages.yaml` ↔ `packages/**`, `libraries.yaml` ↔ `libraries/**`, `tools.yml` ↔ `datagrok-tools` (under `tools/`), `js-api.yml` ↔ `datagrok-api` (under `js-api/`).
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:38-41
+    - code: .github/workflows/packages.yaml
+    - code: .github/workflows/libraries.yaml
+    - code: .github/workflows/tools.yml
+    - code: .github/workflows/js-api.yml
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-152
+  kind: namespace
+  scope: publish-packages
+  value: The `Packages` publish job runs on Node 20.x with the npm registry-url `https://registry.npmjs.org` and the `@datagrok` scope. The publish command is `npm publish --access public` (so scoped packages are published as public, not restricted), gated by `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}`.
+  derives_from:
+    - code: .github/workflows/packages.yaml:228-234,629-634
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-153
+  kind: threshold
+  scope: publish-packages
+  value: `grok check` runs as a publish-time gate. The step is skipped only when `matrix.package` contains `Tests` or `Meta`, or when `matrix.beta == 'true'` (i.e. version <1.0.0). When it runs, its failure blocks the npm publish step (the publish step's `if:` requires `steps.check.outcome` ∈ {success, skipped}).
+  derives_from:
+    - code: .github/workflows/packages.yaml:624-627,635
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-156
+  kind: enum
+  scope: publish-packages
+  value: `grok publish` accepts the flags `--release` (release-mode build; default is debug-mode), `--rebuild`, `--build`, `--key <KEY>` (developer key; falls back to `~/.grok/config.yaml`), `--suffix <s>` (auto-derived from short git SHA when omitted), `--debug`, `--dropDb`, `--link`, `--refresh`, `--rebuild-docker`, `--skip-docker-rebuild`. `--debug` and `--release` are mutually exclusive — combining them errors out with "Incompatible options: --debug and --release".
+  derives_from:
+    - code: tools/bin/commands/publish.js:570,614,620-621,652,676,679
+  contradicts: []
+  confidence: high
+
+# DRIFTS for publish-packages
+
+- id: DG-FACT-450
+  kind: naming
+  scope: publish-packages
+  value: |
+    Packages in the public repository (`packages/<Name>/`) are
+    published to the `@datagrok` NPM scope. The `package.json`
+    `name` field is `@datagrok/<lowercase>` — e.g.
+    `@datagrok/chem`, `@datagrok/bio`, `@datagrok/tutorials`.
+    The folder name is PascalCase (`Chem`, `Bio`, `Tutorials`),
+    the NPM name is the lowercased form prefixed with `@datagrok/`.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:16-17
+    - code: packages/Chem/package.json
+    - code: packages/Bio/package.json
+    - code: packages/Tutorials/package.json
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-451
+  kind: threshold
+  scope: publish-packages
+  value: |
+    Workflow gate: a package is published ONLY when the major
+    version is ≥ 1. Versions under 1.0.0 are flagged as `beta`
+    in the matrix (`MATRIX_PUBLISH_JSON+=", \"beta\": \"beta\""`)
+    and skipped with the notice `"Package <X> version <V> is
+    under 1.0.0 and is not going to be published"`. Use the
+    first major bump (`0.x.y` → `1.0.0`) as the deliberate
+    publish-readiness gate; do not expect `0.x` tags to appear
+    on NPM.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:16   # SemVer mention; threshold itself is undocumented
+    - code: .github/workflows/packages.yaml:134,149-151
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-452
+  kind: threshold
+  scope: publish-packages
+  value: |
+    Workflow gate: a package is NOT published if any of its
+    `dependencies` / `devDependencies` values match `../*`
+    (file-path pointers to unpublished sibling packages or
+    libraries in the monorepo). The job emits the notice
+    `"Package <X> version <V> has unpublished dependencies:
+    <deps>"` and proceeds with build/test only. Resolution:
+    either publish the dependency first, or replace `../*`
+    with a published NPM version range.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md   # undocumented
+    - code: .github/workflows/packages.yaml:84,135,144-147
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-453
+  kind: threshold
+  scope: publish-packages
+  value: |
+    Workflow gate: publishing only fires on `push` to the
+    `master` branch (`github.ref == 'refs/heads/master'`).
+    Pushes to other branches build/test but emit
+    `"It is an action for branch other than 'master'. Publish
+    will be skipped."`. Pull-request runs (`github.event_name
+    == 'pull_request'`) skip publish with
+    `"It is an actions for PR. Publish will be skipped."`.
+    Manual `workflow_dispatch` with the `packages` input
+    treats the input list as a force-publish for the named
+    packages on the current ref (still subject to the version
+    and unpublished-deps gates).
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:10-22,33-36
+    - code: .github/workflows/packages.yaml:136-143,157-159
+    - code: .github/workflows/packages.yaml:2-14   # triggers
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-454
+  kind: namespace
+  scope: publish-packages
+  value: |
+    "Is this version already on NPM?" check used by the
+    workflow: HTTP GET to
+    `https://registry.npmjs.org/<package-name>/<current-version>`.
+    If the response JSON has a `version` field equal to
+    `current_version` (extracted with `jq -r '.? | select(
+    has("version") == true ).version'`), the workflow logs
+    `"Package <X> version <V> already published"` and the
+    publish branch is skipped. Practical consequence: bumping
+    `package.json` version IS the only trigger — if you push
+    without bumping, nothing publishes even on `master`.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:16,29-31
+    - code: .github/workflows/packages.yaml:128-129,133,153-155
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-455
+  kind: namespace
+  scope: publish-packages
+  value: |
+    The `Packages` workflow (`.github/workflows/packages.yaml`)
+    triggers on three events: (1) `push` with `paths:
+    packages/**`, (2) `pull_request` with `paths: packages/**`
+    (build/test only, no publish), (3) `workflow_dispatch` with
+    a `packages` input — space-separated names, e.g.
+    `Demo Tutorials`. Sister workflows follow the same shape:
+    `libraries.yaml` (libraries/**), `tools.yml`
+    (datagrok-tools), `js-api.yml` (datagrok-api).
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:33-41
+    - code: .github/workflows/packages.yaml:2-14
+    - code: .github/workflows/libraries.yaml
+    - code: .github/workflows/tools.yml
+    - code: .github/workflows/js-api.yml
+  contradicts:
+    - DG-FACT-DRIFT-PUB-001  # article URL says packages.yml, file is packages.yaml
+  confidence: high
+
+- id: DG-FACT-456
+  kind: namespace
+  scope: publish-packages
+  value: |
+    CLI for publishing a package to a Datagrok instance
+    directly (without NPM round-trip): `grok publish <HOST>`
+    from `datagrok-tools` (`tools/bin/commands/publish.ts`,
+    `export async function publish(args: PublishArgs)` at
+    `:593`). Behavior — runs `check` first (unless
+    `--skip-check`), optionally `--build`/`--rebuild`
+    (`npm install` + `npm run build`), zips the package, and
+    POSTs to the host using the dev-key stored in
+    `~/.grok/config.yaml`. `<HOST>` is a server alias defined
+    in that config, NOT a raw URL.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:50-52
+    - code: tools/bin/commands/publish.ts:593-637
+    - code: tools/bin/grok.js:20
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-458
+  kind: naming
+  scope: publish-packages
+  value: |
+    A private/non-NPM-publishable package shared between
+    accounts is propagated via Datagrok's group sharing — the
+    `Share package` action (UI) targets a group from
+    `govern/access-control/users-and-groups`. There is no
+    workflow gate or CLI flag for "private" — the distinction
+    is purely whether `grok publish <HOST>` is used in place of
+    the NPM-mediated GitHub Actions path.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:43-56
+  contradicts: []
+  confidence: medium  # documented; no JS-API symbol to verify
+
+# DRIFT entries — article vs. code disagreements (publish-packages)
+
+- id: DG-FACT-DRIFT-PUB-001
+  kind: naming
+  scope: publish-packages
+  value: |
+    Article links the GitHub Actions workflow as
+    `actions/workflows/packages.yml` (line 33), but the file
+    on disk is `.github/workflows/packages.yaml` (`.yaml`, not
+    `.yml`). GitHub resolves either extension in the URL so
+    the link works, but the article's `js-api.yml`/`tools.yml`
+    references DO match disk (`.yml`), while
+    `packages.yml`/`libraries.yaml` mix conventions. Fix in
+    article: use `packages.yaml` to match the file (or
+    standardize the repository on one extension).
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:33,39-41
+    - code: .github/workflows/packages.yaml
+    - code: .github/workflows/libraries.yaml
+    - code: .github/workflows/js-api.yml
+    - code: .github/workflows/tools.yml
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-PUB-002
+  kind: threshold
+  scope: publish-packages
+  value: |
+    Article documents the publish flow as "Bump version →
+    push → workflow publishes". Missing from the article: the
+    workflow has FOUR independent gates that silently skip the
+    publish step — version < 1.0.0 (DG-FACT-451), unpublished
+    `../*` deps (DG-FACT-452), non-`master` branch
+    (DG-FACT-453), and "version already on NPM"
+    (DG-FACT-454). First-time publishers who hit any of these
+    see a green check on Actions but no NPM release, with the
+    explanation only in the workflow log's `::notice`. Fix in
+    article: add a "Why didn't my package publish?" section
+    enumerating these gates.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:19-26
+    - code: .github/workflows/packages.yaml:128-159
+  contradicts: []
+  confidence: high
+```
+
