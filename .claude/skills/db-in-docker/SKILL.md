@@ -1,48 +1,68 @@
 ---
 name: db-in-docker
-description: Ship a database inside the package's Docker container and connect to it from Datagrok
+version: 0.3.0
+description: |
+  Ship a database engine (Postgres with custom extensions, MariaDB,
+  ClickHouse, Oracle, ...) inside a sibling container alongside a Datagrok
+  package and wire the platform to it. For plugin authors whose data layer
+  needs an engine the shared RDS doesn't provide or DBA-level isolation.
+  Produces `dockerfiles/Dockerfile` + `dockerfiles/container.json` +
+  `connections/<name>.json` whose `server` placeholder resolves to the
+  running container at deploy time, so queries against
+  `<Pkg>:<Connection>` route transparently through it.
+  Use when asked to "ship a bundled database with my plugin", "wire a
+  connection to a sibling container database", or "run postgres with
+  custom extensions alongside the package".
+triggers:
+  - bundled database alongside the package
+  - sibling container database connection
+  - postgres extensions not in shared rds
+  - wire connection to containerized database
+  - custom postgres engine for a plugin
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+harness-authored: true
 ---
 
 # db-in-docker
 
 ## When to use
 
-Your package needs to ship a database the platform-managed Postgres can't
-host — a non-Postgres engine, a Postgres plugin RDS doesn't support, or a
-preloaded dataset baked into the image. Triggers: "bundle SQLite/MySQL with
-my package", "use pgvector / postgis", "ship a demo DB with seed data", or
-"my plugin needs its own DB and I don't want a plugin Postgres". For an
-empty platform-managed Postgres, prefer the simpler `db-in-plugin` flow.
+Pick this path when your package needs a database engine the shared
+platform RDS won't run:
+
+- a non-Postgres DBMS (MariaDB, ClickHouse, Oracle);
+- a Postgres image with extensions outside the shared instance's
+  allowlist;
+- required DBA-level isolation from other tenants (`DG-FACT-418`).
+
+For ordinary CRUD storage that fits in the shared Postgres, prefer
+[[db-in-plugin]] — it's simpler, the platform manages migrations and
+lifecycle, and it uses far fewer resources. If none of the three
+bullets above apply, stop and use that path instead.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`). Paths below are relative to
-  the package root.
-- Familiarity with the `connections/*.json` shape — see the `access-data`
-  skill (knowledge `DG-FACT-033`, `DG-FACT-040`).
-- Docker CLI installed locally for `docker build` smoke tests; `grok-spawner`
-  must be running on the target Datagrok instance for image build/run.
-- A user API key from `<GROK_HOST>/u` for transferring credentials post-deploy.
+- Package scaffold (`grok create <Name>`); paths below are relative to
+  the package root. Use [[create-package]] if absent.
+- API key from `<GROK_HOST>/u` for the credentials POST in step 5.
+- Familiarity with the connection-and-query spine from [[access-data]] —
+  this skill only replaces step 1 of that flow.
 
 ## Steps
 
-1. **Decide the dockerfile layout.**
-   One container per package — put the Dockerfile at
-   `dockerfiles/Dockerfile`. For multiple containers, create one
-   subfolder per image: `dockerfiles/<folder>/Dockerfile`. Container
-   "friendly name" follows from the layout: single → `<PackageName>`;
-   multi → `<PackageName>-<folder>` (knowledge `DG-FACT-043`).
-   ```bash
-   mkdir -p dockerfiles
-   ```
-   Expected: a `dockerfiles/` directory at the package root.
-
-2. **Author the Dockerfile.**
-   Set the DB engine, seed credentials via env vars, COPY init scripts,
-   and EXPOSE exactly one port. EXPOSE is mandatory and must appear once
-   only — multiple EXPOSE directives are unsupported (knowledge
-   `DG-FACT-046`). A `HEALTHCHECK` is recommended so the platform sees
-   when the DB is ready (knowledge `DG-FACT-048`).
+1. **Write `dockerfiles/Dockerfile`.** One file directly under
+   `dockerfiles/` (single-container packages); the friendly name then
+   defaults to the package name. Bake user/password/database into the
+   image via env vars — the connection JSON in step 3 must match these
+   byte-for-byte. Declare exactly one `EXPOSE <internal-port>`; the
+   platform proxies it dynamically and forbids multiple ports per
+   image (`DG-FACT-416`). For multi-container packages, use sub-folders
+   `dockerfiles/<friendly-suffix>/Dockerfile`; the friendly name
+   becomes `<package>-<friendly-suffix>` (`DG-FACT-414`).
    ```dockerfile
    FROM postgres
    ENV POSTGRES_PASSWORD datagrok
@@ -53,30 +73,39 @@ empty platform-managed Postgres, prefer the simpler `db-in-plugin` flow.
    HEALTHCHECK --interval=5s --timeout=3s --retries=10 --start-period=10s \
      CMD pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" || exit 1
    ```
-   Expected: `dockerfiles/Dockerfile` (or `dockerfiles/<folder>/Dockerfile`)
-   builds locally with `docker build dockerfiles -t pkg-db`.
+   Expected: `docker build dockerfiles/` succeeds locally. Reference:
+   `packages/DBTests/dockerfiles/Dockerfile`.
 
-3. **(Optional) Add `container.json` next to the Dockerfile.**
-   Databases are good candidates for on-demand startup with an idle
-   timeout (knowledge `DG-FACT-049`). The article on `db-in-docker.md`
-   does NOT mention this file — see `docker-containers.md` for the full
-   schema (drift `DG-FACT-DRIFT-014`).
+2. **Add `dockerfiles/container.json` for resource allocation.** The
+   article omits this file, but every production db-in-docker package
+   ships one — without it the platform applies defaults (`memory: 512`,
+   `cpu: 0.25`, `on_demand: false`) that are usually too small for a
+   real DB (`DG-FACT-DRIFT-DBDOCKER-001`). Use the documented keys
+   only — `shutdown_timeout` is in minutes; the variant
+   `timeout_minutes` seen in `SureChembl/dockerfiles/container.json`
+   is unsupported and silently ignored, do not propagate it.
    ```json
-   {"on_demand": true, "shutdown_timeout": 30}
+   {"cpu": 1, "memory": 2048, "on_demand": true, "shutdown_timeout": 30}
    ```
-   Expected: `dockerfiles/container.json` exists; container starts on
-   first DB request and shuts down after 30 idle minutes. Omit the file
-   to keep the container running continuously.
+   Expected: container starts on first query and idles out after
+   `shutdown_timeout` minutes. Schema:
+   `{{ lattice.harness.help_develop_root }}/how-to/packages/docker-containers.md:41-86`.
+   Reference: `packages/DBTests/dockerfiles/container.json`.
 
-4. **Write the connection JSON — only programmatic creation works.**
-   Drop a file under `connections/<name>.json`. There is NO UI form for
-   Docker-bound connections; the platform identifies one by the
-   `<DockerContainer>` token in `parameters.server` (knowledge
-   `DG-FACT-042`). The `port` parameter MUST be omitted — Datagrok
-   resolves it dynamically from the container address (knowledge
-   `DG-FACT-044`). Add `db` to select a schema/database name; it must
-   match the engine's `POSTGRES_DB` (or equivalent) from step 2
-   (knowledge `DG-FACT-045`).
+3. **Write `connections/<name>.json` with the `<DockerContainer>`
+   placeholder.** The platform recognizes the connection as
+   container-bound by the `parameters.server` value. Emit the
+   two-segment form `${<Package>:<Friendly><DockerContainer>}`
+   (`DG-FACT-412`). Normalize BOTH the package and friendly segments
+   to first-letter capitalization with the rest lowercased — package
+   `DBTests` becomes `Dbtests`; `SureChembl` becomes `Surechembl`.
+   Literal `${DBTests:DBTests<DockerContainer>}` will NOT resolve
+   (`DG-FACT-413`, `DG-FACT-DRIFT-DBDOCKER-002`). `db` pins the
+   schema/database inside the image and must equal the Dockerfile's
+   `ENV POSTGRES_DB`. Credentials go under `credentials.parameters`
+   and must match the Dockerfile's `ENV POSTGRES_USER` /
+   `ENV POSTGRES_PASSWORD`. NEVER add `port` — the platform resolves
+   it from the running container (`DG-FACT-415`).
    ```json
    {
      "#type": "DataConnection",
@@ -92,103 +121,86 @@ empty platform-managed Postgres, prefer the simpler `db-in-plugin` flow.
      "dataSource": "Postgres"
    }
    ```
-   Expected: a JSON file at `connections/postgres-docker.json`. For
-   `dataSource` values see knowledge `DG-FACT-034`.
+   Expected: `grok publish` accepts the JSON without "missing
+   dataSource" or unknown-server errors. Source:
+   `{{ lattice.harness.help_develop_root }}/how-to/db/db-in-docker.md:13-65`.
+   Reference: `packages/DBTests/connections/postgres-test-docker.json`.
 
-5. **Get the placeholder casing right.**
-   `parameters.server` follows
-   `${<PackageName>:<ContainerFriendlyName><DockerContainer>}`. Both
-   segments use first-letter-only-capitalized form — package `DBTests`
-   becomes `Dbtests:Dbtests`, NOT `DBTests:DBTests` (knowledge
-   `DG-FACT-043`, drift `DG-FACT-DRIFT-012`). The article example
-   (`${Test:Test<DockerContainer>}`) hides this rule because `Test` is
-   already first-letter-capitalized.
-   Expected: `${Dbtests:Dbtests<DockerContainer>}` for a `DBTests`
-   package; `${Foo:Foo-worker<DockerContainer>}` for `dockerfiles/worker/`
-   inside a `Foo` package.
-
-6. **Match Dockerfile credentials to the connection JSON.**
-   Datagrok routes `credentials.parameters.{login,password}` to the
-   container at runtime; the Dockerfile's `ENV POSTGRES_USER` /
-   `ENV POSTGRES_PASSWORD` seed the DB at build time. The two MUST be
-   identical or the connection will be rejected (knowledge `DG-FACT-047`).
-   Expected: `login` / `password` in the JSON exactly equal
-   `POSTGRES_USER` / `POSTGRES_PASSWORD` in the Dockerfile.
-
-7. **Publish and transfer the credentials.**
-   Same flow as any other connection — see `access-data` step 2.
+4. **Publish the package.** Push the Dockerfile + container.json +
+   connection JSON together so the platform builds the image and
+   registers the connection in one round-trip.
    ```bash
-   webpack
-   grok publish dev
-   curl -X POST "$GROK_HOST/api/credentials/for/$PACKAGE_NAME.PostgresDocker" \
+   grok publish
+   ```
+   Expected: the connection appears under **Browse > Databases** as
+   `<Package>:<Name>` (`DG-FACT-417`).
+
+5. **(Production only) Move credentials out of the JSON.** For a
+   throwaway DB the JSON-embedded credentials in step 3 suffice. For
+   production, leave the JSON's `credentials.parameters` empty and
+   POST the real login/password once after deploy so they route
+   through the credentials store (`DG-FACT-409`).
+   ```bash
+   curl -X POST "$GROK_HOST/api/credentials/for/$PACKAGE.$CONNECTION" \
      -H "Authorization: $API_KEY" -H "Content-Type: application/json" \
      -d '{"login":"datagrok","password":"datagrok"}'
    ```
-   Expected: publish exits `0`; credentials POST returns `200 OK`. The
-   image lands in **Manage → Docker** as building (grey blink) → ready
-   (green).
-
-8. **Verify and run a query.**
-   The connection appears in **Browse → Databases**. Author a
-   parameterised query (`access-data` step 3) and call it from JS:
-   ```typescript
-   import * as grok from 'datagrok-api/grok';
-   const df = await grok.data.query(`${_package.name}:Cities`, {limit: 10});
-   grok.shell.addTableView(df);
-   ```
-   Expected: a TableView opens with rows from inside the containerized DB.
+   Expected: the connection still resolves and now reads credentials
+   from the secret store, not the world-readable JSON.
 
 ## Common failure modes
 
-- **Server placeholder rejected.** Wrong casing (`${DBTests:DBTests…}`)
-  or wrong segment count fails resolution; canonical form is
-  first-letter-only-capitalized for both segments (knowledge
-  `DG-FACT-043`, drift `DG-FACT-DRIFT-012`). Fix: rename to
-  `${Dbtests:Dbtests<DockerContainer>}`. Mirror the casing used by
-  `packages/DBTests/connections/postgres-test-docker.json`.
-- **Multi-container friendly-name confusion.** With several
-  `dockerfiles/<folder>/Dockerfile`, friendly name becomes
-  `<PackageName>-<folder>` — not the package name alone (knowledge
-  `DG-FACT-043`). Fix: use `${Foo:Foo-worker<DockerContainer>}` for
-  `dockerfiles/worker/`.
-- **Connection times out / silently never resolves.** `parameters.port`
-  is set in the JSON; Datagrok cannot map the dynamic container port
-  (knowledge `DG-FACT-044`). Fix: remove the `port` line entirely.
-- **Image build fails with "EXPOSE" error or container has no exposed
-  port.** Multiple `EXPOSE` directives, or no `EXPOSE` at all — the
-  platform allows exactly one (knowledge `DG-FACT-046`). Fix: collapse
-  to a single `EXPOSE <port>`.
-- **Auth fails on first query but Dockerfile builds fine.** Login or
-  password in `credentials.parameters` does not match
-  `POSTGRES_USER`/`POSTGRES_PASSWORD` (knowledge `DG-FACT-047`). Fix:
-  copy the values from the Dockerfile into the JSON verbatim.
-- **`db` property points at a database the container never created.**
-  Postgres images only auto-create the database named by `POSTGRES_DB`
-  (knowledge `DG-FACT-045`). Fix: align `parameters.db` with
-  `ENV POSTGRES_DB`, or COPY init SQL that runs `CREATE DATABASE` into
-  `/docker-entrypoint-initdb.d/`.
+- **Connection deploys but queries fail with "unknown server".** The
+  `server` placeholder used the original mixed-case package or friendly
+  name (e.g. `${DBTests:DBTests<DockerContainer>}`). Normalize to
+  first-letter-capitalized form: `Dbtests`, `Surechembl`
+  (`DG-FACT-413`, `DG-FACT-DRIFT-DBDOCKER-002`).
+- **Container never accepts traffic / build queue stalls.** The
+  Dockerfile has zero or multiple `EXPOSE` directives. Exactly one
+  internal port is allowed; remove extras (`DG-FACT-416`).
+- **Container is OOM-killed or evicted on first real query.** No
+  `container.json` was shipped, so the platform applied 512 MB / 0.25
+  CPU defaults. Add `dockerfiles/container.json` with realistic
+  `memory` / `cpu` (`DG-FACT-DRIFT-DBDOCKER-001`).
+- **Connection JSON includes `parameters.port`.** Datagrok ignores the
+  static port and the proxy still binds dynamically, but the platform
+  rejects the JSON as malformed. Remove the field entirely
+  (`DG-FACT-415`).
+- **Login/password sit inside `parameters` or in `connString`.** That
+  block is world-readable; the credentials store is bypassed. Move
+  them under `credentials.parameters` and POST per step 5
+  (`DG-FACT-409`).
+- **Friendly-name segment is wrong.** With one Dockerfile directly in
+  `dockerfiles/`, the friendly name equals the (normalized) package
+  name. With sub-folders, it becomes `<package>-<folder>`. Mismatch →
+  "unknown server" at query time (`DG-FACT-414`).
 
 ## Verification
 
-- `docker build dockerfiles -t pkg-db` exits `0` (local smoke test).
-- `grok publish dev` exits `0` and prints no `<DockerContainer>`-related
-  warnings.
-- **Manage → Docker** shows a green dot for the container card.
-- **Browse → Databases** lists the new connection; clicking it opens
-  the schema browser.
-- A test query (`grok.data.query` or the in-platform query editor)
-  returns rows.
+- `grok publish` returns success and lists the new connection.
+- In Datagrok, **Browse > Databases > `<Package>:<Name>`** opens; its
+  schema tree populates after the first query.
+- Fetch the connection object via `grok.functions.eval` (preserves
+  the original package case — normalization applies ONLY inside the
+  `${...}` placeholder) and call `.test()`. Pass: the dispatcher
+  treats it as a normal Postgres/MariaDB connection (`DG-FACT-417`).
+  ```typescript
+  const conn = await grok.functions.eval('DbTests:PostgresDocker');
+  await conn.test();
+  ```
+  Reference pattern: `packages/DBTests/src/connections/queries-test.ts:43-50`.
 
 ## See also
 
-- Source articles:
-  - `help/develop/how-to/db/db-in-docker.md`
-  - `help/develop/how-to/packages/docker-containers.md` (container.json,
-    EXPOSE rule)
-- Knowledge:
-  - `docs/_internal/knowledge/knowledge-graph.md` — facts `DG-FACT-042`
-    through `DG-FACT-049` and drifts `DG-FACT-DRIFT-012..015`.
-- Related skills:
-  - `access-data` (sibling — covers connection JSON shape, query
-    authoring, credentials POST).
-  - `db-in-plugin` (preferred when a managed empty Postgres is enough).
+- Source: `{{ lattice.harness.help_develop_root }}/how-to/db/db-in-docker.md`
+  (mirror: `docs/_internal/articles-mirror/how-to/db/db-in-docker.md`).
+- Related: `{{ lattice.harness.help_develop_root }}/how-to/packages/docker-containers.md`
+  (container.json schema), `db-in-plugin.md` (simpler alternative),
+  `access-data.md` (connection-and-query spine this plugs into).
+- Knowledge (`docs/_internal/knowledge/knowledge-graph.md`):
+  `DG-FACT-412` – `DG-FACT-418`,
+  `DG-FACT-DRIFT-DBDOCKER-001`, `DG-FACT-DRIFT-DBDOCKER-002`,
+  `DG-FACT-409` (credentials POST).
+- Related skills: [[create-package]], [[docker-containers]] (general
+  container packaging), [[db-in-plugin]] (managed Postgres alternative),
+  [[access-data]] (TS dispatcher), [[manage-credentials]] (step 5 POST).
