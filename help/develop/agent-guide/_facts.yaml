@@ -1446,3 +1446,180 @@
   contradicts: []
   confidence: medium
 
+- id: DG-FACT-229
+  kind: naming
+  scope: rest-api
+  value: REST API authentication uses an `Authorization` header whose value is the API key prefixed with `Bearer ` (note the trailing space). The API key is copied from the user profile → "API Key" link. The Python client passes whatever string the caller supplies into `Authorization` verbatim — i.e. the caller (not the client) must include the `Bearer ` prefix.
+  derives_from:
+    - article: help/develop/packages/rest-api.md:12-18
+    - code: python-api/datagrok_api/http_client.py:5-9   # 'Authorization': api_key (passed through as-is)
+    - code: python-api/datagrok_api/datagrok_client.py:25-27,58  # docstring: 'Should typically start with "Bearer ".'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-431
+  kind: naming
+  scope: upload-data
+  value: |
+    The user-storage CSV upload endpoint has a FIXED path grammar:
+    `POST $DATAGROK_URI/api/files/<LOGIN>/uploads/<free/form/path>/<file>.csv`.
+    Three slots: (a) `<LOGIN>` — the user login that will OWN the
+    resulting project (article example: `alex.aprm`); (b) the literal
+    segment `uploads/`; (c) any free-form path you choose between
+    `/uploads/` and the filename. The endpoint accepts any string for
+    `<LOGIN>` — a typo silently produces an upload owned by a
+    nonexistent path that nobody can browse. This endpoint is the
+    legacy `/api/files/...` surface; it is DISTINCT from the
+    `/public/v1/files/{connector}/{path}` REST endpoint (DG-FACT-231)
+    used by the Python client — only the legacy surface accepts the
+    `?layout=` query knob (DG-FACT-432-adjacent).
+  derives_from:
+    - article: help/develop/how-to/data/upload-data.md:5-15,33-38
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-432
+  kind: enum
+  scope: upload-data
+  value: |
+    POST to a file path on either Datagrok REST file surface REPLACES
+    the existing content silently — no 409/conflict, no warning.
+    Article wording for the `/public/v1/files/{connector}/{path}`
+    endpoint is literal: "If file already exists, replace its content"
+    (`help/develop/packages/rest-api.md:30`). The legacy
+    `/api/files/<LOGIN>/uploads/...` surface (DG-FACT-431) inherits the
+    same overwrite semantics — two pipelines writing to the same
+    `/uploads/<path>/<file>` clobber one another. Mitigation in
+    production pipelines: namespace the path with a timestamp or run
+    id (e.g. `/uploads/nightly/$(date +%Y-%m-%d)/assay.csv`).
+  derives_from:
+    - article: help/develop/packages/rest-api.md:30-31
+    - article: help/develop/how-to/data/upload-data.md:5-17
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-433
+  kind: pattern
+  scope: upload-data
+  value: |
+    The `/api/files/<LOGIN>/uploads/<path>/<file>.csv` REST endpoint
+    (DG-FACT-431) is an OUT-OF-PROCESS surface — its purpose is to give
+    external callers (shell pipelines, cron jobs, lab instruments,
+    standalone Python notebooks) a one-call way to drop a CSV into a
+    user's workspace and get back a shareable project URL. It is NOT
+    the right path from inside a Datagrok package: when TypeScript
+    running in-process needs to write a file, the canonical patterns
+    are `await grok.dapi.files.writeAsText(path, data: string)` for
+    text (js-api/src/dapi.ts:1465) and
+    `await grok.dapi.files.write(path, blob: number[])` for binary
+    (js-api/src/dapi.ts:1457). Note the binary method is `write`, NOT
+    `writeAsBytes` — the latter symbol does not exist anywhere in the
+    public repo. Real packages use these — HitTriage's molreg.ts:182
+    and hit-design-app.ts:1074 persist CSV table snapshots via
+    `writeAsText`, FileEditors/latex-viewer.ts:185 saves edited LaTeX,
+    and ApiTests/src/dapi/files.ts:14,27 (text) and :40 (binary,
+    `write`) exercise both surfaces directly. Wrapping the REST
+    endpoint in a `fetch()` call inside a package function is an
+    anti-pattern: it re-implements `grok.dapi.files.*`, loses access
+    to the active session's auth (no API key needed in-process), and
+    ties the package to a network URL it otherwise doesn't need.
+    Skills built around the legacy REST surface should restrict their
+    advice to out-of-process callers and point in-package readers at
+    `grok.dapi.files.writeAsText` / `grok.dapi.files.write` instead.
+  derives_from:
+    - code: js-api/src/dapi.ts:1457,1465
+    - code: packages/HitTriage/src/app/utils/molreg.ts:182
+    - code: packages/HitTriage/src/app/hit-design-app.ts:1074
+    - code: packages/FileEditors/src/latex/latex-viewer.ts:185
+    - code: packages/ApiTests/src/dapi/files.ts:14,27,40
+    - runtime: verify-e2e/upload-data
+  contradicts: []
+  confidence: high
+```
+
+### DRIFT findings (article vs. code) — db-in-plugin
+
+```yaml
+- id: DG-FACT-DRIFT-DBPLUGIN-001
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article says "compounds is the name of the PostgreSQL database"
+    (`db-in-plugin.md:56`). This is terminologically wrong — `<Name>` is
+    a Postgres SCHEMA inside the platform's single shared database, not
+    a standalone Postgres database. The platform's metadata Postgres has
+    ONE actual database; every plugin DB lives there as a schema. The
+    article's own SQL example proves it — `create table compounds.list`
+    uses schema-qualified table notation, which only makes sense if
+    `compounds` is a schema. Skills must use "schema" wording to avoid
+    confusing readers familiar with Postgres terminology.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:48,56
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:2
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-002
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article's worked example (`db-in-plugin.md:47-54`) ends with a
+    single-table GRANT — `GRANT ALL ON TABLE compounds.list to :LOGIN;`
+    — and no schema/sequence grants. This works ONLY for that one
+    hand-rolled `int primary key` table. Production canonical (FACT-423)
+    is schema-wide:
+      GRANT ALL PRIVILEGES ON ALL TABLES   IN SCHEMA <name> TO :LOGIN;
+      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA <name> TO :LOGIN;
+    The single-table form silently fails to cover SERIAL-induced
+    sequences (which any `id SERIAL PRIMARY KEY` table needs) and
+    leaves future tables in the same schema without grants. Skills
+    must emit the schema-wide form even for the smallest example.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:48-54
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:18-20
+    - code: packages/Plates/databases/plts/0000_init.sql:188-191
+    - code: packages/MolTrack/databases/moltrack/0000.sql:277-279
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-003
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article's worked example assigns IDs as `(floor(random() * 1000 +
+    1)::int, @smiles)` (`db-in-plugin.md:64`). This collides with
+    birthday-paradox probability after ~37 inserts (sqrt(1000)), and is
+    guaranteed to collide on the PRIMARY KEY past ~1000 rows. Production
+    canonical is `id SERIAL PRIMARY KEY` (every observed example —
+    HitTriage, Plates, MolTrack, NodeJSDemo, Biologics). The article's
+    pattern is a self-defeating demo; skills must NOT propagate it.
+    SERIAL requires the sequences GRANT (FACT-423), which is the
+    second-order reason DRIFT-002 above matters.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:47-64
+    - code: packages/HitTriage/databases/hitdesign/0001_dict.sql:3
+    - code: packages/Plates/databases/plts/0000_init.sql:5,13,38
+    - code: packages/NodeJSDemo/databases/todo/000_init.sql:2
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-004
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article does not document what happens if an already-applied
+    migration file is edited or renamed post-release — the platform
+    tracks applied migrations by filename, so editing a published file
+    produces silent drift (publisher sees the new SQL, other users keep
+    the old applied state). Article also omits `:LOGIN` token semantics
+    (substitution at deploy) and the `CURRENT_USER` vs `:LOGIN`
+    distinction, even though every production migration uses both.
+    Skills must teach both points explicitly because the article's
+    example happens to work without them.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md (full)
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:18-20
+  contradicts: []
+  confidence: medium
+```
+
