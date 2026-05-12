@@ -1,0 +1,39 @@
+# General Settings
+keep_building_blocks_in_final_output: False
+max_num_components: 2
+max_num_routes_per_compound: -1 # -1 means disabled, so with -1 all routes will be saved
+max_num_combinations_per_template: 1000
+
+# Specs for the Products
+products_specs:
+  exclusion_smarts_products_file: data/for_dg/exclusion_smarts.csv
+  exclusion_smarts_products_file_smarts_col: SMARTS
+  max_num_heavy_atoms: -1 # -1 means disabled, so this filter is then unused
+  min_num_carbon_atoms: 10
+  max_num_carbon_atoms: 30
+  max_num_hetero_atoms: 10
+  max_num_nitrogen: -1
+  max_num_sulfur: -1
+  max_num_oxygen: -1
+  max_num_metals: 0
+  max_num_halogens: -1
+  max_num_aromatic_atoms: -1
+  max_num_unsaturated_nonaromatic_bonds: 5
+  only_these_atoms_allowed: ["C", "H", "O", "N", "S", "P"]
+  remove_radicals: True
+  remove_isotope_information: True
+  remove_charged_species: True
+
+# Enumeration Settings
+enumeration:
+  template_file: data/for_dg/templates_synformer.csv
+  smarts_col: reaction_smarts # column in the template file that contains the smarts of the reaciton templates
+  reactant_blocking_groups_per_template_column: blocking_fg # the reaction-template won't be applied if the reactant contains these SMARTS as a substructure
+  bb_file: data/for_dg/building_blocks_for_datagrok.csv # file that contains the building blocks
+  bb_smiles_column: SMILES # column in the bb_file that contains the smiles of the bbs
+  reagent_file: None # Optional - enables reagent mode
+  output_file: data/for_dg/for_dg_enum.csv
+  reaction_name_col: reaction_name #optional column name in the template file that contains the name of the reaction
+  delimiter: "," # delimiter of the template-file
+  depth_first: True # do not react products with other products in reaction step 2
+  num_rounds: 3 #number of reaction steps

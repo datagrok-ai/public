@@ -25,8 +25,11 @@ export class PackageFunctions {
     console.log(params);
     setTimeout(() => {
       grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = false;
       grok.shell.windows.showContextPanel = true;
       grok.shell.windows.showHelp = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.windows.showToolbox = true;
     }, 200);
     return new FuncFlowView();
   }
@@ -37,8 +40,11 @@ export class PackageFunctions {
     file.readAsString().then((json) => view.loadFromJson(json));
     setTimeout(() => {
       grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showBrowse = false;
       grok.shell.windows.showContextPanel = true;
       grok.shell.windows.showHelp = false;
+      grok.shell.windows.showBrowse = true;
+      grok.shell.windows.showToolbox = true;
     }, 200);
     return view;
   }

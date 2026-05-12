@@ -11,6 +11,14 @@ const escapeColName = (name: string): string => grok.functions.handleOuterBracke
 /** Wrap a column name as a `${...}` reference, escaping nested braces. */
 const wrapCol = (name: string): string => `\${${escapeColName(name)}}`;
 
+function validateBandFormula(value: string): string {
+  const bandFormulaHelp = 'Band formula should be in format: ${column} in(min, max)';
+  const v = value ?? '';
+  const pattern = /^\s*\$\{(?:\\.|[^}\\])*\}\s+in\s*\(\s*[^,()]+\s*,\s*[^,()]+\s*\)\s*$/;
+  const refCount = v.match(COL_REF_REGEX)?.length ?? 0;
+  return refCount === 1 && pattern.test(v) ? '' : bandFormulaHelp;
+}
+
 /** Formula Line types */
 const enum ITEM_TYPE {
   LINE = 'line',
@@ -261,7 +269,16 @@ class Table {
   private get dataFrame(): DG.DataFrame { return this.grid.dataFrame!; }
 
   public get currentItemIdx(): number { return this.dataFrame.currentRowIdx; }
-  public set currentItemIdx(rowIdx: number) { this.dataFrame.currentRowIdx = rowIdx; }
+  // Setting only `currentRowIdx` leaves `currentCell.isCell` false (no column), and the
+  // grid's `_renderCurrentCell` paints the green stripe only when the current cell is a
+  // real cell — so without a column the indicator stays invisible until the user clicks.
+  // Using `currentCell` here sets both row and column atomically.
+  public set currentItemIdx(rowIdx: number) {
+    if (rowIdx >= 0 && rowIdx < this.dataFrame.rowCount)
+      this.dataFrame.currentCell = this.dataFrame.cell(rowIdx, 'title');
+    else
+      this.dataFrame.currentRowIdx = rowIdx;
+  }
 
   /** Used to prevent onValuesChanged event when the grid changes itself */
   public notify: boolean = true;
@@ -446,7 +463,7 @@ class Table {
     this.dataFrame.set('title', idx, isFormulaLine ? (item as DG.FormulaLine).title : (item as DG.AnnotationRegion).header);
     this.dataFrame.set('formula', idx, isFormulaLine ? (item as DG.FormulaLine).formula : formatAreaFormula(item as DG.AnnotationRegion));
     this.notify = true;
-    this.dataFrame.currentRowIdx = idx;
+    this.currentItemIdx = idx;
   }
 
   public add(item: EditorItem, isFormulaLine: boolean = true) {
@@ -910,6 +927,12 @@ class Preview {
       try {
         /** Duplicate the original item to display it even if it's hidden */
         const item = this.formulaLineItems[itemIdx];
+
+        if (item.type === ITEM_TYPE.BAND && validateBandFormula(item.formula ?? '') !== '') {
+          clearMeta();
+          return false;
+        }
+
         const previewItem = structuredClone(item);
         previewItem.visible = true;
 
@@ -1036,9 +1059,15 @@ class Editor {
     let [itemY, itemX, expression] = ['', '', ''];
 
     if (itemIdx >= 0 && item.type !== ITEM_TYPE.BAND) {
-      const itemMeta = DG.FormulaLinesHelper.getMeta(item);
-      [itemY, itemX, expression] = [itemMeta.funcName!, itemMeta.argName!, itemMeta.expression!];
-      caption = itemX ? ITEM_CAPTION.LINE : ITEM_CAPTION.CONST_LINE;
+      // getMeta parses the formula and throws on invalid input — keep the form alive so
+      // the user can fix an in-progress edit instead of crashing on row switch.
+      try {
+        const itemMeta = DG.FormulaLinesHelper.getMeta(item);
+        [itemY, itemX, expression] = [itemMeta.funcName!, itemMeta.argName!, itemMeta.expression!];
+        caption = itemX ? ITEM_CAPTION.LINE : ITEM_CAPTION.CONST_LINE;
+      } catch {
+        caption = ITEM_CAPTION.LINE;
+      }
     }
 
     const mainPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
@@ -1079,13 +1108,14 @@ class Editor {
   /** Creates textarea for item formula */
   private inputFormula(itemIdx: number): HTMLElement {
     const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
+    const isBand = item.type === ITEM_TYPE.BAND;
 
     const ibFormula = ui.input.textArea('', {value: item.formula ?? '',
       onValueChanged: (value) => {
         const oldFormula = item.formula!;
         item.formula = value;
         const resultOk = this.onItemChangedAction(itemIdx, true);
-        this.setFormulaValidationResult(resultOk, value, ibFormula, item.type === ITEM_TYPE.BAND);
+        this.setFormulaValidationResult(resultOk, value, ibFormula, isBand);
         this.setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -1095,6 +1125,10 @@ class Editor {
     elFormula.setAttribute('style', 'height: 60px;');
 
     ui.tools.initFormulaAccelerators(ibFormula, this.dataFrame);
+
+    // Flag pre-existing invalid bands without waiting for the user to edit.
+    if (isBand)
+      this.setFormulaValidationResult(true, item.formula ?? '', ibFormula, true);
 
     return ibFormula.root;
   }
@@ -1130,20 +1164,18 @@ class Editor {
   private inputLineWidth(itemIdx: number): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
 
-    const elOpacity = ui.element('input');
-    elOpacity.type = 'range';
-    elOpacity.min = 0;
-    elOpacity.max = 20;
-    elOpacity.value = item.outlineWidth ?? 1;
-    elOpacity.addEventListener('input', () => {
-      item.outlineWidth = parseInt(elOpacity.value);
-      this.onItemChangedAction(itemIdx, false);
-    });
-    elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
+    const ibWidth = ui.input.int('Width', {value: item.outlineWidth ?? 1,
+      onValueChanged: (value) => {
+        item.outlineWidth = value;
+        this.onItemChangedAction(itemIdx, false);
+      }});
+    ibWidth.addPostfix('px');
 
-    const label = ui.label('Width', 'ui-label ui-input-label');
+    const elWidth = ibWidth.input as HTMLInputElement;
+    elWidth.placeholder = '1';
+    elWidth.setAttribute('style', 'padding-right: 24px;');
 
-    return ui.div([label, elOpacity], 'ui-input-root');
+    return ibWidth.root;
   }
 
   /** Creates range slider for item opacity */
@@ -1312,7 +1344,7 @@ class Editor {
     const elHeader = ibHeader.input as HTMLInputElement;
     const validateValue = (): string => {
       if (isBand)
-        return resultOk ? '' : 'Invalid formula syntax';
+        return validateBandFormula(value) || (resultOk ? '' : 'Invalid formula syntax');
 
       // Replace each ${...} col-ref with a sentinel to check structure without
       // being confused by `=` chars inside nested column names (e.g. `${${AGE} = 10}`).
@@ -1726,7 +1758,6 @@ class CreationControl {
             type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
             formula1: `${lhs} = ${lo}`,
             formula2: `${lhs} = ${hi}`,
-            header: `${lhs} in [${lo}, ${hi}]`,
             zIndex: defaultItemZIndex,
           };
           this.annotationRegionsJustCreatedItems.unshift(item);
@@ -1978,12 +2009,17 @@ export class FormulaLinesDialog {
       const isHorz = item.orientation === ITEM_ORIENTATION.HORIZONTAL;
 
       if (currentItem.type === ITEM_TYPE.BAND) {
-        if (isHorz && property.name === 'xColumnName' && this.preview.axisCols.x) {
-          item.column2 = this.preview.axisCols.x.name;
-          this.editor.update(this.currentTable.currentItemIdx, true);
-        } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')
-          && this.preview.axisCols.y) {
-          item.column2 = this.preview.axisCols.y.name;
+        // Only rebuild the editor when the axis column actually changed; otherwise our own
+        // preview.update (triggered by editing title/description/etc.) would steal focus on
+        // every keystroke, since setOptions re-fires onPropertyValueChanged for the same value.
+        let newCol2: string | undefined;
+        if (isHorz && property.name === 'xColumnName' && this.preview.axisCols.x)
+          newCol2 = this.preview.axisCols.x.name;
+        else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')
+          && this.preview.axisCols.y)
+          newCol2 = this.preview.axisCols.y.name;
+        if (newCol2 !== undefined && item.column2 !== newCol2) {
+          item.column2 = newCol2;
           this.editor.update(this.currentTable.currentItemIdx, true);
         }
       } else if (currentItem.type === ITEM_TYPE.LINE) {

@@ -8,19 +8,21 @@
     "access": "public"
   },
   "license": "MIT",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "friendlyName": "Scientific Computing",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "Pure TypeScript library for numerical methods",
   "keywords": [
     "optimization",
-    "time series features"
+    "time series features",
+    "statistics"
   ],
   "dependencies": {
     "jstat": "^1.9.6"
   },
   "devDependencies": {
+    "@datagrok-libraries/codegen-async-to-sync": "^0.1.0",
     "@types/jest": "^29.0.0",
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
@@ -38,6 +40,8 @@
     "build": "tsc",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "test": "jest"
+    "test": "jest",
+    "update-codegen": "codegen-async-to-sync --roots src",
+    "codegen:check": "codegen-async-to-sync --check --roots src"
   }
 }

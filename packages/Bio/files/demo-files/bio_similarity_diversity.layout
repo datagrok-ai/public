@@ -1,0 +1,205 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1616,
+      "height": 833
+    },
+    "children": [
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 812,
+          "height": 833,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 812,
+              "height": 833,
+              "element": {
+                "id": "4a541150-48b0-11f1-921a-4b0415f08584",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "showAddNewRowIcon": true,
+                  "addNewRowOnLastRowEdit": true,
+                  "rowHeight": 30,
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "width": 44,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 230,
+                      "columnName": "sequence",
+                      "cellType": "sequence",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 155,
+                      "columnName": "Activity",
+                      "customFormat": "0.0000000000000000",
+                      "cellType": "number",
+                      "format": "0.0000000000000000",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    }
+                  ],
+                  "onInitializedScript": "\n      setTimeout(async () => {\n        const t = grok.shell.table('Table');\n        if (!t)\n          return;\n        await t.meta.detectSemanticTypes();\n        const func = DG.Func.find({name: 'hierarchicalClustering'})[0];\n        if (!func)\n          return;\n        const cols = [\"sequence\"];\n        func.apply({\n          df: t,\n          colNameList: cols,\n          distance: 'euclidean',\n          linkage: 'complete'\n        });\n      }, 1000)\n    "
+                },
+                "title": "peptides-non-natural",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 803,
+          "height": 833
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 803,
+              "height": 396,
+              "element": {
+                "id": "4a543860-48b0-11f1-83c0-f546b6d79614",
+                "type": "Sequence Similarity Search",
+                "look": {
+                  "#type": "JsViewerHostLook",
+                  "limit": 10,
+                  "targetColumnName": "sequence",
+                  "distanceMetric": "Hamming",
+                  "fingerprint": "Morgan",
+                  "gapOpen": 1,
+                  "gapExtend": 0.6,
+                  "cutoff": 0.01,
+                  "hotSearch": true,
+                  "similarColumnLabel": null
+                },
+                "title": "Sequence Similarity Search"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 803,
+              "height": 436,
+              "element": {
+                "id": "4a545f70-48b0-11f1-8ba2-6d41f5aaac0d",
+                "type": "Sequence Diversity Search",
+                "look": {
+                  "#type": "JsViewerHostLook",
+                  "limit": 10,
+                  "targetColumnName": "sequence",
+                  "distanceMetric": "Hamming",
+                  "fingerprint": "Morgan",
+                  "gapOpen": 1,
+                  "gapExtend": 0.6,
+                  "diverseColumnLabel": null
+                },
+                "title": "Sequence Diversity Search"
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "1ac6c220-48b0-11f1-96f8-25bc74a4f3be",
+    "tableName": "Table"
+  },
+  "userData": {
+    ".columnTags": {
+      "sequence": {
+        "units": "separator",
+        "cell.renderer": "sequence",
+        "quality": "Macromolecule"
+      },
+      "Activity": {
+        "format": "0.0000000000000000"
+      }
+    }
+  },
+  "columns": [
+    {
+      "name": "sequence",
+      "type": "string",
+      "semType": "Macromolecule",
+      "id": "4a5522c0-48b0-11f1-aa6b-0144c5d96cd0",
+      "friendlyName": "Sequence",
+      "entityTags": [
+        {
+          "tag": "units",
+          "id": "4a54ad90-48b0-11f1-b76c-7b84e409c4c8"
+        },
+        {
+          "tag": "separator",
+          "id": "4a54ad90-48b0-11f1-a63d-e750540d4500"
+        },
+        {
+          "tag": "aligned",
+          "id": "4a54ad90-48b0-11f1-bacb-b7efc320ed4f"
+        },
+        {
+          "tag": "alphabet",
+          "id": "4a54d4a0-48b0-11f1-e38d-791eed2bbb06"
+        },
+        {
+          "tag": ".alphabetIsMultichar",
+          "id": "4a54d4a0-48b0-11f1-d005-9b6dd0639b69"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "4a54fbb0-48b0-11f1-f185-1736b856a5fd"
+        },
+        {
+          "tag": "quality",
+          "id": "4a54fbb0-48b0-11f1-9edd-8bfb44ec952c"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "4a54fbb0-48b0-11f1-a122-c1e30be38aa5"
+        }
+      ],
+      "metaParams": {
+        "units": "separator",
+        "separator": "/",
+        "aligned": "SEQ.MSA",
+        "alphabet": "UN",
+        ".alphabetIsMultichar": "true",
+        "cell.renderer": "sequence",
+        "quality": "Macromolecule",
+        ".semantic-detection-duration": "17"
+      }
+    }
+  ],
+  "name": "Table",
+  "friendlyName": "Table",
+  "author": {
+    "id": "cb276bc0-6280-11ee-82f7-8dc8dd5df45b"
+  },
+  "createdOn": "2026-05-10T15:59:56.643Z"
+}

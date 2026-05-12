@@ -1,6 +1,6 @@
-import {LiteGraph} from 'litegraph.js';
+/** DG type ↔ socket type & color mappings, plus type-compatibility rules
+ *  used by `TypedSocket.isCompatibleWith`. */
 
-/** Datagrok TYPE → LiteGraph slot type string mapping with colors */
 export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
   'dataframe': {slotType: 'dataframe', color: '#E67E22'},
   'column': {slotType: 'column', color: '#3498DB'},
@@ -26,7 +26,8 @@ export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
   'view': {slotType: 'view', color: '#5C6BC0'},
 };
 
-/** Role → node color mapping (light theme: colored title bar, white body) */
+/** Role → title-bar color (white body). Looked up by `FuncNode` from
+ *  `func.options.role`. */
 export const ROLE_COLORS: Record<string, {color: string; bgcolor: string}> = {
   'app': {color: '#7986CB', bgcolor: '#ffffff'},
   'panel': {color: '#9575CD', bgcolor: '#ffffff'},
@@ -48,14 +49,15 @@ export const ROLE_COLORS: Record<string, {color: string; bgcolor: string}> = {
 export const DEFAULT_NODE_COLOR = '#BDBDBD';
 export const DEFAULT_NODE_BGCOLOR = '#ffffff';
 
-/** Type compatibility: which types can connect to which */
+/** Symmetric compat map: an output of type K can connect to an input of any
+ *  type listed in `COMPATIBLE_TYPES[K]`, and vice-versa. `'*'` is a wildcard. */
 const COMPATIBLE_TYPES: Record<string, string[]> = {
   'double': ['int', 'num'],
   'tableview': ['view'],
   'num': ['int', 'double'],
   'list': ['string_list'],
   'string_list': ['list'],
-  'dynamic': ['*'], // special: connects to everything
+  'dynamic': ['*'],
   'object': ['*'],
 };
 
@@ -63,8 +65,8 @@ export function areTypesCompatible(outputType: string, inputType: string): boole
   if (outputType === inputType) return true;
   if (outputType === 'dynamic' || inputType === 'dynamic') return true;
   if (outputType === 'object' || inputType === 'object') return true;
-  const compat = COMPATIBLE_TYPES[inputType];
-  if (compat && (compat.includes('*') || compat.includes(outputType))) return true;
+  const inCompat = COMPATIBLE_TYPES[inputType];
+  if (inCompat && (inCompat.includes('*') || inCompat.includes(outputType))) return true;
   const outCompat = COMPATIBLE_TYPES[outputType];
   if (outCompat && (outCompat.includes('*') || outCompat.includes(inputType))) return true;
   return false;
@@ -84,12 +86,3 @@ export function getNodeColors(role: string | null): {color: string; bgcolor: str
   if (role && ROLE_COLORS[role]) return ROLE_COLORS[role];
   return {color: DEFAULT_NODE_COLOR, bgcolor: DEFAULT_NODE_BGCOLOR};
 }
-
-/** Register all DG types with LiteGraph's link_type_colors for colored connections */
-export function registerSlotColors(): void {
-  for (const [, {slotType, color}] of Object.entries(DG_TYPE_MAP))
-    LGraphCanvas.link_type_colors[slotType] = color;
-}
-
-// We need to import LGraphCanvas separately for the static property
-import {LGraphCanvas} from 'litegraph.js';

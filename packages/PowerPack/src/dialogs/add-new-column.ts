@@ -470,6 +470,7 @@ export class AddNewColumnDialog {
         this.functionAutocomplete = !this.packageAutocomplete;
         return this.packageAutocomplete;
       },
+      closeOnBlur: false,
     });
 
     //functions tooltip extension

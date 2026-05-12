@@ -1763,6 +1763,8 @@ export interface IFormSettings {
 
   sketchState: {[index: string]: any};
 
+  formFont: string;
+
   columnNames: Array<string>;
 
   allowDynamicMenus: boolean;

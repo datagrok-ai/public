@@ -28,7 +28,11 @@ import {
 import '../../css/styles.css';
 import {applyCodeMirror} from "../utils/code-mirror-check";
 
+const FSE_ICON_SELECTOR = 'i.fa-magic[aria-label="Open Signature Editor"]';
+
 export function functionSignatureEditor(view: DG.View) {
+  if (view.root?.parentElement?.querySelector(FSE_ICON_SELECTOR) != null)
+    return;
   view.type === DATA_QUERY_VIEW ? addFseRibbonQuery(view) : addFseRibbonScript(view);
 }
 

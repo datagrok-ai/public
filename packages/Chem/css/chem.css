@@ -1093,6 +1093,14 @@
   align-items: center;
 }
 
+.chem-mpo-new-profile-box {
+  border: 1px solid var(--blue-1);
+  background: rgba(32, 131, 213, 0.04);
+  border-radius: 4px;
+  padding: 6px 12px 8px 0;
+  margin: 8px 0 12px;
+}
+
 .chem-mpo-scores-viewer {
   display: flex !important;
   flex-direction: column;

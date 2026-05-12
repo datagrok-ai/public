@@ -133,6 +133,10 @@ export namespace funcs {
     return await grok.functions.call('SequenceTranslator:GetPtChemEnumeratorDialog', { cell });
   }
 
+  export async function getPtOligoEnumeratorDialog(cell: any | null): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:GetPtOligoEnumeratorDialog', { cell });
+  }
+
   /**
   Enumerate provided HELM sequence on provided positions with provided monomers and generates new table
   */
@@ -156,6 +160,13 @@ export namespace funcs {
   */
   export async function oligoNucleotideCellRenderer(): Promise<any> {
     return await grok.functions.call('SequenceTranslator:OligoNucleotideCellRenderer', {});
+  }
+
+  /**
+  OligoNucleotide
+  */
+  export async function editOligoNucleotideCell(cell: any ): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:EditOligoNucleotideCell', { cell });
   }
 
   /**

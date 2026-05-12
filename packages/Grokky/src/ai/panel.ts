@@ -224,6 +224,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.root.appendChild(this.outputArea);
     this.root.appendChild(this.inputArea);
 
+    if (this._inline)
+      this.root.classList.add('d4-ai-inline-mode');
+
     this.setupSubscriptions();
   }
 
@@ -488,6 +491,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   get rawRender(): boolean { return this._rawRender; }
   get noPrompt(): boolean { return this._noPrompt; }
 
+  public appendArtifact(node: HTMLElement): void {
+    this.outputArea.appendChild(ui.divV([node], 'd4-ai-assistant-response-container'));
+    this.showContentIcons();
+  }
+
   enableNoPrompt(): void {
     this._noPrompt = true;
     if (!this._rawRender) {
@@ -544,33 +552,35 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   async finalizeStreaming(content: string, view: DG.ViewBase): Promise<void> {
-    if (!this._streamingContainer || !this._streamingMarkdownEl)
-      return;
-
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
       this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
       return;
     }
+    this.renderFinalContent(content);
+    const results = await executeDatagrokBlocks(content, view);
+    for (const el of results) {
+      this.ensureAccordionPane();
+      this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
+    }
+  }
 
+  protected renderFinalContent(content: string): void {
     const markDown = this.createStyledMarkdown(content);
     renderEntityBlocks(markDown);
     this.appendFeedbackButtons(markDown);
 
-    this._streamingMarkdownEl.replaceWith(markDown);
-    this._streamingMarkdownEl = null;
-    this._streamingContainer = null;
+    if (this._streamingMarkdownEl) {
+      this._streamingMarkdownEl.replaceWith(markDown);
+      this._streamingMarkdownEl = null;
+      this._streamingContainer = null;
+    } else {
+      this.ensureAccordionPane();
+      this._aiMessagesAccordionPane!.appendChild(ui.divV([markDown], 'd4-ai-assistant-response-container'));
+    }
 
     this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
-
-    const results = await executeDatagrokBlocks(content, view);
-    for (const el of results) {
-      this.ensureAccordionPane();
-      this._aiMessagesAccordionPane!.appendChild(
-        ui.divV([el], 'd4-ai-assistant-response-container'),
-      );
-    }
   }
 
   clearStreaming(): void {
@@ -937,19 +947,7 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
   }
 
   async finalizeStreaming(content: string, _view: DG.ViewBase): Promise<void> {
-    if (!this._streamingContainer || !this._streamingMarkdownEl)
-      return;
-
-    const markDown = this.createStyledMarkdown(content);
-    renderEntityBlocks(markDown);
-    this.appendFeedbackButtons(markDown);
-
-    this._streamingMarkdownEl.replaceWith(markDown);
-    this._streamingMarkdownEl = null;
-    this._streamingContainer = null;
-
-    this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
-
+    this.renderFinalContent(content);
     // Extract SQL from fenced code blocks and inject into query editor
     const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(content);
     if (sqlMatch) {
@@ -1021,19 +1019,7 @@ export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInput
   }
 
   async finalizeStreaming(content: string, _view: DG.ViewBase): Promise<void> {
-    if (!this._streamingContainer || !this._streamingMarkdownEl)
-      return;
-
-    const markDown = this.createStyledMarkdown(content);
-    renderEntityBlocks(markDown);
-    this.appendFeedbackButtons(markDown);
-
-    this._streamingMarkdownEl.replaceWith(markDown);
-    this._streamingMarkdownEl = null;
-    this._streamingContainer = null;
-
-    this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
-
+    this.renderFinalContent(content);
     // Extract code from datagrok-exec blocks and set on the script editor
     const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(content);
     if (codeMatch) {

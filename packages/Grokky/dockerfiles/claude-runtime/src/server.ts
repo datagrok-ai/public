@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
@@ -5,6 +6,7 @@ import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage, HookCallback} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
+import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
 import {syncUserFiles, generatePackageIndex} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
@@ -189,6 +191,7 @@ function buildOptions(
   resume?: string, apiKey?: string, mcpServerUrl?: string,
   systemPromptMode?: string, userDir?: string, agentFiles?: string[],
   packageIndex?: string | null, userId?: string,
+  model?: ClaudeModel,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode, agentFiles, packageIndex);
   const mcpServers = buildMcpServers(apiKey, mcpServerUrl, userId);
@@ -197,10 +200,18 @@ function buildOptions(
   return {
     systemPrompt,
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
+    // TODO: temporarily disabled — DB tools were getting picked up for unrelated prompts
+    // (e.g. "convert GROKPEP-000002 sequence to molecule"). Re-enable once routing is tighter.
+    disallowedTools: [
+      'mcp__datagrok__db_list_catalogs', 'mcp__datagrok__db_list_schemas',
+      'mcp__datagrok__db_list_tables', 'mcp__datagrok__db_describe_tables',
+      'mcp__datagrok__db_list_joins', 'mcp__datagrok__db_try_sql',
+    ],
     ...(loadPlugin ? {plugins: [{type: 'local' as const, path: '/app/plugin'}]} : {}),
     ...(mcpServers ? {mcpServers} : {}),
+    strictMcpConfig: true,
     permissionMode: 'acceptEdits' as const,
-    model: 'opus' as const,
+    model: model ?? ClaudeModel.Opus,
     includePartialMessages: true,
     cwd: userDir || WORKSPACE,
     hooks: {
@@ -370,7 +381,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   try {
     const packageIndex = await generatePackageIndex(userId);
     const existingSession = getSession(sid);
-    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles, packageIndex, userId);
+    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles, packageIndex, userId, data.model);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
@@ -480,8 +491,15 @@ app.get('/ws', upgradeWebSocket(() => {
 app.notFound((c) => c.json({error: 'Not found'}, 404));
 app.onError((err, c) => c.json({error: String(err)}, 500));
 
-if (!process.env['ANTHROPIC_API_KEY'])
-  console.warn('ANTHROPIC_API_KEY is not set — Claude API calls will fail');
+const hasApiKey = !!process.env['ANTHROPIC_API_KEY'];
+// Subscription auth requires the host's ~/.claude/.credentials.json to be mounted into the container at this path.
+const hasSubscription = fs.existsSync('/home/grok/.claude/.credentials.json');
+if (hasApiKey)
+  console.log('Claude auth: using ANTHROPIC_API_KEY');
+else if (hasSubscription)
+  console.log('Claude auth: using subscription credentials at ~/.claude/.credentials.json');
+else
+  console.warn('Claude auth: no ANTHROPIC_API_KEY and no ~/.claude/.credentials.json — API calls will fail');
 
 const server = serve({fetch: app.fetch, port: PORT});
 injectWebSocket(server);

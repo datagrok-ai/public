@@ -4,8 +4,10 @@
 
 export {performNelderMeadOptimization} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer';
-export {nelderMeadSettingsOpts} from
+export {nelderMeadSettingsOpts, optimizeNM} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-nelder-mead';
+export {optimizeNMSync} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-nelder-mead-sync';
 export {makeBoundsChecker} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-sampler';
 export type {Extremum, OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig,

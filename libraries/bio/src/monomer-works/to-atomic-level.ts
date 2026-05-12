@@ -504,25 +504,30 @@ function setShiftsAndTerminalNodes(
       // remove the branching r-group
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[2]);
     } else if (isPhosphate) {
-      // Phosphate flow assumes the chain bond comes IN at the substituted
-      // R1 atom (e.g. canonical p has R1 cap "OH" → atom is O, the bridging
-      // oxygen). Some phosphate variants (sp, en, ...) have R1 cap "H" —
-      // their R1 placeholder substitutes to H and gets removed by
-      // removeHydrogen. In that case the chain attaches DIRECTLY to the
-      // atom previously bonded to R1 (typically the central P), and we
-      // must keep terminalNodes[0] pointing at THAT atom (its original
-      // setTerminalNodes value), not at the soon-to-disappear H.
+      // Chain bond comes IN at the R1 cap atom. For canonical phosphates
+      // (R1 cap "OH" → cap atom is O) this is the bridging oxygen between
+      // the previous sugar's C3' and the central atom — exactly the
+      // chemistry we want.
+      //
+      // Variants with R1 cap "H" (sp, en, ...) substitute to H instead;
+      // the previous sugar (in the standard flow) has already given up its
+      // own 3'-O on the assumption that the linker will bring a bridging
+      // atom, and removeHydrogen would later strip the H, leaving the
+      // chain bond attached directly to the central atom (e.g., C3'-P
+      // instead of C3'-O-P). Promote the cap H to an O so the bridging
+      // atom exists in the assembled chain regardless of how the library
+      // happened to spell the cap. After the promotion both branches go
+      // through the same terminalNodes[0]=cap-atom code path.
       const r1Idx = monomerGraph.meta.rNodes[0] - 1;
       const r1AtomType = monomerGraph.atoms.atomTypes[r1Idx];
-      const r1IsH = r1AtomType?.toUpperCase() === C.HYDROGEN;
-      if (!r1IsH) {
-        monomerGraph.meta.terminalNodes[0] = monomerGraph.meta.rNodes[0];
-        shiftCoordinates(
-          monomerGraph,
-          -monomerGraph.atoms.x[monomerGraph.meta.terminalNodes[0] - 1],
-          -monomerGraph.atoms.y[monomerGraph.meta.terminalNodes[0] - 1]
-        );
-      }
+      if (r1AtomType?.toUpperCase() === C.HYDROGEN)
+        monomerGraph.atoms.atomTypes[r1Idx] = C.OXYGEN;
+      monomerGraph.meta.terminalNodes[0] = monomerGraph.meta.rNodes[0];
+      shiftCoordinates(
+        monomerGraph,
+        -monomerGraph.atoms.x[monomerGraph.meta.terminalNodes[0] - 1],
+        -monomerGraph.atoms.y[monomerGraph.meta.terminalNodes[0] - 1]
+      );
       setShifts(monomerGraph, polymerType);
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
     } else { // nucleobases
@@ -1104,52 +1109,183 @@ function adjustPeptideMonomerGraph(monomer: MolGraph): void {
 }
 
 function adjustPhosphateMonomerGraph(monomer: MolGraph): void {
-  //need to rotate phosphate so that O-P-O is on OX axis, this is not always possible, but we can always
-  // make sure both O's are on the OX axis
-
-  const centeredNode = monomer.meta.rNodes[1] - 1; // Oxigen 1
-  const rotatedNode = monomer.meta.rNodes[0] - 1; // Oxygen
+  // Orient the linker so that the atoms connected to its R-groups lie on a
+  // horizontal line through the origin:
+  //   - terminalNodes[0] (atom connected to R1) sits at the origin
+  //   - terminalNodes[1] (atom connected to R2) sits on the +X ray
+  //   - rNodes[0] (R1 placeholder) ends up on the left (-X side)
+  //     and rNodes[1] (R2 placeholder) on the right (+X side)
+  //
+  // For a "small" linker (e.g. canonical phosphate) where R1 and R2 attach
+  // to the SAME central atom, terminalNodes[0] == terminalNodes[1] and we
+  // can't form a horizontal segment from a single atom — fall back to
+  // orienting the rNodes[0]→rNodes[1] vector along +X instead.
+  //
+  // No atom-type assumptions: this works for phosphate, phosphorothioate,
+  // sulfonate, carbonate or any other linker the library may carry as long
+  // as the R-groups are present.
   const x = monomer.atoms.x;
   const y = monomer.atoms.y;
 
-  // place nodeOne at origin
-  shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
+  if (monomer.meta.terminalNodes.length === 0) return;
 
-  // angle is measured between OY and the rotated node
-  const angle = findAngleWithOY(x[rotatedNode], y[rotatedNode]);
+  const t0Idx = monomer.meta.terminalNodes[0] - 1;
+  const t1Idx = monomer.meta.terminalNodes.length > 1 ? monomer.meta.terminalNodes[1] - 1 : -1;
 
-  // rotate the centered graph so that O-P-O is on OX
-  rotateCenteredGraph(monomer.atoms, Math.PI / 2 - angle);
+  // 1. Center on terminalNodes[0]
+  shiftCoordinates(monomer, -x[t0Idx], -y[t0Idx]);
+
+  // 2. Pick the rotation reference. Prefer terminalNodes[1] when distinct
+  //    from terminalNodes[0]; otherwise fall back to rNodes[1] / rNodes[0].
+  let refX: number = 0; let refY: number = 0;
+  if (t1Idx >= 0 && t1Idx !== t0Idx) {
+    refX = x[t1Idx]; refY = y[t1Idx];
+  } else if (monomer.meta.rNodes.length > 1 && monomer.meta.rNodes[1] - 1 >= 0) {
+    refX = x[monomer.meta.rNodes[1] - 1]; refY = y[monomer.meta.rNodes[1] - 1];
+  } else if (monomer.meta.rNodes.length > 0 && monomer.meta.rNodes[0] - 1 >= 0) {
+    // single-R linker — treat the R1 placeholder direction as the "incoming"
+    // (left) side, so flip its vector to land R2-ish geometry on +X.
+    refX = -x[monomer.meta.rNodes[0] - 1]; refY = -y[monomer.meta.rNodes[0] - 1];
+  }
+
+  if (refX !== 0 || refY !== 0) {
+    const angleFromOY = findAngleWithOY(refX, refY);
+    rotateCenteredGraph(monomer.atoms, -angleFromOY - Math.PI / 2);
+  }
+
+  // 3. Make sure R1 placeholder is on the left of R2 placeholder.
+  if (monomer.meta.rNodes.length >= 2) {
+    const r1Idx = monomer.meta.rNodes[0] - 1;
+    const r2Idx = monomer.meta.rNodes[1] - 1;
+    if (r1Idx >= 0 && r2Idx >= 0 && x[r1Idx] > x[r2Idx])
+      flipMonomerAroundOY(monomer);
+  }
 }
 
 function adjustSugarMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberWrapper): void {
-  // eslint-disable-next-line max-len
-  // sugars connect with R1 to previous nucleotide phosphate, R3 to the nucleobase and R2 to the next nucleotide phosphate
-  // need to adjust the graph so that R1 is looking left, R2 is looking right and R3 is looking up
+  // Sugars connect via R1 (to the previous linker), R2 (to the next linker),
+  // and R3 (to the branch — the nucleobase). Goal:
+  //   - terminalNodes[0] (atom connected to R1) at the origin
+  //   - terminalNodes[1] (atom connected to R2) on the +X ray
+  //     → atoms connected to R1/R2 are on a horizontal line
+  //   - rNodes[2] (R3 placeholder) lies in the upper half plane
+  //     → R3 (and the nucleobase that will attach there) points up
+  //
+  // The previous algorithm rotated rNodes[1] (the R2 placeholder atom) onto
+  // +X axis, which only worked when the molfile happened to place R2
+  // directly opposite terminalNodes[0]. For non-canonical sugars (modified
+  // riboses, sugar surrogates) this produced skewed layouts. Rotating
+  // terminalNodes[1] is robust to whatever atom types or bond directions
+  // the library uses.
   const x = monomer.atoms.x;
   const y = monomer.atoms.y;
 
-  let centeredNode = monomer.meta.terminalNodes[0] - 1;
-  const rotatedNode = monomer.meta.rNodes[1] - 1;
+  if (monomer.meta.terminalNodes.length === 0) return;
 
-  shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
-  // check if the sugar needs to be flipped around (mirrored)
-  // orient sugar with R3 pointing up
-  const r3Angle = findAngleWithOY(x[monomer.meta.rNodes[2] - 1], y[monomer.meta.rNodes[2] - 1]);
-  rotateCenteredGraph(monomer.atoms, -r3Angle);
-  // console.log(x[monomer.meta.rNodes[0] - 1], x[monomer.meta.rNodes[1] - 1]);
-  // if r1 is to the right of r2, flip the sugar around OY
-  if (x[monomer.meta.rNodes[0] - 1] > x[monomer.meta.rNodes[1] - 1])
-    flipMonomerAroundOY(monomer);
+  const t0Idx = monomer.meta.terminalNodes[0] - 1;
+  const t1Idx = monomer.meta.terminalNodes.length > 1 ? monomer.meta.terminalNodes[1] - 1 : -1;
 
-  // angle is measured between OX and the rotated node
-  const angle = findAngleWithOY(x[rotatedNode], y[rotatedNode]);
-  // rotate the centered graph so that the rotated node in on OX
-  rotateCenteredGraph(monomer.atoms, 3 * Math.PI / 2 - angle);
+  // 1. Center on terminalNodes[0]
+  shiftCoordinates(monomer, -x[t0Idx], -y[t0Idx]);
 
-  pointerToBranchAngle.value = getAngleBetweenSugarBranchAndOY(monomer);
-  centeredNode = monomer.meta.terminalNodes[0] - 1;
-  shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
+  // 2. Rotate so terminalNodes[1] (the atom bonded to R2) lies on +X.
+  //    Skip when terminalNodes[1] is missing or coincides with t0
+  //    (degenerate sugar — fall back to rNodes[1] for orientation).
+  let refX: number = 0; let refY: number = 0;
+  if (t1Idx >= 0 && t1Idx !== t0Idx) {
+    refX = x[t1Idx]; refY = y[t1Idx];
+  } else if (monomer.meta.rNodes.length > 1 && monomer.meta.rNodes[1] - 1 >= 0) {
+    refX = x[monomer.meta.rNodes[1] - 1]; refY = y[monomer.meta.rNodes[1] - 1];
+  }
+  if (refX !== 0 || refY !== 0) {
+    const angleFromOY = findAngleWithOY(refX, refY);
+    rotateCenteredGraph(monomer.atoms, -angleFromOY - Math.PI / 2);
+  }
+
+  // 3. Flip around OX so R3 points up. Prefer the R3 placeholder itself,
+  //    fall back to terminalNodes[2] (atom connected to R3) when missing.
+  let r3y: number | null = null;
+  if (monomer.meta.rNodes.length > 2 && monomer.meta.rNodes[2] - 1 >= 0)
+    r3y = y[monomer.meta.rNodes[2] - 1];
+  else if (monomer.meta.terminalNodes.length > 2 && monomer.meta.terminalNodes[2] - 1 >= 0)
+    r3y = y[monomer.meta.terminalNodes[2] - 1];
+  if (r3y !== null && r3y < 0)
+    flipMonomerAroundOX(monomer);
+
+  // 4. Abnormal-sugar override: when the sugar's R3-attachment atom
+  //    (terminalNodes[2]) is NOT the topmost atom of the molecule, the
+  //    natural branch direction would push the base sideways or even down
+  //    (LNA, with its 2,4-O-CH2 bridge sitting above C1', is the canonical
+  //    example). In that case reposition the R3 placeholder directly above
+  //    the topmost real atom, so the branch shift puts the base's
+  //    terminalNodes[0] above the entire sugar with a vertical bond going
+  //    straight up. This is purely a 2D-depiction adjustment — it preserves
+  //    connectivity and only changes where the base atoms land in space.
+  repositionR3IfAbnormal(monomer);
+
+  // 5. Compute branch angle for the base alignment step. Default to 0
+  //    (straight up) when the sugar lacks the branch attachment — the base
+  //    placement code only runs when a base actually follows. The override
+  //    above, when triggered, places R3 directly above terminalNodes[2]
+  //    so this naturally evaluates to ~0.
+  if (monomer.meta.rNodes.length > 2 && monomer.meta.terminalNodes.length > 2 &&
+      monomer.meta.rNodes[2] - 1 >= 0 && monomer.meta.terminalNodes[2] - 1 >= 0)
+    pointerToBranchAngle.value = getAngleBetweenSugarBranchAndOY(monomer);
+  else
+    pointerToBranchAngle.value = 0;
+
+  // 6. Re-anchor terminalNodes[0] at the origin (rotation/flip preserve it,
+  //    but keep this as a safety net for floating-point drift).
+  const t0IdxFinal = monomer.meta.terminalNodes[0] - 1;
+  shiftCoordinates(monomer, -x[t0IdxFinal], -y[t0IdxFinal]);
+}
+
+/** When the sugar's R3-attachment atom (terminalNodes[2]) is not the
+ * topmost atom, move the R3 placeholder so it sits directly above the
+ * sugar's topmost real atom (with one bond length of vertical clearance).
+ * Sugars like LNA — with a methylene/oxygen bridge spanning over the
+ * face that carries C1' — fall into this branch.
+ *
+ * Only the R3 placeholder atom moves; the rest of the sugar (and the
+ * bond from terminalNodes[2] to rNodes[2]) is preserved. The bond ends
+ * up elongated and vertical, which is fine for SMILES (length is
+ * irrelevant to connectivity) and gives the chain a clean visual layout
+ * with the base above any bridging atoms. */
+function repositionR3IfAbnormal(monomer: MolGraph): void {
+  if (monomer.meta.rNodes.length <= 2 || monomer.meta.terminalNodes.length <= 2)
+    return;
+  const r3 = monomer.meta.rNodes[2] - 1;
+  const t2 = monomer.meta.terminalNodes[2] - 1;
+  if (r3 < 0 || t2 < 0) return;
+
+  const x = monomer.atoms.x;
+  const y = monomer.atoms.y;
+
+  // Topmost Y among atoms that will remain in the assembly: exclude the
+  // R-group placeholder positions (rNodes[*]), since those are either
+  // removed or reassigned during setShiftsAndTerminalNodes.
+  const rGroupSet = new Set<number>();
+  for (const r of monomer.meta.rNodes) {
+    if (r >= 1) rGroupSet.add(r - 1);
+  }
+  let topY = -Infinity;
+  for (let i = 0; i < y.length; ++i) {
+    if (!rGroupSet.has(i) && y[i] > topY) topY = y[i];
+  }
+  if (!Number.isFinite(topY)) return;
+
+  // Tolerance: don't trigger for the normal case where terminalNodes[2]
+  // is at (or near) the top — small floating-point or geometry wobble
+  // shouldn't kick the base into "abnormal" placement.
+  const epsilon = 0.5;
+  if (y[t2] >= topY - epsilon) return;
+
+  // Place R3 directly above terminalNodes[2] (so the bond from
+  // terminalNodes[2] to base's eventual terminalNodes[0] is purely
+  // vertical), at least one bond length above the topmost atom.
+  const verticalClearance = 1.5;
+  x[r3] = x[t2];
+  y[r3] = topY + verticalClearance;
 }
 
 function adjustBaseMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberWrapper): void {
@@ -1162,14 +1298,15 @@ function adjustBaseMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberW
   // center graph at centeredNode
   shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
 
-  // rotate so that the branch bond is aligned with that in sugar
+  // rotate so that the branch bond is aligned with the sugar's branch
   const baseBranchToOYAngle = findAngleWithOY(x[rotatedNode], y[rotatedNode]);
   const sugarBranchToOYAngle = pointerToBranchAngle.value;
-  if (sugarBranchToOYAngle) {
-    rotateCenteredGraph(monomer.atoms,
-      Math.PI - baseBranchToOYAngle + sugarBranchToOYAngle);
-  } else
+  if (sugarBranchToOYAngle === null)
     throw new Error('The value of sugarBranchToOYAngle is null');
+  // Note: 0 is a valid value (R3 directly along +Y after the sugar fix);
+  // the explicit null check above lets us treat it correctly.
+  rotateCenteredGraph(monomer.atoms,
+    Math.PI - baseBranchToOYAngle + sugarBranchToOYAngle);
 
   // scale graph in case its size does not fit the scale of phosphate and sugar
   // todo: consider extending to other monomer types

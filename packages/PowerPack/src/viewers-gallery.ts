@@ -84,6 +84,11 @@ const BIOCHEM_VIEWERS_TEST_DATA: {[key: string] : ViewersTestData} = {
     tooltip: 'Chem Diversity Search viewer needs at least 1 sequence column'},
 };
 
+const CURVES_VIEWERS_TEST_DATA: {[key: string] : ViewersTestData} = {
+  'MultiCurveViewer': {checkFunc: (table) => table.columns.bySemType('fit') !== null,
+    tooltip: 'Multi Curve viewer needs at least 1 curve column'},
+};
+
 const viewers: any = {};
 const jsViewers: any = {};
 const rootViewers = ui.divH([], 'viewer-gallery');
@@ -231,6 +236,8 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
         isViewerEnabled = false;
     } else if ((v.package.name === 'Chem' || v.package.name === 'Bio') && BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName])
       isViewerEnabled = BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
+    else if (v.package.name === 'Curves' && CURVES_VIEWERS_TEST_DATA[v.friendlyName])
+      isViewerEnabled = CURVES_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
     else {
       if (v.options['showInGallery'] === 'false')
         continue;
@@ -241,7 +248,8 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
         enabled: isViewerEnabled,
         tooltip: isViewerEnabled ? '' : CHARTS_VIEWERS_TEST_DATA[v.friendlyName] ?
           CHARTS_VIEWERS_TEST_DATA[v.friendlyName].tooltip : BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName] ?
-          BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].tooltip : 'Viewer cannot be created from viewer gallery',
+          BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].tooltip : CURVES_VIEWERS_TEST_DATA[v.friendlyName] ?
+          CURVES_VIEWERS_TEST_DATA[v.friendlyName].tooltip : 'Viewer cannot be created from viewer gallery',
         icon: (v.options['icon'] != undefined) ? `${v.package.webRoot.endsWith('/') ?
           v.package.webRoot : v.package.webRoot + '/'}${v.options['icon']}` : 'svg-project',
         description: v.description,

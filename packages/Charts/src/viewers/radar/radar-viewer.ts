@@ -136,7 +136,7 @@ export class RadarViewer extends EChartViewer {
 
     this.setupChartEvents();
 
-    this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/radar';
+    this.helpUrl = '/help/visualize/viewers/radar.md';
   }
 
   highlightRowIfEnabled(params: any) {

@@ -42,7 +42,11 @@ export interface ChemEnumCore {
 }
 
 export interface ChemEnumRGroup {
-  /** Normalized SMILES with its single R-label remapped to the target R number. */
+  /**
+   * Normalized SMILES with its single R-label remapped to the target R number,
+   * OR — when {@link isSingleAtom} is set — the canonical single-atom token
+   * (e.g. `N`, `O`, `[N+]`) to splice into the core's `[*:N]` slot.
+   */
   smiles: string;
   /** SMILES as supplied (pre-normalization and pre-remap). */
   originalSmiles: string;
@@ -50,6 +54,12 @@ export interface ChemEnumRGroup {
   rNumber: number;
   /** R number as originally written in `originalSmiles` (pre-remap). */
   sourceRNumber?: number;
+  /**
+   * True when the R-group has zero R-labels and is exactly one heavy atom.
+   * Such groups are spliced into the core's `[*:N]` slot via plain string
+   * replace instead of ring-closure joining.
+   */
+  isSingleAtom?: boolean;
   id: string;
   error?: string;
 }
@@ -169,9 +179,21 @@ export function makeRGroup(
   const rNumbers = extractRNumbers(normalized);
 
   if (rNumbers.length === 0) {
+    // Single-atom mode: a no-R-label SMILES is acceptable iff RDKit confirms
+    // exactly one heavy atom. The atom is then substituted into the core's
+    // `[*:N]` slot by `buildJoinedSmiles` instead of ring-closure-joined.
+    if (rdkit) {
+      const atomSmi = trySingleAtomCanonical(normalized, rdkit);
+      if (atomSmi) {
+        return {
+          smiles: atomSmi, originalSmiles, rNumber: targetRNumber, id,
+          isSingleAtom: true,
+        };
+      }
+    }
     return {
       smiles: normalized, originalSmiles, rNumber: targetRNumber, id,
-      error: 'R-group must contain exactly one R label (found none)'};
+      error: 'R-group must contain exactly one R label, or be a single atom (e.g. N, O, Cl)'};
   }
   if (rNumbers.length > 1) {
     return {
@@ -203,6 +225,27 @@ function tryParse(smi: string, rdkit: RDModule): string | null {
     return null;
   } catch (err: any) {
     return (err?.message ?? String(err)).toString().slice(0, 120);
+  } finally {
+    mol?.delete();
+  }
+}
+
+/**
+ * Returns the canonical, H-stripped SMILES iff `smi` parses as exactly one
+ * heavy atom — used to detect single-atom R-groups (`N`, `O`, `[N+]`, …) that
+ * substitute into the core's `[*:N]` slot directly. Returns null otherwise.
+ */
+function trySingleAtomCanonical(smi: string, rdkit: RDModule): string | null {
+  let mol: RDMol | null = null;
+  try {
+    mol = rdkit.get_mol(smi);
+    if (!mol || !mol.is_valid()) return null;
+    if (mol.get_num_atoms(true) !== 1) return null;
+    mol.remove_hs_in_place();
+    const canon = mol.get_smiles();
+    return canon && canon.length > 0 ? canon : null;
+  } catch {
+    return null;
   } finally {
     mol?.delete();
   }
@@ -302,17 +345,34 @@ export function buildJoinedSmiles(
 ): string | null {
   if (rgSmilesByNum.size === 0) return null;
 
-  const coreFixed = moveStartRLabelToBranch(coreSmiles);
+  // Single-atom R-groups (no `[*:k]` in their SMILES) are spliced into the
+  // core's `[*:k]` slot directly. Labeled R-groups go through the standard
+  // ring-closure join. The two paths cooperate when both are present:
+  // atoms are substituted first, then the labeled rest is joined.
+  const atomReps = new Map<number, string>();
+  const labeled = new Map<number, string>();
+  for (const [k, s] of rgSmilesByNum) {
+    if (extractRNumbers(s).includes(k)) labeled.set(k, s);
+    else atomReps.set(k, s);
+  }
+
+  let preparedCore = coreSmiles;
+  for (const [k, atom] of atomReps)
+    preparedCore = substituteRLabelWithAtom(preparedCore, k, atom);
+
+  if (labeled.size === 0) return preparedCore;
+
+  const coreFixed = moveStartRLabelToBranch(preparedCore);
   const rgsFixed = new Map<number, string>();
-  for (const [k, s] of rgSmilesByNum) rgsFixed.set(k, moveStartRLabelToBranch(s));
+  for (const [k, s] of labeled) rgsFixed.set(k, moveStartRLabelToBranch(s));
 
   const allPieces = [coreFixed, ...rgsFixed.values()];
-  const digits = pickFreeRingDigits(allPieces, rgSmilesByNum.size);
-  if (digits.length < rgSmilesByNum.size) return null;
+  const digits = pickFreeRingDigits(allPieces, labeled.size);
+  if (digits.length < labeled.size) return null;
 
   const digitByNum = new Map<number, string>();
   let i = 0;
-  for (const k of rgSmilesByNum.keys()) digitByNum.set(k, formatRingDigit(digits[i++]));
+  for (const k of labeled.keys()) digitByNum.set(k, formatRingDigit(digits[i++]));
 
   let assembledCore = coreFixed;
   for (const [k, d] of digitByNum)
@@ -323,6 +383,15 @@ export function buildJoinedSmiles(
     assembledRgs.push(substituteRLabelWithRingDigit(s, k, digitByNum.get(k)!));
 
   return [assembledCore, ...assembledRgs].join('.');
+}
+
+/**
+ * Splices an atom token into every `[*:n]` slot of `smi`. Unlike ring-digit
+ * substitution, parens around the label (`(N)` etc.) are valid SMILES, so a
+ * plain string replace is enough.
+ */
+export function substituteRLabelWithAtom(smi: string, n: number, atom: string): string {
+  return smi.split(`[*:${n}]`).join(atom);
 }
 
 /**

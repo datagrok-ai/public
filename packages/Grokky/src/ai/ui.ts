@@ -11,7 +11,7 @@ import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEven
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
 import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
-import {executeDatagrokBlocks} from '../claude/exec-blocks';
+import {executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
 
@@ -93,6 +93,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     try {
       await opts.onFinal(evt, contentHost);
     } finally {
+      renderEntityBlocks(contentHost);
       signalRendered();
       stopListening();
     }
@@ -433,10 +434,14 @@ export function setupShellAIPanelUI(): void {
   _shellAIPanel.show();
 }
 
+const AI_ICON_SELECTOR = 'i[data-name="ai"]';
+
 export async function setupTableViewAIPanelUI() {
   if (!grok.ai.config.configured)
     return;
   const handleView = (tableView: DG.TableView) => {
+    if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
+      return;
     // setup ribbon panel icon
     const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
     iconFse.style.width = iconFse.style.height = '18px';
@@ -465,6 +470,8 @@ export async function setupTableViewAIPanelUI() {
 // TODO: rewrite to use Claude engine instead of deprecated script-tools
 export async function setupScriptsAIPanelUI() {
   const handleView = (scriptView: DG.ScriptView) => {
+    if (scriptView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
+      return;
     const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), 'Ask AI \n Ctrl+I');
     iconFse.style.width = iconFse.style.height = '18px';
     scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);

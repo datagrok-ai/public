@@ -3,7 +3,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {ClaudeRuntimeClient} from '../../claude/runtime-client';
+import * as rxjs from 'rxjs';
+import {ClaudeRuntimeClient, ClaudeModel} from '../../claude/runtime-client';
 import {UsageLimiter} from '../usage-limiter';
 import {AIPanel} from '../panel';
 import {runPromptWithLifecycle, RENDERED_EVENT} from '../ui';
@@ -100,32 +101,52 @@ export class CombinedAISearchAssistant {
     tabcontrol.root.style.width = '100%';
     tabcontrol.root.style.height = 'unset';
     tabcontrol.root.style.minHeight = '300px';
+    // d4 TabControl auto-hides the header stripe when only one pane is added; force it visible so tabs always show
+    tabcontrol.header.style.display = 'flex';
     return DG.Widget.fromRoot(tabcontrol.root);
   }
 
   private buildFunctionTabContent(funcInfo: AISearchFuncInfo, prompt: string): HTMLElement {
-    const host = ui.divV([]);
+    const host = ui.divV([], 'grokky-ai-search-tab-host');
     const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true});
     chat.onRunRequest.subscribe((a) => runPromptWithLifecycle(chat, a.currentPrompt.prompt, grok.shell.v, 'search'));
 
     host.appendChild(ui.wait(async () => {
+      const client = ClaudeRuntimeClient.getInstance();
+      const firstStreamingEvent = new Promise<void>((resolve) => {
+        const sub = rxjs.merge(client.onChunk, client.onToolActivity).subscribe((evt) => {
+          if (evt.sessionId !== chat.sessionId)
+            return;
+          sub.unsubscribe();
+          resolve();
+        });
+      });
+      const rendered = new Promise<void>((resolve) => {
+        const sub = grok.events.onCustomEvent(RENDERED_EVENT).subscribe((s) => {
+          if (s !== chat.sessionId)
+            return;
+          sub.unsubscribe();
+          resolve();
+        });
+      });
+
       const inputParam: {[key: string]: any} = {[funcInfo.inputName]: prompt};
       if (funcInfo.func.inputs.some((i) => i.name === 'sessionId'))
         inputParam['sessionId'] = chat.sessionId;
-      const sub = grok.events.onCustomEvent(RENDERED_EVENT).subscribe((s) => {
-        if (s !== chat.sessionId)
-          return;
-        sub.unsubscribe();
-        chat.mountInto(host);
-      });
-      const result = await funcInfo.func.apply(inputParam) as DG.Widget | null;
-      if (result == null) {
-        sub.unsubscribe();
-        chat.mountInto(host);
-        return ui.divText('No result generated.');
+      const widget = await funcInfo.func.apply(inputParam) as DG.Widget | null;
+
+      const mount = ui.div();
+      if (widget == null) {
+        chat.mountInto(mount);
+        chat.appendArtifact(ui.divText('No result generated.'));
+        return mount;
       }
-      result.root.style.width = '100%';
-      return result.root;
+
+      await Promise.race([firstStreamingEvent, rendered]);
+      chat.mountInto(mount);
+      widget.root.style.width = '100%';
+      chat.appendArtifact(widget.root);
+      return mount;
     }));
 
     return host;
@@ -185,7 +206,7 @@ User query: ${prompt}`;
 
     let order = Object.keys(this.functions);
     try {
-      const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt);
+      const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {model: ClaudeModel.Haiku});
       const parsed = JSON.parse(res) as string[];
       if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string' && this.functions[s]) && parsed.length > 0)
         order = parsed;

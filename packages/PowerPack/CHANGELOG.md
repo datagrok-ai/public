@@ -1,5 +1,9 @@
 # Power Pack changelog
 
+## v.next
+
+* Add New Column dialog: Fixed autocomplete popup closing when clicking its scrollbar
+
 ## 1.8.1 ()
 
 * GROK-20040: Workspace: Pin Spaces; selecting a pinned space embeds the Browse-tree `DG.SpaceView` in the right pane and routes per-item previews into the bottom preview pane
