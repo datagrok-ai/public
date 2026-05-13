@@ -3954,3 +3954,96 @@
   confidence: high
 ```
 
+- id: DG-FACT-198
+  kind: namespace
+  scope: manipulate-viewers
+  value: Universal viewer-attach API is `TableView.addViewer(v: ViewerType | string | Viewer, options?: any): Viewer` (`js-api/src/views/view.ts:418-427`). When `v` is a string the platform looks up the type by name and dispatches asynchronously for non-core viewers; when `v` is a `Viewer` instance the platform attaches it directly. Optional `options` is applied via `setOptions` after attach. Use this for ALL viewers (native and custom). Wrapper methods on `View` (`view.histogram(opts)`, `view.scatterPlot(opts)`, `view.barChart(opts)`, etc., lines 444-587) are JSDoc-marked `deprecated: use addViewer(Viewer.<type>(options))` and slated for removal in 1.21.
+  derives_from:
+    - article: help/develop/how-to/viewers/manipulate-viewers.md:22-77
+    - code: js-api/src/views/view.ts:418-427,444-587
+  contradicts:
+    - DG-FACT-DRIFT-078
+  confidence: high
+
+- id: DG-FACT-199
+  kind: namespace
+  scope: manipulate-viewers
+  value: Two factory paths for creating a `Viewer` BEFORE attaching it. (a) `DG.Viewer.fromType(viewerType, table, options=null): Viewer` — SYNCHRONOUS; reserved for the 25 CORE viewers (`Viewer.getViewerTypes({core: true})`) whose code is already loaded in the shell. (b) `dataFrame.plot.fromType(viewerType, options=null): Promise<Widget>` — ASYNC; the caller must `await` because the owning package may need to load. Article line 71-77 names this difference but doesn't show the return-type contrast (sync `Viewer` vs async `Promise<Widget>`). For sync-only-attach scenarios, `view.addViewer('CustomTypeName')` works but property writes via `setOptions` are not guaranteed to take effect.
+  derives_from:
+    - article: help/develop/how-to/viewers/manipulate-viewers.md:50-77
+    - code: js-api/src/viewer.ts:128-130, js-api/src/dataframe/data-frame.ts:557-559
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-200
+  kind: namespace
+  scope: manipulate-viewers
+  value: `DataFrame.plot` (`DataFramePlotHelper`, `js-api/src/dataframe/data-frame.ts:551-572`) exposes 10 SYNC factory shortcuts that delegate to `DG.Viewer.<type>` and return the typed `Viewer` subclass, plus the async `fromType`. The 10: `scatter`, `grid`, `tile`, `form`, `histogram`, `bar` (NOT `barChart`), `heatMap`, `box`, `line`, `network`. Naming differs from `DG.Viewer` statics (`bar` vs `barChart`, `box` vs `boxPlot`, `line` vs `lineChart`). Returned viewer is detached — pass to `view.addViewer(viewer)` to attach.
+  derives_from:
+    - article: help/develop/how-to/viewers/manipulate-viewers.md:64-69
+    - code: js-api/src/dataframe/data-frame.ts:551-572, js-api/src/viewer.ts:215-305
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-201
+  kind: namespace
+  scope: manipulate-viewers
+  value: `Viewer.getOptions(includeDefaults: boolean = false): {id: string, type: ViewerType, look: {[key: string]: any}}` (`js-api/src/viewer.ts:158-160`). DEFAULT is `false` (omits properties whose value equals the default — keeps the payload small for serialization). Pass `true` for an exhaustive snapshot. Returned object has THREE top-level fields; the runtime-mutable property bag lives under `.look`. Counterpart `setOptions(map)` (line 146-148) accepts a flat property map (not the `{look: ...}` wrapper); `map.type` is optional and lets the platform substitute the viewer kind.
+  derives_from:
+    - article: help/develop/how-to/viewers/manipulate-viewers.md:170-176
+    - code: js-api/src/viewer.ts:146-160
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-202
+  kind: enum
+  scope: manipulate-viewers
+  value: `Viewer.getProperties(): Property[]` (`js-api/src/viewer.ts:166-168`) — readable property descriptors per attached viewer. Each `Property` exposes (getters in `js-api/src/entities/property.ts`): `name` (142), `propertyType: TYPE` (163), `semType` (174), `description` (182), `defaultValue` (194), `choices: string[]` (236), and `columnTypeFilter: ColumnType | 'numerical' | 'categorical' | null` (249) — RENAMED from `columnFilter` (JSDoc: "Column type filter (previously \"columnFilter\")"). Article line 198 still reads `p.columnFilter`; new code MUST use `p.columnTypeFilter` (DRIFT-078). Use `DG.COLUMN_TYPE` constants when comparing the column-type variant.
+  derives_from:
+    - article: help/develop/how-to/viewers/manipulate-viewers.md:189-218
+    - code: js-api/src/viewer.ts:166-168, js-api/src/entities/property.ts:142,163,174,182,194,236,248-251
+  contradicts:
+    - DG-FACT-DRIFT-078
+  confidence: high
+
+- id: DG-FACT-203
+  kind: enum
+  scope: manipulate-viewers
+  value: `DG.DOCK_TYPE` enum (`js-api/src/const.ts:775-782`) — `LEFT='left'`, `RIGHT='right'`, `TOP='up'`, `DOWN='down'`, `FILL='fill'`. NOTE the asymmetry — `DG.DOCK_TYPE.TOP` resolves to the string `'up'`, NOT `'top'`. Public string union `DockType = ${DOCK_TYPE}` is `'left' | 'right' | 'up' | 'down' | 'fill'`. Article (line 263) writes "left | right | top | down | fill" — the enum *names* are correct but pasting the literal `'top'` as a position string fails. Skill output should always reference via `DG.DOCK_TYPE.TOP` to insulate callers from the inconsistency.
+  derives_from:
+    - article: help/develop/how-to/viewers/manipulate-viewers.md:263-265
+    - code: js-api/src/const.ts:775-782,1003
+  contradicts:
+    - DG-FACT-DRIFT-079
+  confidence: high
+
+- id: DG-FACT-204
+  kind: namespace
+  scope: manipulate-viewers
+  value: `DockManager.dock(element: HTMLElement | Viewer, dockType: DockType = DG.DOCK_TYPE.LEFT, refNode: DockNode | null = null, title?: string, ratio: number = 0.5): DockNode` (`js-api/src/docking.ts:135-137`). DEFAULT dock position is `LEFT`, NOT what the article's examples imply. Two distinct accessors: (a) `view.dockManager` (`js-api/src/views/view.ts:440`) — manages windows INSIDE the view; viewers docked here move with the view. (b) `grok.shell.dockManager` (`js-api/src/shell.ts:361-363`) — the global root manager; viewers docked here float independently of any view. Article shows both forms (lines 260, 268) but doesn't surface the parent-vs-root distinction.
+  derives_from:
+    - article: help/develop/how-to/viewers/manipulate-viewers.md:255-269
+    - code: js-api/src/docking.ts:135-137, js-api/src/views/view.ts:440-442, js-api/src/shell.ts:361-363
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-205
+  kind: namespace
+  scope: manipulate-viewers
+  value: `initializationFunction: string` is a built-in viewer property on every `IBaseSettings`-derived interface (`js-api/src/interfaces/d4.d.ts:77,231,261,278,306,331,380,410,437,540`, etc.). Value is a registered Datagrok function NAME (`<Package>:<funcName>` or a runtime-registered name). The function MUST take a single `viewer` input typed as the appropriate viewer subclass; it RUNS every time the viewer is constructed — including restore from saved layouts and projects. Production canonical: `Chem` package's `activityCliffsInitFunction` (`packages/Chem/src/package.ts:1238-1242` — `@grok.decorators.func({name: 'activityCliffsInitFunction'})` over `static async activityCliffsInitFunction(@grok.decorators.param({type: 'viewer'}) sp: DG.ScatterPlotViewer)`). Pass via options at creation: `viewer.setOptions({initializationFunction: 'Pkg:initFunc'})` or `view.scatterPlot({initializationFunction: 'initScatterSquare'})`.
+  derives_from:
+    - article: help/develop/how-to/viewers/manipulate-viewers.md:276-313
+    - code: js-api/src/interfaces/d4.d.ts:77,231,261,278,306,331, packages/Chem/src/package.ts:1218,1238-1256
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-206
+  kind: enum
+  scope: manipulate-viewers
+  value: `DG.VIEWER` enum (`js-api/src/const.ts:670-704`) — 32 native viewer string constants. Subset `DG.CORE_VIEWER` (`const.ts:706-733`, 25 entries) is the SYNCHRONOUS-ready set returned by `DG.Viewer.getViewerTypes({core: true})`; `DG.Viewer.fromType(...)` only succeeds synchronously for these. The 7 names in `VIEWER` but NOT in `CORE_VIEWER`: `GLOBE`, `GOOGLE_MAP`, `WORD_CLOUD`, `TIMELINES`, `RADAR_VIEWER`, `SURFACE_PLOT`, `SCAFFOLD_TREE` — they ship via packages and require the async `dataFrame.plot.fromType` path or `view.addViewer('<name>')`. String values use Title Case with single words ("Pie chart", "Scatter plot", "PC Plot", "Bar chart") — case matters; `DG.VIEWER.HISTOGRAM === 'Histogram'`.
+  derives_from:
+    - article: help/develop/how-to/viewers/manipulate-viewers.md:28-30
+    - code: js-api/src/const.ts:670-733, js-api/src/viewer.ts:135-139
+  contradicts: []
+  confidence: high
+
