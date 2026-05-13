@@ -185,7 +185,7 @@ molecule into a `div`/`canvas`".
  similarity-scoring-sorted,descriptors,r-group,mcs,diversity-search,
  mol-rendering,mol-rendering-canvas}.js`
 - Related skills:
- - `create-cell-renderer` (rendering molecules as table cells uses the
+ - `custom-cell-renderers` (rendering molecules as table cells uses the
  same `svgMol`/`canvasMol` engines).
  - `access-data` (load a `DataFrame` of molecules from SQL/CSV before
  feeding it to `grok.chem.*`).
