@@ -1,5 +1,9 @@
 # Chem changelog
 
+## v.next
+
+* Chem Space: Guard editor entry against null current dataFrame / missing Molecule column to prevent `NullError: method not found: 'dart' on null` from `setColumnInputTable`
+
 ## 1.17.8 (2026-05-12)
 
 * Scaffold tree: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`

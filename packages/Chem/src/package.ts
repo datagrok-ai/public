@@ -827,6 +827,11 @@ export class PackageFunctions {
   @grok.decorators.editor()
   static ChemSpaceEditor(
     @grok.decorators.param({type: 'funccall'}) call: DG.FuncCall): void {
+    const dataFrame = grok.shell.tv?.dataFrame;
+    if (!dataFrame || !dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).length) {
+      grok.shell.warning(`Chemical Space requires an open table with a Molecule column`);
+      return;
+    }
     const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MOLECULE});
     const clusterMCS = ui.input.bool('Cluster MCS', {value: false, tooltipText: 'Perform MCS on clustered data'});
     const editor = funcEditor.getEditor();
