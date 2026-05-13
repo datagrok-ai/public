@@ -1,1 +1,187 @@
-{"#type":"ViewLayout","viewStateMap":{"containerType":"fill","state":{"width":1111,"height":825,"documentManager":true},"children":[{"containerType":"panel","state":{"width":1111,"height":825,"element":{"id":"980d1fb0-48b0-11f1-c5bf-ad6a67f21033","type":"Grid","look":{"#type":"GridLook","showAddNewRowIcon":true,"addNewRowOnLastRowEdit":true,"rowHeight":130,"topLevelDefaultMenu":true,"allowColumnMenu":true,"columns":[{"width":28,"backgroundColor":4294440951,"customName":"","cellType":"row header","headerCellStyle":{"textWrap":"words"}},{"width":77,"columnName":"Cmpd_ID","headerCellStyle":{"textWrap":"words"}},{"width":200,"columnName":"SMILES","cellType":"Molecule","headerCellStyle":{"textWrap":"words"}},{"width":300,"columnName":"AutoDock poses","cellType":"Molecule3D","headerCellStyle":{"textWrap":"words"}},{"width":111,"columnName":"binding energy","cellType":"number","format":"0.00","headerCellStyle":{"textWrap":"words"}},{"width":220,"columnName":"PL Diagram","cellType":"rawPng","headerCellStyle":{"textWrap":"words"}},{"width":114,"columnName":"PL Interactions","headerCellStyle":{"textWrap":"words"}},{"width":70,"columnName":"PL HBD","cellType":"number","headerCellStyle":{"textWrap":"words"}},{"width":69,"columnName":"PL HBA","cellType":"number","headerCellStyle":{"textWrap":"words"}},{"width":67,"columnName":"PL Hyd","cellType":"number","headerCellStyle":{"textWrap":"words"}},{"width":56,"columnName":"PL Pi","cellType":"number","headerCellStyle":{"textWrap":"words"}},{"width":64,"columnName":"PL Cat","cellType":"number","headerCellStyle":{"textWrap":"words"}},{"width":75,"columnName":"PL CatPi","cellType":"number","headerCellStyle":{"textWrap":"words"}},{"width":69,"columnName":"PL vdW","cellType":"number","headerCellStyle":{"textWrap":"words"}},{"width":73,"columnName":"PL Total","cellType":"number","headerCellStyle":{"textWrap":"words"}}]},"title":"docking_demo","default":true}},"children":[]}],"floating":[],"tableId":"de2bed10-48b0-11f1-d6bb-8b71cc2dcb5f","tableName":"docking_demo"},"userData":{".columnTags":{"SMILES":{"quality":"Molecule","units":"smiles","cell.renderer":"Molecule"},"AutoDock poses":{"units":"pdb","quality":"Molecule3D","cell.renderer":"Molecule3D"},"binding energy":{"format":"0.00"},"PL Diagram":{"quality":"rawPng","cell.renderer":"rawPng",".%prolif-source":"AutoDock poses",".%prolif-interactions-col":"PL Interactions"}}},"type":"TableView","id":"980d6dd0-48b0-11f1-d934-637672760061","name":"DockingDemo","friendlyName":"docking_demo"}
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "fill",
+    "state": {
+      "width": 1111,
+      "height": 825,
+      "documentManager": true
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 1111,
+          "height": 825,
+          "element": {
+            "id": "980d1fb0-48b0-11f1-c5bf-ad6a67f21033",
+            "type": "Grid",
+            "look": {
+              "#type": "GridLook",
+              "showAddNewRowIcon": true,
+              "addNewRowOnLastRowEdit": true,
+              "rowHeight": 130,
+              "topLevelDefaultMenu": true,
+              "allowColumnMenu": true,
+              "columns": [
+                {
+                  "width": 28,
+                  "backgroundColor": 4294440951,
+                  "customName": "",
+                  "cellType": "row header",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 77,
+                  "columnName": "Cmpd_ID",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 200,
+                  "columnName": "SMILES",
+                  "cellType": "Molecule",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 300,
+                  "columnName": "AutoDock poses",
+                  "cellType": "Molecule3D",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 111,
+                  "columnName": "binding energy",
+                  "cellType": "number",
+                  "format": "0.00",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 220,
+                  "columnName": "PL Diagram",
+                  "cellType": "rawPng",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 114,
+                  "columnName": "PL Interactions",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 70,
+                  "columnName": "PL HBD",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 69,
+                  "columnName": "PL HBA",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 67,
+                  "columnName": "PL Hyd",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 56,
+                  "columnName": "PL Pi",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 64,
+                  "columnName": "PL Cat",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 75,
+                  "columnName": "PL CatPi",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 69,
+                  "columnName": "PL vdW",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 73,
+                  "columnName": "PL Total",
+                  "cellType": "number",
+                  "headerCellStyle": {
+                    "textWrap": "words"
+                  }
+                }
+              ]
+            },
+            "title": "docking_demo",
+            "default": true
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "de2bed10-48b0-11f1-d6bb-8b71cc2dcb5f",
+    "tableName": "docking_demo"
+  },
+  "userData": {
+    ".columnTags": {
+      "SMILES": {
+        "quality": "Molecule",
+        "units": "smiles",
+        "cell.renderer": "Molecule"
+      },
+      "AutoDock poses": {
+        "units": "pdb",
+        "quality": "Molecule3D",
+        "cell.renderer": "Molecule3D"
+      },
+      "binding energy": {
+        "format": "0.00"
+      },
+      "PL Diagram": {
+        "quality": "rawPng",
+        "cell.renderer": "rawPng",
+        ".%prolif-source": "AutoDock poses",
+        ".%prolif-interactions-col": "PL Interactions"
+      }
+    }
+  },
+  "type": "TableView",
+  "id": "980d6dd0-48b0-11f1-d934-637672760061",
+  "name": "DockingDemo",
+  "friendlyName": "docking_demo"
+}
