@@ -1,5 +1,9 @@
 # Chem changelog
 
+## v.next
+
+* Chem: Toxicity Risks: Avoid 'Column already exists' crash on repeat invocation by using `getUnusedName` before adding risk columns
+
 ## 1.17.8 (2026-05-12)
 
 * Scaffold tree: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
