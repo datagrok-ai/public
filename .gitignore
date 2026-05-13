@@ -97,4 +97,4 @@ CLAUDE.local.md
 test-console-output-?.log
 test-record-?.mp4
 # secrets — never track credentials
-**/.credentials.json
+**/.credentials.json*
