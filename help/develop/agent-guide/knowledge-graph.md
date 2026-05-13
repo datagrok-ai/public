@@ -14,7 +14,7 @@ Each fact is a YAML record with:
   - contradicts   IDs of facts this one contradicts (if any)
   - confidence    high | medium | low
 
-Total facts: 345
+Total facts: 472
 
 - id: DG-FACT-001
   kind: naming
@@ -916,7 +916,7 @@ Total facts: 345
 - id: DG-FACT-081
   kind: namespace
   scope: file-exporters
-  value: Inside the exporter, obtain the active table via `grok.shell.t` (returns the current `DG.DataFrame` or `null` when no table is open — guard before use). The function MUST NOT return anything (`void`). To trigger the browser download, call `DG.Utils.download(filename, content, contentType?)` (`js-api/src/utils.ts:230-237`) — the canonical helper that wraps `Blob` + `URL.createObjectURL` + anchor click. `content: BlobPart` accepts string, `Uint8Array`, `ArrayBuffer`, `Blob`. `contentType` defaults to `'application/octet-stream'`. The article still illustrates the hand-rolled `document.createElement('a')` + `data:text/plain;...,encodeURIComponent(...)` form, but `DG.Utils.download` is the production pattern.
+  value: Inside the exporter, obtain the active table via `grok.shell.t` (returns the current `DG.DataFrame` or `null` when no table is open — guard before use). The function MUST NOT return anything (`void`). To trigger the browser download, call `DG.Utils.download(filename, content, contentType?)` (`js-api/src/utils.ts:230-237`) — the canonical helper that wraps `Blob` + `URL.createObjectURL` + anchor click. `content: BlobPart` accepts string, `Uint8Array`, `ArrayBuffer`, `Blob`. `contentType` defaults to `'application/octet-stream'`. Prefer `DG.Utils.download` over the older `data:` URI + hand-rolled `<a>.click()` form for binary payloads (Parquet, Feather, XLSX); the article notes the `data:` form silently corrupts non-text content beyond ~2 MB in most browsers. After autonomous drift-fix `c36c5d6dfa`, the article example itself uses `DG.Utils.download` (resolves DRIFT-029).
   derives_from:
     - article: help/develop/how-to/files/file-exporters.md:24,48-51
     - code: js-api/src/utils.ts:230-237
@@ -1006,7 +1006,7 @@ Total facts: 345
   scope: folder-content-preview
   value: The canonical role string for a custom folder content preview is `folderViewer` (camelCase). Defined as `FUNC_TYPES.FOLDER_VIEWER = 'folderViewer'` in `js-api/src/const.ts:419` and mirrored in `tools/bin/utils/const.ts:77`. The codegen entry in `tools/bin/utils/func-generation.ts:420-426` emits the same string.
   derives_from:
-    - article: help/develop/how-to/files/folder-content-preview.md:5,12
+    - article: help/develop/how-to/files/folder-content-preview.md:5,14
     - code: js-api/src/const.ts:419
     - code: tools/bin/utils/const.ts:77
     - code: tools/bin/utils/func-generation.ts:102,420-426
@@ -1018,7 +1018,7 @@ Total facts: 345
   scope: folder-content-preview
   value: The folderViewer function signature is `folderViewer(folder: File, files: list<file>): Widget` — declared in the function-role descriptor at `js-api/src/const.ts:593-597`. The codegen contract (`tools/bin/utils/func-generation.ts:420-426`) declares `inputs: [{name: 'folder', type: 'file'}, {name: 'files', type: 'list<file>'}]` and `outputs: [{name: 'result', type: 'widget'}]`.
   derives_from:
-    - article: help/develop/how-to/files/folder-content-preview.md:5-7,12-15
+    - article: help/develop/how-to/files/folder-content-preview.md:5-7,17-19
     - code: js-api/src/const.ts:593-597
     - code: tools/bin/utils/func-generation.ts:420-426
   contradicts: []
@@ -1038,9 +1038,9 @@ Total facts: 345
 - id: DG-FACT-091
   kind: namespace
   scope: folder-content-preview
-  value: A folderViewer returns `DG.Widget | undefined` (or `Promise<...>`). Returning `undefined` (or omitting the return) signals "no preview applies" — the platform falls back to the default folder view. This is the article's stated contract ("returns a widget if a custom preview could be provided, or null otherwise") and matches both production examples — `clinicalCaseFolderLauncher` falls through with no return when no `dm.csv` is found; `platesFolderPreview` returns `undefined` when the folder name does not include `'plate'`.
+  value: A folderViewer returns `DG.Widget | undefined` (or `Promise<...>`). Returning `undefined` (or omitting the return) signals "no preview applies" — the platform falls back to the default folder view. This is the article's stated contract ("returns a widget if a custom preview could be provided, or undefined otherwise") and matches both production examples — `clinicalCaseFolderLauncher` falls through with no return when no `dm.csv` is found; `platesFolderPreview` returns `undefined` when the folder name does not include `'plate'`.
   derives_from:
-    - article: help/develop/how-to/files/folder-content-preview.md:5-7,16-19
+    - article: help/develop/how-to/files/folder-content-preview.md:5-7,19-25
     - code: packages/ClinicalCase/src/package.ts:203-228
     - code: packages/Plates/src/package.ts:49-54
   contradicts: []
@@ -1051,7 +1051,7 @@ Total facts: 345
   scope: folder-content-preview
   value: Wrap an `HTMLElement` into a returnable widget via `DG.Widget.fromRoot(root: HTMLElement): Widget` (`js-api/src/widgets/base.ts:374-376`). The article shows `DG.Widget.fromRoot(ui.div([ui.button('START', ...)]))`. ClinicalCase uses the same pattern (`return DG.Widget.fromRoot(ui.div([ui.panel([...]), ui.button('Run ClinicalCase', async () => {...})]))`).
   derives_from:
-    - article: help/develop/how-to/files/folder-content-preview.md:18
+    - article: help/develop/how-to/files/folder-content-preview.md:21-23
     - code: js-api/src/widgets/base.ts:374-376
     - code: packages/ClinicalCase/src/package.ts:211-226
   contradicts: []
@@ -1060,9 +1060,9 @@ Total facts: 345
 - id: DG-FACT-093
   kind: namespace
   scope: folder-content-preview
-  value: The `folder` input is a `DG.FileInfo` for the folder itself — use `folder.name`, `folder.fullPath` (e.g. to read child files via `grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`)`). The `files` input is `DG.FileInfo[]` listing the folder's entries — iterate to detect sentinel filenames (e.g. `files.some((f) => f.fileName.toLowerCase() === 'dm.csv')`). ClinicalCase scans `files` AND uses `folder.fullPath` for reads; Plates scans `folder.name?.toLowerCase()` only.
+  value: The `folder` input is a `DG.FileInfo` for the folder itself — use `folder.name`, `folder.fullPath` (e.g. to read child files via `grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`)`). The `files` input is `DG.FileInfo[]` listing the folder's entries — iterate to detect sentinel filenames (e.g. `files.some((f) => f.fileName.toLowerCase() === 'dm.csv')`). The article example detects `dm.csv` via the `files` scan (`folder-content-preview.md:20`). ClinicalCase scans `files` AND uses `folder.fullPath` for reads; Plates scans `folder.name?.toLowerCase()` only.
   derives_from:
-    - article: help/develop/how-to/files/folder-content-preview.md:16-19
+    - article: help/develop/how-to/files/folder-content-preview.md:17-20
     - code: packages/ClinicalCase/src/package.ts:204-220
     - code: packages/Plates/src/package.ts:49-53
   contradicts: []
@@ -1120,6 +1120,29 @@ Total facts: 345
     - article: help/develop/how-to/grid/column-tooltip.md:7
     - code: js-api/src/const.ts:590  # signature: tooltip(col: Column): Widget
     - code: packages/Chem/src/package.ts:267-277
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-427
+  kind: naming
+  scope: column-tooltip
+  value: Inside a column tooltip function, build the widget from the column's OWN parent dataframe — `col.dataFrame` — NOT from `grok.shell.tv.dataFrame`. The tooltipped column may belong to a different table than the currently active view, so referencing `grok.shell.tv.dataFrame` (or `grok.shell.t`) silently resolves to the wrong table, and any `columnName`-typed option (e.g. `sequenceColumnName: col.name`) will then look up the name on a table that does not contain that column. Article makes this rule explicit in prose (`column-tooltip.md:13-16`). Article's worked example uses `await col.dataFrame.plot.fromType('WebLogo', {sequenceColumnName: col.name}) as unknown as DG.Widget` (`column-tooltip.md:24`). Production Bio implementation also operates only off `col` — `new MacromoleculeColumnWidget(col, _package.seqHelper)` (`packages/Bio/src/package.ts:152`). Same trap applies to cell renderers (DG-FACT-CELLR — use `gridCell.grid.dataFrame`).
+  derives_from:
+    - article: help/develop/how-to/grid/column-tooltip.md:13-16
+    - article: help/develop/how-to/grid/column-tooltip.md:24
+    - code: packages/Bio/src/package.ts:150-159
+    - code: packages/Chem/src/package.ts:267-277  # iterates col.categories — no grok.shell.tv
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-428
+  kind: naming
+  scope: column-tooltip
+  value: For column tooltips (and every other function role), the matching header-comment form in `package.g.ts` is auto-generated by the `FuncGeneratorPlugin` from the decorated `PackageFunctions` method — do NOT hand-write the `//meta.role: tooltip` block in `package.g.ts`. Article states this rule explicitly (`column-tooltip.md:9-11`). Reference auto-emitted output — `packages/Bio/src/package.g.ts:16-22` (auto-generated from `packages/Bio/src/package.ts:146-159`). The decorator form in `package.ts` is the single source of truth.
+  derives_from:
+    - article: help/develop/how-to/grid/column-tooltip.md:9-11
+    - code: packages/Bio/src/package.g.ts:16-22
+    - code: packages/Bio/src/package.ts:146-159
   contradicts: []
   confidence: high
 
@@ -1328,6 +1351,26 @@ Total facts: 345
   derives_from:
     - article: help/develop/how-to/grid/customize-grid.md:152-156
     - code: js-api/src/grid.ts:820-824
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-429
+  kind: threshold
+  scope: customize-grid
+  value: The `format` tag applies ONLY to numeric and datetime columns. String / boolean / other types silently ignore the tag — `gridColumn.format = 'scientific'` on a string column is a no-op (not an error). Underlying cell values are never mutated by `format`; sorting and filtering use the raw value, so two grids with different `format` strings sort identically. Setter exists on both `GridColumn` (`grid.ts:723-724`, per-grid override) and on the dataframe `Column.meta.format` (`column-helpers.ts:221-223`, propagates to every view); pick by scope.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:38-40
+    - code: js-api/src/grid.ts:723-724
+    - code: js-api/src/dataframe/column-helpers.ts:221-223
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-430
+  kind: naming
+  scope: customize-grid
+  value: Renaming a dataframe column to a name with a leading tilde — `data.columns.byName('age').name = '~age'` — hides it from every Grid/TableView built from that DataFrame. The platform treats the `~` prefix as a "hidden" marker at the dataframe level (different blast radius from `grid.columns.setVisible([...])`, which only affects one grid). To re-show, you must rename back; `grid.columns.setVisible(['~age'])` does NOT undo the rename because the column's actual name now contains the tilde. The rename affects all derived views, including downstream layouts and saved projects.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:130-140
   contradicts: []
   confidence: high
 
@@ -1585,14 +1628,13 @@ Total facts: 345
 - id: DG-FACT-140
   kind: naming
   scope: home-page-widgets
-  value: Widget placement on the home page is controlled by a function-level `order` option on the decorator (`@grok.decorators.dashboard({order: '6'})`) — emitted as `//meta.order: 6` in `package.g.ts`. Lower numbers (including negatives) sort first; `order: '-1'` puts Spotlight at the top, `order: '6'` puts Community further down. Article shows `order` declared as a Widget INSTANCE property via `super.addProperty('order', DG.TYPE.STRING, '1')` — that is a per-widget settings field (visible in the widget's settings panel), NOT the function-level placement control. Skill output should use the decorator-level `order` for placement; addProperty is for runtime-tunable widget settings only. See DRIFT-053.
+  value: Widget placement on the home page is controlled by a function-level `order` option on the decorator (`@grok.decorators.dashboard({order: '6'})`) — emitted as `//meta.order: 6` in `package.g.ts`. Lower numbers (including negatives) sort first; `order: '-1'` puts Spotlight at the top, `order: '6'` puts Community further down. The current article (rewritten — `home-page-widgets.md:18-25`) demonstrates exactly this decorator-level usage with `order: '6'` on `communityWidget`. Per-widget settings declared via `super.addProperty('order', ...)` would be a runtime-tunable field on the widget instance (gear-icon panel), NOT the placement control — the previous draft of the article confused these two surfaces; the upstream rewrite removed that misleading example.
   derives_from:
-    - article: help/develop/how-to/packages/home-page-widgets.md:36,41
+    - article: help/develop/how-to/packages/home-page-widgets.md:18-25
     - code: packages/PowerPack/src/package.ts:142,150
     - code: packages/PowerPack/src/package.g.ts:21,29
     - code: js-api/src/decorators/functions.ts:195-198,216-218
-  contradicts:
-    - DG-FACT-DRIFT-053
+  contradicts: []
   confidence: high
 
 - id: DG-FACT-141
@@ -1624,7 +1666,7 @@ Total facts: 345
 - id: DG-FACT-143
   kind: naming
   scope: home-page-widgets
-  value: Widget subclasses should override `get type(): string` to return a stable identifier — used for serialization and for the platform's widget registry (`js-api/src/widgets/base.ts:233`, default `'Unknown'`). Production canonical — `RecentProjectsWidget` returns `'RecentProjectsWidget'` (`recent-projects-widget.ts:9-11`), `CommunityWidget` returns `'CommunityWidget'`, `SpotlightWidget` returns `'SpotlightWidget'`. The article example OMITS this override; resulting widget would default to `type: 'Unknown'`. See also DG-FACT-DRIFT-053 (article example is a stale snapshot).
+  value: Widget subclasses should override `get type(): string` to return a stable identifier — used for serialization and for the platform's widget registry (`js-api/src/widgets/base.ts:233`, default `'Unknown'`). Production canonical — `RecentProjectsWidget` returns `'RecentProjectsWidget'` (`recent-projects-widget.ts:9-11`), `CommunityWidget` returns `'CommunityWidget'` (`community-widget.ts:7-9`), `SpotlightWidget` returns `'SpotlightWidget'`. The current article example (`home-page-widgets.md:35-43`) STILL omits this override; a widget built strictly from the article would default to `type: 'Unknown'`. Article rewrite resolved the misleading `order`-via-addProperty pattern (see DG-FACT-140) but did not add the `get type()` override to the example. See DG-FACT-DRIFT-HPW-001.
   derives_from:
     - article: help/develop/how-to/packages/home-page-widgets.md:34-46
     - code: js-api/src/widgets/base.ts:233
@@ -1635,6 +1677,30 @@ Total facts: 345
   confidence: high
 
 # DRIFTS for home-page-widgets
+
+- id: DG-FACT-DRIFT-HPW-001
+  kind: naming
+  scope: home-page-widgets
+  value: |
+    Article example class (`home-page-widgets.md:35-43`) omits the
+    `get type(): string` override. Every production widget that ships
+    in the canonical reference package (PowerPack) overrides it —
+    `CommunityWidget` returns `'CommunityWidget'`
+    (`packages/PowerPack/src/widgets/community-widget.ts:7-9`),
+    `RecentProjectsWidget` returns `'RecentProjectsWidget'`
+    (`packages/PowerPack/src/widgets/recent-projects-widget.ts:9-11`),
+    `SpotlightWidget` returns `'SpotlightWidget'`. Without the override
+    the widget defaults to `type: 'Unknown'` (`js-api/src/widgets/base.js:164`),
+    which clouds layout serialization and the widget registry. Fix in
+    article: add a one-line `get type(): string { return 'CommunityWidget'; }`
+    at the top of the class body.
+  derives_from:
+    - article: help/develop/how-to/packages/home-page-widgets.md:35-43
+    - code: js-api/src/widgets/base.js:163-164
+    - code: packages/PowerPack/src/widgets/community-widget.ts:7-9
+    - code: packages/PowerPack/src/widgets/recent-projects-widget.ts:9-11
+  contradicts: []
+  confidence: high
 
 - id: DG-FACT-144
   kind: naming
@@ -1953,6 +2019,81 @@ Total facts: 345
 
 # DRIFTS for work-with-package-files
 
+- id: DG-FACT-DRIFT-066
+  kind: naming
+  scope: work-with-package-files
+  value: |
+    RESOLVED 2026-05-12. Earlier article revision wrote
+    `// _package is defined in package.js` inside the
+    snippet introducing `_package.webRoot`. Current
+    article (lines 37-39, 55-57) consistently says
+    `package.ts` — matches every shipping package
+    (`packages/Chem/src/package.ts`,
+    `packages/Bio/src/package.ts`,
+    `packages/HitTriage/src/package.ts`, …). Kept as a
+    tombstone because `.claude/skills/work-with-package-files/SKILL.md`
+    (step 2, line 24) still cites this ID; clean up at
+    next skill revision.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:37-39,55-57
+    - code: packages/Chem/src/package.ts:1
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-067
+  kind: naming
+  scope: work-with-package-files
+  value: |
+    Article (lines 27-29) claims that, for tables under
+    the `tables/` reserved directory, "import options
+    from an additional file `<table_name>_csv_options.json`,
+    if present, are taken into account." Code disagrees.
+    Searches across the public repo for
+    `_csv_options` / `csvOptions` return zero hits in
+    `js-api/`, every `packages/*/` subtree, and the
+    bundled `js-api/src/datagrok/build/web/grok_shared.dart.js`.
+    No shipping package ships such a sidecar; no JS or
+    Dart code parses the filename pattern. The
+    convention is either Dart-side platform-internal
+    (not exposed and not findable in the shipped
+    bundle) or stale. Fix in article: either show a
+    concrete example with the surfacing API, or drop
+    the sentence. Skill-side workaround: pass
+    `options` per-call to `_package.files.readCsv(name, options)`
+    or `grok.data.parseCsv(text, options)` — both are
+    real and verified.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:27-29
+    - code: js-api/src/dapi.ts:1418-1440  # FilesDataSource read methods, no sidecar lookup
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js  # 0 occurrences of _csv_options
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-068
+  kind: naming
+  scope: work-with-package-files
+  value: |
+    RESOLVED 2026-05-12. Earlier article revision linked
+    the `_package.files` example to
+    `https://datagrok.ai/api/js/dg/classes/FileSource`
+    (the deprecated alias). Current article (line 52)
+    links to `FilesDataSource`, matching the live class
+    name in `js-api/src/dapi.ts:1292` and the package
+    getter at `js-api/src/entities/misc.ts:193-195`.
+    `FileSource = FilesDataSource` is retained as a
+    backward-compatibility alias only
+    (`js-api/src/dapi.ts:1472-1475`); see DG-FACT-172.
+    Kept as a tombstone because
+    `.claude/skills/work-with-package-files/SKILL.md`
+    (step 4, line 92, and Common failure modes line
+    158) still cites this ID; clean up at next skill
+    revision.
+  derives_from:
+    - article: help/develop/how-to/packages/work-with-package-files.md:52
+    - code: js-api/src/dapi.ts:1292-1296,1472-1475
+  contradicts: []
+  confidence: high
+
 - id: DG-FACT-173
   kind: enum
   scope: custom-script-handlers
@@ -1990,11 +2131,12 @@ Total facts: 345
 - id: DG-FACT-176
   kind: enum
   scope: custom-script-handlers
-  value: Optional script-handler annotations recognised by the platform — `meta.scriptHandler.templateScript` (boilerplate inserted into newly created scripts; embed newlines as literal `\n`), `meta.scriptHandler.codeEditorMode` (CodeMirror-5 mode name, e.g. `python`, `clojure`; defaults to `language` per `ddt.api.g.ts:422-424`), `meta.scriptHandler.commentStart` (single character that begins a line comment; defaults to `#` per `ddt.api.g.ts:407` and `grok_shared.dart.js:121493`), `meta.scriptHandler.vectorizationFunction` (nqName `<Package>:<funcName>` of a function that accepts `DG.Script` and returns vectorized code as `string`), `meta.scriptHandler.parserFunction` (nqName of a parser turning text into a `DG.Script`; `ddt.api.g.ts:417`), `meta.scriptHandler.friendlyName` (UI label; defaults to `language`; `ddt.api.g.ts:403-405`), and the generic `meta.icon` (path under the package source tree, e.g. `files/pyodide.png`). The article enumerates `templateScript`, `codeEditorMode`, `vectorizationFunction`, and `icon` only — `commentStart`, `friendlyName`, and `parserFunction` are platform-recognised but article-undocumented (see DG-FACT-DRIFT-069).
+  value: Optional script-handler annotations recognised by the platform — `meta.scriptHandler.templateScript` (boilerplate inserted into newly created scripts; embed newlines as literal `\n`), `meta.scriptHandler.codeEditorMode` (CodeMirror-5 mode name, e.g. `python`, `clojure`; defaults to `language` per `ddt.api.g.ts:422-424`), `meta.scriptHandler.commentStart` (single character that begins a line comment; defaults to `#` per `ddt.api.g.ts:407` and `grok_shared.dart.js:121493`), `meta.scriptHandler.vectorizationFunction` (nqName `<Package>:<funcName>` of a function that accepts `DG.Script` and returns vectorized code as `string`), `meta.scriptHandler.parserFunction` (nqName of a parser turning text into a `DG.Script`; `ddt.api.g.ts:417`), `meta.scriptHandler.friendlyName` (UI label; defaults to `language`; `ddt.api.g.ts:403-405`), and the generic `meta.icon` (path under the package source tree, e.g. `files/pyodide.png`). As of 2026-05-12 the article (lines 33-39) enumerates all seven options including `commentStart`, `friendlyName`, `parserFunction` — DG-FACT-DRIFT-069 (article-undocumented options) is therefore resolved; only the camelCase decorator-key counterparts for `friendlyName` and `parserFunction` are still missing from `js-api/src/decorators/functions.ts:151-162` and `tools/bin/utils/const.ts:31-39`, so authors using the decorator surface MUST use the bracket-string form (`['scriptHandler.friendlyName']`, `['scriptHandler.parserFunction']`).
   derives_from:
-    - article: help/develop/how-to/scripts/custom-script-handlers.md:32-36
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:33-39
     - code: js-api/src/api/ddt.api.g.ts:395-424
     - code: js-api/src/decorators/functions.ts:151-162
+    - code: tools/bin/utils/const.ts:31-39
     - code: packages/Pyodide/src/package.g.ts:18-22
   contradicts: []
   confidence: high
@@ -2002,9 +2144,9 @@ Total facts: 345
 - id: DG-FACT-177
   kind: namespace
   scope: custom-script-handlers
-  value: The vectorization function targeted by `meta.scriptHandler.vectorizationFunction` is itself a registered package function with signature `(script: DG.Script) => string`. It is referenced by nqName `<Package>:<funcName>` (Pyodide uses `Pyodide:makeVectorCode`, `package.g.ts:21`); the function header is `//input: script script` + `//output: string result` (`packages/Pyodide/src/package.g.ts:11-13`). The platform looks it up at handler-construction time (`grok_shared.dart.js:121490`) and again at vectorize-time (`grok_shared.dart.js:121568`); a malformed nqName silently disables vectorization.
+  value: The vectorization function targeted by `meta.scriptHandler.vectorizationFunction` is itself a registered package function with signature `(script: DG.Script) => string`. It is referenced by nqName `<Package>:<funcName>` (Pyodide uses `Pyodide:makeVectorCode`, `package.g.ts:21`); the function header is `//input: script script` + `//output: string result` (`packages/Pyodide/src/package.g.ts:11-13`). The platform looks it up at handler-construction time (`grok_shared.dart.js:121490`) and again at vectorize-time (`grok_shared.dart.js:121568`); a malformed nqName silently disables vectorization. The article (line 38, as of 2026-05-12) now explicitly states this contract — "The target function itself must declare `//input: script script` and `//output: string result` annotations so codegen registers it; otherwise the lookup fails silently at handler construction" — so the previously article-undocumented silent-failure mode is now documented; downstream skills should cite the article for the requirement and DG-FACT-177 for the lookup mechanics.
   derives_from:
-    - article: help/develop/how-to/scripts/custom-script-handlers.md:36
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:38
     - code: packages/Pyodide/src/package.g.ts:9-13,21
     - code: js-api/src/datagrok/build/web/grok_shared.dart.js:121490,121568
   contradicts: []
@@ -2318,10 +2460,30 @@ Total facts: 345
 - id: DG-FACT-208
   kind: namespace
   scope: show-formula-lines
-  value: `FormulaLinesHelper` (`js-api/src/helpers.ts:85-143`) is the abstract surface shared by DataFrame and Viewer accessors. Mutators — `add(item)`, `addAll(items[])`, `addLine(item)` (sets `item.type='line'` then `add`), `addBand(item)` (sets `item.type='band'` then `add`), `updateAt(idx, value)`, `removeAt(idx, count=1)`, `removeWhere(predicate)`, `clear()`. Reader — `items: FormulaLine[]` (parses `storage` JSON every read; the setter re-stringifies). Statics — `setDefaults(item)`, `getMeta(item)`, `getMetaByFormula(formula, type)`. `add()` and `addAll()` route through `setDefaults` (Dart side) so default colors / widths / zIndex are stamped before persistence; manual `items =` assignment skips that. The `add` family appends and re-serializes the WHOLE list each call, so building large sets via `addAll` is dramatically cheaper than looped `addLine`.
+  value: |
+    `FormulaLinesHelper` (`js-api/src/helpers.ts:85-143`) is the abstract surface
+    shared by DataFrame and Viewer accessors. Mutators — `add(item)`,
+    `addAll(items[])`, `addLine(item)` (sets `item.type='line'` then `add`),
+    `addBand(item)` (sets `item.type='band'` then `add`), `updateAt(idx, value)`,
+    `removeAt(idx, count=1)`, `removeWhere(predicate)`, `clear()`. Reader —
+    `items: FormulaLine[]` (parses `storage` JSON every read; the setter
+    re-stringifies). Statics — `setDefaults(item)`, `getMeta(item)`,
+    `getMetaByFormula(formula, type)`. `add()` and `addAll()` route through
+    `setDefaults` (Dart side) so default colors / widths / zIndex are stamped
+    before persistence; manual `items =` assignment skips that. The `add` family
+    appends and re-serializes the WHOLE list each call, so building large sets
+    via `addAll` is dramatically cheaper than looped `addLine`.
+    **`removeAt` LANDMINE** (article line 42 now warns, code `helpers.ts:125-127`):
+    `removeAt(idx, count=1)` is implemented as
+    `this.items = this.items.slice(idx, idx + count - 1)` — with the documented
+    default `count=1` the slice degenerates to `slice(idx, idx)` which returns
+    `[]`, so calling `removeAt(idx)` wipes the ENTIRE storage instead of removing
+    one item. Use `removeWhere((_, i) => i === idx)` until upstream is fixed.
+    The sibling `AnnotationRegionsHelper.removeAt` at `helpers.ts:173-175` has
+    the same bug.
   derives_from:
     - article: help/develop/how-to/viewers/show-formula-lines.md:36-44
-    - code: js-api/src/helpers.ts:85-143
+    - code: js-api/src/helpers.ts:85-143,125-127
   contradicts: []
   confidence: high
 
@@ -3299,7 +3461,7 @@ Total facts: 345
 - id: DG-FACT-340
   kind: enum
   scope: cache
-  value: The function-level `meta.cache` annotation accepts EXACTLY four values, validated by the CLI checker (`tools/bin/utils/utils.ts:191`) — `'all'`, `'server'`, `'client'`, `'true'`. The article documents only the first three (`client`, `server`, `all`); the legacy `true` value is still accepted by the validator and is in active production use (e.g. `packages/ApiSamples/scripts/functions/caching-results.js:16,22` for dynamically-registered functions and `packages/Chembl/queries/activityDetailsForTarget.sql:7` `--meta.cache: true`). Skill output should prefer the three documented forms; treat `true` as the legacy synonym.
+  value: The function-level `meta.cache` annotation accepts EXACTLY four values, validated by the CLI checker (`tools/bin/utils/utils.ts:191`) — `'all'`, `'server'`, `'client'`, `'true'`. As of the 2026-05 article update, all four are documented (`cache-function-results.md:40-44`) with `true` explicitly labeled "legacy synonym for `all`; prefer the explicit values above in new code." The legacy `true` value is still accepted by the validator and is in active production use (e.g. `packages/ApiSamples/scripts/functions/caching-results.js:16,22` for dynamically-registered functions and `packages/Chembl/queries/activityDetailsForTarget.sql:7` `--meta.cache: true`). Skill output should prefer the three explicit forms; treat `true` as the legacy synonym.
   derives_from:
     - article: help/develop/how-to/functions/cache-function-results.md:40-43
     - code: tools/bin/utils/utils.ts:191
@@ -3838,3 +4000,2624 @@ Total facts: 345
     - code: packages/Tutorials/src/tracks/data-access/index.ts:1
   contradicts: []
   confidence: high
+
+<!-- ─────────────────────────────────────────────────── -->
+<!-- New facts derived in recent cycles (not yet in public) -->
+<!-- ─────────────────────────────────────────────────── -->
+
+- id: DG-FACT-333
+  kind: naming
+  scope: build-an-app
+  value: |
+    App launch URL form depends on the number of apps in the package:
+    one-app packages — `https://<HOST>/apps/<APP_NAME>`; multi-app —
+    `https://<HOST>/apps/<PACKAGE_NAME>/<APP_NAME>`. The launcher resolves
+    the route off the app function's `name` (and optional `meta.url`
+    override on either the function or the package). A direct link to the
+    full app list — `https://<HOST>/apps`.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:21-28,96-100,862-866
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-334
+  kind: enum
+  scope: build-an-app
+  value: |
+    `grok publish` has two lifecycle modes, mutually exclusive via CLI flag:
+    (a) Debug (default) — `grok publish` deploys a per-user version visible
+    ONLY to the publisher; other users keep seeing the previously released
+    version. (b) Release — `grok publish --release` replaces the installed
+    version for all users with proper privileges. Implementation: the CLI
+    passes `!args.release` as the `debug` flag to `processPackage(...)`;
+    `--debug` and `--release` together error with "Incompatible options".
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:851-857
+    - code: tools/bin/commands/publish.ts:651-654,712
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-335
+  kind: namespace
+  scope: build-an-app
+  value: |
+    Persisting a DataFrame as a server-side "Table" (visible in Datagrok's
+    `Tables` pane): `await grok.dapi.tables.uploadDataFrame(df): Promise<string>`
+    returns the saved table's ID; `await grok.dapi.tables.getTable(id):
+    Promise<DataFrame>` reads it back. `grok.dapi.tables` is a singleton
+    `TablesDataSource extends HttpDataSource<TableInfo>`; both methods are
+    asynchronous Dart-bound calls (`grok_Dapi_TablesDataSource_*`). Note: the
+    upload return is the Table id string, NOT the original DataFrame; persist
+    that id in user settings if you need round-trip access.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:481-489
+    - code: js-api/src/dapi.ts:982-1000
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-336
+  kind: namespace
+  scope: build-an-app
+  value: |
+    A view's left-sidebar accordion is reached via `view.toolboxPage.accordion`
+    (returns `Accordion`). Add a pane with
+    `accordion.addPane(name: string, getContent: () => HTMLElement,
+    expanded?: boolean, before?: AccordionPane): AccordionPane`. The article's
+    in-app pattern — `view.toolboxPage.accordion.addPane('Demo 1',
+    () => ui.divText(...), true, acc.panes[0])` — places the new pane ahead of
+    the first existing one; `true` opens it on creation. `ToolboxPage` is a
+    thin Dart-bound wrapper with no other public surface.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:806-814
+    - code: js-api/src/views/view.ts:412-415
+    - code: js-api/src/widgets/containers.ts:216-225
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-337
+  kind: naming
+  scope: build-an-app
+  value: |
+    Package scaffolding: `grok create <PACKAGE_NAME> [--ide=vscode] [--ts]
+    [--eslint] [--test]`. The `--ide=vscode` flag writes the `.vscode/`
+    debug-launch template ONLY when the host platform is win32 — on macOS
+    and Linux the `.vscode/` directory is intentionally skipped
+    (`tools/bin/commands/create.ts:117`: `if (file === '.vscode' &&
+    !(ide == 'vscode' && platform == 'win32')) return;`). The CLI also
+    creates per-server `debug-<name>-<server>` / `release-<name>-<server>`
+    npm scripts for every non-default server in `~/.grok/config.yaml`.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:84-92
+    - code: tools/bin/commands/create.ts:25-26,117
+    - code: tools/bin/commands/create.ts:56-60
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-338
+  kind: threshold
+  scope: build-an-app
+  value: |
+    Every `grok.dapi.userDataStorage` mutator / reader takes a trailing
+    `currentUser: boolean = true` argument — when `true` (default) the
+    store is per-user / private; pass `false` explicitly to read or write
+    a store visible to all users. Applies uniformly to `postValue`,
+    `post`, `put`, `get`, `getValue`, `remove`. The article's wording
+    "set to true by default" matches the source signature exactly.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:463-473
+    - code: js-api/src/dapi.ts:723,729,735,742,751,760
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-339
+  kind: naming
+  scope: viewers
+  value: |
+    `view.boxPlot(options)` / `DG.Viewer.boxPlot(df, options)` typed
+    options follow `Partial<IBoxPlotSettings>` — the categorical-axis key
+    is `category1` (not `category`); the second optional categorical is
+    `category2`. Using `{category: 'X', value: 'Y'}` raises TS2561
+    "Did you mean to write 'category1'?". Canonical form:
+    `view.boxPlot({category1: 'ARM', value: 'AGE'})`. Same shape applies
+    to `categoryColumnNames`, `category1ColumnName`, `valueColumnName`.
+  derives_from:
+    - code: js-api/src/interfaces/d4.ts:1019-1048
+    - runtime: verify-e2e/build-an-app (executor-invented clinical-study.ts)
+  contradicts: []
+  confidence: high
+```
+
+### DRIFT findings (article vs. code) — build-an-app
+
+```yaml
+- id: DG-FACT-DRIFT-BUILD-APP-001
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article frames decorators as THE way to register an app
+    (`build-an-app.md:37-69`, "Modern Datagrok applications use Decorators
+    to define the application entry point"). Reality: the legacy
+    bare-function form with header-comment metadata still works and is in
+    active use by production packages. Pattern: top-level
+    `export function <Name>(): void { ... }` preceded by `//name: <Name>`
+    + `//meta.role: app` (+ optional `//top-menu: ...`). Hand-written usage
+    in Alation/MetabolicGraph/NodeJSDemo/RevvitySignalsLink confirms it's
+    not just codegen output (`grok add app` also emits this style). Skills
+    must recognize both forms when reading existing `src/package.ts`; new
+    code should prefer the decorator form per FACT-330.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:37-69,827-844
+    - code: packages/Alation/src/package.ts:31-34
+    - code: packages/MetabolicGraph/src/package.ts
+    - code: packages/NodeJSDemo/src/package.ts
+    - code: packages/RevvitySignalsLink/src/package.ts
+    - code: tools/entity-template/app.js
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-BUILD-APP-002
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article's `@param` snippet (`build-an-app.md:62-67`) uses the
+    string-keyed dotted form `{options: {metaUrl: true, optional: true}}`
+    — but actually shows the camelCase `metaUrl` and is consistent with
+    production. The string-keyed `'meta.url'` form is ALSO accepted (both
+    keys are declared in `InputOptions`, `js-api/src/decorators/functions.ts:
+    101-102`) but no production package uses it. Skills should emit the
+    camelCase form (`metaUrl`); if encountered in legacy code, treat the
+    dotted form as equivalent and do not "fix" it without reason.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:62-67
+    - code: js-api/src/decorators/functions.ts:101-102
+    - code: packages/Chem/src/package.ts:2923-2924
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-BUILD-APP-003
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article instructs `import * as DG from 'datagrok-api/DG'` (uppercase `DG`
+    in the module path) for use inside webpack packages
+    (`build-an-app.md:341-343`). The published npm module path is lowercase
+    — every production package imports `from 'datagrok-api/dg'`. The
+    uppercase form does not resolve on case-sensitive filesystems (Linux CI).
+    Treat the article snippet as a typo; always use lowercase `dg`.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:341-343
+    - code: packages/Chem/src/utils/reaction-enumeration/enumerator-app.ts (and 100+ peers)
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-BUILD-APP-004
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article's "modern decorator" example (`build-an-app.md:48-69`) declares
+    `export const _package = new DG.Package();` but the import block only
+    pulls `grok` (`import * as grok from 'datagrok-api/grok'`); `DG` is
+    never imported. Treat the snippet as incomplete — the working production
+    pattern is the dual import: `import * as grok from 'datagrok-api/grok';
+    import * as DG from 'datagrok-api/dg';` (and `import * as ui from
+    'datagrok-api/ui'` when UI primitives are used).
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:48-69
+    - code: packages/Chem/src/package.ts:1-12
+  contradicts: []
+  confidence: high
+```
+
+## routing
+
+```yaml
+
+- id: DG-FACT-389
+  kind: naming
+  scope: routing
+  value: |
+    Two URL prefixes resolve to the same app entry point: the legacy
+    `/apps/<package-segment>[/<app-segment>]` and the newer
+    `/browse/apps/<package-segment>[/<app-segment>]`. The `/browse/` form
+    is the navigation-context form (shows the side tree); the bare `/apps/`
+    form is the direct-launch form. Both accept the same `meta.url`
+    overrides and same `view.path` postfix.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:73-82,93-102,119-129
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-390
+  kind: naming
+  scope: routing
+  value: |
+    When a package declares a custom URL segment via `package.json`
+    `"meta": { "url": "/some/segment" }`, BOTH the package-name URL
+    (`/apps/<PackageName>`) and the customized URL
+    (`/apps/some/segment`) resolve, but opening the original
+    package-name URL triggers an immediate client-side replace to the
+    customized URL. Consumers must therefore link to the customized URL
+    or accept the redirect. Confirmed in production:
+    `packages/UsageAnalysis/package.json:71-72` declares
+    `"meta": { "url": "/usage" }`.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:84-103
+    - code: packages/UsageAnalysis/package.json:71-73
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-391
+  kind: enum
+  scope: routing
+  value: |
+    `DG.DemoDatasetName` is a string-literal type derived from `DEMO_DATASET`
+    with exactly seven valid values: `wells`, `demog`, `biosensor`,
+    `random walk`, `geo`, `molecules`, `dose-response`. Used as the first
+    argument to `grok.data.testData(...)`. Any other string fails TS at the
+    call site. The article's routing tutorial drives this enum via URL
+    path segments — relying on user-supplied paths to match these literals
+    requires a runtime guard, not just the TS cast shown in the snippet.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:58,165
+    - code: js-api/src/const.ts:765-773
+    - code: js-api/src/const.ts:1002
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-392
+  kind: namespace
+  scope: routing
+  value: |
+    `grok.data.testData(dataset: DemoDatasetName, rows = 10000,
+    columns = 3): DataFrame` is SYNCHRONOUS — it returns a `DataFrame`
+    directly, NOT a `Promise`. The routing tutorial uses it without
+    `await`. The defaults (10000 rows, 3 columns) apply only to generators
+    that honor `columns` (`random walk`, `biosensor`); for fixed-schema
+    datasets (`wells`, `demog`, `geo`) the `columns` argument has no
+    effect. Separate from `grok.data.getDemoTable(path)` which IS async
+    and reads a named demo file from the demo root.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:37,44,150,156,165
+    - code: js-api/src/data.ts:153-155
+    - code: js-api/src/data.ts:157-159
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-393
+  kind: namespace
+  scope: routing
+  value: |
+    `View.path` is a Dart-bound get/set property: getter is
+    `api.grok_View_Get_Path(this.dart)`, setter is
+    `api.grok_View_Set_Path(this.dart, s)`. Setting it after
+    `addTableView` / `grok.shell.v = view` mutates the browser address
+    bar AND the in-app breadcrumb in a single call — there is no
+    separate "update URL" or "push history" method. The legacy
+    `View.basePath` accessor is JSDoc-marked `@deprecated use path
+    instead`. The full URL the browser shows is
+    `<function-base-path>/<view.path>` (function-base-path resolves via
+    `meta.url` overrides per FACT-333 / FACT-390).
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:11,41,46,60,154,160,173
+    - code: js-api/src/views/view.ts:170-171
+  contradicts: []
+  confidence: high
+```
+
+### DRIFT findings (article vs. code) — routing
+
+```yaml
+- id: DG-FACT-DRIFT-ROUTING-001
+  kind: naming
+  scope: routing
+  value: |
+    Article's intro snippet (`routing.md:16-25`) declares
+    `export function test(path, searchParam)` with NO type annotations,
+    then at line 58 in a separate fragment uses TypeScript syntax
+    `tableName as DG.DemoDatasetName`. The `as` cast does not compile
+    in plain `.js` — only in `.ts`. The full "Tutorial code" section
+    (`routing.md:136-183`) IS consistent TypeScript with typed
+    parameters. Treat the intermediate snippets as TS-in-`.ts`; do not
+    paste them into a `.js` package file. Cross-reference:
+    DG-FACT-DRIFT-BUILD-APP-001 covers the broader header-form vs
+    decorator-form coexistence.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:16-25,55-63,136-183
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-ROUTING-002
+  kind: naming
+  scope: routing
+  value: |
+    Article's "Tutorial code" header form (`routing.md:141-145`) uses
+    `//input: string path {meta.url: true}` — the legacy header-comment
+    syntax with the string-keyed dotted form. Production packages
+    consistently use the decorator form with the camelCase alias
+    (`{metaUrl: true}`); see FACT-332 and DG-FACT-DRIFT-BUILD-APP-002.
+    Both forms emit identical metadata; skills should emit the
+    camelCase decorator form for new code and leave legacy header-form
+    declarations untouched when they already exist.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:141-145
+    - code: js-api/src/decorators/functions.ts:101-102
+    - code: packages/Chem/src/package.ts:2923-2924
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-ROUTING-003
+  kind: naming
+  scope: routing
+  value: |
+    Article (`routing.md:52`) states "in the case of demog table, the
+    `pathname` would be `/apps/TestPackage/demog/All`" — implicitly
+    assuming a one-app package where the app segment is omitted. For
+    multi-app packages the full pathname is
+    `/apps/TestPackage/<AppName>/demog/All`. Article does cover the
+    one-app vs multi-app distinction separately at lines 73-82 but
+    does not connect it back to the tutorial's `view.path` example.
+    Skills writing routing logic must NOT assume the app-name segment
+    is absent — `view.path` is always appended after the function base
+    path, whatever that base path resolves to (FACT-333, FACT-390).
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:52,73-82
+  contradicts: []
+  confidence: medium
+```
+
+## user-settings-storage
+
+```yaml
+
+- id: DG-FACT-394
+  kind: namespace
+  scope: user-settings-storage
+  value: |
+    The current key-value settings store is `class UserSettingsStorage`,
+    exposed on the global `grok` object as `grok.userSettings` (singleton,
+    typed in `grok.ts` as `grok: {..., userSettings: UserSettingsStorage}`).
+    All six methods (`add`, `addAll`, `put`, `get`, `getValue`, `delete`)
+    are synchronous — they return `void` or a plain value, NOT a Promise.
+    Each method's last parameter `isPrivate: boolean = true` selects
+    private (per-user) vs shared (`isPrivate=false`) storage. The legacy
+    `grok.dapi.userDataStorage` (`class UserDataStorage`) is `@deprecated`
+    on every method ("The UserDataStorage should not be used. Use
+    UserSettingsStorage instead") and is async — do not use in new code.
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:19-33
+    - code: js-api/src/user_settings_storage.ts:12-75
+    - code: js-api/grok.ts:29
+    - code: js-api/src/shell.ts:20
+    - code: js-api/src/dapi.ts:168-172,711-770
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-395
+  kind: threshold
+  scope: user-settings-storage
+  value: |
+    Maximum allowed value length is 5000 symbols (characters) per stored
+    entry. The constraint applies to the `value` argument of `add` and to
+    each value in the `data` map passed to `addAll` / `put`. Payloads
+    larger than 5000 chars must be chunked (see
+    `packages/ClinicalCase/src/utils/layout-utils.ts:20-67` for the
+    canonical split-into-N-parts pattern with a `{parts: N}` metadata
+    key). Article states the limit explicitly; the JSDoc on
+    `UserSettingsStorage` repeats it ("Value can't be longer then 5000
+    symbols.").
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:51-55
+    - code: js-api/src/user_settings_storage.ts:9
+    - code: packages/ClinicalCase/src/utils/layout-utils.ts:20-67
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-396
+  kind: threshold
+  scope: user-settings-storage
+  value: |
+    Mutations are kept in memory and flushed to the server every 10
+    seconds when data has changed. Reads after a write within the same
+    10-second window observe the in-memory value immediately; cross-tab
+    or cross-session visibility is bounded by this sync window. The
+    article does not mention this — it is documented only in the
+    `UserSettingsStorage` class JSDoc.
+  derives_from:
+    - code: js-api/src/user_settings_storage.ts:7-11
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-397
+  kind: enum
+  scope: user-settings-storage
+  value: |
+    `UserSettingsStorage` exposes exactly six methods, partitioned by
+    intent:
+    - Write single value: `add(name, key, value, isPrivate?)` — appends.
+    - Write many values (merge): `addAll(name, data, isPrivate?)` — keeps
+      existing keys, overwrites overlapping ones.
+    - Write many values (replace): `put(name, data, isPrivate?)` —
+      replaces the whole record under `name`.
+    - Read whole record: `get(name, isPrivate?)` →
+      `{[key: string]: string} | undefined`.
+    - Read single value: `getValue(name, key, isPrivate?)` →
+      `string | undefined`.
+    - Delete: `delete(name, key, isPrivate?)`. Passing `null` for `key`
+      (TS-typed as `string`; runtime accepts null) wipes the whole
+      namespace. There is no `keys(...)`, `has(...)`, or `list(...)`
+      method — enumeration goes through `get(name)` + `Object.keys(...)`.
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:25-32,79-91
+    - code: js-api/src/user_settings_storage.ts:23,33,43,52,62,72
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-398
+  kind: naming
+  scope: user-settings-storage
+  value: |
+    All `value` arguments to `add` and all map values for `addAll` / `put`
+    must be `string`. The canonical pattern for structured data is
+    `JSON.stringify` on write and `JSON.parse` on read. The TS signature
+    enforces this: `add(name: string, key: string, value: string, ...)`,
+    `data: {[key: string]: string}`. There is no auto-serialization —
+    passing a non-string is a type error.
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:36-49,57-64
+    - code: js-api/src/user_settings_storage.ts:23,33,43
+    - code: packages/CddVaultLink/src/search-function-editor.ts:114,153,177
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-USS-001
+  kind: naming
+  scope: user-settings-storage
+  value: |
+    Article's "Exploring" example (`user-settings-storage.md:107-122`)
+    checks `if (entities !== null && Object.keys(entities).length === 0)`,
+    implying `get(name)` returns `null` for a missing/empty record. The
+    TypeScript signature actually returns
+    `{[key: string]: string} | undefined`
+    (`js-api/src/user_settings_storage.ts:52`). For an empty namespace the
+    runtime returns an empty object `{}`, not `null`. Skill code should
+    check `entries == null` (loose-equals catches both) or test
+    `!entries || Object.keys(entries).length === 0`, NOT `entries !==
+    null` alone.
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:107-122
+    - code: js-api/src/user_settings_storage.ts:47-54
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-USS-002
+  kind: naming
+  scope: user-settings-storage
+  value: |
+    JSDoc on `UserSettingsStorage.get` calls the return value a "map"
+    (`js-api/src/user_settings_storage.ts:48-52`); the TypeScript return
+    type is a plain object record `{[key: string]: string}`, not a JS
+    `Map`. The article inherits the same loose terminology by example.
+    Skill code must iterate with `Object.keys(record)` / `for (const k in
+    record)`, not `record.get(...)` / `record.forEach(...)`.
+  derives_from:
+    - code: js-api/src/user_settings_storage.ts:47-54
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-USS-003
+  kind: naming
+  scope: user-settings-storage
+  value: |
+    Article shows `grok.userSettings.delete('coordinate-storage', null)`
+    to wipe a namespace (`user-settings-storage.md:87-91`), but the TS
+    signature declares `key: string` — passing `null` is a type error in
+    strict TS. The runtime accepts null (Dart routes it to the no-key
+    delete endpoint at `js-api/src/datagrok/build/web/grok_shared.dart.js:93263`).
+    Skill code must cast: `delete(name, null as unknown as string)` or
+    `delete(name, null as any)`.
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:87-91
+    - code: js-api/src/user_settings_storage.ts:72
+  contradicts: []
+  confidence: high
+```
+
+## access-data
+
+```yaml
+
+- id: DG-FACT-400
+  kind: naming
+  scope: access-data
+  value: |
+    Package data connection = a JSON file under `packages/<Pkg>/connections/`.
+    REQUIRED fields: `parameters` (data-source-specific object) and
+    `dataSource` (connector name string). OPTIONAL: `name` (defaults to the
+    filename minus `.json`), `description`, `tags` (string[]),
+    `credentials.parameters` (login/password etc — routed through the
+    credentials store, NOT the world-readable `parameters` block).
+    Connection names are case-insensitive at lookup time (server behavior;
+    not observable in JS-API). Reachable as `<Pkg>:<ConnectionName>` after
+    deploy. `grok add connection <name>` scaffolds a template.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:29-114
+    - code: packages/Chembl/connections/chembl.json
+    - code: packages/DBTests/connections/postgres-test-docker.json
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-401
+  kind: enum
+  scope: access-data
+  value: |
+    `dataSource` value is exact-string-matched server-side; observed
+    canonical values in production: `Postgres`, `PostgresDart`, `MariaDB`,
+    `MySQL`, `MS SQL` (with space), `Oracle`, `Snowflake`, `ClickHouse`,
+    `Neo4j`, `Access`, `Files`. The set is open (controlled by the
+    `connectors` registry on the server) but lowercase/abbreviated
+    spellings (`postgres`, `mssql`) DO NOT match. The article calls out
+    `Postgres` (line 38 example uses `PostgresDart`), `MariaDB` (line 106)
+    and `Files` (line 287). Each connector has its own required
+    `parameters` shape — see `help/access/databases/connectors/`.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:38,106,287
+    - code: packages/DBTests/connections/*.json (10 distinct dataSource values)
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-402
+  kind: naming
+  scope: access-data
+  value: |
+    SQL queries live in `packages/<Pkg>/queries/`. A query file (`.sql`)
+    contains one or more queries, each opened by a header block of
+    `--`-prefixed annotations and terminated by `--end` (omit `--end` if
+    only one query per file). Recognized headers (per `--<key>: <value>`):
+    `--name` (required for multi-query files; otherwise defaults to
+    filename), `--friendlyName`, `--description`, `--connection: <Pkg>:<Conn>`
+    (omit if the package has only one connection), `--input: <type> <name>
+    [= <default>]` (one per parameter). Parameters in the SQL body are
+    referenced as `@name`. `grok add query <name>` scaffolds a template.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:120-165
+    - code: packages/Chembl/queries/queries.sql:1-45
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-403
+  kind: naming
+  scope: access-data
+  value: |
+    Post-processing script + layout are linked to a query by EXACT basename
+    match: `queries/foo.sql` (the query), `queries/foo.js` (post-process
+    script — accepts the result DataFrame as input), `queries/foo.layout`
+    (layout applied to the result). Hard invariant: a file that needs an
+    associated `.js` or `.layout` MUST contain exactly ONE query — the
+    association is by filename, not by query name. Multi-query files break
+    the binding silently.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:189-213
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-404
+  kind: namespace
+  scope: access-data
+  value: |
+    `grok.data.query<T = DataFrame>(queryName, queryParameters?: object | null
+    = null, adHoc?: boolean = false): Promise<T>` — async (`async` in source),
+    returns the resolved query result coerced to `T`. The 3rd `adHoc`
+    parameter is JSDoc-marked `@deprecated` and slated for removal — skill
+    code must omit it. `queryName` is `<Package>:<QueryName>` (the same
+    fully-qualified form the console uses). Internally calls
+    `grok_CallFunc(queryName, queryParameters, true, null)`. There is NO
+    4th polling-interval argument (signature has 3 positional slots).
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:179-185
+    - code: js-api/src/data.ts:255-262
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-405
+  kind: namespace
+  scope: access-data
+  value: |
+    `grok.dapi.fetchProxy(url: string, params?: RequestInit, maxAge?: number):
+    Promise<Response>` — proxies an arbitrary URL through the Datagrok
+    server. Same shape as `fetch`. Defaults `params.method = 'GET'`,
+    `params.headers = {}`. Server injects `original-url` / `original-method`
+    headers; if `params.redirect === 'follow'` it adds `follow-redirects:
+    true`. `maxAge` (seconds) is ONLY honored on `GET`/`HEAD` — it forces
+    `Cache-Control: max-age=<n>` server-side and sets `cache: 'default'`
+    client-side. Non-GET requests are routed as POST to `/connectors/proxy`
+    regardless of `params.method`.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:230-241
+    - code: js-api/src/dapi.ts:189-214
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-406
+  kind: namespace
+  scope: access-data
+  value: |
+    `grok.data.loadTable(csvUrl: string): Promise<DataFrame>` — single-call
+    fetch+parse of a remote CSV. `grok.data.parseCsv(csv: string,
+    options?: CsvImportOptions): DataFrame` — SYNCHRONOUS, returns the
+    DataFrame directly. `grok.data.openTable(id: string): Promise<DataFrame>`
+    — opens a registered table by GUID (not by path). Pair `loadTable` with
+    `_package.webRoot` (trailing-slash-included getter at
+    `js-api/src/entities/misc.ts:79`) for package-bundled assets:
+    `${_package.webRoot}data-samples/test.csv`.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:244-259,326-329
+    - code: js-api/src/data.ts:166-168,173-175,222-224
+    - code: js-api/src/entities/misc.ts:79-84
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-407
+  kind: namespace
+  scope: access-data
+  value: |
+    File-share reads via the function dispatcher return `DataFrame[]` (one
+    entry per parsed table), NOT a single `DataFrame`. The article shows
+    `grok.functions.eval('OpenServerFile("<USER>:Home/data.csv")').then(t
+    => grok.shell.addTableView(t[0]))` — the `[0]` indexing is mandatory.
+    The path grammar: `<USER>:Home/<rel>`, `<Pkg>:<Connection>/<rel>` (path
+    is relative to the connection's `dir` parameter), `System:DemoFiles/...`
+    Equivalent typed call: `grok.functions.call('OpenServerFile',
+    {fullPath: '...'})`. Cross-reference: contract-triangles.md "Triangle:
+    OpenServerFile" for the dispatcher path.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:264-304
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:85499
+    - code: packages/ApiSamples/scripts/scripting/grok-scripting.js:1
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-408
+  kind: namespace
+  scope: access-data
+  value: |
+    `grok.data.testData(dataset: DemoDatasetName, rows = 10000, columns = 3):
+    DataFrame` is SYNCHRONOUS — returns the generated DataFrame directly.
+    Separate from `grok.data.getDemoTable(path: string): Promise<DataFrame>`
+    (async; reads a named demo file by relative path from the demo root).
+    The article presents `grok.data.demo` / `grok.data.getDemoTable` /
+    `grok.data.testData` together; they are NOT interchangeable — `demo`
+    is a typed shortcut namespace (`demo.demog()`, `demo.molecules()` etc),
+    `testData` takes the dataset-name string, `getDemoTable` (the data.ts
+    overload at line 157) takes a file path. Cross-reference: FACT-392.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:244-246
+    - code: js-api/src/data.ts:42,153-155,157-159
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-409
+  kind: namespace
+  scope: access-data
+  value: |
+    Connection credentials are NEVER stored in the JSON committed to git —
+    after deploy, POST them to
+    `$(GROK_HOST)/api/credentials/for/$(PACKAGE_NAME).$(CONNECTION_NAME)`
+    with body `{"login":"...","password":"..."}` (any param keys per
+    connector) and headers `Authorization: $(API_KEY)`,
+    `Content-Type: application/json`. The API key is the user's personal
+    token from their profile page (e.g. https://public.datagrok.ai/u).
+    The dotted entity form targets a specific connection; omitting the
+    dot (`...PACKAGE_NAME` alone) targets the package itself for
+    package-level credentials. Read-back from JS:
+    `await _package.getCredentials(): Promise<Credentials | null>` →
+    `c.parameters['<key>']` (NOT `c.openParameters`, which is the redacted
+    display copy).
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:81-116
+    - code: js-api/src/entities/misc.ts:163-166
+    - code: js-api/src/entities/data-connection.ts:396-415
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-410
+  kind: naming
+  scope: access-data
+  value: |
+    Connection sharing is one-way: sharing a QUERY auto-shares its
+    underlying connection (including web/OpenAPI queries that ride on the
+    connection); sharing the CONNECTION does NOT auto-share its queries.
+    Inheritance rule per article — "access rights of a database connection
+    are inherited from the access rights of a query. However, the access
+    rights of a query don't inherit the access rights of the database
+    connection." Skill authors that distribute a package with private
+    queries must therefore share each query explicitly; sharing the
+    connection alone leaves queries inaccessible.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:217-222
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-411
+  kind: namespace
+  scope: access-data
+  value: |
+    `grok.dapi.files.*` is the typed file-share I/O surface — `readAsText`,
+    `readAsBytes`, `writeAsText`, `exists`, `list`, `rename`, `move`,
+    `delete`, plus search. All async (return Promises). Each method
+    accepts three input shapes interchangeably: (1) a fully-qualified path
+    string (`<USER>:Home/...`), (2) a `FileInfo` instance (from a function
+    input typed `file`, or from `list()`), (3) a file-share connection
+    GUID string. `FileInfo.readAsString()` / `FileInfo.readAsBytes()` are
+    the in-instance methods on a `file`-typed input — equivalent to the
+    `grok.dapi.files.*` calls but more direct in that context.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:308-329
+    - code: js-api/src/dapi.ts:1287-1465
+    - code: js-api/src/entities/table-info.ts:107-114
+    - code: packages/ApiSamples/scripts/dapi/files.js
+  contradicts: []
+  confidence: high
+```
+
+### DRIFT findings (article vs. code) — access-data
+
+```yaml
+- id: DG-FACT-DRIFT-ACCESS-001
+  kind: naming
+  scope: access-data
+  value: |
+    Article line 316 links FileInfo to
+    `js-api/src/entities/table-info.ts#L63` — that line is no longer
+    where `FileInfo` is declared (the type sits around line 90+ in the
+    current source). Treat the line citation in the article as stale; do
+    not propagate the specific line number in skill bodies — point at the
+    file only, or at the currently-correct line (107-114 for
+    `readAsString` / `readAsBytes`).
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:316,327
+    - code: js-api/src/entities/table-info.ts:107-114
+  contradicts: []
+  confidence: medium
+```
+
+## db-in-docker
+
+```yaml
+
+- id: DG-FACT-412
+  kind: naming
+  scope: db-in-docker
+  value: |
+    A connection to a database shipped inside a package's Docker container
+    is declared by a JSON file under `packages/<Pkg>/connections/`, NEVER
+    through the UI's "New Connection" dialog. The discriminator is the
+    `parameters.server` placeholder — two accepted forms, both verified
+    in production: (a) two-segment (recommended for clarity) —
+    `${<PackageName>:<ContainerFriendlyName><DockerContainer>}` (e.g.
+    `packages/DBTests/connections/postgres-test-docker.json:6` →
+    `${Dbtests:Dbtests<DockerContainer>}`); (b) single-segment (allowed
+    when the friendly name is already unique platform-wide) —
+    `${<ContainerFriendlyName><DockerContainer>}` (e.g.
+    `packages/SureChembl/connections/surechembl.json:6` →
+    `${Surechembl<DockerContainer>}`). Skills should EMIT the two-segment
+    form; if encountered, the single-segment form is equivalent.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:14-22
+    - code: packages/DBTests/connections/postgres-test-docker.json:6
+    - code: packages/SureChembl/connections/surechembl.json:6
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-413
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Inside the `<DockerContainer>` placeholder, the platform normalizes
+    the package-name segment to first-letter-only capitalization
+    (everything else lowercased). Confirmed examples: package `DBTests`
+    is referenced as `Dbtests`; package `SureChembl` is referenced as
+    `Surechembl`. Skills writing a fresh connection JSON must apply the
+    normalization manually — the runtime DOES match the literal string
+    against the normalized internal name, so e.g.
+    `${DBTests:DBTests<DockerContainer>}` (preserving original casing)
+    will NOT resolve. Same rule applies to the friendly-name segment.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:26
+    - code: packages/DBTests/connections/postgres-test-docker.json:6
+    - code: packages/SureChembl/connections/surechembl.json:6
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-414
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Container friendly-name resolution:
+    - One Dockerfile directly under `dockerfiles/` →
+      friendly name = (normalized) package name. Evidence:
+      `packages/DBTests/dockerfiles/Dockerfile` →
+      `${Dbtests:Dbtests<DockerContainer>}`;
+      `packages/SureChembl/dockerfiles/Dockerfile` →
+      `${Surechembl<DockerContainer>}`.
+    - Multiple sub-folders under `dockerfiles/` (each with its own
+      Dockerfile) → friendly name = `<package>-<folder>` (both
+      normalized). Evidence: `packages/CVMTests/dockerfiles/
+      cvmtests-docker-test1/Dockerfile` is registered as the container
+      named `cvmtests-cvmtests-docker-test1` (verified at runtime in
+      `packages/CVMTests/src/docker/docker.ts:14-15` —
+      `'Cvmtests-cvmtests-docker-test1'` is used in
+      `dockerContainers.filter('name = "cvmtests-..."')`).
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:22-24
+    - code: packages/DBTests/dockerfiles/Dockerfile
+    - code: packages/SureChembl/dockerfiles/Dockerfile
+    - code: packages/CVMTests/dockerfiles/cvmtests-docker-test1/
+    - code: packages/CVMTests/src/docker/docker.ts:14-15
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-415
+  kind: enum
+  scope: db-in-docker
+  value: |
+    Hard rules for the `parameters` block of a docker-bound connection:
+    - REQUIRED: `server` with the `<DockerContainer>` placeholder
+      (FACT-412), `dataSource` at the JSON top level naming the
+      connector (e.g. `Postgres`, `MariaDB`, `ClickHouse` — see
+      FACT-401 for the full set).
+    - OPTIONAL: `db: "<dbname>"` to pin a database/schema inside the
+      image — value must equal what the Dockerfile declared (e.g.
+      `ENV POSTGRES_DB world` ↔ `"db": "world"`).
+    - FORBIDDEN: `port`. The article (line 17) is explicit — Datagrok
+      resolves the port dynamically from the running container. The
+      Dockerfile's single `EXPOSE <port>` tells the platform which
+      internal port to bind; on the JSON side, omit `port` entirely.
+    - Credentials go through `credentials.parameters.{login,password}`,
+      NOT inside `parameters.connString` or `parameters.server`. The
+      login/password MUST match `ENV POSTGRES_USER` / `ENV POSTGRES_PASSWORD`
+      (or the equivalent for other dbms) baked into the Dockerfile.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:13-22,40-65
+    - code: packages/DBTests/connections/postgres-test-docker.json
+    - code: packages/DBTests/dockerfiles/Dockerfile:2-4
+    - code: packages/SureChembl/connections/surechembl.json
+    - code: packages/SureChembl/dockerfiles/Dockerfile:3-5
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-416
+  kind: threshold
+  scope: db-in-docker
+  value: |
+    The Dockerfile MUST declare `EXPOSE <port>` and only ONE port may be
+    exposed per image. The article's note ("EXPOSE instruction is
+    crucial and should always be declared", line 40) is restated as a
+    hard platform constraint in
+    `help/develop/how-to/packages/docker-containers.md:20` ("only one
+    EXPOSE $PORT is allowed in the image"). The exposed port is the
+    INTERNAL container port (5432 for Postgres in DBTests/SureChembl) —
+    NOT a host port. The platform-side proxy maps it to a
+    dynamically-allocated external address, which is why the JSON's
+    `port` parameter is forbidden (FACT-415).
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:40
+    - article: help/develop/how-to/packages/docker-containers.md:20
+    - code: packages/DBTests/dockerfiles/Dockerfile:6
+    - code: packages/SureChembl/dockerfiles/Dockerfile:9
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-417
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Once the package is published, a docker-bound connection appears in
+    Datagrok's `Browse > Databases` tree and behaves identically to any
+    other connection — addressable as `<Pkg>:<ConnectionName>` for
+    queries, browsable for schemas, usable inside projects. The
+    `<DockerContainer>` placeholder is purely a deploy-time resolution
+    marker; at runtime, the connection object is indistinguishable from
+    a normal Postgres / MariaDB / etc connection. Consequence: the
+    standard `grok.data.query('<Pkg>:<Query>')` dispatcher (FACT-404)
+    transparently routes through the container; query authors do NOT
+    need to be aware that the database is in a container.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:65-67
+    - code: packages/DBTests/queries/queries.sql
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-418
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Choose `db-in-docker` ONLY when one of these applies (per the
+    article's framing, lines 5-10):
+    - The database engine is NOT Postgres (e.g. MariaDB, ClickHouse,
+      Oracle ship-via-image). Plugin Postgres only supports Postgres.
+    - The package needs Postgres extensions or plugins NOT enabled in
+      the platform's shared RDS instance (e.g. PostGIS, `pgcrypto`
+      extensions outside the allowlist, custom `CREATE EXTENSION` calls).
+    - The package requires data isolation, custom users/roles, or
+      DBA-level control the shared instance does not grant.
+    For ordinary CRUD storage attached to a plugin, prefer
+    [[db-in-plugin]] (`packages/<Pkg>/databases/<Name>/*.sql`) — the
+    platform manages migrations, sharing, and resource usage. See also
+    `help/develop/how-to/db/db-in-plugin.md`.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:5-10
+    - article: help/develop/how-to/db/db-in-plugin.md:5-10
+  contradicts: []
+  confidence: medium
+```
+
+### DRIFT findings (article vs. code) — db-in-docker
+
+```yaml
+- id: DG-FACT-DRIFT-DBDOCKER-001
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Article never references `container.json` — the sibling file next to
+    the Dockerfile that controls `on_demand`, `shutdown_timeout`,
+    `cpu`, `memory`, `storage`, `environmentVars`, etc. Every production
+    db-in-docker package ships one (`packages/DBTests/dockerfiles/
+    container.json` — `{on_demand: true, shutdown_timeout: 30}`;
+    `packages/SureChembl/dockerfiles/container.json` — `{cpu: 1,
+    memory: 2048, on_demand: true, timeout_minutes: 30}`). Without it
+    the platform applies hard defaults (`on_demand: false`,
+    `memory: 512`, `cpu: 0.25`) — usually too small for a real DB.
+    Skills MUST mention `container.json` and link the user to
+    `help/develop/how-to/packages/docker-containers.md:41-86`. SureChembl
+    additionally uses the unsupported field name `timeout_minutes` (vs
+    documented `shutdown_timeout`) — see contract-triangles.md DRIFT-051;
+    do NOT propagate that key.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md
+    - article: help/develop/how-to/packages/docker-containers.md:41-86
+    - code: packages/DBTests/dockerfiles/container.json
+    - code: packages/SureChembl/dockerfiles/container.json
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBDOCKER-002
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Article's example uses a hypothetical package literally named `Test`
+    and produces `${Test:Test<DockerContainer>}` (line 50). Because `Test`
+    has no mixed casing, the normalization rule of FACT-413 is invisible
+    in the example — readers may not notice that real packages with
+    mixed-case names (`DBTests`, `SureChembl`) MUST normalize to
+    `Dbtests`, `Surechembl` etc in the placeholder. The explicit note at
+    line 26 covers this, but the worked example does not — skills must
+    emit the normalized form unconditionally when generating snippets
+    for any specific package name.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:26,50
+    - code: packages/DBTests/connections/postgres-test-docker.json:6
+    - code: packages/SureChembl/connections/surechembl.json:6
+  contradicts: []
+  confidence: high
+```
+
+## db-in-plugin
+
+```yaml
+
+- id: DG-FACT-419
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    A plugin-owned Postgres database is declared purely by directory shape:
+    `<PackageRoot>/databases/<Name>/*.sql`. The directory name `<Name>` is a
+    single source of truth that simultaneously becomes (a) the Postgres
+    SCHEMA name used inside SQL bodies (`<Name>.<table>`), (b) the
+    connection name auto-registered as `<Pkg>:<Name>`, (c) the namespace
+    prefix any query file uses in its `--connection:` header. NO
+    `connections/*.json` is required — the platform installer scans
+    `databases/` at install/release and registers the connection itself.
+    Production canonical names are lowercase short identifiers
+    (`hitdesign`, `plts`, `moltrack`, `todo`, `biologics`, `mdb1`,
+    `ua_tickets`); none use mixed case or hyphens.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:14-22
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql
+    - code: packages/Plates/databases/plts/0000_init.sql
+    - code: packages/MolTrack/databases/moltrack/0000.sql
+    - code: packages/HitTriage/queries/locks.sql:4
+    - code: packages/Plates/queries/plates-crud.sql:2
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-420
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    The plugin's data lives in the platform's SHARED Postgres instance
+    (the same Postgres Datagrok uses for its own metadata), isolated only
+    by SCHEMA. This is the key distinction from [[db-in-docker]] (own
+    container, own RDBMS). Consequences: (1) you cannot pick the DBMS
+    version or install non-default extensions; (2) you cannot grant
+    DBA-level privileges; (3) you do not pay extra cluster resources for
+    the container; (4) the platform handles credentials, lifecycle,
+    sharing, and migrations automatically. Article wording "the same
+    database as Datagrok uses for storing metadata" is literal.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:5-10
+    - article: help/develop/how-to/db/db-in-docker.md:5-10
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-421
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Migration files apply in lexicographical filename order. Production
+    canonical: 4-digit zero-padded prefix + underscore + descriptor —
+    `0000_init.sql`, `0001_add_optional_column.sql`. 3-digit prefixes are
+    also seen (`NodeJSDemo/databases/todo/000_init.sql`,
+    `UsageAnalysis/databases/ua_tickets/000_init.sql`) and work
+    identically — but mixing widths within one directory sorts wrong
+    (`9_x.sql` > `10_x.sql`). Prefix presence is the contract; the
+    descriptor after `_` is free-form. MolTrack uses `0000.sql` /
+    `0001.sql` with no descriptor — also valid.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:28-30
+    - code: packages/Biologics/databases/biologics/ (0000-0004)
+    - code: packages/NodeJSDemo/databases/todo/000_init.sql
+    - code: packages/MolTrack/databases/moltrack/0000.sql
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-422
+  kind: enum
+  scope: db-in-plugin
+  value: |
+    Forward-only migration discipline. The article states bluntly: "you
+    can add new columns but cannot make updates that are incompatible
+    with the previous configuration" and "There is no rollback
+    functionality." In practice this means: PERMITTED — `CREATE TABLE`,
+    `CREATE INDEX`, `ADD COLUMN [IF NOT EXISTS]`, `ALTER TABLE ... ADD
+    CONSTRAINT`, additive `INSERT` of seed rows; AVOID — `DROP TABLE`,
+    `DROP COLUMN`, `ALTER COLUMN <type>` to an incompatible type,
+    `RENAME`. Edge case in production: MolTrack 0001.sql does
+    `DROP CONSTRAINT ... ADD CONSTRAINT` on a CHECK (broadening allowed
+    values from 5 to 6) — that's a backward-compatible constraint
+    replacement, not a schema break. Editing an already-published
+    migration silently desyncs across users (the platform tracks by
+    filename, not content).
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:25-37
+    - code: packages/HitTriage/databases/hitdesign/0001_dict.sql
+    - code: packages/Biologics/databases/biologics/0001_init.sql
+    - code: packages/MolTrack/databases/moltrack/0001.sql
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-423
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    `:LOGIN` is a deploy-time substitution token, NOT standard SQL. The
+    platform's migration runner replaces `:LOGIN` with the runtime
+    connection user before executing each migration. Required canonical
+    pattern at the END of `0000_init.sql`:
+      GRANT ALL PRIVILEGES ON ALL TABLES   IN SCHEMA <name> TO :LOGIN;
+      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA <name> TO :LOGIN;
+    Often preceded by `GRANT ALL PRIVILEGES ON SCHEMA <name> TO
+    CURRENT_USER;` (the migration-time owner). `CURRENT_USER` and
+    `:LOGIN` are NOT interchangeable — `CURRENT_USER` is the user
+    running the migration (an admin/owner), `:LOGIN` is the user
+    running queries at runtime. Omitting the `:LOGIN` GRANT means
+    queries hit "permission denied" on first execution. Frequency in
+    production: 16 occurrences of `:LOGIN` vs 4 of `CURRENT_USER`
+    across all canonical `databases/*` SQL files.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:53
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:18-20
+    - code: packages/Plates/databases/plts/0000_init.sql:188-191
+    - code: packages/MolTrack/databases/moltrack/0000.sql:277-279
+    - code: packages/Biologics/databases/biologics/0000_init.sql (tail)
+    - code: packages/monomerDB/databases/mdb1/0000_init.sql (tail)
+  contradicts:
+    - DG-FACT-DRIFT-DBPLUGIN-002
+  confidence: high
+
+- id: DG-FACT-424
+  kind: enum
+  scope: db-in-plugin
+  value: |
+    A migration applies only when the package is published with
+    `grok publish --release`. Debug-mode publishes (`grok publish` with no
+    flag, per FACT-334) deploy a per-user version visible only to the
+    publisher — they do NOT run the migration platform-wide. Practical
+    consequence: while iterating on schema in dev, each new SQL file
+    must be tested via a release-mode publish, and reverting is not
+    possible (FACT-422). Implication for CI/CD: never auto-publish
+    `databases/` changes without intent — a stale migration cannot be
+    rolled back.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:31-37
+    - code: tools/bin/commands/publish.ts:651-654,712
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-425
+  kind: namespace
+  scope: db-in-plugin
+  value: |
+    Queries against a plugin DB use the same dispatcher as any other
+    Datagrok query (`grok.data.query(...)`, FACT-404). Header convention
+    in production: `--connection: <Pkg>:<DirName>` (fully qualified) +
+    `--input: <type> <name>` for each parameter + `@name` in the SQL
+    body. From JS: `await grok.data.query('<Pkg>:<QueryName>', {param:
+    value})`. The plugin DB is indistinguishable from any other Postgres
+    connection at call time — no JS-API surface specific to plugin DBs
+    exists. Query files (`queries/<basename>.sql`) live in the standard
+    `queries/` directory, NOT under `databases/`; the basename-binding
+    rules of FACT-403 (post-process `.js`, `.layout`) apply normally.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:18-22,59-71
+    - code: packages/HitTriage/queries/locks.sql:1-15
+    - code: packages/Plates/queries/plates-crud.sql:1-10
+    - code: packages/Biologics/queries/demo.sql:1-10
+    - code: js-api/src/data.ts:255-262
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-426
+  kind: pattern
+  scope: file-exporters
+  value: |
+    `DG.Utils.download(filename, content, contentType?)` types its
+    `content` parameter as `BlobPart`, which under modern TypeScript lib
+    definitions resolves to `BufferSource | Blob | string`. A bare
+    `Uint8Array` produced by a serializer is now typed
+    `Uint8Array<ArrayBufferLike>` — the `ArrayBufferLike` slot includes
+    `SharedArrayBuffer`, which is NOT assignable to `BlobPart` and the
+    build fails with TS2345 ("Argument of type
+    'Uint8Array<ArrayBufferLike>' is not assignable to parameter of type
+    'BlobPart'"). The canonical fix used in production is to narrow the
+    generic with a cast at the call site, in the same expression that
+    null-coalesces an empty buffer:
+    `DG.Utils.download(name, (bytes ?? new Uint8Array(0)) as Uint8Array<ArrayBuffer>)`.
+    The cast is safe because Datagrok exporters always allocate fresh
+    Uint8Arrays backed by `ArrayBuffer`, never `SharedArrayBuffer`.
+  derives_from:
+    - code: packages/Arrow/src/package.ts:64-76                         # both saveAsParquet and saveAsFeather use this exact cast
+    - code: js-api/src/utils.ts:230-237                                 # download(filename, content: BlobPart, contentType?)
+    - runtime: verify-e2e/file-exporters                                # round 1 build failure: TS2345 on plain Uint8Array
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-427
+  kind: pattern
+  scope: cache
+  value: |
+    The JSDoc-style header form (`//name:`, `//meta.cache: <mode>`,
+    `//meta.cache.invalidateOn: <cron>` placed as line comments directly
+    above the function) is the canonical, lowest-friction way to annotate
+    a TypeScript function in `src/package.ts` for caching — `grok api`
+    parses these comment headers and emits the same `//meta.cache:` lines
+    into `src/package.g.ts`. RevvitySignalsLink uses this form on every
+    cached function (`getUsers`, `getLibraries`, `getTerms`, `getTags`,
+    `queryStructureById`) at `packages/RevvitySignalsLink/src/package.ts:199-200,215-216,245-246,289-290,324-325`.
+    The `@grok.decorators.func({meta: {cache, cacheInvalidateOn}})` form
+    (DG-FACT-343) is interchangeable but heavier — prefer the header form
+    when adding cache to an existing TS function with no other decorator
+    metadata. The header form is what discovery-by-fingerprint expects to
+    see in skill bodies that teach TS caching (otherwise a writer who
+    omits this code block will produce a skill that builds cleanly but
+    fails the fingerprint check when Claude naturally reaches for the
+    minimal header form).
+  derives_from:
+    - code: packages/RevvitySignalsLink/src/package.ts:198-211            # getUsers — header-form with daily invalidateOn
+    - code: packages/RevvitySignalsLink/src/package.ts:213-231            # getLibraries — same pattern, neighboring function
+    - code: packages/RevvitySignalsLink/src/package.ts:243-260            # getTerms — same pattern
+    - code: tools/bin/utils/utils.ts:191                                  # validator accepts //meta.cache: <mode>
+    - runtime: verify-e2e/cache-function-results                          # round 1 discovery failure: Claude wrote header form, skill body taught only decorator form
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-428
+  kind: naming
+  scope: custom-cell-renderers
+  value: |
+    `meta.gridChart: 'true'` is a distinct boolean tag from `meta.virtual:
+    'true'` — it marks the renderer as a chart-style summary cell so the
+    platform offers it in the "Add summary column" picker alongside the
+    other sparkline charts. The two are usually paired (every PowerGrid
+    chart renderer sets BOTH), but they are NOT synonyms: `virtual: true`
+    means "no underlying data column"; `gridChart: true` means "show in the
+    summary-column chart picker". CRITICAL ASYMMETRY: the class-decorator
+    option type `CellRendererOptions` (`js-api/src/decorators/functions.ts:72-80`)
+    exposes only `{name?, description?, cellType, columnTags?, virtual?}`
+    — there is no `gridChart` field. A chart-style renderer authored via
+    `@grok.decorators.cellRenderer({...})` must therefore either (a) use
+    the function-decorator form `@grok.decorators.func({meta: {gridChart:
+    'true', virtual: 'true', cellType: ..., role: 'cellRenderer'}, tags:
+    ['cellRenderer'], outputs: [{type: 'grid_cell_renderer', name:
+    'result'}]})` so `gridChart` lands in the generic meta map (where it
+    IS declared at `functions.ts:147` as `Meta.gridChart?: string`), or
+    (b) keep the class decorator and append `gridChart` post-hoc via a
+    `tags`-style escape hatch with `@ts-ignore` (PowerGrid does this with
+    `tags: ['cellRenderer']`, lines like `png-renderer.ts:8-10`). The
+    article shows option (a) in its "if you prefer" tip
+    (`custom-cell-renderers.md:33-48`) — `gridChart: 'true'` is set
+    through `meta`, not as a top-level field. Skill output that teaches a
+    sparkline / piechart / barchart-style renderer must use the function-
+    decorator form OR explicitly call out the class-decorator type-gap;
+    teaching `@grok.decorators.cellRenderer({cellType: 'foo', gridChart:
+    'true'})` would produce a TS error and silently drop the metadata.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:33-48,52-63
+    - code: js-api/src/decorators/functions.ts:72-80           # CellRendererOptions — NO gridChart
+    - code: js-api/src/decorators/functions.ts:117-149         # Meta interface — gridChart?: string
+    - code: packages/PowerGrid/src/package.ts:34-160           # every PowerGrid chart sets gridChart: 'true' in meta
+    - code: packages/PowerGrid/src/package.g.ts:109,120,131    # auto-emitted //meta.gridChart: true alongside virtual + role
+    - code: packages/Peptides/src/package.ts:278               # second consumer outside PowerGrid
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-429
+  kind: naming
+  scope: custom-cell-renderers
+  value: |
+    The auto-emitted output-parameter NAME in `package.g.ts` differs by
+    registration form, even though the TYPE (`grid_cell_renderer`) is
+    identical. Class-decorator form (`@grok.decorators.cellRenderer`)
+    emits `//output: grid_cell_renderer renderer` because the codegen
+    default at `tools/bin/utils/func-generation.ts:323-330` is `outputs:
+    [{name: 'renderer', type: 'grid_cell_renderer'}]`. Function-decorator
+    form usually overrides this with `outputs: [{type: 'grid_cell_renderer',
+    name: 'result'}]` and the emitted header reads `//output:
+    grid_cell_renderer result`. Both work — the platform binds by output
+    TYPE not name. But skill bodies that copy a `package.g.ts` snippet
+    must match the parameter name to the registration form, and any
+    drift-detector that scrapes `//output:` lines must accept both. The
+    article's auto-emit example (`custom-cell-renderers.md:52-63`) shows
+    `//output: grid_cell_renderer result` because the surrounding example
+    is the function-decorator form; the class-decorator equivalent would
+    show `renderer`. Refines DG-FACT-101.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:43,55
+    - code: tools/bin/utils/func-generation.ts:323-330         # default `name: 'renderer'`
+    - code: packages/PowerGrid/src/package.g.ts:87,98          # class-decorator emit — `renderer`
+    - code: packages/PowerGrid/src/package.g.ts:118,129        # function-decorator emit — `result`
+  contradicts:
+    - DG-FACT-101    # FACT-101 generalized to "result" — refine to two-name pattern
+  confidence: high
+
+- id: DG-FACT-DRIFT-043
+  kind: naming
+  scope: custom-cell-renderers
+  value: |
+    Article shows the auto-emitted header form including `//tags:
+    cellRenderer` (`custom-cell-renderers.md:54`), AND the function-
+    decorator example explicitly sets `tags: ['cellRenderer']`
+    (`custom-cell-renderers.md:41`). But the class-decorator option type
+    `CellRendererOptions` (`functions.ts:72-80`) does NOT expose a `tags`
+    field, so a class-decorator-authored renderer cannot set `tags`
+    cleanly. Codegen handles this transparently — the function-role
+    descriptor at `js-api/src/const.ts:497-501` declares `header: 'tags'`,
+    so the FuncGeneratorPlugin auto-emits `//tags: cellRenderer` into
+    `package.g.ts` regardless of whether the author wrote `tags` on the
+    decorator. PowerGrid still adds `tags: ['cellRenderer'], //@ts-ignore`
+    on class-decorator usages (`png-renderer.ts:8-10`, `svg-cell-renderer.ts:9-10`,
+    `stars-cell-renderer.ts:40`, `hyperlink-cell-renderer.ts:8`) as a
+    defensive habit, but it is redundant — removing it does not change
+    the emitted `.g.ts`. Skill bodies must NOT teach the `@ts-ignore tags`
+    pattern as required; describe it as "PowerGrid-style historical
+    habit, optional and redundant under modern codegen." Resolves the
+    dangling reference from DG-FACT-100.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:14-21,41,54
+    - code: js-api/src/decorators/functions.ts:72-80           # CellRendererOptions — no `tags`
+    - code: js-api/src/const.ts:497-501                        # role descriptor: header: 'tags'
+    - code: packages/PowerGrid/src/png-renderer.ts:8-10        # @ts-ignore tags pattern
+    - code: packages/PowerGrid/src/cell-types/svg-cell-renderer.ts:9-10
+    - code: packages/PowerGrid/src/cell-types/stars-cell-renderer.ts:40
+    - code: packages/PowerGrid/src/package.g.ts:82-87,93-98    # class-decorator auto-emit still carries //tags: cellRenderer
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-430
+  kind: naming
+  scope: decorator-meta-typing
+  value: |
+    Class-decorator option types and the function-decorator `meta` map
+    type the SAME tag with DIFFERENT primitives — booleans on the class
+    side, strings on the function side. `CellRendererOptions`
+    (`js-api/src/decorators/functions.ts:72-80`) declares `virtual?:
+    boolean`, so a class-decorator author writes `virtual: true`. The
+    generic `Meta` interface (`js-api/src/decorators/functions.ts:117-149`)
+    declares `virtual?: string` and `gridChart?: string`, so a
+    function-decorator author writes `virtual: 'true'` and `gridChart:
+    'true'` inside `meta`. The auto-emitted header in `package.g.ts` is
+    the same `//meta.virtual: true` token either way — the typing
+    difference is purely an authoring-surface artifact of the FuncOptions
+    meta map being `Record<string,string>`-flavored, while the dedicated
+    option types narrow each field. Skill bodies and lint rules MUST
+    accept both forms; writing `virtual: 'true'` on the class decorator
+    or `virtual: true` on the function-decorator `meta` map produces a
+    TS error. Generalizes the contrast already documented in DG-FACT-428
+    for `gridChart`.
+  derives_from:
+    - code: js-api/src/decorators/functions.ts:72-80           # CellRendererOptions — virtual?: boolean
+    - code: js-api/src/decorators/functions.ts:117-149         # Meta — virtual?: string, gridChart?: string
+    - code: packages/PowerGrid/src/cell-types/stars-cell-renderer.ts:37-43   # class form, boolean
+    - code: packages/PowerGrid/src/package.ts:34-160           # function form, string
+    - code: packages/PowerGrid/src/package.g.ts:109,120,131    # auto-emitted token is the same either way
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-431
+  kind: naming
+  scope: upload-data
+  value: |
+    The user-storage CSV upload endpoint has a FIXED path grammar:
+    `POST $DATAGROK_URI/api/files/<LOGIN>/uploads/<free/form/path>/<file>.csv`.
+    Three slots: (a) `<LOGIN>` — the user login that will OWN the
+    resulting project (article example: `alex.aprm`); (b) the literal
+    segment `uploads/`; (c) any free-form path you choose between
+    `/uploads/` and the filename. The endpoint accepts any string for
+    `<LOGIN>` — a typo silently produces an upload owned by a
+    nonexistent path that nobody can browse. This endpoint is the
+    legacy `/api/files/...` surface; it is DISTINCT from the
+    `/public/v1/files/{connector}/{path}` REST endpoint (DG-FACT-231)
+    used by the Python client — only the legacy surface accepts the
+    `?layout=` query knob (DG-FACT-432-adjacent).
+  derives_from:
+    - article: help/develop/how-to/data/upload-data.md:5-15,33-38
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-432
+  kind: enum
+  scope: upload-data
+  value: |
+    POST to a file path on either Datagrok REST file surface REPLACES
+    the existing content silently — no 409/conflict, no warning.
+    Article wording for the `/public/v1/files/{connector}/{path}`
+    endpoint is literal: "If file already exists, replace its content"
+    (`help/develop/packages/rest-api.md:30`). The legacy
+    `/api/files/<LOGIN>/uploads/...` surface (DG-FACT-431) inherits the
+    same overwrite semantics — two pipelines writing to the same
+    `/uploads/<path>/<file>` clobber one another. Mitigation in
+    production pipelines: namespace the path with a timestamp or run
+    id (e.g. `/uploads/nightly/$(date +%Y-%m-%d)/assay.csv`).
+  derives_from:
+    - article: help/develop/packages/rest-api.md:30-31
+    - article: help/develop/how-to/data/upload-data.md:5-17
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-433
+  kind: pattern
+  scope: upload-data
+  value: |
+    The `/api/files/<LOGIN>/uploads/<path>/<file>.csv` REST endpoint
+    (DG-FACT-431) is an OUT-OF-PROCESS surface — its purpose is to give
+    external callers (shell pipelines, cron jobs, lab instruments,
+    standalone Python notebooks) a one-call way to drop a CSV into a
+    user's workspace and get back a shareable project URL. It is NOT
+    the right path from inside a Datagrok package: when TypeScript
+    running in-process needs to write a file, the canonical patterns
+    are `await grok.dapi.files.writeAsText(path, data: string)` for
+    text (js-api/src/dapi.ts:1465) and
+    `await grok.dapi.files.write(path, blob: number[])` for binary
+    (js-api/src/dapi.ts:1457). Note the binary method is `write`, NOT
+    `writeAsBytes` — the latter symbol does not exist anywhere in the
+    public repo. Real packages use these — HitTriage's molreg.ts:182
+    and hit-design-app.ts:1074 persist CSV table snapshots via
+    `writeAsText`, FileEditors/latex-viewer.ts:185 saves edited LaTeX,
+    and ApiTests/src/dapi/files.ts:14,27 (text) and :40 (binary,
+    `write`) exercise both surfaces directly. Wrapping the REST
+    endpoint in a `fetch()` call inside a package function is an
+    anti-pattern: it re-implements `grok.dapi.files.*`, loses access
+    to the active session's auth (no API key needed in-process), and
+    ties the package to a network URL it otherwise doesn't need.
+    Skills built around the legacy REST surface should restrict their
+    advice to out-of-process callers and point in-package readers at
+    `grok.dapi.files.writeAsText` / `grok.dapi.files.write` instead.
+  derives_from:
+    - code: js-api/src/dapi.ts:1457,1465
+    - code: packages/HitTriage/src/app/utils/molreg.ts:182
+    - code: packages/HitTriage/src/app/hit-design-app.ts:1074
+    - code: packages/FileEditors/src/latex/latex-viewer.ts:185
+    - code: packages/ApiTests/src/dapi/files.ts:14,27,40
+    - runtime: verify-e2e/upload-data
+  contradicts: []
+  confidence: high
+```
+
+### DRIFT findings (article vs. code) — db-in-plugin
+
+```yaml
+- id: DG-FACT-DRIFT-DBPLUGIN-001
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article says "compounds is the name of the PostgreSQL database"
+    (`db-in-plugin.md:56`). This is terminologically wrong — `<Name>` is
+    a Postgres SCHEMA inside the platform's single shared database, not
+    a standalone Postgres database. The platform's metadata Postgres has
+    ONE actual database; every plugin DB lives there as a schema. The
+    article's own SQL example proves it — `create table compounds.list`
+    uses schema-qualified table notation, which only makes sense if
+    `compounds` is a schema. Skills must use "schema" wording to avoid
+    confusing readers familiar with Postgres terminology.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:48,56
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:2
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-002
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article's worked example (`db-in-plugin.md:47-54`) ends with a
+    single-table GRANT — `GRANT ALL ON TABLE compounds.list to :LOGIN;`
+    — and no schema/sequence grants. This works ONLY for that one
+    hand-rolled `int primary key` table. Production canonical (FACT-423)
+    is schema-wide:
+      GRANT ALL PRIVILEGES ON ALL TABLES   IN SCHEMA <name> TO :LOGIN;
+      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA <name> TO :LOGIN;
+    The single-table form silently fails to cover SERIAL-induced
+    sequences (which any `id SERIAL PRIMARY KEY` table needs) and
+    leaves future tables in the same schema without grants. Skills
+    must emit the schema-wide form even for the smallest example.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:48-54
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:18-20
+    - code: packages/Plates/databases/plts/0000_init.sql:188-191
+    - code: packages/MolTrack/databases/moltrack/0000.sql:277-279
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-003
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article's worked example assigns IDs as `(floor(random() * 1000 +
+    1)::int, @smiles)` (`db-in-plugin.md:64`). This collides with
+    birthday-paradox probability after ~37 inserts (sqrt(1000)), and is
+    guaranteed to collide on the PRIMARY KEY past ~1000 rows. Production
+    canonical is `id SERIAL PRIMARY KEY` (every observed example —
+    HitTriage, Plates, MolTrack, NodeJSDemo, Biologics). The article's
+    pattern is a self-defeating demo; skills must NOT propagate it.
+    SERIAL requires the sequences GRANT (FACT-423), which is the
+    second-order reason DRIFT-002 above matters.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:47-64
+    - code: packages/HitTriage/databases/hitdesign/0001_dict.sql:3
+    - code: packages/Plates/databases/plts/0000_init.sql:5,13,38
+    - code: packages/NodeJSDemo/databases/todo/000_init.sql:2
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-004
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article does not document what happens if an already-applied
+    migration file is edited or renamed post-release — the platform
+    tracks applied migrations by filename, so editing a published file
+    produces silent drift (publisher sees the new SQL, other users keep
+    the old applied state). Article also omits `:LOGIN` token semantics
+    (substitution at deploy) and the `CURRENT_USER` vs `:LOGIN`
+    distinction, even though every production migration uses both.
+    Skills must teach both points explicitly because the article's
+    example happens to work without them.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md (full)
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:18-20
+  contradicts: []
+  confidence: medium
+```
+
+## write-tutorials
+
+```yaml
+
+- id: DG-FACT-434
+  kind: pattern
+  scope: write-tutorials
+  value: |
+    A tutorial is a subclass of `Tutorial`, imported from
+    `@datagrok-libraries/tutorials/src/tutorial` (full subpath — the
+    library has no package-root entry). The class is declared abstract
+    with FOUR mandatory getters AND one protected method:
+    `get name(): string`, `get description(): string`,
+    `get icon(): string`, `get steps(): number`, and
+    `protected async _run(): Promise<void>`. `Tutorial` itself extends
+    `DG.Widget`. `steps` is the declared total used to drive the
+    progress bar; it should match the number of `action(...)` calls
+    that resolve inside `_run`. Mismatched `steps` doesn't crash but
+    leaves the bar inaccurate.
+  derives_from:
+    - article: help/develop/how-to/misc/write-tutorials.md:22-41
+    - code: libraries/tutorials/src/tutorial.ts:12-21,97
+    - code: packages/Tutorials/src/tracks/eda/tutorials/grid.ts:11-31
+    - code: packages/Tutorials/src/tracks/eda/tutorials/filters.ts:10-37
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-435
+  kind: pattern
+  scope: write-tutorials
+  value: |
+    Steps inside `_run()` are built around
+    `await this.action(instructions, completed, hint?, description?)`
+    (libraries/tutorials/src/tutorial.ts:371). `completed` is either
+    an RxJS `Observable<any>` (the action resolves on its first
+    emission) or a `Promise<void>`. Typical sources: a DataFrame event
+    like `this.t!.onFilterChanged.pipe(filter(...))`, a grok shell
+    event like `grok.events.onDialogShown.pipe(filter(...))`, or an
+    `interval(...)` polling the DOM. `hint` (HTMLElement or array)
+    decorates the target widget with a hint blob; `description` is
+    rich HTML shown under the step label. Higher-level helpers wrap
+    `action`: `openPlot(name, check)` (libraries/tutorials/src/
+    tutorial.ts:496), `openDialog(instructions, title, hint?, desc?)`
+    (`:630`), plus per-tutorial helpers (`dlgInputAction`,
+    `buttonClickAction`). Use them where they fit — they encode the
+    correct event source.
+  derives_from:
+    - article: help/develop/how-to/misc/write-tutorials.md:37-41
+    - code: libraries/tutorials/src/tutorial.ts:371,496,630
+    - code: packages/Tutorials/src/tracks/eda/tutorials/filters.ts:65-79
+    - code: packages/Tutorials/src/tracks/eda/tutorials/grid.ts:41-55
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-436
+  kind: pattern
+  scope: write-tutorials
+  value: |
+    The base `Tutorial` auto-loads a demo DataFrame BEFORE `_run()`
+    executes: `demoTable` defaults to `'demog.csv'`, and the runner
+    calls `this._t = await grok.data.getDemoTable(this.demoTable);
+    grok.shell.addTableView(this._t);` (libraries/tutorials/src/
+    tutorial.ts:163-166). Inside `_run` the loaded frame is reachable
+    as `this.t!`. To skip the auto-load (the dashboard tutorial
+    doesn't want a default table) override `demoTable = ''`
+    (packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:24).
+    The article doesn't mention this — it shows only the bare class.
+    Real tutorials rely on `this.t!` heavily, so a subclass that
+    keeps the default and assumes no table will see one already on
+    screen.
+  derives_from:
+    - code: libraries/tutorials/src/tutorial.ts:24,163-166
+    - code: packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:24
+    - code: packages/Tutorials/src/tracks/eda/tutorials/filters.ts:60-79
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-437
+  kind: enum
+  scope: write-tutorials
+  value: |
+    A tutorial defined OUTSIDE the public Tutorials package must
+    register itself via a package.ts factory function with this exact
+    annotation set: `//tags: tutorial`, `//meta.name: <Display Name>`,
+    `//output: object`. Optional: `//meta.track: <Track Name>` (joins
+    an existing track or creates one named exactly so;
+    omitted → the track named after `func.package.friendlyName`),
+    `//meta.icon: <path/relative/to/package/root>` (omitted → the
+    Tutorials package's default `package.png` is used), `//description:
+    <text>` (omitted → empty description in the UI). The function
+    body returns `new YourTutorial()` and the Tutorials package
+    discovers it via `DG.Func.find({tags: ['tutorial']})`
+    (packages/Tutorials/src/package.ts:79). The decorator form
+    `@grok.decorators.func({tags: ['tutorial'], meta: {name: '...',
+    track: '...', icon: '...'}})` is equivalent — codegen emits the
+    same header into package.g.ts.
+  derives_from:
+    - article: help/develop/how-to/misc/write-tutorials.md:43-67
+    - code: packages/Tutorials/src/package.ts:79,102-124
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-438
+  kind: pattern
+  scope: write-tutorials
+  value: |
+    Registering a Track via package.ts annotation has a subtle
+    contract gap. Required header: `//tags: track`, `//meta.name:
+    <Track Name>`, `//help-url: <url>`, `//output: object`. BUT the
+    Tutorials package does NOT invoke the registered function — it
+    constructs a fresh empty Track from metadata:
+    `tracks.push(new Track(func.options['name'], [],
+    func.helpUrl ?? ''))` (packages/Tutorials/src/package.ts:97).
+    Consequence: any logic the article's example puts INSIDE the
+    function body (including `return new Track(...)`) is dead code —
+    only the function's tags / `meta.name` / `help-url` are read.
+    The function must still type-check and declare `output: object`
+    so the platform's function-loader accepts it. Track registration
+    is OPTIONAL — a tutorial whose `meta.track` references an
+    unregistered track name will create that track implicitly with an
+    empty `help-url`.
+  derives_from:
+    - article: help/develop/how-to/misc/write-tutorials.md:75-89
+    - code: packages/Tutorials/src/package.ts:80,94-100
+  contradicts:
+    - The article example "It is also possible to register a track"
+      implies the returned Track object's contents are used. In the
+      live Tutorials package they are NOT — the function body is
+      ignored. Live execution wins.
+  confidence: high
+
+- id: DG-FACT-439
+  kind: enum
+  scope: write-tutorials
+  value: |
+    A subclass may declare service or package prerequisites by
+    overriding the `prerequisites` field of type
+    `TutorialPrerequisites = {packages?: string[], jupyter?: boolean,
+    grokCompute?: boolean, grokConnect?: boolean, h2o?: boolean}`
+    (libraries/tutorials/src/tutorial.ts:672-678). The runner enforces
+    them in `run()` BEFORE `_run`: each name in `packages[]` is queried
+    via `grok.dapi.packages.list({filter: 'shortName = "<p>"'})`;
+    missing entries trigger `grok.shell.error('Please install
+    package... ')` and the tutorial aborts. Each `*: true` service
+    flag is looked up via `grok.dapi.admin.getServiceInfos()` and the
+    tutorial aborts if the service isn't `enabled && status ===
+    'Running'`. The article doesn't mention this surface — it's the
+    correct way to express "needs Jupyter" or "needs ChemPackage"
+    without throwing partway through `_run`. Example —
+    packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:26
+    declares `{grokConnect: true}`.
+  derives_from:
+    - code: libraries/tutorials/src/tutorial.ts:23,135-159,672-678
+    - code: packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:26
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-440
+  kind: naming
+  scope: create-package
+  value: |
+    The column tag literal `quality` IS the semantic-type tag — both
+    the platform constant `TAGS.SEMTYPE` and the public alias
+    `Tags.Quality` resolve to the string `'quality'`
+    (`js-api/src/const.ts:318`, `js-api/src/api/ddt.api.g.ts:77`).
+    Consequence: an info-panel function declaring
+    `//input: <type> <name> {semType: <Value>}` matches a column whose
+    `quality` tag equals `<Value>` (case-sensitive string compare on
+    the raw tag value). The article's instruction "right-click the
+    column → Column Properties → add tag `quality : text`" is exactly
+    setting that semantic-type tag to `text` so the function's
+    `{semType: text}` filter fires. Conventional values for the tag
+    are the strings in `SEMTYPE` (`'Text'`, `'Molecule'`,
+    `'Macromolecule'`, …) — but the matching is whatever literal
+    you wrote in BOTH the annotation and the column tag; the tutorial
+    deliberately uses lowercase `text` to demonstrate the bare
+    mechanism without depending on `SEMTYPE.TEXT = 'Text'`. Detectors
+    set the tag programmatically via `column.semType = '<Value>'`
+    (`js-api/src/dataframe.ts` Column accessor) — same storage slot.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:38-39,80-85
+    - code: js-api/src/const.ts:318
+    - code: js-api/src/const.ts:206-246    # SEMTYPE enum (Text, Molecule, Macromolecule, …)
+    - code: js-api/src/api/ddt.api.g.ts:77 # static Quality = 'quality'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-441
+  kind: naming
+  scope: create-package
+  value: |
+    `grok create <rawName>` writes only TWO names — both derived from
+    `rawName` with NO separate CLI flag for either: (a) the package
+    directory and the `#{PACKAGE_NAME}` template substitution use
+    `rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase()`,
+    which capitalizes the first letter and LOWERCASES the rest;
+    (b) the `friendlyName` and `#{PACKAGE_FRIENDLY_NAME}` substitution
+    use `rawName` unchanged (`tools/bin/commands/create.ts:142-149`).
+    `package.json` "name" is `rawName.toLowerCase()` (npm-name
+    requirement). Effect for `grok create TextStats`: folder
+    `Textstats/`, `package.json` `"name": "textstats"`,
+    `"friendlyName": "TextStats"`. The article's "internal name should
+    follow PascalCase, friendly name Title Case" describes the
+    INTENDED maintenance convention — but the only way to obtain a
+    multi-uppercase internal name from `grok create` is to type that
+    casing as the raw arg AND rename the directory by hand afterward
+    (or to edit `#{PACKAGE_NAME}` substitutions in the generated
+    files). Real packages preserve PascalCase
+    (`packages/BenchlingLink`, `packages/ChemblAPI`, etc.) because
+    they were renamed after scaffolding or migrated from older
+    layouts. Pre-existing scaffolds also override `friendlyName` by
+    hand in `package.json` when they want spaces (e.g.,
+    `"friendlyName": "Text Stats"`).
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:25-29
+    - code: tools/bin/commands/create.ts:142-149
+    - code: tools/package-template/package.json:1-5
+    - code: packages/BenchlingLink   # PascalCase preserved in production
+    - code: packages/ChemblAPI       # PascalCase preserved in production
+  contradicts:
+    - DG-FACT-DRIFT-CP-001  # article describes a convention the CLI does not enforce
+  confidence: high
+
+# DRIFT entries — article vs. code disagreements (create-package)
+
+- id: DG-FACT-DRIFT-CP-001
+  kind: naming
+  scope: create-package
+  value: |
+    Article (`create-package.md:25-29`) instructs: "The internal name
+    of the package should follow PascalCase (e.g., `TextStats`), while
+    the friendly name should use Title Case (e.g., `Text Stats`)."
+    The `grok create` CLI does NOT preserve PascalCase: the directory
+    and `#{PACKAGE_NAME}` token are normalized to first-letter-upper +
+    rest-lower (`tools/bin/commands/create.ts:148`). And the CLI has
+    NO flag for a separately-spelled `friendlyName` — `friendlyName`
+    is always identical to `rawName`. To realize the article's intent
+    the user must either rename the directory after scaffold OR pass
+    a PascalCase rawName and hand-edit `friendlyName` in `package.json`
+    to add the space. The note reads as platform-enforced but is
+    purely a convention. Fix in article: either (a) state explicitly
+    that `friendlyName` must be hand-edited for Title Case spacing,
+    or (b) add a flag like `--friendly-name "<Title Case>"` to
+    `grok create`.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:25-29
+    - code: tools/bin/commands/create.ts:142-149
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-462
+  kind: pattern
+  scope: create-package
+  value: |
+    The `build` script in the package template's `package.json` is
+    `"grok api && grok check --soft && webpack"` — NOT just `webpack`.
+    `grok api` regenerates `src/package.g.ts` from header annotations and
+    `@grok.decorators.*` decorators in `src/package.ts` (codegen);
+    `grok check --soft` runs the package validator (warning-mode — `grok
+    check` without `--soft` fails-fast on any error); `webpack` then
+    bundles. Production packages preserve this exact triplet
+    (`packages/Chem/package.json:99`, `packages/Bio/package.json:102`).
+    The article (`create-package.md:65-66`) says "process your package,
+    e.g., `webpack`" — true but understates. Skipping the codegen step
+    by running `webpack` directly leaves `package.g.ts` stale and means
+    new `//name:` / `//meta.role:` panel annotations never reach the
+    bundled output. The article's "You are not supposed to modify this
+    script" is therefore correct — the triplet is load-bearing.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:60-66
+    - code: tools/package-template/package.json:21
+    - code: packages/Chem/package.json:99
+    - code: packages/Bio/package.json:102
+    - code: packages/NodeJSDemo/package.json:31   # `grok check` (no --soft) variant
+  contradicts:
+    - DG-FACT-DRIFT-CP-003
+  confidence: high
+
+- id: DG-FACT-463
+  kind: pattern
+  scope: create-package
+  value: |
+    `grok create <name>` AUTOMATICALLY runs `npm install` in the new
+    package directory after scaffolding completes
+    (`tools/bin/commands/create.ts:201-205`:
+    `exec('npm install', {cwd: packageDir}, (err, stdout, stderr) => ...)`).
+    The article's step 1 — "For the newly created package, you have to
+    install the dependencies. Run this from the TextStats folder:
+    `npm install`" — is REDUNDANT for normal scaffolds. Re-running
+    `npm install` is only needed when (a) the auto-install errored (the
+    CLI logs `stderr`/`stdout` but the parent process exits normally),
+    (b) `package.json` was hand-edited after scaffolding, or (c) the
+    user moved/copied the directory before deps could resolve. Skill
+    writers should treat the manual `npm install` as a no-op safety
+    step, not a required action.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:19-23
+    - code: tools/bin/commands/create.ts:201-205
+  contradicts:
+    - DG-FACT-DRIFT-CP-002
+  confidence: high
+
+- id: DG-FACT-464
+  kind: naming
+  scope: create-package
+  value: |
+    The `--test` flag on `grok create` has a NARROW effect: it adds
+    `@datagrok-libraries/utils: latest` to `package.json` dependencies
+    and re-asserts `scripts.test = 'grok test'`
+    (`tools/bin/commands/create.ts:80-87`). It does NOT generate
+    `src/package-test.ts`, does NOT generate `src/tests/test-examples.ts`,
+    does NOT add a `test:` webpack entry, and does NOT add
+    `@datagrok-libraries/test` (that dep is in the default template
+    UNconditionally — `tools/package-template/package.json:10` declares
+    `"@datagrok-libraries/test": "^1.1.0"` even without `--test`). The
+    `test: 'grok test'` script is ALSO in the default template
+    (`tools/package-template/package.json:22`), so the `--test`
+    reassignment is a no-op. Net consequence: the article's
+    `grok create TextStats --test` produces a package with the test
+    deps already installed but NO test files — the user must run
+    `grok add tests` (DG-FACT-285) to actually scaffold tests. The
+    article never calls this out.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:14-15
+    - code: tools/bin/commands/create.ts:80-87
+    - code: tools/package-template/package.json:10,22
+  contradicts:
+    - DG-FACT-DRIFT-CP-004
+  confidence: high
+
+- id: DG-FACT-DRIFT-CP-002
+  kind: naming
+  scope: create-package
+  value: |
+    Article (`create-package.md:19-23`) instructs the reader to run
+    `npm install` manually after `grok create`. The CLI ALREADY runs
+    `npm install` in the package directory as the final step of `grok
+    create` (`tools/bin/commands/create.ts:201-205`). The article's
+    instruction is therefore redundant — at best harmless (no-op
+    second run), at worst confusing (a reader expects a missing-deps
+    error if they skip it). Fix in article: either remove the manual
+    step, or rephrase as "If the auto-install printed errors, re-run
+    `npm install`." See DG-FACT-463.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:19-23
+    - code: tools/bin/commands/create.ts:201-205
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-CP-003
+  kind: pattern
+  scope: create-package
+  value: |
+    Article (`create-package.md:65-66`) describes the `build` script as
+    "includes commands to process your package, e.g., `webpack`." The
+    actual script is `"grok api && grok check --soft && webpack"`
+    (template `package.json:21`; preserved in every production package).
+    `grok api` is the codegen step that emits `src/package.g.ts` from
+    annotations; `grok check --soft` is the validator. A reader who
+    follows the article's wording and runs `webpack` directly (or
+    rewrites the build to skip the prefix) ships a bundle whose
+    `package.g.ts` lags the source — newly-added annotated functions
+    silently disappear from the package. Fix in article: spell out the
+    triplet and explain why each step matters. See DG-FACT-462.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:60-66
+    - code: tools/package-template/package.json:21
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-CP-004
+  kind: naming
+  scope: create-package
+  value: |
+    Article (`create-package.md:14-15`) uses `grok create TextStats
+    --test` in the very first command — implying `--test` is the
+    correct flag to scaffold a package with tests. It is NOT: `--test`
+    only injects the `@datagrok-libraries/utils` dependency
+    (`tools/bin/commands/create.ts:80-87`). To scaffold actual test
+    files (`src/package-test.ts`, `src/tests/test-examples.ts`, the
+    test webpack entry) the user must additionally run `grok add
+    tests` (DG-FACT-285). The article never mentions this, so a
+    reader who follows the tutorial verbatim ends up with a "test-
+    enabled" package that has zero test files. Fix in article: either
+    drop the `--test` flag (the tutorial doesn't write tests anyway),
+    or call out the `grok add tests` follow-up step. See DG-FACT-464.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:14-15
+    - code: tools/bin/commands/create.ts:80-87
+  contradicts: []
+  confidence: high
+
+# data-enrichments (how-to/packages/data-enrichments.md)
+
+- id: DG-FACT-442
+  kind: naming
+  scope: data-enrichments
+  value: |
+    Plugin-bundled enrichments live in `<package>/enrichments/*.json`.
+    One JSON file per enrichment. Datagrok ships two reference plugins
+    using this layout: `packages/DBTests/enrichments/*.json` (3 files,
+    Northwind-style) and `packages/Chembl/enrichments/*.json` (17 files,
+    ChEMBL schema).
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:13-23
+    - code: packages/DBTests/enrichments/company_info.json
+    - code: packages/Chembl/enrichments/compound_activities_summary.json
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-443
+  kind: namespace
+  scope: data-enrichments
+  value: |
+    The canonical TS shape of an enrichment record (PowerPack's runtime
+    type) is:
+      interface Enrichment {
+        name: string;
+        keyDb: string | null;     // optional, for multi-db connections
+        keySchema: string;
+        keyTable: string;
+        keyColumn: string;
+        fields: string[];         // "<schema>.<table>.<column>" strings
+        joins: DG.TableJoin[];
+      }
+    The runtime ALSO accepts `connection: string` at top level (an
+    nqName like `Dbtests:PostgresTest`) in plugin-bundled JSON, but the
+    field is absent from the `Enrichment` TS interface — the connection
+    is supplied by the load context (see DG-FACT-446 and DRIFT-DE-001).
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:25-62
+    - code: packages/PowerPack/src/db-explorer.ts:755-763  # Enrichment interface
+    - code: packages/DBTests/enrichments/company_info.json:1-25
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-444
+  kind: enum
+  scope: data-enrichments
+  value: |
+    `joinType` accepts `'inner' | 'outer' | 'left' | 'right'` from the
+    `DG.JOIN_TYPE` enum. The help article only documents three
+    (`left | inner | right`); `outer` is also valid per the runtime
+    enum but is uncommon for enrichments and not used in any bundled
+    JSON example.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:68-69
+    - code: js-api/src/const.ts:59-64
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-445
+  kind: naming
+  scope: data-enrichments
+  value: |
+    Each entry in `fields` is a three-part dotted reference
+    `<schema>.<table>.<column>` (e.g., `public.customers.companyname`).
+    The list MUST include the key column itself
+    (`<keySchema>.<keyTable>.<keyColumn>`) — every bundled JSON file
+    follows this convention, otherwise downstream join logic has no
+    column to align on.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:36-43,61
+    - code: packages/DBTests/enrichments/company_info.json:7-11
+    - code: packages/Chembl/enrichments/compound_activities_summary.json:7-12
+    - code: packages/Chembl/enrichments/compound_hierarchy.json:7-11
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-446
+  kind: namespace
+  scope: data-enrichments
+  value: |
+    User-saved enrichments are stored under
+    `System:AppData/PowerPack/enrichments/{nqName-with-:-as-_}/{keyDb?}/{keySchema}/{keyTable}/{keyColumn}/{name}.json`
+    — the connection nqName is encoded in the path (`:` → `_` via
+    `nqNameToPath`), so the on-disk JSON does NOT need a `connection`
+    field; the runtime knows which connection from the directory
+    structure. (`readEnrichConfig` / `saveEnrichment` /
+    `deleteEnrichment` all key by this path.)
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:13-23
+    - code: packages/PowerPack/src/db-explorer.ts:637-678
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-447
+  kind: namespace
+  scope: data-enrichments
+  value: |
+    `DG.TableJoin` has SIX fields, not five: `leftTableName`,
+    `rightTableName`, `rightTableAlias`, `joinType`, `leftTableKeys`,
+    `rightTableKeys`. The help article omits `rightTableAlias`. All
+    bundled enrichment JSON files in `packages/{DBTests,Chembl}/enrichments`
+    also omit it (the field is optional and only matters when the same
+    right table is joined twice under different aliases).
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:64-70
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:58687
+      # TableJoin mixin field list (compiled Dart)
+    - code: packages/PowerPack/src/db-explorer.ts:762  # joins: DG.TableJoin[]
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-448
+  kind: namespace
+  scope: data-enrichments
+  value: |
+    The enrichments feature is owned by the PowerPack plugin
+    (`packages/PowerPack/src/db-explorer.ts`). The function
+    `PowerPack:runEnrichment` (located via
+    `DG.Func.find({package: 'PowerPack', name: 'runEnrichment'})`)
+    materializes an enrichment JSON into a `DG.TableQuery`:
+    `query.table = "<keySchema>.<keyTable>"`,
+    `query.fields = e.fields`, `query.joins = e.joins`. Without
+    PowerPack installed, plugin-bundled enrichment JSON has no consumer.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:11
+    - code: packages/PowerPack/src/db-explorer.ts:531,683-689,691-697
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-449
+  kind: namespace
+  scope: data-enrichments
+  value: |
+    After installation an enrichment is rendered in the column context
+    panel by `getEnrichmentsDiv(conn, schema, table, column, db, df, fkRefs)`
+    in `packages/PowerPack/src/db-explorer.ts:479`. PowerPack lists
+    candidates for the focused column by walking the `System:AppData`
+    directory tree keyed by `(connection, db?, schema, table, column)`;
+    only files whose path matches the currently selected
+    `<schema>.<table>.<column>` surface.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:72-74
+    - code: packages/PowerPack/src/db-explorer.ts:461-526,637
+  contradicts: []
+  confidence: high
+
+# DRIFT entries — article vs. code disagreements (data-enrichments)
+
+- id: DG-FACT-DRIFT-DE-001
+  kind: namespace
+  scope: data-enrichments
+  value: |
+    Article (`data-enrichments.md:34-58`) shows a top-level
+    `"connection": "Dbtests:Northwind"` field as part of the canonical
+    enrichment JSON, and all bundled examples
+    (`packages/DBTests/enrichments/*.json`,
+    `packages/Chembl/enrichments/*.json`) include it. However the
+    PowerPack runtime `Enrichment` interface (`db-explorer.ts:755-763`)
+    omits `connection` entirely, and the saved-config code path
+    (`db-explorer.ts:637-678`) keys storage by connection nqName
+    encoded in the file path — never by reading `connection` from JSON.
+    No JS code path in `packages/PowerPack/src` reads
+    `<json>.connection`. The field is either consumed server-side
+    during plugin install (bundled JSON → AppData copy) or vestigial.
+    Fix in article: clarify that `connection` is consumed at plugin
+    install time only (and required for bundled JSON), and that it is
+    NOT part of the saved-enrichment shape PowerPack reads at runtime.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:30-50,56-58
+    - code: packages/PowerPack/src/db-explorer.ts:755-763
+    - code: packages/PowerPack/src/db-explorer.ts:655-678
+    - code: packages/DBTests/enrichments/company_info.json:3
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DE-002
+  kind: namespace
+  scope: data-enrichments
+  value: |
+    Article (`data-enrichments.md:25-62`) lists six top-level fields
+    (`name`, `connection`, `keySchema`, `keyTable`, `keyColumn`,
+    `fields`, `joins`) but omits `keyDb: string | null`. The PowerPack
+    runtime interface (`db-explorer.ts:757`) declares `keyDb` and the
+    file-storage path embeds it (`db-explorer.ts:668`); it is required
+    when the connection points at a server that hosts multiple
+    databases and the enrichment must disambiguate. Fix in article:
+    add `keyDb` to the field table with a one-line note that it is
+    optional for single-database connections.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:52-62
+    - code: packages/PowerPack/src/db-explorer.ts:757,668
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DE-003
+  kind: enum
+  scope: data-enrichments
+  value: |
+    Article (`data-enrichments.md:68-69`) lists join types as
+    `left, inner, right`. The actual enum `DG.JOIN_TYPE`
+    (`js-api/src/const.ts:59-64`) includes a fourth value `outer`.
+    None of the bundled enrichment JSON files use `outer` so the
+    practical impact is small, but the article's list reads as
+    exhaustive. Fix in article: either enumerate all four or label
+    the list "common values".
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:68-69
+    - code: js-api/src/const.ts:59-64
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DE-004
+  kind: namespace
+  scope: data-enrichments
+  value: |
+    Article (`data-enrichments.md:64-70`) describes each join with
+    five fields: `leftTableName`, `rightTableName`, `joinType`,
+    `leftTableKeys`, `rightTableKeys`. The runtime `DG.TableJoin` mixin
+    has a sixth: `rightTableAlias` (per `grok_shared.dart.js:58687`),
+    used when the same right table participates in two joins under
+    different aliases. Optional in all bundled JSON, but missing from
+    documentation. Fix in article: add `rightTableAlias` with a
+    one-line "optional, alias for the right table when joining the
+    same table more than once" note.
+  derives_from:
+    - article: help/develop/how-to/packages/data-enrichments.md:64-70
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:58687
+  contradicts: []
+  confidence: medium
+```
+
+## publish-packages
+
+```yaml
+
+- id: DG-FACT-450
+  kind: naming
+  scope: publish-packages
+  value: |
+    Packages in the public repository (`packages/<Name>/`) are
+    published to the `@datagrok` NPM scope. The `package.json`
+    `name` field is `@datagrok/<lowercase>` — e.g.
+    `@datagrok/chem`, `@datagrok/bio`, `@datagrok/tutorials`.
+    The folder name is PascalCase (`Chem`, `Bio`, `Tutorials`),
+    the NPM name is the lowercased form prefixed with `@datagrok/`.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:16-17
+    - code: packages/Chem/package.json
+    - code: packages/Bio/package.json
+    - code: packages/Tutorials/package.json
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-451
+  kind: threshold
+  scope: publish-packages
+  value: |
+    Workflow gate: a package is published ONLY when the major
+    version is ≥ 1. Versions under 1.0.0 are flagged as `beta`
+    in the matrix (`MATRIX_PUBLISH_JSON+=", \"beta\": \"beta\""`)
+    and skipped with the notice `"Package <X> version <V> is
+    under 1.0.0 and is not going to be published"`. Use the
+    first major bump (`0.x.y` → `1.0.0`) as the deliberate
+    publish-readiness gate; do not expect `0.x` tags to appear
+    on NPM.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:16   # SemVer mention; threshold itself is undocumented
+    - code: .github/workflows/packages.yaml:134,149-151
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-452
+  kind: threshold
+  scope: publish-packages
+  value: |
+    Workflow gate: a package is NOT published if any of its
+    `dependencies` / `devDependencies` values match `../*`
+    (file-path pointers to unpublished sibling packages or
+    libraries in the monorepo). The job emits the notice
+    `"Package <X> version <V> has unpublished dependencies:
+    <deps>"` and proceeds with build/test only. Resolution:
+    either publish the dependency first, or replace `../*`
+    with a published NPM version range.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md   # undocumented
+    - code: .github/workflows/packages.yaml:84,135,144-147
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-453
+  kind: threshold
+  scope: publish-packages
+  value: |
+    Workflow gate: publishing only fires on `push` to the
+    `master` branch (`github.ref == 'refs/heads/master'`).
+    Pushes to other branches build/test but emit
+    `"It is an action for branch other than 'master'. Publish
+    will be skipped."`. Pull-request runs (`github.event_name
+    == 'pull_request'`) skip publish with
+    `"It is an actions for PR. Publish will be skipped."`.
+    Manual `workflow_dispatch` with the `packages` input
+    treats the input list as a force-publish for the named
+    packages on the current ref (still subject to the version
+    and unpublished-deps gates).
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:10-22,33-36
+    - code: .github/workflows/packages.yaml:136-143,157-159
+    - code: .github/workflows/packages.yaml:2-14   # triggers
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-454
+  kind: namespace
+  scope: publish-packages
+  value: |
+    "Is this version already on NPM?" check used by the
+    workflow: HTTP GET to
+    `https://registry.npmjs.org/<package-name>/<current-version>`.
+    If the response JSON has a `version` field equal to
+    `current_version` (extracted with `jq -r '.? | select(
+    has("version") == true ).version'`), the workflow logs
+    `"Package <X> version <V> already published"` and the
+    publish branch is skipped. Practical consequence: bumping
+    `package.json` version IS the only trigger — if you push
+    without bumping, nothing publishes even on `master`.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:16,29-31
+    - code: .github/workflows/packages.yaml:128-129,133,153-155
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-455
+  kind: namespace
+  scope: publish-packages
+  value: |
+    The `Packages` workflow (`.github/workflows/packages.yaml`)
+    triggers on three events: (1) `push` with `paths:
+    packages/**`, (2) `pull_request` with `paths: packages/**`
+    (build/test only, no publish), (3) `workflow_dispatch` with
+    a `packages` input — space-separated names, e.g.
+    `Demo Tutorials`. Sister workflows follow the same shape:
+    `libraries.yaml` (libraries/**), `tools.yml`
+    (datagrok-tools), `js-api.yml` (datagrok-api).
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:33-41
+    - code: .github/workflows/packages.yaml:2-14
+    - code: .github/workflows/libraries.yaml
+    - code: .github/workflows/tools.yml
+    - code: .github/workflows/js-api.yml
+  contradicts:
+    - DG-FACT-DRIFT-PUB-001  # article URL says packages.yml, file is packages.yaml
+  confidence: high
+
+- id: DG-FACT-456
+  kind: namespace
+  scope: publish-packages
+  value: |
+    CLI for publishing a package to a Datagrok instance
+    directly (without NPM round-trip): `grok publish <HOST>`
+    from `datagrok-tools` (`tools/bin/commands/publish.ts`,
+    `export async function publish(args: PublishArgs)` at
+    `:593`). Behavior — runs `check` first (unless
+    `--skip-check`), optionally `--build`/`--rebuild`
+    (`npm install` + `npm run build`), zips the package, and
+    POSTs to the host using the dev-key stored in
+    `~/.grok/config.yaml`. `<HOST>` is a server alias defined
+    in that config, NOT a raw URL.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:50-52
+    - code: tools/bin/commands/publish.ts:593-637
+    - code: tools/bin/grok.js:20
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-457
+  kind: namespace
+  scope: publish-packages
+  value: |
+    GitHub Actions publish pipeline runs three sequential jobs
+    per package: (1) build (when `package.json` `scripts.build`
+    exists — `MATRIX_PUBLISH_JSON+=", \"build\": \"build\""`),
+    (2) test (when `scripts.test` exists AND `package.json`
+    `skipCI` is not `"true"` AND name is not `docking`), (3)
+    publish to NPM (only when version/branch/deps gates pass,
+    see DG-FACT-451..453). The article's "Build → Test →
+    Publish" order matches the matrix's job sequence.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:19-22
+    - code: .github/workflows/packages.yaml:78-118,128-139
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-458
+  kind: naming
+  scope: publish-packages
+  value: |
+    A private/non-NPM-publishable package shared between
+    accounts is propagated via Datagrok's group sharing — the
+    `Share package` action (UI) targets a group from
+    `govern/access-control/users-and-groups`. There is no
+    workflow gate or CLI flag for "private" — the distinction
+    is purely whether `grok publish <HOST>` is used in place of
+    the NPM-mediated GitHub Actions path.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:43-56
+  contradicts: []
+  confidence: medium  # documented; no JS-API symbol to verify
+
+# DRIFT entries — article vs. code disagreements (publish-packages)
+
+- id: DG-FACT-DRIFT-PUB-001
+  kind: naming
+  scope: publish-packages
+  value: |
+    Article links the GitHub Actions workflow as
+    `actions/workflows/packages.yml` (line 33), but the file
+    on disk is `.github/workflows/packages.yaml` (`.yaml`, not
+    `.yml`). GitHub resolves either extension in the URL so
+    the link works, but the article's `js-api.yml`/`tools.yml`
+    references DO match disk (`.yml`), while
+    `packages.yml`/`libraries.yaml` mix conventions. Fix in
+    article: use `packages.yaml` to match the file (or
+    standardize the repository on one extension).
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:33,39-41
+    - code: .github/workflows/packages.yaml
+    - code: .github/workflows/libraries.yaml
+    - code: .github/workflows/js-api.yml
+    - code: .github/workflows/tools.yml
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-PUB-002
+  kind: threshold
+  scope: publish-packages
+  value: |
+    Article documents the publish flow as "Bump version →
+    push → workflow publishes". Missing from the article: the
+    workflow has FOUR independent gates that silently skip the
+    publish step — version < 1.0.0 (DG-FACT-451), unpublished
+    `../*` deps (DG-FACT-452), non-`master` branch
+    (DG-FACT-453), and "version already on NPM"
+    (DG-FACT-454). First-time publishers who hit any of these
+    see a green check on Actions but no NPM release, with the
+    explanation only in the workflow log's `::notice`. Fix in
+    article: add a "Why didn't my package publish?" section
+    enumerating these gates.
+  derives_from:
+    - article: help/develop/how-to/packages/publish-packages.md:19-26
+    - code: .github/workflows/packages.yaml:128-159
+  contradicts: []
+  confidence: high
+
+# DRIFT entries for python-functions (previously referenced by
+# DG-FACT-157..164 + contract-triangles "Python functions" but never
+# materialized as standalone entries). Filing now; DRIFT-060 and
+# DRIFT-065 are RESOLVED (article was corrected since prior extraction)
+# — see notes below.
+
+- id: DG-FACT-DRIFT-060
+  kind: naming
+  scope: python-functions
+  value: |
+    RESOLVED 2026-05-12. Earlier article revision specified the
+    folder as `python/<app>/`; current article (line 17) says
+    `Create a dockerfiles/ directory`, matching code at
+    `packages/Samples/dockerfiles/`. No drift remaining. Kept
+    as a tombstone because DG-FACT-157's `contradicts:` list
+    references this ID.
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:17
+    - code: packages/Samples/dockerfiles
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-061
+  kind: namespace
+  scope: python-functions
+  value: |
+    Article claims "Task Wrapping: A Celery-main file is
+    generated automatically" (line 105). Code disagrees —
+    `packages/Samples/dockerfiles/app.py` is hand-written by
+    the developer (manual `from celery import Celery`,
+    `app = Celery(settings.celery_name, broker=settings.broker_url)`,
+    `@app.task(name=..., bind=True, base=DatagrokTask)` over
+    every function). Every shipping Celery-based python-
+    functions reference (`Samples`, `Retrosynthesis`,
+    `Admetica`, `Boltz1`, `Reinvent4`) ships an explicit
+    `app.py`. The platform PARSES the Datagrok header
+    comments to register functions, but it does NOT
+    synthesize the Celery wrapper code. Fix in article:
+    remove "generated automatically" — replace with "Write
+    `app.py` with the Celery + `DatagrokTask` boilerplate
+    (see Samples reference)".
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:102-108
+    - code: packages/Samples/dockerfiles/app.py:1-17
+    - code: packages/Retrosynthesis/dockerfiles/aizynthfinder/app.py:8-15
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-062
+  kind: namespace
+  scope: python-functions
+  value: |
+    Article omits the mandatory `datagrok-celery-task` Python
+    package dependency. Without it, `from datagrok_celery_task
+    import DatagrokTask, Settings, get_logger` fails at
+    container start and the Celery worker never registers
+    with the platform. Production canonical pin —
+    `datagrok-celery-task==0.1.8` (`packages/Samples/dockerfiles/environment.yaml:12`).
+    Same line in `requirements.in` for the
+    requirements-only path. Fix in article: add a "Required
+    dependency" subsection listing `datagrok-celery-task`
+    (with the production pin) and `celery` itself.
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:60-82
+    - code: packages/Samples/dockerfiles/environment.yaml:11-13
+    - code: packages/Samples/dockerfiles/app.py:4-5
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-063
+  kind: namespace
+  scope: python-functions
+  value: |
+    Article claims "Docker Build: A Dockerfile is created
+    using boilerplate" (line 106). Code disagrees —
+    `packages/Samples/dockerfiles/Dockerfile` is hand-written
+    (developer-authored `FROM mambaorg/micromamba:1.5.3`,
+    explicit `apt-get install` of build toolchain,
+    `micromamba create -n myenv -f environment.yaml`,
+    `EXPOSE 5555`, and the full
+    `celery -A app worker --loglevel=info
+    --hostname=$CELERY_HOSTNAME --concurrency=1
+    -Q $TASK_QUEUE_NAME` ENTRYPOINT). Every Celery-based
+    package under `packages/*/dockerfiles/*/Dockerfile` ships
+    its own Dockerfile. Fix in article: replace "created
+    using boilerplate" with "Write `Dockerfile` based on the
+    Samples reference — the platform requires the
+    `$CELERY_HOSTNAME` / `$TASK_QUEUE_NAME` env-var
+    placeholders in the ENTRYPOINT and a single `EXPOSE`
+    line".
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:102-108
+    - code: packages/Samples/dockerfiles/Dockerfile:1-31
+    - code: packages/Admetica/dockerfiles/Dockerfile
+    - code: packages/Reinvent4/dockerfiles/reinvent
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-064
+  kind: threshold
+  scope: python-functions
+  value: |
+    Article asserts "the number of process workers will be
+    `cpu * 2`" via the Celery prefork pool (line 94). Code
+    disagrees — the canonical
+    `packages/Samples/dockerfiles/Dockerfile:30` hardcodes
+    `--concurrency=1`, NOT `cpu * 2`. Celery's default would
+    be `cpu_count()` (not `cpu * 2`) if `--concurrency` were
+    omitted, and the platform-injected `cpu` from
+    `container.json` does not flow into the ENTRYPOINT unless
+    the author parameterizes it themselves. Fix in article:
+    either (a) document that authors must compute their own
+    `--concurrency` (and remove the `cpu * 2` claim), or
+    (b) ship a worker-launch helper that reads `cpu` and sets
+    concurrency before exec'ing celery — neither exists in
+    `datagrok-celery-task==0.1.8`.
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:94
+    - code: packages/Samples/dockerfiles/Dockerfile:27-31
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-065
+  kind: naming
+  scope: python-functions
+  value: |
+    RESOLVED 2026-05-12. Earlier article revision wrote the
+    JS-side call literally as `grok.functions.call('Plugin:add', ...)`
+    with `Plugin` looking like a real package name. Current
+    article (lines 117-118) uses `'<YourPackage>:add'` plus an
+    explanatory comment `Replace <YourPackage> with your
+    package name; 'add' is the value of the #name: header`.
+    No drift remaining. Kept as a tombstone because
+    contract-triangles "Python functions" references this ID.
+  derives_from:
+    - article: help/develop/how-to/packages/python-functions.md:117-118
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-069
+  kind: enum
+  scope: custom-script-handlers
+  value: |
+    RESOLVED 2026-05-12. Earlier article revision documented
+    only four optional `meta.scriptHandler.*` annotations
+    (`templateScript`, `codeEditorMode`, `vectorizationFunction`,
+    `icon`) while the platform recognises three more
+    (`commentStart`, `friendlyName`, `parserFunction` — declared
+    in `js-api/src/api/ddt.api.g.ts:395-424`). Current article
+    (lines 33-39, as of 2026-05-12) enumerates all seven,
+    including the silent-failure constraint on the
+    vectorization function's `//input: script script` +
+    `//output: string result` header (line 38). The remaining
+    minor drift — `friendlyName` and `parserFunction` lack
+    camelCase aliases in `js-api/src/decorators/functions.ts`
+    and `tools/bin/utils/const.ts` — is recorded on DG-FACT-176
+    and does not block authors who use the bracket-string form
+    (`['scriptHandler.friendlyName']`). Kept as a tombstone
+    because DG-FACT-176 references this ID.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:33-39
+    - code: js-api/src/api/ddt.api.g.ts:395-424
+    - code: js-api/src/decorators/functions.ts:151-162
+    - code: tools/bin/utils/const.ts:31-39
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-459
+  kind: naming
+  scope: custom-script-handlers
+  value: |
+    `meta.scriptHandler.parserFunction` targets a registered
+    package function whose role is to convert plain script
+    text into a `DG.Script` instance. It is referenced by
+    nqName `<Package>:<funcName>` and looked up by the
+    platform at handler-construction (`grok_shared.dart.js:121498`)
+    and again when parsing scripts that match the handler's
+    language (`grok_shared.dart.js:121535`). Needed only when
+    the target language's header convention cannot be expressed
+    by stripping `commentStart` from each leading line — for
+    most languages (Python, Clojure, JS) the platform's
+    built-in `#name:` header parser suffices and
+    `parserFunction` can be omitted. No shipping public-repo
+    package supplies one; Pyodide relies on the default parser.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:39
+    - code: js-api/src/api/ddt.api.g.ts:416-417
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:121498,121535
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-460
+  kind: namespace
+  scope: develop-custom-viewer
+  value: Interactivity primitives a custom viewer uses to bridge mouse events back into platform-wide state. `ui.tooltip.showRowGroup(dataFrame, indexPredicate, x, y): void` (`js-api/ui.ts:1606-1608`) — pop the standard row-group tooltip; `indexPredicate: (i: number) => boolean` selects the rows the tooltip should describe. `ui.tooltip.hide()` clears it. `dataFrame.selection.handleClick(rowIndexPredicate, mouseEvent, modifiedSelectOnly=false): void` (`js-api/src/dataframe/bit-set.ts:220-222`) — extends/replaces the dataframe selection per the click's modifier keys (`ctrl`, `shift`, `meta`); always pass the raw `MouseEvent` so the platform interprets Ctrl/Shift/Meta correctly. Reading direction is `BitSet.getSelectedIndexes(): Int32Array` (`bit-set.ts:188-190`); applied to `dataFrame.filter` it yields the currently-filtered row indexes (article line 393 uses this idiom on `dataFrame.filter`).
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:368-393
+    - code: js-api/ui.ts:1606-1608, js-api/src/dataframe/bit-set.ts:188-190,220-222
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-461
+  kind: namespace
+  scope: develop-custom-viewer
+  value: Filter-respecting aggregation inside a viewer's `render()` — chain `this.dataFrame.groupBy([splitCol]).whereRowMask(this.dataFrame.filter).add(aggType, valueCol, 'result').aggregate()`. `whereRowMask(bitset)` is on `GroupByBuilder` (`js-api/src/dataframe/stats.ts:350-354`) and takes any `BitSet` — passing `dataFrame.filter` restricts the aggregation to currently-filtered rows; passing `dataFrame.selection` restricts to selected rows. Skipping the call aggregates over the FULL frame regardless of what users have filtered out — a viewer that does this silently shows stale data when filters change. Re-aggregate inside `render(computeData=true)` and cache the resulting frame; gate on the `computeData` flag so resize-only re-renders skip the work.
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:250-274
+    - code: js-api/src/dataframe/stats.ts:350-354
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-462
+  kind: namespace
+  scope: docker-containers
+  value: |
+    System requirement — the platform-side `grok-spawner` container must be
+    running in the SAME environment as the Datagrok server, otherwise no
+    package Docker container starts. The image build + run system is
+    cloud-agnostic: works on local installs via Docker Compose and on
+    AWS deployments. Once a package containing a Dockerfile is published,
+    Datagrok queues the image build, creates a `DockerContainer` entity, and
+    makes the container reachable via `grok.dapi.docker.dockerContainers`
+    proxy methods. No alternative routing exists — the container is not
+    addressable from the public network even when a port is `EXPOSE`d
+    (the EXPOSE just tells the platform which internal port to proxy to).
+  derives_from:
+    - article: help/develop/how-to/packages/docker-containers.md:13-20
+    - article: help/develop/how-to/packages/python-functions.md:107
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-463
+  kind: namespace
+  scope: docker-containers
+  value: |
+    `DockerImage` runtime entity — the TS class is COMMENTED OUT in
+    `js-api/src/entities/misc.ts:212-216`, but the Dart bridge still
+    materializes an object via `dockerImages.filter(name).first()` that
+    carries `.status` (e.g. `'ready'`) and `.logs` (full build log string)
+    properties. This is the supported JS accessor for image build logs:
+    `(await grok.dapi.docker.dockerImages.filter(name).first()).logs`. No
+    standalone `dockerImages.getBuildLogs(id)` method exists on
+    `DockerImagesDataSource` — the data source only declares
+    `revalidate(imageId): Promise<void>` and inherits `HttpDataSource`
+    (filter/list). The `Manage > Dockers` UI's "Build logs" Property pane
+    is the human-readable view of the same `.logs` string. Container
+    runtime logs use the separate `dockerContainers.getContainerLogs(id, limit)`
+    method (DG-FACT-129).
+  derives_from:
+    - article: help/develop/how-to/packages/docker-containers.md:167-168
+    - code: js-api/src/dapi.ts:1024-1040
+    - code: js-api/src/entities/misc.ts:212-216
+    - code: packages/ApiTests/src/packages/docker.ts:14-18
+  contradicts: []
+  confidence: high
+```
+
