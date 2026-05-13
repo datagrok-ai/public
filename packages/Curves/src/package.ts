@@ -9,7 +9,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {FitGridCellHandler, calculateSeriesStats, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
 import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-renderer';
-import {curveDemo} from './fit/fit-demo';
+import {assayCurvesDemo, curveDemo} from './fit/fit-demo';
 import {convertXmlCurveToJson} from './fit/converters/xml-converter';
 import {convertCompactDrToJson} from './fit/converters/compact-dr-converter';
 import {convertPzfxToJson} from './fit/converters/pzfx-converter';
@@ -50,6 +50,15 @@ export class PackageFunctions {
   })
   static async curveFitDemo(): Promise<void> {
     await curveDemo();
+  }
+
+  @grok.decorators.demo({
+    name: 'Assay Curves',
+    description: 'Dashboard with curves for multiple compounds, assays and targets',
+    meta: {demoPath: 'Curves | Assay Curves'},
+  })
+  static async assayCurveFitDemo(): Promise<void> {
+    await assayCurvesDemo();
   }
 
   // @grok.decorators.func({
