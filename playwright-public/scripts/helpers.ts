@@ -29,8 +29,14 @@ export async function openScriptsBrowser(page: Page) {
   // Also neutralise pointer events on the preloader — it can re-appear after
   // dialog-opening clicks while the platform fetches data, and intercept the
   // next interaction. Platform JS still drives it; only the click-intercept
-  // is disabled for the page lifetime.
-  await page.addStyleTag({ content: '#grok-preloader, .grok-preloader { pointer-events: none !important; }' });
+  // is disabled for the page lifetime. The same `display: none` for
+  // `.d4-tooltip` mirrors connections/queries helpers — hover-tooltips
+  // (e.g. the "After you save the project ..." hint that pops up next to
+  // the Save-project dialog's OK button) can also overlap actionability.
+  await page.addStyleTag({ content: `
+    #grok-preloader, .grok-preloader { pointer-events: none !important; }
+    .d4-tooltip { display: none !important; }
+  ` });
 
   // Expand Platform node (only if collapsed)
   const platformExpander = page.locator('[name="tree-expander-Platform"]');

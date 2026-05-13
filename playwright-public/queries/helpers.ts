@@ -150,14 +150,19 @@ export async function clickTransformationAction(page: Page, actionName: string):
 /** Add an "Add New Column" transformation step with the given expression, then confirm the dialog. */
 export async function addNewColumnTransformation(page: Page, expression: string): Promise<void> {
   await clickTransformationAction(page, 'Add New Column');
-  // Expression editor is a CodeMirror 6 contenteditable. The platform names
-  // its wrapper `.add-new-column-dialog-cm-div`, but newer builds drop the
-  // class and ship only `.cm-content` inside the dialog. Try the scoped
-  // selector first, fall back to any `.cm-content` under the open dialog.
-  let cm = page.locator('.add-new-column-dialog-cm-div .cm-content');
-  if (!(await cm.first().isVisible({ timeout: 1_000 }).catch(() => false)))
-    cm = page.locator('.d4-dialog .cm-content').first();
-  await cm.focus();
+  // The expression editor in this dialog is hydrated asynchronously. The
+  // historical wrapper class `.add-new-column-dialog-cm-div` doesn't exist
+  // on all builds, and the inner CM6 `.cm-content` may not be in DOM the
+  // moment the dialog opens — the formula area can also render as a plain
+  // contenteditable div, especially on cold CI. Wait generously, then
+  // accept any of the known editor shapes.
+  const dialog = page.locator('.d4-dialog').first();
+  await dialog.waitFor({ state: 'visible', timeout: 10_000 });
+  const editor = dialog.locator(
+    '.add-new-column-dialog-cm-div .cm-content, .cm-content, .CodeMirror-code, [contenteditable="true"]',
+  ).first();
+  await editor.waitFor({ state: 'visible', timeout: 30_000 });
+  await editor.click();
   await page.keyboard.type(expression);
   await page.locator('[name="button-Add-New-Column---OK"]').click();
   await expect(page.locator('.d4-dialog')).toHaveCount(0, { timeout: 10_000 });

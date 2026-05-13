@@ -422,12 +422,21 @@ test.describe.serial('Scripts: Layout', () => {
     const nameInput = projectDialog.locator('input[name="input-Name"], input.ui-input-editor').first();
     await expect(nameInput).toBeVisible({ timeout: 5_000 });
     await nameInput.fill(PROJECT_NAME);
-    // Target the OK button by accessible name. The original
-    // `button.ui-btn-ok` selector resolves to the dialog's "Creation script"
-    // / "URL Parameters" inline buttons on some builds before reaching the
-    // footer OK, leaving the dialog open under timeout. `button:has-text` is
-    // brittle to whitespace; getByRole locks onto the explicit role+name.
-    await projectDialog.getByRole('button', { name: /^OK$/ }).first().click();
+    // The previous Playwright-driven clicks on this dialog's OK button —
+    // both `button.ui-btn-ok.first()` and `getByRole('button', { name: 'OK' })`
+    // — landed on the right element on dev but, on the ephemeral CI Datlas,
+    // the platform's onOK callback never ran (datlas-tests.log shows the
+    // dialog polling GET /projects?text=<name> repeatedly with no following
+    // POST, i.e. Save was never initiated). Dispatch a native `click()` on
+    // the footer OK button instead — bypasses the actionability/hover paths
+    // Playwright's user-flow click goes through, but still fires the
+    // standard DOM click event the platform listens to.
+    await projectDialog.evaluate((dialog) => {
+      const buttons = Array.from(dialog.querySelectorAll('button')) as HTMLButtonElement[];
+      const ok = buttons.reverse().find((b) => (b.textContent ?? '').trim() === 'OK');
+      if (!ok) throw new Error('OK button not found in Save-project dialog');
+      ok.click();
+    });
     await expect(projectDialog).not.toBeVisible({ timeout: 15_000 });
 
     // Datagrok follows Save with a Share dialog — dismiss it.
