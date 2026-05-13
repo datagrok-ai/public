@@ -54,12 +54,10 @@ WebLogo for `Macromolecule` columns", "top-N diverse structures for
 ## Steps
 
 1. **Declare a `tooltip`-role function on `PackageFunctions`, bound to
-   a `semType`.** The platform discovers tooltips by the function role
-   `tooltip` (lowercase, `DG-FACT-095`); the `semType` constraint on
-   the `column` input scopes it to that type (exact-match, case-sensitive,
-   `DG-FACT-096`). There is no specialized `@grok.decorators.tooltip()`
-   — use the generic `@grok.decorators.func` with `meta.role: 'tooltip'`
-   (`DG-FACT-097`).
+   a `semType`.** Use generic `@grok.decorators.func({meta: {role:
+   'tooltip'}})` — there's no specialized `@grok.decorators.tooltip()`
+   (see `DG-FACT-095` role string, `DG-FACT-096` semType binding,
+   `DG-FACT-097` decorator form).
 
    ```typescript
    // src/package.ts
@@ -82,92 +80,40 @@ WebLogo for `Macromolecule` columns", "top-N diverse structures for
    }
    ```
 
-   Three rules govern the body (`semType` only scopes the hook):
+   Three rules govern the body:
 
-   - **Build from `col`, never from `grok.shell.tv.dataFrame`.** The
-     hovered column may belong to a different table than the active
-     `TableView`, so `grok.shell.tv.dataFrame` / `grok.shell.t`
-     silently resolves to the wrong dataframe and any `columnName`
-     option (`sequenceColumnName: col.name`) misses. The article makes
-     this explicit (`column-tooltip.md:13-16, :24`, `DG-FACT-427`); Bio
-     follows it at `packages/Bio/src/package.ts:146-159`.
-
-   - **Return `undefined` to opt out per-column.** Signature is
-     `tooltip(col: Column): Widget | undefined` (`DG-FACT-095`); a bare
-     `return;` falls back to the default summary (`DG-FACT-098`). Chem
-     uses this to skip SMARTS-pattern `Molecule` columns — see
-     `packages/Chem/src/package.ts:266-280` for the early-return loop
-     over `col.categories`.
-
-   - **Wrap the result as a `DG.Widget`.** `DG.Widget.fromRoot(root)`
-     for an `HTMLElement`, `DG.Widget.fromRoot(viewer.root)` for a
-     viewer, or return a `DG.Widget` subclass directly (`DG-FACT-098`).
-
-   Expected: the file type-checks (the decorators resolve, `DG.Column`
-   and `DG.Widget` are in scope from the imports above).
+   - Build from `col` / `col.dataFrame`, never `grok.shell.tv.dataFrame`
+     or `grok.shell.t` — the hovered column may belong to a different
+     table (`DG-FACT-427`).
+   - Return `undefined` to opt out per-column (e.g. SMARTS-pattern
+     molecules); platform falls back to default summary (`DG-FACT-098`).
+   - Wrap result as `DG.Widget` via `DG.Widget.fromRoot(root)` or return
+     a `DG.Widget` subclass (`DG-FACT-098`).
 
 2. **Build, and verify the auto-emitted wrapper in `package.g.ts`.**
-   `npm run build` runs `FuncGeneratorPlugin`, which scans
-   `PackageFunctions` for decorated methods and regenerates
-   `src/package.g.ts` with one wrapper per function (`DG-FACT-428`). Do
-   NOT hand-edit `package.g.ts`; it is overwritten on every build.
+   `npm run build` runs `FuncGeneratorPlugin`, which regenerates
+   `src/package.g.ts` from decorated methods — never hand-edit it
+   (`DG-FACT-428`).
    ```bash
    npm install && npm run build
    ```
-   Expected: `npm run build` exits 0; the regenerated
-   `src/package.g.ts` gains a wrapper of the shape
-
-   ```
-   //input: column col { semType: Macromolecule }
-   //output: widget result
-   //meta.role: tooltip
-   export async function sequenceTooltip(col: DG.Column) {
-     return await PackageFunctions.sequenceTooltip(col);
-   }
-   ```
-
-   The MUST-have lines are `//meta.role: tooltip` (lowercase) and
+   Expected: the emitted wrapper carries `//meta.role: tooltip` and
    `//input: column col { semType: <Type> }` (`DG-FACT-095`,
-   `DG-FACT-096`). Chem's emitted wrapper has exactly this shape —
-   compare `packages/Chem/src/package.g.ts:38-44`. A `//tags: tooltip`
-   line appears ONLY if the decorator also passes `tags: ['tooltip']`
-   explicitly — Bio does this, so `packages/Bio/src/package.g.ts:16-22`
-   carries the extra line; the example above does not, so don't look
-   for it.
+   `DG-FACT-096`).
 
-3. **Publish.** The `tooltip` role IS the registration — the platform
-   discovers the function from the `package.g.ts` wrapper on load
-   (`DG-FACT-428`); no explicit `grok.functions.register(...)` call is
-   needed.
+3. **Publish.** The `tooltip` role IS the registration; no explicit
+   `grok.functions.register(...)` call is needed (`DG-FACT-428`).
    ```bash
    grok publish <host>   # add --release once stable
    ```
-   Expected: `grok publish <host>` exits 0 and reports the package
-   version it pushed.
 
 ## Common failure modes
 
-- **Hover never fires; default summary still shows.** The role token
-  is missing or misspelled. Inspect `src/package.g.ts` — it MUST
-  contain `//meta.role: tooltip` (lowercase) and a
-  `//input: column col { semType: <Type> }` line (`DG-FACT-095`,
-  `DG-FACT-096`). `Tooltip`/`tooltips` won't match.
-- **Hover fires on the wrong columns (or never).** The `semType` string
-  on the `col` param doesn't match what the column actually has.
-  In the UI, right-click the column → *Properties* → check `semType`;
-  in code, `col.semType`. Exact-match and case-sensitive (`DG-FACT-096`).
-- **Hover renders the wrong table's data when multiple `TableViews`
-  are open.** The body uses `grok.shell.tv.dataFrame` (or `grok.shell.t`)
-  instead of `col` / `col.dataFrame`. Switch to the column reference
-  passed in (`DG-FACT-427`).
-- **Article snippet copy-pasted, won't compile.** The article omits
-  imports (`column-tooltip.md:18-27` shows only the class body). Add
-  `import * as grok from 'datagrok-api/grok'`,
-  `import * as DG from 'datagrok-api/dg'`,
-  `import * as ui from 'datagrok-api/ui'` to the top of `src/package.ts`.
-- **Returned a `DG.Viewer` or `HTMLElement` instead of a `DG.Widget`.**
-  Wrap with `DG.Widget.fromRoot(root)`; for a viewer, return
-  `DG.Widget.fromRoot(viewer.root)` (`DG-FACT-098`).
+- Hover never fires — check `package.g.ts` for `//meta.role: tooltip` (lowercase) and `//input: column col { semType: <Type> }` (`DG-FACT-095`, `DG-FACT-096`).
+- `semType` mismatch — `col.semType` is exact-match, case-sensitive (`DG-FACT-096`).
+- Wrong-table data with multiple TableViews — replace `grok.shell.tv.dataFrame`/`grok.shell.t` with `col`/`col.dataFrame` (`DG-FACT-427`).
+- Article snippet won't compile — add the three imports shown above.
+- Returned `DG.Viewer` or `HTMLElement` — wrap with `DG.Widget.fromRoot(...)` (`DG-FACT-098`).
 
 ## See also
 

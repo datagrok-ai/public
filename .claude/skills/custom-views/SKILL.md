@@ -44,25 +44,20 @@ with no URL/project needs, `grok.shell.newView` is enough — see Step 1.
 ## Steps
 
 1. **Decide which API tier you need.**
-   `grok.shell.newView(name, children?, options?)` builds, names,
-   registers, and docks a `View` in one call (`DG-FACT-213`,
-   `js-api/src/shell.ts:234`). Fine for production, but the returned
-   `View` does NOT dispatch URL paths or serialize state. Subclass
-   `DG.ViewBase` only when you need URL routing, project restore, or a
-   per-class icon (`DG-FACT-214`):
+   `grok.shell.newView` is the one-liner — fine for production, but
+   the returned `View` does NOT dispatch URL paths or serialize state
+   (see `DG-FACT-213`). Subclass `DG.ViewBase` only when you need
+   routing, project restore, or a per-class icon (see `DG-FACT-214`):
    ```typescript
    // Ad-hoc: one-liner, no routing/state — keep for prototypes & dialogs
    const v = grok.shell.newView('Quick View', [ui.divText('Hi!')]);
    ```
-   Expected: a new tab "Quick View" appears with the children appended
-   to `v.root`. Stop here if you don't need routing or state.
+   Stop here if you don't need routing or state.
 
 2. **Subclass `DG.ViewBase` with the standard constructor signature.**
-   Use the `DG.` prefix — package scaffolds import `* as DG` from
-   `datagrok-api/dg` (`DG-FACT-224`). The third constructor arg
-   (`createHost`) defaults to `true`; package code MUST NOT pass
-   `false`, that path is reserved for the internal `View` subclass that
-   wraps a Dart handle (`DG-FACT-214`):
+   Use the `DG.` prefix (`DG-FACT-224`). Never pass `createHost=false`
+   from package code — that path is reserved for the internal `View`
+   subclass (see `DG-FACT-214`):
    ```typescript
    // src/views/dashboard-view.ts
    export class DashboardView extends DG.ViewBase {
@@ -82,10 +77,9 @@ with no URL/project needs, `grok.shell.newView` is enough — see Step 1.
    constructs without throwing.
 
 3. **Override the contract surface — name, path, icon, state.**
-   Defaults live in `js-api/src/views/view.ts:45-204`. Store identity
-   on `this`, expose it via `path`, serialize via `saveStateMap` /
-   `loadStateMap`, dispatch URLs via `handlePath` / `acceptsPath`
-   (`DG-FACT-215`):
+   Store identity on `this`, expose it via `path`, serialize via
+   `saveStateMap` / `loadStateMap`, dispatch URLs via `handlePath` /
+   `acceptsPath` (see `DG-FACT-215` for the full overridable surface):
    ```typescript
    get type()    { return DashboardView.TYPE; }
    get name()    { return this.id ? `Dashboard: ${this.id}` : 'Dashboard'; }
@@ -114,11 +108,8 @@ with no URL/project needs, `grok.shell.newView` is enough — see Step 1.
    returns a non-null `HTMLElement`; `saveStateMap()` returns JSON.
 
 4. **Register the view-producing function with `tags: view`.**
-   The platform turns a function into a registered view by reading four
-   header lines: `tags: view`, `input: map params`, `input: string path`,
-   `output: view result` (`DG-FACT-216`). Without `tags: view` the
-   function is callable but never dispatched on URL paths or wired into
-   the navigation bar:
+   The platform reads four exact header lines (see `DG-FACT-216`).
+   Without `tags: view` the function is callable but never URL-dispatched:
    ```typescript
    // src/package.ts
    //name: Dashboard
@@ -131,55 +122,37 @@ with no URL/project needs, `grok.shell.newView` is enough — see Step 1.
      return new DashboardView(params, path);
    }
    ```
-   Expected: after `grok link` regenerates `package.g.ts`, the new
-   function appears with `//tags: view` and `//output: view result`
-   intact. Notebooks (`packages/Notebooks/src/package.js:528-535`) is
-   the canonical reference — only one production package ships this
-   annotation today (`DG-FACT-217`).
+   Notebooks (`packages/Notebooks/src/package.js:528-535`) is the only
+   production reference today (see `DG-FACT-217`).
 
 5. **Build, publish, and exercise the deep-link URL.**
    ```bash
    webpack && grok publish
    ```
-   Expected: upload succeeds; opening `https://<host>/dashboard/abc`
-   instantiates `DashboardView` with `path='/dashboard/abc'`,
-   `acceptsPath` returns `true`, `handlePath` runs, and the tab opens
-   already pointed at `abc`.
+   Opening `https://<host>/dashboard/abc` instantiates `DashboardView`
+   with `path='/dashboard/abc'`; `handlePath` runs and the tab opens
+   pointed at `abc`.
 
 ## Common failure modes
 
-- **Tab opens but URL doesn't change / deep-link doesn't restore.** You
-  used `grok.shell.newView` — it returns a leaf `View` with no path
-  dispatcher (`DG-FACT-213`). Move the body into a `DG.ViewBase`
-  subclass and register it via `tags: view`.
-- **Reopening a saved project shows an empty tab.** State lives in
-  module-level variables instead of `saveStateMap()` / `loadStateMap()`.
-  Move identity onto `this` and round-trip via the state map
+- URL doesn't change / deep-link doesn't restore — you used
+  `grok.shell.newView` (no path dispatcher; `DG-FACT-213`). Subclass
+  `DG.ViewBase` and register via `tags: view`.
+- Reopened project shows empty tab — state lives in module-level vars.
+  Move identity onto `this` and round-trip via state map (`DG-FACT-215`).
+- Function compiles but path never dispatched — missing `tags: view` or
+  renamed `input: string path` header (`DG-FACT-216`).
+- Type error on `extends ViewBase` — use `DG.ViewBase` with the default
+  `* as DG` import (`DG-FACT-224`).
+- Icon invisible — `getIcon()` returned a string, not `HTMLElement`
   (`DG-FACT-215`).
-- **Function compiles but never dispatches the path.** Missing
-  `tags: view`, or `input: string path` was renamed. The platform reads
-  the EXACT header tokens; rename and re-run `grok link`
-  (`DG-FACT-216`).
-- **Type error on `class … extends ViewBase`.** Default scaffold
-  imports `* as DG`, so the canonical form is `DG.ViewBase`. Bare
-  `ViewBase` only works if you `import {ViewBase} from 'datagrok-api/dg'`
-  (`DG-FACT-224`).
-- **Icon invisible in the tab strip.** `getIcon()` returned a string
-  instead of an `HTMLElement`, or `setIcon(...)` was called from the
-  constructor. Return an `<img>` / `<i>` from `getIcon()` (`DG-FACT-215`).
 
 ## See also
 
 - Source articles: `help/develop/how-to/views/custom-views.md`
-- Knowledge: `docs/_internal/knowledge/knowledge-graph.md` — facts
-  `DG-FACT-213` … `DG-FACT-217`, plus `DG-FACT-224` (`* as DG` import
-  convention).
-- Reference packages:
-  - `packages/Notebooks/src/package.js:27-128, 528-535` — canonical
-    `tags: view` registration plus full state + path round-trip.
-  - `packages/Flow/src/funcflow-view.ts:24` — `ViewBase` subclass
-    constructed by an `meta.role: app` function instead.
-  - `packages/PreclinicalCase/src/views/study-summary-view.ts:25` —
-    minimal `ViewBase` that builds `this.root` lazily.
-- Related skills: `routing` — wires URL state for `meta.role: app`
-  functions; pair with this skill when the screen is opened FROM an app.
+- Knowledge: facts `DG-FACT-213`…`DG-FACT-217`, `DG-FACT-224`.
+- Reference packages: `packages/Notebooks/src/package.js:27-128, 528-535`
+  (canonical `tags: view`); `packages/Flow/src/funcflow-view.ts:24`;
+  `packages/PreclinicalCase/src/views/study-summary-view.ts:25`.
+- Related skills: `routing` — pair when the screen is opened FROM a
+  `meta.role: app` function.

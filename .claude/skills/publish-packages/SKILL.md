@@ -62,30 +62,22 @@ air-gapped Datagrok instance.
    jq -e 'has("beta")' package.json     # MUST be false (deprecated)
    jq -e '.skipCI // false' package.json
    ```
-   Expected: `name` starts with `@datagrok/`, `version` is SemVer-clean
-   and ≥ `1.0.0`, no top-level `"beta"` key. CI rejects a stray `beta`
-   key with `"Remove beta property — it is deprecated"`
-   (`packages.yaml:617-620`).
+   `name` starts with `@datagrok/`; no top-level `"beta"` key (CI
+   rejects it).
 
 2. **Bump the version (SemVer, ≥ 1.0.0 to actually publish).**
    ```bash
    npm version <patch|minor|major> --no-git-tag-version
    ```
-   Expected: `package.json` version increments. Any first published
-   version must be **≥ 1.0.0** — `0.x.x` is flagged `"beta"` in the
-   workflow matrix and skipped with the notice `"Version <v> is under
-   1.0.0 and is not going to be published"` (`DG-FACT-451`).
+   `0.x.x` is flagged beta and silently skipped (see `DG-FACT-451`).
 
 3. **Confirm no local-path entries remain in `dependencies`.**
    ```bash
    jq '.dependencies | with_entries(select(.value | startswith("../")))' \
       package.json
    ```
-   Expected: `{}` (empty). A `"datagrok-api": "../../js-api"` under
-   `dependencies` (not `devDependencies`) marks the build as
-   `unpublished_deps` and the workflow refuses to publish
-   (`DG-FACT-452`, `packages.yaml:84,144-147`). Local link in
-   `devDependencies` is fine for the test step.
+   Must be `{}`. A `"../"` entry under `dependencies` blocks publish
+   (see `DG-FACT-452`). Local link in `devDependencies` is fine.
 
 4. **Commit and push to `master`.**
    ```bash
@@ -93,86 +85,59 @@ air-gapped Datagrok instance.
    git commit -m "<Pkg>: <one-line summary> (vX.Y.Z)"
    git push origin master
    ```
-   Expected: a `Packages` workflow run starts (`on: push: paths:
-   packages/**`). The matrix probes
-   `https://registry.npmjs.org/<name>/<version>`; missing version ⇒
-   publish job runs (`DG-FACT-454`).
+   The `Packages` workflow probes npm; missing version ⇒ publish job
+   runs (see `DG-FACT-454`).
 
 5. **Watch the run — Build → Test → grok check → Publish.**
    ```bash
    gh run list --workflow=packages.yaml --limit 5
    gh run watch                              # pick the latest run
    ```
-   Expected: green build, green test (unless `skipCI` or `Tests`/`Meta`
-   in name), green `grok check` (skipped only for Tests/Meta/beta —
-   `DG-FACT-153`, `packages.yaml:624-627`), green `npm publish
-   --access public` (`DG-FACT-152`, `packages.yaml:629-634`). On
-   success Slack `#build` posts the published version.
+   `grok check` runs except for Tests/Meta/beta (see `DG-FACT-153`);
+   publish is `npm publish --access public` (see `DG-FACT-152`).
 
 6. **Re-trigger manually if the auto-run failed.**
-   In the GitHub UI: **Actions → Packages → Run workflow** on branch
-   `master`, set `packages` to a space-separated list (e.g.
-   `Demo Tutorials`). Same shape applies to sibling workflows —
-   `Libraries`, `Tools` (`datagrok-tools`), `JS-API` (`datagrok-api`)
-   (`DG-FACT-150`, `DG-FACT-151`).
+   GitHub UI: **Actions → Packages → Run workflow** on `master`. Same
+   shape for sibling workflows `Libraries` / `Tools` / `JS-API` (see
+   `DG-FACT-150`, `DG-FACT-151`).
 
 7. **Verify the new version is on npm.**
    ```bash
    curl -s https://registry.npmjs.org/<name>/<version> | jq -r .version
    npm view <name> versions --json | jq '.[-3:]'
    ```
-   Expected: the first command returns `"<version>"` (not `null`); the
-   second lists the new version among the most recent.
 
 8. **(Private path) ship straight to a Datagrok server.**
-   For forks, internal packages, or air-gapped instances — bypass CI:
+   For forks or air-gapped instances — bypass CI:
    ```bash
    cd packages/<Pkg>
    webpack --mode=production
    grok publish <HOST> --release   # <HOST> = alias from ~/.grok/config.yaml
    ```
-   Expected: server returns `200`; package appears under **Manage →
-   Packages** on `<HOST>`. Drop `--release` for a per-developer debug
-   deploy (default). `--debug` and `--release` are mutually exclusive
-   (`DG-FACT-156`, `tools/bin/commands/publish.js:620-621`).
+   Drop `--release` for per-developer debug (default). `--debug` and
+   `--release` are mutually exclusive (see `DG-FACT-156`).
 
-9. **(Private path) share with a group.**
-   `--debug` deploys are per-developer only. Either set `canView` /
-   `canEdit` in `package.json` and re-publish `--release`, or share
-   via the UI (**Manage → Packages → right-click → Share**):
+9. **(Private path) share with a group.** Set `canView` / `canEdit` in
+   `package.json` and re-publish `--release`, or share via UI
+   (**Manage → Packages → right-click → Share**):
    ```json
    {"canEdit": ["Administrators"], "canView": ["All users"]}
    ```
-   Expected: the listed groups see the package on next refresh
-   (`DG-FACT-458`).
+   Groups see the package on next refresh (see `DG-FACT-458`).
 
 ## Common failure modes
 
-- **Version under 1.0.0 — workflow green, no publish.** Build/test
-  pass, then `"Version <v> is under 1.0.0 and is not going to be
-  published"` and the publish step skips (`DG-FACT-451`). Fix: bump
-  to `1.0.0`+.
-- **Same version already on npm — publish silently skipped.** The
-  matrix probes `registry.npmjs.org/<name>/<current_version>`; a hit
-  means "already published" (`DG-FACT-454`). Fix: increment.
-- **Wrong branch — push did not publish.** Only `refs/heads/master`
-  publishes; PRs and feature branches build/test only (`DG-FACT-453`).
-  Fix: merge to `master`, or **Run workflow** on `master`.
-- **Local-path dep in `dependencies` blocks publish.** Workflow emits
-  `"Version <v> has unpublished dependencies and is not going to be
-  published"` (`DG-FACT-452`, `packages.yaml:84,144-147`). Fix: pin to
-  a published version or move the link to `devDependencies`.
-- **`grok check` fails — publish blocked.** Runs for every package
-  whose name lacks `Tests`/`Meta` and isn't beta-flagged. Fix: run
-  `grok check` locally, fix what it reports (function header drift,
-  manifest issues), commit, push.
-- **`name` not in `@datagrok` scope.** `General checks` hard-fails
-  with `"Package should be in '@datagrok' scope"`
-  (`packages.yaml:613-616`). Fix: rename in `package.json` (and the
-  `library` field in `webpack.config.js`).
-- **Private publish only visible to developer.** `--debug` (default)
-  deploys are per-developer. Fix: re-publish with `--release` and set
-  `canView`/`canEdit`, or share via the UI.
+- Version `<1.0.0` — workflow green, publish skipped (`DG-FACT-451`).
+- Version already on npm — silently skipped (`DG-FACT-454`); increment.
+- Wrong branch — only `master` publishes (`DG-FACT-453`).
+- Local-path dep in `dependencies` blocks publish (`DG-FACT-452`); move
+  to `devDependencies` or pin to a published version.
+- `grok check` fails — fix function header drift / manifest issues
+  locally first.
+- `name` not in `@datagrok` scope — rename in `package.json` and the
+  `webpack.config.js` `library` field (`DG-FACT-450`).
+- Private publish only visible to developer — re-publish `--release`
+  with `canView`/`canEdit`, or share via UI.
 
 ## See also
 

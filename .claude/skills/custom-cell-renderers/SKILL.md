@@ -49,28 +49,18 @@ to bind the renderer automatically whenever a matching column appears.
 ## Steps
 
 1. **Subclass `DG.GridCellRenderer`; override the three required hooks.**
-   The platform discovers renderers via the function role `cellRenderer`
-   (camelCase — `DG-FACT-099`). Pick a registration form before writing
-   the stub — both compile to the same `package.g.ts` wrapper, and the
-   article calls the class form "the recommended form" (`custom-cell-renderers.md:22-23`):
-   - **Class decorator** — `@grok.decorators.cellRenderer({...})` on the
-     class; no factory in `package.ts` (`DG-FACT-103`). Canonical for
-     plain renderers (`StarsCellRenderer`, `SvgCellRenderer`) and for
-     the article's chart-style `PieChartCellRenderer` example.
-   - **Function decorator** — static factory on `PackageFunctions` with
-     `@grok.decorators.func({meta:{role:'cellRenderer', cellType:'…',
-     virtual:'true'}, tags:['cellRenderer'], outputs:[{type:'grid_cell_renderer',
-     name:'result'}]})` (`DG-FACT-104`). Stylistic alternative when you
-     keep all renderers in `PackageFunctions` — and the only form that
-     accepts the `gridChart` meta flag (see Step 2 and `DG-FACT-466`).
+   Platform discovers renderers via the function role `cellRenderer`
+   (camelCase — `DG-FACT-099`). Two equivalent registration forms:
+   - **Class decorator** — `@grok.decorators.cellRenderer({...})` on
+     the class (`DG-FACT-103`). Recommended for plain renderers.
+   - **Function decorator** — static factory on `PackageFunctions`
+     (`DG-FACT-104`). Required when you need the `gridChart` meta flag
+     (`DG-FACT-466`).
 
-   Do NOT paste the article's `//name:` / `//meta.role:` block into
-   `package.ts` — that is the auto-emitted `package.g.ts` shape, not
-   the authoring surface. `name`, `cellType`, and `render` all throw
-   in the base class (`DG-FACT-102`); optional overrides —
-   `defaultWidth/Height`, `renderSettings(gridColumn)`, mouse/key
-   handlers (`onClick`, `onMouseEnter`, …),
-   `hasContextValue`/`getContextValue`, `clip`.
+   The three required overrides — `get name()`, `get cellType()`,
+   `render(...)` — all throw in the base class (`DG-FACT-102`).
+   Optional: `defaultWidth/Height`, `renderSettings(gridColumn)`,
+   mouse/key handlers, `hasContextValue`/`getContextValue`, `clip`.
 
    ```typescript
    // src/cell-types/stars-cell-renderer.ts — class-decorator form
@@ -94,25 +84,18 @@ to bind the renderer automatically whenever a matching column appears.
      }
    }
    ```
-   The `@ts-ignore tags` pattern is a PowerGrid habit
-   (`stars-cell-renderer.ts:40`) — redundant under modern codegen, which
-   auto-emits `//tags: cellRenderer` regardless (`DG-FACT-DRIFT-043`).
+   The `@ts-ignore tags` line is redundant under modern codegen
+   (`DG-FACT-DRIFT-043`).
 
 2. **Bind the renderer to columns via `cellType` (or `columnTags`).**
-   The platform invokes your renderer when a column's effective cell
-   type matches `meta.cellType`. Either set `column.semType = 'Stars'`
-   (e.g. via a `semanticTypeDetector`) or use
+   Set `column.semType = 'Stars'` (via a `semanticTypeDetector`) or
    `meta.columnTags: 'units=kg,foo=bar'` for tag-based matching
-   (`DG-FACT-106`; see `packages/PowerGrid/src/package.g.ts:185-201`).
+   (`DG-FACT-106`).
 
-   For SUMMARY/VIRTUAL renderers (sparklines, pie chart, smart form —
-   columns synthesised at render time from several numeric columns),
-   set `meta.virtual` so the column appears in the *Add column → New
-   chart* menu (`DG-FACT-105`). The article's PieChart example uses
-   `virtual: true` on the class decorator and nothing else
-   (`custom-cell-renderers.md:14-21`); reach for the function form
-   only if you also need the `gridChart` meta flag, which is absent
-   from `CellRendererOptions` (`DG-FACT-466`):
+   For SUMMARY/VIRTUAL renderers (sparklines, pie chart, smart form),
+   set `meta.virtual` so the column appears in *Add column → New
+   chart* (`DG-FACT-105`). Use the function form if you also need
+   `gridChart` (absent from `CellRendererOptions` — `DG-FACT-466`):
 
    ```typescript
    // src/package.ts — function-decorator form when `gridChart` is needed
@@ -129,10 +112,9 @@ to bind the renderer automatically whenever a matching column appears.
      static piechartCellRenderer() { return new PieChartCellRenderer(); }
    }
    ```
-   `meta` flags use string literals on the function-decorator form
-   (`virtual: 'true'`, `gridChart: 'true'`) but booleans on the class
-   form (`virtual: true`) — a generic typing asymmetry across all
-   Datagrok decorators (`DG-FACT-468`).
+   `meta` flags are string literals on the function form
+   (`virtual: 'true'`) but booleans on the class form (`virtual:
+   true`) — typing asymmetry across all decorators (`DG-FACT-468`).
 
 3. **Build, publish, and let the codegen wire it up.**
    ```bash
@@ -141,54 +123,26 @@ to bind the renderer automatically whenever a matching column appears.
    grok check          # exits 0
    grok publish <host> # add --release once stable
    ```
-   `package.g.ts` is meant to be committed (`DG-FACT-107`). No explicit
-   `DG.GridCellRenderer.register(...)` call — the function role IS the
-   registration. Expected: each renderer produces a wrapper in
-   `src/package.g.ts` with `//tags: cellRenderer`,
-   `//output: grid_cell_renderer <name>`, `//meta.role: cellRenderer`,
-   `//meta.cellType: <Type>` (compare
-   `packages/PowerGrid/src/package.g.ts:57-64` for the plain form and
-   `:116-125` for the virtual/`gridChart` form).
+   `package.g.ts` is meant to be committed (`DG-FACT-107`). The
+   function role IS the registration — no explicit `register(...)`.
 
 ## Common failure modes
 
-- **Renderer never fires; cells fall back to default text.** Inspect
-  `src/package.g.ts`: each entry MUST contain `//meta.role: cellRenderer`
-  (camelCase, case-sensitive) and `//meta.cellType: <Type>` —
-  `CellRenderer` / `cell-renderer` (the column-tag key at
-  `js-api/src/const.ts:330`) won't register (`DG-FACT-099`).
-- **Build emits no entry in `package.g.ts`.** `FuncGeneratorPlugin` is
-  not wired into `webpack.config.js` (`DG-FACT-107`). Add
-  `const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');`
-  and `new FuncGeneratorPlugin({outputPath: './src/package.g.ts'})`.
-- **`'cellType'`/`'name'`/`'Not implemented'` thrown at render time.**
-  The subclass forgot to override one of `get name()`, `get cellType()`,
-  or `render(...)` — all three throw in `DG.GridCellRenderer` defaults
-  (`DG-FACT-102`).
+- **Renderer never fires.** `//meta.role: cellRenderer` (camelCase) or
+  `//meta.cellType:` missing in `package.g.ts` (`DG-FACT-099`).
+- **Build emits no entry in `package.g.ts`.** `FuncGeneratorPlugin`
+  not wired into `webpack.config.js` (`DG-FACT-107`).
+- **`'Not implemented'` thrown at render time.** Subclass missing one
+  of `get name()`, `get cellType()`, `render(...)` (`DG-FACT-102`).
 - **TS error: `'tags' does not exist on type CellRendererOptions`.**
-  Suppress with `// @ts-ignore` above the `tags` entry, or drop the
-  line entirely — codegen auto-emits it either way (`DG-FACT-DRIFT-043`).
-- **Sparkline never appears in *Add column → New chart*.** Renderer
-  is registered without `meta.virtual` (`DG-FACT-105`). Add
-  `virtual: true` (class form) or `virtual: 'true'` (function form);
-  if you also need `gridChart: 'true'`, switch to the function form
-  because the flag is absent from `CellRendererOptions`
-  (`DG-FACT-466`, `DG-FACT-468`).
+  Suppress with `// @ts-ignore` or drop the line — codegen auto-emits
+  it (`DG-FACT-DRIFT-043`).
+- **Sparkline never appears in *Add column → New chart*.** Missing
+  `meta.virtual` (`DG-FACT-105`); use function form if you also need
+  `gridChart` (`DG-FACT-466`).
 
 ## See also
 
 - Source: `help/develop/how-to/grid/custom-cell-renderers.md`.
-- Knowledge: `.claude/knowledge/_master/knowledge-graph.md`
-  — `DG-FACT-099`…`107`, `DG-FACT-466`, `DG-FACT-467`, `DG-FACT-468`,
-  `DG-FACT-DRIFT-043`.
-- Reference packages:
-  - `packages/PowerGrid/src/cell-types/stars-cell-renderer.ts:37-43` —
-    minimal class-decorator form.
-  - `packages/PowerGrid/src/cell-types/svg-cell-renderer.ts:6-12` —
-    class form with image cache + `onDoubleClick`.
-  - `packages/PowerGrid/src/sparklines/piechart.ts:192-332` +
-    `packages/PowerGrid/src/package.ts:85-98` — function-decorator form
-    (virtual sparkline) with `renderSettings` + `getContextValue`.
-  - `packages/PowerGrid/src/package.g.ts:13-201` — auto-emitted wrappers.
-- Related skills: `register-identifiers` (registers the `semType` that
-  `cellType` matches), `column-tooltip` (same role pattern, different role).
+- Knowledge: `DG-FACT-099`–`107`, `466`–`468`, `DRIFT-043`.
+- Related skills: `register-identifiers`, `column-tooltip`.

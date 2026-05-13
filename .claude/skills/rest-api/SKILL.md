@@ -32,44 +32,29 @@ spec". For *in-package* HTTP, use `grok.dapi.fetchProxy` (see
 
 ## Steps
 
-1. **Set the base URL and API key in the shell.**
+1. **Set the base URL and API key in the shell.** `Bearer ` prefix lives inside `$API_KEY` (`DG-FACT-229`).
  ```bash
  export GROK_HOST=https://public.datagrok.ai
  export GROK_API=$GROK_HOST/api
  export API_KEY="Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
  ```
- Expected: every later step substitutes `$GROK_API` and `$API_KEY`. The
- `Bearer ` prefix lives inside `$API_KEY` so headers stay one-liners
- (knowledge `DG-FACT-229`).
 
-2. **Smoke-test auth by fetching the OpenAPI spec.**
- The spec is the authoritative endpoint inventory; the help article
- lists only a curated subset (knowledge `DG-FACT-234`).
+2. **Smoke-test auth by fetching the OpenAPI spec** — the authoritative endpoint inventory (`DG-FACT-234`).
  ```bash
  curl -fsS -H "Authorization: $API_KEY" "$GROK_API/public/api.yaml" \
  | head -20
  ```
- Expected: YAML starting with `openapi: 3...`. A `401` means the key
- or `Bearer ` prefix is wrong; a `404` means `$GROK_API` is missing
- `/api`.
+ `401` = key/prefix wrong; `404` = `$GROK_API` missing `/api`.
 
-3. **Download a table as CSV.**
- Tables are addressed by GUID *or* Grok name — but Grok names use `:`
- as separator and the REST API requires `.` instead. Replace before
- sending (knowledge `DG-FACT-232`).
+3. **Download a table as CSV.** Tables are addressed by GUID or Grok name; Grok names use `:` but REST requires `.` (`DG-FACT-232`).
  ```bash
  TABLE="JohnDoe.MyProject.Cars" # NOT JohnDoe:MyProject:Cars
  curl -fsS -H "Authorization: $API_KEY" \
  "$GROK_API/public/v1/tables/$TABLE" -o cars.csv
  ```
- Expected: `cars.csv` on disk; `head cars.csv` shows the column
- header. Endpoint shape: `GET /public/v1/tables/{name}` (knowledge
- `DG-FACT-231`, `DG-FACT-233`).
+ Endpoint: `GET /public/v1/tables/{name}` (`DG-FACT-231`, `DG-FACT-233`).
 
-4. **Upload a CSV as a table.**
- `POST` body is the CSV bytes; `Content-Type: text/csv`. If the path
- includes a project segment, the table is added to that project; if
- the table name already exists, its data is replaced.
+4. **Upload a CSV as a table.** Body is raw CSV with `Content-Type: text/csv`; existing names are replaced.
  ```bash
  curl -fsS -X POST \
  -H "Authorization: $API_KEY" \
@@ -80,10 +65,7 @@ spec". For *in-package* HTTP, use `grok.dapi.fetchProxy` (see
  Expected: JSON `{"ID": "<guid>",...}` echoing identifiers for the
  newly uploaded table.
 
-5. **Upload/download a file under a connector.**
- File paths are `<connector>/<path>`. The connector identifier obeys
- the same colon→period rule (knowledge `DG-FACT-232`). Body is binary;
- `Content-Type: application/octet-stream`.
+5. **Upload/download a file under a connector.** Path is `<connector>/<path>`; same colon→period rule (`DG-FACT-232`). Body is binary with `Content-Type: application/octet-stream`.
  ```bash
  CONN="JohnDoe.Home" # was JohnDoe:Home
  curl -fsS -X POST \
@@ -95,10 +77,7 @@ spec". For *in-package* HTTP, use `grok.dapi.fetchProxy` (see
  Expected: HTTP 200; the file appears under
  `<GROK_HOST>/u/files/$CONN/reports/`.
 
-6. **Create a dashboard from uploaded tables.**
- `POST /public/v1/dashboards/{name}/{table_ids}`. `table_ids` is
- comma-separated; the optional JSON body is a project layout
- (knowledge `DG-FACT-233`).
+6. **Create a dashboard from uploaded tables** — `POST /public/v1/dashboards/{name}/{table_ids}` (comma-separated; optional JSON-body layout). See `DG-FACT-233`.
  ```bash
  curl -fsS -X POST \
  -H "Authorization: $API_KEY" \
@@ -121,10 +100,7 @@ spec". For *in-package* HTTP, use `grok.dapi.fetchProxy` (see
  ```
  Expected: JSON-encoded function return value.
 
-8. **Skip the curl boilerplate with the Python client.**
- `pip install datagrok-api` then construct a `DatagrokClient` once;
- resources cover files, tables, dashboards, functions, connections,
- users, groups, shares (knowledge `DG-FACT-231`).
+8. **Skip the curl boilerplate with the Python client.** `pip install datagrok-api`; resources cover files/tables/dashboards/functions/connections/users/groups/shares (`DG-FACT-231`). Client substitutes `:`→`.` (`DG-FACT-232`); caller still adds `Bearer ` (`DG-FACT-229`).
  ```python
  from datagrok_api import DatagrokClient
  grok = DatagrokClient(base_url="https://public.datagrok.ai/api",
@@ -132,36 +108,15 @@ spec". For *in-package* HTTP, use `grok.dapi.fetchProxy` (see
  df = grok.tables.download("JohnDoe:MyTable") # ':' OK — client substitutes
  grok.functions.call("JohnDoe:MyFunction", {"a": 1, "b": 2})
  ```
- Expected: the client replaces `:` with `.` internally
- (knowledge `DG-FACT-232`) and prefixes `Bearer ` is the caller's job
- (knowledge `DG-FACT-229`).
 
 ## Common failure modes
 
-- **`401 Unauthorized` on every call.** The API key is missing the
- literal `Bearer ` prefix (with a trailing space) or `$API_KEY` is
- unquoted and the shell ate the space (knowledge `DG-FACT-229`). Fix:
- `API_KEY="Bearer xxxx"` and always quote `"$API_KEY"` in headers.
-- **`404 Not Found` calling a function.** You followed the article path
- `/public/v1/{name}/call` literally. Fix:
- insert `functions/` — `/public/v1/functions/{name}/call`.
-- **`404 Not Found` on tables/files with the right name.** The
- identifier still has `:` separators; REST API requires `.`
- (knowledge `DG-FACT-232`). Fix:
- `name=$(echo "$NAME" | tr ':' '.')` before composing the URL.
-- **Wrong base URL — endpoints route to the web UI.** `$GROK_HOST`
- works in the browser but the REST root is `$GROK_HOST/api`
- (knowledge `DG-FACT-230`). Fix: define `GROK_API="$GROK_HOST/api"`
- and use it for every REST call.
-- **Successful HTTP 200 but the response body says `ApiError...`.**
- Datagrok signals application-level errors with an `api-error` header
- even on 2xx. Fix: check `response.headers['api-error']` and surface
- the body — the Python client and the Grokky package both do this
- (`python-api/datagrok_api/http_client.py:48`,
- `packages/Grokky/dockerfiles/claude-runtime/src/shared-api-client.ts:51`).
-- **CSV upload arrives mangled.** `curl` defaulted to `--data` which
- strips newlines and applies form encoding. Fix: use `--data-binary
- @file.csv` plus `Content-Type: text/csv`.
+- **`401 Unauthorized`** — missing `Bearer ` prefix, or unquoted `$API_KEY` (`DG-FACT-229`). Always quote `"$API_KEY"`.
+- **`404` calling a function** — article path is wrong; insert `functions/`: `/public/v1/functions/{name}/call`.
+- **`404` on tables/files with the right name** — identifier still has `:`; replace with `.` (`DG-FACT-232`).
+- **Wrong base URL routes to web UI** — REST root is `$GROK_HOST/api` (`DG-FACT-230`).
+- **HTTP 200 but body says `ApiError...`** — check `response.headers['api-error']` (errors surface even on 2xx).
+- **CSV upload mangled** — use `--data-binary @file.csv` not `--data`.
 
 ## See also
 

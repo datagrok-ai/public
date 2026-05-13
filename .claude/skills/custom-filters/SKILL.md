@@ -49,11 +49,8 @@ and the widget must compose with every other selector in *Filters*.
 ## Steps
 
 1. **Subclass `DG.Filter`; implement the two abstract members.**
-   `DG.Filter` extends `Widget`; `filterSummary` (caption text) and
-   `applyFilter()` (writes the mask) are abstract and MUST be
-   overridden (`DG-FACT-265`). Constructor calls `super()` no-args
-   (base assigns `this.root = ui.div()`); the subclass reassigns
-   `this.root` to its own container and resets `this.subs = []`.
+   `filterSummary` and `applyFilter()` MUST be overridden — see
+   `DG-FACT-265` for constructor/super contract.
 
    ```typescript
    // src/filters/radio-button-filter.ts
@@ -77,13 +74,13 @@ and the widget must compose with every other selector in *Filters*.
      applyState(state: any) { super.applyState(state); this.render(); } // DG-FACT-273
    }
    ```
-   Expected: TS compiles; `applyFilter is abstract` errors gone.
 
 2. **Register the class as a package function with `role: filter`.**
-   The platform discovers filters by *function role*, not class name —
-   the function MUST declare `meta.role: filter` AND output type
-   `filter` (`DG-FACT-266`). Function-decorator form (canonical for
-   Widgets):
+   Platform discovers filters by function role (`DG-FACT-266` — needs
+   `meta.role: filter` AND `filter`-typed output). Class-decorator
+   shortcut `@grok.decorators.filter({name?, description?, semType?})`
+   applies both implicitly — no `package.ts` factory needed
+   (`DG-FACT-267`).
 
    ```typescript
    // src/package.ts
@@ -97,20 +94,9 @@ and the widget must compose with every other selector in *Filters*.
    }
    ```
 
-   The class-decorator shortcut `@grok.decorators.filter({name?,
-   description?, semType?})` implicitly applies `meta.role: filter`
-   plus the `filter` output (`DG-FACT-267`) — no `package.ts` factory
-   needed. Do NOT hand-author the bare-function `//name:` / `//meta.role:`
-   header from the article: that is the auto-emitted `package.g.ts`
-   shape and IS committed (not gitignored).
-
 3. **Filter additively in `applyFilter`; never set bits TRUE.**
-   Filters compose by mask AND; each filter MUST only flip bits to
-   FALSE. Iterate `dataFrame.rowCount`, call `filter.set(i, <pass>,
-   false)` (third arg = `notify=false`), and call `filter.fireChanged()`
-   once at the end (`DG-FACT-270`). Base JSDoc: "should disregard
-   false values (these are filtered out already by other filters), and
-   should filter out corresponding indexes".
+   See `DG-FACT-270` — only flip rows to FALSE via `filter.set(i,
+   <pass>, false)`, finish with `filter.fireChanged()`.
 
    ```typescript
    applyFilter() {
@@ -123,13 +109,8 @@ and the widget must compose with every other selector in *Filters*.
    ```
 
 4. **Trigger re-filtering via `requestFilter`, NOT a direct call.**
-   On every UI change call `this.dataFrame!.rows.requestFilter()`;
-   it fires `onRowsFiltering`, prompting the platform to invoke
-   `applyFilter()` on every filter in the group. Direct calls bypass
-   the chain (`DG-FACT-271`). Optionally override `get isFiltering()`
-   as `super.isFiltering && <predicate>` to short-circuit when
-   nothing is selected; chaining through `super` preserves the
-   `d4-filter-disabled` checkbox behaviour (`DG-FACT-274`).
+   See `DG-FACT-271`. Optionally chain `get isFiltering()` through
+   `super.isFiltering` to honor user-disable (`DG-FACT-274`).
 
    ```typescript
    radio.on('change', () => this.dataFrame!.rows.requestFilter());
@@ -140,11 +121,10 @@ and the widget must compose with every other selector in *Filters*.
    npm install && npm run build && grok publish <host>
    ```
    Pass `type: '<Package>:<funcName>'` to the *Filters* viewer
-   (`DG-FACT-268`). For cross-package use, call
-   `await grok.functions.call('<Package>:<funcName>')` FIRST so the
-   function loads before the synchronous viewer call (`DG-FACT-269`).
-   Prefer `addViewer(Viewer.filters(...))` over deprecated
-   `view.filters(...)`:
+   (`DG-FACT-268`). For cross-package use, `await grok.functions.call(
+   '<Package>:<funcName>')` first so the function loads before the
+   synchronous viewer call (`DG-FACT-269`). Prefer
+   `addViewer(Viewer.filters(...))` over deprecated `view.filters(...)`.
 
    ```typescript
    await grok.functions.call('Widgets:radioButtonFilter');
@@ -156,26 +136,12 @@ and the widget must compose with every other selector in *Filters*.
 
 ## Common failure modes
 
-- **Filter never appears in *Add filter…* picker.** Function role is
-  wrong or missing — `src/package.g.ts` MUST contain
-  `//meta.role: filter` AND `//output: filter result`, case-sensitive
-  (`DG-FACT-266`).
-- **Other filters' selections clear when this filter runs.**
-  `applyFilter` is setting bits to TRUE; only flip failing rows to
-  FALSE with `filter.set(i, <predicate>, false)` (`DG-FACT-270`).
-- **UI changes don't refilter.** Change handler calls
-  `this.applyFilter()` directly. Switch to
-  `this.dataFrame!.rows.requestFilter()` (`DG-FACT-271`).
-- **`Cannot read properties of undefined` in `attach`.** Subclass
-  read `this.dataFrame` / `this.column` before `super.attach(...)` —
-  call `super.attach` FIRST, then assign `this.column` /
-  `this.columnName`, then build UI (`DG-FACT-272`).
-- **Cross-package filter throws "function not found".** Add
-  `await grok.functions.call('<Package>:<func>')` before
-  `view.filters({...})` (`DG-FACT-269`).
-- **State doesn't restore on layout reload.** Override `applyState`
-  to call `super.applyState(state)` then re-render (`DG-FACT-273`);
-  platform calls `applyState` AFTER `attach`.
+- Filter missing from *Add filter…* — check `package.g.ts` has `//meta.role: filter` AND `//output: filter result` (`DG-FACT-266`).
+- Other filters' selections wiped — `applyFilter` is setting TRUE; only flip to FALSE (`DG-FACT-270`).
+- UI changes don't refilter — replace `this.applyFilter()` call with `rows.requestFilter()` (`DG-FACT-271`).
+- `Cannot read properties of undefined` in `attach` — call `super.attach` FIRST (`DG-FACT-272`).
+- Cross-package "function not found" — `await grok.functions.call(...)` before `view.filters(...)` (`DG-FACT-269`).
+- State doesn't restore on layout reload — override `applyState` (`DG-FACT-273`).
 
 ## See also
 

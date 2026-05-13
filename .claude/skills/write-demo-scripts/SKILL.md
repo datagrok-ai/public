@@ -46,11 +46,8 @@ instead (out of scope).
 
 ## Steps
 
-1. **Create the walkthrough source file and import `DemoScript`.**
-   Convention — `src/demo/<feature>.ts` (e.g.,
-   `packages/Chem/src/demo/demo.ts:6`). The import path is fixed —
-   the library declares no package root entry, so the full
-   `src/demo-script` subpath is required (knowledge `DG-FACT-374`).
+1. **Create the walkthrough source file and import `DemoScript`**
+   (`DG-FACT-374` — full subpath required).
    ```bash
    mkdir -p src/demo && touch src/demo/my-feature.ts
    ```
@@ -59,13 +56,9 @@ instead (out of scope).
    import * as DG from 'datagrok-api/dg';
    import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
    ```
-   Expected: `npx tsc --noEmit` resolves the import. If it can't, the
-   dependency from Prerequisites didn't land in `node_modules/`.
 
-2. **Instantiate `DemoScript` with name, description, mode, options.**
-   Constructor (knowledge `DG-FACT-375`):
-   `new DemoScript(name, description, isAutomatic = false,
-   options?: {autoStartFirstStep?: boolean, path?: string})`.
+2. **Instantiate `DemoScript` with name, description, mode, options**
+   (constructor at `DG-FACT-375`).
    ```typescript
    export async function demoMyFeature(): Promise<void> {
      const script = new DemoScript(
@@ -78,21 +71,18 @@ instead (out of scope).
    }
    ```
    Pick `isAutomatic`:
-   - `true` → auto-advance using each step's `delay` (default 2000 ms,
-     knowledge `DG-FACT-377`). `autoStartFirstStep` is ignored.
-   - `false` → manual; user clicks "Next step". `delay` values are
-     parsed but inert (knowledge `DG-FACT-378`). Set
-     `autoStartFirstStep: true` to start step 1 without a click.
+   - `true` → auto-advance per-step `delay` (default 2000 ms,
+     `DG-FACT-377`). `autoStartFirstStep` is ignored.
+   - `false` → manual ("Next step" button). `delay` values are parsed
+     but inert (`DG-FACT-378`). Set `autoStartFirstStep: true` to start
+     step 1 without a click.
 
-   `options.path` becomes the in-view breadcrumb suffix and the
-   `grok.shell.v.path` value, appended to `apps/Tutorials/Demo/`
-   (knowledge `DG-FACT-379`). Spaces in `path` are replaced with `-`.
+   `options.path` becomes the breadcrumb suffix on `apps/Tutorials/Demo/`;
+   spaces replaced with `-` (`DG-FACT-379`).
 
-3. **Chain `.step(...)` calls and terminate with `.start()`.**
-   Signature (knowledge `DG-FACT-376`): `step(name, async () => {...},
-   {description?, delay?}): this`. The fluent return means steps chain.
-   `func` must be `async` returning `void`; `await ...start()` is the
-   trigger — without it nothing runs.
+3. **Chain `.step(...)` calls and terminate with `.start()`** —
+   fluent; `func` must be `async`; nothing runs without `await
+   ...start()` (`DG-FACT-376`).
    ```typescript
    await script
      .step('Open dataset', async () => {
@@ -106,22 +96,16 @@ instead (out of scope).
      })
      .start();
    ```
-   Expected: `npx tsc --noEmit` clean.
 
 4. **(Optional) wrap the chain in try/catch.**
-   So a broken step doesn't orphan the view:
    ```typescript
    try { await script.step(/* ... */).start(); }
    catch (err: any) { grok.shell.error(`Walkthrough failed: ${err?.message ?? err}`); }
    ```
 
 5. **Register the function in `src/package.ts` with `meta.demoPath`
-   and `meta.isDemoScript: true`.**
-   `meta.demoPath` is what makes the entry appear in the gallery;
-   `meta.isDemoScript: true` renders the stepwise sidebar (knowledge
-   `DG-FACT-380`). Write the value lowercase `true` — the article
-   shows `True`, but every in-tree usage is lowercase (e.g.,
-   `packages/Chem/src/package.g.ts:1059`); live execution wins.
+   and `meta.isDemoScript: true`** (`DG-FACT-380`). Use lowercase
+   `true` (article incorrectly shows `True`).
    ```typescript
    // src/package.ts
    import {demoMyFeature} from './demo/my-feature';
@@ -134,43 +118,23 @@ instead (out of scope).
      await demoMyFeature();
    }
    ```
-   The `@grok.decorators.func({meta: {demoPath: '...', isDemoScript:
-   'true'}})` decorator form is equivalent — codegen emits the same
-   header into `package.g.ts`. Reference —
-   `packages/Chem/src/package.g.ts:1057-1063`.
+   `@grok.decorators.func({meta: {demoPath: '...', isDemoScript:
+   'true'}})` is equivalent.
 
 6. **Build, publish, and open the entry.**
    ```bash
    webpack
    grok publish dev
    ```
-   Expected: `src/package.g.ts` contains your `//meta.demoPath:` and
-   `//meta.isDemoScript: true` headers. In Datagrok, navigate to
-   **Apps → Tutorials → Demo → MyArea → My Feature** — the sidebar
-   shows your step list with play/next controls.
+   Navigate to **Apps → Tutorials → Demo → MyArea → My Feature**.
 
 ## Common failure modes
 
-- **Entry doesn't appear in the gallery.** `meta.demoPath` is missing
-  or the function isn't exported (knowledge `DG-FACT-380`). Fix: add
-  `//meta.demoPath: <Group> | <Sub>` and confirm `package.g.ts` has
-  the line after rebuild.
-- **Entry appears but shows a static "dashboard" page, not steps.**
-  `meta.isDemoScript: true` is missing (or `meta.isDemoDashboard:
-  true` is set, which overrides). Fix: add the lowercase
-  `//meta.isDemoScript: true` annotation; remove any
-  `meta.isDemoDashboard`.
-- **Steps don't run; the dialog opens but the sidebar is empty.**
-  You called `.step(...)` but forgot the terminating `.start()`, or
-  awaited the constructor instead (knowledge `DG-FACT-376`). Fix:
-  `await script.start()`.
-- **Mode-option mismatch.** `autoStartFirstStep` is consulted only in
-  manual mode; `delay` is consumed only by the automatic countdown
-  (knowledge `DG-FACT-378`). Choose one mode; don't combine.
-- **`Cannot find module '@datagrok-libraries/tutorials/...'`.** The
-  dependency wasn't added or `npm i` wasn't rerun (knowledge
-  `DG-FACT-374`). Fix: add the entry to `package.json` `dependencies`
-  and reinstall.
+- Entry not in gallery — `meta.demoPath` missing or function not exported (`DG-FACT-380`).
+- Static dashboard instead of steps — missing `meta.isDemoScript: true` or `meta.isDemoDashboard: true` overrides.
+- Sidebar empty — missing `.start()` call (`DG-FACT-376`).
+- Mode-option mismatch — `autoStartFirstStep` is manual-only; `delay` is automatic-only (`DG-FACT-378`).
+- `Cannot find module '@datagrok-libraries/tutorials/...'` — missing dep, run `npm i` (`DG-FACT-374`).
 
 ## See also
 

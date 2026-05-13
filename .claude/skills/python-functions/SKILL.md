@@ -47,25 +47,15 @@ Datagrok function from JS.
 
 ## Steps
 
-1. **Scaffold the app folder under `dockerfiles/`.**
-   Each Python "app" is its own folder owning `app.py`, a deps file,
-   optional `container.json`, and a Dockerfile (knowledge
-   `DG-FACT-157`). Reference: `packages/Samples/dockerfiles/`.
+1. **Scaffold the app folder under `dockerfiles/`** (`DG-FACT-157`).
    ```bash
    mkdir -p dockerfiles/<app>
    ```
-   Expected: `<package>/dockerfiles/<app>/` exists. `<app>` is
-   conventionally lowercased package shorthand (`samples`, `chem`).
 
 2. **Write `app.py` with Celery wiring + annotated functions.**
-   Celery-main is NOT auto-generated despite the article's claim
-   (drift `DG-FACT-DRIFT-061`). Hand-write `app = Celery(...)` plus
-   per-function `@app.task(name=..., bind=True, base=DatagrokTask)`
-   wrappers — the platform parses Datagrok header comments to register
-   the function but does NOT synthesize Celery glue (knowledge
-   `DG-FACT-159`). Header grammar: `#name:`, `#language: python`,
-   `#input:` (with `category`, `choices`, `range`), `#output:`,
-   `#meta.*` (knowledge `DG-FACT-158`).
+   Hand-write the Celery boilerplate; the platform parses header
+   comments but does NOT auto-generate Celery glue (`DG-FACT-159`,
+   `DG-FACT-DRIFT-061`). Header grammar at `DG-FACT-158`.
    ```python
    # dockerfiles/<app>/app.py
    from celery import Celery
@@ -84,16 +74,12 @@ Datagrok function from JS.
    def add(self, x: int, y: int) -> int:
        return x + y
    ```
-   Expected: `app.py` declares module-level `app` and at least one
-   `@app.task`-decorated function (ref `packages/Samples/dockerfiles/app.py`).
 
 3. **Declare deps — `environment.yaml` OR `requirements.in`.**
-   `datagrok-celery-task` is REQUIRED at runtime (supplies
-   `DatagrokTask`, `Settings`, `get_logger`); article omits it
-   (drift `DG-FACT-DRIFT-062`). Pin to `0.1.8` alongside `celery`
-   (knowledge `DG-FACT-160`). Use `environment.yaml` for conda-managed
-   natives (RDKit, PyTorch); else `requirements.in` is lighter
-   (knowledge `DG-FACT-163`).
+   `datagrok-celery-task==0.1.8` is REQUIRED (`DG-FACT-160`,
+   `DG-FACT-DRIFT-062`). Use `environment.yaml` for conda-managed
+   natives (RDKit, PyTorch); `requirements.in` for pure-pip
+   (`DG-FACT-163`).
    ```yaml
    # dockerfiles/<app>/environment.yaml
    name: myenv
@@ -107,28 +93,18 @@ Datagrok function from JS.
        - datagrok-celery-task==0.1.8
        - celery
    ```
-   Expected: `datagrok-celery-task==0.1.8` listed under `pip:`. With
-   `requirements.in`, list it directly and validate with
-   `uv pip install -r requirements.in`.
 
-4. **Add `container.json` (optional).**
-   Same shape as `dockerfiles/container.json`, but min and default
-   `cpu` for Celery containers is **1**, not `0.25` (knowledge
-   `DG-FACT-161`). Article claims worker count = `cpu * 2`; the
-   production Dockerfile hard-codes `--concurrency=1` (drift
-   `DG-FACT-DRIFT-064`) — leave concurrency unset.
+4. **Add `container.json` (optional).** Celery containers require
+   `cpu >= 1` (`DG-FACT-161`); leave concurrency unset
+   (`DG-FACT-DRIFT-064`).
    ```json
    {"cpu": 1, "memory": 1024}
    ```
-   Expected: `dockerfiles/<app>/container.json` exists. See
-   `docker-containers` skill for the full field list.
 
-5. **Ship the Dockerfile.**
-   Article claims it's auto-generated (drift `DG-FACT-DRIFT-063`);
-   production hand-writes it and must launch a Celery worker bound to
-   the platform-injected queue. `$CELERY_HOSTNAME` /
-   `$TASK_QUEUE_NAME` come from `grok_spawner` at start time
-   (knowledge `DG-FACT-162`).
+5. **Ship the Dockerfile.** Hand-written (`DG-FACT-DRIFT-063`); must
+   launch a Celery worker bound to the platform-injected queue
+   (`DG-FACT-162` — `$CELERY_HOSTNAME`/`$TASK_QUEUE_NAME` from
+   `grok_spawner`).
    ```dockerfile
    FROM mambaorg/micromamba:1.5.3
    USER root
@@ -142,8 +118,6 @@ Datagrok function from JS.
    ENTRYPOINT micromamba run -n myenv celery -A app worker \
        --loglevel=info --hostname=$CELERY_HOSTNAME -Q $TASK_QUEUE_NAME
    ```
-   Expected: `dockerfiles/<app>/Dockerfile` exists. `-A app` resolves
-   to the module-level `app` symbol from step 2.
 
 6. **Publish the package.** First publish queues the image build; one
    worker container deploys per app folder.
@@ -151,38 +125,24 @@ Datagrok function from JS.
    webpack
    grok publish dev
    ```
-   Expected: exit `0`. Image and container appear in **Platform →
-   Dockers** with a green dot once the build settles.
 
-7. **Call the function from JS.**
-   Use the standard dispatcher with `<Package>:<HeaderName>`.
-   `<HeaderName>` is the `#name:` header value — NOT the Python `def`
-   name and NOT the Celery `@app.task(name=...)` identifier
-   (knowledge `DG-FACT-164`).
+7. **Call the function from JS** with `<Package>:<HeaderName>` —
+   `<HeaderName>` is `#name:`, NOT the Python `def` or Celery task name
+   (`DG-FACT-164`).
    ```typescript
    import * as grok from 'datagrok-api/grok';
 
    const z: number = await grok.functions.call(
      `${_package.name}:Add`, {x: 1, y: 2});
    ```
-   Expected: `z === 3`.
 
 ## Common failure modes
 
-- **`<YourPackage>:add` returns "function not found".** Article shows
-  a placeholder; substitute the real package name and `#name:` header
-  (e.g. `Samples:PyKNNTrain`).
-- **`ImportError: No module named datagrok_celery_task`.** Missing
-  required dep (drift `DG-FACT-DRIFT-062`). Fix: add
-  `datagrok-celery-task==0.1.8` (knowledge `DG-FACT-160`).
-- **Function visible to JS but never executes.** Header comments
-  present, `@app.task(... base=DatagrokTask)` wrapper missing (drift
-  `DG-FACT-DRIFT-061`). Fix: wrap each annotated `def` per step 2.
-- **Worker starts but no tasks land in it.** Dockerfile omits or
-  hard-codes the queue. Fix: keep `-Q $TASK_QUEUE_NAME` unmodified
-  (knowledge `DG-FACT-162`).
-- **`cpu: 0.25` rejected at deploy.** Celery containers require
-  `cpu >= 1` (knowledge `DG-FACT-161`). Fix: bump to `1`+.
+- `<YourPackage>:add` "function not found" — substitute real package + `#name:` header.
+- `ImportError: No module named datagrok_celery_task` — add `datagrok-celery-task==0.1.8` (`DG-FACT-160`).
+- Function visible but never executes — missing `@app.task(... base=DatagrokTask)` wrapper (`DG-FACT-DRIFT-061`).
+- Worker starts but no tasks land — keep `-Q $TASK_QUEUE_NAME` unmodified (`DG-FACT-162`).
+- `cpu: 0.25` rejected — Celery containers need `cpu >= 1` (`DG-FACT-161`).
 
 ## See also
 

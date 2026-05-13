@@ -50,24 +50,13 @@ selected numerical columns.
 
 ## Steps
 
-1. **Pick the input type — it IS the invocation surface (`DG-FACT-182`).**
-   Four tokens dispatch on different surfaces; the article shows only
-   `string`, which loses cell context.
-   - `semantic_value <name> { semType: <T> }` → `DG.SemanticValue`;
-     **cell** right-click + per-row Actions pane. Default
-     (`packages/Chem/src/package.g.ts:843-849`).
-   - `column <name> { semType: <T> }` → `DG.Column`; **column-header**
-     right-click (`packages/Bio/src/package.g.ts:391-396`).
-   - `list <name> { type: numerical }` → `DG.Column[]`;
-     **multi-column selection** (`packages/PowerGrid/src/package.g.ts:171-176`).
-   - `string <name> { semType: <T> }` → article form; raw value only,
-     no cell/column reference. Production never uses it here.
+1. **Pick the input type — it IS the invocation surface.** Four tokens dispatch on different surfaces (see DG-FACT-182):
+   - `semantic_value <name> { semType: <T> }` → cell right-click + per-row Actions pane.
+   - `column <name> { semType: <T> }` → column-header right-click.
+   - `list <name> { type: numerical }` → multi-column selection.
+   - `string <name> { semType: <T> }` → article form; loses cell/column context — avoid.
 
-2. **Declare the action with `meta.action: <Display Text>`.**
-   Adding `meta.action` IS the registration — no explicit `register(...)`
-   call (`DG-FACT-180`). The text becomes the menu label. Exactly one
-   input, carrying `semType`, is required (`DG-FACT-181`); without
-   `semType` the function registers but has no dispatch surface.
+2. **Declare the action with `meta.action: <Display Text>`.** The annotation IS the registration; exactly one input carrying `semType` is required (see DG-FACT-180, DG-FACT-181).
 
    ```typescript
    // src/package.ts — canonical decorator form
@@ -96,23 +85,9 @@ selected numerical columns.
    }
    ```
 
-   Expected: after `npm run build`, the regenerated `src/package.g.ts`
-   carries a wrapper with `//name: Use as filter`,
-   `//input: semantic_value value { semType: Molecule }`, and
-   `//meta.action: Use as filter` (compare
-   `packages/Chem/src/package.g.ts:843-849`). The header-comment form
-   shown in the article is equivalent (`DG-FACT-184`).
+   Header-comment form is equivalent (see DG-FACT-184).
 
-3. **Scope WHERE the action surfaces with the `meta.exclude-*` toggles.**
-   Both surfaces light up by default. Suppress one with a sibling
-   `meta.*: 'true'` flag — the article mentions neither (`DG-FACT-183`):
-   - `meta.exclude-actions-panel: 'true'` → keeps right-click, hides
-     from Actions pane. Chem uses it on each `Copy as <format>`
-     sub-action so the panel only shows the parent chooser
-     (`packages/Chem/src/package.ts:2066,2079`).
-   - `meta.exclude-current-value-menu: 'true'` → keeps Actions pane,
-     hides from right-click. Chem uses it on the parent `Copy as...`
-     chooser (`packages/Chem/src/package.ts:2049`).
+3. **Scope WHERE the action surfaces with the `meta.exclude-*` toggles.** Both surfaces light up by default; the `exclude-actions-panel` / `exclude-current-value-menu` sibling toggles selectively hide one (see DG-FACT-183).
 
    ```typescript
    @grok.decorators.func({
@@ -122,51 +97,21 @@ selected numerical columns.
    static copyAsSmiles(/* @param ... value: DG.SemanticValue */) { /* … */ }
    ```
 
-4. **For "Use as filter" on `Molecule` — branch on units, then `updateOrAdd`.**
-   The article uses `.add(...)` and bare `FILTER_TYPE.SUBSTRUCTURE`;
-   production uses `.updateOrAdd(filterDescriptor, false)` so a second
-   invocation REPLACES the existing filter row instead of stacking, plus
-   fully-qualified `DG.FILTER_TYPE.SUBSTRUCTURE` (`DG-FACT-185`). When
-   `value.cell.column.meta.units == DG.chem.Notation.Smiles`, convert
-   via `DG.chem.convertMolNotation` to preserve orientation; otherwise
-   `molToMolblock(molecule, getRdKitModule())`
-   (`packages/Chem/src/package.ts:2032-2036`).
+4. **For "Use as filter" on `Molecule` — branch on units, then `updateOrAdd`.** Use `.updateOrAdd(filterDescriptor, false)` (not `.add(...)`) so a second invocation REPLACES the existing filter row; branch on `value.cell.column.meta.units` to convert SMILES via `DG.chem.convertMolNotation` and other notations via `molToMolblock` (see DG-FACT-185).
 
 5. **Build and publish — registration is automatic.**
    ```bash
    npm install && npm run build   # regenerates src/package.g.ts
    grok publish <host>            # add --release once stable
    ```
-   The `meta.action` annotation IS the registration. After deploy,
-   right-click an item whose `semType` matches the declared input to
-   see the action.
 
 ## Common failure modes
 
-- **Action never appears on right-click OR Actions pane.** The
-  `meta.action` token is missing or the input lacks a `semType`.
-  Inspect the auto-generated `src/package.g.ts`: it MUST carry both
-  `//meta.action: <Text>` AND `//input: ...{ semType: <T> }`
-  (`DG-FACT-180`, `DG-FACT-181`).
-- **Action surfaces on the wrong invocation surface** (e.g. column
-  header but not cells) **or fires on the wrong column when two columns
-  share a `semType`.** Wrong input type: `column` fires on the header,
-  `semantic_value` on the cell, `list` on multi-column selection. A
-  `string` body that calls `tv.dataFrame.columns.bySemType(...)` picks
-  the first match, not the column the user clicked — switch the input
-  to `semantic_value` and read `value.cell?.column` (`DG-FACT-182`).
-- **Article snippet won't compile / `FILTER_TYPE` is undefined.** The
-  article omits imports and uses bare `FILTER_TYPE.SUBSTRUCTURE`. Add
-  `import * as DG from 'datagrok-api/dg';` and use
-  `DG.FILTER_TYPE.SUBSTRUCTURE`.
-- **Each invocation of "Use as filter" stacks a new filter row.** The
-  article uses `.add(...)`; switch to
-  `.updateOrAdd(filterDescriptor, false)` so the existing row for that
-  column is replaced (`DG-FACT-185`).
-- **`Copy as <format>` sub-actions clutter the Actions pane.** Each
-  format variant lacks `meta.exclude-actions-panel: 'true'`. Add the
-  flag to every variant; keep `meta.exclude-current-value-menu: 'true'`
-  on the parent `Copy as...` chooser (`DG-FACT-183`).
+- **Action never appears.** `meta.action` missing OR input lacks `semType` — check `src/package.g.ts` for both (see DG-FACT-180, DG-FACT-181).
+- **Wrong invocation surface / fires on the wrong column.** Wrong input type. Switch to `semantic_value` and read `value.cell?.column` so you get the column the user clicked (see DG-FACT-182).
+- **Article snippet won't compile / `FILTER_TYPE` is undefined.** Add `import * as DG from 'datagrok-api/dg';` and use `DG.FILTER_TYPE.SUBSTRUCTURE`.
+- **Each invocation stacks a new filter row.** Use `.updateOrAdd(...)` not `.add(...)` (see DG-FACT-185).
+- **`Copy as <format>` sub-actions clutter the Actions pane.** Add `meta.exclude-actions-panel: 'true'` to each variant; `exclude-current-value-menu: 'true'` on the parent chooser (see DG-FACT-183).
 
 ## See also
 

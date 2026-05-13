@@ -52,12 +52,7 @@ built-in runtimes — no handler needed.
 
 ## Steps
 
-1. **Author the handler as a decorated `static` method on `PackageFunctions` in `src/package.ts`.**
-   Do NOT hand-edit `package.g.ts` — codegen overwrites it every
-   build (`DG-FACT-179`). Signature MUST be
-   `async (scriptCall: DG.FuncCall): Promise<void>`; name the
-   parameter `scriptCall` (not `call`) — every shipping handler and
-   the codegen emit `scriptCall` (`DG-FACT-174`).
+1. **Author the handler as a decorated `static` method on `PackageFunctions` in `src/package.ts`** (`DG-FACT-179`; do not hand-edit `package.g.ts`). Signature must be `async (scriptCall: DG.FuncCall): Promise<void>` — use parameter name `scriptCall` (`DG-FACT-174`).
 
    ```typescript
    // src/package.ts
@@ -79,43 +74,13 @@ built-in runtimes — no handler needed.
      }
    }
    ```
-   Expected: `npx grok check` exits `0`; `src/package.g.ts` contains a
-   matching `//meta.role: scriptHandler` block above an
-   `async function clojureScriptHandler(scriptCall: DG.FuncCall): Promise<void>`
-   (shape per `packages/Pyodide/src/package.g.ts:15-26`).
+   Expected: `npx grok check` exits `0`; `package.g.ts` carries `//meta.role: scriptHandler` above the codegen-emitted function.
 
-2. **Include all four mandatory annotations — registration silently fails if any are missing.**
-   Startup only registers a function when `meta.role` equals literal
-   `scriptHandler` AND `meta.scriptHandler.language` is non-empty
-   (`DG-FACT-173`, `DG-FACT-175`):
-   - `meta.role: scriptHandler` (case-sensitive;
-     `DG.FUNC_TYPES.SCRIPT_HANDLER`).
-   - `meta.scriptHandler.language: <name>` — what scripts put in their
-     `#language:` header to dispatch here (`DG-FACT-178`).
-   - `meta.scriptHandler.extensions: <ext1,ext2>` — comma-separated,
-     **no leading dot** (`py`, not `.py`); split on `,` at startup.
-   - One input `funccall scriptCall` (the only parameter).
+2. **Include all four mandatory annotations** — registration silently fails if any are missing (`DG-FACT-173`, `DG-FACT-175`): `meta.role: scriptHandler`, non-empty `meta.scriptHandler.language`, comma-separated `meta.scriptHandler.extensions` (no leading dot), and the single `funccall scriptCall` input.
 
-3. **Add optional annotations as needed — seven exist** (`DG-FACT-176`).
-   - `scriptHandler.templateScript` — boilerplate for new scripts;
-     embed newlines as literal `\n`.
-   - `scriptHandler.codeEditorMode` — CodeMirror-5 mode (`python`,
-     `clojure`); defaults to `language`.
-   - `scriptHandler.commentStart` — line-comment chars; default `#`.
-   - `scriptHandler.friendlyName` — UI label; defaults to `language`.
-   - `scriptHandler.vectorizationFunction` — nqName `<Pkg>:<fn>` of a
-     `DG.Script → string` function (step 4).
-   - `scriptHandler.parserFunction` — nqName of a text→`DG.Script`
-     parser (`DG-FACT-459`); rarely needed (built-in `#name:` parser
-     covers Python / Clojure / JS-style headers).
-   - `meta.icon` — package-relative path (e.g. `files/clojure.png`).
+3. **Add optional annotations as needed** — full list (`templateScript`, `codeEditorMode`, `commentStart`, `friendlyName`, `vectorizationFunction`, `parserFunction`, `meta.icon`) in `DG-FACT-176` and `DG-FACT-459`.
 
-4. **If you set `vectorizationFunction`, register the target with the right input/output types.**
-   Target MUST be a package function with signature
-   `(script: DG.Script) => string`. Codegen needs `//input: script script`
-   + `//output: string result`; without these the lookup fails silently
-   at handler-construction (`DG-FACT-177`). Reference
-   (`packages/Pyodide/src/package.g.ts:9-13`):
+4. **If you set `vectorizationFunction`, register the target** with `//input: script script` + `//output: string result` — without these, lookup fails silently (`DG-FACT-177`).
 
    ```typescript
    // package.g.ts (emitted)
@@ -126,14 +91,7 @@ built-in runtimes — no handler needed.
    }
    ```
 
-5. **Implement the handler body — read script, execute, write outputs via `scriptCall`.**
-   The script body is on `scriptCall.func.script` (a `DG.Script`); its
-   declared inputs/outputs come from the script's own
-   `#name/#input/#output` header, NOT the handler's annotations
-   (`DG-FACT-178`). Read inputs as `scriptCall.inputs[<name>]`; write
-   outputs via `scriptCall.setParamValue('<name>', value)` (or
-   `scriptCall.outputs[<name>] = value`). Reference
-   (`packages/Pyodide/src/package.ts:361-369`):
+5. **Implement the handler body** — read `scriptCall.func.script`, execute, write outputs via `scriptCall.setParamValue` (or `scriptCall.outputs[...]`). The script's `#name/#input/#output` header is the source of truth for parameters (`DG-FACT-178`).
 
    ```typescript
    static async pyodideLanguageHandler(scriptCall: DG.FuncCall): Promise<void> {
@@ -155,27 +113,11 @@ built-in runtimes — no handler needed.
 
 ## Common failure modes
 
-- **Function compiles but never registers.** Mandatory annotation
-  missing or malformed — `meta.role` typo (case-sensitive
-  `scriptHandler`), extensions with leading dots (`.py` vs `py`), or
-  empty `scriptHandler.language`. Startup silently skips it
-  (`DG-FACT-175`); `npx grok check` still passes. Inspect
-  `package.g.ts` — all four mandatory lines must be present.
-- **Hand-edited `package.g.ts` is overwritten on next build.** Edit
-  the decorator in `package.ts`; codegen regenerates `package.g.ts`
-  from it every build (`DG-FACT-179`).
-- **Vectorization silently does nothing.** Either the
-  `vectorizationFunction` nqName is malformed (`Package:funcName`,
-  case-sensitive) or the target lacks `//input: script script` /
-  `//output: string result` and codegen never registered it
-  (`DG-FACT-177`). No build error.
-- **Script runs but outputs are blank.** Handler didn't write back.
-  Outputs go through `scriptCall.setParamValue('<name>', value)` (or
-  `scriptCall.outputs[<name>] = value`); returning a value does
-  nothing — return type is `Promise<void>` (`DG-FACT-174`).
-- **Script with the right extension still falls back to a built-in handler.**
-  Dispatch is by `#language:` header in the script body, NOT by file
-  extension (`DG-FACT-178`). Confirm the script header.
+- **Function compiles but never registers** — a mandatory annotation is missing/malformed (case, leading dots, empty language). Startup skips silently (`DG-FACT-175`).
+- **Hand-edited `package.g.ts` is overwritten** — edit the decorator in `package.ts` (`DG-FACT-179`).
+- **Vectorization silently does nothing** — malformed nqName or missing `//input: script script` + `//output: string result` (`DG-FACT-177`).
+- **Outputs blank** — handler returned a value instead of calling `scriptCall.setParamValue` (`DG-FACT-174`).
+- **Wrong handler fires** — dispatch is by `#language:` header in the script body, not extension (`DG-FACT-178`).
 
 ## See also
 

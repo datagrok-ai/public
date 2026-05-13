@@ -51,10 +51,7 @@ admin UI, see the "No-code alternative" pointer at the bottom.
 
 ## Steps
 
-1. **Declare the pattern in `package.json`.**
-   `meta.semanticTypes` detects identifiers in any text without code
-   (`DG-FACT-058`). Each entry needs `semType`, `description`, and a
-   `parsers` ARRAY (multiple regexes per type).
+1. **Declare the pattern in `package.json`.** Add a `meta.semanticTypes` array (see DG-FACT-058):
    ```json
    {
      "name": "@datagrok/chembl",
@@ -65,15 +62,8 @@ admin UI, see the "No-code alternative" pointer at the bottom.
      }]}
    }
    ```
-   Expected: after `grok publish`, the platform highlights `CHEMBL1234`
-   literals as tagged tokens. Shipped example:
-   `packages/Chemspace/package.json:67-77`.
 
-2. **Write an `ObjectHandler` for hover/card/properties rendering.**
-   Override `get type()`, `isApplicable(x)`, and at least one of
-   `renderTooltip` / `renderCard` / `renderProperties` (`DG-FACT-059`).
-   Canonical guard: `x instanceof DG.SemanticValue && x.semType ===
-   '<TYPE>'`; raw id is `(x as DG.SemanticValue).value` (`DG-FACT-061`).
+2. **Write an `ObjectHandler` for hover/card/properties rendering.** Override `get type()`, `isApplicable(x)`, and at least one renderer (see DG-FACT-059, DG-FACT-061).
    ```typescript
    // src/handlers.ts — imports: grok, ui, DG from 'datagrok-api/{grok,ui,dg}'
    export class ChemblIdHandler extends DG.ObjectHandler {
@@ -89,13 +79,7 @@ admin UI, see the "No-code alternative" pointer at the bottom.
      }
    }
    ```
-   Expected: `src/handlers.ts` compiles. Shipped reference:
-   `packages/JiraConnect/src/jira-grid-cell-handler.ts:24-80`.
-
-3. **Register the handler from an autostart init.**
-   `DG.ObjectHandler.register(...)` is the static entry point
-   (`DG-FACT-060`); must run from autostart — decorator form canonical
-   (`DG-FACT-063`).
+3. **Register the handler from an autostart init.** Must run from autostart (see DG-FACT-060, DG-FACT-063).
    ```typescript
    // src/package.ts — imports: DG, grok, ChemblIdHandler from './handlers'
    export const _package = new DG.Package();
@@ -104,26 +88,13 @@ admin UI, see the "No-code alternative" pointer at the bottom.
      static init() { DG.ObjectHandler.register(new ChemblIdHandler()); }
    }
    ```
-   Expected: after `grok publish --release`, hovering `CHEMBL1234`
-   triggers your `renderTooltip`. Reference:
-   `packages/JiraConnect/src/package.ts:24-32`.
 
 ## Common failure modes
 
-- **Handler never fires after publish.** Init isn't autostart — use
-  `@grok.decorators.autostart()` or `//meta.role: autostart`
-  (`DG-FACT-063`).
-- **`x.semType` undefined inside `isApplicable`.** Detector regex
-  never fired — recheck `meta.semanticTypes[].parsers[].regexp`
-  (`DG-FACT-058`) and confirm the package republished.
-- **Hover fires but `renderTooltip` never runs.** `isApplicable`
-  returned false — confirm `x instanceof DG.SemanticValue` guard and
-  exact-match `semType` string (`DG-FACT-061`); a bare string with
-  the right shape is NOT a `SemanticValue`.
-- **Identifiers detected in grid cells but not in free text /
-  Search Everywhere.** Regex too narrow or anchored — `parsers[].regexp`
-  is matched against arbitrary text fragments, so avoid `^…$`
-  anchors (`DG-FACT-058`).
+- **Handler never fires after publish.** Init isn't autostart (see DG-FACT-063).
+- **`x.semType` undefined inside `isApplicable`.** Detector regex never fired — recheck `parsers[].regexp` (see DG-FACT-058).
+- **Hover fires but `renderTooltip` never runs.** `isApplicable` returned false — check `instanceof DG.SemanticValue` guard and exact-match `semType` (see DG-FACT-061).
+- **Detected in grid cells but not free text / Search Everywhere.** Regex anchored — drop `^…$` (see DG-FACT-058).
 
 ## No-code alternative
 

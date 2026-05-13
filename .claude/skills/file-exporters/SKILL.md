@@ -47,12 +47,9 @@ data out.
 ## Steps
 
 1. **Add a `static` method on `PackageFunctions` and decorate it.**
-   The platform discovers exporters via the function role `fileExporter`
-   — exactly that camelCase token (knowledge `DG-FACT-079`). The
-   decorator's options bag is the generic `FunctionOptions`; the
-   `description` field becomes the visible menu label and is REQUIRED —
-   `grok check` exits non-zero when it is missing or empty (knowledge
-   `DG-FACT-080`). See the "Label convention" note below for phrasing.
+   Role token is `fileExporter` (camelCase — `DG-FACT-079`).
+   `description` is REQUIRED and becomes the menu label — empty fails
+   `grok check` (`DG-FACT-080`).
    ```typescript
    // src/package.ts
    import * as grok from 'datagrok-api/grok';
@@ -66,25 +63,13 @@ data out.
      }
    }
    ```
-   Expected: after `npm run build` (or any tool that regenerates
-   `package.g.ts`), `src/package.g.ts` contains an exported wrapper
-   carrying `//description: Save as <FORMAT>` and `//meta.role:
-   fileExporter` — same shape as `packages/Arrow/src/package.g.ts:60-64`.
 
 2. **Implement the body: read the table, serialize, hand off to `DG.Utils.download`.**
-   `grok.shell.t` returns the currently open `DG.DataFrame` or `null` —
-   guard for `null` before touching `.columns` or `.rowCount`. Then call
-   `DG.Utils.download(filename, content, contentType?)`
-   (`js-api/src/utils.ts:230-237`) — the canonical helper that wraps
-   `Blob` + `URL.createObjectURL` + an anchor click. `content: BlobPart`
-   accepts `string`, `Uint8Array`, `ArrayBuffer`, or `Blob`; binary
-   payloads (Parquet, Feather, XLSX) need a `Uint8Array` (knowledge
-   `DG-FACT-081`). Under modern TS lib types, a bare `Uint8Array` is
-   typed `Uint8Array<ArrayBufferLike>` and is NOT assignable to
-   `BlobPart` (TS2345) — narrow the generic at the call site with
-   `as Uint8Array<ArrayBuffer>`, in the same expression that
-   null-coalesces an empty buffer (knowledge `DG-FACT-426`,
-   `packages/Arrow/src/package.ts:68,75`).
+   `grok.shell.t` returns the currently open `DG.DataFrame` or `null`.
+   `DG.Utils.download(filename, content, contentType?)` accepts
+   `string`, `Uint8Array`, `ArrayBuffer`, or `Blob` (`DG-FACT-081`).
+   For binary payloads under modern TS, narrow the type with
+   `as Uint8Array<ArrayBuffer>` (`DG-FACT-426`).
    ```typescript
    @grok.decorators.fileExporter({description: 'Save as Parquet'})
    static saveAsParquet(): void {
@@ -97,25 +82,16 @@ data out.
      );
    }
    ```
-   Expected: clicking the menu entry triggers a browser download of
-   `<table-name>.parquet` whose payload deserializes correctly in the
-   target tool.
 
 3. **(Optional) Use a dialog form when the user must choose options first.**
-   When the exporter needs follow-up input (which columns to include,
-   width/precision, filename), declare `async` and delegate to a
-   `DG.Dialog` helper that builds the payload and ultimately calls
-   `DG.Utils.download(...)` itself. This is the `Chem.saveAsSdf` /
-   `Bio.saveAsFasta` pattern (`packages/Chem/src/package.ts:526-531`,
-   `packages/Bio/src/package.ts:1404-1407`).
+   Declare `async` and delegate to a `DG.Dialog` helper that ultimately
+   calls `DG.Utils.download(...)`:
    ```typescript
    @grok.decorators.fileExporter({description: 'As SDF...'})
    static async saveAsSdf(): Promise<void> {
      saveAsSdfDialog();   // your DG.Dialog ends in DG.Utils.download
    }
    ```
-   Expected: clicking the menu opens your dialog; the download fires
-   only after the user clicks OK.
 
 4. **Build, publish, let the platform auto-register.**
    ```bash
@@ -129,69 +105,28 @@ data out.
 
 ## Notes
 
-- **Label convention.** Pick the `description` phrasing to match
-  runtime behavior (knowledge `DG-FACT-080`): use `'As <FORMAT>...'`
-  with a trailing ellipsis when a dialog opens first (Chem
-  `'As SDF...'`, Bio `'As FASTA...'`); use `'Save as <FORMAT>'` when
-  the click downloads directly (Arrow `'Save as Parquet'`,
-  `'Save as Feather'`).
-- **No extension annotation, no per-format scoping.** Unlike file
-  viewers/handlers, exporters have NO `meta.fileExporter: <ext>` key
-  and no `FileExporterOptions` type — the options bag is the generic
-  `FunctionOptions` (`js-api/src/decorators/functions.ts:350-356`,
-  knowledge `DG-FACT-082`). Every registered exporter appears in the
-  global Export menu. If your format only makes sense for a particular
-  data shape (e.g. a `Molecule` semType column), gate inside the body
-  and `return` early — mirror `Chem.saveAsSdf`'s structure-column null
-  check.
+- **Label convention.** `'As <FORMAT>...'` (with ellipsis) when a
+  dialog opens first; `'Save as <FORMAT>'` when the click downloads
+  directly (`DG-FACT-080`).
+- **No per-format scoping.** No `meta.fileExporter: <ext>` key
+  (`DG-FACT-082`). Gate inside the body if your format only makes
+  sense for certain data shapes.
 
 ## Common failure modes
 
-- **Menu entry never appears.** The function role is wrong or missing.
-  Inspect the regenerated `src/package.g.ts`: it MUST contain
-  `//meta.role: fileExporter` (camelCase, knowledge `DG-FACT-079`).
-  `fileexporter` / `FileExporter` won't register.
-- **`grok check` fails with "File exporters should have a description
-  parameter".** The decorator was called as
-  `@grok.decorators.fileExporter({})` or `description: ''`. The CLI
-  linter at `tools/bin/commands/check.ts:358-359` enforces a non-empty
-  `description` (knowledge `DG-FACT-080`).
-- **Download is empty / shows `[object Object]` / corrupts a binary
-  file.** You wrote a hand-rolled
-  `<a href="data:text/plain;...,encodeURIComponent(...)">` form. That
-  pattern silently corrupts non-text content beyond ~2 MB on most
-  browsers. Use `DG.Utils.download(filename, bytes)` — pass a
-  `Uint8Array` for binary, a `string` for text (knowledge `DG-FACT-081`).
-- **Runtime `Cannot read properties of null (reading 'columns')`.**
-  `grok.shell.t` returned `null` because no table was open. Add the
-  `if (table == null) return;` guard at the top of every exporter.
-- **Trying to scope the exporter to one extension via metadata.**
-  There is no `meta.fileExporter: <ext>` key (knowledge `DG-FACT-082`).
-  Every registered exporter appears in the global Export menu — gate by
-  inspecting `grok.shell.t` inside the body and returning early when
-  the data shape is wrong.
-- **`grok check && webpack` fails with TS2345 "Argument of type
-  'Uint8Array<ArrayBufferLike>' is not assignable to parameter of type
-  'BlobPart'".** Modern TS `lib.dom.d.ts` types `Uint8Array` with an
-  `ArrayBufferLike` slot that includes `SharedArrayBuffer`, which is
-  not a valid `BlobPart`. Narrow at the call site:
-  `(bytes ?? new Uint8Array(0)) as Uint8Array<ArrayBuffer>` — the
-  pattern both Arrow exporters use (knowledge `DG-FACT-426`).
+- **Menu entry never appears.** `//meta.role: fileExporter` missing
+  in `package.g.ts` (`DG-FACT-079`).
+- **`grok check`: "File exporters should have a description
+  parameter".** `description` empty or missing (`DG-FACT-080`).
+- **Binary download corrupts.** Use `DG.Utils.download(filename,
+  bytes)`, not a hand-rolled `data:` URL (`DG-FACT-081`).
+- **Runtime null on `.columns`.** Guard `if (table == null) return;`.
+- **TS2345 `Uint8Array<ArrayBufferLike>` not assignable to
+  `BlobPart`.** Cast: `(bytes ?? new Uint8Array(0)) as
+  Uint8Array<ArrayBuffer>` (`DG-FACT-426`).
 
 ## See also
 
-- Source articles: `help/develop/how-to/files/file-exporters.md`.
-- Knowledge: `docs/_internal/knowledge/knowledge-graph.md` — facts
-  `DG-FACT-079` (role token + signature), `DG-FACT-080` (description
-  required + label convention), `DG-FACT-081` (`grok.shell.t` +
-  `DG.Utils.download`), `DG-FACT-082` (no extension metadata),
-  `DG-FACT-426` (`Uint8Array<ArrayBuffer>` cast for `BlobPart`).
-- Reference packages:
-  - `packages/Arrow/src/package.ts:64-76` — decorator + `DG.Utils.download`
-    for binary payloads.
-  - `packages/Chem/src/package.ts:526-531` — async exporter delegating
-    to a dialog (`As SDF...`).
-  - `packages/Bio/src/package.ts:1404-1407` — sync exporter delegating
-    to a dialog (`As FASTA...`).
-- Related skills: `create-custom-file-viewers` (inverse direction —
-  preview a file the user clicked).
+- Source: `help/develop/how-to/files/file-exporters.md`.
+- Knowledge: `DG-FACT-079`–`082`, `DG-FACT-426`.
+- Related skills: `create-custom-file-viewers`.

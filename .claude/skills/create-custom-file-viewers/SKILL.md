@@ -45,17 +45,10 @@ player. You are NOT importing the file as a `DataFrame` (that's
 
 ## Steps
 
-1. **Register the function as a file viewer.**
-   The platform discovers viewers via the function role `fileViewer`
-   (`DG-FACT-073`). Use a `static` method on `PackageFunctions`
-   decorated with `@grok.decorators.fileViewer({fileViewer: '<ext>'})`
-   — the canonical form in recent packages. The `fileViewer` key is
-   REQUIRED (`DG-FACT-076`). The regenerated `src/package.g.ts` wrapper
-   will have signature `(file: DG.FileInfo) => DG.View | Promise<DG.View>`.
+1. **Register the function as a file viewer** via role `fileViewer` (`DG-FACT-073`). Decorator form on a `PackageFunctions` static method is canonical; the `fileViewer` key is required (`DG-FACT-076`).
 
    <details><summary>Variant: header-comment form (older packages)</summary>
 
-   The article uses header comments instead of a decorator:
    ```typescript
    //name: previewEps
    //tags: fileViewer
@@ -65,15 +58,10 @@ player. You are NOT importing the file as a `DataFrame` (that's
    //output: view v
    export function previewEps(file: DG.FileInfo): DG.View { /* … */ }
    ```
-   Both forms produce the same wrapper. Prefer the decorator in new code
-   (`DG-FACT-073`, `DG-FACT-074`).
+   Both forms produce the same wrapper; prefer the decorator in new code.
    </details>
 
-2. **Write the viewer body (synchronous).**
-   Mint the view, attach an empty host, return immediately, then fill
-   the host inside `file.readAsBytes().then(...)` so the tab appears
-   before the bytes load (`DG-FACT-077`). Set `view.name = file.name`
-   so the tab caption matches the file (`DG-FACT-078`).
+2. **Write the viewer body (synchronous).** Return the view immediately, fill it after `file.readAsBytes().then(...)` so the tab opens before bytes load (`DG-FACT-077`). Set `view.name = file.name` for the tab caption (`DG-FACT-078`).
    ```typescript
    // src/package.ts
    import * as grok from 'datagrok-api/grok';
@@ -93,17 +81,11 @@ player. You are NOT importing the file as a `DataFrame` (that's
      }
    }
    ```
-   Compare `packages/EpsViewer/src/package.ts:122-146`.
-   Expected: build succeeds; `src/package.g.ts` carries
-   `//meta.role: fileViewer` + `//meta.fileViewer: eps` (compare
-   `packages/EpsViewer/src/package.g.ts:4-10`).
+   Expected: build succeeds; `src/package.g.ts` carries `//meta.role: fileViewer` + `//meta.fileViewer: eps`.
 
    <details><summary>Variant: async (when construction must await content)</summary>
 
-   Use INSTEAD of the sync form when the view cannot be assembled until
-   the bytes are parsed (load JSON, build a model, then mount). Declare
-   `async`, return `Promise<DG.View>` (`DG-FACT-077`). Pick one form per
-   viewer — don't write both.
+   Use INSTEAD of sync when the view cannot be assembled until bytes are parsed. Declare `async`, return `Promise<DG.View>` (`DG-FACT-077`). One form per viewer.
    ```typescript
    @grok.decorators.fileViewer({fileViewer: 'json'})
    static async escherViewer(file: DG.FileInfo): Promise<DG.View> {
@@ -114,34 +96,15 @@ player. You are NOT importing the file as a `DataFrame` (that's
      return view;
    }
    ```
-   Refs: `packages/MetabolicGraph/src/package.ts:82-101`,
-   `packages/FileEditors/src/package.g.ts:11-15` (async wrappers are
-   regenerated with `Promise<any>` — both `Promise<DG.View>` and
-   `Promise<any>` are accepted, `DG-FACT-076`).
    </details>
 
-3. **Multiple extensions: comma-separate them.**
-   `'mol,sdf,cif'` and `'mp3, wav, flac, ogg'` both work — whitespace
-   around commas is tolerated (`DG-FACT-074`). One function registers
-   for every listed extension.
+3. **Multiple extensions: comma-separate them** (whitespace tolerated, see `DG-FACT-074`).
    ```typescript
    @grok.decorators.fileViewer({fileViewer: 'mol,sdf,cif'})
    static viewStructure(file: DG.FileInfo): DG.View { /* … */ }
    ```
-   Compare `packages/Media/src/package.ts:73,83` and
-   `packages/BiostructureViewer/src/package.g.ts:89,97,105,113`.
 
-4. **(Optional) Disambiguate two viewers on the same extension with
-   `fileViewerCheck`.**
-   When two viewers register the same extension (e.g. `.txt` *only* if
-   it parses as a plate file), each declares
-   `fileViewerCheck: '<Package>:<Function>'` — a `bool`-returning probe
-   the platform calls with file content (`string` for text,
-   `Uint8Array` for binary), routing only on truthy return
-   (`DG-FACT-075`). The article omits this; see `packages/Plates`.
-   The probe is itself a Datagrok function and needs its own
-   registration — use `@grok.decorators.func()` (parameter and return
-   types are inferred from the TypeScript signature).
+4. **(Optional) Disambiguate viewers on the same extension with `fileViewerCheck`** (`DG-FACT-075`). The probe must itself be a registered function (`@grok.decorators.func()`).
    ```typescript
    @grok.decorators.fileViewer({fileViewer: 'txt',
                                 fileViewerCheck: 'Plates:checkFileIsPlate'})
@@ -150,8 +113,6 @@ player. You are NOT importing the file as a `DataFrame` (that's
    @grok.decorators.func()
    static checkFileIsPlate(content: string): boolean { /* … */ }
    ```
-   Compare `packages/Plates/src/package.ts:56-66` (viewer) and
-   `:225-230` (check).
 
 5. **Build, publish, and let the platform auto-register.**
    ```bash
@@ -163,24 +124,11 @@ player. You are NOT importing the file as a `DataFrame` (that's
 
 ## Common failure modes
 
-- **Viewer never opens for the file.** Regenerated `src/package.g.ts`
-  is missing `//meta.role: fileViewer` or `//meta.fileViewer: <ext>`.
-  Inspect — both lines MUST be present (`DG-FACT-073`, `DG-FACT-074`).
-  Re-run `npm install` if the wrapper looks stale.
-- **Build error: `Property 'fileViewer' is missing` / not assignable to
-  `string`.** You wrote `@grok.decorators.fileViewer()` or `({})`. The
-  `fileViewer` extension-list key is REQUIRED in the decorator form
-  (`DG-FACT-076`).
-- **Article snippet ported to TypeScript won't compile — `file`
-  implicitly `any`.** The article's JS snippet types the parameter as
-  bare `file`; the TypeScript wrapper expects `file: DG.FileInfo`. Add
-  the type annotation (and `: DG.View` on the return) when porting.
-- **Two viewers fight over the same extension.** Both registered for
-  `.txt` with no `fileViewerCheck`; the platform picks one
-  non-deterministically. Add `fileViewerCheck` to each viewer that
-  should be content-gated (`DG-FACT-075`).
-- **Tab caption shows the function name, not the file.** Missing
-  `view.name = file.name;` after `DG.View.create()` (`DG-FACT-078`).
+- **Viewer never opens** — regenerated `package.g.ts` is missing `//meta.role: fileViewer` or `//meta.fileViewer: <ext>` (`DG-FACT-073`, `DG-FACT-074`). Re-run `npm install` if stale.
+- **Build error: `Property 'fileViewer' is missing`** — empty decorator args. `fileViewer` key is required (`DG-FACT-076`).
+- **Article snippet won't compile** — `file` needs `: DG.FileInfo` and the return needs `: DG.View`.
+- **Two viewers fight over the same extension** — add `fileViewerCheck` to each (`DG-FACT-075`).
+- **Tab caption shows function name** — missing `view.name = file.name` (`DG-FACT-078`).
 
 ## See also
 

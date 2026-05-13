@@ -77,40 +77,28 @@ something to the column context panel", "what role tag do I use for Y".
  with the correct annotations preserved.
 
 3. **Declare the function role explicitly in the source.**
- One role per function; the compound `init, autostart` form is
- undocumented and inconsistent with canonical packages — split into two functions or pick one.
- Decorator form is canonical for modern packages; the codegen still emits header-form into
- `package.g.ts`.
+ One role per function; do not combine `init, autostart`. Decorator
+ form is canonical; codegen emits header-form into `package.g.ts`.
  ```typescript
- // header form (legacy; auto-emitted into package.g.ts)
- //name: ShowMolecule
+ // header form
  //meta.role: panel
  //condition: semType == "Molecule"
  //input: string smiles {semType: Molecule}
  //output: widget result
  export function showMolecule(smiles: string) { /* … */ }
 
- // decorator form (canonical for modern packages)
+ // decorator form
  @grok.decorators.panel({condition: 'semType == "Molecule"'})
  static showMolecule(
  @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string,
  ): DG.Widget { /* … */ }
  ```
- Expected: `grok link && webpack` regenerates `package.g.ts` with
- the role tag preserved.
 
 4. **(Detector / fast-path autostart only) place the function in `detectors.js`.**
- `semTypeDetector` lives in `detectors.js` at the package root so the
- platform can run detectors without loading the main bundle. An
- `autostart` whose only job is to wire menus or subscribe to events
- may also live in `detectors.js` (function-roles.md §Autostart). All
- other roles belong in `src/package.ts`.
- ```bash
- ls detectors.js && jq -r '.role // empty' package.json 2>/dev/null
- ```
- Expected: `detectors.js` exists; `src/package.ts` does NOT re-export
- the detector (otherwise you trigger a full-bundle load on first cell
- read).
+ `semTypeDetector` lives in `detectors.js` so the platform can run
+ detectors without loading the main bundle. Do NOT re-export it from
+ `src/package.ts` (triggers a full-bundle load on first cell read).
+ All other roles belong in `src/package.ts`.
 
 5. **Build and publish.**
  ```bash
@@ -135,45 +123,34 @@ something to the column context panel", "what role tag do I use for Y".
 
 ## Common failure modes
 
-- **Function not discovered after publish.** The `//meta.role:`
- annotation was missing or mistyped. Fix: `grok link` to regenerate
- `package.g.ts`, confirm the role appears in the generated file, then
- `webpack && grok publish` again.
-- **Compound `init, autostart` annotation.** Article
- `register-identifiers.md` shows it but no canonical package uses it. Fix: declare ONE role per function;
- if the same function needs both behaviors, split them.
-- **Role-token casing wrong.** Tokens are camelCase exactly:
- `cellRenderer`, `semTypeDetector`, `fileExporter`, `fileViewer`,
- `fileHandler`, `folderViewer`, `scriptHandler`,
- `packageSettingsEditor`. Fix: copy verbatim from the table in
- step 1; do not infer kebab- or snake-case from `FUNC_TYPES.*` enum
- member names.
+- **Function not discovered after publish.** `//meta.role:` missing or
+  mistyped. `grok link` to regenerate `package.g.ts`, verify the role,
+  re-publish.
+- **Compound `init, autostart` annotation.** Declare ONE role per
+  function; split if both behaviors are needed.
+- **Role-token casing wrong.** Tokens are camelCase: `cellRenderer`,
+  `semTypeDetector`, `fileExporter`, `fileViewer`, `fileHandler`,
+  `folderViewer`, `scriptHandler`, `packageSettingsEditor`. Copy
+  verbatim from step 1's table.
 - **Detector defined in `src/package.ts` instead of `detectors.js`.**
- Detector code never runs because the platform skips loading the main
- bundle until invocation. Fix: move it to `detectors.js`; do NOT
- re-export from `src/package.ts`.
-- **Required companion annotation missing.** Each role has its own
- required extras: `fileViewer` needs `meta.fileViewer: <ext>`
- (`DG-FACT-074`); `fileExporter` needs `description`
- (`DG-FACT-080`); `cellRenderer` needs `meta.cellType`
- (`DG-FACT-100/103`); `scriptHandler` needs four `meta.scriptHandler.*`
- keys (`DG-FACT-173`-block). Fix: cross-check against the
- per-extension how-to before publishing.
+  Detector code never runs because the main bundle is not loaded until
+  invocation.
+- **Required companion annotation missing.** `fileViewer` needs
+  `meta.fileViewer: <ext>` (`DG-FACT-074`); `fileExporter` needs
+  `description` (`DG-FACT-080`); `cellRenderer` needs `meta.cellType`
+  (`DG-FACT-100/103`); `scriptHandler` needs four
+  `meta.scriptHandler.*` keys (`DG-FACT-173`). Cross-check against the
+  per-extension how-to.
 
 ## See also
 
-- Source articles:
- - `help/develop/packages/extensions.md` (this overview).
- - `help/develop/function-roles.md` — canonical role-tag list and
- `grok add` templates per role.
- - Per-extension how-tos linked in step 1's table.
-- Knowledge: `docs/_internal/knowledge/knowledge-graph.md` — facts
- cited inline in the table and failure modes (`DG-FACT-001`, `073-078`,
- `079-082`, `083-086`, `088-094`, `095-098`, `099-105`, `118-119`,
- `173`, `186-197`, `213-217`), `028/036/039/042` (article-vs-canonical decorator drift).
+- Source: `help/develop/packages/extensions.md`,
+  `help/develop/function-roles.md`, per-extension how-tos in step 1.
+- Knowledge: `DG-FACT-001`, `073-078`, `079-082`, `083-086`, `088-094`,
+  `095-098`, `099-105`, `118-119`, `173`, `186-197`, `213-217`.
 - Related skills: `build-an-app`, `routing`, `custom-cell-renderers`,
- `create-custom-file-viewers`, `file-exporters`, `file-handlers`,
- `folder-content-preview`, `column-tooltip`, `custom-script-handlers`,
- `custom-package-settings-editors`, `custom-views`,
- `manipulate-viewers`, `register-identifiers`, `data-enrichments`,
- `publish-packages`.
+  `create-custom-file-viewers`, `file-exporters`, `file-handlers`,
+  `folder-content-preview`, `column-tooltip`, `custom-script-handlers`,
+  `custom-package-settings-editors`, `custom-views`,
+  `manipulate-viewers`, `register-identifiers`, `data-enrichments`,
+  `publish-packages`.

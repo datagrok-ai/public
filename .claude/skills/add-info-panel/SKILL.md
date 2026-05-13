@@ -53,19 +53,9 @@ cell", "render a sequence logo for `Macromolecule` columns", "add a
 
 ## Steps
 
-1. **Pick the implementation path.** Client-side JS panel function
-   (runs in the browser, direct DOM/`DG.Widget` access) or server-side
-   script in Python/R/Grok (runs on the server, useful for heavy compute
-   or non-JS libraries). Both register identically via `meta.role: panel`
-   and re-evaluate visibility on every context change (`DG-FACT-276`).
-   The article shows both at `help/develop/how-to/ui/add-info-panel.md:13-22`.
+1. **Pick the implementation path.** Client-side JS (decorator or header form) or server-side script — both register identically via `meta.role: panel` (see DG-FACT-276).
 
-2. **Declare the panel (JS path) on `PackageFunctions`.** Use
-   `@grok.decorators.panel({...})` with exactly one input — typically
-   `semantic_value` (or `column` / `dataframe` / `row` / `string` /
-   `file`) carrying the `semType` constraint — and return
-   `Promise<DG.Widget>`. A panel function accepts EXACTLY ONE primary
-   input (`DG-FACT-280`); extra user/dataset filters go in `condition`.
+2. **Declare the panel (JS path) on `PackageFunctions`.** Use `@grok.decorators.panel({...})` with exactly one primary input (see DG-FACT-280) and return `Promise<DG.Widget>` (see DG-FACT-277). Null-check the input — `semantic_value` arrives empty when no cell is selected (see DG-FACT-282).
 
    ```typescript
    // src/package.ts
@@ -85,36 +75,15 @@ cell", "render a sequence logo for `Macromolecule` columns", "add a
    }
    ```
 
-   `semantic_value` gives `.value`, `.cell`, `.gridCell`, `.column`,
-   `.semType`, `.units` (`DG-FACT-282`) — use it when the widget needs
-   the cell's context. For column-wide panels declare `column col`; for
-   table-wide, `dataframe table`. Null-check the input —
-   `semantic_value` arrives empty when no cell is selected.
+   Header-comment form (no decorator) works identically — top-level `export function` prefixed with `//meta.role: panel`, `//input: <type> <name>`, `//output: widget result`.
 
-   Header-comment form (no decorator) works identically — top-level
-   `export function` prefixed with `//meta.role: panel`,
-   `//input: <type> <name>`, `//output: widget result`. The article
-   shows it at `help/develop/how-to/ui/add-info-panel.md:96-105`;
-   `packages/Bio/src/package.g.ts:50-58` is a production example.
-
-3. **Add a visibility condition (optional).** `//condition:` is a
-   Grok-script boolean re-evaluated on every context change
-   (`DG-FACT-279`), in Grok-script regardless of the panel's
-   implementation language (`help/develop/how-to/ui/add-info-panel.md:88`).
-   Common idioms beyond the `semType:` input constraint:
+3. **Add a visibility condition (optional).** `//condition:` is a Grok-script boolean re-evaluated on every context change (see DG-FACT-279). Common idioms:
 
    - **User role.** `condition: user.hasrole("chemist")`.
    - **Column stats.** `condition: x.isnumerical && x.stats.missingvaluecount > 0`.
-   - **Cross-package predicate.** `condition: Boltz1:isApplicableBoltz(molecule)` —
-     declare the predicate as a sibling `//output: bool result` function;
-     see `packages/Boltz1/src/package.g.ts:44-58` (`DG-FACT-283`).
+   - **Cross-package predicate.** `condition: Boltz1:isApplicableBoltz(molecule)` (see DG-FACT-283).
 
-4. **Or declare a panel script (server-side).** A script under
-   `scripts/<name>.py` / `.r` / `.grok` uses the same role/condition
-   keys with `#` prefixes; supported output types are `widget`,
-   `viewer`, `graphics`, `dataframe` (`{action: join(<table>)}` merges
-   results back as virtual columns), and `string` (`{action: markup}`
-   for inline action buttons) (`DG-FACT-278`).
+4. **Or declare a panel script (server-side).** A script under `scripts/<name>.py` / `.r` / `.grok` uses the same role/condition keys with `#` prefixes; supported output types are `widget`, `viewer`, `graphics`, `dataframe`, `string` (see DG-FACT-278 for action: directives).
 
    ```python
    # scripts/spectrogram.grok
@@ -126,51 +95,24 @@ cell", "render a sequence logo for `Macromolecule` columns", "add a
    pic = Spectrogram("eeg", signal, 256.0, 1024, 0.1, true)
    ```
 
-5. **Build, and verify the auto-emitted wrapper in `package.g.ts`.**
-   `npm run build` runs the function-generator that scans
-   `PackageFunctions` and rewrites `src/package.g.ts`. Do NOT hand-edit
-   `package.g.ts`; it is overwritten on every build.
+5. **Build, and verify the auto-emitted wrapper in `package.g.ts`.** `npm run build` runs the function-generator that rewrites `src/package.g.ts`. Do NOT hand-edit it. The generator auto-appends `panel` to non-`panel` role strings (see DG-FACT-281).
 
    ```bash
    npm install && npm run build
    ```
 
-   Expected: build exits 0; a decorated panel declared with
-   `meta: {role: 'widgets', ...}` emits `//meta.role: widgets,panel`
-   — the generator auto-appends `panel` (`DG-FACT-281`). Compare
-   `packages/Admetica/src/package.ts:30-40` against
-   `packages/Admetica/src/package.g.ts:9-17`.
-
-6. **Publish.** The `panel` role IS the registration — the platform
-   discovers the function from the `package.g.ts` wrapper on load.
+6. **Publish.** The `panel` role IS the registration — the platform discovers the function from the `package.g.ts` wrapper on load.
 
    ```bash
    grok publish <host>   # add --release once stable
    ```
 
-   Expected: `grok publish <host>` exits 0 and reports the published
-   version.
-
 ## Common failure modes
 
-- **Panel never appears.** `meta.role` token is missing or misspelled.
-  Inspect `src/package.g.ts` — it MUST contain `//meta.role: panel` or
-  `//meta.role: <other>,panel` (lowercase). `Panel`/`panels` won't
-  match (`DG-FACT-276`).
-- **Panel fires for everything (or nothing).** The `semType` string on
-  the input doesn't match what the column carries. Right-click the
-  column header → *Properties* → check `semType`; in code, `col.semType`.
-  Exact-match, case-sensitive (`DG-FACT-280`).
-- **`Cannot read property 'cell' of null` at runtime.** The
-  `semantic_value` input arrived empty (no current cell). Add an early
-  `if (!value) return new DG.Widget(ui.divText('no selection'));`
-  guard (`DG-FACT-282`).
-- **Output type rejected.** A JS panel function MUST declare
-  `//output: widget result` and return a `DG.Widget` (`DG-FACT-277`);
-  scripts may instead emit `viewer` / `graphics` / `dataframe` (with
-  `{action: join(table)}`) / `string` (with `{action: markup}`)
-  (`DG-FACT-278`). Wrap raw `HTMLElement` or `DG.Viewer` as
-  `new DG.Widget(el)` or `DG.Widget.fromRoot(viewer.root)`.
+- **Panel never appears.** `meta.role` token missing/misspelled — check `src/package.g.ts` for lowercase `//meta.role: panel` (see DG-FACT-276).
+- **Panel fires for everything (or nothing).** The `semType` string on the input doesn't match what the column carries (exact, case-sensitive — see DG-FACT-280).
+- **`Cannot read property 'cell' of null`.** Missing null guard on `semantic_value` input (see DG-FACT-282).
+- **Output type rejected.** JS panels MUST return `DG.Widget` (see DG-FACT-277); scripts have a wider output set (see DG-FACT-278).
 
 ## See also
 

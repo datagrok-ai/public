@@ -53,31 +53,19 @@ and a `grok publish` round-trip — before you write any business code.
    ```bash
    grok create TextStats --test
    ```
-   Expected: a sibling folder is created and the CLI immediately
-   runs `npm install` inside it — `Running 'npm install' to get the
-   required dependencies...` comes from the CLI, not from you
-   (`tools/bin/commands/create.ts:201-205`, `DG-FACT-463`). A manual
-   `npm install` is only needed if the auto-install printed errors.
-   `--test` adds `@datagrok-libraries/utils` to `dependencies` but
-   does NOT scaffold test files — run `grok add tests` later if you
-   want them (`tools/bin/commands/create.ts:80-87`, `DG-FACT-464`).
+   The CLI auto-runs `npm install` inside the new folder (see
+   `DG-FACT-463`). `--test` only pulls `@datagrok-libraries/utils`;
+   no test files are scaffolded — use `grok add tests` for those
+   (see `DG-FACT-464`).
 
 2. **Fix folder casing and `friendlyName` if you want PascalCase /
-   Title Case.** `grok create` normalizes the raw arg to
-   first-letter-upper + rest-lower for the directory and
-   `#{PACKAGE_NAME}` substitution (`tools/bin/commands/create.ts:150`,
-   `DG-FACT-441`) — `grok create TextStats` writes folder
-   `Textstats/`. `friendlyName` is identical to the raw arg; there
-   is no `--friendly-name` flag. Hand-edit both if you want the
-   article's convention (`create-package.md:25-29` describes the
-   convention, not what the CLI produces;
-   `DG-FACT-DRIFT-CP-001`).
+   Title Case.** `grok create TextStats` writes folder `Textstats/`
+   with `friendlyName = "TextStats"`; the CLI normalizes everything
+   after the first letter (see `DG-FACT-441`, `DG-FACT-DRIFT-CP-001`).
    ```bash
    mv Textstats TextStats   # only if PascalCase matters to you
    # then edit package.json: "friendlyName": "Text Stats"
    ```
-   Expected: directory name + `jq -r .friendlyName package.json`
-   match what you typed.
 
 3. **Add a function — header-annotation form.** Drop a panel function
    into `src/package.ts` to confirm wiring end-to-end:
@@ -97,65 +85,48 @@ and a `grok publish` round-trip — before you write any business code.
      ]));
    }
    ```
-   Expected: header-annotation comments sit immediately above
-   `export function`. At runtime the panel fires for cells whose
-   column's `quality` tag equals `text` — `quality` IS the
-   semantic-type tag (`DG-FACT-440`, `js-api/src/api/ddt.api.g.ts:77`).
+   Header annotations sit directly above `export function`. The
+   panel fires for cells whose column `quality` tag equals `text`
+   (`quality` IS the semantic-type tag — see `DG-FACT-440`).
 
 4. **Build — do not paraphrase to bare `webpack`.** `npm run build`
-   runs the template-defined triplet `grok api && grok check --soft
-   && webpack` (`tools/package-template/package.json:21`,
-   `DG-FACT-462`). `grok api` regenerates `src/package.g.ts` from
-   header annotations; `grok check --soft` warns on package-level
-   issues; `webpack` bundles. Skipping the prefix leaves new
-   `//name:` / `//meta.role:` annotations out of the bundle.
+   runs the load-bearing triplet `grok api && grok check --soft &&
+   webpack` (see `DG-FACT-462`). Skipping the prefix leaves new
+   annotations out of the bundle.
    ```bash
    npm run build
    ```
-   Expected: exit 0; `src/package.g.ts` is rewritten and lists
-   `textStats` with `//meta.role: widgets,panel`.
+   After: `src/package.g.ts` lists `textStats` with
+   `//meta.role: widgets,panel`.
 
 5. **Publish to a dev host in debug mode.** `--debug` is the default;
-   the package is visible only to your developer key
-   (`tools/bin/commands/publish.js:620-621`, `DG-FACT-156`).
+   visible only to your developer key (see `DG-FACT-156`).
    ```bash
    grok publish dev
    ```
-   Expected: exit 0. The package appears under **Manage → Packages**
-   on the `dev` host prefixed `v.<your-name>` — that prefix IS the
-   debug-mode marker.
+   The package shows up under **Manage → Packages** prefixed
+   `v.<your-name>` — that prefix IS the debug-mode marker.
 
 6. **Promote to release when ready.** A release-mode publish makes
    the package visible to every group listed in `canView` /
-   `canEdit` in `package.json`. See the `publish-packages` skill for
-   the full ship pipeline (npm publish via the `Packages` workflow).
+   `canEdit` in `package.json`.
    ```bash
    grok publish dev --release
    ```
-   Expected: the `v.` prefix disappears; the package is listed for
-   the configured groups.
+   The `v.` prefix disappears. See `publish-packages` for the full
+   ship pipeline.
 
 ## Common failure modes
 
-- **`grok` not found.** `datagrok-tools` isn't installed globally, or
-  the npm global `bin` directory isn't on `PATH`. Fix: install per
-  `set-up-environment.md:21`, re-open the shell.
-- **`grok create` aborts: "package directory should be empty".** The
-  CWD already contains files (`tools/bin/commands/create.ts:162-164`).
-  Fix: `cd` to a fresh directory, or pass a name that creates a new
-  subfolder.
-- **Folder name came out lowercase (`Textstats`).** Expected — the
-  CLI capitalizes only the first letter (`DG-FACT-441`). Rename by
-  hand if you need PascalCase.
-- **`npm run build` succeeds but the panel never registers.** You
-  ran `webpack` directly, so `grok api` never ran and
-  `src/package.g.ts` is stale (`DG-FACT-462`). Fix: always use
-  `npm run build`; verify the new function appears in
-  `src/package.g.ts` after the build.
-- **`grok publish` exits non-zero: "Incompatible options: --debug
-  and --release".** Both flags were passed; they are mutually
-  exclusive (`DG-FACT-156`). Fix: drop one — `--release` for shared
-  visibility, no flag for per-developer debug.
+- `grok` not found — `datagrok-tools` not on `PATH`. Install per
+  `set-up-environment.md:21`.
+- `grok create` aborts with "package directory should be empty" — cd
+  to a fresh directory.
+- Folder came out lowercase (`Textstats`) — expected, see step 2.
+- Build succeeds but panel never registers — you ran `webpack`
+  directly; `src/package.g.ts` is stale (`DG-FACT-462`).
+- `grok publish` errors "Incompatible options: --debug and --release"
+  — flags are mutually exclusive (`DG-FACT-156`); pick one.
 
 ## See also
 

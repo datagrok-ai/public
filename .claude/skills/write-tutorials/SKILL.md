@@ -47,13 +47,7 @@ watch, use `write-demo-scripts` instead.
 
 ## Steps
 
-1. **Create the source file and subclass `Tutorial`.**
-   Convention — `src/tutorials/<name>.ts`. The import path is the full
-   subpath; the library has no root entry (knowledge `DG-FACT-434`).
-   Override `demoTable` if you don't want `'demog.csv'` auto-loaded
-   into `this.t!` BEFORE `_run` (knowledge `DG-FACT-436`). Override
-   `prerequisites` to gate on packages/services (knowledge
-   `DG-FACT-439`); the runner aborts with a toast if any fail.
+1. **Create the source file and subclass `Tutorial`.** Convention — `src/tutorials/<name>.ts`. Import the full subpath (see DG-FACT-434). Override `demoTable = ''` to skip the auto-loaded `'demog.csv'` (see DG-FACT-436). Override `prerequisites` to gate on packages/services (see DG-FACT-439).
    ```typescript
    import * as grok from 'datagrok-api/grok';
    import * as DG from 'datagrok-api/dg';
@@ -72,14 +66,9 @@ watch, use `write-demo-scripts` instead.
      protected async _run(): Promise<void> { /* see step 2 */ }
    }
    ```
-   Expected: `npx tsc --noEmit` clean. `steps` should equal the number
-   of `action(...)` calls inside `_run` — it drives the progress bar.
+   `steps` should equal the number of `action(...)` calls inside `_run` — it drives the progress bar.
 
-2. **Fill `_run()` with `action(...)` calls keyed off real events.**
-   `action(instructions, completed, hint?, description?)` advances
-   only when `completed` (Observable or Promise) resolves (knowledge
-   `DG-FACT-435`). The `completed` source is what couples the step to
-   the user actually doing the thing — never a fixed timeout.
+2. **Fill `_run()` with `action(...)` calls keyed off real events.** `action(instructions, completed, hint?, description?)` advances when `completed` (Observable or Promise) resolves (see DG-FACT-435). Use higher-level helpers (`openPlot`, `openDialog`, `dlgInputAction`, `buttonClickAction`) where they fit.
    ```typescript
    import {filter} from 'rxjs/operators';
 
@@ -102,17 +91,9 @@ watch, use `write-demo-scripts` instead.
        (v) => v.type === DG.VIEWER.SCATTER_PLOT);
    }
    ```
-   Prefer the higher-level helpers where they fit — `openPlot`,
-   `openDialog`, `dlgInputAction`, `buttonClickAction` — they encode
-   the right event source. Reference —
-   `packages/Tutorials/src/tracks/eda/tutorials/filters.ts:65-79`.
+   Reference: `packages/Tutorials/src/tracks/eda/tutorials/filters.ts:65-79`.
 
-3. **Register the tutorial in `src/package.ts`.**
-   Required: `//tags: tutorial`, `//meta.name`, `//output: object`.
-   Optional: `//meta.track`, `//meta.icon`, `//description`
-   (knowledge `DG-FACT-437`). Without `meta.track` the tutorial lands
-   under a track named after the package's friendly name; with it
-   set to an existing track name, it joins that track.
+3. **Register the tutorial in `src/package.ts`.** Required: `//tags: tutorial`, `//meta.name`, `//output: object`. Optional: `//meta.track`, `//meta.icon`, `//description` (see DG-FACT-437).
    ```typescript
    import {MyFeatureTutorial} from './tutorials/my-feature';
 
@@ -127,12 +108,7 @@ watch, use `write-demo-scripts` instead.
    }
    ```
 
-4. **(Optional) Register a track for a custom `help-url`.**
-   `//tags: track`, `//meta.name`, `//help-url`, `//output: object`.
-   Caveat — the Tutorials package does NOT invoke the function body;
-   it builds an empty Track from metadata (knowledge `DG-FACT-438`).
-   Skip this step if you're fine with `meta.track` creating the track
-   implicitly without a help link.
+4. **(Optional) Register a track for a custom `help-url`.** The Tutorials package does NOT invoke the function body — it builds an empty Track from metadata (see DG-FACT-438). Skip if you don't need a help link.
    ```typescript
    //tags: track
    //meta.name: My Plugin Onboarding
@@ -146,32 +122,16 @@ watch, use `write-demo-scripts` instead.
    webpack
    grok publish dev
    ```
-   Expected: `src/package.g.ts` carries the `tags: tutorial` /
-   `meta.name:` header. In Datagrok open **Apps → Tutorials** — your
-   track shows your tutorial card; clicking it walks the steps as
-   users interact with the real UI.
+   Open **Apps → Tutorials** — your track shows the tutorial card; clicking it walks the steps as users interact with the real UI.
 
 ## Common failure modes
 
-- **`Cannot find module '@datagrok-libraries/tutorials/src/tutorial'`.**
-  Dependency missing or `npm i` not rerun. The full subpath is
-  mandatory — no root entry (knowledge `DG-FACT-434`).
-- **Card never appears in Apps → Tutorials.** Missing `//tags:
-  tutorial` or `//output: object`, function not exported, or the
-  Tutorials package isn't installed on the server. Confirm
-  `package.g.ts` carries the header after `webpack`.
-- **Step never completes — the indicator stays unchecked.** The
-  `completed` observable filter never matches. Log candidate events
-  (`this.t!.onFilterChanged.subscribe(console.log)`) and align the
-  predicate; prefer `buttonClickAction` over hand-rolled DOM polling
-  (knowledge `DG-FACT-435`).
-- **Lesson aborts with "Please install package …" or "Service not
-  available".** A `prerequisites` entry isn't met; install/enable or
-  drop the optional prereq (knowledge `DG-FACT-439`).
-- **Tutorial sees `demog.csv` already loaded.** Base class
-  auto-loads it (knowledge `DG-FACT-436`). Set `demoTable = ''`.
-- **Track help link goes nowhere.** No `tags: track` function with
-  `//help-url` is registered (knowledge `DG-FACT-438`); add one.
+- **`Cannot find module '@datagrok-libraries/tutorials/src/tutorial'`.** Full subpath mandatory; re-run `npm i` (see DG-FACT-434).
+- **Card never appears in Apps → Tutorials.** Missing `//tags: tutorial` or `//output: object`, function not exported, or Tutorials package not installed.
+- **Step never completes.** `completed` observable predicate never matches — log candidate events and align (see DG-FACT-435).
+- **Lesson aborts with "Please install package…".** Unmet `prerequisites`; install or drop the optional prereq (see DG-FACT-439).
+- **Tutorial sees `demog.csv` already loaded.** Set `demoTable = ''` (see DG-FACT-436).
+- **Track help link goes nowhere.** Add a `tags: track` function with `//help-url` (see DG-FACT-438).
 
 ## See also
 

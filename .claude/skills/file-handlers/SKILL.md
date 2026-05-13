@@ -46,14 +46,7 @@ The three "open this file" roles are distinct (knowledge `DG-FACT-086`).
 
 ## Steps
 
-1. **Add a `static` method on `PackageFunctions` and decorate it.**
-   The platform discovers handlers via the function role `fileHandler`
-   — exactly that camelCase token in the emitted `package.g.ts`
-   (knowledge `DG-FACT-083`). The decorator's options bag is
-   `FileHandlerOptions { ext: string; fileViewerCheck?: string }` and
-   `ext` is REQUIRED — `config` itself is non-optional, unlike
-   `fileViewer(config?)` (knowledge `DG-FACT-085`). The handler signature
-   is `(content: string | Uint8Array) => DG.DataFrame[]`.
+1. **Add a `static` method on `PackageFunctions` and decorate it** with `@grok.decorators.fileHandler({ext})` — role `fileHandler` (camelCase), required `ext`, signature `(content: string | Uint8Array) => DG.DataFrame[]` (`DG-FACT-083`, `DG-FACT-085`).
    ```typescript
    // src/package.ts
    import * as grok from 'datagrok-api/grok';
@@ -70,30 +63,11 @@ The three "open this file" roles are distinct (knowledge `DG-FACT-086`).
      }
    }
    ```
-   Expected: after `npm run build`, `src/package.g.ts` carries
-   `//meta.role: fileHandler` and `//meta.ext: <your-list>` — same
-   shape as `packages/Bio/src/package.g.ts:486-494`.
+   Expected: `src/package.g.ts` carries `//meta.role: fileHandler` and `//meta.ext: <your-list>`.
 
-2. **Declare every extension you claim in `meta.ext`.**
-   `ext` is a single comma-separated string; whitespace around commas
-   is tolerated (knowledge `DG-FACT-084`). One handler entry, many
-   extensions — `'fasta, fna, ffn, faa, frn, fa, fst'`
-   (`packages/Bio/src/package.ts:1089-1094`), `'sdf,mol'`
-   (`packages/Chem/src/package.ts:1908-1911`). Repeating `//meta.ext:`
-   does NOT additively merge — the parser keeps only the last. If two
-   extensions need different bodies, register two decorators — the
-   per-extension dispatch pattern at
-   `packages/nmrium/src/package.ts:20-46`.
+2. **Declare every extension you claim in `meta.ext`** — single comma-separated string, whitespace tolerated (`DG-FACT-084`). Repeating `//meta.ext:` keeps only the last entry; register one decorator per extension when bodies differ.
 
-3. **Pick the input type to match your payload — text or binary.**
-   The default codegen contract is text:
-   `inputs: [{name: 'content', type: 'string'}], outputs: [{name: 'tables', type: 'list'}]`
-   (knowledge `DG-FACT-087`). For binary formats override the input
-   shape with a `@grok.decorators.param({type: 'list'})` annotation on
-   the parameter and type it as `Uint8Array` — the Chem SDF pattern at
-   `packages/Chem/src/package.ts:1908-1920`. The regenerated wrapper
-   then carries `//input: list bytes` (compare
-   `packages/Chem/src/package.g.ts:793-799`).
+3. **Pick the input type to match your payload.** Text is the default; for binary, add `@grok.decorators.param({type: 'list'})` and type the parameter `Uint8Array` (`DG-FACT-087`).
    ```typescript
    @grok.decorators.fileHandler({description: 'Opens SDF file', ext: 'sdf,mol'})
    static importSdf(
@@ -106,24 +80,11 @@ The three "open this file" roles are distinct (knowledge `DG-FACT-086`).
      }
    }
    ```
-   Expected: the emitted wrapper has `//input: list bytes` (NOT
-   `//input: string content`) and your parser receives raw bytes.
+   Expected: emitted wrapper has `//input: list bytes`.
 
-4. **Return `DG.DataFrame[]`; the platform opens one TableView per
-   element.** Empty `[]` is legal — nmrium returns `[]` after
-   side-effect-opening its own view (`packages/nmrium/src/package.ts:12-17,25-46`).
-   Use that pattern only when an accompanying `fileViewer` provides the
-   visualization (knowledge `DG-FACT-086`).
+4. **Return `DG.DataFrame[]`; the platform opens one TableView per element.** Returning `[]` is legal when a sibling `fileViewer` provides the visualization (`DG-FACT-086`).
 
-5. **(Optional) Disambiguate ambiguous extensions with `fileViewerCheck`.**
-   When the same extension is shared with another tool (e.g. `.jdx`,
-   `.dx` JCAMP-DX), gate your handler on a content probe by setting
-   `fileViewerCheck: '<Package>:<Function>'` — the platform calls the
-   named function with file content (`string` for text,
-   `Uint8Array` for binary) and routes only on truthy return
-   (knowledge `DG-FACT-085`). The probe must itself be a Datagrok
-   function — decorate it with plain `@grok.decorators.func()`. Pattern
-   at `packages/nmrium/src/package.ts:20-40, 70-73`.
+5. **(Optional) Disambiguate ambiguous extensions with `fileViewerCheck`** (`DG-FACT-085`). The probe must itself be a registered function.
    ```typescript
    @grok.decorators.fileHandler({fileViewerCheck: 'Nmrium:checkNmriumJdx', ext: 'jdx'})
    static async jdxFileHandler(bytes: string) { return await addNmriumView('jdx', bytes); }
@@ -138,32 +99,15 @@ The three "open this file" roles are distinct (knowledge `DG-FACT-086`).
    grok check
    grok publish <host>            # add --release once stable
    ```
-   No explicit `register(...)` call is needed — the `fileHandler` role
-   plus `meta.ext` IS the registration; the platform invokes the
-   function whenever a user opens a matching file (knowledge
-   `DG-FACT-083`).
+   No explicit `register(...)` — role + `meta.ext` IS the registration (`DG-FACT-083`).
 
 ## Common failure modes
 
-- **Nothing happens on file open.** The regenerated `src/package.g.ts`
-  is missing `//meta.role: fileHandler` or `//meta.ext: <ext>`. Both
-  lines MUST be present; the role token is camelCase as emitted
-  (knowledge `DG-FACT-083`). Re-run `npm install` if it looks stale.
-- **Build error: `Property 'ext' is missing` / `Expected 1 argument, but got 0`.**
-  You wrote `@grok.decorators.fileHandler()` or `({})`. `config` and
-  its `ext` field are both REQUIRED (knowledge `DG-FACT-085`).
-- **Handler runs but the parsed binary is garbled.** You took the
-  default text input (`content: string`) for a binary format. Add
-  `@grok.decorators.param({type: 'list'})` to the parameter and type
-  it `Uint8Array` (knowledge `DG-FACT-087`). The wrapper should then
-  show `//input: list bytes`.
-- **Only one of two `meta.ext:` lines applies.** Repeating the
-  annotation does NOT additively merge — the parser keeps only the
-  last entry (knowledge `DG-FACT-084`). Comma-separate into one entry
-  or register one decorator per extension when bodies differ.
-- **Two handlers fight over `.jdx`.** Both claim the same extension
-  with no `fileViewerCheck`; the platform picks one non-deterministically.
-  Add `fileViewerCheck: '<Pkg>:<Fn>'` to each (knowledge `DG-FACT-085`).
+- **Nothing happens on file open** — regenerated `package.g.ts` is missing `//meta.role: fileHandler` or `//meta.ext` (`DG-FACT-083`).
+- **Build error: `Property 'ext' is missing`** — `config` and its `ext` field are required (`DG-FACT-085`).
+- **Binary parsed as text (garbled)** — add `@grok.decorators.param({type: 'list'})` + `Uint8Array` (`DG-FACT-087`).
+- **Only one of two `meta.ext:` lines applies** — repeats don't merge; comma-separate or split decorators (`DG-FACT-084`).
+- **Two handlers fight over the same extension** — add `fileViewerCheck` to each (`DG-FACT-085`).
 
 ## See also
 

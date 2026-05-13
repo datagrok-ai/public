@@ -50,12 +50,10 @@ titration scatter plot", "draw a y=x diagonal on observed-vs-predicted",
 
 ## Steps
 
-1. **Pick the storage scope: dataframe vs. viewer.**
-   Both expose the same `meta.formulaLines` helper (`DG-FACT-207`).
-   Dataframe storage = JSON in tag `.formula-lines`
-   (`DG.TAGS.FORMULA_LINES`, `js-api/src/const.ts:309`); renders on
-   every viewer of that frame. Viewer storage =
-   `viewer.props['formulaLines']`; renders only on that one viewer.
+1. **Pick the storage scope: dataframe vs. viewer.** Both expose the
+   same `meta.formulaLines` helper (`DG-FACT-207`). Dataframe storage
+   renders on every viewer of that frame; viewer storage renders only
+   on that one viewer.
    ```typescript
    const df = grok.data.demo.demog();
    df.meta.formulaLines.addLine({                 // every viewer of df
@@ -64,11 +62,9 @@ titration scatter plot", "draw a y=x diagonal on observed-vs-predicted",
    ```
 
 2. **Add a single line — `formula` is the only required field.**
-   Left of `=` must be a single column; right side is any
-   [Add New Column](../../../transform/add-new-column.md) expression
-   over a second column or constant. Defaults: color `'#838383'`,
-   `width: 1`, `style: 'solid'`, `zIndex: 100`, `opacity: 100`,
-   `visible: true` (`DG-FACT-212`).
+   Left of `=` must be a single column; right side is any *Add New
+   Column* expression. Defaults at `DG-FACT-212` (color `#838383`,
+   `width: 1`, `style: 'solid'`, `zIndex: 100`, `opacity: 100`).
    ```typescript
    df.meta.formulaLines.addLine({
      title: 'Parabola',
@@ -76,14 +72,10 @@ titration scatter plot", "draw a y=x diagonal on observed-vs-predicted",
      color: '#FFA500', width: 2, style: 'dashed', zIndex: -30,
    });
    ```
-   Expected: line tooltip reads "Parabola"; canonical sample at
-   `packages/ApiSamples/scripts/data-frame/metadata/formula-lines.js`.
 
-3. **Add a band — both `formula` AND `column2` are required.**
-   Band formula uses comparison/range syntax — `${col} < C`,
-   `${col} > avg`, `${col} in(a, b)`, `${col} in(q1, q3)`. `column2`
-   names the OTHER axis the band spans (`DG-FACT-209`). Default
-   band color is `'#F0F0F0'`.
+3. **Add a band — both `formula` AND `column2` are required**
+   (`DG-FACT-209`). Band formula uses comparison/range syntax:
+   `${col} < C`, `${col} in(a, b)`.
    ```typescript
    df.meta.formulaLines.addBand({
      formula: '${height} in(150, 180)',
@@ -92,25 +84,19 @@ titration scatter plot", "draw a y=x diagonal on observed-vs-predicted",
    });
    ```
 
-4. **Bulk-add via `addAll(items[])` — one re-serialization, not N.**
-   Each `add*` call rewrites the entire JSON; for >2 items, batch
-   through `addAll` (`DG-FACT-208`). Set `type: 'line' | 'band'`
-   explicitly when using `add` / `addAll`.
+4. **Bulk-add via `addAll(items[])` — one re-serialization, not N**
+   (`DG-FACT-208`). Set `type: 'line'|'band'` explicitly when using
+   `add`/`addAll`.
    ```typescript
    df.meta.formulaLines.addAll([
      {type: 'line', formula: '${height} = 200', color: '#0000ff'},
      {type: 'band', formula: '${age} > 18', column2: 'sex'},
    ]);
    ```
-   Real-world pattern: `packages/EDA/src/pls/pls-ml.ts:380`
-   (`scatter.meta.formulaLines.addAll(getLines(names))`).
 
 5. **Attach the viewer through `addViewer`, then add viewer-scoped lines.**
-   Two viewer-level toggles control formula-line VISIBILITY without
-   touching storage (`DG-FACT-210`): `showDataframeFormulaLines` and
-   `showViewerFormulaLines`, both default `true`. Pass them at
-   construction or via `setOptions(...)` — clearing storage is
-   destructive; toggling these is reversible.
+   `showDataframeFormulaLines`/`showViewerFormulaLines` (both default
+   `true`) toggle visibility without destroying storage (`DG-FACT-210`).
    ```typescript
    const view = grok.shell.addTableView(df);
    const plot = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
@@ -123,15 +109,9 @@ titration scatter plot", "draw a y=x diagonal on observed-vs-predicted",
      formula: '${weight} = 150', color: '#ff0000', width: 10,
    });
    ```
-   Pattern: `packages/Chem/src/analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer.ts:810-816`
-   adds an Identity line on a paired grid's dataframe so every viewer
-   of that frame renders it.
 
-6. **Remove lines — `removeWhere`, NOT `removeAt`.**
-   `removeAt(idx)` is broken: with the default `count=1` its slice
-   `slice(idx, idx + count - 1) === slice(idx, idx)` returns `[]`,
-   wiping the entire list (`js-api/src/helpers.ts:125-127`,
-   `DG-FACT-208`). Use `removeWhere` until upstream is fixed.
+6. **Remove lines — `removeWhere`, NOT `removeAt`.** `removeAt` is
+   broken — wipes the entire list (`DG-FACT-208`).
    ```typescript
    df.meta.formulaLines.removeWhere((_, i) => i === 2);   // works
    df.meta.formulaLines.clear();                          // wipes all
@@ -139,27 +119,12 @@ titration scatter plot", "draw a y=x diagonal on observed-vs-predicted",
 
 ## Common failure modes
 
-- **Line added but never appears on the chart.** The viewer is in the
-  unsupported set or you hit an axis it doesn't allow: box plot has
-  no X-axis line (categorical), histogram has no Y-axis line (count
-  is derived), bar chart accepts X only when `orientation:'horizontal'`,
-  Y only when `'vertical'` (`DG-FACT-211`). The JS API persists the
-  JSON either way — there is no `addLine`-time error.
-- **Band silently missing — only `formula` was set.** `column2` is
-  required for bands; without it the helper still serializes the
-  item but rendering drops it. Always pass both (`DG-FACT-209`).
-- **Opacity at `0.7` makes the line invisible.** `opacity` is on the
-  `[0..100]` scale, NOT the CSS `[0..1]` convention; `0.7` rounds to
-  nearly transparent. Use `70` (`DG-FACT-212`).
-- **`removeAt(idx)` empties the whole list.** Upstream slice bug at
-  `js-api/src/helpers.ts:125-127`; workaround is
-  `removeWhere((_, i) => i === idx)` (`DG-FACT-208`).
-- **Looped `addLine` for a large set causes UI hitch.** Each call
-  re-stringifies the whole list (`DG-FACT-208`); collect and `addAll`.
-- **Trellis Plot lines don't stick on the outer viewer.** Trellis is
-  special-cased — its storage lives in `viewer.props['innerViewerLook']`,
-  not on the outer viewer's own `formulaLines` (`DG-FACT-207`,
-  `js-api/src/viewer.ts:838-851`).
+- Line added but never appears — unsupported viewer/axis combo; JS API doesn't validate (`DG-FACT-211`).
+- Band silently missing — `column2` required for bands (`DG-FACT-209`).
+- `opacity: 0.7` near-invisible — scale is `[0..100]`, not `[0..1]`; use `70` (`DG-FACT-212`).
+- `removeAt(idx)` empties list — upstream bug; use `removeWhere((_, i) => i === idx)` (`DG-FACT-208`).
+- Looped `addLine` causes UI hitch — re-serializes per call; use `addAll` (`DG-FACT-208`).
+- Trellis Plot lines don't stick — storage lives in `innerViewerLook`, not outer viewer (`DG-FACT-207`).
 
 ## See also
 

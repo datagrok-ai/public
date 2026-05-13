@@ -47,10 +47,9 @@ route authenticated traffic to it.
 ## Steps
 
 1. **Add the Dockerfile under `dockerfiles/`.**
- Single container → `dockerfiles/Dockerfile`. Multiple containers →
- one subfolder per image, each with its own `Dockerfile`
- (`DG-FACT-134`). Exactly one `EXPOSE <port>` — the platform proxy
- routes to that single port.
+ Single container → `dockerfiles/Dockerfile`; multiple → one
+ subfolder per image (`DG-FACT-134`). Exactly one `EXPOSE <port>`
+ (`DG-FACT-136`).
  ```dockerfile
  FROM python:3.11-slim
  WORKDIR /app
@@ -59,15 +58,12 @@ route authenticated traffic to it.
  EXPOSE 5000
  CMD ["python", "app.py"]
  ```
- Expected: `<package>/dockerfiles/Dockerfile` exists. Reference:
- `packages/Admetica/dockerfiles/Dockerfile`.
 
 2. **Add `container.json` next to the Dockerfile (optional).**
- Same directory as the `Dockerfile`. Defaults per `DG-FACT-132`
- (`cpu` 0.25, `gpu` 0, `memory` 512 MB, `on_demand` false,
- `shutdown_timeout` null, `storage` 21 GB, `shm_size` 64 MB). Use
- `environmentVars` not `env`; `shutdown_timeout`
- not `timeout_minutes`.
+ Field names and defaults per `DG-FACT-132` — use `environmentVars`
+ (not `env`), `shutdown_timeout` (not `timeout_minutes`).
+ `#{x.<Package>:<Entity>}` env-var tokens resolve at container-start
+ time, same-package entities only (`DG-FACT-133`).
  ```json
  {
  "cpu": 1.5,
@@ -80,26 +76,16 @@ route authenticated traffic to it.
  }
  }
  ```
- Expected: file at `dockerfiles/container.json`. The
- `#{x.<Package>:<Entity>}` token is JSON-serialized at container-start
- time; only same-package entities resolve — cross-package credentials
- are NOT injected (`DG-FACT-133`).
 
-3. **Publish the package.**
- First publish queues an image build; later publishes re-queue only
- when the build context changes. Image and container appear in
- **Platform → Dockers**.
+3. **Publish the package.** Image build queues on first publish;
+ image+container appear in **Platform → Dockers**.
  ```bash
  webpack
  grok publish dev
  ```
- Expected: exit code `0`. Status dots per `DG-FACT-135` — green =
- running, red = error, blinking grey = pending, no dot = stopped.
+ Status dots per `DG-FACT-135`.
 
-4. **Resolve the container by friendly name.**
- Friendly name is `<PackageName>` for a single Dockerfile, or
- `<PackageName>-<FolderName>` for multi-container packages
- (`DG-FACT-134`).
+4. **Resolve the container by friendly name** (`DG-FACT-134`).
  ```typescript
  import * as grok from 'datagrok-api/grok';
  import * as DG from 'datagrok-api/dg';
@@ -107,23 +93,18 @@ route authenticated traffic to it.
  const container: DG.DockerContainer = await grok.dapi.docker
 .dockerContainers.filter('mypackage').first;
  ```
- Expected: `container.id` is a non-empty GUID. Siblings on the same
- DataSource: `.list`, `.run(id, awaitStart?)`, `.stop(id)`,
- `.getContainerLogs(id, limit?)` (`DG-FACT-129`).
+ Siblings on the DataSource: `.list`, `.run(id, awaitStart?)`,
+ `.stop(id)`, `.getContainerLogs(id, limit?)` (`DG-FACT-129`).
 
-5. **Start the container if it isn't already (`on_demand: true`).**
- Call `run` only when status is neither `started` nor `checking`
- (`DG-FACT-135`); pass `awaitStart=true` to block until up.
+5. **Start the container if `on_demand: true` and not already up**
+ (`DG-FACT-135`).
  ```typescript
  if (container.status !== 'started' && container.status !== 'checking')
  await grok.dapi.docker.dockerContainers.run(container.id, true);
  ```
- Expected: subsequent `fetchProxy` returns `200`, not HTTP 400.
 
-6. **Send an HTTP request through the proxy.**
- Method shape mirrors the Fetch API; `params` is `RequestInit`
- (`DG-FACT-130`). Live reference:
- `packages/MolTrack/src/services/moltrack-docker-service.ts:28`.
+6. **Send an HTTP request through the proxy.** Mirrors Fetch API
+ (`DG-FACT-130`).
  ```typescript
  const resp: Response = await grok.dapi.docker.dockerContainers
 .fetchProxy(container.id, '/predict', {
@@ -138,13 +119,11 @@ route authenticated traffic to it.
  }
  const data = await resp.json;
  ```
- Expected: `resp.ok === true`; `data` parses as JSON. Errors: HTTP
- 400 (bad status), 404 (not found), 500 (workflow) + `datagrok-error`.
+ Errors: HTTP 400 (bad status), 404 (not found), 500 (workflow).
 
-7. **Open a WebSocket through the proxy (optional).**
- `webSocketProxy(id, path, timeout=60000)` resolves only after the
- server emits the `"CONNECTED"` handshake (`DG-FACT-131`). For
- `on_demand` containers, raise `timeout` past 60s to absorb cold-start.
+7. **Open a WebSocket through the proxy (optional)** —
+ `webSocketProxy(id, path, timeout=60000)` resolves after `"CONNECTED"`
+ handshake; raise timeout for `on_demand` cold-starts (`DG-FACT-131`).
  ```typescript
  const ws: WebSocket = await grok.dapi.docker.dockerContainers
 .webSocketProxy(container.id, '/ws', 120_000);
@@ -152,32 +131,18 @@ route authenticated traffic to it.
  ws.send('hello');
  setTimeout( => ws.close, 3000);
  ```
- Expected: `ws.readyState === WebSocket.OPEN` after the await. On
- timeout the socket closes with code `4001`.
+ On timeout the socket closes with code `4001`.
 
 ## Common failure modes
 
-- **`grok.dapi.dockerfiles.fetchProxy is not a function`** — article
- line 111 names a path that doesn't exist.
- Fix: use `grok.dapi.docker.dockerContainers.fetchProxy`.
-- **Env vars never reach the container** — article shows `"env": {...}`,
- but the server-side model and production packages (MolTrack,
- NodeJSDemo) use `"environmentVars"`.
-- **Idle-shutdown ignored** — `"timeout_minutes"` is silently dropped; rename to `shutdown_timeout`.
-- **`fetchProxy` returns HTTP 400** — container is not `started`
- (`DG-FACT-135`). Fix: gate on status and call
- `dockerContainers.run(id, true)` (step 5).
-- **`fetchProxy` returns HTTP 404** — wrong friendly name or unmapped
- internal path. Fix: confirm name per `DG-FACT-134`; inspect
- `getContainerLogs(id)`.
-- **Image build queued forever / red dot** — multiple `EXPOSE`
- directives (only one allowed — `DG-FACT-136`) or a build error.
- Fix: image card → Property pane → **Build logs**.
-- **`#{x.Other:Conn}` resolves empty** — cross-package entity refs are
- not injected (`DG-FACT-133`); move the connection into the same package.
-- **`webSocketProxy` rejects with code 4001** — no `"CONNECTED"`
- handshake within `timeout` (`DG-FACT-131`); raise `timeout` for
- `on_demand` cold starts.
+- `grok.dapi.dockerfiles.fetchProxy is not a function` — article path is wrong; use `grok.dapi.docker.dockerContainers.fetchProxy`.
+- Env vars not reaching container — use `environmentVars` not `env` (`DG-FACT-132`).
+- Idle-shutdown ignored — use `shutdown_timeout` not `timeout_minutes` (`DG-FACT-132`).
+- `fetchProxy` HTTP 400 — container not `started`; gate on status + `run(id, true)` (`DG-FACT-135`).
+- `fetchProxy` HTTP 404 — wrong friendly name (`DG-FACT-134`) or unmapped path; inspect `getContainerLogs(id)`.
+- Image build stuck / red dot — multiple `EXPOSE` directives or build error (`DG-FACT-136`).
+- `#{x.Other:Conn}` empty — cross-package refs aren't injected (`DG-FACT-133`).
+- `webSocketProxy` rejects with 4001 — no `"CONNECTED"` handshake within timeout (`DG-FACT-131`).
 
 ## See also
 

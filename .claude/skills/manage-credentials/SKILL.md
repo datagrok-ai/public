@@ -53,26 +53,15 @@ the connection JSON", "let a cron script rotate our service token".
 
 ## Steps
 
-Two routes share the same secured store but differ in REST path and
-read API (`DG-FACT-346`). Free-form package secrets → **package
-credentials**, path `for/<PackageName>`, read via
-`_package.getCredentials()`. Login/password for a declared
-`DataConnection` → **connection credentials**, path
-`for/<PackageName>.<ConnectionName>`, consumed implicitly by the
-connection.
+Two routes share the same secured store but differ in REST path and read API (see DG-FACT-346): free-form package secrets at `for/<PackageName>`, connection credentials at `for/<PackageName>.<ConnectionName>`.
 
 1. **Set package credentials in the UI** (one-off case).
    ```
    Manage → Packages → right-click <Pkg> → Credentials...
    ```
-   Add key-value pairs; set **Credentials owner** to a user or group
-   (`DG-FACT-350`).
-   Expected: only members of the owner group see real values from
-   `_package.getCredentials()`; non-members get `null`.
+   Set **Credentials owner** to a user or group (see DG-FACT-350).
 
-2. **Set credentials programmatically** (rotation scripts, CI).
-   Payload keys are entity-specific — `{login, password}` for a DB,
-   `{accessKeyId, secretAccessKey}` for AWS, etc. (`DG-FACT-349`).
+2. **Set credentials programmatically** (rotation scripts, CI). Payload keys are entity-specific (see DG-FACT-349).
    ```bash
    curl -X POST \
      "$GROK_HOST/api/credentials/for/$PACKAGE_NAME" \
@@ -80,13 +69,9 @@ connection.
      -H "Content-Type: application/json" \
      -d '{"login":"datagrok","password":"s3cr3t"}'
    ```
-   For a connection, target `for/$PACKAGE_NAME.$CONNECTION_NAME`.
-   Canonical Python reference: `packages/NLP/aws/nlp-user.py:47-53`.
-   Expected: HTTP `200 OK`. Same body POSTed twice overwrites in place.
+   For a connection, target `for/$PACKAGE_NAME.$CONNECTION_NAME`. Same body POSTed twice overwrites in place.
 
-3. **Read the package's own credentials from code.** Lenient `== null`
-   check, access via `.parameters[key]` (not `.openParameters`)
-   (`DG-FACT-347`, `DG-FACT-348`).
+3. **Read the package's own credentials from code.** Use `.parameters[key]` (owner-only real values — see DG-FACT-347, DG-FACT-348).
    ```typescript
    import * as grok from 'datagrok-api/grok';
    import * as DG from 'datagrok-api/dg';
@@ -102,26 +87,14 @@ connection.
      return credentials.parameters['apiKey'];
    }
    ```
-   Reference: `packages/NLP/src/package.ts:104-115`,
-   `packages/Chemspace/src/package.ts:405-413`.
-   Expected: returns the value set in step 1 or 2 when the caller is
-   in the owner group; otherwise `null`.
-
-4. **Use `openParameters` when surfacing what's stored to a user
-   dialog.** Different visibility — redacted display form, safe for
-   non-owners (`DG-FACT-348`).
+4. **Use `openParameters` when surfacing what's stored to a user dialog.** Redacted display form, safe for non-owners (see DG-FACT-348).
    ```javascript
    let p = await grok.dapi.packages.filter('<Pkg>').first();
    let c = await p.getCredentials();
    grok.shell.info(c ? c.openParameters : 'Credentials are not set.');
    ```
-   Reference: `packages/ApiSamples/scripts/misc/package-credentials.js:6-8`.
-   Expected: displays the redacted key set without leaking values.
 
-5. **Declare connection credentials in JSON at deploy time.**
-   In `packages/<Pkg>/connections/<name>.json`, add the
-   `credentials.parameters` block alongside `parameters`
-   (`DG-FACT-351`):
+5. **Declare connection credentials in JSON at deploy time.** Add the `credentials.parameters` block to `packages/<Pkg>/connections/<name>.json` — at deploy, Datagrok strips it and stores under `<Pkg>.<Conn>`. Literal values only — there is NO `${VAR_NAME}` substitution (see DG-FACT-351):
    ```json
    {
      "#type": "DataConnection",
@@ -140,37 +113,15 @@ connection.
      "dataSource": "PostgresDart"
    }
    ```
-   At deploy, Datagrok strips the `credentials` block off the connection
-   record and stores it under the entity `<Pkg>.<Conn>`. Values must be
-   literal — there is NO `${VAR_NAME}` env-substitution. Canonical:
-   `packages/DBTests/connections/postgresql-test.json:10-15`. For a
-   non-private repo, omit the `credentials` block entirely and POST
-   after deploy with step 2.
+   For a non-private repo, omit the `credentials` block entirely and POST after deploy with step 2.
 
 ## Common failure modes
 
-- **HTTP 401 from the REST POST.** The `Authorization` header has a
-  `Bearer ` prefix or stray quotes around the key. Send the raw API
-  key string from `/u` with NO prefix (`DG-FACT-349`).
-- **`_package.getCredentials()` returns `null` after a successful
-  set.** Either the package was not republished on the same host, or
-  the caller isn't in the **Credentials owner** group — `parameters`
-  is owner-gated (`DG-FACT-350`). Fix: re-run `grok publish dev`
-  against the same `$GROK_HOST`; for non-owners, change owner to a
-  shared group.
-- **Connection credentials missing after deploy.** Connection JSON
-  used `${DB_PASSWORD}` expecting env substitution. The platform does
-  NOT expand `${...}` (`DG-FACT-351`). Fix: inline the literal value
-  (private repo) or omit the block and POST to `for/<Pkg>.<Conn>`
-  after deploy.
-- **Rotation script breaks when its author leaves.** Script used a
-  personal API key from `/u`. Fix: create a service user via
-  **Manage → Users → Actions → Add Service User** and embed *its* key
-  (`DG-FACT-350`; ref `packages/NLP/aws/nlp-user.py:50-52`).
-- **Secrets leak through the connection string.** When `connString` is
-  supplied, it persists in the connection record itself — not the
-  secured store. Always put login/password in the
-  `credentials.parameters` block.
+- **HTTP 401 from REST POST.** `Authorization` has a `Bearer ` prefix or quotes — send raw key (see DG-FACT-349).
+- **`_package.getCredentials()` returns `null` after a successful set.** Package not republished on the same host, OR caller isn't in the **Credentials owner** group (see DG-FACT-350).
+- **Connection credentials missing after deploy.** Used `${DB_PASSWORD}` expecting env substitution — not supported (see DG-FACT-351). Inline literal or POST after deploy.
+- **Rotation script breaks when its author leaves.** Used a personal API key. Create a service user via **Manage → Users → Actions → Add Service User** (see DG-FACT-350).
+- **Secrets leak through `connString`.** Always put login/password in `credentials.parameters`.
 
 ## See also
 

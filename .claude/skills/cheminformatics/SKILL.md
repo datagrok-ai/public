@@ -43,12 +43,9 @@ molecule into a `div`/`canvas`".
  t.filter.copyFrom(bs);
  grok.shell.addTableView(t);
  ```
- Expected: a `BitSet` whose length equals `column.length`; bit `i` is
- `1` iff the `i`-th molecule contains the pattern, `0` for non-matches
- AND for unparseable molecules — invalid SMILES are silently skipped,
- not raised (knowledge `DG-FACT-238`). `settings` is
- `{ molBlockFailover?: string }` only — the `substructLibrary` flag
- shown in the article is not read by the wrapper.
+ Returns a `BitSet` aligned 1:1 with the column; unparseable molecules
+ leave bit `0` (no throw). Settings is `{ molBlockFailover?: string }`
+ only (see `DG-FACT-238`).
 
 2. **Find most similar molecules.**
  ```typescript
@@ -60,12 +57,9 @@ molecule into a `div`/`canvas`".
  { limit: 20, cutoff: 0.4 });
  grok.shell.addTableView(top!);
  ```
- Expected: a `DataFrame` with three columns — `molecule` (original
- strings), `score` (Tanimoto, sorted descending, range `0.0..1.0`),
- `index` (positions in the input column). Defaults are
- `{ limit: Number.MAX_VALUE, cutoff: 0.0 }`, i.e. ALL molecules ranked
- (knowledge `DG-FACT-239`). Engine: Morgan fingerprints + Tanimoto
- (knowledge `DG-FACT-237`).
+ Returns a `DataFrame` of `molecule` / `score` / `index` columns,
+ sorted descending by Tanimoto score; Morgan fingerprints (see
+ `DG-FACT-237`, `DG-FACT-239`).
 
 3. **Score every row, or prime the fingerprint cache.**
  ```typescript
@@ -75,11 +69,9 @@ molecule into a `div`/`canvas`".
  // Cache-priming form (returns null, no scoring):
  await grok.chem.getSimilarities(t.col('smiles')!, '');
  ```
- Expected: a single `Column` (NOT a DataFrame — drift
- ) of length equal to the input column; null
- scores for unparseable rows. With `molecule = ''` (not `null`) the
- per-column fingerprint cache is populated and the call returns
- `null` (knowledge `DG-FACT-240`, `DG-FACT-237`).
+ Returns a single `Column` (not a DataFrame). Pass `molecule = ''`
+ (not `null`) to prime the cache; returns `null` in that branch (see
+ `DG-FACT-240`).
 
 4. **Pick a diverse subset.**
  ```typescript
@@ -98,11 +90,8 @@ molecule into a `div`/`canvas`".
  t, 'smiles', /*returnSmarts*/ true);
  grok.shell.info(smarts);
  ```
- Expected: a `Promise<string>` resolving to SMILES (or SMARTS when
- `returnSmarts=true`). The signature is
- `(table: DataFrame, column: string, returnSmarts?, exactAtomSearch?,
- exactBondSearch?)` — the article's `mcs(column)` form passes a
- Column where a DataFrame is expected and will fail at runtime.
+ Signature is `(DataFrame, columnName, returnSmarts?, exactAtomSearch?,
+ exactBondSearch?)`. Passing a Column will fail at runtime.
 
 6. **R-group analysis with a scaffold SMARTS.**
  ```typescript
@@ -110,8 +99,7 @@ molecule into a `div`/`canvas`".
  t, 'smiles', 'O=C1Nc2ccccc2C(C2CCCCC2)=NC1');
  grok.shell.addTableView(rg);
  ```
- Expected: a new `DataFrame` with one column per R-group position
- (`R1`, `R2`, …) holding the matched substituents per row.
+ Returns a new DataFrame, one column per R-group position (`R1`, `R2`, …).
 
 7. **Compute descriptors.**
  ```typescript
@@ -120,11 +108,8 @@ molecule into a `div`/`canvas`".
  ['MolWt', 'NumHAcceptors', 'NumHDonors', 'TPSA']);
  grok.shell.addTableView(desc);
  ```
- Expected: a `DataFrame` with the source column plus one numeric
- column per requested descriptor. Lipinski / Crippen / MolSurf /
- Fragments group names are also accepted; see
- `packages/ApiSamples/scripts/domains/chem/descriptors.js` for the
- full catalogue.
+ Lipinski / Crippen / MolSurf / Fragments group names also accepted;
+ catalogue in `packages/ApiSamples/scripts/domains/chem/descriptors.js`.
 
 8. **Render a molecule into a `div` (sync, OpenChemLib).**
  ```typescript
@@ -134,10 +119,8 @@ molecule into a `div`/`canvas`".
  'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', 300, 200))
 .show;
  ```
- Expected: a dialog with the molecule rendered as inline SVG.
- `svgMol` is synchronous and returns the `HTMLDivElement`
- immediately; the SVG is filled in after a dynamic
- `import('openchemlib/full.js')` resolves (knowledge `DG-FACT-241`).
+ `svgMol` is sync — returns the div immediately, SVG fills in on the
+ next microtask (see `DG-FACT-241`).
 
 9. **Render to a `canvas` with scaffold highlighting (async, RDKit).**
  ```typescript
@@ -149,29 +132,18 @@ molecule into a `div`/`canvas`".
  'c1ccccc1');
  ui.dialog({ title: 'Molecule' }).add(canvas).show;
  ```
- Expected: the molecule drawn into the canvas with the benzene
- scaffold highlighted. Pass the scaffold as SMARTS; `canvasMol` is
- async (knowledge `DG-FACT-241`).
+ `canvasMol` is async; scaffold is SMARTS (see `DG-FACT-241`).
 
 ## Common failure modes
 
-- **`searchSubstructure` is missing rows you expected.** Unparseable
- molecule strings are silently skipped — bit stays `0`, no throw
- (knowledge `DG-FACT-238`). Fix: pre-validate or supply
- `molBlockFailover` SMARTS. The article's `substructLibrary: true` is
- dropped by the wrapper.
-- **`mcs(column)` throws / returns garbage.** Signature is
- `(DataFrame, columnName,...)`, not `(Column)`. Fix: pass the table and column name string.
-- **`diversitySearch(col, METRIC_TANIMOTO, 10)` — `METRIC_TANIMOTO is
- undefined`.** The constant doesn't exist; second arg is a settings
- object. Fix: `(col, { limit: 10 })`.
-- **`getSimilarities(col, null)` returns nothing useful.** Cache-priming
- expects `''`, not `null`.
-- **`canvasMol` shows nothing.** It's async — `await` it before the
- dialog opens (knowledge `DG-FACT-241`).
-- **`svgMol` returns an empty `div`.** OpenChemLib loads dynamically;
- SVG is injected on the next microtask. Append the div first; do not
- read `innerHTML` synchronously (knowledge `DG-FACT-241`).
+- `searchSubstructure` missing rows — unparseable molecules silently
+ stay `0` (`DG-FACT-238`). Use `molBlockFailover` SMARTS.
+- `mcs(column)` — wrong signature; pass `(DataFrame, columnName, …)`.
+- `diversitySearch(col, METRIC_TANIMOTO, 10)` — constant doesn't exist;
+ second arg is `{ limit }`.
+- `getSimilarities(col, null)` — cache-priming wants `''`, not `null`.
+- `canvasMol` shows nothing — must `await` (`DG-FACT-241`).
+- `svgMol` empty — append div first, don't read `innerHTML` sync.
 
 ## See also
 

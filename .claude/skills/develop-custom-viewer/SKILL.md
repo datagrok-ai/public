@@ -42,16 +42,10 @@ layouts, and react to filter/selection/current row.
 ## Steps
 
 1. **Subclass `DG.JsViewer`; declare properties in the constructor.**
-   Base class at `js-api/src/viewer.ts:379` (`DG-FACT-186`). Each typed
-   helper — `this.int`, `this.float`, `this.string`, `this.stringList`,
-   `this.bool`, `this.dateTime`, `this.columnList` (`viewer.ts:457-499`,
-   `DG-FACT-187`) — both registers the property in the context panel
-   AND returns its initial value. Column-bound properties MUST end with
-   `ColumnName`; that suffix flags them as Data (`viewer.ts:455-459`,
-   `DG-FACT-188`). Properties auto-group into tabs by name pattern
-   (Data / Colors / Axes / Legend / Margins / Markers / Description /
-   Misc — `DG-FACT-189`); override via `{category: 'X'}`.
-
+   Typed `this.int/float/string/bool/dateTime/columnList/…` helpers
+   register-and-return the initial value (see `DG-FACT-186`, `187`).
+   Column-bound names must end `ColumnName` (`DG-FACT-188`); tab
+   grouping is by name pattern (`DG-FACT-189`).
    ```typescript
    import * as DG from 'datagrok-api/dg';
    import * as grok from 'datagrok-api/grok';
@@ -65,18 +59,10 @@ layouts, and react to filter/selection/current row.
      initialized = false;
    }
    ```
-   Expected: properties appear in the context panel under their
-   auto-derived tabs when the viewer is attached.
 
 2. **Wire lifecycle hooks; push every subscription onto `this.subs`.**
-   `onTableAttached()` runs when a DataFrame binds — do data-dependent
-   init here (`DG-FACT-190`, `viewer.ts:412-444`). Push every
-   `selection.onChanged` / `filter.onChanged` / `ui.onSizeChanged(...)`
-   subscription onto `this.subs`; default `detach()` unsubscribes them
-   (`DG-FACT-191`, `viewer.ts:397-398,429-432`). Wrap noisy streams
-   with `DG.debounce(obs, 50)`. Don't override `detach()` without
-   `super.detach()` — leaks.
-
+   Default `detach()` unsubscribes the bag for you (see `DG-FACT-190`,
+   `DG-FACT-191`).
    ```typescript
    onTableAttached() {
      this.init();
@@ -91,14 +77,8 @@ layouts, and react to filter/selection/current row.
    }
    ```
 
-3. **Render against the live filter; gate compute on a flag.**
-   In `render(computeData = true)` recompute the aggregated frame ONLY
-   when `computeData` (resize events skip the work). Chain
-   `groupBy([col]).whereRowMask(this.dataFrame.filter).add(...).aggregate()`
-   so the viewer respects user filters — skipping `whereRowMask`
-   aggregates over the full frame regardless (`DG-FACT-461`,
-   `stats.ts:350-354`). Clear `this.root` and re-draw to its size.
-
+3. **Render against the live filter; gate compute on a flag.** Always
+   chain `.whereRowMask(this.dataFrame.filter)` (see `DG-FACT-461`).
    ```typescript
    render(computeData = true) {
      if (computeData) {
@@ -114,12 +94,7 @@ layouts, and react to filter/selection/current row.
    }
    ```
 
-4. **Bridge mouse events into platform state.**
-   `ui.tooltip.showRowGroup(dataFrame, predicate, x, y)` pops the
-   standard row-group tooltip; `dataFrame.selection.handleClick(predicate,
-   event)` extends/replaces selection per Ctrl/Shift/Meta — pass the raw
-   `MouseEvent` (`DG-FACT-460`, `ui.ts:1606-1608`, `bit-set.ts:220-222`).
-
+4. **Bridge mouse events to platform state** (see `DG-FACT-460`).
    ```typescript
    bars.on('mouseover', (event, d) => ui.tooltip.showRowGroup(this.dataFrame,
        i => d.category === this.dataFrame.getCol(this.splitColumnName).get(i),
@@ -130,48 +105,28 @@ layouts, and react to filter/selection/current row.
        event));
    ```
 
-5. **Register so it appears in *Add Viewer*.** Two paths (`DG-FACT-193`):
-   the `@grok.decorators.viewer({name, description?, icon?, toolbox?,
-   trellisable?, viewerPath?})` class decorator (canonical:
-   `packages/Charts/src/viewers/sankey/sankey.ts:53-57` →
-   `packages/Charts/src/package.g.ts:129-136`); or an annotated factory
-   in `package.ts` returning `new AwesomeViewer()`. Either way the build
-   emits `//name:` + `//meta.role: viewer` + `//output: viewer result`
-   into `src/package.g.ts` — commit it (NOT gitignored). Metadata
-   (`DG-FACT-194`, `decorators/functions.ts:36-45`): `meta.icon`,
-   `meta.toolbox: true`, `meta.trellisable: true` (inner viewer of
-   `DG.VIEWER.TRELLIS_PLOT`), `meta.viewerPath: 'Cat | Friendly Name'`
-   (overrides default `Add > JavaScript Viewers > <Pkg> > <Name>`).
-   `meta.viewerPosition` (`top|bottom|left|right|fill|auto`,
-   `DG-FACT-195`) is HEADER-FORM ONLY — patch into `package.g.ts`
-   post-build (see `packages/PowerGrid/src/package.g.ts:225`).
+5. **Register so it appears in *Add Viewer*.** Use
+   `@grok.decorators.viewer({...})` on the class, or an annotated
+   factory (see `DG-FACT-193`, `DG-FACT-194`). Commit `package.g.ts`
+   (not gitignored). `meta.viewerPosition` is header-form only — patch
+   into `package.g.ts` post-build (see `DG-FACT-195`).
 
-6. **Alternative: scripting viewer (server-rendered).** For Python/R/
-   Julia, drop a `.py`/`.r`/`.jl` under `<pkg>/scripts/` with
-   `# language: python`, `# tags: viewers` (registers in Script Browser
-   at `/scripts?q=%23viewers`), typed inputs (e.g. `# input: column
-   splitColumnName {type: categorical}`), and `# output: graphics`
-   — REQUIRED (`DG-FACT-196`). Platform auto-adds `Refresh on Filter`,
-   `Title`, `Description`, `Description Position`, `Description
-   Visibility Mode` (`DG-FACT-197`).
+6. **Alternative: scripting viewer (server-rendered).** Python/R/Julia
+   under `<pkg>/scripts/` with `# language:`, `# tags: viewers`,
+   `# output: graphics` required (see `DG-FACT-196`, `DG-FACT-197`).
 
 ## Common failure modes
 
-- **Viewer doesn't appear in *Add Viewer* menu.** `src/package.g.ts`
-  missing `//meta.role: viewer` or `//output: viewer result` — rebuild
-  after fixing the decorator; confirm `package.g.ts` is committed
-  (`DG-FACT-193`).
-- **Memory leak: closed viewer keeps re-rendering.** A subscription
-  wasn't pushed onto `this.subs`, so default `detach()` can't
-  unsubscribe it (`DG-FACT-191`).
-- **Chart shows stale rows after the user filters.** Aggregation
-  skipped `whereRowMask(this.dataFrame.filter)` and ran over the full
-  frame (`DG-FACT-461`).
-- **Property doesn't show in the Data tab.** Name lacks the
-  `ColumnName` suffix — rename `splitCol` → `splitColumnName`
+- Not in *Add Viewer* — `package.g.ts` missing `//meta.role: viewer` /
+  `//output: viewer result`; rebuild + commit (`DG-FACT-193`).
+- Memory leak on close — subscription wasn't pushed onto `this.subs`
+  (`DG-FACT-191`).
+- Stale rows after filter — missing `whereRowMask(...filter)`
+  (`DG-FACT-461`).
+- Property absent from Data tab — name lacks `ColumnName` suffix
   (`DG-FACT-188`).
-- **Scripting viewer fails to render.** Header omits `# output: graphics`
-  or `# tags: viewers` (`DG-FACT-196`).
+- Scripting viewer blank — header missing `# output: graphics` or
+  `# tags: viewers` (`DG-FACT-196`).
 
 ## See also
 

@@ -56,114 +56,55 @@ the situation and to read the artifacts when a test goes red.
    cd <package-dir>
    grok test --host <alias> --csv
    ```
-   The runner builds the package, publishes it to `<alias>` in debug
-   mode, then executes every `category(...)` registered through
-   `src/package-test.ts` (`DG-FACT-356`).
-   Expected: stdout summary `Passed N, Failed M, Skipped K`; a
-   `test-report.csv` next to `package.json` with one row per test
-   (name, category, pass/fail/skip, duration, error).
+   The runner builds, publishes, and executes every registered `category(...)` (see DG-FACT-356). Output: stdout summary + `test-report.csv` next to `package.json`.
 
-2. **Iterate fast — re-run against the already-deployed build.**
-   When you're debugging logic and the package is already published,
-   skip the slow steps:
+2. **Iterate fast — re-run against the already-deployed build.** Combine `--skip-build --skip-publish` with `--category` to re-run in seconds (see DG-FACT-356).
    ```bash
    grok test --host <alias> --skip-build --skip-publish \
      --category "<CategoryName>"
    ```
-   `--category` narrows the run to one `category(...)` block; combine
-   with `--skip-build --skip-publish` to re-run in seconds (`DG-FACT-356`).
-   Expected: only the named category is exercised; build + publish
-   logs do not appear.
 
-3. **Step through a single failing test interactively.**
-   `--debug` is only honoured in non-headless mode — pair it with
-   `--gui`, otherwise the breakpoint is silently dropped (`DG-FACT-356`).
+3. **Step through a single failing test interactively.** `--debug` requires `--gui`; otherwise the breakpoint is silently dropped (see DG-FACT-356).
    ```bash
    grok test --host <alias> --gui --debug \
      --category "<CategoryName>"
    ```
-   Expected: a Chromium window opens; execution pauses at a
-   breakpoint before each test; DevTools is attachable for live
-   stepping.
 
 4. **Record the run for later inspection (flaky test triage).**
    ```bash
    grok test --host <alias> --record --csv --verbose
    ```
-   `--record` produces an mp4 of the headless browser; `--verbose`
-   adds per-test passed/skipped detail to stdout (`DG-FACT-356`).
-   Useful locally when you suspect the same visual/timing issue
-   you saw in CI.
 
-5. **Run a single test from the Datagrok UI (Test Manager).**
-   In the platform: **Top menu → Tools → Dev → Test Manager**
-   (`DG-FACT-357`). The tree lists every package whose
-   `src/package-test.ts` is loaded; expand → category → test.
-   - Right-click → `Run`, or select + `Enter`, or double-click a leaf.
-   - `Run all` on the ribbon executes every package.
-
-   Deep-link a test directly from the URL bar:
+5. **Run a single test from the Datagrok UI (Test Manager).** **Top menu → Tools → Dev → Test Manager** (see DG-FACT-357). Expand package → category → test; right-click → `Run`, or double-click. Deep-link:
    ```
    <host>/apps/DevTools/TestManager/<PackageName>/<CategoryName>/<TestName>
    ```
-   Append `?run=true` to auto-execute on load (`DG-FACT-357`).
-   Expected: a pass/fail icon appears next to the selected node;
-   results land in the context panel and a Workspace-addable grid.
+   Append `?run=true` to auto-execute on load.
 
-6. **Run from the platform console.**
-   Press <kbd>~</kbd> (or **Windows → Console**), then:
+6. **Run from the platform console.** Press <kbd>~</kbd> (or **Windows → Console**), then (see DG-FACT-358):
    ```
    <PackageName>:test(category="<CategoryName>")
    <PackageName>:test(category="<CategoryName>", test="<TestName>")
    ```
-   This invokes the same `//name: test` function the runner uses
-   (`DG-FACT-358`). The console prints a result DataFrame.
 
-7. **Re-run the GitHub Actions suite for a package on demand.**
-   Open `https://github.com/datagrok-ai/public/actions/workflows/packages.yml`
-   → **Run workflow** → enter packages space-separated
-   (e.g. `Chem ApiTests`) and a target branch. Publish-to-NPM only
-   fires on `master` (`DG-FACT-359`).
+7. **Re-run the GitHub Actions suite for a package on demand.** Open `https://github.com/datagrok-ai/public/actions/workflows/packages.yml` → **Run workflow** → enter packages (space-separated) and a target branch (see DG-FACT-359).
 
-8. **Diagnose a CI failure from its artifact zip.**
-   On the failed Action's **Summary** page, download the artifact
-   from the **Artifacts** pane. The zip contains exactly three
-   files (`DG-FACT-359`):
+8. **Diagnose a CI failure from its artifact zip.** The zip contains exactly three files (see DG-FACT-359):
    ```text
    test-console-output.log   # raw console + stack traces
    test-record.mp4           # full video of the headless run
    test-report.csv           # per-test pass/fail/duration/error
    ```
-   Triage order: open `test-report.csv` → find the failing row →
-   search its name in `test-console-output.log` for the stack trace
-   → if the failure is timing-dependent or DOM-related, scrub
-   `test-record.mp4` to the same elapsed time.
+   Triage order: `test-report.csv` (find failing row) → search name in `test-console-output.log` (stack trace) → scrub `test-record.mp4` to that elapsed time for visual/timing failures.
 
 ## Common failure modes
 
-- **`--debug` does nothing — execution runs through.** `--debug`
-  requires `--gui`; without it the breakpoint is silently dropped
-  (`DG-FACT-356`, tools/README.md:141). Add `--gui`.
-- **Async viewer test times out only in CI.** Default `awaitCheck`
-  wait is `500` ms — far too short for headless rendering
-  (`DG-FACT-352`). Pass an explicit wait
-  (`await awaitCheck(() => …, 'msg', 30000)`); confirm by scrubbing
-  `test-record.mp4` to the failure point.
-- **`grok test --host <alias>` errors `unknown host`.** `<alias>`
-  isn't in `~/.grok/config.yaml`. Run `grok config add`, or omit
-  `--host` to use the configured default.
-- **Test Manager shows zero packages or none of mine.** Either
-  `DevTools` isn't installed on that server (`DG-FACT-357`), or your
-  package's `src/package-test.ts` doesn't declare `//name: test` /
-  isn't deployed in debug mode — `grok test` won't find it either.
-- **Console call `<Package>:test(category="X")` returns nothing.** The
-  category file isn't side-effect-imported from `src/package-test.ts`
-  (see `add-package-tests` for the import contract). Confirm with
-  `grep "import './tests/" src/package-test.ts`.
-- **CI-only `expectExceptionAsync` failure.** Reads `An exception is
-  expected but not thrown` — the action under test resolved instead of
-  rejected (`DG-FACT-354`). Likely a race: the rejection path didn't
-  fire before the next tick. Wrap with `awaitCheck` before the call.
+- **`--debug` does nothing.** Add `--gui` (see DG-FACT-356).
+- **Async viewer test times out only in CI.** Default `awaitCheck` wait is 500ms — pass an explicit longer `wait` (see DG-FACT-352).
+- **`grok test --host <alias>` errors `unknown host`.** Run `grok config add`, or omit `--host`.
+- **Test Manager shows zero packages.** Either `DevTools` not installed (see DG-FACT-357), or `src/package-test.ts` missing `//name: test` / not deployed in debug mode.
+- **Console call returns nothing.** Category file isn't side-effect-imported from `src/package-test.ts` — `grep "import './tests/" src/package-test.ts`.
+- **CI-only `expectExceptionAsync` failure** (`An exception is expected but not thrown`). Likely a race — wrap with `awaitCheck` before the call (see DG-FACT-354).
 
 ## See also
 

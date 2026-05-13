@@ -47,9 +47,8 @@ navigation, and a pasted URL to rebuild that state on launch.
 ## Steps
 
 1. **Bind the URL path suffix into a string parameter.** Annotate one
-   `string` parameter with `metaUrl: true, optional: true`. The platform
-   passes everything after the app's base path into it — empty (or
-   `undefined`) on a fresh launch from `Apps`. Knowledge: `DG-FACT-332`.
+   `string` parameter with `metaUrl: true, optional: true` (see
+   `DG-FACT-332`).
    ```typescript
    @grok.decorators.app({name: 'Cohorts'})
    static cohortsApp(
@@ -60,37 +59,23 @@ navigation, and a pasted URL to rebuild that state on launch.
      return DG.View.create();
    }
    ```
-   Expected: opening `/apps/Cohorts/foo/bar` invokes `cohortsApp` with
-   `path = 'foo/bar'`. Source:
-   `help/develop/how-to/apps/routing.md:16-25,141-145`. Reference:
-   `packages/Chem/src/package.ts:2923-2924`,
+   `/apps/Cohorts/foo/bar` calls with `path = 'foo/bar'`. Refs:
    `packages/Tutorials/src/package.ts:148-150`.
 
-2. **Split the path and branch on segment count.** Empty path → "fresh
-   launch, build defaults"; non-empty → "rebuild state encoded in the
-   URL". `grok.data.testData(...)` is synchronous (no `await`);
-   `DG.DemoDatasetName` allows only seven literal values — `wells`,
-   `demog`, `biosensor`, `random walk`, `geo`, `molecules`,
-   `dose-response` — so any URL-derived segment fed to it needs a
-   runtime guard, not just the article's TS cast. Knowledge:
-   `DG-FACT-391`, `DG-FACT-392`, `DG-FACT-DRIFT-ROUTING-001`.
+2. **Split the path and branch on segment count.** Empty ⇒ fresh
+   launch; non-empty ⇒ restore. `grok.data.testData(...)` is sync (see
+   `DG-FACT-391`, `DG-FACT-392`).
    ```typescript
    const pathSegments = (path ?? '').split('/').filter((s) => s !== '');
    if (pathSegments.length === 0) openDefaultViews();
    else                          restoreFromPath(pathSegments);
    ```
-   Expected: launching from `Apps` → `pathSegments` is `[]`; pasting
-   `/apps/Cohorts/demog/All` → `pathSegments` is `['demog', 'All']`.
-   Source: `help/develop/how-to/apps/routing.md:14-25,29-31,55-63`.
-   Reference: `packages/Tutorials/src/package.ts:151-152`.
 
-3. **Set `view.path` whenever app state changes.** Assigning to
-   `view.path` rewrites the browser address bar AND the in-app
-   breadcrumb in one call — no separate "push history" exists. The
-   full URL becomes `<function-base-path>/<view.path>`; never hardcode
-   the base path because it varies between one-app and multi-app
-   packages and is overridable (step 5). Knowledge: `DG-FACT-393`,
-   `DG-FACT-DRIFT-ROUTING-003`.
+3. **Set `view.path` whenever app state changes.** Assigning rewrites
+   the address bar AND the breadcrumb in one call — there is no
+   separate "push history". The full URL becomes
+   `<function-base-path>/<view.path>`; never hardcode the base (see
+   `DG-FACT-393`, `DG-FACT-DRIFT-ROUTING-003`).
    ```typescript
    function openDefaultViews(): void {
      const demog = grok.data.testData('demog');
@@ -100,18 +85,14 @@ navigation, and a pasted URL to rebuild that state on launch.
      grok.shell.v = view;
    }
    ```
-   Expected: address bar shows `…/apps/<Package>/Cohorts/demog/All`
-   (or `…/apps/Cohorts/demog/All` for one-app packages); breadcrumb
-   mirrors the same segments. Source:
-   `help/develop/how-to/apps/routing.md:32-50`. Reference:
-   `js-api/src/views/view.ts:169-171`,
-   `packages/UsageAnalysis/src/package.ts:461`.
+   Address bar and breadcrumb mirror `view.path`. Ref:
+   `js-api/src/views/view.ts:169-171`.
 
-4. **Rebuild state from path segments.** Validate each segment before
-   feeding it to a typed API; the `as DG.DemoDatasetName` cast at
-   `routing.md:58` silences the TS checker but does nothing at runtime.
-   Reassign `view.path` once the view is on screen so the URL
-   canonicalizes (missing trailing label fills in to `/<table>/All`).
+4. **Rebuild state from path segments.** Always validate before
+   feeding into a typed API — the `as DG.DemoDatasetName` cast at
+   `routing.md:58` is a TS-only silencer. Reassign `view.path` once
+   the view is on screen so the URL canonicalizes (a missing trailing
+   label fills in to `/<table>/All`).
    ```typescript
    const DEMO: readonly DG.DemoDatasetName[] =
      ['wells', 'demog', 'biosensor', 'random walk',
@@ -130,25 +111,14 @@ navigation, and a pasted URL to rebuild that state on launch.
      grok.shell.v = view;
    }
    ```
-   Expected: `/apps/Cohorts/demog/All` rebuilds the demog view and
-   selection; `/apps/Cohorts/banana` triggers the toast warning
-   instead of a TS-silent crash. Source:
-   `help/develop/how-to/apps/routing.md:55-63,162-182`.
-
 5. **(Optional) Override the package's URL segment.** Add `meta.url`
-   in `package.json` to replace the package-name segment in every app
-   URL the package hosts. The old `/apps/<PackageName>` keeps
-   resolving but redirects on landing — share the alias instead. A
-   matching `meta.url` on a function overrides the app-name segment
-   for that one function. Knowledge: `DG-FACT-389`, `DG-FACT-390`.
+   in `package.json` to rename the package-name segment (see
+   `DG-FACT-389`, `DG-FACT-390`).
    ```json
    { "name": "@datagrok/cohorts", "meta": { "url": "/cohorts" } }
    ```
-   Expected: `/apps/cohorts/...` and `/browse/apps/cohorts/...` both
-   serve the app; `/apps/Cohorts/...` rewrites to the alias on first
-   render. Source:
-   `help/develop/how-to/apps/routing.md:84-103,119-129`. Reference:
-   `packages/UsageAnalysis/package.json:71-73`.
+   Both `/apps/cohorts/...` and `/browse/apps/cohorts/...` serve the
+   app; the old `/apps/Cohorts/...` redirects to the alias.
 
 6. **Build and publish.**
    ```bash
@@ -156,30 +126,19 @@ navigation, and a pasted URL to rebuild that state on launch.
    grok publish <host>            # debug, publisher-only
    grok publish <host> --release  # release for all users
    ```
-   Expected: build exits 0; entry resolves at both `/apps/<AppName>`
-   and `/browse/apps/<AppName>` (`DG-FACT-389`).
 
 ## Common failure modes
 
-- **`path` is always `undefined`.** Parameter isn't typed `string`,
-  isn't marked `metaUrl: true`, or two parameters claim it. Exactly
-  one input must carry `{metaUrl: true}` (`DG-FACT-332`).
-- **URL stays at `/apps/<AppName>` no matter what the user clicks.**
-  The app never assigns to `view.path` after mutating state.
-  `view.path` is the ONLY mutator that moves the address bar and
-  breadcrumb in one call (`DG-FACT-393`); set it on every state change.
-- **TS2345 `string is not assignable to DemoDatasetName`.** Raw URL
-  segment fed into `grok.data.testData(...)`. Narrow with an `includes`
-  guard against the seven literal values, or cast plus catch the
-  runtime failure (`DG-FACT-391`).
-- **Legacy URLs keep redirecting after a `meta.url` alias is added.**
-  Expected — the platform rewrites `/apps/<PackageName>` to the alias
-  on first render (`DG-FACT-390`). Update shared/bookmarked links.
-- **Tutorial example assumes a single-app package.** The article's
-  `/apps/TestPackage/demog/All` skips the app-name segment; in multi-app
-  packages the form is `/apps/<PackageName>/<AppName>/demog/All`.
-  `view.path` itself never changes — it's always appended to whatever
-  base path the launcher resolved (`DG-FACT-DRIFT-ROUTING-003`).
+- `path` always `undefined` — parameter not `string`, not flagged
+  `metaUrl: true`, or two inputs claim it (`DG-FACT-332`).
+- URL frozen at `/apps/<AppName>` — app never assigns `view.path`
+  (`DG-FACT-393`); set on every state change.
+- `TS2345 string is not assignable to DemoDatasetName` — narrow with
+  an `includes` guard before calling `testData` (`DG-FACT-391`).
+- Legacy URLs redirect after `meta.url` alias — expected
+  (`DG-FACT-390`); update bookmarks.
+- Multi-app packages prepend `<PackageName>/<AppName>` to `view.path`
+  (`DG-FACT-DRIFT-ROUTING-003`); don't hardcode the base.
 
 ## See also
 

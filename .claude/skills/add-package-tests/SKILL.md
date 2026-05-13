@@ -65,26 +65,15 @@ optionally per-function `//test:` assertions wired into the same run.
    `webpack.config.js` has a `test:` entry. Shape matches
    `tools/package-template/src/package-test.ts:1-21`.
 
-2. **Confirm the canonical import path.** The library exports
-   `category`, `test`, `expect`, … from
-   `@datagrok-libraries/test/src/test` (`DG-FACT-284`). Check that
-   `src/tests/test-examples.ts` and `src/package-test.ts` import from
-   that path, NOT `@datagrok-libraries/utils/src/test` (legacy
-   duplicate). If the legacy path was written, switch it and ensure
-   `package.json` lists `@datagrok-libraries/test` under
-   `dependencies`.
+2. **Confirm the canonical import path** is `@datagrok-libraries/test/src/test`, not the legacy `utils/src/test` duplicate (see `DG-FACT-284`). If legacy, rewrite imports and ensure the dep is present:
    ```bash
    npm i -S @datagrok-libraries/test     # only if missing
    npm install
    ```
    Expected: `grep -r "@datagrok-libraries/utils/src/test" src/`
-   returns nothing; `node_modules/@datagrok-libraries/test/src/test.ts`
-   resolves.
+   returns nothing.
 
-3. **Add a test file under `src/tests/`** — one file per category
-   (`DG-FACT-289`). `expect(actual, expected = true)` is STRICT
-   (`!==`); the default `expected` is the literal `true`, NOT
-   JS-truthy (`DG-FACT-287`).
+3. **Add a test file under `src/tests/`** — one file per category (`DG-FACT-289`). `expect` is STRICT `!==` with default `expected = true` (`DG-FACT-287`).
    ```typescript
    // src/tests/examples-tests.ts
    import {category, expect, test} from '@datagrok-libraries/test/src/test';
@@ -97,28 +86,15 @@ optionally per-function `//test:` assertions wired into the same run.
      }, {skipReason: 'GROK-99999'});       // DG-FACT-286, DG-FACT-288
    });
    ```
-   Expected: file compiles; `category(...)` registers tests in the
-   shared `tests` registry at module-load time (`DG-FACT-289`).
 
-4. **Side-effect-import the file from `src/package-test.ts`**
-   (`DG-FACT-289`, `DG-FACT-290`). Without this line, `runTests`
-   finds zero tests for the category.
+4. **Side-effect-import the file from `src/package-test.ts`** (`DG-FACT-289`, `DG-FACT-290`) — without this, `runTests` finds zero tests for the category.
    ```typescript
    // src/package-test.ts — ADD near the other imports
    import './tests/examples-tests';
    ```
-   Expected: `src/package-test.ts` retains its template shape —
-   exports `_package = new DG.Package()` and `tests`, and declares
-   both `//name: test` (calls `runTests(...)`) and
-   `//name: initAutoTests` (calls
-   `initAutoTests(_package, _package.getModule('package-test.js'))`).
-   Compare `packages/Chem/src/package-test.ts:1-50`.
+   Keep the template shape: `_package`, `tests`, plus both `//name: test` and `//name: initAutoTests` entries (`DG-FACT-290`).
 
-5. **(Optional) Annotate functions with `//test:` for auto-tests.**
-   One line per assertion; expression is a Grok-script boolean
-   (`DG-FACT-291`). Multiple lines create numbered tests (`square 1`,
-   `square 2`, …). Inline sub-options (`DG-FACT-292`):
-   `skip:`, `wait:<ms>`, `cat:<category>`, `timeout:<ms>`.
+5. **(Optional) Annotate functions with `//test:` for auto-tests** — boolean Grok-script expression per line, inline sub-options `skip:`, `wait:<ms>`, `cat:<category>`, `timeout:<ms>` (`DG-FACT-291`, `DG-FACT-292`). Parameter-type matrix in `DG-FACT-293`.
    ```typescript
    //name: square
    //input: int x
@@ -128,11 +104,6 @@ optionally per-function `//test:` assertions wired into the same run.
    //test: square(3) == 9, cat: Math
    export function square(x: number): number { return x ** 2; }
    ```
-   Parameter-type matrix (`DG-FACT-293`, article-canonical): `int`,
-   `double`, `bool`, `string` (use `""` literals), `datetime`
-   (`Date(YYYY, MM, DD)` / `DateDiff(DateTime(...), "<iso>")`), `map`.
-   For `dataframe`, `column_list`, `column`, `file`, `blob` — wrap
-   via a helper that constructs the input (e.g., `f(getDataframe())`).
 
 6. **Build, publish, and run.**
    ```bash
@@ -147,29 +118,12 @@ optionally per-function `//test:` assertions wired into the same run.
 
 ## Common failure modes
 
-- **`Cannot find module '@datagrok-libraries/test/src/test'`.** The
-  scaffold left the legacy `utils/src/test` path or never added the
-  dep. Fix: `npm i -S @datagrok-libraries/test` and rewrite imports
-  to `@datagrok-libraries/test/src/test` (`DG-FACT-284`).
-- **Tests don't appear in Test Manager / `runTests` returns 0 for a
-  category.** The test file isn't side-effect-imported from
-  `src/package-test.ts` (`DG-FACT-289`). Add
-  `import './tests/<file>';`.
-- **`expect(someBool)` fails for a truthy value.** `expect` is STRICT
-  (`!==`) and defaults `expected = true` (`DG-FACT-287`). `expect(1)`
-  fails because `1 !== true`. Use `expect(!!val, true)` or
-  `expect(val, true)` when `val` is already a boolean.
-- **`//test: f(...)` line never runs.** No `initAutoTests` codegen —
-  `src/package-test.ts` is missing `//name: initAutoTests`
-  (`DG-FACT-290`). Restore it from
-  `tools/package-template/src/package-test.ts:17-20`.
-- **Test hangs and is killed at 30 s.** `STANDART_TIMEOUT` (sic) is
-  30000 ms (`DG-FACT-286`). Bump per-test:
-  `test('long', async () => {...}, {timeout: 90000})`, or
-  per-category: `category(..., () => {...}, {timeout: 90000})`.
-- **`grok test --host <alias>` errors `unknown host`.** The alias
-  isn't in `~/.grok/config.yaml`. Run `grok config add`, or omit
-  `--host` to use the default.
+- **`Cannot find module '@datagrok-libraries/test/src/test'`** — legacy `utils/src/test` path or missing dep. Fix per `DG-FACT-284`.
+- **Tests don't appear in Test Manager / `runTests` returns 0** — missing side-effect import in `src/package-test.ts` (`DG-FACT-289`).
+- **`expect(someBool)` fails for a truthy value** — `expect` is strict `!==` with default `true` (`DG-FACT-287`). Use `expect(!!val, true)`.
+- **`//test:` line never runs** — `src/package-test.ts` is missing `//name: initAutoTests` (`DG-FACT-290`).
+- **Test killed at 30 s** — default timeout (`DG-FACT-286`). Bump via `{timeout: 90000}` per-test or per-category.
+- **`grok test --host <alias>` errors `unknown host`** — add via `grok config add` or omit `--host`.
 
 ## See also
 

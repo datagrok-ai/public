@@ -43,16 +43,11 @@ call it from TypeScript.
 ## Steps
 
 1. **Declare the data connection in `connections/<name>.json`.**
-   Required: `parameters` (data-source-specific) and `dataSource`
-   (exact connector string — `Postgres`, `PostgresDart`, `MariaDB`,
-   `MS SQL`, `Snowflake`, `Files`, ...; lowercase forms like
-   `postgres` / `mssql` don't match). `name` defaults to the filename.
-   Secrets go under `credentials.parameters` — never inside
-   `parameters` or `connString`. The article example (line 41) uses
-   `PostgresDart`; the live `Chembl` reference uses `Postgres` — both
-   are valid, the connector registry accepts either. Scaffold with
-   `grok add connection <name>`. Knowledge: `DG-FACT-400`,
-   `DG-FACT-401`, `DG-FACT-409`.
+   Scaffold with `grok add connection <name>`. Secrets go under
+   `credentials.parameters`, never inside `parameters` or `connString`.
+   See `DG-FACT-400` (file shape), `DG-FACT-401` (exact `dataSource`
+   strings — `Postgres`/`PostgresDart`/`MariaDB`/`MS SQL`/...; lowercase
+   forms don't match), `DG-FACT-409` (credentials routing).
    ```json
    {
      "#type": "DataConnection", "name": "Chembl",
@@ -63,63 +58,37 @@ call it from TypeScript.
    }
    ```
    Expected: `grok publish` registers the connection as
-   `<Package>:<Name>` (case-insensitive at lookup). The `#type` field
-   is the deserializer discriminator used by the Chembl reference; the
-   article omits it from its example but the live JSON includes it.
-   Source:
-   `help/develop/how-to/db/access-data.md:29-114`.
-   Reference: `packages/Chembl/connections/chembl.json` (real shape
-   including `#type`).
+   `<Package>:<Name>` (case-insensitive at lookup).
 
 2. **Transfer credentials after the first deploy.** POST them once
    published so they route through Datagrok's credentials store. The
    dotted path targets one connection; `.../for/<Package>` (no dot)
-   targets the package itself. Knowledge: `DG-FACT-409`.
+   targets the package itself (see `DG-FACT-409`).
    ```bash
    curl -X POST "$GROK_HOST/api/credentials/for/$PACKAGE.$CONNECTION" \
      -H "Authorization: $API_KEY" -H "Content-Type: application/json" \
      -d '{"login":"abc","password":"123"}'
    ```
    Expected: `200 OK`. Read back via `await _package.getCredentials()`
-   → `c.parameters['<key>']` (NOT `c.openParameters`, the redacted
-   display copy). Source:
-   `help/develop/how-to/db/access-data.md:81-116`.
-   Reference: `js-api/src/entities/misc.ts:163-166` (the
-   `getCredentials` typing and `parameters` vs `openParameters` split).
+   → `c.parameters['<key>']` (NOT `c.openParameters`).
 
 3. **Author the parameterized SQL query in `queries/<basename>.sql`.**
-   Each query is a `--`-prefixed header block followed by SQL,
-   terminated by `--end`. `--end` is OPTIONAL when the file holds a
-   single query — the parser only needs it to separate consecutive
-   queries. Headers: `--name`, `--friendlyName`, `--description`,
-   `--connection: <Package>:<Connection>` (omit if the package has
-   only one), `--input: <type> <name> [= <default>]` (reference in SQL
-   as `@name`). Keep one query per file when attaching a sibling
-   `<basename>.js` post-process or `<basename>.layout` — those bind by
-   basename, not by query name. Header annotation details (input
-   types, friendlyName, description) follow the standard
-   function-parameter syntax referenced from the article (line 165).
-   Scaffold with `grok add query <name>`. Knowledge: `DG-FACT-402`,
-   `DG-FACT-403`.
+   Scaffold with `grok add query <name>`. See `DG-FACT-402` (header
+   grammar: `--name`, `--friendlyName`, `--description`, `--connection`,
+   `--input`; `@name` references; `--end` separator) and `DG-FACT-403`
+   (one query per file when attaching sibling `<basename>.js` post-
+   process or `<basename>.layout` — binding is by basename).
    ```sql
    --name: ProteinClassification
    --connection: Chembl
    --input: int level = 1
    select * from protein_classification where class_level = @level
    ```
-   Expected: `grok publish` registers a function
-   `<Package>:ProteinClassification`. Source:
-   `help/develop/how-to/db/access-data.md:120-213`
-   (header grammar at 132-156; sibling `.js`/`.layout` binding at
-   189-213; annotation deferral at 165).
-   Reference: `packages/Chembl/queries/queries.sql:1-6`.
+   Expected: `grok publish` registers `<Package>:ProteinClassification`.
 
-4. **Execute the query from TypeScript.** `grok.data.query` is async
-   and returns the result coerced to `T` (default `DataFrame`). Pass
-   only `(queryName, parameters)` — the 3rd `adHoc` argument is
-   JSDoc-marked `@deprecated`; there is no 4th polling-interval
-   argument (verified against the JS-API signature, not the article).
-   Knowledge: `DG-FACT-404`.
+4. **Execute the query from TypeScript.** Pass only `(queryName,
+   parameters)` — see `DG-FACT-404` for signature (3rd `adHoc` is
+   `@deprecated`; no 4th argument exists).
    ```typescript
    import * as grok from 'datagrok-api/grok';
 
@@ -128,30 +97,15 @@ call it from TypeScript.
    grok.shell.addTableView(df);
    ```
    Expected: a `TableView` opens with the query result. For a scalar
-   return type use `grok.data.query<number>(...)`. Source:
-   `help/develop/how-to/db/access-data.md:169-185`.
-   Reference: `js-api/src/data.ts:255-262` (signature, deprecation
-   marker, positional-arg count).
+   return type use `grok.data.query<number>(...)`.
 
 ## Common failure modes
 
-- **`grok.data.query(...)` warns about the 3rd argument.** `adHoc`
-  is `@deprecated`; an apparent 4th polling-interval argument doesn't
-  exist in the signature. Drop both — pass only `(queryName,
-  parameters)` (`DG-FACT-404`).
-- **`dataSource` set to `postgres` / `mssql` — connection silently
-  fails.** Server matches the string exactly; use `Postgres` (or
-  `PostgresDart`), `MS SQL` (with space), `MySQL` (`DG-FACT-401`).
-- **Login/password committed in `parameters` or `connString`.** That
-  block is world-readable; the credentials store is bypassed. Move
-  secrets under `credentials.parameters` and POST per step 2
-  (`DG-FACT-400`, `DG-FACT-409`).
-- **Sibling `<basename>.js` or `<basename>.layout` never applied.**
-  The `.sql` file holds multiple queries; binding is by basename, not
-  query name. Split into one query per file (`DG-FACT-403`).
-- **Sharing the connection didn't share the queries.** Sharing flows
-  one way: query → connection auto-shares; the reverse does NOT.
-  Share each query explicitly (`DG-FACT-410`).
+- 3rd/4th arg to `grok.data.query(...)` — drop them (`DG-FACT-404`).
+- `dataSource` set to lowercase `postgres`/`mssql` — exact match required (`DG-FACT-401`).
+- Credentials in `parameters`/`connString` — move under `credentials.parameters` and POST per step 2 (`DG-FACT-400`, `DG-FACT-409`).
+- Sibling `<basename>.js`/`.layout` not applied — split multi-query files (`DG-FACT-403`).
+- Sharing connection didn't share queries — sharing is one-way query→connection (`DG-FACT-410`).
 
 ## See also
 

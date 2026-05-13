@@ -60,29 +60,18 @@ fields land in the dataframe.
 ## Steps
 
 1. **Identify the trigger column and the verbatim connection nqName.**
-   Open **Browse → Databases** in the target instance, find the
-   connection, copy its nqName as displayed (every shipping enrichment
-   uses first-letter-only-capitalized — `Dbtests:PostgresTest`,
-   `Chembl:Chembl` — not `DBTests:`,
-   `packages/DBTests/enrichments/company_info.json:3`). Note
-   `keySchema.keyTable.keyColumn` for the column users will click.
-   `keyColumn` must be `STRING | BIG_INT | INT | FLOAT`; PowerPack
-   rejects `BOOL` and `DATE_TIME` inline with "Cannot use column of
-   <type> type for enrichment" (`DG-FACT-127`,
-   `packages/PowerPack/src/db-explorer.ts:396-398`).
+   Open **Browse → Databases**, copy the nqName as displayed (e.g.
+   `Dbtests:PostgresTest`, `Chembl:Chembl` — first-letter-only-cap).
+   `keyColumn` must be `STRING|BIG_INT|INT|FLOAT` — PowerPack rejects
+   `BOOL`/`DATE_TIME` inline (`DG-FACT-127`).
 
 2. **Create the `enrichments/` folder at the package root.**
-   The platform discovers enrichments by directory name; no manifest
-   needed (`DG-FACT-122`).
    ```bash
    mkdir -p enrichments
    ```
-   Expected: `enrichments/` sits next to `package.json`.
 
-3. **Author the bundled JSON.**
-   Six top-level keys plus `joins[]` (`DG-FACT-123`). File name does
-   not affect runtime; shipping packages use `<key_table>_<purpose>.json`
-   (`packages/Chembl/enrichments/compound_id_properties.json`).
+3. **Author the bundled JSON.** Six required keys plus `joins[]`
+   (`DG-FACT-123`). File name does not affect runtime.
    ```json
    {
      "name": "Add company info",
@@ -106,69 +95,34 @@ fields land in the dataframe.
      ]
    }
    ```
-   Use the BUNDLED shape (with `connection`, no `keyDb`). The runtime
-   `Enrichment` interface PowerPack uses for user-saved enrichments
-   omits `connection` and adds `keyDb` instead; the shapes are not
-   interchangeable (`DG-FACT-DRIFT-DE-001`,
-   `packages/PowerPack/src/db-explorer.ts:755-763`).
+   Use BUNDLED shape (with `connection`, no `keyDb`) — the runtime
+   shape PowerPack reads for user-saved enrichments is different and
+   not interchangeable (`DG-FACT-DRIFT-DE-001`).
 
 4. **List every result column in `fields[]` as 3-segment selectors.**
-   Each entry is `<schema>.<table>.<column>`; both `keyTable` columns
-   and joined-table columns may appear (`DG-FACT-126`). Include
-   `keyTable.keyColumn` itself so the result row carries the lookup
-   key. No alias / rename syntax — result column names are the
-   unqualified `<column>`. See
-   `packages/Chembl/enrichments/compound_records_docs.json:7-17` (9
-   columns from one joined table).
+   `<schema>.<table>.<column>`; include `keyTable.keyColumn` so the
+   result carries the lookup key. No alias/rename syntax (`DG-FACT-126`).
 
-5. **Bring every right-side table in via `joins[]`.**
-   Five keys per entry — `leftTableName`, `rightTableName` (fully
-   qualified `schema.table`), `joinType`, `leftTableKeys`,
-   `rightTableKeys` (`DG-FACT-124`). Key arrays must be the same
-   length; positional pairs form the condition. Every shipping
-   enrichment uses single-element arrays — default to one key per
-   side. `joinType` ∈ {`left`, `inner`, `right`} per the article; all
-   20 shipping enrichments use `left` (`DG-FACT-125`) — default to
-   `left`. For multi-hop chains, add one entry per hop in dependency
-   order.
+5. **Bring every right-side table in via `joins[]`.** Five keys per
+   entry (`DG-FACT-124`); key arrays must be same length, positional
+   pairs form the condition. Default `joinType: left` (`DG-FACT-125`,
+   `inner`/`right` documented but unused in shipping packages). For
+   multi-hop chains, one entry per hop in dependency order.
 
-6. **Publish in `--release` mode.**
-   The platform loads enrichment files when the plugin is published
-   (`DG-FACT-122`). Dev publishes only update your own session.
+6. **Publish in `--release` mode.** Dev publishes don't propagate
+   plugin assets to other users (`DG-FACT-122`).
    ```bash
    webpack
    grok publish <host> --release
    ```
-   Expected: publish exits `0`; build output lists the new
-   `enrichments/` files.
 
 ## Common failure modes
 
-- **Nothing appears in the column context panel after publish.**
-  Either PowerPack is not installed on the target instance
-  (`DG-FACT-122`), or the focused column is `BOOL` / `DATE_TIME` and
-  PowerPack renders the inline rejection message instead
-  (`DG-FACT-127`). Fix: install PowerPack; pick a
-  `STRING` / `INT` / `BIG_INT` / `FLOAT` column whose values match
-  `keyColumn`.
-- **`connection` not found at apply time.** Wrong package casing in the
-  nqName (`Dbtests:…` not `DBTests:…`), wrong connection name, or the
-  upstream package isn't deployed. Fix: copy the nqName verbatim from
-  **Browse → Databases**.
-- **A field column never lands in the result.** A `fields[]` entry
-  points at a table no `joins[]` entry brings in (`DG-FACT-124`). Fix:
-  add a join that connects the missing table to one already reachable
-  from `keyTable`, or drop the orphan field.
-- **Join silently returns empty rows.** `leftTableKeys` and
-  `rightTableKeys` differ in length, or the named columns don't exist
-  on the named tables — the platform produces an empty join, not an
-  error (`DG-FACT-124`). Fix: align array lengths; verify each key
-  column exists via `information_schema.columns`.
-- **Bundled file copied from a user-saved enrichment fails to load.**
-  User-saved enrichments under `System:AppData/PowerPack/enrichments/`
-  use the `keyDb` shape with no `connection` (`DG-FACT-DRIFT-DE-001`).
-  Plugin-bundled JSON must use `connection` and omit `keyDb`. Fix:
-  rewrite the file in bundled shape.
+- Nothing in column context panel — PowerPack missing, or column is `BOOL`/`DATE_TIME` (`DG-FACT-122`, `DG-FACT-127`).
+- `connection` not found — wrong package casing in nqName; copy verbatim from **Browse → Databases**.
+- Field never lands — `fields[]` entry refers to a table no `joins[]` brings in (`DG-FACT-124`).
+- Empty join silently returned — `leftTableKeys`/`rightTableKeys` length mismatch or wrong column names (`DG-FACT-124`).
+- Bundled file copied from user-saved enrichment fails — user-saved uses `keyDb`, bundled uses `connection`; rewrite (`DG-FACT-DRIFT-DE-001`).
 
 ## See also
 

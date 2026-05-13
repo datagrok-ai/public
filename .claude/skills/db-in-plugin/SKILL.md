@@ -50,22 +50,12 @@ use `db-in-docker` instead.
 
 ## Steps
 
-1. **Pick a schema name and create the directory.**
-   The directory name becomes the Postgres schema, the connection
-   (`<Pkg>:<name>`), and the namespace prefix in query headers
-   (knowledge `DG-FACT-419`). Use a short lowercase identifier — no
-   hyphens, no mixed case (production: `hitdesign`, `plts`, `todo`).
+1. **Pick a schema name and create the directory.** The dir name becomes the schema, connection (`<Pkg>:<name>`), and namespace prefix (`DG-FACT-419`). Short lowercase identifier, no hyphens.
    ```bash
    mkdir -p packages/<PackageName>/databases/<name>
    ```
-   Expected: an empty directory. No JSON file is required — the
-   platform scans `databases/` on release.
 
-2. **Write the initial migration.**
-   Create `0000_init.sql`. Use a 4-digit zero-padded prefix; mixing
-   widths inside one directory sorts wrong (knowledge `DG-FACT-421`).
-   Use `id SERIAL PRIMARY KEY` — the article's `floor(random()*1000)`
-   pattern collides after ~37 rows (drift `DG-FACT-DRIFT-DBPLUGIN-003`).
+2. **Write the initial migration.** Create `0000_init.sql` (4-digit zero-padded — `DG-FACT-421`). Use `id SERIAL PRIMARY KEY` (the article's `floor(random()*1000)` collides — `DG-FACT-DRIFT-DBPLUGIN-003`).
    ```sql
    CREATE TABLE <name>.notes (
        id SERIAL PRIMARY KEY,
@@ -78,17 +68,9 @@ use `db-in-docker` instead.
    GRANT ALL PRIVILEGES ON ALL TABLES   IN SCHEMA <name> TO :LOGIN;
    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA <name> TO :LOGIN;
    ```
-   Expected: a single file at
-   `packages/<PackageName>/databases/<name>/0000_init.sql`. The
-   `:LOGIN` token is substituted at deploy time by the runtime user;
-   the schema-wide GRANT (not single-table) covers SERIAL sequences
-   and future tables in the same migration directory (knowledge
-   `DG-FACT-423`, drift `DG-FACT-DRIFT-DBPLUGIN-002`).
+   `:LOGIN` is substituted at deploy time; schema-wide GRANT covers SERIAL sequences and future tables (`DG-FACT-423`, `DG-FACT-DRIFT-DBPLUGIN-002`).
 
-3. **Write a query against the new tables.**
-   Queries live under `queries/`, NOT `databases/`. Reference the
-   connection as `<PackageName>:<name>` — the platform auto-registers
-   it at install time (knowledge `DG-FACT-425`).
+3. **Write a query against the new tables.** Queries live under `queries/`, not `databases/`. Use the auto-registered `<PackageName>:<name>` connection (`DG-FACT-425`).
    ```sql
    --name: insertNote
    --connection: <PackageName>:<name>
@@ -105,14 +87,9 @@ use `db-in-docker` instead.
    ORDER BY created_at DESC;
    --end
    ```
-   Expected: a file under `packages/<PackageName>/queries/notes.sql`.
-   `--end` is required between queries in a multi-query file. If a
-   query needs a sibling `.js` post-process or `.layout`, put it in
-   its own one-query file (knowledge `DG-FACT-403`).
+   `--end` separates queries in a multi-query file. One-query files when you need a sibling `.js`/`.layout` (`DG-FACT-403`).
 
-4. **Call the queries from the package.**
-   The same dispatcher as any other Datagrok query — there is no
-   plugin-DB-specific JS API (knowledge `DG-FACT-425`).
+4. **Call the queries from the package** — same dispatcher as any other Datagrok query (`DG-FACT-425`).
    ```typescript
    import * as grok from 'datagrok-api/grok';
 
@@ -126,55 +103,25 @@ use `db-in-docker` instead.
    Expected: `insertNote` returns the new row's `id`; `getNotes` opens
    a TableView showing all rows.
 
-5. **Release-publish to apply migrations.**
-   Debug publishes do not run migrations — only `--release` does
-   (knowledge `DG-FACT-424`). Migrations are applied in lexicographic
-   filename order; the platform tracks applied files by NAME, not
-   content (knowledge `DG-FACT-421`, drift `DG-FACT-DRIFT-DBPLUGIN-004`).
+5. **Release-publish to apply migrations.** Debug publishes skip migrations (`DG-FACT-424`); applied files tracked by NAME in lex order (`DG-FACT-421`, `DG-FACT-DRIFT-DBPLUGIN-004`).
    ```bash
    cd packages/<PackageName>
    grok publish <server> --release
    ```
-   Expected: the build succeeds and the server log shows the
-   migration was applied. The new connection appears under
-   `Browse > Databases > <PackageName>:<name>`.
 
-6. **Add a forward-only follow-up migration.**
-   Bump the prefix; only additive changes are safe (knowledge
-   `DG-FACT-422`). Never edit or rename a published migration — the
-   platform sees the filename as already-applied and skips it, so the
-   new SQL never reaches existing installs (drift
-   `DG-FACT-DRIFT-DBPLUGIN-004`).
+6. **Add a forward-only follow-up migration.** Bump the prefix; only additive changes are safe (`DG-FACT-422`). Never edit a published migration — see `DG-FACT-DRIFT-DBPLUGIN-004`.
    ```sql
    -- 0001_add_tags.sql
    ALTER TABLE <name>.notes ADD COLUMN IF NOT EXISTS tags TEXT[];
    ```
-   Expected: a new file `databases/<name>/0001_add_tags.sql`. Re-run
-   `grok publish <server> --release` to roll it out.
 
 ## Common failure modes
 
-- **`permission denied for relation <name>.<table>`** at first query.
-  The migration ran as the install user but never granted access to
-  the runtime user. Fix: end every migration with the schema-wide
-  `GRANT ... TO :LOGIN` lines from step 2 — the article's single-table
-  `GRANT ALL ON TABLE ...` form silently misses sequences and future
-  tables (drift `DG-FACT-DRIFT-DBPLUGIN-002`).
-- **`duplicate key value violates unique constraint` on the primary
-  key.** You followed the article's `floor(random()*1000)::int` pattern;
-  it collides after ~37 inserts. Fix: use `id SERIAL PRIMARY KEY`
-  (drift `DG-FACT-DRIFT-DBPLUGIN-003`).
-- **Edited an already-published migration; the change isn't visible
-  on installed clients.** The platform tracks applied migrations by
-  filename. Fix: revert the edit, add a new file with the next prefix
-  (drift `DG-FACT-DRIFT-DBPLUGIN-004`).
-- **`grok publish` succeeded but the migration didn't run.** You
-  published without `--release` — debug mode deploys per-user and
-  skips migrations. Fix: republish with `--release` (knowledge
-  `DG-FACT-424`).
-- **Filenames sort wrong (`10_x.sql` before `2_x.sql`).** Mixed prefix
-  widths. Fix: zero-pad consistently (`0010_x.sql`, `0002_x.sql`) —
-  knowledge `DG-FACT-421`.
+- **`permission denied for relation <name>.<table>`** — single-table GRANT instead of schema-wide; misses sequences/future tables (`DG-FACT-DRIFT-DBPLUGIN-002`).
+- **`duplicate key`** — `floor(random()*1000)` collides after ~37 rows. Use `SERIAL` (`DG-FACT-DRIFT-DBPLUGIN-003`).
+- **Edited migration doesn't reach installs** — tracked by filename. Add a new file with next prefix (`DG-FACT-DRIFT-DBPLUGIN-004`).
+- **Migration didn't run** — published without `--release` (`DG-FACT-424`).
+- **Filenames sort wrong** — mixed prefix widths; zero-pad (`DG-FACT-421`).
 
 ## See also
 

@@ -47,16 +47,12 @@ on the landing page".
 
 ## Steps
 
-1. **Author the widget class.** Subclass `DG.Widget`, call
-   `super(rootElement)` with the tile's root `HTMLElement`, append
-   content to `this.root` (`DG-FACT-141`). Add a `get type(): string`
-   override so the widget registry and layout serialization see a
-   stable identifier instead of the default `'Unknown'` (`DG-FACT-143`,
-   `DG-FACT-DRIFT-HPW-001` — the article example omits this; every
-   PowerPack widget has it). Tunable settings (caption, limit) are
-   declared with `super.addProperty(name, type, default, options?)`,
-   which returns the default so each field initializes in one line
-   (`DG-FACT-142`).
+1. **Author the widget class.** Subclass `DG.Widget` and call
+   `super(rootElement)` (see `DG-FACT-141`). Always override
+   `get type(): string` — the default is `'Unknown'` (see `DG-FACT-143`,
+   `DG-FACT-DRIFT-HPW-001`). Use `super.addProperty(name, type, default, options?)`
+   for tunable settings — it registers AND returns the default (see
+   `DG-FACT-142`).
 
    ```typescript
    // src/widgets/recent-files-widget.ts
@@ -83,19 +79,14 @@ on the landing page".
    resolve from the imports above.
 
 2. **Register as a dashboard function.** Declare a zero-arg `static`
-   method on `PackageFunctions` returning `DG.Widget` and decorate it
-   with `@grok.decorators.dashboard({...})` — a specialized decorator
-   (not the generic `func`) whose `DashboardOptions` adds `order?: string`
-   and `test?: string` on top of `FunctionOptions` (`DG-FACT-139`). The
-   role string is `dashboard` lowercase (`DG-FACT-137`); inputs are
-   empty, output is `DG.Widget` (`DG-FACT-138`).
+   method on `PackageFunctions` returning `DG.Widget`, decorated with
+   `@grok.decorators.dashboard({...})` — a specialized decorator with
+   `order?` / `test?` on top of `FunctionOptions` (see `DG-FACT-137`,
+   `DG-FACT-138`, `DG-FACT-139`).
 
-   Placement is controlled by `order` — lower numbers (including
-   negatives) sort first. PowerPack uses `order: '-1'` for Spotlight,
-   `order: '6'` for Community (`DG-FACT-140`). Do NOT declare `order`
-   via `super.addProperty('order', ...)` inside the widget — that is a
-   per-widget runtime field, NOT the placement control (older article
-   draft conflated the two; the rewrite removed that example).
+   Placement is the decorator-level `order` string — lower sorts first;
+   PowerPack uses `'-1'` (Spotlight) / `'6'` (Community) (see
+   `DG-FACT-140`). Do NOT use `super.addProperty('order', ...)` for this.
 
    ```typescript
    // src/package.ts
@@ -116,65 +107,33 @@ on the landing page".
    Expected: file type-checks; `@grok.decorators.dashboard` resolves
    from `datagrok-api/grok`.
 
-3. **Build, and verify the auto-emitted wrapper in `package.g.ts`.**
-   `npm run build` runs the function-generator plugin, which scans
-   `PackageFunctions` for decorated methods and regenerates
-   `src/package.g.ts` with one wrapper per function. Do NOT hand-edit
-   `package.g.ts`; it is overwritten on every build.
-
+3. **Build and verify the auto-emitted wrapper.**
    ```bash
    npm install && npm run build
    ```
+   The regenerated `src/package.g.ts` must include both
+   `//meta.role: dashboard` and `//output: widget result` (see
+   `DG-FACT-138`). Don't hand-edit `package.g.ts` — it is overwritten.
+   Compare `packages/PowerPack/src/package.g.ts:17-24` and `26-32`.
 
-   Expected: `npm run build` exits 0; the regenerated `src/package.g.ts`
-   gains a wrapper of the shape
-
-   ```
-   //name: Recent SDFs
-   //output: widget result
-   //meta.role: dashboard
-   //meta.order: 5
-   export function recentFilesWidget() : any {
-     return PackageFunctions.recentFilesWidget();
-   }
-   ```
-
-   The MUST-have lines are `//meta.role: dashboard` and
-   `//output: widget result` (`DG-FACT-138`). Compare
-   `packages/PowerPack/src/package.g.ts:26-32` (Community) or
-   `:17-24` (Spotlight, with `order: -1`).
-
-4. **Publish.** The `dashboard` role IS the registration — the platform
-   picks the function up from the `package.g.ts` wrapper at load; no
+4. **Publish.** The `dashboard` role IS the registration — no
    explicit `grok.functions.register(...)` is needed.
 
    ```bash
    grok publish <host>   # add --release once stable
    ```
-
-   Expected: exits 0 and reports the package version pushed. After a
-   Datagrok reload, the welcome screen shows the new tile in the slot
-   dictated by `order`.
+   After reload the tile appears in the slot dictated by `order`.
 
 ## Common failure modes
 
-- **Tile never appears on the welcome screen.** Role token missing or
-  misspelled. `src/package.g.ts` MUST contain `//meta.role: dashboard`
-  (lowercase) and `//output: widget result` (`DG-FACT-137`,
-  `DG-FACT-138`). `Dashboard`/`dashboards` won't match.
-- **Tile appears but in the wrong slot.** `order` set on the wrong
-  surface. Placement is the function-level
-  `@grok.decorators.dashboard({order: '5'})`, NOT
-  `super.addProperty('order', ...)` (`DG-FACT-140`). Verify
-  `//meta.order: 5` in `package.g.ts`.
-- **Widget serializes as `type: 'Unknown'`.** Class missing the
-  `get type(): string` override (`DG-FACT-143`, `DG-FACT-DRIFT-HPW-001`).
-  Add `get type(): string { return '<ClassName>'; }` at the top of
-  the class body.
-- **Settings don't appear in the gear panel.** `super.addProperty(...)`
-  called outside the constructor, or its return wasn't assigned
-  (`DG-FACT-142`). Canonical:
-  `this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Recent files')`.
+- Tile never appears — `package.g.ts` is missing `//meta.role: dashboard`
+  (lowercase) or `//output: widget result` (`DG-FACT-137`, `DG-FACT-138`).
+- Tile in wrong slot — `order` set via `addProperty` instead of the
+  decorator (`DG-FACT-140`); verify `//meta.order: 5` in `package.g.ts`.
+- Widget serializes as `type: 'Unknown'` — missing `get type()` override
+  (`DG-FACT-143`).
+- Settings absent from gear panel — `super.addProperty(...)` called
+  outside the constructor or its return not assigned (`DG-FACT-142`).
 
 ## See also
 

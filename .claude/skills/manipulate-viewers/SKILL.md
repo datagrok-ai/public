@@ -42,12 +42,7 @@ or wire an overlay that re-runs on every layout restore.
 
 ## Steps
 
-1. **Use the universal attach path: `view.addViewer(...)`.**
- First arg is a string, `DG.VIEWER.<TYPE>` constant, or a `Viewer`
- instance — works for ALL viewers, native and custom (`DG-FACT-198`).
- The per-type wrappers `view.histogram(opts)`, `view.scatterPlot(opts)`,
- `view.barChart(opts)` featured in the article are JSDoc-marked
- `@deprecated use addViewer(...)` and slated for removal:
+1. **Use the universal attach path: `view.addViewer(...)`** — accepts string, `DG.VIEWER.<TYPE>` constant, or `Viewer` instance; works for native and custom (`DG-FACT-198`). Per-type wrappers like `view.histogram` are deprecated.
  ```typescript
  const data = grok.data.demo.demog;
  const view = grok.shell.addTableView(data);
@@ -57,73 +52,37 @@ or wire an overlay that re-runs on every layout restore.
  renderType: 'heat map',
  });
  ```
- Expected: viewer mounts in the table view. Pattern matches
- `packages/Chem/src/package.ts:1207-1221`.
 
-2. **Choose the right factory when you need the instance first.**
- `DG.Viewer.fromType(type, df, opts?)` is SYNC and only works for
- core viewers in `DG.CORE_VIEWER` (`DG-FACT-199`, `DG-FACT-206`).
- `df.plot.fromType(type, opts?)` is ASYNC — required for
- package-shipped types like `GLOBE`, `GOOGLE_MAP`, `WORD_CLOUD`,
- `TIMELINES`, `RADAR_VIEWER`, `SURFACE_PLOT`, `SCAFFOLD_TREE`:
+2. **Choose the right factory when you need the instance first.** `DG.Viewer.fromType` is sync and core-only; `df.plot.fromType` is async and required for package viewers (`DG-FACT-199`, `DG-FACT-206`). Typed `df.plot.{scatter,bar,...}` shortcuts in `DG-FACT-200`.
  ```typescript
  const sp = DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, data); // sync
  view.addViewer(sp);
  const wc = await data.plot.fromType(DG.VIEWER.WORD_CLOUD); // async
  view.addViewer(wc);
  ```
- `df.plot` also has typed sync shortcuts (`scatter`, `histogram`,
- `bar`, `box`, `line`, `heatMap`, `network`, `grid`, `tile`, `form`)
- returning the typed subclass (`DG-FACT-200`). Names differ from
- `DG.Viewer` statics — `df.plot.bar` not `barChart`.
 
-3. **Pass / read options as a flat map; values live under `.look`.**
- `setOptions(map)` takes a flat bag (no `{look:...}` wrapper).
- `getOptions(includeDefaults = false)` returns `{id, type, look:{...}}` —
- pass `true` for an exhaustive snapshot, `false` (default) keeps the
- payload small for serialization (`DG-FACT-201`):
+3. **Pass / read options as a flat map; values live under `.look`** (`DG-FACT-201`). `setOptions` is flat; `getOptions(includeDefaults?)` returns `{id, type, look:{...}}`.
  ```typescript
  const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT) as DG.ScatterPlotViewer;
  sp.setOptions({xColumnName: 'weight', yColumnName: 'height'});
  const opts = sp.getOptions(true); // {id, type, look:{xColumnName:...,...}}
  const xCol = opts.look['xColumnName'];
  ```
- Pattern: `packages/Chem/src/package.ts:1253` reads
- `sp.getOptions.look['xColumnName']`.
 
-4. **Inspect available properties via `getProperties` — use `columnTypeFilter`.**
- Each `Property` exposes `name`, `propertyType`, `semType`,
- `description`, `defaultValue`, `choices`, and `columnTypeFilter`
- (`DG-FACT-202`). The article's `p.columnFilter` is stale; no
- backward-compat alias:
+4. **Inspect available properties via `getProperties` — use `columnTypeFilter`** (article's `p.columnFilter` is stale, no alias; `DG-FACT-202`).
  ```typescript
  const bc = view.addViewer(DG.VIEWER.BAR_CHART);
  for (const p of bc.getProperties)
  console.log(`${p.propertyType} ${p.name}: ${p.description} [${p.columnTypeFilter}]`);
  ```
- `columnTypeFilter` is `'numerical' | 'categorical' | ColumnType | null`;
- compare with `DG.COLUMN_TYPE.*` constants, not raw strings.
 
-5. **Dock through the right manager — never the literal `'top'`.**
- `DockManager.dock(viewer, dockType?, refNode?, title?, ratio?)`
- defaults to `LEFT` (`DG-FACT-204`). Pick by intent:
- `view.dockManager` keeps the viewer INSIDE the view; the
- `grok.shell.dockManager` floats it independently. `DG.DOCK_TYPE.TOP`
- resolves to `'up'` (NOT `'top'`) — the article's "top" misleads
- (`DG-FACT-203`, ). Always go through the enum:
+5. **Dock through the right manager — never the literal `'top'`.** `DG.DOCK_TYPE.TOP` resolves to `'up'`; always go through the enum (`DG-FACT-203`, `DG-FACT-204`). Use `view.dockManager` for in-view, `grok.shell.dockManager` to float.
  ```typescript
  const wl = view.addViewer('WebLogo', {sequenceColumnName: col.name});
  view.dockManager.dock(wl, DG.DOCK_TYPE.DOWN, null, 'Composition', 0.25);
  ```
- Pattern: `packages/Bio/src/package.ts:1050-1051`,
- `packages/PowerPack/src/search/power-search.ts:147,397`.
 
-6. **Persist custom init via `initializationFunction` (re-runs on restore).**
- `initializationFunction` is a built-in viewer property whose value
- is a registered Datagrok function name. The function takes a single
- `viewer` input typed as the right subclass and runs every time the
- viewer is constructed — including on layout/project restore
- (`DG-FACT-205`):
+6. **Persist custom init via `initializationFunction`** — built-in viewer property whose value is a registered function name; re-runs on layout/project restore (`DG-FACT-205`).
  ```typescript
  export class PackageFunctions {
  @grok.decorators.func({name: 'highlightInitFunction'})
@@ -141,27 +100,14 @@ or wire an overlay that re-runs on every layout restore.
  initializationFunction: 'highlightInitFunction',
  });
  ```
- Pattern: `packages/Chem/src/package.ts:1218,1238-1242`.
 
 ## Common failure modes
 
-- **Package viewer attaches but `setOptions` silently no-ops.** You
- used `DG.Viewer.fromType` (sync, core-only) for a packaged viewer,
- or `view.addViewer('CustomType', opts)` returned before the package
- loaded. Switch to `await df.plot.fromType('Type')` and configure on
- the resolved instance (`DG-FACT-199`, `DG-FACT-206`).
-- **`view.dockManager.dock(viewer, 'top')` throws or no-ops.** The
- position string is `'up'`. Use `DG.DOCK_TYPE.TOP` (`DG-FACT-203`,
- ).
-- **`p.columnFilter` is `undefined` in `getProperties`.** Accessor
- was renamed to `columnTypeFilter`; no alias.
-- **`view.histogram(...)` / `view.scatterPlot(...)` flagged deprecated
- by `tsc`.** All `View.<viewer>` wrappers carry `@deprecated`;
- rewrite as `view.addViewer(DG.VIEWER.<TYPE>, {...})`.
-- **Custom overlay runs once but vanishes on layout reload.** You
- subscribed after `addViewer` instead of passing
- `initializationFunction`. Move the body into a registered package
- function and pass its name in viewer options (`DG-FACT-205`).
+- **Package viewer `setOptions` silently no-ops** — used sync `DG.Viewer.fromType` for a package type. Switch to `await df.plot.fromType` (`DG-FACT-199`, `DG-FACT-206`).
+- **`dock(viewer, 'top')` no-ops** — position is `'up'`; use `DG.DOCK_TYPE.TOP` (`DG-FACT-203`).
+- **`p.columnFilter` undefined** — renamed to `columnTypeFilter` (`DG-FACT-202`).
+- **`view.histogram(...)` deprecated** — rewrite as `view.addViewer(DG.VIEWER.HISTOGRAM, {...})`.
+- **Custom overlay vanishes on layout reload** — use `initializationFunction` (`DG-FACT-205`).
 
 ## See also
 
