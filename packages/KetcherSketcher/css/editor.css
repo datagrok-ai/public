@@ -37,3 +37,55 @@ body > div.MuiPopover-root.MuiMenu-root {
 body > div.MuiPopover-root {
     z-index: 20000;
 }
+
+/* ---------------------------------------------------------------------------
+ * Hide Extended Table generic-atom buttons that cannot be faithfully translated
+ * to RDKit-compatible V2000 query features. Scoped to the substructure filter
+ * sketcher only (Chem package adds the .chem-substructure-filter-sketcher class
+ * to its DG.chem.Sketcher.host); other sketchers keep the full button set.
+ *
+ * Authoritative list of unsupported aliases lives in
+ *   packages/Chem/src/utils/mol-creation_rdkit.ts → UNSUPPORTED_ALIASES
+ * Keep these selectors in sync with that map.
+ *
+ * Strategy: hide only individual buttons by their data-testid. We intentionally
+ * do NOT hide whole subgroup containers — Ketcher's DOM nests fieldsets such
+ * that a "hide the parent if any unsupported button inside" rule also hides
+ * the parent's supported siblings. Orphaned labels (e.g. "alkynyl" with no
+ * buttons) are acceptable; lost supported buttons are not.
+ * --------------------------------------------------------------------------- */
+.chem-substructure-filter-sketcher button[data-testid="AH-button"],
+.chem-substructure-filter-sketcher button[data-testid="ACH-button"],
+.chem-substructure-filter-sketcher button[data-testid="AHH-button"],
+.chem-substructure-filter-sketcher button[data-testid="ABH-button"],
+.chem-substructure-filter-sketcher button[data-testid="CYH-button"],
+.chem-substructure-filter-sketcher button[data-testid="CBH-button"],
+.chem-substructure-filter-sketcher button[data-testid="CHH-button"],
+.chem-substructure-filter-sketcher button[data-testid="CXH-button"],
+.chem-substructure-filter-sketcher button[data-testid="QH-button"],
+.chem-substructure-filter-sketcher button[data-testid="MH-button"],
+.chem-substructure-filter-sketcher button[data-testid="XH-button"],
+.chem-substructure-filter-sketcher button[data-testid="*-button"],
+.chem-substructure-filter-sketcher button[data-testid="Pol-button"],
+.chem-substructure-filter-sketcher button[data-testid="G-button"],
+.chem-substructure-filter-sketcher button[data-testid="GH-button"],
+.chem-substructure-filter-sketcher button[data-testid="G*-button"],
+.chem-substructure-filter-sketcher button[data-testid="GH*-button"],
+.chem-substructure-filter-sketcher button[data-testid="AOX-button"],
+.chem-substructure-filter-sketcher button[data-testid="AOH-button"],
+.chem-substructure-filter-sketcher button[data-testid="AYL-button"],
+.chem-substructure-filter-sketcher button[data-testid="AYH-button"],
+.chem-substructure-filter-sketcher button[data-testid="ALK-button"],
+.chem-substructure-filter-sketcher button[data-testid="ALH-button"],
+.chem-substructure-filter-sketcher button[data-testid="AEL-button"],
+.chem-substructure-filter-sketcher button[data-testid="AEH-button"],
+.chem-substructure-filter-sketcher button[data-testid="ARY-button"],
+.chem-substructure-filter-sketcher button[data-testid="ARH-button"],
+.chem-substructure-filter-sketcher button[data-testid="CAL-button"],
+.chem-substructure-filter-sketcher button[data-testid="CAH-button"],
+.chem-substructure-filter-sketcher button[data-testid="CEL-button"],
+.chem-substructure-filter-sketcher button[data-testid="CEH-button"],
+.chem-substructure-filter-sketcher button[data-testid="HAR-button"],
+.chem-substructure-filter-sketcher button[data-testid="HAH-button"] {
+    display: none !important;
+}
