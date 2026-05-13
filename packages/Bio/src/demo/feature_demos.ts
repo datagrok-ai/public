@@ -95,9 +95,14 @@ export async function sirnaDemo() {
   const df = await _package.files.readCsv('demo-files/SIRNA.csv');
   const layoutTXT = await _package.files.readAsText('demo-files/SIRNA.layout');
   const layout = DG.ViewLayout.fromJson(layoutTXT);
+  df.col('sense_seq')!.setTag('aligned', 'SEQ.MSA');
+  df.col('antisense_seq')!.setTag('aligned', 'SEQ.MSA');
   const tv = grok.shell.addTableView(df);
   await DG.delay(100);
   tv.loadLayout(layout, true);
   await df.meta.detectSemanticTypes();
   grok.shell.info('Hover over the oligo structrues to see modifications to different sugars, linkers and residues.', {timeout: 10});
+  setTimeout(() => {
+    df.currentCell = df.cell(0, 'oligo_helm');
+  }, 300);
 }

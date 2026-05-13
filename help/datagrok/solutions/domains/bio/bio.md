@@ -510,20 +510,27 @@ To add a dendrogram viewer, do the following:
 
 ### Multiple sequence alignment (MSA)
 
-[Multiple Sequence Alignment](https://en.wikipedia.org/wiki/Multiple_sequence_alignment) aligns sequences for macromolecules in both FASTA and HELM formats. For DNA, RNA, and natural peptides, we use
-[KAlign](https://github.com/TimoLassmann/kalign), which can be modified to work with custom substitution matrices for
-sequences. For non-natural sequences, we use [PepSeA](https://github.com/Merck/PepSeA), which enables alignment of multiple linear peptide sequences in HELM notation, with lengths of up to 256 non-natural amino acids. <!--PepSeA uses a substitution matrix calculated with Rapid Overlay of Chemical Structures Similarities Across ChEMBL 28 HELM Monomers.-->
+[Multiple Sequence Alignment](https://en.wikipedia.org/wiki/Multiple_sequence_alignment) aligns sequences for macromolecules in any format (fasta, separator, HELM, biln, etc). Datagrok automatically picks an alignment mode based on the sequence column and exposes a choice of engines for non-canonical peptides.
+
+For DNA, RNA, and natural peptides, Datagrok uses [KAlign](https://github.com/TimoLassmann/kalign), which can be modified to work with custom substitution matrices.
+
+For non-canonical sequences, the MSA dialog discovers all installed engines and lets you select one. The following engines are available out of the box:
+
+* **HELM MSA**. An in-browser progressive aligner built from scratch for arbitrary HELM topologies. It aligns linear, cyclic (head-to-tail, lariat), stapled, CHEM-bridged macrocyclic, branched, and multi-chain sequences with any number of non-canonical monomers. Cyclic peptides are automatically rotated to a common frame before alignment, and connection positions are remapped after gap insertion so the output HELM remains valid. The engine uses UPGMA-guided progressive alignment for small sets and center-star alignment for large ones, with affine gap penalties and separate terminal-gap control. Because it runs entirely in the browser, no Docker container is required and thousands of sequences align in under a second.
+* **PepSeA**. [PepSeA](https://github.com/Merck/PepSeA) aligns multiple linear peptide sequences in HELM notation of up to 256 non-natural amino acids. It runs in a Docker container and is best suited for linear peptides where a chemistry-aware substitution matrix is desirable.<!--PepSeA uses a substitution matrix calculated with Rapid Overlay of Chemical Structures Similarities Across ChEMBL 28 HELM Monomers.-->
+
+Each engine exposes its own parameters (gap penalties, alignment method, and engine-specific options) directly in the MSA dialog.
 
 <details>
 <summary>How to use</summary>
 
 To perform MSA, do the following:
 
-1. In the Top Menu, select **Bio** > **MSA...**. A dialog opens.
+1. In the **Top Menu**, select **Bio** > **MSA...**. A dialog opens.
 
-   ![Multiple Sequence Alignment dialog](img/MSA_dialog-800.png)<!--replace png with a GIF file showing the steps-->
+   ![Multiple Sequence Alignment dialog](img/msa_dialog.png)<!--replace png with a GIF file showing the steps-->
 
-1. In the dialog, select the sequence column (**Sequence**) and set other parameters.
+1. In the dialog, select the sequence column (**Sequence**). For non-canonical sequences, select an **Engine** (for example, **Datagrok MSA** or **PepSeA**) and adjust engine-specific parameters using the **Alignment parameters** button.
    If your data has been clustered already, you can align sequences only within the same cluster. To do so, specify a column containing clusters (**Cluster**).
 1. Click **OK** to execute. A new column containing the aligned sequences is added to the table.
 
