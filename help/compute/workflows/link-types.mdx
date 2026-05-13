@@ -510,6 +510,10 @@ following workflow/script nodes targets:
 - `tags` will be used to fill tags when user saves a workflow. Note
   that tags here are completely unrelated to `PipelineConfiguration`
   ones. They tag a particular saved instance of a workflow.
+- `body` is rendered as markdown in the Compute2 step row, below the
+  title (via the `<dg-markdown>` webcomponent). Use this for inline
+  notes, step instructions, or reactive status text. Works on every
+  step kind including action steps.
 
 Node meta controller has an additional method:
 

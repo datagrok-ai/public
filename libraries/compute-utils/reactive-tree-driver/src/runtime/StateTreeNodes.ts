@@ -14,7 +14,7 @@ import {RestrictionType, ValidationResult} from '../data/common-types';
 import {DriverLogger} from '../data/Logger';
 import {customDeepEqual, mergeValidationResults, pruneByKeys} from '../utils';
 
-export const descriptionOutputs = ['title', 'description', 'tags'] as const;
+export const descriptionOutputs = ['title', 'description', 'tags', 'body'] as const;
 const descriptionStates = descriptionOutputs.map((id) => ({id}));
 
 export type StateTreeSerializationOptions = {
