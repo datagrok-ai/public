@@ -13,6 +13,8 @@ keywords:
   - nimotuzumab
   - bioreactor
   - pollution model
+  - prey-predator model
+  - lotka-volterra model
 ---
 Datagrok [Diff Studio](diff-studio.md) enables modeling complex processes defined by [ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation). The examples below showcase its full range of capabilities.
 
@@ -52,7 +54,7 @@ PK-PD modeling simulates pharmacokinetics (PK), pharmacodynamics (PD), and their
 
 ### Acid production
 
-[Acid production](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/ga-production.ivp) models gluconic acid [production](https://www.chempap.org/file_access.php?file=581a23.pdf) by Aspergillus niger. This example shows the usage of the [update](diff-studio.md#multistage-processes) feature for multistage simulation
+[Acid production](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/ga-production.ivp) models gluconic acid [production](https://www.chempap.org/file_access.php?file=581a23.pdf) by Aspergillus niger. This example shows the usage of the [update](diff-studio.md#multistage-processes) feature for multistage simulation.
 
 ![add-to-workspace](pics/diff-studio-acid-production.gif)
 
@@ -73,6 +75,13 @@ The [Bioreactor](https://public.datagrok.ai/file/System.AppData/DiffStudio/libra
 The [Pollution](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pollution.ivp) example describes a chemical reaction part of the air [pollution model](https://archimede.uniba.it/~testset/problems/pollu.php). It consists of 25 reaction and 20 reacting compounds. This example illustrates the capability of Diff Studio to solve large systems of [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation).
 
 ![add-to-workspace](pics/diff-studio-pollution.png)
+
+### Lotka-Volterra
+
+[Predator-prey](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/lotka-volterra.ivp) models the [Lotka-Volterra](https://en.wikipedia.org/wiki/Lotka%E2%80%93Volterra_equations) dynamics of two interacting populations - a prey species and its predator. This example shows the usage of the [output](diff-studio.md#syntax-reference) feature for plotting coupled oscillations.
+
+![add-to-workspace](pics/diff-studio-lotka-volterra.png)
+
 
 See also
 
