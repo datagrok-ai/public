@@ -41,7 +41,6 @@ To cache results of a particular function:
    * `client` - to use only **Client-side cache**
    * `server` - to use only **Server-side cache**
    * `all` - to use both types of cache.
-   * `true` - legacy synonym for `all`; prefer the explicit values above in new code.
 
 2. Optionally add `meta.cache.invalidateOn` to specify when the cache is invalidated. This parameter accepts valid [cron expressions](https://www.adminschoice.com/crontab-quick-reference). If not specified, the cache will never be updated.
 
@@ -76,8 +75,8 @@ Also, you can configure the cache for connection programmatically in the connect
     "db": "Northwind",
     "cacheSchema": false,
     "cacheResults": true,
-    "cacheInvalidateSchedule": "0 1 * * *",
-    "ssl": false
+    "ssl": false,
+    "connString": ""
   }
 }
 ```

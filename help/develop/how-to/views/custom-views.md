@@ -22,7 +22,7 @@ icons, buttons, or side panels. See how it works (and looks!) in
 the [full example](https://public.datagrok.ai/js/samples/ui/views/views).
 
 As simple and easy as this method may seem, it is still more suitable for ad-hoc experiments. To implement a view from a
-package, you would need to extend the [DG.ViewBase](https://github.com/datagrok-ai/public/blob/master/js-api/src/views/view.ts) class. For
+package, you would need to extend the [DG.ViewBase](https://datagrok.ai/api/js/dg/classes/ViewBase) class. For
 instance, the following part of code defines a new view for Jupyter Notebooks:
 
 ```javascript
@@ -37,7 +37,7 @@ class NotebookView extends DG.ViewBase {
     get type() { return this.TYPE };
     get helpUrl() { return '/help/compute/jupyter-notebook.md'; }
     get name() { return 'Notebook' };
-    get path() { return `${this.PATH}/${this.id}` };
+    get path() { return `${this.PATH}/${this.notebookId}` };
 
     // Icon
     getIcon() {
@@ -49,8 +49,8 @@ class NotebookView extends DG.ViewBase {
     };
 
     // View state serialization/deserialization
-    saveStateMap() { return {'id': this.id }; }
-    loadStateMap(stateMap) { this.open(stateMap['id']); }
+    saveStateMap() { return {'notebookId': this.notebookId }; }
+    loadStateMap(stateMap) { this.open(stateMap['notebookId']); }
 
     // URL path handler
     handlePath(path) {
@@ -91,8 +91,8 @@ the [Notebooks](https://public.datagrok.ai/notebooks?) browser).
 See also:
 
 * [JavaScript API](../../packages/js-api.md)
-* [JavaScript API: View](https://github.com/datagrok-ai/public/blob/master/js-api/src/views/view.ts)
-* [JavaScript API: ViewBase](https://github.com/datagrok-ai/public/blob/master/js-api/src/views/view.ts)
+* [JavaScript API: View](https://datagrok.ai/api/js/dg/classes/View)
+* [JavaScript API: ViewBase](https://datagrok.ai/api/js/dg/classes/ViewBase)
 * [JavaScript API Samples: Custom view](https://public.datagrok.ai/js/samples/ui/views/views)
 * [JavaScript API Samples: Virtual view](https://public.datagrok.ai/js/samples/ui/virtual-view)
 * [Table view](../../../visualize/table-view-1.md)

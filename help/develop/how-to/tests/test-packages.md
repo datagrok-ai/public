@@ -8,7 +8,7 @@ confirm that new changes haven't affected previous functionality. Each package s
 responsible for either UI or logic underneath. And Datagrok provides various capabilities and tools to conveniently run
 those tests any time during development.
 
-The process of writing and executing tests can be significantly easier with the help of Datagrok library Utils,
+The process of writing and executing tests can be significantly easier with the help of Datagrok test library,
 which contains a powerful [set of testing utilities](https://github.com/datagrok-ai/public/blob/master/libraries/test/src/test.ts).
 From basic assertions to asynchronous handling and viewer testing, these utilities cover a wide range of testing scenarios.
 

@@ -74,7 +74,7 @@ export class ChemblIdHandler extends DG.ObjectHandler {
 Then you need to register the handler in the `package.ts` file of your package, specifically in the function that autostarts the package:
 
 ```typescript
-//meta.role: autostart
+//meta.role: init, autostart
 export function init() {
   //Register handlers
   DG.ObjectHandler.register(new ChemblIdHandler());
@@ -243,7 +243,7 @@ export const explorerConfig = {
   // Database connection details
   'connectionName': 'CHEMBL',          // Name of your database connection in Datagrok
   'schemaName': 'public',              // Database schema name where the identifiers are located
-  'nqName': 'Chembl:Chembl',            // Optional: fully-qualified connection name (<namespace>:<shortName>)
+  'nqName': 'Chembl',                  // Optional: fully-qualified connection name (namespace-qualified)
   'dataSourceName': 'postgres',        // Data source type (postgres, oracle, mysql, etc.)
   
   // Entry points: Define identifiers that trigger exploration

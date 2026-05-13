@@ -48,7 +48,7 @@ Datagrok Rest API allows you to invoke function calls within Datagrok with speci
 
 **Endpoints**
 
-* `POST /public/v1/functions/{name}/call` – Invoke a function with specified parameters, passed in a JSON body. 
+* `POST /public/v1/{name}/call` – Invoke a function with specified parameters, passed in a JSON body. 
 
 ## Identifiers
 

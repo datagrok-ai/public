@@ -14,7 +14,7 @@ This guide outlines how to build and deploy your own Python-based Docker applica
 
 ## Folder Structure
 
-Create a `dockerfiles/` directory inside your plugin root. Inside it:
+Create a `python/` directory inside your plugin root. Inside it:
 
 * One or more folders, each representing a separate application
 * Each folder can contain:
@@ -27,7 +27,7 @@ Create a `dockerfiles/` directory inside your plugin root. Inside it:
 
 ```
 plugin-root/
-└── dockerfiles/
+└── python/
     └── my_app/
         ├── logic.py
         ├── requirements.in

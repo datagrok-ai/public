@@ -4522,3 +4522,169 @@
 
 # DRIFTS for docker-containers
 
+- id: DG-FACT-173
+  kind: enum
+  scope: custom-script-handlers
+  value: The role token that registers a function as a custom script handler is the literal string `scriptHandler` — exposed as `DG.FUNC_TYPES.SCRIPT_HANDLER = 'scriptHandler'` (`js-api/src/const.ts:420`). Header form `//meta.role: scriptHandler`; decorator form `@grok.decorators.func({meta: {role: 'scriptHandler'}})`. Pyodide is the only shipping public-repo package using this role (`packages/Pyodide/src/package.g.ts:23`).
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:27
+    - code: js-api/src/const.ts:420
+    - code: packages/Pyodide/src/package.g.ts:23
+    - code: packages/Pyodide/src/package.ts:358
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-174
+  kind: enum
+  scope: custom-script-handlers
+  value: A script-handler function MUST take exactly one input of type `funccall` named `scriptCall` (header form `//input: funccall scriptCall`; decorator form `@grok.decorators.param({type: 'funccall'}) scriptCall: DG.FuncCall`) and return `Promise<void>`. The platform passes a populated `DG.FuncCall` whose declared inputs/outputs come from the script's own `#name/#input/#output` header — the handler runs the script's code and writes results back via `scriptCall.outputs[<name>] = <value>` (or `scriptCall.setParamValue(name, value)`). The article's example uses the parameter name `call`, but every shipping handler in the public repo uses `scriptCall`; codegen (`package.g.ts`) emits `scriptCall`.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:17,30
+    - code: packages/Pyodide/src/package.g.ts:15,24
+    - code: packages/Pyodide/src/package.ts:361-369
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-175
+  kind: enum
+  scope: custom-script-handlers
+  value: Mandatory script-handler annotations (all four required for registration to succeed) — `meta.role: scriptHandler`, `meta.scriptHandler.language: <name>`, `meta.scriptHandler.extensions: <ext1,ext2,...>` (comma-separated, no leading dot — e.g. `py`, `clj,cljs,cljr`), and the single `funccall scriptCall` input. The platform extracts `language` and splits `extensions` on `,` at startup (`grok_shared.dart.js:121486-121487`). The startup loop only registers a function as a handler if the `scriptHandler` tag is present AND `scriptHandler.language` is non-empty (`grok_shared.dart.js:137559-137563`).
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:25-30
+    - code: js-api/src/api/ddt.api.g.ts:395-401
+    - code: packages/Pyodide/src/package.g.ts:16-17,23
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-176
+  kind: enum
+  scope: custom-script-handlers
+  value: Optional script-handler annotations recognised by the platform — `meta.scriptHandler.templateScript` (boilerplate inserted into newly created scripts; embed newlines as literal `\n`), `meta.scriptHandler.codeEditorMode` (CodeMirror-5 mode name, e.g. `python`, `clojure`; defaults to `language` per `ddt.api.g.ts:422-424`), `meta.scriptHandler.commentStart` (single character that begins a line comment; defaults to `#` per `ddt.api.g.ts:407` and `grok_shared.dart.js:121493`), `meta.scriptHandler.vectorizationFunction` (nqName `<Package>:<funcName>` of a function that accepts `DG.Script` and returns vectorized code as `string`), `meta.scriptHandler.parserFunction` (nqName of a parser turning text into a `DG.Script`; `ddt.api.g.ts:417`), `meta.scriptHandler.friendlyName` (UI label; defaults to `language`; `ddt.api.g.ts:403-405`), and the generic `meta.icon` (path under the package source tree, e.g. `files/pyodide.png`). As of 2026-05-12 the article (lines 33-39) enumerates all seven options including `commentStart`, `friendlyName`, `parserFunction` — DG-FACT-DRIFT-069 (article-undocumented options) is therefore resolved; only the camelCase decorator-key counterparts for `friendlyName` and `parserFunction` are still missing from `js-api/src/decorators/functions.ts:151-162` and `tools/bin/utils/const.ts:31-39`, so authors using the decorator surface MUST use the bracket-string form (`['scriptHandler.friendlyName']`, `['scriptHandler.parserFunction']`).
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:33-39
+    - code: js-api/src/api/ddt.api.g.ts:395-424
+    - code: js-api/src/decorators/functions.ts:151-162
+    - code: tools/bin/utils/const.ts:31-39
+    - code: packages/Pyodide/src/package.g.ts:18-22
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-177
+  kind: namespace
+  scope: custom-script-handlers
+  value: The vectorization function targeted by `meta.scriptHandler.vectorizationFunction` is itself a registered package function with signature `(script: DG.Script) => string`. It is referenced by nqName `<Package>:<funcName>` (Pyodide uses `Pyodide:makeVectorCode`, `package.g.ts:21`); the function header is `//input: script script` + `//output: string result` (`packages/Pyodide/src/package.g.ts:11-13`). The platform looks it up at handler-construction time (`grok_shared.dart.js:121490`) and again at vectorize-time (`grok_shared.dart.js:121568`); a malformed nqName silently disables vectorization. The article (line 38, as of 2026-05-12) now explicitly states this contract — "The target function itself must declare `//input: script script` and `//output: string result` annotations so codegen registers it; otherwise the lookup fails silently at handler construction" — so the previously article-undocumented silent-failure mode is now documented; downstream skills should cite the article for the requirement and DG-FACT-177 for the lookup mechanics.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:38
+    - code: packages/Pyodide/src/package.g.ts:9-13,21
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:121490,121568
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-178
+  kind: namespace
+  scope: custom-script-handlers
+  value: At runtime the platform recognises a script as belonging to a custom handler by matching the script's `#language:` header annotation against each registered handler's `meta.scriptHandler.language`. Once matched, the platform invokes the handler with a `DG.FuncCall` whose declared inputs/outputs derive from the script's own header — meaning the script header (not the handler header) is the source of truth for parameters. Handlers therefore implement: parse `scriptCall.func.script` (the user-authored body), execute it (in-process / WebAssembly / Docker container), then write each output via `scriptCall.outputs`.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:51-53
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:121486-121498,137559-137563
+    - code: packages/Pyodide/src/package.ts:361-369
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-179
+  kind: naming
+  scope: custom-script-handlers
+  value: Codegen (`package.g.ts`) is the canonical surface for handler declaration. The Pyodide reference shows the generated form — header comment block (`//input: funccall scriptCall`, `//meta.scriptHandler.*`, `//meta.role: scriptHandler`) directly above an `async function <name>(scriptCall: DG.FuncCall): Promise<void>` that delegates into a static `PackageFunctions.<name>(scriptCall)`. Author the decorator form (`@grok.decorators.func({meta: {role: 'scriptHandler', 'scriptHandler.language': 'x', ...}})`) on a static method inside `PackageFunctions` in `package.ts`; let codegen emit `package.g.ts`. Do NOT hand-write the comment-header form in `package.ts` — production packages don't, and the codegen will overwrite it.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:38-48
+    - code: packages/Pyodide/src/package.ts:347-369
+    - code: packages/Pyodide/src/package.g.ts:15-26
+  contradicts: []
+  confidence: high
+
+# DRIFTS for custom-script-handlers
+
+- id: DG-FACT-459
+  kind: naming
+  scope: custom-script-handlers
+  value: |
+    `meta.scriptHandler.parserFunction` targets a registered
+    package function whose role is to convert plain script
+    text into a `DG.Script` instance. It is referenced by
+    nqName `<Package>:<funcName>` and looked up by the
+    platform at handler-construction (`grok_shared.dart.js:121498`)
+    and again when parsing scripts that match the handler's
+    language (`grok_shared.dart.js:121535`). Needed only when
+    the target language's header convention cannot be expressed
+    by stripping `commentStart` from each leading line — for
+    most languages (Python, Clojure, JS) the platform's
+    built-in `#name:` header parser suffices and
+    `parserFunction` can be omitted. No shipping public-repo
+    package supplies one; Pyodide relies on the default parser.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:39
+    - code: js-api/src/api/ddt.api.g.ts:416-417
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:121498,121535
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-180
+  kind: naming
+  scope: context-actions
+  value: A context-action is registered by adding `meta.action: <Display Text>` to a function's header annotations (or `meta: {action: '<Display Text>'}` in the `@grok.decorators.func({...})` form). The text becomes the menu item label shown in (a) right-click context menus on cells / column headers and (b) the Actions accordion pane of the property panel. The platform indexes registered functions by `meta.action` and offers them whenever the right-clicked item's semantic type matches the function's `input` `semType`.
+  derives_from:
+    - article: help/develop/how-to/ui/context-actions.md:5-9
+    - code: js-api/src/api/ddt.api.g.ts:329-330, packages/Chem/src/package.ts:2010-2014, packages/Chem/src/package.g.ts:843-849
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-181
+  kind: naming
+  scope: context-actions
+  value: A context-action function MUST declare exactly one input, and that input MUST carry a `{semType: <SemanticType>}` annotation. The semantic type is the dispatch key — the action is offered only when the right-clicked item is detected as that semantic type (e.g., `semType: Molecule` → action shows on cells / columns whose semantic type is `Molecule`). No `semType` → no dispatch surface → the function is registered but never offered as a context action.
+  derives_from:
+    - article: help/develop/how-to/ui/context-actions.md:9
+    - code: packages/Chem/src/package.g.ts:843-849, packages/Bio/src/package.g.ts:391-396, packages/Helm/src/package.g.ts (openEditor)
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-182
+  kind: enum
+  scope: context-actions
+  value: Recognised input parameter types for context actions, by invocation surface — (a) `semantic_value <name> { semType: <T> }` → bound as `DG.SemanticValue`; action surfaces on the CELL right-click menu and the per-row Actions pane; gives the handler full cell context (`value.value`, `value.cell.column`, `value.cell.column.meta.units`, `value.cell.rowIndex`). Production canonical for cell-level actions (Chem `Use as filter`, `Sort by similarity`, `Copy as ...`; Bio `Edit Helm...`). (b) `column <name> { semType: <T> }` → bound as `DG.Column`; action surfaces on the column-HEADER right-click menu and the Actions pane when a column is selected (Chem `Convert Notation...`, Bio `To Atomic Level...`). (c) `list <name> { type: numerical }` (or unannotated) → bound as `DG.Column[]`; action surfaces on multi-column selection (PowerGrid `Sparklines...`, `Smart form...`). (d) `string <name> { semType: <T> }` → article example; works but loses cell/column context — production never uses this form for context actions.
+  derives_from:
+    - article: help/develop/how-to/ui/context-actions.md:13-17
+    - code: packages/Chem/src/package.g.ts:765-849, packages/Bio/src/package.g.ts:391-396,510-516, packages/PowerGrid/src/package.g.ts:170-183, packages/Helm/src/package.g.ts
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-183
+  kind: namespace
+  scope: context-actions
+  value: Optional sibling toggles that scope WHERE a context action surfaces — `meta.exclude-actions-panel: true` (`DG.FuncOptions.ExcludeActionsPanel = 'exclude-actions-panel'`, `js-api/src/api/ddt.api.g.ts:434`) hides the action from the Actions accordion pane while keeping it in the cell right-click menu; `meta.exclude-current-value-menu: true` (`DG.FuncOptions.ExcludeCurrentValueMenu = 'exclude-current-value-menu'`, `js-api/src/api/ddt.api.g.ts:436`) does the inverse — hides from cell right-click but keeps the Actions pane. Default (neither set) shows in both. Chem uses `exclude-actions-panel: true` on every `Copy as <format>` sub-action so the panel only shows the parent `Copy as...` chooser, not the nine format variants.
+  derives_from:
+    - article: help/develop/how-to/ui/context-actions.md (none — undocumented)
+    - code: js-api/src/api/ddt.api.g.ts:434,436, packages/Chem/src/package.g.ts:855,864,873,882, packages/Chem/src/package.ts:2045,2066,2079
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-184
+  kind: namespace
+  scope: context-actions
+  value: Decorator-form for context actions — `@grok.decorators.func({name: '<Action Name>', description: '<...>', meta: {action: '<Display Text>'}}) static <handler>(@grok.decorators.param({options: {semType: '<T>'}}) value: DG.SemanticValue): void` over a method inside `PackageFunctions`. Codegen emits the matching `//name:`, `//description:`, `//input: semantic_value value { semType: <T> }`, `//meta.action: <Display Text>` block in `package.g.ts`. Both header and decorator forms are valid; production Chem (post-decorator migration) uses the decorator form in `package.ts` and codegen-emits the header form in `package.g.ts`.
+  derives_from:
+    - article: help/develop/how-to/ui/context-actions.md (none — header form only)
+    - code: packages/Chem/src/package.ts:2010-2046, packages/Chem/src/package.g.ts:843-849
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-185
+  kind: namespace
+  scope: context-actions
+  value: For the canonical "Use as substructure filter" pattern — `tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({type: DG.FILTER_TYPE.SUBSTRUCTURE, column: molCol.name, columnName: molCol.name, molBlock: molblock}, false)`. Branch on `value.cell.column.meta.units == DG.chem.Notation.Smiles` to convert SMILES → MolBlock via `DG.chem.convertMolNotation` (preserves orientation); for non-SMILES inputs, use `molToMolblock(molecule, getRdKitModule())` directly. Guard with `if (grok.shell.tv == null) throw new Error('Requires an open table view.')` and `if (value.cell?.column == null) throw ...`.
+  derives_from:
+    - article: help/develop/how-to/ui/context-actions.md:21-26
+    - code: packages/Chem/src/package.ts:2015-2040, js-api/src/views/view.ts:405, js-api/CLAUDE.md:151-154
+  contradicts: []
+  confidence: high
+

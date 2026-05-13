@@ -75,7 +75,7 @@ for the panel to be shown in the `condition` header parameter:
 # input: file file
 # output: bool hascats
 # meta.role: panel
-# condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endswith("jpg") || file.name.endswith("jpeg"))
+# condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endsWith("jpg") || file.name.endsWith("jpeg"))
 
 import cv2
 

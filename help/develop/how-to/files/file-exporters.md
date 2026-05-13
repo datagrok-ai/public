@@ -10,14 +10,9 @@ export" menu:
 ![Save as SDF](file-exporter.gif "Save as SDF")
 
 To write an exporter function, declare a `static` method on your `PackageFunctions` class and decorate it with
-`@grok.decorators.fileExporter`. The `description` is required — `grok check` fails the package if it's missing — and is
-used as the menu entry, e.g., `As ${fileExtension}`. Unlike file viewers, exporters don't need an extension-specific
-tag; you start with an open table, modify it, and let the user download the converted version. Use
-`DG.Utils.download(filename, content, contentType?)` to trigger the download — it wraps `Blob` + `URL.createObjectURL`
-and works correctly for binary payloads (Parquet, Feather, XLSX), unlike the older `data:` URI form which silently
-corrupts non-text content beyond ~2 MB in most browsers. Let's have a look at a function from the
-[Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/package.ts) package that exports a dataframe
-in a special file format for chemical data:
+`@grok.decorators.fileExporter`. The `description` is required — and is used as the menu entry, e.g., `As ${fileExtension}`. Unlike file viewers, exporters don't need an extension-specific
+tag; you start with an open table, modify it, and let the user download the converted version.
+Let's have a look at a function from the [Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/package.ts) package that exports a dataframe in a special file format for chemical data:
 
 ```typescript
 @grok.decorators.fileExporter({description: 'As SDF...'})

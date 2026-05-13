@@ -39,7 +39,7 @@ same methods:
 - `viewer.meta.formulaLines.addAll(itemParamList)` - creates multiple items at once
 - `viewer.meta.formulaLines.items` - returns the list of the all items
 - `viewer.meta.formulaLines.updateAt(index, itemParams)` - update the item at the index position with the new params
-- `viewer.meta.formulaLines.removeAt(index)` - intended to remove the item at the index position, but currently broken (the slice arguments truncate the list). Use `removeWhere((_, i) => i === index)` instead until upstream is fixed.
+- `viewer.meta.formulaLines.removeAt(index)` - removes the item at the index position
 - `viewer.meta.formulaLines.removeWhere(predicate)` - removes items that satisfy the condition
 - `viewer.meta.formulaLines.clear()` - removes all items
 

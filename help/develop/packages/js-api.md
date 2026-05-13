@@ -164,8 +164,8 @@ grok.functions.register({
   signature: 'List<String> jsSuggestCountryName(String text)',
   isAsync: true,
   run: async function(text) {
-    let response = await fetch('https://restcountries.com/v3.1/name/' + text);
-    return response.status === 200 ? (await response.json()).map(country => country['name']['common']) : [];
+    let response = await fetch('https://restcountries.eu/rest/v2/name/' + text);
+    return response.status === 200 ? (await response.json()).map(country => country['name']) : [];
   }
 });
 ```
