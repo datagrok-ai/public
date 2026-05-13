@@ -38,7 +38,6 @@ export async function recalculateCoords(table: DG.DataFrame, molecules: DG.Colum
 //name: Chemistry | Most Diverse Structures
 //input: column col { semType: Molecule }
 //output: widget result
-//meta.role: tooltip
 export async function chemTooltip(col: DG.Column) : Promise<any> {
   return await PackageFunctions.chemTooltip(col);
 }

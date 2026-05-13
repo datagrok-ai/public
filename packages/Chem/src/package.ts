@@ -266,7 +266,6 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Chemistry | Most Diverse Structures',
-    meta: {role: 'tooltip'},
   })
   static async chemTooltip(
     @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column): Promise<DG.Widget | undefined> {
