@@ -31,6 +31,7 @@ export enum HINT {
   NIM = 'Nimotuzumab disposition model',
   BIO = 'Bioreactor simulation',
   POLL = 'The chemical reaction part of the air pollution model',
+  LV = 'Predator-prey model',
   CLEAR = 'Clear model',
   TO_JS = 'Open in script editor',
   APP = 'Export model to platform application with user interface',
@@ -82,6 +83,7 @@ export enum TITLE {
   NIM = 'Nimotuzumab',
   BIO = 'Bioreactor',
   POLL = 'Pollution',
+  LV = 'Lotka-Volterra',
   CLEAR = 'Clear',
   TO_JS = 'js',
   MISC = 'Misc',
@@ -112,7 +114,7 @@ export enum TITLE {
 export const TEMPLATE_TITLES = [TITLE.BASIC, TITLE.ADV, TITLE.EXT];
 
 /** Titles of example models */
-export const EXAMPLE_TITLES = [TITLE.CHEM, TITLE.ROB, TITLE.FERM, TITLE.PK,
+export const EXAMPLE_TITLES = [TITLE.CHEM, TITLE.ROB, TITLE.LV, TITLE.FERM, TITLE.PK,
   TITLE.PKPD, TITLE.ACID, TITLE.NIM, TITLE.BIO, TITLE.POLL];
 
 /** Models' tooltips map */
@@ -129,6 +131,7 @@ export const MODEL_HINT = new Map([
   [TITLE.NIM, HINT.NIM],
   [TITLE.BIO, HINT.BIO],
   [TITLE.POLL, HINT.POLL],
+  [TITLE.LV, HINT.LV],
 ]);
 
 /** Help links */
@@ -147,6 +150,7 @@ export enum LINK {
   ROBERTSON = `${MODELS}#robertson-model`,
   BIOREACTOR = `${MODELS}#bioreactor`,
   POLLUTION = `${MODELS}#pollution`,
+  LOTKA_VOLT = `${MODELS}#lotka-volterra`,
   COMPUTE = 'https://datagrok.ai/help/compute',
   LOAD_SAVE = `${DIF_STUDIO_REL}#working-with-models`,
   MODEL_COMPONENTS = `${DIF_STUDIO_REL}#model-components-and-syntax`,
@@ -362,6 +366,7 @@ export const modelImageLink = new Map([
   [TITLE.NIM, 'images/nimotuzumab.png'],
   [TITLE.BIO, 'images/bioreactor.png'],
   [TITLE.POLL, 'images/pollution.png'],
+  [TITLE.LV, 'images/lotka-volterra.png'],
 ]);
 
 /** Model icon path (files/icons/) */
@@ -378,6 +383,7 @@ export const MODEL_ICON = new Map([
   [TITLE.NIM, 'icons/nimotuzumab.png'],
   [TITLE.BIO, 'icons/_bioreactor.png'],
   [TITLE.POLL, 'icons/pollution.png'],
+  [TITLE.LV, 'icons/lotka-volterra.png'],
 ]);
 
 /** Inputs table constants */

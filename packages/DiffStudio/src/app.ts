@@ -88,6 +88,7 @@ export enum EDITOR_STATE {
   NIMOTUZUMAB = 'nimotuzumab',
   BIOREACTOR = 'bioreactor',
   POLLUTION = 'pollution',
+  LOTKA_VOLT = 'lotka-volterra',
 };
 
 /** Build rich tooltip for a model (icon + name + description) matching hub cards */
@@ -141,6 +142,7 @@ const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
   [EDITOR_STATE.NIMOTUZUMAB, USE_CASES.NIMOTUZUMAB],
   [EDITOR_STATE.BIOREACTOR, USE_CASES.BIOREACTOR],
   [EDITOR_STATE.POLLUTION, USE_CASES.POLLUTION],
+  [EDITOR_STATE.LOTKA_VOLT, USE_CASES.LOTKA_VOLT],
 ]);
 
 /** Model title-to-editor state map */
@@ -157,6 +159,7 @@ export const STATE_BY_TITLE = new Map<TITLE, EDITOR_STATE>([
   [TITLE.NIM, EDITOR_STATE.NIMOTUZUMAB],
   [TITLE.BIO, EDITOR_STATE.BIOREACTOR],
   [TITLE.POLL, EDITOR_STATE.POLLUTION],
+  [TITLE.LV, EDITOR_STATE.LOTKA_VOLT],
 ]);
 
 /** Model state-to-title map */
@@ -177,6 +180,7 @@ const MODELS: string[] = [
   EDITOR_STATE.NIMOTUZUMAB,
   EDITOR_STATE.BIOREACTOR,
   EDITOR_STATE.POLLUTION,
+  EDITOR_STATE.LOTKA_VOLT,
 ];
 
 /** Return help link with respect to IVP editor state */
@@ -208,6 +212,9 @@ export function getLink(state: EDITOR_STATE): string {
 
   case EDITOR_STATE.POLLUTION:
     return LINK.POLLUTION;
+
+  case EDITOR_STATE.LOTKA_VOLT:
+    return LINK.LOTKA_VOLT;
 
   case EDITOR_STATE.EXTENDED_TEMPLATE:
     return LINK.INTERFACE;
@@ -3146,6 +3153,7 @@ export class DiffStudio {
     const libraryGroup = menu.group(TITLE.LIBRARY)
       .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
       .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+      .item(TITLE.LV, async () => await this.overwrite(EDITOR_STATE.LOTKA_VOLT), undefined, {description: HINT.LV})
       .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
       .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
       .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})

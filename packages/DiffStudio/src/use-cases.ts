@@ -587,6 +587,33 @@ const POLLUTION_MODEL = `#name: Pollution
 
 #tolerance: 1e-6`;
 
+/** Lotka-Volterra predator-prey model */
+const LOTKA_VOLT_MODEL = `#name: Lotka-Volterra
+#description: The Lotka-Volterra predator-prey model
+#equations:
+  dx/dt = alpha * x - beta * x * y
+  dy/dt = -gamma * y + delta * x * y
+
+#argument: t
+  t0 = 0   {min: 0; max: 2; caption: Start; category: Time}
+  t1 = 50  {min: 2; max: 150; caption: Finish; category: Time}
+  h = 0.1  {min: 0.1; max: 1; caption: Step; category: Time}
+
+#inits:
+  x = 20 {min: 2; max: 40; category: Seed; caption: Prey}
+  y = 2  {min: 2; max: 10; category: Seed; caption: Predator}
+
+#parameters:
+  alpha = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The maximum prey per capita growth rate]
+  beta = 0.4  {min: 0.1; max: 1; category: Parameters} [The effect of the presence of predators on the prey death rate]
+  gamma = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The predator's per capita death rate]
+  delta = 0.4 {min: 0.1; max: 1; category: Parameters} [The effect of the presence of prey on the predator's growth rate]
+
+#output:
+  t {caption: Time}
+  x {caption: Prey}
+  y {caption: Predator}`;
+
 /** Initial value problem use cases */
 export enum USE_CASES {
   CHEM_REACT = CHEM_REACT_MODEL,
@@ -598,4 +625,5 @@ export enum USE_CASES {
   NIMOTUZUMAB = NIMOTUZUMAB_MODEL,
   BIOREACTOR = BIOREACTOR_MODEL,
   POLLUTION = POLLUTION_MODEL,
+  LOTKA_VOLT = LOTKA_VOLT_MODEL,
 }

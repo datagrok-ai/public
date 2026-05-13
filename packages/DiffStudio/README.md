@@ -85,6 +85,9 @@ The **Library** section on the Hub contains built-in example models. You can run
   * Robertson's chemical reaction model
   * [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation) example
   * shows how Datagrok solves complicated ODEs
+* `Lotka-Volterra`
+  * classic [predator-prey](https://en.wikipedia.org/wiki/Lotka%E2%80%93Volterra_equations) model
+  * illustrates a small non-stiff system with interacting species
 * `Fermentation`
   * models the kinetics of the biochemical reactions in [fermentation](https://en.wikipedia.org/wiki/Fermentation)
   * shows the usage of `min` and `max` in inputs annotation
