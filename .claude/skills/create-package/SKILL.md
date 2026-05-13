@@ -1,102 +1,196 @@
 ---
 name: create-package
-description: Scaffold, build, and publish a new Datagrok package
-when-to-use: When user asks to create a new package, scaffold a plugin, or start a new Datagrok project
-context: fork
-effort: high
+version: 0.1.0
+description: |
+  Scaffold a brand-new Datagrok plugin folder, wire the standard
+  `build` / `test` / `publish` scripts, and ship the first version
+  to a developer-private slot on a Datagrok host. For first-time
+  plugin contributors and anyone starting a project from zero who
+  needs a template that imports `datagrok-api`, regenerates
+  `package.g.ts` from annotations, validates with `grok check`, and
+  bundles with webpack. Produces a `<Name>/` directory containing
+  `src/package.ts`, `webpack.config.js`, a configured `package.json`,
+  and a working `grok publish <host>` round-trip.
+  Use when asked to "scaffold a fresh plugin project", "bootstrap a
+  new plugin from zero", or "start a brand-new Datagrok project".
+triggers:
+  - scaffold a plugin from scratch
+  - bootstrap a new plugin project
+  - start a fresh plugin from zero
+  - generate a starter project skeleton
+  - first plugin folder setup
+  - new datagrok project template
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+harness-authored: true
 ---
 
-# Create a Datagrok Package
+# create-package
 
-Help the user scaffold a new Datagrok package, add functions to it, build, and publish.
+## When to use
 
-## Usage
-```
-/create-package [package-name] [--test] [--js]
-```
+You're starting a brand-new Datagrok plugin and need the canonical
+folder layout — `src/package.ts`, `webpack.config.js`, `package.json`
+with the `grok api && grok check --soft && webpack` build triplet,
+and a `grok publish` round-trip — before you write any business code.
 
-## Instructions
+## Prerequisites
 
-### 1. Scaffold the package
+- `datagrok-tools` installed globally and `~/.grok/config.yaml`
+  populated via `grok config` (developer key + at least one host
+  alias). See `help/develop/dev-process/set-up-environment.md`.
+- Node.js + npm available on `PATH` (managed via a node version
+  manager, not Snap — `set-up-environment.md:23-25`).
+- An empty target directory: `grok create` aborts with *"The package
+  directory should be empty"* otherwise
+  (`tools/bin/commands/create.ts:162-164`).
 
-Run from the directory where the package folder should be created:
+## Steps
 
-```shell
-grok create <PackageName> --test
-```
+1. **Scaffold from the package template.** Run from the directory
+   where the new package folder should appear:
+   ```bash
+   grok create TextStats --test
+   ```
+   Expected: a sibling folder is created and the CLI immediately
+   runs `npm install` inside it — `Running 'npm install' to get the
+   required dependencies...` comes from the CLI, not from you
+   (`tools/bin/commands/create.ts:201-205`, `DG-FACT-463`). A manual
+   `npm install` is only needed if the auto-install printed errors.
+   `--test` adds `@datagrok-libraries/utils` to `dependencies` but
+   does NOT scaffold test files — run `grok add tests` later if you
+   want them (`tools/bin/commands/create.ts:80-87`, `DG-FACT-464`).
 
-- Package name must be **PascalCase** (e.g., `TextStats`, `MyAnalysis`).
-- The `--test` flag adds a test scaffold. Use `--js` for plain JavaScript instead of TypeScript.
-- After creation, install dependencies:
+2. **Fix folder casing and `friendlyName` if you want PascalCase /
+   Title Case.** `grok create` normalizes the raw arg to
+   first-letter-upper + rest-lower for the directory and
+   `#{PACKAGE_NAME}` substitution (`tools/bin/commands/create.ts:150`,
+   `DG-FACT-441`) — `grok create TextStats` writes folder
+   `Textstats/`. `friendlyName` is identical to the raw arg; there
+   is no `--friendly-name` flag. Hand-edit both if you want the
+   article's convention (`create-package.md:25-29` describes the
+   convention, not what the CLI produces;
+   `DG-FACT-DRIFT-CP-001`).
+   ```bash
+   mv Textstats TextStats   # only if PascalCase matters to you
+   # then edit package.json: "friendlyName": "Text Stats"
+   ```
+   Expected: directory name + `jq -r .friendlyName package.json`
+   match what you typed.
 
-```shell
-cd <PackageName>
-npm install
-```
+3. **Add a function — header-annotation form.** Drop a panel function
+   into `src/package.ts` to confirm wiring end-to-end:
+   ```typescript
+   //name: TextStats
+   //meta.role: panel, widgets
+   //input: string str {semType: text}
+   //output: widget result
+   export function textStats(str: string) {
+     const counts = Array.from(str).reduce((acc, ch) => {
+       acc[ch] = (acc[ch] || 0) + 1;
+       return acc;
+     }, Object.create(null));
+     return new DG.Widget(ui.divV([
+       ui.divText('Counting characters:'),
+       ui.divText(JSON.stringify(counts)),
+     ]));
+   }
+   ```
+   Expected: header-annotation comments sit immediately above
+   `export function`. At runtime the panel fires for cells whose
+   column's `quality` tag equals `text` — `quality` IS the
+   semantic-type tag (`DG-FACT-440`, `js-api/src/api/ddt.api.g.ts:77`).
 
-### 2. Understand the package structure
+4. **Build — do not paraphrase to bare `webpack`.** `npm run build`
+   runs the template-defined triplet `grok api && grok check --soft
+   && webpack` (`tools/package-template/package.json:21`,
+   `DG-FACT-462`). `grok api` regenerates `src/package.g.ts` from
+   header annotations; `grok check --soft` warns on package-level
+   issues; `webpack` bundles. Skipping the prefix leaves new
+   `//name:` / `//meta.role:` annotations out of the bundle.
+   ```bash
+   npm run build
+   ```
+   Expected: exit 0; `src/package.g.ts` is rewritten and lists
+   `textStats` with `//meta.role: widgets,panel`.
 
-The created package contains:
-- `src/package.ts` -- main entry point for functions, viewers, panels, apps
-- `detectors.js` -- semantic type detectors (loaded separately from the bundle)
-- `webpack.config.js` -- webpack configuration (do not modify the externals)
-- `package.json` -- metadata and dependencies
+5. **Publish to a dev host in debug mode.** `--debug` is the default;
+   the package is visible only to your developer key
+   (`tools/bin/commands/publish.js:620-621`, `DG-FACT-156`).
+   ```bash
+   grok publish dev
+   ```
+   Expected: exit 0. The package appears under **Manage → Packages**
+   on the `dev` host prefixed `v.<your-name>` — that prefix IS the
+   debug-mode marker.
 
-### 3. Add functions to the package
+6. **Promote to release when ready.** A release-mode publish makes
+   the package visible to every group listed in `canView` /
+   `canEdit` in `package.json`. See the `publish-packages` skill for
+   the full ship pipeline (npm publish via the `Packages` workflow).
+   ```bash
+   grok publish dev --release
+   ```
+   Expected: the `v.` prefix disappears; the package is listed for
+   the configured groups.
 
-Functions are defined with annotation comments above the export. Common types:
+## Common failure modes
 
-**Panel function** (appears in context panel for matching data):
-```typescript
-//name: MyPanel
-//tags: panel, widgets
-//input: string str {semType: text}
-//output: widget result
-export function myPanel(str: string) {
-  return new DG.Widget(ui.divV([
-    ui.divText('Result: ' + str.length)
-  ]));
-}
-```
+- **`grok` not found.** `datagrok-tools` isn't installed globally, or
+  the npm global `bin` directory isn't on `PATH`. Fix: install per
+  `set-up-environment.md:21`, re-open the shell.
+- **`grok create` aborts: "package directory should be empty".** The
+  CWD already contains files (`tools/bin/commands/create.ts:162-164`).
+  Fix: `cd` to a fresh directory, or pass a name that creates a new
+  subfolder.
+- **Folder name came out lowercase (`Textstats`).** Expected — the
+  CLI capitalizes only the first letter (`DG-FACT-441`). Rename by
+  hand if you need PascalCase.
+- **`npm run build` succeeds but the panel never registers.** You
+  ran `webpack` directly, so `grok api` never ran and
+  `src/package.g.ts` is stale (`DG-FACT-462`). Fix: always use
+  `npm run build`; verify the new function appears in
+  `src/package.g.ts` after the build.
+- **`grok publish` exits non-zero: "Incompatible options: --debug
+  and --release".** Both flags were passed; they are mutually
+  exclusive (`DG-FACT-156`). Fix: drop one — `--release` for shared
+  visibility, no flag for per-developer debug.
 
-**Add more function types via CLI:**
-```shell
-grok add app <name>        # Application entry point
-grok add viewer <name>     # Custom viewer
-grok add detector <name>   # Semantic type detector
-```
+## Verification
 
-### 4. Build the package
+- `ls <Name>/` shows `src/package.ts`, `webpack.config.js`,
+  `package.json`, `detectors.js`, `tsconfig.json`.
+- `jq -r '.scripts.build' <Name>/package.json` returns
+  `grok api && grok check --soft && webpack` verbatim.
+- `npm run build` exits 0; `git diff src/package.g.ts` shows
+  annotations you wrote in `src/package.ts` surfacing in the
+  generated wrapper.
+- After `grok publish dev`, the package is listed under **Manage →
+  Packages** on the dev host with a `v.<developer>` prefix.
 
-```shell
-npm run build
-```
+## See also
 
-This runs `grok api` (auto-generates wrappers), `grok check --soft` (validates), and `webpack` (bundles). Do not modify the `build` script in `package.json`.
-
-### 5. Publish the package
-
-Publish to a configured server:
-
-```shell
-grok publish dev           # Debug mode (only visible to you)
-grok publish dev --release # Release mode (visible to shared groups)
-```
-
-Return code `0` means success. After publishing in debug mode, find the package under `Manage | Packages` prefixed with `v.`.
-
-### 6. Share and release
-
-- Share the package to user groups via right-click menu on the package in `Manage | Packages`.
-- For public release: `grok publish public --release`.
-
-## Behavior
-
-- Always ask for the package name if not provided.
-- Use PascalCase for the package name.
-- Default to TypeScript unless the user requests JavaScript.
-- Include the `--test` flag unless the user says otherwise.
-- After scaffolding, remind the user to run `npm install`.
-- Follow Datagrok coding conventions: no excessive comments, no curly brackets for one-line if/for, catch/else-if on new line.
-- When adding functions, use the annotation comment format (`//name:`, `//tags:`, `//input:`, `//output:`).
-- Warn if webpack externals are modified (datagrok-api, rxjs, cash-dom, dayjs, wu, openchemlib/full are provided by the platform).
+- Source article: `help/develop/how-to/packages/create-package.md`.
+- Adjacent articles: `help/develop/dev-process/set-up-environment.md`
+  (prerequisites); `help/develop/develop.md#publishing` (`--debug`
+  vs `--release`, `canView` / `canEdit`).
+- Knowledge: `docs/_internal/knowledge/knowledge-graph.md` —
+  `DG-FACT-440` (`quality` tag is the semType tag),
+  `DG-FACT-441` (name normalization),
+  `DG-FACT-462` (build triplet),
+  `DG-FACT-463` (auto `npm install`),
+  `DG-FACT-464` (`--test` is narrow),
+  `DG-FACT-156` (`grok publish` flags),
+  plus drifts `DG-FACT-DRIFT-CP-001..004`.
+- Reference packages: `tools/package-template/package.json` (source
+  template); `packages/Chem/package.json:99,106` (production
+  preserves the build triplet); `packages/BenchlingLink`,
+  `packages/ChemblAPI` (PascalCase folders preserved by hand-rename).
+- Related skills: `add-info-panel` (step 3's function is a panel);
+  `add-package-tests` (`grok add tests`, required follow-up for real
+  tests); `publish-packages` (full `Packages` workflow + npm publish);
+  `define-semantic-type-detectors` (programmatic alternative to the
+  manual `quality : text` tag).
