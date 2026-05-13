@@ -26,14 +26,18 @@ async function demo(type: 'docking', columnNames: string[]): Promise<void> {
   const datasetPath = `System:AppData/Docking/demo_files/${type}_demo.csv`;
   const layoutPath = `System:AppData/Docking/demo_files/${type}_demo.layout`;
 
-  // semType isn't stored in layout JSON — pin Molecule (SMILES) and rawPng
-  // (PL Diagram, BSV PL object handler) at import time. Ligand columns are
-  // pinned below in the same loop that adds their docking-role tag.
+  // semType isn't stored in layout JSON — pin Molecule (SMILES), rawPng
+  // (PL Diagram, BSV PL object handler), and Tags (PL Interactions, drives
+  // the per-token colored badge renderer in tandem with the layout's
+  // `cell.renderer: Tags` + `.multi-value-separator: ,` tags) at import
+  // time. Ligand columns are pinned below in the same loop that adds their
+  // docking-role tag.
   const df = DG.DataFrame.fromCsv(
     await grok.dapi.files.readAsText(datasetPath),
     {columnImportOptions: [
       {name: 'SMILES', semType: DG.SEMTYPE.MOLECULE},
       {name: 'PL Diagram', semType: 'rawPng'},
+      {name: 'PL Interactions', semType: 'Tags'},
     ]},
   );
 
@@ -55,5 +59,18 @@ async function demo(type: 'docking', columnNames: string[]): Promise<void> {
   const tv = grok.shell.addTableView(df);
   await DG.delay(100);
   tv.loadLayout(layout, true);
+
+  // Companion scatter: hydrophobic contact count vs docking score. Reacts to
+  // grid selection and to PL Interactions tag-chip filtering.
+  const scatter = tv.addViewer(DG.VIEWER.SCATTER_PLOT, {
+    x: 'PL Hyd',
+    y: 'binding energy',
+    color: 'binding energy',
+    size: 'PL Total',
+    showRegressionLine: true,
+    showRegressionLineEquation: false,
+  });
+  tv.dockManager.dock(scatter, DG.DOCK_TYPE.RIGHT, null, 'Scatter: PL Hyd × binding', 0.32);
+
   df.currentCell = df.cell(0, columnNames[0]);
 }

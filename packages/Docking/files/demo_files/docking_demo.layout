@@ -20,7 +20,7 @@
               "#type": "GridLook",
               "showAddNewRowIcon": true,
               "addNewRowOnLastRowEdit": true,
-              "rowHeight": 130,
+              "rowHeight": 235,
               "topLevelDefaultMenu": true,
               "allowColumnMenu": true,
               "columns": [
@@ -63,7 +63,15 @@
                   "format": "0.00",
                   "headerCellStyle": {
                     "textWrap": "words"
-                  }
+                  },
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "customFormat": "0.00",
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4278255360,
+                    4294901760
+                  ]
                 },
                 {
                   "width": 220,
@@ -74,7 +82,7 @@
                   }
                 },
                 {
-                  "width": 114,
+                  "width": 250,
                   "columnName": "PL Interactions",
                   "headerCellStyle": {
                     "textWrap": "words"
@@ -86,7 +94,14 @@
                   "cellType": "number",
                   "headerCellStyle": {
                     "textWrap": "words"
-                  }
+                  },
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4294901760,
+                    4278255360
+                  ]
                 },
                 {
                   "width": 69,
@@ -94,7 +109,14 @@
                   "cellType": "number",
                   "headerCellStyle": {
                     "textWrap": "words"
-                  }
+                  },
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4294901760,
+                    4278255360
+                  ]
                 },
                 {
                   "width": 67,
@@ -102,7 +124,14 @@
                   "cellType": "number",
                   "headerCellStyle": {
                     "textWrap": "words"
-                  }
+                  },
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4294901760,
+                    4278255360
+                  ]
                 },
                 {
                   "width": 56,
@@ -110,7 +139,14 @@
                   "cellType": "number",
                   "headerCellStyle": {
                     "textWrap": "words"
-                  }
+                  },
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4294901760,
+                    4278255360
+                  ]
                 },
                 {
                   "width": 64,
@@ -118,7 +154,14 @@
                   "cellType": "number",
                   "headerCellStyle": {
                     "textWrap": "words"
-                  }
+                  },
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4294901760,
+                    4278255360
+                  ]
                 },
                 {
                   "width": 75,
@@ -126,7 +169,14 @@
                   "cellType": "number",
                   "headerCellStyle": {
                     "textWrap": "words"
-                  }
+                  },
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4294901760,
+                    4278255360
+                  ]
                 },
                 {
                   "width": 69,
@@ -134,7 +184,14 @@
                   "cellType": "number",
                   "headerCellStyle": {
                     "textWrap": "words"
-                  }
+                  },
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4294901760,
+                    4278255360
+                  ]
                 },
                 {
                   "width": 73,
@@ -142,7 +199,14 @@
                   "cellType": "number",
                   "headerCellStyle": {
                     "textWrap": "words"
-                  }
+                  },
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4294901760,
+                    4278255360
+                  ]
                 }
               ]
             },
@@ -177,6 +241,10 @@
         "cell.renderer": "rawPng",
         ".%prolif-source": "AutoDock poses",
         ".%prolif-interactions-col": "PL Interactions"
+      },
+      "PL Interactions": {
+        "cell.renderer": "Tags",
+        ".multi-value-separator": ","
       }
     }
   },
