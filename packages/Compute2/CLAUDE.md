@@ -55,7 +55,7 @@ RTD source: `libraries/compute-utils/reactive-tree-driver/`
 
 - **Tree structure**: Composed of nested pipeline nodes and FuncCallNode leaves. Pipeline types: `static` (immutable sequence), `dynamic` (mutable set of steps, add/remove at runtime), `action` (lightweight placeholder for visibleOn actions). `parallel` and `sequential` are legacy aliases for `dynamic`.
 - **Driver** (`src/Driver.ts`): Main orchestrator. Manages state, commands, validations, consistency. Uses RxJS BehaviorSubjects for reactive state.
-- **Links**: Propagate data between FuncCall inputs/outputs via pattern-matching queries. Roles: `data` (value propagation), `validator` (validation results), `meta` (UI metadata/hooks).
+- **Links**: Propagate data between FuncCall inputs/outputs via pattern-matching queries. Roles: `data` (value propagation), `validator` (per-IO validation results), `pipelineValidator` (pipeline-node-level validation, reactive on `from` ports and tree mutations), `meta` (UI metadata/hooks).
 - **StateTree** (`src/runtime/StateTree.ts`): Tree state management.
 - **StateTreeNodes** (`src/runtime/StateTreeNodes.ts`): Node state types (FuncCallStateInfo, ConsistencyInfo, MetaCallInfo).
 - **PipelineConfiguration** (`src/config/PipelineConfiguration.ts`): Configuration types - handlers, validators, meta handlers, mutation handlers, export config.
@@ -229,33 +229,7 @@ grok test --skip-build --skip-publish \
 > Store these details in Claude Code memory files rather than hardcoding here.
 > Example: `PUPPETEER_EXECUTABLE_PATH=/path/to/browser grok test ...`
 
-### Test Categories
-
-| Category | File |
-|----------|------|
-| ComputeUtils: Driver config processing | config-processing.ts |
-| ComputeUtils: Driver state tree init | instance-init.ts |
-| ComputeUtils: Driver init calls | instance-init.ts |
-| ComputeUtils: Driver state tree persistence | instance-persistence.ts |
-| ComputeUtils: Driver state tree mutations | instance-mutations.ts |
-| ComputeUtils: Driver state tree readonly | instance-readonly.ts |
-| ComputeUtils: Driver links matching | links-matching.ts |
-| ComputeUtils: Driver links reactivity: data | links-reactivity-data.ts |
-| ComputeUtils: Driver links reactivity: validators | links-reactivity-validators.ts |
-| ComputeUtils: Driver links reactivity: meta | links-reactivity-meta.ts |
-| ComputeUtils: Driver links reactivity: actions | links-reactivity-actions.ts |
-| ComputeUtils: Driver instance additional states | instance-additional.ts |
-| ComputeUtils: Driver mock wrapper | funcall-wrappers.ts |
-| ComputeUtils: Driver FuncCall wrapper | funcall-wrappers.ts |
-| ComputeUtils: Driver instance bridge | instance-bridge.ts |
-| ComputeUtils: Driver links additional states propagation | links-additional-states-propagation.ts |
-| ComputeUtils: Driver steps dependencies tracking | step-deps-tracking.ts |
-| ComputeUtils: Driver obsolete meta cleanup | obsolete-meta.ts |
-| ComputeUtils: Driver hooks running | oninit-hook.ts |
-| ComputeUtils: Driver workflow test | links-workflow.ts |
-| ComputeUtils: Driver run steps sequence | sequence-run.ts |
-| ComputeUtils: Driver links retention | links-retention.ts |
-| ComputeUtils: Driver structure check hook running | structurecheck-hook.ts |
+Test files live in `packages/LibTests/src/tests/compute-utils/reactive-tree-driver/`. Each file registers one or more categories named `ComputeUtils: Driver <area>`. Run `ls` on that directory or `grok test --category "ComputeUtils: Driver"` (which runs all of them) for the current set.
 
 ### Testing Rules
 
