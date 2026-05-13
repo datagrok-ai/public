@@ -59,18 +59,5 @@ async function demo(type: 'docking', columnNames: string[]): Promise<void> {
   const tv = grok.shell.addTableView(df);
   await DG.delay(100);
   tv.loadLayout(layout, true);
-
-  // Companion scatter: hydrophobic contact count vs docking score. Reacts to
-  // grid selection and to PL Interactions tag-chip filtering.
-  const scatter = tv.addViewer(DG.VIEWER.SCATTER_PLOT, {
-    x: 'PL Hyd',
-    y: 'binding energy',
-    color: 'binding energy',
-    size: 'PL Total',
-    showRegressionLine: true,
-    showRegressionLineEquation: false,
-  });
-  tv.dockManager.dock(scatter, DG.DOCK_TYPE.RIGHT, null, 'Scatter: PL Hyd × binding', 0.32);
-
   df.currentCell = df.cell(0, columnNames[0]);
 }
