@@ -4,20 +4,31 @@ import { Page, expect } from '@playwright/test';
 export const AUTH_STATE = 'e2e/.auth.json';
 
 // Default Postgres credentials for the test_postgres / external-provider scenarios.
-// `db.datagrok.ai` is reachable from the dev environment; the password is provided
-// via the `DG_PG_PASSWORD` env var (.env / shell), never hard-coded here.
-export const PG_SERVER = process.env.DG_PG_SERVER ?? 'db.datagrok.ai';
-export const PG_PORT = process.env.DG_PG_PORT ?? '54322';
+//
+// CI: the test compose (deps.docker-compose.ci.yaml) ships demo `northwind` and
+// `world` Postgres containers under aliases `northwind:5432` / `world:5432` in
+// the same docker network as datlas + grok_connect. Defaulting to `northwind`
+// (postgres/postgres) gives the platform a reachable, real Postgres so
+// test_postgres actually connects — which in turn unblocks the schema-walk
+// scenarios in 02-identifiers, 03-edit test 3, 07-schema test 2, etc.
+//
+// Dev/playwright-tests/: that copy ships its own `.env` with
+// DG_PG_SERVER=db.datagrok.ai + a real password, which overrides these
+// defaults — so this change is CI-only in practice.
+export const PG_SERVER = process.env.DG_PG_SERVER ?? 'northwind';
+export const PG_PORT = process.env.DG_PG_PORT ?? '5432';
 export const PG_DB = process.env.DG_PG_DB ?? 'northwind';
-export const PG_LOGIN = process.env.DG_PG_LOGIN ?? 'datagrok';
-export const PG_PASSWORD = process.env.DG_PG_PASSWORD ?? '';
+export const PG_LOGIN = process.env.DG_PG_LOGIN ?? 'postgres';
+export const PG_PASSWORD = process.env.DG_PG_PASSWORD ?? 'postgres';
 
-// External-provider Postgres (port 54327, db `test`, user `superuser`).
-export const PG_EXT_SERVER = process.env.DG_PG_EXT_SERVER ?? 'db.datagrok.ai';
-export const PG_EXT_PORT = process.env.DG_PG_EXT_PORT ?? '54327';
-export const PG_EXT_DB = process.env.DG_PG_EXT_DB ?? 'test';
-export const PG_EXT_LOGIN = process.env.DG_PG_EXT_LOGIN ?? 'superuser';
-export const PG_EXT_PASSWORD = process.env.DG_PG_EXT_PASSWORD ?? '';
+// External-provider Postgres for 09-external-provider. CI defaults target the
+// in-network `world` demo Postgres so the PostgreSQLDBTests2 CRUD cycle has a
+// real, writable DB to operate against.
+export const PG_EXT_SERVER = process.env.DG_PG_EXT_SERVER ?? 'world';
+export const PG_EXT_PORT = process.env.DG_PG_EXT_PORT ?? '5432';
+export const PG_EXT_DB = process.env.DG_PG_EXT_DB ?? 'world';
+export const PG_EXT_LOGIN = process.env.DG_PG_EXT_LOGIN ?? 'postgres';
+export const PG_EXT_PASSWORD = process.env.DG_PG_EXT_PASSWORD ?? 'postgres';
 
 // SPARQL test endpoint (public).
 export const SPARQL_ENDPOINT =

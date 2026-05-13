@@ -152,18 +152,24 @@ export async function addNewColumnTransformation(page: Page, expression: string)
   await clickTransformationAction(page, 'Add New Column');
   // The formula editor in `_showAddNewColumnDialog`
   // (core/client/xamgle/lib/src/commands/edit/edit_add_new_column.dart:61)
-  // is a plain `TextAreaInput` — i.e. a `<textarea>` with placeholder
-  // "Formula. Press '$' to select a column, or drag a column here", not a
-  // CodeMirror editor. Some older builds wrapped the textarea in a div
-  // with CM-flavoured classes — keep those as a fallback for the dev copy.
+  // is a plain `TextAreaInput` — a `<textarea class="ui-input-editor">`
+  // with placeholder "Formula. Press '$' to select a column, or drag a
+  // column here". Datagrok overlays the textarea with a formula-display
+  // div, so the textarea itself is hidden — `state: 'visible'` fails (CI
+  // build #24: "locator resolved to hidden <textarea ...>"). Wait for
+  // attachment only, then set value programmatically and dispatch the
+  // events `TextAreaInput.onChanged` listens for.
   const dialog = page.locator('.d4-dialog').first();
   await dialog.waitFor({ state: 'visible', timeout: 10_000 });
-  const editor = dialog.locator(
-    'textarea[placeholder*="Formula"], textarea, .add-new-column-dialog-cm-div .cm-content, .cm-content, .CodeMirror-code',
-  ).first();
-  await editor.waitFor({ state: 'visible', timeout: 30_000 });
-  await editor.click();
-  await page.keyboard.type(expression);
+  const editor = dialog.locator('textarea').first();
+  await editor.waitFor({ state: 'attached', timeout: 30_000 });
+  await editor.evaluate((el, val) => {
+    const ta = el as HTMLTextAreaElement;
+    ta.focus();
+    ta.value = val;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    ta.dispatchEvent(new Event('change', { bubbles: true }));
+  }, expression);
   await page.locator('[name="button-Add-New-Column---OK"]').click();
   await expect(page.locator('.d4-dialog')).toHaveCount(0, { timeout: 10_000 });
 }

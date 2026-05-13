@@ -445,17 +445,30 @@ test.describe.serial('Scripts: Layout', () => {
       else
         await page.keyboard.press('Escape').catch(() => null);
       await expect(projectDialog).not.toBeVisible({ timeout: 5_000 });
-      await page.evaluate(async (projectName) => {
-        const grok = (window as any).grok;
-        const DG = (window as any).DG;
-        const tv = grok.shell.tv;
-        if (!tv) throw new Error('No active TableView for project save');
-        const project = DG.Project.create();
-        project.name = projectName;
-        if (tv.dataFrame) project.addChild(tv.dataFrame);
-        project.addChild(tv);
-        await grok.dapi.projects.save(project);
+      // Persist the project. Wrap in try/catch and explicitly return a
+      // primitive — `grok.dapi.projects.save` resolves with the saved
+      // entity (rich object graph including back-refs to the TableView /
+      // DataFrame / shell), and Playwright's evaluate result-channel
+      // serialisation chokes on that with "object reference chain is
+      // too long" if the value escapes the callback.
+      const saveResult = await page.evaluate(async (projectName) => {
+        try {
+          const grok = (window as any).grok;
+          const DG = (window as any).DG;
+          const tv = grok.shell.tv;
+          if (!tv) return { ok: false, error: 'No active TableView for project save' };
+          const project = DG.Project.create();
+          project.name = projectName;
+          if (tv.dataFrame) project.addChild(tv.dataFrame);
+          project.addChild(tv);
+          await grok.dapi.projects.save(project);
+          return { ok: true };
+        } catch (e: any) {
+          return { ok: false, error: String(e?.message ?? e) };
+        }
       }, PROJECT_NAME);
+      if (!saveResult.ok)
+        throw new Error(`Fallback grok.dapi.projects.save failed: ${saveResult.error}`);
     }
     await expect(projectDialog).not.toBeVisible({ timeout: 15_000 });
 
