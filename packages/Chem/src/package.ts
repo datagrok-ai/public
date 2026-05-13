@@ -2427,17 +2427,6 @@ export class PackageFunctions {
     return filteredMolecules;
   }
 
-
-  @grok.decorators.func({
-    name: 'Demo Chem Overview',
-    description: 'Overview of Cheminformatics functionality',
-    meta: {isDemoScript: 'true', demoSkip: 'GROK-14320', demoPath: 'Cheminformatics | Overview'},
-  })
-  static async demoChemOverview(): Promise<void> {
-    await _demoChemOverview();
-  }
-
-
   @grok.decorators.func({
     name: 'Demo Similarity Search',
     description: 'Searching for most similar or diverse molecules in dataset',

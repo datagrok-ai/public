@@ -1054,15 +1054,6 @@ export function removeDuplicates(molecules: string[], molecule: string) : string
   return PackageFunctions.removeDuplicates(molecules, molecule);
 }
 
-//name: Demo Chem Overview
-//description: Overview of Cheminformatics functionality
-//meta.isDemoScript: true
-//meta.demoSkip: GROK-14320
-//meta.demoPath: Cheminformatics | Overview
-export async function demoChemOverview() : Promise<void> {
-  await PackageFunctions.demoChemOverview();
-}
-
 //name: Demo Similarity Search
 //description: Searching for most similar or diverse molecules in dataset
 //meta.demoPath: Cheminformatics | Similarity & Diversity Search

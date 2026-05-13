@@ -759,13 +759,6 @@ export namespace funcs {
   }
 
   /**
-  Overview of Cheminformatics functionality
-  */
-  export async function demoChemOverview(): Promise<void> {
-    return await grok.functions.call('Chem:DemoChemOverview', {});
-  }
-
-  /**
   Searching for most similar or diverse molecules in dataset
   */
   export async function demoSimilarityDiversitySearch(): Promise<void> {
