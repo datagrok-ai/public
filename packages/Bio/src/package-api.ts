@@ -498,6 +498,13 @@ export namespace funcs {
     return await grok.functions.call('Bio:DemoBioAtomicLevel', {});
   }
 
+  /**
+  SI-RNA sequences, molecular structures, curves and assay data
+  */
+  export async function demoBioSiRNA(): Promise<void> {
+    return await grok.functions.call('Bio:DemoBioSiRNA', {});
+  }
+
   export async function sdfToJsonLib(table: DG.DataFrame ): Promise<void> {
     return await grok.functions.call('Bio:SdfToJsonLib', { table });
   }

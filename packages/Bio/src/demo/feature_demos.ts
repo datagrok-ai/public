@@ -79,7 +79,7 @@ export async function antibodyDemo() {
 }
 
 export async function atomicLevelDemo() {
-  const df = await _package.files.readCsv('demo-files/Atomic_level.csv');
+  const df = await _package.files.readCsv('demo-files/Atomic_Level.csv');
   await df.meta.detectSemanticTypes();
   const tv = grok.shell.addTableView(df);
   await DG.delay(100);
@@ -89,6 +89,15 @@ export async function atomicLevelDemo() {
   df.col('molfile(helm)')!.setTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS, 'false');
   df.col('molfile(helm)')!.setTag(ChemTags.SEQUENCE_SRC_COL, 'HELM');
   grok.shell.info('Hover over monomers in HELM column to highlight them in molecular structure.', {timeout: 10});
-  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/bio/bio.md#convert-to-atomic-level');
-  grok.shell.windows.showHelp = true;
+}
+
+export async function sirnaDemo() {
+  const df = await _package.files.readCsv('demo-files/SIRNA.csv');
+  const layoutTXT = await _package.files.readAsText('demo-files/SIRNA.layout');
+  const layout = DG.ViewLayout.fromJson(layoutTXT);
+  const tv = grok.shell.addTableView(df);
+  await DG.delay(100);
+  tv.loadLayout(layout, true);
+  await df.meta.detectSemanticTypes();
+  grok.shell.info('Hover over the oligo structrues to see modifications to different sugars, linkers and residues.', {timeout: 10});
 }

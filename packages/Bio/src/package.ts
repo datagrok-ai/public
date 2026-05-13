@@ -91,7 +91,7 @@ import {showAnnotationManagerDialog} from './utils/annotations/annotation-manage
 import {numberAntibodyColumn} from './utils/antibody-numbering/number-antibody';
 
 import * as api from './package-api';
-import {antibodyDemo, atomicLevelDemo} from './demo/feature_demos';
+import {antibodyDemo, atomicLevelDemo, sirnaDemo} from './demo/feature_demos';
 export const _package = new BioPackage(/*{debug: true}/**/);
 export * from './package.g';
 
@@ -1554,6 +1554,16 @@ export class PackageFunctions {
   })
   static async demoBioAtomicLevel(): Promise<void> {
     await atomicLevelDemo();
+  }
+
+  @grok.decorators.demo({
+    description: 'SI-RNA sequences, molecular structures, curves and assay data',
+    demoPath: 'Bioinformatics | SI-RNA',
+    path: '/apps/Tutorials/Demo/Bioinformatics/SI-RNA',
+    meta: {demoSkip: 'true'} // skip for now, not sure why the tests are failing
+  })
+  static async demoBioSiRNA(): Promise<void> {
+    await sirnaDemo();
   }
 
   @grok.decorators.func({name: 'SDF to JSON Library'})

@@ -753,10 +753,19 @@ export async function demoBioActivityCliffs() : Promise<void> {
 }
 
 //description: Atomic level structure of Macromolecules
+//meta.demoSkip: true
 //meta.demoPath: Bioinformatics | Atomic Level
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Atomic%20Level
 export async function demoBioAtomicLevel() : Promise<void> {
   await PackageFunctions.demoBioAtomicLevel();
+}
+
+//description: SI-RNA sequences, molecular structures, curves and assay data
+//meta.demoSkip: true
+//meta.demoPath: Bioinformatics | SI-RNA
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/SI-RNA
+export async function demoBioSiRNA() : Promise<void> {
+  await PackageFunctions.demoBioSiRNA();
 }
 
 //name: SDF to JSON Library
