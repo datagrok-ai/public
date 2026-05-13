@@ -3,17 +3,17 @@
   "viewStateMap": {
     "containerType": "vertical",
     "state": {
-      "width": 1103,
-      "height": 922
+      "width": 1652,
+      "height": 1034
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 1103,
-          "height": 453,
+          "width": 1652,
+          "height": 524,
           "element": {
-            "id": "6f404f90-48b0-11f1-9b88-13980690b06d",
+            "id": "07d8e6a0-48b0-11f1-e6ca-c7552a5a062d",
             "type": "Form",
             "look": {
               "#type": "FormLook",
@@ -21,166 +21,244 @@
                 "#type": "SketchState",
                 "elementStates": [
                   {
-                    "left": 94,
-                    "top": 158,
-                    "width": 660,
-                    "height": 139,
-                    "type": "sparkline-cell",
+                    "left": 1183,
+                    "top": 111,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
                     "viewerSettings": {
-                      "column": "molfile(antisense_helm)",
+                      "column": "kd_duration_days",
+                      "format": null,
+                      "inputType": "Int",
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 765,
-                    "top": 359,
-                    "width": 144,
+                    "left": 1183,
+                    "top": 39,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "selectivity_index",
+                      "format": null,
+                      "inputType": "Float",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1303,
+                    "top": 208,
+                    "width": 150,
                     "height": 20,
                     "type": "html",
                     "viewerSettings": {
                       "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
-                      "column": "off_target_count",
-                      "input-value": "off_target_count",
+                      "column": "purity_pct",
+                      "input-value": "purity_pct",
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 9,
-                    "top": 299,
-                    "width": 71,
+                    "left": 1183,
+                    "top": 184,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "liver_conc_24h_ngg",
+                      "format": null,
+                      "inputType": "Int",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 15,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "ec50_nm",
+                      "input-value": "ec50_nm",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 39,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "selectivity_index",
+                      "input-value": "selectivity_index",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1473,
+                    "top": 15,
+                    "width": 98,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "conjugate",
+                      "format": null,
+                      "inputType": "Text",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 159,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "liver_t_half_d",
+                      "format": null,
+                      "inputType": "Float",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 10,
+                    "top": 12,
+                    "width": 64,
                     "height": 20,
                     "type": "html",
                     "viewerSettings": {
                       "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
                       "column": "oligo_helm",
                       "input-value": "Oligo",
-                      "textColor": 4293617511,
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 929,
-                    "top": 287,
+                    "left": 1013,
+                    "top": 63,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "in_vivo_ed50_mgkg",
+                      "input-value": "in_vivo_ed50_mgkg",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 257,
                     "width": 100,
                     "height": 20,
                     "type": "field",
                     "viewerSettings": {
-                      "column": "tm_c",
+                      "column": "cyto_lc50_um",
                       "format": null,
                       "inputType": "Float",
-                      "textColor": 4283477800,
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 765,
-                    "top": 215,
-                    "width": 144,
+                    "left": 1304,
+                    "top": 356,
+                    "width": 150,
                     "height": 20,
                     "type": "html",
                     "viewerSettings": {
                       "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
-                      "column": "id",
-                      "input-value": "id",
+                      "column": "num_phosphorothioate",
+                      "input-value": "num_phosphorothioate",
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 929,
-                    "top": 359,
+                    "left": 1013,
+                    "top": 184,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "liver_conc_24h_ngg",
+                      "input-value": "liver_conc_24h_ngg",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 87,
                     "width": 100,
                     "height": 20,
                     "type": "field",
                     "viewerSettings": {
-                      "column": "off_target_count",
+                      "column": "in_vivo_ed90_mgkg",
+                      "format": null,
+                      "inputType": "Float",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1303,
+                    "top": 15,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "conjugate",
+                      "input-value": "conjugate",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 86,
+                    "top": 11,
+                    "width": 913,
+                    "height": 64,
+                    "type": "sparkline-cell",
+                    "viewerSettings": {
+                      "column": "oligo_helm",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1474,
+                    "top": 356,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "num_phosphorothioate",
                       "format": null,
                       "inputType": "Int",
-                      "textColor": 4294944000,
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 765,
-                    "top": 287,
-                    "width": 144,
-                    "height": 20,
-                    "type": "html",
-                    "viewerSettings": {
-                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
-                      "column": "tm_c",
-                      "input-value": "tm_c",
-                      "fontWeight": "normal",
-                      "fontFamily": "Roboto"
-                    }
-                  },
-                  {
-                    "left": 11,
-                    "top": 18,
-                    "width": 66,
-                    "height": 20,
-                    "type": "html",
-                    "viewerSettings": {
-                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
-                      "column": "molfile(sense_helm)",
-                      "input-value": "Sense",
-                      "fontWeight": "normal",
-                      "fontFamily": "Roboto"
-                    }
-                  },
-                  {
-                    "left": 929,
-                    "top": 263,
-                    "width": 100,
-                    "height": 20,
-                    "type": "field",
-                    "viewerSettings": {
-                      "column": "status",
-                      "format": null,
-                      "inputType": "Text",
-                      "textColor": 4294967295,
-                      "backgroundColor": 4292224808,
-                      "fontWeight": "normal",
-                      "fontFamily": "Roboto"
-                    }
-                  },
-                  {
-                    "left": 929,
-                    "top": 335,
-                    "width": 100,
-                    "height": 20,
-                    "type": "field",
-                    "viewerSettings": {
-                      "column": "kd_pct",
-                      "format": null,
-                      "inputType": "Int",
-                      "textColor": 4283477800,
-                      "fontWeight": "normal",
-                      "fontFamily": "Roboto"
-                    }
-                  },
-                  {
-                    "left": 765,
-                    "top": 335,
-                    "width": 144,
-                    "height": 20,
-                    "type": "html",
-                    "viewerSettings": {
-                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
-                      "column": "kd_pct",
-                      "input-value": "kd_pct",
-                      "fontWeight": "normal",
-                      "fontFamily": "Roboto"
-                    }
-                  },
-                  {
-                    "left": 929,
-                    "top": 239,
+                    "left": 1472,
+                    "top": 38,
                     "width": 100,
                     "height": 20,
                     "type": "field",
@@ -188,16 +266,58 @@
                       "column": "target",
                       "format": null,
                       "inputType": "Text",
-                      "textColor": 4278190080,
-                      "backgroundColor": 4287915965,
+                      "textColor": 4294967295,
+                      "backgroundColor": 4286545791,
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 765,
-                    "top": 311,
-                    "width": 144,
+                    "left": 1304,
+                    "top": 308,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "num_moe",
+                      "input-value": "num_moe",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 208,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "liver_conc_28d_ngg",
+                      "format": null,
+                      "inputType": "Int",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 305,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "target_transcript",
+                      "format": null,
+                      "inputType": "Text",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1302,
+                    "top": 110,
+                    "width": 150,
                     "height": 20,
                     "type": "html",
                     "viewerSettings": {
@@ -209,51 +329,62 @@
                     }
                   },
                   {
-                    "left": 765,
-                    "top": 239,
-                    "width": 144,
+                    "left": 1183,
+                    "top": 15,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "ec50_nm",
+                      "format": null,
+                      "inputType": "Float",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 401,
+                    "width": 150,
                     "height": 20,
                     "type": "html",
                     "viewerSettings": {
                       "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
-                      "column": "target",
-                      "input-value": "target",
+                      "column": "snp_in_seed",
+                      "input-value": "snp_in_seed",
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 929,
-                    "top": 311,
-                    "width": 100,
-                    "height": 20,
-                    "type": "field",
+                    "left": 86,
+                    "top": 81,
+                    "width": 913,
+                    "height": 203,
+                    "type": "sparkline-cell",
                     "viewerSettings": {
-                      "column": "ic50_nm",
-                      "format": null,
-                      "inputType": "Float",
-                      "textColor": 4294944000,
+                      "column": "molfile(sense_helm)",
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 929,
-                    "top": 215,
-                    "width": 100,
+                    "left": 1302,
+                    "top": 62,
+                    "width": 150,
                     "height": 20,
-                    "type": "field",
+                    "type": "html",
                     "viewerSettings": {
-                      "column": "id",
-                      "format": null,
-                      "inputType": "Text",
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "status",
+                      "input-value": "status",
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
                     "left": 10,
-                    "top": 159,
+                    "top": 291,
                     "width": 70,
                     "height": 20,
                     "type": "html",
@@ -266,67 +397,745 @@
                     }
                   },
                   {
-                    "left": 94,
-                    "top": 298,
-                    "width": 661,
-                    "height": 80,
+                    "left": 1014,
+                    "top": 432,
+                    "width": 271,
+                    "height": 30,
                     "type": "sparkline-cell",
                     "viewerSettings": {
-                      "column": "oligo_helm",
+                      "column": "sense_seq",
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 94,
-                    "top": 18,
-                    "width": 660,
-                    "height": 138,
-                    "type": "sparkline-cell",
+                    "left": 1474,
+                    "top": 260,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
                     "viewerSettings": {
-                      "column": "molfile(sense_helm)",
+                      "column": "num_2ome",
+                      "format": null,
+                      "inputType": "Int",
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   },
                   {
-                    "left": 764,
-                    "top": 17,
-                    "width": 265,
-                    "height": 192,
-                    "type": "sparkline-cell",
-                    "viewerSettings": {
-                      "column": "curve",
-                      "fontWeight": "normal",
-                      "fontFamily": "Roboto"
-                    }
-                  },
-                  {
-                    "left": 765,
-                    "top": 263,
-                    "width": 144,
+                    "left": 1304,
+                    "top": 380,
+                    "width": 150,
                     "height": 20,
                     "type": "html",
                     "viewerSettings": {
                       "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "pct_modified",
+                      "input-value": "pct_modified",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 232,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "seed_off_target_count",
+                      "format": null,
+                      "inputType": "Int",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 111,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "kd_duration_days",
+                      "input-value": "kd_duration_days",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 63,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "in_vivo_ed50_mgkg",
+                      "format": null,
+                      "inputType": "Float",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 377,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "species_coverage",
+                      "input-value": "species_coverage",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1304,
+                    "top": 404,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "duplex_mw_da",
+                      "input-value": "duplex_mw_da",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1303,
+                    "top": 184,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "tm_calc_c",
+                      "input-value": "tm_calc_c",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1302,
+                    "top": 38,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "target",
+                      "input-value": "target",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 135,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "plasma_t_half_h",
+                      "input-value": "plasma_t_half_h",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 257,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "cyto_lc50_um",
+                      "input-value": "cyto_lc50_um",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 401,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "snp_in_seed",
+                      "format": null,
+                      "inputType": "Int",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 305,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "target_transcript",
+                      "input-value": "target_transcript",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1303,
+                    "top": 232,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "mass_spec_match",
+                      "input-value": "mass_spec_match",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1472,
+                    "top": 62,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
                       "column": "status",
-                      "input-value": "status",
+                      "format": null,
+                      "inputType": "Text",
+                      "textColor": 4278190080,
+                      "backgroundColor": 4294949752,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 10,
+                    "top": 52,
+                    "width": 64,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "id",
+                      "format": null,
+                      "inputType": "Text",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 281,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "ames_call",
+                      "input-value": "ames_call",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 12,
+                    "top": 81,
+                    "width": 64,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "molfile(sense_helm)",
+                      "input-value": "Sense",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 377,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "species_coverage",
+                      "format": null,
+                      "inputType": "Text",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1305,
+                    "top": 434,
+                    "width": 273,
+                    "height": 30,
+                    "type": "sparkline-cell",
+                    "viewerSettings": {
+                      "column": "antisense_seq",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1472,
+                    "top": 110,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "ic50_nm",
+                      "format": null,
+                      "inputType": "Float",
+                      "textColor": 4294922560,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 353,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "target_position_nt",
+                      "format": null,
+                      "inputType": "Int",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1474,
+                    "top": 380,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "pct_modified",
+                      "format": null,
+                      "inputType": "Float",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1304,
+                    "top": 332,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "num_deoxy",
+                      "input-value": "num_deoxy",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1302,
+                    "top": 158,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "off_target_count",
+                      "input-value": "off_target_count",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 281,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "ames_call",
+                      "format": null,
+                      "inputType": "Text",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 85,
+                    "top": 291,
+                    "width": 914,
+                    "height": 212,
+                    "type": "sparkline-cell",
+                    "viewerSettings": {
+                      "column": "molfile(antisense_helm)",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 329,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "target_region",
+                      "input-value": "target_region",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1304,
+                    "top": 284,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "num_2f",
+                      "input-value": "num_2f",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 232,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "seed_off_target_count",
+                      "input-value": "seed_off_target_count",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1472,
+                    "top": 134,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "kd_pct",
+                      "format": null,
+                      "inputType": "Int",
+                      "textColor": 4283477800,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1474,
+                    "top": 284,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "num_2f",
+                      "format": null,
+                      "inputType": "Int",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1472,
+                    "top": 158,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "off_target_count",
+                      "format": null,
+                      "inputType": "Int",
+                      "textColor": 4294922560,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1304,
+                    "top": 260,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "num_2ome",
+                      "input-value": "num_2ome",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 87,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "in_vivo_ed90_mgkg",
+                      "input-value": "in_vivo_ed90_mgkg",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1302,
+                    "top": 134,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "kd_pct",
+                      "input-value": "kd_pct",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 159,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "liver_t_half_d",
+                      "input-value": "liver_t_half_d",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 353,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "target_position_nt",
+                      "input-value": "target_position_nt",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1474,
+                    "top": 308,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "num_moe",
+                      "format": null,
+                      "inputType": "Int",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1473,
+                    "top": 232,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "mass_spec_match",
+                      "format": null,
+                      "inputType": "Text",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1302,
+                    "top": 86,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "tm_c",
+                      "input-value": "tm_c",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 329,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "target_region",
+                      "format": null,
+                      "inputType": "Text",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1183,
+                    "top": 135,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "plasma_t_half_h",
+                      "format": null,
+                      "inputType": "Float",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1474,
+                    "top": 404,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "duplex_mw_da",
+                      "format": null,
+                      "inputType": "Float",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1472,
+                    "top": 86,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "tm_c",
+                      "format": null,
+                      "inputType": "Float",
+                      "textColor": 4283477800,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1474,
+                    "top": 332,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "num_deoxy",
+                      "format": null,
+                      "inputType": "Int",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1473,
+                    "top": 184,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "tm_calc_c",
+                      "format": null,
+                      "inputType": "Float",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1473,
+                    "top": 208,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "purity_pct",
+                      "format": null,
+                      "inputType": "Float",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 1013,
+                    "top": 208,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "liver_conc_28d_ngg",
+                      "input-value": "liver_conc_28d_ngg",
                       "fontWeight": "normal",
                       "fontFamily": "Roboto"
                     }
                   }
                 ],
-                "table": "si-rna-with-curves (2)",
+                "table": "SIRNA",
                 "formDesigned": true
               },
               "columnNames": [
-                "tm_c",
-                "off_target_count",
-                "status",
-                "kd_pct",
+                "kd_duration_days",
+                "selectivity_index",
+                "liver_conc_24h_ngg",
+                "conjugate",
+                "liver_t_half_d",
+                "cyto_lc50_um",
+                "in_vivo_ed90_mgkg",
+                "num_phosphorothioate",
                 "target",
+                "liver_conc_28d_ngg",
+                "target_transcript",
+                "ec50_nm",
+                "num_2ome",
+                "seed_off_target_count",
+                "in_vivo_ed50_mgkg",
+                "snp_in_seed",
+                "status",
+                "id",
+                "species_coverage",
                 "ic50_nm",
-                "id"
+                "target_position_nt",
+                "pct_modified",
+                "ames_call",
+                "kd_pct",
+                "num_2f",
+                "off_target_count",
+                "num_moe",
+                "mass_spec_match",
+                "target_region",
+                "plasma_t_half_h",
+                "duplex_mw_da",
+                "tm_c",
+                "num_deoxy",
+                "tm_calc_c",
+                "purity_pct"
               ]
             },
             "title": "Form"
@@ -335,162 +1144,676 @@
         "children": []
       },
       {
-        "containerType": "fill",
+        "containerType": "horizontal",
         "state": {
-          "width": 1103,
-          "height": 468,
-          "documentManager": true
+          "width": 1652,
+          "height": 509
         },
         "children": [
           {
+            "containerType": "fill",
+            "state": {
+              "width": 1106,
+              "height": 509,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 1106,
+                  "height": 509,
+                  "element": {
+                    "id": "07d934c0-48b0-11f1-c67f-b1973e361ed7",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "rowHeight": 160,
+                      "sortByColumnNames": [
+                        "kd_pct"
+                      ],
+                      "sortTypes": [
+                        false
+                      ],
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 28,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 74,
+                          "columnName": "id",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 564.0423728813557,
+                          "columnName": "oligo_helm",
+                          "cellType": "OligoNucleotide",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "isTextBackgroundColorCoded": true,
+                          "width": 83,
+                          "columnName": "target",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {},
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "isTextBackgroundColorCoded": true,
+                          "width": 62,
+                          "columnName": "status",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {},
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "isTextColorCoded": true,
+                          "width": 53,
+                          "columnName": "tm_c",
+                          "customFormat": "0.0",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "colorCodingType": "Conditional",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "isTextColorCoded": true,
+                          "width": 74,
+                          "columnName": "ic50_nm",
+                          "customFormat": "0.00",
+                          "cellType": "number",
+                          "format": "0.00",
+                          "colorCodingType": "Conditional",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "isTextColorCoded": true,
+                          "width": 63,
+                          "columnName": "kd_pct",
+                          "cellType": "number",
+                          "colorCodingType": "Conditional",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "isTextColorCoded": true,
+                          "width": 105,
+                          "columnName": "off_target_count",
+                          "cellType": "number",
+                          "colorCodingType": "Conditional",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 162.6447536302328,
+                          "columnName": "curve",
+                          "cellType": "fit",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 74,
+                          "columnName": "Name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 219.41747572815527,
+                          "columnName": "molfile(sense_helm)",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 219.41747572815527,
+                          "columnName": "molfile(antisense_helm)",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 230,
+                          "columnName": "sense_seq",
+                          "cellType": "sequence",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 230,
+                          "columnName": "antisense_seq",
+                          "cellType": "sequence",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 102,
+                          "columnName": "sense_length",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 124,
+                          "columnName": "antisense_length",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 114,
+                          "columnName": "gc_content_pct",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 230,
+                          "columnName": "seed_sequence",
+                          "cellType": "sequence",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 151,
+                          "columnName": "chemistry_class",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 86,
+                          "columnName": "conjugate",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 90,
+                          "columnName": "num_2ome",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 69,
+                          "columnName": "num_2f",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 82,
+                          "columnName": "num_moe",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 91,
+                          "columnName": "num_deoxy",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 160,
+                          "columnName": "num_phosphorothioate",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 101,
+                          "columnName": "pct_modified",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 111,
+                          "columnName": "duplex_mw_da",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 83,
+                          "columnName": "tm_calc_c",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 114,
+                          "columnName": "duplex_dg_kcal",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 168,
+                          "columnName": "thermo_asymmetry_kcal",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 113,
+                          "columnName": "reynolds_score",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 95,
+                          "columnName": "ui_tei_score",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 67,
+                          "columnName": "i_score",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 147,
+                          "columnName": "max_knockdown_pct",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 80,
+                          "columnName": "hill_slope",
+                          "cellType": "number",
+                          "format": "0.00",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 78,
+                          "columnName": "ec50_nm",
+                          "cellType": "number",
+                          "format": "0.000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 122,
+                          "columnName": "selectivity_index",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 139,
+                          "columnName": "in_vivo_ed50_mgkg",
+                          "cellType": "number",
+                          "format": "0.00",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 139,
+                          "columnName": "in_vivo_ed90_mgkg",
+                          "cellType": "number",
+                          "format": "0.00",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 127,
+                          "columnName": "kd_duration_days",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 119,
+                          "columnName": "plasma_t_half_h",
+                          "cellType": "number",
+                          "format": "0.00",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 102,
+                          "columnName": "liver_t_half_d",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 167,
+                          "columnName": "serum_stability_pct_24h",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 190,
+                          "columnName": "hepatocyte_clint_ul_min_mg",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 131,
+                          "columnName": "liver_plasma_ratio",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 140,
+                          "columnName": "liver_conc_24h_ngg",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 140,
+                          "columnName": "liver_conc_28d_ngg",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 155,
+                          "columnName": "seed_off_target_count",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 137,
+                          "columnName": "immunostim_score",
+                          "cellType": "number",
+                          "format": "0.00",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 149,
+                          "columnName": "herg_inhib_10um_pct",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 105,
+                          "columnName": "cyto_lc50_um",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 83,
+                          "columnName": "ames_call",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 122,
+                          "columnName": "target_transcript",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 103,
+                          "columnName": "target_region",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 130,
+                          "columnName": "target_position_nt",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 158,
+                          "columnName": "species_coverage",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 97,
+                          "columnName": "snp_in_seed",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 100,
+                          "columnName": "project_code",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 74,
+                          "columnName": "batch_id",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 89,
+                          "columnName": "synth_date",
+                          "cellType": "number",
+                          "format": "M/d/yyyy",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 77,
+                          "columnName": "yield_mg",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 83,
+                          "columnName": "purity_pct",
+                          "cellType": "number",
+                          "format": "0.00",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 133,
+                          "columnName": "mass_spec_match",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 127,
+                          "columnName": "endotoxin_eu_mg",
+                          "cellType": "number",
+                          "format": "0.000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 81,
+                          "columnName": "qc_status",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 230,
+                          "columnName": "durability_curve",
+                          "cellType": "fit",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 230,
+                          "columnName": "in_vivo_dr_curve",
+                          "cellType": "fit",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 230,
+                          "columnName": "plasma_stability_curve",
+                          "cellType": "fit",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        }
+                      ]
+                    },
+                    "title": "Grid",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          },
+          {
             "containerType": "panel",
             "state": {
-              "width": 1103,
-              "height": 468,
+              "width": 545,
+              "height": 509,
               "element": {
-                "id": "6f4076a0-48b0-11f1-84e9-414c40ecff41",
-                "type": "Grid",
+                "id": "07d95bd0-48b0-11f1-9bf2-e9ed32ad241a",
+                "type": "MultiCurveViewer",
                 "look": {
-                  "#type": "GridLook",
-                  "showAddNewRowIcon": true,
-                  "addNewRowOnLastRowEdit": true,
-                  "rowHeight": 113,
-                  "sortByColumnNames": [
-                    "kd_pct"
+                  "#type": "JsViewerHostLook",
+                  "curvesColumnNames": [
+                    "curve",
+                    "durability_curve",
+                    "in_vivo_dr_curve",
+                    "plasma_stability_curve"
                   ],
-                  "sortTypes": [
-                    false
-                  ],
-                  "topLevelDefaultMenu": true,
-                  "allowColumnMenu": true,
-                  "columns": [
-                    {
-                      "width": 28,
-                      "backgroundColor": 4294440951,
-                      "customName": "",
-                      "cellType": "row header",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 74,
-                      "columnName": "id",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 564.0423728813557,
-                      "columnName": "oligo_helm",
-                      "cellType": "OligoNucleotide",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "isColorCoded": true,
-                      "isTextBackgroundColorCoded": true,
-                      "width": 83,
-                      "columnName": "target",
-                      "colorCodingType": "Categorical",
-                      "colorCodingCategorical": {},
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "isColorCoded": true,
-                      "isTextBackgroundColorCoded": true,
-                      "width": 62,
-                      "columnName": "status",
-                      "colorCodingType": "Categorical",
-                      "colorCodingCategorical": {},
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "isColorCoded": true,
-                      "isTextColorCoded": true,
-                      "width": 53,
-                      "columnName": "tm_c",
-                      "cellType": "number",
-                      "format": "0.0",
-                      "colorCodingType": "Conditional",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "isColorCoded": true,
-                      "isTextColorCoded": true,
-                      "width": 74,
-                      "columnName": "ic50_nm",
-                      "cellType": "number",
-                      "format": "0.00",
-                      "colorCodingType": "Conditional",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "isColorCoded": true,
-                      "isTextColorCoded": true,
-                      "width": 63,
-                      "columnName": "kd_pct",
-                      "cellType": "number",
-                      "colorCodingType": "Conditional",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "isColorCoded": true,
-                      "isTextColorCoded": true,
-                      "width": 105,
-                      "columnName": "off_target_count",
-                      "cellType": "number",
-                      "colorCodingType": "Conditional",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 162.6447536302328,
-                      "columnName": "curve",
-                      "cellType": "fit",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 74,
-                      "columnName": "Name",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 219.41747572815527,
-                      "columnName": "molfile(sense_helm)",
-                      "cellType": "Molecule",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 219.41747572815527,
-                      "columnName": "molfile(antisense_helm)",
-                      "cellType": "Molecule",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    }
-                  ]
+                  "legendColumnName": "",
+                  "showSelectedRowsCurves": true,
+                  "showCurrentRowCurve": true,
+                  "showMouseOverRowCurve": false,
+                  "mergeColumnSeries": false,
+                  "showOutliers": true,
+                  "minX": null,
+                  "minY": null,
+                  "maxX": null,
+                  "maxY": null,
+                  "title": null,
+                  "xAxisName": null,
+                  "yAxisName": null,
+                  "logX": null,
+                  "logY": null,
+                  "allowXZeroes": null,
+                  "mergeCellSeries": null,
+                  "showColumnLabel": true,
+                  "showStatistics": null
                 },
-                "title": "si-rna-with-curves (2)",
-                "default": true
+                "title": "MultiCurveViewer"
               }
             },
             "children": []
@@ -499,11 +1822,17 @@
       }
     ],
     "floating": [],
-    "tableId": "b7d87a00-48b0-11f1-c52b-fbb2814510c2",
+    "tableId": "2fc7d5f0-48b0-11f1-b08e-9742cee52b4c",
     "tableName": "SIRNA"
   },
   "userData": {
     ".columnTags": {
+      "oligo_helm": {
+        "units": "helm",
+        "cell.renderer": "OligoNucleotide",
+        "quality": "OligoNucleotide",
+        ".%initialName": "oligo_helm"
+      },
       "tm_c": {
         "format": "0.0"
       },
@@ -524,273 +1853,925 @@
         "cell.renderer": "Molecule",
         "quality": "Molecule"
       },
-      "oligo_helm": {
-        ".%initialName": "oligo_helm",
-        "quality": "OligoNucleotide",
-        "units": "helm",
-        "cell.renderer": "OligoNucleotide"
+      "sense_seq": {
+        "units": "fasta",
+        "cell.renderer": "sequence",
+        "quality": "Macromolecule"
+      },
+      "antisense_seq": {
+        "units": "fasta",
+        "cell.renderer": "sequence",
+        "quality": "Macromolecule"
+      },
+      "gc_content_pct": {
+        "format": "0.0"
+      },
+      "seed_sequence": {
+        "units": "fasta",
+        "cell.renderer": "sequence",
+        "quality": "Macromolecule"
+      },
+      "pct_modified": {
+        "format": "0.0"
+      },
+      "duplex_mw_da": {
+        "format": "0.0"
+      },
+      "tm_calc_c": {
+        "format": "0.0"
+      },
+      "duplex_dg_kcal": {
+        "format": "0.0"
+      },
+      "thermo_asymmetry_kcal": {
+        "format": "0.0"
+      },
+      "max_knockdown_pct": {
+        "format": "0.0"
+      },
+      "hill_slope": {
+        "format": "0.00"
+      },
+      "ec50_nm": {
+        "format": "0.000"
+      },
+      "selectivity_index": {
+        "format": "0.0"
+      },
+      "in_vivo_ed50_mgkg": {
+        "format": "0.00"
+      },
+      "in_vivo_ed90_mgkg": {
+        "format": "0.00"
+      },
+      "plasma_t_half_h": {
+        "format": "0.00"
+      },
+      "liver_t_half_d": {
+        "format": "0.0"
+      },
+      "serum_stability_pct_24h": {
+        "format": "0.0"
+      },
+      "hepatocyte_clint_ul_min_mg": {
+        "format": "0.0"
+      },
+      "liver_plasma_ratio": {
+        "format": "0.0"
+      },
+      "immunostim_score": {
+        "format": "0.00"
+      },
+      "herg_inhib_10um_pct": {
+        "format": "0.0"
+      },
+      "cyto_lc50_um": {
+        "format": "0.0"
+      },
+      "synth_date": {
+        "format": "M/d/yyyy"
+      },
+      "yield_mg": {
+        "format": "0.0"
+      },
+      "purity_pct": {
+        "format": "0.00"
+      },
+      "endotoxin_eu_mg": {
+        "format": "0.000"
+      },
+      "durability_curve": {
+        "quality": "fit",
+        "cell.renderer": "fit"
+      },
+      "in_vivo_dr_curve": {
+        "quality": "fit",
+        "cell.renderer": "fit"
+      },
+      "plasma_stability_curve": {
+        "quality": "fit",
+        "cell.renderer": "fit"
       }
     }
   },
   "columns": [
     {
-      "name": "tm_c",
+      "name": "kd_duration_days",
+      "type": "int",
+      "id": "07d982e0-48b0-11f1-eee2-5df338d81f18",
+      "friendlyName": "Kd_duration_days",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07d982e0-48b0-11f1-933d-3143c9e9190c"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "selectivity_index",
       "type": "double",
-      "id": "32dba5e0-48b0-11f1-9269-39c85af11b9d",
-      "friendlyName": "Tm_c",
+      "id": "07d9a9f0-48b0-11f1-a738-d1b411cdb5f7",
+      "friendlyName": "Selectivity_index",
       "entityTags": [
         {
           "tag": "format",
-          "id": "6f40c4c0-48b0-11f1-aab3-9fb1b823a830"
+          "id": "07d9a9f0-48b0-11f1-c5e0-b71f76e99b79"
         },
         {
           "tag": ".source-precision",
-          "id": "6f40c4c0-48b0-11f1-88ea-d3fa7366b546"
+          "id": "07d9a9f0-48b0-11f1-da1d-eb9d182a16ef"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "6f40c4c0-48b0-11f1-d3a5-d36e03ecc990"
-        },
-        {
-          "tag": ".color-coding-type",
-          "id": "6f40ebd0-48b0-11f1-8cd5-99e828b1cd66"
-        },
-        {
-          "tag": ".color-coding-text",
-          "id": "6f40ebd0-48b0-11f1-a8d8-dbeba1638da1"
-        },
-        {
-          "tag": ".color-coding-text-background",
-          "id": "6f40ebd0-48b0-11f1-ab65-2de0136bc6f9"
-        },
-        {
-          "tag": ".id",
-          "id": "6f4112e0-48b0-11f1-b7d5-c96637e02b53"
+          "id": "07d9a9f0-48b0-11f1-c4ed-73f171489b9d"
         }
       ],
       "metaParams": {
         "format": "0.0",
         ".source-precision": "1",
-        ".semantic-detection-duration": "1",
-        ".color-coding-type": "Conditional",
-        ".color-coding-text": "true",
-        ".color-coding-text-background": null,
-        ".id": "32dba5e0-48b0-11f1-9269-39c85af11b9d"
+        ".semantic-detection-duration": "1"
       }
     },
     {
-      "name": "off_target_count",
+      "name": "liver_conc_24h_ngg",
       "type": "int",
-      "id": "32dc1b10-48b0-11f1-ed03-4b4eb001fe2c",
-      "friendlyName": "Off_target_count",
+      "id": "07d9a9f0-48b0-11f1-c781-eb976de7f017",
+      "friendlyName": "Liver_conc_24h_ngg",
       "entityTags": [
         {
           "tag": ".semantic-detection-duration",
-          "id": "6f4112e0-48b0-11f1-a7d0-2763eed838db"
-        },
-        {
-          "tag": ".color-coding-type",
-          "id": "6f4139f0-48b0-11f1-bf14-e972e59e5747"
-        },
-        {
-          "tag": ".color-coding-text",
-          "id": "6f4139f0-48b0-11f1-ec85-238fe4256c0d"
-        },
-        {
-          "tag": ".color-coding-text-background",
-          "id": "6f4139f0-48b0-11f1-b38a-e95a80e556ea"
-        },
-        {
-          "tag": ".id",
-          "id": "6f4139f0-48b0-11f1-c1fa-092c742777eb"
+          "id": "07d9a9f0-48b0-11f1-da24-ad970cb3f2a7"
         }
       ],
       "metaParams": {
-        ".semantic-detection-duration": "0",
-        ".color-coding-type": "Conditional",
-        ".color-coding-text": "true",
-        ".color-coding-text-background": null,
-        ".id": "32dc1b10-48b0-11f1-ed03-4b4eb001fe2c"
+        ".semantic-detection-duration": "1"
       }
     },
     {
-      "name": "status",
+      "name": "conjugate",
       "type": "string",
-      "id": "32dc6930-48b0-11f1-bf69-b1009e4e2456",
-      "friendlyName": "Status",
+      "id": "07d9a9f0-48b0-11f1-ed42-0736c0d4ecc9",
+      "friendlyName": "Conjugate",
       "entityTags": [
         {
           "tag": ".semantic-detection-duration",
-          "id": "6f4139f0-48b0-11f1-ef63-df1824e975a6"
-        },
-        {
-          "tag": ".color-coding-type",
-          "id": "6f4139f0-48b0-11f1-87f6-e95378569867"
-        },
-        {
-          "tag": ".color-coding-categorical",
-          "id": "6f416100-48b0-11f1-9b44-030fb50c840e"
-        },
-        {
-          "tag": ".color-coding-text",
-          "id": "6f416100-48b0-11f1-def9-65bfc75578f0"
-        },
-        {
-          "tag": ".color-coding-text-background",
-          "id": "6f416100-48b0-11f1-ff80-a1bca901872d"
-        },
-        {
-          "tag": ".id",
-          "id": "6f416100-48b0-11f1-bc26-d131e265280c"
+          "id": "07d9a9f0-48b0-11f1-c7cd-f78fe37c1efd"
         }
       ],
       "metaParams": {
-        ".semantic-detection-duration": "1",
-        ".color-coding-type": "Categorical",
-        ".color-coding-categorical": "{}",
-        ".color-coding-text": null,
-        ".color-coding-text-background": "true",
-        ".id": "32dc6930-48b0-11f1-bf69-b1009e4e2456"
+        ".semantic-detection-duration": "1"
       }
     },
     {
-      "name": "kd_pct",
-      "type": "int",
-      "id": "32dc9040-48b0-11f1-c149-a5a7906cf498",
-      "friendlyName": "Kd_pct",
+      "name": "liver_t_half_d",
+      "type": "double",
+      "id": "07d9d100-48b0-11f1-b2f8-f120c54198ad",
+      "friendlyName": "Liver_t_half_d",
       "entityTags": [
         {
+          "tag": "format",
+          "id": "07d9d100-48b0-11f1-c258-1b08208392a9"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07d9d100-48b0-11f1-a19e-57894498b1b2"
+        },
+        {
           "tag": ".semantic-detection-duration",
-          "id": "6f418810-48b0-11f1-c9ef-ab2abbc13b00"
-        },
-        {
-          "tag": ".color-coding-type",
-          "id": "6f418810-48b0-11f1-f88d-4f2034ba9f49"
-        },
-        {
-          "tag": ".color-coding-text",
-          "id": "6f418810-48b0-11f1-8fae-7fe44947d8bd"
-        },
-        {
-          "tag": ".color-coding-text-background",
-          "id": "6f418810-48b0-11f1-a188-6f26a880df69"
-        },
-        {
-          "tag": ".id",
-          "id": "6f418810-48b0-11f1-f37f-37e03cde449a"
+          "id": "07d9d100-48b0-11f1-ea82-3faab622baeb"
         }
       ],
       "metaParams": {
-        ".semantic-detection-duration": "1",
-        ".color-coding-type": "Conditional",
-        ".color-coding-text": "true",
-        ".color-coding-text-background": null,
-        ".id": "32dc9040-48b0-11f1-c149-a5a7906cf498"
+        "format": "0.0",
+        ".source-precision": "1",
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "cyto_lc50_um",
+      "type": "double",
+      "id": "07d9d100-48b0-11f1-b922-d1f137da2108",
+      "friendlyName": "Cyto_lc50_um",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "07d9d100-48b0-11f1-8a4b-d9508513d680"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07d9d100-48b0-11f1-8d8f-79c27f85e816"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07d9d100-48b0-11f1-be50-699864c9f4ab"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0",
+        ".source-precision": "1",
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "in_vivo_ed90_mgkg",
+      "type": "double",
+      "id": "07d9f810-48b0-11f1-d405-ed482a5f8aa4",
+      "friendlyName": "In_vivo_ed90_mgkg",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "07d9d100-48b0-11f1-f728-4322ef8d8673"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07d9f810-48b0-11f1-912b-3bdaec376126"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07d9f810-48b0-11f1-8a06-91f4a1035d77"
+        }
+      ],
+      "metaParams": {
+        "format": "0.00",
+        ".source-precision": "2",
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "num_phosphorothioate",
+      "type": "int",
+      "id": "07d9f810-48b0-11f1-f552-3fac87c6d2d9",
+      "friendlyName": "Num_phosphorothioate",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07d9f810-48b0-11f1-8d83-7715456d4fe6"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1"
       }
     },
     {
       "name": "target",
       "type": "string",
-      "id": "32dcde60-48b0-11f1-a774-6f33d9540015",
+      "id": "07d9f810-48b0-11f1-8055-f32d2cb58dbf",
       "friendlyName": "Target",
       "entityTags": [
         {
           "tag": ".semantic-detection-duration",
-          "id": "6f41af20-48b0-11f1-cc9f-2d86017b0393"
+          "id": "07d9f810-48b0-11f1-9d75-8950733a0476"
         },
         {
           "tag": ".color-coding-type",
-          "id": "6f41af20-48b0-11f1-8552-4b1776c85d2f"
+          "id": "07d9f810-48b0-11f1-f510-d945734f01a9"
         },
         {
           "tag": ".color-coding-categorical",
-          "id": "6f41af20-48b0-11f1-9950-85be7d0bf418"
-        },
-        {
-          "tag": ".color-coding-text",
-          "id": "6f41af20-48b0-11f1-c053-bb0c71d2017c"
-        },
-        {
-          "tag": ".color-coding-text-background",
-          "id": "6f41af20-48b0-11f1-8739-ab9f560cce01"
-        },
-        {
-          "tag": ".id",
-          "id": "6f41af20-48b0-11f1-9a07-7b9bfd9f528c"
+          "id": "07d9f810-48b0-11f1-b718-7fb3a9a809ea"
         }
       ],
       "metaParams": {
         ".semantic-detection-duration": "1",
         ".color-coding-type": "Categorical",
-        ".color-coding-categorical": "{}",
-        ".color-coding-text": null,
-        ".color-coding-text-background": "true",
-        ".id": "32dcde60-48b0-11f1-a774-6f33d9540015"
+        ".color-coding-categorical": "{}"
+      }
+    },
+    {
+      "name": "liver_conc_28d_ngg",
+      "type": "int",
+      "id": "07d9f810-48b0-11f1-ce6f-39802221e7cc",
+      "friendlyName": "Liver_conc_28d_ngg",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07d9f810-48b0-11f1-edc9-73235f76a0a8"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "target_transcript",
+      "type": "string",
+      "id": "07da1f20-48b0-11f1-ce81-f9dd643c9f9b",
+      "friendlyName": "Target_transcript",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da1f20-48b0-11f1-e0a7-8fafa2627fbb"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "2"
+      }
+    },
+    {
+      "name": "ec50_nm",
+      "type": "double",
+      "id": "07da1f20-48b0-11f1-993c-5978e6529313",
+      "friendlyName": "Ec50_nm",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "07da1f20-48b0-11f1-ca3d-f77294236c70"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07da1f20-48b0-11f1-a153-8dd39afed3a8"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da1f20-48b0-11f1-c030-1b8b7f5f2089"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000",
+        ".source-precision": "3",
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "num_2ome",
+      "type": "int",
+      "id": "07da1f20-48b0-11f1-ce69-5947ade1b215",
+      "friendlyName": "Num_2ome",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da1f20-48b0-11f1-c9e3-6f4489e97609"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "seed_off_target_count",
+      "type": "int",
+      "id": "07da1f20-48b0-11f1-b4f3-b3b988e0b9f2",
+      "friendlyName": "Seed_off_target_count",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da1f20-48b0-11f1-beeb-9b99d5253550"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "in_vivo_ed50_mgkg",
+      "type": "double",
+      "id": "07da4630-48b0-11f1-8cdc-bf0f1f495e09",
+      "friendlyName": "In_vivo_ed50_mgkg",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "07da1f20-48b0-11f1-a58e-db776499b000"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07da4630-48b0-11f1-b710-e9871f897c48"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da4630-48b0-11f1-b771-b9b12462be4e"
+        }
+      ],
+      "metaParams": {
+        "format": "0.00",
+        ".source-precision": "2",
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "snp_in_seed",
+      "type": "int",
+      "id": "07da4630-48b0-11f1-dae8-27b39d3bc8e1",
+      "friendlyName": "Snp_in_seed",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da4630-48b0-11f1-fc78-fde8aa57b51e"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "id": "07da4630-48b0-11f1-965b-0dcebdcfd3dc",
+      "friendlyName": "Status",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da4630-48b0-11f1-984b-8df7fa07177f"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "07da4630-48b0-11f1-f90c-e9712ed5e865"
+        },
+        {
+          "tag": ".color-coding-categorical",
+          "id": "07da4630-48b0-11f1-de0e-534371691bc6"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Categorical",
+        ".color-coding-categorical": "{}"
+      }
+    },
+    {
+      "name": "id",
+      "type": "string",
+      "id": "07da6d40-48b0-11f1-9e70-85ca8dbf6dda",
+      "friendlyName": "Id",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da6d40-48b0-11f1-fd4d-859d34bb6460"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "16"
+      }
+    },
+    {
+      "name": "species_coverage",
+      "type": "string",
+      "id": "07da6d40-48b0-11f1-b869-a1f34930c54e",
+      "friendlyName": "Species_coverage",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da6d40-48b0-11f1-b85c-4dfede628835"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1"
       }
     },
     {
       "name": "ic50_nm",
       "type": "double",
-      "id": "32dd0570-48b0-11f1-d742-b378f1bca8da",
+      "id": "07da6d40-48b0-11f1-cf46-43f597ad1e4d",
       "friendlyName": "Ic50_nm",
       "entityTags": [
         {
           "tag": "format",
-          "id": "6f41d630-48b0-11f1-f34d-cf84d1532c65"
+          "id": "07da6d40-48b0-11f1-883e-59d9d6394e27"
         },
         {
           "tag": ".source-precision",
-          "id": "6f41d630-48b0-11f1-9319-750ba292555e"
+          "id": "07da6d40-48b0-11f1-e6bc-a9ffd887615e"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "6f41d630-48b0-11f1-b42d-13bfafa9ed32"
+          "id": "07da6d40-48b0-11f1-fa78-f78108841939"
         },
         {
           "tag": ".color-coding-type",
-          "id": "6f41d630-48b0-11f1-a927-29fd74062e22"
-        },
-        {
-          "tag": ".color-coding-text",
-          "id": "6f41d630-48b0-11f1-b045-1d441a9de017"
-        },
-        {
-          "tag": ".color-coding-text-background",
-          "id": "6f41fd40-48b0-11f1-a907-1988823ac259"
-        },
-        {
-          "tag": ".id",
-          "id": "6f41fd40-48b0-11f1-b5d7-f11f80192133"
+          "id": "07da6d40-48b0-11f1-d775-49d7a844f38b"
         }
       ],
       "metaParams": {
         "format": "0.00",
         ".source-precision": "2",
         ".semantic-detection-duration": "1",
-        ".color-coding-type": "Conditional",
-        ".color-coding-text": "true",
-        ".color-coding-text-background": null,
-        ".id": "32dd0570-48b0-11f1-d742-b378f1bca8da"
+        ".color-coding-type": "Conditional"
       }
     },
     {
-      "name": "id",
-      "type": "string",
-      "id": "32dd2c80-48b0-11f1-d70f-a7a872bdc4ed",
-      "friendlyName": "Id",
+      "name": "target_position_nt",
+      "type": "int",
+      "id": "07da6d40-48b0-11f1-a2da-d375705ac012",
+      "friendlyName": "Target_position_nt",
       "entityTags": [
         {
           "tag": ".semantic-detection-duration",
-          "id": "6f41fd40-48b0-11f1-cf2e-95bba62f22d1"
-        },
-        {
-          "tag": ".id",
-          "id": "6f41fd40-48b0-11f1-9c5b-9904e074d7e6"
+          "id": "07da6d40-48b0-11f1-d9c6-d357e302b49c"
         }
       ],
       "metaParams": {
-        ".semantic-detection-duration": "5",
-        ".id": "32dd2c80-48b0-11f1-d70f-a7a872bdc4ed"
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "pct_modified",
+      "type": "double",
+      "id": "07da9450-48b0-11f1-ff88-f9c2ff1e8d57",
+      "friendlyName": "Pct_modified",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "07da6d40-48b0-11f1-e9f8-bf9b2954bc98"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07da9450-48b0-11f1-9b0c-07ffdda51bb2"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da9450-48b0-11f1-d75c-3fe35b13a1cc"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0",
+        ".source-precision": "1",
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "ames_call",
+      "type": "string",
+      "id": "07da9450-48b0-11f1-a832-470f8263761a",
+      "friendlyName": "Ames_call",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da9450-48b0-11f1-aa6e-7dec781d357e"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "kd_pct",
+      "type": "int",
+      "id": "07da9450-48b0-11f1-fcec-b9863a64f57a",
+      "friendlyName": "Kd_pct",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da9450-48b0-11f1-9aae-a700d53eb836"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "07da9450-48b0-11f1-f347-df804318c204"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Conditional"
+      }
+    },
+    {
+      "name": "num_2f",
+      "type": "int",
+      "id": "07da9450-48b0-11f1-c703-2f281da6dbef",
+      "friendlyName": "Num_2f",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da9450-48b0-11f1-db88-5d25d79745b9"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "off_target_count",
+      "type": "int",
+      "id": "07dabb60-48b0-11f1-dc5c-9b6b2ebb1735",
+      "friendlyName": "Off_target_count",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07da9450-48b0-11f1-e0b0-bb868712eb7c"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "07dabb60-48b0-11f1-d0a6-c50f6ed7a054"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Conditional"
+      }
+    },
+    {
+      "name": "num_moe",
+      "type": "int",
+      "id": "07dabb60-48b0-11f1-ff68-756d63d5f7f4",
+      "friendlyName": "Num_moe",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07dabb60-48b0-11f1-e940-af367fd3b4ee"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "mass_spec_match",
+      "type": "string",
+      "id": "07dabb60-48b0-11f1-fc8e-8301c652d3c9",
+      "friendlyName": "Mass_spec_match",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07dabb60-48b0-11f1-ea01-37934edcfeb9"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "target_region",
+      "type": "string",
+      "id": "07dabb60-48b0-11f1-b993-e3100d74ca2b",
+      "friendlyName": "Target_region",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07dabb60-48b0-11f1-cf5c-51a64565f96f"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "plasma_t_half_h",
+      "type": "double",
+      "id": "07dabb60-48b0-11f1-d8d7-6779240ba246",
+      "friendlyName": "Plasma_t_half_h",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "07dabb60-48b0-11f1-cb5c-51c073605862"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07dabb60-48b0-11f1-9961-b746a4d69c4c"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07dabb60-48b0-11f1-e202-ab49a36e6eb0"
+        }
+      ],
+      "metaParams": {
+        "format": "0.00",
+        ".source-precision": "2",
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "duplex_mw_da",
+      "type": "double",
+      "id": "07dae270-48b0-11f1-e404-276432bdaf19",
+      "friendlyName": "Duplex_mw_da",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "07dae270-48b0-11f1-989d-03f693f61e42"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07dae270-48b0-11f1-a961-23a55bbe0472"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07dae270-48b0-11f1-ba2c-f1ee3731e1af"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0",
+        ".source-precision": "1",
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "tm_c",
+      "type": "double",
+      "id": "07dae270-48b0-11f1-eaaf-c9e2ad83ad2e",
+      "friendlyName": "Tm_c",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "07dae270-48b0-11f1-9dff-67a3de6dab93"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07dae270-48b0-11f1-d4d1-a101130d6251"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07dae270-48b0-11f1-c04d-6b906228f961"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "07dae270-48b0-11f1-f44f-8f97522db2a8"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0",
+        ".source-precision": "1",
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Conditional"
+      }
+    },
+    {
+      "name": "num_deoxy",
+      "type": "int",
+      "id": "07dae270-48b0-11f1-9962-5791faa18396",
+      "friendlyName": "Num_deoxy",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07dae270-48b0-11f1-eed1-db3f2556943f"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "tm_calc_c",
+      "type": "double",
+      "id": "07db0980-48b0-11f1-d3cd-b767c54dd351",
+      "friendlyName": "Tm_calc_c",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "07dae270-48b0-11f1-bd2b-3d63cf9c59ba"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07db0980-48b0-11f1-ccfa-73b8b74e78f6"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07db0980-48b0-11f1-dd2f-b1ac49b4a883"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0",
+        ".source-precision": "1",
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "purity_pct",
+      "type": "double",
+      "id": "07db3090-48b0-11f1-e7de-978f907a65f2",
+      "friendlyName": "Purity_pct",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "07db3090-48b0-11f1-f9d9-419189cac81c"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "07db3090-48b0-11f1-92ce-ff424cd9a703"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07db3090-48b0-11f1-f5cb-43d6fe611c6d"
+        }
+      ],
+      "metaParams": {
+        "format": "0.00",
+        ".source-precision": "2",
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "curve",
+      "type": "string",
+      "semType": "fit",
+      "id": "07db3090-48b0-11f1-c87d-cd9b59f728e1",
+      "friendlyName": "Curve",
+      "entityTags": [
+        {
+          "tag": "quality",
+          "id": "07db3090-48b0-11f1-ccde-39cd4137ef4e"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07db3090-48b0-11f1-9b04-9f0c0fd537fd"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "07db3090-48b0-11f1-ea0e-87f2a2901d0f"
+        },
+        {
+          "tag": ".fit",
+          "id": "07db3090-48b0-11f1-947c-93e59eb29629"
+        }
+      ],
+      "metaParams": {
+        "quality": "fit",
+        ".semantic-detection-duration": "7",
+        "cell.renderer": "fit",
+        ".fit": "{\"chartOptions\":{\"logX\":false,\"logY\":false,\"allowXZeroes\":true,\"mergeSeries\":false,\"showColumnLabel\":false},\"seriesOptions\":{\"fitFunction\":\"sigmoid\",\"errorModel\":\"constant\",\"connectDots\":false,\"clickToToggle\":false,\"showFitLine\":true,\"showPoints\":\"points\",\"showOutliers\":true,\"showCurveConfidenceInterval\":false,\"markerType\":\"circle\",\"outlierMarkerType\":\"outlier\",\"lineStyle\":\"solid\",\"columnName\":\"\"}}"
+      }
+    },
+    {
+      "name": "durability_curve",
+      "type": "string",
+      "semType": "fit",
+      "id": "07db57a0-48b0-11f1-8bab-aba80db08b42",
+      "friendlyName": "Durability_curve",
+      "entityTags": [
+        {
+          "tag": "quality",
+          "id": "07db3090-48b0-11f1-ea5a-413e887cbf61"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "07db3090-48b0-11f1-d1cd-1f7666f48672"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07db57a0-48b0-11f1-ac44-49e0226ce210"
+        },
+        {
+          "tag": ".fit",
+          "id": "07db57a0-48b0-11f1-fd37-33f463df05ed"
+        }
+      ],
+      "metaParams": {
+        "quality": "fit",
+        "cell.renderer": "fit",
+        ".semantic-detection-duration": "10",
+        ".fit": "{\"chartOptions\":{\"logX\":false,\"logY\":false,\"allowXZeroes\":true,\"mergeSeries\":false,\"showColumnLabel\":false},\"seriesOptions\":{\"fitFunction\":\"sigmoid\",\"errorModel\":\"constant\",\"connectDots\":false,\"clickToToggle\":false,\"showFitLine\":true,\"showPoints\":\"points\",\"showOutliers\":true,\"showCurveConfidenceInterval\":false,\"markerType\":\"circle\",\"outlierMarkerType\":\"outlier\",\"lineStyle\":\"solid\",\"columnName\":\"\"}}"
+      }
+    },
+    {
+      "name": "in_vivo_dr_curve",
+      "type": "string",
+      "semType": "fit",
+      "id": "07db57a0-48b0-11f1-c06b-873ff9f5bd67",
+      "friendlyName": "In_vivo_dr_curve",
+      "entityTags": [
+        {
+          "tag": "quality",
+          "id": "07db57a0-48b0-11f1-e312-435676bfcb8e"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "07db57a0-48b0-11f1-d3b5-6f017903a09b"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07db57a0-48b0-11f1-e4d4-6daf6c61880a"
+        },
+        {
+          "tag": ".fit",
+          "id": "07db57a0-48b0-11f1-8e4d-cdaba1177306"
+        }
+      ],
+      "metaParams": {
+        "quality": "fit",
+        "cell.renderer": "fit",
+        ".semantic-detection-duration": "13",
+        ".fit": "{\"chartOptions\":{\"logX\":false,\"logY\":false,\"allowXZeroes\":true,\"mergeSeries\":false,\"showColumnLabel\":false},\"seriesOptions\":{\"fitFunction\":\"sigmoid\",\"errorModel\":\"constant\",\"connectDots\":false,\"clickToToggle\":false,\"showFitLine\":true,\"showPoints\":\"points\",\"showOutliers\":true,\"showCurveConfidenceInterval\":false,\"markerType\":\"circle\",\"outlierMarkerType\":\"outlier\",\"lineStyle\":\"solid\",\"columnName\":\"\"}}"
+      }
+    },
+    {
+      "name": "plasma_stability_curve",
+      "type": "string",
+      "semType": "fit",
+      "id": "07db7eb0-48b0-11f1-a2ff-3d6c4120e4a7",
+      "friendlyName": "Plasma_stability_curve",
+      "entityTags": [
+        {
+          "tag": "quality",
+          "id": "07db57a0-48b0-11f1-d5b3-4fdb84dd47b3"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "07db57a0-48b0-11f1-d203-c90b1e35c451"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "07db57a0-48b0-11f1-d39e-0d8b0b212a46"
+        },
+        {
+          "tag": ".fit",
+          "id": "07db57a0-48b0-11f1-addc-bb29e6c8582d"
+        }
+      ],
+      "metaParams": {
+        "quality": "fit",
+        "cell.renderer": "fit",
+        ".semantic-detection-duration": "12",
+        ".fit": "{\"chartOptions\":{\"logX\":false,\"logY\":false,\"allowXZeroes\":true,\"mergeSeries\":false,\"showColumnLabel\":false},\"seriesOptions\":{\"fitFunction\":\"sigmoid\",\"errorModel\":\"constant\",\"connectDots\":false,\"clickToToggle\":false,\"showFitLine\":true,\"showPoints\":\"points\",\"showOutliers\":true,\"showCurveConfidenceInterval\":false,\"markerType\":\"circle\",\"outlierMarkerType\":\"outlier\",\"lineStyle\":\"solid\",\"columnName\":\"\"}}"
       }
     }
   ],
@@ -799,5 +2780,5 @@
   "author": {
     "id": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"
   },
-  "createdOn": "2026-05-12T21:56:31.107Z"
+  "createdOn": "2026-05-13T18:10:32.067Z"
 }
