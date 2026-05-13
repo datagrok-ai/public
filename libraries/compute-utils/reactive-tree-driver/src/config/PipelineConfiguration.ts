@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
-import {PipelineOutline, PipelineState, StepDynamicInitialConfig, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
+import {PipelineState, StepDynamicInitialConfig, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 import type ExcelJS from 'exceljs';
 import {ConsistencyInfo} from '../runtime/StateTreeNodes';
 import {Zippable} from 'fflate';
@@ -38,6 +38,7 @@ export type IRuntimeController = IRuntimeLinkController | IRuntimeValidatorContr
 export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R> | R) | NqName;
 export type Handler = HandlerBase<{ controller: IRuntimeLinkController }, void>;
 export type Validator = HandlerBase<{ controller: IRuntimeValidatorController }, void>;
+export type PipelineValidator = HandlerBase<{ controller: IRuntimePipelineValidatorController }, void>;
 export type MetaHandler = HandlerBase<{ controller: IRuntimeMetaController }, void>;
 export type MutationHandler = HandlerBase<{ controller: IRuntimePipelineMutationController }, void>;
 export type SelectorHandler = HandlerBase<{ controller: INameSelectorController }, void>;
@@ -68,7 +69,6 @@ export type ExportUtils = {
 }
 export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<any>;
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
-export type StructureCheckHook = (data: PipelineOutline) => ValidationResult | undefined;
 
 // link-like
 
@@ -131,7 +131,15 @@ export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> 
   sequential?: boolean;
 };
 
-export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P>;
+export type PipelinePipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  type: 'pipelineValidator';
+  handler: PipelineValidator;
+  runOnInit?: undefined;
+  sequential?: boolean;
+  debounce?: number;
+};
+
+export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P> | PipelinePipelineValidatorConfiguration<P>;
 
 export type ActionInfo = {
   id: string;
@@ -197,7 +205,6 @@ export type PipelineConfigurationBase<P> = {
   onReturn?: PipelineReturnConfiguration<P>;
   states?: StateItem[];
   tags?: string[];
-  structureCheck?: StructureCheckHook;
   forceNavigate?: boolean;
   customExports?: CustomExport[];
   disableHistory?: boolean;

@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import {TreeNode} from '../data/BaseTree';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';
 import {GranularMutationOp, RestrictionType, StepHandle, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {ScopeInfo} from './Link';
-import {PipelineInstanceConfig} from '../config/PipelineInstance';
+import {PipelineInstanceConfig, PipelineOutline} from '../config/PipelineInstance';
 import {NodePath} from '../data/BaseTree';
 
 export class ControllerCancelled extends Error { };
@@ -106,6 +106,31 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
     this.checkIsClosed();
     this.checkOutput(name);
     this.outputs[name] = validation;
+  }
+}
+
+export class PipelineValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimePipelineValidatorController {
+  public output: ValidationResult | undefined;
+
+  constructor(
+    public inputs: Record<string, any[]>,
+    public inputsSet: Set<string>,
+    public outputsSet: Set<string>,
+    public id: string,
+    public outline: PipelineOutline,
+    public scopeInfo?: ScopeInfo,
+  ) {
+    super(inputs, inputsSet, outputsSet, id, scopeInfo);
+  }
+
+  setValidation(validation?: ValidationResult) {
+    this.checkIsClosed();
+    this.output = validation;
+  }
+
+  getOutline(): PipelineOutline {
+    this.checkIsClosed();
+    return this.outline;
   }
 }
 

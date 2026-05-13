@@ -180,7 +180,7 @@ export class LinksState {
           .flat();
         const links = matchedLinks.map((minfo) => {
           const spec = minfo.spec;
-          const debounce = spec.type === 'validator'
+          const debounce = (spec.type === 'validator' || spec.type === 'pipelineValidator')
             ? (spec.debounce ?? (this.batchLinks ? 0 : undefined))
             : undefined;
           const link = new Link(path, minfo, debounce, this.logger);
@@ -332,6 +332,14 @@ export class LinksState {
     }
     for (const [, action] of this.actions)
       action.wire(state, this);
+    this.triggerPipelineValidators();
+  }
+
+  private triggerPipelineValidators() {
+    for (const [, link] of this.links) {
+      if (link.isPipelineValidator)
+        link.trigger();
+    }
   }
 
   public disableLinks() {

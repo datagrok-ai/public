@@ -26,7 +26,7 @@ import './tests/compute-utils/reactive-tree-driver/oninit-hook';
 import './tests/compute-utils/reactive-tree-driver/links-workflow';
 import './tests/compute-utils/reactive-tree-driver/sequence-run';
 import './tests/compute-utils/reactive-tree-driver/links-retention';
-import './tests/compute-utils/reactive-tree-driver/structurecheck-hook';
+import './tests/compute-utils/reactive-tree-driver/pipeline-validators-reactive';
 import './tests/compute-utils/reactive-tree-driver/pipeline-granular-mutations';
 import './tests/compute-utils/reactive-tree-driver/error-handling';
 import './tests/compute-utils/reactive-tree-driver/advanced-coverage';

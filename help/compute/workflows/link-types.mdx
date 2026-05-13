@@ -30,6 +30,7 @@ There are several types of links/actions:
 
 - `data`
 - `validator`
+- `pipelineValidator`
 - `meta`
 - `nodemeta`
 - `funccall`
@@ -371,8 +372,64 @@ getValidationAction(id: string, actionId: string) : string | undefined;
 
 Gets an action descriptor to be used in `ValidationResult`.
 
-For validation of the current workflow structure itself use another
-method described [here](configuration.mdx#structurecheck).
+For validation of the workflow structure itself (rather than a single
+script io) use [pipeline validators](#pipeline-validators) — a reactive,
+multi-validator-per-node mechanism that can be triggered from any
+inputs or outputs.
+
+
+### Pipeline validators
+
+Pipeline validators attach a validation result to one or more workflow
+nodes rather than to a script io. They have type `pipelineValidator`.
+Unlike regular validators, they target pipeline nodes — the
+link-defining workflow, a named descendant, or several at once via an
+array `to`. The handler writes a single `ValidationResult`, which is
+broadcast to every matched target. Multiple pipeline validators on the
+same node combine their results, and the merged outcome is exposed on
+the workflow state as `structureCheckResults`.
+
+Pipeline validators are reactive in two ways:
+
+- They subscribe to their `from` ports and re-fire (debounced) on input
+  changes, the same way regular validators do.
+- They also re-fire after any tree structure update (step added, removed
+  or moved), so they can react to topology changes their `from` ports
+  might not capture.
+
+Routing is expressed via the standard `to` query — see the
+[Link Query Language](./links-spec.mdx) for the full grammar. A
+zero-segment path targets the link-defining pipeline node (self); a
+segmented path targets a descendant.
+
+The pipeline validator controller has the following methods:
+
+#### `setValidation`
+
+```
+setValidation(validation?: ValidationResult): void;
+```
+
+Sets (or clears) this validator's contribution to the merged
+`structureCheckResults` of the target pipeline node. Pass `undefined` to
+remove the contribution.
+
+#### `getOutline`
+
+```
+getOutline(): PipelineOutline;
+```
+
+Returns the current `PipelineOutline` of the pipeline where this link
+is defined (the link's prefix node), including all nested pipelines.
+This is independent of the `to` target — `to` says where the result
+is written; `getOutline()` describes the link's own scope. Use this
+when the validator needs to inspect the workflow topology, e.g. the
+number of nested steps or their configIds.
+
+#### `debounce`
+
+Same semantics as for regular `validator` links. Default is 250ms.
 
 
 ### Metadata links

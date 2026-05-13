@@ -500,6 +500,7 @@ export class StateTree {
 
       if (!isFuncCallNode(item)) {
         item.clearOldTags(currentLinkIds);
+        item.clearOldPipelineValidations(currentLinkIds);
         return acc;
       }
 

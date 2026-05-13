@@ -10,13 +10,16 @@ import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapSc
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
-import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, RuntimeReturnController, ValidatorController} from './LinkControllers';
+import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, PipelineValidatorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
 import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
 import {GranularMutationOp} from '../data/common-types';
 import {DriverLogger, reportError} from '../data/Logger';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
+import {toStateRec} from './StateTreeSerializer';
+import {PipelineNodeBase} from './StateTreeNodes';
+import {PipelineOutline} from '../config/PipelineInstance';
 
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
@@ -31,6 +34,7 @@ export class Link {
 
   public uuid = uuidv4();
   public readonly isValidator = this.matchInfo.spec.type === 'validator';
+  public readonly isPipelineValidator = this.matchInfo.spec.type === 'pipelineValidator';
   public readonly isMeta = this.matchInfo.spec.type === 'meta';
   public readonly isMutation = this.matchInfo.spec.type === 'pipeline';
   public readonly isNodeMeta = this.matchInfo.spec.type === 'nodemeta' || this.matchInfo.spec.type === 'selector';
@@ -65,7 +69,7 @@ export class Link {
     private logger?: DriverLogger,
   ) {
     const spec = this.matchInfo.spec;
-    if (spec.type === 'validator') {
+    if (spec.type === 'validator' || spec.type === 'pipelineValidator') {
       const effectiveDebounce = this.customDebounceTime ?? VALIDATOR_DEBOUNCE_TIME;
       this.isBatchable = effectiveDebounce === 0 && !spec.sequential;
     } else if (spec.type === 'meta' || spec.type === 'nodemeta' || spec.type === 'selector')
@@ -187,7 +191,7 @@ export class Link {
       return inputsTriggered$.pipe(map(toInputsChanges));
     }
 
-    const debounceVal = this.customDebounceTime ?? (this.isValidator ? VALIDATOR_DEBOUNCE_TIME : 0);
+    const debounceVal = this.customDebounceTime ?? ((this.isValidator || this.isPipelineValidator) ? VALIDATOR_DEBOUNCE_TIME : 0);
 
     const activeInputs$ = inputsEntries$.pipe(
       filter(() => this.isActive$.value),
@@ -261,6 +265,11 @@ export class Link {
     if (this.isValidator)
       return new ValidatorController(inputs, inputSet, outputSet, this.matchInfo.spec.id, actions, baseNode, scope);
 
+    if (this.isPipelineValidator) {
+      const outline = this.resolveOutline(state);
+      return new PipelineValidatorController(inputs, inputSet, outputSet, this.matchInfo.spec.id, outline, scope);
+    }
+
     if (this.isMeta)
       return new MetaController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
 
@@ -281,6 +290,12 @@ export class Link {
     return new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
   }
 
+  private resolveOutline(state?: BaseTree<StateTreeNode>): PipelineOutline {
+    if (!state)
+      throw new Error(`Link ${this.matchInfo.spec.id}: pipeline validator has no tree state`);
+    return toStateRec(state.getNode(this.prefix), {skipFuncCalls: true}) as PipelineOutline;
+  }
+
   private getOrderedIO(ioData: Record<string, MatchedNodePaths>) {
     return Object.entries(ioData).sort(([, v1], [, v2]) => {
       const p1 = this.getFirstMatch(v1);
@@ -297,7 +312,7 @@ export class Link {
     return p0;
   }
 
-  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NodeMetaController | FuncallActionController | RuntimeReturnController, state: BaseTree<StateTreeNode>) {
+  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NodeMetaController | FuncallActionController | RuntimeReturnController | PipelineValidatorController, state: BaseTree<StateTreeNode>) {
     this.lastPipelineMutations = [];
     this.lastGranularMutations = [];
     if (this.logger) {
@@ -318,6 +333,18 @@ export class Link {
     });
     if (controller instanceof RuntimeReturnController) {
       this.returnResult = controller.result;
+      return;
+    }
+    if (controller instanceof PipelineValidatorController) {
+      for (const matched of Object.values(this.matchInfo.outputs)) {
+        for (const target of matched) {
+          const item = state.getNode([...this.prefix, ...target.path]).getItem();
+          if (item instanceof PipelineNodeBase)
+            item.setPipelineValidation(this.uuid, controller.output);
+          else
+            reportError('warning', `link:${this.matchInfo.spec.id}`, `pipelineValidator \`to\` target ${item.uuid} is not a pipeline node — skipped`, this.logger);
+        }
+      }
       return;
     }
     for (const [outputAlias, nodesData] of outputsEntries) {

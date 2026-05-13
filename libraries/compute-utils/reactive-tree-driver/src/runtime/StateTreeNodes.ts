@@ -4,15 +4,15 @@ import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, combineLatest, merge, Observable, Subject, of} from 'rxjs';
 import dayjs from 'dayjs';
 import {v4 as uuidv4} from 'uuid';
-import {PipelineStateDynamic, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction, PipelineInstanceRuntimeData, PipelineOutline} from '../config/PipelineInstance';
+import {PipelineStateDynamic, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction, PipelineInstanceRuntimeData} from '../config/PipelineInstance';
 import {PipelineConfigurationDynamicProcessed, PipelineConfigurationProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
 import {RestrictionType, ValidationResult} from '../data/common-types';
-import {DriverLogger, reportError} from '../data/Logger';
-import {customDeepEqual, mergeValidationResults} from '../utils';
+import {DriverLogger} from '../data/Logger';
+import {customDeepEqual, mergeValidationResults, pruneByKeys} from '../utils';
 
 export const descriptionOutputs = ['title', 'description', 'tags'] as const;
 const descriptionStates = descriptionOutputs.map((id) => ({id}));
@@ -196,15 +196,9 @@ export class FuncCallNode implements IStoreProvider {
     for (const meta$ of Object.values(this.instancesWrapper.metaStates ?? {})) {
       if (!meta$?.value)
         continue;
-      let needsUpdate = false;
-      for (const handlerId of Object.keys(meta$.value)) {
-        if (!currentIds.has(handlerId)) {
-          delete meta$.value[handlerId];
-          needsUpdate = true;
-        }
-      }
-      if (needsUpdate)
-        meta$.next(Object.keys(meta$.value).length === 0 ? undefined : meta$.value);
+      const next = pruneByKeys(meta$.value, currentIds);
+      if (next)
+        meta$.next(Object.keys(next).length === 0 ? undefined : next);
     }
   }
 
@@ -213,17 +207,9 @@ export class FuncCallNode implements IStoreProvider {
   }
 
   clearOldValidations(currentIds: Set<string>) {
-    const cval = this.instancesWrapper.validations$.value;
-    const nval: Record<string, Record<string, ValidationResult | undefined>> = {};
-    let needsUpdate = false;
-    for (const [k, v] of Object.entries(cval)) {
-      if (currentIds.has(k))
-        nval[k] = v;
-      else
-        needsUpdate = true;
-    }
-    if (needsUpdate)
-      this.instancesWrapper.validations$.next(nval);
+    const next = pruneByKeys(this.instancesWrapper.validations$.value, currentIds);
+    if (next)
+      this.instancesWrapper.validations$.next(next);
   }
 
   close() {
@@ -325,6 +311,7 @@ export class PipelineNodeBase implements IStoreProvider {
   public uuid = uuidv4();
   private store: MemoryStore;
   public nodeDescription = new NodeMetaDescription(descriptionStates, false);
+  public pipelineValidations$ = new BehaviorSubject<Record<string, ValidationResult | undefined>>({});
 
   constructor(
     public readonly config: PipelineConfigurationProcessed,
@@ -346,17 +333,25 @@ export class PipelineNodeBase implements IStoreProvider {
   }
 
   clearOldTags(currentIds: Set<string>) {
-    const cval = this.nodeDescription.getState<Record<string, string[]>>('tags') ?? [];
-    const nval: Record<string, string[]> = {};
-    let needsUpdate = false;
-    for (const [k, v] of Object.entries(cval)) {
-      if (currentIds.has(k))
-        nval[k] = v;
-      else
-        needsUpdate = true;
-    }
-    if (needsUpdate)
-      this.nodeDescription.setState('tags', nval);
+    const cur = this.nodeDescription.getState<Record<string, string[]>>('tags') ?? {};
+    const next = pruneByKeys(cur, currentIds);
+    if (next)
+      this.nodeDescription.setState('tags', next);
+  }
+
+  setPipelineValidation(uuid: string, r?: ValidationResult) {
+    const cur = {...this.pipelineValidations$.value};
+    if (r === undefined)
+      delete cur[uuid];
+    else
+      cur[uuid] = r;
+    this.pipelineValidations$.next(cur);
+  }
+
+  clearOldPipelineValidations(currentIds: Set<string>) {
+    const next = pruneByKeys(this.pipelineValidations$.value, currentIds);
+    if (next)
+      this.pipelineValidations$.next(next);
   }
 
   toSerializedState(options: StateTreeSerializationOptions) {
@@ -386,15 +381,6 @@ export class PipelineNodeBase implements IStoreProvider {
     return res;
   }
 
-  getStructureCheck(state: PipelineOutline) {
-    if (this.config.structureCheck) {
-      try {
-        return this.config.structureCheck(state);
-      } catch (e: any) {
-        reportError('warning', 'structureCheck', e instanceof Error ? e : new Error(String(e)), this.logger);
-      }
-    }
-  }
 }
 
 export class StaticPipelineNode extends PipelineNodeBase {

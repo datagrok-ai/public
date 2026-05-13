@@ -20,7 +20,11 @@ Each LQL query has the following high level structure:
 - The `call` flag, used in [funccall](link-types#funccall-actions) actions, specifies that the FuncCall itself should be matched and returned instead of a script I/O
 - The `template` flag is used in [template queries](#template-queries)
 
-`PATH` is a mandatory path, where items are delimited by `/`. For
+`PATH` is a mandatory path, where items are delimited by `/`. A
+query with no path segments (just a `Name`) resolves to the
+link-defining node; this form is used by
+[`pipelineValidator`](link-types#pipeline-validators) links to target
+the host pipeline. For
 example, assuming its data link input:
 
 ```

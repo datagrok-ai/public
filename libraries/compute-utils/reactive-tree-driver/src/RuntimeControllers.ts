@@ -1,4 +1,4 @@
-import {PipelineInstanceConfig} from './config/PipelineInstance';
+import {PipelineInstanceConfig, PipelineOutline} from './config/PipelineInstance';
 import {RestrictionType, StepHandle, ValidationResult} from './data/common-types';
 import * as DG from 'datagrok-api/dg';
 
@@ -21,6 +21,12 @@ export interface IRuntimeReturnController extends IControllerBase {
 export interface IRuntimeValidatorController extends IControllerBase {
   setValidation(name: string, validation?: ValidationResult | undefined): void;
   getValidationAction(id: string, actionId: string): string | undefined;
+}
+
+export interface IRuntimePipelineValidatorController extends IControllerBase {
+  setValidation(validation?: ValidationResult): void;
+  /** Outline of the pipeline where this link is defined (not the `to` target). */
+  getOutline(): PipelineOutline;
 }
 
 export interface IRuntimeMetaController extends IControllerBase {
