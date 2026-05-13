@@ -265,71 +265,6 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Chemistry | Most Diverse Structures',
-  })
-  static async chemTooltip(
-    @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column): Promise<DG.Widget | undefined> {
-    const initialWidth = 255;
-    const initialHeight = 90;
-    const tooltipMaxWidth = 500;
-    const version = col.version;
-    const colCategories = col.categories;
-    for (let i = 0; i < Math.min(colCategories.length, 100); ++i) {
-      if (!!colCategories[i] && _isSmarts(colCategories[i]))
-        return;
-    }
-
-    const divMain = ui.div();
-    divMain.append(ui.divText('Most diverse structures', 'chem-tooltip-text'));
-    const divStructures = ui.div([ui.loader()]);
-    divStructures.classList.add('chem-tooltip-structure-div');
-    const getDiverseStructures = async (): Promise<void> => {
-      if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
-        const molIds = await chemDiversitySearch(
-          col, similarityMetric[BitArrayMetricsNames.Tanimoto], Math.min(6, colCategories.length), Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
-
-        Object.assign(col.temp, {
-          'version': version,
-          'molIds': molIds,
-        });
-      }
-      ui.empty(divStructures);
-      const molIdsCached = col.temp['molIds'];
-      for (let i = 0; i < molIdsCached.length; ++i)
-        divStructures.append(renderMolecule(col.categories[molIdsCached[i]], {width: 75, height: 32}));
-    };
-
-    divMain.append(divStructures);
-    const widget = new DG.Widget(divMain);
-
-    Object.assign(widget.root.style, {
-      position: 'relative',
-      width: `${initialWidth}px`,
-      height: `${initialHeight}px`,
-    });
-
-    const tooltip = document.querySelector('.d4-tooltip');
-    if (tooltip) {
-      const rect = tooltip.getBoundingClientRect();
-      const {width, height} = rect;
-      const isWideTooltip = width + initialWidth > tooltipMaxWidth;
-      const fitsRight = rect.right + initialWidth + 20 <= window.innerWidth;
-
-      if (!isWideTooltip && fitsRight) {
-        Object.assign(widget.root.style, {
-          left: `${width}px`,
-          top: `${30 - height}px`,
-          width: `${initialWidth + width}px`,
-          height: '0',
-        });
-      }
-    }
-
-    setTimeout(() => getDiverseStructures(), 10);
-    return widget;
-  }
-
-  @grok.decorators.func({
     name: 'Scaffold Tree',
     meta: {icon: 'files/icons/scaffold-tree-icon.svg', role: 'viewer'},
     outputs: [{name: 'result', type: 'viewer'}],
@@ -3150,3 +3085,69 @@ export class PackageFunctions {
     return DG.Widget.fromRoot(container);
   }
 }
+
+// removed because is not useful enaugh and can freeze browser.
+// @grok.decorators.func({
+//   name: 'Chemistry | Most Diverse Structures',
+// })
+// static async chemTooltip(
+//   @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column): Promise<DG.Widget | undefined> {
+//   const initialWidth = 255;
+//   const initialHeight = 90;
+//   const tooltipMaxWidth = 500;
+//   const version = col.version;
+//   const colCategories = col.categories;
+//   for (let i = 0; i < Math.min(colCategories.length, 100); ++i) {
+//     if (!!colCategories[i] && _isSmarts(colCategories[i]))
+//       return;
+//   }
+
+//   const divMain = ui.div();
+//   divMain.append(ui.divText('Most diverse structures', 'chem-tooltip-text'));
+//   const divStructures = ui.div([ui.loader()]);
+//   divStructures.classList.add('chem-tooltip-structure-div');
+//   const getDiverseStructures = async (): Promise<void> => {
+//     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
+//       const molIds = await chemDiversitySearch(
+//         col, similarityMetric[BitArrayMetricsNames.Tanimoto], Math.min(6, colCategories.length), Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
+
+//       Object.assign(col.temp, {
+//         'version': version,
+//         'molIds': molIds,
+//       });
+//     }
+//     ui.empty(divStructures);
+//     const molIdsCached = col.temp['molIds'];
+//     for (let i = 0; i < molIdsCached.length; ++i)
+//       divStructures.append(renderMolecule(col.categories[molIdsCached[i]], {width: 75, height: 32}));
+//   };
+
+//   divMain.append(divStructures);
+//   const widget = new DG.Widget(divMain);
+
+//   Object.assign(widget.root.style, {
+//     position: 'relative',
+//     width: `${initialWidth}px`,
+//     height: `${initialHeight}px`,
+//   });
+
+//   const tooltip = document.querySelector('.d4-tooltip');
+//   if (tooltip) {
+//     const rect = tooltip.getBoundingClientRect();
+//     const {width, height} = rect;
+//     const isWideTooltip = width + initialWidth > tooltipMaxWidth;
+//     const fitsRight = rect.right + initialWidth + 20 <= window.innerWidth;
+
+//     if (!isWideTooltip && fitsRight) {
+//       Object.assign(widget.root.style, {
+//         left: `${width}px`,
+//         top: `${30 - height}px`,
+//         width: `${initialWidth + width}px`,
+//         height: '0',
+//       });
+//     }
+//   }
+
+//   setTimeout(() => getDiverseStructures(), 10);
+//   return widget;
+// }

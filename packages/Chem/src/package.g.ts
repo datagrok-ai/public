@@ -35,13 +35,6 @@ export async function recalculateCoords(table: DG.DataFrame, molecules: DG.Colum
   return await PackageFunctions.recalculateCoords(table, molecules, method, join);
 }
 
-//name: Chemistry | Most Diverse Structures
-//input: column col { semType: Molecule }
-//output: widget result
-export async function chemTooltip(col: DG.Column) : Promise<any> {
-  return await PackageFunctions.chemTooltip(col);
-}
-
 //name: Scaffold Tree
 //output: viewer result
 //meta.icon: files/icons/scaffold-tree-icon.svg
