@@ -325,7 +325,7 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
   try {
     const client = ClaudeRuntimeClient.getInstance();
-    const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(userPrompt, view);
+    const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(panel.prependEntityContext(userPrompt), view);
 
     await client.ensureConnected();
 

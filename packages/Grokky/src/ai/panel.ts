@@ -94,6 +94,7 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   sessionId: string;
   startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void, loader: HTMLElement};
   prependViewContext(prompt: string, view: DG.ViewBase): string;
+  prependEntityContext(prompt: string): string;
   updateStreaming(content: string, loader: HTMLElement): void;
   finalizeStreaming(content: string, view: DG.ViewBase): Promise<void>;
   clearStreaming(): void;
@@ -136,6 +137,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
   private runButtonTooltip: typeof actionButtionValues[keyof typeof actionButtionValues] = actionButtionValues.run;
   public inputControlsDiv: HTMLElement;
+  protected attachedEntities: DG.Entity[] = [];
+  protected attachmentsRow: HTMLElement = ui.divH([]);
+  private _pendingEntityContext = '';
   protected get contextId(): string {
     return this._contextID;// these should be overriden in subclasses
   }
@@ -236,7 +240,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     sessionControls.style.marginLeft = 'auto';
     const messageControls = ui.divH([this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
     const controlsDiv = ui.divH([this.inputControlsDiv, sessionControls, ui.div([], 'd4-ribbon-separator'), messageControls], 'd4-ai-panel-controls-container');
-    this.textAreaDiv = ui.divV([this.textArea], {classes: 'd4-ai-input-textarea-div', style: {position: 'relative'}});
+    this.textAreaDiv = ui.divV([this.attachmentsRow, this.textArea], {classes: 'd4-ai-input-textarea-div', style: {position: 'relative'}});
+    ui.makeDroppable(this.textAreaDiv, {
+      acceptDrop: (o) => o instanceof DG.Entity,
+      doDrop: (args: any) => {
+        if (args?.dragObject instanceof DG.Entity)
+          this.addEntityChip(args.dragObject);
+      },
+    });
     this.inputArea.appendChild(this.textAreaDiv);
     this.inputArea.appendChild(controlsDiv);
     this.root.appendChild(this.header);
@@ -252,17 +263,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected setupSubscriptions() {
     if (this._inline)
       return;
-    // do some subscriptions
     let wasShown = false;
     const sub = grok.events.onCurrentViewChanged.subscribe(() => {
       if (grok.shell.v != this.view) {
         wasShown = this.isShown;
         if (wasShown)
           this.hide();
-      } else {
-        if (wasShown)
-          this.show();
-      }
+      } else if (wasShown)
+        this.show();
     });
 
     const toggleSub = getAIPanelToggleSubscription().subscribe((rv) => {
@@ -345,6 +353,41 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return {
       prompt: this.textArea.value,
     } as K;
+  }
+
+  private addEntityChip(e: DG.Entity): void {
+    if (this.attachedEntities.some((x) => x.id === e.id))
+      return;
+    this.attachedEntities.push(e);
+    const icon = DG.ObjectHandler.forEntity(e)?.renderIcon(e.dart) ?? ui.iconFA('tag');
+    const chip = ui.divH([icon, ui.label(e.friendlyName ?? e.name)]);
+    chip.appendChild(ui.iconFA('times', () => {
+      this.attachedEntities = this.attachedEntities.filter((y) => y !== e);
+      chip.remove();
+    }, 'Remove'));
+    this.attachmentsRow.appendChild(chip);
+  }
+
+  private clearAttachments(): void {
+    this.attachedEntities = [];
+    ui.empty(this.attachmentsRow);
+  }
+
+  private describeEntity(e: DG.Entity): string {
+    const parts = [`type: ${e.entityType}`, `id: ${e.id}`];
+    if (e.nqName)
+      parts.push(`nqName: ${e.nqName}`);
+    if (e instanceof DG.FileInfo)
+      parts.push(`path: ${e.fullPath}`);
+    return `- "${e.friendlyName ?? e.name}" (${parts.join(', ')})`;
+  }
+
+  public prependEntityContext(prompt: string): string {
+    const ctx = this._pendingEntityContext;
+    if (!ctx)
+      return prompt;
+    this._pendingEntityContext = '';
+    return ctx + '\n---\n\n' + prompt;
   }
 
   protected _aiMessagesAccordionPane: HTMLElement | null = null;
@@ -732,6 +775,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return;
     const inputs = this.getCurrentInputs();
     this.textArea.value = '';
+    this._pendingEntityContext = this.attachedEntities.length
+      ? 'Attached Datagrok entities (use MCP tools to fetch full details by id/nqName/path):\n' +
+        this.attachedEntities.map((e) => this.describeEntity(e)).join('\n')
+      : '';
+    this.clearAttachments();
     this._promptHistoryIndex = null;
     this._onRunRequest.next({
       prevMessages: this._messages,
