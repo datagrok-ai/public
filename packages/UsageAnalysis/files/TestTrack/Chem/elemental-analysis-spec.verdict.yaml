@@ -1,0 +1,105 @@
+---
+gate: E
+critic_mode: spec
+target: public/packages/UsageAnalysis/files/TestTrack/Chem/elemental-analysis-spec.ts
+paired_md: public/packages/UsageAnalysis/files/TestTrack/Chem/elemental-analysis.md
+critic_date: 2026-05-12
+critic: claude-code-automator-self-review (abbreviated-inline per chem-new-batch-1 lessons_learned Convention for non-first specs in phase)
+review_method: abbreviated-inline
+review_round: 1
+verdict: PASS
+cycle_id: chem-migrate-spec-phase-2026-05-12-phase-A
+spec_id: elemental-analysis
+predecessor_cycle_id: chem-migrate-2026-05-11
+
+claims:
+  - check_id: E-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Spec file exists at expected path; written via Write tool 2026-05-12.
+  - check_id: E-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      TypeScript parse — balanced braces, all imports declared, test() signature
+      well-formed. No `tsc --noEmit` invocation as part of this self-review,
+      but visual inspection confirms valid syntax.
+  - check_id: E-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Single `test(...)` block at line 39 covering the migrated scenario.
+  - check_id: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name `'Chem: Elemental Analysis multi-format walk (smiles / molV2000 / molV3000)'`
+      contains scenario heading words (Elemental Analysis multi-format).
+  - check_id: E-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      Canonical imports only: `@playwright/test`, `../spec-login`.
+  - check_id: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Spec begins with `/* --- sub_features_covered: [chem.analyze.elemental,
+      chem.analyze.elemental.top-menu, chem.analyze.elemental.run] --- */`.
+      All 3 IDs verified present in feature-atlas/chem.yaml.
+  - check_id: E-TRACE-01
+    status: PASS
+    evidence: |
+      Each softStep maps to a step in the migrated body — setup → open
+      dataset (per variant) → wait → verify mol semType → open dialog →
+      toggle checkboxes → click OK → verify.
+  - check_id: E-TRACE-02
+    status: PASS
+    evidence: |
+      All 6 numbered scenario steps (per variant) covered. The 7th step
+      "close active view" is implicit via the next loop iteration's
+      closeAll().
+  - check_id: E-TRACE-03
+    status: PASS
+    evidence: |
+      Verification step (column-append OR error-balloon detection) maps to
+      Scenarios step 5 verbatim assertion "verify per-element atom-count
+      columns are appended ... OR a user-visible error balloon is shown".
+  - check_id: E-SEL-01
+    status: PASS
+    evidence: |
+      Selectors used: [name="div-Chem"] (chem.md top-menu §), .d4-menu-item-label
+      (chem.md), .d4-dialog (chem.md), [name="button-OK"] (chem.md), .d4-grid (standard),
+      [name="viewer-Grid"] (chem.md), .d4-balloon/.grok-balloon (standard balloon pattern).
+      All traceable to chem.md or generic Datagrok patterns.
+  - check_id: E-SEL-02
+    status: PASS
+    evidence: |
+      No invented selectors. Per-element checkboxes discovered via
+      `dlg.querySelectorAll('input[type="checkbox"]')` — generic DOM API.
+  - check_id: E-HELP-02
+    status: PASS
+    evidence: |
+      Uses canonical helpers: loginToDatagrok, softStep, stepErrors,
+      specTestOptions from spec-login.ts. No reinvention.
+  - check_id: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: |
+      target_layer=playwright; spec contains DOM-driving calls
+      (page.locator, dispatchEvent click, page.locator click). UI-coverage
+      flows (chem-elemental-analysis-top-menu, chem-elemental-analysis-checkboxes)
+      both exercised via UI driving — no JS API substitution for owned flows.
+  - check_id: E-BOUND-01
+    status: PASS
+    evidence: |
+      Only writes to public/packages/UsageAnalysis/files/TestTrack/Chem/.
+
+scope_reduction_proposal: null
+evidence_needed: null
+
+self_review_notes: |
+  Gate B execution pending. Spec authored with breakthrough pattern:
+  split-evaluate setup + 30s post-addTableView settle on D1 (smiles.csv),
+  8s warm-session settle on D2 (mol1K.sdf) and D3 (ApprovedDrugs2015.sdf).
+  Risk: per-element checkbox discovery via `input[type="checkbox"]` may
+  capture unintended checkboxes in the dialog (e.g. options checkboxes
+  outside the element grid). If Gate B fails with checkbox over-toggle,
+  scope the selector to a per-element container class.
+
+recommendation: |
+  Proceed to Gate B Playwright validation.

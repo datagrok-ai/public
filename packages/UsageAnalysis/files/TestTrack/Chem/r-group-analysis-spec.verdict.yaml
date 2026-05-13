@@ -1,0 +1,49 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: chem-migrate-spec-phase-2026-05-12-phase-A-validation-sweep
+feature: chem
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/r-group-analysis-spec.ts
+invoked_at: 2026-05-12T19:35:00Z
+review_method: inline-walkthrough
+verdict: FAIL
+gate: E
+failure_keys:
+  - E-STRUCT-MECH-06
+  - E-TRACE-02
+  - E-TRACE-03
+claims:
+  - check: E-STRUCT-MECH-06
+    status: FAIL
+    evidence: Missing /* --- sub_features_covered: [...] --- */ frontmatter block.
+  - check: E-TRACE-02
+    status: FAIL
+    evidence: |
+      Scenario has 19 numbered steps + GROK-16329 invariant block.
+      Spec covers 2 softSteps:
+        (a) sar_small.csv + R-Groups + MCS → Trellis + R1-R4 cols (≈5 steps)
+        (b) smiles.csv + R-Groups + MCS → no Trellis (negative case, ≈3 steps)
+      Uncovered: detailed R-Groups dialog parameter walk
+      (Column prefix, Exact atoms, Exact bonds, Visual analysis,
+      Matching strategy, Only-match-at-R-groups checkboxes), Visual
+      Analysis tab, Trellis interactive checks (cell click, scaffold
+      column display), additional dataset variants.
+  - check: E-TRACE-03
+    status: FAIL
+    evidence: |
+      No GROK-16329 invariant assertion (related_bugs=[GROK-16329] per
+      migrated frontmatter — bug-focused spec body should explicitly
+      check the bug invariant). Trellis plot existence is a weak proxy.
+  - check: E-SEL-01
+    status: PASS
+    evidence: All selectors per chem.md (R-Groups dialog, button-OK).
+  - check: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: DOM-driving present (page.locator click on button-OK, dispatched click on menu items).
+remediation_path: |
+  Spec needs full rewrite per migrated 19-step scenario:
+    - Add frontmatter block
+    - Cover R-Groups dialog parameter knobs (per chem.md R-Groups Analysis dialog § input-host-Molecules, input-Column-prefix, etc.)
+    - Add GROK-16329 invariant assertion
+    - Add Visual Analysis tab walk

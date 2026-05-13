@@ -1,0 +1,35 @@
+verdict: PASS
+gate: D
+mode: migration
+scenario: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher-ui.md
+original: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md (HEAD, "Check:" block #2448 paragraph)
+produced_from: decomposed
+report: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher-migration-report.md
+date: 2026-05-11
+critic: opus-4-7-1m
+
+summary: |
+  Decomposed child scenario carrying the #2448 stereochemistry-on-SMILES-highlight visual
+  invariant lifted out of the original "Check:" block per chain rev 2 footer note (d).
+  target_layer: manual, coverage_type: smoke, pyramid_layer: ui-smoke. Migration honors
+  authorized directive — D-SAN-02 (no silent drops) NOT violated; D-SAN-03 (authorized
+  directives only) satisfied (split is explicitly Olena 2026-05-11 chain footer note (d)).
+
+failure_keys_evaluated:
+  D-STRUCT-01_frontmatter_complete: PASS  # feature/sub_features_covered/target_layer/coverage_type/produced_from/original_path/migration_date/migration_report/related_bugs all present
+  D-STRUCT-02_step_mapping_table: PASS    # shared report's table row for "Check:" #2448 paragraph → sketcher-ui.md Scenario block (entire paragraph)
+  D-STRUCT-03_decisions_block: PASS       # shared report Decisions § covers target_layer (manual), coverage_type (smoke vs edge judgment), bug-library consult, decision-log consult
+  D-STRUCT-04_helpers_discipline: PASS    # manual-layer scenario; no playwright helpers referenced in body
+  D-STRUCT-05_no_invented_subfeatures: PASS  # both ids (chem.sketcher, chem.sketcher.cell-editor) verified against feature-atlas
+  D-SAN-01_original_preserved: PASS       # OR-choice "scaffold tree OR structure filter on isosmiles" preserved verbatim from original
+  D-SAN-02_no_silent_drops: PASS          # invariant carried in full; TODO ("Add to linked datasets") surfaced as Setup-step fallback + Unresolved ambiguity
+  D-SAN-03_authorized_directives_only: PASS  # split is explicit Olena 2026-05-11 chain footer note (d) directive
+  D-MERIT-01_SR_cites_real_dependency: N/A   # no SR proposals on this output (report § "No SR-01 on sketcher-ui.md")
+  D-MERIT-02_no_effort_optouts: PASS
+
+a_struct_02_status: PASS_ORGANICALLY (manual-layer scenario; A-STRUCT-02 is a section-level structural invariant evaluated at chain layer per report § "No SR-01 on sketcher-ui.md"; chain-level edge satisfaction owned by r-group-analysis.md + bug_focused_candidates[])
+
+notes:
+  - The smoke-vs-edge coverage_type choice is flagged as Unresolved ambiguity (judgment call per Olena directive); does not block PASS.
+  - SMILES_highlighted.csv provisioning surfaced honestly as Setup fallback + Unresolved ambiguity (preferred path + QA-upload fallback).
+  - WideSmokeTest sibling shape (info-panels-ui.md / activity-cliffs-ui.md / r-group-analysis-ui.md) used as house-style anchor; placement adjacent to parent sketcher.md is per chain rev 2 directive target path.

@@ -1,0 +1,122 @@
+revision: 2
+schema_version: "v3.0"
+cycle_id: chem-new-2026-05-12
+predecessor_cycle_id: chem-new-2026-05-11-batch-2
+feature: chem
+mode: validator
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-16870-spec.ts
+invoked_at: 2026-05-12T09:45:00Z
+verdict: PASS
+verdict_transition: SCOPE_REDUCTION → PASS
+sr_class: null
+scope_reduction_proposal: null
+
+hypothesis_history:
+  - round: 1
+    category: environmental-flake
+    theory: |
+      Chem package cold-start in fresh Playwright session: Molecule semantic
+      type detector (chem.detect.smiles / chem.detect.mol) AND RDKit cell
+      renderer (cellRenderer-Molecule, chem.rendering.rdkit-renderer) are
+      both registered by Chem package on init. In fresh Playwright with
+      only auth.json storage state (no warm package state), the detector
+      does NOT fire for canonical_smiles column → semType !== 'Molecule'
+      → my setup check fails AND the Box Plot tooltip render path
+      cannot invoke the renderer (renderer not in registry).
+    investigation_evidence: |
+      Validator Round 1 trace: "Setup failed: no Molecule column detected
+      on smiles.csv" + "Box Plot viewer node not found at
+      [name=viewer-Box-plot]" (Box Plot viewer add silently failed
+      because addViewer was called on the same evaluate as the failed
+      Molecule check, but more deeply because viewer for chem-related
+      data fails to materialize when Chem package detectors absent).
+      Same DOM signature class as chem-grok-14028 batch-1 cold-start
+      (.chem-filter absent) and chem-grok-17964 (chem.notation.action
+      absent). Common root: Chem package not loaded by query time;
+      multiple package-contributed surfaces (detector, renderer, filter
+      widget, column action) all dark.
+    fix_applied: none in code — escalating to env-pending SR per orchestrator SR dispatch table.
+    outcome: SR-routed (not failed)
+    failure_mode: env-pending-chem-package-cold-start
+    next_round_id: 2
+    skip_round_2_rationale_initial: |
+      Per orchestrator SR dispatch table, env-pending defensive skip
+      applies when an artifact requires environment provisioning
+      unavailable on dev/qa-pw. Round 2 was eventually run post
+      dataset-swap to confirm the predicted outcome empirically.
+  - round: 2
+    category: environmental-flake (warmChemPackage probe)
+    theory: |
+      Per user directive 2026-05-11 21:23 — empirically test whether
+      warmChemPackage(page) + auth.json refresh + smiles-50.csv (50
+      rows) is sufficient to fit Chem package init within 180s test
+      budget for GROK-16870 (renderer-in-tooltip vector, different
+      surface from GROK-17964's chem.notation.action).
+    investigation_evidence: |
+      Round 2 run: 3.2 minutes total (180s timeout exceeded). Same
+      first-step exhaustion as chem-grok-17964 Round 2: warmChemPackage()
+      did not complete in time, dataset did not open with semType
+      detection, Box Plot did not render. Identical failure shape to
+      chem-grok-17964 Round 2 confirms the structural blocker is the
+      same across both specs and both surfaces (chem.notation.action
+      AND cellRenderer-Molecule registration). The 360s probe documented
+      in chem-grok-17964 Round 4 is universally applicable.
+    fix_applied: |
+      Restored test.fixme() with updated rationale citing the Round 2
+      empirical confirmation + cross-reference to chem-grok-17964 Round 4
+      360s probe outcome.
+    outcome: confirmed structural blocker requiring globalSetup
+    next_round_id: 3
+  - round: 3
+    category: PASS (proven-pattern confirmation on stable env)
+    theory: |
+      Post-breakthrough re-run with test.fixme removed. Spec body uses the
+      canonical pattern proven on chem-grok-17964 (split-evaluate setup +
+      30s outside-evaluate post-addTableView settle + Box Plot mount +
+      hover sweep + console.error hook). The "structural blocker requiring
+      globalSetup" hypothesis from Round 2 was over-weighted — the actual
+      blocker was Playwright + WASM event-loop interaction inside long
+      evaluate chains, fixed via per-spec body redesign (proven on
+      chem-grok-17964 PASS 2026-05-12T07:50Z + 3-run stability baseline
+      2026-05-12T09:34Z all consistent at ~1.3 min/run).
+    investigation_evidence: |
+      3-run stability baseline of chem-grok-17964 (1.3 / 1.4 / 1.3 min,
+      total 4.2m) confirmed dev.datagrok.ai stable. chem-grok-16870 with
+      test.fixme removed executed cleanly: 50.1s duration, all 5 softSteps
+      green (Setup + 30s settle + Box Plot mount + hover sweep + renderer
+      assertion). No rdkit-cell-renderer errors during 5-position hover
+      sweep. Box Plot remains responsive post-sweep (canvas count ≥1,
+      non-zero bbox).
+    fix_applied: |
+      Removed test.fixme() + accompanying multi-line block comment from
+      lines 30-40 of chem-grok-16870-spec.ts. Spec body unchanged from
+      breakthrough cycle edits.
+    outcome: PASS
+    next_round_id: null
+    runner_environment_note: |
+      Node-side OOM ("Committing semi space failed") observed in pre-baseline
+      run with default Node heap; resolved by passing
+      NODE_OPTIONS=--max-old-space-size=8192 to the Playwright runner.
+      Recurring runner-host OOM is a separate concern from spec body
+      correctness. Recommend documenting in spec-login docstring or
+      playwright README.
+
+remediation_path: null
+
+cross_references:
+  - 'cycle_completions[chem-new-2026-05-11-batch-1] :: lessons_learned #3 (Chem package cold-start, original hypothesis — superseded)'
+  - 'cycle_completions[chem-new-2026-05-11-batch-2-breakthrough] :: breakthrough retro (root-cause re-attribution from package-load to Playwright+WASM event-loop)'
+  - public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-17964.gateB.verdict.yaml (canonical PASS pattern source)
+  - public/packages/UsageAnalysis/files/TestTrack/spec-login.ts (warmChemPackage helper retained for any future use; obsolete for cold-start scenarios)
+  - public/packages/UsageAnalysis/files/TestTrack/playwright.config.ts (globalSetup remains a Phase-C optimization — saves ~30s/test, not required to unblock any spec)
+
+claims:
+  - check_id: B-RUN-01
+    status: PASS
+    evidence: |
+      Spec executed under DATAGROK_URL=https://dev.datagrok.ai, workers=1,
+      NODE_OPTIONS=--max-old-space-size=8192. Duration 50.1s (total 52.8s
+      including Playwright overhead). All 5 softSteps green. No rdkit-cell-
+      renderer error patterns in console hook during 5-position Box Plot
+      hover sweep. Box Plot remains responsive after sweep (canvas count
+      assertion + bounding rect non-zero check both pass).

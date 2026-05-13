@@ -1,0 +1,122 @@
+verdict: PASS
+gate: D
+review_round: 1
+failure_keys: []
+claims:
+  - check_id: D-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Migration report present at
+      Chem/Advanced/scaffold-tree-functions-migration-report.md
+      (435 lines, non-empty). Path matches expected
+      `<original-name>-migration-report.md` convention.
+  - check_id: D-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      "Step mapping" Markdown table at lines 22-31 of the migration
+      report contains 8 rows mapping every original step (5 numbered
+      steps + sub-bullets + JSON footer) to migrated locations.
+  - check_id: D-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Frontmatter (lines 1-11) contains all 9 required Block 6 fields:
+      feature, sub_features_covered, target_layer (playwright),
+      coverage_type (smoke), produced_from (migrated), original_path,
+      migration_date (2026-05-11), migration_report, related_bugs ([]).
+      Deprecated `migrated_from` is absent.
+  - check_id: D-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Migration report has all 5 required `## ` sections — Step mapping
+      (L12), Decisions (L36), Opt-outs (L272), Deferred items (L301),
+      Unresolved ambiguities (L375) — plus Edge cases (L318).
+  - check_id: D-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      `original_path` points to
+      `public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/
+      scaffold-tree-functions.md` which exists on disk (read
+      successfully in critic input #3, 176 lines).
+  - check_id: D-STEP-01
+    status: PASS
+    evidence: |
+      All 5 original numbered steps + sub-bullets mapped in the Step
+      mapping table to migrated steps. Step 1 → Setup step 1 +
+      Scenarios step 1; Step 2 main → Step 2; Step 2 sub-bullets →
+      Steps 3-5; Step 3 → Steps 6-7; Step 4 → Step 8; Step 5 → Step 9.
+      JSON footer explicitly classified as metadata-not-step.
+  - check_id: D-STEP-02
+    status: PASS
+    evidence: |
+      Every implicit "Expected result" verification preserved: empty-
+      state placeholder (Scenarios step 3), generation completion
+      (step 5), table filter (step 7), toolbox render (step 8),
+      property panel render + interactable controls (step 9). No
+      console-error verifications added per Edge cases section.
+  - check_id: D-EDGE-01
+    status: PASS
+    evidence: |
+      5 implicit edge cases (empty→generated transition; per-scaffold
+      filter selection; toolbox surface disambiguation vs. application
+      Toolbox; property-panel content depth; console errors weave) all
+      preserved as scenario steps or Notes-level caveats. None
+      silently dropped, none moved to atlas/manual_only without
+      documentation.
+  - check_id: D-STRUCT-01
+    status: PASS
+    evidence: |
+      Chain dependency_graph entry (scenario-chains/chem.yaml L159-160)
+      declares `depends_on: []`. Cross-cutting bug awareness for
+      GROK-12758, GROK-17595, github-3004 documented in migration
+      report Decisions (lines 140-181) and migrated Notes (lines
+      123-151), with dedicated bug-focused candidate specs owning each
+      invariant.
+  - check_id: D-STRUCT-02
+    status: PASS
+    evidence: |
+      Scenario is a linear 5-step walk, no matrix structure
+      (single dataset, single notation, no parameter axes). Check
+      applies vacuously.
+  - check_id: D-UI-DELEGATION-01
+    status: PASS
+    evidence: |
+      SR-01 is an A-STRUCT-02 carryforward (section-level edge/perf
+      coverage waiver) — NOT a UI-to-JS-API substitution. Migration
+      report Decisions § "UI delegation status" (L210-225) explicitly
+      states no SR proposal substitutes JS API for any of the 5 UI
+      flows; the UI-delegation discipline does not apply. Migrated
+      Notes "No JS API substitution" reaffirms hard constraint.
+  - check_id: D-SAN-01
+    status: PASS
+    evidence: |
+      All required Block 11 sections present (Step mapping, Decisions,
+      Opt-outs, Deferred items, Unresolved ambiguities) plus Edge
+      cases. Each section lists non-trivial decisions with cited
+      sources (chain YAML, atlas, bug-library, decision-log, sibling
+      specs).
+  - check_id: D-SAN-02
+    status: PASS
+    evidence: |
+      Step mapping table acknowledges every original element — 5
+      numbered steps, 2 sub-bullets, and the JSON footer (latter
+      explicitly classified metadata-not-step). Report explicitly
+      asserts at L34 "No original step or implicit verification
+      bullet is silently dropped." No text dropped without entry.
+  - check_id: D-MERIT-01
+    status: PASS
+    evidence: |
+      Single opt-out (SR-01) cites a real section-level structural
+      invariant (A-STRUCT-02 edge|perf coverage) with chain-wide
+      satisfaction path via 10 bug_focused_candidates[], not effort.
+      Decision-log precedent (radar.md 2026-05-07 carryforward, line
+      8528-8530) referenced. No step opted out for effort alone.
+  - check_id: D-MERIT-02
+    status: PASS
+    evidence: |
+      Deferred items section is empty. Selector-reference write
+      proposal flagged as Phase 2 with concrete dependency cited
+      (existing scaffold-tree-functions-spec.ts already drives the
+      Scaffold Tree viewer via page.evaluate + page.locator — no
+      blocker on this migration). Candidate helpers explicitly noted
+      as non-blocking (Automator may inline pending registration).
+      No unprompted "TODO: add later" deferrals.

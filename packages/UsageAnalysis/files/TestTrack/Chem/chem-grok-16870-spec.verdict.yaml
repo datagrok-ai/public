@@ -1,0 +1,75 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: chem-new-2026-05-11-batch-2
+feature: chem
+mode: spec
+review_round: 1
+review_method: abbreviated-inline (NOT subagent-isolated)
+review_method_rationale: |
+  Structural isomorphism with GROK-18407 batch-1 PASS + GROK-17964 batch-2 PASS
+  precedents. Same spec frontmatter shape, same softStep + stepErrors aggregation,
+  same auth.json storageState override, same ../spec-login import surface, same
+  JS-API-inside-evaluate + UI-driving via page.locator + page.mouse outside
+  evaluate split. Per cycle_completions[chem-new-2026-05-11-batch-1] lesson #6.
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-16870-spec.ts
+invoked_at: 2026-05-11T17:10:00Z
+verdict: PASS
+failure_keys: []
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: Spec file present at expected path under TestTrack/Chem/; paired scenario chem-grok-16870.md references it via produced_for.
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: TypeScript parses cleanly — valid imports, async/await, typed evaluate callbacks, (window as any) cast for test-state hooks.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: One test() block — "Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip context".
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: Test title substring-matches scenario H1 (GROK-16870 + RDKit cell renderer + Box Plot tooltip). softStep titles trace to scenario Block A steps 1-6.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: Imports only @playwright/test and ../spec-login (test-suite local path). grok accessed via window globals inside page.evaluate.
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: Leading /* --- sub_features_covered: [...] --- */ frontmatter with 3 IDs (chem.rendering, chem.rendering.molecule-cell, chem.rendering.rdkit-renderer) all resolving in atlas sub_features[] (verified by grep on feature-atlas/chem.yaml).
+  - check: E-TRACE-01
+    status: PASS
+    evidence: All softStep blocks trace to scenario steps; no orphaned code blocks.
+  - check: E-TRACE-02
+    status: PASS
+    evidence: All 6 scenario steps covered — open + viewer add + console hook (Steps 1-2), hover sweep (Step 3), settle (Step 4), assert no rdkit errors (Step 5), assert viewer responsive (Step 6).
+  - check: E-TRACE-03
+    status: PASS
+    evidence: Verification via expect(rdkitErrors.length).toBe(0), expect(viewer present).toBe(true), expect(rect area).toBeGreaterThan(0), expect(canvasCount).toBeGreaterThanOrEqual(1).
+  - check: E-SEL-01
+    status: PASS
+    evidence: Selector `[name="viewer-Box-plot"]` confirmed by MCP recon 2026-05-11 (validated against actual dev.datagrok.ai DOM — `cls: "d4-layout-root d4-root d4-viewer d4-box-plot ui-box", name: "viewer-Box-plot"`). The hyphenated form `Box-plot` (not `Box plot`) is the as-rendered DOM attribute value.
+  - check: E-SEL-02
+    status: PASS
+    evidence: No invented selectors — only `[name="viewer-Box-plot"]` for the viewer container and standard CSS `canvas` for child canvas elements. Page.mouse.move uses real coordinate API, not a CSS selector.
+  - check: E-SEL-03
+    status: PASS
+    evidence: No .fill() on Dart inputs; only page.mouse.move() for real pointer events and page.evaluate() for state inspection.
+  - check: E-HELP-01
+    status: PASS
+    evidence: loginToDatagrok, softStep, stepErrors, specTestOptions imported from canonical ../spec-login harness used by all chem specs.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No reinvention — reuses softStep + stepErrors aggregation identical to sibling chem specs (chem-grok-18407, chem-grok-14028, chem-grok-17964).
+  - check: E-LAYER-01
+    status: PASS
+    evidence: Frontmatter target_layer=playwright; spec under playwright harness with @playwright/test import.
+  - check: E-LAYER-02
+    status: NA
+    evidence: No layer override — target_layer follows scenario default (playwright).
+  - check: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: playwright target — spec contains real-pointer-event DOM driving (page.mouse.move() with steps:5 for natural cursor trajectory) plus state inspection via page.evaluate. pyramid_layer=bug-focused — JS API permitted for dataset open + viewer add + console.error hook; UI driving exercises the actual hover-tooltip pipeline the bug lives in.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Spec under public/packages/UsageAnalysis/files/TestTrack/Chem/ — within allowed boundary.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No modifications to core/** or non-test package source.

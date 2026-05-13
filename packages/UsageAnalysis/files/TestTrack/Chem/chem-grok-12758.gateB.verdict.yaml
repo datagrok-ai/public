@@ -1,0 +1,96 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: chem-new-2026-05-12
+feature: chem
+mode: validator
+gate: B
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-12758-spec.ts
+invoked_at: 2026-05-12T10:30:00Z
+verdict: SCOPE_REDUCTION
+sr_class: env-pending defensive skip (cold-start-recon-pending)
+scope_reduction_proposal: |
+  cold-start-recon-pending: spec body + selectors MCP-validated 2026-05-12;
+  spec authored under the post-breakthrough proven pattern (split-evaluate
+  + 30s settle + accordion-style poll). Validator R1 surfaced a NEW
+  cold-Playwright blocker — Scaffold Tree `magic wand` click does NOT
+  reliably trigger `viewer.generateTree()` within 90s. Toolbar stays in
+  `empty-tree` state with 0 visible nodes after two consecutive wand
+  clicks separated by 8s settle. MCP warm session populated 1626 nodes
+  reliably (recon 2026-05-12); cold session does not. Bug invariant
+  cannot be exercised without populated tree.
+  test.fixme() applied with cold-start-recon-pending rationale; remove
+  when:
+    (a) MCP recon identifies root-cause of cold-session generation failure
+        (candidates: molColumn binding lag, Chem package
+        getScaffoldTree/GenerateScaffoldTree function init order), OR
+    (b) playwright.config.ts globalSetup pre-warms Chem package such that
+        scaffold-tree viewer.generateTree() works first-try.
+
+hypothesis_history:
+  - round: 1
+    category: environmental-flake (scaffold-tree cold-start)
+    theory: |
+      Magic-wand click on the Scaffold Tree viewer toolbar relies on the
+      molecule column being bound + Chem-package scaffold-tree-generation
+      machinery being warm. In MCP warm session both are true; in cold
+      Playwright session post-30s settle, the wand click silently no-ops
+      (toolbar remains `empty-tree`). Distinct from the original
+      "env-pending Chem cold-start" blocker (which was retired by the
+      breakthrough pattern for OTHER chem surfaces) — this is
+      scaffold-tree-specific.
+    investigation_evidence: |
+      Validator R1 run (DATAGROK_URL=https://dev.datagrok.ai, workers=1,
+      NODE_OPTIONS=--max-old-space-size=8192, duration 2.5 min):
+        - All breakthrough-pattern setup softSteps GREEN: close all + selenium
+          flags / Read SPGI.csv + addTableView / Wait 30s for Chem autostart /
+          Verify Molecule semType + Grid renders / Open Scaffold Tree viewer.
+        - Magic-wand click sequence: first click + 8s settle + second click +
+          90s poll all completed; toolbar end-state still `empty-tree`,
+          visibleNodes 0, totalNodes 1 (hidden empty root).
+        - Downstream softSteps all cascaded into errors: "only 0 visible
+          nodes" on the 4th-node lookup, "no CANCEL button" (no dialog
+          opened), "no checkbox on 4th node".
+      MCP recon (same session, prior to Validator): clicked wand twice
+      (with `viewer.generateTree()` API call in between) → 1626 nodes
+      within 5s of second click. Different timing or warm-state dependency.
+    fix_applied: |
+      Added test.fixme() with cold-start-recon-pending rationale; spec body
+      preserved end-to-end. chem.md updated with per-node selectors +
+      "GROK-12758 known fragility" callout.
+    outcome: env-pending SR (cold-start-recon-pending) — acceptable per
+      orchestrator SR dispatch table acceptable-SR-class env-pending
+      defensive skip.
+    next_round_id: null
+
+remediation_path: |
+  External (out-of-scope for orchestrator):
+    - MCP recon comparing warm-vs-cold session scaffold-tree state at the
+      moment of first wand click. Inspect viewer.molColumnName,
+      viewer.props, viewer.dataFrame at click time. Determine why
+      generateTree() is silently no-op'd in cold session.
+    - Alternative: call `grok.functions.call('Chem:GenerateScaffoldTree', {table, smilesColumn, ringCutoff, ...})`
+      with full parameter set; bypass wand click entirely. Earlier MCP
+      attempt with partial params surfaced "TypeError: 'NoneType' object
+      is not subscriptable" — needs proper invocation.
+    - Cross-spec optimization: globalSetup that pre-warms scaffold tree
+      viewer once before worker pool releases.
+
+cross_references:
+  - .claude/skills/grok-orchestrate-test-cycle/references/bug-library/chem.yaml (GROK-12758)
+  - .claude/skills/grok-browser/references/chem.md (Scaffold Tree per-node selectors + "GROK-12758 known fragility" section, both added 2026-05-12)
+  - public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/scaffold-tree-spec.ts (parallel populate-smoke spec — predates breakthrough pattern; status unknown)
+  - public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-17964.gateB.verdict.yaml (canonical PASS pattern source — proven for OTHER chem surfaces)
+
+claims:
+  - check_id: B-RUN-01
+    status: SCOPE_REDUCTION
+    evidence: |
+      Spec executed under DATAGROK_URL=https://dev.datagrok.ai, workers=1,
+      NODE_OPTIONS=--max-old-space-size=8192. All breakthrough-pattern
+      setup softSteps GREEN. Failed at "Wait for scaffold tree to populate
+      with ≥4 visible nodes" softStep: 90s poll exhausted with
+      visibleNodes=0, toolbar still `empty-tree`. Downstream softSteps
+      cascaded into ErrorPropagation. test.fixme() applied with
+      cold-start-recon-pending rationale per orchestrator SR dispatch
+      table acceptable-SR-class env-pending.

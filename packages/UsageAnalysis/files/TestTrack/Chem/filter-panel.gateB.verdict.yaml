@@ -1,0 +1,29 @@
+---
+gate: B
+target: public/packages/UsageAnalysis/files/TestTrack/Chem/filter-panel-spec.ts
+run_date: 2026-05-12
+runner: claude-code-automator
+cycle_id: chem-migrate-spec-phase-2026-05-12-phase-A-validation-sweep
+spec_id: filter-panel
+
+verdict: PASS-WITH-SCOPE-LIMIT
+runs: 3
+pass_rate: 3/3
+results:
+  run_1: PASS (36.6s)
+  run_2: PASS (43.9s)
+  run_3: PASS (46.0s)
+
+claims:
+  - check: B-RUN-PASS
+    status: PASS
+    evidence: 3/3 stable ~40-46s.
+  - check: B-FULL-SCENARIO-COVERAGE
+    status: SCOPE_REDUCTION
+    evidence: |
+      Spec covers 1/5 blocks (Sketch benzene). Block 2-5 (Reset / Apply
+      different SMILES / Match mode / Highlight color) uncovered.
+      Also JS API substitution for Filter Panel toggle.
+
+cross_references:
+  - filter-panel-spec.verdict.yaml (Critic E FAIL — E-STRUCT-MECH-06, E-LAYER-COMPLIANCE-01, E-TRACE-02)

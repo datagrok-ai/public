@@ -1,0 +1,40 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: chem-migrate-spec-phase-2026-05-12-phase-A-validation-sweep
+feature: chem
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/filter-panel-spec.ts
+invoked_at: 2026-05-12T20:05:00Z
+review_method: inline-walkthrough
+verdict: FAIL
+gate: E
+failure_keys:
+  - E-STRUCT-MECH-06
+  - E-LAYER-COMPLIANCE-01
+  - E-TRACE-02
+claims:
+  - check: E-STRUCT-MECH-06
+    status: FAIL
+    evidence: Missing /* --- sub_features_covered: [...] --- */ frontmatter block.
+  - check: E-LAYER-COMPLIANCE-01
+    status: FAIL
+    evidence: |
+      JS API substitution for owned UI flow: grok.shell.tv.getFiltersGroup()
+      to toggle Filter Panel instead of UI filter toggle icon
+      (.grok-icon-filter per chem.md). Migrated filter-panel.md (5 blocks)
+      explicitly forbids JS API substitution for 11 UI flows in
+      ui_coverage_responsibility.
+  - check: E-TRACE-02
+    status: FAIL
+    evidence: |
+      Migrated scenario has 16 steps in 5 blocks per prompt §7
+      (filter-panel.md is Phase C.1 scope). Spec covers 5 softSteps:
+        - Setup, read, wait, schema verify
+        - Sketch benzene via .sketch-link
+      Uncovered: Filter Panel toggle UI flow, multi-block walks
+      (Sketch + Reset + Apply different SMILES patterns + Match mode
+      switching + Highlight color toggle).
+remediation_path: |
+  Phase C.1 scope. Add frontmatter, replace getFiltersGroup() with UI
+  toggle icon, cover all 5 blocks per migrated .md.

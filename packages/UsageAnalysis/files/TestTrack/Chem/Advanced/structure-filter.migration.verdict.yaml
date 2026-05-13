@@ -1,0 +1,132 @@
+verdict: PASS
+gate: D
+review_round: 1
+failure_keys: []
+claims:
+  - check_id: D-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Migration report exists at expected path
+      public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/structure-filter-migration-report.md
+      and is non-empty (553 lines).
+  - check_id: D-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      Report contains "## Step mapping" Markdown table with 26 rows covering
+      Setup, all 5 blocks' steps, both Block 4 sub-bullets, Block 5 trailing
+      Expected result line, and the JSON footer drop.
+  - check_id: D-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Migrated frontmatter has all 9 required Block 6 fields (feature,
+      sub_features_covered, target_layer, coverage_type, produced_from=migrated,
+      original_path, migration_date, migration_report, related_bugs).
+      No deprecated `migrated_from` field present.
+  - check_id: D-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Report has all 5 required `## ` sections: Step mapping, Decisions,
+      Opt-outs (SCOPE_REDUCTION proposals), Deferred items (NOT opt-outs),
+      Unresolved ambiguities. Bonus Edge cases section also present.
+  - check_id: D-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      `original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/structure-filter.md`
+      exists on disk (44-line original confirmed in user task; sibling specs
+      structure-filter-spec.ts + structure-filter-run.md confirm the section
+      shape).
+  - check_id: D-STEP-01
+    status: PASS
+    evidence: |
+      Every original numbered step across all 5 blocks (Block 1 steps 1-5
+      after silent renumber fix; Block 2 steps 1-3; Block 3 steps 1-5;
+      Block 4 steps 1-2 + added implicit step 3; Block 5 steps 1-4 after
+      silent renumber fix) is mapped in Step mapping table to a specific
+      migrated location. Silent renumber fixes (Block 1 `1.2.3.3.3.`,
+      Block 4/5 `4.4.`) and typo fixes ("corectly"→"correctly",
+      "Open  the"→"Open the") all disclosed in Decisions §
+      "Source-text defect silent fixes" per chain rev 2 directive.
+  - check_id: D-STEP-02
+    status: PASS
+    evidence: |
+      Block 5 trailing "Expected result: filter is applied, filters are
+      synchronized in two open views" preserved as verification clause on
+      migrated Block 5 step 4. Per-block implicit "no console errors"
+      assertion preserved across all 5 blocks. All Block 4 sub-bullets
+      (sketched correctly + first on Filter Panel) preserved verbatim
+      as nested bullets under migrated Block 4 step 2.
+  - check_id: D-EDGE-01
+    status: PASS
+    evidence: |
+      All 7 implicit edge cases (filter state survival across panel
+      close+reopen, Use-as-filter with panel closed, hamburger Filter +
+      Add filter combinatorics, first-on-panel ordering, clone-view
+      cross-view sync, filter-panel auto-populate, console errors
+      throughout) preserved as scenario steps or Notes-level caveats.
+      No edge case silently dropped; report's Edge cases § enumerates
+      each with PRESERVED disposition.
+  - check_id: D-STRUCT-01
+    status: PASS
+    evidence: |
+      Chain YAML declares `depends_on: []` (independent scenario);
+      migrated frontmatter has no cross-scenario dependency to preserve.
+      GROK-14028 bug-coverage spans documented in Notes section as
+      defense-in-depth sister check, with Pattern 2 ownership routed
+      to dedicated bug-focused spec (chem-grok-14028-spec.ts).
+  - check_id: D-STRUCT-02
+    status: PASS
+    evidence: |
+      Original has 5 sub-blocks (not a matrix); migrated preserves all
+      5 as `### <name>` sub-scenarios. Chain YAML `matrix_axes: []`
+      confirms non-matrix shape. 5-in → 5-out preserved.
+  - check_id: D-UI-DELEGATION-01
+    status: PASS
+    evidence: |
+      SR-01 does NOT replace any UI flow with JS API equivalent — it
+      defers A-STRUCT-02 (a section-level structural property) to
+      chain-wide satisfaction via bug-focused candidates +
+      r-group-analysis.md organic edge coverage. Chain YAML
+      `ui_coverage_delegated_to: null` confirms scenario owns its own
+      UI coverage (all 8 ui_coverage_responsibility flows exercised
+      via UI driving in the migrated body, per Decisions §
+      Scenario constraint extraction (b)). Migrated Notes § "No JS
+      API substitution for UI flows" explicitly mandates UI driving.
+  - check_id: D-SAN-01
+    status: PASS
+    evidence: |
+      Report present and lists non-trivial decisions in all required
+      sections plus Edge cases. Decisions § enumerates target_layer
+      / coverage_type / strategy rationale, sibling consultations,
+      helpers reused + candidate helpers, bug library result, decision
+      log query result, source-text defect silent-fix disclosures,
+      scenario constraint extraction, and helpers/sub_features
+      invention check.
+  - check_id: D-SAN-02
+    status: PASS
+    evidence: |
+      No text from original silently dropped. JSON footer metadata
+      captured in chain YAML order_from_files + migrated Setup step 1.
+      Source-text defects (numbering glitches, typo, double-space,
+      menu phrasing) all silently fixed per chain rev 2 directive
+      AND each fix explicitly disclosed in Decisions § "Source-text
+      defect silent fixes" with original→migrated mapping. Block 4
+      `4. 4.` interpretation flagged in Unresolved ambiguities for QA
+      pair review.
+  - check_id: D-MERIT-01
+    status: PASS
+    evidence: |
+      SR-01 cites a real section-level structural property
+      (A-STRUCT-02 edge|perf coverage_type) whose satisfaction path
+      is owned chain-wide (10 bug_focused_candidates + organic
+      r-group-analysis.md edge coverage), not by per-scenario
+      mis-classification. Precedent: radar.md (2026-05-07),
+      info-panels.md/calculate.md/similarity-search.md (2026-05-11
+      same cycle). No step opted out for effort alone.
+  - check_id: D-MERIT-02
+    status: PASS
+    evidence: |
+      Deferred items section is empty (correctly populated with "(none)"
+      plus rationale that all 5 sub-scenarios are realizable against
+      current playwright + helpers-registry + atlas state). Candidate
+      helpers flagged as convenience abstractions Automator may inline
+      pending registration, NOT as deferrals blocking spec realization.

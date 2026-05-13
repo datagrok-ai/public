@@ -1,0 +1,253 @@
+verdict: SCOPE_REDUCTION
+gate: A
+review_round: 1
+failure_keys: []
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/scaffold-tree-functions.md
+migration_report_path: public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/scaffold-tree-functions-migration-report.md
+
+scope_reduction_proposal: |
+  **A-STRUCT-02 carryforward (chain-level edge/perf coverage).**
+
+  Defer A-STRUCT-02 evaluation on `Advanced/scaffold-tree-functions.md` to
+  chain-level / section-complete review (Gate F). Migration report's
+  `## Opt-outs (SCOPE_REDUCTION proposals)` section, entry SR-01
+  (scaffold-tree-functions-migration-report.md lines 272-299), explicitly
+  proposes this carryforward citing:
+
+  1. **Real structural dependency (not effort):** A-STRUCT-02 is a
+     section-level invariant — "at least one scenario in the section
+     is edge/perf". The chain (`scenario-chains/chem.yaml` rev 2) owns
+     section-level coverage_type distribution via
+     `bug_focused_candidates[]` (10 entries), each of which naturally
+     carries `coverage_type: edge` once authored (sister-pattern to
+     charts radar-save-reopen-bug.md / sunburst-date-column-bug.md /
+     tree-rowsource-onclick-state-bug.md / etc.).
+
+  2. **Forcing coverage_type=edge on this file would mis-classify.**
+     `Advanced/scaffold-tree-functions.md` is the section's UI smoke
+     (`pyramid_layer: ui-smoke`, `ui_coverage_plan.smoke_scenario` per
+     chain), realizing atlas critical path
+     `chem.cp.scaffold-tree-add-filter` (p0) end-to-end. It is a
+     canonical viewer create + configure walk on `smiles-50.csv`, no
+     bug-repro path, no parameter matrix, no perf threshold —
+     coverage_type=smoke is the only correct classification.
+
+  3. **Established precedent.** Decision-log line 8528-8530 records the
+     radar.md 2026-05-07 verdict:
+       "radar.md: SCOPE_REDUCTION (3 waivers — A-STRUCT-02 +
+        A-STRUCT-05 carryforward + A-MERIT-02 step 13 new)"
+     — canonical A-STRUCT-02 carryforward pattern. info-panels.md (this
+     same migration cycle, this same Critic A pass, 2026-05-11) also
+     resolved A-STRUCT-02 via the same SR-01 carryforward proposal and
+     received `SCOPE_REDUCTION` verdict per
+     info-panels.scenario.verdict.yaml.
+     `Advanced/scaffold-tree-functions.md` applies the identical
+     carryforward shape.
+
+  **Resolution path:** Gate F (coverage critic, section-complete)
+  re-verifies section-level A-STRUCT-02 satisfaction once the 10
+  `bug_focused_candidates[]` (chem-grok-12758-spec.ts,
+  chem-grok-17595-spec.ts, chem-github-3004-spec.ts, etc.) are
+  authored and carry `coverage_type: edge`. Section-complete
+  re-evaluation locks A-STRUCT-02 satisfaction for the chem section
+  as a whole.
+
+  **Scope of waiver:** A-STRUCT-02 verdict on this file is deferred to
+  chain-level evaluation. All other checks evaluated on merit and
+  pass.
+
+evidence_needed: ""
+
+claims:
+  - check_id: A-STRUCT-MECH-01
+    status: PASS
+    evidence: |
+      Frontmatter (lines 1-11) is well-formed YAML and contains all 4
+      required fields: `feature: chem`, `sub_features_covered` (5
+      atlas IDs), `target_layer: playwright`, `coverage_type: smoke`.
+      Also carries Block 6 migration fields (`produced_from: migrated`,
+      `original_path`, `migration_date`, `migration_report`,
+      `related_bugs: []`).
+
+  - check_id: A-STRUCT-MECH-02
+    status: PASS
+    evidence: |
+      `## Scenarios` heading at line 53 anchors the scenario section;
+      scenario sub-heading `### Scaffold Tree add + generate + filter
+      + inspect` at line 55. Setup factored under `## Setup` (line 37),
+      Notes under `## Notes` (line 100). Convention matches section
+      sibling `info-panels.md`.
+
+  - check_id: A-STRUCT-MECH-03
+    status: PASS
+    evidence: |
+      Scenario "Scaffold Tree add + generate + filter + inspect"
+      contains 9 numbered steps (lines 61-98: 1. Open ... 9. With
+      the Scaffold Tree viewer still focused, open the viewer's
+      property panel ...). All steps start with proper "N." numbering.
+
+  - check_id: A-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Single scenario in body has 9 non-empty steps. No empty
+      scenarios present.
+
+  - check_id: A-STRUCT-MECH-05
+    status: PASS
+    evidence: |
+      `target_layer: playwright` is a member of the canonical enum
+      `{uitests-package, playwright, api-contract, manual-only}`.
+
+  - check_id: A-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      `coverage_type: smoke` is a member of the canonical test-kind
+      enum `{smoke, regression, edge, perf}` (unified field name post
+      2026-04-30 rename).
+
+  - check_id: A-STRUCT-01
+    status: PASS
+    evidence: |
+      Scenario "Scaffold Tree add + generate + filter + inspect"
+      interleaves 5 atlas sub-features in interaction:
+      `chem.analyze.scaffold-tree` (parent), `.viewer` (steps 3, 8,
+      9 — viewer surface), `.add` (step 2 — top-menu add), `.generate`
+      (steps 4-5 — magic-wand getScaffoldTree script), `.filter`
+      (steps 6-7 — Scaffold Tree Filter). 5 sub-features ≥ 3
+      threshold.
+
+  - check_id: A-STRUCT-02
+    status: FAIL
+    evidence: |
+      Strict reading: scenario has `coverage_type: smoke`, no scenario
+      in this file has `coverage_type: edge` or `coverage_type: perf`.
+      Per A-STRUCT-02 letter this is FAIL.
+
+      HOWEVER per the SR-01 carryforward proposal explicitly cited in
+      `scaffold-tree-functions-migration-report.md` lines 272-299, and
+      per the established radar.md 2026-05-07 precedent (decision-log
+      line 8529) + info-panels.md 2026-05-11 sister-pilot precedent
+      (info-panels.scenario.verdict.yaml: SCOPE_REDUCTION carryforward),
+      this FAIL routes to file-level verdict **SCOPE_REDUCTION**
+      (carryforward), NOT FAIL. Section-level A-STRUCT-02 satisfaction
+      is owned by the chain's 10 `bug_focused_candidates[]` (each
+      naturally `coverage_type: edge` once authored) and re-verified by
+      Gate F (coverage critic, section-complete). See
+      scope_reduction_proposal above.
+
+  - check_id: A-STRUCT-03
+    status: PASS
+    evidence: |
+      Frontmatter `coverage_type: smoke` (line 5) — a valid test-kind
+      enum value. No severity-axis (`p0..p3`) misuse.
+
+  - check_id: A-STRUCT-04
+    status: PASS
+    evidence: |
+      Setup section (lines 37-52) factors three setup beats: dataset
+      provisioning, Chem package precondition, no-fixture-consumed
+      declaration. The scenario body (steps 1-9) does NOT repeat setup
+      — it consumes the setup state and walks the scenario logic. No
+      duplicated setup across scenarios (single scenario in file).
+
+  - check_id: A-STRUCT-05
+    status: PASS
+    evidence: |
+      Atlas `feature-atlas/chem.yaml` lines 428-463 define 5 scaffold-
+      tree sub-features (`chem.analyze.scaffold-tree`, `.viewer`,
+      `.add`, `.filter`, `.generate`). The scenario's
+      `sub_features_covered` enumerates all 5 (100%). Coverage well
+      above the 70% threshold.
+
+  - check_id: A-STRUCT-06
+    status: PASS
+    evidence: |
+      1 scenario × 5 sub-features = average 5 sub-features per
+      scenario, ≥ 2 density floor. Additionally `coverage_type: smoke`
+      exempts under the smoke-scenario clause (smoke may cover 1
+      sub-feature).
+
+  - check_id: A-CONT-01
+    status: PASS
+    evidence: |
+      Scenario uses real names throughout:
+      - Real dataset: `System:DemoFiles/chem/smiles-50.csv` (atlas-
+        and chain-referenced).
+      - Real top-menu path: `Chem > Analyze > Scaffold Tree` (atlas
+        `chem.analyze.scaffold-tree.add` interactions).
+      - Real package surfaces: `Chem/src/package.ts#L2237` (atlas),
+        `Chem/src/widgets/scaffold-tree.ts`, `ScaffoldTreeViewer`,
+        `getScaffoldTree`, `Scaffold Tree Filter`.
+      - Real UI affordances: "magic-wand icon" with verbatim tooltip
+        "Generate from molecular column" (preserved from original).
+      - Real placeholder text: "Scaffold Tree is empty" (preserved
+        from original Step 2 sub-bullet).
+      No angle-bracket / square-bracket / generic-standin placeholders
+      anywhere. No `<column>`, `<X>`, `[fill in]`, "column1", "the
+      column" patterns present.
+
+  - check_id: A-BUG-01
+    status: PASS
+    evidence: |
+      Atlas `feature-atlas/chem.yaml` scaffold-tree sub-features (lines
+      428-463) do NOT carry a populated `known_issues` field with
+      `test_coverage: needed` entries. Per A-BUG-01 spec, returns
+      PASS-by-vacuity when atlas `known_issues` is empty or absent.
+
+      For completeness: three bug-library entries (GROK-12758,
+      GROK-17595, github-3004) intersect this scenario's sub_features.
+      All three are parallel-coverage candidates owned by dedicated
+      bug-focused specs in chain `bug_focused_candidates[]`
+      (chem-grok-12758-spec.ts, chem-grok-17595-spec.ts,
+      chem-github-3004-spec.ts) per migration report Decisions § "Bug
+      library consulted". This scenario does not exercise the
+      reproduction paths (no Sketcher open, no project save/reopen,
+      no multi-table state); all three are cited in migrated Notes
+      as awareness-only. `related_bugs: []` is correct.
+
+  - check_id: A-MERIT-01
+    status: PASS
+    evidence: |
+      The single SR-01 in the migration report cites a real structural
+      dependency: A-STRUCT-02 is a section-level invariant whose
+      satisfaction path is owned by chain `bug_focused_candidates[]`
+      (a real chain-architectural property, not "effort" or
+      "complexity"). No step in the migrated body is opted out for
+      effort. No step is deferred for complexity. The scenario
+      preserves all 5 original steps + sub-bullets fully realized as
+      9 migrated steps (per Step mapping table — zero drops).
+
+  - check_id: A-MERIT-02
+    status: PASS
+    evidence: |
+      No "TODO: add later", "to be done in next phase", or
+      unprompted-deferral language present in the scenario body or
+      Notes. The Notes section's "Cross-cutting bug awareness" blocks
+      (GROK-12758 / GROK-17595 / github-3004) cite the dedicated
+      bug-focused candidate specs that own each invariant — these
+      are real chain-architectural references (chain YAML
+      `bug_focused_candidates[]`), not deferrals.
+      The migration report's "Deferred items (NOT opt-outs)" section
+      is explicitly empty ("(none)" — line 303). Lattice Rule 13
+      compliant.
+
+verdict_summary: |
+  SCOPE_REDUCTION verdict, driven exclusively by SR-01 (A-STRUCT-02
+  chain-level carryforward) per migration report Opt-outs section.
+
+  All 6 mechanical checks PASS.
+  10 content/structural/merit checks: 9 PASS + 1 strict-FAIL on
+  A-STRUCT-02 routed to file-level SCOPE_REDUCTION per SR-01 carryforward
+  precedent (radar.md 2026-05-07 + info-panels.md 2026-05-11 sister
+  pilots, decision-log line 8529).
+
+  No effort/complexity opt-outs anywhere in artifact. No invented
+  sub_features / helpers / placeholders. Scenario fully realizes atlas
+  critical path `chem.cp.scaffold-tree-add-filter` (p0) end-to-end,
+  walks the canonical viewer-create+configure smoke pattern, and
+  preserves all 5 original steps + sub-bullets as 9 migrated steps
+  (per Step mapping).
+
+  Section-level A-STRUCT-02 satisfaction is re-verified by Gate F
+  (section-complete) once the chain's 10 `bug_focused_candidates[]`
+  are authored.

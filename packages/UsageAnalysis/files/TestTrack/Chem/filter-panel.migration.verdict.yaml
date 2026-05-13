@@ -1,0 +1,50 @@
+verdict: PASS
+gate: D
+review_round: 1
+failure_keys: []
+claims:
+  - check_id: D-STRUCT-MECH-01
+    status: PASS
+    evidence: "Report file exists at public/packages/UsageAnalysis/files/TestTrack/Chem/filter-panel-migration-report.md (411 lines, non-empty), matching <original-name>-migration-report.md convention."
+  - check_id: D-STRUCT-MECH-02
+    status: PASS
+    evidence: "Report contains '## Step mapping' Markdown table with 15 rows mapping every original numbered bullet (Lines 1-15 in chaotic numbering) + JSON footer + 3 silent-fix entries to migrated locations in Setup + Blocks A-E."
+  - check_id: D-STRUCT-MECH-03
+    status: PASS
+    evidence: "Migrated frontmatter has all 9 required Block 6 fields (feature=chem, sub_features_covered=[6 ids], target_layer=playwright, coverage_type=regression, produced_from=migrated, original_path=public/packages/UsageAnalysis/files/TestTrack/Chem/filter-panel.md, migration_date=2026-05-11, migration_report=filter-panel-migration-report.md, related_bugs=[GROK-14028]). No deprecated `migrated_from` present."
+  - check_id: D-STRUCT-MECH-04
+    status: PASS
+    evidence: "Report contains all required ## sections: Step mapping, Decisions, Opt-outs (SR-01 present), Deferred items (explicit '(none)' with rationale), Unresolved ambiguities (7 items), plus Edge cases (8 items)."
+  - check_id: D-STRUCT-MECH-05
+    status: PASS
+    evidence: "original_path public/packages/UsageAnalysis/files/TestTrack/Chem/filter-panel.md exists as the migrated file itself (in-place migration per chain convention; pre-migration 22-line chaotic-numbered source body confirmed in report Step mapping § preamble and via git show diff)."
+  - check_id: D-STEP-01
+    status: PASS
+    evidence: "All 11 original numbered bullets mapped (Lines 1-15 chaotic numbering → Setup step 1 + Scenarios Blocks A-E steps 1-13). Chaotic-line-numbering gap at original lines 12 and 14 disclosed as source-text defect silently fixed per chain rev 2 footer note (c). No step silently dropped."
+  - check_id: D-STEP-02
+    status: PASS
+    evidence: "Original expected-result clauses preserved + verifications made explicit: Block A step 3 (table filters + substructure highlight overlay), Block A step 4 (per-tab re-evaluation + row-set update + no console errors), Block B step 6 (panel reopens + filter populated + orientation preserved per atlas + table filters), Block C step 9 (filter added + table filters), Block D step 11 (filter added at TOP of panel — verbatim 'should be added to the top of the Filter Panel' preserved), Block E step 12 (logical AND composition + toggle invariant + no console errors), Block E step 13 (verbatim 'we must always observe the same structure' filter-sketcher synchronization invariant preserved)."
+  - check_id: D-EDGE-01
+    status: PASS
+    evidence: "All 8 implicit edges preserved (4 settings tabs Contains/Included-in/Exact/Similar, Use-as-filter orientation-preservation, drag-and-drop top-of-panel position invariant, cross-filter logical-AND composition, filter-sketcher synchronization round-trip invariant, console errors throughout). GROK-14028 Reset-cleanup gap routed to bug-focused candidate chem-grok-14028-spec.ts per chain Pattern 2 — documented in Edge cases + Notes as defense-in-depth owner, not silently dropped. MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT bound flagged for atlas curator (out-of-scope here)."
+  - check_id: D-STRUCT-01
+    status: PASS
+    evidence: "depends_on: [] per chain rev 2 output_plan.filter-panel.md; no fixture chain to preserve. Sibling filter-panel-spec.ts noted as READ-ONLY consultation per Invariant 2 (Automator will extend it; test.skip marker assessment deferred). Cross-cutting bug spans (4 of 10 chain bug_focused_candidates: GROK-12758, GROK-14028, GROK-17595, GitHub-2942) explicitly enumerated in Decisions; only GROK-14028 (directly-overlapping affected sub_features) cited in related_bugs per Pattern 2 discipline."
+  - check_id: D-STRUCT-02
+    status: PASS
+    evidence: "No matrix reduction. Original is single-scenario 11-bullet interaction walk; migrated body preserves all 11 bullets organized into 5 labeled blocks (A=Filter Panel basics, B=Use as filter, C=Hamburger menu Filter, D=Drag-and-drop, E=Cross-filter + sketcher-sync). Step-numbering chaos resolution + typo `sketcherr`→`sketcher` + `Drag'n'drop`→`Drag-and-drop` canonicalization documented in Decisions § Source-text fixes silently applied per chain rev 2 directive footer note (c) (Olena 2026-05-11)."
+  - check_id: D-UI-DELEGATION-01
+    status: PASS
+    evidence: "SR-01 is structural (A-STRUCT-02 carryforward, not UI→JS-API substitution). Migrated Notes explicitly state 'No JS API substitution' for all 11 chain ui_coverage_responsibility entries (chem-substructure-filter-draw / -settings-contains / -included-in / -exact / -similar / chem-substructure-use-as-filter / -hamburger-menu-add-filter / -filter-remove / -drag-drop-to-panel / -cross-filter-other-types / -sketcher-modify-from-hamburger). Decisions § Scenario constraint extraction (a)/(b) confirm UI coverage owned in-scenario; the filter-sketcher synchronization invariant explicitly requires real DOM observation across two widgets and cannot be JS-API-substituted. D-UI-DELEGATION-01 not applicable (no UI→JS-API SR proposed)."
+  - check_id: D-SAN-01
+    status: PASS
+    evidence: "Report includes Step mapping, Decisions, Opt-outs (SR-01), Deferred items (explicit '(none)'), Edge cases (8 items), Unresolved ambiguities (7 items). All non-trivial decisions captured (target_layer, coverage_type, strategy, 5 sibling consultations including chemical-space + activity-cliffs + sketcher + info-panels + filter-panel-spec.ts, helpers reused + 6 candidate helpers, bug library 4-bug review, decision log query, source-text fixes (step renumber + 2 typos), scenario constraint extraction (a)-(e), UI delegation status, cross-cutting bug citations across 4 chain bug_focused_candidates)."
+  - check_id: D-SAN-02
+    status: PASS
+    evidence: "Three silent fixes (step-numbering chaos resolution with block labels A-E, typo sketcherr→sketcher, Drag'n'drop→Drag-and-drop canonicalization) fully disclosed in Decisions § Source-text fixes silently applied per chain rev 2 directive (Olena 2026-05-11) and footer note (c). JSON footer order:11 treated as metadata-not-step per documented convention. No silent drops of semantic content. All preserved/dropped decisions explicit."
+  - check_id: D-MERIT-01
+    status: PASS
+    evidence: "SR-01 cites real section-level structural property (A-STRUCT-02 satisfaction owned by chain bug_focused_candidates[chem-grok-14028-spec.ts] which directly targets filter-panel sketcher-state-cleanup invariant — strongest possible chain-level carrier, the bug is cited in this scenario's related_bugs frontmatter + same-cycle sibling r-group-analysis.md edge-coverage carrier), not effort. No other opt-outs. Candidate helpers (6 entries: toggleFilterPanel, drawSubstructureInFilterPanelSketcher, cycleSubstructureFilterSettingsTabs, useAsFilter, openColumnHamburgerFilter, dragColumnHeaderToFilterPanel) flagged but not used as deferral mechanism — Automator may inline."
+  - check_id: D-MERIT-02
+    status: PASS
+    evidence: "No 'deferred to later phase' clauses on scenario realization. Selector-reference write proposal for grok-browser/references/viewers/filter-panel.md explicitly flagged as Phase 2 enhancement (Automator inlines selectors via existing filter-panel-spec.ts patterns + page.evaluate introspection per sibling pattern), not blocking. test.skip marker in existing filter-panel-spec.ts flagged as Automator-side extension-time assessment, not Migrator-side deferral. Candidate helpers may be inlined by Automator pending registration."

@@ -1,59 +1,167 @@
+/* ---
+sub_features_covered: [chem.analyze.elemental, chem.analyze.elemental.top-menu, chem.analyze.elemental.run]
+--- */
+// Frontmatter extraction (Section 1 of automator-prompt):
+//   target_layer: playwright
+//   pyramid_layer: integration
+//   sub_features_covered: [chem.analyze.elemental, .top-menu, .run]
+//   ui_coverage_responsibility: [chem-elemental-analysis-top-menu, chem-elemental-analysis-checkboxes]
+//     (delegated_to: null — scenario owns its own UI coverage)
+//   related_bugs: []
+//
+// Source: elemental-analysis.md (migrated 2026-05-11), authored under
+//   chem-migrate-spec-phase-2026-05-12 cycle per
+//   chem-migrate-spec-phase-automator-prompt.md.
+//
+// Multi-format matrix per migrated scenario Step 1-6:
+//   D1 = System:AppData/Chem/tests/smiles-50.csv (SMILES)
+//   D2 = System:AppData/Chem/mol1K.sdf (molV2000)
+//   D3 = System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf (molV3000)
+//
+// Breakthrough pattern (chem-new-2026-05-11-batch-2-breakthrough, 2026-05-12):
+//   split-evaluate setup + 30s post-addTableView settle + console.error hook.
+//   Per-variant the cascade fires once (warm package state persists between
+//   variants in the same test session) — 30s wait kept on D1 only; D2/D3 use
+//   a shorter 8s post-addTableView wait per warm-session expectations.
+//
+// Top-menu walk selectors per references/chem.md "Top-menu Chem entries" §:
+//   [name="div-Chem"] dispatchEvent click → .d4-menu-item-label text matching
+//   "Elemental Analysis..." → click `.closest('.d4-menu-item')`.
+//
+// Paired scenario: elemental-analysis.md
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
-test.use(specTestOptions);
+test.use({...specTestOptions, storageState: 'auth.json'});
 
-test('Chem: Elemental Analysis', async ({page}) => {
-  test.setTimeout(300_000);
+interface Variant { id: string; path: string; format: string; opener: 'csv' | 'table'; warmWaitMs: number; }
+const variants: Variant[] = [
+  {id: 'D1', path: 'System:AppData/Chem/tests/smiles-50.csv',                 format: 'smiles',   opener: 'csv',   warmWaitMs: 30000},
+  {id: 'D2', path: 'System:AppData/Chem/mol1K.sdf',                    format: 'molV2000', opener: 'table', warmWaitMs: 8000},
+  {id: 'D3', path: 'System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf',  format: 'molV3000', opener: 'table', warmWaitMs: 8000},
+];
+
+test('Chem: Elemental Analysis multi-format walk (smiles / molV2000 / molV3000)', async ({page}) => {
+  test.setTimeout(420_000);
 
   await loginToDatagrok(page);
 
-  await page.evaluate(async () => {
-    document.body.classList.add('selenium');
-    try { grok.shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
-    try { grok.shell.windows.simpleMode = true; } catch (e) {}
-    grok.shell.closeAll();
-    await new Promise(r => setTimeout(r, 500));
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/smiles.csv');
-    grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-    for (let i = 0; i < 50; i++) {
-      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise(r => setTimeout(r, 200));
-    }
-    await new Promise(r => setTimeout(r, 5000));
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
-
-  await softStep('Open Chem → Analyze → Elemental Analysis → dialog', async () => {
-    await page.evaluate(async () => {
-      const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
-      chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 500));
-      const ea = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find(m => m.textContent!.trim() === 'Elemental Analysis...') as HTMLElement;
-      (ea.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
-    });
-    await page.locator('.d4-dialog').waitFor({timeout: 10000});
-  });
-
-  await softStep('Enable all checkboxes + OK → element columns appended', async () => {
+  await softStep('Setup: close all + selenium flags + hook console.error', async () => {
     await page.evaluate(() => {
-      const dialog = document.querySelector('.d4-dialog');
-      if (!dialog) return;
-      dialog.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        if (!(cb as HTMLInputElement).checked) (cb as HTMLElement).click();
-      });
+      document.body.classList.add('selenium');
+      try { grok.shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
+      try { grok.shell.windows.simpleMode = true; } catch (e) {}
+      grok.shell.closeAll();
+      (window as any).__ea_errors = [];
+      const orig = console.error;
+      console.error = function(...args: any[]) {
+        (window as any).__ea_errors.push(args.map((a: any) => String(a)).join(' '));
+        orig.apply(console, args as any);
+      };
     });
-    const colsBefore = await page.evaluate(() => grok.shell.t.columns.length);
-    await page.locator('[name="button-OK"]').click();
-    await page.waitForTimeout(15000);
-    const colsAfter = await page.evaluate(() => grok.shell.t.columns.length);
-    expect(colsAfter).toBeGreaterThan(colsBefore);
+    await page.waitForTimeout(500);
   });
+
+  for (const v of variants) {
+    await softStep(`${v.id} (${v.format}): open ${v.path}`, async () => {
+      await page.evaluate(async ({path}: {path: string; opener: string}) => {
+        grok.shell.closeAll();
+        const isSdf = path.toLowerCase().endsWith('.sdf');
+        let df: any;
+        if (isSdf) {
+          await ((DG as any).Func.find({name: 'OpenFile'})[0])
+            .prepare({fullPath: path}).call(undefined, undefined, {processed: false});
+          for (let __i = 0; __i < 30 && !grok.shell.t; __i++) await new Promise(r => setTimeout(r, 200));
+          df = grok.shell.t;
+        } else {
+          df = await grok.dapi.files.readCsv(path);
+          grok.shell.addTableView(df);
+        }
+        (window as any).__ea_df = df;
+        (window as any).__ea_preCount = df.columns.length;
+      }, {path: v.path, opener: v.opener});
+    });
+
+    await softStep(`${v.id}: wait ${v.warmWaitMs}ms for Chem cascade (semType + dialog registration)`, async () => {
+      await page.waitForTimeout(v.warmWaitMs);
+    });
+
+    await softStep(`${v.id}: verify Molecule semType + Grid renders`, async () => {
+      const result = await page.evaluate(() => {
+        const df = (window as any).__ea_df;
+        const cols = df.columns.toList().map((c: any) => ({name: c.name, semType: c.semType}));
+        return {hasMol: cols.some((c: any) => c.semType === 'Molecule'), cols};
+      });
+      if (!result.hasMol)
+        throw new Error(`${v.id} setup failed: no Molecule column. cols=${JSON.stringify(result.cols)}`);
+      await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 20000});
+    });
+
+    await softStep(`${v.id}: open Chem > Analyze > Elemental Analysis... dialog`, async () => {
+      await page.evaluate(async () => {
+        const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement | null;
+        if (!chemMenu) throw new Error('[name="div-Chem"] not found in DOM (Chem top-menu missing)');
+        chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+        await new Promise(r => setTimeout(r, 600));
+        const ea = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+          .find(m => (m.textContent ?? '').trim() === 'Elemental Analysis...') as HTMLElement | undefined;
+        if (!ea) throw new Error('"Elemental Analysis..." sub-menu item not found');
+        (ea.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      });
+      await page.locator('.d4-dialog').waitFor({timeout: 15000});
+    });
+
+    await softStep(`${v.id}: toggle all per-element checkboxes ON`, async () => {
+      const counts = await page.evaluate(() => {
+        const dlg = document.querySelector('.d4-dialog');
+        if (!dlg) return {total: 0, toggled: 0};
+        const checkboxes = Array.from(dlg.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
+        let toggled = 0;
+        for (const cb of checkboxes) {
+          if (!cb.checked) {
+            cb.click();
+            toggled++;
+          }
+        }
+        return {total: checkboxes.length, toggled};
+      });
+      expect(counts.total, `${v.id}: per-element checkboxes must exist in dialog`).toBeGreaterThan(0);
+    });
+
+    await softStep(`${v.id}: click OK and verify column-append OR error-balloon`, async () => {
+      const preCount = await page.evaluate(() => (window as any).__ea_preCount as number);
+      await page.locator('.d4-dialog [name="button-OK"]').click();
+      // Wait up to 30s for column append or balloon-error to surface
+      const outcome = await page.waitForFunction((preCount: number) => {
+        const df = (window as any).__ea_df;
+        if (df.columns.length > preCount) return {appended: df.columns.length - preCount, balloon: null};
+        const balloon = document.querySelector('.d4-balloon, .grok-balloon');
+        if (balloon && balloon.textContent && balloon.textContent.length > 5)
+          return {appended: 0, balloon: balloon.textContent.slice(0, 200)};
+        return false;
+      }, preCount, {timeout: 30000}).then(jsh => jsh.jsonValue()).catch(() => null) as {appended: number; balloon: string | null} | null;
+      expect(outcome, `${v.id}: neither column-append nor error balloon within 30s — silent failure not allowed`).toBeTruthy();
+      // The scenario asserts: appended columns OR visible balloon. Both are
+      // valid outcomes per "verify per-element atom-count columns appended
+      // OR a user-visible error balloon is shown — never silent" (migrated
+      // body, Implicit cross-variant invariants).
+      const ok = (outcome!.appended > 0) || !!outcome!.balloon;
+      expect(ok, `${v.id}: outcome=${JSON.stringify(outcome)}`).toBe(true);
+    });
+
+    // No closeAll between variants — the next variant's softStep calls closeAll
+    // inside its open evaluate; this keeps the loop tight and avoids extra waits.
+  }
+
+  // Console-error sanity check on the cumulative session.
+  const consoleErrors = await page.evaluate(() => ((window as any).__ea_errors as string[] | undefined) ?? []);
+  const fatalErrors = consoleErrors.filter((e: string) =>
+    /TypeError|cannot read|undefined is not|null is not/i.test(e) &&
+    !/non-fatal|warning/i.test(e));
+  expect(
+    fatalErrors.length,
+    `Fatal console errors during Elemental Analysis multi-format walk: ${JSON.stringify(fatalErrors.slice(0, 5))}`,
+  ).toBe(0);
 
   await page.evaluate(() => grok.shell.closeAll());
 

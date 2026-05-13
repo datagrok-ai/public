@@ -1,0 +1,103 @@
+revision: 3
+schema_version: "v3.0"
+cycle_id: chem-new-2026-05-12
+predecessor_cycle_id: chem-new-2026-05-11
+feature: chem
+mode: validator
+gate: B
+review_round: 3
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-14028-spec.ts
+invoked_at: 2026-05-12T09:52:00Z
+verdict: PASS
+verdict_transition: SCOPE_REDUCTION (R1/R2 env-pending) → PASS (R3 post-surgery)
+sr_class: null
+scope_reduction_proposal: null
+
+hypothesis_history:
+  - round: 1
+    category: test-bug + selectors-pending
+    theory: |
+      Initial blind-author surfaced 3 surface test-bugs (viewer-Grid strict-mode,
+      sketch-link missing, Reset action vector unknown). Closed test.fixme with
+      selectors-recon TODO.
+    investigation_evidence: |
+      Original Round 1 evidence preserved in this verdict file prior revision
+      (rev 2 at 2026-05-11T15:30:00Z). Three test-bugs documented; closed pending
+      MCP recon.
+    fix_applied: test.fixme + selectors-recon TODO.
+    outcome: SR-routed pending recon
+    next_round_id: 2
+  - round: 2
+    category: environmental-flake (chem-filter cold-start hypothesis — superseded by breakthrough)
+    theory: |
+      Post-MCP-recon (chem.md selectors validated), Validator surfaced
+      "deeper env-bootstrap issue": .chem-filter widget absent from cold
+      Playwright DOM, sketch-link missing, only 39 filters where MCP warm
+      session shows 43. Attributed to Chem-package-cold-start.
+    investigation_evidence: |
+      Diagnostic probe revealed .chem-filter / .grok-sketcher / .sketch-link
+      all absent in fresh session DOM. force-load via
+      `grok.dapi.packages.filter('name = "Chem"').first().then(p => p.load())`
+      + `Chem:getRdKitModule` call hit 180s test timeout; subsequently 300s
+      budget also exhausted. Documented in chem-grok-17964 R4 verdict as a
+      universal pattern (incorrectly).
+    fix_applied: warmChemPackage(page) helper landed in spec-login.ts +
+      test.fixme(true, ...) restored with env-bootstrap-pending rationale.
+    outcome: SR-routed env-pending defensive skip — SUPERSEDED by R3
+      breakthrough re-attribution.
+    next_round_id: 3
+  - round: 3
+    category: PASS (proven-pattern post-surgery)
+    theory: |
+      Per chem-new-2026-05-11-batch-2-breakthrough re-attribution: the actual
+      structural blocker was Playwright + WASM event-loop interaction inside
+      long page.evaluate chains, NOT Chem package cold-start. With the
+      canonical pattern applied — split-evaluate setup + 30s outside-evaluate
+      post-addTableView settle + console.error hook — Chem autostart cascade
+      fires reliably on SPGI.csv within 30s budget, chem-filter widget
+      registers, sketch-link materializes, Filter Panel + sketcher + Clear +
+      3-layer-cleanup invariant all observable.
+    investigation_evidence: |
+      Surgical edit applied:
+        1. Removed warmChemPackage import + pre-call (obsolete per breakthrough
+           re-attribution; pre-warming BEFORE dataset opening is wasted budget).
+        2. Removed test.fixme.
+        3. Reduced test.setTimeout(300_000) → test.setTimeout(180_000).
+        4. Split monster first softStep (lines 52-88 prior rev) into four
+           shorter softSteps: close all + selenium flags / Read CSV +
+           addTableView / 30s post-addTableView settle / Verify semType +
+           Grid render. Preserved 45s sketch-link probe and substantive
+           Filter / Clear / Assert flow unchanged.
+      Validator run:
+        - DATAGROK_URL=https://dev.datagrok.ai, workers=1,
+          NODE_OPTIONS=--max-old-space-size=8192
+        - Duration 56.1s (total 58.8s including Playwright overhead)
+        - All softSteps green
+        - 3-layer cleanup invariant assertion observable + green:
+          L1 BitSet=df.rowCount, L2 clear-btn absent + summary clean,
+          L3 no leaked virtual columns.
+    fix_applied: |
+      Per-spec body redesign per the canonical breakthrough pattern. No
+      changes to playwright.config.ts. No globalSetup helper required.
+    outcome: PASS
+    next_round_id: null
+
+remediation_path: null
+
+cross_references:
+  - 'cycle_completions[chem-new-2026-05-11-batch-2-breakthrough] :: breakthrough retro (root-cause re-attribution)'
+  - public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-17964.gateB.verdict.yaml (canonical PASS pattern source)
+  - public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-16870.gateB.verdict.yaml (Phase A.1 peer PASS this cycle)
+  - public/packages/UsageAnalysis/files/TestTrack/Chem/chem-github-3004.gateB.verdict.yaml (Phase A.2 peer PASS this cycle)
+  - public/packages/UsageAnalysis/files/TestTrack/spec-login.ts (warmChemPackage helper retained for any non-cold-start use; obsolete for cold-start scenarios)
+
+claims:
+  - check_id: B-RUN-01
+    status: PASS
+    evidence: |
+      Spec executed under DATAGROK_URL=https://dev.datagrok.ai, workers=1,
+      NODE_OPTIONS=--max-old-space-size=8192. Duration 56.1s. All softSteps
+      green. 3-layer cleanup invariant green: L1 BitSet cleared
+      (filter.trueCount === rowCount), L2 sketcher UI cleared (clear-btn
+      absent + summary empty of SMILES pattern), L3 no leaked virtual
+      `~*substructure*` / `~*highlight*` columns.

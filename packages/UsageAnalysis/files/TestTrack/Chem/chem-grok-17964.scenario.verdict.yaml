@@ -1,0 +1,83 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: chem-new-2026-05-11-batch-2
+feature: chem
+mode: scenario
+review_round: 1
+review_method: abbreviated-inline (NOT subagent-isolated)
+review_method_rationale: |
+  Structural isomorphism with GROK-18407 batch-1 precedent (same `strategy:
+  simple` chain declaration for `bug_focused_candidates[]`, same single-
+  invariant bug-focused shape, same A-STRUCT-01/A-STRUCT-06 SR pattern with
+  A-STRUCT-02 chain-wide satisfaction via r-group-analysis.md /
+  mmp.md organic edge presence). Per cycle_completions
+  [chem-new-2026-05-11-batch-1] lesson #6 — abbreviated inline review is
+  acceptable for batch-2+ specs of identical shape; full subagent review
+  reserved for FIRST spec of a new shape.
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-17964.md
+invoked_at: 2026-05-11T16:55:00Z
+verdict: SCOPE_REDUCTION
+failure_keys: [A-STRUCT-01, A-STRUCT-06]
+scope_reduction_proposal: |
+  Accept as deliberately narrow bug-focused regression-lock scenario (single
+  edge case, GROK-17964). Document scope in frontmatter (already
+  `pyramid_layer: bug-focused`, `coverage_type: edge`) and waive A-STRUCT-01 /
+  A-STRUCT-06 because chain YAML
+  (`scenario-chains/chem.yaml :: bug_focused_candidates[chem-grok-17964-spec.ts]`)
+  declares `strategy: simple` with parallel-coverage on `chem.notation.*`
+  owned by `info-panels.md` (Context Panel walk, `coverage_type: regression`)
+  and `sketcher.md` (notation round-trip, `coverage_type: regression`).
+  The 3+ sub-feature density requirement is structurally incompatible with a
+  single-invariant bug-lock authored under an approved chain reduction;
+  combining sub-features further would dilute the regression signal.
+  Precedent: same SR pattern accepted for chem-grok-18407 (batch-1) +
+  r-group-analysis.md / mmp.md during chem-migrate-2026-05-11 cycle.
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: Frontmatter valid YAML with all required fields (feature, sub_features_covered, target_layer=playwright, coverage_type=edge, pyramid_layer=bug-focused, related_bugs=[GROK-17964]).
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: Body contains `## Scenarios` group with `### Block A` scenario heading.
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: Block A has 8 numbered steps (open + baseline + cancel + complete + on-original + on-new-col + multi-cancel + global-count).
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: Single scenario is non-empty with substantive steps grounded in MCP-validated selectors.
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: target_layer=playwright is allowed enum value.
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: coverage_type=edge is allowed enum value.
+  - check: A-STRUCT-01
+    status: FAIL
+    evidence: Scenario lists 3 sub-features but single Block A exercises one interaction lifecycle (Convert Notation dialog open + cancel + commit + multi-invocation). SR-accepted per chain `strategy: simple` and bug-focused single-invariant design (precedent GROK-18407 batch-1).
+  - check: A-STRUCT-02
+    status: PASS
+    evidence: coverage_type=edge satisfies edge-or-perf requirement chain-wide via r-group-analysis.md / mmp.md / chem-grok-18407 organic edge presence; scenario itself is registration-leak regression-lock.
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: Single scenario inherits coverage_type=edge from frontmatter; no severity-axis values used.
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: ## Setup section factors login, dataset choice rationale, and fixture-independence before scenarios.
+  - check: A-STRUCT-05
+    status: PASS
+    evidence: Bug-focused scenario scoped narrow per chain YAML; companion info-panels.md owns happy-path Context Panel walk of chem.notation.* surfaces.
+  - check: A-STRUCT-06
+    status: FAIL
+    evidence: Single non-smoke scenario covers one focused interaction lifecycle (registration count across cancel + commit + multi-invocation); density below 2 under strict reading. SR-accepted per chain `strategy: simple`.
+  - check: A-CONT-01
+    status: PASS
+    evidence: Real names used throughout (canonical_smiles, label.d4-link-action, [name="input-Target-Notation"], [name="button-OK"], molV2000, .d4-accordion-pane). No placeholders.
+  - check: A-BUG-01
+    status: PASS
+    evidence: related_bugs=[GROK-17964] in frontmatter; scenario realizes one of the 6 remaining bug_focused_candidates from chem-migrate-2026-05-11 chain.
+  - check: A-MERIT-01
+    status: PASS
+    evidence: No effort/complexity opt-outs; project-reload deferral cites real cross-spec coupling boundary (auth.json + upload + reload navigation) AND is explained as cross-cutting "context panel state persistence" gap left to a future cycle if it surfaces.
+  - check: A-MERIT-02
+    status: PASS
+    evidence: No TODO-add-later markers; deferrals bounded by chain YAML scope and the action-lifecycle invariant scope (registration exactly-once during invocation, NOT persistence).

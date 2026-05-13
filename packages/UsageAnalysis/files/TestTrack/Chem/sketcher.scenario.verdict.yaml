@@ -1,0 +1,35 @@
+verdict: SCOPE_REDUCTION
+gate: A
+mode: scenario
+scenario: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md
+report: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher-migration-report.md
+date: 2026-05-11
+critic: opus-4-7-1m
+
+summary: |
+  Scenario quality checks pass on the migrated playwright-layer canonical sketcher walk
+  (Favorites + Recent + Copy + Paste round-trip + opportunistic backend enumeration).
+  A-STRUCT-02 (at least one scenario with coverage_type edge or perf) does NOT pass on
+  THIS scenario in isolation — coverage_type: regression is the correct natural fit
+  post-split. SR-01 carryforward applies, chain-wide A-STRUCT-02 satisfaction owned by
+  bug_focused_candidates[] + r-group-analysis.md (edge).
+
+failure_keys_evaluated:
+  A-STRUCT-01_frontmatter_valid_keys: PASS
+  A-STRUCT-02_edge_or_perf_coverage_present: SR_CARRYFORWARD  # per report Opt-outs § SR-01
+  A-STRUCT-03_setup_block_present: PASS
+  A-STRUCT-04_scenarios_block_well_formed: PASS  # two sub-blocks (OCL walk + backend enumeration), 11 numbered steps in canonical walk, properly renumbered
+  A-STRUCT-05_notes_block_explanatory: PASS      # 7 notes covering coverage_type, JS API non-substitution, OCL hard-coding, #1608/#2448 transformation, existing sibling, helpers, source-text fixes
+  A-STRUCT-06_no_dangling_TODOs: PASS            # original TODO ("Add to linked datasets") fully resolved (moved to sketcher-ui.md Setup with provisioning fallback)
+  A-COVERAGE-01_steps_executable_at_target_layer: PASS  # playwright-realizable via existing sketcher-spec.ts sibling extension
+  A-COVERAGE-02_assertions_concrete: PASS        # Recent contains cyclohexane / Favorites contains step-3 molecule / canvas-shows-SMILES-from-clipboard / canvas-shows-MOLBLOCK-from-clipboard — all concrete
+  A-COVERAGE-03_ui_coverage_responsibility_honored: PASS  # 8 sketcher-cell-editor flows exercised via UI driving; 1 transferred to sketcher-ui.md; 1 transferred to filter-panel.md future-work
+  A-MERIT-01_no_meaningless_steps: PASS
+  A-MERIT-02_no_jsapi_substitution_for_ui_flow: PASS  # Notes block has explicit "No JS API substitution" clause
+
+a_struct_02_status: SR_CARRYFORWARD (explicit SR-01 in shared report Opt-outs §; chain-level satisfaction via bug_focused_candidates[] + r-group-analysis.md confirmed)
+
+notes:
+  - Backend enumeration block is correctly framed as opportunistic / pass-extending (OCL required, others opportunistic) per chain rev 2 directive.
+  - FORBIDDEN-substitution sentinel ("type C1CCCCC1 directly, not via Ctrl+V paste") preserved verbatim — correctly identified as assertion-target-not-shortcut.
+  - Cross-cutting bug pointer surfaces (GROK-12758 Step 2, GROK-14028 Step 6, GROK-17964 Step 6) acknowledged in report; no related_bugs frontmatter pollution.

@@ -1,0 +1,50 @@
+verdict: PASS
+gate: D
+review_round: 1
+failure_keys: []
+claims:
+  - check_id: D-STRUCT-MECH-01
+    status: PASS
+    evidence: Migration report file present at expected path TestTrack/Chem/elemental-analysis-migration-report.md, ~245 lines, non-empty.
+  - check_id: D-STRUCT-MECH-02
+    status: PASS
+    evidence: Report contains "## Step mapping" section with Markdown table mapping all 4 original steps (1/2/2/3) plus implicit verification and JSON footer entry to migrated locations.
+  - check_id: D-STRUCT-MECH-03
+    status: PASS
+    evidence: Migrated frontmatter contains all 9 required Block 6 fields (feature, sub_features_covered, target_layer, coverage_type, produced_from=migrated, original_path, migration_date=2026-05-11, migration_report, related_bugs=[]). Deprecated `migrated_from` absent.
+  - check_id: D-STRUCT-MECH-04
+    status: PASS
+    evidence: Report has all required `## ` sections — Step mapping, Decisions, Opt-outs (SCOPE_REDUCTION proposals), Deferred items, Edge cases, Unresolved ambiguities.
+  - check_id: D-STRUCT-MECH-05
+    status: PASS
+    evidence: original_path `public/packages/UsageAnalysis/files/TestTrack/Chem/elemental-analysis.md` resolves — git show HEAD confirms original 9-line file exists.
+  - check_id: D-STEP-01
+    status: PASS
+    evidence: All 4 original numbered steps (open datasets; open Chem|Analyze|Elemental Analysis; toggle checkboxes; click OK) mapped to migrated Setup step 1 + Scenarios steps 1-4 per Step mapping table. Step-numbering collision (1/2/2/3) renumbered cleanly to 1/2/3/4 with disclosure.
+  - check_id: D-STEP-02
+    status: PASS
+    evidence: Original implicit "Make sure the result is correct" expected-result preserved as explicit verification step 5 (per-element atom-count columns appended, row count unchanged, no console errors). Disclosed under Source-text fixes silently applied.
+  - check_id: D-EDGE-01
+    status: PASS
+    evidence: Edge cases section enumerates 7 implicit edges; preserved-in-body (cross-format invocation, all-elements-on, element-set variance, console errors) or atlas-curator-flagged (missing Charts/PowerGrid, empty-table, malformed-molecule) — none silently dropped.
+  - check_id: D-STRUCT-01
+    status: PASS
+    evidence: No cross-file dependency exists per chain YAML `depends_on: []`. Independent scenario, confirmed in body Setup step 3 and Decisions § strategy.
+  - check_id: D-STRUCT-02
+    status: PASS
+    evidence: Dataset matrix extension (1→3 entries) disclosed under Source-text fixes per chain rev 2 directive (Olena 2026-05-11 footer note (i)); aligns body promise "smiles, molV2000 and molV3000 formats" with JSON footer. Sibling activity-cliffs.md / calculate.md precedent cited. Not a reduction — an extension authorized by chain directive.
+  - check_id: D-UI-DELEGATION-01
+    status: PASS
+    evidence: SR-01 is a chain-level coverage_type carryforward (A-STRUCT-02), not a UI-to-JS-API substitution. Both UI flows (chem-elemental-analysis-top-menu, chem-elemental-analysis-checkboxes) retained as UI driving per Notes "No JS API substitution". Rule does not apply.
+  - check_id: D-SAN-01
+    status: PASS
+    evidence: All required report sections present and populated with non-trivial decisions (target_layer, coverage_type, strategy, siblings consulted, helpers reused/candidates, bug library, decision log, cross-cutting citations, UI delegation, constraint extraction, source-text fixes, data_driven strategy).
+  - check_id: D-SAN-02
+    status: PASS
+    evidence: All original text accounted for. Step-numbering glitch + dataset list extension + implicit verification step concretization are all explicitly disclosed under Decisions § Source-text fixes; mirrored in migrated body Notes § Source-text fixes silently applied during migration.
+  - check_id: D-MERIT-01
+    status: PASS
+    evidence: SR-01 cites a real structural-invariant resolution path (chain-level A-STRUCT-02 carryforward via bug_focused_candidates + r-group-analysis.md edge same-cycle), not effort. No step opted out for effort.
+  - check_id: D-MERIT-02
+    status: PASS
+    evidence: Deferred items § is explicitly empty; selector-reference Phase 2 enhancement and optional Radar add-on surfaces are flagged as out-of-scope-of-original-body, not unprompted deferrals.

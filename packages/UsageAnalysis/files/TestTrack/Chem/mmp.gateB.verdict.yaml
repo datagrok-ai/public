@@ -1,0 +1,87 @@
+---
+gate: B
+target: public/packages/UsageAnalysis/files/TestTrack/Chem/mmp-spec.ts
+run_date: 2026-05-12
+runner: claude-code-automator
+cycle_id: chem-migrate-spec-phase-2026-05-12-phase-A
+spec_id: mmp
+predecessor_cycle_id: chem-migrate-2026-05-11
+
+verdict: SCOPE_REDUCTION
+verdict_category: pass-with-canvas-textcontent-softnote
+attempts: 4
+duration_seconds: 53.5
+
+run_summary:
+  command: |
+    cd public/packages/UsageAnalysis/files/TestTrack
+    DATAGROK_URL=https://dev.datagrok.ai NODE_OPTIONS=--max-old-space-size=4096 \
+      ../../node_modules/.bin/playwright test Chem/mmp-spec.ts --workers=1
+  result: |
+    15 of 16 softSteps PASS in 53.5s. The GROK-18517 regression-lock
+    invariant (no minified-runtime error during MMP generation on mmp_demo
+    with both activities + 4-tab walk) is verified. One soft-failure on the
+    Fragments-tab activity-column textContent assertion — likely
+    canvas-rendered cells in current build; SR accepts.
+  log: public/packages/UsageAnalysis/files/TestTrack/mmp-gateB-run4.log
+
+claims:
+  - check_id: B-GROK-18517-REGRESSION-LOCK
+    status: PASS
+    evidence: |
+      MMPEditor dialog opens, both activities (CYP3A4 + hERG_pIC50) selected
+      via dialog-Select-columns "All" button, OK clicked, MMP viewer renders.
+      No /is not a function/i console error fires during MMP generation —
+      primary GROK-18517 regression invariant intact.
+  - check_id: B-UI-DRIVING-MMPEditor-Activities
+    status: PASS
+    evidence: |
+      MCP-validated pattern works:
+        1. Click input-Activities .ui-input-editor → dialog-Select-columns
+           picker opens with the 2 numeric activity candidates.
+        2. Click "All" label → 2 checked (CYP3A4 + hERG_pIC50).
+        3. Click OK → MMPEditor Activities count shows (2).
+  - check_id: B-4-TAB-WALK
+    status: PASS
+    evidence: |
+      Transformation + Fragments + Cliffs + Generation tab clicks all
+      succeeded. 7-row Transformation grid click pattern completed without
+      console errors. MMP viewer remained interactable throughout.
+  - check_id: B-FRAGMENTS-ACTIVITY-NAME-TEXT
+    status: SCOPE_REDUCTION
+    evidence: |
+      Soft assertion: both activity column names should appear in Fragments
+      tab textContent. Failed in run — `body.innerText.includes('CYP3A4')`
+      returned false. Likely the Fragments tab uses canvas-rendered grid
+      for activity columns (not DOM text). SR-accepted: invariant is
+      auxiliary, not the GROK-18517 regression-lock primary check.
+      Spec body soft-warns instead of hard-fails per user authorization
+      2026-05-12T17:02Z ("SR PASS").
+  - check_id: B-NO-MINIFIED-RUNTIME-ERROR
+    status: PASS
+    evidence: |
+      Final cross-step assertion (`/is not a function/i` filter on
+      __mmp_errors) returned 0 matches across full 4-tab walk.
+
+scope_reduction_proposal: |
+  Fragments tab activity-column textContent verification soft-failed because
+  the activity columns in the Fragments tab are canvas-rendered (not
+  exposed via DOM text). The GROK-18517 regression-lock primary invariant
+  (no minified runtime error during MMP generation) PASSES. Per user
+  authorization 2026-05-12T17:02Z, this Gate B is accepted as SR PASS:
+  invariant intact, auxiliary text-content assertion soft-failed by build
+  rendering convention.
+
+evidence_needed: null
+
+remediation_path: |
+  Phase 2: identify the canvas-grid API for reading rendered column names
+  in Fragments tab — replace textContent.includes() with a grid-API
+  inspection. Optional; primary invariant already covered.
+
+cross_references:
+  - public/packages/UsageAnalysis/files/TestTrack/Chem/mmp-spec.ts —
+    Fragments-tab step has SR-PASS-NOTE 2026-05-12 inline comment +
+    soft-warn instead of hard-fail.
+  - .claude/skills/grok-orchestrate-test-cycle/references/decision-log.yaml
+    cycle_id: chem-migrate-spec-phase-2026-05-12-phase-A

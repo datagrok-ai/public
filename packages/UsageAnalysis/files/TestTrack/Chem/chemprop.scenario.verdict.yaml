@@ -1,0 +1,136 @@
+---
+gate: A
+critic_mode: scenario
+target: public/packages/UsageAnalysis/files/TestTrack/Chem/chemprop.md
+report: public/packages/UsageAnalysis/files/TestTrack/Chem/chemprop-migration-report.md
+critic_date: 2026-05-11
+critic: grok-critic (scenario mode)
+verdict: SCOPE_REDUCTION
+overall_status: SCOPE_REDUCTION
+scope_reduction_source: SR-01 (A-STRUCT-02 chain-level carryforward, accepted at Gate D)
+
+inputs:
+  migrated_lines: 145
+  scenarios: 1
+  steps: 5
+  sub_features_covered: 5
+  ui_coverage_responsibility_entries: 5
+  related_bugs: 0
+
+failure_keys:
+  A-STRUCT-01_frontmatter_complete:
+    status: PASS
+    rationale: |
+      All required frontmatter fields present: feature, sub_features_covered
+      (5 ids), target_layer (playwright), coverage_type (regression),
+      produced_from (migrated), original_path, migration_date (2026-05-11),
+      migration_report, related_bugs ([]). Lines 1–11.
+  A-STRUCT-02_edge_or_perf_coverage:
+    status: SCOPE_REDUCTION
+    rationale: |
+      Per SR-01 carryforward from Gate D: A-STRUCT-02 is a section-level
+      structural invariant (at least one scenario must be edge/perf). This
+      scenario's coverage_type = regression is the natural classification for
+      a happy-path cross-subsystem ML train+apply+correlation walk. Section-
+      level satisfaction is owned by chain rev 2 — organically met by
+      r-group-analysis.md (same-cycle, coverage_type: edge) and reinforced by
+      10 bug_focused_candidates[] in scenario-chains/chem.yaml. Same SR-01
+      carryforward accepted in 11 sibling-cycle migration reports.
+    deferred_to: chain-level (Critic F coverage gate at section-complete)
+  A-STRUCT-03_setup_block_present:
+    status: PASS
+    rationale: |
+      Setup section explicit (3 numbered items): dataset provisioning
+      (System:AppData/Chem/mol1K.sdf — bundled, no external provisioning),
+      Chem + ML predictive-models surface + Docker container backend
+      assumption, fixture-consumption clarification (depends_on: []; no
+      fixture consumed; in-session only). Lines 29–45.
+  A-STRUCT-04_scenarios_block_present:
+    status: PASS
+    rationale: |
+      Single Scenarios section with one named scenario ("Train Chemprop on
+      mol1K.sdf, apply, and verify prediction-activity correlation"), 5
+      numbered steps mirroring original 5 bullets. Lines 47–82.
+  A-STRUCT-05_notes_block_present:
+    status: PASS
+    rationale: |
+      Notes section present with 7 substantive bullets covering coverage_type
+      rationale, JS API substitution constraint, existing sibling spec
+      references (Chem + Models sections), Docker container backend
+      dependency, long-running training timeout, helpers usage, order in
+      chain, source-text fix discipline. Lines 93–145.
+  A-STRUCT-06_no_orphan_steps:
+    status: PASS
+    rationale: |
+      No orphan content. Every paragraph + bullet belongs to Setup, Scenarios,
+      Implicit cross-step invariants subsection, or Notes. No floating
+      assertions outside structure.
+  A-COVERAGE-01_ui_coverage_responsibility_exercised:
+    status: PASS
+    rationale: |
+      All 5 ui_coverage_responsibility flows from chain YAML are exercised in
+      Scenarios body via UI driving: ml-models-train-model-top-menu (step 2),
+      ml-train-model-feature-column-selector (step 3), ml-train-model-predict-
+      column-selector (step 3), ml-apply-model (step 4), scatter-plot-add-
+      for-correlation (step 5). Notes section reaffirms "No JS API
+      substitution" as hard constraint.
+  A-COVERAGE-02_sub_features_witnessed:
+    status: PASS
+    rationale: |
+      Each of the 5 sub_features_covered ids is exercised by an explicit step:
+      chem.chemprop (overall scenario), chem.chemprop.train (step 4), chem.
+      chemprop.apply (step 4), chem.chemprop.is-applicable (step 2/3 registry
+      gate), chem.chemprop.is-interactive (implicit via interactive Train
+      Model view in steps 2–4). Atlas line references cited inline.
+  A-COVERAGE-03_chain_dependencies_honored:
+    status: PASS
+    rationale: |
+      depends_on: [] verified against chain YAML line 616. produces field
+      ("in-session only") matches chain line 617–618. No upstream fixture
+      consumption claimed. Independent-scenario status correctly described in
+      Setup step 3 + chain-rationale paragraph (lines 20–28).
+  A-MERIT-01_steps_have_assertable_outcomes:
+    status: PASS
+    rationale: |
+      Each of the 5 steps has an assertable expected-result clause:
+      step 1 — table view renders + molecule column populated + RDKit cell
+      renderer + pIC50_HIV_Integrase numeric;
+      step 2 — view name = Predictive model + Chemprop trainer registered;
+      step 3 — trainer selectable + no console errors;
+      step 4 — prediction column appended + no console errors;
+      step 5 — points cluster around diagonal + no console errors.
+      Visual correlation quantification options surfaced for Automator
+      (Pearson/Spearman/per-row delta).
+  A-MERIT-02_cross_subsystem_coupling_described:
+    status: PASS
+    rationale: |
+      Cross-subsystem coupling (Datagrok ML predictive-models registry ↔ Chem
+      Chemprop trainer (chem.chemprop.*) ↔ chem-chemprop Docker container)
+      explicit in scenario rationale paragraph (lines 22–27) and in Notes
+      "Docker container backend dependency" (lines 122–129). The mlname:
+      Chemprop registration gate via isApplicableNN is named as the cross-
+      subsystem invariant.
+  A-MERIT-03_no_jsapi_substitution_for_ui_flows:
+    status: PASS
+    rationale: |
+      Notes section explicitly forbids JS API substitution for the 5
+      ui_coverage_responsibility flows (lines 104–112). Rationale: registry
+      integration gate (mlname: Chemprop surfaces in Train Model view via
+      chem.chemprop.is-applicable) is observable only through dialog-driven
+      flow. UI-first hard constraint per user preference
+      [feedback_ui_first_scenarios].
+
+UI_first_discipline:
+  applied: true
+  notes: |
+    All 5 ui_coverage_responsibility flows are driven via UI (top-menu walk,
+    Train Model view interaction, Apply Model control, scatter-plot add).
+    Direct invocation of trainChemprop / applyChemprop explicitly forbidden
+    in Notes. Aligns with user preference for UI-first scenarios.
+
+recommendation: |
+  ACCEPT scenario with SR-01 carryforward (A-STRUCT-02 deferred to chain-
+  level Critic F at section-complete). All other A-STRUCT-* / A-COVERAGE-* /
+  A-MERIT-* checks PASS. Proceed to Automator for spec extension on
+  existing chemprop-spec.ts (currently covers steps 1–2 only; extension to
+  full 5-step walk).

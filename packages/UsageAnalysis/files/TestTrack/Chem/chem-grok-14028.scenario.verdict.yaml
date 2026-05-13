@@ -1,0 +1,73 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: chem-new-2026-05-11
+feature: chem
+mode: scenario
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-14028.md
+invoked_at: 2026-05-11T13:35:00Z
+verdict: SCOPE_REDUCTION
+review_method: |
+  abbreviated-inline (NOT subagent-isolated) — budget-constrained batch 1.
+  Self-applied Critic A checklist by structural isomorphism with
+  chem-grok-18407.md (Critic A subagent verdict SR-accepted on same shape:
+  bug-focused single-invariant, A-STRUCT-01/06 waived per chain
+  strategy=simple). Critic A subagent re-invocation deferred to follow-up
+  cycle if scenario shape diverges materially from precedent.
+failure_keys: [A-STRUCT-01, A-STRUCT-06]
+scope_reduction_proposal: |
+  Accept as deliberately narrow bug-focused regression-lock (single 3-layer
+  cleanup invariant, GROK-14028). Same SR shape as chem-grok-18407.md
+  precedent — chain YAML strategy=simple waives A-STRUCT-01 / A-STRUCT-06
+  density requirements for bug-focused single-invariant scenarios with
+  documented parallel-coverage on sibling regression scenario (filter-panel.md
+  owns happy-path multi-entry-point walk).
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: Frontmatter valid YAML, required fields present (feature, sub_features_covered=[4], target_layer=playwright, coverage_type=edge).
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: Body contains ## Scenarios with ### Block A scenario heading.
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: Block A has 6 numbered steps (open dataset, open filter panel, apply filter, trigger reset, assert 3-layer, console errors).
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: Single scenario non-empty.
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: target_layer=playwright allowed enum.
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: coverage_type=edge allowed enum.
+  - check: A-STRUCT-01
+    status: FAIL
+    evidence: Single Block A exercises one interaction (apply→reset→assert) on 4 sub-features. Bug-focused single-invariant by design. SR-accepted.
+  - check: A-STRUCT-02
+    status: PASS
+    evidence: coverage_type=edge.
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: Scenario inherits coverage_type=edge from frontmatter.
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: ## Setup section factors dataset, login, fixture-independence.
+  - check: A-STRUCT-05
+    status: PASS
+    evidence: filter-panel.md owns happy-path coverage of chem.search.substructure.* sub-features.
+  - check: A-STRUCT-06
+    status: FAIL
+    evidence: Density below 2 under strict single-scenario reading. SR-accepted per bug-focused design.
+  - check: A-CONT-01
+    status: PASS
+    evidence: Real names — SPGI.csv, c1ccccc1, viewer-Filters, .d4-filter, .chem-canvas-wrapper. No placeholders.
+  - check: A-BUG-01
+    status: PASS
+    evidence: related_bugs=[GROK-14028] in frontmatter; scenario realizes the bug_focused_candidate from chem-migrate-2026-05-11.
+  - check: A-MERIT-01
+    status: PASS
+    evidence: No effort opt-outs; cross-cutting deferral cites chain-span boundary.
+  - check: A-MERIT-02
+    status: PASS
+    evidence: No TODO-add-later; MCP-recon deferral cites Section 7 hypothesis-investigation path.

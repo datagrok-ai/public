@@ -1,0 +1,82 @@
+---
+gate: E
+critic_mode: spec
+target: public/packages/UsageAnalysis/files/TestTrack/Chem/mmp-spec.ts
+paired_md: public/packages/UsageAnalysis/files/TestTrack/Chem/mmp.md
+critic_date: 2026-05-12
+critic: claude-code-automator-self-review (abbreviated-inline)
+review_method: abbreviated-inline
+review_round: 1
+verdict: SCOPE_REDUCTION
+cycle_id: chem-migrate-spec-phase-2026-05-12-phase-A
+spec_id: mmp
+predecessor_cycle_id: chem-migrate-2026-05-11
+
+claims:
+  - check_id: E-STRUCT-MECH-01
+    status: PASS
+  - check_id: E-STRUCT-MECH-02
+    status: PASS
+  - check_id: E-STRUCT-MECH-03
+    status: PASS
+  - check_id: E-STRUCT-MECH-04
+    status: PASS
+    evidence: |
+      Test name `'Chem: MMP GROK-18517 regression-lock on mmp_demo with both
+      activities + 4-tab walk'` contains scenario heading + bug reference.
+  - check_id: E-STRUCT-MECH-05
+    status: PASS
+  - check_id: E-STRUCT-MECH-06
+    status: PASS
+    evidence: |
+      Frontmatter `/* --- sub_features_covered: [chem.analyze.mmp,
+      chem.analyze.mmp.top-menu, chem.analyze.mmp.editor,
+      chem.analyze.mmp.viewer, chem.demos.mmpa] --- */`. 5 IDs in atlas.
+  - check_id: E-TRACE-02
+    status: SCOPE_REDUCTION
+    evidence: |
+      MMPEditor activity-columns selector mechanism is heuristic in spec —
+      tries inline checkboxes first, falls back to multi-column dialog.
+      The exact widget shape was NOT pre-recon'd (no MCP recon on
+      MMPEditor performed in this session). Spec records what it can
+      drive without inventing selectors per migration report § Helpers
+      usage. If selection fails, OK click still proceeds and the
+      GROK-18517 invariant (no minified runtime error) is the dominant
+      assertion.
+  - check_id: E-TRACE-03
+    status: PASS
+    evidence: |
+      GROK-18517 discriminator: explicit assertion against
+      `/is not a function/i` console-error pattern at MMP generation
+      and final cross-tab walk.
+  - check_id: E-SEL-01
+    status: SCOPE_REDUCTION
+    evidence: |
+      Top-menu + .d4-dialog + button-OK selectors per chem.md MMP dialog
+      §. Tab selectors (.ui-tab-header / .d4-tabs .d4-tab-handle / .d4-tab)
+      use generic Datagrok tab patterns; not explicitly listed in chem.md
+      for the MMP viewer tabs. Phase 2 deliverable to author MMP viewer
+      tab reference. Acceptable SR pending recon validation at Gate B.
+  - check_id: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: |
+      target_layer=playwright + pyramid_layer=bug-focused. Spec includes
+      DOM-driving calls + explicit GROK-18517 invariant assertion
+      (per REQUIRED list IF bug-focused).
+
+scope_reduction_proposal: |
+  MMPEditor activity-columns selector + MMP viewer tab navigation rely on
+  heuristic DOM patterns without explicit chem.md reference. Acceptable
+  SR per migration report. If Gate B fails on activity selection or tab
+  navigation, follow-up MCP recon round to extend chem.md.
+
+self_review_notes: |
+  GROK-18517 regression-lock invariant explicit: scenario fails if any
+  `/is not a function/i` console error fires during MMP generation OR
+  cross-tab walk. This is the primary bug-focused assertion per
+  pyramid_layer=bug-focused. The 7-row Transformation tab walk + Fragments
+  + Cliffs + Generation tab walks are bounded UI interactions; no MMP
+  state persistence (in-session only per chain produces).
+
+recommendation: |
+  Proceed to Gate B Playwright validation once env stabilizes.

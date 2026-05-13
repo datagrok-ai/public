@@ -1,0 +1,35 @@
+verdict: PASS
+gate: D
+mode: migration
+scenario: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md
+original: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md (HEAD, 31 lines)
+report: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher-migration-report.md
+date: 2026-05-11
+critic: opus-4-7-1m
+
+summary: |
+  Migrator split sketcher.md into a main playwright scenario (this file) + a decomposed
+  ui-only sibling (sketcher-ui.md) per chain rev 2 footer note (d), authorized by Olena
+  2026-05-11. D-SAN-02 (no silent drops) is NOT violated: #1608 drop and #2448 split are
+  both cited explicitly in the shared migration-report Step mapping table and Decisions §,
+  with chain-directive provenance.
+
+failure_keys_evaluated:
+  D-STRUCT-01_frontmatter_complete: PASS
+  D-STRUCT-02_step_mapping_table: PASS  # 13-row table covering every original step + Check-block + JSON footer
+  D-STRUCT-03_decisions_block: PASS     # target_layer / coverage_type / strategy / sibling-tests / helpers / bug-lib / decision-log all addressed
+  D-STRUCT-04_helpers_discipline: PASS  # 3 reused helpers cited with file:line; 5 candidates flagged, NOT name-referenced in body
+  D-STRUCT-05_no_invented_subfeatures: PASS  # all 6 sub_features_covered ids verified against feature-atlas/chem.yaml per report
+  D-SAN-01_original_preserved: PASS     # original at public/HEAD untouched; report references it as source-of-truth
+  D-SAN-02_no_silent_drops: PASS        # #1608 drop + #2448 split both cite chain rev 2 footer note (d); step-renumbering glitch + "smiles. csv" typo + "CTRL+V" capitalization all listed under Source-text fixes
+  D-SAN-03_authorized_directives_only: PASS  # all transformations trace to chain rev 2 footer notes (c) and (d)
+  D-MERIT-01_SR_cites_real_dependency: PASS  # SR-01 cites A-STRUCT-02 as section-level structural invariant; carryforward path (chain bug_focused_candidates[] + r-group-analysis.md edge) is concrete
+  D-MERIT-02_no_effort_optouts: PASS    # SR-01 is the only opt-out; cites structural property, not effort
+
+a_struct_02_status: SR_CARRYFORWARD (declared in report Opt-outs § SR-01; deferred to chain-level)
+
+notes:
+  - Two-output split is directive-driven, not classifier-driven (Pattern 1 decomposition triggered by chain footer note (d), not by simple/complex classifier).
+  - Cross-cutting bug citations (GROK-12758/14028/17964) correctly NOT added to related_bugs frontmatter per migration-prompt cross-cutting-citation discipline.
+  - Source-text fixes (step-renumbering, typo normalization, keyboard-shortcut canonicalization) all listed under report § Source-text fixes — fully traceable.
+  - Decision-log queried (zero matches for "chem" + "sketcher") — first-cycle confirmation matches sibling reports.

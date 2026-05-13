@@ -1,0 +1,157 @@
+/* ---
+sub_features_covered: [chem.analyze.scaffold-tree, chem.analyze.scaffold-tree.viewer, chem.analyze.scaffold-tree.add]
+--- */
+// Frontmatter extraction (Section 1 of automator-prompt):
+//   target_layer: playwright
+//   pyramid_layer: bug-focused
+//   sub_features_covered: [chem.analyze.scaffold-tree, .viewer, .add]
+//   ui_coverage_responsibility: [] (delegated_to: null) — bug-focused slice
+//   related_bugs: [github-3004]
+//
+// Bug invariant (regression-lock per references/bug-library/chem.yaml :: github-3004):
+//   With ≥2 table views open, Top-menu `Chem | Analyze | Scaffold Tree` MUST
+//   bind the new Scaffold Tree viewer to the ACTIVE table view
+//   (grok.shell.tv.dataFrame), NOT the first-opened. github-3004 NIBR
+//   customer-signal bug — fixed in 1.21.0.
+// Parallel-coverage with Advanced/scaffold-tree.md (single-table walk,
+// coverage_type=regression) and Advanced/scaffold-tree-functions.md (JS API
+// function walk).
+//
+// Paired scenario: chem-github-3004.md
+import {test, expect} from '@playwright/test';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, waitForChemMenu} from '../spec-login';
+
+// storageState consumes auth.json captured via `npx playwright codegen --save-storage=auth.json`
+// (refreshed 2026-05-11; DATAGROK_LOGIN/PASSWORD env not set in this session).
+test.use({...specTestOptions, storageState: 'auth.json'});
+
+test('Chem: github-3004 Scaffold Tree from active TableView binds to active TableView (multi-table)', async ({page}) => {
+  test.setTimeout(180_000);
+
+  // github-3004 is status: fixed, fixed_in: 1.21.0 per bug-library. Spec
+  // exercises the post-fix invariant as a regression-lock.
+  await loginToDatagrok(page);
+
+  await softStep('Setup: close all + selenium flags', async () => {
+    await page.evaluate(() => {
+      document.body.classList.add('selenium');
+      try { grok.shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
+      try { grok.shell.windows.simpleMode = true; } catch (e) {}
+      grok.shell.closeAll();
+    });
+    await page.waitForTimeout(500);
+  });
+
+  await softStep('Open TableView A (tableA) + TableView B (tableB)', async () => {
+    await page.evaluate(async () => {
+      const dfA = await grok.dapi.files.readCsv('System:AppData/Chem/tests/smiles-50.csv');
+      dfA.name = 'tableA';
+      grok.shell.addTableView(dfA);
+      const dfB = await grok.dapi.files.readCsv('System:AppData/Chem/tests/smiles-50.csv');
+      dfB.name = 'tableB';
+      grok.shell.addTableView(dfB);
+    });
+  });
+
+  await softStep('Wait for Chem menu registration (semType + cellRenderer + scaffold-tree.add)', async () => {
+    await waitForChemMenu(page);
+  });
+
+  await softStep('Verify both tables have Molecule semType (poll up to 60s for both)', async () => {
+    const result = await page.evaluate(async () => {
+      for (let i = 0; i < 30; i++) {
+        const tables = Array.from(grok.shell.tables) as any[];
+        const states = tables.map((t: any) => ({
+          name: t.name,
+          hasMol: t.columns.toList().some((c: any) => c.semType === 'Molecule'),
+        }));
+        const allHaveMol = states.length >= 2 && states.every(s => s.hasMol);
+        if (allHaveMol) return {ok: true, states};
+        await new Promise(r => setTimeout(r, 2000));
+      }
+      const tables2 = Array.from(grok.shell.tables) as any[];
+      return {ok: false, states: tables2.map((t: any) => ({
+        name: t.name,
+        hasMol: t.columns.toList().some((c: any) => c.semType === 'Molecule'),
+      }))};
+    });
+    expect((result as any).ok,
+      `Tables missing Molecule semType after 60s poll: ${JSON.stringify((result as any).states)}`).toBe(true);
+  });
+
+  await softStep('Force tableB to be active', async () => {
+    await page.evaluate(async () => {
+      const tvs = Array.from(grok.shell.tableViews) as any[];
+      const tvB = tvs.find((tv: any) => tv.dataFrame?.name === 'tableB');
+      if (tvB) (grok.shell as any).v = tvB;
+      await new Promise(r => setTimeout(r, 1500));
+    });
+  });
+
+  await softStep('Pre-condition: active table is tableB after step 2', async () => {
+    const state = await page.evaluate(() => ({
+      shell_t_name: grok.shell.t?.name,
+      shell_tv_df_name: grok.shell.tv?.dataFrame?.name,
+      tables_open: grok.shell.tables.map((t: any) => t.name),
+    }));
+    expect(
+      state.shell_t_name,
+      `Pre-condition failed: active table expected 'tableB', got '${state.shell_t_name}'. Setup invariant broken — Datagrok default newly-added-view-becomes-active changed? tables_open=${JSON.stringify(state.tables_open)}`,
+    ).toBe('tableB');
+    expect(state.shell_tv_df_name).toBe('tableB');
+  });
+
+  await softStep('Invoke top-menu Chem | Analyze | Scaffold Tree', async () => {
+    await page.evaluate(async () => {
+      const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
+      if (!chemMenu) throw new Error('Top-menu Chem entry not found');
+      chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      await new Promise(r => setTimeout(r, 700));
+      const stItem = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .find(el => el.textContent!.trim() === 'Scaffold Tree') as HTMLElement;
+      if (!stItem) throw new Error('Top-menu "Scaffold Tree" sub-menu item not found');
+      (stItem.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    });
+    // Wait for the Scaffold Tree viewer to materialize on the active TableView B.
+    await page.locator('[name="viewer-Scaffold-Tree"]').waitFor({timeout: 10000});
+  });
+
+  await softStep('Assert regression-lock: Scaffold Tree viewer binds to tableB (active), NOT tableA', async () => {
+    const result = await page.evaluate(() => {
+      const tv = grok.shell.tv;
+      const stViewer = Array.from(tv.viewers).find((v: any) => v.type === 'Scaffold Tree');
+      return {
+        viewer_present: !!stViewer,
+        viewer_df_name: stViewer ? (stViewer as any).dataFrame?.name : null,
+        active_tv_df_name: tv?.dataFrame?.name,
+      };
+    });
+    expect(result.viewer_present, 'Scaffold Tree viewer not attached to active TableView').toBe(true);
+    expect(
+      result.viewer_df_name,
+      `github-3004 regression: Scaffold Tree viewer bound to '${result.viewer_df_name}' instead of 'tableB' (active). Multi-table state-tracking bug landed again. active_tv_df=${result.active_tv_df_name}`,
+    ).toBe('tableB');
+  });
+
+  await softStep('Verify TableView A has no Scaffold Tree viewer (no spurious binding)', async () => {
+    const result = await page.evaluate(() => {
+      const tvs = Array.from(grok.shell.tableViews);
+      const tvA = tvs.find((tv: any) => tv.dataFrame?.name === 'tableA');
+      if (!tvA) return {tvA_found: false};
+      const stOnA = Array.from(tvA.viewers).filter((v: any) => v.type === 'Scaffold Tree').length;
+      return {tvA_found: true, scaffold_tree_count_on_A: stOnA};
+    });
+    expect(result.tvA_found, 'TableView A not found in shell.tableViews — multi-table state setup broken').toBe(true);
+    expect(
+      result.scaffold_tree_count_on_A,
+      `github-3004 regression: Scaffold Tree viewer spuriously attached to TableView A — multi-table state-tracking error. count=${result.scaffold_tree_count_on_A}`,
+    ).toBe(0);
+  });
+
+  await page.evaluate(() => grok.shell.closeAll());
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
+});

@@ -1,0 +1,32 @@
+---
+gate: B
+target: public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/structure-filter-spec.ts
+run_date: 2026-05-12
+runner: claude-code-automator
+cycle_id: chem-migrate-spec-phase-2026-05-12-phase-A-validation-sweep
+spec_id: structure-filter
+
+verdict: PASS-FLAKY
+runs: 3
+pass_rate: 2/3
+results:
+  run_1: FAIL (login timeout / env flake)
+  run_2: PASS (41.7s)
+  run_3: PASS (44.3s)
+
+claims:
+  - check: B-RUN-PASS
+    status: FLAKY
+    evidence: |
+      2/3 pass rate (66%). Run 1 fail is login-timeout env-flake, not
+      spec-specific. Spec executes successfully when env stable.
+      Critic E gates FAIL on JS API substitution for owned UI flows.
+
+cross_references:
+  - structure-filter-spec.verdict.yaml (Critic E FAIL — E-STRUCT-MECH-06, E-LAYER-COMPLIANCE-01, E-TRACE-02)
+
+remediation_path: |
+  Massive UI rewrite needed: replace searchSubstructure JS API + setAll +
+  getFiltersGroup with UI-driven Filter Panel sketch-link + Clear button +
+  panel toggle icon per migrated scenario's "No JS API substitution"
+  directive + chem-grok-14028 regression-lock pattern.

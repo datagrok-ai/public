@@ -1,0 +1,91 @@
+verdict: SCOPE_REDUCTION
+gate: A
+review_round: 1
+failure_keys: []
+scope_reduction_proposal: |
+  SR-01 (A-STRUCT-02 carryforward, accepted per chain rev 2 precedent —
+  decision-log radar.md 2026-05-07; same-cycle siblings calculate.md,
+  r-group-analysis.md, elemental-analysis.md, sketcher.md,
+  activity-cliffs.md, Advanced/scaffold-tree-functions.md).
+
+  chemical-space.md is a single-scenario file with coverage_type:
+  regression (multi-format × dialog-walk happy-path across the Chemical
+  Space editor + method selector + Cluster MCS toggle + embedding
+  transform; pyramid_layer: integration). It therefore mechanically
+  fails A-STRUCT-02 in isolation (no in-file scenario carries
+  coverage_type: edge or perf).
+
+  Real section-level dependency: A-STRUCT-02 is a section-wide
+  structural invariant, not per-scenario. Forcing coverage_type: edge
+  would mis-classify (scenario walks the happy path, no failure-mode
+  invariant being asserted — the empty-column-input silent-close
+  invariant of atlas chem.cp.chemical-space p1 is owned by the
+  bug-focused spec chem-grok-18407-spec.ts per chain
+  bug_focused_candidates[], NOT by this scenario). Section-level
+  satisfaction routes elsewhere:
+    (a) scenario-chains/chem.yaml rev 2 `bug_focused_candidates[]`
+        enumerates 10 chem-bug-focused specs; chem-grok-18407-spec.ts
+        directly intersects chemical-space.* sub_features (spans Step 3
+        and Step 5 of this scenario) and naturally carries
+        coverage_type: edge once authored — strongest possible
+        chain-level carrier for this specific scenario;
+    (b) same-cycle sibling r-group-analysis.md carries coverage_type:
+        edge organically (per its Gate A verdict);
+    (c) row-count / dataset-volume thresholds for Chemical Space not
+        documented in atlas (unlike Activity Cliffs); no out-of-scope
+        perf invariant available to carry here.
+
+  Verdict on A-STRUCT-02 deferred to chain-level / section-complete
+  evaluation (Gate F). Accept SR.
+
+  All other Gate A checks (mechanical + A-STRUCT-01/03/04/05/06,
+  A-CONT-01, A-BUG-01, A-MERIT-01/02) PASS independently.
+claims:
+  - check_id: A-STRUCT-MECH-01
+    status: PASS
+    evidence: "Frontmatter is parseable YAML (lines 1-11). Required fields present: feature=chem, sub_features_covered=[5 ids: chem.analyze.chemical-space + .top-menu + .transform + .editor + .embeddings], target_layer=playwright, coverage_type=regression, produced_from=migrated."
+  - check_id: A-STRUCT-MECH-02
+    status: PASS
+    evidence: "Scenario H2 heading '## Scenarios' present at line 44 with H3 subheading '### Chemical Space dialog walk per dataset' at line 46."
+  - check_id: A-STRUCT-MECH-03
+    status: PASS
+    evidence: "Numbered steps 1.-7. present under '### Chemical Space dialog walk per dataset' (lines 62-78) plus Setup numbered steps 1.-3. (lines 30-42)."
+  - check_id: A-STRUCT-MECH-04
+    status: PASS
+    evidence: "Single scenario block ('Chemical Space dialog walk per dataset') has 7 numbered steps per dataset cell plus implicit cross-cell invariants block; not empty."
+  - check_id: A-STRUCT-MECH-05
+    status: PASS
+    evidence: "target_layer=playwright, valid enum value per allowed set {uitests-package, playwright, api-contract, manual-only}."
+  - check_id: A-STRUCT-MECH-06
+    status: PASS
+    evidence: "coverage_type=regression, valid enum value per allowed set {smoke, regression, edge, perf}."
+  - check_id: A-STRUCT-01
+    status: PASS
+    evidence: "Single scenario covers 5 sub_features in interaction (chem.analyze.chemical-space parent + .top-menu + .transform + .editor + .embeddings) — well above 3+ threshold. All 4 chain ui_coverage_responsibility flows exercised via UI driving (top-menu walk + editor dialog + method selector + Cluster MCS toggle)."
+  - check_id: A-STRUCT-02
+    status: FAIL
+    evidence: "chemical-space.md is single-scenario with coverage_type=regression; no in-file scenario carries coverage_type: edge or perf. SR-01 carryforward (chain-level satisfaction via bug_focused_candidates[chem-grok-18407-spec.ts] directly targeting chem.analyze.chemical-space.* + same-cycle sibling r-group-analysis.md edge coverage) accepted per chain rev 2 precedent — converts verdict to SCOPE_REDUCTION, not FAIL. Documented in migration report Opt-outs §SR-01."
+  - check_id: A-STRUCT-03
+    status: PASS
+    evidence: "coverage_type=regression label present at frontmatter level (line 5) — file-level label applies to the single scenario per migration-prompt convention; valid test-kind enum value."
+  - check_id: A-STRUCT-04
+    status: PASS
+    evidence: "Single scenario; no duplication possible. Setup section (lines 28-42) factors dataset provisioning (D1-D3) + chem-package load + fixture-state declaration once."
+  - check_id: A-STRUCT-05
+    status: PASS
+    evidence: "5 sub_features cover the chem.analyze.chemical-space.* subtree which is the scope of this scenario (parent + top-menu + transform + editor + embeddings; .similarity-matrix is programmatic helper not exposed via dialog, intentionally omitted per Decisions § No invented sub_features). Remaining chem.analyze.* sub-features (activity-cliffs, elemental-analysis, etc.) owned by sibling TestTrack scenarios per chain output_plan."
+  - check_id: A-STRUCT-06
+    status: PASS
+    evidence: "Average sub-features per scenario = 5 (single scenario covering 5 ids); well above density threshold of 2. Smoke exemption not invoked (coverage_type=regression)."
+  - check_id: A-CONT-01
+    status: PASS
+    evidence: "Real names throughout: dataset paths (System:DemoFiles/chem/smiles.csv, System:AppData/Chem/mol1K.sdf, System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf), menu path (Chem | Analyze | Chemical Space...), atlas sub_feature ids, editor surfaces (molecule column picker, method selector UMAP/t-SNE, similarity metric, Cluster MCS toggle), class name (ChemSpaceEditor), tag names (chem-space-embedding-col, chem-space-cluster-col), transform name (chemSpaceTransform), embeddings function (getChemSpaceEmbeddings), package source (Chem/src/package.ts#L823). No angle-bracket / square-bracket / generic placeholders."
+  - check_id: A-BUG-01
+    status: PASS
+    evidence: "Bug-library/chem.yaml rev 1 consulted (Decisions §Bug library consulted). One curated bug (GROK-18407 Chemical Space empty-column-input silent close) intersects chem.analyze.chemical-space.* sub_features but is OWNED by chain bug_focused_candidates[chem-grok-18407-spec.ts] (Pattern 2 bug-focused spec) per chain rev 2. Per chain notes 'Body does NOT test empty-column-input edge case — this gap is captured under bug_focused_candidates[]'. related_bugs: [] correct — bug cited in Notes as parallel-coverage awareness only, NOT propagated."
+  - check_id: A-MERIT-01
+    status: PASS
+    evidence: "No effort-based opt-outs. SR-01 cites real section-level structural property and chain-routed resolution (bug-focused spec directly targeting this scenario's sub_features); not effort/complexity."
+  - check_id: A-MERIT-02
+    status: PASS
+    evidence: "No TODO/deferred-to-later-phase clauses in migrated body. Selector-reference write proposal for grok-browser/references/viewers/chemical-space.md flagged in Decisions as Phase 2 enhancement (out of migration scope; Automator inlines via existing chemical-space-spec.ts patterns + page.evaluate introspection). Candidate helpers (openChemicalSpaceDialog, changeChemicalSpaceMethod, toggleClusterMCS) flagged but not blocking — Automator may inline pending registry curation."

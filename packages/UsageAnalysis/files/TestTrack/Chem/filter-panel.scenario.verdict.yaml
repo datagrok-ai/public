@@ -1,0 +1,109 @@
+verdict: SCOPE_REDUCTION
+gate: A
+review_round: 1
+failure_keys: []
+scope_reduction_proposal: |
+  SR-01 (A-STRUCT-02 carryforward, accepted per chain rev 2 precedent —
+  decision-log radar.md 2026-05-07; same-cycle siblings calculate.md,
+  r-group-analysis.md, elemental-analysis.md, sketcher.md,
+  activity-cliffs.md, chemical-space.md, Advanced/scaffold-tree-functions.md).
+
+  filter-panel.md is a single-scenario file with coverage_type:
+  regression (multi-entry-point × four-settings-tabs × cross-filter ×
+  filter-sketcher-sync happy-path walk across the substructure filter
+  surface; pyramid_layer: integration). It therefore mechanically
+  fails A-STRUCT-02 in isolation (no in-file scenario carries
+  coverage_type: edge or perf).
+
+  Real section-level dependency: A-STRUCT-02 is a section-wide
+  structural invariant, not per-scenario. Forcing coverage_type: edge
+  would mis-classify (scenario walks the happy path, no failure-mode
+  invariant being asserted — the Reset-filter-doesn't-clear-sketcher-
+  input three-layer cleanup invariant per GROK-14028 is owned by
+  the bug-focused spec chem-grok-14028-spec.ts per chain
+  bug_focused_candidates[], NOT by this scenario; the
+  MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT row-count bound per atlas
+  chem.search.substructure is not exercised — SPGI.csv sits below
+  threshold). Section-level satisfaction routes elsewhere:
+    (a) scenario-chains/chem.yaml rev 2 `bug_focused_candidates[]`
+        enumerates 10 chem-bug-focused specs; chem-grok-14028-spec.ts
+        directly targets the filter-sketcher state-cleanup invariant
+        on this exact scenario (Step 2 span on filter-panel.md per
+        chain rev 2) and naturally carries coverage_type: edge once
+        authored — strongest possible chain-level carrier, and
+        notably the bug IS cited in this scenario's `related_bugs`
+        frontmatter (GROK-14028) per directly-overlapping affected
+        sub_features (chem.search.substructure.filter + chem.sketcher
+        intersect 3 of this scenario's 6 sub_features_covered). The
+        non-empty related_bugs strengthens — does not weaken — the
+        SR-01 argument: it concretely names the chain-level carrier
+        that owns the edge invariant this scenario intentionally
+        does NOT exercise, satisfying D-MERIT-01 / A-MERIT-01 real-
+        dependency citation at maximum specificity. The
+        related_bugs entry is bug-AWARENESS (defense-in-depth
+        coverage owned elsewhere), NOT a claim that this scenario
+        carries edge coverage itself — A-STRUCT-02 reading is
+        unchanged structurally (still file-internal edge/perf
+        absent; SR carryforward still required);
+    (b) same-cycle sibling r-group-analysis.md carries coverage_type:
+        edge organically (per its Gate A verdict);
+    (c) row-count / dataset-volume thresholds for substructure search
+        documented in atlas chem.search.substructure
+        (MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) but intentionally out of
+        scope for this regression walk — SPGI.csv sits below the
+        bound; perf invariant carryforward not applicable here.
+
+  Verdict on A-STRUCT-02 deferred to chain-level / section-complete
+  evaluation (Gate F). Accept SR.
+
+  All other Gate A checks (mechanical + A-STRUCT-01/03/04/05/06,
+  A-CONT-01, A-BUG-01, A-MERIT-01/02) PASS independently.
+claims:
+  - check_id: A-STRUCT-MECH-01
+    status: PASS
+    evidence: "Frontmatter is parseable YAML (lines 1-11). Required fields present: feature=chem, sub_features_covered=[6 ids: chem.search.substructure + .filter + .editor + .use-as-filter + chem.sketcher + .ocl], target_layer=playwright, coverage_type=regression, produced_from=migrated. related_bugs=[GROK-14028] populated by Migrator (Reset-filter-doesn't-clear-sketcher-input invariant intersects 3 of 6 sub_features)."
+  - check_id: A-STRUCT-MECH-02
+    status: PASS
+    evidence: "Scenario H2 heading '## Scenarios' present at line 50 with H3 subheading '### Filter Panel deep-dive on SPGI.csv' at line 52 and H4 subheadings '#### Block A' through '#### Block E' organizing the body."
+  - check_id: A-STRUCT-MECH-03
+    status: PASS
+    evidence: "Numbered steps 1.-13. present under '### Filter Panel deep-dive on SPGI.csv' (lines 61-129) organized across Blocks A-E plus Setup numbered steps 1.-3. (lines 39-48)."
+  - check_id: A-STRUCT-MECH-04
+    status: PASS
+    evidence: "Single scenario block ('Filter Panel deep-dive on SPGI.csv') has 13 numbered steps across 5 labeled blocks (A:3 steps, B:2 steps, C:4 steps, D:1 step, E:2 steps + 1 entry step shared); not empty."
+  - check_id: A-STRUCT-MECH-05
+    status: PASS
+    evidence: "target_layer=playwright, valid enum value per allowed set {uitests-package, playwright, api-contract, manual-only}."
+  - check_id: A-STRUCT-MECH-06
+    status: PASS
+    evidence: "coverage_type=regression, valid enum value per allowed set {smoke, regression, edge, perf}."
+  - check_id: A-STRUCT-01
+    status: PASS
+    evidence: "Single scenario covers 6 sub_features in interaction (chem.search.substructure + .filter + .editor + .use-as-filter + chem.sketcher + .ocl) — well above 3+ threshold. All 11 chain ui_coverage_responsibility flows exercised via UI driving (Filter Panel toggle + in-panel sketcher draw + 4 settings-tabs cycle + Use-as-filter cell action + hamburger-menu Filter route + filter widget remove + drag-and-drop column header + cross-filter composition + sketcher-modify-from-hamburger round-trip)."
+  - check_id: A-STRUCT-02
+    status: FAIL
+    evidence: "filter-panel.md is single-scenario with coverage_type=regression; no in-file scenario carries coverage_type: edge or perf. Non-empty related_bugs=[GROK-14028] does NOT alter this reading — A-STRUCT-02 measures in-file frontmatter coverage_type, not awareness of edge invariants owned elsewhere. SR-01 carryforward (chain-level satisfaction via bug_focused_candidates[chem-grok-14028-spec.ts] directly targeting filter-sketcher state-cleanup, which IS the bug cited in this scenario's related_bugs — strongest possible chain-level real-dependency citation + same-cycle sibling r-group-analysis.md edge coverage) accepted per chain rev 2 precedent — converts verdict to SCOPE_REDUCTION, not FAIL. Documented in migration report Opt-outs §SR-01."
+  - check_id: A-STRUCT-03
+    status: PASS
+    evidence: "coverage_type=regression label present at frontmatter level (line 4) — file-level label applies to the single scenario per migration-prompt convention; valid test-kind enum value."
+  - check_id: A-STRUCT-04
+    status: PASS
+    evidence: "Single scenario; no duplication possible. Setup section (lines 37-48) factors dataset provisioning (System:DemoFiles/SPGI.csv) + Chem package + OCL sketcher backend load + fixture-state declaration (no fixture consumed, depends_on: []) once."
+  - check_id: A-STRUCT-05
+    status: PASS
+    evidence: "6 sub_features cover the substructure-filter surface (chem.search.substructure parent + .filter + .editor + .use-as-filter + chem.sketcher + .ocl). Remaining chem.* sub-features (chem.analyze.*, chem.notation.*, chem.actions.*, etc.) owned by sibling TestTrack scenarios per chain output_plan. Atlas-curator-flagged MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT bound out-of-scope here (Notes-level caveat)."
+  - check_id: A-STRUCT-06
+    status: PASS
+    evidence: "Average sub-features per scenario = 6 (single scenario covering 6 ids); well above density threshold of 2. Smoke exemption not invoked (coverage_type=regression)."
+  - check_id: A-CONT-01
+    status: PASS
+    evidence: "Real names throughout: dataset path (System:DemoFiles/SPGI.csv), atlas sub_feature ids (6 named), menu paths (Current Value > Use as filter, column hamburger menu > Filter), match-mode tabs (Contains / Included in / Exact / Similar) with each tab's semantic meaning called out, 11 ui_coverage_responsibility entries (chem-substructure-filter-* x 11), package source (Chem/src/package.ts), atlas critical_path (chem.cp.substructure-search-with-filter), bug ID (GROK-14028) + 3 cross-cutting bug IDs (GROK-12758, GROK-17595, GitHub-2942), sibling spec path (filter-panel-spec.ts). No angle-bracket / square-bracket / generic placeholders."
+  - check_id: A-BUG-01
+    status: PASS
+    evidence: "Bug-library/chem.yaml rev 1 consulted (Decisions §Bug library consulted, full 4-bug review). One curated bug (GROK-14028 Filter Panel Reset doesn't clear sketcher) has directly-overlapping affected sub_features with this scenario (chem.search.substructure.filter + chem.search.substructure + chem.sketcher intersect 3 of 6 sub_features_covered) — CITED in related_bugs: [GROK-14028]. Three cross-cutting bugs (GROK-12758, GROK-17595, GitHub-2942) are span-attached in chain bug_focused_candidates[] but their affected sub_features overlap cross-cutting territory not exercised here (Scaffold Tree integration / save-reopen+datasync / CSV export); NOT propagated to related_bugs per Pattern 2 discipline — owned by dedicated bug-focused specs. A-BUG-01 PASS: every relevant atlas/bug-library known_issue with directly-overlapping affected sub_features is addressed via related_bugs (defense-in-depth coverage owned by chem-grok-14028-spec.ts per chain bug_focused_candidates[])."
+  - check_id: A-MERIT-01
+    status: PASS
+    evidence: "No effort-based opt-outs. SR-01 cites real section-level structural property and chain-routed resolution (bug-focused spec chem-grok-14028-spec.ts directly targeting this scenario's sub_features + the bug IS cited in this scenario's related_bugs as concrete real-dependency citation at maximum specificity); not effort/complexity."
+  - check_id: A-MERIT-02
+    status: PASS
+    evidence: "No TODO/deferred-to-later-phase clauses in migrated body. Selector-reference write proposal for grok-browser/references/viewers/filter-panel.md flagged in Decisions as Phase 2 enhancement (out of migration scope; Automator inlines via existing filter-panel-spec.ts patterns + page.evaluate introspection). 6 candidate helpers (toggleFilterPanel / drawSubstructureInFilterPanelSketcher / cycleSubstructureFilterSettingsTabs / useAsFilter / openColumnHamburgerFilter / dragColumnHeaderToFilterPanel) flagged but not blocking — Automator may inline pending registry curation. test.skip in existing filter-panel-spec.ts is Automator-side extension-time assessment, not Migrator deferral."

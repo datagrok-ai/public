@@ -1,0 +1,50 @@
+verdict: PASS
+gate: D
+review_round: 1
+failure_keys: []
+claims:
+  - check_id: D-STRUCT-MECH-01
+    status: PASS
+    evidence: "Report file exists at public/packages/UsageAnalysis/files/TestTrack/Chem/activity-cliffs-migration-report.md (344 lines, non-empty), matching <original-name>-migration-report.md convention."
+  - check_id: D-STRUCT-MECH-02
+    status: PASS
+    evidence: "Report contains '## Step mapping' Markdown table with 12 rows mapping every original numbered step (1-7, 9-11), the original step-7→step-9 gap, the implicit close-view cleanup, and the JSON footer to migrated locations."
+  - check_id: D-STRUCT-MECH-03
+    status: PASS
+    evidence: "Migrated frontmatter has all 9 required Block 6 fields (feature, sub_features_covered, target_layer, coverage_type, produced_from=migrated, original_path, migration_date, migration_report, related_bugs). No deprecated `migrated_from` present."
+  - check_id: D-STRUCT-MECH-04
+    status: PASS
+    evidence: "Report contains all required ## sections: Step mapping, Decisions, Opt-outs (SR-01 present), Deferred items (none, explanatory), Unresolved ambiguities (6 items), plus Edge cases."
+  - check_id: D-STRUCT-MECH-05
+    status: PASS
+    evidence: "original_path public/packages/UsageAnalysis/files/TestTrack/Chem/activity-cliffs.md exists in working tree (23-line source confirmed; submodule path resolvable per public-repo convention)."
+  - check_id: D-STEP-01
+    status: PASS
+    evidence: "All 10 original numbered steps mapped (1, 2, 3, 4, 5, 6, 7, 9, 10, 11) — original step-8 gap explicitly documented as source-text defect (chain rev 2 footer (c)) and renumbered cleanly to migrated steps 1-12. No step silently dropped."
+  - check_id: D-STEP-02
+    status: PASS
+    evidence: "Original expected-result clauses preserved: Step 4 (only cliff points remain), Step 5 (cliffs grid appears + populated), Step 6 (scatter zoom + property panel pair + activity diff + hover tooltip), Step 7 (zoom + grid current row), Step 11 (fresh scatter reflecting edited params). Each verification co-located with its action in the migrated body. Console-error invariants made explicit per sister scenarios."
+  - check_id: D-EDGE-01
+    status: PASS
+    evidence: "Implicit edges preserved (multi-format variant matrix D1-D5, 2-column dialog branch on D4, default-vs-custom param pass, console errors throughout). Out-of-scope items (zero-cliff threshold, row-count cap 10k, long-running-confirm 5000/2000) flagged in Edge cases section + Notes as atlas-curator candidates or future-scope, not silently dropped."
+  - check_id: D-STRUCT-01
+    status: PASS
+    evidence: "depends_on: [] per chain rev 2 output_plan.activity-cliffs.md; no fixture chain to preserve. Sibling activity-cliffs-spec.ts noted as READ-ONLY consultation per Invariant 2; closest curated bug GROK-18407 (sister-pattern, different feature scope) documented in Decisions as awareness only, not propagated to related_bugs."
+  - check_id: D-STRUCT-02
+    status: PASS
+    evidence: "Original lists 4 format variants in body prose + 5 in JSON footer (SPGI extra). Migrated expands to full 5-variant matrix (D1-D5) with explicit cell loop. Original step-7→9 gap closed silently; smiles_2_columns.csv path corrected from System:AppData/UsageAnalysis/test_datasets/ to System:AppData/Chem/tests/. All expansions documented in Decisions § Source-text fixes."
+  - check_id: D-UI-DELEGATION-01
+    status: PASS
+    evidence: "SR-01 is structural (A-STRUCT-02 carryforward, not UI→JS-API substitution). Migrated Notes explicitly state 'No JS API substitution' for all 7 chain ui_coverage_responsibility entries (chem-add-activity-cliffs, editor-dialog, show-only-cliffs-toggle, cliff-count-link, grid-row-click, scatter-zoom-line-click, property-panel-pair-molecules). Decisions § Scenario constraint extraction (a)/(b) confirm UI coverage owned in-scenario. D-UI-DELEGATION-01 not applicable."
+  - check_id: D-SAN-01
+    status: PASS
+    evidence: "Report includes Step mapping, Decisions, Opt-outs (SR-01), Deferred items (explicit 'none'), Edge cases (6 items), Unresolved ambiguities (6 items). All non-trivial decisions captured (target_layer, coverage_type, strategy, sibling consultation, helpers, bug library, decision log query, source-text fixes, scenario constraint extraction)."
+  - check_id: D-SAN-02
+    status: PASS
+    evidence: "Three silent fixes (step-numbering gap 7→9 closed; smiles_2_columns.csv path corrected from UsageAnalysis/test_datasets to Chem/tests; SPGI dataset list extension from 4 to 5 variants) all disclosed in Decisions § Source-text fixes per chain rev 2 directive (Olena 2026-05-11). JSON footer treated as metadata-not-step per documented convention. No silent drops."
+  - check_id: D-MERIT-01
+    status: PASS
+    evidence: "SR-01 cites real section-level structural property (A-STRUCT-02 satisfaction owned by chain bug_focused_candidates[] + sibling r-group-analysis.md / scaffold-tree-functions.md edge-coverage carriers in same cycle), not effort. No other opt-outs. Candidate helpers flagged but not used as deferral mechanism."
+  - check_id: D-MERIT-02
+    status: PASS
+    evidence: "No 'deferred to later phase' clauses on scenario realization. Selector-reference write proposal for grok-browser/references/viewers/activity-cliffs.md explicitly flagged as Phase 2 enhancement (Automator inlines selectors via existing activity-cliffs-spec.ts patterns), not blocking. Candidate helpers may be inlined by Automator pending registration."

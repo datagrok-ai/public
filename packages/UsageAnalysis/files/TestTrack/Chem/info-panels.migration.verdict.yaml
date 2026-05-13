@@ -1,0 +1,76 @@
+gate: D
+mode: migration
+verdict: PASS
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/info-panels.md
+report_path: public/packages/UsageAnalysis/files/TestTrack/Chem/info-panels-migration-report.md
+date: 2026-05-11
+critic_subagent_isolation: confirmed
+failure_keys: []
+claims:
+  - check_id: D-STRUCT-MECH-01
+    status: PASS
+    evidence: "info-panels-migration-report.md exists at expected path (TestTrack/Chem/) and is non-empty (344 lines, substantive prose)."
+  - check_id: D-STRUCT-MECH-02
+    status: PASS
+    evidence: "Step mapping Markdown table present at report lines 23-42 with 18 rows (17 original-step rows + JSON footer row); header row '| Original step | Migrated location | Decision |' confirmed."
+  - check_id: D-STRUCT-MECH-03
+    status: PASS
+    evidence: "Migrated frontmatter (lines 1-11) contains all 9 required Block 6 fields: feature, sub_features_covered, target_layer=playwright, coverage_type=regression, produced_from=migrated, original_path, migration_date=2026-05-11, migration_report, related_bugs=[]. No deprecated `migrated_from` field. coverage_type enum value 'regression' is valid (smoke|regression|edge|perf); produced_from enum value 'migrated' is valid (migrated|atlas-driven|decomposed)."
+  - check_id: D-STRUCT-MECH-04
+    status: PASS
+    evidence: "Report contains all required ## sections: 'Step mapping' (line 9), 'Decisions' (line 47), 'Opt-outs (SCOPE_REDUCTION proposals)' (line 202), 'Deferred items (NOT opt-outs)' (line 212), 'Edge cases' (line 223), 'Unresolved ambiguities' (line 287)."
+  - check_id: D-STRUCT-MECH-05
+    status: PASS
+    evidence: "original_path=public/packages/UsageAnalysis/files/TestTrack/Chem/info-panels.md resolves to an extant file in the repo (the migrated file itself per pilot variant A — original content preserved in git HEAD of the public submodule, verified via `git show HEAD:packages/UsageAnalysis/files/TestTrack/Chem/info-panels.md` returning the 32-line original two-block scenario)."
+  - check_id: D-STEP-01
+    status: PASS
+    evidence: "All original steps mapped in report step-mapping table (lines 24-42): Block 1 steps 1-5 + 4 sub-steps under step 4 + 2 implicit-verification bullets under step 5 + Block 2 steps 1-6 + JSON footer = 17 mapping rows. Every original step lands in at least one migrated step (Phase A 1-12 or Phase B per-row 1-6). Cross-checked against `git show HEAD` original — Block 1 Step 1 → Setup step 1 + Phase A step 1 + Phase A step 5 + Phase B per-row step 1; Block 1 Step 2 → Phase A 1+2; Block 1 Step 3 → Phase A 3; Block 1 Step 4 → Phase A 4; sub-steps 4.1-4.4 → Phase A 5-9; Step 5 + 2 bullets → Phase A 10-12; Block 2 Steps 1-6 → Phase B per-row 1-6. Zero unmapped steps."
+  - check_id: D-STEP-02
+    status: PASS
+    evidence: "Every 'Expected result' / verification bullet in original preserved as verification step: Block 1 sub-step 4.3 ('Molecules ... should be aligned ... and scaffold should be highlighted') → Phase A step 7 verification; sub-step 4.4 ('Both hightlightnings should be visible') → Phase A step 9 verification; Step 5 bullet 1 ('Context Panel switches') → Phase A step 11 verification; Step 5 bullet 2 ('Expand all tabs... no errors') → Phase A step 12 verification; Block 2 Steps 2, 4, 6 verifications → Phase B per-row steps 2, 4, 6 verifications. Step mapping table column 3 explicitly labels each as 'preserved as verification'."
+  - check_id: D-EDGE-01
+    status: PASS
+    evidence: "## Edge cases section (lines 223-284) enumerates 6 implicit edge cases derived from original scenario content (SMARTS format branch, molV2000 vs. molV3000 dichotomy, Context Panel column→molecule mode-switch, two-layer highlight stacking, tab inventory caveat across packages, SMILES auto-detection threshold) and explicitly states 'All implicit edge cases are PRESERVED as scenario steps OR Notes-level caveats in the migrated body' (line 283-284). None silently dropped, none moved to atlas/manual_only/deferred without documentation."
+  - check_id: D-STRUCT-01
+    status: PASS
+    evidence: "Chain YAML output_plan.info-panels.md.depends_on=[] (cited in report line 7); scenario is independent. Migrated body Setup step 3 confirms 'No fixture consumed. Per chain YAML depends_on: [].'. No cross-file dependency exists to lose."
+  - check_id: D-STRUCT-02
+    status: PASS
+    evidence: "Block 2 is a 4-row matrix (smiles × molV2000 × molV3000 × smarts) across 6 steps = 24 logical cases. Migrated Phase B preserves all 4 format rows in the parameterized data-driven table (migrated lines 120-125), iterating the same 6 steps over each row. 4 → 4 rows preserved; 24 → 24 logical cases preserved. No reduction."
+  - check_id: D-UI-DELEGATION-01
+    status: PASS
+    evidence: "## Opt-outs (SCOPE_REDUCTION proposals) section explicitly states '(none)' (line 204). No SCOPE_REDUCTION proposal replaces a UI flow with JS API. Decisions section additionally documents 'UI delegation status' (lines 183-193): 'delegated_to: null (UI coverage owned, not delegated)... no SCOPE_REDUCTION proposal moves UI driving to a sibling — therefore the UI delegation discipline... does not apply here.' Vacuously satisfied — no SR-with-UI-replacement shape to discipline."
+  - check_id: D-SAN-01
+    status: PASS
+    evidence: "Migration report present with all required sections (Step mapping, Decisions, Opt-outs, Deferred items, Edge cases, Unresolved ambiguities) and lists all non-trivial decisions: target_layer rationale, coverage_type rationale, strategy rationale, sibling tests consulted (read-only per Invariant 2), helpers reused + candidate helpers, bug library consultation outcome, decision-log query outcome (zero matches for feature: chem — first cycle), cross-cutting bug citations (GROK-16870, GROK-17964, GROK-17621-rejected), UI delegation status, no-invented-ids check."
+  - check_id: D-SAN-02
+    status: PASS
+    evidence: "No silent drops. Typos in original ('cvs' → 'csv'; 'Hightlight' / 'hightlightnings' → 'Highlight' / 'highlights'; 'ml1K.sdf' → 'mol1K.sdf') explicitly noted as silent corrections in step-mapping table column 3 (rows for Block 1 Step 2 and Block 1 Step 4 sub-step 4). JSON footer (`{order: 1, datasets: [5 entries]}`) explicitly marked '(dropped from body) — metadata-not-step (chain analysis convention; captured in scenario-chains/chem.yaml order_from_files + migrated Setup step 1 dataset enumeration)' (table row, line 42). Migration-report Decisions section adds extended context (sibling tests, helpers, bug library, decision log, cross-cutting bugs, UI delegation) that augments rather than replaces original content."
+  - check_id: D-MERIT-01
+    status: PASS
+    evidence: "## Opt-outs section explicitly states '(none)' with rationale: 'All original numbered steps and implicit verifications are preserved in the migrated body. No step is opted out for effort. No technical dependency was hit during migration that required a SCOPE_REDUCTION proposal (per D-MERIT-01: opt-outs must cite a real technical dependency, never effort).' (lines 204-210). Vacuously satisfied — zero opt-outs to scrutinize."
+  - check_id: D-MERIT-02
+    status: PASS
+    evidence: "## Deferred items (NOT opt-outs) section explicitly states '(none)' with rationale: 'No step is deferred awaiting a prerequisite that does not exist yet. The migrated body steps are realizable against the current playwright + helpers-registry + atlas state. (The candidate helpers surfaced in Decisions are convenience abstractions that the Automator may inline pending registration — they do NOT block spec realization.)' (lines 214-221). Vacuously satisfied — zero deferrals to scrutinize. Lattice Rule 13 not violated."
+notes: |
+  All 14 D-* checks PASS. Strong, mechanical migration with no silent drops.
+  Highlights:
+  1. Step-mapping table (report lines 23-42) maps every original step + sub-step + verification bullet
+     + the JSON footer to migrated locations with per-row decision labels. Cross-validated against
+     `git show HEAD` of the public submodule which returned the canonical 32-line two-block original
+     (5 steps + 4 sub-steps + 2 verification bullets in Block 1; 6 steps in Block 2; JSON footer with
+     order=1 + 5 datasets). Zero discrepancies.
+  2. Edge-case preservation discipline is exemplary: 6 implicit edge cases enumerated, each preserved
+     as a scenario step OR a Notes-level caveat, with explicit rationale. No silent drop to atlas/
+     manual_only. Tab-inventory caveat (cross-package tab injection) handled as Notes-level
+     interpretation rule rather than fabricated scenario step — defensible scoping discipline.
+  3. UI delegation discipline correctly NA — no SR proposal, no UI flow replaced by JS API, so
+     D-UI-DELEGATION-01 is vacuously PASS. UI delegation status section explicitly documents this
+     reasoning (lines 183-193) per Phase 1 / Edit 3 expectation.
+  4. Matrix scenario (Phase B 4 formats × 6 steps = 24 logical cases) preserved 1:1.
+  5. First-cycle-for-chem discipline observed: decision-log queried with zero matches reported,
+     bug-library consulted with 3 intersecting bugs explicitly evaluated and rejected for
+     `related_bugs` per chain frontmatter delta (parallel coverage owned by bug-focused spec
+     candidates).
+  Total checks applied: 14. Total PASS: 14. Zero failures, zero scope reductions, zero evidence gaps.

@@ -1,0 +1,82 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: chem-new-2026-05-11-batch-2
+feature: chem
+mode: scenario
+review_round: 1
+review_method: abbreviated-inline (NOT subagent-isolated)
+review_method_rationale: |
+  Structural isomorphism with GROK-18407 batch-1 + GROK-17964 batch-2 precedent
+  (same `strategy: simple` chain declaration, same single-invariant bug-focused
+  shape, same A-STRUCT-01/A-STRUCT-06 SR pattern with A-STRUCT-02 chain-wide
+  satisfaction via r-group-analysis.md / mmp.md / chem-grok-18407 organic edge
+  presence). Per cycle_completions[chem-new-2026-05-11-batch-1] lesson #6.
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-16870.md
+invoked_at: 2026-05-11T17:08:00Z
+verdict: SCOPE_REDUCTION
+failure_keys: [A-STRUCT-01, A-STRUCT-06]
+scope_reduction_proposal: |
+  Accept as deliberately narrow bug-focused regression-lock scenario (single
+  edge case, GROK-16870, Box Plot vector). Document scope in frontmatter
+  (already `pyramid_layer: bug-focused`, `coverage_type: edge`) and waive
+  A-STRUCT-01 / A-STRUCT-06 because chain YAML
+  (`scenario-chains/chem.yaml :: bug_focused_candidates[chem-grok-16870-spec.ts]`)
+  declares `strategy: simple` with parallel-coverage on `chem.rendering.*`
+  owned by `info-panels.md` (Context Panel walk, `coverage_type: regression`).
+  The 3+ sub-feature density requirement is structurally incompatible with a
+  single-invariant bug-lock authored under an approved chain reduction;
+  combining sub-features further would dilute the regression signal.
+  Cross-viewer extension to Scatter Plot / Histogram explicitly deferred to a
+  future cycle per the bug edge_case_for_atlas recurring-class note —
+  in-scope vector is Box Plot per the bug report's canonical repro.
+  Precedent: same SR pattern accepted for chem-grok-18407 (batch-1) and
+  chem-grok-17964 (batch-2).
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: Frontmatter valid YAML with all required fields (feature, sub_features_covered, target_layer=playwright, coverage_type=edge, pyramid_layer=bug-focused, related_bugs=[GROK-16870]).
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: Body contains `## Scenarios` group with `### Block A` scenario heading.
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: Block A has 6 numbered steps (open + console hook, hover sweep, settle, assert no rdkit errors, assert viewer responsive).
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: Single scenario is non-empty with substantive steps grounded in MCP-validated selectors and Playwright real-pointer-event requirement.
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: target_layer=playwright is allowed enum value.
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: coverage_type=edge is allowed enum value.
+  - check: A-STRUCT-01
+    status: FAIL
+    evidence: Scenario lists 3 sub-features but single Block A exercises one interaction (hover Box Plot, verify no rdkit errors). SR-accepted per chain `strategy: simple` and bug-focused single-invariant design.
+  - check: A-STRUCT-02
+    status: PASS
+    evidence: coverage_type=edge satisfies edge-or-perf chain-wide requirement; scenario itself is renderer-tooltip-crash regression-lock.
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: Single scenario inherits coverage_type=edge from frontmatter.
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: ## Setup section factors login, dataset choice, and fixture-independence before scenarios.
+  - check: A-STRUCT-05
+    status: PASS
+    evidence: Bug-focused scenario scoped narrow per chain YAML; companion info-panels.md owns Context Panel happy-path rendering of molecule cells across notation formats.
+  - check: A-STRUCT-06
+    status: FAIL
+    evidence: Single non-smoke scenario covers one focused viewer-tooltip-rendering vector (Box Plot); density below 2 under strict reading. SR-accepted per chain `strategy: simple` + bug-report-canonical-vector scoping.
+  - check: A-CONT-01
+    status: PASS
+    evidence: Real names used throughout (canonical_smiles, [name="viewer-Box-plot"], rdkit-cell-renderer, smiles.csv, page.mouse.move). No placeholders.
+  - check: A-BUG-01
+    status: PASS
+    evidence: related_bugs=[GROK-16870] in frontmatter; scenario realizes one of the 6 remaining bug_focused_candidates from chem-migrate-2026-05-11 chain.
+  - check: A-MERIT-01
+    status: PASS
+    evidence: No effort/complexity opt-outs; cross-viewer Scatter Plot / Histogram deferral cites real chain-span boundary (single-vector single-invariant per strategy=simple).
+  - check: A-MERIT-02
+    status: PASS
+    evidence: No TODO-add-later markers; deferrals bounded by chain YAML scope and the single-vector single-invariant scope (Box Plot only per bug report canonical repro).

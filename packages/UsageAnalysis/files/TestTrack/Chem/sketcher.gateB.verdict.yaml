@@ -1,0 +1,40 @@
+---
+gate: B
+target: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher-spec.ts
+run_date: 2026-05-12
+runner: claude-code-automator
+cycle_id: chem-migrate-spec-phase-2026-05-12-phase-A-validation-sweep
+spec_id: sketcher
+
+verdict: FLAKY
+runs: 3
+pass_rate: 1/3
+results:
+  run_1: FAIL
+  run_2: PASS (48.3s)
+  run_3: FAIL
+
+claims:
+  - check: B-RUN-PASS
+    status: FLAKY
+    evidence: |
+      Pass rate 1/3 with one inconclusive. Critic E gates FAIL on spec body
+      coverage (2/11 scenario steps + 5 failure_keys) — Gate B PASS in run 2
+      means the EXISTING minimal spec executes when env stable, but does
+      NOT validate the migrated scenario contract.
+
+cross_references:
+  - sketcher-spec.verdict.yaml (Critic E FAIL — E-STRUCT-MECH-06, E-LAYER-COMPLIANCE-01, E-SEL-03, E-TRACE-02, E-TRACE-03)
+
+remediation_path: |
+  Spec body needs full rewrite per migrated scenario's 11-step walk +
+  backend enumeration block:
+    - Add /* --- sub_features_covered: [...] --- */ frontmatter
+    - Replace grok.chem.sketcher(...) + ui.dialog().show() with
+      double-click on molecule cell (Dart canvas — needs MCP recon)
+    - Add Add-to-Favorites click (hamburger menu)
+    - Add reopen + Recent/Favorites content verification
+    - Add Copy-as-SMILES + Ctrl+V paste round-trip verification
+    - Add Copy-as-MOLBLOCK + Ctrl+V paste round-trip verification
+    - Add backend enumeration (OCL required, others opportunistic)
+    - Replace nativeSetter+dispatchEvent with keyboard.type() for Dart input

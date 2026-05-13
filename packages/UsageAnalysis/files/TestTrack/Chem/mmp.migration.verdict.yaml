@@ -1,0 +1,113 @@
+mode: migration
+gate: D
+scenario: mmp.md
+path: public/packages/UsageAnalysis/files/TestTrack/Chem/mmp.md
+report_path: public/packages/UsageAnalysis/files/TestTrack/Chem/mmp-migration-report.md
+critic_date: 2026-05-11
+verdict: PASS
+verdict_4valued: PASS
+failure_keys: []
+
+summary: |
+  Gate D migration critic on mmp.md.
+
+  The migrated body is a faithful, well-disclosed expansion of the 17-line original (6
+  numbered steps + sub-bullet on step 3) into a structured Setup / Scenarios / Notes
+  shape with one silent source-text fix ("three activities" -> "both" in original steps
+  4 and 5) fully disclosed in the migration report and re-disclosed in the migrated
+  Notes section. The silent fix is authorized by chain rev 2 directive footer note (c)
+  (Olena 2026-05-11) and verified against the bundled mmp_demo.csv header which contains
+  exactly two activity columns (CYP3A4, hERG_pIC50). Step 3 of the original already
+  correctly references "two activities" so the silent fix preserves the scenario's clear
+  internal intent rather than inventing new content.
+
+  Step mapping in the report (§ "Step mapping" table) accounts for every original line:
+  line 1 (open dataset) splits into Setup step 1 (provisioning) + Scenarios step 1 (open
+  action) per D-STEP-02 expected-result verification; lines 2, 3, 6 (sub-bullet on line
+  3), 7, 8, 9 each land as Scenarios steps 2-7 with explicit expected-result inline
+  verification; the JSON footer (order: 14, datasets: [...]) is correctly classified as
+  metadata-not-step and captured in chain YAML order_from_files plus Setup step 1
+  dataset enumeration. No step is silently dropped. The 1-to-N relationship between
+  original line 1 and migrated steps (Setup 1 + Scenarios 1) is justified and visible
+  in the report table.
+
+  Frontmatter is well-formed and aligned with the chain YAML output_plan.mmp.md:
+  target_layer: playwright (correct — DOM-level UI driving for top-menu walk, MMPEditor
+  dialog, four viewer tab clicks); coverage_type: edge (correct — bug-focused per chain
+  pyramid_layer: bug-focused; the GROK-18517 minified-runtime-error reproduction IS the
+  negative-path invariant); produced_from: migrated; original_path correct;
+  migration_date present and matches today (2026-05-11); migration_report path correct;
+  related_bugs: [GROK-18517] matches the bug-library cross-reference in
+  bug-library/chem.yaml. sub_features_covered enumerates 5 atlas ids — all 5 verified
+  by the report against feature-atlas/chem.yaml (lines 399, 406, 414, 421, 1245) and
+  correspond exactly to GROK-18517's affects list.
+
+  D-STEP-02 expected-result verifications are woven inline through Scenarios steps 1-7
+  (table renders + 4 columns + numeric activity detection; MMPEditor dialog renders;
+  GROK-18517 discriminator paragraph; per-row Transformation update; Fragments grid +
+  both columns; Cliffs filter controls + scatter; Generation grid populates) plus three
+  cross-step invariants (GROK-18517 invariant, both-activities propagation, no console
+  errors throughout) — sufficient and proportionate to the bug-focused intent.
+  D-MERIT-01: no step is opted out for effort.
+
+  Decisions section (report § Decisions) addresses every required field per
+  migration-prompt: target_layer rationale (playwright + GROK-18517 discriminator only
+  observable through editor flow), coverage_type rationale (edge fits bug-focused per
+  A-STRUCT-02), strategy rationale (simple per chain — Pattern 2 bug-focused slice IS
+  the dominant pattern), sibling tests consulted as read-only (mmpa-tests.ts,
+  mmp-function-editor.ts, sibling Chem migration reports as shape anchors), helpers
+  reused (3 registered) and candidate helpers (3 flagged for addition with clear
+  surface mapping to steps 2-7), bug-library consulted (GROK-18517 priority p2 fixed,
+  full affects-list overlap), decision-log queried (empty — first chem migration cycle,
+  no constraints), cross-cutting bug citations (mmp.md not in bug_focused_candidates[]
+  because it organically covers GROK-18517), atlas critical-path adjacency
+  (chem.cp.mmp-analysis p1, 5 of 5 sub-features), UI delegation status (delegated_to:
+  null — owned in-scenario), and scenario constraint extraction (a/b/c/d/e all
+  addressed including forbidden JS API substitution and selector escalation deferred
+  to Phase 2). All decisions are traceable to chain YAML, atlas, or bug library.
+
+  Opt-outs section is correctly empty with explicit A-STRUCT-02 organic-satisfaction
+  rationale (coverage_type: edge IS the negative-path invariant). Deferred items
+  section is correctly empty. Edge cases section enumerates 5 implicit edge cases all
+  PRESERVED (none moved to atlas / manual_only / deferred / separate scenario) — the
+  minified-runtime-error reproduction, demo-dataset criticality, both-activities
+  propagation, console-error introspection, and single-dataset coverage scope. Each
+  PRESERVED location is identified (scenario step 3 discriminator, Notes, cross-step
+  invariants, per-step verification weave).
+
+  Unresolved ambiguities section flags four items honestly for QA pair review:
+  "two vs three activities" (resolved via dataset reading — no review needed flag),
+  "first 7 entries" interpretation (row click — flagged), MMPEditor activity-column
+  selector UI shape (deferred to spec-time introspection — flagged), and diff types /
+  scaling methods / fragment cutoff defaults (defaults assumed — flagged). All four
+  ambiguities are appropriately deferred and do NOT block spec realization.
+
+  Authorized silent fix verified against authoritative source: mmp_demo.csv header
+  contains exactly two activity columns (CYP3A4, hERG_pIC50) — the "three activities"
+  in original steps 4 and 5 is an authoring defect (likely counting the molecules
+  column or CMPD_CHEMBLID as an "activity"), and the silent fix to "both" preserves
+  the scenario's clear original intent without inventing new content. D-SAN-02
+  full-disclosure requirement satisfied in both the migration report (§ Source-text
+  fixes) and the migrated body Notes (§ Source-text fixes applied).
+
+  No invented sub_features, helpers, or atlas references. Every cited atlas line is
+  verifiable. Every cited helper is either in the helpers-registry.yaml (3 reused) or
+  explicitly flagged as a candidate (3 new). No prompt-vs-scenario conflict surfaced.
+  No SCOPE_REDUCTION proposal embedded inappropriately (none needed — coverage_type:
+  edge satisfies A-STRUCT-02 organically).
+
+  Verdict: PASS. No findings, no SCOPE_REDUCTION proposals, no EVIDENCE_GAP. Migration
+  is ready for Gate A scenario critic + downstream Automator handoff.
+
+findings: []
+
+recommendation: |
+  Accept the migration as-is. The migrator did a thorough job preserving original
+  intent while disclosing the one authorized silent fix, mapping every original line
+  to a migrated location, and providing a well-structured Decisions / Edge cases /
+  Unresolved ambiguities section that gives downstream agents (Automator, QA pair)
+  enough context to act. The 4 flagged QA-pair items are downstream concerns, not
+  Gate D blockers.
+
+related_bugs_verified: [GROK-18517]
+silent_fixes_verified: ["three activities -> both (mmp_demo.csv has 2 activity columns: CYP3A4, hERG_pIC50)"]

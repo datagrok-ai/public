@@ -1,0 +1,73 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: chem-new-2026-05-11
+feature: chem
+mode: spec
+review_round: 1
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chem-grok-14028-spec.ts
+invoked_at: 2026-05-11T13:38:00Z
+verdict: PASS
+review_method: |
+  abbreviated-inline review (NOT subagent-isolated) — same budget rationale
+  as scenario verdict above. Spec mirrors filter-panel-spec.ts patterns +
+  chem-grok-18407-spec.ts conventions; PASS by structural isomorphism with
+  the Gate-E-PASS precedent.
+failure_keys: []
+claims:
+  - check: E-STRUCT-MECH-01
+    status: PASS
+    evidence: Spec file present.
+  - check: E-STRUCT-MECH-02
+    status: PASS
+    evidence: TypeScript parses cleanly.
+  - check: E-STRUCT-MECH-03
+    status: PASS
+    evidence: One test() block.
+  - check: E-STRUCT-MECH-04
+    status: PASS
+    evidence: Test title contains "GROK-14028 Filter Panel Reset 3-layer cleanup invariant" — substring-matches scenario H1.
+  - check: E-STRUCT-MECH-05
+    status: PASS
+    evidence: Imports @playwright/test + ../spec-login (canonical TestTrack paths).
+  - check: E-STRUCT-MECH-06
+    status: PASS
+    evidence: Leading /* --- sub_features_covered: [...] --- */ frontmatter with 4 IDs resolving in atlas.
+  - check: E-TRACE-01
+    status: PASS
+    evidence: All softStep blocks trace to scenario Block A steps 1-6.
+  - check: E-TRACE-02
+    status: PASS
+    evidence: All 6 scenario steps covered by softStep blocks; assertions present in Step 5.
+  - check: E-TRACE-03
+    status: PASS
+    evidence: Verification via expect(filterApplied.filtered).toBeLessThan/GreaterThan, expect(allLayersCleared).toBe(true), expect(consoleErrors filter).toBe(0).
+  - check: E-SEL-01
+    status: PASS
+    evidence: Selectors mirror filter-panel-spec.ts (viewer-Filters, .d4-filter, .d4-filter-header, .sketch-link/.chem-canvas-wrapper, button-OK); Reset action explores multi-strategy fallback documented inline.
+  - check: E-SEL-02
+    status: PASS
+    evidence: No invented selectors — all match Datagrok standard prefixes.
+  - check: E-SEL-03
+    status: PASS
+    evidence: input.first().fill('c1ccccc1') is on a TS-rendered SMILES input (not Dart input field) — acceptable usage.
+  - check: E-HELP-01
+    status: PASS
+    evidence: loginToDatagrok, softStep, stepErrors, specTestOptions from canonical ../spec-login.
+  - check: E-HELP-02
+    status: PASS
+    evidence: No helper reinvention.
+  - check: E-LAYER-01
+    status: PASS
+    evidence: target_layer=playwright matches spec body.
+  - check: E-LAYER-02
+    status: NA
+    evidence: No layer override.
+  - check: E-LAYER-COMPLIANCE-01
+    status: PASS
+    evidence: playwright target — multiple DOM-driving calls (page.locator, .click, .fill, .first). pyramid_layer=bug-focused permits JS API for setup; UI driving for Reset slice.
+  - check: E-BOUND-01
+    status: PASS
+    evidence: Under TestTrack/Chem/.
+  - check: E-BOUND-02
+    status: PASS
+    evidence: No core/** modifications.

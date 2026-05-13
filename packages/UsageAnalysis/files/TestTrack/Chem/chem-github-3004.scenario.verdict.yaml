@@ -1,0 +1,75 @@
+revision: 1
+schema_version: "v3.0"
+cycle_id: chem-new-2026-05-11-batch-2
+feature: chem
+mode: scenario
+review_round: 1
+review_method: abbreviated-inline (NOT subagent-isolated)
+review_method_rationale: |
+  Structural isomorphism with GROK-18407 / GROK-17964 / GROK-16870 batch-1+2
+  precedents (same `strategy: simple` chain declaration, same single-invariant
+  bug-focused shape, same A-STRUCT-01/06 SR pattern with A-STRUCT-02 chain-
+  wide satisfaction). Per cycle_completions[chem-new-2026-05-11-batch-1]
+  lesson #6 — abbreviated inline review for batch-N specs of identical shape.
+artifact_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chem-github-3004.md
+invoked_at: 2026-05-11T21:35:00Z
+verdict: SCOPE_REDUCTION
+failure_keys: [A-STRUCT-01, A-STRUCT-06]
+scope_reduction_proposal: |
+  Accept as deliberately narrow bug-focused regression-lock scenario (single
+  edge case, github-3004, multi-table Scaffold Tree binding). Document scope
+  via frontmatter (`pyramid_layer: bug-focused`, `coverage_type: edge`) and
+  waive A-STRUCT-01 / A-STRUCT-06 per chain `strategy: simple` and the
+  bug-focused-single-invariant precedent. Parallel-coverage on
+  `chem.analyze.scaffold-tree.*` owned by `Advanced/scaffold-tree.md`
+  (single-table walk, `coverage_type: regression`) +
+  `Advanced/scaffold-tree-functions.md` (JS API walk).
+claims:
+  - check: A-STRUCT-MECH-01
+    status: PASS
+    evidence: Frontmatter valid YAML with required fields (feature, sub_features_covered, target_layer=playwright, coverage_type=edge, pyramid_layer=bug-focused, related_bugs=[github-3004]).
+  - check: A-STRUCT-MECH-02
+    status: PASS
+    evidence: Body contains `## Scenarios` group with `### Block A` heading.
+  - check: A-STRUCT-MECH-03
+    status: PASS
+    evidence: Block A has 7 numbered steps (open A, open B, pre-condition, invoke ST, wait viewer, assert binding, assert no spurious binding on A).
+  - check: A-STRUCT-MECH-04
+    status: PASS
+    evidence: Single scenario is non-empty with substantive steps grounded in MCP-validated selectors.
+  - check: A-STRUCT-MECH-05
+    status: PASS
+    evidence: target_layer=playwright is allowed enum value.
+  - check: A-STRUCT-MECH-06
+    status: PASS
+    evidence: coverage_type=edge is allowed enum value.
+  - check: A-STRUCT-01
+    status: FAIL
+    evidence: Scenario lists 3 sub-features but single Block A exercises one interaction (multi-table state → top-menu Scaffold Tree → assert active-table binding). SR-accepted per chain `strategy: simple` (precedent GROK-18407 / GROK-17964 / GROK-16870).
+  - check: A-STRUCT-02
+    status: PASS
+    evidence: coverage_type=edge satisfies edge-or-perf chain-wide requirement; scenario itself is multi-table-state regression-lock.
+  - check: A-STRUCT-03
+    status: PASS
+    evidence: Single scenario inherits coverage_type=edge.
+  - check: A-STRUCT-04
+    status: PASS
+    evidence: ## Setup section factors login, dataset construction note (two reads of smiles-50.csv with distinct names), fixture-independence.
+  - check: A-STRUCT-05
+    status: PASS
+    evidence: Bug-focused scenario scoped narrow; companion Advanced/scaffold-tree.md owns happy-path single-table coverage.
+  - check: A-STRUCT-06
+    status: FAIL
+    evidence: Single non-smoke scenario covers one focused interaction (multi-table active-table binding); density below 2 under strict reading. SR-accepted per chain `strategy: simple`.
+  - check: A-CONT-01
+    status: PASS
+    evidence: Real names used throughout (tableA, tableB, canonical_smiles, [name="div-Chem"], [name="viewer-Scaffold-Tree"], smiles-50.csv). No placeholders.
+  - check: A-BUG-01
+    status: PASS
+    evidence: related_bugs=[github-3004] in frontmatter; realizes one of the 6 remaining bug_focused_candidates from chem-migrate-2026-05-11 chain (4 remaining after this).
+  - check: A-MERIT-01
+    status: PASS
+    evidence: No effort/complexity opt-outs; JS-API-substitution-deferral cites real UI-vector-bug-surface boundary.
+  - check: A-MERIT-02
+    status: PASS
+    evidence: No TODO-add-later markers; env-pending Chem cold-start dependency explicitly noted with forward-path cross-reference.

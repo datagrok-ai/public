@@ -1,0 +1,34 @@
+verdict: PASS
+gate: A
+mode: scenario
+scenario: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher-ui.md
+report: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher-migration-report.md
+date: 2026-05-11
+critic: opus-4-7-1m
+
+summary: |
+  Decomposed ui-only manual smoke. A-STRUCT-02 evaluated against the manual layer
+  convention: section-level edge/perf invariant satisfaction is owned by the playwright
+  layer (r-group-analysis.md, bug_focused_candidates[]). Manual-layer ui-smoke scenarios
+  are NOT expected to carry edge/perf coverage_type — A-STRUCT-02 passes organically by
+  scope-of-applicability per the report § "No SR-01 on sketcher-ui.md".
+
+failure_keys_evaluated:
+  A-STRUCT-01_frontmatter_valid_keys: PASS  # target_layer/coverage_type/produced_from/original_path/migration_date/migration_report/related_bugs all valid
+  A-STRUCT-02_edge_or_perf_coverage_present: PASS  # section-level invariant scoped to playwright layer; manual-layer ui-smoke evaluated separately per section convention; chain-level satisfaction via r-group-analysis.md (edge)
+  A-STRUCT-03_setup_block_present: PASS  # 3-step Setup including dataset provisioning fallback + Chem package confirm
+  A-STRUCT-04_scenarios_block_well_formed: PASS  # single block, 6 numbered steps, explicit Expected-result clause with 3-bullet visual fidelity criteria
+  A-STRUCT-05_notes_block_explanatory: PASS  # 6 notes covering coverage_type, no playwright expected, #2448 origin, disjointness from sketcher.md, dataset provisioning, WideSmokeTest sibling
+  A-STRUCT-06_no_dangling_TODOs: PASS  # original TODO ("Add to linked datasets") surfaced as Setup fallback + Unresolved ambiguity
+  A-COVERAGE-01_steps_executable_at_target_layer: PASS  # manual visual review — appropriate for stereochemistry-fidelity invariant; no DOM-pixel-diff library required of manual QA
+  A-COVERAGE-02_assertions_concrete: PASS  # 3-bullet expected-result: wedge bonds visible / E/Z markings visible / molecule overall depiction unchanged aside from highlight overlay
+  A-COVERAGE-03_ui_coverage_responsibility_honored: PASS  # chain entry chem-info-panel-highlight-scaffold-tree-or-filter transferred to this scenario per migration report
+  A-MERIT-01_no_meaningless_steps: PASS
+  A-MERIT-02_no_jsapi_substitution_for_ui_flow: PASS  # manual visual review by definition cannot be JS-API substituted; Notes block explicit that no playwright spec is generated
+
+a_struct_02_status: PASS_ORGANICALLY (A-STRUCT-02 section-level invariant scoped to playwright layer; manual-layer ui-smoke evaluated separately per section convention; chain-wide edge satisfaction via r-group-analysis.md + bug_focused_candidates[] confirmed)
+
+notes:
+  - OR-choice at step 6 (scaffold tree OR isosmiles structure filter) preserved verbatim; flagged as Unresolved ambiguity for QA pair review at first manual run.
+  - smoke-vs-edge coverage_type judgment call documented in report as Unresolved ambiguity; flag for Critic F re-classification at section-complete — does not block PASS at this gate.
+  - Future-work atlas-curator candidate (pixel-diff or vector-render comparison library for stereo-rendering assertions) acknowledged in scenario body; correctly out of scope here.

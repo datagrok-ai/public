@@ -1,0 +1,110 @@
+verdict: PASS
+gate: A
+review_round: 1
+failure_keys: []
+claims:
+  - check_id: A-STRUCT-MECH-01
+    status: PASS
+    evidence: >
+      Frontmatter is parseable YAML and contains all four required fields:
+      feature (chem), sub_features_covered (4 atoms), target_layer (playwright),
+      coverage_type (edge). All 9 Block-6 fields present (also produced_from,
+      original_path, migration_date, migration_report, related_bugs).
+  - check_id: A-STRUCT-MECH-02
+    status: PASS
+    evidence: >
+      Two scenario headings present under `## Scenarios`: "### Block A —
+      smiles.csv empty-result balloon (GROK-16329 repro)" and "### Block B —
+      sar_small.csv Replace Latest matrix".
+  - check_id: A-STRUCT-MECH-03
+    status: PASS
+    evidence: >
+      Block A has steps 1–6 numbered; Block B has steps 1–11 numbered.
+  - check_id: A-STRUCT-MECH-04
+    status: PASS
+    evidence: >
+      No empty scenarios. Block A: 6 steps. Block B: 11 steps.
+  - check_id: A-STRUCT-MECH-05
+    status: PASS
+    evidence: >
+      target_layer = "playwright" — valid enum value.
+  - check_id: A-STRUCT-MECH-06
+    status: PASS
+    evidence: >
+      coverage_type = "edge" — valid test-kind enum value
+      (smoke|regression|edge|perf).
+  - check_id: A-STRUCT-01
+    status: PASS
+    evidence: >
+      Block B exercises ≥3 sub-features in interaction: chem.analyze.r-groups
+      (decomposition workflow), chem.analyze.r-groups.top-menu (Chem > Analyze >
+      R-Groups Analysis re-invocations), chem.analyze.r-groups.decomposition
+      (MCS + OK runs producing trellis plots and column appends), plus
+      chem.sketcher (MCS button populates sketcher canvas). Block A also
+      composes 3 atoms (top-menu + sketcher + decomposition).
+  - check_id: A-STRUCT-02
+    status: PASS
+    evidence: >
+      File-level frontmatter coverage_type = "edge" — satisfies the edge|perf
+      requirement organically. Block A is the literal GROK-16329 empty-result
+      bug reproduction (atlas critical path chem.cp.r-groups-analysis explicitly
+      tags this as "the sharp edge"); Block B step 11 is the "No core was
+      provided" negative-path invariant. No SR-01 carry-forward needed.
+  - check_id: A-STRUCT-03
+    status: PASS
+    evidence: >
+      coverage_type label present at frontmatter level (value "edge", from the
+      unified test-kind enum). Not a severity-axis value.
+  - check_id: A-STRUCT-04
+    status: PASS
+    evidence: >
+      `## Setup` section factors dataset provisioning (2 system files) and
+      login. No repeated setup duplicated across Blocks A and B beyond the
+      per-block "open dataset" step (which is dataset-specific, not shared
+      setup).
+  - check_id: A-STRUCT-05
+    status: PASS
+    evidence: >
+      Atlas r-groups area has 3 sub-features (chem.analyze.r-groups,
+      .top-menu, .decomposition) — all 3 covered (100% within scope). The
+      4th frontmatter atom (chem.sketcher) is an additional cross-area atom
+      via MCS button interaction with sketcher canvas. Well above 70%
+      threshold for the targeted area.
+  - check_id: A-STRUCT-06
+    status: PASS
+    evidence: >
+      4 sub-features across 2 scenarios = 2.0 avg, meeting the ≥2 density
+      threshold. Block A touches 3 (top-menu + sketcher + decomposition);
+      Block B touches 3 (top-menu + sketcher + decomposition) — both blocks
+      individually dense.
+  - check_id: A-CONT-01
+    status: PASS
+    evidence: >
+      All names are real and source-verified per the migration report's
+      "Source-text fix per chain rev 1 → 2" section: dataset paths
+      (`System:DemoFiles/chem/smiles.csv`, `sar_small.csv`), menu path
+      (`Chem > Analyze > R-Groups Analysis...`), input labels ("Visual
+      analysis" at r-group-analysis.ts:97, "Replace latest" at line 99),
+      balloon strings ("No R-Groups were found" at line 192, "No core was
+      provided" at line 241). Zero placeholders / TODO markers.
+  - check_id: A-BUG-01
+    status: PASS
+    evidence: >
+      Atlas known_issues entry GROK-16329 (lines 1785–1793) has
+      test_coverage.exists: false (= "needed"). It is addressed both (a)
+      via `related_bugs: [GROK-16329]` in scenario frontmatter and (b) via
+      explicit scenario-body reference ("Block A — GROK-16329 empty-result
+      repro" and Notes citing r-group-analysis.ts:192). Atlas affects
+      sub-features fully intersect scenario's sub_features_covered.
+  - check_id: A-MERIT-01
+    status: PASS
+    evidence: >
+      Migration report Opt-outs section is empty (none). No effort/complexity
+      opt-outs cited.
+  - check_id: A-MERIT-02
+    status: PASS
+    evidence: >
+      Migration report Deferred items section is empty (none). No
+      unprompted "TODO: add later" deferrals in the scenario body. Open
+      ambiguities are flagged for Automator/QA-pair review at spec-time
+      (legitimate dependency citation), not deferred coverage.
