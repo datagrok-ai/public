@@ -124,6 +124,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _noPrompt: boolean = false;
   private recognition: SpeechRecognition | null = null;
   private isRecognizing: boolean = false;
+  /** `Say "cancel" to stop` caption shown next to the loader while the AI is working in voice mode. */
+  private _voiceCancelHint: HTMLElement | null = null;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
   protected _messages: T[] = [];
   protected _uiMessages: UIMessage[] = [];
@@ -542,8 +544,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   public startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void, loader: HTMLElement} {
-    const loader = ui.icons.loader();
-    dartLike(loader.style).set('alignSelf', 'center').set('height', '20px').set('marginTop', '8px');
+    const spinner = ui.icons.loader();
+    dartLike(spinner.style).set('height', '20px');
+    // Speech is easy to mishear, so while the AI works in voice mode show the word that aborts the run.
+    const cancelHint = ui.divText('Say "cancel" to stop', 'd4-ai-voice-cancel-hint');
+    cancelHint.style.display = this.isRecognizing ? '' : 'none';
+    this._voiceCancelHint = cancelHint;
+    const loader = ui.divH([spinner, cancelHint], 'd4-ai-loader');
+    dartLike(loader.style).set('alignSelf', 'center').set('marginTop', '8px');
     this.runButton.classList.remove('fal', 'fa-paper-plane');
     this.runButton.classList.add('fas', 'fa-stop');
     this.runButton.style.color = 'orangered';
@@ -564,6 +572,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this.runButton.classList.add('fal', 'fa-paper-plane');
         this.runButton.style.color = 'var(--blue-1)';
         this.runButtonTooltip = actionButtionValues.run;
+        this._voiceCancelHint = null;
         this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
         loader.remove();
       }
@@ -943,6 +952,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.startRecognition();
   }
 
+  /** The voice escape hatch only matters while the mic is live — keep the loader caption in sync. */
+  private syncVoiceCancelHint() {
+    if (this._voiceCancelHint)
+      this._voiceCancelHint.style.display = this.isRecognizing ? '' : 'none';
+  }
+
   private startRecognition() {
     try {
       this.recognition = new SpeechRecognition();
@@ -956,12 +971,25 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.micButton.classList.add('fa-stop');
       this.micButton.style.color = 'orangered';
       ui.setUpdateIndicator(this.textAreaDiv, true, 'Listening...');
+      this.syncVoiceCancelHint();
 
       this.recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         ui.setUpdateIndicator(this.textAreaDiv, false);
 
-        if (transcript === 'stop') {
+        const command = transcript.trim().replace(/[.,;:!?]+$/, '').toLowerCase();
+        const isCancelWord = command === 'stop' || command === 'cancel';
+
+        // While a prompt is being processed, "stop"/"cancel" aborts the AI run instead of being sent
+        // as a new prompt — speech is easy to mishear, so keep this escape hatch reliable. Anything
+        // else said while busy is ignored (a new prompt can't be submitted yet anyway).
+        if (this.runButtonTooltip === actionButtionValues.stop) {
+          if (isCancelWord)
+            this.terminate();
+          return;
+        }
+
+        if (isCancelWord) {
           this.stopRecognition();
           this.textArea.focus();
           return;
@@ -1024,6 +1052,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   private stopRecognition() {
     this.isRecognizing = false;
+    this.syncVoiceCancelHint();
 
     if (this.recognition) {
       try {

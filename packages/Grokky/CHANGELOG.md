@@ -2,6 +2,7 @@
 
 ## v.next
 
+* AI: Voice input — while a prompt is being processed the loader shows a `Say "cancel" to stop` hint, and saying "stop"/"cancel" aborts the run instead of being sent as a new prompt
 * AI: Fixed Enter key not submitting prompts in Chrome ≤ 50 / Dartium (no `KeyboardEvent.key`)
 * AI: Prompts claimed by Datagrok's built-in handler now show a green "Handled natively" check instead of a Responses block
 * AI: Ctrl+[ / Ctrl+] cycle through the current session's prompt history

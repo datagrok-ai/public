@@ -423,6 +423,17 @@
   border-radius: 3px;
 }
 
+/* Loader spinner + (voice mode only) the "Say "cancel" to stop" caption beside it. */
+.d4-ai-loader {
+  align-items: center;
+}
+
+.d4-ai-voice-cancel-hint {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--text-color-light);
+}
+
 .grokky-stream-activity {
   border-left: 2px solid var(--grey-2);
   padding-left: 12px;
