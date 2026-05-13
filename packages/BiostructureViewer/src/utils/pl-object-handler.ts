@@ -14,16 +14,15 @@
 // `.%chem-space-embedding-col`, Curves' `.%curve-format`).
 
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {getPlHtmlForRow, interactionsColForDiagram, renderInteractionBreakdown} from './prolif';
+import {
+  getPlHtmlForRow, interactionsColForDiagram,
+  PL_DIAGRAM_SEM_TYPE, PROLIF_SOURCE_TAG, renderInteractionBreakdown,
+} from './prolif';
 
-/** Tag set on every `PL Diagram` column by the batch handler. Its value is
- *  the name of the source ligand/PDB column the diagrams were computed
- *  from. Presence of this tag is what `PlDiagramObjectHandler.isApplicable`
- *  uses to claim ownership of the cell. */
-export const PROLIF_SOURCE_TAG = '.%prolif-source';
+// Re-export so existing call sites and tests keep working.
+export {PROLIF_SOURCE_TAG};
 
 export class PlDiagramObjectHandler extends DG.ObjectHandler {
   get type(): string { return 'pl-diagram'; }
@@ -31,20 +30,21 @@ export class PlDiagramObjectHandler extends DG.ObjectHandler {
   isApplicable(x: any): boolean {
     if (!(x instanceof DG.SemanticValue)) return false;
     const cell = x.cell;
-    return cell != null && cell.dart != null && cell.column != null &&
-      cell.column.tags[PROLIF_SOURCE_TAG] != null;
+    return cell != null && cell.dart != null && cell.column != null && x.semType === PL_DIAGRAM_SEM_TYPE && 
+      cell.column.tags[PROLIF_SOURCE_TAG] != null && !!cell.dataFrame.col(cell.column.tags[PROLIF_SOURCE_TAG]);
   }
 
   renderProperties(x: DG.SemanticValue, _context: unknown = null): HTMLElement {
-    // `SemanticValue.cell` is the typical path; `grok.shell.o` covers the
-    // case where the panel re-fires without a fresh cell reference (e.g.
-    // user clicks elsewhere then back, and the SemanticValue is stale).
-    const dgCell = x.cell ?? (grok.shell.o as DG.Cell | null);
-    const df = dgCell?.dataFrame ?? grok.shell.t ?? null;
-    const rowIdx = dgCell?.rowIndex ?? df?.currentRowIdx ?? -1;
-    if (df == null || rowIdx < 0)
+    const dgCell = x.cell;
+    const diagramCol = dgCell?.column ?? null;
+    const df = dgCell?.dataFrame ?? null;
+    const rowIdx = dgCell?.rowIndex ?? -1;
+    if (df == null || diagramCol == null || rowIdx < 0)
       return ui.divText('No row context.');
-    const html = getPlHtmlForRow(df, rowIdx);
+    // HTML lives on the diagram column's `temp` slot (populated by
+    // `runPlBatch`). Survives until the column is removed or the
+    // DataFrame is closed; doesn't survive project save/reopen.
+    const html = getPlHtmlForRow(diagramCol, rowIdx);
     if (!html) {
       return ui.divText(
         `LigNetwork HTML not cached for ${df.name} row ${rowIdx} — ` +
@@ -55,10 +55,13 @@ export class PlDiagramObjectHandler extends DG.ObjectHandler {
     iframe.srcdoc = html;
     iframe.classList.add('bsv-pl-panel-iframe');
     iframe.onload = () => iframe.classList.add('bsv-pl-panel-iframe-loaded');
-    const interactionsCol = dgCell?.column?.name != null
-      ? interactionsColForDiagram(df, dgCell.column.name) : null;
+    const interactionsCol = interactionsColForDiagram(diagramCol);
     const interactionsStr = (interactionsCol?.get(rowIdx) as string | null) ?? '';
-    return ui.div(
-      [iframe, renderInteractionBreakdown(interactionsStr)], 'd4-empty-parent');
+    const originalAcc = ui.panels.infoPanel(x);
+    originalAcc.addPane('Interactions', () => {
+      return ui.div(
+        [iframe, renderInteractionBreakdown(interactionsStr)], 'd4-empty-parent');
+    }, true);
+    return originalAcc.root;
   }
 }

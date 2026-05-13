@@ -90,37 +90,32 @@ export function detectNonWaterHetatmInstances(pdbText: string): string[] {
 // Per-row HTML cache
 // ---------------------------------------------------------------------------
 
-// Stored on `window` rather than at module level so the cache survives a
-// hot-reload / package re-register without losing batch results. `df.name`
-// is the inner key (stable across JS wrapper recreations, unlike the
-// `DG.DataFrame` wrapper itself). The captured PNG lives in the column
-// value (read by the cell renderer); only the raw interactive HTML lives
-// in this cache.
-interface PlGlobalCache {
-  html: Map<string, Map<number, string>>;
+// The raw interactive LigNetwork HTML is stashed on the `PL Diagram`
+// column's `temp` slot (Datagrok-canonical column-scoped session cache —
+// same pattern as Chem's `col.temp[ChemTemps.SUBSTRUCT_PROVIDERS]` and
+// Peptides' `col.temp[colorCacheKey]`). The captured PNG lives in the
+// column value (read by PowerGrid's `rawPng` renderer); only the raw HTML
+// for the post-batch context panel lives here.
+//
+// Lifetime = column lifetime: when `_dropPriorPlColumns` removes the
+// column on a re-batch, the cache vanishes with it. Doesn't survive
+// project save/reopen (the user would re-click the batch button), but
+// neither does the offscreen-iframe machinery that produced the HTML.
+export const PL_HTML_TEMP_KEY = '.prolif-html-cache';
+
+/** Read the cached LigNetwork HTML for a row of the given `PL Diagram`
+ *  column. Returns `undefined` if no batch has populated this column. */
+export function getPlHtmlForRow(diagramCol: DG.Column, rowIdx: number): string | undefined {
+  return (diagramCol.temp[PL_HTML_TEMP_KEY] as Map<number, string> | undefined)?.get(rowIdx);
 }
-declare global {
-  interface Window {
-    __prolifCache?: PlGlobalCache;
+
+function _getHtmlCache(diagramCol: DG.Column): Map<number, string> {
+  let m = diagramCol.temp[PL_HTML_TEMP_KEY] as Map<number, string> | undefined;
+  if (m == null) {
+    m = new Map<number, string>();
+    diagramCol.temp[PL_HTML_TEMP_KEY] = m;
   }
-}
-function _getCache(): PlGlobalCache {
-  if (window.__prolifCache == null)
-    window.__prolifCache = {html: new Map()};
-  return window.__prolifCache;
-}
-
-/** Read the cached LigNetwork HTML for a (DataFrame, rowIdx) — null if no
- *  batch has produced one yet, or the cache was lost across packages. */
-export function getPlHtmlForRow(df: DG.DataFrame, rowIdx: number): string | undefined {
-  return _getCache().html.get(df.name)?.get(rowIdx);
-}
-
-function _setHtmlForRow(df: DG.DataFrame, rowIdx: number, html: string): void {
-  const c = _getCache().html;
-  let m = c.get(df.name);
-  if (m == null) { m = new Map(); c.set(df.name, m); }
-  m.set(rowIdx, html);
+  return m;
 }
 
 // ---------------------------------------------------------------------------
@@ -220,17 +215,43 @@ const PL_COL_NAMES_FIXED = {
  *  in BSV/package.ts's `init`, keyed off the `.%prolif-source` column tag. */
 export const PL_DIAGRAM_SEM_TYPE = 'rawPng';
 
-/** Given a `PL Diagram` column name, find the matching `PL Interactions`
- *  column. Modern runs always use canonical names (`PL Diagram` paired with
- *  `PL Interactions`), but the suffix-matching here is kept defensively so
- *  DataFrames carrying `(N)`-suffixed columns from older code keep working
- *  until the user re-runs the batch (which drops them and produces canonical
- *  names). Returns null if no matching column exists. */
-export function interactionsColForDiagram(df: DG.DataFrame, diagramColName: string): DG.Column<string> | null {
-  const m = /^PL Diagram( \(\d+\))?$/.exec(diagramColName);
-  if (!m) return null;
-  const suffix = m[1] ?? '';
-  return (df.col(`PL Interactions${suffix}`) ?? null) as DG.Column<string> | null;
+/** Tag set on every `PL Diagram` column by the batch handler. Its value is
+ *  the name of the source ligand/PDB column the diagrams were computed
+ *  from. Also used by `findPlDiagramColForSource` so the inline-diagram
+ *  panel for a Molecule3D / docking-pose cell can hit the batch cache
+ *  instead of re-running the script. */
+export const PROLIF_SOURCE_TAG = '.%prolif-source';
+
+/** Tag set on every `PL Diagram` column by the batch handler. Its value is
+ *  the name of the sibling `PL Interactions` column. `interactionsColForDiagram`
+ *  reads this tag rather than guessing the name by regex so a future
+ *  rename (e.g. uniquification on column-name collision) doesn't break the
+ *  pairing. */
+export const PROLIF_INTERACTIONS_TAG = '.%prolif-interactions-col';
+
+/** Look up the `PL Interactions` column paired with the given diagram column.
+ *  Reads the `PROLIF_INTERACTIONS_TAG` tag set by `runPlBatch`. Returns null
+ *  if the tag is missing (column wasn't produced by this PR's batch) or
+ *  the referenced column has since been removed. */
+export function interactionsColForDiagram(diagramCol: DG.Column): DG.Column<string> | null {
+  const interactionsName = diagramCol.tags[PROLIF_INTERACTIONS_TAG];
+  if (!interactionsName) return null;
+  const df = diagramCol.dataFrame;
+  if (df == null) return null;
+  return (df.col(interactionsName) ?? null) as DG.Column<string> | null;
+}
+
+/** Find a `PL Diagram` column whose `.%prolif-source` tag points at the
+ *  given source column. Returns null if no such column exists (no batch
+ *  has been run for this source). Used by the inline-diagram path so
+ *  clicking a Molecule3D / docking-pose cell can reuse the cached HTML
+ *  from a prior batch instead of spending ~15-30s on a fresh script call. */
+export function findPlDiagramColForSource(df: DG.DataFrame, sourceColName: string): DG.Column<string> | null {
+  for (const col of df.columns.toList()) {
+    if (col.semType === PL_DIAGRAM_SEM_TYPE && col.tags[PROLIF_SOURCE_TAG] === sourceColName)
+      return col as DG.Column<string>;
+  }
+  return null;
 }
 
 // Conditional per-type-count columns. Each entry maps TS key → Python
@@ -240,17 +261,17 @@ export function interactionsColForDiagram(df: DG.DataFrame, diagramColName: stri
 // display codes keep grid columns narrow; full names appear in the
 // breakdown UI where there's room.
 const PL_INT_COLS: ReadonlyArray<{key: string; pythonKey: string; displayName: string}> = [
-  {key: 'nHBondDonor',    pythonKey: 'n_hbond_donor',    displayName: 'PL HBD'},
+  {key: 'nHBondDonor', pythonKey: 'n_hbond_donor', displayName: 'PL HBD'},
   {key: 'nHBondAcceptor', pythonKey: 'n_hbond_acceptor', displayName: 'PL HBA'},
-  {key: 'nHydrophobic',   pythonKey: 'n_hydrophobic',    displayName: 'PL Hyd'},
-  {key: 'nPiStacking',    pythonKey: 'n_pistacking',     displayName: 'PL Pi'},
-  {key: 'nCationic',      pythonKey: 'n_cationic',       displayName: 'PL Cat'},
-  {key: 'nAnionic',       pythonKey: 'n_anionic',        displayName: 'PL An'},
-  {key: 'nCationPi',      pythonKey: 'n_cationpi',       displayName: 'PL CatPi'},
-  {key: 'nXBond',         pythonKey: 'n_xbond',          displayName: 'PL XB'},
-  {key: 'nMetal',         pythonKey: 'n_metal',          displayName: 'PL Metal'},
-  {key: 'nVdw',           pythonKey: 'n_vdw',            displayName: 'PL vdW'},
-  {key: 'nTotal',         pythonKey: 'n_total',          displayName: 'PL Total'},
+  {key: 'nHydrophobic', pythonKey: 'n_hydrophobic', displayName: 'PL Hyd'},
+  {key: 'nPiStacking', pythonKey: 'n_pistacking', displayName: 'PL Pi'},
+  {key: 'nCationic', pythonKey: 'n_cationic', displayName: 'PL Cat'},
+  {key: 'nAnionic', pythonKey: 'n_anionic', displayName: 'PL An'},
+  {key: 'nCationPi', pythonKey: 'n_cationpi', displayName: 'PL CatPi'},
+  {key: 'nXBond', pythonKey: 'n_xbond', displayName: 'PL XB'},
+  {key: 'nMetal', pythonKey: 'n_metal', displayName: 'PL Metal'},
+  {key: 'nVdw', pythonKey: 'n_vdw', displayName: 'PL vdW'},
+  {key: 'nTotal', pythonKey: 'n_total', displayName: 'PL Total'},
 ];
 
 // Matches any PL output column we've ever produced — canonical names
@@ -271,21 +292,24 @@ function _dropPriorPlColumns(df: DG.DataFrame): void {
   const toDrop = df.columns.toList()
     .filter((c) => PL_COLUMN_PATTERN.test(c.name))
     .map((c) => c.name);
+  // Removing the column drops its `temp` slot too, so the prior batch's
+  // cached LigNetwork HTML disappears with the `PL Diagram` column.
   for (const name of toDrop) df.columns.remove(name);
-  // Also flush the cached LigNetwork HTML for this DataFrame — otherwise
-  // the post-batch panel would still show stale diagrams for rows that
-  // happen to be skipped on the re-run (e.g. user filtered the data).
-  _getCache().html.delete(df.name);
 }
 
 // Set grid row height + column width for the diagram after the batch
 // finishes. The actual cell rendering is handled by PowerGrid's built-in
 // `RawPNGRenderer` (semType `rawPng`), registered platform-wide via PowerGrid.
-function _adjustGridForDiagrams(df: DG.DataFrame, colName: string): void {
-  const tv = grok.shell.getTableView(df.name);
+// Look up the TableView by exact DataFrame reference rather than by name —
+// `grok.shell.getTableView(df.name)` returns the wrong view if multiple
+// TableViews share a name (the platform allows duplicates).
+function _adjustGridForDiagrams(df: DG.DataFrame, colNames: string[]): void {
+  const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame === df);
   if (tv == null) return;
-  const gc = tv.grid.columns.byName(colName);
-  if (gc != null) gc.width = 220;
+  for (const colName of colNames) {
+    const gc = tv.grid.columns.byName(colName);
+    if (gc != null) gc.width = 220;
+  }
   tv.grid.setOptions({rowHeight: 130});
   try { tv.grid.invalidate(); } catch (_e) { /* no-op */ }
 }
@@ -300,26 +324,33 @@ function _adjustGridForDiagrams(df: DG.DataFrame, colName: string): void {
 // vis.js from drawing. A small but on-screen container slips past the
 // heuristic; the full-size iframe is clipped to 30px but vis.js still draws
 // at production resolution. Users see a brief thumbnail flicker during a
-// batch. Concurrency = 3 because a SOLO iframe in the small region still
-// gets throttled empirically. The 11KB threshold on the polled canvas
+// batch. Concurrency = 2 keeps at least one iframe rendering at any
+// moment during a busy batch (a SOLO iframe in the small region still
+// gets throttled empirically). The 11KB threshold on the polled canvas
 // rejects blank captures.
 // No sandbox — we control the HTML, so postMessage + canvas access work.
-const PL_CAPTURE_CONCURRENCY = 3;
+const PL_CAPTURE_CONCURRENCY = 2;
 
+// Lazy + ref-counted container. Created on first enqueue, removed once
+// the queue drains and all workers exit so the bottom-right thumbnail
+// flicker isn't visible during idle.
 let _captureContainer: HTMLDivElement | null = null;
-function _getCaptureContainer(): HTMLDivElement {
+function _ensureCaptureContainer(): HTMLDivElement {
   if (_captureContainer == null) {
-    // Style lives in BSV's `viewer.css:.bsv-pl-capture-container`.
     _captureContainer = ui.div([], 'bsv-pl-capture-container');
     _captureContainer.setAttribute('data-prolif-capture', 'true');
-    // `document.body.appendChild` is the one DOM operation without a clean
-    // Datagrok wrapper: the capture container must be a `position:fixed`
-    // overlay that survives every view switch (its lifetime is the whole
-    // browser session, not any one TableView). `grok.shell.v.root` would
-    // scope it to the current view and lose iframes mid-batch on view change.
+    // `position:fixed` overlay appended to `document.body` so it isn't
+    // scoped to the current view (mid-batch view switches would
+    // otherwise detach the iframes).
     document.body.appendChild(_captureContainer);
   }
   return _captureContainer;
+}
+function _disposeCaptureContainerIfIdle(): void {
+  if (_captureContainer != null && _captureQueue.length === 0 && _captureWorkersRunning === 0) {
+    try { _captureContainer.remove(); } catch (_e) { /* */ }
+    _captureContainer = null;
+  }
 }
 
 interface CaptureTask {
@@ -330,10 +361,7 @@ const _captureQueue: CaptureTask[] = [];
 let _captureWorkersRunning = 0;
 
 /** Queue an offscreen vis.js capture and return a Promise that resolves
- *  with the base64-encoded PNG (or null on timeout / malformed canvas).
- *  The caller decides what to do with the result — `runPlBatch` collects
- *  all promises and writes the diagram column in one bulk pass at the end
- *  so the grid doesn't flicker through each row as captures complete. */
+ *  with the base64-encoded PNG (or null on timeout / malformed canvas). */
 function _enqueueCapture(html: string): Promise<string | null> {
   return new Promise<string | null>((resolve) => {
     _captureQueue.push({html, resolve});
@@ -356,6 +384,7 @@ async function _runCaptureWorker(): Promise<void> {
     }
   } finally {
     _captureWorkersRunning--;
+    _disposeCaptureContainerIfIdle();
   }
 }
 
@@ -382,7 +411,7 @@ function _findCanvas(doc: Document | null): HTMLCanvasElement | null {
 
 function _captureOne(html: string, timeoutMs = 15000): Promise<string | null> {
   return new Promise((resolve) => {
-    const container = _getCaptureContainer();
+    const container = _ensureCaptureContainer();
     const iframe = ui.element('iframe') as HTMLIFrameElement;
     iframe.classList.add('bsv-pl-capture-iframe');
     iframe.srcdoc = html;
@@ -492,21 +521,9 @@ export function resolveBatchCtxFromSemValue(
   if (hasValidCell) {
     df = cell.dataFrame;
     pdbCol = cell.column as DG.Column<string>;
-  } else {
-    // Fallback: use the current table view's DataFrame. Lets the button
-    // work even when the panel is invoked without a usable cell context
-    // (e.g. opened from the menu instead of a grid click).
-    const t = grok.shell.t;
-    if (t != null) {
-      df = t;
-      const m3dCols = t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE3D);
-      pdbCol = (m3dCols[0] ?? null) as DG.Column<string> | null;
-      if (m3dCols.length > 1) {
-        grok.shell.warning(
-          `Multiple Molecule3D columns found; PL batch will use "${m3dCols[0].name}".`);
-      }
-    }
-  }
+  } else
+    return undefined;
+
   if (df == null || pdbCol == null) return undefined;
   return asDockingPose ? {df, pdbCol, ligandCol: pdbCol} : {df, pdbCol};
 }
@@ -545,11 +562,11 @@ export function makeProlifWidget(params: {
   const ligands = detectNonWaterHetatmInstances(detectionSource);
 
   // Style: `viewer.css:.bsv-pl-summary`.
-  const summaryText = ligands.length === 0
-    ? 'No non-water HETATM ligand found in this structure.'
-    : ligands.length === 1
-      ? `Ligand: ${ligands[0]}`
-      : `${ligands.length} ligands found: ${ligands.join(', ')}`;
+  const summaryText = ligands.length === 0 ?
+    'No non-water HETATM ligand found in this structure.' :
+    ligands.length === 1 ?
+      `Ligand: ${ligands[0]}` :
+      `${ligands.length} ligands found: ${ligands.join(', ')}`;
   host.append(ui.divText(summaryText, 'bsv-pl-summary'));
 
   // Optional inline LigNetwork: 0 ligands / no explicit ligand → nothing;
@@ -560,6 +577,13 @@ export function makeProlifWidget(params: {
     (params.ligand_resname != null && params.ligand_resname.trim().length > 0);
   if (opts?.showInlineDiagram && (ligands.length > 0 || hasExplicitLigand)) {
     const diagramHost = ui.div([], 'bsv-pl-inline-diagram');
+    // Look for a cached diagram from a prior `runPlBatch`. When found, the
+    // inline panel skips the 15-30s script call and renders from `column.temp`
+    // (same cache the `PL Diagram` cell context panel reads). Only valid for
+    // the single-ligand auto-detect path; the multi-ligand picker re-runs
+    // the script for each user pick since the batch only computed one ligand.
+    const cache = (batchCtx != null && (ligands.length <= 1 || hasExplicitLigand)) ?
+      _findCachedDiagram(batchCtx.df, batchCtx.pdbCol.name) : undefined;
     if (ligands.length > 1 && !hasExplicitLigand) {
       // `nullable: true` + `value: null` forces an intentional pick rather
       // than guessing via the most-common-HETATM heuristic.
@@ -577,13 +601,13 @@ export function makeProlifWidget(params: {
       host.append(diagramHost);
     } else {
       host.append(diagramHost);
-      void _mountInlineDiagram(diagramHost, params);
+      void _mountInlineDiagram(diagramHost, params, cache);
     }
   }
 
-  const onClick = opts?.runBatch ?? (() => batchCtx != null
-    ? runPlBatch({ctx: batchCtx, buildRowArgs: defaultBuildRowArgs(batchCtx)})
-    : undefined);
+  const onClick = opts?.runBatch ?? (() => batchCtx != null ?
+    runPlBatch({ctx: batchCtx, buildRowArgs: defaultBuildRowArgs(batchCtx)}) :
+    undefined);
 
   const btn = ui.button('Compute for whole dataset', onClick);
   btn.classList.add('bsv-pl-batch-btn');
@@ -596,14 +620,55 @@ export function makeProlifWidget(params: {
   return new DG.Widget(host);
 }
 
+/** Resolve the (diagramCol, rowIdx) pair if a prior batch has cached
+ *  HTML for the current row of `sourceColName`. Uses `df.currentRowIdx`
+ *  for the row (kept in sync by the platform with the clicked cell), and
+ *  matches the diagram column via the `.%prolif-source` tag. Returns
+ *  undefined if no batch has run or no HTML is cached for this row. */
+function _findCachedDiagram(
+  df: DG.DataFrame, sourceColName: string,
+): {diagramCol: DG.Column<string>; rowIdx: number} | undefined {
+  const rowIdx = df.currentRowIdx;
+  if (rowIdx < 0) return undefined;
+  const diagramCol = findPlDiagramColForSource(df, sourceColName);
+  if (diagramCol == null) return undefined;
+  if (getPlHtmlForRow(diagramCol, rowIdx) == null) return undefined;
+  return {diagramCol, rowIdx};
+}
+
+/** Render the cached LigNetwork iframe + per-residue breakdown into `target`
+ *  from the `(diagramCol, rowIdx)` pair. Pulls HTML from `column.temp`
+ *  (populated by `runPlBatch`) and the interactions string from the
+ *  tag-linked `PL Interactions` column. */
+function _mountCachedDiagram(
+  target: HTMLElement, diagramCol: DG.Column<string>, rowIdx: number,
+): void {
+  const html = getPlHtmlForRow(diagramCol, rowIdx)!;
+  const iframe = ui.element('iframe') as HTMLIFrameElement;
+  iframe.srcdoc = html;
+  iframe.classList.add('bsv-pl-panel-iframe');
+  iframe.onload = () => iframe.classList.add('bsv-pl-panel-iframe-loaded');
+  target.append(iframe);
+  const interactionsCol = interactionsColForDiagram(diagramCol);
+  const interactionsStr = (interactionsCol?.get(rowIdx) as string | null) ?? '';
+  target.append(renderInteractionBreakdown(interactionsStr));
+}
+
 /** Fetches the interactive LigNetwork + per-residue breakdown for a single
  *  (protein, ligand) pair via the Python script, then mounts them in the
- *  given target. Used by `makeProlifWidget`'s inline-diagram path. The
- *  iframe is same-origin (no sandbox) so vis.js can read its own canvas;
- *  CSS lives in `viewer.css:.bsv-pl-panel-iframe`. */
+ *  given target. Used by `makeProlifWidget`'s inline-diagram path. If `cache`
+ *  is supplied, skips the script entirely and renders from `column.temp`
+ *  (same source the `PL Diagram` cell context panel uses). The iframe is
+ *  same-origin (no sandbox) so vis.js can read its own canvas; CSS lives
+ *  in `viewer.css:.bsv-pl-panel-iframe`. */
 async function _mountInlineDiagram(
   target: HTMLElement, params: {protein: string; ligand?: string; ligand_resname?: string},
+  cache?: {diagramCol: DG.Column<string>; rowIdx: number},
 ): Promise<void> {
+  if (cache != null) {
+    _mountCachedDiagram(target, cache.diagramCol, cache.rowIdx);
+    return;
+  }
   const loader = ui.loader();
   target.append(loader);
   try {
@@ -647,9 +712,13 @@ function defaultBuildRowArgs(ctx: ProlifBatchCtx): (rowIdx: number) => PlScriptA
 // Per-row batch handler
 // ---------------------------------------------------------------------------
 
-const PL_BATCH_CONCURRENCY = 4;
+// Script calls run sequentially. The Python script is single-threaded and
+// the Datagrok server has its own worker scheduler; fanning out 4 concurrent
+// calls from the client just queues them up server-side. Captures still
+// pipeline against the next row's script call via `_enqueueCapture` (which
+// is fire-and-forget) so wall-clock isn't worse than the previous design.
 
-// Per-row state for the batch loop.
+// Per-row state.
 const ROW_SKIP = 1;
 const ROW_OK = 2;
 const ROW_ERROR = 3;
@@ -672,20 +741,22 @@ export interface RunPlBatchOptions {
   prepare?: () => Promise<boolean>;
 }
 
-/** Per-row script calls via a 4-worker promise pool. We don't use the
- *  `meta:{vectorFunc:'true'}` Datagrok pattern (Chem's `getDescriptors`,
- *  `getMorganFingerprints`) because that's designed for column→column
- *  transforms with a single output value per row; ProLIF returns 13 values
- *  per row plus a large HTML blob, so a manual claim-cursor pool is the
- *  right fit.
+/** Sequential per-row script calls (the Python script is single-threaded
+ *  and the Datagrok server has its own worker scheduler, so client-side
+ *  parallel fan-out doesn't help — see comment at the top of this section).
+ *  Offscreen LigNetwork captures still pipeline against the next row's
+ *  script call via the fire-and-forget `_enqueueCapture` queue.
+ *
+ *  We don't use `meta:{vectorFunc:'true'}` because the script returns 13
+ *  values per row plus a large HTML blob plus a client-side capture step;
+ *  a manual loop is the right fit.
  *
  *  Column layout:
- *    1. Add the `PL Diagram` and `PL Interactions` columns up front; the
- *       grid shows progress as workers complete.
+ *    1. Add the `PL Diagram` and `PL Interactions` columns up front so the
+ *       grid shows the structure immediately.
  *    2. Accumulate per-type counts in Int32Arrays during the loop.
- *    3. After the loop, add only the count columns that have at least one
- *       OK row with value > 0 (skipping types with no observed instances —
- *       e.g. metal columns vanish for purely organic-ligand datasets).
+ *    3. After the loop, bulk-fill all output columns via `col.init`
+ *       (single notification per column instead of one per row).
  *
  *  Diagram columns are stamped with `PL_DIAGRAM_SEM_TYPE` (`rawPng`) so
  *  PowerGrid's built-in renderer draws the thumbnails and
@@ -703,13 +774,21 @@ export async function runPlBatch(opts: RunPlBatchOptions): Promise<void> {
   // PL Diagram added BEFORE PL Interactions so it appears to the left in
   // the grid. semType `rawPng` lights up PowerGrid's built-in PNG
   // renderer; the `.%prolif-source` tag links each cell to the source
-  // ligand/PDB column and is what `PlDiagramObjectHandler` keys off.
-  // Tag literal must match `PROLIF_SOURCE_TAG` in `./pl-object-handler.ts`
-  // (inlined to avoid a circular import).
+  // ligand/PDB column (what `PlDiagramObjectHandler` and the inline-diagram
+  // cache lookup key off); the `.%prolif-interactions-col` tag pairs the
+  // diagram column with its sibling so `interactionsColForDiagram` doesn't
+  // have to guess by name.
   const diagramCol = df.columns.addNewString(PL_COL_NAMES_FIXED.diagram) as DG.Column<string>;
   diagramCol.semType = PL_DIAGRAM_SEM_TYPE;
-  diagramCol.tags['.%prolif-source'] = ctx.pdbCol.name;
+  diagramCol.tags[PROLIF_SOURCE_TAG] = ctx.pdbCol.name;
   const interactionsCol = df.columns.addNewString(PL_COL_NAMES_FIXED.interactions) as DG.Column<string>;
+  diagramCol.tags[PROLIF_INTERACTIONS_TAG] = interactionsCol.name;
+  // `<RESIDUE>_<CODE>` entries are joined with `, ` by the Python script.
+  // Setting the multi-value separator lights up the platform's multi-value
+  // filter mode so the user can filter for "engages GLY351" or "any HBDonor"
+  // by ticking categories rather than typing substring queries.
+  interactionsCol.tags[DG.TAGS.MULTI_VALUE_SEPARATOR] = ',';
+  interactionsCol.tags[DG.TAGS.CELL_RENDERER] = 'Tags';
   const dropFixedCols = () => {
     df.columns.remove(interactionsCol.name);
     df.columns.remove(diagramCol.name);
@@ -726,63 +805,53 @@ export async function runPlBatch(opts: RunPlBatchOptions): Promise<void> {
     }
   }
 
-  // Per-row buffers — column writes happen in a single bulk pass after
-  // Promise.all below, so all PL columns populate at once when the batch
-  // finishes (instead of trickling in row-by-row).
+  // Per-row buffers. Column writes happen in a single bulk `col.init` pass
+  // after the loop so the grid notifies on each output column exactly once.
   const interactionsValues = new Array<string>(rowCount).fill('');
   const counts: {[key: string]: Int32Array} = {};
   for (const c of PL_INT_COLS)
     counts[c.key] = new Int32Array(rowCount);
   const rowState = new Uint8Array(rowCount);
-  const capturePromises: Promise<{rowIdx: number; base64: string | null}>[] = [];
+  const htmlByRow = _getHtmlCache(diagramCol);
+  const pngByRow = new Map<number, string>();
+  const capturePromises: Promise<void>[] = [];
 
   const pi = DG.TaskBarProgressIndicator.create(
     `Computing PL interactions (${rowCount} rows)...`, {cancelable: true});
-  let completed = 0;
-  let cursor = 0;
-  const claim = (): number => {
-    if (pi.canceled) return -1;
-    if (cursor >= rowCount) return -1;
-    return cursor++;
-  };
-
-  const processRow = async (i: number): Promise<void> => {
-    const args = buildRowArgs(i);
-    if (args == null) {
-      rowState[i] = ROW_SKIP;
-      return;
-    }
-    try {
-      const result = await grok.functions.call(
-        'BiostructureViewer:ProteinLigandInteractionDiagram', args,
-      ) as DG.DataFrame;
-      interactionsValues[i] = result.col('interactions')!.get(0) as string;
-      // Cache the LigNetwork HTML for the post-batch context panel, and
-      // enqueue an offscreen capture whose result goes to a buffer (not the
-      // column directly) — the bulk-write happens after Promise.all below.
-      const html = result.col('html')!.get(0) as string;
-      _setHtmlForRow(df, i, html);
-      capturePromises.push(
-        _enqueueCapture(html).then((base64) => ({rowIdx: i, base64})));
-      for (const c of PL_INT_COLS)
-        counts[c.key][i] = result.col(c.pythonKey)!.get(0) as number;
-      rowState[i] = ROW_OK;
-    } catch (err) {
-      interactionsValues[i] = err instanceof Error ? `Error: ${err.message}` : String(err);
-      rowState[i] = ROW_ERROR;
-    }
-  };
 
   try {
-    await Promise.all(Array.from({length: PL_BATCH_CONCURRENCY}, async () => {
-      for (;;) {
-        const i = claim();
-        if (i === -1) return;
-        await processRow(i);
-        completed++;
-        pi.update(100 * completed / rowCount, `${completed} / ${rowCount}`);
+    for (let i = 0; i < rowCount; i++) {
+      if (pi.canceled) break;
+      const args = buildRowArgs(i);
+      if (args == null) {
+        rowState[i] = ROW_SKIP;
+        pi.update(100 * (i + 1) / rowCount, `${i + 1} / ${rowCount}`);
+        continue;
       }
-    }));
+      try {
+        const result = await grok.functions.call(
+          'BiostructureViewer:ProteinLigandInteractionDiagram', args,
+        ) as DG.DataFrame;
+        interactionsValues[i] = result.col('interactions')!.get(0) as string;
+        const html = result.col('html')!.get(0) as string;
+        // Cache the interactive HTML on the diagram column's `temp` slot
+        // for the post-batch context panel. Lifetime = column lifetime.
+        htmlByRow.set(i, html);
+        // Capture runs in the background and resolves after we've moved on
+        // to the next row's script call — keeps the script→capture pipeline
+        // saturated without parallel script calls.
+        capturePromises.push(_enqueueCapture(html).then((base64) => {
+          if (base64 != null) pngByRow.set(i, base64);
+        }));
+        for (const c of PL_INT_COLS)
+          counts[c.key][i] = result.col(c.pythonKey)!.get(0) as number;
+        rowState[i] = ROW_OK;
+      } catch (err) {
+        interactionsValues[i] = err instanceof Error ? `Error: ${err.message}` : String(err);
+        rowState[i] = ROW_ERROR;
+      }
+      pi.update(100 * (i + 1) / rowCount, `${i + 1} / ${rowCount}`);
+    }
   } finally {
     pi.close();
   }
@@ -793,43 +862,35 @@ export async function runPlBatch(opts: RunPlBatchOptions): Promise<void> {
     return;
   }
 
-  // Wait for the offscreen captures to finish — captures took up to 15s
-  // each but ran in parallel with the script calls, so most have already
-  // completed by now. Then write EVERYTHING (interactions string, per-type
-  // counts, diagram PNG) to the columns in a single synchronous pass so
-  // the user sees all PL columns populate at the same instant. Single
-  // grid invalidate at the end keeps the visible transition crisp.
-  let captures: Array<{rowIdx: number; base64: string | null}> = [];
+  // Wait for the offscreen captures to drain — most have completed in
+  // parallel with subsequent script calls, but the last few rows always
+  // have outstanding captures at this point.
   if (capturePromises.length > 0) {
     const captureProgress = DG.TaskBarProgressIndicator.create(
       'Finalizing PL Diagram thumbnails...');
     try {
-      captures = await Promise.all(capturePromises);
+      await Promise.all(capturePromises);
     } finally {
       captureProgress.close();
     }
   }
 
-  for (let i = 0; i < rowCount; i++)
-    interactionsCol.set(i, interactionsValues[i]);
-  for (const {rowIdx, base64} of captures)
-    if (base64 != null) diagramCol.set(rowIdx, base64);
+  // Bulk-fill output columns. `col.init` writes the whole column without
+  // firing per-row notifications — orders of magnitude fewer events than
+  // a per-row `col.set` loop on a 1000-row dataset.
+  interactionsCol.init((i) => interactionsValues[i]);
+  diagramCol.init((i) => pngByRow.get(i) ?? null);
   // Add only the count columns that have at least one OK row with value > 0.
-  // For each kept column, write counts for OK rows and DG.INT_NULL for ERROR
-  // rows so per-column stats / sorts / filters distinguish "failed" from
-  // "0 interactions". SKIP rows stay at the addNewInt default (DG.INT_NULL).
+  // For each kept column, OK rows get their count, ERROR rows get
+  // DG.INT_NULL so per-column stats / sorts / filters distinguish "failed"
+  // from "0 interactions". SKIP rows also get DG.INT_NULL.
   for (const c of PL_INT_COLS) {
     const arr = counts[c.key];
-    // Skip the whole column if no OK row has a positive count. `arr.some`
-    // short-circuits like the manual loop+break but reads cleanly.
     if (!arr.some((v, i) => rowState[i] === ROW_OK && v > 0)) continue;
     const intCol = df.columns.addNewInt(c.displayName) as DG.Column<number>;
-    for (let i = 0; i < rowCount; i++) {
-      if (rowState[i] === ROW_OK) intCol.set(i, arr[i]);
-      else if (rowState[i] === ROW_ERROR) intCol.set(i, DG.INT_NULL);
-    }
+    intCol.init((i) => rowState[i] === ROW_OK ? arr[i] : DG.INT_NULL);
   }
 
-  _adjustGridForDiagrams(df, diagramCol.name);
+  _adjustGridForDiagrams(df, [diagramCol.name, interactionsCol.name]);
   grok.shell.info(`PL interactions added for ${rowCount} rows.`);
 }

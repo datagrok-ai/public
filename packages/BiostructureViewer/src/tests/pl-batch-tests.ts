@@ -6,7 +6,11 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {
   detectNonWaterHetatmInstances,
+  findPlDiagramColForSource,
   interactionsColForDiagram,
+  PL_DIAGRAM_SEM_TYPE,
+  PROLIF_INTERACTIONS_TAG,
+  PROLIF_SOURCE_TAG,
   renderInteractionBreakdown,
 } from '../utils/prolif';
 
@@ -79,43 +83,74 @@ category('PLBatch', () => {
 
   // ------------------------------------------------------------------------
   // interactionsColForDiagram — wires the post-batch context panel to the
-  // matching `PL Interactions` column. New runs always produce canonical names,
-  // but the function does suffix-aware lookup so DataFrames carrying `(N)`-
-  // suffixed columns from older runs keep working. Regression here would make
-  // the breakdown read from a stale column or null silently.
+  // matching `PL Interactions` column via the `.%prolif-interactions-col`
+  // tag set by `runPlBatch`. Tag-based (not name-based) so a future
+  // uniquification on column-name collision doesn't break the pairing.
+  // Regression here would make the breakdown read from a stale column or
+  // null silently.
   // ------------------------------------------------------------------------
-  test('interactionsColForDiagram: matches bare PL Diagram column', async () => {
+  test('interactionsColForDiagram: tag-linked pair resolves correctly', async () => {
     const df = DG.DataFrame.fromColumns([
       DG.Column.string('PL Diagram', 1),
       DG.Column.string('PL Interactions', 1),
     ]);
-    const col = interactionsColForDiagram(df, 'PL Diagram');
-    expect(col?.name, 'PL Interactions');
+    const diagramCol = df.col('PL Diagram')!;
+    diagramCol.tags[PROLIF_INTERACTIONS_TAG] = 'PL Interactions';
+    expect(interactionsColForDiagram(diagramCol)?.name, 'PL Interactions');
   });
 
-  test('interactionsColForDiagram: matches suffixed PL Diagram column', async () => {
+  test('interactionsColForDiagram: returns null when tag missing', async () => {
+    // Column has no tag — caller treats this as "not produced by runPlBatch".
     const df = DG.DataFrame.fromColumns([
-      DG.Column.string('PL Diagram (2)', 1),
-      DG.Column.string('PL Interactions (2)', 1),
+      DG.Column.string('PL Diagram', 1),
+      DG.Column.string('PL Interactions', 1),
     ]);
-    const col = interactionsColForDiagram(df, 'PL Diagram (2)');
-    expect(col?.name, 'PL Interactions (2)');
+    expect(interactionsColForDiagram(df.col('PL Diagram')!), null);
   });
 
-  test('interactionsColForDiagram: returns null for non-matching name', async () => {
-    const df = DG.DataFrame.fromColumns([
-      DG.Column.string('something else', 1),
-    ]);
-    expect(interactionsColForDiagram(df, 'something else'), null);
-  });
-
-  test('interactionsColForDiagram: returns null when suffix has no sibling', async () => {
-    // PL Diagram exists but matching PL Interactions does not — the batch
-    // would never produce this state, but a manual column delete could.
+  test('interactionsColForDiagram: returns null when tag points at missing column', async () => {
+    // Tag exists but the referenced column was removed (manual user delete).
     const df = DG.DataFrame.fromColumns([
       DG.Column.string('PL Diagram', 1),
     ]);
-    expect(interactionsColForDiagram(df, 'PL Diagram'), null);
+    const diagramCol = df.col('PL Diagram')!;
+    diagramCol.tags[PROLIF_INTERACTIONS_TAG] = 'PL Interactions';
+    expect(interactionsColForDiagram(diagramCol), null);
+  });
+
+  // ------------------------------------------------------------------------
+  // findPlDiagramColForSource — drives the inline-diagram cache reuse in the
+  // Molecule3D / docking-pose context panels. Without this, clicking a PDB
+  // cell after running a batch would silently re-run the Python script (15-30s)
+  // instead of pulling the cached HTML from `column.temp`. The match is by
+  // (semType === PL_DIAGRAM_SEM_TYPE) AND (.%prolif-source tag === source name)
+  // so unrelated rawPng columns from other features don't get claimed.
+  // ------------------------------------------------------------------------
+  test('findPlDiagramColForSource: matches diagram col by source tag + rawPng semType', async () => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.string('pdb', 1),
+      DG.Column.string('PL Diagram', 1),
+    ]);
+    const diagramCol = df.col('PL Diagram')!;
+    diagramCol.semType = PL_DIAGRAM_SEM_TYPE;
+    diagramCol.tags[PROLIF_SOURCE_TAG] = 'pdb';
+    expect(findPlDiagramColForSource(df, 'pdb')?.name, 'PL Diagram');
+  });
+
+  test('findPlDiagramColForSource: returns null when no batch has run', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.string('pdb', 1)]);
+    expect(findPlDiagramColForSource(df, 'pdb'), null);
+  });
+
+  test('findPlDiagramColForSource: ignores rawPng cols from unrelated features', async () => {
+    // A different rawPng column (e.g. from PowerGrid demo / another package)
+    // must not be matched — only ones with the prolif source tag for OUR source.
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.string('pdb', 1),
+      DG.Column.string('other-png', 1),
+    ]);
+    df.col('other-png')!.semType = PL_DIAGRAM_SEM_TYPE;
+    expect(findPlDiagramColForSource(df, 'pdb'), null);
   });
 
   // ------------------------------------------------------------------------
