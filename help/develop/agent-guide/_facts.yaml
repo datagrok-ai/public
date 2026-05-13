@@ -3703,3 +3703,124 @@
 
 # DRIFT entries — article vs. code disagreements (add-info-panel)
 
+- id: DG-FACT-265
+  kind: namespace
+  scope: custom-filters
+  value: A custom filter is a subclass of the abstract class `DG.Filter` (`js-api/src/widgets/filter.ts:15`), which itself extends `Widget`. Two members are abstract and MUST be implemented — `get filterSummary(): string` (short text shown on viewers / context panel) and `applyFilter(): void` (writes the filter mask). Constructor must call `super()` with no args (the base `Filter` constructor calls `super(ui.div())` itself); subclasses then assign their own `this.root = ui.divV([...], 'class')` and reset `this.subs = []`.
+  derives_from:
+    - article: help/develop/how-to/viewers/custom-filters.md:5-8
+    - code: js-api/src/widgets/filter.ts:15-44,68-75
+    - code: packages/Widgets/src/filters/radio-button-filter.ts:12-20
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-266
+  kind: enum
+  scope: custom-filters
+  value: To register a function as a custom filter, the package function must declare `meta.role: filter` AND output type `filter`. Header form — `//meta.role: filter` plus `//output: filter result`. Decorator form — `meta: {role: 'filter'}` plus `outputs: [{type: 'filter', name: 'result'}]` on `@grok.decorators.func({...})`. Both forms appear side-by-side in the canonical reference (Widgets package generates the header form from the decorator at build time via `FuncGeneratorPlugin`).
+  derives_from:
+    - article: help/develop/how-to/viewers/custom-filters.md:12-21
+    - code: packages/Widgets/src/package.ts:15-23     # decorator form
+    - code: packages/Widgets/src/package.g.ts:4-10    # generated header form
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-267
+  kind: namespace
+  scope: custom-filters
+  value: The class-decorator shortcut `@grok.decorators.filter({...})` accepts ONLY three optional fields — `name?: string`, `description?: string`, `semType?: string` (`js-api/src/decorators/functions.ts:54-60`). It implicitly applies `meta.role: filter` and the `filter`-typed output, so the decorated class needs no `package.ts` registration. Requires `datagrok-tools ^4.12.x` (the version that ships `FuncGeneratorPlugin` with class-decorator support). The generated `package.g.ts` file is committed to the repository, NOT gitignored.
+  derives_from:
+    - article: help/develop/how-to/viewers/custom-filters.md:23-40
+    - article: help/develop/advanced/decorators.md:10,46-53
+    - code: js-api/src/decorators/functions.ts:47-60
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-268
+  kind: namespace
+  scope: custom-filters
+  value: A registered custom filter is added to a TableView's filter group via `view.filters({filters: [{type: '<Package>:<funcName>', columnName: '<col>'}]})`. The `type` value is `<PackageName>:<functionName>` (e.g., `Widgets:radioButtonFilter`, `Chem:substructureFilter`). The settings shape comes from `IFiltersSettings.filters: Array<{[index: string]: any}>` (`js-api/src/interfaces/d4.ts:1708`). NOTE — `view.filters(...)` is marked `@deprecated` (`js-api/src/views/view.ts:489`) in favour of `view.addViewer(DG.Viewer.filters(options))`; the tutorial article still demonstrates the deprecated form.
+  derives_from:
+    - article: help/develop/how-to/viewers/custom-filters.md:45-51
+    - code: js-api/src/views/view.ts:489-494
+    - code: js-api/src/interfaces/d4.ts:1674-1710
+    - code: packages/ApiSamples/scripts/ui/viewers/filters/custom-filters.js:8-10
+  contradicts:
+    - DG-FACT-DRIFT-CF-001
+  confidence: high
+
+- id: DG-FACT-269
+  kind: naming
+  scope: custom-filters
+  value: When the filter is hosted by a different package than the caller, the filter function must be loaded BEFORE the synchronous `view.filters({...})` call. The canonical pattern is `await grok.functions.call('<Package>:<filterFunc>')` first, then `view.filters({filters: [{type: '<Package>:<filterFunc>', ...}]})`. ApiSamples uses this pattern for Chem's substructure filter on a non-Chem view.
+  derives_from:
+    - code: packages/ApiSamples/scripts/ui/viewers/filters/custom-filters.js:5-10
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-270
+  kind: namespace
+  scope: custom-filters
+  value: Collaborative filtering contract — every custom filter participates in a multi-filter chain by writing the dataframe filter mask additively (only flip bits to FALSE; never set TRUE). Inside `applyFilter()` the filter reads `this.column!.getRawData()` (or `.get(i)`), iterates `this.dataFrame!.rowCount`, and calls `filter.set(i, false, false)` for each row that fails its own predicate. The `false` second-argument-to-`set` semantic combines with already-filtered rows. Finish with `this.dataFrame!.filter.fireChanged()`. The Filter base class JSDoc on `applyFilter` states this verbatim: "should disregard false values (these are filtered out already by other filters), and should filter out corresponding indexes" (`js-api/src/widgets/filter.ts:71-75`).
+  derives_from:
+    - code: js-api/src/widgets/filter.ts:71-75
+    - code: packages/Widgets/src/filters/radio-button-filter.ts:53-63
+    - code: packages/Widgets/src/filters/multi-value-filter.ts:50-68
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-271
+  kind: namespace
+  scope: custom-filters
+  value: When the filter's UI selection changes, it must call `this.dataFrame!.rows.requestFilter()` — this is what triggers the platform's `onRowsFiltering` event, which in turn invokes `applyFilter()` on every filter in the group. Direct calls to `applyFilter()` bypass the chain and produce wrong results when multiple filters are active. Both reference filters wire this on every input change handler (`radio-button-filter.ts:73`, `multi-value-filter.ts:88`).
+  derives_from:
+    - code: js-api/src/widgets/filter.ts:96-102
+    - code: packages/Widgets/src/filters/radio-button-filter.ts:73
+    - code: packages/Widgets/src/filters/multi-value-filter.ts:88
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-272
+  kind: namespace
+  scope: custom-filters
+  value: `attach(dataFrame: DataFrame)` is the lifecycle hook called when a filter is bound to a dataframe — subclasses MUST call `super.attach(dataFrame)` first (the base subscribes to `onRowsFiltering` and pushes the subscription to `this.subs`). After the super call, subclasses assign `this.column` and `this.columnName`, then build their UI (typically via a `render()` method). Default column resolution — when `columnName` is unset, the subclass picks a sensible default (RadioButton picks `DG.Utils.firstOrNull(this.dataFrame!.columns.categorical)`; MultiValue picks `this.dataFrame!.columns.byIndex(0)`).
+  derives_from:
+    - code: js-api/src/widgets/filter.ts:91-103
+    - code: packages/Widgets/src/filters/radio-button-filter.ts:31-37
+    - code: packages/Widgets/src/filters/multi-value-filter.ts:24-29
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-273
+  kind: namespace
+  scope: custom-filters
+  value: Filter state persistence is two-way via `saveState(): any` / `applyState(state: any): void`. The base implementation persists `{column, columnName}` only. Subclasses override `applyState` to additionally restore their UI (RadioButton and MultiValue both call `super.applyState(state)` then `this.render()`). State is consumed when a layout is reloaded — the platform calls `applyState` AFTER `attach`, so render code must tolerate either order.
+  derives_from:
+    - code: js-api/src/widgets/filter.ts:78-89
+    - code: packages/Widgets/src/filters/radio-button-filter.ts:39-42
+    - code: packages/Widgets/src/filters/multi-value-filter.ts:31-34
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-274
+  kind: namespace
+  scope: custom-filters
+  value: Override `get isFiltering(): boolean` to declare whether the filter currently filters anything. Returning `true` unconditionally (as `RadioButtonFilter` does — line 22) tells the platform a filter is always active; returning a computed value (as `MultiValueFilter` does — line 18-20: combines `super.isFiltering` with "any checkbox unchecked") lets the platform short-circuit redundant work when nothing is selected. The base getter checks for the CSS classes `d4-filter-disabled` / `d4-filters-disabled` set by FilterGroup when the user toggles the filter via the panel checkbox (`js-api/src/widgets/filter.ts:60-63`). Subclasses that want the user-disable behavior should chain through `super.isFiltering`.
+  derives_from:
+    - code: js-api/src/widgets/filter.ts:57-63
+    - code: packages/Widgets/src/filters/radio-button-filter.ts:22
+    - code: packages/Widgets/src/filters/multi-value-filter.ts:18-20
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-275
+  kind: namespace
+  scope: custom-filters
+  value: The Filter base class exposes two layout slots managed by FilterGroup — `indicator: HTMLDivElement` (left of the filter caption, with class `d4-filter-indicator`, hidden by default — set `display: ''` from your filter's logic to expose it) and `controls: HTMLDivElement` (right of the caption, class `d4-flex-row` — FilterGroup itself toggles its visibility on hover). The visible filter caption defaults to `columnName ?? ''` via the `caption` getter; override `get caption()` to customize.
+  derives_from:
+    - code: js-api/src/widgets/filter.ts:18-43
+  contradicts: []
+  confidence: high
+
+# DRIFT entries — article vs. code disagreements (custom-filters)
+
