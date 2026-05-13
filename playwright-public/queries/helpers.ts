@@ -150,8 +150,13 @@ export async function clickTransformationAction(page: Page, actionName: string):
 /** Add an "Add New Column" transformation step with the given expression, then confirm the dialog. */
 export async function addNewColumnTransformation(page: Page, expression: string): Promise<void> {
   await clickTransformationAction(page, 'Add New Column');
-  // Expression editor is a CodeMirror 6 contenteditable — focus it and type.
-  const cm = page.locator('.add-new-column-dialog-cm-div .cm-content');
+  // Expression editor is a CodeMirror 6 contenteditable. The platform names
+  // its wrapper `.add-new-column-dialog-cm-div`, but newer builds drop the
+  // class and ship only `.cm-content` inside the dialog. Try the scoped
+  // selector first, fall back to any `.cm-content` under the open dialog.
+  let cm = page.locator('.add-new-column-dialog-cm-div .cm-content');
+  if (!(await cm.first().isVisible({ timeout: 1_000 }).catch(() => false)))
+    cm = page.locator('.d4-dialog .cm-content').first();
   await cm.focus();
   await page.keyboard.type(expression);
   await page.locator('[name="button-Add-New-Column---OK"]').click();
@@ -401,15 +406,26 @@ export async function waitForQuerySql(page: Page, expected: string): Promise<voi
 /** Click the Play icon in the query editor ribbon and wait for the result grid to appear. */
 export async function runQueryViaPlay(page: Page): Promise<void> {
   await page.locator('[name="icon-play"]').first().click();
+  // After Play the page may contain multiple `[name="viewer-Grid"]` nodes:
+  // stale 0×0 placeholders from earlier views + the live result grid. A bare
+  // selector resolves to the first match (often 0×0 and "visible" per
+  // Playwright's check). Poll until at least one canvas under viewer-Grid
+  // has non-zero size.
+  const waitForLiveGrid = async (timeoutMs: number) => {
+    await expect.poll(async () => page.evaluate(() => {
+      const canvases = Array.from(document.querySelectorAll('[name="viewer-Grid"] canvas')) as HTMLCanvasElement[];
+      return canvases.some((c) => c.width > 0 && c.height > 0);
+    }), { timeout: timeoutMs }).toBe(true);
+  };
   try {
-    await page.waitForSelector('[name="viewer-Grid"] canvas', { timeout: 30_000 });
+    await waitForLiveGrid(30_000);
   }
   catch {
     // Public-env MS SQL occasionally drops the first call ("Socket closed" appears
     // in the Messages tab and no grid renders). A real user clicks Play again — the
     // second call typically succeeds against the now-warmed connection.
     await page.locator('[name="icon-play"]').first().click();
-    await page.waitForSelector('[name="viewer-Grid"] canvas', { timeout: 30_000 });
+    await waitForLiveGrid(30_000);
   }
 }
 

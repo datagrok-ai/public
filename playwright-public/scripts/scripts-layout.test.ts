@@ -422,7 +422,12 @@ test.describe.serial('Scripts: Layout', () => {
     const nameInput = projectDialog.locator('input[name="input-Name"], input.ui-input-editor').first();
     await expect(nameInput).toBeVisible({ timeout: 5_000 });
     await nameInput.fill(PROJECT_NAME);
-    await projectDialog.locator('button.ui-btn-ok').first().click();
+    // Target the OK button by accessible name. The original
+    // `button.ui-btn-ok` selector resolves to the dialog's "Creation script"
+    // / "URL Parameters" inline buttons on some builds before reaching the
+    // footer OK, leaving the dialog open under timeout. `button:has-text` is
+    // brittle to whitespace; getByRole locks onto the explicit role+name.
+    await projectDialog.getByRole('button', { name: /^OK$/ }).first().click();
     await expect(projectDialog).not.toBeVisible({ timeout: 15_000 });
 
     // Datagrok follows Save with a Share dialog — dismiss it.

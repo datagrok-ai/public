@@ -62,8 +62,13 @@ test.describe.serial(`DB schema column inspection (${PROVIDER} / ${POSTGRES_CONN
         // segment of the node `name=` attribute.
         const expectedColName = colNode.split('---').pop()!;
         const actualName = await getCurrentObjectName(page);
-        expect(actualName, `clicking ${colNode} should select the column as current object`)
-          .toBe(expectedColName);
+        // The tree-node `name=` attribute substitutes `_` with `-` (so the
+        // `first_name` column appears as `…---first-name`), while
+        // `grok.shell.o.name` returns the actual DB column name with
+        // underscores. Normalise both sides for a single canonical compare.
+        const normalise = (s: string | null) => (s ?? '').replace(/[_-]+/g, '_');
+        expect(normalise(actualName), `clicking ${colNode} should select the column as current object`)
+          .toBe(normalise(expectedColName));
 
         // Context Panel should not surface any error balloons as a side effect.
         expect(await getVisibleErrorBalloons(page),
