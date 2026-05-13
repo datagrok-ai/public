@@ -145,17 +145,6 @@ step/workflow has a certain structural invariant, like the interface
 concept in programming. Could be matched in
 [links](./links-spec.mdx#tag-selectors).
 
-#### `structureCheck`
-
-_Optional_
-
-A synchronous function that could do checks on dynamic workflow items
-themselves (not just inputs/outputs). Receives `PipelineOutline`
-input, should return `ValidationResult` or undefined. Could be used to
-check an order of steps and give a user errors/warnings if the current
-dynamic workflow steps state has issues. `ValidationResult` is the
-same as described [here](./link-types#setvalidation).
-
 #### `forceNavigate`
 
 _Optional_
@@ -232,8 +221,8 @@ fields: `friendlyName`, `description`, `tags`.
 
 For [dynamic workflows](#dynamic-workflows), the `stepTypes` array has
 additional options available that limit a user's ability to alter the
-workflow.  If more validation logic is needed, a
-[structureCheck](#structurecheck) can be used.
+workflow. If more validation logic is needed, a
+[pipelineValidator link](./link-types#pipeline-validators) can be used.
 
 #### `disableUIAdding`
 
