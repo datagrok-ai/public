@@ -1,100 +1,380 @@
 {
   "#type": "ViewLayout",
   "viewStateMap": {
-    "containerType": "fill",
+    "containerType": "horizontal",
     "state": {
-      "width": 1208,
-      "height": 754,
-      "documentManager": true
+      "width": 1111,
+      "height": 825
     },
     "children": [
       {
+        "containerType": "fill",
+        "state": {
+          "width": 755,
+          "height": 825,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 755,
+              "height": 825,
+              "element": {
+                "id": "8bb24a90-48b0-11f1-ce16-bd0556d1e721",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "showAddNewRowIcon": true,
+                  "addNewRowOnLastRowEdit": true,
+                  "rowHeight": 235,
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "width": 28,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 77,
+                      "columnName": "Cmpd_ID",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 200,
+                      "columnName": "SMILES",
+                      "cellType": "Molecule",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 300,
+                      "columnName": "AutoDock poses",
+                      "cellType": "Molecule3D",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 111,
+                      "columnName": "binding energy",
+                      "customFormat": "0.00",
+                      "cellType": "number",
+                      "format": "0.00",
+                      "colorCodingType": "Linear",
+                      "colorCodingLinear": [
+                        4278255360,
+                        4294901760
+                      ],
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 220,
+                      "columnName": "PL Diagram",
+                      "cellType": "rawPng",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 250,
+                      "columnName": "PL Interactions",
+                      "cellType": "Tags",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 70,
+                      "columnName": "PL HBD",
+                      "cellType": "number",
+                      "colorCodingType": "Linear",
+                      "colorCodingLinear": [
+                        4294901760,
+                        4278255360
+                      ],
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 69,
+                      "columnName": "PL HBA",
+                      "cellType": "number",
+                      "colorCodingType": "Linear",
+                      "colorCodingLinear": [
+                        4294901760,
+                        4278255360
+                      ],
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 67,
+                      "columnName": "PL Hyd",
+                      "cellType": "number",
+                      "colorCodingType": "Linear",
+                      "colorCodingLinear": [
+                        4294901760,
+                        4278255360
+                      ],
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 56,
+                      "columnName": "PL Pi",
+                      "cellType": "number",
+                      "colorCodingType": "Linear",
+                      "colorCodingLinear": [
+                        4294901760,
+                        4278255360
+                      ],
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 64,
+                      "columnName": "PL Cat",
+                      "cellType": "number",
+                      "colorCodingType": "Linear",
+                      "colorCodingLinear": [
+                        4294901760,
+                        4278255360
+                      ],
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 75,
+                      "columnName": "PL CatPi",
+                      "cellType": "number",
+                      "colorCodingType": "Linear",
+                      "colorCodingLinear": [
+                        4294901760,
+                        4278255360
+                      ],
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 69,
+                      "columnName": "PL vdW",
+                      "cellType": "number",
+                      "colorCodingType": "Linear",
+                      "colorCodingLinear": [
+                        4294901760,
+                        4278255360
+                      ],
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 73,
+                      "columnName": "PL Total",
+                      "cellType": "number",
+                      "colorCodingType": "Linear",
+                      "colorCodingLinear": [
+                        4294901760,
+                        4278255360
+                      ],
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    }
+                  ]
+                },
+                "title": "docking_demo",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
         "containerType": "panel",
         "state": {
-          "width": 1208,
-          "height": 754,
+          "width": 354,
+          "height": 825,
           "element": {
-            "id": "9f91f240-e920-11ef-e64c-cf7f9b69f191",
-            "type": "Grid",
+            "id": "8bb2e6d0-48b0-11f1-fcc5-8dcdadb15dbf",
+            "type": "Scatter plot",
             "look": {
-              "#type": "GridLook",
-              "showAddNewRowIcon": true,
-              "addNewRowOnLastRowEdit": true,
-              "rowHeight": 79,
-              "topLevelDefaultMenu": true,
-              "allowColumnMenu": true,
-              "columns": [
-                {
-                  "width": 28,
-                  "backgroundColor": 4294440951,
-                  "customName": "",
-                  "cellType": "row header",
-                  "headerCellStyle": {
-                    "vertAlign": "bottom",
-                    "textWrap": "words"
-                  }
-                },
-                {
-                  "width": 77,
-                  "columnName": "Cmpd_ID",
-                  "headerCellStyle": {
-                    "vertAlign": "bottom",
-                    "textWrap": "words"
-                  }
-                },
-                {
-                  "width": 157.6503735822687,
-                  "columnName": "SMILES",
-                  "cellType": "Molecule",
-                  "headerCellStyle": {
-                    "vertAlign": "bottom",
-                    "textWrap": "words"
-                  }
-                },
-                {
-                  "width": 137.15824915824922,
-                  "columnName": "AutoDock poses",
-                  "cellType": "Molecule3D",
-                  "headerCellStyle": {
-                    "vertAlign": "bottom",
-                    "textWrap": "words"
-                  }
-                },
-                {
-                  "isColorCoded": true,
-                  "isTextColorCoded": true,
-                  "width": 112,
-                  "columnName": "binding energy",
-                  "customFormat": "0.00",
-                  "cellType": "number",
-                  "format": "0.00",
-                  "colorCodingType": "Linear",
-                  "colorCodingLinear": [
-                    4278255360,
-                    4294901760
-                  ],
-                  "headerCellStyle": {
-                    "vertAlign": "bottom",
-                    "textWrap": "words"
-                  }
-                }
-              ]
+              "#type": "ScatterPlotLook",
+              "xColumnName": "PL Hyd",
+              "yColumnName": "binding energy",
+              "colorColumnName": "binding energy",
+              "sizeColumnName": "PL Total",
+              "markersColumnName": "",
+              "markerMinSize": 3,
+              "markerMaxSize": 20,
+              "showRegressionLine": true,
+              "showRegressionLineEquation": false,
+              "legendPosition": "Auto"
             },
-            "title": "Grid",
-            "default": true
+            "title": "Scatter: PL Hyd × binding"
           }
         },
         "children": []
       }
     ],
     "floating": [],
-    "tableId": "93f62500-e920-11ef-e4e2-37bef8eababd",
-    "tableName": "docking_demo"
+    "tableId": "8ee09c90-48b0-11f1-bcd6-0f30e4c09c2e",
+    "tableName": "Table"
   },
-  "name": "DockingDemo",
-  "friendlyName": "docking_demo",
-  "author": {
-    "id": "ca82ee60-6280-11ee-df26-75193ba005c5"
+  "userData": {
+    "dataFrameTooltip": "SMILES\nbinding energy\nPL Total",
+    ".columnTags": {
+      "SMILES": {
+        "quality": "Molecule",
+        "cell.renderer": "Molecule",
+        "units": "smiles"
+      },
+      "AutoDock poses": {
+        "units": "pdb",
+        "quality": "Molecule3D",
+        "cell.renderer": "Molecule3D"
+      },
+      "binding energy": {
+        "format": "0.00"
+      },
+      "PL Diagram": {
+        "quality": "rawPng",
+        "cell.renderer": "rawPng",
+        ".%prolif-source": "AutoDock poses",
+        ".%prolif-interactions-col": "PL Interactions"
+      },
+      "PL Interactions": {
+        "quality": "Tags",
+        "cell.renderer": "Tags",
+        ".multi-value-separator": ","
+      }
+    }
   },
-  "createdOn": "2025-03-25T11:45:17.667Z"
+  "type": "TableView",
+  "columns": [
+    {
+      "name": "PL Hyd",
+      "type": "int",
+      "id": "8bb3f840-48b0-11f1-f1e1-cd114823125c",
+      "friendlyName": "PL Hyd",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "8bb3d130-48b0-11f1-fcdc-f9ca30d570b5"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "8bb3d130-48b0-11f1-e9d2-414577f8b7bf"
+        },
+        {
+          "tag": ".color-coding-linear",
+          "id": "8bb3d130-48b0-11f1-c399-4b103682222c"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "4",
+        ".color-coding-type": "Linear",
+        ".color-coding-linear": "[4294901760,4278255360]"
+      }
+    },
+    {
+      "name": "binding energy",
+      "type": "double",
+      "id": "8bb44660-48b0-11f1-a218-ef82e8392ca9",
+      "friendlyName": "binding energy",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "8bb41f50-48b0-11f1-8813-31848d4c8137"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "8bb44660-48b0-11f1-d214-796c9b277c9c"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "8bb44660-48b0-11f1-8a6f-9b9faea84c70"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "8bb44660-48b0-11f1-cc65-c12946f498fe"
+        },
+        {
+          "tag": ".color-coding-linear",
+          "id": "8bb44660-48b0-11f1-e8f8-2905a52b68fe"
+        }
+      ],
+      "metaParams": {
+        "format": "0.00",
+        ".source-precision": "2",
+        ".semantic-detection-duration": "5",
+        ".color-coding-type": "Linear",
+        ".color-coding-linear": "[4278255360,4294901760]"
+      }
+    },
+    {
+      "name": "PL Total",
+      "type": "int",
+      "id": "8bb49480-48b0-11f1-9539-a7d24da51685",
+      "friendlyName": "PL Total",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "8bb49480-48b0-11f1-cfb2-0f9564e198d0"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "8bb49480-48b0-11f1-fa22-933d11a8daf2"
+        },
+        {
+          "tag": ".color-coding-linear",
+          "id": "8bb49480-48b0-11f1-dfe8-e1aec766234f"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "3",
+        ".color-coding-type": "Linear",
+        ".color-coding-linear": "[4294901760,4278255360]"
+      }
+    }
+  ],
+  "id": "8bb334f0-48b0-11f1-e76b-3556dca72c87",
+  "name": "Docking",
+  "friendlyName": "Docking"
 }

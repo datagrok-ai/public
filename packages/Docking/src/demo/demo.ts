@@ -1,6 +1,5 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 
 import {_package} from '../utils/constants';
 
@@ -10,39 +9,55 @@ export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
   return grok.shell.addTableView(table);
 }
 
-export function showHelpPanel() {
-  grok.shell.windows.showContextPanel = true;
+export function showHelpPanel(): void {
   grok.shell.windows.showHelp = true;
   grok.shell.windows.help.showHelp('/help/develop/domains/chem/docking');
-  
-  grok.shell.windows.context.visible = true;  
+  grok.shell.windows.context.visible = true;
   grok.shell.windows.showContextPanel = true;
   grok.shell.windows.showProperties = true;
 }
 
 export async function _demoDocking(): Promise<void> {
-  await demo('docking', ['Autodock poses']);
+  await demo('docking', ['AutoDock poses']);
   showHelpPanel();
 }
 
-async function demo(type: "docking", columnNames: string[]): Promise<void> {
+async function demo(type: 'docking', columnNames: string[]): Promise<void> {
   const datasetPath = `System:AppData/Docking/demo_files/${type}_demo.csv`;
   const layoutPath = `System:AppData/Docking/demo_files/${type}_demo.layout`;
 
-  const tv: DG.TableView = await openMoleculeDataset(datasetPath);
+  // semType isn't stored in layout JSON — pin Molecule (SMILES), rawPng
+  // (PL Diagram, BSV PL object handler), and Tags (PL Interactions, drives
+  // the per-token colored badge renderer in tandem with the layout's
+  // `cell.renderer: Tags` + `.multi-value-separator: ,` tags) at import
+  // time. Ligand columns are pinned below in the same loop that adds their
+  // docking-role tag.
+  const df = DG.DataFrame.fromCsv(
+    await grok.dapi.files.readAsText(datasetPath),
+    {columnImportOptions: [
+      {name: 'SMILES', semType: DG.SEMTYPE.MOLECULE},
+      {name: 'PL Diagram', semType: 'rawPng'},
+      {name: 'PL Interactions', semType: 'Tags'},
+    ]},
+  );
+
   const layout = DG.ViewLayout.fromJson(await grok.dapi.files.readAsText(layoutPath));
-  tv.loadLayout(layout);
+  layout.columns.forEach((c) => {
+    const col = df.col(c.name);
+    if (col)
+      Object.entries(c.tags).forEach(([k, v]) => col.setTag(k, v));
+  });
+  await df.meta.detectSemanticTypes();
 
-  const { dataFrame } = tv;
-  await grok.data.detectSemanticTypes(dataFrame);
-
-  for (let i = 0; i < columnNames.length; i++) {
-    const name = columnNames[i];
-    const column = dataFrame.getCol(name);
+  for (const name of columnNames) {
+    const column = df.getCol(name);
     column.semType = DG.SEMTYPE.MOLECULE3D;
     column.meta.units = 'pdb';
     column.setTag('docking.role', 'ligand');
   }
 
-  dataFrame.currentCell = dataFrame.cell(0, columnNames[0]);
-} 
+  const tv = grok.shell.addTableView(df);
+  await DG.delay(100);
+  tv.loadLayout(layout, true);
+  df.currentCell = df.cell(0, columnNames[0]);
+}
