@@ -263,6 +263,58 @@ category('ComputeUtils: Driver pipeline validators: multi-target `to`', async ()
 });
 
 
+category('ComputeUtils: Driver pipeline validators: action step target', async () => {
+  let testScheduler: TestScheduler;
+
+  before(async () => {
+    testScheduler = createTestScheduler();
+  });
+
+  test('`to` resolving to an action step writes the validation and surfaces in structureCheckResults', async () => {
+    const config: PipelineConfiguration = {
+      id: 'outer',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'myAction', type: 'action'},
+      ],
+      links: [{
+        id: 'checkAction',
+        type: 'pipelineValidator',
+        from: 'a:step1/a',
+        to: 'check:first(myAction)',
+        handler({controller}) {
+          controller.setValidation({warnings: [{description: 'action-warn'}]});
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const actionNode = getPipelineNode(tree, [{idx: 1}]);
+      cold('-a').subscribe(() => {
+        tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore().setState('a', 1);
+      });
+      cold('400ms a').subscribe({
+        next: () => {
+          const vals = Object.values(actionNode.pipelineValidations$.value);
+          expectDeepEqual(vals, [{warnings: [{description: 'action-warn'}]}], {prefix: 'action step received validation'});
+          const state = tree.toState({skipFuncCalls: true}) as any;
+          const actionState = state.steps?.[1];
+          expectDeepEqual(actionState?.isActionStep, true, {prefix: 'confirmed action step'});
+          expectDeepEqual(actionState?.structureCheckResults, {
+            errors: [],
+            warnings: [{description: 'action-warn'}],
+            notifications: [],
+          }, {prefix: 'structureCheckResults surfaced on action step'});
+        },
+      });
+    });
+  });
+});
+
+
 category('ComputeUtils: Driver pipeline validators: tree mutation rerun', async () => {
   let testScheduler: TestScheduler;
 
