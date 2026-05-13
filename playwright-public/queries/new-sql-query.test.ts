@@ -26,8 +26,9 @@ import {
 
 const PROVIDER = 'Postgres';
 const SCHEMA = 'public';
-const TABLE = 'products';
-const QUERY_NAME = 'new_sql_query_products_test';
+// CI: use a Datagrok metadata table (System:Datagrok) instead of Northwind.
+const TABLE = 'entities';
+const QUERY_NAME = `new_sql_query_${TABLE}_test`;
 const EXPECTED_PREFILLED_SQL = `select * from ${SCHEMA}.${TABLE}`;
 
 test.describe.serial(`New SQL Query from table (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {

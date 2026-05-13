@@ -23,7 +23,11 @@ import {
 
 const PROVIDER = 'Postgres';
 const SCHEMA = 'public';
-const TABLES = ['products', 'orders', 'customers'] as const;
+// CI: target three Datagrok metadata tables (System:Datagrok). They always
+// exist, each exposes its full column list, and together cover the same
+// "click every column of three different tables" intent as the original
+// Northwind triplet (products/orders/customers).
+const TABLES = ['users', 'groups', 'entities'] as const;
 
 test.describe.serial(`DB schema column inspection (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
   test('Clicking each column of products/orders/customers sets it as current object without errors', async ({ page }) => {
