@@ -61,7 +61,7 @@ to bind the renderer automatically whenever a matching column appears.
      virtual:'true'}, tags:['cellRenderer'], outputs:[{type:'grid_cell_renderer',
      name:'result'}]})` (`DG-FACT-104`). Stylistic alternative when you
      keep all renderers in `PackageFunctions` — and the only form that
-     accepts the `gridChart` meta flag (see Step 2 and `DG-FACT-428`).
+     accepts the `gridChart` meta flag (see Step 2 and `DG-FACT-466`).
 
    Do NOT paste the article's `//name:` / `//meta.role:` block into
    `package.ts` — that is the auto-emitted `package.g.ts` shape, not
@@ -111,7 +111,7 @@ to bind the renderer automatically whenever a matching column appears.
    `virtual: true` on the class decorator and nothing else
    (`custom-cell-renderers.md:14-21`); reach for the function form
    only if you also need the `gridChart` meta flag, which is absent
-   from `CellRendererOptions` (`DG-FACT-428`):
+   from `CellRendererOptions` (`DG-FACT-466`):
 
    ```typescript
    // src/package.ts — function-decorator form when `gridChart` is needed
@@ -131,7 +131,7 @@ to bind the renderer automatically whenever a matching column appears.
    `meta` flags use string literals on the function-decorator form
    (`virtual: 'true'`, `gridChart: 'true'`) but booleans on the class
    form (`virtual: true`) — a generic typing asymmetry across all
-   Datagrok decorators (`DG-FACT-430`).
+   Datagrok decorators (`DG-FACT-468`).
 
 3. **Build, publish, and let the codegen wire it up.**
    ```bash
@@ -172,7 +172,7 @@ to bind the renderer automatically whenever a matching column appears.
   `virtual: true` (class form) or `virtual: 'true'` (function form);
   if you also need `gridChart: 'true'`, switch to the function form
   because the flag is absent from `CellRendererOptions`
-  (`DG-FACT-428`, `DG-FACT-430`).
+  (`DG-FACT-466`, `DG-FACT-468`).
 
 ## Verification
 
@@ -192,7 +192,7 @@ to bind the renderer automatically whenever a matching column appears.
 - Source: `<help_develop_root>/how-to/grid/custom-cell-renderers.md`
   (mirror: `<harness_root>/docs/_internal/articles-mirror/how-to/grid/custom-cell-renderers.md`).
 - Knowledge: `<harness_root>/docs/_internal/knowledge/knowledge-graph.md`
-  — `DG-FACT-099`…`107`, `DG-FACT-428`, `DG-FACT-429`, `DG-FACT-430`,
+  — `DG-FACT-099`…`107`, `DG-FACT-466`, `DG-FACT-467`, `DG-FACT-468`,
   `DG-FACT-DRIFT-043`.
 - Reference packages:
   - `packages/PowerGrid/src/cell-types/stars-cell-renderer.ts:37-43` —

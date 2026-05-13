@@ -83,7 +83,7 @@ backing data mutates, pick a coarse `invalidateOn` or do not cache.
 3. **For a TypeScript function, the header form is the lowest-friction
    path; the decorator is an equivalent alternative.** Either lands the
    same annotation in `package.g.ts` (knowledge `DG-FACT-343`,
-   `DG-FACT-427`).
+   `DG-FACT-465`).
 
    **Header form (preferred when adding cache to an existing
    function).** JSDoc-style line comments directly above the
@@ -187,7 +187,7 @@ backing data mutates, pick a coarse `invalidateOn` or do not cache.
 - **TS function annotated via decorator but writer wanted minimal
   touch.** Use the JSDoc header form instead (`//meta.cache: …` lines
   directly above the `export function`) — `grok api` codegens it
-  identically to the decorator form (knowledge `DG-FACT-427`,
+  identically to the decorator form (knowledge `DG-FACT-465`,
   `packages/RevvitySignalsLink/src/package.ts:198-211`).
 
 ## Verification
@@ -210,7 +210,7 @@ backing data mutates, pick a coarse `invalidateOn` or do not cache.
   size/record/type limits), `DG-FACT-342` (`invalidateOn` cron +
   parent-cache constraint), `DG-FACT-343` (header vs decorator
   forms), `DG-FACT-344` (connection-level keys), `DG-FACT-345`
-  (`grok.functions.clientCache` runtime surface), `DG-FACT-427`
+  (`grok.functions.clientCache` runtime surface), `DG-FACT-465`
   (TS header form is preferred for minimal-touch caching).
 - Reference packages: `packages/RevvitySignalsLink/src/package.ts:198-211`
   (TS header-form, `all` + daily — the canonical "add cache to an
