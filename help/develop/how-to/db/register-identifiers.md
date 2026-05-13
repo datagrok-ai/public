@@ -47,7 +47,7 @@ export class ChemblIdHandler extends DG.ObjectHandler {
   }
 
   renderInnerCard(x: any) {// inner function for querying the database and rendering the card
-    const id = (x as SemanticValue).value;
+    const id = (x as DG.SemanticValue).value;
     return ui.divV([
       ui.h3(id),
       ui.wait(async () =>
@@ -243,7 +243,7 @@ export const explorerConfig = {
   // Database connection details
   'connectionName': 'CHEMBL',          // Name of your database connection in Datagrok
   'schemaName': 'public',              // Database schema name where the identifiers are located
-  'nqName': 'CHEMBL',                   // Optional: fully-qualified connection name (namespace-qualified)
+  'nqName': 'Chembl',                  // Optional: fully-qualified connection name (namespace-qualified)
   'dataSourceName': 'postgres',        // Data source type (postgres, oracle, mysql, etc.)
   
   // Entry points: Define identifiers that trigger exploration

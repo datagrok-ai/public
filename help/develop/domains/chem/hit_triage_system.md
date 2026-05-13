@@ -7,7 +7,7 @@ With Datagrok, creating a light-weighted hit triage system using your database a
 - Query database
 
   ```js
-  let data = await grok.functions.call('Chembl:_compoundActivityDetailsForTarget', {target: "CHEMBL1827"})
+  let data = await grok.data.query('ChEMBL:CompoundActivityDetailsForTarget', {target: 'CHEMBL1827'})
   ```
 
 Here we used an existing data query. However, if you want to learn more about query creation, go to this [link](../../../develop/how-to/db/access-data.md#creating-queries)

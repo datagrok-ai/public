@@ -1,0 +1,145 @@
+# Facts cited by the `develop-custom-viewer` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 13
+
+- id: DG-FACT-186
+  kind: namespace
+  scope: develop-custom-viewer
+  value: |-
+    Custom JS viewers subclass `DG.JsViewer` (`extends Viewer`). The base class is declared at `js-api/src/viewer.ts:379`. Constructor takes no arguments; the root element is `ui.box()` assigned to `this._root` and exposed via the `root` getter. The constructor wires Dart interop (`api.grok_Viewer_FromJsViewer`) and initializes `subs: Subscription[]`, `obs`, and `props: ObjectPropertyBag`. Convention is to suffix the class name with `Viewer` (e.g., `AwesomeViewer`).
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:34-41
+    - code: js-api/src/viewer.ts:376-404
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-187
+  kind: namespace
+  scope: develop-custom-viewer
+  value: |-
+    Property-registration helpers on `DG.JsViewer` (all `protected`, signature `(propertyName, defaultValue?, options?)`) — `int` (TYPE.INT), `float` (TYPE.FLOAT), `string` (TYPE.STRING), `stringList` (TYPE.STRING_LIST), `bool` (TYPE.BOOL), `dateTime` (TYPE.DATE_TIME), plus `columnList` (TYPE.COLUMN_LIST), `choices(name, default, choices[])` and `column(dataPropertyName)` (auto-appends `ColumnName` suffix). Each call both registers the property in the context panel and returns the (initial) value to assign to a class field. `options` accepts `{choices: [...]}`, `{category: '<Tab>'}`, `{fieldName: 'someName'}`, etc.
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:140-147
+    - code: js-api/src/viewer.ts:457-499
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-188
+  kind: naming
+  scope: develop-custom-viewer
+  value: |-
+    The `ColumnName` suffix on a property name is the marker that flags it as a column-bound (Data) property — the JS-API comment at `viewer.ts:456` says explicitly that "ColumnName suffix... determines whether this is a data property". A column-name property is always a STRING (it stores the column name, not the column dtype); use `this.string('fooColumnName', 'someCol')` regardless of whether the column itself is numeric or categorical. Property names use `lowerCamelCase`; the context panel renders them capitalized with spaces inserted (e.g. `propertyName` → "Property Name").
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:127-129,149-155
+    - code: js-api/src/viewer.ts:455-459
+  contradicts:
+    - DG-FACT-DRIFT-076
+  confidence: high
+
+- id: DG-FACT-189
+  kind: enum
+  scope: develop-custom-viewer
+  value: |-
+    Properties are auto-grouped into context-panel tabs by name pattern (no explicit category needed) — `Data`: ends with `ColumnName`. `Colors`: ends with `color`. `Axes`: contains `axis`. `Legend`: starts with `legend`. `Margins`: contains `margin`. `Markers`: contains `marker`. `Description`: name is exactly `title` or `description`. Everything else falls into `Misc`. Override the auto-grouping by passing `{category: '<Tab>'}` in the options bag (e.g. `string('filter', '', {category: 'Data'})` at `viewer.ts:409`).
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:159-168
+    - code: js-api/src/viewer.ts:409
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-190
+  kind: namespace
+  scope: develop-custom-viewer
+  value: |-
+    JsViewer lifecycle hooks — `onTableAttached()` (no-op default) is called when a DataFrame is attached; do data-dependent init and event subscriptions here. `detach()` is called on viewer close; default impl is `this.subs.forEach(s => s.unsubscribe())` — DO NOT override unless you super-call it. `onPropertyChanged(property)` is called when any property value changes; the parameter is the changed `Property` (not a name); always `super.onPropertyChanged(property)` first if overridden. `getProperty(name)` / `getProperties()` retrieve registered properties. `onSourceRowsChanged()` fires when filtered/source rows change.
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:103-110,210-232
+    - code: js-api/src/viewer.ts:412-444
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-191
+  kind: namespace
+  scope: develop-custom-viewer
+  value: |-
+    `subs: Subscription[]` is the stream-subscription bag on JsViewer (initialized to `[]` in the constructor). Push every `dataFrame.selection.onChanged` / `dataFrame.filter.onChanged` / `ui.onSizeChanged(this.root)` subscription into `this.subs`, and the default `detach()` will unsubscribe all of them automatically. Wrap noisy event streams with `DG.debounce(observable, 50)` to coalesce re-renders. NOT pushing a subscription into `subs` causes a memory leak when the viewer is closed.
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:98-111,193-206
+    - code: js-api/src/viewer.ts:397-398,429-432
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-193
+  kind: namespace
+  scope: develop-custom-viewer
+  value: |-
+    Two viewer-registration paths. (a) Annotated factory function in `package.ts` — `//name: <ClassName>` + `//tags: viewer` (or `//meta.role: viewer`) + `//output: viewer result`, returning `new MyViewer()`. Resolution is asynchronous on the client (the package has to load first), so callers using `view.addViewer('Name')` get the viewer back via async dispatch. (b) Runtime registration via `grok.shell.registerViewer(typeName, description, factory)` (`js-api/src/shell.ts:295`) — synchronous, but only useful when called from a `//meta.role: autostart` function so the viewer is available before any user code asks for it. Decorator form `@grok.decorators.viewer({...})` is sugar for path (a): the FuncGeneratorPlugin webpack plugin reads the decorator and emits the matching `//name:`/`//tags: viewer`/`//output: viewer result` block into `package.g.ts` (the generated file is committed — not gitignored).
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:43-53,484-561
+    - code: js-api/src/shell.ts:295, js-api/src/decorators/functions.ts:36-45, packages/Charts/src/viewers/sankey/sankey.ts:53-58
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-194
+  kind: namespace
+  scope: develop-custom-viewer
+  value: |-
+    Viewer registration metadata (function-annotation / decorator form) — `name` (function/UI name), `description`, `icon` / `meta.icon` (package-relative path to icon file, replaces default in UI), `toolbox` / `meta.toolbox` (boolean — adds icon to table-view toolbox), `trellisable` / `meta.trellisable` (boolean — viewer can be inner viewer of `DG.VIEWER.TRELLIS_PLOT`), `viewerPath` / `meta.viewerPath` (top-menu placement, format `Subcategory | Friendly Viewer Name`). Default top-menu path when `viewerPath` is unset is `Add > JavaScript Viewers > <Package Name> > <Friendly Viewer Name>`. Header-form-only: `//meta.viewerPosition: <pos>` (the decorator's typed signature does NOT expose `viewerPosition` — see DG-FACT-DRIFT-077).
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:495-515
+    - code: js-api/src/decorators/functions.ts:36-45, packages/PowerGrid/src/package.g.ts:225, packages/Charts/src/viewers/sankey/sankey.ts:53-57
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-195
+  kind: enum
+  scope: develop-custom-viewer
+  value: |-
+    `meta.viewerPosition` values — `top`, `bottom`, `left`, `right`, `fill`, `auto`. Header-form annotation `//meta.viewerPosition: bottom` (e.g., PowerGrid `package.g.ts:225`). Controls where the viewer docks when added by the user. There is no decorator-typed equivalent; users of the decorator form must annotate the generated function in `package.g.ts` via header-form codegen or a workaround.
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:515
+    - code: packages/PowerGrid/src/package.g.ts:225, js-api/src/api/ddt.api.g.ts:393
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-196
+  kind: enum
+  scope: develop-custom-viewer
+  value: |-
+    Scripting-viewer header essentials — `# language: <python|r|julia|...>`, `# tags: viewers` (registers the script as a viewer in Script Browser at `/scripts?q=%23viewers`), `# input: dataframe <name>`, `# input: column <name> {type: numerical|categorical|dateTime}` (column type selectors restrict the dropdown to compatible columns and seed sane initial values), `# input: string <name> = <default> {choices: [...]}`, `# output: graphics` (REQUIRED — scripting viewers must return a `graphics` object). Optional: `# sample: demog.csv` adds a Star icon to the script's top menu that loads the sample dataset.
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:413-477
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-197
+  kind: enum
+  scope: develop-custom-viewer
+  value: |-
+    Scripting-viewer auto-injected properties (added by platform on top of the script's declared inputs) — `Refresh on Filter` (boolean, default true; binds visualization with standard filters), `Title` (caption on top), `Description` (long text), `Description Position` (`left | right | top | bottom | center`), `Description Visibility Mode` (`auto | always | never`). These properties exist for every `tags: viewers` script and need NOT be declared in the script header.
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:441-448
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-460
+  kind: namespace
+  scope: develop-custom-viewer
+  value: |-
+    Interactivity primitives a custom viewer uses to bridge mouse events back into platform-wide state. `ui.tooltip.showRowGroup(dataFrame, indexPredicate, x, y): void` (`js-api/ui.ts:1606-1608`) — pop the standard row-group tooltip; `indexPredicate: (i: number) => boolean` selects the rows the tooltip should describe. `ui.tooltip.hide()` clears it. `dataFrame.selection.handleClick(rowIndexPredicate, mouseEvent, modifiedSelectOnly=false): void` (`js-api/src/dataframe/bit-set.ts:220-222`) — extends/replaces the dataframe selection per the click's modifier keys (`ctrl`, `shift`, `meta`); always pass the raw `MouseEvent` so the platform interprets Ctrl/Shift/Meta correctly. Reading direction is `BitSet.getSelectedIndexes(): Int32Array` (`bit-set.ts:188-190`); applied to `dataFrame.filter` it yields the currently-filtered row indexes (article line 393 uses this idiom on `dataFrame.filter`).
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:368-393
+    - code: js-api/ui.ts:1606-1608, js-api/src/dataframe/bit-set.ts:188-190,220-222
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-461
+  kind: namespace
+  scope: develop-custom-viewer
+  value: |-
+    Filter-respecting aggregation inside a viewer's `render()` — chain `this.dataFrame.groupBy([splitCol]).whereRowMask(this.dataFrame.filter).add(aggType, valueCol, 'result').aggregate()`. `whereRowMask(bitset)` is on `GroupByBuilder` (`js-api/src/dataframe/stats.ts:350-354`) and takes any `BitSet` — passing `dataFrame.filter` restricts the aggregation to currently-filtered rows; passing `dataFrame.selection` restricts to selected rows. Skipping the call aggregates over the FULL frame regardless of what users have filtered out — a viewer that does this silently shows stale data when filters change. Re-aggregate inside `render(computeData=true)` and cache the resulting frame; gate on the `computeData` flag so resize-only re-renders skip the work.
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:250-274
+    - code: js-api/src/dataframe/stats.ts:350-354
+  contradicts: []
+  confidence: high

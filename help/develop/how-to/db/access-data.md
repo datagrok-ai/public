@@ -176,10 +176,10 @@ grok.functions.call('Chembl:ProteinClassification')
   .then(t => grok.shell.addTableView(t));
 ```
 
-Additionally, there is a dedicated method for queries that take the query name as a required parameter and several additional parameters (such as query parameters, ad hoc status, and the polling interval):
+Additionally, there is a dedicated method for queries that take the query name as a required parameter and optional query parameters:
 
 ```javascript
-grok.data.query(`${PACKAGE_NAME}:${QUERY_NAME}`, {'parameter': 'value'}, true, 100);
+await grok.data.query(`${PACKAGE_NAME}:${QUERY_NAME}`, {'parameter': 'value'});
 ```
 
 To see how this method works, refer to [this example](https://public.datagrok.ai/js/samples/data-access/parameterized-query).
@@ -313,7 +313,7 @@ All `dapi.files` methods accept three types of inputs:
 
 * a fully specified file path, as seen
   in [these examples](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/dapi/files.js)
-* a variable of the `file` type (see [FileInfo](https://github.com/datagrok-ai/public/blob/14eb2acd6e36b33f64c4a0d108e940f7624af479/js-api/src/entities.js#L317)), which may come, for example, from info panels working on files
+* a variable of the `file` type (see [FileInfo](https://github.com/datagrok-ai/public/blob/master/js-api/src/entities/table-info.ts#L63)), which may come, for example, from info panels working on files
 * a string containing a file share connection GUID
 
 All `dapi.files` methods are asynchronous.
@@ -324,7 +324,7 @@ For a comprehensive understanding of the `files` API, see [this example](https:/
 
 You can also use one of the following options to open files using JavaScript:
 
-1. Define a function that takes an input of `file` type (see [FileInfo](https://github.com/datagrok-ai/public/blob/14eb2acd6e36b33f64c4a0d108e940f7624af479/js-api/src/entities.js#L317)): When you use this option, you can call `file.readAsBytes()`
+1. Define a function that takes an input of `file` type (see [FileInfo](https://github.com/datagrok-ai/public/blob/master/js-api/src/entities/table-info.ts#L63)): When you use this option, you can call `file.readAsBytes()`
   or `file.readAsString()` methods on this function. For example, by passing a string obtained from a file to `grok.data.parseCsv(csv, options)`, you can customize the construction of a dataframe from comma-separated values. Alternatively, you can pass a file to a [script](../../../compute/scripting/scripting.mdx) to perform calculations and receive the results in your application's code.
 1. Use `grok.data.openTable(id)`: This method is helpful when replicating a process where you need to open a specific table by its ID. See [this example](https://public.datagrok.ai/js/samples/data-access/open-table-by-id).
 

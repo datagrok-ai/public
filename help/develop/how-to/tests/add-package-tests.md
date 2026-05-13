@@ -36,7 +36,7 @@ mkdir tests
 Each file typically includes tests for one category. Here is an example:
 
 ```js
-import { category, expect, test } from '@datagrok-libraries/utils/src/test';
+import { category, expect, test } from '@datagrok-libraries/test/src/test';
 
 
 category('Examples', () => {

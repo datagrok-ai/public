@@ -1,0 +1,108 @@
+# Facts cited by the `docker-containers` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 8
+
+- id: DG-FACT-129
+  kind: namespace
+  scope: docker-containers
+  value: |-
+    The canonical entry point for package Docker containers from JS is `grok.dapi.docker.dockerContainers` (a `DockerContainersDataSource`). Resolve a container by friendly name with `grok.dapi.docker.dockerContainers.filter('<name>').first()` → `Promise<DG.DockerContainer>`. The DataSource also exposes `.list()`, `.run(id, awaitStart=false)`, `.stop(id, awaitStop=false)`, `.fetchProxy(id, path, params?)`, `.webSocketProxy(id, path, timeout=60000)`, `.webSocketProxySync(id, path, timeout=60000)`, `.getContainerLogs(id, limit=10000)`. Sibling `grok.dapi.docker.dockerImages` covers images.
+  derives_from:
+    - code: js-api/src/dapi.ts:1011-1207
+    - code: packages/ApiTests/src/packages/docker.ts:8-25
+    - code: packages/Reinvent4/src/package.ts:51,61
+    - code: packages/NodeJSDemo/src/app/todo_app.ts:59
+  contradicts:
+    - DG-FACT-DRIFT-049    # article prose names the wrong path `grok.dapi.dockerfiles.fetchProxy`
+  confidence: high
+
+- id: DG-FACT-130
+  kind: namespace
+  scope: docker-containers
+  value: |-
+    `grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, params?: RequestInit): Promise<Response>` — same shape as the standard `fetch` API (`params` is `RequestInit`). The implementation prefixes a leading `/` if `path` lacks one, defaults `params.method` to `'GET'`, and forces `params.credentials = 'include'`. Calls route through `${api.grok_Dapi_Root()}/docker/containers/proxy/<containerId><path>`. Server-side errors come back as a JSON body with a `datagrok-error` field; bad container status returns HTTP 400; server-workflow errors return HTTP 500.
+  derives_from:
+    - code: js-api/src/dapi.ts:1083-1089
+    - code: packages/ApiTests/src/packages/docker.ts:31
+    - code: packages/MolTrack/src/services/moltrack-docker-service.ts:28-73
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-131
+  kind: namespace
+  scope: docker-containers
+  value: |-
+    `grok.dapi.docker.dockerContainers.webSocketProxy(containerId, path, timeout=60000): Promise<WebSocket>` — opens a WebSocket through the platform proxy and resolves only after the server emits a literal `"CONNECTED"` text message (the readiness handshake). On timeout the socket is closed with code 4001 and the promise rejects. `timeout` is milliseconds; default 60000ms (60s); raise it for `on_demand: true` containers because cold-start adds latency. A synchronous variant `webSocketProxySync(...)` returns the socket immediately (not yet ready to send) — use only when you can't await.
+  derives_from:
+    - code: js-api/src/dapi.ts:1091-1196
+    - article: help/develop/how-to/packages/docker-containers.md:121-141
+    - code: packages/Notebooks/src/package.js:446
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-132
+  kind: enum
+  scope: docker-containers
+  value: |-
+    `container.json` lives next to the Dockerfile in `dockerfiles/[<folder>/]` and is OPTIONAL. Documented fields with defaults — `cpu` (Double, 0.25 cores), `gpu` (Integer, 0), `memory` (Integer, 512 MB), `on_demand` (Boolean, false — start only on first request), `shutdown_timeout` (Integer minutes, null — idle-shutdown delay), `storage` (Integer, 21 GB), `shm_size` (Integer, 64 MB — shared-memory size), and an env-vars map. Server-side `DockerContainerConfig` model (Dart) uses these exact `db.Field` names — `on_demand`, `shutdown_timeout`, `shm_size`, plus an `environmentVars` map. Article calls the env-vars key `env`; production packages (MolTrack, NodeJSDemo) write `environmentVars` (see DRIFT-050).
+  derives_from:
+    - article: help/develop/how-to/packages/docker-containers.md:46-72
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:147770-147796
+    - code: packages/Bio/dockerfiles/container.json
+    - code: packages/Boltz1/dockerfiles/boltz/container.json
+    - code: packages/MolTrack/dockerfiles/container.json
+  contradicts:
+    - DG-FACT-DRIFT-050    # `env` (article) vs `environmentVars` (model + production)
+  confidence: high
+
+- id: DG-FACT-133
+  kind: naming
+  scope: docker-containers
+  value: |-
+    Pass package entities into a container's environment via the `#{x.<Package>:<Entity>}` template syntax inside the env-vars map, e.g. `"DATA_CONNECTION": "#{x.todo}"` (`packages/NodeJSDemo/dockerfiles/todo-app/container.json`) or `"db": "#{x.moltrack}"` (`packages/MolTrack/dockerfiles/container.json`). The platform JSON-serializes the resolved entity at container-start time and injects it as the env-var value. Only entities from the SAME package are reachable — credentials in cross-package connections are NOT injected.
+  derives_from:
+    - article: help/develop/how-to/packages/docker-containers.md:55-57,79-81
+    - code: packages/NodeJSDemo/dockerfiles/todo-app/container.json
+    - code: packages/MolTrack/dockerfiles/container.json
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-134
+  kind: naming
+  scope: docker-containers
+  value: |-
+    A container's "friendly name" — the value passed to `dockerContainers.filter(name).first()` — is `<PackageName>` when `dockerfiles/` ships a single Dockerfile (e.g. `'pepsea'`, `'reinvent'`, `'nlp'`, `'todo'`), and `<PackageName>-<FolderName>` when `dockerfiles/` has subfolders each with their own Dockerfile (e.g. `'Apitests-apitests-docker-test1'`, `'Notebooks-jupyter-notebook'`). Casing follows the same first-letter-uppercase normalization as DB-in-Docker placeholders (DG-FACT-DRIFT-012).
+  derives_from:
+    - code: packages/Reinvent4/src/package.ts:51            # 'reinvent'
+    - code: packages/NodeJSDemo/src/app/todo_app.ts:59      # 'todo'
+    - code: packages/NLP/src/package.ts:415                 # 'nlp'
+    - code: packages/Notebooks/src/package.js:513           # 'Notebooks-jupyter-notebook'
+    - code: packages/ApiTests/src/packages/docker.ts:5      # 'Apitests-apitests-docker-test1'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-135
+  kind: naming
+  scope: docker-containers
+  value: |-
+    `DG.DockerContainer.status` carries one of a small set of strings; the runtime production check is `container.status !== 'started' && container.status !== 'checking'` before issuing requests, and `dockerContainers.run(id, awaitStart=true)` is called when status is anything else. Other observed states: `stopped` (no status dot in UI), `error` (red dot), and a pending state (blinking grey dot — starting / stopping / rebuilding).
+  derives_from:
+    - code: packages/ApiTests/src/packages/docker.ts:9-10,22-23
+    - article: help/develop/how-to/packages/docker-containers.md:159-165
+    - code: js-api/src/dapi.ts:1057-1069
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-136
+  kind: threshold
+  scope: docker-containers
+  value: |-
+    An image is allowed exactly ONE `EXPOSE <port>` directive — multiple ports per image are not supported. Article line 20 — "you can access the container via HTTP, but only one EXPOSE $PORT is allowed in the image." Cross-references DG-FACT-046 in the db-in-docker scope. The single exposed port is what `fetchProxy`/`webSocketProxy` route to internally.
+  derives_from:
+    - article: help/develop/how-to/packages/docker-containers.md:20
+    - code: packages/Admetica/dockerfiles/Dockerfile:50      # EXPOSE 8000
+    - code: packages/DBTests/dockerfiles/Dockerfile:6        # EXPOSE 5432
+  contradicts: []
+  confidence: high
+
+# DRIFTS for docker-containers

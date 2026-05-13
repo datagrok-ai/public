@@ -1,0 +1,83 @@
+# Facts cited by the `file-exporters` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 5
+
+- id: DG-FACT-079
+  kind: enum
+  scope: file-exporters
+  value: |-
+    The role token for a file-exporter function is exactly `fileExporter` (camelCase). Header form `//meta.role: fileExporter`; decorator form `@grok.decorators.fileExporter(config?: FunctionOptions)`. Canonical constant `DG.FUNC_TYPES.FILE_EXPORTER = 'fileExporter'`. Declared signature `fileExporter(): void` — NO inputs, NO outputs. Once registered, the platform attaches the function to the file's "Export" top menu at startup.
+  derives_from:
+    - article: help/develop/how-to/files/file-exporters.md:7-14
+    - code: js-api/src/const.ts:378-380,485-489
+    - code: js-api/src/decorators/functions.ts:350-356
+    - code: tools/bin/utils/func-generation.ts:340-346                  # inputs: [], outputs: []
+    - code: tools/bin/utils/const.ts:131-136                             # signature: 'fileExporter(): void'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-080
+  kind: naming
+  scope: file-exporters
+  value: |-
+    A file-exporter function MUST declare a non-empty `description`. The `tools/bin/commands/check.ts:358` linter errors with "File exporters should have a description parameter" when description is missing or empty. The description string becomes the visible label of the export menu entry (e.g., `description: 'As SDF...'` → menu item `As SDF...`). Header form `//description: <text>`; decorator form `@grok.decorators.fileExporter({description: '<text>'})`. Naming convention across the canonical packages — `As <FORMAT>...` (Chem `As SDF...`, Bio `As FASTA...`) when the exporter pops a follow-up dialog; `Save as <FORMAT>` (Arrow `Save as Parquet`, `Save as Feather`) when it downloads directly.
+  derives_from:
+    - article: help/develop/how-to/files/file-exporters.md:12-14
+    - code: tools/bin/commands/check.ts:358-359
+    - code: packages/Chem/src/package.ts:526-531                        # description: 'As SDF...'
+    - code: packages/Bio/src/package.ts:1404-1407                       # description: 'As FASTA...'
+    - code: packages/Arrow/src/package.ts:64-76                         # description: 'Save as Parquet' / 'Save as Feather'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-081
+  kind: namespace
+  scope: file-exporters
+  value: |-
+    Inside the exporter, obtain the active table via `grok.shell.t` (returns the current `DG.DataFrame` or `null` when no table is open — guard before use). The function MUST NOT return anything (`void`). To trigger the browser download, call `DG.Utils.download(filename, content, contentType?)` (`js-api/src/utils.ts:230-237`) — the canonical helper that wraps `Blob` + `URL.createObjectURL` + anchor click. `content: BlobPart` accepts string, `Uint8Array`, `ArrayBuffer`, `Blob`. `contentType` defaults to `'application/octet-stream'`. Prefer `DG.Utils.download` over the older `data:` URI + hand-rolled `<a>.click()` form for binary payloads (Parquet, Feather, XLSX); the article notes the `data:` form silently corrupts non-text content beyond ~2 MB in most browsers. After autonomous drift-fix `c36c5d6dfa`, the article example itself uses `DG.Utils.download` (resolves DRIFT-029).
+  derives_from:
+    - article: help/develop/how-to/files/file-exporters.md:24,48-51
+    - code: js-api/src/utils.ts:230-237
+    - code: packages/Arrow/src/package.ts:65-76                         # DG.Utils.download(table.name + '.parquet', ...)
+    - code: packages/Chem/src/package.ts:526-531                        # delegates to saveAsSdfDialog (Chem/src/utils/sdf-utils.ts)
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-082
+  kind: namespace
+  scope: file-exporters
+  value: |-
+    Unlike file viewers, file exporters have NO extension-specific annotation — there is no `meta.fileExporter: <ext>` companion key, and there is no `FileExporterOptions` type. The decorator's options bag is the generic `FunctionOptions` (see `js-api/src/decorators/functions.ts:350`), so any function-level metadata (`description`, `name`, `tags`, `meta.icon`, etc.) is carried through, but extension routing is NOT a registration concern: every exporter appears in the global Export menu and decides at runtime what filename/extension to emit via `DG.Utils.download(...)`.
+  derives_from:
+    - article: help/develop/how-to/files/file-exporters.md:13-15
+    - code: js-api/src/decorators/functions.ts:350-356                  # FunctionOptions, not FileExporterOptions
+    - code: packages/Arrow/src/package.ts:64-76                         # filename + extension chosen at download time
+  contradicts: []
+  confidence: high
+
+# DRIFTS for file-exporters
+
+- id: DG-FACT-426
+  kind: pattern
+  scope: file-exporters
+  value: |
+    `DG.Utils.download(filename, content, contentType?)` types its
+    `content` parameter as `BlobPart`, which under modern TypeScript lib
+    definitions resolves to `BufferSource | Blob | string`. A bare
+    `Uint8Array` produced by a serializer is now typed
+    `Uint8Array<ArrayBufferLike>` — the `ArrayBufferLike` slot includes
+    `SharedArrayBuffer`, which is NOT assignable to `BlobPart` and the
+    build fails with TS2345 ("Argument of type
+    'Uint8Array<ArrayBufferLike>' is not assignable to parameter of type
+    'BlobPart'"). The canonical fix used in production is to narrow the
+    generic with a cast at the call site, in the same expression that
+    null-coalesces an empty buffer:
+    `DG.Utils.download(name, (bytes ?? new Uint8Array(0)) as Uint8Array<ArrayBuffer>)`.
+    The cast is safe because Datagrok exporters always allocate fresh
+    Uint8Arrays backed by `ArrayBuffer`, never `SharedArrayBuffer`.
+  derives_from:
+    - code: packages/Arrow/src/package.ts:64-76                         # both saveAsParquet and saveAsFeather use this exact cast
+    - code: js-api/src/utils.ts:230-237                                 # download(filename, content: BlobPart, contentType?)
+    - runtime: verify-e2e/file-exporters                                # round 1 build failure: TS2345 on plain Uint8Array
+  contradicts: []
+  confidence: high

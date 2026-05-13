@@ -1,0 +1,71 @@
+# Facts cited by the `custom-views` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 6
+
+- id: DG-FACT-213
+  kind: namespace
+  scope: custom-views
+  value: |-
+    `grok.shell.newView(name='view', children?: object[], options?: string|{}|null): View` is the one-liner ad-hoc view constructor. Implementation: `let view = View.create(options); view.name = name; ui.appendAll(view.root, children ?? []); this.addView(view); return view;` (`js-api/src/shell.ts:234-242`). Returns a fully docked, registered `View` instance — NOT a `ViewBase`. Article (lines 16-17) presents this as the "simplest example" but stops short of saying it is "ad-hoc only" — it is fine for production code; the "from a package, extend ViewBase" guidance (lines 24-26) applies only when you need URL-dispatch / state-serialization / icon overrides.
+  derives_from:
+    - article: help/develop/how-to/views/custom-views.md:14-26
+    - code: js-api/src/shell.ts:234-242
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-214
+  kind: namespace
+  scope: custom-views
+  value: |-
+    `DG.ViewBase` extends `Widget` (`js-api/src/views/view.ts:45`). Subclasses receive `(params: object|null = null, path: string = '', createHost: boolean = true)` — the `createHost` third arg (article never mentions it) lets internal subclasses like `View` skip the JS host wrapper by passing `false` and assigning `this.dart` from a Dart-side handle (see `View.constructor` at `view.ts:217-221`). Package code that subclasses `ViewBase` should NEVER pass `false` — the Dart wrapper is what makes routing/serialization work.
+  derives_from:
+    - article: help/develop/how-to/views/custom-views.md:29-33
+    - code: js-api/src/views/view.ts:45-68, 217-221
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-215
+  kind: enum
+  scope: custom-views
+  value: |-
+    `ViewBase` overridable surface (defaults in `js-api/src/views/view.ts:70-204`). Getters intended for override — `type` (default `'js-view-base'`), `helpUrl` (default `null`, also has setter), `name` (default `'New View'`, also has setter), `path` (Dart-backed getter — override is what enables URL routing), `description` (default `''`), `entity` (default `null`), `box`, `parentCall`, `parentView`, `toolbox`, `ribbonMenu`, `statusBarPanels`, `closing`, `root`. Methods intended for override — `getIcon(): HTMLElement|null` (default `null`), `setIcon(icon)`, `saveStateMap(): object|null` (default `null`), `loadStateMap(stateMap)` (default no-op), `handlePath(urlPath)` (default no-op), `acceptsPath(urlPath): boolean` (default `false`), `setRibbonPanels(panels, clear=true)`, `getRibbonPanels()`, `append(item)`, `appendAll(items)`, `detach()`, `close()`. The article (lines 36-63) shows only seven of these — `type`, `helpUrl`, `name`, `path`, `getIcon`, `saveStateMap`, `loadStateMap`, `handlePath`, `acceptsPath` — but the contract surface is wider.
+  derives_from:
+    - article: help/develop/how-to/views/custom-views.md:29-63
+    - code: js-api/src/views/view.ts:70-204
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-216
+  kind: naming
+  scope: custom-views
+  value: |-
+    To register a `ViewBase` subclass-producing function with the platform, the canonical function annotation is `//tags: view`, `//input: map params`, `//input: string path`, `//output: view result` (article lines 80-85). Backing typesToAnnotation map at `tools/bin/utils/func-generation.ts:128-131` maps both `DG.ViewBase` and `ViewBase` (and `DG.View`/`View`) to the annotation type `'view'`; `FUNC_PARAMS.VIEW = 'view'` constant at `func-generation.ts:76`. Notebooks is the ONLY production package that ships a function with the `view` tag (`packages/Notebooks/src/package.js:528-535`); most apps construct views inline inside `meta.role: app` functions instead.
+  derives_from:
+    - article: help/develop/how-to/views/custom-views.md:69-85
+    - code: tools/bin/utils/func-generation.ts:76, 128-131
+    - code: packages/Notebooks/src/package.js:528-535
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-217
+  kind: enum
+  scope: custom-views
+  value: |-
+    Package code subclassing `DG.ViewBase` (15 sites in public): `Notebooks/src/package.js:27`, `Flow/src/funcflow-view.ts:24`, `Tutorials/src/demo-app/demo-app.ts:24`, `ClinicalCase/src/model/ClinicalCaseViewBase.ts:9`, `HitTriage/src/app/base-view.ts:8`, `PreclinicalCase/src/views/configuration-view.ts:14` and `study-summary-view.ts:25`, `NodeJSDemo/src/app/todo_app.ts:15`, `UsageAnalysis/src/test-track/app.ts:61`, `service_logs/service_logs.ts:5`, `tabs/ua.ts:16`, `DevTools/src/package-testing.ts:70` and `icon-tool.ts:7`, `PhyloTreeViewer/src/apps/tree-to-grid-app.ts:12`, `CruddyDemo/src/cruddy/app.ts:21`. Most are app-internal (constructed by `meta.role: app` functions); only `Notebooks` registers via `tags: view`.
+  derives_from:
+    - code: packages/Notebooks/src/package.js:27, packages/Flow/src/funcflow-view.ts:24, packages/Tutorials/src/demo-app/demo-app.ts:24, packages/ClinicalCase/src/model/ClinicalCaseViewBase.ts:9, packages/HitTriage/src/app/base-view.ts:8, packages/PreclinicalCase/src/views/configuration-view.ts:14, packages/PreclinicalCase/src/views/study-summary-view.ts:25, packages/NodeJSDemo/src/app/todo_app.ts:15, packages/UsageAnalysis/src/test-track/app.ts:61, packages/UsageAnalysis/src/service_logs/service_logs.ts:5, packages/UsageAnalysis/src/tabs/ua.ts:16, packages/DevTools/src/package-testing.ts:70, packages/DevTools/src/icon-tool.ts:7, packages/PhyloTreeViewer/src/apps/tree-to-grid-app.ts:12, packages/CruddyDemo/src/cruddy/app.ts:21
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-224
+  kind: namespace
+  scope: js-api
+  value: |-
+    The JS API has THREE entry points — `grok` (discoverable functionality, IntelliSense-driven), `ui` (UI building helpers + visual classes like `Widget`, `Dialog`, `InputBase`), and `DG` (raw class namespace for instantiating types directly). Imports — `import * as grok from 'datagrok-api/grok'`, `import * as ui from 'datagrok-api/ui'`, `import * as DG from 'datagrok-api/dg'`. `DG` re-exports from `js-api/dg.ts`; `grok` exports from `js-api/grok.ts`; `ui` is the legacy single-file `js-api/ui.ts`.
+  derives_from:
+    - article: help/develop/packages/js-api.md:25-65
+    - code: js-api/grok.ts:1-39
+    - code: js-api/dg.ts
+    - code: js-api/ui.ts
+  contradicts: []
+  confidence: high

@@ -35,7 +35,7 @@ them via HTTP. The package root for client-side can be found with the `webRoot` 
 [Package](https://datagrok.ai/api/js/dg/classes/Package). Here are some examples:
 
 ```js
-// `_package` is defined in package.js
+// `_package` is defined in package.ts
 export const _package = new DG.Package();
 
 // Get `test.csv` from the `tables` folder and open a table view for it
@@ -49,10 +49,10 @@ root.style.backgroundImage = `url(${_package.webRoot}images/night-sky.png)`;
 
 These methods work with any URL, be it a link to an external resource or a file from a package.
 Data under `files`, however, can be accessed via standard file methods exposed in Datagrok JS
-API (check out the [FileSource](https://datagrok.ai/api/js/dg/classes/FileSource) class):
+API (check out the [FilesDataSource](https://datagrok.ai/api/js/dg/classes/FilesDataSource) class):
 
 ```js
-// `_package` is defined in package.js
+// `_package` is defined in package.ts
 export const _package = new DG.Package();
 
 async function test() {

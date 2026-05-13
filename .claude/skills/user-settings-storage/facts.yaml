@@ -1,0 +1,155 @@
+# Facts cited by the `user-settings-storage` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 8
+
+- id: DG-FACT-394
+  kind: namespace
+  scope: user-settings-storage
+  value: |
+    The current key-value settings store is `class UserSettingsStorage`,
+    exposed on the global `grok` object as `grok.userSettings` (singleton,
+    typed in `grok.ts` as `grok: {..., userSettings: UserSettingsStorage}`).
+    All six methods (`add`, `addAll`, `put`, `get`, `getValue`, `delete`)
+    are synchronous — they return `void` or a plain value, NOT a Promise.
+    Each method's last parameter `isPrivate: boolean = true` selects
+    private (per-user) vs shared (`isPrivate=false`) storage. The legacy
+    `grok.dapi.userDataStorage` (`class UserDataStorage`) is `@deprecated`
+    on every method ("The UserDataStorage should not be used. Use
+    UserSettingsStorage instead") and is async — do not use in new code.
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:19-33
+    - code: js-api/src/user_settings_storage.ts:12-75
+    - code: js-api/grok.ts:29
+    - code: js-api/src/shell.ts:20
+    - code: js-api/src/dapi.ts:168-172,711-770
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-395
+  kind: threshold
+  scope: user-settings-storage
+  value: |
+    Maximum allowed value length is 5000 symbols (characters) per stored
+    entry. The constraint applies to the `value` argument of `add` and to
+    each value in the `data` map passed to `addAll` / `put`. Payloads
+    larger than 5000 chars must be chunked (see
+    `packages/ClinicalCase/src/utils/layout-utils.ts:20-67` for the
+    canonical split-into-N-parts pattern with a `{parts: N}` metadata
+    key). Article states the limit explicitly; the JSDoc on
+    `UserSettingsStorage` repeats it ("Value can't be longer then 5000
+    symbols.").
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:51-55
+    - code: js-api/src/user_settings_storage.ts:9
+    - code: packages/ClinicalCase/src/utils/layout-utils.ts:20-67
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-396
+  kind: threshold
+  scope: user-settings-storage
+  value: |
+    Mutations are kept in memory and flushed to the server every 10
+    seconds when data has changed. Reads after a write within the same
+    10-second window observe the in-memory value immediately; cross-tab
+    or cross-session visibility is bounded by this sync window. The
+    article does not mention this — it is documented only in the
+    `UserSettingsStorage` class JSDoc.
+  derives_from:
+    - code: js-api/src/user_settings_storage.ts:7-11
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-397
+  kind: enum
+  scope: user-settings-storage
+  value: |
+    `UserSettingsStorage` exposes exactly six methods, partitioned by
+    intent:
+    - Write single value: `add(name, key, value, isPrivate?)` — appends.
+    - Write many values (merge): `addAll(name, data, isPrivate?)` — keeps
+      existing keys, overwrites overlapping ones.
+    - Write many values (replace): `put(name, data, isPrivate?)` —
+      replaces the whole record under `name`.
+    - Read whole record: `get(name, isPrivate?)` →
+      `{[key: string]: string} | undefined`.
+    - Read single value: `getValue(name, key, isPrivate?)` →
+      `string | undefined`.
+    - Delete: `delete(name, key, isPrivate?)`. Passing `null` for `key`
+      (TS-typed as `string`; runtime accepts null) wipes the whole
+      namespace. There is no `keys(...)`, `has(...)`, or `list(...)`
+      method — enumeration goes through `get(name)` + `Object.keys(...)`.
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:25-32,79-91
+    - code: js-api/src/user_settings_storage.ts:23,33,43,52,62,72
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-398
+  kind: naming
+  scope: user-settings-storage
+  value: |
+    All `value` arguments to `add` and all map values for `addAll` / `put`
+    must be `string`. The canonical pattern for structured data is
+    `JSON.stringify` on write and `JSON.parse` on read. The TS signature
+    enforces this: `add(name: string, key: string, value: string, ...)`,
+    `data: {[key: string]: string}`. There is no auto-serialization —
+    passing a non-string is a type error.
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:36-49,57-64
+    - code: js-api/src/user_settings_storage.ts:23,33,43
+    - code: packages/CddVaultLink/src/search-function-editor.ts:114,153,177
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-USS-001
+  kind: naming
+  scope: user-settings-storage
+  value: |
+    Article's "Exploring" example (`user-settings-storage.md:107-122`)
+    checks `if (entities !== null && Object.keys(entities).length === 0)`,
+    implying `get(name)` returns `null` for a missing/empty record. The
+    TypeScript signature actually returns
+    `{[key: string]: string} | undefined`
+    (`js-api/src/user_settings_storage.ts:52`). For an empty namespace the
+    runtime returns an empty object `{}`, not `null`. Skill code should
+    check `entries == null` (loose-equals catches both) or test
+    `!entries || Object.keys(entries).length === 0`, NOT `entries !==
+    null` alone.
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:107-122
+    - code: js-api/src/user_settings_storage.ts:47-54
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-USS-002
+  kind: naming
+  scope: user-settings-storage
+  value: |
+    JSDoc on `UserSettingsStorage.get` calls the return value a "map"
+    (`js-api/src/user_settings_storage.ts:48-52`); the TypeScript return
+    type is a plain object record `{[key: string]: string}`, not a JS
+    `Map`. The article inherits the same loose terminology by example.
+    Skill code must iterate with `Object.keys(record)` / `for (const k in
+    record)`, not `record.get(...)` / `record.forEach(...)`.
+  derives_from:
+    - code: js-api/src/user_settings_storage.ts:47-54
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-USS-003
+  kind: naming
+  scope: user-settings-storage
+  value: |
+    Article shows `grok.userSettings.delete('coordinate-storage', null)`
+    to wipe a namespace (`user-settings-storage.md:87-91`), but the TS
+    signature declares `key: string` — passing `null` is a type error in
+    strict TS. The runtime accepts null (Dart routes it to the no-key
+    delete endpoint at `js-api/src/datagrok/build/web/grok_shared.dart.js:93263`).
+    Skill code must cast: `delete(name, null as unknown as string)` or
+    `delete(name, null as any)`.
+  derives_from:
+    - article: help/develop/how-to/data/user-settings-storage.md:87-91
+    - code: js-api/src/user_settings_storage.ts:72
+  contradicts: []
+  confidence: high

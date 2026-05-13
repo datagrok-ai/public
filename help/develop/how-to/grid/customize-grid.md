@@ -164,8 +164,8 @@ A grid can encode column categories with color. For instance, assigning custom c
 let view = grok.shell.addTableView(grok.data.demo.demog());
 
 view.grid.col('sex').categoryColors = {
-  'M': 0xFF0000FF,
-  'F': 0xFF800080
+  'M': DG.Color.blue,
+  'F': DG.Color.purple
 };
 ```
 
@@ -194,11 +194,11 @@ grok.shell.addTableView(t);
 
 </details>
 
-You should specify the `COLOR_CODING_TYPE` tag in all cases. The
-`COLOR_CODING_CONDITIONAL` and `COLOR_CODING_LINEAR` tags take effect only when the corresponding coloring type is set.
+You should specify the `.color-coding-type` tag in all cases. The
+`.color-coding-conditional` and `.color-coding-linear` tags take effect only when the corresponding coloring type is set.
 For the conditional type, the value contains the rules for determining which color matches a number in the column. The
 slight difference from the first example is that values that do not fall within the range, or otherwise are beyond the
-scope of the given rules, are not colored at all. Note that the `COLOR_CODING_CONDITIONAL` tag is optional, when it is
+scope of the given rules, are not colored at all. Note that the `.color-coding-conditional` tag is optional, when it is
 not given and the type is set to conditional, the default coloring scheme will be applied to the column. The binning
 rules in this case rely on the column's statistics, and are generated automatically. See
 the [patterns](../../../access/databases/databases.md#parameterized-queries)

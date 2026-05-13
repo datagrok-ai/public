@@ -114,7 +114,8 @@ When you deploy a plugin:
 Once your app is deployed, functions can be called via the JS API:
 
 ```javascript
-await grok.functions.call('Plugin:add', { x: 1, y: 2 });
+// Replace <YourPackage> with your package name; 'add' is the value of the `#name:` header
+await grok.functions.call('<YourPackage>:add', { x: 1, y: 2 });
 ```
 
 The platform will:

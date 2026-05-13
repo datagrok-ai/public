@@ -35,11 +35,11 @@ For demonstration purposes, consider using the provided [demo data](https://gith
 
 ### Run docking simulations
 
-* Navigate to **Chem > Autodock**. A dialog appears.
+* Navigate to **Chem > Docking > AutoDock...**. A dialog appears.
 * Configure the parameters:
   * **Ligands**: Specify the column that contains small molecules to be docked.
   * **Target**: Choose the folder that contains the macromolecule and grid parameter file.
-  * **Conformations**: Define the number of conformations.
+  * **Poses**: Define the number of output conformations for each small molecule.
 * Run the calculations.
 
 ![docking-simulations](./_pics/docking-simulations.gif)

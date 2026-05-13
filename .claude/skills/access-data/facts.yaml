@@ -1,0 +1,137 @@
+# Facts cited by the `access-data` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 7
+
+- id: DG-FACT-400
+  kind: naming
+  scope: access-data
+  value: |
+    Package data connection = a JSON file under `packages/<Pkg>/connections/`.
+    REQUIRED fields: `parameters` (data-source-specific object) and
+    `dataSource` (connector name string). OPTIONAL: `name` (defaults to the
+    filename minus `.json`), `description`, `tags` (string[]),
+    `credentials.parameters` (login/password etc — routed through the
+    credentials store, NOT the world-readable `parameters` block).
+    Connection names are case-insensitive at lookup time (server behavior;
+    not observable in JS-API). Reachable as `<Pkg>:<ConnectionName>` after
+    deploy. `grok add connection <name>` scaffolds a template.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:29-114
+    - code: packages/Chembl/connections/chembl.json
+    - code: packages/DBTests/connections/postgres-test-docker.json
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-401
+  kind: enum
+  scope: access-data
+  value: |
+    `dataSource` value is exact-string-matched server-side; observed
+    canonical values in production: `Postgres`, `PostgresDart`, `MariaDB`,
+    `MySQL`, `MS SQL` (with space), `Oracle`, `Snowflake`, `ClickHouse`,
+    `Neo4j`, `Access`, `Files`. The set is open (controlled by the
+    `connectors` registry on the server) but lowercase/abbreviated
+    spellings (`postgres`, `mssql`) DO NOT match. The article calls out
+    `Postgres` (line 38 example uses `PostgresDart`), `MariaDB` (line 106)
+    and `Files` (line 287). Each connector has its own required
+    `parameters` shape — see `help/access/databases/connectors/`.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:38,106,287
+    - code: packages/DBTests/connections/*.json (10 distinct dataSource values)
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-402
+  kind: naming
+  scope: access-data
+  value: |
+    SQL queries live in `packages/<Pkg>/queries/`. A query file (`.sql`)
+    contains one or more queries, each opened by a header block of
+    `--`-prefixed annotations and terminated by `--end` (omit `--end` if
+    only one query per file). Recognized headers (per `--<key>: <value>`):
+    `--name` (required for multi-query files; otherwise defaults to
+    filename), `--friendlyName`, `--description`, `--connection: <Pkg>:<Conn>`
+    (omit if the package has only one connection), `--input: <type> <name>
+    [= <default>]` (one per parameter). Parameters in the SQL body are
+    referenced as `@name`. `grok add query <name>` scaffolds a template.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:120-165
+    - code: packages/Chembl/queries/queries.sql:1-45
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-403
+  kind: naming
+  scope: access-data
+  value: |
+    Post-processing script + layout are linked to a query by EXACT basename
+    match: `queries/foo.sql` (the query), `queries/foo.js` (post-process
+    script — accepts the result DataFrame as input), `queries/foo.layout`
+    (layout applied to the result). Hard invariant: a file that needs an
+    associated `.js` or `.layout` MUST contain exactly ONE query — the
+    association is by filename, not by query name. Multi-query files break
+    the binding silently.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:189-213
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-404
+  kind: namespace
+  scope: access-data
+  value: |
+    `grok.data.query<T = DataFrame>(queryName, queryParameters?: object | null
+    = null, adHoc?: boolean = false): Promise<T>` — async (`async` in source),
+    returns the resolved query result coerced to `T`. The 3rd `adHoc`
+    parameter is JSDoc-marked `@deprecated` and slated for removal — skill
+    code must omit it. `queryName` is `<Package>:<QueryName>` (the same
+    fully-qualified form the console uses). Internally calls
+    `grok_CallFunc(queryName, queryParameters, true, null)`. There is NO
+    4th polling-interval argument (signature has 3 positional slots).
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:179-185
+    - code: js-api/src/data.ts:255-262
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-409
+  kind: namespace
+  scope: access-data
+  value: |
+    Connection credentials are NEVER stored in the JSON committed to git —
+    after deploy, POST them to
+    `$(GROK_HOST)/api/credentials/for/$(PACKAGE_NAME).$(CONNECTION_NAME)`
+    with body `{"login":"...","password":"..."}` (any param keys per
+    connector) and headers `Authorization: $(API_KEY)`,
+    `Content-Type: application/json`. The API key is the user's personal
+    token from their profile page (e.g. https://public.datagrok.ai/u).
+    The dotted entity form targets a specific connection; omitting the
+    dot (`...PACKAGE_NAME` alone) targets the package itself for
+    package-level credentials. Read-back from JS:
+    `await _package.getCredentials(): Promise<Credentials | null>` →
+    `c.parameters['<key>']` (NOT `c.openParameters`, which is the redacted
+    display copy).
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:81-116
+    - code: js-api/src/entities/misc.ts:163-166
+    - code: js-api/src/entities/data-connection.ts:396-415
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-410
+  kind: naming
+  scope: access-data
+  value: |
+    Connection sharing is one-way: sharing a QUERY auto-shares its
+    underlying connection (including web/OpenAPI queries that ride on the
+    connection); sharing the CONNECTION does NOT auto-share its queries.
+    Inheritance rule per article — "access rights of a database connection
+    are inherited from the access rights of a query. However, the access
+    rights of a query don't inherit the access rights of the database
+    connection." Skill authors that distribute a package with private
+    queries must therefore share each query explicitly; sharing the
+    connection alone leaves queries inaccessible.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:217-222
+  contradicts: []
+  confidence: medium

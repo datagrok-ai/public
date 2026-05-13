@@ -289,7 +289,7 @@ for categorical values.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.barChart({
+view.addViewer(DG.VIEWER.BAR_CHART, {
 split: 'race',
 value: 'age',
 valueAggrType: 'avg'
@@ -303,7 +303,7 @@ five number summary: minimum, first quartile, median, third quartile, and maximu
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.boxPlot();
+view.addViewer(DG.VIEWER.BOX_PLOT);
 ```
 
 #### Calendar
@@ -312,7 +312,7 @@ Calendar lets you analyze longitudinal data. It needs at least one column of typ
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.calendar();
+view.addViewer(DG.VIEWER.CALENDAR);
 ```
 
 #### Correlation plot
@@ -323,7 +323,7 @@ corresponding scatter plot. The grid is sortable. Select columns in the view by 
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.corrPlot({
+view.addViewer(DG.VIEWER.CORR_PLOT, {
   xs: ['age', 'weight', 'height'],
   ys: ['age', 'weight', 'height'],
 });
@@ -337,7 +337,7 @@ contains.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.densityPlot();
+view.addViewer(DG.VIEWER.DENSITY_PLOT);
 ```
 
 #### Filters
@@ -346,7 +346,7 @@ A set of controls for quick filtering, selection, and visual assessment of colum
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.filters();
+view.addViewer(DG.VIEWER.FILTERS);
 ```
 
 #### Form
@@ -357,7 +357,7 @@ the [Tile viewer](#tile-viewer).
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.form();
+view.addViewer(DG.VIEWER.FORM);
 ```
 
 #### Globe
@@ -398,8 +398,7 @@ all of the grid's features are applicable to the heat map as well.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.heatMap();
-});
+view.addViewer(DG.VIEWER.HEAT_MAP);
 ```
 
 #### Histogram
@@ -408,7 +407,7 @@ A histogram is a graphical representation of the distribution of numerical data.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.histogram({
+view.addViewer(DG.VIEWER.HISTOGRAM, {
     value: 'age'
 });
 ```
@@ -419,7 +418,7 @@ Line chart displays information as a series of data points connected by a line.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.lineChart();
+view.addViewer(DG.VIEWER.LINE_CHART);
 ```
 
 #### Markup viewer
@@ -447,7 +446,7 @@ Use Matrix Plot to assess the relationship among many pairs of columns at the sa
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.matrixPlot();
+view.addViewer(DG.VIEWER.MATRIX_PLOT);
 ```
 
 #### Network diagram
@@ -458,7 +457,7 @@ to the values that represent an edge or a Node.js.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.networkDiagram();
+view.addViewer(DG.VIEWER.NETWORK_DIAGRAM);
 ```
 
 #### Parallel coordinates plot
@@ -475,7 +474,7 @@ be of interest.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.pcPlot();
+view.addViewer(DG.VIEWER.PC_PLOT);
 ```
 
 #### Scatter plot 3D
@@ -486,7 +485,7 @@ Additionally, you can color-code and size-code points, as well as display labels
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.scatterPlot3d();
+view.addViewer(DG.VIEWER.SCATTER_PLOT_3D);
 ```
 
 #### Scatter plot
@@ -499,7 +498,7 @@ value of the other variable determining the position on the vertical axis.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-let plot = view.scatterPlot({
+let plot = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
     x: 'height',
     y: 'weight',
     size: 'age',
@@ -523,7 +522,7 @@ When opened, a viewer automatically determines the best map that is applicable t
 ```javascript
 grok.data.loadTable('https://public.datagrok.ai/demo//earnings-by-state.csv').then((t) => {
   let view = grok.shell.addTableView(t);
-  view.shapeMap();
+  view.addViewer(DG.VIEWER.SHAPE_MAP);
 });
 ```
 
@@ -533,7 +532,7 @@ Provides specified descriptive statistics for the chosen columns.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.statistics();
+view.addViewer(DG.VIEWER.STATISTICS);
 ```
 
 #### Tile viewer
@@ -542,7 +541,7 @@ Visualizes rows as a collection of forms that are positioned as tiles.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.tileViewer();
+view.addViewer(DG.VIEWER.TILE_VIEWER);
 ```
 
 #### Tree map
@@ -553,7 +552,7 @@ proportional to a specified dimension of the data.
 
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.treeMap();
+view.addViewer(DG.VIEWER.TREE_MAP);
 ```
 
 ### Ribbon
@@ -620,7 +619,7 @@ ui.dialog('Standard dialog')
   .add(ui.span(['Some content...']))
   .onOK(() => {})
   .addContextAction('My Action', () => {})
-  .addButton('Optional button')
+  .addButton('Optional button', () => {})
   .show({x: 300, y: 300});
 ```
 

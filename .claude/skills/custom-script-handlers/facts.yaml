@@ -1,0 +1,144 @@
+# Facts cited by the `custom-script-handlers` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 9
+
+- id: DG-FACT-173
+  kind: enum
+  scope: custom-script-handlers
+  value: |-
+    The role token that registers a function as a custom script handler is the literal string `scriptHandler` — exposed as `DG.FUNC_TYPES.SCRIPT_HANDLER = 'scriptHandler'` (`js-api/src/const.ts:420`). Header form `//meta.role: scriptHandler`; decorator form `@grok.decorators.func({meta: {role: 'scriptHandler'}})`. Pyodide is the only shipping public-repo package using this role (`packages/Pyodide/src/package.g.ts:23`).
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:27
+    - code: js-api/src/const.ts:420
+    - code: packages/Pyodide/src/package.g.ts:23
+    - code: packages/Pyodide/src/package.ts:358
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-174
+  kind: enum
+  scope: custom-script-handlers
+  value: |-
+    A script-handler function MUST take exactly one input of type `funccall` named `scriptCall` (header form `//input: funccall scriptCall`; decorator form `@grok.decorators.param({type: 'funccall'}) scriptCall: DG.FuncCall`) and return `Promise<void>`. The platform passes a populated `DG.FuncCall` whose declared inputs/outputs come from the script's own `#name/#input/#output` header — the handler runs the script's code and writes results back via `scriptCall.outputs[<name>] = <value>` (or `scriptCall.setParamValue(name, value)`). The article's example uses the parameter name `call`, but every shipping handler in the public repo uses `scriptCall`; codegen (`package.g.ts`) emits `scriptCall`.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:17,30
+    - code: packages/Pyodide/src/package.g.ts:15,24
+    - code: packages/Pyodide/src/package.ts:361-369
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-175
+  kind: enum
+  scope: custom-script-handlers
+  value: |-
+    Mandatory script-handler annotations (all four required for registration to succeed) — `meta.role: scriptHandler`, `meta.scriptHandler.language: <name>`, `meta.scriptHandler.extensions: <ext1,ext2,...>` (comma-separated, no leading dot — e.g. `py`, `clj,cljs,cljr`), and the single `funccall scriptCall` input. The platform extracts `language` and splits `extensions` on `,` at startup (`grok_shared.dart.js:121486-121487`). The startup loop only registers a function as a handler if the `scriptHandler` tag is present AND `scriptHandler.language` is non-empty (`grok_shared.dart.js:137559-137563`).
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:25-30
+    - code: js-api/src/api/ddt.api.g.ts:395-401
+    - code: packages/Pyodide/src/package.g.ts:16-17,23
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-176
+  kind: enum
+  scope: custom-script-handlers
+  value: |-
+    Optional script-handler annotations recognised by the platform — `meta.scriptHandler.templateScript` (boilerplate inserted into newly created scripts; embed newlines as literal `\n`), `meta.scriptHandler.codeEditorMode` (CodeMirror-5 mode name, e.g. `python`, `clojure`; defaults to `language` per `ddt.api.g.ts:422-424`), `meta.scriptHandler.commentStart` (single character that begins a line comment; defaults to `#` per `ddt.api.g.ts:407` and `grok_shared.dart.js:121493`), `meta.scriptHandler.vectorizationFunction` (nqName `<Package>:<funcName>` of a function that accepts `DG.Script` and returns vectorized code as `string`), `meta.scriptHandler.parserFunction` (nqName of a parser turning text into a `DG.Script`; `ddt.api.g.ts:417`), `meta.scriptHandler.friendlyName` (UI label; defaults to `language`; `ddt.api.g.ts:403-405`), and the generic `meta.icon` (path under the package source tree, e.g. `files/pyodide.png`). As of 2026-05-12 the article (lines 33-39) enumerates all seven options including `commentStart`, `friendlyName`, `parserFunction` — DG-FACT-DRIFT-069 (article-undocumented options) is therefore resolved; only the camelCase decorator-key counterparts for `friendlyName` and `parserFunction` are still missing from `js-api/src/decorators/functions.ts:151-162` and `tools/bin/utils/const.ts:31-39`, so authors using the decorator surface MUST use the bracket-string form (`['scriptHandler.friendlyName']`, `['scriptHandler.parserFunction']`).
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:33-39
+    - code: js-api/src/api/ddt.api.g.ts:395-424
+    - code: js-api/src/decorators/functions.ts:151-162
+    - code: tools/bin/utils/const.ts:31-39
+    - code: packages/Pyodide/src/package.g.ts:18-22
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-177
+  kind: namespace
+  scope: custom-script-handlers
+  value: |-
+    The vectorization function targeted by `meta.scriptHandler.vectorizationFunction` is itself a registered package function with signature `(script: DG.Script) => string`. It is referenced by nqName `<Package>:<funcName>` (Pyodide uses `Pyodide:makeVectorCode`, `package.g.ts:21`); the function header is `//input: script script` + `//output: string result` (`packages/Pyodide/src/package.g.ts:11-13`). The platform looks it up at handler-construction time (`grok_shared.dart.js:121490`) and again at vectorize-time (`grok_shared.dart.js:121568`); a malformed nqName silently disables vectorization. The article (line 38, as of 2026-05-12) now explicitly states this contract — "The target function itself must declare `//input: script script` and `//output: string result` annotations so codegen registers it; otherwise the lookup fails silently at handler construction" — so the previously article-undocumented silent-failure mode is now documented; downstream skills should cite the article for the requirement and DG-FACT-177 for the lookup mechanics.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:38
+    - code: packages/Pyodide/src/package.g.ts:9-13,21
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:121490,121568
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-178
+  kind: namespace
+  scope: custom-script-handlers
+  value: |-
+    At runtime the platform recognises a script as belonging to a custom handler by matching the script's `#language:` header annotation against each registered handler's `meta.scriptHandler.language`. Once matched, the platform invokes the handler with a `DG.FuncCall` whose declared inputs/outputs derive from the script's own header — meaning the script header (not the handler header) is the source of truth for parameters. Handlers therefore implement: parse `scriptCall.func.script` (the user-authored body), execute it (in-process / WebAssembly / Docker container), then write each output via `scriptCall.outputs`.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:51-53
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:121486-121498,137559-137563
+    - code: packages/Pyodide/src/package.ts:361-369
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-179
+  kind: naming
+  scope: custom-script-handlers
+  value: |-
+    Codegen (`package.g.ts`) is the canonical surface for handler declaration. The Pyodide reference shows the generated form — header comment block (`//input: funccall scriptCall`, `//meta.scriptHandler.*`, `//meta.role: scriptHandler`) directly above an `async function <name>(scriptCall: DG.FuncCall): Promise<void>` that delegates into a static `PackageFunctions.<name>(scriptCall)`. Author the decorator form (`@grok.decorators.func({meta: {role: 'scriptHandler', 'scriptHandler.language': 'x', ...}})`) on a static method inside `PackageFunctions` in `package.ts`; let codegen emit `package.g.ts`. Do NOT hand-write the comment-header form in `package.ts` — production packages don't, and the codegen will overwrite it.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:38-48
+    - code: packages/Pyodide/src/package.ts:347-369
+    - code: packages/Pyodide/src/package.g.ts:15-26
+  contradicts: []
+  confidence: high
+
+# DRIFTS for custom-script-handlers
+
+- id: DG-FACT-459
+  kind: naming
+  scope: custom-script-handlers
+  value: |
+    `meta.scriptHandler.parserFunction` targets a registered
+    package function whose role is to convert plain script
+    text into a `DG.Script` instance. It is referenced by
+    nqName `<Package>:<funcName>` and looked up by the
+    platform at handler-construction (`grok_shared.dart.js:121498`)
+    and again when parsing scripts that match the handler's
+    language (`grok_shared.dart.js:121535`). Needed only when
+    the target language's header convention cannot be expressed
+    by stripping `commentStart` from each leading line — for
+    most languages (Python, Clojure, JS) the platform's
+    built-in `#name:` header parser suffices and
+    `parserFunction` can be omitted. No shipping public-repo
+    package supplies one; Pyodide relies on the default parser.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:39
+    - code: js-api/src/api/ddt.api.g.ts:416-417
+    - code: js-api/src/datagrok/build/web/grok_shared.dart.js:121498,121535
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-069
+  kind: enum
+  scope: custom-script-handlers
+  value: |
+    RESOLVED 2026-05-12. Earlier article revision documented
+    only four optional `meta.scriptHandler.*` annotations
+    (`templateScript`, `codeEditorMode`, `vectorizationFunction`,
+    `icon`) while the platform recognises three more
+    (`commentStart`, `friendlyName`, `parserFunction` — declared
+    in `js-api/src/api/ddt.api.g.ts:395-424`). Current article
+    (lines 33-39, as of 2026-05-12) enumerates all seven,
+    including the silent-failure constraint on the
+    vectorization function's `//input: script script` +
+    `//output: string result` header (line 38). The remaining
+    minor drift — `friendlyName` and `parserFunction` lack
+    camelCase aliases in `js-api/src/decorators/functions.ts`
+    and `tools/bin/utils/const.ts` — is recorded on DG-FACT-176
+    and does not block authors who use the bracket-string form
+    (`['scriptHandler.friendlyName']`). Kept as a tombstone
+    because DG-FACT-176 references this ID.
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:33-39
+    - code: js-api/src/api/ddt.api.g.ts:395-424
+    - code: js-api/src/decorators/functions.ts:151-162
+    - code: tools/bin/utils/const.ts:31-39
+  contradicts: []
+  confidence: high

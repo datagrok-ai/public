@@ -1,0 +1,127 @@
+# Facts cited by the `js-api` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 11
+
+- id: DG-FACT-008
+  kind: naming
+  scope: routing
+  value: |-
+    When users open the package-name-based URL while a `meta.url` override exists, the URL is auto-replaced with the override.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:103
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-018
+  kind: threshold
+  scope: user-settings-storage
+  value: |-
+    Writes are eventually consistent. The store is held in memory and synchronized with the server every 10 seconds when data has changed; values are not durable across page reloads until the sync fires.
+  derives_from:
+    - code: js-api/src/user_settings_storage.ts:8   # JSDoc: "synchronized with the server every 10 seconds if data was changed"
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-026
+  kind: namespace
+  scope: access-data
+  value: |-
+    `grok.dapi.fetchProxy(url, params?, maxAge?)` proxies a fetch through the Datagrok server (CORS bypass + caching). Same shape as the standard `fetch` API; returns `Promise<Response>`. `maxAge` (seconds) emits a `Cache-Control` directive on GET/HEAD requests.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:236-241
+    - code: js-api/src/dapi.ts:189-209
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-046
+  kind: threshold
+  scope: db-in-docker
+  value: |-
+    The Dockerfile MUST include exactly one `EXPOSE <port>` instruction. Multiple EXPOSE directives are not supported — the platform allows only a single exposed port per image (`docker-containers.md:20`).
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:36
+    - article: help/develop/how-to/packages/docker-containers.md:20
+    - code: packages/DBTests/dockerfiles/Dockerfile:6                  # EXPOSE 5432
+    - code: packages/Retrosynthesis/dockerfiles/aizynthfinder/Dockerfile  # single EXPOSE
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-059
+  kind: namespace
+  scope: register-identifiers
+  value: |-
+    `DG.ObjectHandler` is the base class extended for custom semantic-type rendering. Override `get type()` (returns the semType string), `isApplicable(x)` (returns boolean — typically `x instanceof DG.SemanticValue && x.semType === '<type>'`), and any of `renderTooltip(x, context?)`, `renderCard(x, context?)`, `renderProperties(x, context?)`, `renderMarkup(x, context?)`, `renderIcon(x, context?)`, `renderView(x, context?)`. All renderers return `HTMLElement`. Defaults render `divText(getCaption(x))`.
+  derives_from:
+    - article: help/develop/how-to/db/register-identifiers.md:39-72
+    - code: js-api/ui.ts:1651-1761
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-213
+  kind: namespace
+  scope: custom-views
+  value: |-
+    `grok.shell.newView(name='view', children?: object[], options?: string|{}|null): View` is the one-liner ad-hoc view constructor. Implementation: `let view = View.create(options); view.name = name; ui.appendAll(view.root, children ?? []); this.addView(view); return view;` (`js-api/src/shell.ts:234-242`). Returns a fully docked, registered `View` instance — NOT a `ViewBase`. Article (lines 16-17) presents this as the "simplest example" but stops short of saying it is "ad-hoc only" — it is fine for production code; the "from a package, extend ViewBase" guidance (lines 24-26) applies only when you need URL-dispatch / state-serialization / icon overrides.
+  derives_from:
+    - article: help/develop/how-to/views/custom-views.md:14-26
+    - code: js-api/src/shell.ts:234-242
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-224
+  kind: namespace
+  scope: js-api
+  value: |-
+    The JS API has THREE entry points — `grok` (discoverable functionality, IntelliSense-driven), `ui` (UI building helpers + visual classes like `Widget`, `Dialog`, `InputBase`), and `DG` (raw class namespace for instantiating types directly). Imports — `import * as grok from 'datagrok-api/grok'`, `import * as ui from 'datagrok-api/ui'`, `import * as DG from 'datagrok-api/dg'`. `DG` re-exports from `js-api/dg.ts`; `grok` exports from `js-api/grok.ts`; `ui` is the legacy single-file `js-api/ui.ts`.
+  derives_from:
+    - article: help/develop/packages/js-api.md:25-65
+    - code: js-api/grok.ts:1-39
+    - code: js-api/dg.ts
+    - code: js-api/ui.ts
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-225
+  kind: namespace
+  scope: js-api
+  value: |-
+    Full inventory of `grok` namespaces — `functions` (Functions instance), `events` (Events instance), `dapi` (Dapi — server-side entities), `shell` (Shell — visual platform state), `settings` (Settings), `data` (Data — table loaders), `userSettings` (UserSettingsStorage), `ai` (AI), `log` (static Logger), plus re-exports from `./src/chem` (`grok.chem.*`), `./src/ml` (`grok.ml.*`), and `./src/decorators/functions` (`grok.decorators.*`). The article's ordered list `[shell, chem, data, data, ml]` is a typo (`data` listed twice) and incomplete.
+  derives_from:
+    - article: help/develop/packages/js-api.md:37
+    - code: js-api/grok.ts:11-38
+  contradicts:
+    - DG-FACT-DRIFT-087
+  confidence: high
+
+- id: DG-FACT-226
+  kind: namespace
+  scope: js-api
+  value: |-
+    `grok.events` (class `Events`) and per-instance event getters (e.g., `dataFrame.onValuesChanged`, `grok.events.onCurrentProjectChanged`) return RxJS `Observable<T>` produced by `__obs(eventId, object?)` from `js-api/src/events.ts:45`. The platform bridges Dart event streams via `rxjs.fromEventPattern`. Subscribe with `.subscribe(handler)`; compose with `rxjs/operators` (e.g., `debounce(observable, ms)` is a thin re-export of `debounceTime`).
+  derives_from:
+    - article: help/develop/packages/js-api.md:184-196
+    - code: js-api/src/events.ts:1-60
+    - code: js-api/grok.ts:14
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-227
+  kind: enum
+  scope: js-api
+  value: |-
+    `IFunctionRegistrationData` shape passed to `grok.functions.register({...})` — `signature: string` (REQUIRED — Datagrok-typed signature like `'String jsConcat(int foo, int bar)'` or `'List<String> jsSuggestCountryName(String text)'`; multiple outputs use `'({int x, int y}) foo(string bar)'` form), `run: Function` (REQUIRED), `tags?: string` (comma-separated; e.g., `'Widgets'` to expose under the Widgets dashboard category), `isAsync?: boolean` (set when `run` is async), `namespace?: string`, `options?: {[key: string]: string}`. Returns the registered `Func`. Datagrok type names in the signature string are the platform's type vocabulary (`String`, `int`, `List<String>`, `Widget`, `DataFrame`, …), NOT raw TypeScript types.
+  derives_from:
+    - article: help/develop/packages/js-api.md:140-171
+    - code: js-api/src/functions.ts:106-139
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-228
+  kind: namespace
+  scope: js-api
+  value: |-
+    Inspector tool (Alt+I) is the canonical way to discover what events the platform fires for any UI action. Open Inspector → "Client Log" tab → perform the action → click an emitted event → context panel shows the event parameters AND auto-generates a copy-pasteable JS event-handling snippet. This is the discovery mechanism for the typed `grok.events.on*` getters and per-entity `on*` observables.
+  derives_from:
+    - article: help/develop/packages/js-api.md:202-208
+  contradicts: []
+  confidence: medium

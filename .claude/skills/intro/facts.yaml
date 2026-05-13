@@ -1,0 +1,104 @@
+# Facts cited by the `intro` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 8
+
+- id: DG-FACT-224
+  kind: namespace
+  scope: js-api
+  value: |-
+    The JS API has THREE entry points — `grok` (discoverable functionality, IntelliSense-driven), `ui` (UI building helpers + visual classes like `Widget`, `Dialog`, `InputBase`), and `DG` (raw class namespace for instantiating types directly). Imports — `import * as grok from 'datagrok-api/grok'`, `import * as ui from 'datagrok-api/ui'`, `import * as DG from 'datagrok-api/dg'`. `DG` re-exports from `js-api/dg.ts`; `grok` exports from `js-api/grok.ts`; `ui` is the legacy single-file `js-api/ui.ts`.
+  derives_from:
+    - article: help/develop/packages/js-api.md:25-65
+    - code: js-api/grok.ts:1-39
+    - code: js-api/dg.ts
+    - code: js-api/ui.ts
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-235
+  kind: namespace
+  scope: cheminformatics
+  value: |-
+    The cheminformatics JS-API surface lives under `grok.chem` (re-exported `chem.*` namespace from `js-api/src/chem.ts`). Most methods are async and route through `grok.functions.call('Chem:<dartName>', ...)` — i.e., they delegate to the Chem package's server-side / Web Worker functions. The wrapper-to-Dart-name mapping is not 1:1 (e.g. `diversitySearch` → `Chem:getDiversities`, `mcs` → `Chem:FindMCS`, `rGroup` → `Chem:FindRGroups`, `descriptors` → `Chem:chemDescriptors`).
+  derives_from:
+    - article: help/develop/domains/chem/cheminformatics.md:19-21
+    - code: js-api/src/chem.ts:699-829
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-236
+  kind: enum
+  scope: cheminformatics
+  value: |-
+    Molecule string notations supported by RDKit JS (and accepted as the `pattern`/`molecule` arg to `searchSubstructure`, `findSimilar`, `getSimilarities`, `canvasMol`, etc.) are FIVE — `smiles`, `cxsmiles`, `molblock`, `v3Kmolblock`, `inchi`. Format detection is automatic; molfiles are recognized by the `M  END` marker (`svgMol` uses `smiles.includes('M  END')` to dispatch between `Molecule.fromMolfile` and `Molecule.fromSmiles`).
+  derives_from:
+    - article: help/develop/domains/chem/cheminformatics.md:44,61-63,694-695
+    - code: js-api/src/chem.ts:694-695,714-715,844-847
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-249
+  kind: namespace
+  scope: hit-triage
+  value: |-
+    `grok.data.detectSemanticTypes(t: DataFrame): Promise<void>` (`js-api/src/data.ts:273-275`) must be `await`ed AFTER programmatically constructing or fetching a DataFrame and BEFORE `grok.shell.addTableView(t)` if you want semantic-typed cell renderers (Molecule, Macromolecule, Image, etc.) to engage on the resulting grid. The detection is server-side (`api.grok_DetectSemanticTypes(t.dart)`) and writes `quality`/semantic-type tags onto each column. `DataFrame` also exposes a no-arg instance form (`data-frame.ts:534-536`) that simply delegates to `grok.data.detectSemanticTypes(this.df)`. Frames returned by `grok.data.loadTable` and most query/file pipelines have already been detected; frames built with `DataFrame.create()`/`DataFrame.fromColumns()` have NOT.
+  derives_from:
+    - article: help/develop/domains/chem/hit_triage_system.md:32-34
+    - code: js-api/src/data.ts:273-275
+    - code: js-api/src/dataframe/data-frame.ts:534-536
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-251
+  kind: enum
+  scope: cheminformatics
+  value: |-
+    Storage-format taxonomy mapped to `DG.chem.Notation` (`js-api/src/chem.ts:51-59`). The enum's seven members and their roles are — `Smiles` (compact one-line graph string, used as the default column type), `CxSmiles` (extended SMILES with stereo/coord annotations), `Smarts` (substructure *query* language with logical atom/bond operators — patterns, not molecules), `CxSmarts` (extended SMARTS), `MolBlock` (MOL V2000 — atoms+bonds with 2D/3D coordinates and per-atom/bond properties; recognized by the `M  END` marker), `V3KMolBlock` (MOL V3000 for >999 atoms, enhanced stereo, R-group templates), `Unknown` (sentinel for "let the converter detect"). SDF is NOT a `Notation` value — it's a *file* of concatenated `M  END\n$$$$\n` MOL records (loaded as a `DataFrame` by `grok.data.loadTable`, one row per record). SMIRKS (reaction transformations) is not a `Notation` either; it rides on the SMARTS surface. The smaller `UNITS.Molecule` set (`smiles`, `molblock`, `v3Kmolblock`, `inchi`, `const.ts:248-255`) is what semantic-type renderers consume — note that `inchi` is a UNIT but NOT a `Notation`.
+  derives_from:
+    - article: help/develop/domains/chem/intro.md:34-58
+    - code: js-api/src/chem.ts:51-59,68
+    - code: js-api/src/const.ts:248-255
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-252
+  kind: namespace
+  scope: cheminformatics
+  value: |-
+    Cheminformatics applicability is bounded — `grok.chem.*` operates on small molecules and short peptides only. Datagrok separates the surface at the semantic-type layer (`js-api/src/const.ts:227-229`) — `SEMTYPE.MOLECULE = 'Molecule'` is the trigger for `grok.chem.*` (substructure, similarity, descriptors, R-group, MCS, `svgMol`/`canvasMol`). `SEMTYPE.MACROMOLECULE = 'Macromolecule'` (proteins, oligonucleotides, peptide chains, HELM-encoded sequences) is handled by the `Bio` package (`@datagrok-libraries/bio`); macromolecule columns are silently no-op for `grok.chem` calls — they pre-fail format detection. `SEMTYPE.MOLECULE3D = 'Molecule3D'` is for 3D pose strings (the AutoDock pose column, PDB/PDBQT). For peptides expressible as SMILES, the Bio package provides atomic-level expansion (`bio/src/widgets/to-atomic-level-widget.ts`) into a `Molecule` column before passing to `grok.chem`.
+  derives_from:
+    - article: help/develop/domains/chem/intro.md:108-117
+    - code: js-api/src/const.ts:227-241
+    - code: packages/Bio/src/widgets/to-atomic-level-widget.ts
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-253
+  kind: namespace
+  scope: cheminformatics
+  value: |-
+    Format detection + conversion API surface (`js-api/src/chem.ts:68,888-913`). All four are *synchronously* callable from JS (no `await`) but three of them route through the Chem package via `Func.find` and `funcCall.callSync()` — they only work when the Chem package is installed. `chem.isMolBlock(s)`: pure JS marker check (`s.includes('M  END')`); never throws. `chem.checkSmiles(s)`: calls `Chem:isSmiles` — returns `false` for empty/null/SMARTS/molblock and for malformed SMILES. `chem.isSmarts(s)`: calls `Chem:isSmarts`; returns `false` if the Chem function is missing (graceful degrade). `chem.convert(s, sourceFormat: Notation, targetFormat: Notation): string`: calls `Chem:convertMolNotation`; pass `Notation.Unknown` as source when the input format is uncertain and let RDKit detect. SMARTS → SMILES is meaningless and warns via `chem.smilesFromSmartsWarning()` (line 915-918, just a balloon — does not throw).
+  derives_from:
+    - article: help/develop/domains/chem/intro.md:46-58
+    - code: js-api/src/chem.ts:68,888-918
+    - code: packages/Bio/src/utils/monomer-lib/monomer-manager/monomer-manager.ts:1194-1200,1262-1270
+    - code: packages/Chembl/src/package.ts:137
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-254
+  kind: numeric
+  scope: cheminformatics
+  value: |-
+    Datagrok's de-facto SMILES-length guard before RDKit calls is 5000 characters (no central constant — the threshold is duplicated as a literal in each call site). Pattern: `if (!grok.chem.isMolBlock(molecule) && molecule?.length > 5000) return;` — molblocks are exempt because their atom count is encoded in headers, not in line length. Used by `Chem/src/widgets/scaffold-tree.ts:2770`, `Chem/src/widgets/pharmacophore-features.ts:76`, `Chem/src/widgets/structural-alerts.ts:27`, and `Chembl/src/package.ts:177`. `SureChembl/src/package.ts:193` declares the same threshold via a named constant `MAX_SMILES_LENGTH = 5000`. The threshold is a practical "is this still a small molecule" filter — peptide chains and macromolecule SMILES routinely exceed it and crash RDKit's parser.
+  derives_from:
+    - article: help/develop/domains/chem/intro.md:108-110
+    - code: packages/Chem/src/widgets/scaffold-tree.ts:2770
+    - code: packages/Chem/src/widgets/pharmacophore-features.ts:76
+    - code: packages/Chem/src/widgets/structural-alerts.ts:27
+    - code: packages/Chembl/src/package.ts:177
+    - code: packages/SureChembl/src/package.ts:193
+  contradicts: []
+  confidence: high
+
+# Define semantic-type detectors (data-shape detectors written in JS)

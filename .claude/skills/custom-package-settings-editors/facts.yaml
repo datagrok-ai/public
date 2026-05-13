@@ -1,0 +1,51 @@
+# Facts cited by the `custom-package-settings-editors` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 4
+
+- id: DG-FACT-118
+  kind: naming
+  scope: package-settings-editor
+  value: |-
+    A custom package-settings editor is a function annotated with role `packageSettingsEditor`. The role string is canonical — `FUNC_TYPES.PACKAGE_SETTINGS_EDITOR = 'packageSettingsEditor'` (`js-api/src/const.ts:394`), `SETTINGS_EDITOR = 'packageSettingsEditor'` enum in the codegen (`tools/bin/utils/func-generation.ts:95`), and the function-role descriptor lists `header: 'tags'`, `signature: 'packageSettingsEditor(): Widget'` (`js-api/src/const.ts:502-507`). Three annotation surfaces all work — `//meta.role: packageSettingsEditor` (header), `tags: ['packageSettingsEditor']` + `meta: {role: 'packageSettingsEditor'}` (decorator), or both together (HitTriage uses both — `packages/HitTriage/src/package.ts:350-358`). Skill output should prefer the decorator form on a `static` inside `PackageFunctions`; the codegen emits matching `package.g.ts`.
+  derives_from:
+    - article: help/develop/how-to/packages/custom-package-settings-editors.md:9-25
+    - code: js-api/src/const.ts:392-394,502-507
+    - code: tools/bin/utils/func-generation.ts:95
+    - code: packages/HitTriage/src/package.ts:350-358
+    - code: packages/HitTriage/src/package.g.ts:127-134
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-119
+  kind: namespace
+  scope: package-settings-editor
+  value: |-
+    The settings-editor function returns `DG.Widget` (or `Promise<DG.Widget>` for async). The widget is rendered inside the "Settings" pane of the context panel (right side) when the user opens the package's properties view. `DG.Widget` is the same base class used for dashboard widgets and tooltip widgets — subclass it (`extends DG.Widget`) and pass an `HTMLElement` to the `super(...)` constructor as the root node. The article's minimal example uses `super(ui.divText('...'))`; PowerPack uses `super(ui.div())` and appends to `this.root` (`packages/PowerPack/src/settings-editor.ts:11-40`); HitTriage builds inputs from `DG.Property[]` and pushes them into a `ui.div(inputs)` (`packages/HitTriage/src/packageSettingsEditor.ts:66-...`).
+  derives_from:
+    - article: help/develop/how-to/packages/custom-package-settings-editors.md:11,16-24
+    - code: packages/PowerPack/src/settings-editor.ts:11-40
+    - code: packages/HitTriage/src/packageSettingsEditor.ts:66
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-120
+  kind: namespace
+  scope: package-settings-editor
+  value: |-
+    Decorator surface `@grok.decorators.packageSettingsEditor(config?: FunctionOptions)` is exported as a method decorator (`js-api/src/decorators/functions.ts:310-316`) — the body is empty (it's a marker for the codegen plugin). Production code does NOT use this specialized decorator; HitTriage uses the generic `@grok.decorators.func({name, meta: {role: 'packageSettingsEditor'}, tags: ['packageSettingsEditor']})` (`packages/HitTriage/src/package.ts:350-353`). Skill output should match — use the generic `func` decorator form, since that's what production templates and what the codegen emits to `package.g.ts` correctly.
+  derives_from:
+    - code: js-api/src/decorators/functions.ts:310-316
+    - code: packages/HitTriage/src/package.ts:350-358
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-121
+  kind: enum
+  scope: package-settings-editor
+  value: |-
+    The settings-editor function complements `package.json`-declared properties — it does NOT replace them. The platform reads property metadata from `package.json` (or the codegen-defined `properties` block), then passes the resulting `DG.Property[]` to the editor. The editor's job is to provide a custom UI for those properties; the default UI is auto-generated. This is the same `DG.Property` array surfaced to the column-tooltip / function-input infrastructure — each entry has `.name`, `.category`, `.get(scope)`, `.set(scope, value)`. HitTriage filters by `.category` (`p.category === defaultSharingGroupCategoryName`) to render only a subset of properties (`packages/HitTriage/src/packageSettingsEditor.ts:67`). Persistence — call `prop.set(null, stringValue)` to stage; the platform writes to backend on the user's "save" click.
+  derives_from:
+    - article: help/develop/how-to/packages/custom-package-settings-editors.md:5-7
+    - code: packages/HitTriage/src/packageSettingsEditor.ts:66-95
+  contradicts: []
+  confidence: high

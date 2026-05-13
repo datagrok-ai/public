@@ -1,116 +1,129 @@
 ---
 name: cache-function-results
-description: Add caching to Datagrok functions using meta.cache annotations
-when-to-use: When user asks to cache function results, add memoization, or optimize repeated computations
-effort: low
+version: 0.1.0
+description: |
+  Make a Datagrok function (script, TypeScript wrapper, or SQL query)
+  return the previously-computed answer for identical inputs instead of
+  re-executing. For plugin authors whose functions are deterministic
+  but slow — remote model calls, RDKit similarity passes, parameterized
+  SQL queries hitting a stable backend. Produces a `meta.cache` /
+  `meta.cache.invalidateOn` annotation on the function header (or the
+  equivalent decorator field), plus the regenerated `package.g.ts`
+  the platform reads at startup. Connection-wide caching is a separate
+  switch on the connection JSON.
+  Use when asked to "remember a previous answer", "skip re-running an
+  expensive computation", or "stop re-paying for identical model calls".
+triggers:
+  - remember a previous answer
+  - skip re-running an expensive computation
+  - memoize results for identical inputs
+  - avoid repeating an expensive api call
+  - reuse last answer across users
+  - persist query results between sessions
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
 ---
 
-# Cache Function Results
+## Cited facts
 
-Help the user add caching to Datagrok functions to improve performance by storing results for repeated calls with the same inputs.
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
-## Usage
-```
-/cache-function-results [function-name] [--mode <client|server|all>]
-```
+# cache-function-results
 
-## Instructions
+## When to use
 
-### 1. Choose the cache mode
+A Datagrok function is called repeatedly with the same arguments (LLM
+completion, RDKit similarity, parameterized SQL) and you want the
+second call to return the first call's result without re-executing.
+The body must be effectively pure over the cache's lifetime — if the
+backing data mutates, pick a coarse `invalidateOn` or do not cache.
 
-Add `meta.cache` annotation to the function header:
+## Steps
 
-- `client` — stores results in the browser's IndexedDB
-- `server` — stores results on the Datagrok server
-- `all` — uses both client and server caches together
+1. **Pick a cache mode and add the header annotation.**
+   `//meta.cache: <mode>` accepts exactly `'client'`, `'server'`,
+   `'all'`, or `'true'` (legacy synonym for `all`; prefer explicit
+   forms) (`DG-FACT-340`).
+   ```python
+   #name: Example
+   #language: python
+   #meta.cache: client
+   #input: string table [Data table]
+   #output: int result
+   ```
 
-### 2. Add caching to a TypeScript/JavaScript function
+2. **Add `meta.cache.invalidateOn` with a 5-field cron if the answer
+   can change.** Without it the cache never auto-invalidates. Use the
+   dotted `meta.cache.invalidateOn` form — `meta.invalidateOn` without
+   `meta.cache:` is a validator error (`DG-FACT-342`).
+   ```text
+   //meta.cache.invalidateOn: 0 * * * *        # hourly
+   //meta.cache.invalidateOn: 0 0 * * *        # daily
+   //meta.cache.invalidateOn: 0 0 1 * *        # monthly
+   ```
 
-```typescript
-//name: Get Users
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
-//output: dataframe result
-export async function getUsers(): Promise<DG.DataFrame> {
-  // Expensive operation — results will be cached
-}
-```
+3. **For a TypeScript function, prefer the JSDoc header form.** Place
+   `//meta.cache:` / `//meta.cache.invalidateOn:` line comments
+   directly above the `export`ed function — `grok api` codegens them
+   to `package.g.ts` (`DG-FACT-465`):
+   ```typescript
+   //name: askRemoteModel
+   //input: string prompt
+   //output: string answer
+   //meta.cache: all
+   //meta.cache.invalidateOn: 0 0 * * *
+   export async function askRemoteModel(prompt: string): Promise<string> {
+     /* … */
+   }
+   ```
+   Equivalent decorator forms (use when the function already carries
+   `@grok.decorators.func` metadata): nested `meta: {cache,
+   cacheInvalidateOn}` or top-level `{cache, cacheInvalidateOn}`
+   (`DG-FACT-343`).
 
-### 3. Add caching to a Python/R script
+4. **Stay inside the client-cache budget if you pick `client` or
+   `all`.** IndexedDB-backed; ≤ 100 MB per function, ≤ 100 000 total
+   records, output must be scalar / `dataframe` / `graphics` /
+   `datetime`. Anything else must switch to `server` (`DG-FACT-341`).
 
-```python
-#name: Example
-#language: python
-#meta.cache: client
-#meta.cache.invalidateOn: 0 * * * *
-#input: string table [Data table]
-#output: int result
+5. **For SQL queries, cache at the connection level** via
+   `cacheResults`, `cacheSchema`, `cacheInvalidateSchedule` keys in
+   `connections/<name>.json` `parameters` (`DG-FACT-344`):
+   ```json
+   "parameters": { "server": "…", "port": 54327, "db": "test",
+                   "cacheResults": true,
+                   "cacheInvalidateSchedule": "0 1 * * *" }
+   ```
+   UI equivalent: right-click connection > **Edit…** > **Cache
+   Results** / **Invalidate On**.
 
-...
-```
+6. **(Optional) Clear the client cache at runtime** when a downstream
+   source changed and the cron is too coarse (`DG-FACT-345`):
+   ```typescript
+   await grok.functions.clientCache.clear();         // drop all
+   await grok.functions.clientCache.clear('myFn');   // one function id
+   ```
 
-### 4. Add caching to a SQL query
+## Common failure modes
 
-```sql
---name: ActivityDetails
---connection: Chembl
---meta.cache: all
---meta.cache.invalidateOn: 0 0 * * *
---input: string target = "CHEMBL1827"
-SELECT * FROM activity_details WHERE target_id = @target
---end
-```
+- **`unsupported cache variable: <mode>`** — value outside the allowed
+  set (`DG-FACT-340`).
+- **`Can't use invalidateOn without cache`** — header has the
+  invalidator but no `meta.cache:` line (`DG-FACT-342`).
+- **`unsupported invalidateOn: <expr>`** — use a 5-field unix cron, not
+  the 7-field Quartz form.
+- **Cached output never refreshes.** `meta.cache.invalidateOn` was
+  omitted. Add a cron or call `grok.functions.clientCache.clear(<id>)`.
+- **`meta.cache: client` silently degrades.** Output type is outside
+  IndexedDB eligibility — switch to `server` / `all` (`DG-FACT-341`).
+- **Connection-level cache on but queries still recompute.**
+  Platform-wide **Settings > Cache** switches still gate storage.
 
-### 5. Set cache invalidation
+## See also
 
-Use `meta.cache.invalidateOn` with a cron expression to control when cached results expire:
-
-| Cron expression | Meaning |
-|----------------|---------|
-| `0 * * * *` | Every hour |
-| `0 0 * * *` | Every day at midnight |
-| `0 0 * * 1` | Every Monday at midnight |
-| `0 0 1 * *` | First day of each month |
-
-If `meta.cache.invalidateOn` is not specified, the cache never expires automatically.
-
-### 6. Cache all queries under a connection
-
-Instead of annotating each query, enable caching at the connection level:
-
-**Via UI:** Right-click the connection > **Edit...** > check **Cache Results** and optionally fill **Invalidate On**.
-
-**Via connection JSON:**
-```json
-{
-  "name": "Northwind",
-  "parameters": {
-    "server": "db.example.com",
-    "port": 5432,
-    "db": "mydb",
-    "cacheResults": true,
-    "cacheSchema": false
-  }
-}
-```
-
-### 7. Client-side cache limits
-
-- Function output must be scalar (int, float, string) or dataframe, graphics, datetime
-- Maximum cache size per function: 100 MB
-- Maximum record count: 100,000
-- Users enable it in **Settings > Cache > Client-side cache**
-
-### 8. Server-side cache
-
-- No restrictions on size or parameter types
-- Users enable it in **Settings > Cache > Server-side cache**
-- Works together with client-side cache when mode is `all`
-
-## Behavior
-
-- Default to `meta.cache: all` unless the user specifies a preference.
-- Always suggest adding `meta.cache.invalidateOn` with an appropriate schedule — warn that without it the cache never refreshes.
-- Only recommend caching for functions that are immutable (same input produces same output).
-- Warn against caching database queries when the underlying data changes frequently.
-- For connection-level caching, mention that it applies to all queries under that connection.
+- Source: `help/develop/how-to/functions/cache-function-results.md`.
+- Knowledge: `DG-FACT-340`–`345`, `DG-FACT-465`.
+- Related skills: `access-data`, `python-functions`.

@@ -88,12 +88,12 @@ demog.meta.formulaLines.clear();
 
 let view = grok.shell.addTableView(demog);
 
-let plot = view.scatterPlot({
+let plot = view.addViewer(DG.Viewer.scatterPlot(view.dataFrame, {
   x: 'weight',
   y: 'height',
   showDataframeFormulaLines: true,    // Hide or show all lines stored in the dataframe.
   showViewerFormulaLines: true        // Hide or show all lines stored in the viewer.
-});
+}));
 
 // Add line to viewer:
 plot.meta.formulaLines.addLine({

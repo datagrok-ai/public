@@ -1,7 +1,7 @@
 ---
 name: create-interactive-scientific-application-spec
 description: Create a specification for an interactive scientific Datagrok application (simulation, ODE/PDE solver, computational tool)
-when-to-use: When user asks to plan, spec, or design a scientific app, simulation, or computation-heavy application. NOT for CRUD apps — use build-app instead.
+when-to-use: When user asks to plan, spec, or design a scientific app, simulation, or computation-heavy application. NOT for CRUD apps — use build-an-app instead.
 context: fork
 effort: high
 ---

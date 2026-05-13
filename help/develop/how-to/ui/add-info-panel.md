@@ -75,7 +75,7 @@ for the panel to be shown in the `condition` header parameter:
 # input: file file
 # output: bool hascats
 # meta.role: panel
-# condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endsWith("jpg") || file.name.endswith("jpeg"))
+# condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endsWith("jpg") || file.name.endsWith("jpeg"))
 
 import cv2
 
@@ -95,7 +95,7 @@ properly annotated to return a widget. A simplified example is shown below:
 
 ```javascript
 //name: Translation
-//meta.role: panel, widgets
+//meta.role: widgets,panel
 //input: file file
 //output: widget result
 //condition: isTextFile(file)
@@ -112,7 +112,7 @@ The following code demonstrates how to get the column that contains the value.
 
 ```javascript
 //name: get_column
-//meta.role: panel, widgets
+//meta.role: widgets,panel
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 export function valueWidget(value) {
@@ -262,7 +262,7 @@ clicks on a structure.
 #description: Predicts solubility by molecule descriptors ("Ipc", "MolWt", "NumValenceElectrons", "MolLogP", "LabuteASA", "TPSA", "HeavyAtomCount", "NumhAcceptors", "NumHDonors", "NumRotatableBonds", "RingCount")
 #language: grok
 #meta.role: panel
-#condition: smiles.semtype == "Molecule"
+#condition: smiles.semType == "Molecule"
 #input: dataframe table
 #input: column smiles {semtype: Molecule} [Column with molecules, in smiles format]
 #output: dataframe predictions {action: join(table)}

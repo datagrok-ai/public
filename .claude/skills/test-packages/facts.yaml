@@ -1,0 +1,95 @@
+# Facts cited by the `test-packages` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 8
+
+- id: DG-FACT-352
+  kind: namespace
+  scope: test-packages
+  value: |-
+    `awaitCheck(checkHandler: () => boolean, error?: string, wait?: number, interval?: number): Promise<any>` — polls `checkHandler()` every `interval` ms (default `50`) until it returns true OR `wait` ms (default `500`) elapses; on timeout rejects with `Error(error)` (default `'Timeout exceeded'`). Cleared via `clearInterval`/`clearTimeout` on either branch. Standard async-test idiom is to wait for a DOM node — e.g., `await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000)` (article line 59). The defaults are deceptive — 500ms is rarely enough; production callers pass an explicit `wait` (1000-30000 ms typical).
+  derives_from:
+    - article: help/develop/how-to/tests/test-packages.md:51-65
+    - code: libraries/test/src/test.ts:852-867
+    - code: libraries/utils/src/test.ts:852-867
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-353
+  kind: namespace
+  scope: test-packages
+  value: |-
+    `delay(ms: number): Promise<void>` — thin wrapper over `new Promise(r => setTimeout(r, ms))`. Use for fixed pauses that DON'T depend on a checkable condition (animations, debounce settle, transition completion). Prefer `awaitCheck` whenever the wait has an observable end state — `delay` is opaque to the runner and burns wall-clock unconditionally.
+  derives_from:
+    - article: help/develop/how-to/tests/test-packages.md:62
+    - code: libraries/test/src/test.ts:848-850
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-354
+  kind: namespace
+  scope: test-packages
+  value: |-
+    `expectExceptionAsync(action: () => Promise<void>, check?: (exception: any) => boolean): Promise<void>` — asserts that `action()` rejects. Without `check` any throw passes; with `check`, the thrown value is passed in and the function must return truthy. On no-throw: `Error('An exception is expected but not thrown')`. On wrong throw: `Error('An expected exception is thrown, but it does not satisfy the condition')`. There is NO synchronous counterpart — for sync code wrap in `async () => { syncCall() }`.
+  derives_from:
+    - article: help/develop/how-to/tests/test-packages.md:96-107
+    - code: libraries/test/src/test.ts:901-916
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-355
+  kind: namespace
+  scope: test-packages
+  value: |-
+    `testViewer(viewerName: string, df: DG.DataFrame, options?: {detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean, packageName?: string, awaitViewer?: (v: DG.Viewer) => Promise<void>}): Promise<void>` — full lifecycle harness for a Datagrok viewer. Executes FOUR phases sequentially: (1) open + close, (2) open + run selection/filter/current-row change + close (skipped when `readOnly: true`), (3) open + change options + save layout + close, (4) load layout. When `arbitraryDfTest !== false` (default true), it ALSO repeats phases on a small categorical fallback dataframe (`catDF` — `libraries/test/src/test.ts:918`) to catch viewers that hard-depend on the input shape. Requires the input `df` to have at least 3 rows (per JSDoc). `awaitViewer` is a custom Promise-returning hook called after each open — use it for viewers with async DOM rendering (e.g., wait for a specific selector via `awaitCheck`).
+  derives_from:
+    - article: help/develop/how-to/tests/test-packages.md:67-94
+    - code: libraries/test/src/test.ts:920-975
+    - code: libraries/test/src/test-viewer-utils.ts
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-356
+  kind: enum
+  scope: test-packages
+  value: |-
+    `grok test` CLI flags (full set from `tools/README.md:127-141`) — `--host=<alias>` (server from `.grok/config.yaml`; default = the config's default host), `--skip-build` (skip webpack build), `--skip-publish` (skip publish; runs against the already-deployed package version), `--csv` (write report as CSV in package folder), `--gui` (disable headless Chromium; required by `--debug`), `--debug` (pause at a breakpoint before each test; GUI mode only), `--record` (mp4 of run), `--report` (send results report), `--verbose` (print passed+skipped details), `--catchUnhandled` (catch unhandled exceptions during tests), `--category=<name>` (limit to one category), `--platform` (ApiTests-only — platform tests), `--core` (package + core + autotests). The runner FIRST builds and publishes, then runs — use `--skip-build --skip-publish` together when iterating against a known-good deployed package.
+  derives_from:
+    - article: help/develop/how-to/tests/test-packages.md:115-126
+    - code: tools/README.md:122-142
+    - code: tools/bin/commands/test.ts
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-357
+  kind: namespace
+  scope: test-packages
+  value: |-
+    Test Manager is the in-platform UI for running and reviewing package tests, packaged inside `DevTools`. Source: `packages/DevTools/src/package-testing.ts:70` (`class TestManager extends DG.ViewBase`). Top-menu entry: `Tools | Dev | Test Manager` (declared in `packages/DevTools/src/package.ts:71`). Deep-link URL format: `<host>/apps/DevTools/TestManager/<PackageName>/<CategoryName>/<TestName>` — Test Manager parses these segments from `window.location.pathname` (`package-testing.ts:97,130-133`) and pre-selects the corresponding node. The app prefix `/TestManager/` is the constant `APP_PREFIX` at `package-testing.ts:66`. Append `?run=true` to the URL to auto-run the selected node after navigation (`package-testing.ts:146-148`). Multiple ways to fire a test from the UI — right-click → Run, Enter key, ribbon-panel Run, context-panel Run, double-click on a leaf test, or `Run all` on the ribbon.
+  derives_from:
+    - article: help/develop/how-to/tests/test-packages.md:155-189
+    - code: packages/DevTools/src/package-testing.ts:66-150
+    - code: packages/DevTools/src/package.ts:70-76
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-358
+  kind: naming
+  scope: test-packages
+  value: |-
+    Platform-console syntax for running tests — `~` opens the console (or Windows → Console). Run a category — `<PackageName>:test(category="<CategoryName>")`. Run a single test — `<PackageName>:test(category="<CategoryName>", test="<TestName>")`. This invokes the same `//name: test` function declared in every `src/package-test.ts`, whose `category` and `test` inputs are `{optional: true}` strings (`tools/package-template/src/package-test.ts:6-7`). Example — `ApiTests:test(category="Layouts")` or `ApiTests:test(category="Layouts", test="ViewLayout.toJson()")`. The result DataFrame surfaces back into the console output.
+  derives_from:
+    - article: help/develop/how-to/tests/test-packages.md:199-216
+    - code: tools/package-template/src/package-test.ts:1-15
+    - code: packages/ApiTests/src/package-test.ts:67-81
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-359
+  kind: naming
+  scope: test-packages
+  value: |-
+    GitHub Actions CI test artifacts — every public package run produces a zip in the Action's Summary → Artifacts pane containing exactly three files: `test-console-output.log` (raw console, error messages, stack traces), `test-record.mp4` (full video of the headless browser execution — diagnostic gold for visual/flaky failures), `test-report.csv` (per-test row: pass/fail, duration, error). The workflow that produces them is `.github/workflows/packages.yml`; for each changed package it spins up a fresh Datagrok instance from the latest docker image, publishes the package, then runs `grok test`. The same workflow is manually triggerable via Actions → Packages → Run workflow with a space-separated package list and a target branch (publish-to-NPM happens only on `master`).
+  derives_from:
+    - article: help/develop/how-to/tests/test-packages.md:130-153,218-228
+  contradicts: []
+  confidence: medium

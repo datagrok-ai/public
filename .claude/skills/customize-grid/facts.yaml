@@ -1,0 +1,138 @@
+# Facts cited by the `customize-grid` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 12
+
+- id: DG-FACT-108
+  kind: namespace
+  scope: customize-grid
+  value: |-
+    Grid-only column properties — `format`, `width`, `categoryColors` — live on `GridColumn`, NOT on the underlying `Column`. Setters at `js-api/src/grid.ts:712-715` (`width: number`), `:723-724` (`format: string`), `:741-742` (`categoryColors: { [s: string]: number }`). Access via `view.grid.columns.byName(name)`, `view.grid.columns.byIndex(i)`, or the shortcut `view.grid.col(name)`. Each setter mutates one Grid only — assigning `gridColumn.categoryColors` does NOT affect other grids over the same DataFrame.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:32-34,150-152,166-170
+    - code: js-api/src/grid.ts:712-715,723-724,741-742
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-109
+  kind: namespace
+  scope: customize-grid
+  value: |-
+    `view.grid.col(name)` is a one-line convenience that delegates to `view.grid.columns.byName(name)` (`js-api/src/grid.ts:955-957`). Returns `GridColumn | null` — null when no grid column has that name (case-insensitive lookup is platform-side; the article notes "column names are not case-sensitive"). There is NO plural `view.grid.cols(...)` method; the plural form is `view.grid.columns` (the `GridColumnList`).
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:48,127,150
+    - code: js-api/src/grid.ts:836-838,955-957
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-110
+  kind: namespace
+  scope: customize-grid
+  value: |-
+    Column ordering exists at TWO levels with different blast radius. `df.columns.setOrder([names])` (`js-api/src/dataframe/column-list.ts:121-126`) reorders columns inside the DataFrame — affects every TableView/Grid built over that frame and the on-disk projection. `view.grid.columns.setOrder([names])` (`js-api/src/grid.ts:840-845`) reorders only the visual layout of one Grid, leaves the DataFrame's column order untouched. Article uses the Grid-level form. Pick the level that matches the desired scope; do not mix them in the same code path.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:48
+    - code: js-api/src/grid.ts:840-845
+    - code: js-api/src/dataframe/column-list.ts:121-126
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-111
+  kind: namespace
+  scope: customize-grid
+  value: |-
+    `grid.setRowOrder(indexes: number[])` (`js-api/src/grid.ts:1042-1048`) DISPLAYS ONLY the listed indexes — non-listed rows are hidden from the grid. `grid.sortIndexes((a, b) => …)` (`js-api/src/grid.ts:1027-1035`) preserves all rows: it builds a full identity `Int32Array` of size `table.rowCount`, sorts that array via the comparer, then calls `setRowOrder` with the result. Skill authors picking "I want to keep all rows but reorder them" must use `sortIndexes`; "I want to filter to a subset, in this order" is `setRowOrder`. Confused use of `setRowOrder` with a partial index list silently drops rows from view.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:55-74
+    - code: js-api/src/grid.ts:1027-1048
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-112
+  kind: enum
+  scope: customize-grid
+  value: |-
+    Datagrok `Color` integers are 4-byte ARGB with alpha in the high byte (`js-api/src/color.ts:24` JSDoc — "Returns ARGB-formatted integer"). Constants — `DG.Color.red = 0xFFFF0000`, `DG.Color.green = 0xFF00FF00`, `DG.Color.blue = 0xFF0000FF`, `DG.Color.white = 0xFFFFFFFF`, `DG.Color.black = 0xFF000000`, `DG.Color.orange = 0xFFFFA500` (`js-api/src/color.ts:141-183`). Conversion helpers — `DG.Color.fromHtml('#ff0000') → 0xFFFF0000`, `DG.Color.toHtml(0xFFFF0000) → 'rgb(255,0,0)'` (`js-api/src/color.ts:61-64`). Skill output should prefer the named constants (or `fromHtml`) over literal hex to avoid the byte-order trap.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:166-170,189-190
+    - code: js-api/src/color.ts:24,61-64,141-183
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-113
+  kind: enum
+  scope: customize-grid
+  value: |-
+    `COLOR_CODING_TYPE` enum has exactly four values — `'Off'`, `'Categorical'`, `'Conditional'`, `'Linear'` (`js-api/src/const.ts:797-802`). `column.meta.colors.getType()` returns one of these strings (`js-api/src/dataframe/column-helpers.ts:55-61`). Defaults — `'Off'` when no `COLOR_CODING_TYPE` tag is set, except a legacy fallback returns `'Categorical'` when the `COLOR_CODING_CATEGORICAL` tag exists without a type tag. Article-level constraint — numerical columns can use Off/Linear/Conditional, categorical columns Off/Categorical, datetime columns Off/Linear.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:177-181,215-217
+    - code: js-api/src/const.ts:797-802
+    - code: js-api/src/dataframe/column-helpers.ts:55-61
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-114
+  kind: namespace
+  scope: customize-grid
+  value: |-
+    `column.meta.colors` returns a `ColumnColorHelper` (`js-api/src/dataframe/column-helpers.ts:48-135`). Methods — `setLinear(range?: number[], options?: {min?, max?, belowMinColor?, aboveMaxColor?})`, `setLinearAbsolute(valueColors, options?)`, `setCategorical(map?, options?: {fallbackColor, matchType?})`, `setConditional(rules?: {[range: string]: number | string})`, `setDisabled()`, `getType()`, `getColor(i)`, `getColors()`. EVERY `set*` call sets the `COLOR_CODING_TYPE` tag implicitly — skill code does NOT need to write the tag manually. Calling a setter with no/null arg writes the type tag only and the platform applies default colors (e.g. `setLinear()` → linear with default palette; `setCategorical()` → auto-categorical). `setConditional` auto-converts numeric color values to HTML strings via `DG.Color.toHtml` (`column-helpers.ts:117-119`).
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:188-222
+    - code: js-api/src/dataframe/column-helpers.ts:48-135
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-115
+  kind: namespace
+  scope: customize-grid
+  value: |-
+    `column.valueComparer = (a, b) => …` is a setter on the underlying `Column` (`js-api/src/dataframe/column.ts:417-418`), NOT on `GridColumn`. Once set, the comparer is used by EVERY visualization, aggregation, group-by, and chart category ordering — the article notes "Once a value comparer is defined for a column, it gets used by all visualizations, and for other purposes, such as aggregation". `column.getSortedOrder()` (`js-api/src/dataframe/column.ts:412-413`) returns `Int32Array` of row indexes sorted by the comparer (or by the column's natural value order if no comparer is set). Pass to `grid.setRowOrder` to apply the sort to a grid.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:91-114
+    - code: js-api/src/dataframe/column.ts:412-418
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-116
+  kind: namespace
+  scope: customize-grid
+  value: |-
+    `grid.sort(columns, orders?)` (`js-api/src/grid.ts:1019-1025`) accepts `string[] | Column[]` for columns and an optional same-length `boolean[]` for direction (`true` ASC, `false` DESC). Default — ASC for every column when `orders` is null. The two arrays must align — `grid.sort(['disease', 'weight'], [true, false])` sorts `disease` ASC and `weight` DESC. Calling `grid.sort([], [])` clears the active sort (production reference — `packages/Chem/src/package.ts:2001`). The method returns `Grid` for chaining.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:80-89
+    - code: js-api/src/grid.ts:1019-1025
+    - code: packages/Chem/src/package.ts:2001
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-117
+  kind: namespace
+  scope: customize-grid
+  value: |-
+    `grid.columns.rowHeader` is a getter that returns `byIndex(0)` (`js-api/src/grid.ts:820-824`). The row header IS the first GridColumn — index 0. Setting `view.grid.columns.rowHeader.width = 100` is identical to `view.grid.columns.byIndex(0).width = 100`. The first DATAFRAME column lives at GridColumn index 1. Skill authors should treat `rowHeader` as the canonical name when targeting the index column (clearer intent than `byIndex(0)`).
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:152-156
+    - code: js-api/src/grid.ts:820-824
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-429
+  kind: threshold
+  scope: customize-grid
+  value: |-
+    The `format` tag applies ONLY to numeric and datetime columns. String / boolean / other types silently ignore the tag — `gridColumn.format = 'scientific'` on a string column is a no-op (not an error). Underlying cell values are never mutated by `format`; sorting and filtering use the raw value, so two grids with different `format` strings sort identically. Setter exists on both `GridColumn` (`grid.ts:723-724`, per-grid override) and on the dataframe `Column.meta.format` (`column-helpers.ts:221-223`, propagates to every view); pick by scope.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:38-40
+    - code: js-api/src/grid.ts:723-724
+    - code: js-api/src/dataframe/column-helpers.ts:221-223
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-430
+  kind: naming
+  scope: customize-grid
+  value: |-
+    Renaming a dataframe column to a name with a leading tilde — `data.columns.byName('age').name = '~age'` — hides it from every Grid/TableView built from that DataFrame. The platform treats the `~` prefix as a "hidden" marker at the dataframe level (different blast radius from `grid.columns.setVisible([...])`, which only affects one grid). To re-show, you must rename back; `grid.columns.setVisible(['~age'])` does NOT undo the rename because the column's actual name now contains the tilde. The rename affects all derived views, including downstream layouts and saved projects.
+  derives_from:
+    - article: help/develop/how-to/grid/customize-grid.md:130-140
+  contradicts: []
+  confidence: high

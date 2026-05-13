@@ -21,12 +21,12 @@ Most of the methods are asynchronous. Behind the scenes they either use a
 server-side assist, or a browser's separate Web Worker to call [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h) functions.
 
 ```
-searchSubstructure(column, pattern, settings = { substructLibrary: true });
+searchSubstructure(column, pattern, settings = { molBlockFailover: '' });
 getSimilarities(column, molecule, settings = { /* reserved */ })
 findSimilar(column, molecule, settings = { limit: ..., cutoff: ... })
-diversitySearch(column, metric = METRIC_TANIMOTO, limit = 10);
+diversitySearch(column, settings = { limit: Number.MAX_VALUE });
 rGroup(table, column, core);
-mcs(column);
+mcs(table, column, returnSmarts = false, exactAtomSearch = true, exactBondSearch = true);
 descriptors(table, column, descriptors);
 ```
 
@@ -35,7 +35,7 @@ use [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minili
 
 ### Substructure search
 
-`searchSubstructure(column, pattern = null, settings = { substructLibrary: true })`
+`searchSubstructure(column, pattern = '', settings = { molBlockFailover: '' })`
 
 This function performs substructure search using RDKit JS. It returns a [BitSet](../../packages/js-api.md#bitset).
 If the i-th element in the input `column` has the pattern's substructure, the i-th bit is set to 1; otherwise, it is set to 0.
@@ -79,10 +79,10 @@ columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/simila
 
 #### Scoring each molecule against a given molecule
 
-`getSimilarities(column, molecule = null, settings = { sorted: false });`
+`getSimilarities(column, molecule = '', settings = {});`
 
-Produces a Datagrok [`DataFrame`](https://datagrok.ai/api/js/dg/classes/DataFrame) with a
-single [`Column`](https://datagrok.ai/api/js/dg/classes/Column), where the i-th element contains a similarity score for
+Produces a [`Column`](https://datagrok.ai/api/js/dg/classes/Column) (or `null` when `molecule` is an empty string,
+used for cache priming), where the i-th element contains a similarity score for
 the i-th element of the
 input `Column` ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores)).
 

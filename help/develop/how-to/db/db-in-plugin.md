@@ -58,14 +58,14 @@ GRANT ALL ON TABLE compounds.list to :LOGIN;
 
 ```sql
 --name: insertElement
---connection: Compounds
+--connection: CompoundRegistrator:compounds
 --input: string smiles
 insert into compounds.list (id, smiles) values 
 (floor(random() * 1000 + 1)::int, @smiles);
 --end
 
 --name: getElements
---connection: Compounds
+--connection: CompoundRegistrator:compounds
 SELECT id, smiles from compounds.list;
 --end
 ```

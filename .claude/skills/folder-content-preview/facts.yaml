@@ -1,0 +1,88 @@
+# Facts cited by the `folder-content-preview` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 7
+
+- id: DG-FACT-088
+  kind: enum
+  scope: folder-content-preview
+  value: |-
+    The canonical role string for a custom folder content preview is `folderViewer` (camelCase). Defined as `FUNC_TYPES.FOLDER_VIEWER = 'folderViewer'` in `js-api/src/const.ts:419` and mirrored in `tools/bin/utils/const.ts:77`. The codegen entry in `tools/bin/utils/func-generation.ts:420-426` emits the same string.
+  derives_from:
+    - article: help/develop/how-to/files/folder-content-preview.md:5,14
+    - code: js-api/src/const.ts:419
+    - code: tools/bin/utils/const.ts:77
+    - code: tools/bin/utils/func-generation.ts:102,420-426
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-089
+  kind: namespace
+  scope: folder-content-preview
+  value: |-
+    The folderViewer function signature is `folderViewer(folder: File, files: list<file>): Widget` — declared in the function-role descriptor at `js-api/src/const.ts:593-597`. The codegen contract (`tools/bin/utils/func-generation.ts:420-426`) declares `inputs: [{name: 'folder', type: 'file'}, {name: 'files', type: 'list<file>'}]` and `outputs: [{name: 'result', type: 'widget'}]`.
+  derives_from:
+    - article: help/develop/how-to/files/folder-content-preview.md:5-7,17-19
+    - code: js-api/src/const.ts:593-597
+    - code: tools/bin/utils/func-generation.ts:420-426
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-090
+  kind: namespace
+  scope: folder-content-preview
+  value: |-
+    The decorator form is `@grok.decorators.folderViewer(config?: FunctionOptions)` from `datagrok-api/grok` (`js-api/src/decorators/functions.ts:294-300`). `config` is OPTIONAL (unlike `fileHandler` which requires it) — there is NO specialized `FolderViewerOptions` interface. Skill authors typically pass either nothing or `{name}`/`{outputs}` overrides.
+  derives_from:
+    - code: js-api/src/decorators/functions.ts:294-300
+    - code: packages/ClinicalCase/src/package.ts:200-202
+    - code: packages/Plates/src/package.ts:48
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-091
+  kind: namespace
+  scope: folder-content-preview
+  value: |-
+    A folderViewer returns `DG.Widget | undefined` (or `Promise<...>`). Returning `undefined` (or omitting the return) signals "no preview applies" — the platform falls back to the default folder view. This is the article's stated contract ("returns a widget if a custom preview could be provided, or undefined otherwise") and matches both production examples — `clinicalCaseFolderLauncher` falls through with no return when no `dm.csv` is found; `platesFolderPreview` returns `undefined` when the folder name does not include `'plate'`.
+  derives_from:
+    - article: help/develop/how-to/files/folder-content-preview.md:5-7,19-25
+    - code: packages/ClinicalCase/src/package.ts:203-228
+    - code: packages/Plates/src/package.ts:49-54
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-092
+  kind: namespace
+  scope: folder-content-preview
+  value: |-
+    Wrap an `HTMLElement` into a returnable widget via `DG.Widget.fromRoot(root: HTMLElement): Widget` (`js-api/src/widgets/base.ts:374-376`). The article shows `DG.Widget.fromRoot(ui.div([ui.button('START', ...)]))`. ClinicalCase uses the same pattern (`return DG.Widget.fromRoot(ui.div([ui.panel([...]), ui.button('Run ClinicalCase', async () => {...})]))`).
+  derives_from:
+    - article: help/develop/how-to/files/folder-content-preview.md:21-23
+    - code: js-api/src/widgets/base.ts:374-376
+    - code: packages/ClinicalCase/src/package.ts:211-226
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-093
+  kind: namespace
+  scope: folder-content-preview
+  value: |-
+    The `folder` input is a `DG.FileInfo` for the folder itself — use `folder.name`, `folder.fullPath` (e.g. to read child files via `grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`)`). The `files` input is `DG.FileInfo[]` listing the folder's entries — iterate to detect sentinel filenames (e.g. `files.some((f) => f.fileName.toLowerCase() === 'dm.csv')`). The article example detects `dm.csv` via the `files` scan (`folder-content-preview.md:20`). ClinicalCase scans `files` AND uses `folder.fullPath` for reads; Plates scans `folder.name?.toLowerCase()` only.
+  derives_from:
+    - article: help/develop/how-to/files/folder-content-preview.md:17-20
+    - code: packages/ClinicalCase/src/package.ts:204-220
+    - code: packages/Plates/src/package.ts:49-53
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-094
+  kind: namespace
+  scope: folder-content-preview
+  value: |-
+    Widening the output type — use `outputs: [{name: 'result', type: 'dynamic'}]` in the decorator config when the function returns `DG.Widget | DG.ViewBase | undefined` (instead of just `Widget`). The codegen default is `{name: 'result', type: 'widget'}` (`tools/bin/utils/func-generation.ts:424`); Plates overrides it (`@grok.decorators.folderViewer({outputs: [{'name': 'result', 'type': 'dynamic'}]})` at `packages/Plates/src/package.ts:48`) so its preview can return either a `Widget` or a `ViewBase`. The auto-generated `package.g.ts` reflects this — `//output: dynamic result` instead of `//output: widget result`.
+  derives_from:
+    - code: packages/Plates/src/package.ts:48-49
+    - code: packages/Plates/src/package.g.ts:17-22
+    - code: tools/bin/utils/func-generation.ts:420-426
+  contradicts: []
+  confidence: high

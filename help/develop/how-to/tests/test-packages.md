@@ -8,8 +8,8 @@ confirm that new changes haven't affected previous functionality. Each package s
 responsible for either UI or logic underneath. And Datagrok provides various capabilities and tools to conveniently run
 those tests any time during development.
 
-The process of writing and executing tests can be significantly easier with the help of Datagrok library Utils,
-which contains a powerful [set of testing utilities](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts).
+The process of writing and executing tests can be significantly easier with the help of Datagrok test library,
+which contains a powerful [set of testing utilities](https://github.com/datagrok-ai/public/blob/master/libraries/test/src/test.ts).
 From basic assertions to asynchronous handling and viewer testing, these utilities cover a wide range of testing scenarios.
 
 <b>Writing Tests</b>
@@ -66,7 +66,7 @@ v.close();
 
 <b>Testing Viewers</b>
 
-The [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L612) utility is a valuable tool for testing Datagrok viewers. It facilitates thorough testing of viewer functionality, including dataframe transformation and serialization. By providing a DataFrame as input, testViewer allows you to examine how the viewer responds to various data scenarios, handling dataframe modifications such as row selection, data filtering, and column value changes. Furthermore, the utility validates viewer serialization by saving the viewer into a layout and loading it back, ensuring that viewers can accurately preserve their state.
+The [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/test/src/test.ts#L939) utility is a valuable tool for testing Datagrok viewers. It facilitates thorough testing of viewer functionality, including dataframe transformation and serialization. By providing a DataFrame as input, testViewer allows you to examine how the viewer responds to various data scenarios, handling dataframe modifications such as row selection, data filtering, and column value changes. Furthermore, the utility validates viewer serialization by saving the viewer into a layout and loading it back, ensuring that viewers can accurately preserve their state.
 
 <details>
 <summary>Example</summary>
@@ -78,7 +78,7 @@ await testViewer('Chem Similarity Search', smiles, {detectSemanticTypes: true});
 
 </details>
 
-To test viewers with asynchronous rendering pass optional `awaitViewer` parameter to [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L614) function. `awaitViewer` is a function which takes `DG.Viewer` as an argument and waits for it to be created and rendered. Create any custom behavior to ensure viewer initialization is completed. For instance, wait for some event to be fired or some element to appear in DOM.
+To test viewers with asynchronous rendering pass optional `awaitViewer` parameter to [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/test/src/test.ts#L939) function. `awaitViewer` is a function which takes `DG.Viewer` as an argument and waits for it to be created and rendered. Create any custom behavior to ensure viewer initialization is completed. For instance, wait for some event to be fired or some element to appear in DOM.
 
 <details>
 <summary>Example</summary>
@@ -95,7 +95,7 @@ await testViewer('Chem Diversity Search', smiles, {detectSemanticTypes: true, aw
 
 <b>Handling Exceptions</b>
 
-Ensure proper exception handling by using the [expectExceptionAsync](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L425) function. It allows you to test that specific actions throw the expected exceptions and offers the flexibility to perform deeper inspections of the exceptions when needed.
+Ensure proper exception handling by using the [expectExceptionAsync](https://github.com/datagrok-ai/public/blob/master/libraries/test/src/test.ts#L909) function. It allows you to test that specific actions throw the expected exceptions and offers the flexibility to perform deeper inspections of the exceptions when needed.
 
 <details>
 <summary>Example</summary>

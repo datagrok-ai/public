@@ -19,7 +19,7 @@ The first step is to initialize a `DemoScript`:
 
 ```typescript
 export function demo() {
-  const demoScript = new DemoScript('Demo', 'Demo description', true, {autoStartFirstStep: true, path: 'Curves/Demo'});
+  const demoScript = new DemoScript('Demo', 'Demo description', false, {autoStartFirstStep: true, path: 'Curves/Demo'});
   // ...
 }
 ```
@@ -68,9 +68,9 @@ import {demo} from './demo-app/demo-script';
 //name: Demo script
 //description: Illustrates the work of the demo script 
 //meta.demoPath: Viewers | Demo Script
-//meta.isDemoScript: True
+//meta.isDemoScript: true
 export function demoScript() {
-  return new demo();
+  return demo();
 }
 ```
 

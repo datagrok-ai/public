@@ -1,0 +1,262 @@
+# Facts cited by the `db-in-plugin` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 12
+
+- id: DG-FACT-403
+  kind: naming
+  scope: access-data
+  value: |
+    Post-processing script + layout are linked to a query by EXACT basename
+    match: `queries/foo.sql` (the query), `queries/foo.js` (post-process
+    script — accepts the result DataFrame as input), `queries/foo.layout`
+    (layout applied to the result). Hard invariant: a file that needs an
+    associated `.js` or `.layout` MUST contain exactly ONE query — the
+    association is by filename, not by query name. Multi-query files break
+    the binding silently.
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:189-213
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-419
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    A plugin-owned Postgres database is declared purely by directory shape:
+    `<PackageRoot>/databases/<Name>/*.sql`. The directory name `<Name>` is a
+    single source of truth that simultaneously becomes (a) the Postgres
+    SCHEMA name used inside SQL bodies (`<Name>.<table>`), (b) the
+    connection name auto-registered as `<Pkg>:<Name>`, (c) the namespace
+    prefix any query file uses in its `--connection:` header. NO
+    `connections/*.json` is required — the platform installer scans
+    `databases/` at install/release and registers the connection itself.
+    Production canonical names are lowercase short identifiers
+    (`hitdesign`, `plts`, `moltrack`, `todo`, `biologics`, `mdb1`,
+    `ua_tickets`); none use mixed case or hyphens.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:14-22
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql
+    - code: packages/Plates/databases/plts/0000_init.sql
+    - code: packages/MolTrack/databases/moltrack/0000.sql
+    - code: packages/HitTriage/queries/locks.sql:4
+    - code: packages/Plates/queries/plates-crud.sql:2
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-420
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    The plugin's data lives in the platform's SHARED Postgres instance
+    (the same Postgres Datagrok uses for its own metadata), isolated only
+    by SCHEMA. This is the key distinction from [[db-in-docker]] (own
+    container, own RDBMS). Consequences: (1) you cannot pick the DBMS
+    version or install non-default extensions; (2) you cannot grant
+    DBA-level privileges; (3) you do not pay extra cluster resources for
+    the container; (4) the platform handles credentials, lifecycle,
+    sharing, and migrations automatically. Article wording "the same
+    database as Datagrok uses for storing metadata" is literal.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:5-10
+    - article: help/develop/how-to/db/db-in-docker.md:5-10
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-421
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Migration files apply in lexicographical filename order. Production
+    canonical: 4-digit zero-padded prefix + underscore + descriptor —
+    `0000_init.sql`, `0001_add_optional_column.sql`. 3-digit prefixes are
+    also seen (`NodeJSDemo/databases/todo/000_init.sql`,
+    `UsageAnalysis/databases/ua_tickets/000_init.sql`) and work
+    identically — but mixing widths within one directory sorts wrong
+    (`9_x.sql` > `10_x.sql`). Prefix presence is the contract; the
+    descriptor after `_` is free-form. MolTrack uses `0000.sql` /
+    `0001.sql` with no descriptor — also valid.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:28-30
+    - code: packages/Biologics/databases/biologics/ (0000-0004)
+    - code: packages/NodeJSDemo/databases/todo/000_init.sql
+    - code: packages/MolTrack/databases/moltrack/0000.sql
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-422
+  kind: enum
+  scope: db-in-plugin
+  value: |
+    Forward-only migration discipline. The article states bluntly: "you
+    can add new columns but cannot make updates that are incompatible
+    with the previous configuration" and "There is no rollback
+    functionality." In practice this means: PERMITTED — `CREATE TABLE`,
+    `CREATE INDEX`, `ADD COLUMN [IF NOT EXISTS]`, `ALTER TABLE ... ADD
+    CONSTRAINT`, additive `INSERT` of seed rows; AVOID — `DROP TABLE`,
+    `DROP COLUMN`, `ALTER COLUMN <type>` to an incompatible type,
+    `RENAME`. Edge case in production: MolTrack 0001.sql does
+    `DROP CONSTRAINT ... ADD CONSTRAINT` on a CHECK (broadening allowed
+    values from 5 to 6) — that's a backward-compatible constraint
+    replacement, not a schema break. Editing an already-published
+    migration silently desyncs across users (the platform tracks by
+    filename, not content).
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:25-37
+    - code: packages/HitTriage/databases/hitdesign/0001_dict.sql
+    - code: packages/Biologics/databases/biologics/0001_init.sql
+    - code: packages/MolTrack/databases/moltrack/0001.sql
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-423
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    `:LOGIN` is a deploy-time substitution token, NOT standard SQL. The
+    platform's migration runner replaces `:LOGIN` with the runtime
+    connection user before executing each migration. Required canonical
+    pattern at the END of `0000_init.sql`:
+      GRANT ALL PRIVILEGES ON ALL TABLES   IN SCHEMA <name> TO :LOGIN;
+      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA <name> TO :LOGIN;
+    Often preceded by `GRANT ALL PRIVILEGES ON SCHEMA <name> TO
+    CURRENT_USER;` (the migration-time owner). `CURRENT_USER` and
+    `:LOGIN` are NOT interchangeable — `CURRENT_USER` is the user
+    running the migration (an admin/owner), `:LOGIN` is the user
+    running queries at runtime. Omitting the `:LOGIN` GRANT means
+    queries hit "permission denied" on first execution. Frequency in
+    production: 16 occurrences of `:LOGIN` vs 4 of `CURRENT_USER`
+    across all canonical `databases/*` SQL files.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:53
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:18-20
+    - code: packages/Plates/databases/plts/0000_init.sql:188-191
+    - code: packages/MolTrack/databases/moltrack/0000.sql:277-279
+    - code: packages/Biologics/databases/biologics/0000_init.sql (tail)
+    - code: packages/monomerDB/databases/mdb1/0000_init.sql (tail)
+  contradicts:
+    - DG-FACT-DRIFT-DBPLUGIN-002
+  confidence: high
+
+- id: DG-FACT-424
+  kind: enum
+  scope: db-in-plugin
+  value: |
+    A migration applies only when the package is published with
+    `grok publish --release`. Debug-mode publishes (`grok publish` with no
+    flag, per FACT-334) deploy a per-user version visible only to the
+    publisher — they do NOT run the migration platform-wide. Practical
+    consequence: while iterating on schema in dev, each new SQL file
+    must be tested via a release-mode publish, and reverting is not
+    possible (FACT-422). Implication for CI/CD: never auto-publish
+    `databases/` changes without intent — a stale migration cannot be
+    rolled back.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:31-37
+    - code: tools/bin/commands/publish.ts:651-654,712
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-425
+  kind: namespace
+  scope: db-in-plugin
+  value: |
+    Queries against a plugin DB use the same dispatcher as any other
+    Datagrok query (`grok.data.query(...)`, FACT-404). Header convention
+    in production: `--connection: <Pkg>:<DirName>` (fully qualified) +
+    `--input: <type> <name>` for each parameter + `@name` in the SQL
+    body. From JS: `await grok.data.query('<Pkg>:<QueryName>', {param:
+    value})`. The plugin DB is indistinguishable from any other Postgres
+    connection at call time — no JS-API surface specific to plugin DBs
+    exists. Query files (`queries/<basename>.sql`) live in the standard
+    `queries/` directory, NOT under `databases/`; the basename-binding
+    rules of FACT-403 (post-process `.js`, `.layout`) apply normally.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:18-22,59-71
+    - code: packages/HitTriage/queries/locks.sql:1-15
+    - code: packages/Plates/queries/plates-crud.sql:1-10
+    - code: packages/Biologics/queries/demo.sql:1-10
+    - code: js-api/src/data.ts:255-262
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-001
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article says "compounds is the name of the PostgreSQL database"
+    (`db-in-plugin.md:56`). This is terminologically wrong — `<Name>` is
+    a Postgres SCHEMA inside the platform's single shared database, not
+    a standalone Postgres database. The platform's metadata Postgres has
+    ONE actual database; every plugin DB lives there as a schema. The
+    article's own SQL example proves it — `create table compounds.list`
+    uses schema-qualified table notation, which only makes sense if
+    `compounds` is a schema. Skills must use "schema" wording to avoid
+    confusing readers familiar with Postgres terminology.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:48,56
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:2
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-002
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article's worked example (`db-in-plugin.md:47-54`) ends with a
+    single-table GRANT — `GRANT ALL ON TABLE compounds.list to :LOGIN;`
+    — and no schema/sequence grants. This works ONLY for that one
+    hand-rolled `int primary key` table. Production canonical (FACT-423)
+    is schema-wide:
+      GRANT ALL PRIVILEGES ON ALL TABLES   IN SCHEMA <name> TO :LOGIN;
+      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA <name> TO :LOGIN;
+    The single-table form silently fails to cover SERIAL-induced
+    sequences (which any `id SERIAL PRIMARY KEY` table needs) and
+    leaves future tables in the same schema without grants. Skills
+    must emit the schema-wide form even for the smallest example.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:48-54
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:18-20
+    - code: packages/Plates/databases/plts/0000_init.sql:188-191
+    - code: packages/MolTrack/databases/moltrack/0000.sql:277-279
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-003
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article's worked example assigns IDs as `(floor(random() * 1000 +
+    1)::int, @smiles)` (`db-in-plugin.md:64`). This collides with
+    birthday-paradox probability after ~37 inserts (sqrt(1000)), and is
+    guaranteed to collide on the PRIMARY KEY past ~1000 rows. Production
+    canonical is `id SERIAL PRIMARY KEY` (every observed example —
+    HitTriage, Plates, MolTrack, NodeJSDemo, Biologics). The article's
+    pattern is a self-defeating demo; skills must NOT propagate it.
+    SERIAL requires the sequences GRANT (FACT-423), which is the
+    second-order reason DRIFT-002 above matters.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md:47-64
+    - code: packages/HitTriage/databases/hitdesign/0001_dict.sql:3
+    - code: packages/Plates/databases/plts/0000_init.sql:5,13,38
+    - code: packages/NodeJSDemo/databases/todo/000_init.sql:2
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBPLUGIN-004
+  kind: naming
+  scope: db-in-plugin
+  value: |
+    Article does not document what happens if an already-applied
+    migration file is edited or renamed post-release — the platform
+    tracks applied migrations by filename, so editing a published file
+    produces silent drift (publisher sees the new SQL, other users keep
+    the old applied state). Article also omits `:LOGIN` token semantics
+    (substitution at deploy) and the `CURRENT_USER` vs `:LOGIN`
+    distinction, even though every production migration uses both.
+    Skills must teach both points explicitly because the article's
+    example happens to work without them.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-plugin.md (full)
+    - code: packages/HitTriage/databases/hitdesign/0000_init.sql:18-20
+  contradicts: []
+  confidence: medium

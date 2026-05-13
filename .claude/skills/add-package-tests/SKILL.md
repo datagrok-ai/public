@@ -1,134 +1,146 @@
 ---
 name: add-package-tests
-description: Add unit tests to a Datagrok package
-when-to-use: When user asks to add tests, create test files, or set up testing for a package
-effort: high
-argument-hint: "[package-path]"
+version: 0.1.0
+description: |
+  Wire the Datagrok test harness into a package so unit specs and
+  function-level `//test:` assertions are discoverable by `grok test`,
+  the platform's Test Manager, and the console `<Package>:test(...)`
+  call. For plugin authors who need an automated check suite CI can
+  run on every PR — basic smoke plus a few integration scenarios.
+  Produces `src/package-test.ts`, one `src/tests/<topic>-tests.ts`
+  per category, and optional `//test:` lines on exported functions.
+  Use when asked to "set up an automated check suite for my plugin",
+  "wire CI checks for my package", "where do package tests live so
+  the platform finds them", or "auto-verify a function with an inline
+  assertion".
+triggers:
+  - automated check suite for plugin
+  - wire ci checks for package
+  - where do package tests live
+  - inline assertion on a function
+  - run my plugin through test manager
+  - smoke test a datagrok package
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
 ---
 
-# Add Package Tests
+## Cited facts
 
-Add unit tests to a Datagrok package using the platform's custom test framework.
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
-## Usage
+# add-package-tests
 
-```
-/add-package-tests [package-path]
-```
+## When to use
 
-## Instructions
+Your Datagrok package has no automated checks yet, or has only ad-hoc
+scripts. You want a category/test scaffold the platform discovers,
+a `grok test` command that builds + deploys + runs the suite, and
+optionally per-function `//test:` assertions wired into the same run.
 
-When this skill is invoked, help the user set up and write tests for a Datagrok package.
+## Prerequisites
 
-### Step 1: Set up test infrastructure
+- A package directory (fresh from `grok create`, or existing without tests).
+- A server alias in `~/.grok/config.yaml` if you plan to use
+  `grok test --host <alias>` (set once via `grok config add`).
+- Familiarity with the canonical test-library exports — `category`,
+  `test`, `expect`, `expectFloat`, `expectTable`, `before`, `after`,
+  `delay`, `awaitCheck` (`DG-FACT-284`, `DG-FACT-286`).
 
-For a new package with tests:
+## Steps
 
-```bash
-grok create <package-name> --test
-```
+1. **Scaffold the test harness.** Pick ONE path (`DG-FACT-285`).
+   ```bash
+   # (a) NEW package — harness included from day one
+   grok create MyPackage --test
 
-For an existing package:
+   # (b) EXISTING package — add harness in place
+   cd MyPackage
+   grok add tests
+   ```
+   Expected: `src/package-test.ts` exists, `src/tests/test-examples.ts`
+   exists, `package.json` has `"test": "grok test"`, and
+   `webpack.config.js` has a `test:` entry. Shape matches
+   `tools/package-template/src/package-test.ts:1-21`.
 
-```bash
-cd <package-name>
-grok add tests
-npm install
-```
+2. **Confirm the canonical import path** is `@datagrok-libraries/test/src/test`, not the legacy `utils/src/test` duplicate (see `DG-FACT-284`). If legacy, rewrite imports and ensure the dep is present:
+   ```bash
+   npm i -S @datagrok-libraries/test     # only if missing
+   npm install
+   ```
+   Expected: `grep -r "@datagrok-libraries/utils/src/test" src/`
+   returns nothing.
 
-### Step 2: Create test files
+3. **Add a test file under `src/tests/`** — one file per category (`DG-FACT-289`). `expect` is STRICT `!==` with default `expected = true` (`DG-FACT-287`).
+   ```typescript
+   // src/tests/examples-tests.ts
+   import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-Create a `src/tests/` directory. Each file covers one test category.
+   category('Examples', () => {
+     test('Success', async () => { expect(1, 1); });
+     test('Float window', async () => { expect(10 < 12.5 && 12.5 < 20, true); });
+     test('Skipped — tracked', async () => {
+       expect(1, 11);
+     }, {skipReason: 'GROK-99999'});       // DG-FACT-286, DG-FACT-288
+   });
+   ```
 
-```ts
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+4. **Side-effect-import the file from `src/package-test.ts`** (`DG-FACT-289`, `DG-FACT-290`) — without this, `runTests` finds zero tests for the category.
+   ```typescript
+   // src/package-test.ts — ADD near the other imports
+   import './tests/examples-tests';
+   ```
+   Keep the template shape: `_package`, `tests`, plus both `//name: test` and `//name: initAutoTests` entries (`DG-FACT-290`).
 
+5. **(Optional) Annotate functions with `//test:` for auto-tests** — boolean Grok-script expression per line, inline sub-options `skip:`, `wait:<ms>`, `cat:<category>`, `timeout:<ms>` (`DG-FACT-291`, `DG-FACT-292`). Parameter-type matrix in `DG-FACT-293`.
+   ```typescript
+   //name: square
+   //input: int x
+   //output: int y
+   //test: square(1) == 1
+   //test: square(2) == 4
+   //test: square(3) == 9, cat: Math
+   export function square(x: number): number { return x ** 2; }
+   ```
 
-category('MyCategory', () => {
-  test('should do something', async () => {
-    expect(actualValue, expectedValue);
-  });
+6. **Build, publish, and run.**
+   ```bash
+   grok publish <host> --release       # or omit --release for dev
+   grok test --host <host>             # builds, publishes in debug, runs
+   ```
+   Useful flags: `--skip-build`, `--skip-publish`, `--csv`
+   (`test-report.csv` in the package folder), `--gui` (non-headless
+   browser for debugging).
+   Expected: a summary like `Passed N, Failed 0, Skipped 1` on stdout;
+   with `--csv`, a `test-report.csv` next to `package.json`.
 
-  test('should handle edge case', async () => {
-    // Test logic
-    expect(result, true);
-  });
-});
-```
+## Common failure modes
 
-Key test framework functions:
-- `category(name, fn)` - groups related tests
-- `test(name, fn, options?)` - defines a single test case
-- `expect(actual, expected)` - assertion that checks equality
+- **`Cannot find module '@datagrok-libraries/test/src/test'`** — legacy `utils/src/test` path or missing dep. Fix per `DG-FACT-284`.
+- **Tests don't appear in Test Manager / `runTests` returns 0** — missing side-effect import in `src/package-test.ts` (`DG-FACT-289`).
+- **`expect(someBool)` fails for a truthy value** — `expect` is strict `!==` with default `true` (`DG-FACT-287`). Use `expect(!!val, true)`.
+- **`//test:` line never runs** — `src/package-test.ts` is missing `//name: initAutoTests` (`DG-FACT-290`).
+- **Test killed at 30 s** — default timeout (`DG-FACT-286`). Bump via `{timeout: 90000}` per-test or per-category.
+- **`grok test --host <alias>` errors `unknown host`** — add via `grok config add` or omit `--host`.
 
-### Step 3: Register tests in package-test.ts
+## See also
 
-Import all test files in `src/package-test.ts`:
-
-```ts
-import './tests/my-category-tests';
-import './tests/another-category-tests';
-```
-
-### Step 4: Skip failing tests
-
-Use the `skipReason` parameter to temporarily skip a test (always provide a reason such as a Jira ticket):
-
-```ts
-test('flaky test', async () => {
-  expect(1, 11);
-}, {skipReason: 'GROK-99999'});
-```
-
-### Step 5: Add inline function tests
-
-For simple functions, add test cases directly in the function annotation using the `test` parameter:
-
-```ts
-//name: square
-//input: int x
-//output: int y
-//test: square(1) == 1
-//test: square(2) == 4
-//test: square(3) == 9
-export function square(x: number): number {
-  return x ** 2;
-}
-```
-
-Supported parameter types for `//test:` annotations: `int`, `double`, `bool`, `string`, `datetime`, `map`. Types like `dataframe`, `column_list`, `column`, `file`, `blob` require an additional helper function call.
-
-### Step 6: Run tests
-
-```bash
-# Local testing with datagrok-tools
-grok test
-
-# Against a specific server
-grok test --host dev
-
-# With visible browser
-grok test --gui
-
-# Specific category or test
-grok test --category "MyCategory"
-grok test --test "should do something"
-```
-
-Tests can also be run from the Datagrok console or Test Manager in the platform UI.
-
-### Key points
-
-- Import `category`, `test`, `expect` from `@datagrok-libraries/utils/src/test`
-- Always register test files in `src/package-test.ts`
-- Use `skipReason` with a Jira key (e.g., `GROK-12345`) when skipping tests
-- The `//test:` annotation on functions is for simple input/output validation
-- For real examples, see the Chem package: `public/packages/Chem/`
-
-## Behavior
-
-1. Check if the package already has test infrastructure (`src/package-test.ts`, `src/tests/`)
-2. If not, set up test support using `grok add tests`
-3. Create test files with `category` and `test` blocks for the functionality the user wants to test
-4. Register the test files in `src/package-test.ts`
-5. Show the user how to run the tests
+- Source: `help/develop/how-to/tests/add-package-tests.md`;
+  `help/develop/how-to/tests/test-packages.md` (Test Manager, `grok
+  test` flags, console runs, GitHub Actions retry).
+- Knowledge: `docs/_internal/knowledge/knowledge-graph.md` —
+  `DG-FACT-284` (canonical import path), `DG-FACT-285` (CLI
+  scaffolds), `DG-FACT-286` (`TestOptions`, `STANDART_TIMEOUT`),
+  `DG-FACT-287` (`expect` strict semantics), `DG-FACT-288`
+  (`skipReason`), `DG-FACT-289` (per-file category + side-effect
+  import), `DG-FACT-290` (`package-test.ts` entry contract),
+  `DG-FACT-291`–`DG-FACT-293` (`//test:` expression, inline
+  sub-options, parameter-type matrix).
+- Reference: `packages/Chem/src/package-test.ts:1-50` (30+
+  side-effect imports); `packages/Chem/src/tests/chemprop-tests.ts:11-40`
+  (`before`, `test(..., {timeout, skipReason})`);
+  `packages/ApiTests/src/package-test.ts:1-40` (large-package layout).
+- Related skills: `publish-packages` (prerequisite — `grok publish`
+  is invoked by `grok test`).

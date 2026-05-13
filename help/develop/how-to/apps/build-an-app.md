@@ -15,12 +15,8 @@ that resides in a [package](../../develop.md#packages) and has the `#app` role. 
 in C++, this is an entry point that gets executed when the app is [launched](#launching-applications).
 
 A [Datagrok package](../../develop.md#packages) may contain any number of applications; an application is just a function
-with the `app` role. To get the template for an `app` function, use the following `datagrok-tools` command from your package
-directory:
-
-```
-grok add app <name>
-```
+with the `app` role. See [The entry point](#the-entry-point) below for the modern, decorator-based way to define an app
+in `src/package.ts`.
 
 ## Launching applications
 
@@ -64,8 +60,8 @@ export class PackageFunctions {
     })
     static demoApp(
         // The @param decorator allows you to map URL parameters to function arguments.
-        // 'meta.url': true ensures this parameter captures the path after the app name in the URL.
-        @grok.decorators.param({options: {'meta.url': true, 'optional': true}}) path?: string
+        // metaUrl: true ensures this parameter captures the path after the app name in the URL.
+        @grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string
     ): void {
         grok.shell.info(`App launched with path: ${path}`);
         // Your view initialization logic here
@@ -95,7 +91,7 @@ to prepare our simple package and deploy it.
       Find this key in your user profile section in the Datagrok UI,
       e.g. [https://public.datagrok.ai/u](https://public.datagrok.ai/u)
 
-3. Add an app to the package by `grok add app <APP_NAME>`, or just copy-paste the above TS snippet into `src/package.ts`
+3. Add an app to the package by copy-pasting the above TS snippet into `src/package.ts`
 
 After deploying this package to `https://public.datagrok.ai`, you'd find the `Test App` app via `Functions | Apps`
 in the Datagrok's sidebar. Run the app and notice the tooltip. You may also call this entry point by a

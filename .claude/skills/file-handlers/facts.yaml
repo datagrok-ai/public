@@ -1,0 +1,71 @@
+# Facts cited by the `file-handlers` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 5
+
+- id: DG-FACT-083
+  kind: enum
+  scope: file-handlers
+  value: |-
+    The role token for a custom file handler is `fileHandler` (camelCase) in every production package and in the article. Decorator surface `@grok.decorators.fileHandler(config: FileHandlerOptions)` (`js-api/src/decorators/functions.ts:358`). Function signature `fileImporter(x: string | TypedArray): DataFrame[]` per the `functionRoles[]` descriptor. Once registered, the platform invokes the function whenever a user opens a file with one of the declared extensions, and treats the returned list as a set of imported tables.
+  derives_from:
+    - article: help/develop/how-to/files/file-handlers.md:5-21
+    - code: js-api/src/const.ts:382-385,490-495                  # FILE_IMPORTER + functionRoles[]
+    - code: js-api/src/decorators/functions.ts:358-364
+    - code: packages/Bio/src/package.g.ts:486-503                # //meta.role: fileHandler ; //meta.ext: fasta,…
+    - code: packages/Chem/src/package.g.ts:793-809               # //meta.role: fileHandler ; //meta.ext: sdf,mol
+    - code: packages/nmrium/src/package.ts:20-46                 # @grok.decorators.fileHandler({ext, fileViewerCheck?})
+  contradicts:
+    - DG-FACT-DRIFT-031   # FUNC_TYPES.FILE_IMPORTER constant value is `'file-handler'` (kebab) but tag emitted in package.g.ts is `fileHandler` (camel)
+  confidence: high
+
+- id: DG-FACT-084
+  kind: naming
+  scope: file-handlers
+  value: |-
+    The set of extensions a handler claims is declared in `meta.ext` as a single comma-separated string. Whitespace around commas is tolerated. One handler entry, many extensions — `meta.ext: fasta, fna, ffn, faa, frn, fa, fst` (Bio FASTA), `meta.ext: sdf,mol` (Chem SDF), `meta.ext: bam, bai` (Bio BAM). Decorator form uses the same shape via the `ext: string` key — `@grok.decorators.fileHandler({ext: 'jdx'})`. Repeating `//meta.ext:` lines is NOT supported (the parser keeps only the last). Per-extension dispatch into a single body is the canonical pattern: register one decorator per extension when bodies differ (BiostructureViewer NGL pattern), or one comma-list when they share.
+  derives_from:
+    - article: help/develop/how-to/files/file-handlers.md:5-6,16    # "comma-separated extensions in the meta.ext parameter"
+    - code: packages/Bio/src/package.g.ts:491                       # /meta.ext: fasta, fna, ffn, faa, frn, fa, fst
+    - code: packages/Chem/src/package.g.ts:797                      # /meta.ext: sdf,mol
+    - code: packages/Bio/src/package.g.ts:501                       # /meta.ext: bam, bai
+    - code: packages/nmrium/src/package.ts:20-46                    # one decorator per extension when bodies differ
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-085
+  kind: namespace
+  scope: file-handlers
+  value: |-
+    Decorator config type — `interface FileHandlerOptions extends FunctionOptions { ext: string; fileViewerCheck?: string; }` (`js-api/src/decorators/functions.ts:225-228`). The `ext` field is REQUIRED (no `?`); the `fileHandler` decorator signature is `fileHandler(config: FileHandlerOptions)` (note the non-optional `config` — unlike `fileViewer(config?)`). The optional `fileViewerCheck: '<Pkg>:<Fn>'` gates the handler on file content the same way it gates a `fileViewer`: the platform calls the named check function with the file content (string for text, Uint8Array for binary) and routes to this handler only on truthy return. Used by `packages/nmrium/src/package.ts:20-40` to disambiguate `.jdx`/`.dx` (JCAMP-DX, ambiguous) before importing.
+  derives_from:
+    - code: js-api/src/decorators/functions.ts:225-228             # FileHandlerOptions
+    - code: js-api/src/decorators/functions.ts:358-364             # fileHandler(config: FileHandlerOptions) — non-optional
+    - code: packages/nmrium/src/package.ts:20-46                   # fileViewerCheck: 'Nmrium:checkNmriumJdx'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-086
+  kind: enum
+  scope: file-handlers
+  value: |-
+    The three "open this file" roles are distinct registrations, NOT interchangeable. `fileHandler` — `(content: string | Uint8Array) => DataFrame[]`; the platform IMPORTS the file as one-or-more tables and opens them as TableViews. `fileViewer` — `(file: DG.FileInfo) => DG.View | Promise<DG.View>`; the platform builds a custom view WITHOUT importing as a table (used for things that aren't tabular: 3D structures, audio, NMR spectra). `fileExporter` — `() => void`; goes the other way (write the active table out). When a file's extension is registered for both a viewer and a handler, the handler does the import and the viewer adds the dedicated visualization — they coexist (e.g., nmrium registers both `fileHandler` and `fileViewer` for `nmrium`).
+  derives_from:
+    - code: js-api/src/const.ts:372-395                            # FILE_VIEWER, FILE_EXPORTER, FILE_IMPORTER signatures
+    - code: js-api/src/decorators/functions.ts:220-228             # FileViewerOptions vs FileHandlerOptions (separate types)
+    - code: packages/nmrium/src/package.ts:20-55                   # both fileHandler + fileViewer for nmrium
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-087
+  kind: namespace
+  scope: file-handlers
+  value: |-
+    Codegen contract for the `fileHandler` decorator (`tools/bin/utils/func-generation.ts:348-355`) defaults to `inputs: [{name: 'content', type: 'string'}], outputs: [{name: 'tables', type: 'list'}]`. For binary formats override the inputs with `inputs: [{name: 'bytes', type: 'list'}]` in the decorator (header form `//input: list bytes`) — Chem's `importSdf(bytes: Uint8Array)` (`packages/Chem/src/package.g.ts:794-799`) and `importBam(bytes: Uint8Array)` follow this shape. Output is always a `list` of `dataframe`; returning `[]` from a handler that opens a custom view as a side effect (nmrium pattern) is legal — the platform just opens no extra table view.
+  derives_from:
+    - code: tools/bin/utils/func-generation.ts:348-355
+    - code: packages/Chem/src/package.g.ts:793-809                 # //input: list bytes ; //output: list<dataframe>
+    - code: packages/nmrium/src/package.ts:25-46                   # async returns [] after addNmriumView()
+  contradicts: []
+  confidence: high
+
+# DRIFTS for file-handlers

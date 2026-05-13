@@ -1,0 +1,148 @@
+# Facts cited by the `build-an-app` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 9
+
+- id: DG-FACT-330
+  kind: namespace
+  scope: build-app
+  value: |-
+    Decorator surface `@grok.decorators.app(config: AppOptions)` is exported from `datagrok-api/grok` (`js-api/src/decorators/functions.ts:246-252`). `config` is REQUIRED (no `?` on the parameter), unlike `appTreeBrowser`. `AppOptions extends FunctionOptions` adds three app-specific keys — `browsePath?: string`, `icon?: string`, `url?: string` (`functions.ts:189-193`); `name`, `description`, `tags`, `meta`, `outputs` come from `FunctionOptions`. Applied to a `static` method inside `PackageFunctions`. Method signature ranges over `(): void`, `(): Promise<DG.View>`, `(): Promise<DG.ViewBase>` — Chem's `mpoProfilesApp` returns `Promise<DG.View>` and `reactionEnumeratorApp` returns `Promise<DG.ViewBase>` (`packages/Chem/src/package.ts:2919-2925,2949-2957`); article's `demoApp` example returns `void`. The codegen emits the matching `//name`, `//meta.role: app`, `//meta.browsePath`, `//meta.icon` block into `package.g.ts`.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:52-74
+    - code: js-api/src/decorators/functions.ts:189-193,246-252
+    - code: packages/Chem/src/package.ts:2919-2925,2949-2957
+    - code: packages/Bio/src/package.ts
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-331
+  kind: namespace
+  scope: build-app
+  value: |-
+    Decorator surface `@grok.decorators.appTreeBrowser(config?: AppTreeBrowserOptions)` is exported from `datagrok-api/grok` (`js-api/src/decorators/functions.ts:390-396`). `config` is OPTIONAL; `AppTreeBrowserOptions extends FunctionOptions` adds a single key — `app?: string` (`functions.ts:207-209`) — whose value is the `name` of the `@app` method the tree browser is bound to (e.g., `{app: 'Demo'}` binds to the `@grok.decorators.app({name: 'Demo'})` entry in the same package). Applied to a `static` method inside `PackageFunctions` with signature `(treeNode: DG.TreeViewGroup): Promise<void>`. The platform invokes it on app launch and passes a root `TreeViewGroup`; populate via `treeNode.item(text): TreeViewNode` and `treeNode.group(text): TreeViewGroup` (`js-api/src/widgets/tree.ts:231,241`); subscribe to selection via `node.onSelected.subscribe(...)` (`widgets/tree.ts:138`). Production references — Tutorials, BenchlingLink, CddVaultLink, KnimeLink all follow the same shape.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:120-137
+    - code: js-api/src/decorators/functions.ts:207-209,390-396
+    - code: js-api/src/widgets/tree.ts:138,231,241
+    - code: packages/BenchlingLink/src/package.ts:47-52
+    - code: packages/KnimeLink/src/package.ts:61-62
+    - code: packages/CddVaultLink/src/package.ts:120-125
+    - code: packages/Tutorials/src/package.ts:171-172
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-332
+  kind: namespace
+  scope: build-app
+  value: |-
+    The `@app` method's URL-path input is declared with `@grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string` (camelCase alias). The article snippet (`build-an-app.md:68`) uses the string-keyed dotted form `@grok.decorators.param({options: {'meta.url': true, 'optional': true}})` — both are valid because `InputOptions` declares BOTH `"meta.url"?: boolean` AND `metaUrl?: boolean` (`js-api/src/decorators/functions.ts:101-102`). Production canonical packages normalize to the camelCase form — Chem's `mpoProfilesApp` is the reference (`packages/Chem/src/package.ts:2924` — `{metaUrl: true, optional: true}`). Skill output should default to `metaUrl: true` to match production; the codegen-emitted `package.g.ts` writes `//input: string path { meta.url: true; optional: true }` regardless of the source form.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:67-68
+    - code: js-api/src/decorators/functions.ts:101-102
+    - code: packages/Chem/src/package.ts:2923-2924
+    - code: packages/Bio/src/package.g.ts:642
+  contradicts: []
+  confidence: high
+
+# DRIFT entries — article vs. code disagreements (build-app)
+
+- id: DG-FACT-333
+  kind: naming
+  scope: build-an-app
+  value: |
+    App launch URL form depends on the number of apps in the package:
+    one-app packages — `https://<HOST>/apps/<APP_NAME>`; multi-app —
+    `https://<HOST>/apps/<PACKAGE_NAME>/<APP_NAME>`. The launcher resolves
+    the route off the app function's `name` (and optional `meta.url`
+    override on either the function or the package). A direct link to the
+    full app list — `https://<HOST>/apps`.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:21-28,96-100,862-866
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-334
+  kind: enum
+  scope: build-an-app
+  value: |
+    `grok publish` has two lifecycle modes, mutually exclusive via CLI flag:
+    (a) Debug (default) — `grok publish` deploys a per-user version visible
+    ONLY to the publisher; other users keep seeing the previously released
+    version. (b) Release — `grok publish --release` replaces the installed
+    version for all users with proper privileges. Implementation: the CLI
+    passes `!args.release` as the `debug` flag to `processPackage(...)`;
+    `--debug` and `--release` together error with "Incompatible options".
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:851-857
+    - code: tools/bin/commands/publish.ts:651-654,712
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-339
+  kind: naming
+  scope: viewers
+  value: |
+    `view.boxPlot(options)` / `DG.Viewer.boxPlot(df, options)` typed
+    options follow `Partial<IBoxPlotSettings>` — the categorical-axis key
+    is `category1` (not `category`); the second optional categorical is
+    `category2`. Using `{category: 'X', value: 'Y'}` raises TS2561
+    "Did you mean to write 'category1'?". Canonical form:
+    `view.boxPlot({category1: 'ARM', value: 'AGE'})`. Same shape applies
+    to `categoryColumnNames`, `category1ColumnName`, `valueColumnName`.
+  derives_from:
+    - code: js-api/src/interfaces/d4.ts:1019-1048
+    - runtime: verify-e2e/build-an-app (executor-invented clinical-study.ts)
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-BUILD-APP-002
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article's `@param` snippet (`build-an-app.md:62-67`) uses the
+    string-keyed dotted form `{options: {metaUrl: true, optional: true}}`
+    — but actually shows the camelCase `metaUrl` and is consistent with
+    production. The string-keyed `'meta.url'` form is ALSO accepted (both
+    keys are declared in `InputOptions`, `js-api/src/decorators/functions.ts:
+    101-102`) but no production package uses it. Skills should emit the
+    camelCase form (`metaUrl`); if encountered in legacy code, treat the
+    dotted form as equivalent and do not "fix" it without reason.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:62-67
+    - code: js-api/src/decorators/functions.ts:101-102
+    - code: packages/Chem/src/package.ts:2923-2924
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-BUILD-APP-003
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article instructs `import * as DG from 'datagrok-api/DG'` (uppercase `DG`
+    in the module path) for use inside webpack packages
+    (`build-an-app.md:341-343`). The published npm module path is lowercase
+    — every production package imports `from 'datagrok-api/dg'`. The
+    uppercase form does not resolve on case-sensitive filesystems (Linux CI).
+    Treat the article snippet as a typo; always use lowercase `dg`.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:341-343
+    - code: packages/Chem/src/utils/reaction-enumeration/enumerator-app.ts (and 100+ peers)
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-BUILD-APP-004
+  kind: naming
+  scope: build-an-app
+  value: |
+    Article's "modern decorator" example (`build-an-app.md:48-69`) declares
+    `export const _package = new DG.Package();` but the import block only
+    pulls `grok` (`import * as grok from 'datagrok-api/grok'`); `DG` is
+    never imported. Treat the snippet as incomplete — the working production
+    pattern is the dual import: `import * as grok from 'datagrok-api/grok';
+    import * as DG from 'datagrok-api/dg';` (and `import * as ui from
+    'datagrok-api/ui'` when UI primitives are used).
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:48-69
+    - code: packages/Chem/src/package.ts:1-12
+  contradicts: []
+  confidence: high

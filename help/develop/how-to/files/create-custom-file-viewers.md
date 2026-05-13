@@ -13,23 +13,26 @@ is real code from
 the ["NglViewer" public package](https://github.com/datagrok-ai/public/blob/master/packages/NglViewer).-->
 
 ```js
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as NGL from 'ngl';
+
 //meta.role: fileViewer
 //meta.fileViewer: mol,sdf,cif
 //input: file file
 //output: view v
-nglStructureViewer(file) {
-  let view = DG.View.create();
-  var host = ui.div([], 'd4-ngl-viewer');
-  var stage = new NGL.Stage(host);
+export function nglStructureViewer(file) {
+  const view = DG.View.create();
+  const host = ui.div([], 'd4-ngl-viewer');
+  const stage = new NGL.Stage(host);
 
   file
     .readAsBytes()
-    .then(bytes => stage.loadFile(new Blob([bytes])));
+    .then((bytes) => stage.loadFile(new Blob([bytes])));
 
   view.append(host);
   return view;
 }
-
 ```
 
 This is it! Once a [package](../../develop.md#packages) containing that function is published, the platform will
