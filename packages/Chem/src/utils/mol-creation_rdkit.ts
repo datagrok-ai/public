@@ -71,12 +71,16 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
     else {
       try {
         queryMol = rdKitModule.get_qmol(queryMolString);
-        queryMol.convert_to_aromatic_form();
       } catch (e) {
-        if (queryMol) {
-          queryMol.delete();
-          queryMol = null;
-        }
+        queryMol = null;
+      }
+      // Kekulé→aromatic conversion is a precaution for benzene-like queries; if
+      // it throws on query-atom features (e.g. L + M ALS), keep the queryMol —
+      // it's still usable for substructure matching, just won't aromatize.
+      if (queryMol !== null) {
+        try {
+          queryMol.convert_to_aromatic_form();
+        } catch (e) {/* non-fatal */}
       }
     }
   } else { // not a molblock
