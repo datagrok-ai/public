@@ -1,200 +1,200 @@
 ---
 name: develop-custom-viewer
-description: Author a custom JavaScript viewer in a Datagrok package — extend DG.JsViewer, declare properties, wire lifecycle, register via decorator
+version: 0.1.0
+description: |
+  Subclass `DG.JsViewer` to ship a DataFrame-bound chart the platform
+  doesn't have built-in (D3 bar chart, custom domain plot) — or declare
+  a Python/R/Julia scripting viewer for a server-rendered visualization.
+  Produces a class wired to dataframe filter/selection/size events plus
+  the package-function registration that surfaces it in the *Add Viewer*
+  menu and lets users persist it in layouts.
+  Use when asked to "add a new chart kind to the Add menu",
+  "ship a custom D3 visualization for a dataframe", or "register a
+  domain-specific plot type the platform doesn't have built-in".
+triggers:
+  - new chart kind for dataframe
+  - add custom d3 visualization
+  - register chart in add menu
+  - domain-specific plot type
+  - ship a python scripting plot
+  - dataframe-bound visualization
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+harness-authored: true
 ---
 
 # develop-custom-viewer
 
 ## When to use
 
-Your package needs a chart Datagrok doesn't ship (Sankey, word cloud,
-WebLogo, plate map, …) bound to the current dataframe — properties on
-the context panel, react to filter / selection / resize, persist with
-layout. Python/R chart → *scripting viewer* (last step). EXISTING
-viewer → `manipulate-viewers`. File-share preview →
-`create-custom-file-viewers`.
+A built-in viewer (scatter, bar, histogram, line, network, …) can't
+express the picture your data needs — a D3 bar chart with custom
+interactions, a domain plot (radar, sankey), or a server-rendered
+matplotlib scene. Output must live in *Add Viewer*, persist in
+layouts, and react to filter/selection/current row.
 
 ## Prerequisites
 
-- Package scaffold (`grok create <Name> --ts`); run from package root.
-- `datagrok-tools` ≥ `4.12.x` for `@grok.decorators.viewer` (`DG-FACT-193`).
-- `DG.JsViewer` (base at `js-api/src/viewer.ts:379`): no-arg ctor,
-  `this.root` is `ui.box()`, `this.subs: Subscription[]` pre-initialized
-  (`DG-FACT-186`, `DG-FACT-191`).
+- A package scaffold (`grok create <Name> --ts`); run from package root.
+- `datagrok-api` imports (`* as DG`, `* as ui`, `* as grok`);
+  `datagrok-tools ^4.12.x` for `@grok.decorators.viewer` (older
+  toolchains use the annotated-factory surface).
 
 ## Steps
 
-1. **Scaffold the viewer file.**
-   ```bash
-   grok add viewer AwesomeViewer
-   ```
-   Expected: `src/awesome-viewer.ts` with a `DG.JsViewer` subclass; class
-   names end in `Viewer` by convention (`DG-FACT-186`).
+1. **Subclass `DG.JsViewer`; declare properties in the constructor.**
+   Base class at `js-api/src/viewer.ts:379` (`DG-FACT-186`). Each typed
+   helper — `this.int`, `this.float`, `this.string`, `this.stringList`,
+   `this.bool`, `this.dateTime`, `this.columnList` (`viewer.ts:457-499`,
+   `DG-FACT-187`) — both registers the property in the context panel
+   AND returns its initial value. Column-bound properties MUST end with
+   `ColumnName`; that suffix flags them as Data (`viewer.ts:455-459`,
+   `DG-FACT-188`). Properties auto-group into tabs by name pattern
+   (Data / Colors / Axes / Legend / Margins / Markers / Description /
+   Misc — `DG-FACT-189`); override via `{category: 'X'}`.
 
-2. **Declare properties with the typed helpers.**
-   Helpers on `DG.JsViewer`: `int`, `float`, `string`, `stringList`,
-   `bool`, `dateTime`, plus `column(...)` (`DG-FACT-187`). **Column-bound
-   properties are always `string`** — they store the column NAME, not
-   the column dtype (`DG-FACT-188`). The article's worked example
-   contradicts this with `this.int('valueColumnName', 'age')` — drift
-   `DG-FACT-DRIFT-076`; do not copy.
    ```typescript
-   import * as DG from 'datagrok-api/dg';   // + ui, grok as needed
-   @grok.decorators.viewer({
-     name: 'Awesome', description: 'Aggregated bar chart',
-     icon: 'icons/awesome.svg', toolbox: true,
-   })
-   export class AwesomeViewer extends DG.JsViewer {
-     splitColumnName!: string;
-     valueColumnName!: string;     // string, not int (DG-FACT-DRIFT-076)
-     valueAggrType!: string;
-     color!: string;
-     initialized = false;
+   import * as DG from 'datagrok-api/dg';
+   import * as grok from 'datagrok-api/grok';
 
-     constructor() {
-       super();
-       this.splitColumnName = this.string('splitColumnName', null,
-         {nullable: false, columnTypeFilter: DG.TYPE.STRING});
-       this.valueColumnName = this.string('valueColumnName', null,
-         {nullable: false, columnTypeFilter: DG.TYPE.NUMERICAL});
-       this.valueAggrType = this.string('valueAggrType', 'avg',
-         {choices: ['avg', 'count', 'sum']});
-       this.color = this.string('color', 'steelblue',
-         {choices: ['darkcyan', 'seagreen', 'steelblue']});
-       this.addRowSourceAndFormula();   // standard rowSource (DG-FACT-192)
-     }
+   @grok.decorators.viewer({name: 'Awesome', icon: 'icons/awesome.svg'})
+   export class AwesomeViewer extends DG.JsViewer {
+     splitColumnName = this.string('splitColumnName', 'site');
+     valueColumnName = this.string('valueColumnName', 'age');
+     valueAggrType = this.string('valueAggrType', 'avg', {choices: ['avg', 'count', 'sum']});
+     color = this.string('color', 'steelblue', {choices: ['darkcyan', 'seagreen', 'steelblue']});
+     initialized = false;
    }
    ```
-   Expected: properties auto-group into context-panel tabs by name
-   pattern — `*ColumnName` → **Data**, `*color` → **Colors**, `*axis*`
-   → **Axes**, `legend*` → **Legend**, `*margin*` → **Margins**,
-   `*marker*` → **Markers**, `title|description` → **Description**,
-   else **Misc** (`DG-FACT-189`). Override with `{category: '<Tab>'}`.
+   Expected: properties appear in the context panel under their
+   auto-derived tabs when the viewer is attached.
 
-3. **Wire lifecycle and subscriptions in `onTableAttached`.**
-   Push every subscription into `this.subs`; default `detach()`
-   unsubscribes them — only override `detach` if you super-call
-   (`DG-FACT-190`, `DG-FACT-191`). Wrap noisy streams in `DG.debounce`.
+2. **Wire lifecycle hooks; push every subscription onto `this.subs`.**
+   `onTableAttached()` runs when a DataFrame binds — do data-dependent
+   init here (`DG-FACT-190`, `viewer.ts:412-444`). Push every
+   `selection.onChanged` / `filter.onChanged` / `ui.onSizeChanged(...)`
+   subscription onto `this.subs`; default `detach()` unsubscribes them
+   (`DG-FACT-191`, `viewer.ts:397-398,429-432`). Wrap noisy streams
+   with `DG.debounce(obs, 50)`. Don't override `detach()` without
+   `super.detach()` — leaks.
+
    ```typescript
    onTableAttached() {
      this.init();
-     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
-       .subscribe(() => this.render()));
-     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50)
-       .subscribe(() => this.render()));
-     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
-       .subscribe(() => this.render(false)));
+     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(_ => this.render()));
+     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe(_ => this.render()));
+     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(_ => this.render(false)));
      this.render();
    }
-   onPropertyChanged(p: DG.Property) {
-     super.onPropertyChanged(p);          // always super-call first
+   onPropertyChanged(property: DG.Property) {
+     super.onPropertyChanged(property);
      if (this.initialized) this.render();
    }
    ```
-   Expected: closing the viewer triggers default `detach` → all three
-   subscriptions unsubscribe; no leaked listeners on the dataframe.
 
-4. **Implement `render(computeData)` and respect the filter.**
-   Split data prep from drawing so resize doesn't re-aggregate; use
-   `whereRowMask(this.dataFrame.filter)` to keep aggregation in sync.
-   Add `ui.tooltip.showRowGroup(...)` on hover and
-   `dataFrame.selection.handleClick(...)` on mousedown so the viewer
-   highlights and selects across sibling viewers.
+3. **Render against the live filter; gate compute on a flag.**
+   In `render(computeData = true)` recompute the aggregated frame ONLY
+   when `computeData` (resize events skip the work). Chain
+   `groupBy([col]).whereRowMask(this.dataFrame.filter).add(...).aggregate()`
+   so the viewer respects user filters — skipping `whereRowMask`
+   aggregates over the full frame regardless (`DG-FACT-461`,
+   `stats.ts:350-354`). Clear `this.root` and re-draw to its size.
+
    ```typescript
    render(computeData = true) {
      if (computeData) {
-       this.aggregated = this.dataFrame.groupBy([this.splitColumnName])
+       this.aggregatedTable = this.dataFrame
+         .groupBy([this.splitColumnName])
          .whereRowMask(this.dataFrame.filter)
          .add(this.valueAggrType, this.valueColumnName, 'result')
          .aggregate();
+       /* populate this.data from aggregatedTable.getCol('result') */
      }
-     $(this.root).empty();          // draw into this.root w/ d3/echarts/svg
+     $(this.root).empty();
+     /* ... d3 draw using this.data, this.color, this.root size ... */
    }
    ```
-   Expected: filter toggle re-aggregates; resize re-draws without
-   recomputing; hover highlights matching rows in sibling viewers.
 
-5. **Confirm registration form and (if needed) docking position.**
-   The decorator emits a `package.g.ts` wrapper with `//name:`,
-   `//tags: viewer`, `//output: viewer result`, plus
-   `//meta.icon|toolbox|trellisable|viewerPath` (`DG-FACT-194`). Default
-   top-menu path: `Add > JavaScript Viewers > <Pkg> > <Name>`; override
-   with `viewerPath: 'Subcategory | Friendly Name'`. **`viewerPosition`
-   is NOT a typed decorator option** (`DG-FACT-DRIFT-077`) — annotate
-   the generated wrapper header-form:
-   `//meta.viewerPosition: bottom` (`top|bottom|left|right|fill|auto`,
-   `DG-FACT-195`). Use `grok.shell.registerViewer(...)` (`DG-FACT-193`)
-   ONLY from a `meta.role: autostart` function when you need a
-   synchronous handle inside package code.
+4. **Bridge mouse events into platform state.**
+   `ui.tooltip.showRowGroup(dataFrame, predicate, x, y)` pops the
+   standard row-group tooltip; `dataFrame.selection.handleClick(predicate,
+   event)` extends/replaces selection per Ctrl/Shift/Meta — pass the raw
+   `MouseEvent` (`DG-FACT-460`, `ui.ts:1606-1608`, `bit-set.ts:220-222`).
 
-6. **Build and smoke-test.**
-   ```bash
-   npm install && npm run build
-   grok publish dev          # add --release once stable
+   ```typescript
+   bars.on('mouseover', (event, d) => ui.tooltip.showRowGroup(this.dataFrame,
+       i => d.category === this.dataFrame.getCol(this.splitColumnName).get(i),
+       event.x, event.y))
+     .on('mouseout', () => ui.tooltip.hide())
+     .on('mousedown', (event, d) => this.dataFrame.selection.handleClick(
+       i => d.category === this.dataFrame.getCol(this.splitColumnName).get(i),
+       event));
    ```
-   In the Datagrok console:
-   ```javascript
-   grok.shell.addTableView(grok.data.demo.demog()).addViewer('Awesome');
-   ```
-   Expected: `package.g.ts` contains
-   `export function _AwesomeViewer() { return new AwesomeViewer(); }`
-   with `//meta.role: viewer` + `//tags: viewer`; the viewer renders;
-   context panel shows properties under Data/Colors/Misc.
 
-7. **(Alternative) Scripting viewer in Python / R / Julia.**
-   `scripts/<name>.py` with `# tags: viewers` and `# output: graphics`
-   registers the script as a viewer (`DG-FACT-196`). Platform auto-adds
-   `Refresh on Filter`, `Title`, `Description`, `Description Position`,
-   `Description Visibility Mode` (`DG-FACT-197`).
+5. **Register so it appears in *Add Viewer*.** Two paths (`DG-FACT-193`):
+   the `@grok.decorators.viewer({name, description?, icon?, toolbox?,
+   trellisable?, viewerPath?})` class decorator (canonical:
+   `packages/Charts/src/viewers/sankey/sankey.ts:53-57` →
+   `packages/Charts/src/package.g.ts:129-136`); or an annotated factory
+   in `package.ts` returning `new AwesomeViewer()`. Either way the build
+   emits `//name:` + `//meta.role: viewer` + `//output: viewer result`
+   into `src/package.g.ts` — commit it (NOT gitignored). Metadata
+   (`DG-FACT-194`, `decorators/functions.ts:36-45`): `meta.icon`,
+   `meta.toolbox: true`, `meta.trellisable: true` (inner viewer of
+   `DG.VIEWER.TRELLIS_PLOT`), `meta.viewerPath: 'Cat | Friendly Name'`
+   (overrides default `Add > JavaScript Viewers > <Pkg> > <Name>`).
+   `meta.viewerPosition` (`top|bottom|left|right|fill|auto`,
+   `DG-FACT-195`) is HEADER-FORM ONLY — patch into `package.g.ts`
+   post-build (see `packages/PowerGrid/src/package.g.ts:225`).
+
+6. **Alternative: scripting viewer (server-rendered).** For Python/R/
+   Julia, drop a `.py`/`.r`/`.jl` under `<pkg>/scripts/` with
+   `# language: python`, `# tags: viewers` (registers in Script Browser
+   at `/scripts?q=%23viewers`), typed inputs (e.g. `# input: column
+   splitColumnName {type: categorical}`), and `# output: graphics`
+   — REQUIRED (`DG-FACT-196`). Platform auto-adds `Refresh on Filter`,
+   `Title`, `Description`, `Description Position`, `Description
+   Visibility Mode` (`DG-FACT-197`).
 
 ## Common failure modes
 
-- **`Argument of type 'string' is not assignable to parameter of type
-  'number'` on `this.int('valueColumnName', 'age')`.** Drift
-  `DG-FACT-DRIFT-076`. Column-name properties are STRINGS regardless of
-  dtype — use `this.string('valueColumnName', 'age', {columnTypeFilter:
-  DG.TYPE.NUMERICAL})`.
-- **Memory leak / "viewer still firing after close".** Subscription not
-  pushed into `this.subs`, or `detach()` overridden without
-  `super.detach()`. Default `detach` only unsubscribes what's in
-  `this.subs` (`DG-FACT-190`, `DG-FACT-191`).
-- **`viewerPosition` set on the decorator is ignored.** Typed signature
-  exposes only `name|description|icon|toolbox|trellisable|viewerPath`
-  (`DG-FACT-DRIFT-077`). Annotate generated `package.g.ts` with
-  `//meta.viewerPosition: <pos>` instead.
-- **Property lands in the wrong context-panel tab.** Auto-grouping is
-  by name pattern (`DG-FACT-189`), not type. Rename or pass
-  `{category: 'Colors'}` explicitly.
-- **`view.addViewer('Awesome')` returns blank.** Non-core viewer
-  resolution is async until the package loads (`DG-FACT-193`).
-  Pre-register via `grok.shell.registerViewer(...)` from a
-  `meta.role: autostart` function for synchronous attach.
-- **`super.onPropertyChanged(p)` skipped.** Layout serialization and
-  undo break silently. Always super-call first (`DG-FACT-190`).
+- **Viewer doesn't appear in *Add Viewer* menu.** `src/package.g.ts`
+  missing `//meta.role: viewer` or `//output: viewer result` — rebuild
+  after fixing the decorator; confirm `package.g.ts` is committed
+  (`DG-FACT-193`).
+- **Memory leak: closed viewer keeps re-rendering.** A subscription
+  wasn't pushed onto `this.subs`, so default `detach()` can't
+  unsubscribe it (`DG-FACT-191`).
+- **Chart shows stale rows after the user filters.** Aggregation
+  skipped `whereRowMask(this.dataFrame.filter)` and ran over the full
+  frame (`DG-FACT-461`).
+- **Property doesn't show in the Data tab.** Name lacks the
+  `ColumnName` suffix — rename `splitCol` → `splitColumnName`
+  (`DG-FACT-188`).
+- **Scripting viewer fails to render.** Header omits `# output: graphics`
+  or `# tags: viewers` (`DG-FACT-196`).
 
 ## Verification
 
-- `npm run build` exits `0`; regenerated `src/package.g.ts` contains
-  `//meta.role: viewer` + `//tags: viewer` for the wrapper.
-- `Add → JavaScript Viewers → <Pkg> → Awesome` opens the viewer;
-  properties grouped under Data / Colors / Misc.
-- Toggle a filter — chart re-aggregates; resize — re-draws without
-  recomputing (log in `render(computeData)`). Close viewer; dataframe's
-  `selection.onChanged` listener count drops back.
+- `npm run build` + `grok publish <host>` exit `0`; `src/package.g.ts`
+  contains a wrapper with `//meta.role: viewer` and `//output: viewer
+  result` for your viewer.
+- In Datagrok: open a table view → *Add → JavaScript Viewers → <pkg> →
+  <viewer name>* — viewer paints; toggling the filter or selecting rows
+  re-renders it; properties persist into a saved layout.
 
 ## See also
 
-- Source articles:
-  - `help/develop/how-to/viewers/develop-custom-viewer.md`
-- Knowledge: `docs/_internal/knowledge/knowledge-graph.md` — facts
-  `DG-FACT-186`…`DG-FACT-197` and drifts `DG-FACT-DRIFT-076`,`-077`.
-- Reference packages:
-  - `packages/Charts/src/viewers/sankey/sankey.ts:53-130` — decorator
-    form, `addRowSourceAndFormula`, `columnTypeFilter`.
-  - `packages/Charts/src/viewers/word-cloud/word-cloud-viewer.ts:15-90`
-    — typed property bag with `{choices}` and `{min}`.
-  - `packages/PowerGrid/src/package.g.ts:225` — header-form
-    `//meta.viewerPosition: bottom` workaround for `DG-FACT-DRIFT-077`.
-- Related skills:
-  - `manipulate-viewers` (sibling — attach/configure EXISTING viewers).
-  - `create-custom-file-viewers` (sibling — file-share preview viewers).
+- Source: `help/develop/how-to/viewers/develop-custom-viewer.md`;
+  related `help/develop/how-to/viewers/manipulate-viewers.md`,
+  `help/visualize/viewers/viewers.md`; API `js-api/src/viewer.ts:376-499`.
+- Knowledge: `docs/_internal/knowledge/knowledge-graph.md` —
+  `DG-FACT-186` … `DG-FACT-197`, `DG-FACT-460`, `DG-FACT-461`.
+- Reference: `packages/Charts/src/viewers/sankey/sankey.ts:53-100`
+  (decorator + JsViewer); `.../radar/radar-viewer.ts:20-240` (full
+  lifecycle); `packages/Charts/src/package.g.ts:129-136` (auto-emitted
+  header); `packages/PowerGrid/src/package.g.ts:220-230` (viewerPosition).
+- Related skills: `manipulate-viewers`, `custom-filters`, `custom-cell-renderers`.
