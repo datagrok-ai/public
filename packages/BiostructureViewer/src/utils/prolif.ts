@@ -304,14 +304,14 @@ function _dropPriorPlColumns(df: DG.DataFrame): void {
 // `grok.shell.getTableView(df.name)` returns the wrong view if multiple
 // TableViews share a name (the platform allows duplicates).
 function _adjustGridForDiagrams(df: DG.DataFrame, colNames: string[]): void {
-  const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame === df);
+  const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame?.id === df?.id);
   if (tv == null) return;
   for (const colName of colNames) {
     const gc = tv.grid.columns.byName(colName);
-    if (gc != null) gc.width = 220;
+    if (gc != null) gc.width = 250;
   }
-  tv.grid.setOptions({rowHeight: 130});
-  try { tv.grid.invalidate(); } catch (_e) { /* no-op */ }
+  // tv.grid.setOptions({rowHeight: 130});
+  // try { tv.grid.invalidate(); } catch (_e) { /* no-op */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -789,6 +789,7 @@ export async function runPlBatch(opts: RunPlBatchOptions): Promise<void> {
   // by ticking categories rather than typing substring queries.
   interactionsCol.tags[DG.TAGS.MULTI_VALUE_SEPARATOR] = ',';
   interactionsCol.tags[DG.TAGS.CELL_RENDERER] = 'Tags';
+  interactionsCol.semType = 'Tags';
   const dropFixedCols = () => {
     df.columns.remove(interactionsCol.name);
     df.columns.remove(diagramCol.name);

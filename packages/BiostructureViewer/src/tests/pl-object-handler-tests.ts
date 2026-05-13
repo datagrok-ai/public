@@ -20,6 +20,7 @@ category('PLObjectHandler', () => {
     const handler = new PlDiagramObjectHandler();
     const df = DG.DataFrame.fromColumns([DG.Column.string('PL Diagram', 1)]);
     df.col('PL Diagram')!.tags[PROLIF_SOURCE_TAG] = 'protein';
+    df.col('PL Diagram')!.semType = 'rawPng';
     const sv = DG.SemanticValue.fromTableCell(df.cell(0, 'PL Diagram'));
     expect(handler.isApplicable(sv), true);
   });
