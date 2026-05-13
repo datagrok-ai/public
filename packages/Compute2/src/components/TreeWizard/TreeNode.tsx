@@ -224,7 +224,7 @@ export const TreeNode = Vue.defineComponent({
         style={{
           display: 'flex',
           width: '100%',
-          height: '30px',
+          minHeight: '30px',
           alignItems: 'center',
         }}
       >
