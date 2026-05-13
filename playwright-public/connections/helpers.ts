@@ -48,7 +48,14 @@ export async function goHome(page: Page): Promise<void> {
   // Datagrok hover-tooltips intercept Playwright's stability checks on tree nodes.
   // The platform's tooltip JS still runs (handlers fire, content builds) — only
   // visual rendering and pointer interception are disabled for the page lifetime.
-  await page.addStyleTag({ content: '.d4-tooltip { display: none !important; }' });
+  // Additionally, make `#grok-preloader` transparent to pointer events: on cold
+  // CI Datlas the preloader can re-appear AFTER goHome (e.g. while a freshly
+  // opened dialog fetches its schema) and time-out the next click. The platform
+  // JS still drives it; only the pointer-events intercept is neutralised.
+  await page.addStyleTag({ content: `
+    .d4-tooltip { display: none !important; }
+    #grok-preloader, .grok-preloader { pointer-events: none !important; }
+  ` });
   // Activate Browse so the Databases tree is actually visible — otherwise tree
   // helpers operate on hidden DOM and UI-mode reviewers see no navigation.
   const databasesRoot = treeNodeLocator(page, 'tree-Databases');

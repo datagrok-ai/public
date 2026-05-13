@@ -1,9 +1,18 @@
 import { Page, expect } from '@playwright/test';
 
 // Connection name constant — easy to swap between environments.
-// On `public` the Northwind connection is named `Northwind`;
-// on `dev` the test track expects `NorthwindTest`.
-export const POSTGRES_CONNECTION = 'Northwind';
+//
+// CI: the ephemeral Datlas auto-provisions the platform's own metadata DB
+// as a Postgres connection named "Datagrok" (System:Datagrok, see
+// `ServiceConnectionsMigration.createDatagrokConnection`). It always
+// exists, contains the `public` schema with platform tables
+// (`users`, `groups`, `entities`, …), and is reachable from grok_connect
+// inside the test docker network — so queries-suite specs target it
+// instead of Northwind / NorthwindTest, which exist only on dev/public.
+// MS_SQL_CONNECTION isn't used in the CI flow (mssql-query-lifecycle is
+// skipped — no MS SQL service in the CI compose); kept for parity with
+// the dev playwright-tests/ copy.
+export const POSTGRES_CONNECTION = 'Datagrok';
 export const MS_SQL_CONNECTION = 'Northwind';
 
 // Auth state file produced by queries/global-setup.ts (public-env login).
@@ -35,7 +44,14 @@ export async function goHome(page: Page): Promise<void> {
   // (handlers run, content is built) — only visual rendering and pointer interception
   // are disabled. `addStyleTag` lives in the page DOM, so it is re-injected after each
   // `goto('/')` automatically because every test calls `goHome`.
-  await page.addStyleTag({ content: '.d4-tooltip { display: none !important; }' });
+  // Additionally make `#grok-preloader` transparent to pointer events: it can
+  // re-appear AFTER goHome on cold CI Datlas (e.g. while opening a dialog that
+  // does an async server fetch) and time-out the next click. Platform JS still
+  // drives it; only the pointer-events intercept is neutralised.
+  await page.addStyleTag({ content: `
+    .d4-tooltip { display: none !important; }
+    #grok-preloader, .grok-preloader { pointer-events: none !important; }
+  ` });
   // Activate the Browse sidebar so the Databases tree is actually visible. Otherwise
   // tree helpers operate on hidden DOM — the platform still handles the events, but
   // UI-mode timelines and human reviewers see no visual navigation.
