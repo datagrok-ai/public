@@ -23,8 +23,11 @@ allowed-tools:
   - Read
   - Bash
   - Edit
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # publish-packages
 
@@ -170,15 +173,6 @@ air-gapped Datagrok instance.
 - **Private publish only visible to developer.** `--debug` (default)
   deploys are per-developer. Fix: re-publish with `--release` and set
   `canView`/`canEdit`, or share via the UI.
-
-## Verification
-
-- `gh run list --workflow=packages.yaml --limit 1` shows the latest
-  publish run as `completed / success`.
-- `curl -s https://registry.npmjs.org/<name>/<version> | jq -r .version`
-  returns `<version>` (not `null`).
-- For the private path: log in to `<HOST>` → **Manage → Packages**,
-  filter by package name — the new version is listed and shareable.
 
 ## See also
 

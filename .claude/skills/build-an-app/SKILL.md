@@ -21,8 +21,11 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # build-an-app
 
@@ -39,13 +42,6 @@ links restore state.
 - A package scaffold with `src/package.ts` declaring
   `export const _package = new DG.Package();` — produce one with the
   `create-package` skill if absent.
-- `datagrok-tools` globally available (`npm install -g datagrok-tools`)
-  and a server alias configured in `~/.grok/config.yaml`.
-- Canonical imports in `src/package.ts`: `grok` from
-  `datagrok-api/grok`, `DG` from `datagrok-api/dg` (lowercase; the
-  article's uppercase `DG` fails on case-sensitive filesystems), `ui`
-  from `datagrok-api/ui` when UI primitives are used. Knowledge:
-  `DG-FACT-DRIFT-BUILD-APP-003`, `DG-FACT-DRIFT-BUILD-APP-004`.
 
 ## Steps
 
@@ -188,21 +184,9 @@ links restore state.
   `packages/ApiSamples/scripts/demo/stock-broker.js:44-47`
   (`DG-FACT-339`).
 
-## Verification
-
-- `src/package.g.ts` carries `//meta.role: app` for the app function
-  and (if step 3) `//meta.role: appTreeBrowser` + `//meta.app: <AppName>`.
-- After `grok publish <host>`, `https://<host>/apps/<AppName>`
-  (single-app) or `https://<host>/apps/<PackageName>/<AppName>`
-  (multi-app) renders the view from step 1.
-- If step 2 applied, appending `.../foo/bar` surfaces `foo/bar` in
-  `path` (verify via `grok.shell.info` or a breakpoint).
-- If step 3 applied, the tree renders alongside the view and item
-  `onSelected` handlers fire on click.
-
 ## See also
 
-- Source: `{{ lattice.harness.help_develop_root }}/how-to/apps/build-an-app.md`
+- Source: `help/develop/how-to/apps/build-an-app.md`
   (mirror: `docs/_internal/articles-mirror/how-to/apps/build-an-app.md`).
 - Knowledge (`docs/_internal/knowledge/knowledge-graph.md`):
   `DG-FACT-330` (`@grok.decorators.app`), `DG-FACT-331`

@@ -21,8 +21,11 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # customize-grid
 
@@ -37,8 +40,6 @@ linearly red→green", "sort by a custom comparer".
 
 - A package scaffold (`grok create <Name>`) OR an interactive script run
   from **Functions → Scripts** — both use the same JS-API.
-- `datagrok-api` imports (article omits them):
-  `import * as grok from 'datagrok-api/grok'; import * as DG from 'datagrok-api/dg';`
 - A `TableView` — `grok.shell.addTableView(df)` or `grok.shell.tv`.
 
 ## Concepts
@@ -174,15 +175,6 @@ Three surfaces with different blast radius — pick the level first
   level; `grid.columns.setVisible(['~age'])` does NOT undo it — the
   column's *name* now contains the tilde (`DG-FACT-430`). Rename back
   to `'age'` first.
-
-## Verification
-
-- `GridColumn` setters (`width`, `format`, `categoryColors`) repaint the
-  column without an explicit `grid.invalidate()`.
-- `column.meta.colors.getType()` returns one of
-  `'Off' | 'Categorical' | 'Conditional' | 'Linear'` (`DG-FACT-113`).
-- Open a second `TableView` over the same `DataFrame`: `GridColumn`
-  changes do NOT propagate; `Column` / `meta.colors` changes DO.
 
 ## See also
 

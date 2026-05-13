@@ -24,8 +24,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # db-in-docker
 
@@ -45,8 +48,6 @@ none of the three bullets above apply, stop and use that path instead.
 
 ## Prerequisites
 
-- Package scaffold (`grok create <Name>`); paths below are relative to
-  the package root. Use [[create-package]] if absent.
 - API key from `<GROK_HOST>/u` for the credentials POST in step 5.
 - Familiarity with the connection-and-query spine from [[access-data]] —
   this skill only replaces step 1 of that flow.
@@ -88,7 +89,7 @@ none of the three bullets above apply, stop and use that path instead.
    ```
    Expected: container starts on first query and idles out after
    `shutdown_timeout` minutes. Schema:
-   `{{ lattice.harness.help_develop_root }}/how-to/packages/docker-containers.md:41-86`.
+   `help/develop/how-to/packages/docker-containers.md:41-86`.
    Reference: `packages/DBTests/dockerfiles/container.json`.
 
 3. **Write `connections/<name>.json` with the `<DockerContainer>`
@@ -122,7 +123,7 @@ none of the three bullets above apply, stop and use that path instead.
    ```
    Expected: `grok publish` accepts the JSON without "missing
    dataSource" or unknown-server errors. Source:
-   `{{ lattice.harness.help_develop_root }}/how-to/db/db-in-docker.md:13-65`.
+   `help/develop/how-to/db/db-in-docker.md:13-65`.
    Reference: `packages/DBTests/connections/postgres-test-docker.json`.
 
 4. **Publish the package.** Push the Dockerfile + container.json +
@@ -172,24 +173,9 @@ none of the three bullets above apply, stop and use that path instead.
   them under `credentials.parameters` and POST per step 5
   (`DG-FACT-409`).
 
-## Verification
-
-- `grok publish` returns success and lists the new connection.
-- In Datagrok, **Browse > Databases > `<Package>:<Name>`** opens; its
-  schema tree populates after the first query.
-- Fetch the connection via `grok.functions.eval` (preserves the
-  original package case — normalization applies ONLY inside the
-  `${...}` placeholder) and call `.test()`. Pass: the dispatcher
-  treats it as a normal Postgres/MariaDB connection (`DG-FACT-417`).
-  ```typescript
-  const conn = await grok.functions.eval('DbTests:PostgresDocker');
-  await conn.test();
-  ```
-  Reference: `packages/DBTests/src/connections/queries-test.ts:43-50`.
-
 ## See also
 
-- Source: `{{ lattice.harness.help_develop_root }}/how-to/db/db-in-docker.md`
+- Source: `help/develop/how-to/db/db-in-docker.md`
   (mirror: `docs/_internal/articles-mirror/how-to/db/db-in-docker.md`);
   related article `how-to/packages/docker-containers.md` (container.json schema).
 - Knowledge (`docs/_internal/knowledge/knowledge-graph.md`):

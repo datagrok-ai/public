@@ -25,8 +25,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # custom-package-settings-editors
 
@@ -42,10 +45,6 @@ groups for new campaigns", "a folder browser for the storage root",
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from package root.
-- `datagrok-api` imported — `import * as grok`, `import * as DG`,
-  `import * as ui` (article omits these —
-  `custom-package-settings-editors.md:13-25`).
 - One or more properties declared in `package.json` under
   `"properties": [...]` (`develop.md:542-559`). The editor *complements*
   the declarations — the platform reads the metadata, passes them as
@@ -170,17 +169,6 @@ groups for new campaigns", "a folder browser for the storage root",
   header — the `package.g.ts` shape, not the authoring surface
   (`custom-package-settings-editors.md:13-25`). Add imports and switch
   to the decorator form.
-
-## Verification
-
-- `npm run build`, `grok check --soft`, and `grok publish <host>` all
-  exit 0.
-- Regenerated `src/package.g.ts` carries both
-  `//tags: packageSettingsEditor` and `//meta.role: packageSettingsEditor`
-  (compare `packages/HitTriage/src/package.g.ts:127-134`).
-- In Datagrok, open the package's context panel and expand *Settings* —
-  your custom widget renders. Tweaking a value and clicking "Save"
-  persists; re-opening the pane shows the saved value.
 
 ## See also
 

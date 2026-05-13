@@ -23,8 +23,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # file-exporters
 
@@ -38,11 +41,6 @@ data out.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <PackageName>`); all paths below are
-  relative to the package root.
-- `datagrok-api` available with `import * as grok from 'datagrok-api/grok'`
-  and `import * as DG from 'datagrok-api/dg'` — the article snippet omits
-  imports and won't compile as written.
 - Familiarity with `DG.DataFrame` and `grok.shell.t` (knowledge
   `DG-FACT-081`).
 
@@ -179,19 +177,6 @@ data out.
   not a valid `BlobPart`. Narrow at the call site:
   `(bytes ?? new Uint8Array(0)) as Uint8Array<ArrayBuffer>` — the
   pattern both Arrow exporters use (knowledge `DG-FACT-426`).
-
-## Verification
-
-- `grok check` exits `0`; `grok publish <host>` exits `0`.
-- `src/package.g.ts` contains an exported wrapper with
-  `//description: <your label>` AND `//meta.role: fileExporter`
-  (compare `packages/Arrow/src/package.g.ts:60-70`).
-- In Datagrok, open any table → top menu **Export** lists your entry
-  with the exact `description` text. Click it: the browser downloads a
-  file whose name matches the `filename` argument you passed to
-  `DG.Utils.download(...)`.
-- Close the table and re-trigger the menu entry: the function returns
-  silently (no exception, no empty download) thanks to the `null` guard.
 
 ## See also
 

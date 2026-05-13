@@ -22,8 +22,11 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # custom-views
 
@@ -36,13 +39,6 @@ with no URL/project needs, `grok.shell.newView` is enough — see Step 1.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); code lives under `src/`.
-- Standard `datagrok-api` imports (article omits these):
-  ```typescript
-  import * as grok from 'datagrok-api/grok';
-  import * as DG   from 'datagrok-api/dg';
-  import * as ui   from 'datagrok-api/ui';
-  ```
 - Familiarity with the `routing` skill if you'll wire URL state.
 
 ## Steps
@@ -171,17 +167,6 @@ with no URL/project needs, `grok.shell.newView` is enough — see Step 1.
 - **Icon invisible in the tab strip.** `getIcon()` returned a string
   instead of an `HTMLElement`, or `setIcon(...)` was called from the
   constructor. Return an `<img>` / `<i>` from `getIcon()` (`DG-FACT-215`).
-
-## Verification
-
-- TypeScript build (`webpack` or `grok check`) exits `0`.
-- `grok publish` lists the function with `tags: view`; the regenerated
-  `src/package.g.ts` retains all four header lines.
-- Opening the deep-linked URL (e.g. `/dashboard/abc`) opens the tab
-  pointed at `abc` — constructor sees `path='/dashboard/abc'`.
-- Add the open screen to a project, save, log out, reopen — the same
-  state restores (`saveStateMap` / `loadStateMap` round-trip).
-- The tab strip shows your icon (`getIcon()` returned a node).
 
 ## See also
 

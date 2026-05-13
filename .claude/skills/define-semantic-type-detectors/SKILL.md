@@ -22,8 +22,11 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # define-semantic-type-detectors
 
@@ -39,7 +42,6 @@ instead — no JS file needed.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from the package root.
 - Familiarity with the column API you'll branch on (`col.type`,
   `col.name`, `col.min`, `col.max`, `col.categories`, `col.meta.units`).
 
@@ -180,15 +182,6 @@ instead — no JS file needed.
   detector that aliases an existing platform semType will shadow the
   stricter one. Tighten cheap checks, or return `null` for cases the
   platform already handles.
-
-## Verification
-
-- `grok check` and `grok publish <host>` exit `0`.
-- Matching table: the column's "Semantic type" (Properties panel)
-  shows the returned string; non-matching table: empty, or set by a
-  stricter detector.
-- For variant disambiguation: `col.meta.units` shows the per-variant unit.
-- Browser console after import — no `<Pkg>PackageDetectors` errors.
 
 ## See also
 

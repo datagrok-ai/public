@@ -23,7 +23,6 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-harness-authored: true
 ---
 
 # layouts
@@ -38,13 +37,6 @@ for newly opened tables.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from the
-  package root, code lives under `src/`.
-- `datagrok-api` imports — the article omits these:
-  ```typescript
-  import * as grok from 'datagrok-api/grok';
-  import * as DG   from 'datagrok-api/dg';
-  ```
 - A `DG.TableView` (`grok.shell.addTableView(df)` or `grok.shell.tv`).
   `saveLayout` / `loadLayout` are defined on the generic `View` base
   but are no-ops on a plain `ViewBase` — only `TableView`-shaped views
@@ -171,16 +163,6 @@ for newly opened tables.
 - **Layout applies but viewers paint blank for a moment.** Dart-side
   viewer construction is async; insert `await DG.delay(100)` before
   `loadLayout` (`packages/Chem/src/demo/demo.ts:67`).
-
-## Verification
-
-- TypeScript build (`npm run build` or `grok check`) exits `0` with no
-  `Property 'saveLayout' does not exist on type 'View'` errors —
-  every call site is on a `TableView`.
-- `JSON.parse(view.saveLayout().toJson())` exposes `#type`,
-  `viewStateMap`, `columns`, `name`, `author` top-level keys.
-- `(await grok.dapi.layouts.list()).some(l => l.id === saved.id)` is
-  `true` after `grok.dapi.layouts.save(saved)`.
 
 ## See also
 

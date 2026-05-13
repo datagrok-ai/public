@@ -21,8 +21,11 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # routing
 
@@ -38,8 +41,6 @@ navigation, and a pasted URL to rebuild that state on launch.
 - App entry point already registered with `@grok.decorators.app` on a
   `static` method of `PackageFunctions` in `src/package.ts` — produce
   one with `build-an-app` if absent.
-- Canonical imports: `grok` from `datagrok-api/grok`, `DG` from
-  `datagrok-api/dg` (lowercase), `ui` from `datagrok-api/ui`.
 - `datagrok-tools` (`npm install -g datagrok-tools`) and a configured
   server alias for the publish step.
 
@@ -180,18 +181,9 @@ navigation, and a pasted URL to rebuild that state on launch.
   `view.path` itself never changes — it's always appended to whatever
   base path the launcher resolved (`DG-FACT-DRIFT-ROUTING-003`).
 
-## Verification
-
-- Launch the app from `Apps`; confirm step-3 default views render and
-  the address bar shows the assigned `view.path` suffix.
-- Copy the address bar URL, open it in a new tab; confirm the same
-  view + selection rebuilds via the step-4 branch.
-- Mutate state in-app (click a row, change tab); confirm address bar
-  and breadcrumb advance together.
-
 ## See also
 
-- Source: `{{ lattice.harness.help_develop_root }}/how-to/apps/routing.md`
+- Source: `help/develop/how-to/apps/routing.md`
   (mirror: `docs/_internal/articles-mirror/how-to/apps/routing.md`).
 - Knowledge (`docs/_internal/knowledge/knowledge-graph.md`):
   `DG-FACT-332`, `DG-FACT-389` – `DG-FACT-393`,

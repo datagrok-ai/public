@@ -22,8 +22,11 @@ allowed-tools:
   - Read
   - Edit
   - Write
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # register-identifiers
 
@@ -42,7 +45,6 @@ admin UI, see the "No-code alternative" pointer at the bottom.
 
 ## Prerequisites
 
-- Package scaffold (`grok create <Name>`); run from package root.
 - `package.json` editable (`DG-FACT-058`).
 - Familiarity with `DG.SemanticValue` and `DG.ObjectHandler`
   (`DG-FACT-059`, `DG-FACT-061`).
@@ -122,15 +124,6 @@ admin UI, see the "No-code alternative" pointer at the bottom.
   Search Everywhere.** Regex too narrow or anchored — `parsers[].regexp`
   is matched against arbitrary text fragments, so avoid `^…$`
   anchors (`DG-FACT-058`).
-
-## Verification
-
-- `grok publish <host> --release` exits `0`.
-- Open a view containing a known identifier in a string column — the
-  platform highlights it as a tagged token.
-- Hover the highlighted token — your `renderTooltip` content appears.
-- Type the identifier into **Search Everywhere** — a card with the
-  rendered content appears.
 
 ## No-code alternative
 

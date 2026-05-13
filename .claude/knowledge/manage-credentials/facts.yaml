@@ -1,0 +1,82 @@
+# Facts cited by the `manage-credentials` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 6
+
+- id: DG-FACT-346
+  kind: namespace
+  scope: manage-credentials
+  value: |-
+    Datagrok has TWO entity types that own credentials in the secured credentials store — packages and data connections. Both route through the same `/api/credentials/for/<ENTITY_NAME>` REST surface, but the read APIs differ. Package credentials are read from JS via `_package.getCredentials()` (`Package.getCredentials(): Promise<Credentials>`, `js-api/src/entities/misc.ts:163-166`). Connection credentials are not surfaced directly to package JS — they are consumed implicitly when the connection is executed, OR retrieved via `grok.dapi.credentials.forEntity(conn)` (`CredentialsDataSource.forEntity`, `js-api/src/dapi.ts:631-633`). The Credentials entity itself is defined at `js-api/src/entities/data-connection.ts:396-415`.
+  derives_from:
+    - article: help/develop/how-to/packages/manage-credentials.md:5-10,46-66,76-103
+    - code: js-api/src/entities/misc.ts:163-166
+    - code: js-api/src/entities/data-connection.ts:396-415
+    - code: js-api/src/dapi.ts:624-642
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-347
+  kind: namespace
+  scope: manage-credentials
+  value: |-
+    `_package.getCredentials()` returns `Promise<Credentials | null>` — null when no credentials are set for the package OR the caller is not in the credentials owner group. Production read pattern (canonical reference `packages/NLP/src/package.ts:104-115`) is `const c = await _package.getCredentials(); if (c == null) { /* not set */ } else { use c.parameters[key]; }`. The `==`-null check (lenient) matches the NLP reference; the article uses `=== null` (strict) at `manage-credentials.md:54-58` — both are correct because the Dart bridge returns `null` not `undefined`. Single-parameter access form: `c.parameters['login']` (string key, MapProxy-backed at `data-connection.ts:406`).
+  derives_from:
+    - article: help/develop/how-to/packages/manage-credentials.md:46-66
+    - code: js-api/src/entities/misc.ts:163-166
+    - code: js-api/src/entities/data-connection.ts:396-407
+    - code: packages/NLP/src/package.ts:104-115
+    - code: packages/ApiSamples/scripts/misc/package-credentials.js:6-8
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-348
+  kind: namespace
+  scope: manage-credentials
+  value: |-
+    `Credentials` exposes TWO parameter accessors with different visibility semantics — `parameters: any` (MapProxy over the real values, hidden from non-owners; for owners returns the real secrets) and `openParameters: Record<string, string>` (the redacted/display form shown in edit forms). Class doc at `js-api/src/entities/data-connection.ts:397-414`. The article uses `parameters` everywhere (lines 53-66) because the use case is OWN-package code reading its own secrets. The API sample (`packages/ApiSamples/scripts/misc/package-credentials.js:8`) uses `openParameters` because it's a public listing demo. Rule of thumb: when the package reads its own credentials to use them, `parameters`; when surfacing what's stored to a user dialog, `openParameters`.
+  derives_from:
+    - article: help/develop/how-to/packages/manage-credentials.md:53-66
+    - code: js-api/src/entities/data-connection.ts:397-414
+    - code: packages/ApiSamples/scripts/misc/package-credentials.js:6-8
+    - code: packages/NLP/src/package.ts:111-115
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-349
+  kind: naming
+  scope: manage-credentials
+  value: |-
+    The REST endpoint for writing credentials is `POST ${GROK_HOST}/api/credentials/for/${ENTITY_NAME}` where `ENTITY_NAME` is either (a) the package name alone (sets package credentials, e.g. `for/Nlp`) or (b) the dotted form `${PACKAGE_NAME}.${CONNECTION_NAME}` (sets credentials of a connection declared in that package, e.g. `for/Chembl.chembl`). Required headers — `Authorization: <API_KEY>` (the raw key from the user profile page `/u`; NO `Bearer ` prefix) and `Content-Type: application/json`. Body is a flat JSON object of key→string pairs (`{"login":"...","password":"..."}` for a database; `{"accessKeyId":"...","secretAccessKey":"..."}` for AWS — keys are entity-specific and arbitrary). Canonical Python reference: `packages/NLP/aws/nlp-user.py:47-53`.
+  derives_from:
+    - article: help/develop/how-to/packages/manage-credentials.md:22-40,98-103
+    - code: packages/NLP/aws/nlp-user.py:47-53
+    - code: help/govern/access-control/access-control.md:227
+    - code: help/develop/how-to/db/access-data.md:116
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-350
+  kind: namespace
+  scope: manage-credentials
+  value: |-
+    Package credentials are owner-scoped — the `Credentials owner` field on the package's `Credentials...` dialog (Packages view → right-click → Credentials...) is a `Group` reference. Only members of that group can READ the credentials back via `_package.getCredentials()`; non-members get `null`. Examples of allowed owners: a single user (the current user), a named group, the special `All users` group (= the default, makes credentials readable by any authenticated user). For automated/programmatic credential rotation, the article prescribes a SERVICE USER created at `Manage | Users | Actions | Add Service User` — service users have their own API key that the rotation script (e.g., `packages/NLP/aws/nlp-user.py:51`) embeds in the `Authorization` header.
+  derives_from:
+    - article: help/develop/how-to/packages/manage-credentials.md:14-19,42-44
+    - code: packages/NLP/aws/nlp-user.py:48-51
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-351
+  kind: namespace
+  scope: manage-credentials
+  value: |-
+    The connection JSON `credentials.parameters` block (`packages/<Pkg>/connections/<name>.json`) is the file-side counterpart to the REST endpoint — at deploy time the platform reads this block, removes it from the connection record, and stores it in the secured credentials store under the entity `<PackageName>.<ConnectionName>`. Canonical shape — `{"credentials": {"parameters": {"login": "datagrok", "password": "..."}}}` (literal example: `packages/DBTests/connections/postgresql-test.json:10-15`, `packages/DBTests/connections/postgres-db-tests.json:10-15`). Production connection JSONs in `packages/DBTests/connections/` hard-code real login/password values; there is NO `${VAR_NAME}` env-var substitution syntax supported at deploy time — the file is either checked in with literal values (and access-controlled at the repo level) or the `credentials.parameters` block is omitted entirely and credentials are POSTed after deploy via the REST endpoint (FACT-349 path b).
+  derives_from:
+    - article: help/develop/how-to/packages/manage-credentials.md:83-103
+    - code: packages/DBTests/connections/postgresql-test.json:10-15
+    - code: packages/DBTests/connections/postgres-db-tests.json:10-15
+    - code: packages/DBTests/connections/postgres-test-docker.json
+  contradicts: []
+  confidence: high
+
+# DRIFT entries — article vs. code disagreements (manage-credentials)

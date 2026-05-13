@@ -1,0 +1,76 @@
+# Facts cited by the `write-demo-scripts` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 7
+
+- id: DG-FACT-374
+  kind: namespace
+  scope: write-demo-script
+  value: |-
+    The `DemoScript` class is imported as `import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script'`. Requires adding `@datagrok-libraries/tutorials` to the package's dependencies. Package source — `libraries/tutorials/package.json` (`name: @datagrok-libraries/tutorials`).
+  derives_from:
+    - article: help/develop/how-to/misc/write-demo-scripts.md:11-17
+    - code: libraries/tutorials/src/demo-script.ts:20
+    - code: libraries/tutorials/package.json:2
+    - code: packages/Chem/src/demo/demo.ts:6
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-375
+  kind: namespace
+  scope: write-demo-script
+  value: 'DemoScript constructor signature: `new DemoScript(name: string, description: string, isAutomatic: boolean = false, options?: {autoStartFirstStep?: boolean, path?: string})`. Defaults — `isAutomatic=false`, `autoStartFirstStep=false`, `path=""`. The constructor also sets `DemoScript.currentObject = this` (static singleton).'
+  derives_from:
+    - article: help/develop/how-to/misc/write-demo-scripts.md:19-31
+    - code: libraries/tutorials/src/demo-script.ts:94-106
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-376
+  kind: namespace
+  scope: write-demo-script
+  value: '`DemoScript.step(name: string, func: () => Promise<void>, options?: {description?: string, delay?: number}): this` is fluent (returns `this`), so steps chain. `func` MUST be `async` returning `void` — synchronous functions or non-`Promise` returns will not be awaited correctly. `await demoScript.start()` is the trigger; nothing runs without it.'
+  derives_from:
+    - article: help/develop/how-to/misc/write-demo-scripts.md:33-52
+    - code: libraries/tutorials/src/demo-script.ts:8-17,393-400,402-416
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-377
+  kind: threshold
+  scope: write-demo-script
+  value: |-
+    Default per-step delay (when `options.delay` is omitted and the script is automatic) is 2000ms. Source — `const stepDelay = this._steps[this._currentStep].options?.delay ? ...delay! : 2000;`. Skill output should default explicit `delay: 2000` to make timing visible to authors.
+  derives_from:
+    - code: libraries/tutorials/src/demo-script.ts:211-212
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-378
+  kind: naming
+  scope: write-demo-script
+  value: 'The step `delay` option is consumed ONLY in automatic mode (`isAutomatic=true`). The branch that awaits `_countdown(...)` + `DG.delay(stepDelay)` lives behind `if (this._isAutomatic) { ... }`; in manual scripts the user clicks "Next step" to advance and `delay` is ignored. Article example at lines 36-43 sets `delay: 2000` on a manual script — visually harmless but inert.'
+  derives_from:
+    - article: help/develop/how-to/misc/write-demo-scripts.md:33-43
+    - code: libraries/tutorials/src/demo-script.ts:223-226
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-379
+  kind: naming
+  scope: write-demo-script
+  value: '`DemoScript.DEMO_PATH = "apps/Tutorials/Demo"` (instance field). The constructor `options.path` is appended (with spaces replaced by `-`) to form `view.path` for every step: `grok.shell.v.path = ` `${this.DEMO_PATH}/${(this._path ?? "").replaceAll(" ", "-")}`. So `path: "Curves/Demo"` produces `apps/Tutorials/Demo/Curves/Demo`. The same `path` value drives the in-view breadcrumb labels (`["Home", "Demo", ...path.split("/")]`).'
+  derives_from:
+    - code: libraries/tutorials/src/demo-script.ts:61,64-65,186-192
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-380
+  kind: naming
+  scope: write-demo-script
+  value: 'A demo function is registered in `package.ts` (or `package.g.ts` from decorators) with the header comment `//meta.demoPath: <Group> | <Sub>` to be discovered by the Demo app, and `//meta.isDemoScript: true` to be rendered as a `DemoScript` (sidebar with step list and play controls). Without `meta.demoPath` the function will not appear in the demo gallery. The constant `DG.FUNC_OPTIONS.DEMO_PATH` confirms `meta.demoPath` is a first-class function option. Optional `//meta.isDemoDashboard: true` (orthogonal) renders a static dashboard instead of a stepwise script.'
+  derives_from:
+    - article: help/develop/how-to/misc/write-demo-scripts.md:54-81
+    - code: packages/Chem/src/package.g.ts:1057-1064,1080-1096
+    - code: packages/Tutorials/src/demo-app/widget.ts:34
+  contradicts: []
+  confidence: high

@@ -3,6 +3,10 @@ name: cheminformatics
 description: Use the grok.chem JS API for substructure search, similarity, MCS, R-group, descriptors, and molecule rendering
 ---
 
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
+
 # cheminformatics
 
 ## When to use
@@ -168,15 +172,6 @@ molecule into a `div`/`canvas`".
 - **`svgMol` returns an empty `div`.** OpenChemLib loads dynamically;
  SVG is injected on the next microtask. Append the div first; do not
  read `innerHTML` synchronously (knowledge `DG-FACT-241`).
-
-## Verification
-
-- Step 1: `bs.length === t.col('smiles').length && bs.trueCount > 0`.
-- Step 2: the result's `score` column is monotonically decreasing and
- every value is within `[cutoff, 1.0]`.
-- Step 3: `scores.length === t.col('smiles').length`.
-- Step 5: `typeof smarts === 'string' && smarts.length > 0`.
-- Step 9: `canvas.toDataURL` is longer than the empty-canvas prefix.
 
 ## See also
 

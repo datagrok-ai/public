@@ -21,8 +21,11 @@ allowed-tools:
  - Read
  - Edit
  - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # manipulate-viewers
 
@@ -34,13 +37,6 @@ or wire an overlay that re-runs on every layout restore.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); code lives under `src/`.
-- `datagrok-api` imports — the article omits these; snippets won't
- compile without them:
- ```typescript
- import * as grok from 'datagrok-api/grok';
- import * as DG from 'datagrok-api/dg';
- ```
 - A `DG.DataFrame` (`grok.data.demo.demog` for demos) and a
  `TableView` (`grok.shell.addTableView(df)` or `grok.shell.tv`).
 
@@ -166,18 +162,6 @@ or wire an overlay that re-runs on every layout restore.
  subscribed after `addViewer` instead of passing
  `initializationFunction`. Move the body into a registered package
  function and pass its name in viewer options (`DG-FACT-205`).
-
-## Verification
-
-- `npm run build` (or `grok check`) exits `0` with no `deprecated`
- warnings on `view.<type>(...)` — every attach goes through `addViewer`.
-- In Datagrok, the viewer mounts; `viewer.getOptions(true).look`
- returns your options plus defaults.
-- `viewer.getProperties.every(p => 'columnTypeFilter' in p)` is `true`.
-- Save the layout, reopen — the viewer reappears AND the
- `initializationFunction` behavior re-runs.
-- `view.dockManager.dock(viewer, DG.DOCK_TYPE.TOP)` actually docks at
- the top (proves you didn't paste the literal `'top'`).
 
 ## See also
 

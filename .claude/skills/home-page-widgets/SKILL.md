@@ -25,8 +25,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # home-page-widgets
 
@@ -40,8 +43,6 @@ on the landing page".
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from package root.
-- `datagrok-api` imported — `grok`, `DG`, `ui`.
 - Familiarity with `DG.Widget` — every tile extends it (`DG-FACT-141`).
 
 ## Steps
@@ -174,16 +175,6 @@ on the landing page".
   called outside the constructor, or its return wasn't assigned
   (`DG-FACT-142`). Canonical:
   `this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Recent files')`.
-
-## Verification
-
-- `npm run build` and `grok publish <host>` both exit 0.
-- `src/package.g.ts` carries `//meta.role: dashboard`,
-  `//output: widget result`, and `//meta.order: <n>` matching the
-  decorator (compare `packages/PowerPack/src/package.g.ts:17-32`).
-- In Datagrok, the welcome screen shows the tile in the slot set by
-  `order`; right-click → *Settings* exposes `caption` and other
-  `addProperty` fields.
 
 ## See also
 

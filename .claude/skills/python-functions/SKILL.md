@@ -22,8 +22,11 @@ allowed-tools:
   - Read
   - Write
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # python-functions
 
@@ -35,8 +38,6 @@ Datagrok function from JS.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); paths below are relative
-  to the package root.
 - A Datagrok instance where `grok_spawner` runs (it injects
   `$CELERY_HOSTNAME` / `$TASK_QUEUE_NAME` — knowledge `DG-FACT-162`).
 - Python 3.8+ with `requirements.in` (uv) OR `environment.yaml`
@@ -182,14 +183,6 @@ Datagrok function from JS.
   (knowledge `DG-FACT-162`).
 - **`cpu: 0.25` rejected at deploy.** Celery containers require
   `cpu >= 1` (knowledge `DG-FACT-161`). Fix: bump to `1`+.
-
-## Verification
-
-- After step 6, **Platform → Dockers** shows a card for the app's
-  image and container with a green or grey dot (not red); the function
-  appears in **Functions** as `<Package>:<HeaderName>`.
-- After step 7, `grok.functions.call(...)` resolves; on failure, check
-  container logs from the Property pane.
 
 ## See also
 

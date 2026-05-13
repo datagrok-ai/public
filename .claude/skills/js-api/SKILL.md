@@ -3,6 +3,10 @@ name: js-api
 description: Navigate the Datagrok JS API — pick the right entry point (`grok` / `ui` / `DG`) for a task, register functions, and subscribe to events
 ---
 
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
+
 # js-api
 
 ## When to use
@@ -18,8 +22,6 @@ function from JS", "subscribe to a platform event", "dock a custom div".
 
 - A package scaffold (`grok create <Name>`); `datagrok-api` already in
  `dependencies` (the `grok create` template wires this).
-- Three canonical imports — `grok` / `ui` / `DG` (knowledge `DG-FACT-224`).
- The full `grok.*` namespace inventory is `DG-FACT-225`.
 - A logged-in platform tab to verify with the Console (`Tools → Console`)
  and Inspector (`Alt+I`).
 
@@ -155,16 +157,6 @@ function from JS", "subscribe to a platform event", "dock a custom div".
  during dev mode multiply handlers. Fix: store the subscription on the
  package object (or in a module-level array) and `unsubscribe` when
  the package re-inits.
-
-## Verification
-
-- Step 1 — `webpack` exits `0`; the generated bundle resolves all three
- imports.
-- Step 3 — `grok.functions.find('<PackageName>:jsConcat')` returns a
- `Func`; `jsConcat(1, 2)` evaluates to `'1_2'` in the Console.
-- Step 4 — switching the current project fires the balloon exactly once
- per subscribe (no duplicates after a reload).
-- Step 6 — `init` balloon prints all three `typeof` values as `object`.
 
 ## See also
 

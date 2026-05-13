@@ -13,27 +13,6 @@ disable-model-invocation: true
 Help the user create a Datagrok workflow — a `PipelineConfiguration` object that wires
 multiple scripts together with reactive data links, validators, and metadata handlers.
 
-## Prerequisites
-
-The package must have `@datagrok-libraries/compute-api` installed. This is the public API
-for workflow development — it re-exports all needed types (`PipelineConfiguration`, `Handler`,
-`Validator`, `MetaHandler`, controller interfaces, etc.).
-
-```bash
-npm i @datagrok-libraries/compute-api
-```
-
-The provider file must also import `dayjs` with UTC/timezone plugins — required by
-TreeWizardEditor at runtime:
-
-```typescript
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-dayjs.extend(utc);
-dayjs.extend(timezone);
-```
-
 ## References
 
 **Always read before implementing:**

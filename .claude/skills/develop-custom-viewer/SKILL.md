@@ -23,8 +23,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # develop-custom-viewer
 
@@ -35,13 +38,6 @@ express the picture your data needs — a D3 bar chart with custom
 interactions, a domain plot (radar, sankey), or a server-rendered
 matplotlib scene. Output must live in *Add Viewer*, persist in
 layouts, and react to filter/selection/current row.
-
-## Prerequisites
-
-- A package scaffold (`grok create <Name> --ts`); run from package root.
-- `datagrok-api` imports (`* as DG`, `* as ui`, `* as grok`);
-  `datagrok-tools ^4.12.x` for `@grok.decorators.viewer` (older
-  toolchains use the annotated-factory surface).
 
 ## Steps
 
@@ -176,15 +172,6 @@ layouts, and react to filter/selection/current row.
   (`DG-FACT-188`).
 - **Scripting viewer fails to render.** Header omits `# output: graphics`
   or `# tags: viewers` (`DG-FACT-196`).
-
-## Verification
-
-- `npm run build` + `grok publish <host>` exit `0`; `src/package.g.ts`
-  contains a wrapper with `//meta.role: viewer` and `//output: viewer
-  result` for your viewer.
-- In Datagrok: open a table view → *Add → JavaScript Viewers → <pkg> →
-  <viewer name>* — viewer paints; toggling the filter or selecting rows
-  re-renders it; properties persist into a saved layout.
 
 ## See also
 

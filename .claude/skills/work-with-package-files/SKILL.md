@@ -24,8 +24,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # work-with-package-files
 
@@ -37,8 +40,6 @@ package code without an external URL or DB connection.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from the
-  package root.
 - `import * as grok from 'datagrok-api/grok'`,
   `import * as DG from 'datagrok-api/dg'`.
 - `_package` exported from `src/package.ts` (the article's `package.js`
@@ -167,17 +168,6 @@ package code without an external URL or DB connection.
 - **Editor autocompletes `DG.FileSource`.** Deprecated alias
   (`DG-FACT-172`, drift `DG-FACT-DRIFT-068`). New code uses
   `DG.FilesDataSource`.
-
-## Verification
-
-- `grok publish <host>` exits `0`.
-- `Files | App Data | <Package>` in the UI lists everything committed
-  under the source `files/` directory.
-- A test or `init()` that calls `_package.files.list('', true)`
-  returns a non-empty `FileInfo[]`; `readAsText` / `readAsBytes` on a
-  known entry returns its content.
-- `grok.data.loadTable(`${_package.webRoot}tables/<x>.csv`)` returns
-  a `DG.DataFrame` with the expected columns.
 
 ## See also
 

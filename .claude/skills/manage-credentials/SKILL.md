@@ -23,8 +23,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # manage-credentials
 
@@ -168,19 +171,6 @@ connection.
   supplied, it persists in the connection record itself — not the
   secured store. Always put login/password in the
   `credentials.parameters` block.
-
-## Verification
-
-- POST the same body in step 2 a second time — endpoint is idempotent,
-  HTTP `200 OK` both times.
-- In the Datagrok console:
-  ```javascript
-  (await (await grok.dapi.packages.filter('<Pkg>').first()).getCredentials()).openParameters
-  ```
-  Returns the redacted key set you stored (`DG-FACT-348`).
-- For a connection: open
-  **Browse → Connections → \<Pkg\>:\<Conn\>**, click **Test connection** —
-  it succeeds without re-prompting for a password.
 
 ## See also
 

@@ -1,0 +1,79 @@
+# Facts cited by the `rest-api` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 6
+
+- id: DG-FACT-229
+  kind: naming
+  scope: rest-api
+  value: |-
+    REST API authentication uses an `Authorization` header whose value is the API key prefixed with `Bearer ` (note the trailing space). The API key is copied from the user profile → "API Key" link. The Python client passes whatever string the caller supplies into `Authorization` verbatim — i.e. the caller (not the client) must include the `Bearer ` prefix.
+  derives_from:
+    - article: help/develop/packages/rest-api.md:12-18
+    - code: python-api/datagrok_api/http_client.py:5-9   # 'Authorization': api_key (passed through as-is)
+    - code: python-api/datagrok_api/datagrok_client.py:25-27,58  # docstring: 'Should typically start with "Bearer ".'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-230
+  kind: naming
+  scope: rest-api
+  value: |-
+    REST API base URL is the Datagrok deployment URL with `/api` appended. Canonical example for the public instance is `https://public.datagrok.ai/api`. The base URL is what the Python client takes as its `base_url` argument — endpoint paths like `/public/v1/...` are appended to it.
+  derives_from:
+    - article: help/develop/packages/rest-api.md:22
+    - code: python-api/datagrok_api/datagrok_client.py:58,93
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-231
+  kind: naming
+  scope: rest-api
+  value: |-
+    All public REST endpoints live under the `/public/v1/` prefix (e.g. `/public/v1/files/...`, `/public/v1/tables/...`, `/public/v1/dashboards/...`, `/public/v1/functions/...`). The Python client confirms additional prefixes that the article does not document — `/public/v1/connections`, `/public/v1/users`, `/public/v1/entities/{id}/shares`, `/public/v1/groups`.
+  derives_from:
+    - article: help/develop/packages/rest-api.md:29-51
+    - code: python-api/CLAUDE.md:7   # "wraps the public API endpoints (`/public/v1/*`)"
+    - code: python-api/datagrok_api/resources/connections.py:61
+    - code: python-api/datagrok_api/resources/users.py:48
+    - code: python-api/datagrok_api/resources/shares.py:76
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-232
+  kind: naming
+  scope: rest-api
+  value: |-
+    Datagrok Grok names use `:` as the separator (e.g. `Demo:Files:cars.csv`), but the REST API requires `.` instead (e.g. `Demo.Files.cars.csv`). Callers must replace colons with periods before sending the request — the Python client does this automatically with `id.replace(':', '.')` on every resource that takes a name (files, tables, dashboards, functions, connections, groups, shares). Sending raw colons is the #1 REST API gotcha.
+  derives_from:
+    - article: help/develop/packages/rest-api.md:58-62
+    - code: python-api/datagrok_api/resources/files.py:39,62,118
+    - code: python-api/datagrok_api/resources/tables.py:30,51,74-75
+    - code: python-api/datagrok_api/resources/functions.py:67,85
+    - code: python-api/datagrok_api/resources/connections.py:60,103
+    - code: python-api/datagrok_api/resources/shares.py:75
+    - code: python-api/datagrok_api/resources/groups.py:44,80
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-233
+  kind: enum
+  scope: rest-api
+  value: |-
+    REST API supported entity surfaces (per the article) are files, tables, dashboards, and functions. Files are identified by `{connector}/{path}` and uploaded/downloaded as binary; tables are identified by name (or `project.table`) and exchanged as CSV; dashboards take `{name}/{table_ids}` on create and a `{id}/shares?groups=...&access=...` query for sharing; functions are invoked via POST with parameters in the JSON body.
+  derives_from:
+    - article: help/develop/packages/rest-api.md:25-51
+    - code: python-api/datagrok_api/resources/tables.py:31,52,76
+    - code: python-api/datagrok_api/resources/files.py
+    - code: python-api/datagrok_api/resources/functions.py:68
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-234
+  kind: namespace
+  scope: rest-api
+  value: |-
+    The OpenAPI specification for the REST API is published at `<base-url>/public/api.yaml` — for the public instance, `https://public.datagrok.ai/api/public/api.yaml`. This is the authoritative endpoint listing; the help article enumerates only a curated subset.
+  derives_from:
+    - article: help/develop/packages/rest-api.md:70
+  contradicts: []
+  confidence: medium  # remote URL; not verified against a local copy

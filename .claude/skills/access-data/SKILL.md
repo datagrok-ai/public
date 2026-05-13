@@ -24,8 +24,11 @@ allowed-tools:
   - Edit
   - Write
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # access-data
 
@@ -36,13 +39,6 @@ Your package needs rows from an external SQL database materialized as a
 kept out of git, and one JS call to run the query. The spine is four
 steps: declare the connection, transfer credentials, author the query,
 call it from TypeScript.
-
-## Prerequisites
-
-- Package scaffold (`grok create <Name>`); paths are relative to the
-  package root. Produce one with `create-package` if absent.
-- Imports: `grok` from `datagrok-api/grok`, `_package` from
-  `./package`. API key from `<GROK_HOST>/u` for step 2.
 
 ## Steps
 
@@ -71,7 +67,7 @@ call it from TypeScript.
    is the deserializer discriminator used by the Chembl reference; the
    article omits it from its example but the live JSON includes it.
    Source:
-   `{{ lattice.harness.help_develop_root }}/how-to/db/access-data.md:29-114`.
+   `help/develop/how-to/db/access-data.md:29-114`.
    Reference: `packages/Chembl/connections/chembl.json` (real shape
    including `#type`).
 
@@ -87,7 +83,7 @@ call it from TypeScript.
    Expected: `200 OK`. Read back via `await _package.getCredentials()`
    → `c.parameters['<key>']` (NOT `c.openParameters`, the redacted
    display copy). Source:
-   `{{ lattice.harness.help_develop_root }}/how-to/db/access-data.md:81-116`.
+   `help/develop/how-to/db/access-data.md:81-116`.
    Reference: `js-api/src/entities/misc.ts:163-166` (the
    `getCredentials` typing and `parameters` vs `openParameters` split).
 
@@ -113,7 +109,7 @@ call it from TypeScript.
    ```
    Expected: `grok publish` registers a function
    `<Package>:ProteinClassification`. Source:
-   `{{ lattice.harness.help_develop_root }}/how-to/db/access-data.md:120-213`
+   `help/develop/how-to/db/access-data.md:120-213`
    (header grammar at 132-156; sibling `.js`/`.layout` binding at
    189-213; annotation deferral at 165).
    Reference: `packages/Chembl/queries/queries.sql:1-6`.
@@ -133,7 +129,7 @@ call it from TypeScript.
    ```
    Expected: a `TableView` opens with the query result. For a scalar
    return type use `grok.data.query<number>(...)`. Source:
-   `{{ lattice.harness.help_develop_root }}/how-to/db/access-data.md:169-185`.
+   `help/develop/how-to/db/access-data.md:169-185`.
    Reference: `js-api/src/data.ts:255-262` (signature, deprecation
    marker, positional-arg count).
 
@@ -157,20 +153,9 @@ call it from TypeScript.
   one way: query → connection auto-shares; the reverse does NOT.
   Share each query explicitly (`DG-FACT-410`).
 
-## Verification
-
-- After step 1, the file is valid JSON and `grok publish` accepts it
-  without a "missing dataSource" error.
-- After step 2, `curl` returns `200 OK` and
-  `await _package.getCredentials()` resolves with the posted keys.
-- After step 3, the `<Package>:ProteinClassification` function appears
-  in the function registry after `grok publish`.
-- After step 4, running `<Package>:ProteinClassification()` in the
-  Datagrok console opens a `TableView` with the expected rows.
-
 ## See also
 
-- Source: `{{ lattice.harness.help_develop_root }}/how-to/db/access-data.md`
+- Source: `help/develop/how-to/db/access-data.md`
   (mirror: `docs/_internal/articles-mirror/how-to/db/access-data.md`).
 - Knowledge (`docs/_internal/knowledge/knowledge-graph.md`):
   `DG-FACT-400` – `DG-FACT-404`, `DG-FACT-409`, `DG-FACT-410`.

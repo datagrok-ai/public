@@ -24,8 +24,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # file-handlers
 
@@ -39,10 +42,6 @@ The three "open this file" roles are distinct (knowledge `DG-FACT-086`).
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); paths are relative to the
-  package root.
-- `datagrok-api` imported as `import * as grok from 'datagrok-api/grok'`
-  and `import * as DG from 'datagrok-api/dg'`.
 - A working parser that returns `DG.DataFrame[]`.
 
 ## Steps
@@ -165,19 +164,6 @@ The three "open this file" roles are distinct (knowledge `DG-FACT-086`).
 - **Two handlers fight over `.jdx`.** Both claim the same extension
   with no `fileViewerCheck`; the platform picks one non-deterministically.
   Add `fileViewerCheck: '<Pkg>:<Fn>'` to each (knowledge `DG-FACT-085`).
-
-## Verification
-
-- `grok check` exits `0`; `grok publish <host>` exits `0`.
-- `src/package.g.ts` contains the exported wrapper with
-  `//meta.role: fileHandler` and `//meta.ext: <your-list>` (compare
-  `packages/Bio/src/package.g.ts:486-503` or
-  `packages/Chem/src/package.g.ts:793-799`).
-- In Datagrok, drag-drop or open a file with one of the registered
-  extensions: a TableView appears for each returned `DG.DataFrame` in
-  the order your handler returned them.
-- Open an unrelated file (`.csv`, `.txt`): your handler is NOT invoked
-  — the generic importer takes over.
 
 ## See also
 

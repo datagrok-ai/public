@@ -1,0 +1,188 @@
+# Facts cited by the `create-package` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 7
+
+- id: DG-FACT-156
+  kind: enum
+  scope: publish-packages
+  value: |-
+    `grok publish` accepts the flags `--release` (release-mode build; default is debug-mode), `--rebuild`, `--build`, `--key <KEY>` (developer key; falls back to `~/.grok/config.yaml`), `--suffix <s>` (auto-derived from short git SHA when omitted), `--debug`, `--dropDb`, `--link`, `--refresh`, `--rebuild-docker`, `--skip-docker-rebuild`. `--debug` and `--release` are mutually exclusive — combining them errors out with "Incompatible options: --debug and --release".
+  derives_from:
+    - code: tools/bin/commands/publish.js:570,614,620-621,652,676,679
+  contradicts: []
+  confidence: high
+
+# DRIFTS for publish-packages
+
+- id: DG-FACT-440
+  kind: naming
+  scope: create-package
+  value: |
+    The column tag literal `quality` IS the semantic-type tag — both
+    the platform constant `TAGS.SEMTYPE` and the public alias
+    `Tags.Quality` resolve to the string `'quality'`
+    (`js-api/src/const.ts:318`, `js-api/src/api/ddt.api.g.ts:77`).
+    Consequence: an info-panel function declaring
+    `//input: <type> <name> {semType: <Value>}` matches a column whose
+    `quality` tag equals `<Value>` (case-sensitive string compare on
+    the raw tag value). The article's instruction "right-click the
+    column → Column Properties → add tag `quality : text`" is exactly
+    setting that semantic-type tag to `text` so the function's
+    `{semType: text}` filter fires. Conventional values for the tag
+    are the strings in `SEMTYPE` (`'Text'`, `'Molecule'`,
+    `'Macromolecule'`, …) — but the matching is whatever literal
+    you wrote in BOTH the annotation and the column tag; the tutorial
+    deliberately uses lowercase `text` to demonstrate the bare
+    mechanism without depending on `SEMTYPE.TEXT = 'Text'`. Detectors
+    set the tag programmatically via `column.semType = '<Value>'`
+    (`js-api/src/dataframe.ts` Column accessor) — same storage slot.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:38-39,80-85
+    - code: js-api/src/const.ts:318
+    - code: js-api/src/const.ts:206-246    # SEMTYPE enum (Text, Molecule, Macromolecule, …)
+    - code: js-api/src/api/ddt.api.g.ts:77 # static Quality = 'quality'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-441
+  kind: naming
+  scope: create-package
+  value: |
+    `grok create <rawName>` writes only TWO names — both derived from
+    `rawName` with NO separate CLI flag for either: (a) the package
+    directory and the `#{PACKAGE_NAME}` template substitution use
+    `rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase()`,
+    which capitalizes the first letter and LOWERCASES the rest;
+    (b) the `friendlyName` and `#{PACKAGE_FRIENDLY_NAME}` substitution
+    use `rawName` unchanged (`tools/bin/commands/create.ts:142-149`).
+    `package.json` "name" is `rawName.toLowerCase()` (npm-name
+    requirement). Effect for `grok create TextStats`: folder
+    `Textstats/`, `package.json` `"name": "textstats"`,
+    `"friendlyName": "TextStats"`. The article's "internal name should
+    follow PascalCase, friendly name Title Case" describes the
+    INTENDED maintenance convention — but the only way to obtain a
+    multi-uppercase internal name from `grok create` is to type that
+    casing as the raw arg AND rename the directory by hand afterward
+    (or to edit `#{PACKAGE_NAME}` substitutions in the generated
+    files). Real packages preserve PascalCase
+    (`packages/BenchlingLink`, `packages/ChemblAPI`, etc.) because
+    they were renamed after scaffolding or migrated from older
+    layouts. Pre-existing scaffolds also override `friendlyName` by
+    hand in `package.json` when they want spaces (e.g.,
+    `"friendlyName": "Text Stats"`).
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:25-29
+    - code: tools/bin/commands/create.ts:142-149
+    - code: tools/package-template/package.json:1-5
+    - code: packages/BenchlingLink   # PascalCase preserved in production
+    - code: packages/ChemblAPI       # PascalCase preserved in production
+  contradicts:
+    - DG-FACT-DRIFT-CP-001  # article describes a convention the CLI does not enforce
+  confidence: high
+
+# DRIFT entries — article vs. code disagreements (create-package)
+
+- id: DG-FACT-462
+  kind: pattern
+  scope: create-package
+  value: |
+    The `build` script in the package template's `package.json` is
+    `"grok api && grok check --soft && webpack"` — NOT just `webpack`.
+    `grok api` regenerates `src/package.g.ts` from header annotations and
+    `@grok.decorators.*` decorators in `src/package.ts` (codegen);
+    `grok check --soft` runs the package validator (warning-mode — `grok
+    check` without `--soft` fails-fast on any error); `webpack` then
+    bundles. Production packages preserve this exact triplet
+    (`packages/Chem/package.json:99`, `packages/Bio/package.json:102`).
+    The article (`create-package.md:65-66`) says "process your package,
+    e.g., `webpack`" — true but understates. Skipping the codegen step
+    by running `webpack` directly leaves `package.g.ts` stale and means
+    new `//name:` / `//meta.role:` panel annotations never reach the
+    bundled output. The article's "You are not supposed to modify this
+    script" is therefore correct — the triplet is load-bearing.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:60-66
+    - code: tools/package-template/package.json:21
+    - code: packages/Chem/package.json:99
+    - code: packages/Bio/package.json:102
+    - code: packages/NodeJSDemo/package.json:31   # `grok check` (no --soft) variant
+  contradicts:
+    - DG-FACT-DRIFT-CP-003
+  confidence: high
+
+- id: DG-FACT-463
+  kind: pattern
+  scope: create-package
+  value: |
+    `grok create <name>` AUTOMATICALLY runs `npm install` in the new
+    package directory after scaffolding completes
+    (`tools/bin/commands/create.ts:201-205`:
+    `exec('npm install', {cwd: packageDir}, (err, stdout, stderr) => ...)`).
+    The article's step 1 — "For the newly created package, you have to
+    install the dependencies. Run this from the TextStats folder:
+    `npm install`" — is REDUNDANT for normal scaffolds. Re-running
+    `npm install` is only needed when (a) the auto-install errored (the
+    CLI logs `stderr`/`stdout` but the parent process exits normally),
+    (b) `package.json` was hand-edited after scaffolding, or (c) the
+    user moved/copied the directory before deps could resolve. Skill
+    writers should treat the manual `npm install` as a no-op safety
+    step, not a required action.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:19-23
+    - code: tools/bin/commands/create.ts:201-205
+  contradicts:
+    - DG-FACT-DRIFT-CP-002
+  confidence: high
+
+- id: DG-FACT-464
+  kind: naming
+  scope: create-package
+  value: |
+    The `--test` flag on `grok create` has a NARROW effect: it adds
+    `@datagrok-libraries/utils: latest` to `package.json` dependencies
+    and re-asserts `scripts.test = 'grok test'`
+    (`tools/bin/commands/create.ts:80-87`). It does NOT generate
+    `src/package-test.ts`, does NOT generate `src/tests/test-examples.ts`,
+    does NOT add a `test:` webpack entry, and does NOT add
+    `@datagrok-libraries/test` (that dep is in the default template
+    UNconditionally — `tools/package-template/package.json:10` declares
+    `"@datagrok-libraries/test": "^1.1.0"` even without `--test`). The
+    `test: 'grok test'` script is ALSO in the default template
+    (`tools/package-template/package.json:22`), so the `--test`
+    reassignment is a no-op. Net consequence: the article's
+    `grok create TextStats --test` produces a package with the test
+    deps already installed but NO test files — the user must run
+    `grok add tests` (DG-FACT-285) to actually scaffold tests. The
+    article never calls this out.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:14-15
+    - code: tools/bin/commands/create.ts:80-87
+    - code: tools/package-template/package.json:10,22
+  contradicts:
+    - DG-FACT-DRIFT-CP-004
+  confidence: high
+
+- id: DG-FACT-DRIFT-CP-001
+  kind: naming
+  scope: create-package
+  value: |
+    Article (`create-package.md:25-29`) instructs: "The internal name
+    of the package should follow PascalCase (e.g., `TextStats`), while
+    the friendly name should use Title Case (e.g., `Text Stats`)."
+    The `grok create` CLI does NOT preserve PascalCase: the directory
+    and `#{PACKAGE_NAME}` token are normalized to first-letter-upper +
+    rest-lower (`tools/bin/commands/create.ts:148`). And the CLI has
+    NO flag for a separately-spelled `friendlyName` — `friendlyName`
+    is always identical to `rawName`. To realize the article's intent
+    the user must either rename the directory after scaffold OR pass
+    a PascalCase rawName and hand-edit `friendlyName` in `package.json`
+    to add the space. The note reads as platform-enforced but is
+    purely a convention. Fix in article: either (a) state explicitly
+    that `friendlyName` must be hand-edited for Title Case spacing,
+    or (b) add a flag like `--friendly-name "<Title Case>"` to
+    `grok create`.
+  derives_from:
+    - article: help/develop/how-to/packages/create-package.md:25-29
+    - code: tools/bin/commands/create.ts:142-149
+  contradicts: []
+  confidence: high

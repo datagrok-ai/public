@@ -25,8 +25,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # custom-script-handlers
 
@@ -173,20 +176,6 @@ built-in runtimes — no handler needed.
 - **Script with the right extension still falls back to a built-in handler.**
   Dispatch is by `#language:` header in the script body, NOT by file
   extension (`DG-FACT-178`). Confirm the script header.
-
-## Verification
-
-- `npx grok check` exits `0`; `src/package.g.ts` shows all four
-  mandatory annotations above your handler.
-- After `grok publish`, **Tools → Scripting → New script** lists your
-  language; selecting it loads `templateScript` and switches the
-  editor to `codeEditorMode`.
-- Run a minimal script (`#language: <yours>` + one `#input` +
-  `#output`); the output panel shows the value set via
-  `scriptCall.setParamValue`.
-- If `vectorizationFunction` is set: tabular invocation (apply to a
-  column) does NOT fall back to per-row scalar.
-- Browser console shows no `scriptHandler` warnings at startup.
 
 ## See also
 

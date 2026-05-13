@@ -1,0 +1,223 @@
+# Facts cited by the `custom-cell-renderers` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 11
+
+- id: DG-FACT-099
+  kind: enum
+  scope: custom-cell-renderers
+  value: |-
+    The role string for a custom grid cell renderer is `cellRenderer` (camelCase). Defined as `FUNC_TYPES.CELL_RENDERER = 'cellRenderer'` in `js-api/src/const.ts:390`. Function-role descriptor at `js-api/src/const.ts:497-501` declares `{role: FUNC_TYPES.CELL_RENDERER, header: 'tags', signature: 'cellRenderer(): GridCellRenderer'}`. NOTE the lookalike at `js-api/src/const.ts:330` — `Tags.CELL_RENDERER = 'cell.renderer'` — is a COLUMN-TAG KEY (used to override the renderer for a single column), NOT the function role; do not confuse them.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:15
+    - code: js-api/src/const.ts:387-390
+    - code: js-api/src/const.ts:497-501
+    - code: js-api/src/const.ts:330
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-102
+  kind: namespace
+  scope: custom-cell-renderers
+  value: |-
+    A custom renderer subclasses `DG.GridCellRenderer` (declared at `js-api/src/grid.ts:1276-1325`). REQUIRED overrides — `get name(): string` and `get cellType(): string` (defaults throw `'"name" property not implemented'` / `'"cellType" property not implemented'`); `render(g, x, y, w, h, gridCell, cellStyle): void` (default in the base `CanvasRenderer` throws `'Not implemented'`). OPTIONAL overrides — `renderSettings(gridColumn): Element | null` (default returns `null`); `defaultWidth` / `defaultHeight` / `getDefaultSize`; mouse / keyboard handlers (`onMouseEnter`, `onClick`, etc.); `clip` flag (default `true`). Static `GridCellRenderer.register(renderer)` is the imperative registration call (`js-api/src/grid.ts:1304-1306`); skill code never calls it directly because the platform invokes it via the factory function.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:44-48
+    - code: js-api/src/grid.ts:1276-1325
+    - code: packages/PowerGrid/src/sparklines/piechart.ts:192-217
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-103
+  kind: namespace
+  scope: custom-cell-renderers
+  value: |-
+    The class-decorator form `@grok.decorators.cellRenderer({name?, description?, cellType, columnTags?, virtual?})` is exported from `datagrok-api/grok` at `js-api/src/decorators/functions.ts:62-80` as a CLASS DECORATOR (typed `(constructor: Function) => void`). Applied directly to the `extends DG.GridCellRenderer` class — no separate registration function needed. `cellType` is REQUIRED; `virtual` is BOOLEAN (not string). Production consumers — `packages/PowerGrid/src/cell-types/svg-cell-renderer.ts:6-12` (`{name: 'svgCellRenderer', cellType: 'SVG'}`) and `packages/Curves/src/fit/fit-renderer.ts:311-315` (`{name: 'Fit', cellType: 'fit', virtual: true}`). The `FuncGeneratorPlugin` walks the source, picks up the decorator, and emits the corresponding entry into `package.g.ts`.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:26-42
+    - code: js-api/src/decorators/functions.ts:62-80
+    - code: packages/PowerGrid/src/cell-types/svg-cell-renderer.ts:6-12
+    - code: packages/Curves/src/fit/fit-renderer.ts:311-315
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-104
+  kind: namespace
+  scope: custom-cell-renderers
+  value: |-
+    Function-decorator form (the alternative to the class decorator) — `@grok.decorators.func({meta: {role: 'cellRenderer', cellType: '<type>', virtual: 'true'}, tags: ['cellRenderer'], outputs: [{type: 'grid_cell_renderer', name: 'result'}], name: '<DisplayName>'}) static <factory>() { return new MyRenderer(); }` on a static method inside `PackageFunctions`. The factory returns a fresh `DG.GridCellRenderer` instance. Used heavily by PowerGrid — e.g. `packages/PowerGrid/src/package.ts:85-98` (piechart) and 19+ other entries. CRITICAL: in this form `meta.virtual` is the STRING `'true'` (the `meta` interface is typed `Record<string, string>`); the class-decorator form uses BOOLEAN `true`. Use whichever pattern matches the rest of the package — PowerGrid mixes both.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:38  # mentions package.g.ts emission only
+    - code: packages/PowerGrid/src/package.ts:85-98
+    - code: packages/PowerGrid/src/package.ts:117-149
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-105
+  kind: naming
+  scope: custom-cell-renderers
+  value: |-
+    `meta.virtual: true` marks a renderer that produces values for a SUMMARY/VIRTUAL column (a column that has no underlying data and is computed from other columns at render time, e.g. sparkline / piechart that aggregates several numeric inputs). Required for chart-style renderers; OMIT for pure semantic-type renderers that just visualise an existing cell value. Reference distinction — `packages/PowerGrid/src/package.g.ts:121` (`piechart` virtual) vs `packages/PowerGrid/src/cell-types/svg-cell-renderer.ts:6-12` (`SVG`, NOT virtual).
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:17,32
+    - code: packages/PowerGrid/src/package.g.ts:116-125
+    - code: packages/PowerGrid/src/cell-types/svg-cell-renderer.ts:6-12
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-106
+  kind: naming
+  scope: custom-cell-renderers
+  value: |-
+    `columnTags` is a comma-separated `key=value` string that lets the platform match a renderer by COLUMN TAGS rather than (or in addition to) `cellType`. Format — `"quality=Macromolecule, units=fasta"` (whitespace tolerated). Set via `meta.columnTags: <pairs>` (header) or the `columnTags` field on the class/func decorator. Production examples — `packages/PowerGrid/src/package.g.ts:188` (`meta.columnTags: foo=bar,units=kg`); `packages/Bio/src/utils/cell-renderer.ts:63` shows a commented `columnTags: 'quality=Macromolecule, units=custom'` for a Macromolecule sequence renderer; `help/develop/advanced/decorators.md:63-70` shows `quality=Macromolecule, units=fasta`.
+  derives_from:
+    - code: js-api/src/decorators/functions.ts:66-67  # decorator JSDoc
+    - code: js-api/src/decorators/functions.ts:212-213  # CellRendererOptions
+    - code: packages/PowerGrid/src/package.g.ts:185-201
+    - code: packages/Bio/src/utils/cell-renderer.ts:63
+    - code: help/develop/advanced/decorators.md:62-70
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-107
+  kind: naming
+  scope: custom-cell-renderers
+  value: |-
+    The `FuncGeneratorPlugin` (`tools/plugins/func-gen-plugin.js`) is a webpack plugin that scans `package.ts` for `@grok.decorators.*` annotations and emits `package.g.ts`. Wired in every package's `webpack.config.js` — `const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin'); plugins: [new FuncGeneratorPlugin({outputPath: './src/package.g.ts'})]` (reference: `packages/PowerGrid/webpack.config.js:2,47`). Article statement that "`package.g.ts` is not on the ignore list, so you are supposed to commit this file" is confirmed — every canonical package commits its `package.g.ts`.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:39-41
+    - code: tools/plugins/func-gen-plugin.js
+    - code: packages/PowerGrid/webpack.config.js:2,47
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-466
+  kind: naming
+  scope: custom-cell-renderers
+  value: |
+    `meta.gridChart: 'true'` is a distinct boolean tag from `meta.virtual:
+    'true'` — it marks the renderer as a chart-style summary cell so the
+    platform offers it in the "Add summary column" picker alongside the
+    other sparkline charts. The two are usually paired (every PowerGrid
+    chart renderer sets BOTH), but they are NOT synonyms: `virtual: true`
+    means "no underlying data column"; `gridChart: true` means "show in the
+    summary-column chart picker". CRITICAL ASYMMETRY: the class-decorator
+    option type `CellRendererOptions` (`js-api/src/decorators/functions.ts:72-80`)
+    exposes only `{name?, description?, cellType, columnTags?, virtual?}`
+    — there is no `gridChart` field. A chart-style renderer authored via
+    `@grok.decorators.cellRenderer({...})` must therefore either (a) use
+    the function-decorator form `@grok.decorators.func({meta: {gridChart:
+    'true', virtual: 'true', cellType: ..., role: 'cellRenderer'}, tags:
+    ['cellRenderer'], outputs: [{type: 'grid_cell_renderer', name:
+    'result'}]})` so `gridChart` lands in the generic meta map (where it
+    IS declared at `functions.ts:147` as `Meta.gridChart?: string`), or
+    (b) keep the class decorator and append `gridChart` post-hoc via a
+    `tags`-style escape hatch with `@ts-ignore` (PowerGrid does this with
+    `tags: ['cellRenderer']`, lines like `png-renderer.ts:8-10`). The
+    article shows option (a) in its "if you prefer" tip
+    (`custom-cell-renderers.md:33-48`) — `gridChart: 'true'` is set
+    through `meta`, not as a top-level field. Skill output that teaches a
+    sparkline / piechart / barchart-style renderer must use the function-
+    decorator form OR explicitly call out the class-decorator type-gap;
+    teaching `@grok.decorators.cellRenderer({cellType: 'foo', gridChart:
+    'true'})` would produce a TS error and silently drop the metadata.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:33-48,52-63
+    - code: js-api/src/decorators/functions.ts:72-80           # CellRendererOptions — NO gridChart
+    - code: js-api/src/decorators/functions.ts:117-149         # Meta interface — gridChart?: string
+    - code: packages/PowerGrid/src/package.ts:34-160           # every PowerGrid chart sets gridChart: 'true' in meta
+    - code: packages/PowerGrid/src/package.g.ts:109,120,131    # auto-emitted //meta.gridChart: true alongside virtual + role
+    - code: packages/Peptides/src/package.ts:278               # second consumer outside PowerGrid
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-467
+  kind: naming
+  scope: custom-cell-renderers
+  value: |
+    The auto-emitted output-parameter NAME in `package.g.ts` differs by
+    registration form, even though the TYPE (`grid_cell_renderer`) is
+    identical. Class-decorator form (`@grok.decorators.cellRenderer`)
+    emits `//output: grid_cell_renderer renderer` because the codegen
+    default at `tools/bin/utils/func-generation.ts:323-330` is `outputs:
+    [{name: 'renderer', type: 'grid_cell_renderer'}]`. Function-decorator
+    form usually overrides this with `outputs: [{type: 'grid_cell_renderer',
+    name: 'result'}]` and the emitted header reads `//output:
+    grid_cell_renderer result`. Both work — the platform binds by output
+    TYPE not name. But skill bodies that copy a `package.g.ts` snippet
+    must match the parameter name to the registration form, and any
+    drift-detector that scrapes `//output:` lines must accept both. The
+    article's auto-emit example (`custom-cell-renderers.md:52-63`) shows
+    `//output: grid_cell_renderer result` because the surrounding example
+    is the function-decorator form; the class-decorator equivalent would
+    show `renderer`. Refines DG-FACT-101.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:43,55
+    - code: tools/bin/utils/func-generation.ts:323-330         # default `name: 'renderer'`
+    - code: packages/PowerGrid/src/package.g.ts:87,98          # class-decorator emit — `renderer`
+    - code: packages/PowerGrid/src/package.g.ts:118,129        # function-decorator emit — `result`
+  contradicts:
+    - DG-FACT-101    # FACT-101 generalized to "result" — refine to two-name pattern
+  confidence: high
+
+- id: DG-FACT-468
+  kind: naming
+  scope: decorator-meta-typing
+  value: |
+    Class-decorator option types and the function-decorator `meta` map
+    type the SAME tag with DIFFERENT primitives — booleans on the class
+    side, strings on the function side. `CellRendererOptions`
+    (`js-api/src/decorators/functions.ts:72-80`) declares `virtual?:
+    boolean`, so a class-decorator author writes `virtual: true`. The
+    generic `Meta` interface (`js-api/src/decorators/functions.ts:117-149`)
+    declares `virtual?: string` and `gridChart?: string`, so a
+    function-decorator author writes `virtual: 'true'` and `gridChart:
+    'true'` inside `meta`. The auto-emitted header in `package.g.ts` is
+    the same `//meta.virtual: true` token either way — the typing
+    difference is purely an authoring-surface artifact of the FuncOptions
+    meta map being `Record<string,string>`-flavored, while the dedicated
+    option types narrow each field. Skill bodies and lint rules MUST
+    accept both forms; writing `virtual: 'true'` on the class decorator
+    or `virtual: true` on the function-decorator `meta` map produces a
+    TS error. Generalizes the contrast already documented in DG-FACT-428
+    for `gridChart`.
+  derives_from:
+    - code: js-api/src/decorators/functions.ts:72-80           # CellRendererOptions — virtual?: boolean
+    - code: js-api/src/decorators/functions.ts:117-149         # Meta — virtual?: string, gridChart?: string
+    - code: packages/PowerGrid/src/cell-types/stars-cell-renderer.ts:37-43   # class form, boolean
+    - code: packages/PowerGrid/src/package.ts:34-160           # function form, string
+    - code: packages/PowerGrid/src/package.g.ts:109,120,131    # auto-emitted token is the same either way
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-043
+  kind: naming
+  scope: custom-cell-renderers
+  value: |
+    Article shows the auto-emitted header form including `//tags:
+    cellRenderer` (`custom-cell-renderers.md:54`), AND the function-
+    decorator example explicitly sets `tags: ['cellRenderer']`
+    (`custom-cell-renderers.md:41`). But the class-decorator option type
+    `CellRendererOptions` (`functions.ts:72-80`) does NOT expose a `tags`
+    field, so a class-decorator-authored renderer cannot set `tags`
+    cleanly. Codegen handles this transparently — the function-role
+    descriptor at `js-api/src/const.ts:497-501` declares `header: 'tags'`,
+    so the FuncGeneratorPlugin auto-emits `//tags: cellRenderer` into
+    `package.g.ts` regardless of whether the author wrote `tags` on the
+    decorator. PowerGrid still adds `tags: ['cellRenderer'], //@ts-ignore`
+    on class-decorator usages (`png-renderer.ts:8-10`, `svg-cell-renderer.ts:9-10`,
+    `stars-cell-renderer.ts:40`, `hyperlink-cell-renderer.ts:8`) as a
+    defensive habit, but it is redundant — removing it does not change
+    the emitted `.g.ts`. Skill bodies must NOT teach the `@ts-ignore tags`
+    pattern as required; describe it as "PowerGrid-style historical
+    habit, optional and redundant under modern codegen." Resolves the
+    dangling reference from DG-FACT-100.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:14-21,41,54
+    - code: js-api/src/decorators/functions.ts:72-80           # CellRendererOptions — no `tags`
+    - code: js-api/src/const.ts:497-501                        # role descriptor: header: 'tags'
+    - code: packages/PowerGrid/src/png-renderer.ts:8-10        # @ts-ignore tags pattern
+    - code: packages/PowerGrid/src/cell-types/svg-cell-renderer.ts:9-10
+    - code: packages/PowerGrid/src/cell-types/stars-cell-renderer.ts:40
+    - code: packages/PowerGrid/src/package.g.ts:82-87,93-98    # class-decorator auto-emit still carries //tags: cellRenderer
+  contradicts: []
+  confidence: high

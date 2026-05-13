@@ -1,0 +1,239 @@
+# Facts cited by the `db-in-docker` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 10
+
+- id: DG-FACT-409
+  kind: namespace
+  scope: access-data
+  value: |
+    Connection credentials are NEVER stored in the JSON committed to git —
+    after deploy, POST them to
+    `$(GROK_HOST)/api/credentials/for/$(PACKAGE_NAME).$(CONNECTION_NAME)`
+    with body `{"login":"...","password":"..."}` (any param keys per
+    connector) and headers `Authorization: $(API_KEY)`,
+    `Content-Type: application/json`. The API key is the user's personal
+    token from their profile page (e.g. https://public.datagrok.ai/u).
+    The dotted entity form targets a specific connection; omitting the
+    dot (`...PACKAGE_NAME` alone) targets the package itself for
+    package-level credentials. Read-back from JS:
+    `await _package.getCredentials(): Promise<Credentials | null>` →
+    `c.parameters['<key>']` (NOT `c.openParameters`, which is the redacted
+    display copy).
+  derives_from:
+    - article: help/develop/how-to/db/access-data.md:81-116
+    - code: js-api/src/entities/misc.ts:163-166
+    - code: js-api/src/entities/data-connection.ts:396-415
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-412
+  kind: naming
+  scope: db-in-docker
+  value: |
+    A connection to a database shipped inside a package's Docker container
+    is declared by a JSON file under `packages/<Pkg>/connections/`, NEVER
+    through the UI's "New Connection" dialog. The discriminator is the
+    `parameters.server` placeholder — two accepted forms, both verified
+    in production: (a) two-segment (recommended for clarity) —
+    `${<PackageName>:<ContainerFriendlyName><DockerContainer>}` (e.g.
+    `packages/DBTests/connections/postgres-test-docker.json:6` →
+    `${Dbtests:Dbtests<DockerContainer>}`); (b) single-segment (allowed
+    when the friendly name is already unique platform-wide) —
+    `${<ContainerFriendlyName><DockerContainer>}` (e.g.
+    `packages/SureChembl/connections/surechembl.json:6` →
+    `${Surechembl<DockerContainer>}`). Skills should EMIT the two-segment
+    form; if encountered, the single-segment form is equivalent.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:14-22
+    - code: packages/DBTests/connections/postgres-test-docker.json:6
+    - code: packages/SureChembl/connections/surechembl.json:6
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-413
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Inside the `<DockerContainer>` placeholder, the platform normalizes
+    the package-name segment to first-letter-only capitalization
+    (everything else lowercased). Confirmed examples: package `DBTests`
+    is referenced as `Dbtests`; package `SureChembl` is referenced as
+    `Surechembl`. Skills writing a fresh connection JSON must apply the
+    normalization manually — the runtime DOES match the literal string
+    against the normalized internal name, so e.g.
+    `${DBTests:DBTests<DockerContainer>}` (preserving original casing)
+    will NOT resolve. Same rule applies to the friendly-name segment.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:26
+    - code: packages/DBTests/connections/postgres-test-docker.json:6
+    - code: packages/SureChembl/connections/surechembl.json:6
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-414
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Container friendly-name resolution:
+    - One Dockerfile directly under `dockerfiles/` →
+      friendly name = (normalized) package name. Evidence:
+      `packages/DBTests/dockerfiles/Dockerfile` →
+      `${Dbtests:Dbtests<DockerContainer>}`;
+      `packages/SureChembl/dockerfiles/Dockerfile` →
+      `${Surechembl<DockerContainer>}`.
+    - Multiple sub-folders under `dockerfiles/` (each with its own
+      Dockerfile) → friendly name = `<package>-<folder>` (both
+      normalized). Evidence: `packages/CVMTests/dockerfiles/
+      cvmtests-docker-test1/Dockerfile` is registered as the container
+      named `cvmtests-cvmtests-docker-test1` (verified at runtime in
+      `packages/CVMTests/src/docker/docker.ts:14-15` —
+      `'Cvmtests-cvmtests-docker-test1'` is used in
+      `dockerContainers.filter('name = "cvmtests-..."')`).
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:22-24
+    - code: packages/DBTests/dockerfiles/Dockerfile
+    - code: packages/SureChembl/dockerfiles/Dockerfile
+    - code: packages/CVMTests/dockerfiles/cvmtests-docker-test1/
+    - code: packages/CVMTests/src/docker/docker.ts:14-15
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-415
+  kind: enum
+  scope: db-in-docker
+  value: |
+    Hard rules for the `parameters` block of a docker-bound connection:
+    - REQUIRED: `server` with the `<DockerContainer>` placeholder
+      (FACT-412), `dataSource` at the JSON top level naming the
+      connector (e.g. `Postgres`, `MariaDB`, `ClickHouse` — see
+      FACT-401 for the full set).
+    - OPTIONAL: `db: "<dbname>"` to pin a database/schema inside the
+      image — value must equal what the Dockerfile declared (e.g.
+      `ENV POSTGRES_DB world` ↔ `"db": "world"`).
+    - FORBIDDEN: `port`. The article (line 17) is explicit — Datagrok
+      resolves the port dynamically from the running container. The
+      Dockerfile's single `EXPOSE <port>` tells the platform which
+      internal port to bind; on the JSON side, omit `port` entirely.
+    - Credentials go through `credentials.parameters.{login,password}`,
+      NOT inside `parameters.connString` or `parameters.server`. The
+      login/password MUST match `ENV POSTGRES_USER` / `ENV POSTGRES_PASSWORD`
+      (or the equivalent for other dbms) baked into the Dockerfile.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:13-22,40-65
+    - code: packages/DBTests/connections/postgres-test-docker.json
+    - code: packages/DBTests/dockerfiles/Dockerfile:2-4
+    - code: packages/SureChembl/connections/surechembl.json
+    - code: packages/SureChembl/dockerfiles/Dockerfile:3-5
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-416
+  kind: threshold
+  scope: db-in-docker
+  value: |
+    The Dockerfile MUST declare `EXPOSE <port>` and only ONE port may be
+    exposed per image. The article's note ("EXPOSE instruction is
+    crucial and should always be declared", line 40) is restated as a
+    hard platform constraint in
+    `help/develop/how-to/packages/docker-containers.md:20` ("only one
+    EXPOSE $PORT is allowed in the image"). The exposed port is the
+    INTERNAL container port (5432 for Postgres in DBTests/SureChembl) —
+    NOT a host port. The platform-side proxy maps it to a
+    dynamically-allocated external address, which is why the JSON's
+    `port` parameter is forbidden (FACT-415).
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:40
+    - article: help/develop/how-to/packages/docker-containers.md:20
+    - code: packages/DBTests/dockerfiles/Dockerfile:6
+    - code: packages/SureChembl/dockerfiles/Dockerfile:9
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-417
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Once the package is published, a docker-bound connection appears in
+    Datagrok's `Browse > Databases` tree and behaves identically to any
+    other connection — addressable as `<Pkg>:<ConnectionName>` for
+    queries, browsable for schemas, usable inside projects. The
+    `<DockerContainer>` placeholder is purely a deploy-time resolution
+    marker; at runtime, the connection object is indistinguishable from
+    a normal Postgres / MariaDB / etc connection. Consequence: the
+    standard `grok.data.query('<Pkg>:<Query>')` dispatcher (FACT-404)
+    transparently routes through the container; query authors do NOT
+    need to be aware that the database is in a container.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:65-67
+    - code: packages/DBTests/queries/queries.sql
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-418
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Choose `db-in-docker` ONLY when one of these applies (per the
+    article's framing, lines 5-10):
+    - The database engine is NOT Postgres (e.g. MariaDB, ClickHouse,
+      Oracle ship-via-image). Plugin Postgres only supports Postgres.
+    - The package needs Postgres extensions or plugins NOT enabled in
+      the platform's shared RDS instance (e.g. PostGIS, `pgcrypto`
+      extensions outside the allowlist, custom `CREATE EXTENSION` calls).
+    - The package requires data isolation, custom users/roles, or
+      DBA-level control the shared instance does not grant.
+    For ordinary CRUD storage attached to a plugin, prefer
+    [[db-in-plugin]] (`packages/<Pkg>/databases/<Name>/*.sql`) — the
+    platform manages migrations, sharing, and resource usage. See also
+    `help/develop/how-to/db/db-in-plugin.md`.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:5-10
+    - article: help/develop/how-to/db/db-in-plugin.md:5-10
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-DRIFT-DBDOCKER-001
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Article never references `container.json` — the sibling file next to
+    the Dockerfile that controls `on_demand`, `shutdown_timeout`,
+    `cpu`, `memory`, `storage`, `environmentVars`, etc. Every production
+    db-in-docker package ships one (`packages/DBTests/dockerfiles/
+    container.json` — `{on_demand: true, shutdown_timeout: 30}`;
+    `packages/SureChembl/dockerfiles/container.json` — `{cpu: 1,
+    memory: 2048, on_demand: true, timeout_minutes: 30}`). Without it
+    the platform applies hard defaults (`on_demand: false`,
+    `memory: 512`, `cpu: 0.25`) — usually too small for a real DB.
+    Skills MUST mention `container.json` and link the user to
+    `help/develop/how-to/packages/docker-containers.md:41-86`. SureChembl
+    additionally uses the unsupported field name `timeout_minutes` (vs
+    documented `shutdown_timeout`) — see contract-triangles.md DRIFT-051;
+    do NOT propagate that key.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md
+    - article: help/develop/how-to/packages/docker-containers.md:41-86
+    - code: packages/DBTests/dockerfiles/container.json
+    - code: packages/SureChembl/dockerfiles/container.json
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-DBDOCKER-002
+  kind: naming
+  scope: db-in-docker
+  value: |
+    Article's example uses a hypothetical package literally named `Test`
+    and produces `${Test:Test<DockerContainer>}` (line 50). Because `Test`
+    has no mixed casing, the normalization rule of FACT-413 is invisible
+    in the example — readers may not notice that real packages with
+    mixed-case names (`DBTests`, `SureChembl`) MUST normalize to
+    `Dbtests`, `Surechembl` etc in the placeholder. The explicit note at
+    line 26 covers this, but the worked example does not — skills must
+    emit the normalized form unconditionally when generating snippets
+    for any specific package name.
+  derives_from:
+    - article: help/develop/how-to/db/db-in-docker.md:26,50
+    - code: packages/DBTests/connections/postgres-test-docker.json:6
+    - code: packages/SureChembl/connections/surechembl.json:6
+  contradicts: []
+  confidence: high

@@ -1,8 +1,11 @@
 ---
 name: build-app
 description: Build a Datagrok application — register an app entry point, capture URL path, add a navigation tree, and deploy
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # build-app
 
@@ -16,10 +19,7 @@ Datagrok app", "wire an entry point", "add a side-navigation tree",
 
 ## Prerequisites
 
-- `datagrok-tools` global (`npm i -g datagrok-tools` — provides `grok`);
-  article also asks for `npm i -g webpack webpack-cli`.
 - Datagrok server alias in `~/.grok/config.yaml` (`grok config add`).
-- A package scaffold (fresh from step 1, or existing).
 - `DG.View` / `DG.ViewBase` and `ui.div*` familiarity for view bodies
   (related skill: `create-custom-view`).
 
@@ -155,18 +155,6 @@ Datagrok app", "wire an entry point", "add a side-navigation tree",
   `DG-FACT-007`).
 - **`grok publish` fails with `unknown host`.** No alias in
   `~/.grok/config.yaml`. Run `grok config add`, or omit the host arg.
-
-## Verification
-
-- `npm run build` exits 0; `grok publish <host>` exits 0.
-- `src/package.g.ts` contains a wrapper for the app function with
-  `//meta.role: app` and (for view-returning apps) `//output: view result`.
-- Open `https://<host>/apps/<PackageName>` (or
-  `.../<PackageName>/<AppName>`): the view from step 3 renders.
-- Append a tail to the URL (`.../<AppName>/foo/bar`) and observe the
-  `path` argument receives `foo/bar` in the view body.
-- (If step 4) The side navigation tree appears next to the app view
-  and `onSelected` handlers fire.
 
 ## See also
 

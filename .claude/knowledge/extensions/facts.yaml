@@ -1,0 +1,188 @@
+# Facts cited by the `extensions` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 14
+
+- id: DG-FACT-001
+  kind: naming
+  scope: routing
+  value: |-
+    An app receives the URL path through a string input parameter annotated `{meta.url: true}`; URL query parameters are bound to other named inputs by name.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:21-27
+    - code: js-api/src/decorators/functions.ts:101  # "meta.url"?: boolean
+    - code: packages/Bio/src/package.g.ts:642       # //input: string path { meta.url: true; optional: true }
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-073
+  kind: naming
+  scope: file-viewers
+  value: |-
+    A custom file viewer is a function with `//meta.role: fileViewer`, `//input: file file` (a `FileInfo`), and `//output: view v` (a `DG.View`, possibly Promise-wrapped). The platform invokes it from the file-share browser when the user opens a file with a registered extension. The `fileViewer` role token is canonicalized in `js-api/src/const.ts` as `FILE_VIEWER: 'fileViewer'`.
+  derives_from:
+    - article: help/develop/how-to/files/create-custom-file-viewers.md:5-31
+    - code: js-api/src/const.ts:372-376
+    - code: packages/EpsViewer/src/package.g.ts:6-7
+    - code: packages/Plates/src/package.g.ts:27-31
+    - code: packages/FileEditors/src/package.g.ts:11-15
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-074
+  kind: naming
+  scope: file-viewers
+  value: |-
+    Supported file extensions are declared via `//meta.fileViewer: <ext>[,<ext>…]` — comma-separated list, optional whitespace tolerated. Single-extension form (`mol`, `eps`, `pdf`) and multi-extension form (`mol,sdf,cif`, `kmz,kml`, `mp3, wav, flac, ogg, oga, opus, m4a, aac, weba`) both work. Multiple `fileViewer` functions in the same package may register the same extension when each one declares a `meta.fileViewerCheck` to disambiguate.
+  derives_from:
+    - article: help/develop/how-to/files/create-custom-file-viewers.md:7,16
+    - code: packages/BiostructureViewer/src/package.g.ts:89,97,105,113   # multi-ext, no spaces
+    - code: packages/Media/src/package.ts:73,83                          # multi-ext, with spaces
+    - code: packages/EpsViewer/src/package.g.ts:7                        # single-ext
+    - code: packages/Plates/src/package.g.ts:28,38,53,62                 # same ext (txt, xlsx) reused with different fileViewerCheck
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-079
+  kind: enum
+  scope: file-exporters
+  value: |-
+    The role token for a file-exporter function is exactly `fileExporter` (camelCase). Header form `//meta.role: fileExporter`; decorator form `@grok.decorators.fileExporter(config?: FunctionOptions)`. Canonical constant `DG.FUNC_TYPES.FILE_EXPORTER = 'fileExporter'`. Declared signature `fileExporter(): void` — NO inputs, NO outputs. Once registered, the platform attaches the function to the file's "Export" top menu at startup.
+  derives_from:
+    - article: help/develop/how-to/files/file-exporters.md:7-14
+    - code: js-api/src/const.ts:378-380,485-489
+    - code: js-api/src/decorators/functions.ts:350-356
+    - code: tools/bin/utils/func-generation.ts:340-346                  # inputs: [], outputs: []
+    - code: tools/bin/utils/const.ts:131-136                             # signature: 'fileExporter(): void'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-080
+  kind: naming
+  scope: file-exporters
+  value: |-
+    A file-exporter function MUST declare a non-empty `description`. The `tools/bin/commands/check.ts:358` linter errors with "File exporters should have a description parameter" when description is missing or empty. The description string becomes the visible label of the export menu entry (e.g., `description: 'As SDF...'` → menu item `As SDF...`). Header form `//description: <text>`; decorator form `@grok.decorators.fileExporter({description: '<text>'})`. Naming convention across the canonical packages — `As <FORMAT>...` (Chem `As SDF...`, Bio `As FASTA...`) when the exporter pops a follow-up dialog; `Save as <FORMAT>` (Arrow `Save as Parquet`, `Save as Feather`) when it downloads directly.
+  derives_from:
+    - article: help/develop/how-to/files/file-exporters.md:12-14
+    - code: tools/bin/commands/check.ts:358-359
+    - code: packages/Chem/src/package.ts:526-531                        # description: 'As SDF...'
+    - code: packages/Bio/src/package.ts:1404-1407                       # description: 'As FASTA...'
+    - code: packages/Arrow/src/package.ts:64-76                         # description: 'Save as Parquet' / 'Save as Feather'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-083
+  kind: enum
+  scope: file-handlers
+  value: |-
+    The role token for a custom file handler is `fileHandler` (camelCase) in every production package and in the article. Decorator surface `@grok.decorators.fileHandler(config: FileHandlerOptions)` (`js-api/src/decorators/functions.ts:358`). Function signature `fileImporter(x: string | TypedArray): DataFrame[]` per the `functionRoles[]` descriptor. Once registered, the platform invokes the function whenever a user opens a file with one of the declared extensions, and treats the returned list as a set of imported tables.
+  derives_from:
+    - article: help/develop/how-to/files/file-handlers.md:5-21
+    - code: js-api/src/const.ts:382-385,490-495                  # FILE_IMPORTER + functionRoles[]
+    - code: js-api/src/decorators/functions.ts:358-364
+    - code: packages/Bio/src/package.g.ts:486-503                # //meta.role: fileHandler ; //meta.ext: fasta,…
+    - code: packages/Chem/src/package.g.ts:793-809               # //meta.role: fileHandler ; //meta.ext: sdf,mol
+    - code: packages/nmrium/src/package.ts:20-46                 # @grok.decorators.fileHandler({ext, fileViewerCheck?})
+  contradicts:
+    - DG-FACT-DRIFT-031   # FUNC_TYPES.FILE_IMPORTER constant value is `'file-handler'` (kebab) but tag emitted in package.g.ts is `fileHandler` (camel)
+  confidence: high
+
+- id: DG-FACT-088
+  kind: enum
+  scope: folder-content-preview
+  value: |-
+    The canonical role string for a custom folder content preview is `folderViewer` (camelCase). Defined as `FUNC_TYPES.FOLDER_VIEWER = 'folderViewer'` in `js-api/src/const.ts:419` and mirrored in `tools/bin/utils/const.ts:77`. The codegen entry in `tools/bin/utils/func-generation.ts:420-426` emits the same string.
+  derives_from:
+    - article: help/develop/how-to/files/folder-content-preview.md:5,14
+    - code: js-api/src/const.ts:419
+    - code: tools/bin/utils/const.ts:77
+    - code: tools/bin/utils/func-generation.ts:102,420-426
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-095
+  kind: enum
+  scope: column-tooltip
+  value: |-
+    The role string for a custom column tooltip is `tooltip` (camelCase). Defined as `FUNC_TYPES.TOOLTIP = 'tooltip'` (`js-api/src/const.ts:418`). Function-role descriptor at `js-api/src/const.ts:586-591` declares `{role: FUNC_TYPES.TOOLTIP, description: 'Provides a custom tooltip for columns', header: 'tags', signature: 'tooltip(col: Column): Widget'}`.
+  derives_from:
+    - article: help/develop/how-to/grid/column-tooltip.md:7
+    - code: js-api/src/const.ts:418
+    - code: js-api/src/const.ts:586-591
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-099
+  kind: enum
+  scope: custom-cell-renderers
+  value: |-
+    The role string for a custom grid cell renderer is `cellRenderer` (camelCase). Defined as `FUNC_TYPES.CELL_RENDERER = 'cellRenderer'` in `js-api/src/const.ts:390`. Function-role descriptor at `js-api/src/const.ts:497-501` declares `{role: FUNC_TYPES.CELL_RENDERER, header: 'tags', signature: 'cellRenderer(): GridCellRenderer'}`. NOTE the lookalike at `js-api/src/const.ts:330` — `Tags.CELL_RENDERER = 'cell.renderer'` — is a COLUMN-TAG KEY (used to override the renderer for a single column), NOT the function role; do not confuse them.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:15
+    - code: js-api/src/const.ts:387-390
+    - code: js-api/src/const.ts:497-501
+    - code: js-api/src/const.ts:330
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-100
+  kind: namespace
+  scope: custom-cell-renderers
+  value: |-
+    Header-form annotations on a `() => DG.GridCellRenderer` factory function — `//tags: cellRenderer`, `//meta.role: cellRenderer`, `//meta.cellType: <type>`, `//output: grid_cell_renderer result`. Optional `//meta.virtual: true` (string) for renderers that synthesise values from other columns; optional `//meta.columnTags: <key=value,…>` for tag-based column matching. Function takes NO inputs and returns a `DG.GridCellRenderer` subclass instance. The `tags: cellRenderer` line is auto-emitted alongside `meta.role: cellRenderer` because the function-role descriptor uses `header: 'tags'`. Reference: `packages/PowerGrid/src/package.g.ts:116-125`.
+  derives_from:
+    - article: help/develop/how-to/grid/custom-cell-renderers.md:14-22
+    - code: packages/PowerGrid/src/package.g.ts:116-125
+    - code: packages/PowerGrid/src/package.g.ts:185-201  # columnTags variant
+    - code: js-api/src/const.ts:497-501
+  contradicts:
+    - DG-FACT-DRIFT-043   # article omits the `tags: cellRenderer` line
+  confidence: high
+
+- id: DG-FACT-118
+  kind: naming
+  scope: package-settings-editor
+  value: |-
+    A custom package-settings editor is a function annotated with role `packageSettingsEditor`. The role string is canonical — `FUNC_TYPES.PACKAGE_SETTINGS_EDITOR = 'packageSettingsEditor'` (`js-api/src/const.ts:394`), `SETTINGS_EDITOR = 'packageSettingsEditor'` enum in the codegen (`tools/bin/utils/func-generation.ts:95`), and the function-role descriptor lists `header: 'tags'`, `signature: 'packageSettingsEditor(): Widget'` (`js-api/src/const.ts:502-507`). Three annotation surfaces all work — `//meta.role: packageSettingsEditor` (header), `tags: ['packageSettingsEditor']` + `meta: {role: 'packageSettingsEditor'}` (decorator), or both together (HitTriage uses both — `packages/HitTriage/src/package.ts:350-358`). Skill output should prefer the decorator form on a `static` inside `PackageFunctions`; the codegen emits matching `package.g.ts`.
+  derives_from:
+    - article: help/develop/how-to/packages/custom-package-settings-editors.md:9-25
+    - code: js-api/src/const.ts:392-394,502-507
+    - code: tools/bin/utils/func-generation.ts:95
+    - code: packages/HitTriage/src/package.ts:350-358
+    - code: packages/HitTriage/src/package.g.ts:127-134
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-173
+  kind: enum
+  scope: custom-script-handlers
+  value: |-
+    The role token that registers a function as a custom script handler is the literal string `scriptHandler` — exposed as `DG.FUNC_TYPES.SCRIPT_HANDLER = 'scriptHandler'` (`js-api/src/const.ts:420`). Header form `//meta.role: scriptHandler`; decorator form `@grok.decorators.func({meta: {role: 'scriptHandler'}})`. Pyodide is the only shipping public-repo package using this role (`packages/Pyodide/src/package.g.ts:23`).
+  derives_from:
+    - article: help/develop/how-to/scripts/custom-script-handlers.md:27
+    - code: js-api/src/const.ts:420
+    - code: packages/Pyodide/src/package.g.ts:23
+    - code: packages/Pyodide/src/package.ts:358
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-186
+  kind: namespace
+  scope: develop-custom-viewer
+  value: |-
+    Custom JS viewers subclass `DG.JsViewer` (`extends Viewer`). The base class is declared at `js-api/src/viewer.ts:379`. Constructor takes no arguments; the root element is `ui.box()` assigned to `this._root` and exposed via the `root` getter. The constructor wires Dart interop (`api.grok_Viewer_FromJsViewer`) and initializes `subs: Subscription[]`, `obs`, and `props: ObjectPropertyBag`. Convention is to suffix the class name with `Viewer` (e.g., `AwesomeViewer`).
+  derives_from:
+    - article: help/develop/how-to/viewers/develop-custom-viewer.md:34-41
+    - code: js-api/src/viewer.ts:376-404
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-213
+  kind: namespace
+  scope: custom-views
+  value: |-
+    `grok.shell.newView(name='view', children?: object[], options?: string|{}|null): View` is the one-liner ad-hoc view constructor. Implementation: `let view = View.create(options); view.name = name; ui.appendAll(view.root, children ?? []); this.addView(view); return view;` (`js-api/src/shell.ts:234-242`). Returns a fully docked, registered `View` instance — NOT a `ViewBase`. Article (lines 16-17) presents this as the "simplest example" but stops short of saying it is "ad-hoc only" — it is fine for production code; the "from a package, extend ViewBase" guidance (lines 24-26) applies only when you need URL-dispatch / state-serialization / icon overrides.
+  derives_from:
+    - article: help/develop/how-to/views/custom-views.md:14-26
+    - code: js-api/src/shell.ts:234-242
+  contradicts: []
+  confidence: high

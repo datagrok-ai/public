@@ -3,6 +3,10 @@ name: rest-api
 description: Call the Datagrok REST API from outside the platform — authenticate, transfer files/tables, build dashboards, invoke functions
 ---
 
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
+
 # rest-api
 
 ## When to use
@@ -158,18 +162,6 @@ spec". For *in-package* HTTP, use `grok.dapi.fetchProxy` (see
 - **CSV upload arrives mangled.** `curl` defaulted to `--data` which
  strips newlines and applies form encoding. Fix: use `--data-binary
  @file.csv` plus `Content-Type: text/csv`.
-
-## Verification
-
-- Step 2: `curl... /public/api.yaml` returns YAML — auth works and
- base URL is correct.
-- After step 3: downloaded CSV row count matches the table's
- `rowCount` shown in the platform's context panel.
-- After step 4: re-running step 3 with the just-uploaded table name
- returns the same content you posted.
-- After step 7: the server-side function's value appears in the
- response; cross-check against running the same function in the
- Datagrok console.
 
 ## See also
 

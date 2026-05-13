@@ -1,0 +1,94 @@
+# Facts cited by the `upload-data` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 4
+
+- id: DG-FACT-229
+  kind: naming
+  scope: rest-api
+  value: |-
+    REST API authentication uses an `Authorization` header whose value is the API key prefixed with `Bearer ` (note the trailing space). The API key is copied from the user profile → "API Key" link. The Python client passes whatever string the caller supplies into `Authorization` verbatim — i.e. the caller (not the client) must include the `Bearer ` prefix.
+  derives_from:
+    - article: help/develop/packages/rest-api.md:12-18
+    - code: python-api/datagrok_api/http_client.py:5-9   # 'Authorization': api_key (passed through as-is)
+    - code: python-api/datagrok_api/datagrok_client.py:25-27,58  # docstring: 'Should typically start with "Bearer ".'
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-431
+  kind: naming
+  scope: upload-data
+  value: |
+    The user-storage CSV upload endpoint has a FIXED path grammar:
+    `POST $DATAGROK_URI/api/files/<LOGIN>/uploads/<free/form/path>/<file>.csv`.
+    Three slots: (a) `<LOGIN>` — the user login that will OWN the
+    resulting project (article example: `alex.aprm`); (b) the literal
+    segment `uploads/`; (c) any free-form path you choose between
+    `/uploads/` and the filename. The endpoint accepts any string for
+    `<LOGIN>` — a typo silently produces an upload owned by a
+    nonexistent path that nobody can browse. This endpoint is the
+    legacy `/api/files/...` surface; it is DISTINCT from the
+    `/public/v1/files/{connector}/{path}` REST endpoint (DG-FACT-231)
+    used by the Python client — only the legacy surface accepts the
+    `?layout=` query knob (DG-FACT-432-adjacent).
+  derives_from:
+    - article: help/develop/how-to/data/upload-data.md:5-15,33-38
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-432
+  kind: enum
+  scope: upload-data
+  value: |
+    POST to a file path on either Datagrok REST file surface REPLACES
+    the existing content silently — no 409/conflict, no warning.
+    Article wording for the `/public/v1/files/{connector}/{path}`
+    endpoint is literal: "If file already exists, replace its content"
+    (`help/develop/packages/rest-api.md:30`). The legacy
+    `/api/files/<LOGIN>/uploads/...` surface (DG-FACT-431) inherits the
+    same overwrite semantics — two pipelines writing to the same
+    `/uploads/<path>/<file>` clobber one another. Mitigation in
+    production pipelines: namespace the path with a timestamp or run
+    id (e.g. `/uploads/nightly/$(date +%Y-%m-%d)/assay.csv`).
+  derives_from:
+    - article: help/develop/packages/rest-api.md:30-31
+    - article: help/develop/how-to/data/upload-data.md:5-17
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-433
+  kind: pattern
+  scope: upload-data
+  value: |
+    The `/api/files/<LOGIN>/uploads/<path>/<file>.csv` REST endpoint
+    (DG-FACT-431) is an OUT-OF-PROCESS surface — its purpose is to give
+    external callers (shell pipelines, cron jobs, lab instruments,
+    standalone Python notebooks) a one-call way to drop a CSV into a
+    user's workspace and get back a shareable project URL. It is NOT
+    the right path from inside a Datagrok package: when TypeScript
+    running in-process needs to write a file, the canonical patterns
+    are `await grok.dapi.files.writeAsText(path, data: string)` for
+    text (js-api/src/dapi.ts:1465) and
+    `await grok.dapi.files.write(path, blob: number[])` for binary
+    (js-api/src/dapi.ts:1457). Note the binary method is `write`, NOT
+    `writeAsBytes` — the latter symbol does not exist anywhere in the
+    public repo. Real packages use these — HitTriage's molreg.ts:182
+    and hit-design-app.ts:1074 persist CSV table snapshots via
+    `writeAsText`, FileEditors/latex-viewer.ts:185 saves edited LaTeX,
+    and ApiTests/src/dapi/files.ts:14,27 (text) and :40 (binary,
+    `write`) exercise both surfaces directly. Wrapping the REST
+    endpoint in a `fetch()` call inside a package function is an
+    anti-pattern: it re-implements `grok.dapi.files.*`, loses access
+    to the active session's auth (no API key needed in-process), and
+    ties the package to a network URL it otherwise doesn't need.
+    Skills built around the legacy REST surface should restrict their
+    advice to out-of-process callers and point in-package readers at
+    `grok.dapi.files.writeAsText` / `grok.dapi.files.write` instead.
+  derives_from:
+    - code: js-api/src/dapi.ts:1457,1465
+    - code: packages/HitTriage/src/app/utils/molreg.ts:182
+    - code: packages/HitTriage/src/app/hit-design-app.ts:1074
+    - code: packages/FileEditors/src/latex/latex-viewer.ts:185
+    - code: packages/ApiTests/src/dapi/files.ts:14,27,40
+    - runtime: verify-e2e/upload-data
+  contradicts: []
+  confidence: high

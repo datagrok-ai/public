@@ -25,8 +25,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # add-package-tests
 
@@ -39,7 +42,6 @@ optionally per-function `//test:` assertions wired into the same run.
 
 ## Prerequisites
 
-- `datagrok-tools` installed globally (`npm i -g datagrok-tools`).
 - A package directory (fresh from `grok create`, or existing without tests).
 - A server alias in `~/.grok/config.yaml` if you plan to use
   `grok test --host <alias>` (set once via `grok config add`).
@@ -168,16 +170,6 @@ optionally per-function `//test:` assertions wired into the same run.
 - **`grok test --host <alias>` errors `unknown host`.** The alias
   isn't in `~/.grok/config.yaml`. Run `grok config add`, or omit
   `--host` to use the default.
-
-## Verification
-
-- `grok test --host <host>` exits `0` and prints a summary that
-  counts all tests in your new category.
-- **Tools → Dev → Test manager** lists your package; expanding it
-  shows the category and its tests; running them inline reproduces
-  the CLI's pass/fail/skip counts.
-- Platform Console (`~`):
-  `<PackageName>:test(category="Examples")` returns a DataFrame.
 
 ## See also
 

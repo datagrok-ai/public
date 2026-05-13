@@ -25,8 +25,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # cache-function-results
 
@@ -37,12 +40,6 @@ completion, RDKit similarity, parameterized SQL) and you want the
 second call to return the first call's result without re-executing.
 The body must be effectively pure over the cache's lifetime — if the
 backing data mutates, pick a coarse `invalidateOn` or do not cache.
-
-## Prerequisites
-
-- A package scaffold (`grok create <Name>`); paths below relative to
-  the package root. A function whose body is deterministic w.r.t. its
-  declared inputs.
 
 ## Steps
 
@@ -189,18 +186,6 @@ backing data mutates, pick a coarse `invalidateOn` or do not cache.
   directly above the `export function`) — `grok api` codegens it
   identically to the decorator form (knowledge `DG-FACT-465`,
   `packages/RevvitySignalsLink/src/package.ts:198-211`).
-
-## Verification
-
-- `grok check` exits `0`; the published function header
-  (`src/package.g.ts` for TS) contains `//meta.cache: <mode>` and
-  (optionally) `//meta.cache.invalidateOn: <cron>`.
-- Call the function twice with identical inputs
-  (`grok.functions.call('<pkg>:<fn>', {…})`); the second call returns
-  instantly without re-executing the body (any `grok.shell.info` the
-  handler emits fires once within the cron window, not twice).
-- `await grok.functions.clientCache.getRecordCount()` increments
-  after the first call.
 
 ## See also
 

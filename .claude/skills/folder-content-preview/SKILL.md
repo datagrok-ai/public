@@ -23,8 +23,11 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # folder-content-preview
 
@@ -39,9 +42,6 @@ matched files as `DG.DataFrame[]`, use `file-handlers`.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from the package root.
-- `datagrok-api` available (`import * as grok / ui / DG`); the article's
-  snippet omits imports and won't compile as written.
 - Familiarity with `DG.FileInfo` and `DG.Widget.fromRoot(...)`
   (knowledge: `DG-FACT-092`, `DG-FACT-093`).
 
@@ -187,18 +187,6 @@ matched files as `DG.DataFrame[]`, use `file-handlers`.
   SDTM data')`. Production code (`packages/ClinicalCase`) reads the
   sentinel file, parses it, and calls a real app entry via
   `grok.functions.call('<Pkg>:<App>')`.
-
-## Verification
-
-- `grok check` exits `0`; `grok publish <host>` exits `0`.
-- The regenerated `src/package.g.ts` contains a wrapper with
-  `//meta.role: folderViewer`, `//input: file folder`,
-  `//input: list<file> files`, and `//output: widget result` (or
-  `//output: dynamic result` when you overrode `outputs`).
-- In Datagrok, **Browse → Files**, navigate to a folder that satisfies
-  your detector — your widget renders in place of the default listing.
-- Navigate to an unrelated folder — the default listing shows
-  (i.e. your function returned `undefined` and the platform fell back).
 
 ## See also
 

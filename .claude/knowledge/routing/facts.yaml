@@ -1,0 +1,147 @@
+# Facts cited by the `routing` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 8
+
+- id: DG-FACT-332
+  kind: namespace
+  scope: build-app
+  value: |-
+    The `@app` method's URL-path input is declared with `@grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string` (camelCase alias). The article snippet (`build-an-app.md:68`) uses the string-keyed dotted form `@grok.decorators.param({options: {'meta.url': true, 'optional': true}})` — both are valid because `InputOptions` declares BOTH `"meta.url"?: boolean` AND `metaUrl?: boolean` (`js-api/src/decorators/functions.ts:101-102`). Production canonical packages normalize to the camelCase form — Chem's `mpoProfilesApp` is the reference (`packages/Chem/src/package.ts:2924` — `{metaUrl: true, optional: true}`). Skill output should default to `metaUrl: true` to match production; the codegen-emitted `package.g.ts` writes `//input: string path { meta.url: true; optional: true }` regardless of the source form.
+  derives_from:
+    - article: help/develop/how-to/apps/build-an-app.md:67-68
+    - code: js-api/src/decorators/functions.ts:101-102
+    - code: packages/Chem/src/package.ts:2923-2924
+    - code: packages/Bio/src/package.g.ts:642
+  contradicts: []
+  confidence: high
+
+# DRIFT entries — article vs. code disagreements (build-app)
+
+- id: DG-FACT-389
+  kind: naming
+  scope: routing
+  value: |
+    Two URL prefixes resolve to the same app entry point: the legacy
+    `/apps/<package-segment>[/<app-segment>]` and the newer
+    `/browse/apps/<package-segment>[/<app-segment>]`. The `/browse/` form
+    is the navigation-context form (shows the side tree); the bare `/apps/`
+    form is the direct-launch form. Both accept the same `meta.url`
+    overrides and same `view.path` postfix.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:73-82,93-102,119-129
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-390
+  kind: naming
+  scope: routing
+  value: |
+    When a package declares a custom URL segment via `package.json`
+    `"meta": { "url": "/some/segment" }`, BOTH the package-name URL
+    (`/apps/<PackageName>`) and the customized URL
+    (`/apps/some/segment`) resolve, but opening the original
+    package-name URL triggers an immediate client-side replace to the
+    customized URL. Consumers must therefore link to the customized URL
+    or accept the redirect. Confirmed in production:
+    `packages/UsageAnalysis/package.json:71-72` declares
+    `"meta": { "url": "/usage" }`.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:84-103
+    - code: packages/UsageAnalysis/package.json:71-73
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-391
+  kind: enum
+  scope: routing
+  value: |
+    `DG.DemoDatasetName` is a string-literal type derived from `DEMO_DATASET`
+    with exactly seven valid values: `wells`, `demog`, `biosensor`,
+    `random walk`, `geo`, `molecules`, `dose-response`. Used as the first
+    argument to `grok.data.testData(...)`. Any other string fails TS at the
+    call site. The article's routing tutorial drives this enum via URL
+    path segments — relying on user-supplied paths to match these literals
+    requires a runtime guard, not just the TS cast shown in the snippet.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:58,165
+    - code: js-api/src/const.ts:765-773
+    - code: js-api/src/const.ts:1002
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-392
+  kind: namespace
+  scope: routing
+  value: |
+    `grok.data.testData(dataset: DemoDatasetName, rows = 10000,
+    columns = 3): DataFrame` is SYNCHRONOUS — it returns a `DataFrame`
+    directly, NOT a `Promise`. The routing tutorial uses it without
+    `await`. The defaults (10000 rows, 3 columns) apply only to generators
+    that honor `columns` (`random walk`, `biosensor`); for fixed-schema
+    datasets (`wells`, `demog`, `geo`) the `columns` argument has no
+    effect. Separate from `grok.data.getDemoTable(path)` which IS async
+    and reads a named demo file from the demo root.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:37,44,150,156,165
+    - code: js-api/src/data.ts:153-155
+    - code: js-api/src/data.ts:157-159
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-393
+  kind: namespace
+  scope: routing
+  value: |
+    `View.path` is a Dart-bound get/set property: getter is
+    `api.grok_View_Get_Path(this.dart)`, setter is
+    `api.grok_View_Set_Path(this.dart, s)`. Setting it after
+    `addTableView` / `grok.shell.v = view` mutates the browser address
+    bar AND the in-app breadcrumb in a single call — there is no
+    separate "update URL" or "push history" method. The legacy
+    `View.basePath` accessor is JSDoc-marked `@deprecated use path
+    instead`. The full URL the browser shows is
+    `<function-base-path>/<view.path>` (function-base-path resolves via
+    `meta.url` overrides per FACT-333 / FACT-390).
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:11,41,46,60,154,160,173
+    - code: js-api/src/views/view.ts:170-171
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-ROUTING-001
+  kind: naming
+  scope: routing
+  value: |
+    Article's intro snippet (`routing.md:16-25`) declares
+    `export function test(path, searchParam)` with NO type annotations,
+    then at line 58 in a separate fragment uses TypeScript syntax
+    `tableName as DG.DemoDatasetName`. The `as` cast does not compile
+    in plain `.js` — only in `.ts`. The full "Tutorial code" section
+    (`routing.md:136-183`) IS consistent TypeScript with typed
+    parameters. Treat the intermediate snippets as TS-in-`.ts`; do not
+    paste them into a `.js` package file. Cross-reference:
+    DG-FACT-DRIFT-BUILD-APP-001 covers the broader header-form vs
+    decorator-form coexistence.
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:16-25,55-63,136-183
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-DRIFT-ROUTING-003
+  kind: naming
+  scope: routing
+  value: |
+    Article (`routing.md:52`) states "in the case of demog table, the
+    `pathname` would be `/apps/TestPackage/demog/All`" — implicitly
+    assuming a one-app package where the app segment is omitted. For
+    multi-app packages the full pathname is
+    `/apps/TestPackage/<AppName>/demog/All`. Article does cover the
+    one-app vs multi-app distinction separately at lines 73-82 but
+    does not connect it back to the tutorial's `view.path` example.
+    Skills writing routing logic must NOT assume the app-name segment
+    is absent — `view.path` is always appended after the function base
+    path, whatever that base path resolves to (FACT-333, FACT-390).
+  derives_from:
+    - article: help/develop/how-to/apps/routing.md:52,73-82
+  contradicts: []
+  confidence: medium

@@ -22,8 +22,11 @@ triggers:
 allowed-tools:
   - Read
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # test-packages
 
@@ -161,18 +164,6 @@ the situation and to read the artifacts when a test goes red.
   expected but not thrown` — the action under test resolved instead of
   rejected (`DG-FACT-354`). Likely a race: the rejection path didn't
   fire before the next tick. Wrap with `awaitCheck` before the call.
-
-## Verification
-
-- `grok test --host <alias> --csv` exits `0` and writes a
-  `test-report.csv` whose row count matches the stdout summary.
-- The same test reached three ways gives the same verdict: the
-  CLI, **Tools → Dev → Test Manager**, and the console
-  `<Package>:test(category="…", test="…")` form.
-- For a CI failure, the failing test in `test-report.csv` is also
-  the failing node in `test-console-output.log` (matched by name)
-  and its failure timestamp aligns with the visible problem in
-  `test-record.mp4`.
 
 ## See also
 

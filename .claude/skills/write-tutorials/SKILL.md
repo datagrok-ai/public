@@ -23,8 +23,11 @@ allowed-tools:
   - Edit
   - Write
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # write-tutorials
 
@@ -38,9 +41,6 @@ watch, use `write-demo-scripts` instead.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`).
-- `"@datagrok-libraries/tutorials": "^1.7.6"` under `package.json`
-  `dependencies`, then `npm i`.
 - The Tutorials package installed on the target server — it owns the
   **Apps → Tutorials** view that hosts external tutorials (knowledge
   `DG-FACT-437`).
@@ -172,16 +172,6 @@ watch, use `write-demo-scripts` instead.
   auto-loads it (knowledge `DG-FACT-436`). Set `demoTable = ''`.
 - **Track help link goes nowhere.** No `tags: track` function with
   `//help-url` is registered (knowledge `DG-FACT-438`); add one.
-
-## Verification
-
-- `grok publish dev` succeeds; `package.g.ts` contains a `tags:
-  tutorial` entry for your factory.
-- In Datagrok **Apps → Tutorials** the track shows your card with
-  the annotated icon and description. Click it: the right-rail
-  reads `name`, progress starts at `Step: 0 of <steps>`. The first
-  scripted action ticks the indicator and advances the bar;
-  completing all `steps` shows "Congratulations!".
 
 ## See also
 

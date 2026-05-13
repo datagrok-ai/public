@@ -25,8 +25,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # create-package
 
@@ -39,11 +42,6 @@ and a `grok publish` round-trip — before you write any business code.
 
 ## Prerequisites
 
-- `datagrok-tools` installed globally and `~/.grok/config.yaml`
-  populated via `grok config` (developer key + at least one host
-  alias). See `help/develop/dev-process/set-up-environment.md`.
-- Node.js + npm available on `PATH` (managed via a node version
-  manager, not Snap — `set-up-environment.md:23-25`).
 - An empty target directory: `grok create` aborts with *"The package
   directory should be empty"* otherwise
   (`tools/bin/commands/create.ts:162-164`).
@@ -158,18 +156,6 @@ and a `grok publish` round-trip — before you write any business code.
   and --release".** Both flags were passed; they are mutually
   exclusive (`DG-FACT-156`). Fix: drop one — `--release` for shared
   visibility, no flag for per-developer debug.
-
-## Verification
-
-- `ls <Name>/` shows `src/package.ts`, `webpack.config.js`,
-  `package.json`, `detectors.js`, `tsconfig.json`.
-- `jq -r '.scripts.build' <Name>/package.json` returns
-  `grok api && grok check --soft && webpack` verbatim.
-- `npm run build` exits 0; `git diff src/package.g.ts` shows
-  annotations you wrote in `src/package.ts` surfacing in the
-  generated wrapper.
-- After `grok publish dev`, the package is listed under **Manage →
-  Packages** on the dev host with a `v.<developer>` prefix.
 
 ## See also
 

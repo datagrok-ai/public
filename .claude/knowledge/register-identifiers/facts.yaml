@@ -1,0 +1,83 @@
+# Facts cited by the `register-identifiers` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 7
+
+- id: DG-FACT-058
+  kind: naming
+  scope: register-identifiers
+  value: |-
+    A package declares identifier patterns by adding a `meta.semanticTypes` array to `package.json`. Each entry takes `semType` (string), `description` (string), and `parsers` — an ARRAY of objects, each with a `regexp` field. Multiple parsers may apply to the same semantic type. After deploy, the platform auto-detects matches in any text/cell on the platform and tags them with the semantic type.
+  derives_from:
+    - article: help/develop/how-to/db/register-identifiers.md:13-31
+    - code: packages/Chemspace/package.json:67-77
+    - code: packages/PowerPack/package.json
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-059
+  kind: namespace
+  scope: register-identifiers
+  value: |-
+    `DG.ObjectHandler` is the base class extended for custom semantic-type rendering. Override `get type()` (returns the semType string), `isApplicable(x)` (returns boolean — typically `x instanceof DG.SemanticValue && x.semType === '<type>'`), and any of `renderTooltip(x, context?)`, `renderCard(x, context?)`, `renderProperties(x, context?)`, `renderMarkup(x, context?)`, `renderIcon(x, context?)`, `renderView(x, context?)`. All renderers return `HTMLElement`. Defaults render `divText(getCaption(x))`.
+  derives_from:
+    - article: help/develop/how-to/db/register-identifiers.md:39-72
+    - code: js-api/ui.ts:1651-1761
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-060
+  kind: namespace
+  scope: register-identifiers
+  value: |-
+    `DG.ObjectHandler.register(handler)` is the registration call (static). It is called from a package init/autostart function. The static method also auto-registers a grid cell renderer if `getGridCellRenderer()` is defined and a markup handler if `markupRegexp` is non-null.
+  derives_from:
+    - article: help/develop/how-to/db/register-identifiers.md:78-82
+    - code: js-api/ui.ts:1764-1773
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-061
+  kind: namespace
+  scope: register-identifiers
+  value: |-
+    `DG.SemanticValue` wraps a typed value with `value: T`, `semType: string`, and `units`. Inside an `ObjectHandler.isApplicable(x)`, the canonical guard is `x instanceof DG.SemanticValue && x.semType === '<TYPE>'`; inside renderers, `(x as SemanticValue).value` extracts the underlying identifier string.
+  derives_from:
+    - article: help/develop/how-to/db/register-identifiers.md:46,50
+    - code: js-api/src/grid.ts:1379-1380
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-063
+  kind: naming
+  scope: register-identifiers
+  value: |-
+    The init function that registers handlers must be marked as autostart. Two equivalent forms — header annotation `//meta.role: init, autostart` (or just `autostart`), or the decorator `@grok.decorators.autostart()` on a `static init()` method inside `PackageFunctions`. Canonical reference uses the decorator form.
+  derives_from:
+    - article: help/develop/how-to/db/register-identifiers.md:77-82,429-438
+    - code: packages/Chembl/src/package.ts:15-19
+    - code: packages/Chembl/src/package.g.ts:4
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-064
+  kind: namespace
+  scope: register-identifiers
+  value: |-
+    For identifiers tied to database tables, the recommended approach is the `@datagrok-libraries/db-explorer` library (config-driven). Entry point — `DBExplorer.initFromConfig(config)` returns a `DBExplorer` instance OR `null` (skill authors must null-check; on null, the schema couldn't be loaded or the connection wasn't found). Alternative — `DBExplorer.initFromConfigPath(_package, configPath?)` reads a JSON config from package files (default path `db-explorer/db-explorer-config.json`).
+  derives_from:
+    - article: help/develop/how-to/db/register-identifiers.md:388-407
+    - code: libraries/db-explorer/src/db-explorer.ts:210-251
+    - code: packages/Chembl/src/handlers.ts:7-12
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-071
+  kind: naming
+  scope: register-identifiers
+  value: |-
+    No-code DB-explorer configuration is launched from the connection context menu — Browse > Databases > <connection> right-click > "Configure Identifiers...". Dialog asks for the schema, then opens an accordion editor with sections — Identifiers, Joins, Explicit References, Header Names, Unique Columns, Custom Selected Columns, Renderers. Bottom of the panel exposes Import/Export JSON and Save. Save validates required fields before persisting.
+  derives_from:
+    - article: help/develop/how-to/db/register-identifiers.md:131-142,148-150
+    - code: playwright-public/connections/02-identifiers.test.ts:69-72
+  contradicts: []
+  confidence: high

@@ -21,8 +21,11 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # write-demo-scripts
 
@@ -38,9 +41,6 @@ instead (out of scope).
 
 - A package scaffold (`grok create <Name>`); the functions you want to
   showcase already callable from the package.
-- The tutorials library added to the package — `package.json`,
-  `"@datagrok-libraries/tutorials": "^<x>.<y>.<z>"` under
-  `dependencies`, then `npm i` (knowledge `DG-FACT-374`).
 - Familiarity with package header annotations (`//name:`, `//meta.*:`)
   or the `@grok.decorators.func` form.
 
@@ -171,18 +171,6 @@ instead (out of scope).
   dependency wasn't added or `npm i` wasn't rerun (knowledge
   `DG-FACT-374`). Fix: add the entry to `package.json` `dependencies`
   and reinstall.
-
-## Verification
-
-- After `grok publish dev`, open
-  `apps/Tutorials/Demo/<your-demoPath-joined-with-/>` in the URL bar
-  (spaces replaced by `-`). The sidebar should show your steps in
-  order; clicking **Next** (manual) or watching the countdown
-  (automatic) executes each step and updates `grok.shell.v.path` to
-  `apps/Tutorials/Demo/<path-with-spaces-replaced-by-dashes>`
-  (knowledge `DG-FACT-379`).
-- The gallery card carries the `description` text from the package
-  function header.
 
 ## See also
 

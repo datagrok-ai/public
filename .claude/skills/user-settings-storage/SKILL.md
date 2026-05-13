@@ -22,8 +22,11 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # user-settings-storage
 
@@ -180,15 +183,6 @@ and follow the user across devices, with no separate database.
   (`js-api/src/dapi.ts:168,712,716`), async, and does not share data
   with `grok.userSettings`. Fix: migrate to `grok.userSettings`
   (`DG-FACT-394`).
-
-## Verification
-
-- In the Datagrok JS console after step 2,
-  `JSON.parse(grok.userSettings.getValue('MyPackage.lastSearch', 'vault-42')!)`
-  returns your object.
-- Wait > 10s, reload, repeat the read — the value persists.
-- Sign in as a different user (or open an incognito session): private
-  values are absent; `isPrivate: false` values are visible.
 
 ## See also
 

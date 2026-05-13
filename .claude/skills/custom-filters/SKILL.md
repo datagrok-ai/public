@@ -26,8 +26,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # custom-filters
 
@@ -40,8 +43,6 @@ and the widget must compose with every other selector in *Filters*.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); run from the package root.
-- `datagrok-api` imports (`* as DG`, `* as ui`, `* as grok`).
 - `datagrok-tools ^4.12.x` for the `@grok.decorators.filter` shortcut
   (`DG-FACT-267`); older toolchains use the function-role surface.
 
@@ -175,14 +176,6 @@ and the widget must compose with every other selector in *Filters*.
 - **State doesn't restore on layout reload.** Override `applyState`
   to call `super.applyState(state)` then re-render (`DG-FACT-273`);
   platform calls `applyState` AFTER `attach`.
-
-## Verification
-
-- `npm run build` + `grok publish <host>` exit `0`; `src/package.g.ts`
-  contains a wrapper with `//meta.role: filter` and `//output: filter result`.
-- In Datagrok: open *Filters* → *Add filter* — your widget appears and
-  paints its UI; toggling it reduces visible rows and composes (rather
-  than resets) other active filters.
 
 ## See also
 

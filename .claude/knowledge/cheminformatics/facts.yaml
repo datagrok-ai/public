@@ -1,0 +1,81 @@
+# Facts cited by the `cheminformatics` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 7
+
+- id: DG-FACT-235
+  kind: namespace
+  scope: cheminformatics
+  value: |-
+    The cheminformatics JS-API surface lives under `grok.chem` (re-exported `chem.*` namespace from `js-api/src/chem.ts`). Most methods are async and route through `grok.functions.call('Chem:<dartName>', ...)` — i.e., they delegate to the Chem package's server-side / Web Worker functions. The wrapper-to-Dart-name mapping is not 1:1 (e.g. `diversitySearch` → `Chem:getDiversities`, `mcs` → `Chem:FindMCS`, `rGroup` → `Chem:FindRGroups`, `descriptors` → `Chem:chemDescriptors`).
+  derives_from:
+    - article: help/develop/domains/chem/cheminformatics.md:19-21
+    - code: js-api/src/chem.ts:699-829
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-236
+  kind: enum
+  scope: cheminformatics
+  value: |-
+    Molecule string notations supported by RDKit JS (and accepted as the `pattern`/`molecule` arg to `searchSubstructure`, `findSimilar`, `getSimilarities`, `canvasMol`, etc.) are FIVE — `smiles`, `cxsmiles`, `molblock`, `v3Kmolblock`, `inchi`. Format detection is automatic; molfiles are recognized by the `M  END` marker (`svgMol` uses `smiles.includes('M  END')` to dispatch between `Molecule.fromMolfile` and `Molecule.fromSmiles`).
+  derives_from:
+    - article: help/develop/domains/chem/cheminformatics.md:44,61-63,694-695
+    - code: js-api/src/chem.ts:694-695,714-715,844-847
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-237
+  kind: namespace
+  scope: cheminformatics
+  value: |-
+    Similarity scoring (`findSimilar`, `getSimilarities`) uses Morgan (circular) fingerprints + Tanimoto/Jaccard similarity. Substructure search (`searchSubstructure`) uses RDKit Pattern fingerprints for preliminary filtration, then graph-based `get_substruct_match` on Mol objects. Both maintain a per-column cache: encountering a new `Column` builds the cache; subsequent calls on the same `Column` reuse it. Mol objects are computed only for the first N molecules (memory cap), fingerprints for all.
+  derives_from:
+    - article: help/develop/domains/chem/cheminformatics.md:50,57-58,89-90
+  contradicts: []
+  confidence: medium  # algorithm description from article; cache lives Dart-side, not directly verifiable from chem.ts
+
+- id: DG-FACT-238
+  kind: namespace
+  scope: cheminformatics
+  value: |-
+    `grok.chem.searchSubstructure(column, pattern, settings?)` returns a `BitSet` whose length always equals `column.length`. The i-th bit is 1 iff the i-th molecule contains the pattern's substructure. Molecules that fail to parse (invalid SMILES, unsupported notation) leave the corresponding bit as 0 — they are silently skipped during indexing, NOT raised as errors. Settings shape per the TS type is `{ molBlockFailover?: string }` only — the `molBlockFailover` is the SMARTS used as the substructure when `pattern` itself is invalid.
+  derives_from:
+    - article: help/develop/domains/chem/cheminformatics.md:38-52
+    - code: js-api/src/chem.ts:766-775
+  contradicts:
+    - DG-FACT-DRIFT-093  # article also lists `substructLibrary: true` which is not in the TS settings type
+  confidence: high
+
+- id: DG-FACT-239
+  kind: namespace
+  scope: cheminformatics
+  value: |-
+    `grok.chem.findSimilar(column, molecule, settings?)` returns `Promise<DataFrame | null>` (null when `molecule` is empty — i.e. cache-priming mode). The DataFrame has THREE columns — `molecule` (original strings from input column), `score` (Tanimoto similarity, range 0.0–1.0, the DataFrame is sorted descending by this), and `index` (positions in original column). Default settings are `{ limit: Number.MAX_VALUE, cutoff: 0.0 }` — i.e. by default returns ALL molecules ranked.
+  derives_from:
+    - article: help/develop/domains/chem/cheminformatics.md:67-78
+    - code: js-api/src/chem.ts:726-737
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-240
+  kind: namespace
+  scope: cheminformatics
+  value: |-
+    `grok.chem.getSimilarities(column, molecule, settings?)` returns `Promise<Column | null>` — a SINGLE Column (not a DataFrame, despite the article's phrasing) of similarity scores aligned 1:1 with the input column. Pass `molecule = ''` to prime the fingerprint cache without scoring; in that branch the function returns `null`. Output Column length always equals input Column length; molecules that fail to parse get null fingerprints (and thus null scores) but the row count is preserved.
+  derives_from:
+    - article: help/develop/domains/chem/cheminformatics.md:82-95
+    - code: js-api/src/chem.ts:699-708
+  contradicts:
+    - DG-FACT-DRIFT-094  # article phrases the return as a DataFrame "with a single Column" and shows settings={sorted:false}
+  confidence: high
+
+- id: DG-FACT-241
+  kind: namespace
+  scope: cheminformatics
+  value: |-
+    Datagrok ships TWO molecule renderers with different engines and different sync/async profiles. `grok.chem.svgMol(smiles, width=300, height=200, options?): HTMLDivElement` is SYNC (returns the div immediately, fills its `innerHTML` after a dynamic `import('openchemlib/full.js')`); engine is OpenChemLib JS. `grok.chem.canvasMol(x, y, w, h, canvas, molString, scaffoldMolString=null, options={normalizeDepiction:true,straightenDepiction:true}): Promise<void>` is ASYNC (delegates to `Chem:canvasMol` server function); engine is RDKit. Scaffold highlighting is done via SMARTS passed as `scaffoldMolString`. The article notes canvasMol "will be made synchronous in the future" — still async as of current code (TODO comment in source).
+  derives_from:
+    - article: help/develop/domains/chem/cheminformatics.md:107-138
+    - code: js-api/src/chem.ts:837-868
+  contradicts: []
+  confidence: high

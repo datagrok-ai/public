@@ -3,6 +3,10 @@ name: extensions
 description: Pick the right Datagrok extension point for a plugin behavior, scaffold the function with datagrok-tools, and declare the matching function-role tag
 ---
 
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
+
 # extensions
 
 ## When to use
@@ -155,18 +159,6 @@ something to the column context panel", "what role tag do I use for Y".
  (`DG-FACT-100/103`); `scriptHandler` needs four `meta.scriptHandler.*`
  keys (`DG-FACT-173`-block). Fix: cross-check against the
  per-extension how-to before publishing.
-
-## Verification
-
-- `DG.Func.find({meta: {role: '<role-token>'}})` returns your function
- among the matches.
-- The UI surface fires the function: open a file (`fileViewer` /
- `fileHandler`), click a column with the matching `semType`
- (`panel` / `tooltip`), open the grid (`cellRenderer`), open the
- package settings pane (`packageSettingsEditor`), navigate to
- `<host>/apps/<PackageName>` (`app`).
-- Reloading with `?initPackageFunctions=false` disables your function —
- confirms the role gates registration, not some other code path.
 
 ## See also
 

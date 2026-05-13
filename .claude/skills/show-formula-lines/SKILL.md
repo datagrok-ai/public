@@ -20,8 +20,11 @@ allowed-tools:
   - Read
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # show-formula-lines
 
@@ -36,13 +39,6 @@ titration scatter plot", "draw a y=x diagonal on observed-vs-predicted",
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from the
-  package root, code lives under `src/`.
-- `datagrok-api` imports — the article omits these:
-  ```typescript
-  import * as grok from 'datagrok-api/grok';
-  import * as DG   from 'datagrok-api/dg';
-  ```
 - A `DG.DataFrame` (`grok.data.demo.demog()` works for demos) and a
   supported viewer: scatter plot, line chart, density plot, box plot,
   histogram, or bar chart (`DG-FACT-211`). Other viewers persist the
@@ -164,21 +160,6 @@ titration scatter plot", "draw a y=x diagonal on observed-vs-predicted",
   special-cased — its storage lives in `viewer.props['innerViewerLook']`,
   not on the outer viewer's own `formulaLines` (`DG-FACT-207`,
   `js-api/src/viewer.ts:838-851`).
-
-## Verification
-
-- `npm run build` (or `grok check`) exits `0`.
-- `df.getTag('.formula-lines')` returns a JSON string whose parsed
-  array length matches the count of `addLine`/`addBand` calls
-  (`DG-FACT-207`).
-- `df.meta.formulaLines.items.length` equals that same count, and
-  every entry has the expected `type: 'line' | 'band'` and `formula`.
-- Open the table view: lines/bands render on the scatter plot;
-  `plot.setOptions({showDataframeFormulaLines: false})` hides them
-  all without clearing storage; setting back to `true` restores them.
-- For an unsupported viewer (e.g., bar chart with `orientation:
-  'vertical'` and an X-axis formula), `items` still contains the
-  entry but the chart shows nothing — confirms `DG-FACT-211`.
 
 ## See also
 

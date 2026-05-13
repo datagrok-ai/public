@@ -23,8 +23,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # create-custom-file-viewers
 
@@ -38,11 +41,6 @@ player. You are NOT importing the file as a `DataFrame` (that's
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from the
-  package root.
-- `datagrok-api` imported explicitly — `import * as DG / ui / grok`.
-  The article snippet types `file` as a bare identifier; in a
-  TypeScript package you must type it as `DG.FileInfo`.
 - Familiarity with `DG.View` and `DG.FileInfo` (`DG-FACT-078`).
 
 ## Steps
@@ -183,19 +181,6 @@ player. You are NOT importing the file as a `DataFrame` (that's
   should be content-gated (`DG-FACT-075`).
 - **Tab caption shows the function name, not the file.** Missing
   `view.name = file.name;` after `DG.View.create()` (`DG-FACT-078`).
-
-## Verification
-
-- `grok publish <host>` exits `0`; regenerated `src/package.g.ts`
-  contains a wrapper with both `//meta.role: fileViewer` and
-  `//meta.fileViewer: <ext>`.
-- In Datagrok, open **Browse → Files**, click a file with the
-  registered extension — your view opens in a new tab whose caption
-  equals `file.name`.
-- Close and re-click; the tab re-opens (the view is rebuilt per click,
-  not cached).
-- For `fileViewerCheck`-gated viewers: swap the test file to content
-  that only ONE check accepts; only that viewer should appear.
 
 ## See also
 

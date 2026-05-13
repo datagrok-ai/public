@@ -25,8 +25,11 @@ allowed-tools:
   - Edit
   - Write
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # custom-cell-renderers
 
@@ -39,8 +42,6 @@ to bind the renderer automatically whenever a matching column appears.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); run from the package root.
-- `datagrok-api` imports (`* as DG`, `* as grok` — article omits these).
 - `datagrok-tools` shipping `@grok.decorators.cellRenderer` (current 6.x).
 - Familiarity with `CanvasRenderingContext2D` — `render` paints directly
   to a 2D canvas; nothing in the DOM.
@@ -174,24 +175,10 @@ to bind the renderer automatically whenever a matching column appears.
   because the flag is absent from `CellRendererOptions`
   (`DG-FACT-466`, `DG-FACT-468`).
 
-## Verification
-
-- `npm run build` and `grok check` both exit `0`; `grok publish <host>`
-  succeeds.
-- Regenerated `src/package.g.ts` contains, per renderer, a wrapper with
-  `//tags: cellRenderer`, `//output: grid_cell_renderer <name>`,
-  `//meta.role: cellRenderer`, `//meta.cellType: <Type>` (compare
-  `packages/PowerGrid/src/package.g.ts:13-64` plain, `116-125` virtual).
-- In Datagrok, open a table whose `semType`/tags match `cellType` —
-  grid paints via your `render`. For a virtual renderer, *Add column →
-  New chart* must list `<Type>`. Switching to a column with a different
-  `semType` falls back to the built-in renderer (binding is scoped).
-
 ## See also
 
-- Source: `<help_develop_root>/how-to/grid/custom-cell-renderers.md`
-  (mirror: `<harness_root>/docs/_internal/articles-mirror/how-to/grid/custom-cell-renderers.md`).
-- Knowledge: `<harness_root>/docs/_internal/knowledge/knowledge-graph.md`
+- Source: `help/develop/how-to/grid/custom-cell-renderers.md`.
+- Knowledge: `.claude/knowledge/_master/knowledge-graph.md`
   — `DG-FACT-099`…`107`, `DG-FACT-466`, `DG-FACT-467`, `DG-FACT-468`,
   `DG-FACT-DRIFT-043`.
 - Reference packages:

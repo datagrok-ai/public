@@ -1,0 +1,122 @@
+# Facts cited by the `home-page-widgets` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 8
+
+- id: DG-FACT-137
+  kind: enum
+  scope: home-page-widgets
+  value: |-
+    The role string for a home-page (welcome-screen) widget is `dashboard` (camelCase). Defined as `FUNC_TYPES.DASHBOARD = 'dashboard'` (`js-api/src/const.ts:398`) and the codegen enum `DASHBOARD = 'dashboard'` (`tools/bin/utils/func-generation.ts:104`). Function-role descriptor at `js-api/src/const.ts:509-513` declares `{role: FUNC_TYPES.DASHBOARD, description: 'Makes a widget appear on the welcome screen.', header: 'tags', signature: 'dashboard(): Widget'}`.
+  derives_from:
+    - article: help/develop/how-to/packages/home-page-widgets.md:18
+    - code: js-api/src/const.ts:396-398,509-513
+    - code: tools/bin/utils/func-generation.ts:104
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-138
+  kind: naming
+  scope: home-page-widgets
+  value: |-
+    A dashboard (home-page) widget is a zero-arg function annotated with `//meta.role: dashboard` + `//output: widget result`. The codegen contract (`tools/bin/utils/func-generation.ts:436-443`) declares `inputs: []` and `outputs: [{name: 'result', type: 'widget'}]`. Function-role descriptor signature is `dashboard(): Widget` (`js-api/src/const.ts:512`). Body returns a `DG.Widget` instance — typically an instance of a custom subclass of `DG.Widget` defined elsewhere in the package.
+  derives_from:
+    - article: help/develop/how-to/packages/home-page-widgets.md:17-21
+    - code: tools/bin/utils/func-generation.ts:436-443
+    - code: js-api/src/const.ts:509-513
+    - code: packages/PowerPack/src/package.g.ts:17-32
+    - code: packages/UsageAnalysis/src/package.g.ts:94-110
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-139
+  kind: namespace
+  scope: home-page-widgets
+  value: |-
+    There IS a specialized `@grok.decorators.dashboard(config?: DashboardOptions)` decorator (`js-api/src/decorators/functions.ts:286-292`) — unlike `tooltip` which has none. `DashboardOptions extends FunctionOptions` and adds `order?: string` and `test?: string` (`js-api/src/decorators/functions.ts:195-198,216-218`). Production canonical usage — `packages/PowerPack/src/package.ts:138-147` (`@grok.decorators.dashboard({meta: {'showName': 'false'}, order: '-1', name: 'Spotlight'})`), `packages/UsageAnalysis/src/package.ts:397-406` (`@grok.decorators.dashboard({'meta': {'canView': 'Developers,Administrators'}, 'name': 'Usage', 'test': 'usageWidget()'})`).
+  derives_from:
+    - code: js-api/src/decorators/functions.ts:195-198,216-218,286-292
+    - code: packages/PowerPack/src/package.ts:138-155
+    - code: packages/UsageAnalysis/src/package.ts:397-415
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-140
+  kind: naming
+  scope: home-page-widgets
+  value: |-
+    Widget placement on the home page is controlled by a function-level `order` option on the decorator (`@grok.decorators.dashboard({order: '6'})`) — emitted as `//meta.order: 6` in `package.g.ts`. Lower numbers (including negatives) sort first; `order: '-1'` puts Spotlight at the top, `order: '6'` puts Community further down. The current article (rewritten — `home-page-widgets.md:18-25`) demonstrates exactly this decorator-level usage with `order: '6'` on `communityWidget`. Per-widget settings declared via `super.addProperty('order', ...)` would be a runtime-tunable field on the widget instance (gear-icon panel), NOT the placement control — the previous draft of the article confused these two surfaces; the upstream rewrite removed that misleading example.
+  derives_from:
+    - article: help/develop/how-to/packages/home-page-widgets.md:18-25
+    - code: packages/PowerPack/src/package.ts:142,150
+    - code: packages/PowerPack/src/package.g.ts:21,29
+    - code: js-api/src/decorators/functions.ts:195-198,216-218
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-141
+  kind: naming
+  scope: home-page-widgets
+  value: |-
+    A custom widget is a class extending `DG.Widget` with a constructor that calls `super(rootElement: HTMLElement)` — the argument becomes `this.root` (`js-api/src/widgets/base.ts:231,250-257,322-325`). Article uses `super(ui.panel())`. Production `RecentProjectsWidget` uses `super(ui.panel([], {style: {display: 'flex'}}))` (`packages/PowerPack/src/widgets/recent-projects-widget.ts:16`); `CommunityWidget` uses `super(ui.panel([], 'welcome-community-widget'))` (`packages/PowerPack/src/widgets/community-widget.ts:14`); `SpotlightWidget` uses an empty `super(ui.div())` and appends children later. `ui.panel(items, options)` (`js-api/ui.ts:2149-2153`) is just a `div` with class `ui-panel`.
+  derives_from:
+    - article: help/develop/how-to/packages/home-page-widgets.md:38-44
+    - code: js-api/src/widgets/base.ts:231-257,322-325
+    - code: packages/PowerPack/src/widgets/recent-projects-widget.ts:8-19
+    - code: packages/PowerPack/src/widgets/community-widget.ts:6-28
+    - code: packages/PowerPack/src/spotlight/spotlight-widget.ts:17-22
+    - code: js-api/ui.ts:2149-2153
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-142
+  kind: naming
+  scope: home-page-widgets
+  value: |-
+    Tunable widget settings (rendered in the widget's gear-icon settings panel) are declared via `super.addProperty(name: string, type: Type, defaultValue: any, options?: IProperty): any` inside the widget's constructor — the call returns the default value, allowing the field to be initialized in one line: `this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Recent projects')`. Defined at `js-api/src/widgets/base.ts:345-365`. Production canonical — `RecentProjectsWidget` declares `caption` (`recent-projects-widget.ts:17`), `CommunityWidget` declares `caption` (`community-widget.ts:26`).
+  derives_from:
+    - article: help/develop/how-to/packages/home-page-widgets.md:40-41
+    - code: js-api/src/widgets/base.ts:345-365
+    - code: packages/PowerPack/src/widgets/recent-projects-widget.ts:13,17
+    - code: packages/PowerPack/src/widgets/community-widget.ts:11,26
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-143
+  kind: naming
+  scope: home-page-widgets
+  value: |-
+    Widget subclasses should override `get type(): string` to return a stable identifier — used for serialization and for the platform's widget registry (`js-api/src/widgets/base.ts:233`, default `'Unknown'`). Production canonical — `RecentProjectsWidget` returns `'RecentProjectsWidget'` (`recent-projects-widget.ts:9-11`), `CommunityWidget` returns `'CommunityWidget'` (`community-widget.ts:7-9`), `SpotlightWidget` returns `'SpotlightWidget'`. The current article example (`home-page-widgets.md:35-43`) STILL omits this override; a widget built strictly from the article would default to `type: 'Unknown'`. Article rewrite resolved the misleading `order`-via-addProperty pattern (see DG-FACT-140) but did not add the `get type()` override to the example. See DG-FACT-DRIFT-HPW-001.
+  derives_from:
+    - article: help/develop/how-to/packages/home-page-widgets.md:34-46
+    - code: js-api/src/widgets/base.ts:233
+    - code: packages/PowerPack/src/widgets/recent-projects-widget.ts:9-11
+    - code: packages/PowerPack/src/widgets/community-widget.ts:7-9
+    - code: packages/PowerPack/src/spotlight/spotlight-widget.ts:18
+  contradicts: []
+  confidence: high
+
+# DRIFTS for home-page-widgets
+
+- id: DG-FACT-DRIFT-HPW-001
+  kind: naming
+  scope: home-page-widgets
+  value: |
+    Article example class (`home-page-widgets.md:35-43`) omits the
+    `get type(): string` override. Every production widget that ships
+    in the canonical reference package (PowerPack) overrides it —
+    `CommunityWidget` returns `'CommunityWidget'`
+    (`packages/PowerPack/src/widgets/community-widget.ts:7-9`),
+    `RecentProjectsWidget` returns `'RecentProjectsWidget'`
+    (`packages/PowerPack/src/widgets/recent-projects-widget.ts:9-11`),
+    `SpotlightWidget` returns `'SpotlightWidget'`. Without the override
+    the widget defaults to `type: 'Unknown'` (`js-api/src/widgets/base.js:164`),
+    which clouds layout serialization and the widget registry. Fix in
+    article: add a one-line `get type(): string { return 'CommunityWidget'; }`
+    at the top of the class body.
+  derives_from:
+    - article: help/develop/how-to/packages/home-page-widgets.md:35-43
+    - code: js-api/src/widgets/base.js:163-164
+    - code: packages/PowerPack/src/widgets/community-widget.ts:7-9
+    - code: packages/PowerPack/src/widgets/recent-projects-widget.ts:9-11
+  contradicts: []
+  confidence: high

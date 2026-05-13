@@ -24,8 +24,11 @@ allowed-tools:
  - Write
  - Edit
  - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # docker-containers
 
@@ -38,11 +41,6 @@ route authenticated traffic to it.
 
 ## Prerequisites
 
-- A package scaffold (e.g. `grok create <Name>`); paths are relative to
- the package root.
-- `datagrok-api` available — entry point `grok.dapi.docker.dockerContainers`
- (`DG-FACT-129`). The `grok.dapi.dockerfiles.*` path named in article
- prose does NOT exist.
 - Target instance running `grok-spawner` (article line 19); exactly one
  exposed port per image (`DG-FACT-136`).
 
@@ -180,15 +178,6 @@ route authenticated traffic to it.
 - **`webSocketProxy` rejects with code 4001** — no `"CONNECTED"`
  handshake within `timeout` (`DG-FACT-131`); raise `timeout` for
  `on_demand` cold starts.
-
-## Verification
-
-- After step 3, **Platform → Dockers** shows image + container cards
- with a green or blinking grey dot (not red).
-- After step 4, `container.id` is a GUID matching `DG-FACT-134`'s
- friendly-name rule.
-- After step 6, `resp.status === 200` and `await resp.json` parses.
-- After step 7 (if used), `ws.readyState === WebSocket.OPEN`.
 
 ## See also
 

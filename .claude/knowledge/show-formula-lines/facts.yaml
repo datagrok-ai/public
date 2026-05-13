@@ -1,0 +1,87 @@
+# Facts cited by the `show-formula-lines` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 6
+
+- id: DG-FACT-207
+  kind: namespace
+  scope: show-formula-lines
+  value: |-
+    Formula-line storage is a JSON string parked in two places, and the `meta.formulaLines` accessor is a typed view over that JSON. (a) DataFrame side — JSON sits in the `.formula-lines` tag (`DG.TAGS.FORMULA_LINES = '.formula-lines'`, `js-api/src/const.ts:309`); `df.meta.formulaLines` returns a `DataFrameFormulaLinesHelper` whose `storage` getter/setter wrap `df.getTag('.formula-lines')` / `df.setTag(...)` (`js-api/src/dataframe/formula-helpers.ts:11-21`). (b) Viewer side — JSON sits in the viewer's `formulaLines` property (`viewer.props['formulaLines']`); `viewer.meta.formulaLines` returns a `ViewerFormulaLinesHelper` (`js-api/src/viewer.ts:835-857`). Trellis Plot is special-cased — its `storage` reads/writes `viewer.props['innerViewerLook']`'s `formulaLines` via `grok_PropMixin_GetPropertyValue/SetPropertyValue` rather than the outer viewer's own property (`viewer.ts:838-851`). Lines saved to the dataframe render on every viewer of that frame; lines saved to the viewer render only on that viewer.
+  derives_from:
+    - article: help/develop/how-to/viewers/show-formula-lines.md:27-50
+    - code: js-api/src/const.ts:309, js-api/src/dataframe/formula-helpers.ts:11-21, js-api/src/viewer.ts:812-857
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-208
+  kind: namespace
+  scope: show-formula-lines
+  value: |
+    `FormulaLinesHelper` (`js-api/src/helpers.ts:85-143`) is the abstract surface
+    shared by DataFrame and Viewer accessors. Mutators — `add(item)`,
+    `addAll(items[])`, `addLine(item)` (sets `item.type='line'` then `add`),
+    `addBand(item)` (sets `item.type='band'` then `add`), `updateAt(idx, value)`,
+    `removeAt(idx, count=1)`, `removeWhere(predicate)`, `clear()`. Reader —
+    `items: FormulaLine[]` (parses `storage` JSON every read; the setter
+    re-stringifies). Statics — `setDefaults(item)`, `getMeta(item)`,
+    `getMetaByFormula(formula, type)`. `add()` and `addAll()` route through
+    `setDefaults` (Dart side) so default colors / widths / zIndex are stamped
+    before persistence; manual `items =` assignment skips that. The `add` family
+    appends and re-serializes the WHOLE list each call, so building large sets
+    via `addAll` is dramatically cheaper than looped `addLine`.
+    **`removeAt` LANDMINE** (article line 42 now warns, code `helpers.ts:125-127`):
+    `removeAt(idx, count=1)` is implemented as
+    `this.items = this.items.slice(idx, idx + count - 1)` — with the documented
+    default `count=1` the slice degenerates to `slice(idx, idx)` which returns
+    `[]`, so calling `removeAt(idx)` wipes the ENTIRE storage instead of removing
+    one item. Use `removeWhere((_, i) => i === idx)` until upstream is fixed.
+    The sibling `AnnotationRegionsHelper.removeAt` at `helpers.ts:173-175` has
+    the same bug.
+  derives_from:
+    - article: help/develop/how-to/viewers/show-formula-lines.md:36-44
+    - code: js-api/src/helpers.ts:85-143,125-127
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-209
+  kind: enum
+  scope: show-formula-lines
+  value: |-
+    `FormulaLine` interface (`js-api/src/helpers.ts:9-32`) — full optional-field set: `id, type, title, description, color, visible, opacity, zIndex, min, max, formula, showOnPlot, showOnTooltip` (shared); `orientation, width, spline, style` (lines only); `column2, xMap, yMap` (bands only). `style` enum literal: `'solid' | 'dotted' | 'dashed' | 'longdash' | 'dotdash'` (article line 135 + sample `packages/ApiSamples/scripts/data-frame/metadata/formula-lines.js:34,82,144`). `type` literal: `'line' | 'band'` (set by `addLine`/`addBand`; required when calling `add` directly — article line 78). Required at call time — `formula` for both; additionally `column2` for bands.
+  derives_from:
+    - article: help/develop/how-to/viewers/show-formula-lines.md:117-156
+    - code: js-api/src/helpers.ts:9-32, packages/ApiSamples/scripts/data-frame/metadata/formula-lines.js:34
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-210
+  kind: namespace
+  scope: show-formula-lines
+  value: |-
+    Two viewer-level toggles control formula-line VISIBILITY without touching the storage: `showDataframeFormulaLines: boolean` and `showViewerFormulaLines: boolean`. Both default to `true`. Declared on every viewer-options interface that supports formula lines — concretely on `IScatterPlotSettings` (`d4.ts:597,602`), `ILineChartSettings` (`d4.ts:909,914`), `IDensityPlotSettings` (`d4.ts:1199,1204`), `IBoxPlotSettings` (`d4.ts:1605,1610`), `IHistogramSettings` (`d4.ts:1932,1937`), `IBarChartSettings` (`d4.ts:2331,2336`). These two booleans are the canonical "hide ALL lines" switch — set them at viewer construction (`view.scatterPlot({showDataframeFormulaLines:false, ...})`) or via `viewer.setOptions({...})`; clearing the storage is destructive, this is reversible. Per-line `visible: boolean` (default `true`) controls a single line.
+  derives_from:
+    - article: help/develop/how-to/viewers/show-formula-lines.md:91-96, 130, 152
+    - code: js-api/src/interfaces/d4.ts:597,602,909,914,1199,1204,1605,1610,1932,1937,2331,2336
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-211
+  kind: enum
+  scope: show-formula-lines
+  value: |-
+    Per-viewer support matrix (article lines 14-25, 12 entries): scatter plot, line chart, density plot — both X and Y formula lines. Box plot — Y axis only (X is categorical). Histogram — X axis only (count is derived). Bar chart — X line when `orientation: 'horizontal'`, Y line when `orientation: 'vertical'`. Box plot, histogram, and bar chart accept ONLY constant-RHS formulas (`${value} = C`) and bands (`${value} in (a, b)`) on their value axis; the Formula Lines editor dialog narrows its popup-menu items + column picker to enforce this. JS API does not validate this at `addLine` time — the helper persists whatever JSON you pass, but unsupported viewers silently drop the line at render. Defaults apply per the dialog's runtime gating, not at `setDefaults`.
+  derives_from:
+    - article: help/develop/how-to/viewers/show-formula-lines.md:14-25
+  contradicts: []
+  confidence: medium
+
+- id: DG-FACT-212
+  kind: enum
+  scope: show-formula-lines
+  value: |-
+    Per-line / per-band defaults stamped by `FormulaLinesHelper.setDefaults` (Dart-side; observable from article columns `Default`): line color `'#838383'` (dark gray), band color `'#F0F0F0'` (light gray), `zIndex: 100`, `opacity: 100`, `visible: true`, `width: 1` (line), `spline: 0.9` (line), `style: 'solid'` (line), `min`/`max` unbounded. Color is HEX string (no rgba). `opacity` is a number on `[0..100]` (not the CSS `[0..1]` convention — easy bug source). `zIndex` 0 is the chart itself; negatives render UNDER the chart, positives OVER; ties broken by insertion order.
+  derives_from:
+    - article: help/develop/how-to/viewers/show-formula-lines.md:124-135, 146-155
+    - code: js-api/src/helpers.ts:138
+  contradicts: []
+  confidence: high

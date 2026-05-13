@@ -23,8 +23,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # data-enrichments
 
@@ -166,18 +169,6 @@ fields land in the dataframe.
   use the `keyDb` shape with no `connection` (`DG-FACT-DRIFT-DE-001`).
   Plugin-bundled JSON must use `connection` and omit `keyDb`. Fix:
   rewrite the file in bundled shape.
-
-## Verification
-
-```bash
-jq -e '.fields | all((split(".") | length) == 3)' enrichments/*.json
-jq -e '.joins | all((.leftTableKeys|length) == (.rightTableKeys|length))' \
-  enrichments/*.json
-```
-After `grok publish <host> --release`: open a table whose values match
-`keyColumn`, click the column, and the context panel lists your
-enrichment with an **Apply** button. Apply attaches the `fields[]`
-columns to the open dataframe.
 
 ## See also
 

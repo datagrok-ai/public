@@ -26,8 +26,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # context-actions
 
@@ -41,8 +44,6 @@ selected numerical columns.
 
 ## Prerequisites
 
-- Package scaffold (`grok create <Name>`); commands run from the
-  package root with `datagrok-api` imported.
 - A semantic type already attached to the target columns — built-in
   (`Molecule`, `Macromolecule`, …) or package-registered (see
   `register-identifiers`).
@@ -166,21 +167,6 @@ selected numerical columns.
   format variant lacks `meta.exclude-actions-panel: 'true'`. Add the
   flag to every variant; keep `meta.exclude-current-value-menu: 'true'`
   on the parent `Copy as...` chooser (`DG-FACT-183`).
-
-## Verification
-
-- `npm run build` exits 0; `grok publish <host>` exits 0.
-- The regenerated `src/package.g.ts` contains, per action, both
-  `//meta.action: <Text>` and `//input: <type> <name> { semType: <T> }`
-  (compare `packages/Chem/src/package.g.ts:843-849`).
-- In Datagrok, open a table whose column carries the matching
-  `semType`. Right-click a cell (for `semantic_value`), the column
-  header (for `column`), or a multi-column selection (for `list`) — the
-  menu item with the `meta.action` label appears; expand the Actions
-  accordion to confirm panel placement (unless
-  `exclude-actions-panel: 'true'`).
-- Right-click an item with a different `semType` — the action does NOT
-  appear, confirming the dispatch is scoped, not global.
 
 ## See also
 

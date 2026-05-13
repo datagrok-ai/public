@@ -23,8 +23,11 @@ triggers:
 allowed-tools:
   - Read
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # upload-data
 
@@ -161,16 +164,6 @@ the `access-data` skill for the full `grok.dapi.files.*` surface.
   `await grok.dapi.files.write(path, bytes)` for binary
   (`js-api/src/dapi.ts:1457,1465`) — see the `access-data` skill
   (`DG-FACT-433`).
-
-## Verification
-
-- Step 2 prints `Open in Datagrok: http…` and exits 0; on failure it
-  prints `upload failed: HTTP <code>` or `unexpected body: …` and
-  exits 1.
-- The captured `$PROJECT_URL`, when opened, renders the CSV as a
-  TableView under `$LOGIN`'s uploads.
-- With `?layout=<qualified-name>` appended, the opened view shows the
-  layout's viewers (and not the default grid-only layout).
 
 ## See also
 

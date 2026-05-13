@@ -3,6 +3,10 @@ name: chem-intro
 description: Orient cheminformatics work in Datagrok — pick the right notation, validate it, and choose between `grok.chem.*` and the Bio package
 ---
 
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
+
 # chem-intro
 
 ## When to use
@@ -151,15 +155,6 @@ for this peptide?".
   apply the 5000-char gate from step 4 before any
   `searchSubstructure` / `findSimilar` / `mcs` call (knowledge
   `DG-FACT-254`).
-
-## Verification
-
-- Step 1: each branch fires for `'CCO'` (smiles), `'[#6]-[#7]'`
-  (smarts), the `DG.chem.WHITE_MOLBLOCK` constant (molblock), and
-  `''` (unknown).
-- Step 3: `chem.convert(chem.convert('CCO', Smiles, MolBlock), Unknown,
-  Smiles)` round-trips to `'CCO'`.
-- Step 6: balloon shows `Notations: 7, RDKit ok: true`.
 
 ## See also
 

@@ -23,8 +23,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # db-in-plugin
 
@@ -40,8 +43,6 @@ use `db-in-docker` instead.
 
 ## Prerequisites
 
-- A package scaffold (`grok create <PackageName>`). All paths below
-  are relative to the package root.
 - A Datagrok server you can publish to with `--release` (debug
   publishes do NOT apply migrations — knowledge `DG-FACT-424`).
 - Query-authoring conventions from `access-data` — this skill consumes
@@ -174,16 +175,6 @@ use `db-in-docker` instead.
 - **Filenames sort wrong (`10_x.sql` before `2_x.sql`).** Mixed prefix
   widths. Fix: zero-pad consistently (`0010_x.sql`, `0002_x.sql`) —
   knowledge `DG-FACT-421`.
-
-## Verification
-
-- After step 5, in the Datagrok UI open `Browse > Databases` and
-  confirm `<PackageName>:<name>` appears with the expected schema.
-- After step 4, run `await grok.data.query('<PackageName>:getNotes')`
-  in the console — a non-empty DataFrame returns once `insertNote`
-  has run.
-- After step 6, `SELECT tags FROM <name>.notes LIMIT 1;` in
-  `Browse > Databases` succeeds.
 
 ## See also
 

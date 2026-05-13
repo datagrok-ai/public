@@ -3,6 +3,10 @@ name: docking
 description: Dock small molecules to a macromolecule in Datagrok via the AutoDock GPU package
 ---
 
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
+
 # docking
 
 ## When to use
@@ -141,20 +145,10 @@ programmatically from a package/script via the JS API.
  (`adSvc.awaitStatus('started', 30000)` timed out, knowledge
  `DG-FACT-246`).
 
-## Verification
-
-- After step 3 or 4: `t.col('pose').semType === DG.SEMTYPE.MOLECULE3D`
- and every non-error row of `binding energy` is a finite negative
- number (kcal/mol). Sort the `binding energy` column ascending —
- strongest binders are at the top, lowest values.
-- After step 5: clicking a `pose` cell shows the **AutoDock** widget
- in the context panel with a 3D viewer, not a "Docking has not been
- run" placeholder.
-
 ## See also
 
 - Source articles:
- - `<help_develop_root>/domains/chem/docking.md`
+ - `help/develop/domains/chem/docking.md`
 - Knowledge:
  - `docs/_internal/knowledge/knowledge-graph.md` — facts
  `DG-FACT-242`..`DG-FACT-247`.

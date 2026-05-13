@@ -25,8 +25,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # add-info-panel
 
@@ -41,8 +44,6 @@ cell", "render a sequence logo for `Macromolecule` columns", "add a
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from the
-  package root, with `datagrok-api` imported (`grok`, `DG`, `ui`).
 - A semantic type already attached to the column — built-in
   (`Molecule`, `Macromolecule`, `Text`, …) or one your package
   registers via `register-identifiers` /
@@ -170,17 +171,6 @@ cell", "render a sequence logo for `Macromolecule` columns", "add a
   `{action: join(table)}`) / `string` (with `{action: markup}`)
   (`DG-FACT-278`). Wrap raw `HTMLElement` or `DG.Viewer` as
   `new DG.Widget(el)` or `DG.Widget.fromRoot(viewer.root)`.
-
-## Verification
-
-- `npm run build` exits 0; `grok publish <host>` exits 0.
-- Regenerated `src/package.g.ts` carries, per panel,
-  `//meta.role: ...,panel` and `//output: widget result` (or one of
-  the script-only output types).
-- In Datagrok, clicking an object whose context matches the declared
-  `semType` and `condition` renders the widget in the right-hand
-  context panel; clicking an unrelated object does NOT — confirms the
-  binding is scoped, not global.
 
 ## See also
 

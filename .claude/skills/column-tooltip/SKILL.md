@@ -26,8 +26,11 @@ allowed-tools:
   - Write
   - Edit
   - Bash
-harness-authored: true
 ---
+
+## Cited facts
+
+See [`facts.yaml`](./facts.yaml) — concrete API references for the `DG-FACT-NNN` citations used below.
 
 # column-tooltip
 
@@ -42,11 +45,6 @@ WebLogo for `Macromolecule` columns", "top-N diverse structures for
 
 ## Prerequisites
 
-- A package scaffold (`grok create <Name>`); commands run from the
-  package root.
-- `datagrok-api` imported — `import * as grok from 'datagrok-api/grok'`,
-  `import * as DG from 'datagrok-api/dg'`, `import * as ui from 'datagrok-api/ui'`
-  (the article omits these; standard for any TypeScript package).
 - A semantic type already attached to the column — built-in
   (`Macromolecule`, `Molecule`, …) or one your package registers via
   the `register-identifiers` skill (`DG-FACT-096`).
@@ -170,19 +168,6 @@ WebLogo for `Macromolecule` columns", "top-N diverse structures for
 - **Returned a `DG.Viewer` or `HTMLElement` instead of a `DG.Widget`.**
   Wrap with `DG.Widget.fromRoot(root)`; for a viewer, return
   `DG.Widget.fromRoot(viewer.root)` (`DG-FACT-098`).
-
-## Verification
-
-- `npm run build` exits 0; `grok publish <host>` exits 0.
-- Regenerated `src/package.g.ts` contains, per hover function, a
-  wrapper with `//meta.role: tooltip`,
-  `//input: column col { semType: <Type> }`, `//output: widget result`
-  (compare `packages/Chem/src/package.g.ts:38-44`; Bio additionally
-  carries `//tags: tooltip` because its decorator passes `tags: ['tooltip']`).
-- In Datagrok, hovering a column whose `semType` matches the
-  constraint renders the returned `DG.Widget`; hovering a column
-  with a different `semType` falls back to the default summary —
-  confirms the binding is scoped, not global.
 
 ## See also
 

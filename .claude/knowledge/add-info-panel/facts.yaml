@@ -1,0 +1,108 @@
+# Facts cited by the `add-info-panel` skill.
+# Generated from knowledge-graph.md — do not edit by hand.
+# Total facts: 8
+
+- id: DG-FACT-276
+  kind: enum
+  scope: add-info-panel
+  value: |-
+    An info panel is a Datagrok package function distinguished by the role `panel` on its `meta.role` annotation. Two implementation paths exist — server-side scripts (any supported language; written with header annotations like `# meta.role: panel`) and client-side JavaScript/TypeScript package functions (`//meta.role: panel` header or `@grok.decorators.panel({...})` class decorator). Scripts run on the server; JS panel functions run on the client. Both paths are equivalent in registration and visibility-condition handling.
+  derives_from:
+    - article: help/develop/how-to/ui/add-info-panel.md:13-22,67-87,91-105
+    - code: js-api/src/decorators/functions.ts:278-284   # decorators.panel
+    - code: packages/Bio/src/package.g.ts:52-58         # canonical //meta.role: panel header form
+    - code: packages/Admetica/src/package.ts:30-40      # canonical @grok.decorators.panel decorator form
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-277
+  kind: enum
+  scope: add-info-panel
+  value: |-
+    A client-side JS info panel function MUST declare a `widget` output (`//output: widget result`) and return a `DG.Widget` instance (constructed via `new DG.Widget(htmlElement)` or `DG.Widget.fromRoot(el)`, or a subclass). `DG.Widget` is defined at `js-api/src/widgets/base.ts:231` and stores its visual root in `_root` (settable via constructor argument). 16 panel functions across the public packages (`grep -c '//meta.role: panel' packages/*/src/package.g.ts` → 16) all use `//output: widget result`.
+  derives_from:
+    - article: help/develop/how-to/ui/add-info-panel.md:96-104
+    - code: js-api/src/widgets/base.ts:231-273
+    - code: packages/Bio/src/package.g.ts:54,63,147     # //output: widget result on panels
+    - code: packages/Admetica/src/package.g.ts:12       # //output: widget result on panel
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-278
+  kind: enum
+  scope: add-info-panel
+  value: |-
+    A panel script (server-side) may declare any of these output types — `widget` (returns a `DG.Widget`-equivalent), `viewer` (returns a Datagrok viewer instance, e.g. `table.ScatterPlot(...)`), `graphics` (returns a server-rendered image, e.g. R/Python plot), `dataframe` (returns a `DG.DataFrame`, typically paired with `{action: join(<input-table>)}` to merge columns into the source frame as virtual columns), or `string` with `{action: markup}` (returns Grok-script markup such as `#{button("Label", "expression")}` rendered as inline action buttons in the panel). `widget` and `viewer` are platform enum members at `js-api/src/const.ts:107` (`VIEWER = 'viewer'`) and the Dart-side type list at `grok_shared.dart.js:139623`.
+  derives_from:
+    - article: help/develop/how-to/ui/add-info-panel.md:191-203,222-232,240-250,260-274
+    - code: js-api/src/const.ts:99,107  # GRAPHICS = 'graphics', VIEWER = 'viewer'
+    - code: packages/Curves/scripts/calculateMSR.py:13   # action:join(table)
+    - code: help/datagrok/concepts/functions/func-params-annotation.md:782,801,814,839  # action: join semantics
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-279
+  kind: namespace
+  scope: add-info-panel
+  value: |-
+    The `condition` header annotation is a Grok-script boolean expression that the platform re-evaluates on every context change to decide whether the panel is visible. The expression references variables by name — input parameters by their declared name (e.g., `signal`, `smiles`, `x`), plus three platform-supplied identifiers — `user` (current user; methods `user.name`, `user.hasrole(<roleName>)`, `user.inteam(<teamName>)`), `table` (active dataframe; method `table.gettag(<key>)`), and any input's `.semType` / `.name` / `.stats.*` member access. Operators include `&&`, `||`, `==`, `<`, `>`, and method-style invocations (`column.isnumerical`, `file.path.contains(<substr>)`, `file.name.endsWith(<suffix>)`, `column.stats.missingvaluecount`). Conditions are written in Grok-script syntax REGARDLESS of the panel implementation language (`add-info-panel.md:88`). `condition?: string` is declared on `FunctionOptions` at `js-api/src/decorators/functions.ts:183`.
+  derives_from:
+    - article: help/develop/how-to/ui/add-info-panel.md:53-54,78,88,137-141,156-158,172-176
+    - code: js-api/src/decorators/functions.ts:183       # condition?: string
+    - code: packages/Boltz1/src/package.g.ts:49          # //condition: Boltz1:isApplicableBoltz(molecule)
+    - code: packages/Docking/src/package.g.ts:66         # //condition: Docking:isApplicableAutodock(molecule)
+    - code: packages/NLP/src/package.g.ts:7              # //condition: isTextFile(textfile)
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-280
+  kind: enum
+  scope: add-info-panel
+  value: |-
+    An info panel accepts EXACTLY ONE primary input parameter, whose type narrows the context the panel binds to — `column <name>` (binds to the active column; condition can use `<name>.isnumerical`, `<name>.semType`, `<name>.stats.*`), `dataframe <name>` (binds to the active table; condition uses `<name>.name`, `<name>.columns.containsAll([...])`), `row <name>` (binds to the active row; condition uses `<name>.table.name`), `cell` (active cell), `string` / `int` / `file` / `object` (any context object), or `semantic_value <name> {semType: <SemType>}` (JS-only — receives a `DG.SemanticValue` wrapper carrying `.value`, `.cell`, `.gridCell`, `.column`, `.semType`, `.units` properties). The `semantic_value` type literal is enum `INPUT.SEM_VALUE = 'semantic_value'` at `js-api/src/const.ts:109` and class `SemanticValue` at `js-api/src/grid.ts:1349`. Extra user-context / dataset-context filters MUST be expressed in `condition`, not as additional inputs.
+  derives_from:
+    - article: help/develop/how-to/ui/add-info-panel.md:107-121,163-176
+    - code: js-api/src/const.ts:109,123                  # SEM_VALUE / SEMANTIC_VALUE = 'semantic_value'
+    - code: js-api/src/grid.ts:1349-1398                 # class SemanticValue { value, cell, gridCell, column, semType, units }
+    - code: packages/Bio/src/package.g.ts:155            # //input: semantic_value sequence { semType: Macromolecule }
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-281
+  kind: naming
+  scope: add-info-panel
+  value: |-
+    When `@grok.decorators.panel({meta: {role: '<x>', ...}})` is applied with a non-`panel` role string (e.g., `'widgets'`), `datagrok-tools` codegen automatically APPENDS `,panel` to the emitted `//meta.role:` line so the function is still indexed as a panel. Verified — `packages/Admetica/src/package.ts:33` declares `meta: {role: 'widgets', domain: 'chem'}`; the generated `packages/Admetica/src/package.g.ts:13` emits `//meta.role: widgets,panel`. Skill authors using the decorator form should NOT manually include `panel` in `meta.role` — let the generator add it. (For multi-role declared in source — e.g., `meta.role: panel, widgets` in the article line 98 — the generator emits comma-joined with no space; do not depend on the exact string ordering, only on the presence of `panel`.)
+  derives_from:
+    - article: help/develop/how-to/ui/add-info-panel.md:96-105
+    - code: packages/Admetica/src/package.ts:30-40       # source: meta: {role: 'widgets', ...}
+    - code: packages/Admetica/src/package.g.ts:13        # generated: //meta.role: widgets,panel
+    - code: packages/Bio/src/package.g.ts:157            # //meta.role: widgets,panel
+    - code: packages/Boltz1/src/package.g.ts:47          # //meta.role: widgets,panel
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-282
+  kind: namespace
+  scope: add-info-panel
+  value: |-
+    To get the source column from a `semantic_value` input inside a JS info-panel function, use `value.cell.column` (the cell-side getter on `SemanticValue` — `js-api/src/grid.ts:1393`). The column gives you `.name`, `.semType`, the parent `.dataFrame`, etc. Pattern from the article (`add-info-panel.md:117-120`): `function valueWidget(value) { return value ? new DG.Widget(ui.divText('column - ' + value.cell.column.name)) : new DG.Widget(ui.divText('value is empty')); }`. Always null-check the input — `semantic_value` can be empty when no cell is selected.
+  derives_from:
+    - article: help/develop/how-to/ui/add-info-panel.md:107-121
+    - code: js-api/src/grid.ts:1379-1398                 # SemanticValue.{value, cell, gridCell, column, semType}
+  contradicts: []
+  confidence: high
+
+- id: DG-FACT-283
+  kind: enum
+  scope: add-info-panel
+  value: |-
+    A panel script's `condition` evaluates BEFORE the script runs; an expensive condition (e.g., a cross-package function call) gates execution. Two canonical condition patterns from production — (a) static semantic-type gate: `condition: <inputName>.semType == "Molecule"` (re-evaluated cheaply at the platform level); (b) cross-package function call: `condition: <Pkg>:<predicateFunc>(<input>)` — `Boltz1:isApplicableBoltz(molecule)` and `Docking:isApplicableAutodock(molecule)` are real examples. The predicate function must be registered (typically as a `//input: string molecule //output: bool result` helper in the same package) so the platform can resolve and call it during condition evaluation.
+  derives_from:
+    - article: help/develop/how-to/ui/add-info-panel.md:50-54
+    - code: packages/Boltz1/src/package.g.ts:49,54-58    # condition + isApplicableBoltz
+    - code: packages/Docking/src/package.g.ts:66         # condition: Docking:isApplicableAutodock(molecule)
+  contradicts: []
+  confidence: high
+
+# DRIFT entries — article vs. code disagreements (add-info-panel)
