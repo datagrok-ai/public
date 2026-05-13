@@ -27,6 +27,7 @@ import './dapi/groups';
 import './dapi/dapi';
 import './dapi/connection';
 import './dapi/entities';
+import './dapi/entities-save';
 import './dapi/layouts';
 import './dapi/packages';
 import './dapi/tables';
@@ -57,6 +58,7 @@ import './valuematcher/valuematcher';
 import './property/property';
 import './widgets/input-form';
 import './utils/progressIndicator';
+import './ai/ai-tests';
 
 import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 

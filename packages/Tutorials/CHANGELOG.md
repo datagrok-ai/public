@@ -1,5 +1,12 @@
 # Tutorials changelog
 
+## v.next
+
+* Demo app: Always clear the "Updating..." overlay when a demo finishes — moved `setUpdateIndicator(false)` into a `finally` so a failing demo no longer leaves the indicator covering the home page
+* Demo app: Fixed clipped/misplaced "Updating..." overlay — place it on the tab-content of the active view instead of `tab-content[0]`, so it stays bounded (tab-content is `position: relative`) and lands on the pane that's actually being replaced rather than a sibling (e.g. the home page) when the dock is split
+* Demo app: Made the "Updating..." overlay clearly readable during demo loading — scoped CSS (`.demo-app-loading > .d4-update-shadow`) gives the overlay a solid translucent white background with a subtle backdrop blur and renders the label/loader at full opacity, so widget text underneath no longer bleeds through
+* Demo app: Fixed view leak when reopening a multi-table demo (e.g. Table Linking) — newly opened views are tagged via `view.temp['demoApp']` and all of them are closed on the next demo switch, instead of only `currentView`
+
 ## 1.11.2 (2026-04-10)
 
 * Added demo image for Retrosynthesis

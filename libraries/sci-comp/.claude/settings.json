@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/vmaka/Datagrok/NumericLibsPy/jonckheere_terpstra/**)",
+      "Bash(python -c \"import json; d=json.load\\(open\\(r'C:/Users/vmaka/Datagrok/NumericLibsPy/jonckheere_terpstra/tests/R_generation/jonckheere_test_results_PMCMRplus.json'\\)\\); r=d[143]; print\\('alt:', r['alt']\\); print\\('group_size:', r['group_size'], 'k:', r['group_number']\\); print\\('statistic:', r['statistic'], 'p:', r['p_value']\\); print\\('len\\(x\\):', len\\(r['x']\\), 'unique:', len\\(set\\(r['x']\\)\\)\\)\")",
+      "Bash(python -c ' *)"
+    ]
+  }
+}

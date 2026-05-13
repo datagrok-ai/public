@@ -102,7 +102,26 @@ export type INewTemplateResult<T> = {
 export type HitDesignTemplate = Omit<HitTriageTemplate, 'dataSourceType' | 'queryFunctionName'> &
     {stages: string[]};
 
-export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'> & {tilesViewerFormSketch?: string};
+export type HitDesignMergeMode = 'smiles' | 'vid';
+export type HitDesignMergeClashStrategy = 'skip' | 'overwrite';
+
+export type HitDesignMergeConfig = {
+    mode: HitDesignMergeMode,
+    // Only set when the source file lives on the Datagrok file share, so it can be reopened later
+    filePath?: string,
+    // Incoming column name to use as molecule source (required for SMILES mode, optional for VID mode)
+    molColName?: string,
+    // Incoming column name carrying V-iD values (only used in VID mode)
+    vidColName?: string,
+    addNewRows: boolean,
+    runComputeOnNewRows: boolean,
+    clashStrategy: HitDesignMergeClashStrategy,
+}
+
+export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'> & {
+    tilesViewerFormSketch?: string,
+    mergeConfig?: HitDesignMergeConfig,
+};
 
 // todo: probably add some more stuff
 export type PeptiHitTemplate = HitDesignTemplate & {toAtomiLevelProps?: {[key: string]: any}}

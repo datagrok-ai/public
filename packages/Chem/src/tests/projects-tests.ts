@@ -376,6 +376,7 @@ async function runRGroupAnalysis(tv: DG.TableView): Promise<void> {
 
 async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise<void> {
   const project = DG.Project.create();
+  project.name = 'Test project';
   const tableInfo = tv.dataFrame.getTableInfo();
   if (dataSync) {
     //@ts-ignore

@@ -1,5 +1,15 @@
 # statistics changelog
 
+## 1.12.6 (2026-04-30)
+
+* GROK-20056: MPO: Prevent rerendering on column input hover and wheel scroll
+
+## 1.12.5 (2026-04-15)
+
+* MPO: Use column input for auto-updating column selectors
+* MPO: Fix column selector hover rerendering and layout overflow
+* Compute dialog: Add single-select radio button mode for MPO functionality
+
 ## 1.12.4 (2026-04-08)
 
 * MPO: Share compute function engine with HT

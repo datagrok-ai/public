@@ -1,12 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineParallelItem, PipelineSequentialItem} from './PipelineConfiguration';
+import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
+import {DriverLogger, reportError} from '../data/Logger';
 
 //
 // Internal config processing
@@ -20,12 +21,15 @@ export type FuncCallIODescription = {
 }
 
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<LinkSpecString, never>;
-type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial;
+type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial | AbstractPipelineActionConfiguration;
 
 export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
-export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
-export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
-export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed;
+export type PipelineConfigurationDynamicProcessed = AbstractPipelineDynamicConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
+/** @deprecated Use PipelineConfigurationDynamicProcessed */
+export type PipelineConfigurationParallelProcessed = PipelineConfigurationDynamicProcessed;
+/** @deprecated Use PipelineConfigurationDynamicProcessed */
+export type PipelineConfigurationSequentialProcessed = PipelineConfigurationDynamicProcessed;
+export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationDynamicProcessed;
 
 export type IOType = 'input' | 'output' | 'base' | 'actions' | 'not';
 
@@ -33,28 +37,34 @@ function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineCon
   return !!((c as PipelineConfigurationStaticInitial).type === 'static');
 }
 
-function isPipelineParallelInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationParallelInitial {
-  return !!((c as PipelineConfigurationParallelInitial).type === 'parallel');
+function isPipelineDynamicInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationDynamicInitial {
+  const type = (c as PipelineConfigurationDynamicInitial).type;
+  return type === 'dynamic' || type === 'parallel' || type === 'sequential';
 }
 
-function isPipelineSequentialInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationSequentialInitial {
-  return !!((c as PipelineConfigurationSequentialInitial).type === 'sequential');
-}
+/** @deprecated Use isPipelineDynamicInitial */
+const isPipelineParallelInitial = isPipelineDynamicInitial;
+/** @deprecated Use isPipelineDynamicInitial */
+const isPipelineSequentialInitial = isPipelineDynamicInitial;
 
 function isPipelineRefInitial(c: ConfigInitialTraverseItem): c is PipelineRefInitial {
   return !!((c as PipelineRefInitial).type === 'ref');
 }
 
+function isActionConfigInitial(c: ConfigInitialTraverseItem): c is AbstractPipelineActionConfiguration {
+  return (c as AbstractPipelineActionConfiguration).type === 'action';
+}
+
 function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepConfigurationInitial {
-  return !isPipelineStaticInitial(c) && !isPipelineParallelInitial(c) && !isPipelineSequentialInitial(c) && !isPipelineRefInitial(c);
+  return !isPipelineStaticInitial(c) && !isPipelineParallelInitial(c) && !isPipelineSequentialInitial(c) && !isPipelineRefInitial(c) && !isActionConfigInitial(c);
 }
 
 function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationInitial {
   return isPipelineStaticInitial(c) || isPipelineParallelInitial(c) || isPipelineSequentialInitial(c);
 }
 
-export async function getProcessedConfig(conf: PipelineConfigurationInitial): Promise<PipelineConfigurationProcessed> {
-  const pconf = await configProcessing(conf, new Map());
+export async function getProcessedConfig(conf: PipelineConfigurationInitial, logger?: DriverLogger): Promise<PipelineConfigurationProcessed> {
+  const pconf = await configProcessing(conf, new Map(), logger);
   return pconf as PipelineConfigurationProcessed;
 }
 
@@ -81,51 +91,45 @@ export function containsPipelineRef<T>(store: PipelineRefStore<T>, nqName: strin
 async function configProcessing(
   conf: ConfigInitialTraverseItem,
   loadedPipelines: PipelineRefStore<null>,
-): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncCallIODescription[]> | PipelineSelfRef> {
+  logger?: DriverLogger,
+): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncCallIODescription[]> | AbstractPipelineActionConfiguration | PipelineSelfRef> {
   if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
     addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
-  if (isStepConfigInitial(conf)) {
-    const pconf = await processStepConfig(conf);
+  if (isActionConfigInitial(conf)) {
+    return processActionConfig(conf);
+  } else if (isStepConfigInitial(conf)) {
+    const pconf = await processStepConfig(conf, logger);
     return pconf;
   } else if (isPipelineStaticInitial(conf)) {
-    const pconf = processStaticConfig(conf);
+    const pconf = processStaticConfig(conf, logger);
     const steps = await Promise.all(conf.steps.map(async (step) => {
       processUIFlags(step);
-      const sconf = await configProcessing(step, loadedPipelines);
+      const sconf = await configProcessing(step, loadedPipelines, logger);
       return sconf;
     }));
-    checkUniqId(steps);
+    checkUniqId(steps, logger);
     return {...pconf, steps};
-  } else if (isPipelineParallelInitial(conf)) {
-    const pconf = processParallelConfig(conf);
+  } else if (isPipelineDynamicInitial(conf)) {
+    const pconf = processDynamicConfig(conf, logger);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
       processUIFlags(item);
-      const nconf = await configProcessing(item, loadedPipelines);
+      const nconf = await configProcessing(item, loadedPipelines, logger);
       return nconf;
     }));
-    checkUniqId(stepTypes);
-    return {...pconf, stepTypes};
-  } else if (isPipelineSequentialInitial(conf)) {
-    const pconf = processSequentialConfig(conf);
-    const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
-      processUIFlags(item);
-      const nconf = await configProcessing(item, loadedPipelines);
-      return nconf;
-    }));
-    checkUniqId(stepTypes);
+    checkUniqId(stepTypes, logger);
     return {...pconf, stepTypes};
   } else if (isPipelineRefInitial(conf)) {
     const pconf = await callHandler<LoadedPipeline>(conf.provider, conf).toPromise();
     if (containsPipelineRef(loadedPipelines, pconf.nqName, pconf.version))
       return {id: pconf.id, nqName: pconf.nqName, version: pconf.version, type: 'selfRef'};
     addPipelineRef(loadedPipelines, pconf.nqName, pconf.version, null);
-    return configProcessing(pconf, loadedPipelines);
+    return configProcessing(pconf, loadedPipelines, logger);
   }
   throw new Error(`Pipeline configuration node type matching failed: ${conf}`);
 }
 
-function processUIFlags(item: PipelineParallelItem<LinkSpecString, never, PipelineRefInitial> | PipelineSequentialItem<LinkSpecString, never, PipelineRefInitial>) {
+function processUIFlags(item: PipelineDynamicItem<LinkSpecString, never, PipelineRefInitial>) {
   if (item.disableUIControlls) {
     item.disableUIAdding = true;
     item.disableUIDragging = true;
@@ -133,32 +137,24 @@ function processUIFlags(item: PipelineParallelItem<LinkSpecString, never, Pipeli
   }
 }
 
-function processStaticConfig(conf: PipelineConfigurationStaticInitial) {
+function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: DriverLogger) {
   const links = conf.links?.map((link) => processLinkData(link));
-  const actions = processPipelineActions(conf.actions ?? []);
+  const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
   return {...conf, links, actions, onInit, onReturn};
 }
 
-function processParallelConfig(conf: PipelineConfigurationParallelInitial) {
+function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?: DriverLogger) {
   const links = conf.links?.map((link) => processLinkData(link));
-  const actions = processPipelineActions(conf.actions ?? []);
+  const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
   return {...conf, actions, links, onInit, onReturn};
 }
 
-function processSequentialConfig(conf: PipelineConfigurationSequentialInitial) {
-  const links = conf.links?.map((link) => processLinkData(link));
-  const actions = processPipelineActions(conf.actions ?? []);
-  const onInit = processInitHook(conf.onInit);
-  const onReturn = processReturnHook(conf.onReturn);
-  return {...conf, links, actions, onInit, onReturn};
-}
-
-async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>) {
-  const actions = processStepActions(conf.actions ?? []);
+async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>, logger?: DriverLogger) {
+  const actions = processStepActions(conf.actions ?? [], logger);
   const io = await getFuncCallIO(conf.nqName);
   const func = DG.Func.byName(conf.nqName);
   const viewersHookMakerName = getViewersHook(func);
@@ -168,6 +164,20 @@ async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString,
     viewersHook = await hookMaker.apply();
   }
   return {...conf, viewersHook, io, actions};
+}
+
+function processActionConfig(conf: AbstractPipelineActionConfiguration): PipelineConfigurationStaticProcessed {
+  return {
+    id: conf.id,
+    type: 'static',
+    friendlyName: conf.friendlyName,
+    tags: conf.tags,
+    steps: [],
+    links: [],
+    actions: [],
+    disableHistory: true,
+    isActionStep: true,
+  } as PipelineConfigurationStaticProcessed;
 }
 
 async function getFuncCallIO(nqName: NqName): Promise<FuncCallIODescription[]> {
@@ -187,14 +197,14 @@ function isOptional(prop: DG.Property) {
   return prop.options.optional === 'true';
 }
 
-function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[]) {
-  checkUniqId(actionsInput);
+function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
+  checkUniqId(actionsInput, logger);
   const actions = actionsInput.map((action) => ({...processLinkData(action)}));
   return actions;
 }
 
-function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[]) {
-  checkUniqId(actionsInput);
+function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
+  checkUniqId(actionsInput, logger);
   const actions = actionsInput.map((action) => ({...processLinkData(action)}));
   return actions;
 }
@@ -227,14 +237,11 @@ function processLink(io: LinkSpecString, ioType: IOType) {
     return [];
 }
 
-function checkUniqId(items: {id: string}[]) {
+function checkUniqId(items: {id: string}[], logger?: DriverLogger) {
   const ids = new Set<string>();
   for (const item of items) {
-    if (ids.has(item.id)) {
-      const msg = `Id ${item.id} is not unique`;
-      console.error(msg);
-      grok.shell.error(msg);
-    }
+    if (ids.has(item.id))
+      reportError('warning', 'configProcessing', `Id ${item.id} is not unique`, logger);
     ids.add(item.id);
   }
 }

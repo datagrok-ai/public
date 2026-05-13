@@ -10,17 +10,14 @@ export const _package = new DG.Package();
 let dbdf: DG.DataFrame;
 let synonymsCol: DG.Column<string>;
 let moleculeCol: DG.Column<string>;
-let dbdfRowCount: number;
 
 
-export * from './package.g';
 export class PackageFunctions {
   @grok.decorators.init()
   static async initDrugBank(): Promise<void> {
     dbdf = (await _package.files.readBinaryDataFrames('drugbank-open-structures.d42'))[0];
     synonymsCol = dbdf.getCol('SYNONYMS');
     moleculeCol = dbdf.getCol('molecule');
-    dbdfRowCount = dbdf.rowCount;
   }
 
 
@@ -58,6 +55,6 @@ export class PackageFunctions {
     outputs: [{type: 'string', name: 'result', options: {semType: 'Molecule'}}],
   })
   static drugNameMolecule(id: string): string {
-    return drugNameMoleculeConvert(id, dbdfRowCount, synonymsCol, moleculeCol);
+    return drugNameMoleculeConvert(id, synonymsCol, moleculeCol);
   }
 }

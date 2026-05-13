@@ -14,13 +14,14 @@ const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 import * as Papa from 'papaparse';
 import * as testUtils from '../utils/test-utils';
+import * as playwrightRunner from '../utils/playwright-runner';
 import {BrowserOptions, loadTestsList, runBrowser, ResultObject, saveCsvResults, printBrowsersResult, mergeBrowsersResults, Test, OrganizedTests as OrganizedTest, timeout, addColumnToCsv} from '../utils/test-utils';
 import {setAlphabeticalOrder} from '../utils/order-functions';
 
 const testInvocationTimeout = 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright', 'skip-puppeteer'];
 
 const curDir = process.cwd();
 
@@ -234,7 +235,7 @@ export async function test(args: TestArgs): Promise<boolean> {
   //   color.warn('--core flag can only be used in the DevTools package');
 
 
-  if (!args.package) {
+  if (!args.package && !args['skip-puppeteer']) {
       try {
           await testUtils.loadPackages(packagesDir,
               packageName,
@@ -247,7 +248,55 @@ export async function test(args: TestArgs): Promise<boolean> {
       }
   }
   process.env.TARGET_PACKAGE = packageName;
-  const res = await runTesting(args);
+  let res: ResultObject;
+  if (args['skip-puppeteer']) {
+    // Playwright-only mode: skip the Puppeteer browser launch + DG.Test runner.
+    // Used by Playwright-only test directories (e.g. public/playwright-public)
+    // that have a `playwrightTests` field in package.json but no Dart/JS package
+    // tests on the server.
+    res = {
+      failed: false, verbosePassed: '', verboseSkipped: '', verboseFailed: '',
+      passedAmount: 0, skippedAmount: 0, failedAmount: 0, csv: '',
+    };
+  } else {
+    try {
+      res = await runTesting(args);
+    } catch (e: any) {
+      // Don't let Puppeteer-side failures (login error, browser crash) skip the
+      // Playwright pass — the two suites have independent auth and runtime paths,
+      // and we want at least one half of the run reported.
+      color.error(`Puppeteer pass failed: ${e?.message || e}`);
+      res = {
+        failed: true, verbosePassed: '', verboseSkipped: '',
+        verboseFailed: `Puppeteer pass failed: ${e?.message || e}\n`,
+        passedAmount: 0, skippedAmount: 0, failedAmount: 1, csv: '',
+        error: String(e?.message || e),
+      };
+    }
+  }
+
+  if (!args['skip-playwright']) {
+    const ptDir = playwrightRunner.hasPlaywrightTests(curDir);
+    if (ptDir) {
+      const ptRes = await playwrightRunner.runPlaywrightTests(curDir, ptDir, args, args.host ?? '');
+      // mergeBrowsersResults assumes both inputs have a header row; an empty
+      // Puppeteer CSV (filter matched zero tests) breaks the merge. Take the
+      // Playwright CSV verbatim in that case, otherwise merge.
+      if (!res.csv || res.csv.trim().split('\n').length < 2) {
+        res.csv = ptRes.csv;
+        res.passedAmount += ptRes.passedAmount;
+        res.failedAmount += ptRes.failedAmount;
+        res.skippedAmount += ptRes.skippedAmount;
+        res.failed = res.failed || ptRes.failed;
+        res.verbosePassed = (res.verbosePassed || '') + ptRes.verbosePassed;
+        res.verboseFailed = (res.verboseFailed || '') + ptRes.verboseFailed;
+        res.verboseSkipped = (res.verboseSkipped || '') + ptRes.verboseSkipped;
+      } else if (ptRes.csv && ptRes.csv.trim().split('\n').length >= 2) {
+        res = await mergeBrowsersResults([res, ptRes]);
+      }
+    }
+  }
+
   if (args.csv) {
       res.csv = addColumnToCsv(res.csv, 'stress_test', args['stress-test'] ?? false);
       res.csv = addColumnToCsv(res.csv, 'benchmark', args.benchmark ?? false);
@@ -502,6 +551,8 @@ interface TestArgs {
   f?: string,
   params?: string,
   logfailed?: boolean | string,
+  'skip-playwright'?: boolean,
+  'skip-puppeteer'?: boolean,
 }
 
 interface TestResult {

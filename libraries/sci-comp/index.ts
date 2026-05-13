@@ -1,2 +1,5 @@
-// Optimization (namespace re-exports to avoid name collisions)
+// Namespace re-exports to avoid name collisions
 export {singleObjective, multiObjective} from './src/optimization';
+export * as timeSeries from './src/time-series';
+export * as stats from './src/stats';
+export * as nca from './src/nca';

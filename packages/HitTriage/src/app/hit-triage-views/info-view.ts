@@ -26,9 +26,14 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   public readmePath = _package.webRoot + 'README_HT.md';
   private dataSourceFunctionsMap: {[key: string]: DG.Func | DG.DataQuery} = {};
   currentGroupping: string = 'None';
+  protected _appHeader: HTMLElement | null = null;
+  protected _contentRoot: HTMLElement = ui.div([], {classes: 'hit-triage-info-view-container'});
   constructor(app: HitTriageApp) {
     super(app);
     this.name = 'Hit Triage';
+    this._appHeader = this.getAppHeader();
+    this.root.appendChild(ui.div([this._appHeader], {style: {marginLeft: '10px'}}));
+    this.root.appendChild(this._contentRoot);
     grok.shell.windows.showHelp = true;
     grok.shell.windows.help.showHelp(this.readmePath);
     this.checkCampaign().then((c) => {this.app.campaign = c; this.init();});
@@ -87,7 +92,6 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     try {
       const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
       const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
-      const appHeader = this.getAppHeader();
 
       const campaignAccordionDiv = ui.div();
       const templatesDiv = ui.div([], {classes: 'ui-form'});
@@ -178,14 +182,12 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       const sortingHeader = ui.divH([continueCampaignsHeader, editColumnsIcon, groupIcon, refreshIcon], {style: {alignItems: 'center'}});
 
       await this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate);
-      $(this.root).empty();
-      this.root.appendChild(ui.div([
-        ui.divV([appHeader, sortingHeader], {style: {marginLeft: '10px'}}),
-        this.campaignsTableRoot,
-        createNewCampaignHeader,
-        templatesDiv,
-        campaignAccordionDiv,
-      ], {classes: 'hit-triage-info-view-container'}));
+      $(this._contentRoot).empty();
+      this._contentRoot.appendChild(ui.divV([sortingHeader], {style: {marginLeft: '10px'}}));
+      this._contentRoot.appendChild(this.campaignsTableRoot);
+      this._contentRoot.appendChild(createNewCampaignHeader);
+      this._contentRoot.appendChild(templatesDiv);
+      this._contentRoot.appendChild(campaignAccordionDiv);
     } catch (e) {
       ui.setUpdateIndicator(this.root, false);
       throw e;

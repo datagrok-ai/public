@@ -430,6 +430,12 @@ Here's how:
 
 ![Linked table data in cell](../../deploy/releases/img/grid-nested-linked-tables.gif) 
 
+### Hyperlinks
+
+String columns render hyperlinks automatically. Two formats are supported: plain URLs (`https://datagrok.ai/`) and markdown links (`[Datagrok](https://datagrok.ai/)`) when you want a short visible label over a longer URL. To build per-row links from other columns, use a [calculated column](../../transform/add-new-column.md), e.g. `'[' + ${name} + '](http://something/' + ${id} + ')'`, and hide the `id` column.
+
+The column's **On link click** setting controls click behavior: *Open in new tab*, *Open in context panel* (previews the URL's content in the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel) without leaving the grid), or *Custom (JS handler)*.
+
 ### Images
 
 Datagrok supports two types of images in cells: embedded and linked. Supported formats are .jpg, .png, and .jpeg.

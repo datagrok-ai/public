@@ -45,7 +45,7 @@ function getSettings(gc: DG.GridColumn): FormSettings {
   return settings;
 }
 
-let scene: Scene;
+const scenes = new WeakMap<DG.Grid, Scene>();
 
 /** Returns approximate length in characters of the longest value in the column. */
 function getMaxValueWidth(column: DG.Column): number {
@@ -106,7 +106,10 @@ export class FormCellRenderer extends DG.GridCellRenderer {
           scene.elements.push(new LabelElement(labelR, fontSize, molCols[i].name, {horzAlign: 'center', color: 'lightgrey', font: font}));
           r = r.cutTop(labelHeight);
         }
-        scene.elements.push(new GridCellElement(r, cell));
+        const molEl = new GridCellElement(r, cell);
+        if (!shouldShowMolLabels)
+          molEl.style!.tooltip = `${molCols[i].name}: ${molEl.style!.tooltip}`;
+        scene.elements.push(molEl);
       }
     }
 
@@ -154,6 +157,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
       if (b.height < cols.length * 20 * 0.4 && !isTwoColumn) {
         const r = b.getLeftPart(cols.length, i);
         const e = new GridCellElement(r, cell);
+        e.style!.tooltip = `${col.name}: ${e.style!.tooltip}`;
         scene.elements.push(e);
       } else {
         const layoutColIndex = Math.floor(i / rowsPerCol);
@@ -185,10 +189,14 @@ export class FormCellRenderer extends DG.GridCellRenderer {
           scene.elements.push(new LabelElement(tagRect, fontSize * 0.6, tagText,
             {horzAlign: 'left', color: 'gray', font: font}));
         } else {
-          let valueRect = new DG.Rect(valueX, intY, finalValueWidth, intH);
+          const slotWidth = showColumnNames ? finalValueWidth : effectiveWidth;
+          let valueRect = new DG.Rect(valueX, intY, slotWidth, intH);
           if (col.type === DG.TYPE.BOOL)
-            valueRect = new DG.Rect(valueX, intY - 5, 20, intH);
-          scene.elements.push(new GridCellElement(valueRect, cell));
+            valueRect = new DG.Rect(valueX, intY - 5, showColumnNames ? 20 : effectiveWidth, intH);
+          const valEl = new GridCellElement(valueRect, cell);
+          if (!showColumnNames)
+            valEl.style!.tooltip = `${col.name}: ${valEl.style!.tooltip}`;
+          scene.elements.push(valEl);
         }
       }
     }
@@ -217,20 +225,25 @@ export class FormCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseEnter(gridCell: DG.GridCell, e: MouseEvent): void {
-    scene = FormCellRenderer.makeScene(gridCell);
-    if (scene.elements.every((e) => e.bounds.width < 25 && e.bounds.height < 25)) {
-      setTimeout(() => ui.tooltip.show(this.makeBestScene(gridCell).toCanvas(),
-        gridCell.documentBounds.right, gridCell.documentBounds.top), 200);
+    const scene = FormCellRenderer.makeScene(gridCell);
+    scenes.set(gridCell.grid, scene);
+    console.log('[Form] onMouseEnter: scene elements:', scene.elements.length, scene.elements.map(el => ({bounds: `${el.bounds.x},${el.bounds.y},${el.bounds.width},${el.bounds.height}`, tooltip: (el as any).style?.tooltip})));
+    if (scene.elements.every((el) => el.bounds.width < 25 && el.bounds.height < 25)) {
+      ui.tooltip.show(this.makeBestScene(gridCell).toCanvas(),
+        gridCell.documentBounds.right, gridCell.documentBounds.top, {delay: 200});
     }
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
+    const scene = scenes.get(gridCell.grid);
     const el = scene?.hitTest(e.offsetX, e.offsetY);
-    if (el?.style?.tooltip)
-      setTimeout(() => ui.tooltip.show(el.style!.tooltip!, e.x + 20, e.y - 20));
-    else
-      ui.tooltip.hide();
-    //super.onMouseMove(gridCell, e);
+    console.log('[Form] onMouseMove: offsetX/Y=', e.offsetX, e.offsetY, 'scene=', !!scene, 'el=', el, 'tooltip=', (el as any)?.style?.tooltip);
+    ui.tooltip.show(el?.style?.tooltip ?? null, e.x + 20, e.y - 20, {delay: 200});
+  }
+
+  onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
+    scenes.delete(gridCell.grid);
+    ui.tooltip.hide();
   }
 
   onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void {

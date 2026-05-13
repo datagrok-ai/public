@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import '../css/docking.css';
+
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
 import {IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
@@ -12,7 +14,7 @@ import {_runAutodock, AutoDockService, _runAutodock2, ensureNoDockingError} from
 import {TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
 import { _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
-import { addColorCoding, formatColumns, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
+import { addColorCoding, buildComparisonTable, formatColumns, getRemarksFromPdb, getRemarksFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -104,7 +106,18 @@ export class PackageFunctions{
 
     formatColumns(autodockResults);
     const processedResults = processAutodockResults(autodockResults, table);
+    // `processAutodockResults` returns an empty DataFrame when AutoDock's
+    // output is missing required columns — skip downstream wiring.
+    if (processedResults.columns.length === 0)
+      return processedResults;
     await grok.data.detectSemanticTypes(processedResults);
+
+    // NOTE: the SMILES↔pose atom-picker link is NOT written here. Users
+    // activate it explicitly via the "Link SMILES column" checkbox in the
+    // AutoDock context panel (`mol3dAtomPickerLinkWidget`). Auto-linking
+    // was rejected to avoid ambiguous pairings when the table has more
+    // than one SMILES column and to keep the interactive-highlight opt-in
+    // rather than implicit.
     return processedResults;
   }
 
@@ -116,7 +129,7 @@ export class PackageFunctions{
   })
   static async runAutodock(
     @grok.decorators.param({options: {description: '\'Input data table\''}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule', description: '\'Small molecules to dock\''}}) ligands: DG.Column,
+    @grok.decorators.param({options: {semType: 'Molecule', description: '\'Small molecules to dock\''}}) ligands: DG.Column,
     @grok.decorators.param({options: {choices: 'Docking:getConfigFiles', description: '\'Folder with config and macromolecule\''}}) target: string,
     @grok.decorators.param({type: 'int', options: {initialValue: '10', description: '\'Number of output conformations for each small molecule\''}}) poses: number): Promise<void> {
 
@@ -188,7 +201,7 @@ export class PackageFunctions{
     if (!addedToPdb)
       return new DG.Widget(ui.divText('Docking has not been run'));
 
-    const autodockResults: DG.DataFrame = getFromPdbs(molecule);
+    const autodockResults: DG.DataFrame = getRemarksFromPdbs(molecule);
     const widget = new DG.Widget(ui.div([]));
 
     if (table)
@@ -205,14 +218,52 @@ export class PackageFunctions{
     if (!showProperties) return widget;
 
     const result = ui.div();
-    const map: { [_: string]: any } = {};
-    for (let i = 0; i < autodockResults!.columns.length; ++i) {
-      const columnName = autodockResults!.columns.names()[i];
-      const propertyCol = autodockResults!.col(columnName);
-      map[columnName] = prop(molecule, propertyCol!, result, AUTODOCK_PROPERTY_DESCRIPTIONS);
-    }
-    result.appendChild(ui.tableFromMap(map));
+    const buildPropertyMap = () => {
+      const map: { [_: string]: any } = {};
+      for (let i = 0; i < autodockResults!.columns.length; ++i) {
+        const columnName = autodockResults!.columns.names()[i];
+        const propertyCol = autodockResults!.col(columnName);
+        map[columnName] = prop(molecule, propertyCol!, result, AUTODOCK_PROPERTY_DESCRIPTIONS);
+      }
+      return ui.tableFromMap(map);
+    };
+    result.appendChild(buildPropertyMap());
     widget.root.append(result);
+
+    const currentRowIdx = molecule.cell.rowIndex;
+    const ligandCol = molecule.cell.column;
+    const currentValues = getRemarksFromPdb(ligandCol.get(currentRowIdx));
+
+    const sub = DG.debounce(currentTable.onMouseOverRowChanged, 50).subscribe(() => {
+      const hovIdx = currentTable.mouseOverRowIdx;
+      ui.empty(result);
+      if (hovIdx >= 0 && hovIdx !== currentRowIdx) {
+        const hovPdb = ligandCol.get(hovIdx);
+        if (hovPdb && hovPdb.includes(BINDING_ENERGY_COL)) {
+          result.appendChild(buildComparisonTable(currentValues, getRemarksFromPdb(hovPdb)));
+          return;
+        }
+      }
+      result.appendChild(buildPropertyMap());
+    });
+    widget.subs.push(sub);
+
+    // Append the atom-picker "Link SMILES column" checkbox at the bottom
+    // of the AutoDock panel. Rendered via BiostructureViewer's exposed
+    // function rather than as a separate cell panel, so the UI stays as
+    // a single "AutoDock" section in the context panel instead of two.
+    // Fails silently if BSV isn't installed / the function isn't found.
+    try {
+      const linkWidget = await grok.functions.call(
+        'BiostructureViewer:mol3dAtomPickerLinkWidget',
+        {mol3DCol: molecule.cell.column},
+      ) as DG.Widget | null;
+      if (linkWidget?.root)
+        widget.root.append(linkWidget.root);
+    } catch (err: unknown) {
+      _package.logger.debug(
+        `mol3dAtomPickerLinkWidget unavailable: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     return widget;
   }

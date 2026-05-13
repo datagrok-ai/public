@@ -12,20 +12,30 @@
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.27.0",
     "dayjs": "^1.11.13",
-    "litegraph.js": "^0.7.18"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "rete": "^2.0.6",
+    "rete-area-plugin": "^2.1.5",
+    "rete-connection-plugin": "^2.0.5",
+    "rete-history-plugin": "^2.1.1",
+    "rete-react-plugin": "^2.1.0",
+    "rete-render-utils": "^2.0.3",
+    "styled-components": "^5.3.11"
   },
   "devDependencies": {
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.4",
     "datagrok-tools": "^5.1.5",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "debug-funcflow": "webpack && grok publish",

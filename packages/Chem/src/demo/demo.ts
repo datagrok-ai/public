@@ -71,6 +71,10 @@ export async function _demoChemOverview(): Promise<void> {
       table = tv.dataFrame;
     }, {description: 'Load dataset with molecule columns', delay: 3000})
     .step('Calculate molecule properties', async () => {
+      if (!grok.shell.windows.context.visible)
+        grok.shell.windows.context.visible = true;
+      await awaitCheck(() => document.getElementsByClassName('grok-entity-prop-panel').length > 0,
+        'Property panel did not appear', 5000);
       propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
       closeAllAccordionPanes(propPanel!);
       const molColumnName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
@@ -101,6 +105,11 @@ export async function _demoChemOverview(): Promise<void> {
       grok.shell.o = tv.dataFrame.col('smiles');
       await DG.delay(2000);
       grok.shell.windows.showHelp = false;
+      if (!grok.shell.windows.context.visible)
+        grok.shell.windows.context.visible = true;
+      await awaitCheck(() => document.getElementsByClassName('grok-entity-prop-panel').length > 0,
+        'Property panel did not appear', 5000);
+      propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
       closeAllAccordionPanes(propPanel!);
       const chemistryPaneContent = getAccordionPane('Chemistry', propPanel!);
       const renderingPaneContent = getAccordionPane('Rendering', chemistryPaneContent!) as HTMLElement;

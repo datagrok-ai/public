@@ -7,7 +7,7 @@ import { KetcherSketcher } from '../ketcher';
 
 const testSmiles = 'c1ccccc1';
 const testMolfile = `
-  Ketcher  8 92217 42D 1   1.00000     0.00000     0                      
+  Ketcher  8 92217 42D 1   1.00000     0.00000     0
 
   6  5  0  0  0  0  0  0  0  0999 V2000
    -3.6828    1.5285    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
@@ -25,53 +25,65 @@ M  END`;
 const testSmarts = '[!#6&!#7]1:[#6]:[#6]:[#6]:[#6]:[#6]:1';
 
 export async function _testSetSmiles() {
-    const {sketcher, dialog} = await createKetcher();
-    sketcher.setKetcherMolecule(testSmiles);
-    await awaitCheck(() => sketcher._smiles === testSmiles, 'molecule has not been set', 10000);
-    dialog.close();
+  const {sketcher, dialog} = await createKetcher();
+  sketcher.setKetcherMolecule(testSmiles);
+  await awaitCheck(() => sketcher._smiles === testSmiles, 'molecule has not been set', 10000);
+  dialog.close();
 }
 
 export async function _testSetMolfile() {
-    const {sketcher, dialog} = await createKetcher();
-    sketcher.setKetcherMolecule(testMolfile);
-    const rdkit = await grok.functions.call('Chem:getRdKitModule');
-    await awaitCheck(() => {
-        if (!!sketcher._molV2000) {
-            const mol1 = rdkit.get_mol(testMolfile);
-            const mol2 = rdkit.get_mol(sketcher._molV2000);
-            const match1 = mol1.get_substruct_match(mol2);
-            const match2 = mol2.get_substruct_match(mol1);
-            mol1.delete();
-            mol2.delete();
-            return match1 !== '{}' && match2 !== '{}';
-        }
-        return false;
-    }, 
-        'molecule has not been set', 10000);
-    dialog.close();
+  const {sketcher, dialog} = await createKetcher();
+  sketcher.setKetcherMolecule(testMolfile);
+  const rdkit = await grok.functions.call('Chem:getRdKitModule');
+  await awaitCheck(() => {
+    if (!!sketcher._molV2000) {
+      const mol1 = rdkit.get_mol(testMolfile);
+      const mol2 = rdkit.get_mol(sketcher._molV2000);
+      try {
+        const match1 = mol1.get_substruct_match(mol2);
+        const match2 = mol2.get_substruct_match(mol1);
+        return match1 !== '{}' && match2 !== '{}';
+      } finally {
+        mol1.delete();
+        mol2.delete();
+      }
+    }
+    return false;
+  }, 'molecule has not been set', 10000);
+  dialog.close();
 }
 
 export async function _testSetSmarts() {
-    const {sketcher, dialog} = await createKetcher();
-    sketcher.setKetcherMolecule(testSmarts);
-    await awaitCheck(() => sketcher._molV3000 !== null && sketcher._molV3000 !== '', 'molecule has not been set', 10000);
-    const res = await sketcher.getSmarts();
-    const rdkit = await grok.functions.call('Chem:getRdKitModule');
-    const qmolTest = rdkit.get_qmol(testSmarts);
-    const smarts = qmolTest.get_smarts();
+  const {sketcher, dialog} = await createKetcher();
+  sketcher.setKetcherMolecule(testSmarts);
+  await awaitCheck(() => sketcher._molV3000 !== null && sketcher._molV3000 !== '', 'molecule has not been set', 10000);
+  const res = await sketcher.getSmarts();
+  const rdkit = await grok.functions.call('Chem:getRdKitModule');
+  let smarts: string;
+  const qmolTest = rdkit.get_qmol(testSmarts);
+  try {
+    smarts = qmolTest.get_smarts();
+  } finally {
     qmolTest?.delete();
-    const qmol = rdkit.get_qmol(res);
-    const resSmarts = qmol.get_smarts();
+  }
+  let resSmarts: string;
+  const qmol = rdkit.get_qmol(res);
+  try {
+    resSmarts = qmol.get_smarts();
+  } finally {
     qmol?.delete();
-    expect(resSmarts, smarts);
-    dialog.close();
+  }
+  expect(resSmarts, smarts);
+  dialog.close();
 }
 
-async function createKetcher(): Promise<any> {
-    const func = await DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}, name: 'ketcherSketcher'})[0];
-    grok.chem.currentSketcherType = func.friendlyName;
-    const s = new Sketcher();
-    const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher?.isInitialized === true, undefined, 10000);
-    return {sketcher: s.sketcher, dialog: d};
+async function createKetcher(): Promise<{sketcher: KetcherSketcher, dialog: DG.Dialog}> {
+  const func = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}, name: 'ketcherSketcher'})[0];
+  if (!func)
+    throw new Error('KetcherSketcher function not registered');
+  grok.chem.currentSketcherType = func.friendlyName;
+  const s = new Sketcher();
+  const d = ui.dialog().add(s).show();
+  await awaitCheck(() => s.sketcher?.isInitialized === true, undefined, 10000);
+  return {sketcher: s.sketcher as KetcherSketcher, dialog: d};
 }

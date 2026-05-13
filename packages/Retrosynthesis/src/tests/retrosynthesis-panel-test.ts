@@ -1,12 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
-import {DataEntry, ReactionData, Tree} from '../aizynth-api';
+import {Tree} from '../aizynth-api';
 import {before, timeout} from '@datagrok-libraries/test/src/test';
 
 
 category('retrosynthesis', async () => {
-  const molStr = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';
-
   before(async () => {
     try {
       await timeout(
@@ -20,6 +18,7 @@ category('retrosynthesis', async () => {
   });
 
   test('retrosynthesis', async () => {
+    const molStr = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';
     const result = await grok.functions.call('Retrosynthesis:run_aizynthfind',
       {molecule: molStr, config: '', expansion: '', stock: '', filter: ''});
     const paths: Tree[] = JSON.parse(result);

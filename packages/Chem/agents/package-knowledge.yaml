@@ -1,0 +1,55 @@
+packageName: Chem
+description: Cheminformatics for small molecules — substructure/similarity/diversity search, fingerprints, descriptors, chemical space (UMAP/t-SNE), activity cliffs, R-groups, scaffold tree, MMP, MPO, structural alerts, toxicity, reactions, mixtures, and structure rendering (RDKit + OCL)
+keywords:
+  - cheminformatics
+  - small molecules
+  - rdkit
+  - openchemlib
+  - smiles
+  - smarts
+  - molfile
+  - inchi
+  - inchi key
+  - sdf import
+  - sdf export
+  - notation conversion
+  - substructure search
+  - similarity search
+  - diversity search
+  - synthon search
+  - descriptors
+  - fingerprints
+  - morgan fingerprint
+  - molecular properties
+  - logP
+  - logS
+  - molecular weight
+  - molecular formula
+  - drug likeness
+  - chemical space
+  - activity cliffs
+  - r-groups
+  - scaffold tree
+  - mcs
+  - matched molecular pairs
+  - mmp
+  - mpo
+  - elemental analysis
+  - bitbirch clustering
+  - structural alerts
+  - PAINS
+  - toxicity risks
+  - pharmacophore features
+  - reactions
+  - deprotection
+  - remove salts
+  - chemprop
+  - molecule sketcher
+  - molecule rendering
+  - cell renderer
+  - mixtures
+  - identifier mapping
+  - names to smiles
+  - gasteiger partial charges
+apiRef: src/package-api.ts
+docsRef: ../../help/datagrok/solutions/domains/chem/chem.md

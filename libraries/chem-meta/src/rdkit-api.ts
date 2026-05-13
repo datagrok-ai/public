@@ -111,7 +111,7 @@ export interface RDMol {
   straighten_depiction(minimizeRotation?: boolean): void;
   get_num_atoms(heavyOnly?: boolean): number;
   get_num_bonds(): number;
-  get_copy(): RDMol;
+  copy(): RDMol;
 
   /** Reclaims the memory used for that molecule. */
   delete(): void;
@@ -143,7 +143,7 @@ export interface RDReaction {
   draw_to_canvas_with_offset(): string;
   draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
   draw_to_canvas_with_highlights(canvas: HTMLCanvasElement, details: string): string;
-  is_valid(): boolean;
+  // is_valid(): boolean;
   get_svg(width?: number, height?: number): string;
   get_svg_with_highlights(options: string): string;
   run_reactants(reactants: MolList, maxProducts: number): RDReactionResult;

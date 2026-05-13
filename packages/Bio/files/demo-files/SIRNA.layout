@@ -1,0 +1,803 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "vertical",
+    "state": {
+      "width": 1103,
+      "height": 922
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 1103,
+          "height": 453,
+          "element": {
+            "id": "6f404f90-48b0-11f1-9b88-13980690b06d",
+            "type": "Form",
+            "look": {
+              "#type": "FormLook",
+              "sketchState": {
+                "#type": "SketchState",
+                "elementStates": [
+                  {
+                    "left": 94,
+                    "top": 158,
+                    "width": 660,
+                    "height": 139,
+                    "type": "sparkline-cell",
+                    "viewerSettings": {
+                      "column": "molfile(antisense_helm)",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 765,
+                    "top": 359,
+                    "width": 144,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "off_target_count",
+                      "input-value": "off_target_count",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 9,
+                    "top": 299,
+                    "width": 71,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "oligo_helm",
+                      "input-value": "Oligo",
+                      "textColor": 4293617511,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 929,
+                    "top": 287,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "tm_c",
+                      "format": null,
+                      "inputType": "Float",
+                      "textColor": 4283477800,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 765,
+                    "top": 215,
+                    "width": 144,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "id",
+                      "input-value": "id",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 929,
+                    "top": 359,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "off_target_count",
+                      "format": null,
+                      "inputType": "Int",
+                      "textColor": 4294944000,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 765,
+                    "top": 287,
+                    "width": 144,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "tm_c",
+                      "input-value": "tm_c",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 11,
+                    "top": 18,
+                    "width": 66,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "molfile(sense_helm)",
+                      "input-value": "Sense",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 929,
+                    "top": 263,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "status",
+                      "format": null,
+                      "inputType": "Text",
+                      "textColor": 4294967295,
+                      "backgroundColor": 4292224808,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 929,
+                    "top": 335,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "kd_pct",
+                      "format": null,
+                      "inputType": "Int",
+                      "textColor": 4283477800,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 765,
+                    "top": 335,
+                    "width": 144,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "kd_pct",
+                      "input-value": "kd_pct",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 929,
+                    "top": 239,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "target",
+                      "format": null,
+                      "inputType": "Text",
+                      "textColor": 4278190080,
+                      "backgroundColor": 4287915965,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 765,
+                    "top": 311,
+                    "width": 144,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "ic50_nm",
+                      "input-value": "ic50_nm",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 765,
+                    "top": 239,
+                    "width": 144,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "target",
+                      "input-value": "target",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 929,
+                    "top": 311,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "ic50_nm",
+                      "format": null,
+                      "inputType": "Float",
+                      "textColor": 4294944000,
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 929,
+                    "top": 215,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "column": "id",
+                      "format": null,
+                      "inputType": "Text",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 10,
+                    "top": 159,
+                    "width": 70,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "molfile(antisense_helm)",
+                      "input-value": "Antisense",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 94,
+                    "top": 298,
+                    "width": 661,
+                    "height": 80,
+                    "type": "sparkline-cell",
+                    "viewerSettings": {
+                      "column": "oligo_helm",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 94,
+                    "top": 18,
+                    "width": 660,
+                    "height": 138,
+                    "type": "sparkline-cell",
+                    "viewerSettings": {
+                      "column": "molfile(sense_helm)",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 764,
+                    "top": 17,
+                    "width": 265,
+                    "height": 192,
+                    "type": "sparkline-cell",
+                    "viewerSettings": {
+                      "column": "curve",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  },
+                  {
+                    "left": 765,
+                    "top": 263,
+                    "width": 144,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "column": "status",
+                      "input-value": "status",
+                      "fontWeight": "normal",
+                      "fontFamily": "Roboto"
+                    }
+                  }
+                ],
+                "table": "si-rna-with-curves (2)",
+                "formDesigned": true
+              },
+              "columnNames": [
+                "tm_c",
+                "off_target_count",
+                "status",
+                "kd_pct",
+                "target",
+                "ic50_nm",
+                "id"
+              ]
+            },
+            "title": "Form"
+          }
+        },
+        "children": []
+      },
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 1103,
+          "height": 468,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 1103,
+              "height": 468,
+              "element": {
+                "id": "6f4076a0-48b0-11f1-84e9-414c40ecff41",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "showAddNewRowIcon": true,
+                  "addNewRowOnLastRowEdit": true,
+                  "rowHeight": 113,
+                  "sortByColumnNames": [
+                    "kd_pct"
+                  ],
+                  "sortTypes": [
+                    false
+                  ],
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "width": 28,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 74,
+                      "columnName": "id",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 564.0423728813557,
+                      "columnName": "oligo_helm",
+                      "cellType": "OligoNucleotide",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextBackgroundColorCoded": true,
+                      "width": 83,
+                      "columnName": "target",
+                      "colorCodingType": "Categorical",
+                      "colorCodingCategorical": {},
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextBackgroundColorCoded": true,
+                      "width": 62,
+                      "columnName": "status",
+                      "colorCodingType": "Categorical",
+                      "colorCodingCategorical": {},
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 53,
+                      "columnName": "tm_c",
+                      "cellType": "number",
+                      "format": "0.0",
+                      "colorCodingType": "Conditional",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 74,
+                      "columnName": "ic50_nm",
+                      "cellType": "number",
+                      "format": "0.00",
+                      "colorCodingType": "Conditional",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 63,
+                      "columnName": "kd_pct",
+                      "cellType": "number",
+                      "colorCodingType": "Conditional",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 105,
+                      "columnName": "off_target_count",
+                      "cellType": "number",
+                      "colorCodingType": "Conditional",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 162.6447536302328,
+                      "columnName": "curve",
+                      "cellType": "fit",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 74,
+                      "columnName": "Name",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 219.41747572815527,
+                      "columnName": "molfile(sense_helm)",
+                      "cellType": "Molecule",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 219.41747572815527,
+                      "columnName": "molfile(antisense_helm)",
+                      "cellType": "Molecule",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    }
+                  ]
+                },
+                "title": "si-rna-with-curves (2)",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "b7d87a00-48b0-11f1-c52b-fbb2814510c2",
+    "tableName": "SIRNA"
+  },
+  "userData": {
+    ".columnTags": {
+      "tm_c": {
+        "format": "0.0"
+      },
+      "ic50_nm": {
+        "format": "0.00"
+      },
+      "curve": {
+        "quality": "fit",
+        "cell.renderer": "fit"
+      },
+      "molfile(sense_helm)": {
+        "units": "molblock",
+        "cell.renderer": "Molecule",
+        "quality": "Molecule"
+      },
+      "molfile(antisense_helm)": {
+        "units": "molblock",
+        "cell.renderer": "Molecule",
+        "quality": "Molecule"
+      },
+      "oligo_helm": {
+        ".%initialName": "oligo_helm",
+        "quality": "OligoNucleotide",
+        "units": "helm",
+        "cell.renderer": "OligoNucleotide"
+      }
+    }
+  },
+  "columns": [
+    {
+      "name": "tm_c",
+      "type": "double",
+      "id": "32dba5e0-48b0-11f1-9269-39c85af11b9d",
+      "friendlyName": "Tm_c",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "6f40c4c0-48b0-11f1-aab3-9fb1b823a830"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "6f40c4c0-48b0-11f1-88ea-d3fa7366b546"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "6f40c4c0-48b0-11f1-d3a5-d36e03ecc990"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "6f40ebd0-48b0-11f1-8cd5-99e828b1cd66"
+        },
+        {
+          "tag": ".color-coding-text",
+          "id": "6f40ebd0-48b0-11f1-a8d8-dbeba1638da1"
+        },
+        {
+          "tag": ".color-coding-text-background",
+          "id": "6f40ebd0-48b0-11f1-ab65-2de0136bc6f9"
+        },
+        {
+          "tag": ".id",
+          "id": "6f4112e0-48b0-11f1-b7d5-c96637e02b53"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0",
+        ".source-precision": "1",
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Conditional",
+        ".color-coding-text": "true",
+        ".color-coding-text-background": null,
+        ".id": "32dba5e0-48b0-11f1-9269-39c85af11b9d"
+      }
+    },
+    {
+      "name": "off_target_count",
+      "type": "int",
+      "id": "32dc1b10-48b0-11f1-ed03-4b4eb001fe2c",
+      "friendlyName": "Off_target_count",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "6f4112e0-48b0-11f1-a7d0-2763eed838db"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "6f4139f0-48b0-11f1-bf14-e972e59e5747"
+        },
+        {
+          "tag": ".color-coding-text",
+          "id": "6f4139f0-48b0-11f1-ec85-238fe4256c0d"
+        },
+        {
+          "tag": ".color-coding-text-background",
+          "id": "6f4139f0-48b0-11f1-b38a-e95a80e556ea"
+        },
+        {
+          "tag": ".id",
+          "id": "6f4139f0-48b0-11f1-c1fa-092c742777eb"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "0",
+        ".color-coding-type": "Conditional",
+        ".color-coding-text": "true",
+        ".color-coding-text-background": null,
+        ".id": "32dc1b10-48b0-11f1-ed03-4b4eb001fe2c"
+      }
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "id": "32dc6930-48b0-11f1-bf69-b1009e4e2456",
+      "friendlyName": "Status",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "6f4139f0-48b0-11f1-ef63-df1824e975a6"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "6f4139f0-48b0-11f1-87f6-e95378569867"
+        },
+        {
+          "tag": ".color-coding-categorical",
+          "id": "6f416100-48b0-11f1-9b44-030fb50c840e"
+        },
+        {
+          "tag": ".color-coding-text",
+          "id": "6f416100-48b0-11f1-def9-65bfc75578f0"
+        },
+        {
+          "tag": ".color-coding-text-background",
+          "id": "6f416100-48b0-11f1-ff80-a1bca901872d"
+        },
+        {
+          "tag": ".id",
+          "id": "6f416100-48b0-11f1-bc26-d131e265280c"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Categorical",
+        ".color-coding-categorical": "{}",
+        ".color-coding-text": null,
+        ".color-coding-text-background": "true",
+        ".id": "32dc6930-48b0-11f1-bf69-b1009e4e2456"
+      }
+    },
+    {
+      "name": "kd_pct",
+      "type": "int",
+      "id": "32dc9040-48b0-11f1-c149-a5a7906cf498",
+      "friendlyName": "Kd_pct",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "6f418810-48b0-11f1-c9ef-ab2abbc13b00"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "6f418810-48b0-11f1-f88d-4f2034ba9f49"
+        },
+        {
+          "tag": ".color-coding-text",
+          "id": "6f418810-48b0-11f1-8fae-7fe44947d8bd"
+        },
+        {
+          "tag": ".color-coding-text-background",
+          "id": "6f418810-48b0-11f1-a188-6f26a880df69"
+        },
+        {
+          "tag": ".id",
+          "id": "6f418810-48b0-11f1-f37f-37e03cde449a"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Conditional",
+        ".color-coding-text": "true",
+        ".color-coding-text-background": null,
+        ".id": "32dc9040-48b0-11f1-c149-a5a7906cf498"
+      }
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "id": "32dcde60-48b0-11f1-a774-6f33d9540015",
+      "friendlyName": "Target",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "6f41af20-48b0-11f1-cc9f-2d86017b0393"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "6f41af20-48b0-11f1-8552-4b1776c85d2f"
+        },
+        {
+          "tag": ".color-coding-categorical",
+          "id": "6f41af20-48b0-11f1-9950-85be7d0bf418"
+        },
+        {
+          "tag": ".color-coding-text",
+          "id": "6f41af20-48b0-11f1-c053-bb0c71d2017c"
+        },
+        {
+          "tag": ".color-coding-text-background",
+          "id": "6f41af20-48b0-11f1-8739-ab9f560cce01"
+        },
+        {
+          "tag": ".id",
+          "id": "6f41af20-48b0-11f1-9a07-7b9bfd9f528c"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Categorical",
+        ".color-coding-categorical": "{}",
+        ".color-coding-text": null,
+        ".color-coding-text-background": "true",
+        ".id": "32dcde60-48b0-11f1-a774-6f33d9540015"
+      }
+    },
+    {
+      "name": "ic50_nm",
+      "type": "double",
+      "id": "32dd0570-48b0-11f1-d742-b378f1bca8da",
+      "friendlyName": "Ic50_nm",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "6f41d630-48b0-11f1-f34d-cf84d1532c65"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "6f41d630-48b0-11f1-9319-750ba292555e"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "6f41d630-48b0-11f1-b42d-13bfafa9ed32"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "6f41d630-48b0-11f1-a927-29fd74062e22"
+        },
+        {
+          "tag": ".color-coding-text",
+          "id": "6f41d630-48b0-11f1-b045-1d441a9de017"
+        },
+        {
+          "tag": ".color-coding-text-background",
+          "id": "6f41fd40-48b0-11f1-a907-1988823ac259"
+        },
+        {
+          "tag": ".id",
+          "id": "6f41fd40-48b0-11f1-b5d7-f11f80192133"
+        }
+      ],
+      "metaParams": {
+        "format": "0.00",
+        ".source-precision": "2",
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Conditional",
+        ".color-coding-text": "true",
+        ".color-coding-text-background": null,
+        ".id": "32dd0570-48b0-11f1-d742-b378f1bca8da"
+      }
+    },
+    {
+      "name": "id",
+      "type": "string",
+      "id": "32dd2c80-48b0-11f1-d70f-a7a872bdc4ed",
+      "friendlyName": "Id",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "6f41fd40-48b0-11f1-cf2e-95bba62f22d1"
+        },
+        {
+          "tag": ".id",
+          "id": "6f41fd40-48b0-11f1-9c5b-9904e074d7e6"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "5",
+        ".id": "32dd2c80-48b0-11f1-d70f-a7a872bdc4ed"
+      }
+    }
+  ],
+  "name": "SIRNA",
+  "friendlyName": "SIRNA",
+  "author": {
+    "id": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"
+  },
+  "createdOn": "2026-05-12T21:56:31.107Z"
+}

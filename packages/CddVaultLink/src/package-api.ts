@@ -8,8 +8,8 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function cddVaultApp(path?: string , filter?: string ): Promise<DG.View> {
-    return await grok.functions.call('CDDVaultLink:CddVaultApp', { path, filter });
+  export async function cddVaultApp(path?: string , _filter?: string ): Promise<DG.View> {
+    return await grok.functions.call('CDDVaultLink:CddVaultApp', { path, _filter });
   }
 
   export async function cddVaultAppTreeBrowser(treeNode: any ): Promise<void> {
@@ -20,8 +20,8 @@ export namespace funcs {
     return await grok.functions.call('CDDVaultLink:MolColumnPropertyPanel', { mol });
   }
 
-  export async function cddvaultSearchEditor(call: any ): Promise<void> {
-    return await grok.functions.call('CDDVaultLink:CDDVaultSearchEditor', { call });
+  export async function cddvaultSearchEditor(_call: any ): Promise<void> {
+    return await grok.functions.call('CDDVaultLink:CDDVaultSearchEditor', { _call });
   }
 
   export async function getVaultStats(vaultId: number , vaultName: string ): Promise<string> {
@@ -32,12 +32,20 @@ export namespace funcs {
     return await grok.functions.call('CDDVaultLink:GetVaults', {});
   }
 
-  export async function getMolecules(vaultId: number | null, moleculesIds: string ): Promise<DG.DataFrame> {
+  export async function getMolecules(vaultId: number , moleculesIds: string | null): Promise<DG.DataFrame> {
     return await grok.functions.call('CDDVaultLink:GetMolecules', { vaultId, moleculesIds });
   }
 
-  export async function getMoleculesAsync(vaultId: number | null, moleculesIds: string , timeoutMinutes: number ): Promise<DG.DataFrame> {
+  export async function getMoleculesAsync(vaultId: number , moleculesIds: string | null, timeoutMinutes: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('CDDVaultLink:GetMoleculesAsync', { vaultId, moleculesIds, timeoutMinutes });
+  }
+
+  export async function getBatches(vaultId: number | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('CDDVaultLink:GetBatches', { vaultId });
+  }
+
+  export async function getBatchesAsync(vaultId: number | null, timeoutMinutes: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('CDDVaultLink:GetBatchesAsync', { vaultId, timeoutMinutes });
   }
 
   export async function getProtocolsAsync(vaultId: number | null, timeoutMinutes: number ): Promise<string> {
@@ -60,11 +68,11 @@ export namespace funcs {
     return await grok.functions.call('CDDVaultLink:CDDVaultSearchAsync', { vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run });
   }
 
-  export async function cDDVaultSearch(vaultId: number | null, molecules: string | null, names: string | null, include_original_structures: boolean | null, only_ids: boolean | null, only_batch_ids: boolean | null, created_before: string | null, created_after: string | null, modified_before: string | null, modified_after: string | null, batch_created_before: string | null, batch_created_after: string | null, batch_field_before_name: string | null, batch_field_before_date: string | null, batch_field_after_name: string | null, batch_field_after_date: string | null, projects: string | null, data_sets: string | null, structure: string | null, structure_search_type: string | null, structure_similarity_threshold: number | null, inchikey: string | null, molecule_fields: any | null, batch_fields: any | null, fields_search: any | null): Promise<DG.DataFrame> {
-    return await grok.functions.call('CDDVaultLink:CDDVaultSearch', { vaultId, molecules, names, include_original_structures, only_ids, only_batch_ids, created_before, created_after, modified_before, modified_after, batch_created_before, batch_created_after, batch_field_before_name, batch_field_before_date, batch_field_after_name, batch_field_after_date, projects, data_sets, structure, structure_search_type, structure_similarity_threshold, inchikey, molecule_fields, batch_fields, fields_search });
+  export async function cDDVaultSearch2(vaultId: number | null, molecules: string | null, names: string | null, include_original_structures: boolean | null, only_ids: boolean | null, only_batch_ids: boolean | null, created_before: string | null, created_after: string | null, modified_before: string | null, modified_after: string | null, batch_created_before: string | null, batch_created_after: string | null, batch_field_before_name: string | null, batch_field_before_date: string | null, batch_field_after_name: string | null, batch_field_after_date: string | null, projects: string | null, data_sets: string | null, structure: string | null, structure_search_type: string | null, structure_similarity_threshold: number | null, inchikey: string | null, molecule_fields: any | null, batch_fields: any | null, fields_search: any | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('CDDVaultLink:CDDVaultSearch2', { vaultId, molecules, names, include_original_structures, only_ids, only_batch_ids, created_before, created_after, modified_before, modified_after, batch_created_before, batch_created_after, batch_field_before_name, batch_field_before_date, batch_field_after_name, batch_field_after_date, projects, data_sets, structure, structure_search_type, structure_similarity_threshold, inchikey, molecule_fields, batch_fields, fields_search });
   }
 
-  export async function cDDVaultSearch2(vaultId: number | null, structure: string | null, structure_search_type: string | null, structure_similarity_threshold: number | null, protocol: number | null, run: number | null): Promise<DG.DataFrame> {
-    return await grok.functions.call('CDDVaultLink:CDDVaultSearch2', { vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run });
+  export async function cDDVaultSearch(vaultId: number | null, structure: string | null, structure_search_type: string | null, structure_similarity_threshold: number | null, protocol: number | null, run: number | null, page_size: number | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('CDDVaultLink:CDDVaultSearch', { vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run, page_size });
   }
 }

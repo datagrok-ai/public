@@ -1,0 +1,40 @@
+packageName: Reinvent4
+description: "Generative molecule design using REINVENT4: de novo generation, scaffold hopping, R-group replacement, linker design, and optimization"
+keywords:
+  - reinvent4
+  - generative
+  - molecule design
+  - de novo
+  - scaffold hopping
+  - r-group replacement
+  - linker design
+  - optimization
+  - ligand
+  - smiles
+  - hit design
+  - lineage
+  - cheminformatics
+overview: |
+  Generates molecules via MolecularAI's REINVENT4 for de novo design,
+  scaffold hopping, R-group replacement, linker design, and optimization,
+  running in a Docker container.
+
+  Generate molecules: Top Menu > Chem > Generate molecules... Opens a
+  dialog asking for a ligand seed (SMILES) and an Optimize configuration.
+  Click Run; results open as a table with Input_SMILES, SMILES, and a
+  color-coded Score column (red → green).
+
+  Configurations: each sub-folder under System:AppData/Reinvent4/reinvent
+  is a named configuration. The folder name appears in the Optimize
+  dropdown. A KRAS bundle ships with the package; drop your own folder
+  there to add a new option.
+
+  Lineage: if a 'Lineage' sticky-meta schema exists on the server, seed
+  and generated molecules are tagged with role, optimized parameters,
+  user, and date.
+
+  HitDesign: exposes the Reinvent generator as a compute function — pick
+  a seed ligand and an Optimize configuration inside a campaign to produce
+  new molecules.
+apiRef: src/package-api.ts
+docsRef: README.md

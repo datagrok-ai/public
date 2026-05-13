@@ -3,13 +3,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as rxjs from 'rxjs';
+
 import {CombinedAISearchAssistant} from './search/combined-search';
-import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription,
-  fireBeforeUserPromptEvent, fireAfterUserPromptEvent, UserPromptEventArgs} from '../utils';
+import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
-import {ClaudeRuntimeClient} from '../claude/runtime-client';
-import {executeDatagrokBlocks} from '../claude/exec-blocks';
+import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
+import {executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
 
@@ -24,7 +26,7 @@ const executionPlanSchema = {
     plan: {
       type: 'array',
       items: {type: 'string'},
-      description: 'Numbered list of steps to achieve the goal',
+      description: 'Steps to achieve the goal. Each item is a single step, plain text, without any leading number, bullet, or punctuation prefix.',
     },
     code: {
       type: 'string',
@@ -35,39 +37,128 @@ const executionPlanSchema = {
   additionalProperties: false,
 } as const;
 
-export async function smartExecution(prompt: string): Promise<DG.Widget> {
-  const waitDiv = ui.wait(async () => {
-    try {
-      const result: ExecutionPlan = await ClaudeRuntimeClient.getInstance().query(prompt, {outputSchema: executionPlanSchema});
-      const container = ui.divV([]);
-      container.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+const MAX_ACTIVITY_LINES = 5;
 
-      if (result.code) {
-        const wrappedCode = '```datagrok-exec\n' + result.code + '\n```';
-        const execResults = await executeDatagrokBlocks(wrappedCode, grok.shell.v);
-        for (const el of execResults)
-          container.appendChild(el);
-      }
-
-      return container;
-    } catch (error: any) {
-      console.error('Error during AI execution:', error);
-      return ui.divText(`Error during AI execution: ${error.message}`);
-    }
-  });
-  return DG.Widget.fromRoot(waitDiv);
+interface StreamingOpts {
+  sessionPrefix?: string;
+  sessionId?: string;
+  outputSchema?: object;
+  onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
 }
 
-export async function askWiki(question: string) {
-  try {
-    const res = await ClaudeRuntimeClient.getInstance().query(question);
-    const markdown = ui.markdown(res);
-    markdown.style.userSelect = 'text';
-    return DG.Widget.fromRoot(markdown);
-  } catch (error: any) {
-    console.error('Error during AI help:', error);
-    return DG.Widget.fromRoot(ui.divText(`Error during AI help: ${error.message}`));
-  }
+export const RENDERED_EVENT = 'grokky-rendered';
+
+async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.Widget> {
+  const client = ClaudeRuntimeClient.getInstance();
+  await client.ensureConnected();
+  const sessionId = opts.sessionId ?? `${opts.sessionPrefix ?? 'stream'}-${crypto.randomUUID()}`;
+
+  const activityHost = ui.divV([], 'grokky-stream-activity');
+  const contentHost = ui.div([], 'grokky-stream-content');
+  const container = ui.divV([activityHost, contentHost], 'grokky-stream');
+
+  let onFirstEvent: () => void = () => {};
+  const firstEvent = new Promise<void>((res) => { onFirstEvent = res; });
+
+  const widget = DG.Widget.fromRoot(ui.wait(async () => {
+    await firstEvent;
+    return container;
+  }));
+
+  const signalRendered = () => grok.events.fireCustomEvent(RENDERED_EVENT, sessionId);
+
+  const sessionSubs: rxjs.Subscription[] = [];
+  const forSession = <T extends {sessionId: string}>(
+    src: rxjs.Observable<T>, handler: (evt: T) => void,
+  ) => {
+    const sub = src.subscribe((evt) => {
+      if (evt.sessionId === sessionId)
+        handler(evt);
+    });
+    widget.subs.push(sub);
+    sessionSubs.push(sub);
+  };
+  const stopListening = () => sessionSubs.forEach((s) => s.unsubscribe());
+
+  forSession<ToolActivityEvent>(client.onToolActivity, (evt) => {
+    activityHost.appendChild(ui.divText(evt.summary, 'grokky-stream-activity-line'));
+    while (activityHost.children.length > MAX_ACTIVITY_LINES)
+      activityHost.removeChild(activityHost.firstChild!);
+    onFirstEvent();
+  });
+
+  forSession<FinalEvent>(client.onFinal, async (evt) => {
+    activityHost.remove();
+    onFirstEvent();
+    try {
+      await opts.onFinal(evt, contentHost);
+    } finally {
+      renderEntityBlocks(contentHost);
+      signalRendered();
+      stopListening();
+    }
+  });
+
+  forSession<ErrorEvent>(client.onError, (evt) => {
+    activityHost.remove();
+    contentHost.appendChild(ui.info(`Error: ${evt.message}`));
+    onFirstEvent();
+    signalRendered();
+    stopListening();
+  });
+
+  client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
+  return widget;
+}
+
+export async function smartExecution(prompt: string, sessionId?: string): Promise<DG.Widget> {
+  return streamingWidget(prompt, {
+    sessionId,
+    sessionPrefix: 'execute',
+    outputSchema: executionPlanSchema,
+    onFinal: async (evt, host) => {
+      const result = evt.structured_output as ExecutionPlan | undefined;
+      if (!result) {
+        host.appendChild(ui.divText(evt.content || 'No plan returned.'));
+        return;
+      }
+
+      host.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+      if (!result.code)
+        return;
+
+      const codeAcc = ui.accordion();
+      const code = '```datagrok-exec\n' + result.code + '\n```';
+      codeAcc.addPane('Code', () => createStyledMarkdown(code), false);
+      host.appendChild(codeAcc.root);
+
+      let resolveExec: () => void = () => {};
+      const execDone = new Promise<void>((res) => { resolveExec = res; });
+      host.appendChild(ui.wait(async () => {
+        try {
+          const execResults = await executeDatagrokBlocks(code, grok.shell.v);
+          return ui.divV(execResults);
+        } catch (e: any) {
+          return ui.info(`Execution error: ${e?.message ?? e}`);
+        } finally {
+          resolveExec();
+        }
+      }));
+      await execDone;
+    },
+  });
+}
+
+export async function askWiki(question: string, sessionId?: string): Promise<DG.Widget> {
+  return streamingWidget(question, {
+    sessionId,
+    sessionPrefix: 'help',
+    onFinal: (evt, host) => {
+      const md = ui.markdown(evt.content || '');
+      md.style.userSelect = 'text';
+      host.appendChild(md);
+    },
+  });
 }
 
 // sets up the ui button for the input
@@ -82,8 +173,7 @@ export function setupSearchUI() {
     const searchBoxContainer = document.getElementsByClassName('power-pack-welcome-view')[0];
     if (!searchBoxContainer)
       return null;
-    const searchInput = Array.from(searchBoxContainer.getElementsByClassName('power-search-search-everywhere-input'))[0] as HTMLInputElement;
-    return searchInput;
+    return Array.from(searchBoxContainer.getElementsByClassName('power-search-search-everywhere-input'))[0] as HTMLInputElement;
   }
 
   function initInput(searchInput: HTMLInputElement) {
@@ -104,11 +194,13 @@ export function setupSearchUI() {
     searchInput.addEventListener('input', onSearchChanged);
     // set up the enter key listener and modify suggestion
     const searchHelpDiv = document.getElementsByClassName('power-search-help-text-container')[0] as HTMLDivElement;
-    if (searchHelpDiv)
+    if (searchHelpDiv) {
       searchHelpDiv.innerText = `Press Enter to grok. ${searchHelpDiv.innerText}`;
+      searchHelpDiv.style.visibility = 'hidden';
+    }
 
     searchInput.addEventListener('keyup', (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && searchInput.value?.trim()) {
+      if (isEnterKey(event) && searchInput.value?.trim()) {
         event.preventDefault();
         setTimeout(() => aiCombinedSearch(searchInput.value), 400); // timeout needed to allow other enter handlers to run first
       }
@@ -164,39 +256,52 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   return true;
 }
 
-async function runPromptWithLifecycle(
+export async function runPromptWithLifecycle(
   panel: StreamingPanel,
   prompt: string,
   view: DG.ViewBase,
   quotaCategory: string,
   clientToolHandler?: (toolName: string, input: any) => Promise<string>,
 ): Promise<void> {
-  if (prompt.startsWith('!!')) {
+  if (prompt.startsWith('!!'))
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
-  } else if (prompt.startsWith('!')) {
+  else if (prompt.startsWith('!')) {
     const command = prompt.slice(1).trimStart();
     if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, command))
       return;
     await runClaudeStreaming(panel, command, view, clientToolHandler, 'bash');
     return;
   }
+  let session: ReturnType<StreamingPanel['startChatSession']> | undefined;
   if (!panel.rawRender) {
     const args: UserPromptEventArgs = {prompt, context: view, handled: false};
     fireBeforeUserPromptEvent(args);
     if (args.handled)
       return;
-    if (await grok.ai.processPrompt(prompt))
+
+    // Echo the user message before routing so it never disappears, even when
+    // grok.ai.processPrompt's built-in handler claims the prompt.
+    session = panel.startChatSession();
+    session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
+
+    if (await grok.ai.processPrompt(prompt)) {
+      // Built-in handler claimed the prompt — no AI response, just a green check next to it.
+      session.session.markHandledNatively();
+      session.endSession();
       return;
+    }
   }
-  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt))
+  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt)) {
+    session?.endSession();
     return;
-  await runClaudeStreaming(panel, prompt, view, clientToolHandler);
+  }
+  await runClaudeStreaming(panel, prompt, view, clientToolHandler, undefined, session);
   if (!panel.rawRender)
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string) {
-  const chatSession = panel.startChatSession();
+async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string, existingSession?: ReturnType<StreamingPanel['startChatSession']>) {
+  const chatSession = existingSession ?? panel.startChatSession();
   const sessionId = panel.sessionId;
   let accumulated = '';
   let toolStatus = '';
@@ -220,11 +325,12 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
   try {
     const client = ClaudeRuntimeClient.getInstance();
-    const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(userPrompt, view);
+    const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(panel.prependEntityContext(userPrompt), view);
 
     await client.ensureConnected();
 
-    chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
+    if (!existingSession)
+      chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
 
     forSession(client.onChunk, (evt) => {
       accumulated += evt.content;
@@ -246,8 +352,12 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
     forSession(client.onFinal, (evt) => {
       panel.cancelInputRequest();
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: evt.content}]});
-      panel.finalizeStreaming(evt.content, view);
+      // evt.content is the SDK's result.result — only the final assistant turn after the last
+      // tool call. Use the full accumulated chunk stream so finalizeStreaming sees every
+      // datagrok-exec block Claude emitted, including ones written before it invoked a tool.
+      const fullContent = accumulated || evt.content;
+      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
+      panel.finalizeStreaming(fullContent, view);
       chatSession.endSession();
       cleanup();
     });
@@ -323,12 +433,16 @@ export function setupShellAIPanelUI(): void {
   _shellAIPanel.show();
 }
 
+const AI_ICON_SELECTOR = 'i[data-name="ai"]';
+
 export async function setupTableViewAIPanelUI() {
   if (!grok.ai.config.configured)
     return;
   const handleView = (tableView: DG.TableView) => {
+    if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
+      return;
     // setup ribbon panel icon
-    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
+    const iconFse = ui.iconFA('user-robot', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
     iconFse.style.width = iconFse.style.height = '18px';
     tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
     // setup the panel itself
@@ -355,6 +469,8 @@ export async function setupTableViewAIPanelUI() {
 // TODO: rewrite to use Claude engine instead of deprecated script-tools
 export async function setupScriptsAIPanelUI() {
   const handleView = (scriptView: DG.ScriptView) => {
+    if (scriptView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
+      return;
     const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), 'Ask AI \n Ctrl+I');
     iconFse.style.width = iconFse.style.height = '18px';
     scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);

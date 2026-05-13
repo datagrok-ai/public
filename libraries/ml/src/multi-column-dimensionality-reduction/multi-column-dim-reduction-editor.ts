@@ -203,9 +203,22 @@ export class MultiColumnDimReductionEditor {
         else
           this.aggregationMethodInput.root.style.display = 'flex';
         if (!value || value.length === 0) {
+          this.columnOptEditors = [];
           this.columnParamsEditorAccordion.root.style.display = 'none';
+          this.vectorDistanceInput.root.style.display = 'none';
           return;
         }
+
+        // All-numerical columns are treated as a single vector — per-column editors
+        // are neither rendered nor needed, so skip constructing them entirely.
+        if (value.every((it) => it.isNumerical)) {
+          this.columnOptEditors = [];
+          this.aggregationMethodInput.root.style.display = 'none';
+          this.columnParamsEditorAccordion.root.style.display = 'none';
+          this.vectorDistanceInput.root.style.display = 'flex';
+          return;
+        }
+        this.vectorDistanceInput.root.style.display = 'none';
 
         this.columnOptEditors = value.map((col) => {
           const editorClass = new DimReductionColumnEditor(col, this.columnFunctionsMap[col.name].map((it) =>
@@ -237,14 +250,6 @@ export class MultiColumnDimReductionEditor {
           this.columnParamsEditorAccordion.root.style.display = 'flex';
         table.classList.add('ml-dim-reduction-column-editor-table-root');
         this.columnOptEditorsRoot.appendChild(table);
-
-        if (value.every((it) => it.isNumerical)) {
-          this.aggregationMethodInput.root.style.display = 'none';
-          this.columnParamsEditorAccordion.root.style.display = 'none';
-          this.vectorDistanceInput.root.style.display = 'flex';
-        } else {
-          this.vectorDistanceInput.root.style.display = 'none';
-        }
       }, available: supportedColNames});
       columnsInput.fireChanged();
       if (!this.columnsInputRoot) {
@@ -320,15 +325,29 @@ export class MultiColumnDimReductionEditor {
     }
 
     public getParams() {
+      const columns = this.columnsInput.value!;
+      // When all columns are numerical, per-column editors are skipped for performance.
+      // multiColReduceDimensionality still validates array lengths, but discards the values
+      // in the vector path — so we emit same-length placeholders.
+      const usePlaceholders = this.columnOptEditors.length === 0 && columns && columns.length > 0;
+      const n = columns?.length ?? 0;
       return {
         table: this.tableInput.value!,
-        columns: this.columnsInput.value!,
+        columns,
         methodName: this.methodInput.value!,
-        preprocessingFunctions: this.columnOptEditors.map((it) => it.preProcessingFunction),
-        distanceMetrics: this.columnOptEditors.map((it) => it.similarityMetricInput.value!),
-        weights: this.columnOptEditors.map((it) => it.weight ?? 1),
+        preprocessingFunctions: usePlaceholders ?
+          new Array(n).fill(null) :
+          this.columnOptEditors.map((it) => it.preProcessingFunction),
+        distanceMetrics: usePlaceholders ?
+          new Array(n).fill('') :
+          this.columnOptEditors.map((it) => it.similarityMetricInput.value!),
+        weights: usePlaceholders ?
+          new Array(n).fill(1) :
+          this.columnOptEditors.map((it) => it.weight ?? 1),
         options: {...this.algorithmOptions, ...this.dbScanOptions,
-          preprocessingFuncArgs: this.columnOptEditors.map((it) => it.preprocessingFunctionSettings)},
+          preprocessingFuncArgs: usePlaceholders ?
+            new Array(n).fill(null).map(() => ({})) :
+            this.columnOptEditors.map((it) => it.preprocessingFunctionSettings)},
         plotEmbeddings: this.plotEmbeddingsInput.value,
         clusterEmbeddings: false,
         postProcessingFunction: this.postProcessingEditor.postProcessingFunction,
@@ -340,14 +359,25 @@ export class MultiColumnDimReductionEditor {
 
     // used by history
     public getInput() {
+      const columns = this.columnsInput.value;
+      const usePlaceholders = this.columnOptEditors.length === 0 && columns && columns.length > 0;
+      const n = columns?.length ?? 0;
       return {
-        columns: this.columnsInput.value.map((it) => it.name),
+        columns: columns.map((it) => it.name),
         method: this.methodInput.value,
-        preprocessingFunctions: this.columnOptEditors.map((it) => it.preprocessingFunctionInput.value),
-        distanceMetrics: this.columnOptEditors.map((it) => it.similarityMetricInput.value!),
-        weights: this.columnOptEditors.map((it) => it.weight ?? 1),
+        preprocessingFunctions: usePlaceholders ?
+          new Array(n).fill(null) :
+          this.columnOptEditors.map((it) => it.preprocessingFunctionInput.value),
+        distanceMetrics: usePlaceholders ?
+          new Array(n).fill('') :
+          this.columnOptEditors.map((it) => it.similarityMetricInput.value!),
+        weights: usePlaceholders ?
+          new Array(n).fill(1) :
+          this.columnOptEditors.map((it) => it.weight ?? 1),
         options: {...this.algorithmOptions, ...this.dbScanOptions,
-          preprocessingFuncArgs: this.columnOptEditors.map((it) => it.preprocessingFunctionSettings)},
+          preprocessingFuncArgs: usePlaceholders ?
+            new Array(n).fill(null).map(() => ({})) :
+            this.columnOptEditors.map((it) => it.preprocessingFunctionSettings)},
         plotEmbeddings: this.plotEmbeddingsInput.value,
         postProcessingFunction: this.postProcessingEditor.postProcessingFunctionInput.value ?? null,
         postProcessingFunctionArgs: this.postProcessingEditor.args,

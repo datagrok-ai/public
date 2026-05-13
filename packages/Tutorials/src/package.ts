@@ -512,14 +512,16 @@ export class PackageFunctions {
 
     const demogTypes = await grok.data.loadTable(`${_package.webRoot}/${TABLE1_PATH}`);
     const demog = await grok.data.loadTable(`${_package.webRoot}/${TABLE2_PATH}`);
+    demogTypes.name = 'Categories';
+    demog.name = 'Demographics';
 
     grok.shell.addTableView(demog);
     const demogTypesTableView = grok.shell.addTableView(demogTypes);
 
     grok.data.linkTables(demogTypes, demog, ['sex', 'race'], ['sex', 'race'],
       [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
-    const demogGridViewer = demogTypesTableView.addViewer(DG.VIEWER.GRID, {table: 'Table'});
-    demogTypesTableView.dockManager.dock(demogGridViewer, DG.DOCK_TYPE.RIGHT, null, 'demog', 0.7);
+    const demogGridViewer = demogTypesTableView.addViewer(DG.VIEWER.GRID, {table: demog.name});
+    demogTypesTableView.dockManager.dock(demogGridViewer, DG.DOCK_TYPE.RIGHT, null, demog.name, 0.7);
     showHelp(HELP_URL);
   }
 }

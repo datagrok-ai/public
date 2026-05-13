@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.5.2 (2026-04-24)
+
+Fix the column_list issue in PCA
+
 ## 1.5.1 (2026-03-27)
 
 Add formula for prediction in multivariate analysis

@@ -1,5 +1,5 @@
 import {PipelineInstanceConfig} from './config/PipelineInstance';
-import {RestrictionType, ValidationResult} from './data/common-types';
+import {RestrictionType, StepHandle, ValidationResult} from './data/common-types';
 import * as DG from 'datagrok-api/dg';
 
 export interface IControllerBase {
@@ -32,7 +32,11 @@ export interface INameSelectorController extends IControllerBase {
 }
 
 export interface IRuntimePipelineMutationController extends IControllerBase {
-  setPipelineState(name: any, state: PipelineInstanceConfig): void;
+  setPipelineState(name: string, state: PipelineInstanceConfig): void;
+  getSteps(name: string): StepHandle[];
+  addStep(name: string, configId: string, position?: number): void;
+  removeStep(name: string, step: StepHandle): void;
+  moveStep(name: string, step: StepHandle, position: number): void;
 }
 
 export interface IFuncallActionController extends IControllerBase {

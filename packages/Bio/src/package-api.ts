@@ -15,8 +15,8 @@ export namespace scripts {
   /**
   Converts molecules to HELM notation based on monomer library
   */
-  export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryJSON: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryJSON });
+  export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryFile: DG.FileInfo ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryFile });
   }
 
   /**
@@ -162,7 +162,7 @@ export namespace funcs {
   }
 
   /**
-  Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack
+  Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)
   */
   export async function applyNumberingScheme(): Promise<void> {
     return await grok.functions.call('Bio:ApplyNumberingScheme', {});
@@ -282,6 +282,20 @@ export namespace funcs {
   */
   export async function pepseaMsa(sequenceCol: DG.Column , method: string , gapOpen: number , gapExtend: number ): Promise<DG.Column> {
     return await grok.functions.call('Bio:PepseaMsa', { sequenceCol, method, gapOpen, gapExtend });
+  }
+
+  /**
+  Assigns antibody numbering (IMGT/Kabat) using the immunum WASM library
+  */
+  export async function immunumAntibodyNumbering(df: DG.DataFrame , seqCol: DG.Column , scheme: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Bio:ImmunumAntibodyNumbering', { df, seqCol, scheme });
+  }
+
+  /**
+  Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)
+  */
+  export async function compareSequences(): Promise<void> {
+    return await grok.functions.call('Bio:CompareSequences', {});
   }
 
   /**
@@ -484,8 +498,22 @@ export namespace funcs {
     return await grok.functions.call('Bio:DemoBioAtomicLevel', {});
   }
 
+  /**
+  SI-RNA sequences, molecular structures, curves and assay data
+  */
+  export async function demoBioSiRNA(): Promise<void> {
+    return await grok.functions.call('Bio:DemoBioSiRNA', {});
+  }
+
   export async function sdfToJsonLib(table: DG.DataFrame ): Promise<void> {
     return await grok.functions.call('Bio:SdfToJsonLib', { table });
+  }
+
+  /**
+  Antibody sequences, numbering, liabilities, extraction and SAR
+  */
+  export async function demoAntibodies(): Promise<void> {
+    return await grok.functions.call('Bio:DemoAntibodies', {});
   }
 
   /**

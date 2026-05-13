@@ -298,6 +298,44 @@ export class EventData<TArgs = any> {
   }
 }
 
+/** Arguments passed to drag-and-drop callbacks (see {@link DG.ui.makeDroppable}).
+ * Wraps the Dart `DragDropArgs` handle exposed via the {@link GrokJsObject} mixin. */
+export class DragDropArgs<T = any> {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** The object being dragged (e.g. `DG.Column`, `DG.DataFrame`, or an `HTMLElement`). */
+  get dragObject(): T { return toJs(api.grok_DragDropArgs_Get_DragObject(this.dart)); }
+
+  /** Source context of the drag (e.g. parent DataFrame for a column drag). */
+  get dragSource(): any { return toJs(api.grok_DragDropArgs_Get_DragSource(this.dart)); }
+
+  /** Type tag supplied by the drag source (e.g. `'column'`, `'row'`, `'markup'`). */
+  get dragObjectType(): string { return api.grok_DragDropArgs_Get_DragObjectType(this.dart); }
+
+  /** True when the drop should copy rather than move (Ctrl / Cmd held). */
+  get copying(): boolean { return !!api.grok_DragDropArgs_Get_Copying(this.dart); }
+
+  /** True when the drop should create a link rather than copy/move (Alt held). */
+  get link(): boolean { return !!api.grok_DragDropArgs_Get_Link(this.dart); }
+
+  /** Original drag-start event. */
+  get event(): Event { return api.grok_DragDropArgs_Get_Event(this.dart); }
+
+  /** Mouse-up event on the drop zone (set when the drop actually happens). */
+  get dropEvent(): MouseEvent { return api.grok_DragDropArgs_Get_DropEvent(this.dart); }
+
+  /** Element the drag originated from. */
+  get dragFromElement(): Element | null { return api.grok_DragDropArgs_Get_DragFromElement(this.dart); }
+
+  /** When true, further handling of the drop is suppressed. */
+  get handled(): boolean { return api.grok_DragDropArgs_Get_Handled(this.dart); }
+  set handled(v: boolean) { api.grok_DragDropArgs_Set_Handled(this.dart, v); }
+}
+
 /** Central event hub. */
 export class EventBus {
   private _streams: Map<any, any>;

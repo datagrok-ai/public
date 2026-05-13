@@ -1,0 +1,407 @@
+---
+title: "Local machine: advanced"
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+For most users the [Local machine](docker-compose.mdx) install script is enough. This page
+covers running the canonical compose file `docker/localhost.docker-compose.yaml` directly:
+selectively starting service profiles, running multiple stands side by side, attaching the
+demo databases, and troubleshooting.
+
+The same Datagrok services run on every deployment — see
+[Components](../deploy.md#components) for the canonical list.
+
+:::info Hardware requirements
+
+Minimal: 60 GB of free disk space, 4 CPUs, 8 GB RAM.
+
+:::
+
+## Prerequisites
+
+1. Install and launch the latest Docker Desktop:
+    * [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/)
+    * [Docker Desktop for MacOS](https://docs.docker.com/desktop/install/mac-install/)
+    * [Docker Desktop for Linux](https://docs.docker.com/desktop/install/linux-install/)
+2. Clone the
+   [public repository](https://github.com/datagrok-ai/public) (the compose file lives at
+   `docker/localhost.docker-compose.yaml`).
+3. Open a terminal and `cd` into the cloned repository.
+
+## Compose profiles
+
+The compose file uses [Docker Compose profiles](https://docs.docker.com/compose/profiles/)
+to start subsets of services. The `all` profile is everything; pick narrower profiles to
+save disk and RAM.
+
+| Profile                          | Starts                                                                                       |
+|----------------------------------|----------------------------------------------------------------------------------------------|
+| `all`                            | Every Datagrok service plus the in-cluster Postgres                                          |
+| `datagrok`                       | Datagrok core only                                                                           |
+| `db`                             | In-cluster Postgres                                                                          |
+| `grok_connect`                   | Grok Connect (external database connectors)                                                  |
+| `grok_spawner`                   | Grok Spawner (manages plugin containers)                                                     |
+| `rabbitmq`                       | RabbitMQ (AMQP queue, required for `scripting`)                                              |
+| `scripting` / `jkg`              | Jupyter Kernel Gateway, RabbitMQ, `grok_pipe` — server-side script execution                 |
+| `cvm`                            | Convenience alias for `scripting` + everything it needs                                      |
+| `mlflow` / `ml`                  | MLflow tracking server and supporting Postgres                                               |
+| `demo`                           | Demo databases (`world`, `chembl`, `northwind`, `unichem`, `starbucks`) — used by tutorials  |
+| `postgres_chembl`, `postgres_world`, ... | Individual demo databases                                                            |
+| `postgres_rdkit`                 | Adds RDKit Postgres for cheminformatics work                                                 |
+
+## Install Datagrok
+
+1. Pull the latest images:
+
+    <Tabs groupId="os" queryString>
+    <TabItem value="win" label="Windows" default>
+
+    ```cmd
+    docker compose -f docker\localhost.docker-compose.yaml --profile all pull
+    ```
+
+    </TabItem>
+    <TabItem value="bash" label="MacOS/Linux">
+
+    ```shell
+    docker compose -f docker/localhost.docker-compose.yaml --profile all pull
+    ```
+
+    </TabItem>
+    </Tabs>
+
+2. Start the full stack:
+
+    <Tabs groupId="os" queryString>
+    <TabItem value="win" label="Windows" default>
+
+    ```cmd
+    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+      --profile all up -d
+    ```
+
+    :::note
+
+    If you encounter an error related to a `WriteFile` function when running
+    `docker-compose up` on Windows, try running the command prompt (`cmd`) in
+    Administrator mode. This is a [known issue](https://github.com/docker/compose/issues/4531)
+    with Docker on certain computers.
+
+    :::
+
+    </TabItem>
+    <TabItem value="bash" label="MacOS/Linux">
+
+    ```shell
+    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+      --profile all up -d
+    ```
+
+    </TabItem>
+    </Tabs>
+
+3. After about a minute the server is ready at
+   [http://localhost:8080](http://localhost:8080). Sign in as `admin` / `admin`.
+
+## Selective profiles
+
+Drop scripting/JKG to save disk and RAM:
+
+<Tabs groupId="os" queryString>
+<TabItem value="win" label="Windows" default>
+
+```cmd
+docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+  --profile datagrok --profile db --profile grok_connect --profile grok_spawner up -d
+```
+
+</TabItem>
+<TabItem value="bash" label="MacOS/Linux">
+
+```shell
+docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+  --profile datagrok --profile db --profile grok_connect --profile grok_spawner up -d
+```
+
+</TabItem>
+</Tabs>
+
+Add server-side scripting (Python / R / Julia / JavaScript / Octave) on top:
+
+<Tabs groupId="os" queryString>
+<TabItem value="win" label="Windows" default>
+
+```cmd
+docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+  --profile datagrok --profile db --profile grok_connect --profile grok_spawner ^
+  --profile scripting up -d
+```
+
+</TabItem>
+<TabItem value="bash" label="MacOS/Linux">
+
+```shell
+docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+  --profile datagrok --profile db --profile grok_connect --profile grok_spawner \
+  --profile scripting up -d
+```
+
+</TabItem>
+</Tabs>
+
+The `scripting` profile pulls in RabbitMQ, `grok_pipe`, and the Jupyter Kernel Gateway —
+everything needed for [server-side scripts](../../compute/scripting/scripting.mdx).
+
+## Demo databases
+
+Datagrok ships with demo databases that back several tutorials. Add them with the
+`demo` profile:
+
+<Tabs groupId="os" queryString>
+<TabItem value="win" label="Windows" default>
+
+```cmd
+docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+  --profile all --profile demo up -d
+```
+
+</TabItem>
+<TabItem value="bash" label="MacOS/Linux">
+
+```shell
+docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+  --profile all --profile demo up -d
+```
+
+</TabItem>
+</Tabs>
+
+Use individual `postgres_<name>` profiles to start a single demo database.
+
+## Multiple stands
+
+You can run more than one Datagrok stand on the same host. To do so, give the second
+stand a different project name and override the host ports it binds.
+
+1. Run the first stand as described above (project name `datagrok`).
+
+2. Pin image versions for the second stand. Any tag from
+   [Docker Hub](https://hub.docker.com/r/datagrok/) is valid — see
+   [Images and versions](../images.md) for the latest pinned set, or
+   [release history](../releases/release-history.md) for older releases.
+
+   Each service has its own environment variable: `DATAGROK_VERSION`,
+   `GROK_PIPE_VERSION`, `GROK_SPAWNER_VERSION`, `GROK_CONNECT_VERSION`,
+   `JKG_VERSION`, `GROK_REGISTRY_PROXY_VERSION`. They all default to
+   `bleeding-edge`. To pin a stand to the latest stable release:
+
+   <Tabs groupId="os" queryString>
+   <TabItem value="win" label="Windows" default>
+
+   ```cmd
+   set DATAGROK_VERSION=1.27.3
+   set GROK_PIPE_VERSION=1.19.0
+   set GROK_SPAWNER_VERSION=2.16.0
+   set GROK_CONNECT_VERSION=2.6.2
+   set JKG_VERSION=1.31.0
+   ```
+
+   </TabItem>
+   <TabItem value="bash" label="MacOS/Linux">
+
+   ```shell
+   export DATAGROK_VERSION=1.27.3
+   export GROK_PIPE_VERSION=1.19.0
+   export GROK_SPAWNER_VERSION=2.16.0
+   export GROK_CONNECT_VERSION=2.6.2
+   export JKG_VERSION=1.31.0
+   ```
+
+   </TabItem>
+   </Tabs>
+
+3. Override the host ports the second stand binds. Pick values that don't collide with
+   the first stand:
+
+   | Environment variable                     | Default |
+   |------------------------------------------|---------|
+   | `DATAGROK_PORT`                          | `8080`  |
+   | `DATAGROK_DB_PORT`                       | `5432`  |
+   | `GROK_SPAWNER_PORT`                      | `8000`  |
+   | `GROK_CONNECT_PORT`                      | `1234`  |
+   | `DATAGROK_DEMO_POSTGRES_NORTHWIND_PORT`  | `5433`  |
+   | `DATAGROK_DEMO_POSTGRES_CHEMBL_PORT`     | `5434`  |
+   | `DATAGROK_DEMO_POSTGRES_UNICHEM_PORT`    | `5435`  |
+   | `DATAGROK_DEMO_POSTGRES_STARBUCKS_PORT`  | `5436`  |
+   | `DATAGROK_DEMO_POSTGRES_WORLD_PORT`      | `5437`  |
+
+4. Start the second stand under a different project name (e.g. `datagrok_2`):
+
+   <Tabs groupId="os" queryString>
+   <TabItem value="win" label="Windows" default>
+
+   ```cmd
+   set DATAGROK_PORT=8091
+   set DATAGROK_DB_PORT=5443
+   docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok_2 ^
+     --profile all up -d
+   ```
+
+   </TabItem>
+   <TabItem value="bash" label="MacOS/Linux">
+
+   ```shell
+   export DATAGROK_PORT=8091
+   export DATAGROK_DB_PORT=5443
+   docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok_2 \
+     --profile all up -d
+   ```
+
+   </TabItem>
+   </Tabs>
+
+## Compose variants
+
+Several alternative compose files cover specific cases:
+
+| File                                                     | Use when                                                          |
+|----------------------------------------------------------|-------------------------------------------------------------------|
+| `docker/localhost.docker-compose.yaml`                   | Default local install                                             |
+| `docker/localhost.bleeding-edge.docker-compose.yaml`     | Track latest unreleased images                                    |
+| `docker/localhost.bleeding-edge-separate-data.docker-compose.yaml` | Bleeding-edge with persistent data volumes detached     |
+| `docker/localhost.macos-silicon.docker-compose.yaml`     | Apple Silicon (ARM64); pulls `linux/arm64` image variants         |
+| `docker/localhost.js-api.debug.docker-compose.yaml`      | JS API debugging with source maps                                 |
+
+## Shutting down Datagrok
+
+Stop the containers (volumes preserved):
+
+<Tabs groupId="os" queryString>
+<TabItem value="win" label="Windows" default>
+
+```cmd
+docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+  --profile all --profile demo stop
+```
+
+</TabItem>
+<TabItem value="bash" label="MacOS/Linux">
+
+```shell
+docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+  --profile all --profile demo stop
+```
+
+</TabItem>
+</Tabs>
+
+Reset to factory state — removes all data including users, projects, and connections:
+
+<Tabs groupId="os" queryString>
+<TabItem value="win" label="Windows" default>
+
+```cmd
+docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+  --profile all --profile demo down --volumes
+```
+
+</TabItem>
+<TabItem value="bash" label="MacOS/Linux">
+
+```shell
+docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+  --profile all --profile demo down --volumes
+```
+
+</TabItem>
+</Tabs>
+
+## Troubleshooting
+
+1. View logs (follow live):
+
+    <Tabs groupId="os" queryString>
+    <TabItem value="win" label="Windows" default>
+
+    ```cmd
+    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+      --profile all logs -f --tail 200 datagrok
+    ```
+
+    </TabItem>
+    <TabItem value="bash" label="MacOS/Linux">
+
+    ```shell
+    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+      --profile all logs -f --tail 200 datagrok
+    ```
+
+    </TabItem>
+    </Tabs>
+
+   Replace `datagrok` with any service: `db`, `grok_connect`, `grok_pipe`,
+   `grok_spawner`, `jupyter_kernel_gateway`, `rabbitmq`, etc.
+
+2. Open a shell inside a container:
+
+    <Tabs groupId="os" queryString>
+    <TabItem value="win" label="Windows" default>
+
+    ```cmd
+    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+      --profile all exec datagrok /bin/sh
+    ```
+
+    </TabItem>
+    <TabItem value="bash" label="MacOS/Linux">
+
+    ```shell
+    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+      --profile all exec datagrok /bin/sh
+    ```
+
+    </TabItem>
+    </Tabs>
+
+3. Recreate the stand from scratch:
+
+    <Tabs groupId="os" queryString>
+    <TabItem value="win" label="Windows" default>
+
+    ```cmd
+    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+      --profile all --profile demo down --volumes
+    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+      --profile all --profile demo pull
+    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
+      --profile all --profile demo up -d
+    ```
+
+    </TabItem>
+    <TabItem value="bash" label="MacOS/Linux">
+
+    ```shell
+    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+      --profile all --profile demo down --volumes
+    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+      --profile all --profile demo pull
+    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+      --profile all --profile demo up -d
+    ```
+
+    </TabItem>
+    </Tabs>
+
+4. Docker logs may consume free disk space over time. Limit the daemon's log size via
+   [Docker Desktop resource settings](https://docs.docker.com/desktop/settings/windows/#resources)
+   or the [logging configuration](https://docs.docker.com/config/containers/logging/local/#usage).
+
+## See also
+
+* [Local machine](docker-compose.mdx) — install via the wrapper script
+* [Components](../deploy.md#components) — service list and roles
+* [Server configuration](../configuration.md) — `GROK_PARAMETERS` reference
+* [All deployment paths](../deploy.md#deployment-paths)

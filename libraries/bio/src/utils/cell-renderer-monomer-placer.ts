@@ -19,6 +19,11 @@ import {IMonomerLibBase} from '../types/monomer-library';
 import {HelmTypes} from '../helm/consts';
 import {ISeqMonomer} from '../helm/types';
 import {execMonomerHoverLinks} from '../monomer-works/monomer-hover';
+import {
+  DEFAULT_MACROMOLECULE_HIGHLIGHT_FILL,
+  MACROMOLECULE_HIGHLIGHT_EVENT_ID, MACROMOLECULE_HIGHLIGHT_TEMP,
+  MacromoleculeHighlightEntry, MacromoleculeHighlightEventArgs, macromoleculeHighlightColorToCss,
+} from './macromolecule-highlight';
 import * as operators from 'rxjs/operators';
 
 type MonomerPlacerProps = {
@@ -271,7 +276,58 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       this.reset();
     }));
 
+    this.subs.push(grok.events.onCustomEvent(MACROMOLECULE_HIGHLIGHT_EVENT_ID)
+      .subscribe((args: MacromoleculeHighlightEventArgs) => this.handleHighlightEvent(args)));
+
     this.reset();
+  }
+
+  private handleHighlightEvent(args: MacromoleculeHighlightEventArgs): void {
+    if (!args || !this.tableCol || !this.tableCol.dataFrame) return;
+    if (args.columnName !== this.tableCol.name) return;
+    const df = this.tableCol.dataFrame;
+    if (args.tableId && df.id !== args.tableId) return;
+    if (args.tableName && df.name !== args.tableName) return;
+
+    const map = (this.tableCol.temp[MACROMOLECULE_HIGHLIGHT_TEMP] ??=
+      new Map<number, MacromoleculeHighlightEntry>()) as Map<number, MacromoleculeHighlightEntry>;
+    if (args.monomers == null || args.monomers.length === 0)
+      map.delete(args.rowIdx);
+    else {
+      map.set(args.rowIdx, {
+        monomers: args.monomers.slice(),
+        fillColor: args.fillColor,
+        strokeColor: args.strokeColor,
+      });
+    }
+    this.invalidateGrid();
+  }
+
+  private getHighlightForRow(rowIdx: number | null): MacromoleculeHighlightEntry | null {
+    if (rowIdx == null) return null;
+    const map = this.tableCol.temp[MACROMOLECULE_HIGHLIGHT_TEMP] as
+      Map<number, MacromoleculeHighlightEntry> | undefined;
+    return map?.get(rowIdx) ?? null;
+  }
+
+  // Paints a translucent background behind the monomer at `posIdx` if this row has a highlight
+  // entry that includes that position. Uses the entry's `fillColor` (alpha forced) or the
+  // default fill color. Called from both single-line and multi-line render paths.
+  private drawHighlightBackground(
+    g: CanvasRenderingContext2D, rowIdx: number | null, posIdx: number,
+    rectX: number, rectY: number, rectW: number, rectH: number,
+  ): void {
+    const entry = this.getHighlightForRow(rowIdx);
+    if (!entry || !entry.monomers || entry.monomers.length === 0) return;
+    if (!entry.monomers.includes(posIdx)) return;
+    const fillCss = macromoleculeHighlightColorToCss(entry.fillColor ?? DEFAULT_MACROMOLECULE_HIGHLIGHT_FILL);
+    g.save();
+    try {
+      g.fillStyle = fillCss;
+      g.fillRect(rectX, rectY, rectW, rectH);
+    } finally {
+      g.restore();
+    }
   }
 
   public static getFontSettings(tableCol?: DG.Column) {
@@ -612,6 +668,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             if (annotRenderer)
               annotRenderer.drawPositionBackground(g, elementX, lineY, element.width + 2, layout.lineHeight, monomerIndex, gridCell.tableRowIndex!);
 
+            this.drawHighlightBackground(
+              g, gridCell.tableRowIndex, monomerIndex,
+              elementX, lineY, element.width + 2, layout.lineHeight);
+
             printLeftOrCentered(g, monomer.om, elementX, lineY, element.width, layout.lineHeight, {
               color: color,
               isMultiLineContext: true,
@@ -634,11 +694,16 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
         // Pre-compute text bottom y for annotation underlines (text is vertically centered)
         let textBottomY: number | undefined;
+        // Compute a monomer-sized highlight rect (a little taller than the glyph itself) so the
+        // background doesn't span the whole cell height.
+        const monomerMetrics = g.measureText('M');
+        const monomerTextHeight = monomerMetrics.fontBoundingBoxAscent + monomerMetrics.fontBoundingBoxDescent;
+        const hlPadding = 4;
+        const hlRectHeight = Math.min(h, monomerTextHeight + hlPadding);
+        const hlRectY = y + (h - hlRectHeight) / 2;
         if (annotRenderer) {
-          const metrics = g.measureText('M');
-          const textHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
-          const dy = h / 2 - textHeight / 2 + 1;
-          textBottomY = y + dy + textHeight;
+          const dy = h / 2 - monomerTextHeight / 2 + 1;
+          textBottomY = y + dy + monomerTextHeight;
         }
 
         for (let posIdx: number = positionShift; posIdx < visibleSeqLength; ++posIdx) {
@@ -655,17 +720,21 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           const drawnSeparator = (subParts?.graphInfo?.disjointSeqStarts?.indexOf(posIdx + 1) ?? 0) > 0 ? '|' : separator;
 
           // Draw annotation background before the monomer text
+          const wordIdx = posIdx - positionShift;
+          const placeX = (maxLengthWordsSum[wordIdx] ?? 0) - (maxLengthWordsSum[0] ?? 0);
+          const nextPlaceX = wordIdx + 1 < maxLengthWordsSum.length ?
+            (maxLengthWordsSum[wordIdx + 1] ?? 0) - (maxLengthWordsSum[0] ?? 0) : placeX + this.props.fontCharWidth;
+          const monomerW = nextPlaceX - placeX;
+          const monomerLeftX = x + this.padding + this._leftThreeDotsPadding + placeX;
           if (annotRenderer && gridCell.tableRowIndex != null) {
-            const wordIdx = posIdx - positionShift;
-            const placeX = (maxLengthWordsSum[wordIdx] ?? 0) - (maxLengthWordsSum[0] ?? 0);
-            const nextPlaceX = wordIdx + 1 < maxLengthWordsSum.length ?
-              (maxLengthWordsSum[wordIdx + 1] ?? 0) - (maxLengthWordsSum[0] ?? 0) : placeX + this.props.fontCharWidth;
-            const monomerW = nextPlaceX - placeX;
             annotRenderer.drawPositionBackground(
-              g, x + this.padding + this._leftThreeDotsPadding + placeX, y, monomerW, h,
+              g, monomerLeftX, y, monomerW, h,
               posIdx, gridCell.tableRowIndex, textBottomY,
             );
           }
+
+          this.drawHighlightBackground(g, gridCell.tableRowIndex, posIdx,
+            monomerLeftX, hlRectY, monomerW, hlRectHeight);
 
           const opts: Partial<PrintOptions> = {
             color: color, pivot: 0, left: true, transparencyRate: 0.0,

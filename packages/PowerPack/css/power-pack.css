@@ -1,4 +1,20 @@
 .power-pack-welcome-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.power-pack-view-host {
+    flex: 1;
+    overflow: hidden;
+}
+
+.power-pack-widgets-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
 }
 
 .power-pack-search-host .power-pack-search-list > span {
@@ -146,6 +162,11 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     flex: 1 1 0;
 }
 
+.power-pack-activity-widget-spotlight-root > .grok-wait {
+    flex: 1 1 0;
+    min-width: auto;
+}
+
 .power-pack-activity-widget-spotlight-getting-started-column {
     margin-right: 13px;
     flex: 1 1 0;
@@ -233,6 +254,20 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 
 .power-pack-activity-widget-activity-tab {
     margin-top: 4px;
+}
+
+.power-pack-activity-widget-activity-list {
+    display: block !important;
+    width: 100%;
+}
+
+.power-pack-activity-widget-activity-list > .grok-ellipsis {
+    display: none;
+}
+
+.power-pack-activity-widget-see-more {
+    display: inline-block;
+    margin: 8px 0 4px 12px;
 }
 
 .power-pack-widget-header {
@@ -420,9 +455,25 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
   margin-top: 10px !important;
 }
 
+.dlg-add-new-column .ui-widget-addnewcolumn-columns {
+    height: 100%!important;
+}
+
+.dlg-add-new-column .ui-widget-addnewcolumn-functions .grok-actions-browser {
+    overflow-x: hidden !important;
+}
+
 .ui-widget-addnewcolumn-columns, .ui-widget-addnewcolumn-functions {
   display: flex;
   flex-grow: 1;
+}
+
+.ui-widget-addnewcolumn-columns .add-new-column-columns-grid {
+    min-width: unset!important;
+}
+
+.ui-widget-addnewcolumn-columns .add-new-column-columns-grid .d4-layout-center {
+    height: 100%!important;
 }
 
 .ui-widget-addnewcolumn-functions #categories-div {
@@ -456,6 +507,10 @@ body.dartium .power-pack-widgets-host.ui-div .power-pack-widget-host {
     flex-grow: 1;
 }
 
+body.dartium .power-pack-widget-host[widget-title="Spotlight"] {
+    max-width: 100% !important;
+}
+
 body.dartium .power-pack-widgets-host.ui-div {
     display: flex;
     flex-direction: row;
@@ -467,6 +522,50 @@ body.dartium .power-pack-widgets-host.ui-div {
 
 .dlg-formula-lines .d4-accordion-pane-content .d4-flex-row > .ui-input-root {
     flex-grow: 1;
+}
+
+.dlg-formula-lines-pane-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.dlg-formula-lines-pane-wrap > .d4-tab-host,
+.dlg-formula-lines-pane-wrap > .d4-viewer {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+}
+
+.dlg-formula-lines-tabs-box {
+    min-height: 80px;
+}
+
+.dlg-formula-lines-preview-box {
+    min-height: 180px;
+}
+
+.dlg-formula-lines-preview-box > .dlg-formula-lines-pane-wrap {
+    padding-top: 4px;
+}
+
+/* Editor (right pane) and the left viewer/grid pane both shrink and grow at the
+   same rate so dialog-resize is symmetric: shrinking from a wide dialog and
+   then growing back returns the panes to their original proportions. The
+   flex-grow ratios are set inline by ui.splitH from each pane's initial width. */
+.dlg-formula-lines-editor-box {
+    min-width: 240px;
+    overflow: auto;
+}
+
+.dlg-formula-lines-left-split {
+    min-width: 320px;
+    min-height: 0;
 }
 
 
@@ -990,4 +1089,609 @@ body.dartium .power-pack-widgets-host.ui-div {
 
 .pp-cron-raw-row:has(.pp-cron-invalid) {
     background: rgba(235, 103, 103, 0.08);
+}
+
+.pp-notifications-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px 4px 8px;
+    font-size: 12px;
+    color: var(--steel-4);
+    margin-left: 32px;
+}
+
+.pp-notifications-separator {
+    color: var(--steel-3);
+}
+
+.pp-mark-all-read {
+    cursor: pointer;
+}
+
+.power-pack-activity-widget-notifications-tab .grok-notification-unread {
+    font-weight: bolder;
+}
+
+.pp-notification-badge {
+    position: absolute;
+    top: 1px;
+    right: -6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 12px;
+    height: 12px;
+    padding: 0 2px;
+    background-color: #eb6767;
+    color: #fff;
+    font-size: 8px;
+    font-weight: bold;
+    border-radius: 6px;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+
+/* ── Workspace tab ──────────────────────────────────────── */
+
+.pp-workspace-root {
+    padding: 4px 18px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+    min-height: 0;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.pp-workspace-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 0;
+}
+
+.pp-workspace-greeting {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--grey-6);
+    margin-bottom: 2px;
+    flex-shrink: 0;
+}
+
+.pp-workspace-main {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+    gap: 16px;
+}
+
+.pp-workspace-list-pane {
+    width: 280px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    padding-right: 6px;
+    border-right: 1px solid var(--grey-2);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pp-workspace-editor-pane {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pp-workspace-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pp-workspace-section-header {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--grey-5);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pp-workspace-section-header i {
+    color: var(--blue-1);
+    font-size: 12px;
+}
+
+.pp-workspace-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.pp-workspace-item {
+    position: relative;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.pp-workspace-item:hover {
+    background-color: var(--grey-1);
+}
+
+.pp-workspace-item-selected,
+.pp-workspace-item-selected:hover {
+    background-color: var(--blue-1);
+}
+
+.pp-workspace-item-selected .pp-workspace-item-label,
+.pp-workspace-item-selected .pp-workspace-item-time {
+    color: #fff;
+}
+
+.pp-workspace-item-selected .pp-workspace-item-icon > i,
+.pp-workspace-item-selected .pp-workspace-item-icon > svg {
+    color: #fff;
+    filter: brightness(3);
+}
+
+.pp-workspace-item-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--blue-1);
+}
+
+.pp-workspace-item-icon > .grok-icon {
+    max-width: 16px;
+    max-height: 16px;
+}
+
+.pp-workspace-item-icon > svg {
+    width: 16px;
+    height: 16px;
+}
+
+.pp-workspace-item-icon > i.grok-icon:not(.grok-ds) {
+    font-size: 14px;
+}
+
+.pp-workspace-item-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: var(--grey-6);
+}
+
+.pp-workspace-item-time {
+    flex-shrink: 0;
+    color: var(--text-color-light);
+    font-size: 10px;
+    margin-left: auto;
+}
+
+.pp-workspace-root .pp-workspace-item-remove.grok-icon.grok-font-icon-close {
+    font-size: 12px;
+    color: var(--grey-3);
+    cursor: pointer;
+    visibility: hidden;
+    opacity: 0;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+}
+
+.pp-workspace-root .pp-workspace-item:hover .pp-workspace-item-remove.grok-icon.grok-font-icon-close {
+    visibility: visible;
+    opacity: 1;
+}
+
+.pp-workspace-root .pp-workspace-item-remove.grok-icon.grok-font-icon-close:hover {
+    color: var(--red-1);
+    filter: none;
+}
+
+/* Editor pane */
+
+.pp-workspace-editor-header {
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--grey-2);
+    flex-shrink: 0;
+}
+
+.pp-workspace-editor-title {
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--grey-6);
+}
+
+.pp-workspace-editor-title .grok-icon,
+.pp-workspace-editor-title svg {
+    width: 18px;
+    height: 18px;
+    color: var(--blue-1);
+}
+
+.pp-workspace-editor-params {
+    padding-top: 4px;
+}
+
+.pp-workspace-editor-actions {
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.pp-workspace-editor-status {
+    color: var(--text-color-light);
+    font-size: 12px;
+}
+
+.pp-workspace-editor-hint {
+    color: var(--text-color-light);
+    font-style: italic;
+    font-size: 13px;
+    padding: 20px 0;
+    text-align: center;
+}
+
+.pp-workspace-editor-error {
+    color: var(--red-1);
+    margin-top: 10px;
+}
+
+.pp-workspace-editor-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+}
+
+.pp-workspace-empty-hint {
+    color: var(--text-color-light);
+    font-style: italic;
+    font-size: 13px;
+    margin: 8px 0;
+}
+
+/* Pencil edit icon on section headers */
+.pp-workspace-section-edit {
+    visibility: hidden;
+    opacity: 0;
+    margin-left: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--grey-3);
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.pp-workspace-section-header:hover .pp-workspace-section-edit {
+    visibility: visible;
+    opacity: 1;
+}
+
+.pp-workspace-section-edit:hover {
+    color: var(--blue-1);
+}
+
+/* "Manage favorites for another group..." link */
+.pp-workspace-manage-link {
+    font-size: 12px;
+    color: var(--blue-1);
+    cursor: pointer;
+    margin-top: 4px;
+}
+
+.pp-workspace-manage-link:hover {
+    text-decoration: underline;
+}
+
+/* Preview host (lives below the Spotlight widget in the Welcome view) */
+
+.power-pack-workspace-preview {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--grey-2);
+    border-radius: 6px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.pp-workspace-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.pp-workspace-preview-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grey-6);
+}
+
+.pp-workspace-preview-open-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    border: 1px solid var(--blue-1);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--blue-1);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.pp-workspace-preview-open-btn:hover {
+    background: var(--blue-1);
+    color: #fff;
+}
+
+.pp-workspace-preview-grid,
+.pp-workspace-preview-view {
+    flex: 1;
+    min-height: 200px;
+    overflow: hidden;
+    position: relative;
+}
+
+.pp-workspace-preview-grid > .d4-viewer,
+.pp-workspace-preview-grid > div,
+.pp-workspace-preview-view > div {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.pp-workspace-preview-error {
+    color: var(--red-1);
+}
+
+.pp-workspace-preview-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    flex: 1;
+}
+
+.pp-workspace-preview-text {
+    color: var(--grey-6);
+    padding: 8px 0;
+}
+
+.pp-workspace-project-card {
+    padding: 8px 0;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.pp-workspace-project-card > .grok-gallery-grid-item {
+    flex: 0 0 auto;
+    width: 240px;
+    max-width: 100%;
+}
+
+.pp-workspace-preview-project {
+    flex: 1;
+    min-height: 220px;
+    overflow: auto;
+}
+
+.pp-workspace-space-view {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    overflow: hidden;
+}
+
+.pp-workspace-space-view > .d4-root,
+.pp-workspace-space-view > div {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+}
+
+
+.pp-workspace-drop-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.92);
+    z-index: 100;
+    pointer-events: auto;
+}
+
+.pp-workspace-drop-overlay.pp-drop-active {
+    display: flex;
+}
+
+.pp-workspace-drop-zone {
+    width: 160px;
+    min-height: 120px;
+    padding: 16px 12px;
+    border: 2px dashed var(--blue-1);
+    border-radius: 10px;
+    background: var(--grey-1);
+    color: var(--blue-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background-color 0.12s, border-color 0.12s, color 0.12s, transform 0.12s;
+    cursor: copy;
+    text-align: center;
+}
+
+.pp-workspace-drop-zone:hover,
+.pp-workspace-drop-zone.d4-drop {
+    border-style: solid;
+    border-color: var(--blue-2);
+    background: #eaf4fd;
+    color: var(--blue-2);
+    transform: scale(1.03);
+}
+
+.pp-workspace-drop-zone-icon {
+    font-size: 24px;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pp-workspace-drop-zone-icon i {
+    color: inherit;
+    font-size: 24px;
+}
+
+.pp-workspace-drop-zone-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grey-6);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 140px;
+}
+
+/* ── Manage favorites dialog ──────────────────────────── */
+
+.pp-manage-fav-content {
+    gap: 12px;
+    min-width: 400px;
+}
+
+.pp-manage-fav-section-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grey-5);
+}
+
+.pp-manage-fav-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--grey-2);
+    border-radius: 4px;
+    padding: 4px 0;
+}
+
+.pp-manage-fav-search-results {
+    min-height: 60px;
+}
+
+.pp-manage-fav-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    cursor: default;
+}
+
+.pp-manage-fav-row:hover {
+    background: var(--grey-1);
+}
+
+.pp-manage-fav-row-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pp-manage-fav-row-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--grey-6);
+}
+
+.pp-manage-fav-row-action {
+    flex-shrink: 0;
+    cursor: pointer;
+    color: var(--grey-3);
+    font-size: 13px;
+    padding: 2px;
+    transition: color 0.15s;
+}
+
+.pp-manage-fav-row-action:hover {
+    color: var(--red-3);
+}
+
+.pp-manage-fav-row-action.pp-manage-fav-row-add:hover {
+    color: var(--blue-1);
+}
+
+.pp-manage-fav-empty {
+    color: var(--grey-4);
+    font-style: italic;
+    font-size: 12px;
+    padding: 8px;
+    text-align: center;
+}
+
+.pp-manage-fav-search-bar {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.pp-manage-fav-search-input {
+    flex: 1;
+}
+
+.pp-manage-fav-type-input {
+    width: 130px;
+    flex-shrink: 0;
+}
+
+.pp-manage-fav-search-hint {
+    color: var(--grey-4);
+    font-style: italic;
+    font-size: 12px;
+    padding: 8px;
+    text-align: center;
+}
+
+.pp-manage-fav-row-clickable {
+    cursor: pointer;
 }

@@ -32,6 +32,10 @@ export const helpInfo = [
     "title": "Supported connectors"
   },
   {
+    "helpURL": "/help/access/databases/connectors/databricks.md",
+    "title": "Databricks"
+  },
+  {
     "helpURL": "/help/access/databases/connectors/db2.md",
     "title": "DB2"
   },
@@ -84,6 +88,10 @@ export const helpInfo = [
     "title": "Neptune"
   },
   {
+    "helpURL": "/help/access/databases/connectors/oauth-connectors.md",
+    "title": "OAuth authentication for connectors"
+  },
+  {
     "helpURL": "/help/access/databases/connectors/odata.md",
     "title": "OData"
   },
@@ -108,12 +116,12 @@ export const helpInfo = [
     "title": "SAP HANA"
   },
   {
-    "helpURL": "/help/access/databases/connectors/snowflake.md",
-    "title": "Snowflake"
+    "helpURL": "/help/access/databases/connectors/snowflake-oauth-jwt.md",
+    "title": "snowflake-oauth-jwt"
   },
   {
-    "helpURL": "/help/access/databases/connectors/socrata.md",
-    "title": "Socrata"
+    "helpURL": "/help/access/databases/connectors/snowflake.md",
+    "title": "Snowflake"
   },
   {
     "helpURL": "/help/access/databases/connectors/sparql.md",
@@ -204,6 +212,10 @@ export const helpInfo = [
     "title": "Public datasets"
   },
   {
+    "helpURL": "/help/CLAUDE.md",
+    "title": "CLAUDE"
+  },
+  {
     "helpURL": "/help/collaborate/chat.md",
     "title": "Chat"
   },
@@ -290,6 +302,10 @@ export const helpInfo = [
     ]
   },
   {
+    "helpURL": "/help/compute/scripting/advanced-scripting/advanced-scripting.mdx",
+    "title": "Advanced scripting"
+  },
+  {
     "helpURL": "/help/compute/scripting/advanced-scripting/automate-inputs.md",
     "title": "Automate inputs"
   },
@@ -298,12 +314,24 @@ export const helpInfo = [
     "title": "Call via REST"
   },
   {
-    "helpURL": "/help/compute/scripting/advanced-scripting/js-helpers-with-rich-fucntion-view.md",
-    "title": "Using helper functions with Rich Function View"
+    "helpURL": "/help/compute/scripting/advanced-scripting/convert-script-to-package-function.mdx",
+    "title": "Convert script to a package function"
+  },
+  {
+    "helpURL": "/help/compute/scripting/advanced-scripting/embed-as-iframe.mdx",
+    "title": "Embed as iframe"
   },
   {
     "helpURL": "/help/compute/scripting/advanced-scripting/rich-function-view.md",
     "title": "Rich Function View"
+  },
+  {
+    "helpURL": "/help/compute/scripting/advanced-scripting/share-envs.mdx",
+    "title": "Share Python and R environments"
+  },
+  {
+    "helpURL": "/help/compute/scripting/advanced-scripting/under-the-hood.mdx",
+    "title": "Under the hood"
   },
   {
     "helpURL": "/help/compute/scripting/getting-started.md",
@@ -318,16 +346,64 @@ export const helpInfo = [
     "title": "Work with the Datagrok script editor"
   },
   {
+    "helpURL": "/help/compute/scripting/scripting-features/detect-semantic-type.mdx",
+    "title": "Use semantic types with scripts"
+  },
+  {
     "helpURL": "/help/compute/scripting/scripting-features/enhance-input-ui.md",
     "title": "Enhance input UI"
+  },
+  {
+    "helpURL": "/help/compute/scripting/scripting-features/group-inputs.mdx",
+    "title": "Group inputs"
+  },
+  {
+    "helpURL": "/help/compute/scripting/scripting-features/integrate-scripts-into-datagrok.mdx",
+    "title": "Integrate script output into Datagrok"
   },
   {
     "helpURL": "/help/compute/scripting/scripting-features/scripting-features.md",
     "title": "Scripting features"
   },
   {
+    "helpURL": "/help/compute/scripting/scripting-features/specify-env.mdx",
+    "title": "Manage Conda environments"
+  },
+  {
     "helpURL": "/help/compute/scripting/scripting-features/visualize-output-data.md",
     "title": "Visualize output data"
+  },
+  {
+    "helpURL": "/help/compute/scripting/scripting.mdx",
+    "title": "Scripting"
+  },
+  {
+    "helpURL": "/help/compute/workflows/code-usage.mdx",
+    "title": "Programmatic usage"
+  },
+  {
+    "helpURL": "/help/compute/workflows/configuration.mdx",
+    "title": "Configuration"
+  },
+  {
+    "helpURL": "/help/compute/workflows/examples.mdx",
+    "title": "Tutorial and examples"
+  },
+  {
+    "helpURL": "/help/compute/workflows/link-types.mdx",
+    "title": "Link types"
+  },
+  {
+    "helpURL": "/help/compute/workflows/links-spec.mdx",
+    "title": "Link Query Language"
+  },
+  {
+    "helpURL": "/help/compute/workflows/overview.mdx",
+    "title": "Overview"
+  },
+  {
+    "helpURL": "/help/compute/workflows/workflows.mdx",
+    "title": "Low-code workflows"
   },
   {
     "helpURL": "/help/datagrok/concepts/concepts.md",
@@ -354,8 +430,8 @@ export const helpInfo = [
     "title": "Dashboards"
   },
   {
-    "helpURL": "/help/datagrok/concepts/project/project.md",
-    "title": "Projects"
+    "helpURL": "/help/datagrok/concepts/project/space.md",
+    "title": "Spaces"
   },
   {
     "helpURL": "/help/datagrok/concepts/table.md",
@@ -364,10 +440,6 @@ export const helpInfo = [
   {
     "helpURL": "/help/datagrok/datagrok.md",
     "title": "Datagrok: Swiss Army Knife for Data"
-  },
-  {
-    "helpURL": "/help/datagrok/getting-started.md",
-    "title": "Getting started"
   },
   {
     "helpURL": "/help/datagrok/navigation/basic-tasks/basic-tasks.md",
@@ -382,12 +454,35 @@ export const helpInfo = [
     "title": "console-test"
   },
   {
+    "helpURL": "/help/datagrok/navigation/info-pane-reference.md",
+    "title": "Supported info panes",
+    "keywords": [
+      "info panel",
+      "info pane"
+    ]
+  },
+  {
     "helpURL": "/help/datagrok/navigation/navigation.md",
     "title": "User interface",
     "keywords": [
-      "navigation",
+      "user interface",
       "UI elements",
-      "UI"
+      "UI",
+      "info panes",
+      "info panel",
+      "Context Panel",
+      "Context Pane",
+      "Context Help",
+      "View",
+      "drag-and-drop",
+      "docking",
+      "navigation",
+      "Browse",
+      "Home Page",
+      "search",
+      "global search",
+      "routing",
+      "URL sharing"
     ]
   },
   {
@@ -423,7 +518,7 @@ export const helpInfo = [
   },
   {
     "helpURL": "/help/datagrok/navigation/shortcuts.md",
-    "title": "Controls",
+    "title": "Keyboard shortcuts",
     "keywords": [
       "shortcuts",
       "controls",
@@ -445,12 +540,8 @@ export const helpInfo = [
     "title": "Docking"
   },
   {
-    "helpURL": "/help/visualize/table-view-1.md",
-    "title": "Table View"
-  },
-  {
     "helpURL": "/help/datagrok/navigation/views/user-profile-view.md",
-    "title": "User Profile View"
+    "title": "Account and settings (User Profile)"
   },
   {
     "helpURL": "/help/datagrok/navigation/views/views.md",
@@ -480,8 +571,20 @@ export const helpInfo = [
     "title": "Datagrok and Schrödinger: Which one is right for you?"
   },
   {
+    "helpURL": "/help/datagrok/resources/competition/dg-vs-spotfire.md",
+    "title": "Datagrok vs Spotfire for life science R&D"
+  },
+  {
     "helpURL": "/help/datagrok/resources/faq.md",
     "title": "FAQ"
+  },
+  {
+    "helpURL": "/help/datagrok/resources/getting-started.md",
+    "title": "Getting started"
+  },
+  {
+    "helpURL": "/help/datagrok/resources/resources.md",
+    "title": "Resources"
   },
   {
     "helpURL": "/help/datagrok/resources/self-guided-learning.md",
@@ -519,12 +622,43 @@ export const helpInfo = [
     ]
   },
   {
+    "helpURL": "/help/datagrok/solutions/domains/bio/faq_bio.md",
+    "title": "FAQ: Peptides",
+    "keywords": [
+      "peptides",
+      "macromolecules",
+      "biologics",
+      "peptide SAR"
+    ]
+  },
+  {
     "helpURL": "/help/datagrok/solutions/domains/bio/oligo-toolkit.md",
     "title": "Oligo Toolkit"
   },
   {
     "helpURL": "/help/datagrok/solutions/domains/bio/peptides-sar.md",
-    "title": "Peptides SAR"
+    "title": "Peptides SAR",
+    "keywords": [
+      "peptides",
+      "macromolecules",
+      "biologics",
+      "peptide SAR"
+    ]
+  },
+  {
+    "helpURL": "/help/datagrok/solutions/domains/bio/polytool.md",
+    "title": "Polytool",
+    "keywords": [
+      "polytool",
+      "sequence notation",
+      "rules-based notation",
+      "sequence enumeration",
+      "custom connection rules",
+      "reaction-based rules",
+      "monomer connections",
+      "peptide libraries",
+      "sequence conversion"
+    ]
   },
   {
     "helpURL": "/help/datagrok/solutions/domains/chem/chem.md",
@@ -553,7 +687,9 @@ export const helpInfo = [
       "retrosynthesis",
       "patents search",
       "cdd vault integration",
-      "compound registration system"
+      "compound registration system",
+      "mixtures",
+      "multi-parameter optimization"
     ]
   },
   {
@@ -570,11 +706,11 @@ export const helpInfo = [
   },
   {
     "helpURL": "/help/datagrok/solutions/domains/chem/descriptors.md",
-    "title": "Molecular descriptors"
+    "title": "Supported descriptors"
   },
   {
     "helpURL": "/help/datagrok/solutions/domains/chem/fingerprints.md",
-    "title": "Molecular fingerprints"
+    "title": "Supported fingerprints"
   },
   {
     "helpURL": "/help/datagrok/solutions/domains/chem/info-panels/drug-likeness.md",
@@ -595,6 +731,17 @@ export const helpInfo = [
   {
     "helpURL": "/help/datagrok/solutions/domains/chem/info-panels/toxicity-risks.md",
     "title": "Toxicity risks"
+  },
+  {
+    "helpURL": "/help/datagrok/solutions/domains/chem/mpo.md",
+    "title": "Multiparameter optimization",
+    "keywords": [
+      "MPO",
+      "multiparameter optimization",
+      "desirability",
+      "scoring",
+      "profile"
+    ]
   },
   {
     "helpURL": "/help/datagrok/solutions/domains/chem/scripts/butina-cluster.md",
@@ -736,8 +883,12 @@ export const helpInfo = [
     "title": "Dose response curves"
   },
   {
-    "helpURL": "/help/deploy/aws/deploy-amazon-cloudformation.md",
-    "title": "AWS CloudFormation"
+    "helpURL": "/help/deploy/aws/deploy-amazon-ecs.mdx",
+    "title": "AWS CloudFormation (ECS)"
+  },
+  {
+    "helpURL": "/help/deploy/aws/deploy-amazon-eks.mdx",
+    "title": "AWS CloudFormation (EKS)"
   },
   {
     "helpURL": "/help/deploy/aws/deploy-amazon-terraform.md",
@@ -792,8 +943,20 @@ export const helpInfo = [
     "title": "Local machine"
   },
   {
+    "helpURL": "/help/deploy/GCP/deploy-gcp-gke-terraform.md",
+    "title": "GCP GKE Terraform"
+  },
+  {
     "helpURL": "/help/deploy/hosting-options.md",
     "title": "Hosting options"
+  },
+  {
+    "helpURL": "/help/deploy/k8s/install-helm-chart.md",
+    "title": "Install Datagrok with Helm"
+  },
+  {
+    "helpURL": "/help/deploy/releases/compatibility/compatibility.mdx",
+    "title": "compatibility"
   },
   {
     "helpURL": "/help/deploy/releases/plugins/Admetica.md",
@@ -804,12 +967,20 @@ export const helpInfo = [
     "title": "Alation"
   },
   {
+    "helpURL": "/help/deploy/releases/plugins/API_Samples.md",
+    "title": "API Samples"
+  },
+  {
     "helpURL": "/help/deploy/releases/plugins/Arrow.md",
     "title": "Arrow"
   },
   {
     "helpURL": "/help/deploy/releases/plugins/Bio.md",
     "title": "Bio"
+  },
+  {
+    "helpURL": "/help/deploy/releases/plugins/Biologics.md",
+    "title": "Biologics"
   },
   {
     "helpURL": "/help/deploy/releases/plugins/BioNeMo.md",
@@ -828,16 +999,16 @@ export const helpInfo = [
     "title": "Charts"
   },
   {
+    "helpURL": "/help/deploy/releases/plugins/ChatGPT.md",
+    "title": "ChatGPT"
+  },
+  {
     "helpURL": "/help/deploy/releases/plugins/Chem.md",
     "title": "Chem"
   },
   {
-    "helpURL": "/help/deploy/releases/plugins/Chembl.md",
-    "title": "Chembl"
-  },
-  {
-    "helpURL": "/help/deploy/releases/plugins/ChemblAPI.md",
-    "title": "ChemblAPI"
+    "helpURL": "/help/deploy/releases/plugins/ChEMBL.md",
+    "title": "ChEMBL"
   },
   {
     "helpURL": "/help/deploy/releases/plugins/ChEMBL_API.md",
@@ -856,6 +1027,14 @@ export const helpInfo = [
     "title": "Compute2"
   },
   {
+    "helpURL": "/help/deploy/releases/plugins/ComputeApi.md",
+    "title": "ComputeApi"
+  },
+  {
+    "helpURL": "/help/deploy/releases/plugins/ComputeUtils.md",
+    "title": "ComputeUtils"
+  },
+  {
     "helpURL": "/help/deploy/releases/plugins/Curves.md",
     "title": "Curves"
   },
@@ -866,6 +1045,10 @@ export const helpInfo = [
   {
     "helpURL": "/help/deploy/releases/plugins/Dev_Tools.md",
     "title": "Dev Tools"
+  },
+  {
+    "helpURL": "/help/deploy/releases/plugins/Diff_Studio.md",
+    "title": "Diff Studio"
   },
   {
     "helpURL": "/help/deploy/releases/plugins/Docking.md",
@@ -884,16 +1067,32 @@ export const helpInfo = [
     "title": "Enamine ChemSpace"
   },
   {
+    "helpURL": "/help/deploy/releases/plugins/EPS_Viewer.md",
+    "title": "EPS Viewer"
+  },
+  {
+    "helpURL": "/help/deploy/releases/plugins/Excalidraw.md",
+    "title": "Excalidraw"
+  },
+  {
+    "helpURL": "/help/deploy/releases/plugins/File_Editors.md",
+    "title": "File Editors"
+  },
+  {
+    "helpURL": "/help/deploy/releases/plugins/GenomeBrowser.md",
+    "title": "GenomeBrowser"
+  },
+  {
     "helpURL": "/help/deploy/releases/plugins/GIS.md",
     "title": "GIS"
   },
   {
-    "helpURL": "/help/deploy/releases/plugins/Helm.md",
-    "title": "Helm"
+    "helpURL": "/help/deploy/releases/plugins/Grokky.md",
+    "title": "Grokky"
   },
   {
-    "helpURL": "/help/deploy/releases/plugins/HitTriage.md",
-    "title": "HitTriage"
+    "helpURL": "/help/deploy/releases/plugins/Helm.md",
+    "title": "Helm"
   },
   {
     "helpURL": "/help/deploy/releases/plugins/Hit_Triage.md",
@@ -908,8 +1107,12 @@ export const helpInfo = [
     "title": "Ketcher Sketcher"
   },
   {
-    "helpURL": "/help/deploy/releases/plugins/MLFlow.md",
-    "title": "MLFlow"
+    "helpURL": "/help/deploy/releases/plugins/Media.md",
+    "title": "Media"
+  },
+  {
+    "helpURL": "/help/deploy/releases/plugins/MLflow.md",
+    "title": "MLflow"
   },
   {
     "helpURL": "/help/deploy/releases/plugins/NLP.md",
@@ -932,20 +1135,12 @@ export const helpInfo = [
     "title": "Peptides"
   },
   {
-    "helpURL": "/help/deploy/releases/plugins/PhyloTreeViewer.md",
-    "title": "PhyloTreeViewer"
-  },
-  {
     "helpURL": "/help/deploy/releases/plugins/PhyloTree_Viewer.md",
     "title": "PhyloTree Viewer"
   },
   {
-    "helpURL": "/help/deploy/releases/plugins/PowerGrid.md",
-    "title": "PowerGrid"
-  },
-  {
-    "helpURL": "/help/deploy/releases/plugins/PowerPack.md",
-    "title": "PowerPack"
+    "helpURL": "/help/deploy/releases/plugins/plugins.mdx",
+    "title": "Plugins"
   },
   {
     "helpURL": "/help/deploy/releases/plugins/Power_Grid.md",
@@ -962,6 +1157,10 @@ export const helpInfo = [
   {
     "helpURL": "/help/deploy/releases/plugins/Pyodide.md",
     "title": "Pyodide"
+  },
+  {
+    "helpURL": "/help/deploy/releases/plugins/Reinvent4.md",
+    "title": "Reinvent4"
   },
   {
     "helpURL": "/help/deploy/releases/plugins/Retrosynthesis.md",
@@ -1045,12 +1244,24 @@ export const helpInfo = [
     "title": "Datagrok UI"
   },
   {
+    "helpURL": "/help/develop/advanced/url-parameters.md",
+    "title": "URL Parameters"
+  },
+  {
     "helpURL": "/help/develop/api-overview.md",
-    "title": "api-overview"
+    "title": "Datagrok API overview"
   },
   {
     "helpURL": "/help/develop/dev-process/changelog-policy.md",
     "title": "Release notes policy"
+  },
+  {
+    "helpURL": "/help/develop/dev-process/ci-flow.mdx",
+    "title": "CI/CD flow"
+  },
+  {
+    "helpURL": "/help/develop/dev-process/git-policy.mdx",
+    "title": "Git policy"
   },
   {
     "helpURL": "/help/develop/dev-process/set-up-environment.md",
@@ -1095,6 +1306,18 @@ export const helpInfo = [
   {
     "helpURL": "/help/develop/function-roles.md",
     "title": "Function roles"
+  },
+  {
+    "helpURL": "/help/develop/help-pages/github-workflow.mdx",
+    "title": "Building help locally",
+    "keywords": [
+      "docs",
+      "docusaurus",
+      "github workflow",
+      "wiki",
+      "build help",
+      "contribute docs"
+    ]
   },
   {
     "helpURL": "/help/develop/help-pages/help-pages.md",
@@ -1155,8 +1378,12 @@ export const helpInfo = [
     "title": "Plugin Postgres databases"
   },
   {
+    "helpURL": "/help/develop/how-to/db/register-identifiers.md",
+    "title": "Register identifier patterns"
+  },
+  {
     "helpURL": "/help/develop/how-to/faq.md",
-    "title": "FAQs"
+    "title": "Developer FAQ"
   },
   {
     "helpURL": "/help/develop/how-to/files/create-custom-file-viewers.md",
@@ -1195,10 +1422,6 @@ export const helpInfo = [
     "title": "Customize a grid"
   },
   {
-    "helpURL": "/help/develop/how-to/grid/register-identifiers.md",
-    "title": "Register identifier patterns"
-  },
-  {
     "helpURL": "/help/develop/how-to/misc/write-demo-scripts.md",
     "title": "Write demo scripts"
   },
@@ -1213,6 +1436,10 @@ export const helpInfo = [
   {
     "helpURL": "/help/develop/how-to/packages/custom-package-settings-editors.md",
     "title": "Custom package settings editors"
+  },
+  {
+    "helpURL": "/help/develop/how-to/packages/data-enrichments.md",
+    "title": "Publishing enrichments with Datagrok plugins"
   },
   {
     "helpURL": "/help/develop/how-to/packages/docker-containers.md",
@@ -1356,7 +1583,7 @@ export const helpInfo = [
   },
   {
     "helpURL": "/help/develop/python-api.md",
-    "title": "python-api"
+    "title": "Python API"
   },
   {
     "helpURL": "/help/develop/qa/quality-assurance.md",
@@ -1369,6 +1596,19 @@ export const helpInfo = [
   {
     "helpURL": "/help/develop/qa/tests.md",
     "title": "Tests"
+  },
+  {
+    "helpURL": "/help/develop/server-management.md",
+    "title": "Server management with grok s",
+    "keywords": [
+      "grok",
+      "cli",
+      "server management",
+      "automation",
+      "integration",
+      "ldap",
+      "active directory"
+    ]
   },
   {
     "helpURL": "/help/develop/under-the-hood/architecture.md",
@@ -1397,6 +1637,10 @@ export const helpInfo = [
   {
     "helpURL": "/help/develop/under-the-hood/scaling.md",
     "title": "Scaling"
+  },
+  {
+    "helpURL": "/help/explore/ai/ai.md",
+    "title": "AI"
   },
   {
     "helpURL": "/help/explore/anova.md",
@@ -1448,7 +1692,7 @@ export const helpInfo = [
   },
   {
     "helpURL": "/help/govern/access-control/data-connection-credentials.md",
-    "title": "Secrets managers"
+    "title": "Secrets Managers"
   },
   {
     "helpURL": "/help/govern/access-control/group-test.md",
@@ -1548,6 +1792,10 @@ export const helpInfo = [
     "title": "Anonymize data"
   },
   {
+    "helpURL": "/help/transform/append-tables.md",
+    "title": "Append tables"
+  },
+  {
     "helpURL": "/help/transform/batch-edit.md",
     "title": "Batch edit"
   },
@@ -1588,16 +1836,16 @@ export const helpInfo = [
     "title": "Find and replace"
   },
   {
+    "helpURL": "/help/transform/formula-syntax.md",
+    "title": "Formula syntax"
+  },
+  {
     "helpURL": "/help/transform/functions/aggregation-functions.md",
     "title": "Aggregation functions"
   },
   {
     "helpURL": "/help/transform/functions/binning-functions.md",
     "title": "Binning functions"
-  },
-  {
-    "helpURL": "/help/transform/formula-syntax.md#constants",
-    "title": "Constants"
   },
   {
     "helpURL": "/help/transform/functions/conversion-functions.md",
@@ -1610,10 +1858,6 @@ export const helpInfo = [
   {
     "helpURL": "/help/transform/functions/math-functions.md",
     "title": "Math functions"
-  },
-  {
-    "helpURL": "/help/transform/formula-syntax.md#operators",
-    "title": "Operators"
   },
   {
     "helpURL": "/help/transform/functions/stats-functions.md",
@@ -1700,6 +1944,10 @@ export const helpInfo = [
     "title": "Add custom form"
   },
   {
+    "helpURL": "/help/visualize/table-view-1.md",
+    "title": "Table View"
+  },
+  {
     "helpURL": "/help/visualize/view-layout-test.md",
     "title": "view-layout-test"
   },
@@ -1740,6 +1988,10 @@ export const helpInfo = [
     "title": "Column Selector"
   },
   {
+    "helpURL": "/help/visualize/viewers/confusion-matrix.md",
+    "title": "Confusion matrix"
+  },
+  {
     "helpURL": "/help/visualize/viewers/correlation-plot.md",
     "title": "Correlation plot"
   },
@@ -1768,10 +2020,6 @@ export const helpInfo = [
     "title": "Globe"
   },
   {
-    "helpURL": "/help/visualize/viewers/google-map-view-actions-settings.md",
-    "title": "Google Map view action settings"
-  },
-  {
     "helpURL": "/help/visualize/viewers/google-map.md",
     "title": "Google Map viewer"
   },
@@ -1784,6 +2032,10 @@ export const helpInfo = [
       "viewer",
       "excel"
     ]
+  },
+  {
+    "helpURL": "/help/visualize/viewers/group-analysis.md",
+    "title": "Group analysis viewer"
   },
   {
     "helpURL": "/help/visualize/viewers/heat-map.md",
@@ -1822,12 +2074,20 @@ export const helpInfo = [
     "title": "most-potent-residues"
   },
   {
+    "helpURL": "/help/visualize/viewers/multi-curve-viewer.md",
+    "title": "Multi curve viewer"
+  },
+  {
     "helpURL": "/help/visualize/viewers/network-diagram.md",
     "title": "Network diagram"
   },
   {
     "helpURL": "/help/visualize/viewers/ngl.md",
     "title": "NGL viewer"
+  },
+  {
+    "helpURL": "/help/visualize/viewers/pareto-front-viewer.md",
+    "title": "Pareto front viewer"
   },
   {
     "helpURL": "/help/visualize/viewers/pc-plot.md",
@@ -1844,6 +2104,10 @@ export const helpInfo = [
   {
     "helpURL": "/help/visualize/viewers/pivot-table.md",
     "title": "Pivot table"
+  },
+  {
+    "helpURL": "/help/visualize/viewers/position-statistics-viewer.md",
+    "title": "Position Statistics"
   },
   {
     "helpURL": "/help/visualize/viewers/protein-viewer.md",
@@ -1868,6 +2132,10 @@ export const helpInfo = [
   {
     "helpURL": "/help/visualize/viewers/scripting-viewer.md",
     "title": "Scripting viewer"
+  },
+  {
+    "helpURL": "/help/visualize/viewers/sequence-mutation-cliffs.md",
+    "title": "Mutation Cliffs Viewer"
   },
   {
     "helpURL": "/help/visualize/viewers/sequence-variability-map.md",
@@ -1898,6 +2166,10 @@ export const helpInfo = [
     "title": "Tile viewer"
   },
   {
+    "helpURL": "/help/visualize/viewers/timelines.md",
+    "title": "Timelines"
+  },
+  {
     "helpURL": "/help/visualize/viewers/tree-map.md",
     "title": "Treemap"
   },
@@ -1912,10 +2184,6 @@ export const helpInfo = [
   {
     "helpURL": "/help/visualize/viewers/vdregions.md",
     "title": "V-Domain"
-  },
-  {
-    "helpURL": "/help/visualize/viewers/viewer-host.md",
-    "title": "Viewers host"
   },
   {
     "helpURL": "/help/visualize/viewers/viewers-test.md",

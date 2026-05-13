@@ -448,9 +448,9 @@ export class AddNewColumnDialog {
       // Columns and functions can be drag-n-dropped into the Expression field:
       ui.makeDroppable(this.codeMirrorDiv!, {
         acceptDrop: (dragObject) => this.typeOf(dragObject, DG.Column, DG.Func),
-        doDrop: (dragObject, _) => {
+        doDrop: (args) => {
           cm.focus();
-          this.insertIntoCodeMirror(dragObject, cm);
+          this.insertIntoCodeMirror(args.dragObject, cm);
         },
       });
     }
@@ -470,6 +470,7 @@ export class AddNewColumnDialog {
         this.functionAutocomplete = !this.packageAutocomplete;
         return this.packageAutocomplete;
       },
+      closeOnBlur: false,
     });
 
     //functions tooltip extension
@@ -1134,6 +1135,10 @@ export class AddNewColumnDialog {
     control.append(this.widgetFunctions!.root);
     control.classList.add('ui-widget-addnewcolumn-functions');
     control.style.height = 'inherit';
+    // Opt out of ui.css's broad `div.ui-box > *` overflow:auto rule so our own
+    // overflow-x: hidden wins (see power-pack.css). `.ui-div` is in that rule's
+    // :not() exclusion list and has minimal styling side effects.
+    this.widgetFunctions!.root.classList.add('ui-div');
     return control;
   }
 

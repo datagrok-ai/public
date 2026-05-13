@@ -291,6 +291,13 @@ export namespace funcs {
     return await grok.functions.call('Chem:DiversitySearchTopMenu', {});
   }
 
+  /**
+  Computes a full pairwise Tanimoto similarity matrix for the molecules, labeled by the symbol column.
+  */
+  export async function similarityMatrixTopMenu(table: DG.DataFrame , molecules: DG.Column , symbols: DG.Column , fingerprintType: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SimilarityMatrixTopMenu', { table, molecules, symbols, fingerprintType });
+  }
+
   export async function descriptorsDocker(): Promise<void> {
     return await grok.functions.call('Chem:DescriptorsDocker', {});
   }
@@ -900,6 +907,13 @@ export namespace funcs {
 
   export async function mpoProfilesApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('Chem:MpoProfilesApp', { path });
+  }
+
+  /**
+  Forward-reaction library enumeration over building blocks and SMARTS templates.
+  */
+  export async function reactionEnumeratorApp(): Promise<DG.View> {
+    return await grok.functions.call('Chem:ReactionEnumeratorApp', {});
   }
 
   export async function mpoProfilesAppTreeBrowser(treeNode: any , _browseView: DG.View ): Promise<void> {

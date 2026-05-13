@@ -3,7 +3,7 @@
 #description: Converts molecules to HELM notation based on monomer library
 #input: dataframe moleculesDataframe
 #input: column moleculesColumn {semType: Molecule}
-#input: string libraryJSON
+#input: file libraryFile
 #output: dataframe result_helm {action:join(moleculesDataframe)} [Sequences, in HELM format]
 molListToProcess = moleculesDataframe[moleculesColumn].tolist()
 import pandas as pd
@@ -150,26 +150,35 @@ class FragmentGraph:
         return ordered
     
     def _traverse_from_node(self, node_id: int, visited: set, ordered: list):
-        """Helper for depth-first traversal"""
+        """Helper for depth-first traversal with bidirectional link support"""
         if node_id in visited:
             return
-        
+
         visited.add(node_id)
         ordered.append(self.nodes[node_id])
-        
-        # Get peptide bond neighbors first (to maintain chain order)
-        peptide_neighbors = []
-        other_neighbors = []
-        
+
+        # Follow links in BOTH directions but prefer the canonical (from→to)
+        # direction. Link direction depends on bond detection order and is not
+        # guaranteed to match backbone direction (e.g. FC01 stapled peptides).
+        peptide_fwd = []
+        peptide_bwd = []
+        other_fwd = []
+        other_bwd = []
+
         for link in self.links:
             if link.from_node_id == node_id and link.to_node_id not in visited:
                 if link.linkage_type == LinkageType.PEPTIDE:
-                    peptide_neighbors.append(link.to_node_id)
+                    peptide_fwd.append(link.to_node_id)
                 else:
-                    other_neighbors.append(link.to_node_id)
-        
-        # Visit peptide bonds first, then others
-        for neighbor_id in peptide_neighbors + other_neighbors:
+                    other_fwd.append(link.to_node_id)
+            elif link.to_node_id == node_id and link.from_node_id not in visited:
+                if link.linkage_type == LinkageType.PEPTIDE:
+                    peptide_bwd.append(link.from_node_id)
+                else:
+                    other_bwd.append(link.from_node_id)
+
+        # Forward first, backward as fallback
+        for neighbor_id in peptide_fwd + peptide_bwd + other_fwd + other_bwd:
             self._traverse_from_node(neighbor_id, visited, ordered)
     
     def get_fragment_sequence(self) -> List[str]:
@@ -194,22 +203,86 @@ class FragmentGraph:
         if len(ordered) < 3:
             return False
         
-        # Get the last node ID
-        last_id = ordered[-1].id
-        
-        # For a cyclic peptide, the last residue should connect back to one of the first few residues
-        # (usually first, but could be second if there's an N-terminal cap like 'ac')
-        # Check if last node has a peptide bond to any of the first 3 nodes
-        first_few_ids = [ordered[i].id for i in range(min(3, len(ordered)))]
-        
+        # Check if any of the last few residues connect back to any of the first few.
+        # Checking multiple positions on each end handles branch nodes (like 'ac')
+        # that the bidirectional traversal may place at the edges.
+        first_few_ids = set(ordered[i].id for i in range(min(3, len(ordered))))
+        last_few_ids = set(ordered[-i - 1].id for i in range(min(3, len(ordered))))
+
         for link in self.links:
             if link.linkage_type == LinkageType.PEPTIDE:
-                # Check if link connects last node to one of the first few nodes
-                if (link.from_node_id == last_id and link.to_node_id in first_few_ids) or \
-                   (link.to_node_id == last_id and link.from_node_id in first_few_ids):
+                if (link.from_node_id in last_few_ids and link.to_node_id in first_few_ids) or \
+                   (link.to_node_id in last_few_ids and link.from_node_id in first_few_ids):
                     return True
-        
+
         return False
+    
+    def find_all_cycles(self) -> List[List[int]]:
+        """
+        Find all cycles in the graph using DFS.
+        Returns list of cycles, where each cycle is a list of node IDs.
+        """
+        cycles = []
+        visited = set()
+        rec_stack = set()
+        parent = {}
+        
+        def dfs(node_id: int, path: List[int]):
+            visited.add(node_id)
+            rec_stack.add(node_id)
+            path.append(node_id)
+            
+            # Get peptide bond neighbors
+            neighbors = [n_id for n_id, link_type in self.get_neighbors(node_id) 
+                        if link_type == LinkageType.PEPTIDE]
+            
+            for neighbor_id in neighbors:
+                if neighbor_id not in visited:
+                    parent[neighbor_id] = node_id
+                    dfs(neighbor_id, path[:])
+                elif neighbor_id in rec_stack and neighbor_id != parent.get(node_id):
+                    # Found a cycle - extract it from path
+                    cycle_start_idx = path.index(neighbor_id)
+                    cycle = path[cycle_start_idx:] + [neighbor_id]
+                    # Normalize cycle (start from smallest ID)
+                    min_idx = cycle.index(min(cycle[:-1]))  # Don't include duplicate last element
+                    normalized = cycle[min_idx:-1] + cycle[:min_idx]
+                    if normalized not in cycles:
+                        cycles.append(normalized)
+            
+            rec_stack.remove(node_id)
+        
+        # Try starting DFS from each unvisited node
+        for node_id in self.nodes.keys():
+            if node_id not in visited:
+                parent[node_id] = None
+                dfs(node_id, [])
+        
+        return cycles
+    
+    def get_connected_components(self) -> List[List[int]]:
+        """
+        Find all connected components in the graph.
+        Returns list of components, where each component is a list of node IDs.
+        """
+        visited = set()
+        components = []
+        
+        def dfs_component(node_id: int, component: List[int]):
+            visited.add(node_id)
+            component.append(node_id)
+            neighbors = self.get_neighbors(node_id)
+            for neighbor_id, _ in neighbors:
+                if neighbor_id not in visited:
+                    dfs_component(neighbor_id, component)
+        
+        for node_id in self.nodes.keys():
+            if node_id not in visited:
+                component = []
+                dfs_component(node_id, component)
+                components.append(sorted(component))
+        
+        return components
     
     def __len__(self):
         return len(self.nodes)
@@ -302,10 +375,38 @@ class BondDetector:
         bonds = []
         try:
             matches = mol.GetSubstructMatches(self.peptide_bond)
-            for match in matches:
-                if len(match) >= 5:
-                    # Pattern: [C;X3,X4]-[C;X3](=[O;X1])-[N;X2,X3]~[C;X3,X4]
-                    # match[0]=alpha-C (sp2 or sp3), match[1]=carbonyl-C, match[2]=O, match[3]=N, match[4]=next-alpha-C (sp2 or sp3)
+
+            # Filter out internal amide bonds in CHEM linkers like FC01.
+            # FC01 pattern: C(=O)-N-ArRing-N-C(=O) — two amide bonds connect to the
+            # same aromatic ring via the alpha-C position (match[4]).
+            # Real aromatic amino acids (3Abz) only have ONE such bond per ring.
+            skip_indices = set()
+            ring_info = mol.GetRingInfo()
+            rings = ring_info.AtomRings()
+
+            # Map: ring_frozenset -> list of match indices where match[4] is aromatic on that ring
+            # Only consider small rings (5-6 atoms) — large macrocycles should not be filtered
+            ring_to_matches = {}
+            for i, match in enumerate(matches):
+                if len(match) < 5:
+                    continue
+                alpha_c_atom = mol.GetAtomWithIdx(match[4])
+                if alpha_c_atom.GetIsAromatic():
+                    for ring in rings:
+                        if match[4] in ring and len(ring) <= 6:
+                            ring_key = frozenset(ring)
+                            if ring_key not in ring_to_matches:
+                                ring_to_matches[ring_key] = []
+                            ring_to_matches[ring_key].append(i)
+                            break
+
+            # If 2+ matches share an aromatic ring at their alpha-C position, skip them
+            for ring_key, match_indices in ring_to_matches.items():
+                if len(match_indices) >= 2:
+                    skip_indices.update(match_indices)
+
+            for i, match in enumerate(matches):
+                if len(match) >= 5 and i not in skip_indices:
                     c_atom = match[1]  # Carbonyl carbon
                     n_atom = match[3]  # Nitrogen
                     bonds.append((c_atom, n_atom))
@@ -386,6 +487,117 @@ class FragmentProcessor:
         self.monomer_library = monomer_library
         self.bond_detector = BondDetector()
 
+
+    def _find_staple_sidechain_bonds(self, mol, existing_bonds):
+        """
+        Find non-backbone bonds to cleave in macrocycles.
+
+        Handles three types of macrocyclic cross-links:
+        1. RCMtrans/RCMcis (stapled peptides): C=C double bond in the linker.
+           Cleaves one hop away on each side to keep the correct R3 chain length.
+        2. FC01-type (thioether staples): C-S bonds in the linker.
+        3. Alkyl cross-links (bi-cyclic peptides): pure C-C chains connecting
+           two amino acid side chains (R3-R3). Detected by finding non-backbone
+           segments in large macrocycles and cleaving at their midpoint.
+        """
+        ring_info = mol.GetRingInfo()
+        large_rings = [set(ring) for ring in ring_info.AtomRings() if len(ring) > 10]
+        if not large_rings:
+            return []
+
+        existing_atom_pairs = set()
+        for a1, a2, _ in existing_bonds:
+            existing_atom_pairs.add((min(a1, a2), max(a1, a2)))
+        # Also track existing bond atoms for backbone detection
+        existing_bond_atoms = set()
+        for a1, a2, _ in existing_bonds:
+            existing_bond_atoms.add(a1)
+            existing_bond_atoms.add(a2)
+
+        additional_bonds = []
+        seen = set()
+
+        for ring in large_rings:
+            ring_list = list(ring)
+
+            # --- Type 1: C=C double bonds (RCMtrans/RCMcis) ---
+            # Only if molecule has quaternary alpha-methyl C (staple monomer signature)
+            quat_alpha = Chem.MolFromSmarts('[N;X2,X3]-[C;X4;H0](-[C;X3](=[O;X1]))-[CH3]')
+            has_quat = quat_alpha and mol.HasSubstructMatch(quat_alpha)
+            if has_quat:
+                for bond in mol.GetBonds():
+                    a1, a2 = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+                    if a1 not in ring or a2 not in ring:
+                        continue
+                    if (bond.GetBondTypeAsDouble() >= 2 and
+                            mol.GetAtomWithIdx(a1).GetAtomicNum() == 6 and
+                            mol.GetAtomWithIdx(a2).GetAtomicNum() == 6):
+                        for cc_atom_idx in (a1, a2):
+                            other_cc = a2 if cc_atom_idx == a1 else a1
+                            cc_atom = mol.GetAtomWithIdx(cc_atom_idx)
+                            for nbr in cc_atom.GetNeighbors():
+                                nbr_idx = nbr.GetIdx()
+                                if nbr_idx == other_cc or nbr_idx not in ring:
+                                    continue
+                                for nbr2 in nbr.GetNeighbors():
+                                    nbr2_idx = nbr2.GetIdx()
+                                    if nbr2_idx == cc_atom_idx or nbr2_idx not in ring:
+                                        continue
+                                    pair = (min(nbr_idx, nbr2_idx), max(nbr_idx, nbr2_idx))
+                                    if pair not in existing_atom_pairs and pair not in seen:
+                                        seen.add(pair)
+                                        additional_bonds.append((nbr_idx, nbr2_idx, LinkageType.UNKNOWN))
+
+            # --- Type 2: C-S thioether bonds (FC01) ---
+            # Only true thioethers (S bonded to C on both sides), NOT disulfide-adjacent
+            for bond in mol.GetBonds():
+                a1, a2 = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+                if a1 not in ring or a2 not in ring:
+                    continue
+                at1, at2 = mol.GetAtomWithIdx(a1), mol.GetAtomWithIdx(a2)
+                if ((at1.GetAtomicNum() == 6 and at2.GetAtomicNum() == 16) or
+                        (at1.GetAtomicNum() == 16 and at2.GetAtomicNum() == 6)):
+                    s_atom = at2 if at2.GetAtomicNum() == 16 else at1
+                    # Skip if S is bonded to another S (disulfide bridge path)
+                    if any(n.GetAtomicNum() == 16 for n in s_atom.GetNeighbors()):
+                        continue
+                    pair = (min(a1, a2), max(a1, a2))
+                    if pair not in existing_atom_pairs and pair not in seen:
+                        seen.add(pair)
+                        additional_bonds.append((a1, a2, LinkageType.UNKNOWN))
+
+        # --- Type 3: Alkyl cross-link paths (bi-cyclic R3-R3) ---
+        # Find pairs of alpha-C atoms connected by pure carbon chains (no N/O/S
+        # in the path). These are R3-R3 cross-links between different cycles.
+        # Cleave at the midpoint of each such chain.
+        alpha_c_pat = Chem.MolFromSmarts('[N]-[C;X4]-[C;X3](=[O])')
+        if alpha_c_pat:
+            ac_matches = mol.GetSubstructMatches(alpha_c_pat)
+            alpha_c_set = list(set(m[1] for m in ac_matches))
+            for i, ac1 in enumerate(alpha_c_set):
+                for ac2 in alpha_c_set[i + 1:]:
+                    path = Chem.GetShortestPath(mol, ac1, ac2)
+                    if not path or len(path) < 4 or len(path) > 12:
+                        continue
+                    # All middle atoms must be C with no N/O/S neighbors
+                    middle_ok = True
+                    for mid_idx in path[1:-1]:
+                        atom = mol.GetAtomWithIdx(mid_idx)
+                        if atom.GetAtomicNum() != 6:
+                            middle_ok = False
+                            break
+                        if any(n.GetAtomicNum() in (7, 8, 16) for n in atom.GetNeighbors()):
+                            middle_ok = False
+                            break
+                    if middle_ok:
+                        mid = len(path) // 2
+                        pair = (min(path[mid - 1], path[mid]), max(path[mid - 1], path[mid]))
+                        if pair not in existing_atom_pairs and pair not in seen:
+                            seen.add(pair)
+                            additional_bonds.append((path[mid - 1], path[mid], LinkageType.UNKNOWN))
+
+        return additional_bonds
+
     def process_molecule(self, mol: Chem.Mol) -> FragmentGraph:
         """
         Process a molecule into a fragment graph.
@@ -402,6 +614,11 @@ class FragmentProcessor:
         
         try:
             bonds_to_cleave = self.bond_detector.find_cleavable_bonds(mol)
+
+            # Detect R3 side-chain bonds for staple monomers (R8, S5, etc.)
+            r3_bonds = self._find_staple_sidechain_bonds(mol, bonds_to_cleave)
+            if r3_bonds:
+                bonds_to_cleave.extend(r3_bonds)
 
             if not bonds_to_cleave:
                 # Single fragment (no cleavable bonds)
@@ -448,6 +665,7 @@ class FragmentProcessor:
             graph.cleaved_bond_indices = bond_indices
             graph.bond_info = bond_info
             graph.atom_mappings = atom_mappings
+            graph.uncleaned_fragments = fragments  # Keep fragments with dummy atoms for R-group SMILES
 
             # Create nodes for each fragment
             fragment_nodes = []
@@ -735,7 +953,7 @@ class FragmentProcessor:
         # Identify unmatched nodes
         unmatched_nodes = []
         for node_id, node in graph.nodes.items():
-            if node.monomer and node.monomer.symbol.startswith("X"):
+            if node.monomer and node.monomer.is_unknown:
                 unmatched_nodes.append(node_id)
         
         if not unmatched_nodes:
@@ -792,7 +1010,7 @@ class FragmentProcessor:
                 
                 # Try to match the combined fragment (exact match only)
                 monomer = matcher.find_exact_match(combined_mol, num_connections)
-                
+
                 if monomer:
                     # Success! Create new merged node
                     new_node_id = min(nodes_to_merge)
@@ -830,8 +1048,7 @@ class FragmentProcessor:
         # Find all unmatched nodes (nodes with mock/unknown monomers)
         unmatched_nodes = []
         for node_id, node in graph.nodes.items():
-            if node.monomer and (node.monomer.symbol.startswith('X') or 
-                                 node.monomer.name.startswith('Unknown')):
+            if node.monomer and node.monomer.is_unknown:
                 unmatched_nodes.append(node_id)
         
         if not unmatched_nodes:
@@ -868,6 +1085,86 @@ class FragmentProcessor:
         
         return matched_count
 
+    def recover_unmatched_by_merging_stereo_agnostic(self, graph: FragmentGraph, matcher) -> bool:
+        """
+        Final recovery pass: merge pairs of BOTH-unmatched neighbor fragments and
+        try stereo-agnostic matching on the combined result.
+
+        This handles monomers like Phe_4Sdihydroorotamido that have internal amide
+        bonds which get incorrectly cleaved, producing two unmatched fragments.
+
+        Only merges when BOTH fragments in a pair are unmatched — never touches
+        already-matched nodes to avoid regressions.
+
+        Returns True if any merges were successful.
+        """
+        def _is_unmatched(node):
+            return (node.monomer and
+                    node.monomer.is_unknown)
+
+        unmatched_ids = [nid for nid, node in graph.nodes.items() if _is_unmatched(node)]
+        if not unmatched_ids:
+            return False
+
+        had_changes = False
+
+        for node_id in unmatched_ids:
+            if node_id not in graph.nodes:
+                continue
+            if not _is_unmatched(graph.nodes[node_id]):
+                continue
+
+            neighbors = graph.get_neighbors(node_id)
+            for neighbor_id, linkage_type in neighbors:
+                if neighbor_id not in graph.nodes:
+                    continue
+                # Only merge with another unmatched neighbor
+                if not _is_unmatched(graph.nodes[neighbor_id]):
+                    continue
+
+                nodes_to_merge = sorted([node_id, neighbor_id])
+
+                # Find internal links between the merge candidates
+                links_to_exclude = []
+                for link in graph.links:
+                    if (link.from_node_id in nodes_to_merge and
+                            link.to_node_id in nodes_to_merge):
+                        links_to_exclude.append(link)
+
+                combined_mol = self._reconstruct_fragment_with_links(
+                    nodes_to_merge, graph, links_to_exclude)
+                if not combined_mol:
+                    continue
+
+                # Count external connections for merged fragment
+                all_neighbors = set()
+                for nid in nodes_to_merge:
+                    if nid in graph.nodes:
+                        for nbr_id, _ in graph.get_neighbors(nid):
+                            if nbr_id not in nodes_to_merge:
+                                all_neighbors.add(nbr_id)
+                num_connections = len(all_neighbors)
+
+                # Try exact match first, then stereo-agnostic
+                monomer = matcher.find_exact_match(combined_mol, num_connections)
+                if not monomer:
+                    combined_smiles = Chem.MolToSmiles(combined_mol, canonical=True)
+                    monomer = matcher.monomer_library.find_monomer_by_fragment_smiles_no_stereo(
+                        combined_smiles, num_connections)
+
+                if monomer:
+                    new_node_id = min(nodes_to_merge)
+                    new_node = FragmentNode(new_node_id, combined_mol)
+                    new_node.monomer = monomer
+                    self._merge_nodes_in_graph(graph, nodes_to_merge, new_node)
+                    had_changes = True
+                    break  # Restart from outer loop
+
+            if had_changes:
+                break
+
+        return had_changes
+
 # ============================================================================
 # Content from: helm_generator.py
 # ============================================================================
@@ -879,6 +1176,7 @@ class HELMGenerator:
     Supports:
     - Linear peptides
     - Cyclic peptides
+    - Multi-chain structures (BILN peptides)
     - Disulfide bridges
     - Custom linkages
     """
@@ -896,6 +1194,12 @@ class HELMGenerator:
         """
         Generate HELM notation from a FragmentGraph.
         
+        Supports multi-chain structures (BILN peptides):
+        - Detects all cycles (rings) using SSSR-like algorithm
+        - Each cycle becomes a separate PEPTIDE chain
+        - R1-R2 connections define backbone within each chain
+        - R3 connections link chains together
+        
         Args:
             graph: FragmentGraph containing matched monomers and their connections
         
@@ -905,6 +1209,30 @@ class HELMGenerator:
         if len(graph) == 0:
             return ""
         
+        # Find all cycles in the graph (each cycle will be a separate PEPTIDE chain)
+        cycles = graph.find_all_cycles()
+        
+        # Decision: Use multi-chain HELM only if:
+        # 1. Multiple cycles exist (BILN-style structure), OR
+        # 2. There are standalone nodes not in any cycle (attached fragments)
+        
+        if not cycles:
+            # No cycles - simple linear peptide
+            return self._generate_simple_helm(graph)
+        
+        if len(cycles) == 1:
+            # Single cycle (with or without standalone branch nodes like 'ac')
+            # _generate_simple_helm handles branches correctly with proper R-group detection
+            return self._generate_simple_helm(graph)
+
+        # Multi-chain structure detected (multiple cycles)
+        return self._generate_multi_chain_helm(graph, cycles)
+    
+    def _generate_simple_helm(self, graph: FragmentGraph) -> str:
+        """
+        Generate HELM for simple linear or single-cycle peptides.
+        This is the original implementation for backward compatibility.
+        """
         # Get ordered sequence of monomers (backbone)
         ordered_nodes_raw = graph.get_ordered_nodes()
         
@@ -912,31 +1240,14 @@ class HELMGenerator:
         is_cyclic = graph.is_cyclic()
         
         # Filter backbone: nodes that are part of R1-R2 chain are backbone
-        # Nodes connected only via R3 (side chain) are branches
-        # 
-        # Logic: A node at position 1 is a branch if:
-        # - It has no R1 (N-terminus) - meaning it's a cap like 'ac' that only has R2
-        # - It only has 1 peptide connection (to the real backbone)
-        # 
-        # Example: [ac].K in cyclic peptide
-        # - 'ac' has only R2, no R1 → it's a cap
-        # - 'ac' connects to K's R3 (side chain), not K's R1 (backbone)
-        # - So 'ac' should be PEPTIDE2, not part of PEPTIDE1
-        
+        # Nodes lacking R1 (like 'ac' acetyl cap) are branches regardless of position
         backbone_nodes = []
-        for i, node in enumerate(ordered_nodes_raw):
+        for node in ordered_nodes_raw:
             is_branch = False
-            
-            if i == 0 and len(ordered_nodes_raw) > 1 and node.monomer:
-                # Check if this first node lacks R1 (N-terminus)
-                # If it has no R1, it's a cap that should be a branch
+            if node.monomer and len(ordered_nodes_raw) > 1:
                 has_r1 = 'R1' in node.monomer.r_groups
-                
-                if not has_r1:
-                    # This is an N-terminal cap (like 'ac') at position 1
-                    # It should be a branch, not part of the main backbone
+                if not has_r1 and not node.monomer.is_unknown:
                     is_branch = True
-            
             if not is_branch:
                 backbone_nodes.append(node)
         
@@ -948,21 +1259,16 @@ class HELMGenerator:
         branch_nodes = [(node_id, node) for node_id, node in graph.nodes.items() 
                        if node_id not in ordered_node_ids]
         
-        # Generate sequence notation
-        if is_cyclic:
-            # Cyclic: wrap multi-letter monomers in brackets, single-letter ones stay as-is
-            formatted_symbols = [f"[{symbol}]" if len(symbol) > 1 else symbol for symbol in sequence_symbols]
-            sequence = ".".join(formatted_symbols)
-        else:
-            # Linear: no brackets
-            sequence = ".".join(sequence_symbols)
+        # Generate sequence notation — always bracket multi-char symbols (HELM spec requirement,
+        # also needed for inline SMILES like [*:1]NC(CC(=O)O)C(=O)[*:2])
+        formatted_symbols = [f"[{symbol}]" if len(symbol) > 1 else symbol for symbol in sequence_symbols]
+        sequence = ".".join(formatted_symbols)
         
         # Collect non-sequential connections (disulfide bridges, cyclic bonds, etc.)
         connections = []
         
         if is_cyclic:
             # Find the actual cyclic peptide bond (last residue connects back to beginning)
-            # This handles cases where N-terminal caps (like 'ac') are at position 1
             last_id = ordered_nodes[-1].id
             first_few_ids = [ordered_nodes[i].id for i in range(min(3, len(ordered_nodes)))]
             
@@ -1012,14 +1318,14 @@ class HELMGenerator:
                 branch_chain_name = f"PEPTIDE{branch_idx}"
                 branch_symbol = branch_node.monomer.symbol if branch_node.monomer else f"X{branch_node_id}"
                 
-                # Format branch chain (single monomer, so no dots needed)
-                if is_cyclic and len(branch_symbol) > 1:
+                # Format branch chain (single monomer)
+                # In cyclic peptides, always use brackets for consistency with reference HELM
+                if is_cyclic:
                     branch_chains.append(f"{branch_chain_name}{{[{branch_symbol}]}}")
                 else:
                     branch_chains.append(f"{branch_chain_name}{{{branch_symbol}}}")
                 
                 # Find which backbone node this branch connects to
-                # Look for links connecting this branch to the main backbone
                 for link in graph.links:
                     backbone_node_id = None
                     if link.from_node_id == branch_node_id and link.to_node_id in ordered_node_ids:
@@ -1032,7 +1338,6 @@ class HELMGenerator:
                         backbone_pos = next((i + 1 for i, n in enumerate(ordered_nodes) if n.id == backbone_node_id), None)
                         if backbone_pos:
                             # Determine which R-group the branch uses
-                            # If branch has R1, connect to R1; if only R2, connect to R2
                             branch_r_group = "R1"
                             if branch_node.monomer:
                                 if 'R1' in branch_node.monomer.r_groups:
@@ -1048,6 +1353,114 @@ class HELMGenerator:
         all_chains = [f"PEPTIDE1{{{sequence}}}"] + branch_chains
         helm_chains = "|".join(all_chains)
         
+        if connections:
+            connection_str = "|".join(connections)
+            helm = f"{helm_chains}${connection_str}$$$V2.0"
+        else:
+            helm = f"{helm_chains}$$$$V2.0"
+        
+        return helm
+    
+    def _generate_multi_chain_helm(self, graph: FragmentGraph, cycles: list) -> str:
+        """
+        Generate HELM for multi-chain structures (BILN peptides).
+        
+        Strategy:
+        1. Each cycle becomes a separate PEPTIDE chain
+        2. Nodes not in cycles become additional chains
+        3. R3 connections between chains are added as cross-links
+        """
+        # Identify which nodes belong to which cycles
+        nodes_in_cycles = set()
+        for cycle in cycles:
+            nodes_in_cycles.update(cycle)
+        
+        # Find standalone nodes (not in any cycle)
+        standalone_nodes = [nid for nid in graph.nodes.keys() if nid not in nodes_in_cycles]
+        
+        # Build PEPTIDE chains
+        chains = []
+        chain_node_map = {}  # Maps node_id -> (chain_idx, position_in_chain)
+        
+        # Add cyclic chains
+        for cycle_idx, cycle in enumerate(cycles, start=1):
+            chain_name = f"PEPTIDE{cycle_idx}"
+            # Create sequence from cycle nodes
+            sequence_symbols = []
+            for pos, node_id in enumerate(cycle):
+                node = graph.nodes[node_id]
+                symbol = node.monomer.symbol if node.monomer else f"X{node_id}"
+                sequence_symbols.append(symbol)
+                chain_node_map[node_id] = (cycle_idx, pos + 1)  # 1-indexed position
+            
+            # Format with brackets for multi-letter symbols
+            formatted = [f"[{s}]" if len(s) > 1 else s for s in sequence_symbols]
+            sequence = ".".join(formatted)
+            chains.append(f"{chain_name}{{{sequence}}}")
+        
+        # Add standalone chains (linear fragments not in cycles)
+        next_chain_idx = len(cycles) + 1
+        for node_id in standalone_nodes:
+            chain_name = f"PEPTIDE{next_chain_idx}"
+            node = graph.nodes[node_id]
+            symbol = node.monomer.symbol if node.monomer else f"X{node_id}"
+            chains.append(f"{chain_name}{{{symbol}}}")
+            chain_node_map[node_id] = (next_chain_idx, 1)
+            next_chain_idx += 1
+        
+        # Build connections
+        connections = []
+        
+        # Add cyclic connections (R1-R2 within each cycle)
+        for cycle_idx, cycle in enumerate(cycles, start=1):
+            if len(cycle) >= 3:
+                # Connect last to first
+                chain_name = f"PEPTIDE{cycle_idx}"
+                last_pos = len(cycle)
+                connections.append(f"{chain_name},{chain_name},{last_pos}:R2-1:R1")
+        
+        # Add inter-chain connections (R3 links) and disulfide bridges
+        processed_links = set()
+        for link in graph.links:
+            link_key = tuple(sorted([link.from_node_id, link.to_node_id]))
+            if link_key in processed_links:
+                continue
+            
+            from_chain_info = chain_node_map.get(link.from_node_id)
+            to_chain_info = chain_node_map.get(link.to_node_id)
+            
+            if not from_chain_info or not to_chain_info:
+                continue
+            
+            from_chain, from_pos = from_chain_info
+            to_chain, to_pos = to_chain_info
+            
+            # Skip intra-cycle backbone peptide bonds (already handled by R1-R2 connection)
+            if from_chain == to_chain and link.linkage_type == LinkageType.PEPTIDE:
+                # Check if this is a sequential bond within the cycle
+                cycle = cycles[from_chain - 1] if from_chain <= len(cycles) else []
+                # Sequential bonds: adjacent positions or last-to-first
+                if abs(from_pos - to_pos) == 1 or (from_pos == 1 and to_pos == len(cycle)) or (to_pos == 1 and from_pos == len(cycle)):
+                    processed_links.add(link_key)
+                    continue
+            
+            # Add cross-chain connections or intra-chain disulfide bridges
+            if link.linkage_type == LinkageType.DISULFIDE:
+                # Disulfide uses R3 (side chain cysteine)
+                r_group = "R3"
+            elif link.linkage_type == LinkageType.PEPTIDE:
+                # Cross-chain peptide bond (side chain R3 connection)
+                r_group = "R3"
+            else:
+                r_group = "R3"
+            
+            from_chain_name = f"PEPTIDE{from_chain}"
+            to_chain_name = f"PEPTIDE{to_chain}"
+            connections.append(f"{from_chain_name},{to_chain_name},{from_pos}:{r_group}-{to_pos}:{r_group}")
+            processed_links.add(link_key)
+        
+        # Generate final HELM
+        helm_chains = "|".join(chains)
         if connections:
             connection_str = "|".join(connections)
             helm = f"{helm_chains}${connection_str}$$$V2.0"
@@ -1094,23 +1507,34 @@ def remove_stereochemistry_from_smiles(smiles: str) -> str:
     """
     Remove stereochemistry markers from SMILES string.
     Converts [C@@H], [C@H] to C, etc.
-    
+
     This is used for matching when input molecules don't have stereochemistry defined.
+    Only strips brackets from SMILES organic subset atoms (B,C,N,O,P,S,F,Cl,Br,I).
+    Atoms like Se, Te, etc. must keep their brackets to remain valid SMILES.
     """
     if not smiles:
         return smiles
-    
+
+    # SMILES organic subset: atoms that can appear without brackets
+    organic_subset = {'B', 'C', 'N', 'O', 'P', 'S', 'F', 'Cl', 'Br', 'I'}
+
     # Remove @ symbols (stereochemistry markers)
-    # Pattern: [@]+ inside brackets
     smiles_no_stereo = re.sub(r'(@+)', '', smiles)
-    
-    # Also remove H when it's explicit in brackets like [C@@H] -> [C] -> C
-    # But we need to be careful not to remove H from [H] or CH3
-    # After removing @, we might have [CH] which should become C
-    smiles_no_stereo = re.sub(r'\[([A-Z][a-z]?)H\]', r'\1', smiles_no_stereo)
-    # Handle [C] -> C (single atoms in brackets with no other info)
-    smiles_no_stereo = re.sub(r'\[([A-Z][a-z]?)\]', r'\1', smiles_no_stereo)
-    
+
+    # Remove explicit H and brackets only for organic subset atoms
+    # [C@@H] -> [CH] -> C, but [SeH] must stay as [SeH]
+    def _simplify_bracket(match):
+        atom = match.group(1)  # e.g. 'C', 'Se', 'N'
+        has_h = match.group(2)  # 'H' or ''
+        if atom in organic_subset:
+            return atom  # Strip brackets (and H) for organic subset
+        elif has_h:
+            return f'[{atom}H]'  # Keep brackets and H for non-organic atoms
+        else:
+            return f'[{atom}]'  # Keep brackets for non-organic atoms
+
+    smiles_no_stereo = re.sub(r'\[([A-Z][a-z]?)(H?)\]', _simplify_bracket, smiles_no_stereo)
+
     return smiles_no_stereo
 
 class MonomerData:
@@ -1122,6 +1546,7 @@ class MonomerData:
         self.r_groups = {}  # R-group label -> cap SMILES
         self.r_group_count = 0
         self.capped_smiles_cache = {}  # Cache: frozenset of removed R-groups -> canonical SMILES
+        self.is_unknown = False  # True for unmatched fragments with inline SMILES
 
     def __repr__(self):
         return f"Monomer({self.symbol}: {self.name}, R-groups: {self.r_group_count})"
@@ -1234,12 +1659,28 @@ class MonomerData:
             return ""
 
 
+def _canonicalize_no_stereo(smiles: str) -> str:
+    """
+    Remove stereochemistry and re-canonicalize through RDKit.
+    This ensures consistent canonical SMILES regardless of how the molecule was constructed.
+    String-only stereo removal can produce non-canonical SMILES.
+    """
+    no_stereo = remove_stereochemistry_from_smiles(smiles)
+    mol = Chem.MolFromSmiles(no_stereo)
+    if mol:
+        return Chem.MolToSmiles(mol, canonical=True)
+    return no_stereo  # Fallback to string version if parse fails
+
+
 class MonomerLibrary:
     def __init__(self):
         self.monomers = {}
         self.smiles_to_monomer = {}
         self.name_to_monomer = {}
         self.symbol_to_monomer = {}
+        # Hash indices for O(1) matching (built after loading)
+        self._smiles_index = {}         # canonical_smiles -> MonomerData
+        self._smiles_no_stereo_index = {}  # stereo-free_smiles -> MonomerData
 
     def load_from_helm_json(self, json_path: str) -> None:
         if not os.path.exists(json_path):
@@ -1265,6 +1706,9 @@ class MonomerLibrary:
                     successful += 1
             except Exception:
                 continue
+
+        # Build hash indices for O(1) matching
+        self._build_smiles_indices()
 
     def _parse_monomer(self, monomer_dict: dict):
         # IMPORTANT: Only load PEPTIDE monomers (amino acids)
@@ -1313,101 +1757,85 @@ class MonomerLibrary:
 
         return monomer
 
+    def _build_smiles_indices(self):
+        """
+        Pre-compute all possible capped SMILES for every monomer and build
+        hash indices for O(1) lookup. Called once after loading all monomers.
+
+        For each monomer with M R-groups, generates capped SMILES for all
+        possible R-group removal combinations (up to 2^M - 1 entries, typically 1-7).
+
+        Deduplicates monomers with identical SMILES+R-groups to avoid redundant
+        capping computations (important for large libraries with variants).
+        """
+        self._smiles_index = {}
+        self._smiles_no_stereo_index = {}
+
+        # Dedup: group monomers by (smiles, r_group_keys) to avoid recomputing
+        # identical capped forms for monomers with the same structure
+        seen_structures = {}  # (smiles, r_group_frozenset) -> list of capped entries
+
+        for symbol, monomer in self.monomers.items():
+            if monomer.r_group_count == 0:
+                continue
+
+            r_group_labels = list(monomer.r_groups.keys())
+            struct_key = (monomer.smiles, frozenset(monomer.r_groups.items()))
+
+            if struct_key in seen_structures:
+                # Reuse cached capped SMILES from an identical monomer
+                for capped_smiles, n_removed in seen_structures[struct_key]:
+                    key = (capped_smiles, n_removed)
+                    if key not in self._smiles_index:
+                        self._smiles_index[key] = monomer
+                    ns_canonical = _canonicalize_no_stereo(capped_smiles)
+                    if ns_canonical:
+                        ns_key = (ns_canonical, n_removed)
+                        if ns_key not in self._smiles_no_stereo_index:
+                            self._smiles_no_stereo_index[ns_key] = monomer
+                continue
+
+            # First time seeing this structure — compute capped SMILES
+            cached_entries = []
+
+            for n_removed in range(1, monomer.r_group_count + 1):
+                for removed_combo in combinations(r_group_labels, n_removed):
+                    removed_set = frozenset(removed_combo)
+                    capped_smiles = monomer.get_capped_smiles_for_removed_rgroups(removed_set)
+
+                    if not capped_smiles:
+                        continue
+
+                    cached_entries.append((capped_smiles, n_removed))
+
+                    key = (capped_smiles, n_removed)
+                    if key not in self._smiles_index:
+                        self._smiles_index[key] = monomer
+
+                    ns_canonical = _canonicalize_no_stereo(capped_smiles)
+                    if ns_canonical:
+                        ns_key = (ns_canonical, n_removed)
+                        if ns_key not in self._smiles_no_stereo_index:
+                            self._smiles_no_stereo_index[ns_key] = monomer
+
+            seen_structures[struct_key] = cached_entries
+
     def find_monomer_by_fragment_smiles(self, fragment_smiles: str, num_connections: int):
         """
-        Find monomer by matching fragment SMILES with on-demand R-group removal.
-        
-        Args:
-            fragment_smiles: Canonical SMILES of the fragment  
-            num_connections: Number of connections this fragment has in the graph
-        
-        Returns:
-            MonomerData if match found, None otherwise
-            
-        Logic:
-            - Fragment with N connections → N R-groups were removed during fragmentation
-            - For monomer with M R-groups, try all C(M,N) combinations of which N R-groups were removed
-            - Generate SMILES for each combination on-demand (with caching)
-            
-        Example:
-            Fragment has 1 connection, monomer has R1, R2:
-            - Try removing R1 → check if SMILES matches
-            - Try removing R2 → check if SMILES matches
+        Find monomer by matching fragment SMILES. O(1) hash lookup.
         """
-        # Search through all monomers
-        for symbol, monomer in self.monomers.items():
-            # Skip if monomer doesn't have enough R-groups
-            if monomer.r_group_count < num_connections:
-                continue
-            
-            # Generate all combinations of num_connections R-groups that could have been removed
-            r_group_labels = list(monomer.r_groups.keys())
-            
-            # For each combination of R-groups that could have been removed
-            for removed_combo in combinations(r_group_labels, num_connections):
-                removed_set = frozenset(removed_combo)
-                
-                # Generate SMILES with these R-groups removed (lazy, cached)
-                candidate_smiles = monomer.get_capped_smiles_for_removed_rgroups(removed_set)
-                
-                # Check if it matches the fragment (exact match only)
-                if candidate_smiles == fragment_smiles:
-                    return monomer
-        
-        return None
-    
+        return self._smiles_index.get((fragment_smiles, num_connections))
+
     def find_monomer_by_fragment_smiles_no_stereo(self, fragment_smiles: str, num_connections: int):
         """
         Find monomer by matching fragment SMILES WITHOUT stereochemistry.
-        Used only in recovery for handling poor quality input data.
-        
-        Uses molecular graph isomorphism to handle cases where RDKit generates 
-        different canonical SMILES for the same molecule.
-        
-        Args:
-            fragment_smiles: Canonical SMILES of the fragment  
-            num_connections: Number of connections this fragment has in the graph
-        
-        Returns:
-            MonomerData if match found, None otherwise
+        Used in recovery for handling poor quality input data. O(1) hash lookup.
         """
-        # Parse fragment molecule once (without stereochemistry)
-        fragment_no_stereo_smiles = remove_stereochemistry_from_smiles(fragment_smiles)
-        fragment_mol = Chem.MolFromSmiles(fragment_no_stereo_smiles)
-        if not fragment_mol:
+        ns_canonical = _canonicalize_no_stereo(fragment_smiles)
+        if not ns_canonical:
             return None
-        
-        # Search through all monomers
-        for symbol, monomer in self.monomers.items():
-            # Skip if monomer doesn't have enough R-groups
-            if monomer.r_group_count < num_connections:
-                continue
-            
-            # Generate all combinations of num_connections R-groups that could have been removed
-            r_group_labels = list(monomer.r_groups.keys())
-            
-            # For each combination of R-groups that could have been removed
-            for removed_combo in combinations(r_group_labels, num_connections):
-                removed_set = frozenset(removed_combo)
-                
-                # Generate SMILES with these R-groups removed (lazy, cached)
-                candidate_smiles = monomer.get_capped_smiles_for_removed_rgroups(removed_set)
-                
-                # Try string comparison first (fast path)
-                candidate_no_stereo = remove_stereochemistry_from_smiles(candidate_smiles)
-                
-                if candidate_no_stereo == fragment_no_stereo_smiles:
-                    return monomer
-                
-                # If string comparison fails, try molecular graph isomorphism (slower but more robust)
-                # This handles cases where RDKit generates different canonical SMILES for same molecule
-                candidate_mol = Chem.MolFromSmiles(candidate_no_stereo)
-                if candidate_mol and fragment_mol.HasSubstructMatch(candidate_mol) and candidate_mol.HasSubstructMatch(fragment_mol):
-                    # Both molecules are substructures of each other = they're the same
-                    if fragment_mol.GetNumAtoms() == candidate_mol.GetNumAtoms():
-                        return monomer
-        
-        return None
+
+        return self._smiles_no_stereo_index.get((ns_canonical, num_connections))
 
     def find_monomer_by_symbol(self, symbol: str):
         return self.symbol_to_monomer.get(symbol)
@@ -1493,6 +1921,34 @@ class MonomerMatcher:
 from rdkit import Chem
 import os
 import json
+
+def _generate_rgroup_smiles(graph, node_id):
+    """
+    Generate SMILES with R-group markers ([*:1], [*:2], ...) for an unmatched fragment.
+    Uses the uncleaned fragment (with dummy atoms from FragmentOnBonds) stored in the graph.
+    Falls back to plain SMILES from the cleaned mol if uncleaned data isn't available.
+    """
+    # Try to use uncleaned fragment with dummy atoms
+    if hasattr(graph, 'uncleaned_fragments') and node_id < len(graph.uncleaned_fragments):
+        uncleaned = graph.uncleaned_fragments[node_id]
+        try:
+            mol = Chem.RWMol(Chem.Mol(uncleaned))
+            r_num = 1
+            for atom in mol.GetAtoms():
+                if atom.GetAtomicNum() == 0:
+                    atom.SetIsotope(0)
+                    atom.SetAtomMapNum(r_num)
+                    r_num += 1
+            return Chem.MolToSmiles(mol)
+        except Exception:
+            pass
+
+    # Fallback: plain SMILES from cleaned mol (no R-groups)
+    node = graph.nodes.get(node_id)
+    if node and node.mol:
+        return Chem.MolToSmiles(node.mol, canonical=True)
+    return "?"
+
 
 # Global variables for caching
 _MONOMER_LIBRARY = None
@@ -1617,7 +2073,10 @@ def convert_molecules_batch(molecules: list, library_json: str = None, input_typ
             return [(False, "Library loading failed") for _ in molecules]
         
         print(f"Custom library loaded: {len(library.monomers)} monomers")
-        
+
+        # Build hash indices for O(1) matching
+        library._build_smiles_indices()
+
         # Create processor instances for this library
         processor = FragmentProcessor(library)
         matcher = MonomerMatcher(library)
@@ -1672,21 +2131,23 @@ def convert_molecules_batch(molecules: list, library_json: str = None, input_typ
             graph = processor.process_molecule(mol)
             
             # Match each fragment to a monomer using graph topology
-            unknown_count = 0
             for node_id, node in graph.nodes.items():
                 # Count connections for this node
                 neighbors = graph.get_neighbors(node_id)
                 num_connections = len(neighbors)
-                
+
                 # Find matching monomer
                 monomer = matcher.find_exact_match(node.mol, num_connections)
                 if monomer:
                     node.monomer = monomer
                 else:
-                    unknown_count += 1
+                    # Generate inline SMILES with R-group markers for unmatched fragments
                     mock_monomer = MonomerData()
-                    mock_monomer.symbol = f"X{unknown_count}"
-                    mock_monomer.name = f"Unknown_{unknown_count}"
+                    mock_monomer.is_unknown = True
+                    mock_monomer.symbol = _generate_rgroup_smiles(graph, node_id)
+                    mock_monomer.name = "Unknown"
+                    mock_monomer.r_groups = {f'R{j+1}': '' for j in range(num_connections)}
+                    mock_monomer.r_group_count = num_connections
                     node.monomer = mock_monomer
             
             # Try to recover unmatched fragments by merging with neighbors
@@ -1701,7 +2162,14 @@ def convert_molecules_batch(molecules: list, library_json: str = None, input_typ
             stereo_matched = processor.recover_unmatched_with_stereo_agnostic(graph, matcher)
             if stereo_matched > 0:
                 print(f"DEBUG: Stereo-agnostic recovery matched {stereo_matched} additional fragments")
-            
+
+            # Final pass: merge pairs of both-unmatched neighbor fragments
+            # with stereo-agnostic matching (handles split monomers like Phe_4Sdihydroorotamido)
+            for attempt in range(max_recovery_attempts):
+                had_changes = processor.recover_unmatched_by_merging_stereo_agnostic(graph, matcher)
+                if not had_changes:
+                    break
+
             if len(graph.nodes) > 0:
                 helm_notation = helm_generator.generate_helm_from_graph(graph)
                 results.append((True, helm_notation))
@@ -1741,6 +2209,10 @@ def convert_smiles_to_helm(smiles_list: list, library_json: str = None) -> list:
         List of tuples: (success: bool, helm_notation: str)
     """
     return convert_molecules_batch(smiles_list, library_json=library_json, input_type="smiles")
+
+global libraryJSON
+with open(libraryFile) as f:
+    libraryJSON = f.read()
 
 res_helm_list = convert_molecules_batch(molListToProcess, library_json=libraryJSON)
 result_helm = pd.DataFrame(map(lambda x: x[1], res_helm_list), columns=["regenerated sequences"])

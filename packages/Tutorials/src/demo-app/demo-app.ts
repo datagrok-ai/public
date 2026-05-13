@@ -52,34 +52,52 @@ export class DemoView extends DG.ViewBase {
       return;
     const dockNode = dockNodes.filter((node) => node.container.containerElement.classList.contains('document-manager') ||
       node.container.containerElement.getElementsByClassName('document-manager').length > 0)[0];
-    const updateIndicatorRoot = dockNode.container.containerElement.getElementsByClassName('tab-content')[0] as HTMLElement;
+    const activeRoot = grok.shell.v?.root ?? this.currentView?.root;
+    let activeTabContent: HTMLElement | null = null;
+    if (activeRoot) {
+      let el: HTMLElement | null = activeRoot.parentElement;
+      while (el && !el.classList.contains('tab-content'))
+        el = el.parentElement;
+      activeTabContent = el;
+    }
+    const updateIndicatorRoot = (activeTabContent ??
+      dockNode.container.containerElement.getElementsByClassName('tab-content')[0]) as HTMLElement;
 
-    this.currentView?.close();
+    this._closePrevDemoViews();
     this.currentView = null;
 
+    const viewsBefore = new Set<DG.View>(Array.from(grok.shell.views));
+
     if (func.options['isDemoScript'] == 'True') {
+      updateIndicatorRoot.classList.add('demo-app-loading');
       ui.setUpdateIndicator(updateIndicatorRoot, true);
-      const pathElements = viewPath.split('|').map((s) => s.trim());
-      const v = DG.View.create('demo-app-script-view');
-      v.name = pathElements[pathElements.length - 1];
-      v.appendAll([ui.panel([
-        ui.h1(pathElements[pathElements.length - 1]),
-        ui.divText(func.description),
-        ui.bigButton('Start', async () => {
-          try {
-            await func.apply();
-          } catch (e) {
-            console.error(e);
-          } finally {
-            this.tree.rootNode.root.focus();
-          }
-        })
-      ])]);
-      grok.shell.addView(v);
-      this.currentView = v;
-      v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
-      ui.setUpdateIndicator(updateIndicatorRoot, false);
+      try {
+        const pathElements = viewPath.split('|').map((s) => s.trim());
+        const v = DG.View.create('demo-app-script-view');
+        v.name = pathElements[pathElements.length - 1];
+        v.appendAll([ui.panel([
+          ui.h1(pathElements[pathElements.length - 1]),
+          ui.divText(func.description),
+          ui.bigButton('Start', async () => {
+            try {
+              await func.apply();
+            } catch (e) {
+              console.error(e);
+            } finally {
+              this.tree.rootNode.root.focus();
+            }
+          })
+        ])]);
+        grok.shell.addView(v);
+        this.currentView = v;
+        v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
+      } finally {
+        this._tagNewDemoViews(viewsBefore, func.name);
+        ui.setUpdateIndicator(updateIndicatorRoot, false);
+        updateIndicatorRoot.classList.remove('demo-app-loading');
+      }
     } else {
+      updateIndicatorRoot.classList.add('demo-app-loading');
       ui.setUpdateIndicator(updateIndicatorRoot, true);
       const prevAutoShowToolbox = grok.shell.windows.autoShowToolbox;
       grok.shell.windows.autoShowToolbox = false;
@@ -91,15 +109,36 @@ export class DemoView extends DG.ViewBase {
           await grok.data.detectSemanticTypes(grok.shell.tv.dataFrame);
         this._initWindowOptions();
       } finally {
+        this._tagNewDemoViews(viewsBefore, func.name);
         grok.shell.windows.autoShowToolbox = prevAutoShowToolbox;
+        ui.setUpdateIndicator(updateIndicatorRoot, false);
+        updateIndicatorRoot.classList.remove('demo-app-loading');
       }
       this.tree.rootNode.root.focus();
       this._guardTreeFocus();
-      ui.setUpdateIndicator(updateIndicatorRoot, false);
       if (grok.shell.v !== viewBeforeApply) {
         grok.shell.v.name = splitViewPath[splitViewPath.length - 1].trim();
         grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
         this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
+      }
+    }
+  }
+
+  private _closePrevDemoViews(): void {
+    const toClose = Array.from(grok.shell.views).filter((v) => v.temp?.['demoApp']);
+    for (const v of toClose) {
+      try {
+        v.close();
+      } catch (_) {}
+    }
+  }
+
+  private _tagNewDemoViews(viewsBefore: Set<DG.View>, funcName: string): void {
+    for (const v of grok.shell.views) {
+      if (!viewsBefore.has(v)) {
+        try {
+          v.temp['demoApp'] = funcName;
+        } catch (_) {}
       }
     }
   }

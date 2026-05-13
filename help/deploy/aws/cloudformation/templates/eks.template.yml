@@ -1,0 +1,844 @@
+#file: noinspection YAMLIncompatibleTypes
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Datagrok template to deploy all components to AWS EKS with RDS and S3. Installs Datagrok via the Helm chart on the provisioned cluster."
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "EKS configuration"
+        Parameters:
+          - KubernetesVersion
+          - NodeInstanceType
+          - NodeGroupMinSize
+          - NodeGroupMaxSize
+          - NodeGroupDesiredSize
+          - NodeDiskSize
+          - EnableFargate
+      - Label:
+          default: "Database configuration"
+        Parameters:
+          - DBInstanceClass
+          - DBAllocatedStorage
+          - EnableRdsIamAuth
+          - DBSnapshotIdentifier
+      - Label:
+          default: "Client access"
+        Parameters:
+          - InternetSubnetAllow
+          - InternetSubnetAllow2
+          - InternetSubnetAllow3
+      - Label:
+          default: "Helm chart"
+        Parameters:
+          - HelmChartVersion
+          - HelmNamespace
+    ParameterLabels:
+      KubernetesVersion:
+        default: "Kubernetes version"
+      NodeInstanceType:
+        default: "EC2 instance type for EKS nodes"
+      NodeGroupDesiredSize:
+        default: "Desired node count"
+      DBInstanceClass:
+        default: "RDS instance class"
+      DBAllocatedStorage:
+        default: "RDS storage (GiB)"
+      EnableRdsIamAuth:
+        default: "Enable RDS IAM authentication"
+      DBSnapshotIdentifier:
+        default: "DBSnapshotIdentifier: Restore from snapshot"
+      InternetSubnetAllow:
+        default: "InternetSubnetAllow: Allow connect to Datagrok from CIDR"
+      InternetSubnetAllow2:
+        default: "InternetSubnetAllow2: Allow connect to Datagrok from CIDR"
+      InternetSubnetAllow3:
+        default: "InternetSubnetAllow3: Allow connect to Datagrok from CIDR"
+      HelmChartVersion:
+        default: "Helm chart version (defaults to Datagrok version)"
+      HelmNamespace:
+        default: "Kubernetes namespace for the Datagrok release"
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W8001
+        - W8003
+
+Parameters:
+  # --- EKS ---
+  KubernetesVersion:
+    Type: String
+    Default: '1.31'
+    AllowedValues: ['1.30', '1.31', '1.32']
+    Description: EKS control-plane Kubernetes version.
+  NodeInstanceType:
+    Type: String
+    Default: t3.large
+    Description: EC2 instance type for EKS managed node group. Minimum t3.large for Jupyter Kernel Gateway workloads.
+  NodeGroupMinSize:
+    Type: Number
+    Default: 2
+    MinValue: 1
+    MaxValue: 20
+  NodeGroupMaxSize:
+    Type: Number
+    Default: 4
+    MinValue: 1
+    MaxValue: 20
+  NodeGroupDesiredSize:
+    Type: Number
+    Default: 2
+    MinValue: 1
+    MaxValue: 20
+  NodeDiskSize:
+    Type: Number
+    Default: 50
+    Description: Root volume size in GiB for each EKS node.
+  EnableFargate:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: "Create a Fargate profile for the Datagrok namespace. CoreDNS and AWS LB Controller still run on EC2 nodes."
+
+  # --- RDS ---
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.large
+    Description: RDS instance class.
+  DBAllocatedStorage:
+    Type: Number
+    Default: 50
+    MinValue: 20
+    Description: RDS storage in GiB (gp3).
+  EnableRdsIamAuth:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Enable RDS IAM database authentication. Datagrok connects passwordlessly via IRSA when true.
+  DBSnapshotIdentifier:
+    Type: String
+    Default: ''
+    Description: "DBSnapshotIdentifier: Restore RDS from an existing snapshot. Leave empty for a fresh database."
+
+  # --- Client access (shared with ECS templates for drop-in compatibility) ---
+  InternetSubnetAllow:
+    Type: String
+    Default: '0.0.0.0/0'
+    AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
+    Description: CIDR range allowed to reach Datagrok from the internet.
+  InternetSubnetAllow2:
+    Type: String
+    Default: '0.0.0.0/0'
+    AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
+    Description: Additional CIDR range allowed to reach Datagrok from the internet.
+  InternetSubnetAllow3:
+    Type: String
+    Default: '0.0.0.0/0'
+    AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
+    Description: Additional CIDR range allowed to reach Datagrok from the internet.
+
+  # --- Helm ---
+  HelmChartVersion:
+    Type: String
+    Default: ''
+    Description: >
+      Datagrok Helm chart version published at oci://registry-1.docker.io/datagrok/datagrok
+      (tags suffixed with `-helm`, e.g. `1.26.5-helm`). Pass the base version only; the
+      `-helm` suffix is appended automatically by the install step. Leave empty to use
+      the same value as DatagrokVersion (chart releases mirror the app release).
+  HelmNamespace:
+    Type: String
+    Default: datagrok
+    Description: Kubernetes namespace for the Datagrok Helm release.
+  EnableRegistryProxy:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: "Deploy grok_registry_proxy as a Docker registry backed by ECR with Datagrok JWT authentication. On EKS the proxy is deployed via the Helm chart; this parameter only controls the optional Route53 record."
+
+Conditions:
+  RestoreFromSnapshot:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: DBSnapshotIdentifier
+          - ''
+  RdsIamAuthEnabled:
+    Fn::Equals:
+      - Ref: EnableRdsIamAuth
+      - 'true'
+  FargateEnabled:
+    Fn::Equals:
+      - Ref: EnableFargate
+      - 'true'
+  UseChartVersionOverride:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: HelmChartVersion
+          - ''
+  RegistryProxyEnabled:
+    Fn::Equals:
+      - Ref: EnableRegistryProxy
+      - 'true'
+
+Resources:
+
+  # ==================== Shared secrets (drop-in compatible with ECS) ====================
+  #
+  # Logical IDs match the ECS template so replacing an ECS stack's template with
+  # this EKS template preserves Secrets Manager entries, the RDS instance, and the
+  # S3 bucket.
+
+  DatagrokAdminPassword:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-datagrok-admin"
+          - postfix:
+              Ref: Postfix
+      Description: Datagrok admin user first-login password
+      GenerateSecretString:
+        SecretStringTemplate: '{"user": "admin"}'
+        GenerateStringKey: password
+        PasswordLength: 24
+        ExcludePunctuation: true
+        RequireEachIncludedType: true
+
+  DatagrokDbAdminUser:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-rds-superuser"
+          - postfix:
+              Ref: Postfix
+      Description: RDS PostgreSQL superuser password
+      GenerateSecretString:
+        SecretStringTemplate: '{"user": "superuser"}'
+        GenerateStringKey: password
+        PasswordLength: 32
+        ExcludePunctuation: true
+        RequireEachIncludedType: true
+
+  RabbitMQPassword:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-rabbitmq"
+          - postfix:
+              Ref: Postfix
+      Description: RabbitMQ password shared by datlas and grok_spawner
+      GenerateSecretString:
+        SecretStringTemplate: '{"user": "datagrok"}'
+        GenerateStringKey: password
+        PasswordLength: 24
+        ExcludePunctuation: true
+
+  SpawnerApiKey:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-spawner-api-key"
+          - postfix:
+              Ref: Postfix
+      Description: API key used by datlas to call grok_spawner
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: key
+        PasswordLength: 32
+        ExcludePunctuation: true
+
+  GrokPipeApiKey:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-grok-pipe-api-key"
+          - postfix:
+              Ref: Postfix
+      Description: API key used to authenticate with grok_pipe
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: key
+        PasswordLength: 32
+        ExcludePunctuation: true
+
+  # ==================== IAM: EKS cluster & node group ====================
+
+  EKSClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-cluster-role"
+          - postfix:
+              Ref: Postfix
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSVPCResourceController
+
+  EKSNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-node-role"
+          - postfix:
+              Ref: Postfix
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  # ==================== Security groups ====================
+  #
+  # DatagrokSecurityGroup: the EKS cluster additional SG. Name kept identical to
+  #   the ECS template so ingress rules that reference it from other resources
+  #   (DatagrokDBSecurityGroup) continue to resolve across an ECS→EKS upgrade.
+  # DatagrokDBSecurityGroup: the RDS SG. Logical ID + naming identical to ECS.
+
+  DatagrokSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:
+        Fn::Sub: "${AWS::StackName} Datagrok cluster security group"
+      VpcId:
+        Ref: DatagrokVPC
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub:
+              - "${AWS::StackName}${postfix}-cluster-sg"
+              - postfix:
+                  Ref: Postfix
+        - Key: datagrok.component
+          Value: datagrok
+
+  DatagrokDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription:
+        Fn::Sub: "${AWS::StackName} Datagrok DatagrokDB Subnet Group"
+      DBSubnetGroupName:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-rds-subnet"
+          - postfix:
+              Ref: Postfix
+      SubnetIds:
+        - Ref: DatagrokDataSubnet1
+        - Ref: DatagrokDataSubnet2
+      Tags:
+        - Key: datagrok.component
+          Value: rds
+
+  DatagrokDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:
+        Fn::Sub: "${AWS::StackName} Datagrok DB Security Group"
+      VpcId:
+        Ref: DatagrokVPC
+      SecurityGroupEgress: []
+      SecurityGroupIngress:
+        - Description:
+            Fn::Sub: "${AWS::StackName} Allow PostgreSQL from EKS nodes"
+          FromPort: 5432
+          ToPort: 5432
+          IpProtocol: TCP
+          SourceSecurityGroupId:
+            Ref: DatagrokSecurityGroup
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub:
+              - "${AWS::StackName}${postfix}-rds"
+              - postfix:
+                  Ref: Postfix
+        - Key: datagrok.component
+          Value: datagrok
+
+  # ==================== RDS (drop-in compatible with ECS) ====================
+
+  DatagrokDB:
+    Type: AWS::RDS::DBInstance
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Snapshot
+    Properties:
+      DBSnapshotIdentifier:
+        Fn::If:
+          - RestoreFromSnapshot
+          - Ref: DBSnapshotIdentifier
+          - Ref: "AWS::NoValue"
+      AllocatedStorage:
+        Ref: DBAllocatedStorage
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: true
+      BackupRetentionPeriod: 7
+      DBInstanceClass:
+        Ref: DBInstanceClass
+      DBInstanceIdentifier:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-rds"
+          - postfix:
+              Ref: Postfix
+      DBName:
+        Fn::If:
+          - RestoreFromSnapshot
+          - Ref: "AWS::NoValue"
+          - datagrok
+      DBSubnetGroupName:
+        Ref: DatagrokDBSubnetGroup
+      DeleteAutomatedBackups: true
+      DeletionProtection: false
+      Engine: postgres
+      EngineVersion: '17'
+      MasterUsername:
+        Fn::If:
+          - RestoreFromSnapshot
+          - Ref: "AWS::NoValue"
+          - superuser
+      MasterUserPassword:
+        Fn::If:
+          - RestoreFromSnapshot
+          - Ref: "AWS::NoValue"
+          - Fn::Sub:
+              - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
+              - secret:
+                  Ref: DatagrokDbAdminUser
+      MultiAZ: false
+      Port: '5432'
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      StorageType: gp3
+      VPCSecurityGroups:
+        - Ref: DatagrokDBSecurityGroup
+      EnableIAMDatabaseAuthentication:
+        Fn::If:
+          - RdsIamAuthEnabled
+          - true
+          - false
+      Tags:
+        - Key: datagrok.component
+          Value: datagrok
+
+  # ==================== S3 (drop-in compatible with ECS) ====================
+
+  DatagrokS3:
+    Type: AWS::S3::Bucket
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-s3-${uuid}"
+          - postfix:
+              Ref: Postfix
+            uuid:
+              Fn::Select:
+                - 2
+                - Fn::Split:
+                    - "/"
+                    - Ref: AWS::StackId
+      ObjectLockEnabled: false
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: datagrok.component
+          Value: datagrok
+
+  DatagrokS3Policy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: DatagrokS3
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Principal: "*"
+            Action: "*"
+            Effect: Deny
+            Resource:
+              - Fn::GetAtt:
+                  - DatagrokS3
+                  - Arn
+              - Fn::Sub:
+                  - "${bucket}/*"
+                  - bucket:
+                      Fn::GetAtt:
+                        - DatagrokS3
+                        - Arn
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+  # ==================== EKS cluster & node group ====================
+
+  EKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}"
+          - postfix:
+              Ref: Postfix
+      Version:
+        Ref: KubernetesVersion
+      RoleArn:
+        Fn::GetAtt:
+          - EKSClusterRole
+          - Arn
+      ResourcesVpcConfig:
+        SubnetIds:
+          - Ref: DatagrokPrivateSubnet1
+          - Ref: DatagrokPrivateSubnet2
+          - Ref: DatagrokPublicSubnet1
+          - Ref: DatagrokPublicSubnet2
+        SecurityGroupIds:
+          - Ref: DatagrokSecurityGroup
+        EndpointPublicAccess: true
+        EndpointPrivateAccess: true
+      AccessConfig:
+        AuthenticationMode: API_AND_CONFIG_MAP
+
+  EKSNodeGroup:
+    Type: AWS::EKS::Nodegroup
+    DependsOn: EKSCluster
+    Properties:
+      ClusterName:
+        Ref: EKSCluster
+      NodegroupName:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-nodes"
+          - postfix:
+              Ref: Postfix
+      NodeRole:
+        Fn::GetAtt:
+          - EKSNodeRole
+          - Arn
+      Subnets:
+        - Ref: DatagrokPrivateSubnet1
+        - Ref: DatagrokPrivateSubnet2
+      InstanceTypes:
+        - Ref: NodeInstanceType
+      ScalingConfig:
+        MinSize:
+          Ref: NodeGroupMinSize
+        MaxSize:
+          Ref: NodeGroupMaxSize
+        DesiredSize:
+          Ref: NodeGroupDesiredSize
+      AmiType: AL2023_x86_64_STANDARD
+      DiskSize:
+        Ref: NodeDiskSize
+      Tags:
+        Name:
+          Fn::Sub:
+            - "${AWS::StackName}${postfix}-node"
+            - postfix:
+                Ref: Postfix
+
+  # ==================== IAM: IRSA for Datagrok service account ====================
+  #
+  # The Helm chart's service account assumes this role via IRSA. It grants access
+  # to the S3 bucket and (when RDS IAM auth is enabled) rds-db:connect on the DB
+  # users that Datagrok will create at bootstrap time.
+
+  DatagrokClusterOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    DependsOn: EKSCluster
+    Properties:
+      Url:
+        Fn::GetAtt:
+          - EKSCluster
+          - OpenIdConnectIssuerUrl
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 9e99a48a9960b14926bb7f3b02e22da2b0ab7280
+
+  DatagrokServiceAccountRole:
+    Type: AWS::IAM::Role
+    DependsOn: DatagrokClusterOIDCProvider
+    Properties:
+      RoleName:
+        Fn::Sub:
+          - "${AWS::StackName}${postfix}-sa-role"
+          - postfix:
+              Ref: Postfix
+      # The trust policy references the OIDC issuer URL in both the Federated
+      # principal ARN and the aud/sub condition keys. IAM policy keys cannot be
+      # built with Fn::Sub at YAML parse time (YAML mappings require static
+      # keys), so we render the whole document as a JSON string via Fn::Sub.
+      AssumeRolePolicyDocument:
+        Fn::Sub:
+          - |
+            {
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": "arn:aws:iam::${AWS::AccountId}:oidc-provider/${issuer}"
+                },
+                "Action": "sts:AssumeRoleWithWebIdentity",
+                "Condition": {
+                  "StringEquals": {
+                    "${issuer}:aud": "sts.amazonaws.com",
+                    "${issuer}:sub": "system:serviceaccount:${namespace}:datagrok"
+                  }
+                }
+              }]
+            }
+          - issuer:
+              Fn::Select:
+                - 1
+                - Fn::Split:
+                    - "//"
+                    - Fn::GetAtt:
+                        - EKSCluster
+                        - OpenIdConnectIssuerUrl
+            namespace:
+              Ref: HelmNamespace
+      Policies:
+        - PolicyName: DatagrokS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource:
+                  Fn::GetAtt:
+                    - DatagrokS3
+                    - Arn
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  Fn::Sub:
+                    - "${bucket}/*"
+                    - bucket:
+                        Fn::GetAtt:
+                          - DatagrokS3
+                          - Arn
+        - Fn::If:
+            - RdsIamAuthEnabled
+            - PolicyName: DatagrokRdsIamAccess
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Action: rds-db:connect
+                    Resource:
+                      - Fn::Sub:
+                          - "arn:aws:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:${dbi}/datagrok_admin"
+                          - dbi:
+                              Fn::GetAtt:
+                                - DatagrokDB
+                                - DbiResourceId
+                      - Fn::Sub:
+                          - "arn:aws:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:${dbi}/datagrok"
+                          - dbi:
+                              Fn::GetAtt:
+                                - DatagrokDB
+                                - DbiResourceId
+                      - Fn::Sub:
+                          - "arn:aws:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:${dbi}/datagrok_reader"
+                          - dbi:
+                              Fn::GetAtt:
+                                - DatagrokDB
+                                - DbiResourceId
+            - Ref: "AWS::NoValue"
+
+  # ==================== Helm install (AWS LB Controller + Datagrok) ====================
+  #
+  # Requires the one-time activation of AWSQS::Kubernetes::Helm in the target
+  # region. Customers see the activation link in the help page.
+  #
+  # NOTE (Phase 2): The resources below are scaffolding for the seamless install.
+  # They reference DatagrokChartEffectiveVersion and the service-version params so
+  # the final --set values carry through. Do not remove; Phase 2 wiring depends on
+  # these logical IDs.
+
+  DatagrokChartEffectiveVersion:
+    Type: AWS::CloudFormation::WaitConditionHandle
+    Metadata:
+      chart_version:
+        Fn::Sub:
+          - "${base}-helm"
+          - base:
+              Fn::If:
+                - UseChartVersionOverride
+                - Ref: HelmChartVersion
+                - Ref: DatagrokVersion
+
+  # ==================== ALB discovery (seamless r53/dns) ====================
+  #
+  # DatagrokLoadBalancer is a CloudFormation custom resource that discovers the
+  # ALB created by the AWS Load Balancer Controller after the Helm release is
+  # installed. It exposes DNSName and CanonicalHostedZoneID as attributes so the
+  # sibling r53.template.yml / dns.template.yml need no changes.
+
+  DatagrokLoadBalancerLookupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName:
+            Fn::Sub: "${AWS::StackName}-alb-lookup"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
+              - Effect: Allow
+                Action:
+                  - elasticloadbalancing:DescribeLoadBalancers
+                  - elasticloadbalancing:DescribeTags
+                Resource: "*"
+
+  DatagrokLoadBalancerLookupFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Discovers the ALB provisioned by AWS LB Controller for the Datagrok ingress
+      Handler: index.handler
+      Runtime: python3.12
+      Timeout: 900
+      MemorySize: 256
+      Role:
+        Fn::GetAtt:
+          - DatagrokLoadBalancerLookupRole
+          - Arn
+      Code:
+        ZipFile: |
+          import time
+          import boto3
+          import cfnresponse
+
+          def handler(event, context):
+              data = {}
+              try:
+                  if event['RequestType'] == 'Delete':
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+                      return
+                  cluster = event['ResourceProperties']['ClusterName']
+                  namespace = event['ResourceProperties']['Namespace']
+                  elb = boto3.client('elbv2')
+                  # LBC tags ALBs with kubernetes.io/cluster/<cluster>=owned and
+                  # ingress.k8s.aws/stack=<namespace>/<ingress-name>.
+                  deadline = time.time() + 840
+                  while time.time() < deadline:
+                      paginator = elb.get_paginator('describe_load_balancers')
+                      for page in paginator.paginate():
+                          for lb in page['LoadBalancers']:
+                              if lb['Type'] != 'application':
+                                  continue
+                              tags_resp = elb.describe_tags(ResourceArns=[lb['LoadBalancerArn']])
+                              tags = {t['Key']: t['Value'] for t in tags_resp['TagDescriptions'][0]['Tags']}
+                              cluster_tag = tags.get(f'elbv2.k8s.aws/cluster')
+                              stack_tag = tags.get('ingress.k8s.aws/stack', '')
+                              if cluster_tag == cluster and stack_tag.startswith(namespace + '/'):
+                                  data['DNSName'] = lb['DNSName']
+                                  data['CanonicalHostedZoneID'] = lb['CanonicalHostedZoneId']
+                                  cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+                                  return
+                      time.sleep(15)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': 'ALB not found within timeout'})
+              except Exception as e:
+                  print(type(e).__name__, e)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
+
+  DatagrokLoadBalancerLookupLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub:
+          - "/aws/lambda/${fn}"
+          - fn:
+              Ref: DatagrokLoadBalancerLookupFunction
+      RetentionInDays: 7
+
+  # Phase 2: depend on the Helm install resources so this only fires after the
+  # ingress is created and LBC has provisioned the ALB.
+  DatagrokLoadBalancer:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn:
+      - EKSNodeGroup
+      - DatagrokLoadBalancerLookupLogGroup
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - DatagrokLoadBalancerLookupFunction
+          - Arn
+      ClusterName:
+        Ref: EKSCluster
+      Namespace:
+        Ref: HelmNamespace
+
+Outputs:
+  DatagrokClusterName:
+    Description: EKS cluster name
+    Value:
+      Ref: EKSCluster
+  DatagrokS3BucketName:
+    Description: S3 bucket for Datagrok persistent storage
+    Value:
+      Ref: DatagrokS3
+  DatagrokRdsEndpoint:
+    Description: RDS endpoint
+    Value:
+      Fn::GetAtt:
+        - DatagrokDB
+        - Endpoint.Address
+  DatagrokServiceAccountRoleArn:
+    Description: IRSA role ARN for the Datagrok Helm service account
+    Value:
+      Fn::GetAtt:
+        - DatagrokServiceAccountRole
+        - Arn
+  DatagrokAdminPasswordSecret:
+    Description: AWS Secrets Manager URL for the Datagrok admin first-login password
+    Value:
+      Fn::Sub: "https://console.aws.amazon.com/secretsmanager/secret?name=${DatagrokAdminPassword}&region=${AWS::Region}"

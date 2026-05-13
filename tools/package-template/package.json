@@ -1,6 +1,6 @@
 {
   "name": "#{PACKAGE_NAME_LOWERCASE}",
-  "friendlyName": "#{PACKAGE_NAME}",
+  "friendlyName": "#{PACKAGE_FRIENDLY_NAME}",
   "version": "0.0.1",
   "description": "#{PACKAGE_NAME} package",
   "dependencies": {

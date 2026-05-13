@@ -38,7 +38,6 @@ export const PT_UI_USE_CHIRALITY = 'Chirality engine';
 export const PT_UI_HIGHLIGHT_MONOMERS = 'Highlight monomers';
 export const PT_UI_DIALOG_CONVERSION = 'PolyTool Conversion';
 export const PT_UI_DIALOG_UNRULE = 'PolyTool Unrule';
-export const PT_CHEM_UI_DIALOG_ENUMERATION = 'PolyTool Chem Enumeration';
 export const PT_HELM_UI_DIALOG_ENUMERATION = 'PolyTool Helm Enumeration';
 export const PT_UI_RULES_USED = 'Rules used';
 

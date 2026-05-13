@@ -124,9 +124,11 @@ export class TabControl extends DartWidget {
     this.dart = dart;
   }
 
-  /** Creates a new TabControl */
-  static create(vertical: boolean = false): TabControl {
-    return toJs(api.grok_TabControl(vertical));
+  /** Creates a new TabControl.
+   * When [key] is provided, the currently selected pane is persisted across sessions
+   * in localStorage. Without a key, state is not remembered. */
+  static create(vertical: boolean = false, key: string | null = null): TabControl {
+    return toJs(api.grok_TabControl(vertical, key));
   }
 
   /** Visual root */

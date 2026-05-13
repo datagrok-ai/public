@@ -1,6 +1,6 @@
 ---
 title: "AWS Terraform"
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 The deployment consists of several Docker containers, a [database](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing metadata,

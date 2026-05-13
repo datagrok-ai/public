@@ -112,6 +112,11 @@ export class SubstructureFilter extends DG.Filter {
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
 
   onActiveChanged(active: boolean): void {
+    // Guard: during layout apply, onActiveChanged(false) fires before detach() while the
+    // filter's root has already been removed from the DOM. A user checkbox toggle happens
+    // while the root is still attached. TODO: replace with a reliable user-vs-teardown signal.
+    if (!document.body.contains(this.root))
+      return;
     grok.events.fireCustomEvent(FILTER_ENABLED_SYNC_EVENT, {
       colName: this.columnName,
       tableName: this.tableName,

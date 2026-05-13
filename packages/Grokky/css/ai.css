@@ -7,7 +7,6 @@
 .ai-execute-plan {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   line-height: 1.2;
   background: var(--surface);
   border-radius: 8px;
@@ -15,11 +14,17 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* flexbox `gap` is Chrome 84+ — spacing is done with sibling margins so it works in Chrome 50 too */
+.ai-execute-plan > * + * {
+  margin-top: 10px;
+}
+
 .ai-execute-result {
   margin-top: 10px;
   background: var(--surface-variant);
   padding: 8px 12px;
   border-radius: 8px;
+  -webkit-user-select: text !important;
   user-select: text !important;
 }
 
@@ -33,15 +38,21 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+}
+
+.d4-ai-generation-panel > * + * {
+  margin-top: 8px;
 }
 
 .d4-ai-generation-panel .d4-ai-panel-input-area {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   padding: 6px;
   padding-bottom: 16px;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-input-area > * + * {
+  margin-top: 4px;
 }
 
 .d4-ai-generation-panel .d4-ai-panel-input-area select {
@@ -52,12 +63,24 @@
 
 .d4-ai-generation-panel .d4-ai-panel-input-controls {
   align-items: center;
-  gap: 4px;
 }
 
-.d4-ai-generation-panel .d4-ai-panel-run-controls i {
-  margin-left: 8px;
+/* Bottom controls row: uniform icon size, comfortable spacing, subtle hover background. */
+.d4-ai-generation-panel .d4-ai-panel-controls-container i {
+  width: 18px;
+  height: 18px;
+  font-size: 14px;
+  margin: 0 6px;
+  border-radius: 4px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-controls-container i:hover {
+  background-color: var(--warm-grey-1);
 }
 
 .d4-ai-generation-panel textarea.d4-ai-input-textarea {
@@ -80,7 +103,32 @@
   overflow: scroll;
   width: 100%;
   flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-output-area > *:first-child {
   margin-top: auto;
+}
+
+.d4-ai-generation-panel.d4-ai-inline-mode {
+  height: auto;
+}
+
+.d4-ai-generation-panel.d4-ai-inline-mode .d4-ai-panel-output-area {
+  flex: none;
+  min-height: 120px;
+  overflow: visible;
+}
+
+.d4-ai-generation-panel.d4-ai-inline-mode .d4-ai-panel-output-area > *:first-child {
+  margin-top: 0;
+}
+
+.grokky-ai-search-tab-host {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .d4-ai-messages-accordion-pane pre {
@@ -90,8 +138,15 @@
 .d4-ai-generation-panel .d4-ai-user-prompt-container {
   width: 100%;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   padding-left: 35px;
+}
+
+.d4-ai-handled-natively-icon {
+  flex: 0 0 auto;
+  margin-right: 6px;
+  color: var(--green-2);
 }
 
 .d4-ai-generation-panel .d4-ai-user-prompt-container .d4-ai-user-prompt-divtext {
@@ -99,7 +154,9 @@
   border-radius: 8px;
   background-color: var(--steel-1);
   text-align: right;
-  padding: 8px;
+  padding: 4px;
+  margin: 4px 0;
+  -webkit-user-select: text !important;
   user-select: text !important;
 }
 
@@ -113,10 +170,13 @@
   padding: 6px;
   margin-bottom: 4px;
   padding-bottom: 0px;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .d4-ai-generation-panel .d4-ai-assistant-response-container pre {
   background: aliceblue;
+  -webkit-filter: drop-shadow(0px 0px 4px var(--steel-2));
   filter: drop-shadow(0px 0px 4px var(--steel-2));
   padding: 6px;
   border-radius: 8px;
@@ -145,8 +205,11 @@
 
 .d4-ai-generation-panel .d4-ai-panel-header-right-buttons {
   display: flex;
-  gap: 8px;
   align-items: center;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-header-right-buttons > * + * {
+  margin-left: 8px;
 }
 
 .d4-ai-generation-panel .d4-ai-assistant-response-container pre::-webkit-scrollbar-thumb {
@@ -167,6 +230,67 @@
 .d4-ai-messages-accordion-pane .d4-ai-assistant-response-container {
   width: 100%;
   overflow: auto;
+}
+
+/* Per-turn response block: a hover-only "minimize" icon on the left collapses it to one line. */
+.d4-ai-generation-panel .d4-ai-response-block {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.d4-ai-response-block > .d4-ai-messages-accordion-pane {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.d4-ai-response-minimize-icon {
+  flex: 0 0 auto;
+  width: 14px;
+  margin-top: 8px;
+  margin-right: 4px;
+  cursor: pointer;
+  color: var(--steel-3);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.d4-ai-response-block:hover .d4-ai-response-minimize-icon,
+.d4-ai-response-block-collapsed .d4-ai-response-minimize-icon {
+  opacity: 0.65;
+}
+
+.d4-ai-response-minimize-icon:hover {
+  opacity: 1;
+}
+
+.d4-ai-response-block-collapsed > .d4-ai-messages-accordion-pane {
+  max-height: 2.2em;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+
+.d4-ai-response-block-collapsed .d4-ai-panel-feedback-div,
+.d4-ai-response-block-collapsed .d4-ai-copy-code-button {
+  display: none !important;
+}
+
+/* Copy / thumbs-up / thumbs-down under each AI message — revealed only while the message is hovered. */
+.d4-ai-generation-panel .d4-ai-panel-feedback-div {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.d4-ai-generation-panel .d4-ai-assistant-response-container:hover .d4-ai-panel-feedback-div {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-feedback-div > * + * {
+  margin-left: 8px;
 }
 
 .d4-ai-copy-code-button {
@@ -202,8 +326,11 @@
 .grokky-entity-cards {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   margin: 8px 0;
+}
+
+.grokky-entity-cards > * + * {
+  margin-top: 4px;
 }
 
 /* Raw / terminal mode */
@@ -240,6 +367,10 @@
   color: #666;
 }
 
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-panel-controls-container i:hover {
+  background-color: #2a2a2a;
+}
+
 .d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-assistant-response-container {
   background: transparent;
   border-radius: 0;
@@ -250,6 +381,7 @@
 .d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-assistant-response-container pre {
   background: transparent;
   color: #e0e0e0;
+  -webkit-filter: none;
   filter: none;
   border: none;
   padding: 2px 0;
@@ -289,4 +421,31 @@
 .d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-panel-output-area::-webkit-scrollbar-thumb {
   background: #333;
   border-radius: 3px;
+}
+
+/* Loader spinner + (voice mode only) the "Say "cancel" to stop" caption beside it. */
+.d4-ai-loader {
+  align-items: center;
+}
+
+.d4-ai-voice-cancel-hint {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--text-color-light);
+}
+
+.grokky-stream-activity {
+  border-left: 2px solid var(--grey-2);
+  padding-left: 12px;
+}
+
+.grokky-stream-activity-line {
+  color: var(--text-color-light);
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 3px 0;
+}
+
+.grokky-stream .d4-ai-copy-code-button {
+  display: flex;
 }

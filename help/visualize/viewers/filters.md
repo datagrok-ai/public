@@ -293,9 +293,9 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 | Show Histogram | boolean |  |
 | Show Min Max | boolean |  |
 | Show Search Box | boolean |  |
-| Show Mouse Over Row | boolean | Shows the current mouse-over row in the table using a grey vertical bar in the corresponding row. |
-| Show Current Row | boolean | Shows the current row in the table using a green vertical bar in the corresponding row. |
-| Show Mouse Over Group Row | boolean | Shows the mouse over group proportion in the filter (similar to how selection proportion is shown). |
+| Show Mouse Over Row | boolean | shows the current mouse over row in the table using grey vertical bar in corresponding row |
+| Show Current Row | boolean | shows the current row in the table using green vertical bar in corresponding row |
+| Show Mouse Over Group Row | boolean | shouws the mouse over group porportion in the filter (similar to how selection proportion is shown). |
 | Show Bool Combined Filter | boolean | Show a filter that represents all boolean columns in the table. |
 | Column Names | list |  |
 | Filters | list |  |

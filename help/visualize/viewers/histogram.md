@@ -48,7 +48,7 @@ Distribution lines help visualize and compare the distribution patterns across d
 |----------|------|-------------|
 | **Data** | | |
 | Show Filtered Out Rows | boolean | Whether the filtered out rows should be shown with the semi-transparent color See also *Filtered Out Color* |
-| Filtering Enabled | boolean | Allows you to filter the table using the range slider on the bottom. |
+| Filtering Enabled | boolean | Allows to filter table using the range slider on the bottom. |
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **Value** | | |
@@ -65,7 +65,7 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Normalize Values | boolean | Whether the values should be normalized when multiple histograms are shown. If true, you are comparing distributions; if false, you are comparing absolute values. Requires *Split Column Name* to be set. |
 | Split Stack | boolean | If true, split are shown as stacked bins |
 | Spline Tension | number | Spline tension in case multiple histograms are shown. Requires *Split Column Name* to be set. |
-| Show Markers | boolean | Whether markers should be drawn when multiple histograms are shown. Requires *Split Column Name* to be set. |
+| Show Markers | boolean | Whether markers should be drown when multiple histograms are shown. Requires *Split Column Name* to be set. |
 | **Misc** | | |
 | Show Y Axis | boolean |  |
 | Show Distribution Lines | boolean | Shows distribution lines for each stack or spline category in the histogram (see also **Split** and **Split Stack**). |
@@ -114,11 +114,19 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Row Indicator Size | number |  |
 | Back Color | number |  |
 | Axis Font | string |  |
+| Formula Font | string |  |
+| Annotation Font | string |  |
 | Filtered Bins Color | number |  |
 | Selected Bins Color | number |  |
 | Values Color | number |  |
 | Filtered Out Color | number |  |
 | Controls Font | string | Viewer controls elements font. |
+| **Lines** | | |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| **Annotation regions** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
 | **Description** | | |
 | Show Title | boolean |  |
 

@@ -64,6 +64,10 @@ export namespace funcs {
     return await grok.functions.call('Compute2:MockPipeline2', { params });
   }
 
+  export async function stressTestPipeline(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:StressTestPipeline', { params });
+  }
+
   export async function testAdd2(a: number , b: number ): Promise<number> {
     return await grok.functions.call('Compute2:TestAdd2', { a, b });
   }

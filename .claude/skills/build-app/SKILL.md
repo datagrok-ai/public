@@ -73,25 +73,33 @@ static async myAppTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void> {
 
 ### 4. Build the main view
 
-Most apps start with a custom view or a table view:
+Two valid shapes — pick one:
+
+**A. Return the view (preferred)** — declare `//output: view result` and return it. The host places it (main view, preview tile, etc.). Never call `grok.shell.addView` / `addPreview` / set `grok.shell.v` inside such a function — that forces shell placement and breaks preview tiles. `await` the real view instead of returning a proxy and adding the real one later.
 
 ```typescript
-// Custom view
-const view = DG.View.create();
-view.name = 'My App';
-view.root.appendChild(ui.divV([
-  ui.h1('Welcome'),
-  ui.divText('App content here')
-]));
-grok.shell.addView(view);
-
-// Table view with data
-const df = await grok.data.demo.demog(100);
-const tv = grok.shell.addTableView(df);
-tv.addViewer('Scatter plot');
+//name: My App
+//output: view result
+//meta.role: app
+export function myApp(): DG.ViewBase {
+  const view = DG.View.create();
+  view.root.appendChild(ui.divV([ui.h1('Welcome')]));
+  return view;
+}
 ```
 
-Use `ui.splitH` / `ui.splitV` for layout composition.
+**B. Return void and place views yourself** — for apps that orchestrate multiple shell placements (table views, dialogs). Then `grok.shell.addView(...)` / `addTableView(...)` is required.
+
+```typescript
+//name: My App
+//meta.role: app
+export function myApp(): void {
+  const tv = grok.shell.addTableView(await grok.data.demo.demog(100));
+  tv.addViewer('Scatter plot');
+}
+```
+
+Use `ui.splitH` / `ui.splitV` for layout.
 
 ### 5. App URLs and launching
 
@@ -133,3 +141,4 @@ grok publish dev
 - Follow Datagrok coding conventions: no excessive comments, no curly brackets for one-line if/for, catch/else-if on new line.
 - Suggest `AppTreeBrowser` for apps that need multi-view navigation.
 - Remind the user to configure server keys via `grok config` if they haven't published before.
+- In `//meta.role: app` + `//output: view result` functions, `grok.shell.addView` / `addPreview` / `grok.shell.v =` calls are bugs — strip them and return the view directly.

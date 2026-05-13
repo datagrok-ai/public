@@ -11,12 +11,12 @@ export function createInitialSatistics(clinicalCaseNode: DG.TreeViewGroup, confi
   const statsObj: {[key: string]: string}[] = [];
   for (const config of configs) {
     const item: {[key: string]: any} = {};
-    for (const prop of Object.keys(config)) {
+    for (const prop of Object.keys(config) as (keyof StudyConfig)[]) {
       if (prop !== 'other') {
         if (prop === 'startDate' || prop === 'endDate')
           item[prop] = (config[prop] as Dayjs).toString();
         else
-          item[prop] = (config as any)[prop] ?? '';
+          item[prop] = config[prop] ?? '';
       }
     }
     statsObj.push(item);

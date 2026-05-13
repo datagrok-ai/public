@@ -228,6 +228,14 @@ call functions, browse files, or hit any API endpoint. Reads config from `~/.gro
 (same as `grok publish`). Use `--host <alias|url>` to target a specific server.
 
 ```bash
+# Create / update entities (from JSON file — supports both create and update)
+grok s users save --json user.json
+grok s groups save --json group.json --save-relations
+
+# Share entities
+grok s shares add "JohnDoe:MyConnection" Chemists,Admins --access Edit
+grok s shares list <entity-uuid>
+
 # List / inspect entities
 grok s users list
 grok s packages list --filter "MyPlugin"       # check if a plugin is published
@@ -235,6 +243,9 @@ grok s connections list --output json
 grok s functions list --filter "Chem"          # find registered functions
 grok s connections get <id>
 grok s connections delete <id>
+grok s connections save --json conn.json --save-credentials   # create or update
+grok s connections test "JohnDoe:MyConnection"                # test by id or name
+grok s connections test --json conn.json                      # test a connection defined in JSON
 
 # Call a server function
 grok s functions run 'Chem:smilesToMw("ccc")'
@@ -243,6 +254,16 @@ grok s functions run 'Pkg:fn({a:5,b:22})'
 # Browse file storage
 grok s files list "System:AppData" -r          # list files recursively
 grok s files list "System:AppData/MyPlugin"
+
+# Manage group membership
+grok s groups add-members Admins alice bob              # add two users (non-admin)
+grok s groups add-members Admins alice --admin          # add as admin (flips if already member)
+grok s groups add-members Admins alice --user           # force personal-group lookup
+grok s groups remove-members Admins alice bob           # remove members
+grok s groups list-members Admins                       # all members
+grok s groups list-members Admins --admin               # admin members only
+grok s groups list-members Admins --no-admin            # non-admin members only
+grok s groups list-memberships alice                    # groups alice belongs to
 
 # Hit any API endpoint directly
 grok s raw GET /api/users/current

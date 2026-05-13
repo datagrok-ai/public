@@ -2,6 +2,20 @@
 
 Source: [Test functions for optimization — Wikipedia](https://en.wikipedia.org/wiki/Test_functions_for_optimization)
 
+## Benchmark results using these functions
+
+These 15 functions are used by two complementary benchmarks:
+
+- [**unconstrained-benchmarks.md**](./unconstrained-benchmarks.md) — one starting
+  point per problem, direct head-to-head comparison of all 5 optimizers with default
+  hyperparameters.
+- [**multistart-benchmarks.md**](./multistart-benchmarks.md) — **three** starting
+  points per problem (baseline + adversarial perturbation + near-optimum). Exposes
+  x₀-sensitivity and local-trap failure modes that a single-start comparison hides —
+  e.g. L-BFGS finding the global Rastrigin minimum in one iteration from a
+  half-integer x₀ but failing after a 0.1 perturbation. Recommended when evaluating
+  an optimizer for **multimodal** objectives.
+
 ---
 
 ## 1. Sphere

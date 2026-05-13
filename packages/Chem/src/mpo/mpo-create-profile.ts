@@ -12,6 +12,7 @@ import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/ut
 
 import {MpoContextPanel} from './mpo-context-panel';
 import {
+  MpoMethod,
   MpoPathMode,
   MPO_PROFILE_DELETED_EVENT,
   updateMpoPath,
@@ -19,11 +20,10 @@ import {
   createDefaultProfile,
   createProfileForDf,
   mergeProfileWithDf,
+  isEdaPackageInstalled,
+  UNTITLED_PROFILE,
 } from './utils';
 import {MpoProfileManager} from './mpo-profile-manager';
-
-const METHOD_MANUAL = 'Manual';
-const METHOD_PROBABILISTIC = 'Data-driven';
 
 const FIELD_DESCRIPTIONS: Record<string, string> = {
   'Method': 'Manual desirability curve editing or data-driven MPO trained from labeled data',
@@ -61,6 +61,7 @@ export class MpoProfileCreateView {
   private originalProfile: DesirabilityProfile;
   private profileModified = false;
   private updatingLayout = false;
+  private suppressInputHandlers = false;
   private stashedManualProfile: { profile: DesirabilityProfile; modified: boolean } | null = null;
 
   private pMpoDockedItems: {
@@ -110,7 +111,7 @@ export class MpoProfileCreateView {
   }
 
   private get displayName(): string {
-    return this.profile.name || 'Untitled Profile';
+    return this.profile.name || UNTITLED_PROFILE;
   }
 
   setupBreadcrumbs(): void {
@@ -118,7 +119,7 @@ export class MpoProfileCreateView {
   }
 
   private get isManualMode(): boolean {
-    return !this.showMethod || this.methodInput?.value !== METHOD_PROBABILISTIC;
+    return !this.showMethod || this.methodInput?.value !== MpoMethod.DataDriven;
   }
 
   // --- Construction ---
@@ -135,8 +136,8 @@ export class MpoProfileCreateView {
   private initControls(showMethod: boolean) {
     if (showMethod) {
       this.methodInput = ui.input.choice('Method', {
-        items: [METHOD_MANUAL, METHOD_PROBABILISTIC],
-        value: METHOD_MANUAL,
+        items: [MpoMethod.Manual, MpoMethod.DataDriven],
+        value: MpoMethod.Manual,
         nullable: false,
         onValueChanged: () => this.onMethodChanged(),
       });
@@ -179,7 +180,22 @@ export class MpoProfileCreateView {
     };
 
     this.headerEl = editable(ui.h1(this.displayName), () => {
-      this.profile.name = this.textOf(this.headerEl);
+      const oldName = this.profile.name;
+      const newName = this.textOf(this.headerEl);
+
+      if (!newName || oldName === newName) {
+        this.profile.name = newName;
+        return;
+      }
+
+      if (this.df) {
+        const oldCol = this.df.col(oldName);
+        const newColExists = this.df.col(newName);
+        if (oldCol && !newColExists)
+          oldCol.name = newName;
+      }
+
+      this.profile.name = newName;
     }, true);
     this.headerEl.classList.add('chem-profile-header');
 
@@ -202,9 +218,11 @@ export class MpoProfileCreateView {
   // --- Event handlers ---
 
   private async onMethodChanged(): Promise<void> {
+    if (this.suppressInputHandlers)
+      return;
     this.aggregationField.classList.toggle('chem-mpo-d-none', !this.isManualMode);
 
-    if (this.methodInput!.value === METHOD_PROBABILISTIC) {
+    if (this.methodInput!.value === MpoMethod.DataDriven) {
       this.stashedManualProfile = {
         profile: structuredClone(this.profile),
         modified: this.profileModified,
@@ -216,7 +234,7 @@ export class MpoProfileCreateView {
         return;
       }
       this.tableView.dataFrame = this.df;
-      await this.runProbabilisticMpo();
+      await this.runDataDrivenMpo();
       return;
     }
 
@@ -232,16 +250,30 @@ export class MpoProfileCreateView {
     }
 
     const keepChanges = this.profileModified ? await this.showKeepChangesDialog() : false;
+    if (keepChanges === null) {
+      this.suppressInputHandlers = true;
+      this.methodInput!.value = MpoMethod.DataDriven;
+      this.suppressInputHandlers = false;
+      return;
+    }
     this.profile = this.resolveProfileForTransition(keepChanges);
     this.prepareManualLayout();
     await this.attachLayout();
   }
 
   private async onDatasetChanged(df: DG.DataFrame | null): Promise<void> {
-    this.df = df;
+    if (this.suppressInputHandlers)
+      return;
     const keepChanges = this.showMethod && this.isManualMode && this.profileModified ?
       await this.showKeepChangesDialog() : false;
+    if (keepChanges === null) {
+      this.suppressInputHandlers = true;
+      this.datasetInput!.value = this.df;
+      this.suppressInputHandlers = false;
+      return;
+    }
 
+    this.df = df;
     this.closePMpoPanels();
     const indicatorRoot = this.tableViewVisible ? this.tableView.root : this.view.root;
     this.setLoading(indicatorRoot, true, 'Switching dataset...');
@@ -269,11 +301,12 @@ export class MpoProfileCreateView {
       if (!this.isManualMode) {
         this.tableView.dataFrame = this.df;
         this.clearPreviousLayout();
-        await this.runProbabilisticMpo();
+        await this.runDataDrivenMpo();
         return;
       }
 
-      if (this.showMethod) this.profile = this.resolveProfileForTransition(keepChanges);
+      if (this.showMethod)
+        this.profile = this.resolveProfileForTransition(keepChanges);
       this.setTableViewVisible(false);
       await this.attachLayout();
     } finally {
@@ -427,13 +460,18 @@ export class MpoProfileCreateView {
     this.profileViewContainer.append(errorDiv);
   }
 
-  // --- pMPO mode ---
+  // --- Data-driven MPO mode ---
 
-  private async runProbabilisticMpo(): Promise<void> {
+  private async runDataDrivenMpo(): Promise<void> {
     if (!this.df)
       return;
 
     this.setLoading(this.view.root, true, 'Running data-driven MPO...');
+
+    if (!isEdaPackageInstalled()) {
+      this.setLoading(this.view.root, false);
+      return;
+    }
 
     try {
       this.closePMpoPanels();
@@ -441,7 +479,7 @@ export class MpoProfileCreateView {
       const pMpoAppItems = await grok.functions.call('EDA:getPmpoAppItems', {view: this.tableView});
       if (!pMpoAppItems) {
         this.setTableViewVisible(false);
-        this.showError('pMPO is not applicable for this dataset.');
+        this.showError('Data-driven MPO is not applicable for this dataset.');
         return;
       }
 
@@ -450,7 +488,7 @@ export class MpoProfileCreateView {
       const dockMng = this.tableView.dockManager;
       const gridNode = dockMng.findNode(this.tableView.grid.root);
       if (!gridNode)
-        throw new Error('Failed to train pMPO: missing a grid in the table view.');
+        throw new Error('Failed to train data-driven MPO: missing a grid in the table view.');
 
       const controlsNode = dockMng.dock(pMpoAppItems.controls.form, DG.DOCK_TYPE.LEFT, gridNode, undefined, 0.1);
       const statGridNode = dockMng.dock(pMpoAppItems.statsGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
@@ -513,6 +551,8 @@ export class MpoProfileCreateView {
       this.profileModified = false;
       this.stashedManualProfile = null;
       const profile = this.df ? createProfileForDf(this.df) : createDefaultProfile();
+      profile.name = this.profile.name;
+      profile.description = this.profile.description;
       this.originalProfile = structuredClone(profile);
       return profile;
     }
@@ -523,10 +563,10 @@ export class MpoProfileCreateView {
     return this.profile;
   }
 
-  private showKeepChangesDialog(): Promise<boolean> {
+  private showKeepChangesDialog(): Promise<boolean | null> {
     return new Promise((resolve) => {
       let resolved = false;
-      const safeResolve = (value: boolean) => {
+      const safeResolve = (value: boolean | null) => {
         if (resolved)
           return;
         resolved = true;
@@ -537,7 +577,7 @@ export class MpoProfileCreateView {
       const dlg = ui.dialog('Keep profile changes?')
         .addButton('Keep', () => safeResolve(true))
         .addButton('Discard', () => safeResolve(false))
-        .onCancel(() => safeResolve(false))
+        .onCancel(() => safeResolve(null))
         .show({center: true});
     });
   }

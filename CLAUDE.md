@@ -57,6 +57,28 @@ The `grok` CLI manages the full package lifecycle: `grok create`, `grok publish`
 
 Server config is stored in `~/.grok/config.yaml`.
 
+### Managing a running Datagrok server — use `grok s`
+
+For any task that creates, updates, shares, or inspects entities on a running server
+(users, groups, connections, queries, scripts, packages, files, function calls, raw
+API), use `grok s` — **not** Playwright / Selenium / hand-written HTTP. It hits the
+public REST API directly, is idempotent, and scripts cleanly from the shell.
+
+Quick orientation:
+
+```bash
+grok s users list                                    # list entities
+grok s groups get Admins --output json               # introspect the JSON shape
+grok s users save --json user.json                   # create / update from JSON
+grok s groups add-members Chemists alice bob         # membership (idempotent)
+grok s shares add "Me:MyConn" Chemists --access Edit # sharing
+grok s functions run 'Chem:smilesToMw("CCO")'        # call a function
+grok s raw GET /api/users/current                    # any endpoint
+```
+
+Full reference with JSON shapes, batch operations, and scripting patterns:
+[`tools/GROK_S.md`](tools/GROK_S.md).
+
 ## Code Style
 
 - 2-space indentation

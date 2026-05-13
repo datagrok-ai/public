@@ -11,6 +11,7 @@ import {IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {useUrlSearchParams} from '@vueuse/core';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {compositorOverlay} from '../directives/compositor-overlay';
 
 const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -50,6 +51,7 @@ export const RFVApp = Vue.defineComponent({
     const currentCallState = Vue.ref(
       {isRunning: false, isOutputOutdated: true, isRunnable: false, runError: undefined, pendingDependencies: []},
     );
+    const overlayActive = Vue.ref(false);
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
 
     const func = Vue.shallowRef<DG.Func | undefined>(undefined);
@@ -78,7 +80,7 @@ export const RFVApp = Vue.defineComponent({
 
     Vue.watch(currentFuncCall, async (fc) => {
       const isOutputOutdated = JSON.parse(fc.options[OUTPUT_OUTDATED_PATH] ?? 'true');
-      currentCallState.value.isOutputOutdated = isOutputOutdated;
+      currentCallState.value = {...currentCallState.value, isOutputOutdated};
       searchParams.id = fc.author ? fc.id : undefined;
 
       const title = fc?.options?.['title'];
@@ -105,17 +107,26 @@ export const RFVApp = Vue.defineComponent({
     }, {immediate: true});
 
 
+    // Replace the object on every transition so RichFunctionView's
+    // by-reference watch on props.callState fires (it can't deep-watch).
+    const updateCallState = (patch: Partial<typeof currentCallState.value>) => {
+      currentCallState.value = {...currentCallState.value, ...patch};
+    };
+
     const run = async () => {
       if (!currentFuncCall.value) return;
-      currentCallState.value.isRunning = true;
+      overlayActive.value = true;
+      updateCallState({isRunning: true});
       try {
         await currentFuncCall.value.call(undefined, undefined, {processed: true, report: false});
         currentFuncCall.value.started = dayjs();
 
-        currentCallState.value.isOutputOutdated = false;
         currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'false';
+        updateCallState({isOutputOutdated: false, isRunning: false});
       } finally {
-        currentCallState.value.isRunning = false;
+        if (currentCallState.value.isRunning)
+          updateCallState({isRunning: false});
+        overlayActive.value = false;
       }
     };
 
@@ -123,8 +134,8 @@ export const RFVApp = Vue.defineComponent({
       if (props.view && !props.view.isPinned) {
         props.view.pin();
       }
-      currentCallState.value.isOutputOutdated = true;
       currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'true';
+      updateCallState({isOutputOutdated: true});
       searchParams.id = undefined;
       if (isRunningOnInput.value)
         runRequests$.next(true);
@@ -164,7 +175,7 @@ export const RFVApp = Vue.defineComponent({
     }
 
     return () => (
-      <div class='w-full h-full flex'>
+      Vue.withDirectives(<div class='w-full h-full flex'>
         <RibbonPanel view={currentView.value}>
           {!currentCallState.value.isOutputOutdated &&
             <IconFA
@@ -188,7 +199,7 @@ export const RFVApp = Vue.defineComponent({
           showRunButton={!isRunningOnInput.value}
           view={currentView.value}
         />
-      </div>
+      </div>, [[compositorOverlay, overlayActive.value]])
     );
   },
 });

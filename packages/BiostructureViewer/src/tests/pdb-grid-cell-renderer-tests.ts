@@ -27,6 +27,7 @@ category('pdbGridCellRenderer', () => {
   test('pdbDataCsv', async () => {
     const pdbDataDf: DG.DataFrame =
       await grok.dapi.files.readCsv('System:AppData/BiostructureViewer/pdb_data.csv');
+    await pdbDataDf.meta.detectSemanticTypes();
     const pdbDataView: DG.TableView = grok.shell.addTableView(pdbDataDf);
 
     const grid: DG.Grid = pdbDataView.grid;
@@ -40,8 +41,10 @@ category('pdbGridCellRenderer', () => {
     const back = PdbGridCellRendererBack.getOrCreate(gridCell);
 
     await delay(0);
-    await testEvent(back.onRendered, () => {}, () => {
+    let tim: any = null;
+    await testEvent(back.onRendered, () => { tim && clearInterval(tim); }, () => {
       grid.invalidate();
+      tim = setInterval(() => grid.invalidate(), 500);
     }, 20000 /* prev tests cause timeouts on NGL. "Too many active WebGL contexts" */);
   });
 });

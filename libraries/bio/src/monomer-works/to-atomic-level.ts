@@ -7,17 +7,18 @@ import wu from 'wu';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {HELM_FIELDS, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
+import {HELM_FIELDS, HELM_MONOMER_TYPE, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
 import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
 import {IMonomerLib, IMonomerLibBase, Monomer} from '../types/monomer-library';
 import {getFormattedMonomerLib, keepPrecision} from './to-atomic-level-utils';
 import {seqToMolFileWorker} from './seq-to-molfile';
 import {Atoms, Bonds, hasMolGraph, ITypedArray, LibMonomerKey, MolGraph,
-  MonomerMetadata, MonomerMolGraphMap, NumberWrapper, Point, setMolGraph} from './types';
+  MonomerMetadata, MonomerMolGraphMap, NucleotideRole, NumberWrapper, Point, setMolGraph} from './types';
 import {ISeqHelper, ToAtomicLevelRes} from '../utils/seq-helper';
 import {errInfo} from '../utils/err-info';
 import {alphabetToPolymerType} from './utils';
 import {HelmType, ISeqMonomer, PolymerType} from '../helm/types';
+import {HelmTypes, PolymerTypes} from '../helm/consts';
 import {monomerWorksConsts as C} from './consts';
 
 // todo: verify that all functions have return types
@@ -40,8 +41,16 @@ export async function _toAtomicLevel(
   let srcCol: DG.Column<string> = seqCol;
   const seqUh = seqHelper.getSeqHandler(seqCol);
 
-  // convert 'helm' to 'separator' units
-  if (seqUh.notation !== NOTATION.SEPARATOR && seqUh.notation !== NOTATION.BILN) {
+  // Decide whether we must keep HELM as-is for nucleotide assembly. The
+  // alphabet is unreliable here: a HELM RNA column with non-canonical bases
+  // can detect as ALPHABET.UN. Inspect the splitter's per-monomer polymer
+  // types instead — every monomer in every (non-empty) row must be RNA.
+  const keepHelmTriples = seqUh.notation === NOTATION.HELM &&
+    isAllHelmRna(seqCol, seqHelper);
+
+  // convert 'helm' to 'separator' units (peptide HELM, anything non-RNA/DNA)
+  if (!keepHelmTriples &&
+    seqUh.notation !== NOTATION.SEPARATOR && seqUh.notation !== NOTATION.BILN) {
     srcCol = seqUh.convert(NOTATION.SEPARATOR, '.');
     srcCol.name = seqCol.name; // Replace converted col name 'separator(<original>)' to '<original>';
   }
@@ -49,20 +58,39 @@ export async function _toAtomicLevel(
   let polymerType: PolymerType;
   let alphabet: ALPHABET;
   try {
-    const srcSh = seqHelper.getSeqHandler(srcCol);
-    alphabet = srcSh.alphabet as ALPHABET;
-    polymerType = alphabetToPolymerType(alphabet);
+    if (keepHelmTriples) {
+      // We already proved the column is HELM RNA. Pin the polymer type to
+      // RNA without leaning on the alphabet detector (which can yield UN
+      // when only modified monomers appear).
+      polymerType = HELM_POLYMER_TYPE.RNA;
+      alphabet = pickRnaAlphabetFromHelm(seqCol, seqHelper);
+    } else {
+      const srcSh = seqHelper.getSeqHandler(srcCol);
+      alphabet = srcSh.alphabet as ALPHABET;
+      polymerType = alphabetToPolymerType(alphabet);
+    }
   } catch (err: any) {
     const [errMsg, _errStack] = errInfo(err);
     return {molCol: null, warnings: [errMsg]};
   }
 
   const monomerSequencesArray: ISeqMonomer[][] = getMonomerSequencesArray(srcCol, seqHelper);
-  const monomersDict = getMonomersDictFromLib(monomerSequencesArray, polymerType, alphabet, monomerLib, rdKitModule);
+  // Per-row roles: only set in HELM RNA/DNA mode where the splitter emits triples.
+  const rolesArray: (NucleotideRole[] | undefined)[] = keepHelmTriples ?
+    buildRolesForHelmRna(monomerSequencesArray, monomerLib, polymerType) :
+    new Array(monomerSequencesArray.length).fill(undefined);
+  // In triples mode, override the per-row biotype so it carries NUCLEOTIDE
+  // (rather than whatever the seq-handler defaults to for an UN-alphabet column).
+  if (keepHelmTriples) {
+    for (const row of monomerSequencesArray)
+      for (const m of row) m.biotype = HelmTypes.NUCLEOTIDE as HelmType;
+  }
+  const monomersDict = getMonomersDictFromLib(
+    monomerSequencesArray, rolesArray, polymerType, alphabet, monomerLib, rdKitModule);
   const srcColLength = srcCol.length;
 
   const res = await seqToMolFileWorker(
-    srcCol, monomersDict, alphabet, polymerType, monomerLib, seqHelper, rdKitModule);
+    srcCol, monomersDict, alphabet, polymerType, monomerLib, seqHelper, rdKitModule, rolesArray);
   if (res.warnings.length > 0.05 * srcColLength)
     grok.shell.warning(`Molfile conversion resulted in ${res.warnings.length} errors`);
 
@@ -81,6 +109,120 @@ export async function _toAtomicLevel(
   }
 
   return res;
+}
+
+// True iff every row in the column is HELM with a single disjoint
+// sequence whose every monomer carries polymerType=RNA. The check goes
+// through the splitter, not the alphabet, because non-canonical HELM RNA
+// sequences can be mis-detected as ALPHABET.UN.
+function isAllHelmRna(seqCol: DG.Column<string>, seqHelper: ISeqHelper): boolean {
+  const sh = seqHelper.getSeqHandler(seqCol);
+  if (sh.notation !== NOTATION.HELM) return false;
+
+  let sawAny = false;
+  for (let rowI = 0; rowI < seqCol.length; ++rowI) {
+    const seqSS = sh.getSplitted(rowI);
+    if (seqSS.length === 0) continue;
+    const gi = seqSS.graphInfo;
+    // graphInfo.polymerTypes is per-monomer. If the row has any non-RNA
+    // monomer (peptide chain, CHEM, BLOB, ...), bail out.
+    const pts = gi?.polymerTypes;
+    if (!pts || pts.length !== seqSS.length) return false;
+    for (const pt of pts)
+      if (pt !== PolymerTypes.RNA) return false;
+    sawAny = true;
+  }
+  return sawAny;
+}
+
+// When we've already confirmed all rows are HELM RNA via `isAllHelmRna`,
+// pick a column-level alphabet for the (rare) bases-only fallback rows.
+// Heuristic: if any sugar position references the deoxyribose symbol `d`,
+// use DNA, otherwise RNA. Modified-only sequences default to RNA.
+function pickRnaAlphabetFromHelm(seqCol: DG.Column<string>, seqHelper: ISeqHelper): ALPHABET {
+  const sh = seqHelper.getSeqHandler(seqCol);
+  for (let rowI = 0; rowI < seqCol.length; ++rowI) {
+    const seqSS = sh.getSplitted(rowI);
+    for (let i = 0; i < seqSS.length; ++i) {
+      // Sugars sit at index i % 3 === 0 in the HELM RNA triples layout.
+      if (i % 3 !== 0) continue;
+      const sym = seqSS.getCanonical(i);
+      if (sym === C.DEOXYRIBOSE.symbol) return ALPHABET.DNA;
+    }
+  }
+  return ALPHABET.RNA;
+}
+
+// Returns 'r1-only' if the lib monomer has a single R-group labeled R1
+// (i.e. a 3'-end terminal modifier like GalNAc), 'r2-only' if it has only
+// R2 (a 5'-end terminal modifier like Chol), and null otherwise.
+//
+// IMPORTANT: nucleobases (A/C/G/U/T and their modified forms) are
+// monomerType='Branch' with a single R1, but they are NOT terminal
+// modifiers — they're branch attachments to the sugar's R3. We exclude
+// Branch monomers explicitly so the splitter's i-th-base position keeps
+// its BASE role.
+function classifyTerminal(
+  monomerLib: IMonomerLibBase, polymerType: PolymerType, symbol: string
+): 'r1-only' | 'r2-only' | null {
+  const m = monomerLib.getMonomer(polymerType, symbol);
+  if (!m || !m.rgroups || m.rgroups.length !== 1) return null;
+  if (m[HELM_FIELDS.MONOMER_TYPE] === HELM_MONOMER_TYPE.BRANCH) return null;
+  const lbl = m.rgroups[0].label;
+  if (lbl === 'R1') return 'r1-only';
+  if (lbl === 'R2') return 'r2-only';
+  return null;
+}
+
+// For HELM RNA rows, the splitter emits sugar/base/phosphate triples in
+// that fixed order (per `RNA_HELM_TRIPLET_MONOMER_REG`). Tag each entry
+// with its role from its index, then promote first / last entries to
+// TERMINAL_5P / TERMINAL_3P when the lib says they are single-R-group
+// terminal modifiers (Chol / GalNAc-style monomers).
+//
+// Validation: after stripping the terminal positions the remaining "core"
+// length must be 0, 3K, or 3K+2 (the no-trailing-P variant). Rows that
+// don't fit fall back to bases-only mode by returning undefined for that
+// row.
+function buildRolesForHelmRna(
+  monomerSequencesArray: ISeqMonomer[][],
+  monomerLib: IMonomerLibBase,
+  polymerType: PolymerType,
+): (NucleotideRole[] | undefined)[] {
+  const out: (NucleotideRole[] | undefined)[] = new Array(monomerSequencesArray.length);
+  for (let rowI = 0; rowI < monomerSequencesArray.length; ++rowI) {
+    const row = monomerSequencesArray[rowI];
+    if (row.length === 0) { out[rowI] = undefined; continue; }
+
+    // Detect terminals at row boundaries. Conventionally the start would
+    // require r2-only (Chol-style) and the end would require r1-only
+    // (GalNAc/Bio-style), but HELM authors sometimes put the "wrong" one
+    // at either end. We accept ANY single-R-group non-Branch monomer at
+    // each boundary; getMolGraph then swaps the rNodes so the real R
+    // ends up where the role expects it.
+    const startTerm = row.length >= 1 &&
+      classifyTerminal(monomerLib, polymerType, row[0].symbol) !== null;
+    // Don't double-count when row.length === 1 and the single monomer
+    // already became a 5'-terminal: it doesn't ALSO get treated as a 3'.
+    const endTerm = row.length >= 1 && !(startTerm && row.length === 1) &&
+      classifyTerminal(monomerLib, polymerType, row[row.length - 1].symbol) !== null;
+
+    const coreLen = row.length - (startTerm ? 1 : 0) - (endTerm ? 1 : 0);
+    if (coreLen < 0 || !(coreLen % 3 === 0 || coreLen % 3 === 2)) {
+      out[rowI] = undefined; continue;
+    }
+
+    const roles: NucleotideRole[] = new Array(row.length);
+    let coreI = 0;
+    for (let i = 0; i < row.length; ++i) {
+      if (i === 0 && startTerm) { roles[i] = NucleotideRole.TERMINAL_5P; continue; }
+      if (i === row.length - 1 && endTerm) { roles[i] = NucleotideRole.TERMINAL_3P; continue; }
+      roles[i] = (coreI % 3) as NucleotideRole;
+      coreI++;
+    }
+    out[rowI] = roles;
+  }
+  return out;
 }
 
 /** Get jagged array of monomer symbols for the dataframe
@@ -115,13 +257,17 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>, seqHelp
 /** Get a mapping of monomer symbols to MolGraph objects. Notice, the
  * transformation from molfile V2000 to V3000 takes place,
  * with the help of async function call from Chem (RdKit module)
- * @param {string[]} monomerSequencesArray - Jagged array of monomer symbols for the dataframe
- * @param {IMonomerLib} monomerLib - Monomer library
+ * @param {ISeqMonomer[][]} monomerSequencesArray - Jagged array of monomer symbols for the dataframe
+ * @param {Array} rolesArray - Per-row NucleotideRole tags (undefined for legacy bases-only rows)
  * @param {PolymerType} polymerType - Polymer type
  * @param {ALPHABET} alphabet - Alphabet
- * @return {Map<string, MolGraph>} - Mapping of monomer symbols to MolGraph objects*/
+ * @param {IMonomerLibBase} monomerLib - Monomer library
+ * @param {RDModule} rdKitModule - RDKit module
+ * @return {MonomerMolGraphMap} - Mapping of monomer symbols to MolGraph objects */
 export function getMonomersDictFromLib(
-  monomerSequencesArray: ISeqMonomer[][], polymerType: PolymerType, alphabet: ALPHABET,
+  monomerSequencesArray: ISeqMonomer[][],
+  rolesArray: (NucleotideRole[] | undefined)[],
+  polymerType: PolymerType, alphabet: ALPHABET,
   monomerLib: IMonomerLibBase, rdKitModule: RDModule
 ): MonomerMolGraphMap {
   // todo: exception - no gaps, no empty string monomers
@@ -132,31 +278,41 @@ export function getMonomersDictFromLib(
     value: null
   };
 
-  // this must NOT be placed after translating monomer sequences
-  // because adding branch monomers for nucleobases relies on these data
-  if (polymerType === HELM_POLYMER_TYPE.RNA) {
+  // Pre-load default sugar/phosphate when ANY row falls back to bases-only
+  // mode (FASTA, separator, or HELM RNA rows the splitter could not split).
+  // The default monomer adjusters depend on these being present in the dict.
+  const anyBasesOnly = polymerType === HELM_POLYMER_TYPE.RNA &&
+    rolesArray.some((r) => r === undefined);
+  if (anyBasesOnly) {
     const symbols = (alphabet === ALPHABET.RNA) ?
       [C.RIBOSE, C.PHOSPHATE] : [C.DEOXYRIBOSE, C.PHOSPHATE];
-    for (const sym of symbols)
-      addMonomerToDict(monomersDict, sym.symbol, formattedMonomerLib, rdKitModule, polymerType, pointerToBranchAngle);
+    for (const sym of symbols) {
+      addMonomerToDict(monomersDict, sym.symbol, formattedMonomerLib, rdKitModule, polymerType,
+        pointerToBranchAngle, undefined);
+    }
   }
 
   for (let rowI = 0; rowI < monomerSequencesArray.length; ++rowI) {
     const monomerSeq: ISeqMonomer[] = monomerSequencesArray[rowI];
-    for (const seqMonomer of monomerSeq) {
+    const roles = rolesArray[rowI];
+    for (let posI = 0; posI < monomerSeq.length; ++posI) {
+      const seqMonomer = monomerSeq[posI];
       const sym = seqMonomer.symbol;
       if (sym === '') continue; // Skip gap/empty monomer for MSA
+      const role = roles ? roles[posI] : undefined;
       try {
-        if (polymerType === HELM_POLYMER_TYPE.RNA && sym.split(/\(|\)/).filter((e) => !!e).length === 3) {
-          // special case for nucleobases
+        if (polymerType === HELM_POLYMER_TYPE.RNA && role === undefined &&
+          sym.split(/\(|\)/).filter((e) => !!e).length === 3) {
+          // legacy: a single token of the form sugar(base)phosphate slipped
+          // through unsplit; index just the base.
           const nsym = sym.split(/\(|\)/)[1];
           addMonomerToDict(monomersDict, nsym, formattedMonomerLib,
-            rdKitModule, polymerType, pointerToBranchAngle);
+            rdKitModule, polymerType, pointerToBranchAngle, NucleotideRole.BASE);
           if (monomersDict[polymerType]?.[nsym])
             monomersDict[polymerType][sym] = monomersDict[polymerType][nsym];
         } else {
           addMonomerToDict(monomersDict, sym, formattedMonomerLib,
-            rdKitModule, polymerType, pointerToBranchAngle);
+            rdKitModule, polymerType, pointerToBranchAngle, role);
         }
       } catch (err: any) {
         const errTxt = err instanceof Error ? err.message : err.toString();
@@ -172,21 +328,23 @@ export function getMonomersDictFromLib(
 }
 
 /** Adds MolGraph object for 'sym' to the monomers dict when necessary
- * @param {Map<string, MolGraph>} monomersDict - Monomers dictionary
+ * @param {MonomerMolGraphMap} monomersDict - Monomers dictionary
  * @param {string} sym - Monomer symbol
- * @param {Map<string, any>} formattedMonomerLib - Formatted monomer library
+ * @param {Map} formattedMonomerLib - Formatted monomer library
  * @param {any} moduleRdkit - RDKit module
  * @param {PolymerType} polymerType - Polymer type
- * @param {NumberWrapper} pointerToBranchAngle - Pointer to branch angle*/
+ * @param {NumberWrapper} pointerToBranchAngle - Pointer to branch angle
+ * @param {NucleotideRole} role - Optional role hint for RNA (sugar/base/phosphate) */
 function addMonomerToDict(
   monomersDict: MonomerMolGraphMap, sym: string,
   formattedMonomerLib: Map<string, any>, moduleRdkit: any,
-  polymerType: PolymerType, pointerToBranchAngle: NumberWrapper
+  polymerType: PolymerType, pointerToBranchAngle: NumberWrapper,
+  role: NucleotideRole | undefined
 ): void {
   const symKey: LibMonomerKey = {polymerType, symbol: sym};
   if (!hasMolGraph(monomersDict, symKey)) {
     const monomerData: MolGraph | null =
-      getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle);
+      getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle, role);
     if (monomerData)
       setMolGraph(monomersDict, symKey, monomerData);
     else {
@@ -199,15 +357,18 @@ function addMonomerToDict(
 /** Construct the MolGraph object for specified monomerSymbol: the associated
  * graph is adjusted in XY plane and filled with default R-groups
  * @param {string} monomerSymbol - Monomer symbol
- * @param {Map<string, any>} formattedMonomerLib - Formatted monomer library
+ * @param {Map} formattedMonomerLib - Formatted monomer library
  * @param {any} moduleRdkit - RDKit module
  * @param {PolymerType} polymerType - Polymer type
  * @param {NumberWrapper} pointerToBranchAngle - Pointer to branch angle
- * @return {MolGraph | null} - MolGraph object or null if monomerSymbol is absent in the library*/
+ * @param {NucleotideRole} role - Optional explicit role (sugar/base/phosphate); when set
+ *   it takes priority over the legacy symbol-based dispatch.
+ * @return {MolGraph} - MolGraph object or null if monomerSymbol is absent in the library */
 function getMolGraph(
   monomerSymbol: string, formattedMonomerLib: Map<string, any>,
   moduleRdkit: any, polymerType: PolymerType,
-  pointerToBranchAngle: NumberWrapper
+  pointerToBranchAngle: NumberWrapper,
+  role: NucleotideRole | undefined
 ): MolGraph | null {
   if (!formattedMonomerLib.has(monomerSymbol))
     return null;
@@ -230,15 +391,44 @@ function getMolGraph(
     if (polymerType === HELM_POLYMER_TYPE.PEPTIDE)
       adjustPeptideMonomerGraph(monomerGraph);
     else { // nucleotides
-      if (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol)
+      // Prefer explicit role (HELM-RNA triples mode); fall back to symbol
+      // matching against the canonical r/d/p for the legacy bases-only path.
+      const isSugar = role === NucleotideRole.SUGAR ||
+        (role === undefined && (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol));
+      const isPhosphate = role === NucleotideRole.PHOSPHATE ||
+        (role === undefined && monomerSymbol === C.PHOSPHATE.symbol);
+      const isTerminal = role === NucleotideRole.TERMINAL_5P || role === NucleotideRole.TERMINAL_3P;
+      if (isTerminal) {
+        // Terminal monomers have ONE real R-group from the lib; the other
+        // is a pseudo synthesized by getMonomerMetadata and points at a
+        // real atom of the monomer body. The TERMINAL_5P/TERMINAL_3P
+        // logic in setShiftsAndTerminalNodes assumes:
+        //   TERMINAL_5P → real R is at rNodes[1] (chain-extending right).
+        //   TERMINAL_3P → real R is at rNodes[0] (chain-incoming left).
+        // When HELM places a single-R monomer at the "wrong" boundary
+        // (e.g. Bio/GalNAc with only R1 at row[0], or Chol with only R2
+        // at row[last]), the real R sits at the OTHER index. Swap the
+        // rNodes / terminalNodes pair so the existing role logic works.
+        const realRLabel = libObject[HELM_FIELDS.RGROUPS]?.[0]?.label;
+        const realRIdx = realRLabel === 'R1' ? 0 : (realRLabel === 'R2' ? 1 : -1);
+        const expectedRealRIdx = role === NucleotideRole.TERMINAL_5P ? 1 : 0;
+        if (realRIdx !== -1 && realRIdx !== expectedRealRIdx) {
+          [monomerGraph.meta.rNodes[0], monomerGraph.meta.rNodes[1]] =
+            [monomerGraph.meta.rNodes[1], monomerGraph.meta.rNodes[0]];
+          [monomerGraph.meta.terminalNodes[0], monomerGraph.meta.terminalNodes[1]] =
+            [monomerGraph.meta.terminalNodes[1], monomerGraph.meta.terminalNodes[0]];
+        }
+        // Peptide-style adjustment correctly orients a 2-R monomer.
+        adjustPeptideMonomerGraph(monomerGraph);
+      } else if (isSugar)
         adjustSugarMonomerGraph(monomerGraph, pointerToBranchAngle);
-      else if (monomerSymbol === C.PHOSPHATE.symbol)
+      else if (isPhosphate)
         adjustPhosphateMonomerGraph(monomerGraph);
       else
         adjustBaseMonomerGraph(monomerGraph, pointerToBranchAngle);
     }
 
-    setShiftsAndTerminalNodes(polymerType, monomerGraph, monomerSymbol);
+    setShiftsAndTerminalNodes(polymerType, monomerGraph, monomerSymbol, role);
     // todo: restore after debugging
     removeHydrogen(monomerGraph);
     replaceWrongfulRGroups(monomerGraph);
@@ -266,7 +456,8 @@ function getAbsStereocenters(molfileV3K: string): number[] {
 }
 
 function setShiftsAndTerminalNodes(
-  polymerType: PolymerType, monomerGraph: MolGraph, monomerSymbol: string
+  polymerType: PolymerType, monomerGraph: MolGraph, monomerSymbol: string,
+  role: NucleotideRole | undefined
 ): void {
   // remove the 'rightmost' chain-extending r-group node in the backbone
   if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
@@ -274,8 +465,32 @@ function setShiftsAndTerminalNodes(
     const removedR2Atom = removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
     if (removedR2Atom?.removedAtom)
       monomerGraph.terminalR2Atom = removedR2Atom.removedAtom; // store the removed R2 Atom type, if any
+  } else if (role === NucleotideRole.TERMINAL_5P) {
+    // 5'-end terminal modifier (e.g. Chol): R2 is the REAL R-group (chain
+    // attach point); R1 is a pseudo synthesized by getMonomerMetadata that
+    // points at a real atom of the monomer — DO NOT remove it. Remove the
+    // R2 placeholder so the chain bond can attach at terminalNodes[1].
+    setShifts(monomerGraph, polymerType);
+    removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
+  } else if (role === NucleotideRole.TERMINAL_3P) {
+    // 3'-end terminal modifier (e.g. GalNAc): R1 is the REAL R-group
+    // placeholder. After substituteCapGroups it carries the cap atom type
+    // (e.g. 'O' from "OH" or 'H' from "H") — that atom represents the
+    // FREE-form residue at this position and MUST be removed when the
+    // monomer is in a chain (otherwise we leave a stray OH/H bonded to the
+    // chain-attach carbon). After removal, terminalNodes[0] still points
+    // at the correct neighbor (the chain-attach atom).
+    // R2 is the PSEUDO synthesized by getMonomerMetadata; it points at a
+    // real atom of the monomer — DO NOT remove it.
+    removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[0]);
   } else { // nucleotides
-    if (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol) {
+    // Prefer explicit role (HELM RNA triples mode); fall back to symbol
+    // matching against canonical r/d/p for the legacy bases-only path.
+    const isSugar = role === NucleotideRole.SUGAR ||
+      (role === undefined && (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol));
+    const isPhosphate = role === NucleotideRole.PHOSPHATE ||
+      (role === undefined && monomerSymbol === C.PHOSPHATE.symbol);
+    if (isSugar) {
       // remove R2
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
       // set terminalNode2 (oxygen) as new R2
@@ -288,7 +503,25 @@ function setShiftsAndTerminalNodes(
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[0]);
       // remove the branching r-group
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[2]);
-    } else if (monomerSymbol === C.PHOSPHATE.symbol) {
+    } else if (isPhosphate) {
+      // Chain bond comes IN at the R1 cap atom. For canonical phosphates
+      // (R1 cap "OH" → cap atom is O) this is the bridging oxygen between
+      // the previous sugar's C3' and the central atom — exactly the
+      // chemistry we want.
+      //
+      // Variants with R1 cap "H" (sp, en, ...) substitute to H instead;
+      // the previous sugar (in the standard flow) has already given up its
+      // own 3'-O on the assumption that the linker will bring a bridging
+      // atom, and removeHydrogen would later strip the H, leaving the
+      // chain bond attached directly to the central atom (e.g., C3'-P
+      // instead of C3'-O-P). Promote the cap H to an O so the bridging
+      // atom exists in the assembled chain regardless of how the library
+      // happened to spell the cap. After the promotion both branches go
+      // through the same terminalNodes[0]=cap-atom code path.
+      const r1Idx = monomerGraph.meta.rNodes[0] - 1;
+      const r1AtomType = monomerGraph.atoms.atomTypes[r1Idx];
+      if (r1AtomType?.toUpperCase() === C.HYDROGEN)
+        monomerGraph.atoms.atomTypes[r1Idx] = C.OXYGEN;
       monomerGraph.meta.terminalNodes[0] = monomerGraph.meta.rNodes[0];
       shiftCoordinates(
         monomerGraph,
@@ -876,52 +1109,183 @@ function adjustPeptideMonomerGraph(monomer: MolGraph): void {
 }
 
 function adjustPhosphateMonomerGraph(monomer: MolGraph): void {
-  //need to rotate phosphate so that O-P-O is on OX axis, this is not always possible, but we can always
-  // make sure both O's are on the OX axis
-
-  const centeredNode = monomer.meta.rNodes[1] - 1; // Oxigen 1
-  const rotatedNode = monomer.meta.rNodes[0] - 1; // Oxygen
+  // Orient the linker so that the atoms connected to its R-groups lie on a
+  // horizontal line through the origin:
+  //   - terminalNodes[0] (atom connected to R1) sits at the origin
+  //   - terminalNodes[1] (atom connected to R2) sits on the +X ray
+  //   - rNodes[0] (R1 placeholder) ends up on the left (-X side)
+  //     and rNodes[1] (R2 placeholder) on the right (+X side)
+  //
+  // For a "small" linker (e.g. canonical phosphate) where R1 and R2 attach
+  // to the SAME central atom, terminalNodes[0] == terminalNodes[1] and we
+  // can't form a horizontal segment from a single atom — fall back to
+  // orienting the rNodes[0]→rNodes[1] vector along +X instead.
+  //
+  // No atom-type assumptions: this works for phosphate, phosphorothioate,
+  // sulfonate, carbonate or any other linker the library may carry as long
+  // as the R-groups are present.
   const x = monomer.atoms.x;
   const y = monomer.atoms.y;
 
-  // place nodeOne at origin
-  shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
+  if (monomer.meta.terminalNodes.length === 0) return;
 
-  // angle is measured between OY and the rotated node
-  const angle = findAngleWithOY(x[rotatedNode], y[rotatedNode]);
+  const t0Idx = monomer.meta.terminalNodes[0] - 1;
+  const t1Idx = monomer.meta.terminalNodes.length > 1 ? monomer.meta.terminalNodes[1] - 1 : -1;
 
-  // rotate the centered graph so that O-P-O is on OX
-  rotateCenteredGraph(monomer.atoms, Math.PI / 2 - angle);
+  // 1. Center on terminalNodes[0]
+  shiftCoordinates(monomer, -x[t0Idx], -y[t0Idx]);
+
+  // 2. Pick the rotation reference. Prefer terminalNodes[1] when distinct
+  //    from terminalNodes[0]; otherwise fall back to rNodes[1] / rNodes[0].
+  let refX: number = 0; let refY: number = 0;
+  if (t1Idx >= 0 && t1Idx !== t0Idx) {
+    refX = x[t1Idx]; refY = y[t1Idx];
+  } else if (monomer.meta.rNodes.length > 1 && monomer.meta.rNodes[1] - 1 >= 0) {
+    refX = x[monomer.meta.rNodes[1] - 1]; refY = y[monomer.meta.rNodes[1] - 1];
+  } else if (monomer.meta.rNodes.length > 0 && monomer.meta.rNodes[0] - 1 >= 0) {
+    // single-R linker — treat the R1 placeholder direction as the "incoming"
+    // (left) side, so flip its vector to land R2-ish geometry on +X.
+    refX = -x[monomer.meta.rNodes[0] - 1]; refY = -y[monomer.meta.rNodes[0] - 1];
+  }
+
+  if (refX !== 0 || refY !== 0) {
+    const angleFromOY = findAngleWithOY(refX, refY);
+    rotateCenteredGraph(monomer.atoms, -angleFromOY - Math.PI / 2);
+  }
+
+  // 3. Make sure R1 placeholder is on the left of R2 placeholder.
+  if (monomer.meta.rNodes.length >= 2) {
+    const r1Idx = monomer.meta.rNodes[0] - 1;
+    const r2Idx = monomer.meta.rNodes[1] - 1;
+    if (r1Idx >= 0 && r2Idx >= 0 && x[r1Idx] > x[r2Idx])
+      flipMonomerAroundOY(monomer);
+  }
 }
 
 function adjustSugarMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberWrapper): void {
-  // eslint-disable-next-line max-len
-  // sugars connect with R1 to previous nucleotide phosphate, R3 to the nucleobase and R2 to the next nucleotide phosphate
-  // need to adjust the graph so that R1 is looking left, R2 is looking right and R3 is looking up
+  // Sugars connect via R1 (to the previous linker), R2 (to the next linker),
+  // and R3 (to the branch — the nucleobase). Goal:
+  //   - terminalNodes[0] (atom connected to R1) at the origin
+  //   - terminalNodes[1] (atom connected to R2) on the +X ray
+  //     → atoms connected to R1/R2 are on a horizontal line
+  //   - rNodes[2] (R3 placeholder) lies in the upper half plane
+  //     → R3 (and the nucleobase that will attach there) points up
+  //
+  // The previous algorithm rotated rNodes[1] (the R2 placeholder atom) onto
+  // +X axis, which only worked when the molfile happened to place R2
+  // directly opposite terminalNodes[0]. For non-canonical sugars (modified
+  // riboses, sugar surrogates) this produced skewed layouts. Rotating
+  // terminalNodes[1] is robust to whatever atom types or bond directions
+  // the library uses.
   const x = monomer.atoms.x;
   const y = monomer.atoms.y;
 
-  let centeredNode = monomer.meta.terminalNodes[0] - 1;
-  const rotatedNode = monomer.meta.rNodes[1] - 1;
+  if (monomer.meta.terminalNodes.length === 0) return;
 
-  shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
-  // check if the sugar needs to be flipped around (mirrored)
-  // orient sugar with R3 pointing up
-  const r3Angle = findAngleWithOY(x[monomer.meta.rNodes[2] - 1], y[monomer.meta.rNodes[2] - 1]);
-  rotateCenteredGraph(monomer.atoms, -r3Angle);
-  // console.log(x[monomer.meta.rNodes[0] - 1], x[monomer.meta.rNodes[1] - 1]);
-  // if r1 is to the right of r2, flip the sugar around OY
-  if (x[monomer.meta.rNodes[0] - 1] > x[monomer.meta.rNodes[1] - 1])
-    flipMonomerAroundOY(monomer);
+  const t0Idx = monomer.meta.terminalNodes[0] - 1;
+  const t1Idx = monomer.meta.terminalNodes.length > 1 ? monomer.meta.terminalNodes[1] - 1 : -1;
 
-  // angle is measured between OX and the rotated node
-  const angle = findAngleWithOY(x[rotatedNode], y[rotatedNode]);
-  // rotate the centered graph so that the rotated node in on OX
-  rotateCenteredGraph(monomer.atoms, 3 * Math.PI / 2 - angle);
+  // 1. Center on terminalNodes[0]
+  shiftCoordinates(monomer, -x[t0Idx], -y[t0Idx]);
 
-  pointerToBranchAngle.value = getAngleBetweenSugarBranchAndOY(monomer);
-  centeredNode = monomer.meta.terminalNodes[0] - 1;
-  shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
+  // 2. Rotate so terminalNodes[1] (the atom bonded to R2) lies on +X.
+  //    Skip when terminalNodes[1] is missing or coincides with t0
+  //    (degenerate sugar — fall back to rNodes[1] for orientation).
+  let refX: number = 0; let refY: number = 0;
+  if (t1Idx >= 0 && t1Idx !== t0Idx) {
+    refX = x[t1Idx]; refY = y[t1Idx];
+  } else if (monomer.meta.rNodes.length > 1 && monomer.meta.rNodes[1] - 1 >= 0) {
+    refX = x[monomer.meta.rNodes[1] - 1]; refY = y[monomer.meta.rNodes[1] - 1];
+  }
+  if (refX !== 0 || refY !== 0) {
+    const angleFromOY = findAngleWithOY(refX, refY);
+    rotateCenteredGraph(monomer.atoms, -angleFromOY - Math.PI / 2);
+  }
+
+  // 3. Flip around OX so R3 points up. Prefer the R3 placeholder itself,
+  //    fall back to terminalNodes[2] (atom connected to R3) when missing.
+  let r3y: number | null = null;
+  if (monomer.meta.rNodes.length > 2 && monomer.meta.rNodes[2] - 1 >= 0)
+    r3y = y[monomer.meta.rNodes[2] - 1];
+  else if (monomer.meta.terminalNodes.length > 2 && monomer.meta.terminalNodes[2] - 1 >= 0)
+    r3y = y[monomer.meta.terminalNodes[2] - 1];
+  if (r3y !== null && r3y < 0)
+    flipMonomerAroundOX(monomer);
+
+  // 4. Abnormal-sugar override: when the sugar's R3-attachment atom
+  //    (terminalNodes[2]) is NOT the topmost atom of the molecule, the
+  //    natural branch direction would push the base sideways or even down
+  //    (LNA, with its 2,4-O-CH2 bridge sitting above C1', is the canonical
+  //    example). In that case reposition the R3 placeholder directly above
+  //    the topmost real atom, so the branch shift puts the base's
+  //    terminalNodes[0] above the entire sugar with a vertical bond going
+  //    straight up. This is purely a 2D-depiction adjustment — it preserves
+  //    connectivity and only changes where the base atoms land in space.
+  repositionR3IfAbnormal(monomer);
+
+  // 5. Compute branch angle for the base alignment step. Default to 0
+  //    (straight up) when the sugar lacks the branch attachment — the base
+  //    placement code only runs when a base actually follows. The override
+  //    above, when triggered, places R3 directly above terminalNodes[2]
+  //    so this naturally evaluates to ~0.
+  if (monomer.meta.rNodes.length > 2 && monomer.meta.terminalNodes.length > 2 &&
+      monomer.meta.rNodes[2] - 1 >= 0 && monomer.meta.terminalNodes[2] - 1 >= 0)
+    pointerToBranchAngle.value = getAngleBetweenSugarBranchAndOY(monomer);
+  else
+    pointerToBranchAngle.value = 0;
+
+  // 6. Re-anchor terminalNodes[0] at the origin (rotation/flip preserve it,
+  //    but keep this as a safety net for floating-point drift).
+  const t0IdxFinal = monomer.meta.terminalNodes[0] - 1;
+  shiftCoordinates(monomer, -x[t0IdxFinal], -y[t0IdxFinal]);
+}
+
+/** When the sugar's R3-attachment atom (terminalNodes[2]) is not the
+ * topmost atom, move the R3 placeholder so it sits directly above the
+ * sugar's topmost real atom (with one bond length of vertical clearance).
+ * Sugars like LNA — with a methylene/oxygen bridge spanning over the
+ * face that carries C1' — fall into this branch.
+ *
+ * Only the R3 placeholder atom moves; the rest of the sugar (and the
+ * bond from terminalNodes[2] to rNodes[2]) is preserved. The bond ends
+ * up elongated and vertical, which is fine for SMILES (length is
+ * irrelevant to connectivity) and gives the chain a clean visual layout
+ * with the base above any bridging atoms. */
+function repositionR3IfAbnormal(monomer: MolGraph): void {
+  if (monomer.meta.rNodes.length <= 2 || monomer.meta.terminalNodes.length <= 2)
+    return;
+  const r3 = monomer.meta.rNodes[2] - 1;
+  const t2 = monomer.meta.terminalNodes[2] - 1;
+  if (r3 < 0 || t2 < 0) return;
+
+  const x = monomer.atoms.x;
+  const y = monomer.atoms.y;
+
+  // Topmost Y among atoms that will remain in the assembly: exclude the
+  // R-group placeholder positions (rNodes[*]), since those are either
+  // removed or reassigned during setShiftsAndTerminalNodes.
+  const rGroupSet = new Set<number>();
+  for (const r of monomer.meta.rNodes) {
+    if (r >= 1) rGroupSet.add(r - 1);
+  }
+  let topY = -Infinity;
+  for (let i = 0; i < y.length; ++i) {
+    if (!rGroupSet.has(i) && y[i] > topY) topY = y[i];
+  }
+  if (!Number.isFinite(topY)) return;
+
+  // Tolerance: don't trigger for the normal case where terminalNodes[2]
+  // is at (or near) the top — small floating-point or geometry wobble
+  // shouldn't kick the base into "abnormal" placement.
+  const epsilon = 0.5;
+  if (y[t2] >= topY - epsilon) return;
+
+  // Place R3 directly above terminalNodes[2] (so the bond from
+  // terminalNodes[2] to base's eventual terminalNodes[0] is purely
+  // vertical), at least one bond length above the topmost atom.
+  const verticalClearance = 1.5;
+  x[r3] = x[t2];
+  y[r3] = topY + verticalClearance;
 }
 
 function adjustBaseMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberWrapper): void {
@@ -934,14 +1298,15 @@ function adjustBaseMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberW
   // center graph at centeredNode
   shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
 
-  // rotate so that the branch bond is aligned with that in sugar
+  // rotate so that the branch bond is aligned with the sugar's branch
   const baseBranchToOYAngle = findAngleWithOY(x[rotatedNode], y[rotatedNode]);
   const sugarBranchToOYAngle = pointerToBranchAngle.value;
-  if (sugarBranchToOYAngle) {
-    rotateCenteredGraph(monomer.atoms,
-      Math.PI - baseBranchToOYAngle + sugarBranchToOYAngle);
-  } else
+  if (sugarBranchToOYAngle === null)
     throw new Error('The value of sugarBranchToOYAngle is null');
+  // Note: 0 is a valid value (R3 directly along +Y after the sugar fix);
+  // the explicit null check above lets us treat it correctly.
+  rotateCenteredGraph(monomer.atoms,
+    Math.PI - baseBranchToOYAngle + sugarBranchToOYAngle);
 
   // scale graph in case its size does not fit the scale of phosphate and sugar
   // todo: consider extending to other monomer types

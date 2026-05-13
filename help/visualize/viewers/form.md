@@ -60,6 +60,8 @@ The following keyboard shortcuts work only when the form is in both read-only an
 | Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
+| **Style** | | |
+| Form Font | string |  |
 | **Description** | | |
 | Show Title | boolean |  |
 | **Data** | | |

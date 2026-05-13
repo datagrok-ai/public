@@ -23,7 +23,7 @@ export function createTableView(studyId: string, viewName: string,
     onTableViewAddedFunc(tableView as DG.TableView);
   awaitCheck(() => (tableView as DG.TableView).grid !== null, `${viewName} hasn't been added`, 10000)
     .then(() => hideValidationColumns(tableView as DG.TableView))
-    .catch(() => {});
+    .catch((e) => console.warn(`Failed to hide validation columns for ${viewName}:`, e));
   tableView.name = viewName;
   if (helpUrl)
     tableView.helpUrl = helpUrl;

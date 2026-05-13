@@ -30,7 +30,8 @@ import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
 import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
-import {getLinearRegressionParams, getPredictionByLinearRegression} from './regression';
+import {getLinearRegressionParams, getPredictionByLinearRegression,
+  isLinearRegressionApplicable, isLinearRegressionInteractive} from './regression';
 import {PlsModel} from './pls/pls-ml';
 import {SoftmaxClassifier} from './softmax-classifier';
 
@@ -95,7 +96,10 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'bool', 'options': {'caption': 'Center', 'initialValue': 'false', 'description': 'Indicating whether the variables should be shifted to be zero centered.'}}) center: boolean,
     @grok.decorators.param({'type': 'bool', 'options': {'caption': 'Scale', 'initialValue': 'false', 'description': 'Indicating whether the variables should be scaled to have unit variance.'}}) scale: boolean): Promise<void> {
     try {
-      const pcaTable = await computePCA(table, features, components, center, scale);
+      // "column_list" might be passed as array of columns, not DG.ColumnList (slack: https://datagrok.slack.com/archives/C04BF3YM6CF/p1776968116891119)
+      const featuresToPass = Array.isArray(features) ? DG.DataFrame.fromColumns(features).columns : features;
+
+      const pcaTable = await computePCA(table, featuresToPass, components, center, scale);
       addPrefixToEachColumnName('PC', pcaTable.columns);
 
       if (table.id === null) // table is loaded from a local file
@@ -717,12 +721,7 @@ export class PackageFunctions {
   static isApplicableLinearRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    for (const col of df.columns) {
-      if (!col.matches('numerical'))
-        return false;
-    }
-
-    return predictColumn.matches('numerical');
+    return isLinearRegressionApplicable(df.columns, predictColumn);
   }
 
 
@@ -736,7 +735,7 @@ export class PackageFunctions {
   static isInteractiveLinearRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return df.rowCount <= 100000;
+    return isLinearRegressionInteractive(df.columns, predictColumn);
   }
 
 
@@ -1011,13 +1010,12 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({'name': 'getPmpoAppItems', 'outputs': [{name: 'result', type: 'object'}]})
-  static getPmpoAppItems(@grok.decorators.param({type: 'view'}) view: DG.TableView): any | null {
+  static async getPmpoAppItems(@grok.decorators.param({type: 'view'}) view: DG.TableView): Promise<any | null> {
     const df = view.dataFrame;
     if (!Pmpo.isTableValid(df))
       return null;
 
     const pMPO = new Pmpo(df, view);
-
     return pMPO.getPmpoAppItems();
   }
 
@@ -1031,5 +1029,4 @@ export class PackageFunctions {
     df.name = 'Synthetic';
     return df;
   }
-
 }

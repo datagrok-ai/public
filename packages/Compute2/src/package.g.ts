@@ -96,6 +96,14 @@ export async function MockPipeline2(params: any) {
   return await PackageFunctions.MockPipeline2(params);
 }
 
+//tags: stress
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function StressTestPipeline(params: any) {
+  return await PackageFunctions.StressTestPipeline(params);
+}
+
 //input: double a 
 //input: double b 
 //output: double result

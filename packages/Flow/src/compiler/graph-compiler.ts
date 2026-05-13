@@ -1,215 +1,214 @@
-import {LGraph, LGraphNode} from 'litegraph.js';
+/** Compiles the FuncFlow graph into a flat ordered list of `CompiledStep`s.
+ *
+ * Rete-aware: input/output keys are strings; pass-through outputs use the
+ * `<inputName>__pt` convention (see `func-node.ts`). The compiler resolves
+ * input expressions by walking incoming connections and looking up the
+ * source node's output variable in `outputVarMap`.
+ *
+ * The output expressions are JavaScript snippets that the script-emitter
+ * inserts into the generated body. */
+
+import {FlowEditor} from '../rete/flow-editor';
+import {FlowNode, FlowConnection} from '../rete/scheme';
+import {FuncNode} from '../rete/nodes/func-node';
 import {topologicalSort} from './topological-sort';
-import {FuncFlowNode} from '../types/funcflow-node';
+
+export type StepKind = 'input' | 'output' | 'utility' | 'func';
 
 export interface CompiledStep {
-  nodeId: number;
-  nodeType: 'func' | 'input' | 'output' | 'utility';
+  nodeId: string;
+  nodeType: StepKind;
+  /** Qualified DG function name for `func` steps; node title for utilities. */
   funcName: string;
+  /** Variable name we declared in the body (or empty for non-producing steps). */
   variableName: string;
-  inputs: Map<string, string>; // paramName → source expression
-  outputs: Map<string, string>; // paramName → variable name
-  properties: Record<string, any>; // node.properties snapshot for widget values
+  /** input slot key → source expression to feed in. */
+  inputs: Map<string, string>;
+  /** real output slot key → variable name we declared. */
+  outputs: Map<string, string>;
+  /** Snapshot of node.properties at compile time. */
+  properties: Record<string, unknown>;
+  /** Snapshot of node.inputValues (hardcoded primitive defaults). */
+  inputValues: Record<string, unknown>;
 }
 
-/** Compiles the graph into an ordered list of execution steps */
-export function compileGraph(graph: LGraph): CompiledStep[] {
-  const sortedIds = topologicalSort(graph);
-  const links = graph.links || {};
+const PASSTHROUGH_SUFFIX = '__pt';
+
+export function compileGraph(flow: FlowEditor): CompiledStep[] {
+  const sortedIds = topologicalSort(flow);
+  const connections = flow.getConnections();
+
+  // Index incoming connections per (targetId → targetInput → connection)
+  const incoming = new Map<string, Map<string, FlowConnection>>();
+  for (const c of connections) {
+    let perNode = incoming.get(c.target);
+    if (!perNode) incoming.set(c.target, perNode = new Map());
+    perNode.set(String(c.targetInput), c);
+  }
 
   const steps: CompiledStep[] = [];
-  // Map: nodeId:outputSlotIndex → variable name expression
+  /** "<nodeId>:<outputKey>" → expression that yields its value. */
   const outputVarMap = new Map<string, string>();
   const usedVarNames = new Set<string>();
 
   for (const nodeId of sortedIds) {
-    const node = graph.getNodeById(nodeId);
+    const node = flow.getNodeById(nodeId);
     if (!node) continue;
 
-    const n = node as FuncFlowNode;
-    const nodeType = n.dgNodeType || 'func';
+    const kind = node.dgNodeType;
 
-    if (nodeType === 'input') {
-      // Input nodes produce a variable from their param name
-      const paramName = node.properties['paramName'] || 'input';
+    if (kind === 'input') {
+      const paramName = String(node.properties['paramName'] ?? 'input');
       usedVarNames.add(paramName);
-      // Map all output slots to this param name
-      if (node.outputs) {
-        for (let i = 0; i < node.outputs.length; i++)
-          outputVarMap.set(`${nodeId}:${i}`, paramName);
-      }
+      // Map every output slot of an input node to the param name.
+      for (const key of Object.keys(node.outputs))
+        outputVarMap.set(`${nodeId}:${key}`, paramName);
+      const firstOutKey = Object.keys(node.outputs)[0] ?? 'value';
       steps.push({
-        nodeId,
-        nodeType: 'input',
-        funcName: '',
+        nodeId, nodeType: 'input', funcName: '',
         variableName: paramName,
         inputs: new Map(),
-        outputs: new Map([[node.outputs?.[0]?.name || 'value', paramName]]),
+        outputs: new Map([[firstOutKey, paramName]]),
         properties: {...node.properties},
+        inputValues: {...node.inputValues},
       });
       continue;
     }
 
-    if (nodeType === 'output') {
-      // Output nodes just capture their input as the output variable
-      const paramName = node.properties['paramName'] || 'result';
-      const inputExpr = resolveInputExpression(node, 0, links, outputVarMap);
+    if (kind === 'output') {
+      const paramName = String(node.properties['paramName'] ?? 'result');
+      const firstInKey = Object.keys(node.inputs)[0] ?? 'value';
+      const inputExpr = resolveInputExpr(nodeId, firstInKey, incoming, outputVarMap);
       steps.push({
-        nodeId,
-        nodeType: 'output',
-        funcName: '',
+        nodeId, nodeType: 'output', funcName: '',
         variableName: paramName,
-        inputs: new Map([['value', inputExpr]]),
+        inputs: new Map([[firstInKey, inputExpr]]),
         outputs: new Map(),
         properties: {...node.properties},
+        inputValues: {...node.inputValues},
       });
       continue;
     }
 
-    if (nodeType === 'utility') {
-      // Breakpoint is a pure pass-through: its output resolves to its input expression
-      if (node.title === 'Breakpoint') {
-        const inputExpr = resolveInputExpression(node, 0, links, outputVarMap);
-        if (node.outputs) {
-          for (let i = 0; i < node.outputs.length; i++)
-            outputVarMap.set(`${nodeId}:${i}`, inputExpr);
-        }
+    if (kind === 'utility') {
+      // Breakpoint: pure pass-through — output slot resolves to its input expr.
+      if (node.label === 'Breakpoint') {
+        const inputExpr = resolveInputExpr(nodeId, 'in', incoming, outputVarMap);
+        for (const key of Object.keys(node.outputs))
+          outputVarMap.set(`${nodeId}:${key}`, inputExpr);
         steps.push({
-          nodeId,
-          nodeType: 'utility',
-          funcName: 'Breakpoint',
+          nodeId, nodeType: 'utility', funcName: 'Breakpoint',
           variableName: '',
           inputs: new Map([['in', inputExpr]]),
           outputs: new Map(),
           properties: {...node.properties},
+          inputValues: {...node.inputValues},
         });
         continue;
       }
 
-      const step = compileUtilityNode(node, links, outputVarMap, usedVarNames);
-      if (step) {
-        steps.push(step);
-        // Map outputs
-        if (node.outputs) {
-          for (let i = 0; i < node.outputs.length; i++)
-            outputVarMap.set(`${nodeId}:${i}`, step.variableName);
-        }
-      }
+      const step = compileUtilityNode(node, incoming, outputVarMap, usedVarNames);
+      steps.push(step);
+      for (const key of Object.keys(node.outputs))
+        outputVarMap.set(`${nodeId}:${key}`, step.variableName);
       continue;
     }
 
-    // Function node
-    const funcName = n.dgFuncName || node.title;
+    // -------- func step --------
+    const funcName = node.dgFuncName || node.label;
+    const ptCount = node.passthroughCount;
+    const inputKeys = Object.keys(node.inputs);
+    const outputKeys = Object.keys(node.outputs);
 
-    // Generate variable name from func name + first real output (skip pass-throughs)
-    const ptCount = node.properties['_passthroughCount'] ?? 0;
-    let varBase = toCamelCase(node.title);
-    const firstRealOut = node.outputs?.[ptCount];
-    if (firstRealOut)
-      varBase = `${toCamelCase(node.title)}_${firstRealOut.name}`;
-
+    // Variable name based on title + first real output's name.
+    const realOutputKeys = outputKeys.filter((k) => !k.endsWith(PASSTHROUGH_SUFFIX));
+    const firstRealKey = realOutputKeys[0];
+    let varBase = toCamelCase(node.label);
+    if (firstRealKey) varBase = `${toCamelCase(node.label)}_${firstRealKey}`;
     const varName = uniqueVarName(varBase, usedVarNames);
     usedVarNames.add(varName);
 
-    // Resolve inputs
+    // Resolve inputs: connected → expression from outputVarMap, else hardcoded.
     const inputMap = new Map<string, string>();
-    if (node.inputs) {
-      for (let i = 0; i < node.inputs.length; i++) {
-        const inp = node.inputs[i];
-        if (node.isInputConnected(i)) {
-          const expr = resolveInputExpression(node, i, links, outputVarMap);
-          inputMap.set(inp.name, expr);
-        } else {
-          // Use hardcoded value from widget
-          const val = node.properties[`_input_${inp.name}`];
-          if (val !== undefined)
-            inputMap.set(inp.name, formatLiteral(val, inp.type as string));
-        }
+    for (const key of inputKeys) {
+      const conn = incoming.get(nodeId)?.get(key);
+      if (conn) {
+        inputMap.set(key, resolveConnExpr(conn, outputVarMap));
+      } else if (key in node.inputValues) {
+        const val = node.inputValues[key];
+        const slotType = (node.inputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
+        if (val !== undefined)
+          inputMap.set(key, formatLiteral(val, slotType ?? 'dynamic'));
       }
     }
 
-    // Map output slots to variable names
-    // Layout: pass-throughs first (indices 0.._passthroughCount-1), then real outputs
+    // Map output slots: pass-throughs → corresponding input expr; real → varName.
     const outputMap = new Map<string, string>();
-    if (node.outputs) {
-      for (let i = 0; i < node.outputs.length; i++) {
-        if (i < ptCount) {
-          // Pass-through output: resolves to the corresponding input's variable
-          const inputExpr = inputMap.get(node.inputs?.[i]?.name || '') || 'undefined';
-          outputVarMap.set(`${nodeId}:${i}`, inputExpr);
-        } else {
-          const realCount = node.outputs.length - ptCount;
-          const outVarName = realCount === 1 ? varName : `${varName}_${node.outputs[i].name}`;
-          outputMap.set(node.outputs[i].name, outVarName);
-          outputVarMap.set(`${nodeId}:${i}`, outVarName);
-        }
+    for (const key of outputKeys) {
+      const ptInput = key.endsWith(PASSTHROUGH_SUFFIX)
+        ? FuncNode.passthroughInputName(key)
+        : null;
+      if (ptInput) {
+        const inExpr = inputMap.get(ptInput) ?? 'undefined';
+        outputVarMap.set(`${nodeId}:${key}`, inExpr);
+      } else {
+        const realCount = realOutputKeys.length;
+        const outVarName = realCount === 1 ? varName : `${varName}_${key}`;
+        outputMap.set(key, outVarName);
+        outputVarMap.set(`${nodeId}:${key}`, outVarName);
       }
     }
 
     steps.push({
-      nodeId,
-      nodeType: 'func',
-      funcName,
+      nodeId, nodeType: 'func', funcName,
       variableName: varName,
-      inputs: inputMap,
-      outputs: outputMap,
-      properties: {...node.properties},
+      inputs: inputMap, outputs: outputMap,
+      properties: {...node.properties, _passthroughCount: ptCount},
+      inputValues: {...node.inputValues},
     });
   }
 
   return steps;
 }
 
-function resolveInputExpression(
-  node: LGraphNode,
-  slotIndex: number,
-  links: Record<number, any>,
-  outputVarMap: Map<string, string>,
-): string {
-  const inp = node.inputs[slotIndex];
-  if (!inp || inp.link === null || inp.link === undefined) return 'undefined';
-
-  const link = links[inp.link];
-  if (!link) return 'undefined';
-
-  const key = `${link.origin_id}:${link.origin_slot}`;
-  return outputVarMap.get(key) || 'undefined';
-}
-
 function compileUtilityNode(
-  node: LGraphNode,
-  links: Record<number, any>,
+  node: FlowNode,
+  incoming: Map<string, Map<string, FlowConnection>>,
   outputVarMap: Map<string, string>,
   usedVarNames: Set<string>,
-): CompiledStep | null {
-  const title = node.title;
-  const varName = uniqueVarName(toCamelCase(title), usedVarNames);
+): CompiledStep {
+  const varName = uniqueVarName(toCamelCase(node.label), usedVarNames);
   usedVarNames.add(varName);
 
   const inputMap = new Map<string, string>();
-  if (node.inputs) {
-    for (let i = 0; i < node.inputs.length; i++) {
-      const inp = node.inputs[i];
-      if (node.isInputConnected(i))
-        inputMap.set(inp.name, resolveInputExpression(node, i, links, outputVarMap));
-    }
+  for (const key of Object.keys(node.inputs)) {
+    const conn = incoming.get(node.id)?.get(key);
+    if (conn) inputMap.set(key, resolveConnExpr(conn, outputVarMap));
   }
 
-  // Map outputs
-  if (node.outputs) {
-    for (let i = 0; i < node.outputs.length; i++)
-      outputVarMap.set(`${node.id}:${i}`, varName);
-  }
-
+  const firstOutKey = Object.keys(node.outputs)[0] ?? 'value';
   return {
-    nodeId: node.id,
-    nodeType: 'utility',
-    funcName: title,
+    nodeId: node.id, nodeType: 'utility', funcName: node.label,
     variableName: varName,
     inputs: inputMap,
-    outputs: new Map([[node.outputs?.[0]?.name || 'value', varName]]),
+    outputs: new Map([[firstOutKey, varName]]),
     properties: {...node.properties},
+    inputValues: {...node.inputValues},
   };
+}
+
+function resolveInputExpr(
+  nodeId: string, inputKey: string,
+  incoming: Map<string, Map<string, FlowConnection>>,
+  outputVarMap: Map<string, string>,
+): string {
+  const conn = incoming.get(nodeId)?.get(inputKey);
+  if (!conn) return 'undefined';
+  return resolveConnExpr(conn, outputVarMap);
+}
+
+function resolveConnExpr(c: FlowConnection, outputVarMap: Map<string, string>): string {
+  return outputVarMap.get(`${c.source}:${String(c.sourceOutput)}`) ?? 'undefined';
 }
 
 function toCamelCase(s: string): string {
@@ -217,7 +216,10 @@ function toCamelCase(s: string): string {
     .replace(/[^a-zA-Z0-9]+/g, ' ')
     .trim()
     .split(' ')
-    .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map((word, i) => i === 0
+      ? word.toLowerCase()
+      : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+    )
     .join('');
 }
 
@@ -229,7 +231,7 @@ function uniqueVarName(base: string, used: Set<string>): string {
   return `${base}${i}`;
 }
 
-function formatLiteral(value: any, type: string): string {
+function formatLiteral(value: unknown, type: string): string {
   if (value === null || value === undefined) return 'null';
   switch (type) {
   case 'string':

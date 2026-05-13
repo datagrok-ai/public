@@ -284,12 +284,12 @@ export const RichFunctionView = Vue.defineComponent({
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
     }, {immediate: true});
 
-    Vue.watch([currentCall, isOutputOutdated, visibleTabLabels], ([call, isOutputOutdated, visibleTabLabels], [prevCall, prevOutputOutdated, prevLabels]) => {
-      if (prevCall === call && visibleTabLabels === prevLabels && isOutputOutdated === prevOutputOutdated)
+    Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
+      if (prevCall === call && prevCallState === callState && prevLabels === labels)
         return;
       const tabToPropertiesMap = tabToProperties(call);
 
-      tabsData.value = visibleTabLabels.map((tabLabel) =>
+      tabsData.value = labels.map((tabLabel) =>
         ({
           tabLabel,
           tabContent: tabToPropertiesMap.inputs.get(tabLabel) ?? tabToPropertiesMap.outputs.get(tabLabel)!,
@@ -539,7 +539,7 @@ export const RichFunctionView = Vue.defineComponent({
                 ref={formRef}
               >
                 {
-                  Vue.withDirectives(<InputForm
+                  <InputForm
                     key={currentCall.value?.id}
                     ref={inputFormComponentRef}
                     funcCall={currentCall.value}
@@ -553,9 +553,9 @@ export const RichFunctionView = Vue.defineComponent({
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
                     isReadonly={isReadonly.value}
-                  />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
+                  />
                 }
-                <div class='flex sticky bottom-0 justify-end' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
+                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
                   { slots.navigation ?
                     slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
                     showRun.value &&
@@ -582,13 +582,13 @@ export const RichFunctionView = Vue.defineComponent({
                     {...tabConfig}
                   >
                     {
-                      Vue.withDirectives(<Viewer
+                      <Viewer
                         type={options['type'] as string}
                         options={options}
                         dataFrame={tabContent.df.value}
                         class='w-full'
                         onViewerChanged={(v) => setViewerRef(v, tabContent.name, options['type'] as string)}
-                      />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
+                      />
                     }
                   </div>;
                 }
@@ -606,7 +606,7 @@ export const RichFunctionView = Vue.defineComponent({
                     {...tabConfig}
                   />;
 
-                  return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value, 'Recalculating...']]);
+                  return panel;
                 }
               })
           }

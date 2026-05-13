@@ -1,36 +1,98 @@
 ---
 title: "GCP GKE Terraform"
-sidebar_position: 3
+sidebar_position: 1
 ---
 
-The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing metadata,
-and [persistent file storage](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing files
+Deploy Datagrok on Google Cloud Platform using a Terraform module that provisions GKE,
+Cloud SQL (PostgreSQL), GCS, and a VPC, then installs the [Helm chart](../k8s/install-helm-chart.md)
+into the cluster. This is the GCP analogue to the [AWS CloudFormation (EKS)](../aws/deploy-amazon-eks.mdx)
+template.
 
-This document contains instructions to deploy Datagrok using [Terraform](https://www.terraform.io/)
-on [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine) with [SQL Server](https://cloud.google.com/sql-server)
-and [Cloud Storage](https://cloud.google.com/storage).
+The same Datagrok services run on every deployment — see
+[Components](../deploy.md#components) for the canonical list.
 
-We considered a lot of typical security nuances during the Terraform code development. As a result, you will
-create a Datagrok infrastructure in GCP that applies to all standard security policies.
+:::tip Already have a GKE cluster?
 
-More information about Datagrok design and components:
+If your team already manages GKE, install the [Helm chart](../k8s/install-helm-chart.md)
+directly with the `values-gke.yaml` overlay (Cloud SQL + GCS + Workload Identity). The
+Terraform module is for stands that need GKE, Cloud SQL, GCS, IAM, and the chart
+provisioned together.
 
-* [Architecture](../../develop/under-the-hood/architecture.md)
-* [Infrastructure](../../develop/under-the-hood/infrastructure.md)
+:::
 
-## Basic usage
+## Prerequisites
 
-Use [Datagrok GCP Terraform module](https://github.com/datagrok-ai/tf-module-datagrok-core/tree/main/gcp) to deploy 
+* GCP project with billing enabled and the
+  [GKE](https://cloud.google.com/kubernetes-engine/docs/quickstarts/create-cluster),
+  [Cloud SQL](https://cloud.google.com/sql/docs/postgres/quickstart),
+  [Cloud Storage](https://cloud.google.com/storage/docs/quickstart),
+  and Compute Engine APIs enabled.
+* Terraform 1.5+ and a GCP service account credential with `Project Owner` (or the
+  equivalent narrower permissions: GKE admin, Cloud SQL admin, Storage admin, IAM admin,
+  Network admin).
+* `gcloud` and `kubectl` installed locally.
 
-The use [HELM charts](https://github.com/datagrok-ai/tf-module-datagrok-core/tree/main/helm/datagrok) to deploy Kubernetes cluster
+## Deploy
 
-After the Datagrok container starts, the Datagrok server will deploy the database. You can check the status by
-   checking the running task log in container output
+The [Datagrok GCP Terraform module](https://github.com/datagrok-ai/tf-module-datagrok-core/tree/main/gcp)
+creates the GKE cluster, Cloud SQL instance, GCS bucket, and supporting IAM, then
+installs the [Helm chart](https://github.com/datagrok-ai/tf-module-datagrok-core/tree/main/helm/datagrok)
+into the cluster.
 
-## Advanced usage
+```hcl
+module "datagrok_gcp" {
+  source  = "github.com/datagrok-ai/tf-module-datagrok-core//gcp"
+  project = "<gcp-project-id>"
+  region  = "europe-west3"
 
-The Terraform code is highly configurable. Feel free to adapt the code and variables to meet your needs and
-requirements.
-Terraform modules documentation:
+  cluster_name      = "datagrok"
+  datagrok_version  = "1.27.3"
+  datagrok_dns      = "datagrok.example.com"
+  acm_cert          = ""        # use Google-managed cert via the chart's ingress instead
+}
+```
 
-* [Datagrok Core README](https://github.com/datagrok-ai/tf-module-datagrok-core/blob/main/gcp/README.md)
+Apply:
+
+```bash
+terraform init
+terraform apply
+```
+
+After Terraform finishes, the chart is already installed and Datagrok is reachable
+through the ingress. Configure kubectl to inspect the running stand:
+
+```bash
+gcloud container clusters get-credentials datagrok --region europe-west3 \
+  --project <gcp-project-id>
+kubectl -n datagrok get pods
+```
+
+## Service versions
+
+The Terraform module's `datagrok_version` input pins all service image tags to the same
+release. Defaults track the latest stable Datagrok release; see the
+[release history](../releases/release-history.md) and the equivalent
+[Helm chart overrides](../k8s/install-helm-chart.md#service-versions) for granular
+per-service control.
+
+## Update Datagrok components
+
+Bump `datagrok_version` (and the related variables, if you pinned services
+individually) and re-apply:
+
+```bash
+terraform apply -var datagrok_version=1.27.4
+```
+
+Cloud SQL and the GCS bucket are not replaced on `apply`. Database schema migrations run
+automatically on the first start of the new app version. For a manual upgrade with the
+chart only (no Terraform changes), see
+[Helm chart upgrades](../k8s/install-helm-chart.md#upgrades).
+
+## See also
+
+* [Install Datagrok with Helm](../k8s/install-helm-chart.md) — direct chart install for
+  any cluster (including pre-existing GKE)
+* [AWS CloudFormation (EKS)](../aws/deploy-amazon-eks.mdx) — AWS analogue
+* [GCP Terraform module README](https://github.com/datagrok-ai/tf-module-datagrok-core/blob/main/gcp/README.md)

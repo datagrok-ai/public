@@ -18,6 +18,7 @@ import {BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
 import {PdbGridCellRenderer, PdbGridCellRendererBack, PdbIdGridCellRenderer} from './utils/pdb-grid-cell-renderer';
+import {PlDiagramObjectHandler} from './utils/pl-object-handler';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
 import {NglViewer} from './viewers/ngl-viewer';
@@ -43,6 +44,15 @@ import {BiostructureDataProviderApp} from './apps/biostructure-data-provider-app
 import {copyRawValue, downloadRawValue, showBiostructureViewer, showNglViewer} from './utils/context-menu';
 import {defaultErrorHandler} from './utils/err-info';
 import {extractSequenceColumns} from './utils/sequence-handler';
+import {getMol3DAtomPickerLinkWidget} from './panels/mol3d-atom-picker-link-panel';
+import {
+  hasNonWaterHetatm as _hasNonWaterHetatm,
+  isAutoDockPose as _isAutoDockPose,
+  makeProlifWidget,
+  resolveBatchCtxFromSemValue,
+} from './utils/prolif';
+import {makeDockingProlifWidget} from './utils/docking-pose-prolif';
+import {getReceptorData} from './utils/autodock-receptor';
 
 export * from './package.g';
 export const _package: BsvPackage = new BsvPackage();
@@ -50,10 +60,23 @@ export const _package: BsvPackage = new BsvPackage();
 
 const dataDir = 'Admin:Data/PDB/CHEMBL2366517/';
 
+// ProLIF panel + batch handler live in `./utils/prolif.ts`. The
+// AutoDock-pose flavour (receptor pre-fetch + `isAutoDockPose` gate) is
+// glued in via `./utils/docking-pose-prolif.ts`. Docking package has no
+// ProLIF code anymore — see header of `./utils/prolif.ts`.
+
+
 export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
     _package.logger.debug('BiostructureViewer.initBiostructureViewer() init package start');
+    // Register the `PL Diagram` cell context-panel handler. Has to be in
+    // `init` (runs once at package load) rather than at module top level,
+    // because `DG.ObjectHandler.register` needs the Datagrok core to be
+    // fully initialised. The handler claims cells with the `.%prolif-source`
+    // column tag set by `runPlBatch` and shows the cached interactive
+    // LigNetwork iframe + per-residue breakdown.
+    DG.ObjectHandler.register(new PlDiagramObjectHandler());
   }
 
   @grok.decorators.func({
@@ -176,14 +199,12 @@ export class PackageFunctions {
   }
 
   //TODO Support preview .ccp4 with Molstar
-  //eslint-disable-next-line max-len
   @grok.decorators.fileViewer({fileViewer: 'ccp4'})
   static previewNglDensity( @grok.decorators.param({type: 'file'}) file: any): DG.View {
     return previewNgl(file);
   }
 
 
-  // eslint-disable-next-line max-len
   @grok.decorators.fileViewer({fileViewer: 'mol,mol2,cif,mcif,mmcif,gro,pdb,pdbqt,ent,sd,xyz'})
   static previewBiostructureStructure(file: DG.FileInfo): DG.View {
     return previewBiostructure(file);
@@ -227,6 +248,92 @@ export class PackageFunctions {
   ): Promise<DG.Widget> {
     return await pdbInfoWidget(pdbId);
   }
+
+  // Datagrok-function wrapper around the plain `hasNonWaterHetatm` helper
+  // in `./utils/prolif.ts`. Kept here because `@grok.decorators.func`
+  // requires the function to be a class method; the panel `condition` below
+  // looks up `BiostructureViewer:hasNonWaterHetatm` at runtime.
+  @grok.decorators.func()
+  static hasNonWaterHetatm(molecule: string): boolean {
+    return _hasNonWaterHetatm(molecule);
+  }
+
+  @grok.decorators.panel({
+    name: 'Protein-Ligand Interactions',
+    condition: 'BiostructureViewer:hasNonWaterHetatm(molecule)',
+  })
+  static async pdbInteractionsWidget(
+    @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
+  ): Promise<DG.Widget> {
+    return makeProlifWidget(
+      {protein: molecule.value as string},
+      resolveBatchCtxFromSemValue(molecule),
+      {showInlineDiagram: true});
+  }
+
+  // Predicate function for the AutoDock-pose panel condition below. Datagrok
+  // panels reference predicates by their package-qualified name in the
+  // `condition` string; this decorator makes `BiostructureViewer:isAutoDockPose`
+  // resolvable at registration time. Delegates to bio's shared one-line
+  // `'binding energy'`-substring heuristic.
+  @grok.decorators.func()
+  static isAutoDockPose(molecule: string): boolean {
+    return _isAutoDockPose(molecule);
+  }
+
+  // Protein-Ligand Interactions panel for AutoDock poses (the cell value
+  // is a pose PDB containing a `REMARK ... binding energy` line). The
+  // receptor isn't carried in the pose cell — it lives in
+  // `System:AppData/Docking/targets/<receptor>/` (deposited by the
+  // Docking package's `files/` on install). This widget pre-fetches the
+  // receptor on mount and shows the interactive LigNetwork.
+  //
+  // The whole-dataset batch button uses a Docking-flavour `runPlBatch`
+  // (pre-fetch the receptor once, gate per-row by `isAutoDockPose`) —
+  // wired via `makeDockingProlifWidget`.
+  @grok.decorators.panel({
+    name: 'Protein-Ligand Interactions',
+    condition: 'BiostructureViewer:isAutoDockPose(molecule)',
+  })
+  static async dockingInteractionsWidget(
+    @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
+  ): Promise<DG.Widget> {
+    const pose = molecule.value as string;
+    const receptorData = await getReceptorData(pose);
+    const receptor = typeof receptorData.data === 'string'
+      ? receptorData.data
+      : new TextDecoder().decode(receptorData.data as Uint8Array);
+    // `asDockingPose=true` routes the resolved Molecule3D column as both
+    // pdbCol (drives the loop) and ligandCol — that tells the shared batch
+    // handler to treat each row's value as the ligand and use a pre-fetched
+    // receptor as `protein`.
+    return makeDockingProlifWidget(
+      {protein: receptor, ligand: pose},
+      resolveBatchCtxFromSemValue(molecule, true),
+      {showInlineDiagram: true});
+  }
+
+  @grok.decorators.panel({name: 'Protein-Ligand Interactions'})
+  static async pdbIdInteractionsWidget(
+    @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbId: string
+  ): Promise<DG.Widget> {
+    try {
+      const resp = await grok.dapi.fetchProxy(`https://files.rcsb.org/download/${pdbId}.pdb`);
+      if (!resp.ok)
+        return new DG.Widget(ui.divText(`Could not fetch PDB ${pdbId}`));
+      return makeProlifWidget({protein: await resp.text()}, undefined, {showInlineDiagram: true});
+    } catch (err) {
+      return new DG.Widget(ui.divText(
+        `Error fetching ${pdbId}: ${err instanceof Error ? err.message : String(err)}`
+      ));
+    }
+  }
+
+  // The `PL Diagram` cell context panel is registered via
+  // `DG.ObjectHandler.register(new PlDiagramObjectHandler())` in `init()`
+  // above. The old `@grok.decorators.panel`-based registration was replaced
+  // because the ObjectHandler API is more flexible (matches on column tags
+  // rather than semType — leaves the semType free for PowerGrid's renderer).
 
   // -- Test apps --
 
@@ -320,7 +427,6 @@ export class PackageFunctions {
 
   // -- Viewers --
 
-  // eslint-disable-next-line max-len
   @grok.decorators.panel({
     name: 'NGL',
     description: '3D structure viewer for large biological molecules (proteins, DNA, and RNA)',
@@ -426,7 +532,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object'})fi: DG.FileInfo) {
     try {
       await PackageFunctions.openPdbResidues(fi);
-    } catch (err: any) {
+    } catch (err: unknown) {
       defaultErrorHandler(err);
     }
   }
@@ -772,6 +878,19 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
   ): DG.Widget {
     return pdbFileInfoWidget(molecule.value);
+  }
+
+  /** Cross-package helper exposed as a Grok function so Docking's AutoDock
+   *  info panel can inject the "Link SMILES column" checkbox at the bottom
+   *  of its own widget, instead of creating a second top-level section
+   *  with the same name. Called via
+   *  `grok.functions.call('BiostructureViewer:mol3dAtomPickerLinkWidget', {mol3DCol})`. */
+  @grok.decorators.func({
+    name: 'mol3dAtomPickerLinkWidget',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static mol3dAtomPickerLinkWidget(mol3DCol: DG.Column): DG.Widget {
+    return getMol3DAtomPickerLinkWidget(mol3DCol);
   }
 
   @grok.decorators.func({

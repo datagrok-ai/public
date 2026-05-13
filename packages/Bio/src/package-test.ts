@@ -38,6 +38,7 @@ import './tests/activity-cliffs-tests';
 import './tests/sequence-space-test';
 import './tests/scoring';
 import './tests/projects-tests';
+import './tests/antibody-numbering-tests';
 
 
 export const _package = new DG.Package();

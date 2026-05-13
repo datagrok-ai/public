@@ -14,8 +14,8 @@ class ChemPackageDetectors extends DG.Package {
       ChemPackageDetectors.likelyRegexps.some((regexp) => regexp.test(s));
   }
 
-  static validSmilesChars = new Uint32Array([0, 805305144, 1073741823, 1073741822, 0, 0, 0, 0]);
-  static validFirstSmilesChars = new Uint32Array([0, 256, 134857308, 573448, 0, 0, 0, 0]);
+  static validSmilesChars = new Uint32Array([0, 805306168, 1073741823, 1073741822, 0, 0, 0, 0]);
+  static validFirstSmilesChars = new Uint32Array([0, 1280, 134857308, 573448, 0, 0, 0, 0]);
   static numberOfMolsToCheck = 100;
   static numberOfMolsToCheckRdKit = 10;
 

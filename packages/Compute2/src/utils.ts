@@ -96,24 +96,22 @@ const suitableForNavStep = (state: PipelineState) => {
 export function findPrevStep(uuid: string, state: PipelineState): NodeWithPath | undefined {
   let prevUuid = '';
   const pred = (state: PipelineState) => {
-    if (!suitableForNavStep(state))
-      return false;
     if (state.uuid === uuid)
       return true;
-    prevUuid = state.uuid;
+    if (suitableForNavStep(state))
+      prevUuid = state.uuid;
     return false;
   };
   return _findTreeNode([state], pred) ? findNodeWithPathByUuid(prevUuid, state) : undefined;
 }
 
 export function findNextStep(uuid: string, state: PipelineState): NodeWithPath | undefined {
-  let prevUuid = '';
+  let found = false;
   const pred = (state: PipelineState) => {
-    if (!suitableForNavStep(state))
-      return false;
-    if (prevUuid === uuid)
+    if (found && suitableForNavStep(state))
       return true;
-    prevUuid = state.uuid;
+    if (state.uuid === uuid)
+      found = true;
     return false;
   };
   return _findTreeNode([state], pred);

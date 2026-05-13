@@ -1,10 +1,9 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import { _package } from './package';
-import { paramsStringFromObj } from './utils';
+import {_package} from './package';
+import {paramsStringFromObj} from './utils';
 
 const API_KEY_PARAM_NAME = 'apiKey';
+export const CDD_HOST = 'https://app.collaborativedrug.com';
 let apiKey = '';
 
 export interface ApiResponse<T> {
@@ -28,6 +27,17 @@ export interface Project {
   id: number;
 }
 
+
+interface SourceFile {
+  name: string;
+  id: number;
+}
+
+interface DataSet {
+  name: string;
+  id: number;
+}
+
 export interface VaultCollection {
   id: number;
   class: string;
@@ -47,17 +57,6 @@ export interface Collection {
   id: number;
 }
 
-interface SourceFile {
-  name: string;
-  id: number;
-}
-
-interface DataSet {
-  name: string;
-  id: number;
-}
-
-
 export interface Batch {
   id: number;
   class: 'batch';
@@ -67,6 +66,9 @@ export interface Batch {
   molecule_batch_identifier?: string;
   owner: string;
   projects: Project[];
+  /** Parent molecule. Present when a batch is fetched via /batches;
+   * absent when it arrives nested inside Molecule.batches (to avoid circularity). */
+  molecule?: Molecule;
   salt_name?: string;
   solvent_of_crystallization_name?: string;
   formula_weight?: number;
@@ -84,6 +86,8 @@ export interface Molecule {
   name: string;
   synonyms: string[];
   cdd_registry_number?: number;
+  registration_type?: string;
+  registration_form?: { id: number };
   projects: Project[];
   collections?: Collection[];
   owner: string;
@@ -99,6 +103,7 @@ export interface Molecule {
   log_p?: number;
   log_d?: number;
   log_s?: number;
+  num_aromatic_rings?: number;
   num_h_bond_donors?: number;
   num_h_bond_acceptors?: number;
   num_rule_of_5_violations?: number;
@@ -107,6 +112,8 @@ export interface Molecule {
   dot_disconnected_formula?: string;
   p_k_a?: number;
   p_k_a_type?: string;
+  p_k_a_basic?: number;
+  bbb2_score?: number;
   exact_mass?: number;
   heavy_atom_count?: number;
   composition?: string;
@@ -115,7 +122,8 @@ export interface Molecule {
   num_rotatable_bonds?: number;
   cns_mpo_score?: number;
   fsp3?: number;
-  batches: Batch[];
+  /** Absent when this Molecule is itself nested inside a Batch (to avoid circularity). */
+  batches?: Batch[];
   udfs?: Record<string, any>;
   molecule_fields?: Record<string, any>;
   source_files: SourceFile[];
@@ -135,6 +143,20 @@ export interface ProtocolQueryResult {
   objects?: Protocol[];
 }
 
+export interface CollectionsQueryResult {
+  count?: number;
+  offset?: number;
+  page_size?: number;
+  objects?: VaultCollection[];
+}
+
+export interface BatchesQueryResult {
+  count?: number;
+  offset?: number;
+  page_size?: number;
+  objects?: Batch[];
+}
+
 interface ReadoutRowsQueryResult {
   count?: number;
   offset?: number;
@@ -142,7 +164,7 @@ interface ReadoutRowsQueryResult {
   objects?: ReadoutRow[];
 }
 
-export type  MoleculeQueryParams = {
+export type MoleculeQueryParams = {
   molecules?: string; // Comma separated list of ids
   names?: string; // Comma separated list of names/synonyms
   async?: boolean;
@@ -180,21 +202,6 @@ export type MoleculeFieldSearch = {
   date_value?: string;
 }
 
-interface MoleculeCreateParams {
-  class?: 'molecule';
-  smiles?: string;
-  cxsmiles?: string;
-  molfile?: string;
-  structure?: string;
-  name: string;
-  description?: string;
-  synonyms?: string[];
-  udfs?: Record<string, any>;
-  projects: (number | string)[];
-  collections?: (number | string)[];
-  duplicate_resolution?: 'new' | 'prompt';
-}
-
 interface ReadoutRowsQueryParameters {
   async?: boolean; // If true, do an asynchronous export
   only_ids?: boolean; // If true, only the Readout Row IDs are returned
@@ -211,7 +218,8 @@ interface ReadoutRowsQueryParameters {
   runs?: string; // Comma-separated list of run IDs
   offset?: number; // Index of the first object to return (default: 0)
   page_size?: number; // Maximum number of objects to return (default: 50, max: 1000)
-  type?: "detail_row" | "batch_run_aggregate_row" | "batch_protocol_aggregate_row" | "molecule_protocol_aggregate_row"; // Type of readout rows to return
+  type?: 'detail_row' | 'batch_run_aggregate_row' | 'batch_protocol_aggregate_row' |
+  'molecule_protocol_aggregate_row'; // Type of readout rows to return
   include_control_state?: boolean; // If true, control wells are identified as positive or negative control wells
   data_sets?: string; // Comma-separated list of public dataset IDs
 }
@@ -386,43 +394,50 @@ export interface ExportStatus {
 async function request<T>(
   method: string,
   path: string,
-  body?: any,
-  text?: boolean,
+  body?: Record<string, any>,
+  binary?: boolean,
 ): Promise<ApiResponse<T>> {
   try {
     if (apiKey === '') {
       const credentials = await _package.getCredentials();
-      if (!credentials)
-        throw new Error('API key is not set in package credentials');
-      if (!credentials.parameters[API_KEY_PARAM_NAME])
+      if (!credentials || !credentials.parameters[API_KEY_PARAM_NAME])
         throw new Error('API key is not set in package credentials');
       apiKey = credentials.parameters[API_KEY_PARAM_NAME];
     }
-    const headers: any = {
+    const headers: Record<string, string> = {
       'X-CDD-Token': apiKey,
       'Accept': 'application/json',
     };
     if (method === 'POST')
       headers['Content-Type'] = 'application/json';
 
-    const response = await grok.dapi.fetchProxy(`https://app.collaborativedrug.com${path}`, {
+    const response = await grok.dapi.fetchProxy(`${CDD_HOST}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
-      redirect: 'follow'
+      redirect: 'follow',
     });
 
-    const data = text ? await response.bytes() : await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error ?? `HTTP error!: ${response.status}`, {cause: response.status});
+    if (response.status === 401) {
+      apiKey = '';
+      const msg = 'CDD Vault authentication failed. Please check the API key in the package credentials.';
+      grok.shell.error(msg);
+      throw new Error(msg, {cause: 401});
     }
 
-    return { data };
+    if (!response.ok) {
+      const errorBody = binary ? undefined : await response.json().catch(() => undefined);
+      throw new Error(errorBody?.error ?? `HTTP error ${response.status}: ${response.statusText}`,
+        {cause: response.status});
+    }
+
+    const data = binary ? await response.bytes() : await response.json();
+    return {data};
   } catch (error) {
+    const cause = error instanceof Error ? error.cause : undefined;
     return {
       error: error instanceof Error ? error.message : 'An unknown error occurred',
-      errorCode: error instanceof Error ? error.cause as number : undefined
+      errorCode: typeof cause === 'number' ? cause : undefined,
     };
   }
 }
@@ -448,17 +463,33 @@ export async function queryProtocols(vaultId: number): Promise<ApiResponse<Proto
 }
 
 /** Get list of available protocols with various params asynchronously*/
-export async function queryProtocolsAsync(vaultId: number, params: ProtocolQueryParams): Promise<ApiResponse<ExportStatus>> {
+export async function queryProtocolsAsync(vaultId: number,
+  params: ProtocolQueryParams): Promise<ApiResponse<ExportStatus>> {
   params.async = true;
-  const paramsStr = paramsStringFromObj({async: true});
+  const paramsStr = paramsStringFromObj(params);
   return request('GET', `/api/v1/vaults/${vaultId}/protocols${paramsStr}`);
 }
 
+/** Get list of available collections with various params (sync, for small page_size previews) */
+export async function queryCollections(vaultId: number, params: CollectionQueryParams):
+  Promise<ApiResponse<CollectionsQueryResult>> {
+  const paramsStr = paramsStringFromObj(params);
+  return request('GET', `/api/v1/vaults/${vaultId}/collections${paramsStr}`);
+}
+
 /** Get list of available collections with various params asynchronously*/
-export async function queryCollectionsAsync(vaultId: number, params: CollectionQueryParams): Promise<ApiResponse<ExportStatus>> {
+export async function queryCollectionsAsync(vaultId: number, params: CollectionQueryParams):
+  Promise<ApiResponse<ExportStatus>> {
   params.async = true;
   const paramsStr = paramsStringFromObj(params);
   return request('GET', `/api/v1/vaults/${vaultId}/collections${paramsStr}`);
+}
+
+/** Get list of available batches with various params (sync, for small page_size previews) */
+export async function queryBatches(vaultId: number, params: BatchQueryParams):
+ Promise<ApiResponse<BatchesQueryResult>> {
+  const paramsStr = paramsStringFromObj(params);
+  return request('GET', `/api/v1/vaults/${vaultId}/batches${paramsStr}`);
 }
 
 /** Get list of available batches with various params asynchronously*/
@@ -471,7 +502,8 @@ export async function queryBatchesAsync(vaultId: number, params: BatchQueryParam
 /**
  * Query molecules with various parameters
  */
-export async function queryMolecules(vaultId: number, params: MoleculeQueryParams): Promise<ApiResponse<MoleculesQueryResult>> {
+export async function queryMolecules(vaultId: number, params: MoleculeQueryParams):
+ Promise<ApiResponse<MoleculesQueryResult>> {
   // For environments that don't support JSON in GET requests, use POST with /query endpoint
   return request<MoleculesQueryResult>('POST', `/api/v1/vaults/${vaultId}/molecules/query`, params);
 }
@@ -479,16 +511,17 @@ export async function queryMolecules(vaultId: number, params: MoleculeQueryParam
 /**
  * Query molecules with various parameters asynchronously
  */
-export async function queryMoleculesAsync(vaultId: number, params: MoleculeQueryParams): Promise<ApiResponse<ExportStatus>> {
+export async function queryMoleculesAsync(vaultId: number, params: MoleculeQueryParams):
+ Promise<ApiResponse<ExportStatus>> {
   params.async = true;
-  // For environments that don't support JSON in GET requests, use POST with /query endpoint
   return request<ExportStatus>('POST', `/api/v1/vaults/${vaultId}/molecules/query`, params);
 }
 
 /**
  * ReadoutRows without or with various parameters
  */
-export async function queryReadoutRows(vaultId: number, params: ReadoutRowsQueryParameters): Promise<ApiResponse<ReadoutRowsQueryResult>> {
+export async function queryReadoutRows(vaultId: number, params: ReadoutRowsQueryParameters):
+ Promise<ApiResponse<ReadoutRowsQueryResult>> {
   const paramsStr = paramsStringFromObj(params);
   return request<ReadoutRowsQueryResult>('GET', `/api/v1/vaults/${vaultId}/readout_rows${paramsStr}`);
 }
@@ -496,7 +529,8 @@ export async function queryReadoutRows(vaultId: number, params: ReadoutRowsQuery
 /**
  * ReadoutRows without or with various parameters asynchronously
  */
-export async function queryReadoutRowsAsync(vaultId: number, params: ReadoutRowsQueryParameters): Promise<ApiResponse<ExportStatus>> {
+export async function queryReadoutRowsAsync(vaultId: number, params: ReadoutRowsQueryParameters):
+ Promise<ApiResponse<ExportStatus>> {
   params.async = true;
   const paramsStr = paramsStringFromObj(params);
   return request<ExportStatus>('GET', `/api/v1/vaults/${vaultId}/readout_rows${paramsStr}`);
@@ -517,7 +551,8 @@ export async function queryExportStatus(vaultId: number, exportId: number): Prom
   return request<ExportStatus>('GET', `/api/v1/vaults/${vaultId}/export_progress/${exportId}`);
 }
 
-/** Get export result*/
-export async function queryExportResult(vaultId: number, exportId: number, isTextResponse: boolean): Promise<ApiResponse<any>> {
-  return request<any>('GET', `/api/v1/vaults/${vaultId}/exports/${exportId}`, undefined, isTextResponse);
+/** Get export result. `binary=true` returns Uint8Array (SDF); otherwise parsed JSON. */
+export async function queryExportResult(vaultId: number, exportId: number, binary: boolean):
+ Promise<ApiResponse<any>> {
+  return request<any>('GET', `/api/v1/vaults/${vaultId}/exports/${exportId}`, undefined, binary);
 }

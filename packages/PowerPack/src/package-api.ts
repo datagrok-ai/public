@@ -11,6 +11,10 @@ export namespace queries {
   export async function mostRecentEntities(user: string ): Promise<DG.DataFrame> {
     return await grok.data.query('PowerPack:MostRecentEntities', { user });
   }
+
+  export async function recentlySharedWithMe(user: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('PowerPack:RecentlySharedWithMe', { user });
+  }
 }
 
 export namespace funcs {

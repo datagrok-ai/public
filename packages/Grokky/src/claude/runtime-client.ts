@@ -1,6 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 
+export const ClaudeModel = {
+  Haiku: 'haiku',
+  Sonnet: 'sonnet',
+  Opus: 'opus',
+} as const;
+export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
+
 export type ChunkEvent = {sessionId: string, content: string};
 export type ToolActivityEvent = {sessionId: string, summary: string};
 export type ToolResultEvent = {sessionId: string, content: string};
@@ -15,6 +22,7 @@ export class ClaudeRuntimeClient {
   private containerId: string | null = null;
   private mcpServerUrl: string | null = null;
 
+
   public onChunk = new rxjs.Subject<ChunkEvent>();
   public onToolActivity = new rxjs.Subject<ToolActivityEvent>();
   public onToolResult = new rxjs.Subject<ToolResultEvent>();
@@ -22,7 +30,9 @@ export class ClaudeRuntimeClient {
   public onError = new rxjs.Subject<ErrorEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
   public onInputRequest = new rxjs.Subject<InputRequestEvent>();
+  public onSyncStatus = new rxjs.Subject<{status: string; message?: string; files?: string[]}>();
   public onClose = new rxjs.Subject<void>();
+  private _skillNames: string[] | null = null;
 
   private constructor() {}
 
@@ -98,6 +108,12 @@ export class ClaudeRuntimeClient {
       case 'input_request':
         this.onInputRequest.next({sessionId: data.sessionId, toolName: data.toolName, input: data.input});
         break;
+      case 'sync_status':
+        console.log('ClaudeRuntimeClient: sync status:', data.status, data.message ?? '');
+        if (data.status === 'done' && Array.isArray(data.files))
+          this._skillNames = data.files.map((f: string) => f.replace(/\.[^.]+$/, ''));
+        this.onSyncStatus.next({status: data.status, message: data.message, files: data.files});
+        break;
       }
     };
 
@@ -111,7 +127,7 @@ export class ClaudeRuntimeClient {
     };
   }
 
-  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string}): void {
+  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
@@ -120,7 +136,26 @@ export class ClaudeRuntimeClient {
       mcpServerUrl: this.mcpServerUrl,
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
+      ...(options?.model ? {model: options.model} : {}),
     }));
+  }
+
+  async syncUserFiles(
+    scope: 'all' | 'user-files' | 'packages' | 'shared' = 'all',
+    packageName?: string,
+  ): Promise<void> {
+    await this.ensureConnected();
+    this.ws!.send(JSON.stringify({
+      type: 'sync_user_files',
+      apiKey: grok.dapi.token,
+      mcpServerUrl: this.mcpServerUrl,
+      scope,
+      ...(packageName ? {packageName} : {}),
+    }));
+  }
+
+  getSkillNames(): string[] {
+    return this._skillNames ?? [];
   }
 
   abort(sessionId: string): void {
@@ -135,7 +170,7 @@ export class ClaudeRuntimeClient {
     this.ws.send(JSON.stringify({type: 'input_response', sessionId, value}));
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object}): Promise<any> {
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}`;
     return new Promise((resolve, reject) => {
@@ -151,7 +186,10 @@ export class ClaudeRuntimeClient {
         cleanup();
         reject(new Error(evt.message));
       }));
-      this.send(sid, message, options?.outputSchema ? {outputSchema: options.outputSchema} : undefined);
+      this.send(sid, message, {
+        ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
+        ...(options?.model ? {model: options.model} : {}),
+      });
     });
   }
 
@@ -167,6 +205,7 @@ export class ClaudeRuntimeClient {
     this.onError.complete();
     this.onAborted.complete();
     this.onInputRequest.complete();
+    this.onSyncStatus.complete();
     this.onClose.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
@@ -175,6 +214,7 @@ export class ClaudeRuntimeClient {
     this.onError = new rxjs.Subject<ErrorEvent>();
     this.onAborted = new rxjs.Subject<AbortedEvent>();
     this.onInputRequest = new rxjs.Subject<InputRequestEvent>();
+    this.onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();
     this.onClose = new rxjs.Subject<void>();
   }
 }

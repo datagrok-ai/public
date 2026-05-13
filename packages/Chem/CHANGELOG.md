@@ -1,9 +1,33 @@
 # Chem changelog
 
-## v.next
+## 1.17.8 (2026-05-12)
 
-* Fixed crash in checkCurrentView when table is opened in Files preview without a registered TableView
-* Substructure filter: Fixed similarity cutoff and fingerprint not syncing to the slider/UI on view clone
+* Scaffold tree: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
+* Reaction enumerator: Reworked UI — replaced the preview with side-by-side reaction templates and building blocks grids that subset the enumeration via row selection; renamed inputs and the full-config button for clarity
+* Reaction enumerator: Right pane is now a tabbed view (Reaction templates, Building blocks, Reagents, Preview); preview tab re-runs lazily on activation
+* Reaction enumerator: Added reagents-mode enumeration — when a reagents file/column are provided, each step uses exactly one BB or earlier-round product plus reagents in every remaining slot (produces derivatives of each BB across rounds)
+* Reaction enumerator: Added a plain-English mode summary under the config buttons describing how the current selections drive the run
+* Reaction enumerator: Added test coverage for reagents-mode enumeration (round 1 / multi-round step-pool invariants, empty-reagents fallback, BB-BB combo isolation)
+
+## 1.17.5 (2026-04-15)
+
+### Features:
+
+* Chem: Stereo agnostic search
+* Chem: Pharmacophore feature highlighting
+
+### Bug fixes
+
+* GROK-19962: Fixed crash in checkCurrentView when table is opened in Files preview without a registered TableView
+* GROK-19994: MMP: Fixed crash when navigating away from MMP view while tab content is lazily rendered
+* GROK-19921: Bio, Chem: Make table view active when adding scatter plot for chemical/sequence space and activity cliffs (in case it was switched during function execution)
+* GROK-19862: Radar: Viewer type naming issue
+* GROK-14952: Chem: Filter Panel and Hamburger menu molecular filters are not sync
+* GROK-18530: Chem: Substructure Filter: incorrect filtering in the cloned view when using the "Similar" option
+* Chem: Scaffold Tree: Fix double vertical scrollbar
+* Chem: MPO: Add EDA package guard and deduplicate profile loading
+* Chem: MPO: Preserve profile name and description on dataset change
+* Chem: MPO: Fix profile naming and cancel behavior
 
 ## 1.17.4 (2026-03-30)
 

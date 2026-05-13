@@ -10,14 +10,14 @@ import {
 } from './mpo';
 import {DesirabilityEditor, DesirabilityEditorFactory} from './editors/desirability-editor-factory';
 import {DesirabilityModeDialog} from './dialogs/desirability-mode-dialog';
-import {discoverComputeFunctions} from '../compute-functions/discovery';
-import {chemFunctionsDialog} from '../compute-functions/dialog';
+import {discoverComputeFunctions, chemFunctionsDialog} from '../compute-functions';
 
 import '../../css/styles.css';
 
 import {MPO_SCORE_CHANGED_EVENT} from './utils';
 
 const MAX_CATEGORICAL_CATEGORIES = 20;
+const COLUMN_DROPDOWN_OPEN_SELECTOR = '.d4-column-selector-backdrop';
 
 export class MpoProfileEditor {
   readonly root = ui.div([]);
@@ -101,14 +101,6 @@ export class MpoProfileEditor {
     if (this.design === on)
       return;
     this.design = on;
-    this.rows = {};
-    this.render();
-  }
-
-  setPreviewMode(on: boolean): void {
-    if (this.preview === on)
-      return;
-    this.preview = on;
     this.rows = {};
     this.render();
   }
@@ -198,7 +190,7 @@ export class MpoProfileEditor {
     this.rowSubs.get(rowId)?.unsubscribe();
     this.rowSubs.set(rowId, editor.onChanged.subscribe(() => this.emitChange()));
 
-    const propertyCell = this.buildPropertyCell(rowId, name);
+    const propertyCell = this.buildPropertyCell(name);
     const weightCell = this.buildWeightCell(rowId, prop);
     const columnCell = this.buildColumnSelector(rowId, name, editor);
 
@@ -220,7 +212,7 @@ export class MpoProfileEditor {
     return row;
   }
 
-  private buildPropertyCell(rowId: string, name: string): HTMLElement | null {
+  private buildPropertyCell(name: string): HTMLElement | null {
     if (this.dataFrame) {
       const el = ui.divText(name);
       ui.tooltip.bind(el, () => name);
@@ -299,22 +291,73 @@ export class MpoProfileEditor {
     if (!this.dataFrame)
       return null;
 
-    const items = this.getEligibleColumnNames();
-    const matched = this.columnMapping[name] ?? null;
+    const matchedName = this.columnMapping[name] ?? null;
+    const matchedCol = matchedName ? this.dataFrame.col(matchedName) : null;
 
-    if (matched) {
-      const col = this.dataFrame.col(matched);
-      editor.setColumn?.(col);
-    }
+    if (matchedCol)
+      editor.setColumn?.(matchedCol);
 
-    const input = ui.input.choice('', {items, nullable: true, value: matched ?? '', onValueChanged: (v) => {
-      this.columnMapping[name] = v ?? null;
-      const col = v ? this.dataFrame!.col(v) : null;
-      if (col && this.switchPropertyType(name, rowId, col))
+    const commit = (v: DG.Column | null): void => {
+      this.columnMapping[name] = v?.name ?? null;
+      if (v && this.switchPropertyType(name, rowId, v))
         return;
-      editor.setColumn?.(col);
+      editor.setColumn?.(v);
       this.emitChange();
-    }});
+    };
+
+    // Local workaround to avoid blocking statistics releases on a js-api change.
+    // Proper fix: expose `changeOnHover` on IColumnInputInitOptions.
+    const isPopupOpen = (): boolean => !!document.querySelector(COLUMN_DROPDOWN_OPEN_SELECTOR);
+
+    let pending: {value: DG.Column | null} | null = null;
+    let observer: MutationObserver | null = null;
+
+    const stopObserving = (): void => {
+      observer?.disconnect();
+      observer = null;
+    };
+
+    const flush = (): void => {
+      if (!pending)
+        return;
+      const v = pending.value;
+      pending = null;
+      commit(v);
+    };
+
+    const watchForClose = (): void => {
+      if (observer)
+        return;
+      observer = new MutationObserver(() => {
+        if (isPopupOpen())
+          return;
+        stopObserving();
+        flush();
+      });
+      observer.observe(document.body, {childList: true, subtree: true});
+    };
+
+    const input = ui.input.column('', {
+      table: this.dataFrame,
+      nullable: true,
+      value: matchedCol ?? undefined,
+      filter: (c: DG.Column) => !c.isCategorical || c.categories.length <= MAX_CATEGORICAL_CATEGORIES,
+      onValueChanged: (v: DG.Column | null) => {
+        if (isPopupOpen()) {
+          pending = {value: v};
+          watchForClose();
+          return;
+        }
+        pending = null;
+        stopObserving();
+        commit(v);
+      },
+    });
+
+    // Block d4's mouse-wheel column cycling so page scroll over the input doesn't
+    // mutate the value. No preventDefault — the browser still scrolls.
+    input.root.addEventListener('wheel', (e: Event) => e.stopImmediatePropagation(), {capture: true});
+
     return input.root;
   }
 
@@ -387,7 +430,7 @@ export class MpoProfileEditor {
     prop: PropertyDesirability,
     editor: DesirabilityEditor,
   ): HTMLElement {
-    const gear = ui.icons.settings(() => {
+    return ui.icons.settings(() => {
       const name = this.getPropertyNameByRowId(rowId);
       if (!name)
         return;
@@ -395,8 +438,6 @@ export class MpoProfileEditor {
       const col = colName ? this.dataFrame?.col(colName) ?? null : null;
       this.openModeDialog(name, rowId, prop, editor, col);
     }, 'Settings');
-
-    return gear;
   }
 
   private buildRowControls(rowId: string, prop: PropertyDesirability): HTMLElement {
@@ -522,7 +563,7 @@ export class MpoProfileEditor {
   }
 
   private buildComputeIcon(prop: PropertyDesirability): HTMLElement {
-    const icon = ui.iconFA('calculator', async () => {
+    return ui.iconFA('calculator', async () => {
       const computeFunctions = discoverComputeFunctions('HitTriageFunction');
       const template = {
         compute: {
@@ -546,9 +587,11 @@ export class MpoProfileEditor {
         () => {},
         template,
         true,
+        undefined,
+        undefined,
+        true,
       );
     }, 'Configure compute function');
-    return icon;
   }
 
   private async runComputeFunction(prop: PropertyDesirability): Promise<void> {

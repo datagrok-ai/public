@@ -65,6 +65,8 @@ export class UserNotification {
     this.dart = dart;
   };
 
+  get id(): string { return api.grok_UserNotification_Id(this.dart); }
+
   get user(): User {
     return toJs(api.grok_UserNotification_User(this.dart));
   }

@@ -12,14 +12,23 @@ export namespace funcs {
     return await grok.functions.call('Admetica:Info', {});
   }
 
+  /**
+  Panel with ADMET predictions for a molecule.
+  */
   export async function admeticaWidget(smiles: any ): Promise<any> {
     return await grok.functions.call('Admetica:AdmeticaWidget', { smiles });
   }
 
+  /**
+  Lists available ADMET properties.
+  */
   export async function getModels(property: string ): Promise<any> {
     return await grok.functions.call('Admetica:GetModels', { property });
   }
 
+  /**
+  Runs ADMET predictions for Hit Triage.
+  */
   export async function admeticaHT(table: DG.DataFrame , molecules: DG.Column , absorption: any | null, distribution: any | null, metabolism: any | null, excretion: any | null): Promise<void> {
     return await grok.functions.call('Admetica:AdmeticaHT', { table, molecules, absorption, distribution, metabolism, excretion });
   }
@@ -28,16 +37,22 @@ export namespace funcs {
     return await grok.functions.call('Admetica:AdmeticaEditor', { call });
   }
 
+  /**
+  Predicts ADMET properties and appends result columns.
+  */
   export async function admeticaMenu(table: DG.DataFrame , molecules: DG.Column , template: string , models: any , addPiechart: boolean , addForm: boolean ): Promise<void> {
     return await grok.functions.call('Admetica:AdmeticaMenu', { table, molecules, template, models, addPiechart, addForm });
   }
 
+  /**
+  Predicts ADMET properties for a molecule column.
+  */
   export async function getAdmeProperties(table: DG.DataFrame , molecules: DG.Column , props?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Admetica:GetAdmeProperties', { table, molecules, props });
   }
 
   /**
-  Predicts ADME properties for a given molecule.
+  Predicts ADMET properties for a given molecule.
   */
   export async function getAdmePropertiesSingle(molecule: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Admetica:GetAdmePropertiesSingle', { molecule });

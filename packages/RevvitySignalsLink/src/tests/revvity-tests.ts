@@ -1,8 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import { awaitCheck, before, category, expect, test } from '@datagrok-libraries/test/src/test';
-//import { funcs } from '../package-api';
+import { awaitCheck, category, expect, test } from '@datagrok-libraries/test/src/test';
 import { openRevvityNode } from '../view-utils';
 import { Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { funcs } from '../package-api';
@@ -11,20 +10,17 @@ import { getLibrariesWithEntityTypes } from '../libraries';
 
 category('revvity signals app', () => {
 
-  before(async () => {
-  });
-
   test('app initial statistics', async () => {
     const view = await funcs.revvitySignalsLinkApp();
     //check that statistics view has been created
-    await awaitCheck(() => view.root.getElementsByTagName('table') != null, 'Initial statistics hasn\'t been loaded', 30000);
+    await awaitCheck(() => view.root.getElementsByTagName('table').length > 0, 'Initial statistics hasn\'t been loaded', 30000);
   });
 
   test('open compounds|assets node', async () => {
     const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
     node.expanded = true;
     openRevvityNode(node, ['Compounds'], 'Assets', 'Compounds', 'asset');
-    await awaitCheck(() => grok.shell.tv?.dataFrame.rowCount === 100, 'Compounds -> Assests node hasn\'t been loaded', 30000);
+    await awaitCheck(() => grok.shell.tv?.dataFrame.rowCount === 100, 'Compounds -> Assets node hasn\'t been loaded', 30000);
   }, {timeout: 60000});
 
   test('open compounds|assets with pre-defined query', async () => {
@@ -42,15 +38,12 @@ category('revvity signals app', () => {
     const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
     node.expanded = true;
     openRevvityNode(node, ['Compounds'], 'Assets', 'Compounds', 'asset', query);
-    await awaitCheck(() => grok.shell.tv?.dataFrame.rowCount === 100, 'Compounds -> Assests node with pre-defined query hasn\'t been loaded', 30000);
+    await awaitCheck(() => grok.shell.tv?.dataFrame.rowCount === 100, 'Compounds -> Assets node with pre-defined query hasn\'t been loaded', 30000);
   }, {timeout: 60000});
 });
 
 
 category('revvity signals functions', () => {
-
-  before(async () => {
-  });
 
   test('searchEntities', async () => {
     const query = {

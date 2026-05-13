@@ -3,26 +3,42 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {ClaudeRuntimeClient} from '../../claude/runtime-client';
+import * as rxjs from 'rxjs';
+import {ClaudeRuntimeClient, ClaudeModel} from '../../claude/runtime-client';
 import {UsageLimiter} from '../usage-limiter';
+import {AIPanel} from '../panel';
+import {runPromptWithLifecycle, RENDERED_EVENT} from '../ui';
+
+interface AISearchFuncInfo {
+  func: DG.Func;
+  friendlyName: string;
+  inputName: string;
+  order: number;
+}
+
 /**
  * The idea is to provide single AI search provider which will decide which LLM to use based on user prompt.
  * This class will not care about individual LLM implementations, nor the presence of api keys and other needed things.
  */
 export class CombinedAISearchAssistant {
-  private collectFunctions() {
+  private collectFunctions(): {[name: string]: AISearchFuncInfo} {
     // these function should have descriptions, one input of a string prompt and an output of a widget. meta.useWhen must be defined as well
-    const functions = DG.Func.find({meta: {role: 'aiSearchProvider'}}).filter((f) => f.inputs.length === 1 && f.inputs[0].type === 'string' &&
+    const functions = DG.Func.find({meta: {role: 'aiSearchProvider'}}).filter((f) => f.inputs.length >= 1 && f.inputs[0].type === 'string' &&
         f.description && f.outputs.length === 1 && (f.outputs[0].type as string) === 'widget' && f.options.useWhen);
 
-    // create a map from names to functions
-    const functionMap: {[name: string]: {func: DG.Func, friendlyName: string, inputName: string, order: number}} = {};
-    for (const f of functions)
-      functionMap[f.name] = {func: f, friendlyName: f.friendlyName ?? f.name, inputName: f.inputs[0].name, order: Number.parseInt(f.options.order ?? '0') ?? 0};
+    const functionMap: {[name: string]: AISearchFuncInfo} = {};
+    for (const f of functions) {
+      functionMap[f.name] = {
+        func: f,
+        friendlyName: f.friendlyName ?? f.name,
+        inputName: f.inputs[0].name,
+        order: Number.parseInt(f.options.order ?? '0') ?? 0,
+      };
+    }
     return functionMap;
   }
 
-  private functions: ReturnType<typeof CombinedAISearchAssistant.prototype.collectFunctions>;
+  private functions: {[name: string]: AISearchFuncInfo};
   private constructor() {
     this.functions = this.collectFunctions();
   }
@@ -43,17 +59,11 @@ export class CombinedAISearchAssistant {
 
     const addFunctionTab = (functionName: string, setAsCurrentPane: boolean = false) => {
       const funcInfo = this.functions[functionName];
+      let cachedHost: HTMLElement | null = null;
       const pane = tabcontrol.addPane(funcInfo.friendlyName, () => {
-        const wait = ui.wait(async () => {
-          const inputParam: {[key: string]: any} = {};
-          inputParam[funcInfo.inputName] = prompt;
-          const result: DG.Widget | null = await funcInfo.func.apply(inputParam);
-          if (result == null)
-            return ui.divText('No result generated.');
-          result.root.style.width = '100%';
-          return result.root;
-        });
-        return wait;
+        if (!cachedHost)
+          cachedHost = this.buildFunctionTabContent(funcInfo, prompt);
+        return cachedHost;
       });
       if (setAsCurrentPane) tabcontrol.currentPane = pane;
       ui.tooltip.bind(pane.header, funcInfo.func.description);
@@ -91,7 +101,55 @@ export class CombinedAISearchAssistant {
     tabcontrol.root.style.width = '100%';
     tabcontrol.root.style.height = 'unset';
     tabcontrol.root.style.minHeight = '300px';
+    // d4 TabControl auto-hides the header stripe when only one pane is added; force it visible so tabs always show
+    tabcontrol.header.style.display = 'flex';
     return DG.Widget.fromRoot(tabcontrol.root);
+  }
+
+  private buildFunctionTabContent(funcInfo: AISearchFuncInfo, prompt: string): HTMLElement {
+    const host = ui.divV([], 'grokky-ai-search-tab-host');
+    const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true});
+    chat.onRunRequest.subscribe((a) => runPromptWithLifecycle(chat, a.currentPrompt.prompt, grok.shell.v, 'search'));
+
+    host.appendChild(ui.wait(async () => {
+      const client = ClaudeRuntimeClient.getInstance();
+      const firstStreamingEvent = new Promise<void>((resolve) => {
+        const sub = rxjs.merge(client.onChunk, client.onToolActivity).subscribe((evt) => {
+          if (evt.sessionId !== chat.sessionId)
+            return;
+          sub.unsubscribe();
+          resolve();
+        });
+      });
+      const rendered = new Promise<void>((resolve) => {
+        const sub = grok.events.onCustomEvent(RENDERED_EVENT).subscribe((s) => {
+          if (s !== chat.sessionId)
+            return;
+          sub.unsubscribe();
+          resolve();
+        });
+      });
+
+      const inputParam: {[key: string]: any} = {[funcInfo.inputName]: prompt};
+      if (funcInfo.func.inputs.some((i) => i.name === 'sessionId'))
+        inputParam['sessionId'] = chat.sessionId;
+      const widget = await funcInfo.func.apply(inputParam) as DG.Widget | null;
+
+      const mount = ui.div();
+      if (widget == null) {
+        chat.mountInto(mount);
+        chat.appendArtifact(ui.divText('No result generated.'));
+        return mount;
+      }
+
+      await Promise.race([firstStreamingEvent, rendered]);
+      chat.mountInto(mount);
+      widget.root.style.width = '100%';
+      chat.appendArtifact(widget.root);
+      return mount;
+    }));
+
+    return host;
   }
 
   private lastUiprompt: string = '';
@@ -148,7 +206,7 @@ User query: ${prompt}`;
 
     let order = Object.keys(this.functions);
     try {
-      const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt);
+      const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {model: ClaudeModel.Haiku});
       const parsed = JSON.parse(res) as string[];
       if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string' && this.functions[s]) && parsed.length > 0)
         order = parsed;

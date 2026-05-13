@@ -1,5 +1,26 @@
 # Compute2 changelog
 
+## 1.4.1 (2026-04-24)
+
+### Features
+
+- Compositor-thread loading overlay
+- Action step type with unified Back/Next pipeline navigation
+- Inspector improvements: FilterDropdown component, unified log filters, improved log and path formatting
+- Inspector debug tool available to all users
+- Stress test pipeline with onInit and chained steps
+- E2e test suite for apps, RFV editors, and pipelines
+
+### Performance
+
+- Buffer RxJS-to-Vue reactive updates during global lock
+- Suppress Vue rerenders during global lock
+- Webpack filesystem cache and babel-loader caching for faster rebuilds
+
+### UI
+
+- Left-aligned navigation buttons in RFV and PipelineView bottom bar
+
 ## 1.4.0 (2026-03-19)
 
 - 1.27 platform support

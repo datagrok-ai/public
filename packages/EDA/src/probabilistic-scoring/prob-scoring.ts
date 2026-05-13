@@ -246,6 +246,7 @@ export class Pmpo {
 
   private params: Map<string, PmpoParams> | null = null;
   private desirabilityProfile: DesirabilityProfile | null = null;
+  private fitReady: Promise<void> = Promise.resolve();
 
   private table: DG.DataFrame;
   private view: DG.TableView;
@@ -691,12 +692,14 @@ export class Pmpo {
   } // runTrainingApp
 
   /** Runs the pMPO model training application */
-  public getPmpoAppItems(): PmpoAppItems {
+  public async getPmpoAppItems(): Promise<PmpoAppItems> {
+    const controls = this.getInputForm(false);
+    await this.fitReady;
     return {
       statsGrid: this.statGrid,
       rocCurve: this.rocCurve,
       confusionMatrix: this.confusionMatrix,
-      controls: this.getInputForm(false),
+      controls,
       profile: this.desirabilityProfile,
     };
   } // getViewers
@@ -1134,14 +1137,18 @@ export class Pmpo {
       qInput.enabled = toEnable;
     };
 
-    setTimeout(() => {
-      runComputations();
-
-      if (toUseAutoTune)
-        autoTuneInput.value = true; // this will trigger setting optimal parameters and running computations
-      else
+    this.fitReady = new Promise<void>((resolve) => {
+      setTimeout(() => {
         runComputations();
-    }, 10);
+
+        if (toUseAutoTune)
+          autoTuneInput.value = true; // this will trigger setting optimal parameters and running computations
+        else
+          runComputations();
+
+        resolve();
+      }, 10);
+    });
 
     // Save model button
     const saveBtn = ui.button('Save', async () => {

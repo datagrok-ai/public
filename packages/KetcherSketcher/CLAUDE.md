@@ -1,0 +1,45 @@
+# KetcherSketcher
+
+Registers EPAM's [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as a
+molecule sketcher option in Datagrok. When the user picks "Ketcher" in any chem sketcher
+dropdown (grid cell editor, dialog, filter, etc.), the platform instantiates the widget
+defined here and uses it in place of the built-in OpenChemLib sketcher.
+
+This package is small: one real source file (`src/ketcher.tsx`) wraps the third-party
+`ketcher-react` editor and adapts it to the platform's `SketcherBase` contract.
+
+## Architecture
+
+| File | Role |
+|------|------|
+| `src/package.ts` | Registers the single function `Ketcher` with `meta.role: moleculeSketcher`. That's the whole public surface. |
+| `src/ketcher.tsx` | `KetcherSketcher extends grok.chem.SketcherBase`. Mounts a React root holding `<Editor>` from `ketcher-react`, subscribes to `'change'` events, and exposes `smiles / molFile / molV3000 / smarts` getters and setters that bridge Ketcher's async API to the platform's synchronous contract. |
+| `src/constants.ts` | String constants for molfile version args (`v2000` / `v3000`) passed to `ketcher.getMolfile(...)`. |
+| `src/tests/ketcher-utils.ts` | Test helpers: `createKetcher()` opens a dialog containing a fresh `Sketcher`; `_testSetSmiles / _testSetMolfile / _testSetSmarts` verify each notation round-trips. |
+| `css/editor.css` | Scoped overrides on Ketcher's generated class names — fixed `.ketcher-host` size, `.Ketcher-root` min-width, hides About/Help, raises Mui popovers above sketcher overlays. |
+
+## Glossary
+
+| Concept | What it maps to |
+|---------|-----------------|
+| Sketcher | `grok.chem.Sketcher` — the Datagrok host widget (dropdown + container). Delegates to an implementation like `KetcherSketcher` chosen by `grok.chem.currentSketcherType`. |
+| Sketcher implementation | A `DG.Widget` that `extends grok.chem.SketcherBase`. Registered via a package function with `meta.role: moleculeSketcher`. The function name (here `Ketcher`) is what shows up in the sketcher-picker dropdown. |
+| Notation | One of `smiles`, `molblock` (V2000), `molblockV3000`, `smarts`. `DG.chem.Notation` holds the enum; `DG.chem.convert(src, from, to)` converts between them. |
+| `explicitMol` | A `{notation, value}` field on `SketcherBase` that short-circuits the getters: if the caller last set SMILES explicitly, `get smiles` returns that string verbatim instead of reconverting from a cached molblock. |
+| Cached formats (`_smiles`, `_molV2000`, `_molV3000`, `_smarts`) | What Ketcher actually produced on the last `'change'` event (or what was pushed in via a setter). Getters for other notations fall through these via `DG.chem.convert`. Setters for one notation clear the others. |
+| `host` / `setMoleculeFromHost` | The surrounding `Sketcher` container may already have a molecule set before this implementation initializes. `onInit` calls `setMoleculeFromHost()` to pick it up. |
+
+## Conventions and gotchas
+
+- **Editor instance not ready until `onInit` fires.** The React render is synchronous but `ketcher-react` calls `onInit(ketcher)` asynchronously. Before that, `this._sketcher` is `null` and `isInitialized` is `false`. Tests wait on `sketcher.isInitialized === true`.
+- **`getSmiles()` throws on SMARTS.** Ketcher's SMILES export fails when the structure is a query. The `change` handler catches and sets `this._smiles = null`; the `smiles` getter then falls through to `DG.chem.smilesFromSmartsWarning()`.
+- **Setters clear sibling caches.** `set smiles` nulls `_molV2000 / _molV3000 / _smarts`, etc. Don't reuse a cached format after calling a setter on a different one.
+- **User-settings persistence is intentionally off.** The commented-out `grok.dapi.userDataStorage` calls in `onInit` and `detach` were removed in 2.1.8 because restoring saved options broke SMARTS input. Do not uncomment without re-verifying SMARTS.
+- **Popup-truncation workaround (`ketcher.tsx:40-45`).** When the sketcher opens in a popup at the edge of the screen (last grid column), `.Ketcher-root` is forced to `min-width: 0` so it shrinks to fit. Keyed off `host.isInPopupContainer()`.
+- **Deferred React mount until `ketcherHost` is sized (`ketcher.tsx`, `_mountEditorWhenSized` / `_mountEditor`).** Mounting `<Editor>` into a zero-sized or detached host throws "Could not resolve relative length" from `<RulerArea>` because the canvas SVG uses `width/height="100%"` and can't resolve relative units without a sized containing block. **Being attached to the document isn't enough** — the parent flexbox/grid layout has to have run too. The constructor builds the React element and appends `ketcherHost` to `this.root`, then `_mountEditorWhenSized()` checks `getBoundingClientRect()`; if dims are zero it installs a `ResizeObserver` and only calls `reactRoot.render()` once `contentRect` reports `width > 0 && height > 0`. `detach()` disconnects the observer and clears the cached element. The `onInit` closure references `this.host`, which is set by `init()` — Datagrok's sketcher lifecycle guarantees `init()` runs after `host.appendChild(sketcher.root)`, and `onInit` only fires after React mounts (which is after the host is sized), so by then `this.host` is always defined. This pattern was adopted from PR #3789 ("CLAUDE-159: Defer Ketcher React Editor mount until ketcher-host has non-zero dimensions") — more correct than gating on `init()` alone, which only guarantees DOM attachment.
+- **Known upstream limitations we don't currently patch.** ketcher-core leans heavily on module-level singletons that don't clean up after themselves. We are aware of these and chose not to work around them — keep the list in mind when something starts misbehaving:
+  - **`ZoomTool.destroy()` is never called.** The macromolecules editor's `ZoomTool` registers a `ResizeObserver` on its canvas in `observeCanvasResize` and the observer outlives the React tree. When a popup closes and the canvas ends up in a `display: none` subtree, the observer can fire one last time, `drawScrollBars → initScrollBars` reads `canvasWrapper.node().width.baseVal.value`, and the SVG can't resolve its relative length — throws "Could not resolve relative length", which Datagrok's `window.onerror` catches and logs. It's timing-dependent; you may or may not see it on close. We previously patched `ZoomTool.prototype.drawScrollBars` to try/catch the read; removed because the bug stopped reproducing on the deferred-mount flow. If you see the trace again rooted at `ZoomTool.initScrollBars`, restoring the prototype wrap is the cheap fix.
+  - **Multi-instance is not supported.** `CoreEditor.provideEditorInstance()`, the `indigoWorker` Web Worker and its `onmessage` handler, `IndigoService.ketcherId`, and `ketcherProvider` are all module-singletons. Two `KetcherSketcher` instances mounted simultaneously (e.g., a closed-but-not-detached hamburger-menu filter plus a fresh filter-panel filter on the same column) will collide: the second overwrites singletons the first depends on, unmounting the second orphans the worker's `onmessage` so the first's `getSmiles`/`getMolfile` hang forever, and the cached `IndigoService.ketcherId` goes stale on `removeKetcherInstance`, throwing `"couldnt find ketcher instance N"`. Earlier versions of this package patched around all three (shared `IndigoService`, `getStandardServerOptions` recovery, `SVGLength.prototype.value` shim); the patches were reverted because Datagrok's filter UX only shows one sketcher at a time and the workarounds papered over upstream architectural problems we can't really fix from outside. If you reintroduce a flow that opens a second sketcher while the first is still mounted, expect these singletons to bite again — track them down upstream rather than reviving the workarounds.
+- **CSS class names are hashed.** `ketcher-react` ships CSS modules, so selectors here use attribute-substring matchers like `[class*="App-module_top__"]`. If styles stop working after a Ketcher upgrade, first check whether the module name changed.
+- **`file-loader` for `.sdf` in webpack.** `webpack.config.js` routes `.sdf` through `file-loader`; `templates/fg.sdf` and `templates/library.sdf` are shipped as static assets.
+- **No direct `fetch` / `grok.dapi` use.** The sketcher is fully client-side via `StandaloneStructServiceProvider`. There is no server round-trip for molecule conversion.

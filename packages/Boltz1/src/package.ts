@@ -2,8 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { BoltzService } from './utils/boltz-service';
-import { Boltz1AppView } from './demo/boltz-app';
+import {BoltzService} from './utils/boltz-service';
+import {Boltz1AppView} from './demo/boltz-app';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -21,9 +21,9 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     meta: {
-      cache: 'all',
+      'cache': 'all',
       'cache.invalidateOn': '0 0 1 * *',
-    }
+    },
   })
   static async runBoltz(
     config: string,
@@ -33,10 +33,10 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Boltz',
+    'name': 'Boltz',
     'top-menu': 'Bio | Folding | Boltz...',
-    meta: {vectorFunc: 'true'},
-    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
+    'meta': {vectorFunc: 'true'},
+    'outputs': [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async folding(
     table: DG.DataFrame,
@@ -46,10 +46,10 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Boltz',
+    'name': 'Boltz',
     'top-menu': 'Chem | Docking | Boltz...',
-    meta: {vectorFunc: 'true'},
-    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
+    'meta': {vectorFunc: 'true'},
+    'outputs': [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async docking(
     table: DG.DataFrame,

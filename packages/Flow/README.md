@@ -165,7 +165,8 @@ grok publish --release # release mode
 
 ### Key Dependencies
 
-- [litegraph.js](https://github.com/jagenjo/litegraph.js) `^0.7.18` — Node graph canvas library
+- [Rete.js v2](https://retejs.org) — graph editor framework (core, area, connection, render-utils, react renderer)
+- [React](https://react.dev) `^18` — used by the canvas renderer; the rest of the package is plain TS on Datagrok UI
 - [datagrok-api](https://datagrok.ai/help/develop) — Platform API (external, provided at runtime)
 
 See also: [Datagrok Packages](https://datagrok.ai/help/develop/develop#packages)

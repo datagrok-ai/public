@@ -7,6 +7,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {Subscription} from 'rxjs';
+
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {assure} from '@datagrok-libraries/utils/src/test';
@@ -24,6 +26,7 @@ import {
   CHEM_SPACE_CLUSTER_COL,
 } from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {calculateDescriptors, getDescriptorsTree} from './docker/api';
 import {addDescriptorsColsToDf, getDescriptorsSingle, getSelected, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
 import {identifiersWidget, getMapIdentifiers, openMapIdentifiersDialog, textToSmiles} from './widgets/identifiers';
@@ -112,7 +115,7 @@ import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
 import {MpoProfileManager} from './mpo/mpo-profile-manager';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
-import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
+import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT} from './mpo/utils';
 import {removeWaterAndSalts} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {scripts} from './package-api';
@@ -173,6 +176,8 @@ let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
 let _renderers: Map<string, DG.GridCellRenderer>;
 let _initChemPromise: Promise<void> | null = null;
+
+let mpoTreeBrowserSub: Subscription | null = null;
 
 async function initChemInt(): Promise<void> {
   chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -563,6 +568,58 @@ export class PackageFunctions {
   })
   static diversitySearchTopMenu(): void {
     (grok.shell.v as DG.TableView).addViewer('Chem Diversity Search');
+  }
+
+
+  @grok.decorators.func({
+    'name': 'Similarity Matrix',
+    'top-menu': 'Chem | Calculate | Similarity Matrix...',
+    'description': 'Computes a full pairwise Tanimoto similarity matrix for the molecules, labeled by the symbol column.',
+  })
+  static async similarityMatrixTopMenu(
+    table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column'}) symbols: DG.Column,
+    @grok.decorators.param({
+      type: 'string',
+      options: {
+        caption: 'Fingerprint type',
+        choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
+        initialValue: 'Morgan',
+      },
+    }) fingerprintType: string = 'Morgan',
+  ): Promise<DG.DataFrame> {
+    const pb = DG.TaskBarProgressIndicator.create('Computing similarity matrix...');
+    const dmService = new DistanceMatrixService(true, true);
+    try {
+      const fingerprints = await chemSearches.chemGetFingerprints(molecules, fingerprintType as Fingerprint, false);
+      const n = fingerprints.length;
+
+      const symbolValues: string[] = symbols.toList().map((v) => v == null ? '' : v.toString());
+
+      // parallel pairwise Tanimoto distances on web workers; condensed upper-triangular form
+      const distances = await dmService.calc(fingerprints, BitArrayMetricsNames.Tanimoto, false);
+      const dm = new DistanceMatrix(distances, n);
+
+      const result = DG.DataFrame.create(n);
+      result.name = `${molecules.name} similarity matrix`;
+      result.columns.add(DG.Column.fromStrings('symbol', symbolValues));
+
+      for (let j = 0; j < n; j++) {
+        const values = new Float32Array(n);
+        for (let i = 0; i < n; i++)
+          values[i] = i === j ? 1 : 1 - dm.get(i, j);
+        const colName = result.columns.getUnusedName(symbolValues[j] || `mol_${j}`);
+        const col = DG.Column.fromFloat32Array(colName, values);
+        col.meta.format = '0.000';
+        result.columns.add(col);
+      }
+
+      grok.shell.addTableView(result);
+      return result;
+    } finally {
+      pb.close();
+    }
   }
 
 
@@ -2893,22 +2950,29 @@ export class PackageFunctions {
     return infoView.view;
   }
 
+  @grok.decorators.app({
+    'name': 'Reaction Enumerator',
+    'description': 'Forward-reaction library enumeration over building blocks and SMARTS templates.',
+    'meta': {browsePath: 'Chem | Reactions'},
+  })
+  static async reactionEnumeratorApp(): Promise<DG.ViewBase> {
+    const {buildEnumeratorView} = await import('./utils/reaction-enumeration/enumerator-app');
+    return buildEnumeratorView();
+  }
+
   @grok.decorators.func()
   static async mpoProfilesAppTreeBrowser(
     @grok.decorators.param({type: 'dynamic'}) treeNode: DG.TreeViewGroup,
     @grok.decorators.param({type: 'view'}) _browseView: any,
   ) {
     let openedView: DG.ViewBase | null = null;
-    const profileMap = new Map<DG.TreeViewNode, MpoProfileInfo>();
 
     const refresh = async () => {
       treeNode.items.forEach((item) => item.remove());
-      profileMap.clear();
 
       const profiles = await MpoProfileManager.ensureLoaded();
       for (const profile of profiles) {
         const item = treeNode.item(profile.name);
-        profileMap.set(item, profile);
 
         item.onSelected.subscribe(() => {
           openedView?.close();
@@ -2931,8 +2995,8 @@ export class PackageFunctions {
 
     await refresh();
 
-    grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
-      await MpoProfileManager.load();
+    mpoTreeBrowserSub?.unsubscribe();
+    mpoTreeBrowserSub = grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
       await refresh();
     });
   }

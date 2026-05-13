@@ -1,0 +1,49 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%BoundingBox: 0 0 400 300
+%%Title: Test Shapes
+%%Creator: Datagrok EpsViewer Test
+%%EndComments
+
+% Background
+1 1 1 setrgbcolor
+0 0 400 300 rectfill
+
+% Red rectangle
+1 0 0 setrgbcolor
+50 200 150 80 rectfill
+
+% Green circle
+0 0.7 0 setrgbcolor
+newpath
+300 240 50 0 360 arc
+closepath
+fill
+
+% Blue triangle
+0 0 1 setrgbcolor
+newpath
+200 50 moveto
+150 150 lineto
+250 150 lineto
+closepath
+fill
+
+% Yellow star-like shape
+1 0.8 0 setrgbcolor
+newpath
+100 80 moveto
+120 130 lineto
+80 110 lineto
+120 110 lineto
+80 130 lineto
+closepath
+fill
+
+% Text label
+0 0 0 setrgbcolor
+/Helvetica findfont 24 scalefont setfont
+120 20 moveto
+(EPS Test File) show
+
+showpage
+%%EOF

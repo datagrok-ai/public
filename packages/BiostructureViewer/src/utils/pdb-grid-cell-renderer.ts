@@ -15,8 +15,9 @@ import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-rendere
 
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
+import {findLinkedSmilesColName, clearAtomPickerHighlights} from './mol3d-link';
 
-import {_package, } from '../package';
+import {_package,} from '../package';
 import {LruCache} from 'datagrok-api/dg';
 
 export const enum Temps {
@@ -142,6 +143,19 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
     back.onClick(gridCell, e);*/
   }
 
+  /** Escape on a Mol3D cell clears picker highlights on the linked SMILES column.
+   *  Keydowns go to the focused cell's renderer at Dart level; the Chem
+   *  renderer's onKeyDown and grid-root listener don't fire in this case. */
+  override onKeyDown(gridCell: DG.GridCell, e: KeyboardEvent): void {
+    if (e.key !== 'Escape') return;
+    const mol3DCol = gridCell.tableColumn;
+    const df = mol3DCol?.dataFrame;
+    if (!mol3DCol || !df) return;
+    const smilesColName = findLinkedSmilesColName(df, mol3DCol.name);
+    const smilesCol = smilesColName ? df.col(smilesColName) : null;
+    if (smilesCol) clearAtomPickerHighlights(smilesCol);
+  }
+
   /**
    * Cell renderer function.
    *
@@ -203,7 +217,7 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
       if (img) {
         const fit = new DG.Rect(x, y + this.pdbIdHeight, w, h - this.pdbIdHeight).fit(img.width, img.height);
         g.drawImage(img, fit.x, fit.y, fit.width, fit.height);
-        
+
         // Render text in header
         DG.GridCellRenderer.byName('string')?.render(g, x, y, w, this.pdbIdHeight, gridCell, cellStyle);
       }

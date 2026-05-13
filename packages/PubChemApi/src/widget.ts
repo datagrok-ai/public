@@ -3,108 +3,86 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {anyObject, getSmiles, pubChemIdType, pubChemSearchType} from './utils';
 import {getCompoundInfo, identitySearch, similaritySearch, substructureSearch} from './pubchem';
-import {pubChemBaseURL} from './tests/const';
+import {COLUMN_NAMES} from './constants';
 
 const WIDTH = 200;
 const HEIGHT = 100;
 
-export enum COLUMN_NAMES {
-  CANONICAL_SMILES = 'CanonicalSMILES',
-  CONNECTIVITY_SMILES = 'ConnectivitySMILES',
-  CID = 'CID',
-  MOLECULE = 'molecule',
-  SCORE = 'score',
-  INDEX = 'index',
+const pubChemCompoundUrl = (cid: pubChemIdType): string =>
+  `https://pubchem.ncbi.nlm.nih.gov/compound/${cid}`;
+
+// Walk the pug_view Section tree by TOCHeading (e.g. ['Names and Identifiers', 'Molecular Formula']).
+function sectionAt(record: anyObject, path: string[]): anyObject | undefined {
+  let current: anyObject | undefined = record;
+  for (const heading of path)
+    current = current?.Section?.find((s: anyObject) => s.TOCHeading === heading);
+  return current;
 }
 
-export function renderInfoValue(info: anyObject, refs: anyObject): HTMLElement {
-  const infoValue: {[key: string]: any[]} = info.Value;
-  let infoValueList = Object.values(infoValue)[0];
-  infoValueList = infoValueList.length ? Object.values(infoValueList[0]) : infoValueList;
-  let text: string = infoValueList.length ? Object.values(infoValueList[0]).toString() : '';
-
-  if (text && info.ValueUnit)
-    text += ` ${info.ValueUnit}`;
-
-  if (info.Table) {
-    const columnNames: string[] = info.Table.ColumnName;
-    const rows: any[] = info.Table.Row || [];
-
-    return ui.table(rows, (row, _) => {
-      row.Cell.map((x: any) => renderInfoValue(x, refs)).toList();
-    }, columnNames);
-  }
-
-  let result;
-  if (infoValue.String && info.URL)
-    result = ui.div(text.replaceAll('<img src="/', `<img src="${pubChemBaseURL}`));
-  else if (text && info.URL)
-    result = ui.link(text, info.URL);
-  else if (infoValue.StringList)
-    result = ui.list(infoValue.StringList);
-  else if (text)
-    result = ui.divText(text);
-  else if (info.ExternalDataMimeType === 'image/png' && info.ExternalDataURL)
-    result = ui.image(info.ExternalDataURL, 200, 150);
-  else
-    result = null;
-
-
-  if (result instanceof HTMLElement && info.ReferenceNumber) {
-    //@ts-ignore: api types are wrong
-    ui.tooltip.bind(result, () => ui.tableFromMap(refs[info.ReferenceNumber]));
-  }
-
-  return result ?? ui.divText('unknown');
+// Read the first stringifiable Value under a section path. Handles StringWithMarkup and Number[+Unit].
+function readString(record: anyObject, path: string[]): string | null {
+  const value = sectionAt(record, path)?.Information?.[0]?.Value;
+  const str = value?.StringWithMarkup?.[0]?.String ?? value?.Number?.[0]?.toString();
+  if (str == null)
+    return null;
+  return value.Unit ? `${str} ${value.Unit}` : str;
 }
 
-export function renderSection(section: anyObject, refs: anyObject): HTMLDivElement {
-  const content = ui.divV([]);
-
-  const description = section.Description;
-  if (description)
-    content.append(ui.div(description));
-
-
-  const information: any[] = section.Information;
-  if (information) {
-    const table = ui.table(information, (inf, _) => [inf.Description || inf.Name, renderInfoValue(inf, refs)]);
-    content.append(table);
-  }
-
-  const sections: anyObject[] = section.Section;
-  if (sections) {
-    const acc = ui.accordion(`pubChem/${section.TOCHeading}`);
-    for (const section of sections) {
-      const paneName = section.TOCHeading;
-      acc.addPane(paneName, () => renderSection(section, refs));
-      if (section.Description)
-        ui.tooltip.bind(ui.divText(paneName), () => ui.div(section.Description));
-    }
-    content.append(acc.root);
-  }
-  return content;
+function extractHazardIcons(record: anyObject): HTMLElement[] {
+  const markups = sectionAt(record, ['Primary Hazards'])
+    ?.Information?.[0]?.Value?.StringWithMarkup?.[0]?.Markup ?? [];
+  return markups
+    .filter((m: anyObject) => m.Type === 'Icon' && m.URL)
+    .map((m: anyObject) => {
+      const img = ui.image(m.URL, 28, 28);
+      if (m.Extra)
+        ui.tooltip.bind(img, m.Extra);
+      return img;
+    });
 }
 
-export async function buildAccordion(id: pubChemIdType | null): Promise<HTMLElement> {
-  if (id === '0' || id === null)
+// ---------- Top-level panel builder ----------
+
+export async function buildInfoPanel(id: pubChemIdType | null | undefined): Promise<HTMLElement> {
+  if (id == null || id === '0')
     return ui.div('Not found in PubChem');
 
   const json = await getCompoundInfo(id);
+  const record = json?.Record;
+  if (!record)
+    return ui.div('Not found in PubChem');
 
-  const acc = ui.accordion('pubChem');
-  acc.header = ui.label(`pubchem: ${id}`);
+  const cid = record.RecordNumber;
 
-  const references: anyObject = {};
-  const recordJson = json.Record;
-  for (const ref of recordJson.Reference)
-    references[ref.ReferenceNumber] = ref;
+  const map: anyObject = {};
+  if (record.RecordTitle)
+    map['Name'] = record.RecordTitle;
+  map['CID'] = String(cid);
+  const addRow = (label: string, path: string[]) => {
+    const val = readString(record, path);
+    if (val)
+      map[label] = val;
+  };
+  addRow('Formula', ['Names and Identifiers', 'Molecular Formula']);
+  addRow('MW', ['Chemical and Physical Properties', 'Computed Properties', 'Molecular Weight']);
+  addRow('CAS', ['Names and Identifiers', 'Other Identifiers', 'CAS']);
+  addRow('IUPAC Name', ['Names and Identifiers', 'Computed Descriptors', 'IUPAC Name']);
+  addRow('SMILES', ['Names and Identifiers', 'Computed Descriptors', 'SMILES']);
+  addRow('InChIKey', ['Names and Identifiers', 'Computed Descriptors', 'InChIKey']);
 
-  const sections = recordJson.Section;
-  for (const section of sections)
-    acc.addPane(section.TOCHeading, () => renderSection(section, references));
-
-  return acc.root;
+  const root = ui.divV([]);
+  const icons = extractHazardIcons(record);
+  if (icons.length > 0) {
+    const iconsRow = ui.divH(icons);
+    iconsRow.style.marginBottom = '8px';
+    root.append(iconsRow);
+  }
+  root.append(ui.tableFromMap(map));
+  const footer = ui.link('View full record on PubChem ↗', pubChemCompoundUrl(cid));
+  footer.style.display = 'inline-block';
+  footer.style.marginTop = '8px';
+  root.append(footer);
+  return root;
 }
 
 export async function getSearchWidget(molString: string, searchType: pubChemSearchType): Promise<DG.Widget> {
@@ -116,6 +94,11 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
   const headerHost = ui.div();
   const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
   const widget = new DG.Widget(ui.divV([headerHost, compsHost]));
+  const showNoMatches = () => {
+    compsHost.firstChild?.remove();
+    compsHost.appendChild(ui.divText('No matches'));
+    return widget;
+  };
 
   let moleculesJson: anyObject[] | null;
   switch (searchType) {
@@ -129,17 +112,16 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
     moleculesJson = await identitySearch('smiles', molString);
     break;
   default:
-    throw new Error(`DrugBankSearch: Search type \`${searchType}\` not found`);
+    throw new Error(`PubChemSearch: Search type \`${searchType}\` not found`);
   }
 
-  if (moleculesJson === null || moleculesJson.length === 0) {
-    compsHost.firstChild?.remove();
-    compsHost.appendChild(ui.divText('No matches'));
-    return widget;
-  }
+  if (moleculesJson === null || moleculesJson.length === 0)
+    return showNoMatches();
 
   if (searchType === 'identity') {
-    const props: {value: anyObject, urn: anyObject}[] = moleculesJson[0]['props'];
+    const props: {value: anyObject, urn: anyObject}[] | undefined = moleculesJson[0]?.['props'];
+    if (!props || props.length === 0)
+      return showNoMatches();
     const result: anyObject = {};
     const bannedKeys = ['label', 'name', 'implementation', 'datatype'];
 
@@ -161,7 +143,9 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
 
     return new DG.Widget(resultMap);
   }
-  const resultDf = DG.DataFrame.fromObjects(moleculesJson)!;
+  const resultDf = DG.DataFrame.fromObjects(moleculesJson);
+  if (!resultDf)
+    throw new Error('Failed to build a dataframe from PubChem results');
 
   let similarStructures: DG.DataFrame | null = null;
   const moleculesCol = resultDf.col(COLUMN_NAMES.CANONICAL_SMILES) ?? resultDf.col(COLUMN_NAMES.CONNECTIVITY_SMILES);
@@ -173,14 +157,10 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
   if (searchType === 'similarity') {
     similarStructures = await grok.chem.findSimilar(moleculesCol, molString, {limit: 20, cutoff: 0.75});
 
-    if (similarStructures === null || similarStructures.rowCount === 0) {
-      compsHost.firstChild?.remove();
-      compsHost.appendChild(ui.divText('No matches'));
-      return widget;
-    }
-    // moleculesCol = similarStructures.getCol(COLUMN_NAMES.MOLECULE);
+    if (similarStructures === null || similarStructures.rowCount === 0)
+      return showNoMatches();
     scoreCol = similarStructures.getCol(COLUMN_NAMES.SCORE);
-    indexes = similarStructures.getCol(COLUMN_NAMES.INDEX).getRawData() as Int32Array<ArrayBuffer>;
+    indexes = similarStructures.getCol(COLUMN_NAMES.INDEX).getRawData() as Int32Array;
     rowCount = similarStructures.rowCount;
   }
 
@@ -189,30 +169,26 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
   for (let idx = 0; idx < rowCount; idx++) {
     const piv = searchType === 'similarity' ? indexes[idx] : idx;
     const molHost = ui.divV([]);
-    const res = grok.chem.drawMolecule(moleculesCol.get(idx), WIDTH, HEIGHT, true);
+    const res = grok.chem.drawMolecule(moleculesCol.get(piv), WIDTH, HEIGHT, true);
     molHost.append(res);
     if (searchType === 'similarity' && scoreCol !== null)
       molHost.append(ui.divText(`Score: ${scoreCol.get(idx)?.toFixed(2)}`));
 
     ui.tooltip.bind(molHost, () => ui.divText(`CID: ${cidCol.get(piv)}\nClick to open in PubChem`));
     molHost.addEventListener('click',
-      () => window.open(`https://pubchem.ncbi.nlm.nih.gov/compound/${cidCol.get(piv) }`, '_blank'));
+      () => window.open(pubChemCompoundUrl(cidCol.get(piv)), '_blank'));
     compsHost.appendChild(molHost);
   }
 
   headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
-    const table = DG.DataFrame.fromObjects(moleculesJson!);
-    table!.name = 'PubChem Similarity Search';
-    grok.shell.addTableView(table!);
+    resultDf.name = `PubChem ${searchType[0].toUpperCase() + searchType.slice(1)} Search`;
+    grok.shell.addTableView(resultDf);
   }, 'Open compounds as table'));
   compsHost.style.overflowY = 'auto';
   if (compsHost.parentElement)
-    compsHost.parentElement!.style.width = 'auto';
+    compsHost.parentElement.style.width = 'auto';
 
   compsHost.firstChild?.remove();
-
-  if (compsHost.children.length === 0)
-    compsHost.appendChild(ui.divText('No matches'));
 
   return widget;
 }

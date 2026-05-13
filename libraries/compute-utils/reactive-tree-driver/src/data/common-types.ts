@@ -28,3 +28,15 @@ export interface ValidationResult {
   warnings?: ValidationItem[];
   notifications?: ValidationItem[];
 }
+
+export interface StepHandle {
+  readonly configId: string;
+  readonly position: number;
+  /** @internal */
+  readonly _uuid: string;
+}
+
+export type GranularMutationOp =
+  | { op: 'add'; configId: string; position?: number }
+  | { op: 'remove'; _uuid: string }
+  | { op: 'move'; _uuid: string; position: number };

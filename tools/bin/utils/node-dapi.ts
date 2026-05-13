@@ -1,4 +1,11 @@
 /// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
+import {randomUUID} from 'crypto';
+
+export function ensureBodyId<T extends {id?: string} | Record<string, any>>(body: T): T {
+  if (body && typeof body === 'object' && !(body as any).id)
+    (body as any).id = randomUUID();
+  return body;
+}
 
 export interface BatchOperation {
   id?: string;
@@ -90,6 +97,39 @@ export class NodeApiClient {
   get(path: string): Promise<any> { return this.request('GET', path); }
   post(path: string, body?: any): Promise<any> { return this.request('POST', path, body); }
   del(path: string): Promise<any> { return this.request('DELETE', path); }
+
+  /**
+   * POST raw bytes — used for file/table uploads where the body must be the content
+   * itself, not JSON. Defaults to `application/octet-stream`; pass `text/csv` (or
+   * similar) when the server demands a specific content type.
+   */
+  async putBytes(path: string, bytes: Uint8Array | Buffer,
+                 contentType: string = 'application/octet-stream'): Promise<any> {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': this.token,
+        'Content-Type': contentType,
+      },
+      body: bytes as any,
+    });
+    if (!res.ok) {
+      const rawText = await res.text();
+      let errBody: any;
+      try { errBody = JSON.parse(rawText); } catch { errBody = {error: rawText || `HTTP ${res.status}`}; }
+      const err: NodeApiError = {
+        error: errBody?.message ?? errBody?.error ?? `HTTP ${res.status}`,
+        source: errBody?.source ?? 'Server',
+        errorCode: errBody?.errorCode ?? res.status,
+        stackTrace: errBody?.stackTrace,
+      };
+      throw Object.assign(new Error(err.error), {apiError: err});
+    }
+    const ct = res.headers.get('content-type') ?? '';
+    if (ct.includes('application/json'))
+      return res.json();
+    return res.text();
+  }
 }
 
 function buildQuery(params: Record<string, any>): string {
@@ -137,6 +177,188 @@ export class NodeHttpDataSource<T = any> {
   }
 }
 
+export type MemberAddStatus = 'added' | 'updated' | 'noop' | 'error';
+export type MemberRemoveStatus = 'removed' | 'not-member' | 'error';
+
+export interface MemberAddResult {
+  member: string;
+  status: MemberAddStatus;
+  error?: string;
+}
+
+export interface MemberRemoveResult {
+  member: string;
+  status: MemberRemoveStatus;
+  error?: string;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export class NodeGroupsDataSource extends NodeHttpDataSource {
+  constructor(client: NodeApiClient) { super(client, 'groups'); }
+
+  async save(group: any, saveRelations: boolean = false): Promise<any> {
+    const q = buildQuery({saveRelations: saveRelations ? 'true' : undefined});
+    return this.client.post(`/public/v1/groups${q}`, ensureBodyId(group));
+  }
+
+  async lookup(name: string): Promise<any[]> {
+    const q = buildQuery({query: name});
+    return this.client.get(`/public/v1/groups/lookup${q}`);
+  }
+
+  async resolve(idOrName: string, opts: {personalOnly?: boolean} = {}): Promise<any> {
+    if (UUID_RE.test(idOrName))
+      return this.find(idOrName);
+    const matches: any[] = await this.lookup(idOrName);
+    let candidates = matches;
+    if (opts.personalOnly)
+      candidates = matches.filter((g) => g?.personal === true);
+    if (!candidates.length) {
+      const suffix = opts.personalOnly ? ' (personal)' : '';
+      throw new Error(`No group matching '${idOrName}'${suffix}`);
+    }
+    if (candidates.length > 1) {
+      const list = candidates.map((g) => `  ${g.id}  ${g.friendlyName ?? g.name ?? ''}`).join('\n');
+      throw new Error(`Multiple groups match '${idOrName}':\n${list}\nUse the ID to disambiguate.`);
+    }
+    return candidates[0];
+  }
+
+  async addMembers(group: string, members: string[], isAdmin: boolean = false, personalOnly: boolean = false): Promise<MemberAddResult[]> {
+    // Always fetch via find() so parent.children comes back expanded; lookup() returns a
+    // pruned projection and replacing that empty list on save would drop existing members.
+    const resolved = await this.resolve(group);
+    const parent = await this.find(resolved.id);
+    const children: any[] = Array.isArray(parent.children) ? parent.children : [];
+    const results: MemberAddResult[] = [];
+    let mutated = false;
+
+    for (const m of members) {
+      let child: any;
+      try {
+        child = await this.resolve(m, {personalOnly});
+      } catch (err: any) {
+        results.push({member: m, status: 'error', error: err?.message ?? String(err)});
+        continue;
+      }
+      const existing = children.find((r) => r?.child?.id === child.id);
+      if (existing) {
+        // Server returns isAdmin as null/undefined for non-admin relations; normalize
+        // the comparison so re-runs report `noop` instead of `updated`.
+        if ((existing.isAdmin ?? false) === isAdmin) {
+          results.push({member: m, status: 'noop'});
+        } else {
+          existing.isAdmin = isAdmin;
+          mutated = true;
+          results.push({member: m, status: 'updated'});
+        }
+      } else {
+        // Each GroupRelation row needs a non-null id; the server rejects the save otherwise.
+        children.push({id: randomUUID(), parent: {id: parent.id}, child: {id: child.id}, isAdmin});
+        mutated = true;
+        results.push({member: m, status: 'added'});
+      }
+    }
+
+    if (mutated) {
+      parent.children = children;
+      await this.save(parent, true);
+    }
+    return results;
+  }
+
+  async removeMembers(group: string, members: string[], personalOnly: boolean = false): Promise<MemberRemoveResult[]> {
+    const resolved = await this.resolve(group);
+    const parent = await this.find(resolved.id);
+    const results: MemberRemoveResult[] = [];
+    const children: any[] = Array.isArray(parent.children) ? parent.children : [];
+    let mutated = false;
+    for (const m of members) {
+      let child: any;
+      try {
+        child = await this.resolve(m, {personalOnly});
+      } catch (err: any) {
+        results.push({member: m, status: 'error', error: err?.message ?? String(err)});
+        continue;
+      }
+      const idx = children.findIndex((r) => r?.child?.id === child.id);
+      if (idx === -1) {
+        results.push({member: m, status: 'not-member'});
+      } else {
+        children.splice(idx, 1);
+        mutated = true;
+        results.push({member: m, status: 'removed'});
+      }
+    }
+
+    if (mutated) {
+      parent.children = children;
+      await this.save(parent, true);
+    }
+    return results;
+  }
+
+  async getMembers(group: string, admin?: boolean): Promise<any[]> {
+    const parent = await this.resolve(group);
+    const q = buildQuery({admin: admin === undefined ? undefined : String(admin)});
+    return this.client.get(`/public/v1/groups/${encodeURIComponent(parent.id)}/members${q}`);
+  }
+
+  async getMemberships(group: string, admin?: boolean): Promise<any[]> {
+    const parent = await this.resolve(group);
+    const q = buildQuery({admin: admin === undefined ? undefined : String(admin)});
+    return this.client.get(`/public/v1/groups/${encodeURIComponent(parent.id)}/memberships${q}`);
+  }
+}
+
+export class NodeSharesDataSource {
+  constructor(private client: NodeApiClient) {}
+
+  async share(entity: string, groups: string, access: string = 'View'): Promise<any> {
+    const name = encodeURIComponent(entity.replace(':', '.'));
+    const q = buildQuery({groups, access});
+    return this.client.post(`/public/v1/entities/${name}/shares${q}`);
+  }
+
+  async list(entityId: string): Promise<any[]> {
+    const q = buildQuery({entityId});
+    return this.client.get(`/privileges/permissions${q}`);
+  }
+}
+
+export class NodeUsersDataSource extends NodeHttpDataSource {
+  constructor(client: NodeApiClient) { super(client, 'users'); }
+
+  async save(user: any): Promise<any> {
+    return this.client.post('/public/v1/users', ensureBodyId(user));
+  }
+
+  async block(user: any): Promise<void> {
+    await this.client.post('/public/v1/users/block', user);
+  }
+
+  async unblock(user: any): Promise<void> {
+    await this.client.post('/public/v1/users/unblock', user);
+  }
+}
+
+export class NodeConnectionsDataSource extends NodeHttpDataSource {
+  constructor(client: NodeApiClient) { super(client, 'connections'); }
+
+  async save(conn: any, saveCredentials: boolean = false): Promise<any> {
+    const q = buildQuery({saveCredentials: saveCredentials ? 'true' : undefined});
+    return this.client.post(`/public/v1/connections${q}`, conn);
+  }
+
+  async test(conn: any): Promise<void> {
+    const result = await this.client.post(`/public/v1/connections/test`, conn);
+    const text = typeof result === 'string' ? result.replace(/^"|"$/g, '') : String(result ?? '');
+    if (text !== 'ok')
+      throw new Error(text || 'Connection test failed');
+  }
+}
+
 export class NodeFuncsDataSource extends NodeHttpDataSource {
   async run(name: string, params?: Record<string, any>): Promise<any> {
     const normalizedName = name.replace(':', '.');
@@ -158,12 +380,22 @@ function tryParseJson(s: string): any {
 export class NodeFilesDataSource {
   constructor(private client: NodeApiClient) {}
 
+  /**
+   * Split a user-facing file path into {connector, path}.
+   *
+   * Input format: `<connector>/<file-path>` where `<connector>` is the connection's
+   * full name — including namespace — e.g. `System:DemoFiles/smiles_1M.csv`.
+   * The connector can contain colons (the namespace separator); the file path
+   * starts after the first `/`. Colons in the connector segment are converted
+   * to `.` so it forms a single URL path segment (the Dart server reverses
+   * this with `replaceAll('.', ':')`).
+   */
   private splitPath(filePath: string): {connector: string; path: string} {
-    const colonIdx = filePath.indexOf(':');
-    if (colonIdx === -1)
-      return {connector: filePath.replace(':', '.'), path: ''};
-    const connector = filePath.slice(0, colonIdx).replace(':', '.');
-    const path = filePath.slice(colonIdx + 1).replace(/^\//, '');
+    const slashIdx = filePath.indexOf('/');
+    if (slashIdx === -1)
+      return {connector: filePath.replace(/:/g, '.'), path: ''};
+    const connector = filePath.slice(0, slashIdx).replace(/:/g, '.');
+    const path = filePath.slice(slashIdx + 1);
     return {connector, path};
   }
 
@@ -176,27 +408,70 @@ export class NodeFilesDataSource {
 
   async get(filePath: string): Promise<any> {
     const {connector, path} = this.splitPath(filePath);
-    return this.client.get(`/public/v1/files/${connector}/${path}`);
+    const seg = path ? `${connector}/${path}` : connector;
+    return this.client.get(`/public/v1/files/${seg}`);
   }
 
   async delete(filePath: string): Promise<void> {
     const {connector, path} = this.splitPath(filePath);
-    await this.client.del(`/public/v1/files/${connector}/${path}`);
+    const seg = path ? `${connector}/${path}` : connector;
+    await this.client.del(`/public/v1/files/${seg}`);
+  }
+
+  /**
+   * Upload a local file to a Datagrok file share.
+   * Streams raw bytes to POST `/public/v1/files/<connector>/<path>` — no base64,
+   * no JSON wrapping — so it handles large files without blowing up memory.
+   */
+  async put(localPath: string, remotePath: string): Promise<any> {
+    const fs = require('fs') as typeof import('fs');
+    const {connector, path} = this.splitPath(remotePath);
+    if (!path) throw new Error(`Remote path must include a file name after the connector: got '${remotePath}'`);
+    const bytes = fs.readFileSync(localPath);
+    const res = await this.client.putBytes(`/public/v1/files/${connector}/${path}`, bytes);
+    return {path: remotePath, size: bytes.length, response: res};
+  }
+}
+
+export class NodeTablesDataSource {
+  constructor(private client: NodeApiClient) {}
+
+  /** GET /public/v1/tables/{name} — returns CSV text. Name accepts UUID or `namespace:name`. */
+  async download(name: string): Promise<string> {
+    const seg = encodeURIComponent(name.replace(/:/g, '.'));
+    const result = await this.client.get(`/public/v1/tables/${seg}`);
+    // Datagrok returns HTTP 200 + ApiError JSON when the table isn't found.
+    const parsed = typeof result === 'string' ? tryParseJson(result) : result;
+    if (parsed && typeof parsed === 'object' && parsed['#type'] === 'ApiError') {
+      const err: NodeApiError = {error: parsed.message ?? 'Table download failed', errorCode: parsed.errorCode, stackTrace: parsed.stackTrace};
+      throw Object.assign(new Error(err.error), {apiError: err});
+    }
+    return result as string;
+  }
+
+  /** POST /public/v1/tables/{name} with raw CSV bytes. Returns `{ID, Grok name, Markup, URL}`. */
+  async upload(name: string, localPath: string): Promise<any> {
+    const fs = require('fs') as typeof import('fs');
+    const bytes = fs.readFileSync(localPath);
+    const seg = encodeURIComponent(name.replace(/:/g, '.'));
+    return this.client.putBytes(`/public/v1/tables/${seg}`, bytes, 'text/csv');
   }
 }
 
 export class NodeDapi {
   constructor(private client: NodeApiClient) {}
 
-  get users(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'users'); }
-  get groups(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'groups'); }
+  get users(): NodeUsersDataSource { return new NodeUsersDataSource(this.client); }
+  get groups(): NodeGroupsDataSource { return new NodeGroupsDataSource(this.client); }
   get functions(): NodeFuncsDataSource { return new NodeFuncsDataSource(this.client, 'functions'); }
-  get connections(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'connections'); }
+  get connections(): NodeConnectionsDataSource { return new NodeConnectionsDataSource(this.client); }
   get queries(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'queries'); }
   get scripts(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'scripts'); }
   get packages(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'packages'); }
   get reports(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'reports'); }
   get files(): NodeFilesDataSource { return new NodeFilesDataSource(this.client); }
+  get shares(): NodeSharesDataSource { return new NodeSharesDataSource(this.client); }
+  get tables(): NodeTablesDataSource { return new NodeTablesDataSource(this.client); }
 
   async raw(method: string, path: string, body?: any): Promise<any> {
     // Raw paths are relative to server root (e.g. /api/users/current).

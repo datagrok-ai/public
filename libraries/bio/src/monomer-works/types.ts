@@ -118,6 +118,21 @@ export type NumberWrapper = {
   value: number | null // null if there is no branch attach node
 }
 
+/** Role of an entry in a HELM RNA splitted sequence.
+ * SUGAR/BASE/PHOSPHATE are the standard triple positions.
+ * TERMINAL_5P marks a 5'-end terminal modifier (e.g. Chol) — a monomer
+ * with R2 only that takes the place of the leading sugar.
+ * TERMINAL_3P marks a 3'-end terminal modifier (e.g. GalNAc) — a monomer
+ * with R1 only that takes the place of the trailing phosphate. The OH cap
+ * MUST be omitted when a TERMINAL_3P is present. */
+export enum NucleotideRole {
+  SUGAR = 0,
+  BASE = 1,
+  PHOSPHATE = 2,
+  TERMINAL_5P = 3,
+  TERMINAL_3P = 4,
+}
+
 export type MonomerMapValue = { biotype: HelmType, symbol: string, atoms: number[], bonds: number[] };
 
 export class MonomerMap extends Map<number, MonomerMapValue> {
@@ -139,6 +154,10 @@ export class MolfileWithMap {
 /** Only simple types allowed for worker data, avoid classes with methods */
 export type SeqToMolfileWorkerData = {
   seqList: ISeqMonomer[][],
+  /** Per-row parallel array of NucleotideRole tags (only set for rows in
+   * "HELM RNA triples" mode, where each nucleotide contributes 3 entries
+   * sugar/base/phosphate). undefined for legacy bases-only rows. */
+  rolesList?: (NucleotideRole[] | undefined)[],
   monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET,
   polymerType: HELM_POLYMER_TYPE,

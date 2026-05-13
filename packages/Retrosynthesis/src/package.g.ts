@@ -12,11 +12,6 @@ export function retroSynthesisPath(molecule: string) : any {
   return PackageFunctions.retroSynthesisPath(molecule);
 }
 
-//name: retrosynthesisTopMenu
-export function retrosynthesisTopMenu() : void {
-  PackageFunctions.retrosynthesisTopMenu();
-}
-
 //name: Retrosynthesis Demo
 //description: Generate retrosynthesis paths
 //meta.demoPath: Cheminformatics | Retrosynthesis

@@ -8,6 +8,15 @@ in-cluster PostgreSQL with local PVCs (laptop / single-node clusters), as well a
 managed cloud databases (RDS / Cloud SQL) with object storage (S3 / GCS) on EKS or
 GKE.
 
+:::tip On AWS?
+
+For turnkey EKS deployments, use the [AWS CloudFormation (EKS)](../aws/deploy-amazon-eks.mdx)
+template — it provisions the cluster, RDS, S3, and IAM, and installs this chart
+automatically. This page covers manual Helm installs for any Kubernetes cluster
+(on-prem, GKE, AKS, kind, k3s, MicroK8s).
+
+:::
+
 ## Prerequisites
 
 * Kubernetes 1.27+ with a default StorageClass (or an existing PVC for stateful data)
@@ -15,11 +24,23 @@ GKE.
 * For cloud installs: a managed Postgres instance, an object storage bucket, and an
   IAM role / service account that the cluster can use to reach them
 
+## Chart version
+
+The chart is published as an OCI artifact in the shared `datagrok/datagrok` Docker Hub
+repo under tags suffixed with `-helm` to keep the chart and image tag namespaces
+disjoint. `--version 1.27.3-helm` pulls a chart that deploys Datagrok `1.27.3`, and
+every sub-service (grok-pipe, grok-spawner, grok-connect, Jupyter Kernel Gateway)
+defaults to the same app tag. Override individual service image tags via
+`--set <service>.image.tag=...` — see [Service versions](#service-versions) below.
+
+Chart tags follow the same scheme as the Datagrok image tags with a `-helm` suffix; see
+[Images and versions](../images.md#tag-conventions) for the full convention.
+
 ## Quick install (in-cluster Postgres + local storage)
 
 ```bash
 helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
-  --version 1.26.5 \
+  --version 1.27.3-helm \
   --namespace datagrok --create-namespace \
   --set postgres.password=$(openssl rand -base64 24) \
   --set postgres.adminPassword=$(openssl rand -base64 24) \
@@ -30,40 +51,59 @@ This installs PostgreSQL, RabbitMQ, the datagrok app, grok-pipe, grok-spawner,
 grok-connect, and JupyterKernelGateway with default resources. Suitable for
 evaluation, dev, or single-tenant production.
 
-To track the latest unstable build (rebuilt nightly from `master`), use
-`--version 0.0.0-bleeding-edge` instead of a release version. (Helm requires
-SemVer 2.0, so the bleeding-edge chart is published as a prerelease version.)
-Stable releases are
-published on a versioned cadence; bleeding-edge is rebuilt by Jenkins after every
-merge to master.
+To track the latest unstable build (rebuilt after every merge to `master`), use
+`--version bleeding-edge-helm` instead of a release version.
+
+## Service versions
+
+Every service image tag defaults to the chart version. The default set is documented on
+[Images and versions](../images.md) and matches the
+[AWS CloudFormation templates](../aws/deploy-amazon-eks.mdx). Override individual tags when
+you need to run a newer `grok_connect` against an older `datagrok` core, or to pin a
+specific service during a rollout:
+
+```bash
+helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
+  --version 1.27.3-helm \
+  --set datagrok.image.tag=1.27.3 \
+  --set grokPipe.image.tag=1.19.0 \
+  --set grokConnect.image.tag=2.6.2 \
+  --set spawner.image.tag=2.16.0 \
+  --set jkg.image.tag=1.31.0 \
+  --set grokRegistryProxy.image.tag=1.27.1 \
+  -n datagrok
+```
+
+RabbitMQ follows its own upstream release cadence and is not pinned to the Datagrok version.
 
 ## Production install on AWS EKS
 
-The `datagrok-eks-cfn.yaml` CloudFormation template (in the chart repo under
-`deploy/k8s/`) provisions EKS, RDS, S3, and the necessary IAM with IRSA.
+For new AWS stands use the [AWS CloudFormation (EKS) template](../aws/deploy-amazon-eks.mdx) —
+it provisions EKS, RDS, S3, IAM with IRSA, and installs this chart for you. The steps
+below are for installing the chart directly into an EKS cluster you already manage.
 
-1. Deploy the CFN stack and capture its outputs (RDS endpoint, bucket name, IAM
-   role ARN, ACM cert ARN).
-2. Configure kubectl:
+1. Configure kubectl:
    ```bash
    aws eks update-kubeconfig --name <cluster-name>
    ```
-3. Install the AWS Load Balancer Controller (the CFN stack's `PostDeployCommands`
-   output prints the exact `helm install` commands).
+2. Install the [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
+   in the cluster — the chart's `ingress.className: alb` annotations require it.
+3. Provision RDS, S3, and the IRSA role for the Datagrok ServiceAccount yourself
+   (`rds-db:connect`, `s3:Get/Put/List` on the bucket, optionally Secrets Manager read).
 4. Save the EKS overlay below as `values-prod.yaml`, filling in the SET fields:
 
    ```yaml
    postgres:
      internal: false
      external:
-       host: your-db.xxxxx.us-east-1.rds.amazonaws.com   # from CFN
+       host: your-db.xxxxx.us-east-1.rds.amazonaws.com
        port: 5432
        ssl: true
 
    storage:
      type: s3
      s3:
-       bucket: your-datagrok-bucket                       # from CFN
+       bucket: your-datagrok-bucket
        region: us-east-1
 
    ingress:
@@ -81,7 +121,7 @@ The `datagrok-eks-cfn.yaml` CloudFormation template (in the chart repo under
    serviceAccount:
      create: true
      annotations:
-       eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/datagrok-role  # from CFN
+       eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/datagrok-role
 
    registry:
      type: proxy
@@ -98,7 +138,7 @@ The `datagrok-eks-cfn.yaml` CloudFormation template (in the chart repo under
 5. Install:
    ```bash
    helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
-     --version 1.26.5 \
+     --version 1.27.3-helm \
      -f values-prod.yaml \
      -n datagrok --create-namespace
    ```
@@ -114,10 +154,13 @@ Workload Identity).
 
 ```bash
 helm upgrade datagrok oci://registry-1.docker.io/datagrok/datagrok \
-  --version 1.26.6 \
+  --version 1.27.4-helm \
   -f values-prod.yaml \
   -n datagrok
 ```
+
+Always upgrade through consecutive minor versions for production stands; database schema
+migrations run automatically on the first start of each new app version.
 
 The chart's PostgreSQL StatefulSet, datagrok-data, and datagrok-cfg PVCs are
 preserved across upgrades. Database schema migrations run automatically on the

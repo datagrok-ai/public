@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import {monomerWorksConsts as C} from './consts';
-import {getMolGraph, LoopConstants, LoopVariables, MolfileWithMap, MolGraph, MonomerMap, MonomerMolGraphMap} from './types';
+import {getMolGraph, LoopConstants, LoopVariables, MolfileWithMap, MolGraph, MonomerMap, MonomerMolGraphMap,
+  NucleotideRole} from './types';
 import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE,} from '../utils/const';
 import {ALPHABET, GAP_SYMBOL} from '../utils/macromolecule/consts';
 import {IMonomerLibBase, Monomer} from '../types/monomer-library';
@@ -20,14 +21,13 @@ export function getFormattedMonomerLib(
   for (const monomerSymbol of monomerLib.getMonomerSymbolsByType(polymerType)) {
     const it: Monomer = monomerLib.getMonomer(polymerType, monomerSymbol)!;
     if (
-      polymerType === HELM_POLYMER_TYPE.RNA &&
-      (it[HELM_FIELDS.MONOMER_TYPE] === HELM_MONOMER_TYPE.BRANCH ||
-        alphabet === ALPHABET.DNA && it[HELM_FIELDS.SYMBOL] === C.DEOXYRIBOSE.symbol ||
-        alphabet === ALPHABET.RNA && it[HELM_FIELDS.SYMBOL] === C.RIBOSE.symbol ||
-        it[HELM_FIELDS.SYMBOL] === C.PHOSPHATE.symbol) ||
-      polymerType === HELM_POLYMER_TYPE.PEPTIDE &&
+      // RNA: all branch monomers (bases) and all backbone monomers (sugars +
+      // phosphates, including modified ones). Modifications are looked up by
+      // symbol at assembly time, so they MUST be present in the formatted lib.
+      polymerType === HELM_POLYMER_TYPE.RNA || (
+        polymerType === HELM_POLYMER_TYPE.PEPTIDE &&
       it[HELM_FIELDS.MONOMER_TYPE] !== HELM_MONOMER_TYPE.BRANCH
-    ) {
+      )) {
       const monomerObject: { [key: string]: any } = {};
       HELM_CORE_FIELDS.forEach((field) => {
         //@ts-ignore
@@ -40,23 +40,34 @@ export function getFormattedMonomerLib(
 }
 
 /** Translate a sequence of monomer symbols into Molfile V3000
- * @param {string[]} monomerSeq - Sequence of monomer symbols (canonical)
- * @param {Map<string, MolGraph>} monomersDict - Mapping of monomer symbols to MolGraph objects
+ * @param {ISeqMonomer[]} monomerSeq - Sequence of monomer symbols (canonical)
+ * @param {MonomerMolGraphMap} monomersDict - Mapping of monomer symbols to MolGraph objects
  * @param {ALPHABET} alphabet - Alphabet of the column
  * @param {PolymerType} polymerType - Polymer type
- * @return {string} - Molfile V3000*/
+ * @param {Array} roles - Optional per-position NucleotideRole tags. When set, RNA assembly
+ *   uses per-position sugars/phosphates from monomerSeq directly (HELM triples mode).
+ * @return {MolfileWithMap} - Molfile V3000 + per-position monomer index map */
 export function monomerSeqToMolfile(
   monomerSeq: ISeqMonomer[], monomersDict: MonomerMolGraphMap,
-  alphabet: ALPHABET, polymerType: PolymerType
+  alphabet: ALPHABET, polymerType: PolymerType,
+  roles?: NucleotideRole[]
 ): MolfileWithMap {
   if (monomerSeq.length === 0) {
     // throw new Error('monomerSeq is empty');
     return MolfileWithMap.createEmpty();
   }
 
+  // Triples mode is on only when the caller flagged the row with roles
+  // (built and validated by `buildRolesForHelmRna` in to-atomic-level.ts).
+  // The roles array carries the per-position semantics — including
+  // TERMINAL_5P / TERMINAL_3P for non-canonical chain ends — so we don't
+  // re-validate the length here.
+  const triplesMode = polymerType === HELM_POLYMER_TYPE.RNA && !!roles &&
+    roles.length === monomerSeq.length;
+
   // define atom and bond counts, taking into account the bond type
-  const getAtomAndBondCounts = getResultingAtomBondCounts;
-  const {atomCount, bondCount, needsCapping} = getAtomAndBondCounts(monomerSeq, monomersDict, alphabet, polymerType);
+  const {atomCount, bondCount, needsCapping} =
+    getResultingAtomBondCounts(monomerSeq, monomersDict, alphabet, polymerType, triplesMode, roles);
 
   // create arrays to store lines of the resulting molfile
   const molfileAtomBlock = new Array<string>(atomCount);
@@ -71,8 +82,12 @@ export function monomerSeqToMolfile(
     addMonomerToMolblock = addAminoAcidToMolblock;
   else { // nucleotides
     addMonomerToMolblock = addNucleotideToMolblock;
-    sugar = (alphabet === ALPHABET.DNA) ? getMolGraph(monomersDict, C.DEOXYRIBOSE) : getMolGraph(monomersDict, C.RIBOSE);
-    phosphate = getMolGraph(monomersDict, C.PHOSPHATE);
+    // Default sugar/phosphate are only consulted in bases-only mode. In
+    // triples mode, every nucleotide carries its own.
+    if (!triplesMode) {
+      sugar = (alphabet === ALPHABET.DNA) ? getMolGraph(monomersDict, C.DEOXYRIBOSE) : getMolGraph(monomersDict, C.RIBOSE);
+      phosphate = getMolGraph(monomersDict, C.PHOSPHATE);
+    }
   }
   const v: LoopVariables = {
     i: 0,
@@ -88,7 +103,8 @@ export function monomerSeqToMolfile(
   const LC: LoopConstants = {
     sugar: sugar!,
     phosphate: phosphate!,
-    seqLength: monomerSeq.length,
+    // In triples mode, the "logical" sequence length is the nucleotide count.
+    seqLength: triplesMode ? Math.ceil(monomerSeq.length / 3) : monomerSeq.length,
     atomCount: atomCount,
     bondCount: bondCount,
   };
@@ -98,31 +114,38 @@ export function monomerSeqToMolfile(
   let nAtoms = 0;
   let lastMonomerCappingAtom: string | undefined = undefined;
 
-  for (v.i = 0; v.i < LC.seqLength; ++v.i) {
-    const seqMonomer = monomerSeq[v.i];
-    if (seqMonomer.symbol === GAP_SYMBOL) continue;
-    const monomer = getMolGraph(monomersDict, {symbol: seqMonomer.symbol, polymerType: helmTypeToPolymerType(seqMonomer.biotype)})!;
-    lastMonomerCappingAtom = monomer.terminalR2Atom;
-    const mAtomFirst = v.nodeShift;
-    const mBondFirst = v.bondShift;
-    addMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v, LC);
-    //adding stereo atoms to array for further STEABS block generation
-    monomer.stereoAtoms?.forEach((i) => steabsCollection.push(i + nAtoms));
-    nAtoms += monomer.atoms.x.length;
+  if (triplesMode) {
+    runTriplesAssembly(
+      monomerSeq, roles!, monomersDict, molfileAtomBlock, molfileBondBlock,
+      v, LC, monomers, steabsCollection,
+      (a) => { nAtoms += a; }, () => nAtoms);
+  } else {
+    for (v.i = 0; v.i < LC.seqLength; ++v.i) {
+      const seqMonomer = monomerSeq[v.i];
+      if (seqMonomer.symbol === GAP_SYMBOL) continue;
+      const monomer = getMolGraph(monomersDict, {symbol: seqMonomer.symbol, polymerType: helmTypeToPolymerType(seqMonomer.biotype)})!;
+      lastMonomerCappingAtom = monomer.terminalR2Atom;
+      const mAtomFirst = v.nodeShift;
+      const mBondFirst = v.bondShift;
+      addMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v, LC);
+      //adding stereo atoms to array for further STEABS block generation
+      monomer.stereoAtoms?.forEach((i) => steabsCollection.push(i + nAtoms));
+      nAtoms += monomer.atoms.x.length;
 
-    const mAtomCount = v.nodeShift - mAtomFirst;
-    const mAtomList: number[] = new Array<number>(mAtomCount);
-    for (let maI = 0; maI < mAtomCount; ++maI) mAtomList[maI] = mAtomFirst + maI;
+      const mAtomCount = v.nodeShift - mAtomFirst;
+      const mAtomList: number[] = new Array<number>(mAtomCount);
+      for (let maI = 0; maI < mAtomCount; ++maI) mAtomList[maI] = mAtomFirst + maI;
 
-    const mBondCount = v.bondShift - mBondFirst;
-    const mBondList: number[] = new Array<number>(mBondCount);
-    for (let mbI = 0; mbI < mBondCount; ++mbI) mBondList[mbI] = mBondFirst + mbI;
+      const mBondCount = v.bondShift - mBondFirst;
+      const mBondList: number[] = new Array<number>(mBondCount);
+      for (let mbI = 0; mbI < mBondCount; ++mbI) mBondList[mbI] = mBondFirst + mbI;
 
-    monomers.set(v.i, {
-      biotype: seqMonomer.biotype,
-      symbol: seqMonomer.symbol,
-      atoms: mAtomList, bonds: mBondList
-    });
+      monomers.set(v.i, {
+        biotype: seqMonomer.biotype,
+        symbol: seqMonomer.symbol,
+        atoms: mAtomList, bonds: mBondList
+      });
+    }
   }
 
   // if the last monomer needs to be capped, add the terminal OH to the resulting molfile
@@ -342,14 +365,17 @@ function fillBackboneToBranchBond(branchMonomer: MolGraph, molfileBondBlock: str
 
 /** Compute the atom/bond counts for the resulting molfile, depending on the
  * type of polymer (peptide/nucleotide)
- * @param {string[]}monomerSeq - the sequence of monomers
- * @param {Map<string, MolGraph>}monomersDict - the dictionary of monomers
- * @param {ALPHABET}alphabet - the alphabet of the monomers
- * @param {HELM_POLYMER_TYPE}polymerType - the type of polymer
- * @return {{atomCount: number, bondCount: number}} - the atom/bond counts*/
+ * @param {ISeqMonomer[]} monomerSeq - the sequence of monomers
+ * @param {MonomerMolGraphMap} monomersDict - the dictionary of monomers
+ * @param {ALPHABET} alphabet - the alphabet of the monomers
+ * @param {PolymerType} polymerType - the type of polymer
+ * @param {boolean} triplesMode - true when monomerSeq is a flat list of HELM RNA triples
+ * @param {Array} roles - per-position role tags (only meaningful when triplesMode is true)
+ * @return {Object} the atom/bond counts plus needsCapping flag */
 function getResultingAtomBondCounts(
   monomerSeq: ISeqMonomer[], monomersDict: MonomerMolGraphMap,
-  alphabet: ALPHABET, polymerType: PolymerType
+  alphabet: ALPHABET, polymerType: PolymerType,
+  triplesMode: boolean, roles?: NucleotideRole[]
 ): { atomCount: number, bondCount: number, needsCapping: boolean } {
   let atomCount = 0;
   let bondCount = 0;
@@ -357,8 +383,10 @@ function getResultingAtomBondCounts(
   let monomerCount: number = 0;
   let needsCapping = true;
   let lastMonomerGraph: MolGraph | null = null;
+  let lastPhosphateGraph: MolGraph | null = null;
   // sum up all the atoms/nodes provided by the sequence
-  for (const seqMonomer of monomerSeq) {
+  for (let i = 0; i < monomerSeq.length; ++i) {
+    const seqMonomer = monomerSeq[i];
     if (seqMonomer.symbol === GAP_SYMBOL) continue; // Skip for gap/empty monomer in MSA
     if (seqMonomer.symbol == '*')
       throw new Error(`Gap canonical symbol is '', not '*`);
@@ -366,6 +394,9 @@ function getResultingAtomBondCounts(
     atomCount += lastMonomerGraph.atoms.x.length;
     bondCount += lastMonomerGraph.bonds.bondTypes.length;
     monomerCount++;
+    // In triples mode, every 3rd entry (index 2 mod 3) is a phosphate. Track
+    // the LAST one — its atoms/bonds are dropped at the 3'-terminus.
+    if (triplesMode && i % 3 === 2) lastPhosphateGraph = lastMonomerGraph;
   }
 
   // add extra values depending on the polymer type
@@ -384,7 +415,25 @@ function getResultingAtomBondCounts(
         bondCount -= 1; // remove the last bond (the terminal C-OH)
       }
     }
-  } else { // nucleotides
+  } else if (triplesMode) { // nucleotides — HELM triples (per-position sugar/base/phosphate)
+    void lastPhosphateGraph; // kept for symmetry; trailing P is now retained when HELM wrote it
+
+    // Per-monomer-loop already summed sugars + bases + phosphates for every
+    // entry in monomerSeq (terminals included). Reservation: each backbone
+    // emit (sugar / phosphate / terminal) reserves +1 bond slot for the
+    // chain-extending bond, each branch (base) reserves +1 for its branch
+    // bond. Total reservations = monomerCount.
+    bondCount += monomerCount;
+
+    // OH cap atom rides on the 3'-end. Skip it when HELM specified a
+    // 3'-terminal modifier (e.g. GalNAc) that IS the chain end.
+    const has3pTerm = !!roles && roles.length > 0 &&
+      roles[roles.length - 1] === NucleotideRole.TERMINAL_3P;
+    if (has3pTerm)
+      needsCapping = false;
+    else
+      atomCount += 1; // OH cap atom (rides on trailing P or on last sugar's R2)
+  } else { // nucleotides — bases-only legacy path with default sugar/phosphate
     const sugar = (alphabet === ALPHABET.DNA) ?
       getMolGraph(monomersDict, C.DEOXYRIBOSE)! : getMolGraph(monomersDict, C.RIBOSE)!;
     const phosphate = getMolGraph(monomersDict, C.PHOSPHATE)!;
@@ -412,6 +461,125 @@ function getResultingAtomBondCounts(
   }
 
   return {atomCount, bondCount, needsCapping};
+}
+
+// Triples-mode RNA assembly. Iterates by NUCLEOTIDE over the row's "core"
+// positions (those tagged SUGAR/BASE/PHOSPHATE), and emits at most one
+// TERMINAL_5P at the head and one TERMINAL_3P at the tail.
+//
+// Layout permutations the function handles:
+//   roles = [SUGAR, BASE, PHOSPHATE, ...]                     // standard RNA
+//   roles = [..., SUGAR, BASE]                                // no trailing P
+//   roles = [TERMINAL_5P, SUGAR, BASE, PHOSPHATE, ...]        // 5' modifier
+//   roles = [..., SUGAR, BASE, TERMINAL_3P]                   // 3' modifier (replaces last P)
+//   roles = [TERMINAL_5P, ..., TERMINAL_3P]                   // both
+//
+// When a TERMINAL_3P is present the OH cap MUST be skipped (the last
+// monomer is the chain end, period); the caller takes responsibility for
+// needsCapping=false in `getResultingAtomBondCounts`.
+function runTriplesAssembly(
+  monomerSeq: ISeqMonomer[], roles: NucleotideRole[],
+  monomersDict: MonomerMolGraphMap,
+  molfileAtomBlock: string[], molfileBondBlock: string[],
+  v: LoopVariables, LC: LoopConstants,
+  monomers: MonomerMap, steabsCollection: number[],
+  addAtoms: (n: number) => void, getAtoms: () => number
+): void {
+  const has5pTerm = roles.length > 0 && roles[0] === NucleotideRole.TERMINAL_5P;
+  const has3pTerm = roles.length > 0 && roles[roles.length - 1] === NucleotideRole.TERMINAL_3P;
+  const coreStart = has5pTerm ? 1 : 0;
+  const coreEnd = has3pTerm ? roles.length - 1 : roles.length;
+  const coreLen = coreEnd - coreStart;
+  const N = Math.ceil(coreLen / 3); // nucleotide count in the core
+  // coreLen === 3N → trailing P present.  coreLen === 3N - 1 → no trailing P.
+  const hasTrailingP = coreLen === 3 * N;
+
+  // Helper: emit one monomer as a backbone unit and record its atom/bond
+  // ranges in the per-row monomer map.
+  const emitBackbone = (sm: ISeqMonomer, mapKey: number): void => {
+    const mG = getMolGraph(monomersDict,
+      {symbol: sm.symbol, polymerType: helmTypeToPolymerType(sm.biotype)})!;
+    const aFirst = v.nodeShift;
+    const bFirst = v.bondShift;
+    addBackboneMonomerToMolblock(mG, molfileAtomBlock, molfileBondBlock, v);
+    mG.stereoAtoms?.forEach((i) => steabsCollection.push(i + getAtoms()));
+    addAtoms(mG.atoms.x.length);
+    const aList: number[] = [];
+    for (let a = aFirst; a < v.nodeShift; ++a) aList.push(a);
+    const bList: number[] = [];
+    for (let b = bFirst; b < v.bondShift; ++b) bList.push(b);
+    monomers.set(mapKey, {biotype: sm.biotype, symbol: sm.symbol, atoms: aList, bonds: bList});
+  };
+
+  // 1. 5'-end terminal modifier (e.g. Chol).
+  if (has5pTerm) {
+    v.i = 0;
+    emitBackbone(monomerSeq[0], 0);
+  }
+
+  // 2. Core triples loop: each iteration emits [prev-P (if n>=1)] + sugar + base.
+  for (let n = 0; n < N; ++n) {
+    v.i = n + (has5pTerm ? 1 : 0); // keep v.i monotone across emits
+    const sugarSeqIdx = coreStart + 3 * n;
+    const baseSeqIdx = sugarSeqIdx + 1;
+
+    const sugarSm = monomerSeq[sugarSeqIdx];
+    const baseSm = monomerSeq[baseSeqIdx];
+
+    const sugarG = getMolGraph(monomersDict,
+      {symbol: sugarSm.symbol, polymerType: helmTypeToPolymerType(sugarSm.biotype)})!;
+    const baseG = getMolGraph(monomersDict,
+      {symbol: baseSm.symbol, polymerType: helmTypeToPolymerType(baseSm.biotype)})!;
+
+    // Inter-nucleotide phosphate sits at coreStart + 3*(n-1) + 2 for n >= 1.
+    if (n >= 1) {
+      const prevPhosKey = coreStart + 3 * (n - 1) + 2;
+      emitBackbone(monomerSeq[prevPhosKey], prevPhosKey);
+    }
+
+    // Sugar (backbone)
+    const sugarAtomFirst = v.nodeShift;
+    const sugarBondFirst = v.bondShift;
+    addBackboneMonomerToMolblock(sugarG, molfileAtomBlock, molfileBondBlock, v);
+    sugarG.stereoAtoms?.forEach((i) => steabsCollection.push(i + getAtoms()));
+    addAtoms(sugarG.atoms.x.length);
+    const sAList: number[] = [];
+    for (let a = sugarAtomFirst; a < v.nodeShift; ++a) sAList.push(a);
+    const sBList: number[] = [];
+    for (let b = sugarBondFirst; b < v.bondShift; ++b) sBList.push(b);
+    monomers.set(sugarSeqIdx, {
+      biotype: sugarSm.biotype, symbol: sugarSm.symbol,
+      atoms: sAList, bonds: sBList,
+    });
+
+    // Base (branch)
+    const baseAtomFirst = v.nodeShift;
+    const baseBondFirst = v.bondShift;
+    addBranchMonomerToMolblock(baseG, molfileAtomBlock, molfileBondBlock, v);
+    baseG.stereoAtoms?.forEach((i) => steabsCollection.push(i + getAtoms()));
+    addAtoms(baseG.atoms.x.length);
+    const bAList: number[] = [];
+    for (let a = baseAtomFirst; a < v.nodeShift; ++a) bAList.push(a);
+    const bBList: number[] = [];
+    for (let b = baseBondFirst; b < v.bondShift; ++b) bBList.push(b);
+    monomers.set(baseSeqIdx, {
+      biotype: baseSm.biotype, symbol: baseSm.symbol,
+      atoms: bAList, bonds: bBList,
+    });
+  }
+
+  // 3. Trailing phosphate (the LAST nucleotide's P) — only if HELM wrote
+  // one AND there is no 3'-terminal modifier replacing it.
+  if (hasTrailingP) {
+    const lastPhosKey = coreStart + 3 * (N - 1) + 2;
+    emitBackbone(monomerSeq[lastPhosKey], lastPhosKey);
+  }
+
+  // 4. 3'-end terminal modifier (e.g. GalNAc).
+  if (has3pTerm) {
+    v.i = N + (has5pTerm ? 1 : 0);
+    emitBackbone(monomerSeq[roles.length - 1], roles.length - 1);
+  }
 }
 
 /** Keep precision upon floating point operations over atom coordinates

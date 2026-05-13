@@ -6,8 +6,12 @@ export async function _demoDatabasesChembl(): Promise<void> {
   const query: DG.DataQuery = await grok.functions.eval('Chembl:FracClassificationWithSubstructure');
   const funccall: DG.FuncCall = query.prepare();
   const editor = await funccall.getEditor();
-  for (const p of funccall.inputParams.values())
-    p.onChanged.subscribe(() => runQuery());
+
+  const queryPanel = ui.input.textArea('', {value: query.query});
+  queryPanel.input.style.width = '100%';
+  queryPanel.input.style.minHeight = '350px';
+  queryPanel.input.setAttribute('readonly', 'true');
+  const gridDiv = ui.div('', {style: {position: 'relative', height: '100%'}});
 
   const runQuery = async () => {
     ui.setUpdateIndicator(gridDiv, true);
@@ -24,17 +28,8 @@ export async function _demoDatabasesChembl(): Promise<void> {
     }
   };
 
-
-  const queryPanel = ui.input.textArea('', {value: query.query});
-  queryPanel.input.style.width = '100%';
-  queryPanel.input.style.minHeight = '350px';
-  queryPanel.input.setAttribute('readonly', 'true');
-  const gridDiv = ui.div('', {style: {position: 'relative', height: '100%'}});
-
   const tabControl = ui.tabControl({
-    'Query Input Form': ui.divV([
-      editor,
-    ]),
+    'Query Input Form': ui.divV([editor]),
     'Query SQL': ui.div(queryPanel.root),
   });
   tabControl.root.style.width = '100%';
@@ -45,8 +40,13 @@ export async function _demoDatabasesChembl(): Promise<void> {
     gridDiv,
   ], {style: {height: '100%', width: '100%'}});
 
-  const view = grok.shell.addView(DG.View.create());
+  const view = DG.View.create();
   view.name = 'Chemical Databases';
   view.root.append(totalDiv);
-  setTimeout(() => runQuery(), 0);
+
+  for (const p of funccall.inputParams.values())
+    view.subs.push(p.onChanged.subscribe(() => runQuery()));
+
+  grok.shell.addView(view);
+  await runQuery();
 }

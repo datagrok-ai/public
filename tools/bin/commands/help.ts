@@ -211,6 +211,8 @@ Options:
 --report            Report failed tests to audit, notifies package author (default=false)
 --skip-build        Skip the package build step
 --skip-publish      Skip the package publication step
+--skip-puppeteer    Skip the Puppeteer/DG.Test pass; only run Playwright (for playwright-only test directories)
+--skip-playwright   Skip the Playwright pass; only run Puppeteer/DG.Test
 --link  	        Link the package to local utils
 --record            Records the test execution process in mp4 format
 --platform          Runs only platform tests (applicable for ApiTests package only)
@@ -356,18 +358,28 @@ Examples:
 `;
 
 const HELP_REPORT = `
-Usage: grok report <subcommand> <instance> <id>
+Usage: grok report <subcommand> [args]
 
 Manage Datagrok user error reports
 
 Subcommands:
     fetch    Download a report zip from a managed instance
+    read     Normalize a report (zip or json) into one JSON object on stdout
     resolve  Mark a report as resolved
     ticket   Create a JIRA ticket for a report via the Datlas API
 
+Read flags:
+    --extract-screenshot <path>  Write the screenshot binary to <path>
+    --extract-d42 <dir>          Unpack .d42 sidecar tables into <dir>
+    --extract-actions            Write a sibling <stem>_actions.json
+
 Examples:
-  grok report fetch dev 1528         Download report #1528 from the 'dev' instance
-  grok report resolve dev 1528       Resolve report #1528 on the 'dev' instance
+  grok report fetch dev 1528             Download report #1528 from the 'dev' instance
+  grok report read /tmp/report.zip       Print normalized JSON for a local zip
+  grok report read /tmp/report.json      Print normalized JSON for a raw report.json
+  grok report read dev 1528              Fetch + normalize report #1528 from 'dev'
+  grok report read /tmp/report.zip --extract-screenshot ./shot.png
+  grok report resolve dev 1528           Resolve report #1528 on the 'dev' instance
   grok report ticket dev <report-uuid>   Create a JIRA ticket for a report
 
 The instance name must match a server alias in ~/.grok/config.yaml.
@@ -380,7 +392,7 @@ Usage: grok server <entity> <verb> [args] [options]
 Manage a Datagrok server from the command line.
 
 Entities:
-  users, groups, functions, connections, queries, scripts, packages, reports, files
+  users, groups, functions, connections, queries, scripts, packages, reports, files, tables
 
 Verbs:
   list      List entities
@@ -388,10 +400,26 @@ Verbs:
   delete    Delete an entity by ID
 
 Special commands:
-  grok s functions run <Name:func(args)>   Call a function
-  grok s files list [path] [-r]            List files (recursive with -r)
-  grok s raw <METHOD> <path>               Hit any API endpoint
-  grok s describe <entity-type>            Show entity JSON schema
+  grok s functions run <Name:func(args)>             Call a function
+  grok s functions list [--type <t>] [--language <l>] [--package <p>] [--filter <expr>]
+                                                     Type: script|query|function|package; language applies to scripts
+  grok s files list [path] [-r]                      List files (recursive with -r)
+  grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
+                                                     Share an entity with groups
+  grok s shares list <entity-id>                     List who an entity (UUID) is shared with
+  grok s users save --json user.json                 Create or update a user from JSON
+  grok s users block <id-or-login>                   Block a user from the platform
+  grok s users unblock <id-or-login>                 Unblock a previously blocked user
+  grok s groups save --json group.json [--save-relations]
+                                                     Create or update a group from JSON
+  grok s connections save --json conn.json [--save-credentials]
+                                                     Create or update a connection from JSON
+  grok s connections test <id-or-name>               Test connectivity of an existing connection
+  grok s connections test --json conn.json           Test connectivity of a connection defined in JSON
+  grok s tables upload <name> <file.csv>             Upload a CSV as a Datagrok table
+  grok s tables download <name-or-id> [-O <file>]    Download a table as CSV (stdout by default)
+  grok s raw <METHOD> <path>                         Hit any API endpoint
+  grok s describe <entity-type>                      Show entity JSON schema
 
 Options:
   --host <alias|url>    Server alias from config or full URL
@@ -407,6 +435,13 @@ Examples:
   grok s connections list --filter "PostgreSQL" --output json
   grok s connections get <id>
   grok s connections delete <id>
+  grok s connections save --json conn.json --save-credentials
+  grok s connections test "JohnDoe:MyConnection"
+  grok s connections test --json conn.json
+  grok s users save --json user.json
+  grok s groups save --json group.json --save-relations
+  grok s shares add "JohnDoe:MyConnection" Chemists,Admins --access Edit
+  grok s shares list <entity-uuid>
   grok s functions run 'Chem:smilesToMw("ccc")'
   grok s files list "System:AppData" -r
   grok s raw GET /api/users/current

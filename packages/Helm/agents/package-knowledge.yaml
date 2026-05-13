@@ -1,0 +1,25 @@
+packageName: Helm
+description: HELM notation support for macromolecules — HELMWebEditor-based cell editing, cell rendering, properties panel, monomer highlighting, monomer library helper, and HELM→molfile (atomic-level) conversion. Built on the Pistoia HELM standard with bundled HELMWebEditor and JSDraw
+keywords:
+  - helm
+  - macromolecule
+  - polymer
+  - peptide
+  - oligonucleotide
+  - bio
+  - pistoia
+  - helm web editor
+  - jsdraw
+  - helm editor
+  - sketcher
+  - helm input
+  - monomer
+  - monomer library
+  - highlight monomers
+  - cell renderer
+  - helm rendering
+  - helm to molfile
+  - atomic level
+  - macromolecule properties
+apiRef: src/package-api.ts
+docsRef: README.md

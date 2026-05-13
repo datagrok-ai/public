@@ -1,12 +1,15 @@
 /* eslint-disable max-len */
+import './polyfills'; // must run before anything else — Chrome 50 / Dartium support, see polyfills.ts
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {interval} from 'rxjs';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './ai/search/query-matching';
 import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI} from './ai/ui';
 import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
+import {ClaudeRuntimeClient} from './claude/runtime-client';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
 import {biologicsIndex} from './db/indexes/biologics-index';
 import {chemblIndex} from './db/indexes/chembl-index';
@@ -25,8 +28,66 @@ export class PackageFunctions {
     setupSearchUI();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
+    PackageFunctions.ensureAgentsFolder();
+    PackageFunctions.subscribeToSyncEvents();
   }
 
+  // Creates agents/ folder in My Files if it doesn't exist yet.
+  static async ensureAgentsFolder(): Promise<void> {
+    try {
+      const conn = await grok.dapi.connections.filter('name = "My files"').first();
+      if (!conn)
+        return;
+      const agentsPath = `${conn.nqName}/agents`;
+      const exists = await grok.dapi.files.exists(agentsPath);
+      if (!exists) {
+        await grok.dapi.files.writeAsText(`${agentsPath}/README.md`,
+          'Place your personal knowledge files here. Claude will use them as context.');
+        console.log('Grokky: created agents/ folder');
+      }
+    } catch (e: any) {
+      console.warn('Grokky: failed to ensure agents folder:', e.message);
+    }
+  }
+
+  static isAgentsFile(fi: DG.FileInfo): boolean {
+    return (fi.fullPath ?? fi.path ?? fi.name ?? '').includes('agents');
+  }
+
+  // Subscribes to platform events that should trigger file sync.
+  static subscribeToSyncEvents(): void {
+    const sync = (...args: Parameters<ClaudeRuntimeClient['syncUserFiles']>) =>
+      ClaudeRuntimeClient.getInstance().syncUserFiles(...args);
+
+    // MyFiles agents: file operations (create, upload, delete, rename, move)
+    grok.events.onEvent('d4-file-event').subscribe((eventData: any) => {
+      const dartFiles = eventData?.dart?.files;
+      if (!dartFiles)
+        return;
+      const files: DG.FileInfo[] = Array.from({length: dartFiles.length}, (_: any, i: number) => DG.toJs(dartFiles[i]));
+      if (files.some(PackageFunctions.isAgentsFile))
+        sync('user-files');
+    });
+
+    // MyFiles agents: in-place file edits (save)
+    grok.events.onFileEdited.subscribe((fi: DG.FileInfo) => {
+      if (PackageFunctions.isAgentsFile(fi))
+        sync('user-files');
+    });
+
+    // Packages: when a JS bundle is loaded
+    grok.events.onPackageLoaded.subscribe((pkg: DG.Package) => {
+      sync('packages', pkg.name);
+    });
+
+    // Poll for shared connections and package updates every 10 minutes.
+    // No reliable push events exist for sharing or other users' publishes.
+    // TODO: think about more efficient strategies here.
+    interval(15 * 60 * 1000).subscribe(() => {
+      sync('shared');
+      sync('packages');
+    });
+  }
 
   @grok.decorators.autostart({tags: ['autostart']})
   static autostart() {
@@ -64,20 +125,26 @@ export class PackageFunctions {
 
   @grok.decorators.func({meta: {
     role: 'aiSearchProvider',
-    useWhen: 'If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. The tone of the prompt should generally sound like "how do I do this" / "what is this". for example, "what sequence notations are supported?'
+    useWhen: 'If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. The tone of the prompt should generally sound like "how do I do this" / "what is this". for example, "what sequence notations are supported?',
   }, name: 'Help',
   description: 'Get answers from AI assistant based on Datagrok documentation and public code.', result: {type: 'widget', name: 'result'}})
-  static async askHelpLLMProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-    return await askWiki(prompt);
+  static async askHelpLLMProvider(
+    @grok.decorators.param({type: 'string'}) prompt: string,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
+  ): Promise<DG.Widget | null> {
+    return await askWiki(prompt, sessionId);
   }
 
   @grok.decorators.func({meta: {
     role: 'aiSearchProvider',
-    useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function'
+    useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function',
   }, name: 'Execute',
   description: 'Plans and executes function steps to achieve needed results', result: {type: 'widget', name: 'result'}})
-  static async smartChainExecutionProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-    return await smartExecution(prompt);
+  static async smartChainExecutionProvider(
+    @grok.decorators.param({type: 'string'}) prompt: string,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
+  ): Promise<DG.Widget | null> {
+    return await smartExecution(prompt, sessionId);
   }
 
   @grok.decorators.func({meta: {
@@ -85,8 +152,11 @@ export class PackageFunctions {
     useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc. Always use this function when user wants to get the data without any further processing or calculating'
   }, name: 'Query',
   description: 'Tries to find a query which has the similar pattern as the prompt user entered and executes it', result: {type: 'widget', name: 'result'}})
- static async llmSearchQueryProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-   return await tableQueriesFunctionsSearchLlm(prompt);
+ static async llmSearchQueryProvider(
+   @grok.decorators.param({type: 'string'}) prompt: string,
+   @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
+ ): Promise<DG.Widget | null> {
+   return await tableQueriesFunctionsSearchLlm(prompt, sessionId);
  }
 
   @grok.decorators.func({

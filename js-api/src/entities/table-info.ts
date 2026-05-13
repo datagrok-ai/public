@@ -113,6 +113,11 @@ export class FileInfo extends Entity {
     return api.grok_FileInfo_ReadAsBytes(this.dart);
   }
 
+  /** Saves the file info on the server. */
+  save(): Promise<FileInfo> {
+    return api.grok_FileInfo_Save(this.dart);
+  }
+
   static fromBytes(path: string, data: Uint8Array): FileInfo {
     if (!path)
       throw new Error('Path can\'t be null or empty');

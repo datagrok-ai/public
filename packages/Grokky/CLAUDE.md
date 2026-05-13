@@ -22,12 +22,33 @@ is safe, secure, governed, monitored and measured.
 
 See also [Grokky GitHub issues](https://github.com/datagrok-ai/public/issues/3710). 
 
+## Browser compatibility — the UI must run in Chrome 50 / Dartium
+
+Grokky is regularly tested in **Dartium (≈ Chromium 50)**, so every UI change — Dart-side and this
+plugin's TS/CSS — must work there. Verify before reporting UI work as done.
+
+- **CSS**: no flexbox `gap` — use sibling margins (`.container > * + * { margin-…: … }`). No
+  `scrollbar-gutter`. `filter` and `user-select` need `-webkit-` fallbacks (unprefixed = Chrome 53+/54+);
+  `mask-image` needs `-webkit-mask-image`. CSS variables (`var(--…)`) and `calc()` are fine (Chrome 49+).
+- **JS runtime APIs missing in Chrome 50** — avoid them, or rely on `src/polyfills.ts` (imported first
+  from `package.ts` / `package-test.ts`). Already polyfilled: `crypto.randomUUID`,
+  `Object.values`/`entries`/`fromEntries`, `String.prototype.trimStart`/`trimEnd`,
+  `Array.prototype.flatMap`, `Element.prototype.append`/`prepend`/`replaceWith`. If you need another
+  missing API, add it to `polyfills.ts` rather than to call sites.
+- **Clipboard**: use `copyToClipboard()` from `src/utils.ts` — never `navigator.clipboard.writeText`
+  directly (undefined in Chrome 50 and in insecure contexts).
+- **Keyboard**: use `isEnterKey(e)` from `src/utils.ts` — `KeyboardEvent.key` is `undefined` in Chrome 50;
+  use `e.keyCode` fallbacks for other keys too.
+- **Syntax is fine**: the bundle targets `es6` (Chrome 50 supports ES2015), and newer syntax (`?.`, `??`,
+  object spread, `async`/`await`) is transpiled by TypeScript. Only *runtime APIs* need attention.
+
 ## Source Structure
 
 ```
 src/
 ├── package.ts              # Entry point — registers functions, init, search providers
-├── utils.ts                # Shared utilities (viewer/dataframe descriptions, events)
+├── polyfills.ts            # Chrome 50 / Dartium polyfills — imported first from package.ts / package-test.ts
+├── utils.ts                # Shared utilities: viewer/dataframe descriptions, events, isEnterKey/copyToClipboard
 ├── ai/                     # AI panels, search, and UI wiring
 │   ├── panel.ts            # TVAIPanel, DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel
 │   ├── ui.ts               # Setup functions that wire panels into the platform UI
@@ -135,6 +156,10 @@ Processes two types of fenced blocks in Claude responses:
 - `` ```datagrok-exec `` — runs JS with `grok`/`ui`/`DG`/`view`/`t` globals
 - `` ```datagrok-entities `` — renders interactive entity cards (files, scripts, queries, connections, projects, spaces)
 
+The block formats (globals, JSON shapes, return-value rendering) are documented as Claude Code
+skills under `dockerfiles/claude-runtime/plugin/skills/` and loaded into the runtime as a local
+plugin. The inline system prompt only points Claude at these skills, keeping the prompt small.
+
 Also provides `buildViewContext()` — serializes the current view (table columns, script code) for Claude prompts.
 
 ### SQL Tools (`src/db/sql-tools.ts`)
@@ -149,7 +174,7 @@ Also provides `genDBConnectionMeta()` for generating and persisting LLM-friendly
 
 ### Docker Containers (`dockerfiles/`)
 
-- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `tool_result`, `final`, `error`, `aborted`, `input_request`. Includes the skills & knowledge sync system (`src/user-files.ts`) — see [docs/VISION.md](docs/VISION.md) for the full spec.
+- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `tool_result`, `final`, `error`, `aborted`, `input_request`. Includes the skills & knowledge sync system (`src/user-files.ts`) — see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for the full spec. Ships a local Claude Code plugin (`plugin/`) with `datagrok-exec` and `datagrok-entities` skills describing the fenced-block formats; the plugin is attached for full-prompt sessions and skipped for `bash` / `none` modes.
 - `mcp-server/` — MCP server (`@modelcontextprotocol/sdk`, HTTP transport) exposing Datagrok operations as tools: functions (list/get/call/create), files (list/download/upload), projects, spaces, and user info. Auth via per-request `x-user-api-key` / `x-datagrok-api-url` headers.
 
 ### Deprecated Code (`src/depr/`)

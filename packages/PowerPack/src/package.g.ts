@@ -14,7 +14,7 @@ export function _welcomeView() : any {
   return PackageFunctions._welcomeView();
 }
 
-//name: Activity dashboard
+//name: Spotlight
 //output: widget result
 //meta.showName: false
 //meta.role: dashboard

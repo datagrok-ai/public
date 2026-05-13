@@ -4,18 +4,19 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
 import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan, withLatestFrom, filter} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
-import {getPipelineRef, PipelineConfigurationProcessed} from '../config/config-processing-utils';
-import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
-import {buildTraverseD} from '../data/graph-traverse-utils';
-import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineRefMap, PipelineStepConfigurationProcessed} from '../config/config-utils';
-import {FuncCallAdapter, FuncCallMockAdapter} from './FuncCallAdapters';
-import {loadFuncCall, loadInstanceState, makeFuncCall, saveFuncCall, saveInstanceState} from './funccall-utils';
-import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, ParallelPipelineNode, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
+import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
+import {PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
+import {isPipelineStepConfig} from '../config/config-utils';
+import {FuncCallAdapter} from './FuncCallAdapters';
+import {saveFuncCall, saveInstanceState} from './funccall-utils';
+import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
 import {LinksState} from './LinksState';
-import {ValidationResult} from '../data/common-types';
+import {GranularMutationOp, ValidationResult} from '../data/common-types';
 import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
+import * as Factory from './StateTreeFactory';
+import * as Serializer from './StateTreeSerializer';
 
 const MAX_CONCURENT_SAVES = 5;
 
@@ -44,9 +45,10 @@ export class StateTree {
     private mockMode = false,
     private defaultValidators = false,
     private logger?: DriverLogger,
+    private batchLinks = false,
   ) {
     this.nodeTree = new BaseTree(item);
-    this.linksState = new LinksState(defaultValidators, this.logger);
+    this.linksState = new LinksState(defaultValidators, this.logger, batchLinks);
 
     this.linksState.runningLinks$.pipe(
       map((links) => !!links?.length),
@@ -55,7 +57,7 @@ export class StateTree {
   }
 
   //
-  // tree state getting
+  // tree state getting (delegates to StateTreeSerializer)
   //
 
   public toSerializedState(options: StateTreeSerializationOptions = {}): PipelineSerializedState {
@@ -66,116 +68,32 @@ export class StateTree {
     return StateTree.toStateRec(this.nodeTree.root, options, this.linksState);
   }
 
-  public static toStateRec(
-    node: TreeNode<StateTreeNode>,
-    options: StateTreeSerializationOptions = {},
-    linksState?: LinksState,
-  ): PipelineState {
-    const item = node.getItem();
-    const actions = linksState ? linksState.getNodeActionsData(item.uuid) : undefined;
-    if (isFuncCallNode(item))
-      return item.toState(options, actions);
-    const selfState = item.toState(options, actions);
-    const steps = node.getChildren().map((node) => {
-      const item = this.toStateRec(node.item, options, linksState);
-      return item;
-    });
-    const fullState = {...selfState, steps};
-    const structureCheckResults = item.getStructureCheck(fullState);
-    return {...fullState, structureCheckResults};
-  }
-
-  public static toSerializedStateRec(
-    node: TreeNode<StateTreeNode>,
-    options: StateTreeSerializationOptions = {},
-  ): PipelineSerializedState {
-    const item = node.getItem();
-    if (isFuncCallNode(item))
-      return item.toSerializedState(options);
-    const state = item.toSerializedState(options);
-    const steps = node.getChildren().map((node) => {
-      const item = this.toSerializedStateRec(node.item, options);
-      return item;
-    });
-    return {...state, steps};
-  }
-
-  //
-  // additional states getting
-  //
+  // Static re-exports for backward compatibility
+  public static toStateRec = Serializer.toStateRec;
+  public static toSerializedStateRec = Serializer.toSerializedStateRec;
 
   public getValidations() {
-    const entries = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
-      const item = node.getItem();
-      if (isFuncCallNode(item))
-        return [...acc, [item.uuid, item.validationInfo$] as const];
-
-      return acc;
-    }, [] as (readonly [string, BehaviorSubject<Record<string, ValidationResult>>])[]);
-    return Object.fromEntries(entries);
+    return Serializer.getValidations(this.nodeTree);
   }
 
   public getConsistency() {
-    const entries = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
-      const item = node.getItem();
-      if (isFuncCallNode(item))
-        return [...acc, [item.uuid, item.consistencyInfo$] as const];
-
-      return acc;
-    }, [] as (readonly [string, BehaviorSubject<Record<string, ConsistencyInfo>>])[]);
-    return Object.fromEntries(entries);
+    return Serializer.getConsistency(this.nodeTree);
   }
 
   public getMeta() {
-    const entries = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
-      const item = node.getItem();
-      if (isFuncCallNode(item))
-        return [...acc, [item.uuid, item.metaInfo$] as const];
-      return acc;
-    }, [] as (readonly [string, BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>])[]);
-    return Object.fromEntries(entries);
+    return Serializer.getMeta(this.nodeTree);
   }
 
   public getFuncCallStates() {
-    const entries = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
-      const item = node.getItem();
-      if (isFuncCallNode(item))
-        return [...acc, [item.uuid, item.funcCallState$] as const];
-      return acc;
-    }, [] as (readonly [string, BehaviorSubject<FuncCallStateInfo | undefined>])[]);
-    return Object.fromEntries(entries);
+    return Serializer.getFuncCallStates(this.nodeTree);
   }
 
   public getNodesDescriptions() {
-    const entries = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
-      const item = node.getItem();
-      const stateNames = item.nodeDescription.getStateNames();
-      const stateChanges = stateNames.map((name) => item.nodeDescription.getStateChanges(name).pipe(
-        map((val) => [name, val] as const),
-      ));
-      const descriptions$ = merge(...stateChanges).pipe(
-        scan((acc, [name, val]) => {
-          if (name === 'tags') {
-            const tags = Object.values(val ?? {}).flat().filter((x) => x) as string[];
-            return {...acc, [name]: tags};
-          }
-          return {...acc, [name]: val};
-        }, {} as Record<string, string[] | string>),
-        debounceTime(0),
-      );
-      return [...acc, [item.uuid, descriptions$] as const];
-    }, [] as (readonly [string, Observable<Record<string, string | string[]> | undefined>])[]);
-    return Object.fromEntries(entries);
+    return Serializer.getNodesDescriptions(this.nodeTree);
   }
 
   public getIOMutations() {
-    const allFlags = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
-      const item = node.getItem();
-      if (isFuncCallNode(item))
-        return [...acc, item.instancesWrapper.getIOEditsFlag()];
-      return acc;
-    }, [] as Observable<boolean>[]);
-    return merge(...allFlags);
+    return Serializer.getIOMutations(this.nodeTree);
   }
 
   //
@@ -224,67 +142,101 @@ export class StateTree {
     });
   }
 
+  // --- Internal unguarded primitives (caller must hold the tree lock) ---
+
+  private addSubTreeInternal(parentPath: NodePath, id: string, pos: number): TreeUpdateMutationPayload {
+    const subConfig = StateTree.getSubConfig(this.config, parentPath, id);
+    if (isPipelineStepConfig(subConfig)) {
+      const fcNode = new FuncCallNode(subConfig, false, this.logger);
+      fcNode.initState(subConfig);
+      this.nodeTree.attachBrunch(parentPath, new TreeNode(fcNode), id, pos);
+    } else {
+      StateTree.fromPipelineConfig({
+        config: this.config,
+        startNode: subConfig,
+        startPath: [...parentPath, {id, idx: pos}],
+        startState: this,
+        isReadonly: false,
+        defaultValidators: this.defaultValidators,
+        batchLinks: this.batchLinks,
+        mockMode: this.mockMode,
+        logger: this.logger,
+      });
+    }
+    return {mutationRootPath: parentPath, addIdx: pos, id};
+  }
+
+  private removeSubtreeInternal(uuid: string): TreeUpdateMutationPayload {
+    const data = this.nodeTree.find((item) => item.uuid === uuid);
+    if (data == null)
+      throw new Error(`Node uuid ${uuid} not found`);
+    const [node, path] = data;
+    this.nodeTree.removeBrunch(path);
+    const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
+    return {mutationRootPath, removeIdx, id: node.getItem().config.id};
+  }
+
+  private moveSubtreeInternal(uuid: string, newIdx: number): TreeUpdateMutationPayload {
+    const data = this.nodeTree.find((item) => item.uuid === uuid);
+    if (data == null)
+      throw new Error(`Node uuid ${uuid} not found`);
+    const [node, path] = data;
+    this.nodeTree.removeBrunch(path);
+    const [ppath, oldIdx] = this.getMutationSlice(path);
+    this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, newIdx);
+    return {mutationRootPath: ppath, addIdx: newIdx, removeIdx: oldIdx, id: node.getItem().config.id};
+  }
+
+  private replaceSubtreeInternal(path: NodePath, initConfig: PipelineInstanceConfig): {detail: TreeUpdateMutationPayload, subTree: StateTree} {
+    const ppath = path.slice(0, -1);
+    const last = indexFromEnd(path);
+    const subConfig = last ? StateTree.getSubConfig(this.config, ppath, last.id) : this.config;
+    if (isPipelineStepConfig(subConfig))
+      throw new Error(`FuncCall node ${JSON.stringify(path)}, but pipeline is expected`);
+    const subTree = StateTree.fromInstanceConfig({
+      instanceConfig: initConfig,
+      config: subConfig,
+      isReadonly: false,
+      defaultValidators: this.defaultValidators,
+      batchLinks: this.batchLinks,
+      mockMode: this.mockMode,
+      logger: this.logger,
+    });
+    if (last) {
+      this.nodeTree.removeBrunch(path);
+      this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
+    } else
+      this.nodeTree.replaceRoot(subTree.nodeTree.root);
+
+    const detail: TreeUpdateMutationPayload = last ? {
+      mutationRootPath: ppath,
+      addIdx: last.idx,
+      id: last.id,
+    } : {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
+    return {detail, subTree};
+  }
+
+  // --- Public guarded methods ---
+
   public moveSubtree(uuid: string, newIdx: number) {
     return this.mutateTree(() => {
-      const data = this.nodeTree.find((item) => item.uuid === uuid);
-      if (data == null)
-        throw new Error(`Node uuid ${uuid} not found`);
-      const [node, path] = data;
-      this.nodeTree.removeBrunch(path);
-      const [ppath, oldIdx] = this.getMutationSlice(path);
-      this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, newIdx);
-      const details: TreeUpdateMutationPayload[] = [{
-        mutationRootPath: ppath,
-        addIdx: newIdx,
-        removeIdx: oldIdx,
-        id: node.getItem().config.id,
-      }];
-      return of([{isMutation: true, details}]);
+      const detail = this.moveSubtreeInternal(uuid, newIdx);
+      return of([{isMutation: true, details: [detail]}]);
     });
   }
 
   public removeSubtree(uuid: string) {
     return this.mutateTree(() => {
-      const data = this.nodeTree.find((item) => item.uuid === uuid);
-      if (data == null)
-        throw new Error(`Node uuid ${uuid} not found`);
-      const [node, path] = data;
-      this.nodeTree.removeBrunch(path);
-      const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
-      const details: TreeUpdateMutationPayload[] = [{
-        mutationRootPath,
-        removeIdx,
-        id: node.getItem().config.id,
-      }];
-      return of([{isMutation: true, details}]);
+      const detail = this.removeSubtreeInternal(uuid);
+      return of([{isMutation: true, details: [detail]}]);
     });
   }
 
   public addSubTree(puuid: string, id: string, pos: number) {
     return this.mutateTree(() => {
       const [_root, _nqName, ppath] = StateTree.findPipelineNode(this, puuid);
-      const subConfig = StateTree.getSubConfig(this.config, ppath, id);
-      if (isPipelineStepConfig(subConfig)) {
-        const fcNode = new FuncCallNode(subConfig, false);
-        fcNode.initState(subConfig);
-        this.nodeTree.attachBrunch(ppath, new TreeNode(fcNode), id, pos);
-      } else {
-        StateTree.fromPipelineConfig({
-          config: this.config,
-          startNode: subConfig,
-          startPath: [...ppath, {id, idx: pos}],
-          startState: this,
-          isReadonly: false,
-          defaultValidators: this.defaultValidators,
-          mockMode: this.mockMode,
-        });
-      }
-      const details: TreeUpdateMutationPayload[] = [{
-        mutationRootPath: ppath,
-        addIdx: pos,
-        id,
-      }];
-      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([{isMutation: true, details}]));
+      const detail = this.addSubTreeInternal(ppath, id, pos);
+      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([{isMutation: true, details: [detail]}]));
     });
   }
 
@@ -300,6 +252,7 @@ export class StateTree {
           config: subConfig,
           mockMode: this.mockMode,
           defaultValidators: this.defaultValidators,
+          batchLinks: this.batchLinks,
           isReadonly,
         },
       ).pipe(
@@ -317,6 +270,22 @@ export class StateTree {
       }];
       return tree.pipe(mapTo([{isMutation: true, details}]));
     });
+  }
+
+  private applyGranularOps(parentPath: NodePath, ops: GranularMutationOp[]): Observable<TreeUpdateMutationPayload> {
+    const details: TreeUpdateMutationPayload[] = [];
+    for (const op of ops) {
+      if (op.op === 'add') {
+        const pos = op.position ?? this.nodeTree.getNode(parentPath).getChildren().length;
+        details.push(this.addSubTreeInternal(parentPath, op.configId, pos));
+      } else if (op.op === 'remove')
+        details.push(this.removeSubtreeInternal(op._uuid));
+      else if (op.op === 'move')
+        details.push(this.moveSubtreeInternal(op._uuid, op.position));
+    }
+    return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(
+      concatMap(() => from(details)),
+    );
   }
 
   public runStep(uuid: string, mockResults?: Record<string, any>, mockDelay?: number) {
@@ -376,35 +345,20 @@ export class StateTree {
     if (action.spec.type === 'pipeline') {
       return this.mutateTree(() => {
         return action.execPipelineMutations(additionalParams).pipe(
-          concatMap((lastPipelineMutations) => from(lastPipelineMutations ?? []).pipe(
-            concatMap((data) => {
-              const ppath = data.path.slice(0, -1);
-              const last = indexFromEnd(data.path);
-              const subConfig = last ? StateTree.getSubConfig(this.config, ppath, last.id) : this.config;
-              if (isPipelineStepConfig(subConfig))
-                throw new Error(`FuncCall node ${JSON.stringify(data.path)}, but pipeline is expected`);
-              const subTree = StateTree.fromInstanceConfig(
-                {
-                  instanceConfig: data.initConfig,
-                  config: subConfig,
-                  isReadonly: false,
-                  defaultValidators: this.defaultValidators,
-                  mockMode: this.mockMode,
-                });
-              if (last) {
-                this.nodeTree.removeBrunch(data.path);
-                this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
-              } else
-                this.nodeTree.replaceRoot(subTree.nodeTree.root);
+          concatMap(({pipelineMutations, granularMutations}) => {
+            const replacements$ = from(pipelineMutations ?? []).pipe(
+              concatMap((data) => {
+                const {detail, subTree} = this.replaceSubtreeInternal(data.path, data.initConfig);
+                return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(detail));
+              }),
+            );
 
-              const mutationData: TreeUpdateMutationPayload = last ? {
-                mutationRootPath: ppath,
-                addIdx: last.idx,
-                id: last.id,
-              } : {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
-              return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(mutationData));
-            })),
-          ),
+            const granular$ = from(granularMutations ?? []).pipe(
+              concatMap((data) => this.applyGranularOps(data.path, data.ops)),
+            );
+
+            return merge(replacements$, granular$);
+          }),
           toArray(),
           map((details) => [{isMutation: true, details}]),
         );
@@ -470,282 +424,16 @@ export class StateTree {
   }
 
   //
-  // creation helpers
+  // Static factory re-exports (backward compatibility)
   //
 
-  static load({
-    dbId,
-    config,
-    isReadonly = false,
-    defaultValidators = false,
-    mockMode = false,
-  }: {
-    dbId: string,
-    config: PipelineConfigurationProcessed,
-    isReadonly?: boolean,
-    defaultValidators?: boolean
-    mockMode?: boolean
-  }): Observable<StateTree> {
-    return defer(async () => {
-      const [state, _] = await loadInstanceState(dbId);
-      const tree = StateTree.fromInstanceState({state, config, isReadonly, defaultValidators, mockMode});
-      return tree;
-    });
-  }
-
-  static fromPipelineConfig({
-    config,
-    startNode = config,
-    startPath = [],
-    startState,
-    isReadonly = false,
-    defaultValidators = false,
-    mockMode = false,
-    logger,
-  } : {
-    config: PipelineConfigurationProcessed;
-    startNode?: PipelineConfigurationProcessed;
-    startPath?: Readonly<NodePath>;
-    startState?: StateTree;
-    isReadonly?: boolean;
-    defaultValidators?: boolean
-    mockMode?: boolean;
-    logger?: DriverLogger
-  }): StateTree {
-    const refMap = buildRefMap(config);
-
-    // TODO: initial infinite cycles detection
-    const traverse = buildTraverseD(startPath, (data: ConfigTraverseItem, path) => {
-      if (isPipelineParallelConfig(data) || isPipelineSequentialConfig(data)) {
-        const items = (data?.initialSteps ?? []).map((step, idx) => {
-          const item = data.stepTypes.find((t) => {
-            if (isPipelineSelfRef(t)) {
-              const derefedStep = getPipelineRef(refMap, t.nqName, t.version);
-              return derefedStep?.id === step.id;
-            }
-            return t.id === step.id;
-          });
-          if (!item)
-            throw new Error(`Node ${step.id} not found on path ${JSON.stringify(path)}`);
-          const nextPath = [...path, {id: step.id, idx}];
-          const stepItem = {...step, ...item};
-          return [stepItem, nextPath] as const;
-        });
-        return items;
-      } else if (isPipelineStaticConfig(data))
-        return data.steps.map((step, idx) => [step, [...path, {id: step.id, idx}]] as const);
-      else if (isPipelineSelfRef(data)) {
-        const next = getPipelineRef(refMap, data.nqName, data.version);
-        if (!next)
-          throw new Error(`Failed to deref nqName ${data.nqName} version ${data.version} on path ${JSON.stringify(path)}`);
-
-        return [[next, [...path, {id: next.id, idx: 0}]]] as const;
-      }
-      return [] as const;
-    }, new Set<ConfigTraverseItem>());
-
-    const tree = traverse(startNode, (acc, state, path) => {
-      const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path, isReadonly);
-      if (isFuncCallNode(node)) {
-        if (!isPipelineStepConfig(state))
-          throw new Error(`Wrong FuncCall node state type ${state.type} on path ${JSON.stringify(path)}`);
-        node.initState(state);
-      }
-      return StateTree.addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, mockMode, logger});
-    }, startState);
-    return tree!;
-  }
-
-  static fromInstanceState({
-    state,
-    config,
-    isReadonly,
-    mockMode = false,
-    defaultValidators = false,
-    logger,
-  }: {
-    state: PipelineSerializedState;
-    config: PipelineConfigurationProcessed;
-    isReadonly: boolean,
-    defaultValidators?: boolean,
-    mockMode?: boolean,
-    logger?: DriverLogger
-  }): StateTree {
-    const refMap = buildRefMap(config);
-
-    const traverse = buildTraverseD([] as Readonly<NodePath>, (item: PipelineSerializedState, path) => {
-      if (isFuncCallSerializedState(item))
-        return [];
-      else
-        return item.steps.map((step, idx) => [step, [...path, {id: step.configId, idx}]] as const);
-    });
-
-    const tree = traverse(state, (acc, state, path) => {
-      const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path, isReadonly || state.isReadonly);
-      node.restoreState(state);
-      return StateTree.addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, mockMode, logger});
-    }, undefined as StateTree | undefined);
-    return tree!;
-  }
-
-  static fromInstanceConfig({
-    instanceConfig,
-    config,
-    isReadonly = false,
-    defaultValidators = false,
-    mockMode = false,
-    logger,
-  }: {
-    instanceConfig: PipelineInstanceConfig,
-    config: PipelineConfigurationProcessed,
-    isReadonly?: boolean,
-    defaultValidators?: boolean,
-    mockMode?: boolean,
-    logger?: DriverLogger
-  }): StateTree {
-    const refMap = buildRefMap(config);
-
-    // TODO: fix static pipeline missing steps
-    const traverse = buildTraverseD([] as Readonly<NodePath>, (data: PipelineInstanceConfig, path, visited) => {
-      if (visited!.has(data))
-        throw new Error(`Initial config cycle on node ${data.id} path ${JSON.stringify(path)}`);
-      visited!.add(data);
-      if (data.steps)
-        return data.steps.map((step, idx) => [step, [...path, {id: step.id, idx}], visited] as const);
-      else
-        return [];
-    }, new Set<PipelineInstanceConfig>());
-
-    const tree = traverse(instanceConfig, (acc, state, path) => {
-      const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path, isReadonly);
-      if (isFuncCallNode(node))
-        node.initState(state);
-      return StateTree.addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, mockMode, logger});
-    }, undefined as StateTree | undefined);
-    return tree!;
-  }
-
-  //
-  // tree helpers
-  //
-
-  private static makeTreeNode(
-    config: PipelineConfigurationProcessed,
-    refMap: PipelineRefMap,
-    path: Readonly<NodePath>,
-    isReadonly: boolean,
-  ) {
-    const confPath = path.map((p) => p.id);
-    const nodeConf = getConfigByInstancePath(confPath, config, refMap);
-    const node = StateTree.makeNode(nodeConf, isReadonly);
-    const ppath = path.slice(0, -1);
-    const idx = indexFromEnd(path)?.idx ?? 0;
-    return [node, ppath, idx] as const;
-  }
-
-  private static makeNode(
-    nodeConf: PipelineConfigurationProcessed | PipelineStepConfigurationProcessed,
-    isReadonly: boolean,
-  ) {
-    if (isPipelineStepConfig(nodeConf))
-      return new FuncCallNode(nodeConf, isReadonly);
-    else if (isPipelineStaticConfig(nodeConf))
-      return new StaticPipelineNode(nodeConf, isReadonly);
-    else if (isPipelineParallelConfig(nodeConf))
-      return new ParallelPipelineNode(nodeConf, isReadonly);
-    else if (isPipelineSequentialConfig(nodeConf))
-      return new SequentialPipelineNode(nodeConf, isReadonly);
-
-    throw new Error(`Wrong node type ${nodeConf}`);
-  }
-
-  private static addTreeNodeOrCreate(
-    {
-      acc,
-      config,
-      node,
-      ppath,
-      pos,
-      defaultValidators,
-      mockMode,
-      logger,
-    } : {
-      acc: StateTree | undefined;
-      config: PipelineConfigurationProcessed;
-      node: StateTreeNode;
-      ppath: NodePath;
-      pos: number;
-      defaultValidators: boolean;
-      mockMode: boolean;
-      logger?: DriverLogger
-    },
-  ) {
-    if (acc)
-      acc.nodeTree.addItem(ppath, node, node.config.id, pos);
-    else
-      return new StateTree(node, config, mockMode, defaultValidators, logger);
-    return acc;
-  }
-
-  public static loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
-    return defer(() => {
-      const pendingFuncCallLoads = stateTree.nodeTree.traverse(stateTree.nodeTree.root, (acc, node) => {
-        const item = node.getItem();
-        if (isFuncCallNode(item)) {
-          if (item.instancesWrapper.getInstance())
-            return acc;
-          else if (mockMode) {
-            const obs$ = defer(() => {
-              const adapter = new FuncCallMockAdapter(item.config.io!, item.isReadonly);
-              item.initAdapter({adapter, restrictions: {}, isOutputOutdated: true, runError: undefined}, true);
-              return of(undefined);
-            });
-            return [...acc, obs$];
-          } else if (item.instancesWrapper.id == null && item.pendingId == null) {
-            const obs$ = defer(() => {
-              return from(makeFuncCall(item.config.nqName, false)).pipe(
-                map((data) => item.initAdapter(data, true)),
-              );
-            });
-            return [...acc, obs$];
-          } else if (item.instancesWrapper.id == null && item.pendingId) {
-            const savedId = item.pendingId;
-            const obs$ = defer(() => {
-              return from(loadFuncCall(savedId, item.isReadonly)).pipe(
-                map((data) => item.initAdapter(data, false)),
-              );
-            });
-            return [...acc, obs$];
-          }
-        }
-        return acc;
-      }, [] as Array<Observable<undefined | void>>);
-      return merge(...pendingFuncCallLoads, MAX_CONCURENT_SAVES).pipe(
-        toArray(),
-        mapTo(stateTree),
-      );
-    });
-  }
-
-  private static findPipelineNode(stateTree: StateTree, uuid?: string) {
-    const data = stateTree.nodeTree.find((item) => uuid == null || item.uuid === uuid);
-    if (data == null)
-      throw new Error(`Node uuid ${uuid} not found`);
-    const [root, path] = data;
-    const item = root.getItem();
-    if (isFuncCallNode(item))
-      throw new Error(`FuncCall node ${uuid}, but pipeline is expected`);
-
-    const nqName = root.getItem().config.nqName;
-    return [root, nqName, path] as const;
-  }
-
-  private static getSubConfig(config: PipelineConfigurationProcessed, path: NodePath, id: string) {
-    const refMap = buildRefMap(config);
-    const subConfPath = [...path.map((s) => s.id), id];
-    const subConfig = getConfigByInstancePath(subConfPath, config, refMap);
-    return subConfig;
-  }
+  static load = Factory.loadStateTree;
+  static fromPipelineConfig = Factory.fromPipelineConfig;
+  static fromInstanceState = Factory.fromPipelineInstanceState;
+  static fromInstanceConfig = Factory.fromPipelineInstanceConfig;
+  static loadOrCreateCalls = Factory.loadOrCreateCalls;
+  static findPipelineNode = Factory.findPipelineNode;
+  static getSubConfig = Factory.getSubConfig;
 
   //
   // locking, tree mutation and deps tracking

@@ -65,6 +65,7 @@ Grok name uses colons (:) as a separator character. Rest API uses periods (.). B
 ![](./get-grok-name.png)
 
 ## See also
+* [Server management with grok s](../server-management.md) — CLI for the same REST API
 * [Python client](https://github.com/datagrok-ai/public/tree/master/python-api)
 * [OpenAPI specification](https://public.datagrok.ai/api/public/api.yaml)
 * [View layout](../how-to/views/layouts.md)

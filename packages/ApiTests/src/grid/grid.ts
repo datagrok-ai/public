@@ -53,6 +53,25 @@ category('Grid', () => {
     expect(grid.columns.byName('age')!.width, 200);
   });
 
+  test('setColumnsWidthType', async () => {
+    const ageCol = grid.columns.byName('age')!;
+    grid.setColumnsWidthType(DG.ColumnWidthType.Minimal);
+    const minimalWidth = ageCol.width;
+    grid.setColumnsWidthType(DG.ColumnWidthType.Maximal);
+    const maximalWidth = ageCol.width;
+    expect(minimalWidth < maximalWidth, true);
+    expect(minimalWidth > 0, true);
+  });
+
+  test('GridColumn.setWidthType', async () => {
+    const raceCol = grid.columns.byName('race')!;
+    raceCol.setWidthType(DG.ColumnWidthType.Minimal);
+    const minimalWidth = raceCol.width;
+    raceCol.setWidthType(DG.ColumnWidthType.Maximal);
+    const maximalWidth = raceCol.width;
+    expect(minimalWidth < maximalWidth, true);
+  });
+
   test('filter', async () => {
     demog.rows.match('sex = M').filter();
     expect(demog.filter.trueCount, 73);

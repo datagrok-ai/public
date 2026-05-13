@@ -1,11 +1,10 @@
 /** the Nelder-Mead optimizer */
 import * as DG from 'datagrok-api/dg';
 
-import {Extremum, OptimizationResult, InconsistentTables, ValueBoundsData} from './optimizer-misc';
-import {optimizeNM} from './optimizer-nelder-mead';
-import {sampleParamsWithFormulaBounds} from './optimizer-sampler';
-import {TIMEOUT, ReproSettings, EarlyStoppingSettings} from './constants';
-import {seededRandom} from './fitting-utils';
+import {OptimizationResult, OutputTargetItem, ValueBoundsData} from './optimizer-misc';
+import {LOSS, ReproSettings, EarlyStoppingSettings} from './constants';
+import {ExecutorChoice, MainExecutor, canHandle, runWithSharedPool}
+  from './worker/executor';
 
 export async function performNelderMeadOptimization(
   {
@@ -15,6 +14,18 @@ export async function performNelderMeadOptimization(
     settings,
     reproSettings,
     earlyStoppingSettings,
+    // Default 'auto' — canHandle decides per call. A script is routed to a
+    // worker only when it carries `//meta.workerSafe: true` (the explicit
+    // author opt-in), is JS-language, has outputTargets + lossType, and the
+    // runtime has hardwareConcurrency ≥ 2. Anything else falls back to
+    // MainExecutor — non-annotated scripts, non-Script Funcs, callers with
+    // a closure-only objectiveFunc — so the UI and RunOptimizer paths get
+    // worker speedup for free on annotated bodies without breaking anything
+    // that isn't.
+    executor = 'auto',
+    func,
+    outputTargets,
+    lossType,
   }: {
     objectiveFunc: (x: Float64Array) => Promise<number|undefined>;
     inputsBounds: Record<string, ValueBoundsData>;
@@ -22,82 +33,29 @@ export async function performNelderMeadOptimization(
     settings: Map<string, number>;
     reproSettings: ReproSettings;
     earlyStoppingSettings: EarlyStoppingSettings;
+    executor?: ExecutorChoice;
+    func?: DG.Func;
+    outputTargets?: OutputTargetItem[];
+    lossType?: LOSS;
   },
 ): Promise<OptimizationResult> {
-  const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
-  const params = sampleParamsWithFormulaBounds(samplesCount, inputsBounds, rand);
-
-  const validExtremums: Extremum[] = [];
-  const allExtremums: Extremum[] = [];
-  const warnings: string[] = [];
-  const failedInitPoint: Float64Array[] = [];
-  let failsCount = 0;
-  let failsDF: DG.DataFrame | null = null;
-
-  let i: number;
-  let percentage = 0;
-  const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
-
-  const useEarlyStopping = earlyStoppingSettings.useEarlyStopping;
-  const useAboveThresholdPoints = earlyStoppingSettings.useAboveThresholdPoints;
-  const threshold = useEarlyStopping ? earlyStoppingSettings.costFuncThreshold : undefined;
-  const maxValidPoints = earlyStoppingSettings.stopAfter;
-
-  let validPointsCount = 0;
-
-  for (i = 0; i < samplesCount; ++i) {
-    try {
-      if ((pi as any).canceled)
-        break;
-
-      const extremum = await optimizeNM(objectiveFunc, params[i], settings);
-
-      if (useEarlyStopping) {
-        if (extremum.cost <= threshold!) {
-          validExtremums.push(extremum);
-          ++validPointsCount;
-        } else
-          allExtremums.push(extremum);
-
-        if (validPointsCount >= maxValidPoints)
-          break;
-      } else
-        validExtremums.push(extremum);
-
-      percentage = Math.floor(100 * (i + 1) / samplesCount);
-      pi.update(percentage, `Fitting... (${percentage}%)`);
-    } catch (e) {
-      if (e instanceof InconsistentTables) {
-        pi.close();
-        throw new Error(`Inconsistent dataframes: ${e.message}`);
-      }
-
-      ++failsCount;
-      warnings.push((e instanceof Error) ? e.message : 'Platform issue');
-      failedInitPoint.push(params[i]);
-    }
-  }
-
-  pi.close();
-
-  if (failsCount > 0) {
-    const dim = params.length;
-    const raw = new Array<Float64Array>(dim);
-
-    for (let i = 0; i < dim; ++i)
-      raw[i] = new Float64Array(failsCount);
-
-    failedInitPoint.forEach((point, idx) => point.forEach((val, jdx) => raw[jdx][idx] = val));
-
-    failsDF = DG.DataFrame.fromColumns(raw.map((arr, idx) => DG.Column.fromFloat64Array(`arg${idx}`, arr)));
-    failsDF.columns.add(DG.Column.fromStrings('Issue', warnings));
-  }
-
-  if (useEarlyStopping && useAboveThresholdPoints && maxValidPoints > validExtremums.length)
-    validExtremums.push(...allExtremums);
-
-  return {
-    extremums: validExtremums,
-    fails: failsDF,
+  const execArgs = {
+    objectiveFunc,
+    inputsBounds,
+    samplesCount,
+    settings,
+    reproSettings,
+    earlyStoppingSettings,
+    func,
+    outputTargets,
+    lossType,
   };
+
+  const useWorker = executor === 'worker' ||
+    (executor === 'auto' && canHandle(execArgs));
+
+  if (useWorker)
+    return runWithSharedPool(execArgs);
+
+  return new MainExecutor().run(execArgs);
 }

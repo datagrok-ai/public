@@ -1,4 +1,6 @@
-export const SAMPLE_TREE = [
+import {Tree} from './aizynth-api';
+
+export const SAMPLE_TREE: Tree[] = [
   {
     'type': 'mol',
     'hide': false,
@@ -1546,7 +1548,7 @@ export const SAMPLE_TREE = [
 ];
 
 
-export const DEMO_DATA = [
+export const DEMO_DATA: Tree[] = [
   {
       "type": "mol",
       "hide": false,

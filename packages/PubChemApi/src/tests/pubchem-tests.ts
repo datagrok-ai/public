@@ -1,7 +1,7 @@
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {PackageFunctions} from '../package';
 import {smilesToPubChem} from '../pubchem';
-import {buildAccordion, getSearchWidget} from '../widget';
+import {buildInfoPanel, getSearchWidget} from '../widget';
 import * as CONST from './const';
 
 category('Panels', () => {
@@ -10,9 +10,9 @@ category('Panels', () => {
   test('Info', async () => {
     for (const molString of molStrings) {
       const pubChemId = await smilesToPubChem(molString);
-      await buildAccordion(pubChemId);
+      await buildInfoPanel(pubChemId);
     }
-  }, {skipReason: 'GROK-13201: Info panel needs to be refactored'});
+  });
 
   test('Substructure Search', async () => {
     for (const molString of molStrings)

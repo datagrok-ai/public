@@ -660,6 +660,14 @@ export class GridCellWidget {
 
 export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';
 
+/** Predefined column width policies used by {@link Grid.setColumnsWidthType} and {@link GridColumn.setWidthType}. */
+export enum ColumnWidthType {
+  Minimal = 'Minimal',
+  Compact = 'Compact',
+  Optimal = 'Optimal',
+  Maximal = 'Maximal',
+}
+
 /** Represents a grid column */
 export class GridColumn<TData = any> {
   dart: any;
@@ -793,6 +801,12 @@ export class GridColumn<TData = any> {
 
   /** If this column is not entirely visible, scrolls the grid horizontally to show it. */
   scrollIntoView(): void { api.grok_GridColumn_ScrollIntoView(this.dart); }
+
+  /** Sets the column's width using one of the predefined policies (Minimal / Compact / Optimal / Maximal).
+   * Same as Grid's right-click menu → "Column Sizing". */
+  setWidthType(type: ColumnWidthType, extraWidth?: number): void {
+    api.grok_GridColumn_SetWidthType(this.dart, type, extraWidth);
+  }
 }
 
 /** Represents grid columns. */
@@ -1135,6 +1149,12 @@ export class Grid extends Viewer<IGridSettings> {
   /** Resizes the grid to fit the content */
   autoSize(maxWidth: number, maxHeight: number, minWidth?: number, minHeight?: number, autoSizeOnDataChange?: boolean): void {
     api.grok_Grid_AutoSize(this.dart, maxWidth, maxHeight, minWidth, minHeight, autoSizeOnDataChange);
+  }
+
+  /** Applies a column-width policy (Minimal / Compact / Optimal / Maximal) to the given columns,
+   * or to all columns when `columns` is omitted. Same as Grid's right-click menu → "Column Sizing". */
+  setColumnsWidthType(type: ColumnWidthType, columns?: GridColumn[]): void {
+    api.grok_Grid_SetColumnsWidthType(this.dart, type, columns?.map((c) => c.dart) ?? null);
   }
 
   /** Renders the content of this grid to the specified canvas and bounds. */

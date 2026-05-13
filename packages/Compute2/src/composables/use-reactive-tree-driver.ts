@@ -3,13 +3,19 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {useSubscription, useObservable} from '@vueuse/rxjs';
-import {BehaviorSubject, merge, Observable} from 'rxjs';
-import {switchMap, map} from 'rxjs/operators';
+import {BehaviorSubject, MonoTypeOperatorFunction, merge, Observable} from 'rxjs';
+import {audit, distinctUntilChanged, filter, switchMap, map, take} from 'rxjs/operators';
+import {bufferKeysDuringLock} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 import {PipelineInstanceConfig, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {CompositorOverlayService} from './use-compositor-overlay';
+
+function bufferDuringLock<T>(lock$: Observable<boolean>): MonoTypeOperatorFunction<T> {
+  return audit(() => lock$.pipe(filter((locked) => !locked), take(1)));
+}
 
 function makeMergedItems<T>(input: Record<string, Observable<T>>) {
   const entries = Object.entries(input).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
@@ -22,20 +28,36 @@ export function useReactiveTreeDriver(
   providerFunc: Vue.Ref<string>,
   version: Vue.Ref<string | undefined>,
   instanceConfig: Vue.Ref<PipelineInstanceConfig | undefined>,
+  overlayService?: CompositorOverlayService,
 ) {
   const driver = new Driver();
 
-  const treeMutationsLocked = useObservable(driver.treeMutationsLocked$);
+  const globalLock$ = driver.globalROLocked$.pipe(distinctUntilChanged());
+
+  const treeMutationsLocked = useObservable(driver.treeMutationsLocked$.pipe(bufferDuringLock(globalLock$)));
   const isGlobalLocked = useObservable(driver.globalROLocked$);
-  const treeState = useObservable(driver.currentState$.pipe(map((x) => markFuncCallsRaw(x))));
+
+  const treeState = useObservable(driver.currentState$.pipe(
+    map((x) => markFuncCallsRaw(x)),
+    bufferDuringLock(globalLock$),
+  ));
 
   const currentMetaCallData = useObservable(driver.currentMetaCallData$);
   const hasNotSavedEdits = useObservable(driver.hasNotSavedEdits$);
 
-  const logs = useObservable(driver.logger.logs$);
-  const config = useObservable(driver.currentConfig$);
-  const links = useObservable(driver.currentLinks$);
+  const logs = useObservable(driver.logger.logs$.pipe(bufferDuringLock(globalLock$)));
+  const config = useObservable(driver.currentConfig$.pipe(bufferDuringLock(globalLock$)));
+  const links = useObservable(driver.currentLinks$.pipe(bufferDuringLock(globalLock$)));
   const result = useObservable(driver.result$);
+
+  if (overlayService) {
+    Vue.watch(isGlobalLocked, (locked) => {
+      if (locked && !overlayService.isActive.value)
+        overlayService.show();
+      if (!locked)
+        overlayService.hide();
+    });
+  }
 
   const states = Vue.reactive({
     calls: {} as Record<string, FuncCallStateInfo | undefined>,
@@ -50,6 +72,7 @@ export function useReactiveTreeDriver(
       states.descriptions = {};
       return makeMergedItems(data);
     }),
+    bufferKeysDuringLock(globalLock$),
   ).subscribe(([k, val]) => {
     states.descriptions[k] = val ? Vue.markRaw(val) : undefined;
   }));
@@ -59,6 +82,7 @@ export function useReactiveTreeDriver(
       states.calls = {};
       return makeMergedItems(data);
     }),
+    bufferKeysDuringLock(globalLock$),
   ).subscribe(([k, val]) => {
     states.calls[k] = val ? Vue.markRaw(val) : undefined;
   }));
@@ -68,6 +92,7 @@ export function useReactiveTreeDriver(
       states.validations = {};
       return makeMergedItems(data);
     }),
+    bufferKeysDuringLock(globalLock$),
   ).subscribe(([k, val]) => {
     states.validations[k] = val ? Vue.markRaw(val) : undefined;
   }));
@@ -77,6 +102,7 @@ export function useReactiveTreeDriver(
       states.consistency = {};
       return makeMergedItems(data);
     }),
+    bufferKeysDuringLock(globalLock$),
   ).subscribe(([k, val]) => {
     states.consistency[k] = val ? Vue.markRaw(val) : undefined;
   }));
@@ -86,6 +112,7 @@ export function useReactiveTreeDriver(
       states.meta = {};
       return makeMergedItems(data);
     }),
+    bufferKeysDuringLock(globalLock$),
   ).subscribe(([k, val]) => {
     states.meta[k] = val ? Vue.markRaw(val) : undefined;
   }));
@@ -123,10 +150,12 @@ export function useReactiveTreeDriver(
   };
 
   const runStep = async (uuid: string) => {
+    await overlayService?.show();
     driver.sendCommand({event: 'runStep', uuid});
   };
 
   const runSequence = async (startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean) => {
+    await overlayService?.show();
     driver.sendCommand({event: 'runSequence', startUuid, rerunWithConsistent, includeNonNested});
   };
 

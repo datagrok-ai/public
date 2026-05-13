@@ -234,7 +234,7 @@ export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column,
 }
 
 //name: Apply Numbering Scheme
-//description: Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack
+//description: Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)
 //top-menu: Bio | Annotate | Apply Numbering Scheme...
 export function applyNumberingScheme() : void {
   PackageFunctions.applyNumberingScheme();
@@ -454,6 +454,24 @@ export async function alignSequences(sequenceCol: any, clustersCol: any, options
 //meta.role: sequenceMSA
 export async function pepseaMsa(sequenceCol: DG.Column<any>, method: string, gapOpen: number, gapExtend: number) : Promise<any> {
   return await PackageFunctions.pepseaMsa(sequenceCol, method, gapOpen, gapExtend);
+}
+
+//name: Immunum
+//description: Assigns antibody numbering (IMGT/Kabat) using the immunum WASM library
+//input: dataframe df 
+//input: column seqCol { semType: Macromolecule }
+//input: string scheme = 'imgt' { choices: ["imgt","kabat"] }
+//output: dataframe result
+//meta.role: antibodyNumbering
+export async function immunumAntibodyNumbering(df: DG.DataFrame, seqCol: DG.Column<any>, scheme: string) : Promise<any> {
+  return await PackageFunctions.immunumAntibodyNumbering(df, seqCol, scheme);
+}
+
+//name: Compare Sequences
+//description: Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)
+//top-menu: Bio | Analyze | Compare sequences...
+export function compareSequences() : void {
+  PackageFunctions.compareSequences();
 }
 
 //name: Composition Analysis
@@ -735,16 +753,32 @@ export async function demoBioActivityCliffs() : Promise<void> {
 }
 
 //description: Atomic level structure of Macromolecules
+//meta.demoSkip: true
 //meta.demoPath: Bioinformatics | Atomic Level
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Atomic%20Level
 export async function demoBioAtomicLevel() : Promise<void> {
   await PackageFunctions.demoBioAtomicLevel();
 }
 
+//description: SI-RNA sequences, molecular structures, curves and assay data
+//meta.demoSkip: true
+//meta.demoPath: Bioinformatics | SI-RNA
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/SI-RNA
+export async function demoBioSiRNA() : Promise<void> {
+  await PackageFunctions.demoBioSiRNA();
+}
+
 //name: SDF to JSON Library
 //input: dataframe table 
 export async function sdfToJsonLib(table: DG.DataFrame) : Promise<void> {
   await PackageFunctions.sdfToJsonLib(table);
+}
+
+//description: Antibody sequences, numbering, liabilities, extraction and SAR
+//meta.demoPath: Bioinformatics | Antibodies
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Antibodies
+export async function demoAntibodies() : Promise<void> {
+  await PackageFunctions.demoAntibodies();
 }
 
 //description: Converts a `Macromolecule` sequence to its atomic level `Molecule` representation

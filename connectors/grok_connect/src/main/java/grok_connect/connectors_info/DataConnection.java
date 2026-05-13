@@ -29,7 +29,7 @@ public class DataConnection
     public Map<String, String> tags = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     public String get(String parameter) {
-        return (String)parameters.get(parameter);
+        return (String) parameters.get(parameter);
     }
 
     public DataConnection() { }

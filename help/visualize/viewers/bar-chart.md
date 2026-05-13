@@ -63,7 +63,7 @@ Year - Month' and 'Year - Quarter':
 | **General** | | |
 | Orientation | string |  |
 | Show Mouse Over Rect | boolean |  |
-| Show Filtered Rows | boolean | Show which part is filtered. Only works with RowSource = All. |
+| Show Filtered Rows | boolean | Show which part is filtered Only works with RowSource = All |
 | Show Mouse Over Rows | boolean |  |
 | Back Color | number |  |
 | Axis Color | number |  |
@@ -77,7 +77,7 @@ Year - Month' and 'Year - Quarter':
 | Outer Margin Right | number |  |
 | Outer Margin Top | number |  |
 | Outer Margin Bottom | number |  |
-| Show Empty Bars | boolean |  |
+| Show Empty Bars | boolean | Indicates whether categories with no matching rows should appear as zero-height bars. |
 | Show Labels | string |  |
 | Legend Visibility | visibilitymode |  |
 | Legend Position | flexautoposition |  |
@@ -119,8 +119,16 @@ Year - Month' and 'Year - Quarter':
 | Font | string |  |
 | Axis Font | string |  |
 | Min Text Height | number |  |
+| Formula Font | string |  |
+| Annotation Font | string |  |
 | Show Clipped Bar Indicators | boolean | When enabled, shows hatched areas and arrows on bars that are clipped by the value axis range. |
 | Controls Font | string | Viewer controls elements font. |
+| **Lines** | | |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| **Annotation regions** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
 | **Description** | | |
 | Show Title | boolean |  |
 

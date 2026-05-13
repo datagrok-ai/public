@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace queries {
   /**
-  "Get comprehensive antibody profile filtered by organism and target, including structure, HC/LC regions, and all assay data."
+  "Get comprehensive antibody profile filtered by organism and target, including HC/LC chains, dose-response curves, and all assay data."
   */
   export async function antibodyProfileByOrganismAndTarget(organism: string , target: string ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:AntibodyProfileByOrganismAndTarget', { organism, target });
@@ -48,6 +48,13 @@ export namespace queries {
   */
   export async function getBiologicsPeptideHelmByIdentifier(peptideIdentifier: string ): Promise<string> {
     return await grok.data.query('Biologics:GetBiologicsPeptideHelmByIdentifier', { peptideIdentifier });
+  }
+
+  /**
+  "Retrieve the dose-response curve JSON for a biologics assay curve identifier (GROKCRV-######)."
+  */
+  export async function getBiologicsCurveByAssayResultIdentifier(curveIdentifier: string ): Promise<string> {
+    return await grok.data.query('Biologics:GetBiologicsCurveByAssayResultIdentifier', { curveIdentifier });
   }
 }
 

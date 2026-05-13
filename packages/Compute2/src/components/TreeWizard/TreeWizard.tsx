@@ -5,7 +5,7 @@ import * as Vue from 'vue';
 import {BigButton, Button, DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel, tooltip} from '@datagrok-libraries/webcomponents-vue';
 import {
   isFuncCallState, isParallelPipelineState,
-  isSequentialPipelineState,
+  isSequentialPipelineState, isStaticPipelineState,
   PipelineState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -30,12 +30,13 @@ import {take} from 'rxjs/operators';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
+import {createCompositorOverlayService} from '../../composables/use-compositor-overlay';
+import {compositorOverlay} from '../../directives/compositor-overlay';
 import {CustomExport, ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
 import {BehaviorSubject} from 'rxjs';
 
-const DEVELOPERS_GROUP = 'Developers';
 
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
@@ -73,6 +74,8 @@ export const TreeWizard = Vue.defineComponent({
       console.log('TreeWizard onRenderTriggered', event);
     });
 
+    const overlayService = createCompositorOverlayService();
+
     const {
       treeMutationsLocked,
       isGlobalLocked,
@@ -98,7 +101,7 @@ export const TreeWizard = Vue.defineComponent({
       moveStep,
       changeFuncCall,
       returnResult,
-    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'));
+    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'), overlayService);
 
     setHelpService();
 
@@ -575,14 +578,6 @@ export const TreeWizard = Vue.defineComponent({
     // additional
     ////
 
-    const isUserDeveloper = Vue.ref(false);
-    Vue.onMounted(async () => {
-      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
-
-      if (userGroups.find((group) => group.friendlyName === DEVELOPERS_GROUP))
-        isUserDeveloper.value = true;
-    });
 
     ////
     // render
@@ -596,11 +591,11 @@ export const TreeWizard = Vue.defineComponent({
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
             onClick={() => treeHidden.value = !treeHidden.value }
           />
-          { isUserDeveloper.value && <IconFA
+          <IconFA
             name='bug'
             tooltip={inspectorHidden.value ? 'Show inspector': 'Hide inspector'}
             onClick={() => inspectorHidden.value = !inspectorHidden.value }
-          /> }
+          />
           {isTreeReady.value &&
             treeState.value &&
             (hasSubtreeFixableInconsistencies(treeState.value, states.calls, states.consistency) ?
@@ -679,6 +674,8 @@ export const TreeWizard = Vue.defineComponent({
               config={config.value}
               logs={logs.value}
               links={links.value}
+              selectedUuid={chosenStepUuid.value}
+              stepStates={states}
               ref={inspectorInstance}
               dock-spawn-title='Inspector'
               class='h-full overflow-scroll'
@@ -774,7 +771,7 @@ export const TreeWizard = Vue.defineComponent({
                   navigation: ({runLabel, allowRerun}: {runLabel: string, allowRerun: boolean}) => (
                     <>
                       {
-                        <Button onClick={goBack} style={{'margin-right': 'auto'}}>
+                        <Button onClick={goBack}>
                           Back
                         </Button>
                       }
@@ -829,8 +826,6 @@ export const TreeWizard = Vue.defineComponent({
               buttonActions={buttonActions.value}
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'
-              onProceedClicked={onPipelineProceed}
-              onBackClicked={goBack}
               onUpdate:funcCall={onPipelineFuncCallUpdate}
               onAddNode={({itemId, position}) => {
                 if (chosenStepUuid.value)
@@ -838,10 +833,28 @@ export const TreeWizard = Vue.defineComponent({
               }}
               ref={pipelineViewRef}
               view={currentView.value}
-            />
+            >
+              {{
+                navigation: () => {
+                  const isAction = isStaticPipelineState(chosenStepState.value!) && chosenStepState.value!.isActionStep;
+                  return (
+                    <>
+                      { !isRootChoosen.value &&
+                        <Button onClick={goBack}>
+                          Back
+                        </Button>
+                      }
+                      <BigButton onClick={isAction ? goNextStep : onPipelineProceed}>
+                        Next
+                      </BigButton>
+                    </>
+                  );
+                },
+              }}
+            </PipelineView>
           }
         </DockManager>
-      </div>, [[ifOverlapping, isGlobalLocked.value || !treeState.value]])
+      </div>, [[compositorOverlay, overlayService.isActive.value || !treeState.value]])
     );
   },
 });

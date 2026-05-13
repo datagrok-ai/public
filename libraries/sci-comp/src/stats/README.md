@@ -1,0 +1,379 @@
+# Statistics
+
+Statistical methods for two-group comparison, rank correlation, multi-group
+contrasts, dose-response analysis, exact categorical tests, and covariate
+adjustment. Reference values are validated against scipy, R, SAS PROC GLM,
+and the original publications. The mathematical backend is [jstat](https://github.com/jstat/jstat) —
+distributions, special functions, and matrix inverse — wrapped in a typed
+TypeScript API.
+
+```typescript
+import {stats} from '@datagrok-libraries/sci-comp';
+
+const {
+  welchTTest, mannWhitneyU, hedgesG,
+  spearman, severityTrend,
+  welchPairwise, dunnettPairwise, bonferroniCorrect,
+  jonckheere, cochranArmitage, cochranArmitageBasic, thresholdTest,
+  fisherExact2x2, boschlooExact, incidenceExactBoth,
+  pavaIncreasing, pavaDecreasing, williamsTest,
+  runAncova,
+} = stats;
+```
+
+| Method | Use case | Reference |
+|--------|----------|-----------|
+| `welchTTest` | Two-sample mean comparison, unequal variances | [Welch (1947)](https://doi.org/10.1093/biomet/34.1-2.28) |
+| `mannWhitneyU` | Distribution-free two-sample test | [Mann & Whitney (1947)](https://doi.org/10.1214/aoms/1177730491) |
+| `hedgesG` | Bias-corrected effect size (Cohen's d × J) | [Hedges (1981)](https://doi.org/10.3102/10769986006002107) |
+| `spearman` | Rank correlation | [Spearman (1904)](https://doi.org/10.2307/1412159) |
+| `severityTrend` | Dose-severity rank correlation (with constant-y guard) | — |
+| `welchPairwise` | Per-treated-group raw p-values vs control | — |
+| `dunnettPairwise` | Many-to-one comparison vs control (FWER-controlled) | [Dunnett (1955)](https://doi.org/10.1080/01621459.1955.10501294) |
+| `bonferroniCorrect` | Multiplicity correction | [Bonferroni (1936)](https://en.wikipedia.org/wiki/Bonferroni_correction) |
+| `jonckheere` | Trend test for ordered groups (continuous) | [Jonckheere (1954)](https://doi.org/10.1093/biomet/41.1-2.133) |
+| `cochranArmitage` | Trend test for proportions (incidence) — extended (scores, alternative, hypergeometric variance, modified statistic) | [Cochran (1954)](https://doi.org/10.2307/3001616), [Armitage (1955)](https://doi.org/10.2307/3001775) |
+| `cochranArmitageBasic` | Original two-sided trend test (binomial variance, equal-spaced scores) | [Cochran (1954)](https://doi.org/10.2307/3001616), [Armitage (1955)](https://doi.org/10.2307/3001775) |
+| `thresholdTest` | Sequential threshold test for proportions | [Young (1985)](https://www.sra.org/) |
+| `fisherExact2x2` | Exact test for 2×2 contingency tables | [Fisher (1935)](https://en.wikipedia.org/wiki/Fisher%27s_exact_test) |
+| `boschlooExact` | Unconditional exact test (uniformly more powerful than Fisher) | [Boschloo (1970)](https://onlinelibrary.wiley.com/doi/10.1111/j.1467-9574.1970.tb00104.x) |
+| `incidenceExactBoth` | Boschloo (primary) + Fisher (alternative) p-values together | — |
+| `pavaIncreasing/Decreasing` | Isotonic regression (PAVA) | [Barlow et al. (1972)](https://en.wikipedia.org/wiki/Isotonic_regression) |
+| `williamsTest` | Step-down dose-response with PAVA | [Williams (1971)](https://doi.org/10.2307/2528930), [Williams (1972)](https://doi.org/10.2307/2556895) |
+| `runAncova` | Covariate-adjusted group comparison (OLS) | Standard ANCOVA |
+
+All methods accept a flexible numeric input type:
+
+```typescript
+type NumericInput =
+  | readonly number[]
+  | Int8Array | Uint8Array | Int16Array | Uint16Array
+  | Int32Array | Uint32Array | Float32Array | Float64Array;
+```
+
+Inputs are normalised to `Float64Array` internally. NaN is the standard
+"missing" sentinel — methods that take samples strip NaN before computing
+(or do pairwise NaN removal for paired inputs like Spearman and ANCOVA).
+
+## Comparing two groups
+
+Three views on the same data: parametric significance (Welch), distribution-free
+significance (MWU), and the magnitude of the difference (Hedges' g).
+
+```typescript
+const a = [69, 70, 66, 63, 68, 70, 69, 67, 62];
+const b = [68, 62, 67, 68, 69, 67, 61, 59];
+
+const t = welchTTest(a, b);
+// {statistic: ~1.31, pValue: ~0.20}
+
+const u = mannWhitneyU(a, b, 'two-sided');
+// {statistic: ~52, pValue: ~0.18}
+
+const g = hedgesG(a, b);
+// ~0.43  (small effect)
+```
+
+Mann-Whitney uses the **exact** distribution when `min(n1, n2) ≤ 8` without
+ties (matching scipy's `method='auto'`), and the asymptotic normal
+approximation with continuity correction and tie adjustment otherwise.
+
+## Correlation
+
+```typescript
+const x = [106, 86, 100, 101, 99, 103, 97, 113, 112, 110];
+const y = [7, 0, 27, 50, 28, 29, 20, 12, 6, 17];
+
+const r = spearman(x, y);
+// {rho: -29/165 ≈ -0.176, pValue: ~0.63}
+```
+
+`severityTrend` is a thin wrapper that explicitly returns `null` when the
+severities are constant (correlation is undefined for a flat response):
+
+```typescript
+severityTrend([0, 10, 50, 100], [0.1, 0.5, 1.2, 2.0]);
+// {rho: 1.0, pValue: 0}
+
+severityTrend([0, 10, 50, 100], [1.0, 1.0, 1.0, 1.0]);
+// {rho: null, pValue: null}
+```
+
+## Pairwise vs control (FWER control)
+
+Compare each treated group against the control while keeping the
+family-wise error rate at α. Two strategies on the same data:
+
+```typescript
+const control = [7.40, 8.50, 7.20, 8.24, 9.84, 8.32];
+const treated = [
+  {doseLevel: 1, values: [9.76, 8.80, 7.68, 9.36]},
+  {doseLevel: 2, values: [12.80, 9.68, 12.16, 9.20, 10.55]},
+];
+
+// Strategy 1: Welch + Bonferroni
+const raw = welchPairwise(control, treated).map((r) => r.pValueWelch);
+const adj = bonferroniCorrect(raw);
+// adj ≈ [0.621, 0.030]
+
+// Strategy 2: Dunnett's many-to-one
+const dun = dunnettPairwise(control, treated);
+// [{doseLevel: 1, statistic: ~0.857, pValueAdj: ~0.620, ...},
+//  {doseLevel: 2, statistic: ~3.694, pValueAdj: ~0.006, ...}]
+```
+
+Dunnett uses the joint distribution of the contrasts via 2D numerical
+integration of the Dunnett (1955) factorisation — uniformly more powerful
+than Welch + Bonferroni when within-group variance is homogeneous.
+
+## Trend tests
+
+Both reduce to a Z-statistic and a two-sided p-value. Continuous data uses
+**Jonckheere-Terpstra** (sum of pairwise Mann-Whitney counts); incidence
+data uses **Cochran-Armitage** (linear contrast over scores):
+
+```typescript
+// Continuous trend across ordered groups (default: approximate, two-sided)
+jonckheere([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
+// {statistic: ~2.83, pValue: ~0.005, jStatistic: 27}
+
+// Incidence trend (Tang 2006: 0/12, 0/12, 1/12, 3/12)
+cochranArmitage([0, 0, 1, 3], [12, 12, 12, 12]);
+// {zStatistic: ~2.34, chi2Statistic: ~5.45, pValue: ~0.020, ...}
+```
+
+`jonckheere` accepts a `settings` object selecting one of three p-value
+methods, alternative direction, and continuity correction:
+
+```typescript
+import {mulberry32} from '@datagrok-libraries/sci-comp/dist/stats/internal/random';
+
+const G = [[4.2, 5.1, 5.5], [5.6, 6.0, 6.3], [6.4, 7.1, 7.5]];
+
+// Asymptotic normal approximation — fast, default; tie-aware variance.
+// `continuity` defaults to `false` to match clinfun / PMCMRplus / SAS PROC FREQ.
+jonckheere(G, {alternative: 'increasing'});
+
+// Set `continuity: true` for Wilcoxon-style ±0.5 shift in the numerator.
+jonckheere(G, {alternative: 'increasing', continuity: true});
+
+// Monte Carlo permutation p-value (recommended when ties are present)
+jonckheere(G, {method: 'permutation', nperm: 10000, rng: mulberry32(42)});
+
+// Exact enumeration of distinct permutations
+jonckheere(G, {method: 'exact', alternative: 'two-sided'});
+```
+
+The result includes the raw J count alongside the Z statistic and p-value:
+`{statistic, pValue, jStatistic}`. `statistic` is `null` for the exact
+method (no closed-form Z is computed). The asymptotic variance includes
+the standard tie-correction (Lehmann 1975 §6.2) so it agrees with R's
+`clinfun::jonckheere.test` on tied data; for small samples the
+`permutation` and `exact` methods are preferable.
+
+> ⚠ **`exact` cost grows as `N!`.** The method enumerates every distinct
+> permutation of the pooled sample and does not self-limit. It is
+> appropriate for `N ≲ 10` (≈ 3.6M permutations); around `N = 13–14` the
+> runtime moves from minutes to hours. Use `approximate` (cheap, exact-z
+> for the asymptotic distribution) or `permutation` (Monte Carlo at any
+> `N`) outside that range.
+
+`cochranArmitageBasic` is the textbook two-sided form (binomial variance,
+equal-spaced scores `0..k-1`) — useful when you only need a quick
+significance check and don't want to think about settings:
+
+```typescript
+cochranArmitageBasic([0, 0, 1, 3], [12, 12, 12, 12]);
+// {statistic: ~2.34, pValue: ~0.020}
+```
+
+`cochranArmitage` is the extended API: accepts custom scores, alternative
+direction, variance method (binomial / hypergeometric), and an optional
+Buonaccorsi-style modified statistic:
+
+```typescript
+cochranArmitage([0, 0, 1, 3], [12, 12, 12, 12], {
+  scores: [0, 1, 4, 8],          // dose-proportional scores
+  alternative: 'increasing',
+  variance: 'hypergeometric',    // matches R prop.trend.test
+  modified: true,                // adds zModified, pValueModified
+});
+```
+
+## Threshold test (sequential dose-response)
+
+Walks from the lowest dose, pooling each non-significant group into a
+cumulative "control". Stops at the first significant comparison —
+that group is the Effect Level (EL); prior groups are NOELs.
+
+```typescript
+// Young (1985) Table 5(c): NCI mice DDT data
+const counts = [4, 1, 1, 7];
+const totals = [56, 49, 48, 41];
+
+const steps = thresholdTest(counts, totals, {
+  alpha: 0.05,
+  adjustAlpha: true,             // Šidák correction across the k-1 comparisons
+});
+// 3 steps; last step has effectGroup = 3, noelGroups = [0, 1, 2]
+```
+
+## Fisher exact 2×2
+
+Two-sided p-value uses the "minlike" definition (matches scipy's default).
+Returns one-sided p-values and the sample odds ratio as well.
+
+```typescript
+// Lady Tasting Tea (Fisher 1935)
+const r = fisherExact2x2([[3, 1], [1, 3]]);
+// {oddsRatio: 9, pValue: 34/70, pGreater: 17/70, pLess: 69/70}
+
+// Perfect separation → Infinity odds ratio, valid p-value
+fisherExact2x2([[5, 0], [0, 5]]);
+// {oddsRatio: Infinity, pValue: 1/126, ...}
+```
+
+## Boschloo's exact (unconditional)
+
+Boschloo's test uses Fisher's one-sided p-value as a test statistic and
+maximises the rejection probability over the nuisance parameter
+`π = P(success)`. It is **uniformly more powerful** than Fisher's
+conditional exact test on the same data — at the cost of higher
+computational expense. For preclinical incidence comparisons (one fixed
+margin: group sizes), Boschloo is the recommended primary test.
+
+Following `scipy.stats.boschloo_exact`, **columns** are interpreted as the
+two binomial groups and **rows** as success / failure. The two-sided
+p-value is `min(1, 2 · min(p_less, p_greater))`. It is invariant under
+row swap and column swap, but *not* under matrix transpose — transposing
+re-fixes the wrong margin. SEND-style data laid out with rows-as-groups
+must be transposed before being passed in.
+
+```typescript
+// scipy doc example (Saari 2004)
+boschlooExact([[74, 31], [43, 32]], {alternative: 'greater'});
+// {statistic: 0.04831, pValue: 0.03556}
+
+// Preclinical 2/3 vs 0/3 incidence (group 1: 2 successes in 3, group 2: 0 in 3).
+// Cols-as-groups layout: col 0 = (2 success, 1 failure), col 1 = (0, 3).
+// Fisher gives p = 0.40, Boschloo p ≈ 0.22 — power gain is real but
+// 2/3 vs 0/3 is still not significant at α = 0.05.
+boschlooExact([[2, 0], [1, 3]]);
+
+// Run both Boschloo (primary) and Fisher (alternative) at once
+incidenceExactBoth([[10, 3], [5, 12]]);
+// {oddsRatio, pValue: <Boschloo>, pValueFisher: <Fisher>}
+```
+
+The agreement with `scipy.stats.boschloo_exact` is ~1e-11 absolute on
+preclinical-sized tables. `nGrid` defaults to 32 (matches scipy's Sobol
+budget); a golden-section refinement around the best grid point removes
+quantisation noise.
+
+## Williams step-down (dose-response trend)
+
+Two ingredients:
+
+```typescript
+// 1. Pool-Adjacent-Violators isotonic regression
+pavaIncreasing([10.4, 9.9, 10.0, 10.6, 11.4, 11.9, 11.7], [1, 1, 1, 1, 1, 1, 1]);
+// Float64Array [10.1, 10.1, 10.1, 10.6, 11.4, 11.8, 11.8]
+```
+
+PAVA is also exposed standalone (`pavaIncreasing`, `pavaDecreasing`) for
+isotonic-regression use cases outside Williams' test.
+
+```typescript
+// 2. Step-down test using critical-value tables from Williams 1971/1972
+const w = williamsTest(
+  [10.4, 9.9, 10.0, 10.6, 11.4, 11.9, 11.7],   // means (index 0 = control)
+  Array(7).fill(Math.sqrt(1.16)),               // standard deviations
+  [8, 8, 8, 8, 8, 8, 8],                        // sample sizes
+  ['ctrl', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6'], // labels
+  {direction: 'increase', alpha: 0.05},
+);
+// w.minimumEffectiveDose === 'd4'
+// w.stepDownResults: [d6 sig, d5 sig, d4 sig, d3 NS] — stops at first non-sig
+```
+
+`direction: 'auto'` (default) infers the sense of the trend from the
+highest-dose mean vs the control mean. Critical values come from
+[`williams-tables.ts`](./tests/williams-tables.ts) — the digitised
+Williams (1971, 1972) tables with the 1972 extrapolation formula for
+unequal control-vs-dose replication (`w = c/r`).
+
+## ANCOVA
+
+Fits `y ~ C(group) + covariate` via OLS and reports adjusted (LS) means,
+pairwise contrasts vs control, slope homogeneity F-test, and an effect
+decomposition (total = direct + indirect):
+
+```typescript
+// Montgomery (2012) Table 15.10 — fiber strength by machine, diameter as covariate
+const y = [36, 41, 39, 42, 49, 40, 48, 39, 45, 44, 35, 37, 42, 34, 32];
+const x = [20, 25, 24, 25, 32, 22, 28, 22, 30, 28, 21, 23, 26, 21, 15];
+const g = [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3];
+
+const r = runAncova(y, x, g, {controlGroup: 1, alpha: 0.05});
+// r.modelRSquared        ≈ 0.9192   (matches SAS: 0.9192)
+// r.adjustedMeans[0]     ≈ {group: 1, adjustedMean: 40.382, ...}
+// r.slope                ≈ {tStatistic: 8.365, pValue: 4e-6}
+// r.slopeHomogeneity     ≈ {fStatistic: 0.488, pValue: 0.629, homogeneous: true}
+```
+
+The slope-homogeneity F-test is a precondition: when slopes differ
+significantly across groups (`homogeneous: false`), the basic ANCOVA model
+is misspecified and the adjusted means should not be interpreted at face
+value.
+
+For Lazic-style organ-free covariates (Lazic et al. 2020), set
+`useOrganFreeBw: true` — the covariate becomes `BW − organ_value`.
+
+Returns `null` when there are too few observations (`n < k + 2` or `k < 2`).
+
+## Running examples
+
+Runnable examples are located in `examples/`:
+
+```bash
+# Welch t-test + Mann-Whitney U + Hedges' g on the same data
+npx tsx src/stats/examples/compare-two-groups.ts
+
+# Spearman rank correlation + severity-trend (with constant-y edge case)
+npx tsx src/stats/examples/correlation.ts
+
+# Welch + Bonferroni vs Dunnett's many-to-one (FWER comparison)
+npx tsx src/stats/examples/pairwise-vs-control.ts
+
+# Jonckheere-Terpstra + Cochran-Armitage trend tests
+npx tsx src/stats/examples/trend-tests.ts
+
+# Sequential threshold test for proportions (Young 1985)
+npx tsx src/stats/examples/threshold-test.ts
+
+# Fisher 2×2 exact test (Lady Tasting Tea + edge cases)
+npx tsx src/stats/examples/fisher-exact.ts
+
+# Boschloo unconditional exact test + incidenceExactBoth (Boschloo + Fisher)
+npx tsx src/stats/examples/boschloo-exact.ts
+
+# PAVA + Williams' step-down test (Williams 1971/1972 numerical examples)
+npx tsx src/stats/examples/williams-step-down.ts
+
+# ANCOVA on Montgomery Table 15.10 (reproduces SAS PROC GLM)
+npx tsx src/stats/examples/ancova.ts
+```
+
+## Validation
+
+Each method has a Jest test suite in `__tests__/` that loads JSON fixtures
+from `__tests__/fixtures/`. The fixtures were generated out-of-band from
+the SENDEX Python validation suite (scipy) — and `clinfun` / `PMCMRplus` /
+`regressionpack` for the Jonckheere variants — and committed alongside
+the tests. A total of 179 cases across 14 fixtures — all pass with the
+same tolerances as the Python suite (1e-3 for p-values, 1e-2 for
+statistics, tighter for closed-form quantities).
+
+When adding a method, generate the fixture from the same authoritative
+reference (scipy, R `clinfun`/`PMCMRplus`, etc.), check the JSON in, and
+load it via `loadFixture` in the test file.

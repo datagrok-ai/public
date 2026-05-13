@@ -8,7 +8,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {ALPHABET} from '../utils/macromolecule';
 import {
-  MolfileWithMap, MolGraph, MonomerMap, MonomerMapValue, MonomerMolGraphMap,
+  MolfileWithMap, MolGraph, MonomerMap, MonomerMapValue, MonomerMolGraphMap, NucleotideRole,
   SeqToMolfileWorkerData, SeqToMolfileWorkerRes
 } from './types';
 import {ISeqHelper, ToAtomicLevelRes} from '../utils/seq-helper';
@@ -29,7 +29,8 @@ export type SeqToMolfileResult = {
 
 export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET, polymerType: PolymerType,
-  monomerLib: IMonomerLib, seqHelper: ISeqHelper, rdKitModule: RDModule
+  monomerLib: IMonomerLib, seqHelper: ISeqHelper, rdKitModule: RDModule,
+  rolesList?: (NucleotideRole[] | undefined)[]
 ): Promise<ToAtomicLevelRes> {
   const srcColLength = seqCol.length;
   const df: DG.DataFrame | undefined = seqCol.dataFrame;
@@ -57,7 +58,7 @@ export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict
         resolve(res.data);
       };
     });
-    worker.postMessage({seqList, monomersDict, alphabet, polymerType, start, end} as SeqToMolfileWorkerData);
+    worker.postMessage({seqList, rolesList, monomersDict, alphabet, polymerType, start, end} as SeqToMolfileWorkerData);
   }
 
   const molList: MolfileWithMap[] = [];

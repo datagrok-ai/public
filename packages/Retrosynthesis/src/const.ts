@@ -1,10 +1,4 @@
 
-export enum RotatePath {
-    Clockwise = 'Clockwise',
-    CounterClockwise = 'CounterClockwise',
-    None = 'None'
-}
-
 export enum StructureType {
     Root = 'Root',
     Interim = 'Interim',

@@ -15,17 +15,15 @@ let currentWidget: DG.Widget | null = null;
 
 moleculeStream$.pipe(
   debounceTime(2000),
-).subscribe({
-  next: (molecule: string) => {
-    if (currentWidget)
-      updateRetrosynthesisWidget(molecule, currentWidget);
-  },
-  error: (error: any) => {
-    if (currentWidget) {
-      ui.empty(currentWidget.root);
-      currentWidget.root.append(ui.divText(error?.message ?? 'An error occurred'));
-    }
-  },
+).subscribe(async (molecule: string) => {
+  if (!currentWidget)
+    return;
+  try {
+    await updateRetrosynthesisWidget(molecule, currentWidget);
+  } catch (e: any) {
+    ui.empty(currentWidget.root);
+    currentWidget.root.append(ui.divText(e?.message ?? 'An error occurred'));
+  }
 });
 export class PackageFunctions {
   @grok.decorators.panel({
@@ -41,11 +39,6 @@ export class PackageFunctions {
     // Emit the new molecule value to the stream
     moleculeStream$.next(molecule);
     return currentWidget;
-  }
-
-  @grok.decorators.func()
-  static retrosynthesisTopMenu(): void {
-    (grok.shell.v as DG.TableView).addViewer('Retrosynthesis Viewer');
   }
 
   @grok.decorators.func({
@@ -71,21 +64,25 @@ export class PackageFunctions {
 
     view.append(container);
 
-    let demoInited = false;
-    sketcher.onChanged.subscribe(async () => {
-      const smiles = sketcher.getSmiles();
-      if (smiles) {
-        try {
+    const showWidget = (smiles: string) => {
+      try {
+        const widget = PackageFunctions.retroSynthesisPath(smiles);
+        if (widget.root.parentElement !== retrosynthesisDiv) {
           ui.empty(retrosynthesisDiv);
-          ui.setUpdateIndicator(retrosynthesisDiv, true, 'Calculating retrosyntehsis paths...');
-          const widget = await PackageFunctions.retroSynthesisPath(!demoInited ? DEMO_MOLECULE : smiles);
-          demoInited = true;
           retrosynthesisDiv.append(widget.root);
-          ui.setUpdateIndicator(retrosynthesisDiv, false);
-        } catch (e) {
-          grok.shell.error('Invalid or empty molecule');
         }
+      } catch (e) {
+        console.error(e);
+        grok.shell.error('Invalid or empty molecule');
       }
+    };
+
+    showWidget(DEMO_MOLECULE);
+
+    sketcher.onChanged.subscribe(() => {
+      const smiles = sketcher.getSmiles();
+      if (smiles)
+        showWidget(smiles);
     });
     grok.shell.addPreview(view);
   }

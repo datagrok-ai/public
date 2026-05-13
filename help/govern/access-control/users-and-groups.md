@@ -86,6 +86,14 @@ them with others if necessary.
 Currently, there is no way to permanently delete a user. We are planning 
 to implement it in the future versions.
 
+### Bulk and scripted management
+
+For scripted user lifecycle management — bulk imports, syncing with an external
+identity source such as Active Directory, or seeding a fresh server — use the
+[`grok s` CLI](../../develop/server-management.md). It exposes `users save`,
+`users block`, `groups save`, `groups add-members`, and `groups list-members`
+as idempotent shell commands that talk to the platform's public REST API.
+
 ## Groups
 
 A _group_ is a named collection of users that share permissions. To view 

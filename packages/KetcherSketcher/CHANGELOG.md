@@ -1,5 +1,14 @@
 # Ketcher Sketcher changelog
 
+## 2.4.3 (2026-05-12)
+
+* Deferred Ketcher's React Editor mount until ketcher-host has non-zero dimensions (ResizeObserver-gated) so RulerArea can resolve the canvas SVG's relative-unit sizes on its first render — adopted from PR #3789 (CLAUDE-159)
+* Fixed structure filter not clearing when the filter-panel "clear" is hit while the sketcher is detached: `_setNotation` now zeroes the cached notations and resets molfiles to whitespace molblocks when called with an empty value on a detached sketcher
+
+## 2.4.2 (2026-04-23)
+
+* Reset explicitMol on change only if molecule has been already set
+
 ## 2.4.1 (2026-03-18)
 
 * Updated ketcher libraries up to 3.12.0

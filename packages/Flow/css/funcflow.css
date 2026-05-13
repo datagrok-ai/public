@@ -10,18 +10,7 @@
   overflow: hidden;
 }
 
-/* Left panel - Function Browser */
-.funcflow-left-panel {
-  width: 250px;
-  min-width: 200px;
-  max-width: 350px;
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--grey-2, #d0d0d0);
-  background: var(--grey-1, #f7f8fa);
-  overflow: hidden;
-}
-
+/* Function Browser — lives inside the platform toolbox window */
 .funcflow-browser {
   display: flex;
   flex-direction: column;
@@ -102,30 +91,224 @@
   color: var(--blue-2, #1565c0);
 }
 
-/* Center panel - Canvas (dot grid rendered via LiteGraph background_image) */
+/* Center panel — Rete area mounts inside this container.
+   Dot grid is a CSS radial-gradient repeating tile; FlowEditor updates
+   background-size and background-position from the AreaPlugin transform so
+   the dots track pan/zoom and a snapped node sits exactly on a dot. */
 .funcflow-canvas-container {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background-color: #ebedf2;
+  background-color: #ffffff;
+  background-image: radial-gradient(circle, #d6d9e0 1px, transparent 1.4px);
+  background-size: 20px 20px;
+  background-position: 0 0;
 }
 
-.funcflow-canvas-tooltip {
-  display: none;
+/* Alignment guides shown while a node is being dragged.
+   Painted on a screen-space overlay layer above the transformed area
+   contents but below sockets/connections that need pointer events. */
+.ff-guide-overlay {
   position: absolute;
-  padding: 5px 10px;
-  background: rgba(40, 44, 52, 0.92);
-  color: #fff;
-  font-size: 11px;
-  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
-  border-radius: 4px;
+  inset: 0;
   pointer-events: none;
-  white-space: normal;
-  word-wrap: break-word;
-  z-index: 100;
-  max-width: 300px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  z-index: 1000;
 }
+.ff-guide-v {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed #2185d0;
+  display: none;
+}
+.ff-guide-h {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed #2185d0;
+  display: none;
+}
+
+/* Ctrl+drag rectangle multi-select marquee. Sits inside the same overlay
+   layer as the alignment guides; pointer-events:none lets clicks fall
+   through to the canvas. */
+.ff-rect-select {
+  position: absolute;
+  pointer-events: none;
+  border: 1px dashed #2185d0;
+  background-color: rgba(33, 150, 243, 0.10);
+  z-index: 999;
+}
+
+/* Drag-output suggestion popup. Positioned absolute at the pointer release
+   point in viewport coordinates and clamped to fit by the JS that builds it. */
+.ff-suggest-popup {
+  position: fixed;
+  z-index: 10000;
+  width: 320px;
+  max-height: 360px;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
+  font-size: 13px;
+}
+.ff-suggest-search {
+  border: none;
+  border-bottom: 1px solid #eee;
+  padding: 8px 10px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+.ff-suggest-search:focus { border-bottom-color: #2185d0; }
+.ff-suggest-list {
+  overflow-y: auto;
+  flex: 1;
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #b8bec7 #f1f3f6;
+}
+/* WebKit / Blink (Chrome, Edge, Safari) — Firefox ignores these silently. */
+.ff-suggest-list::-webkit-scrollbar {
+  width: 10px;
+}
+.ff-suggest-list::-webkit-scrollbar-track {
+  background: #f1f3f6;
+  border-radius: 5px;
+}
+.ff-suggest-list::-webkit-scrollbar-thumb {
+  background: #b8bec7;
+  border-radius: 5px;
+  border: 2px solid #f1f3f6; /* inset effect */
+}
+.ff-suggest-list::-webkit-scrollbar-thumb:hover {
+  background: #98a0ac;
+}
+.ff-suggest-item {
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ff-suggest-item-builtin { font-weight: 500; }
+.ff-suggest-item-active { background: #e3f2fd; }
+
+/* Hover docs popup — KNIME-style node info card on hover. Lives at
+   document.body so it can overflow the canvas freely; positioned by JS. */
+.ff-hover-docs {
+  position: fixed;
+  z-index: 10001;
+  max-width: 280px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  padding: 8px 10px;
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
+  font-size: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #b8bec7 #f1f3f6;
+}
+.ff-hover-docs::-webkit-scrollbar { width: 8px; }
+.ff-hover-docs::-webkit-scrollbar-track { background: #f1f3f6; border-radius: 4px; }
+.ff-hover-docs::-webkit-scrollbar-thumb { background: #b8bec7; border-radius: 4px; }
+.ff-hover-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #222; }
+.ff-hover-badge {
+  display: inline-block;
+  font-size: 10px;
+  background: #e0e0e0;
+  color: #555;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-bottom: 6px;
+  text-transform: capitalize;
+}
+.ff-hover-desc {
+  color: #444;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  white-space: pre-wrap;
+}
+.ff-hover-section { margin-top: 6px; }
+.ff-hover-section-title {
+  font-weight: 600;
+  font-size: 11px;
+  color: #777;
+  margin-bottom: 2px;
+}
+.ff-hover-row {
+  font-size: 11px;
+  color: #333;
+  padding: 1px 0;
+  font-family: 'Roboto Mono', monospace;
+}
+
+/* Workflow annotations — colored frames behind the graph (KNIME-style).
+   Sit in the same transformed canvas layer as nodes/connections; z-index:0
+   keeps them under nodes (which the order extension drives up). */
+.ff-annotation {
+  position: absolute;
+  background: #FFF59D;
+  border: 2px solid #F9A825;
+  border-radius: 8px;
+  padding: 6px 10px 16px 10px;
+  z-index: 0;
+  box-sizing: border-box;
+  user-select: none;
+  cursor: move;
+}
+.ff-annotation-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #5d4037;
+  outline: none;
+  cursor: text;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ff-annotation-title:focus {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+}
+.ff-annotation-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.25) 50%);
+  border-bottom-right-radius: 6px;
+}
+
+/* Per-port "View Output" floating popover — anchored next to the port. */
+.ff-port-preview {
+  position: fixed;
+  z-index: 10001;
+  max-width: 460px;
+  max-height: 360px;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 8px 10px;
+  overflow: auto;
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: #b8bec7 #f1f3f6;
+}
+.ff-port-preview::-webkit-scrollbar { width: 8px; }
+.ff-port-preview::-webkit-scrollbar-track { background: #f1f3f6; border-radius: 4px; }
+.ff-port-preview::-webkit-scrollbar-thumb { background: #b8bec7; border-radius: 4px; }
 
 /* Property panel — renders inside Datagrok native context panel */
 .funcflow-property-panel {
@@ -286,77 +469,6 @@
   border-radius: 4px;
 }
 
-/* LiteGraph context menu - light theme overrides.
-   Must match or exceed litegraph.css specificity which uses
-   .litegraph.litecontextmenu .litemenu-entry.submenu (4 classes + !important) */
-
-.litegraph.litecontextmenu.litemenubar-panel {
-  background-color: #fff !important;
-  color: #333 !important;
-  border: 1px solid #ccc !important;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
-  border-radius: 6px !important;
-}
-
-.litegraph.litecontextmenu.litemenubar-panel .litemenu-title {
-  color: #333 !important;
-  background-color: #f5f5f5 !important;
-  border-bottom: 1px solid #ddd !important;
-}
-
-.litegraph.litecontextmenu .litemenu-entry.submenu {
-  background-color: #fff !important;
-  color: #333 !important;
-}
-
-.litegraph.litecontextmenu.dark .litemenu-entry.submenu {
-  background-color: #fff !important;
-  color: #333 !important;
-}
-
-.litegraph.litecontextmenu .litemenu-entry {
-  color: #333 !important;
-  background-color: #fff !important;
-}
-
-.litegraph .litemenu-entry:hover:not(.disabled):not(.separator) {
-  background-color: #e3f2fd !important;
-  color: #1565c0 !important;
-}
-
-.litegraph .litemenu-entry.has_submenu {
-  border-right: 2px solid #42A5F5 !important;
-}
-
-.litegraph .litemenu-entry.separator {
-  background-color: transparent !important;
-  border-top: 1px solid #ddd !important;
-  border-bottom: 1px solid #eee !important;
-}
-
-/* LiteGraph search box - light theme */
-.litegraph.litesearchbox {
-  background-color: #fff !important;
-  color: #333 !important;
-  border: 1px solid #ccc !important;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
-  border-radius: 6px !important;
-}
-
-.litegraph.litesearchbox input {
-  background-color: #f5f5f5 !important;
-  color: #333 !important;
-  border: 1px solid #ddd !important;
-}
-
-.litegraph.litesearchbox .name {
-  color: #333 !important;
-}
-
-.litegraph.litesearchbox .name:hover {
-  background-color: #e3f2fd !important;
-}
-
 /* Connection group separators and labels */
 .funcflow-conn-separator {
   border-top: 1px solid #ddd;
@@ -389,21 +501,6 @@
   margin-bottom: 4px;
   font-size: 12px;
   line-height: 1.4;
-}
-
-/* LiteGraph dialog - light theme */
-.litegraph .dialog {
-  background-color: #fff !important;
-  color: #333 !important;
-  border: 1px solid #ccc !important;
-}
-
-.litegraph .dialog input,
-.litegraph .dialog textarea,
-.litegraph .dialog select {
-  background-color: #f5f5f5 !important;
-  color: #333 !important;
-  border: 1px solid #ddd !important;
 }
 
 /* Pass-through compact indicator */
@@ -440,3 +537,322 @@
   border-radius: 3px;
   margin-top: 2px;
 }
+
+/* ===== Rete v2 vanilla renderer styles ===== */
+
+/* Each FlowNode is a positioned <div> sized by its content.
+   AreaPlugin's NodeView places it absolutely; we own visuals only. */
+.ff-node {
+  position: relative;
+  display: inline-block;
+  min-width: 160px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.10);
+  border: 1px solid #b0bec5;
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
+  user-select: none;
+  cursor: grab;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ff-node:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.13);
+}
+
+.ff-node[data-selected="true"] {
+  border-color: #1976d2;
+  border-width: 1.5px;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.15), 0 4px 14px rgba(0, 0, 0, 0.13);
+}
+
+/* Node-type colored stripes (overridden inline by role color when present) */
+.ff-node-input    .ff-node-title { background: #66BB6A; }
+.ff-node-output   .ff-node-title { background: #EF5350; }
+.ff-node-utility  .ff-node-title { background: #78909C; }
+.ff-node-func     .ff-node-title { background: #BDBDBD; }
+
+.ff-node-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 8px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  color: #333;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.ff-node-status {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #90a4ae;
+  cursor: pointer;
+  position: relative;
+}
+
+.ff-node-status[data-status="running"] {
+  background: #1976d2;
+  border-color: #1976d2;
+  animation: ff-pulse 1.2s ease-in-out infinite;
+}
+
+.ff-node-status[data-status="completed"] {
+  background: #43a047;
+  border-color: #43a047;
+}
+
+.ff-node-status[data-status="completed"]::after {
+  content: '';
+  position: absolute;
+  left: 1.5px;
+  top: 3px;
+  width: 5.5px;
+  height: 2.5px;
+  border-left: 1.5px solid #fff;
+  border-bottom: 1.5px solid #fff;
+  transform: rotate(-50deg);
+}
+
+.ff-node-status[data-status="errored"] {
+  background: #e53935;
+  border-color: #e53935;
+  color: #fff;
+  font-size: 8px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 8px;
+}
+
+.ff-node-status[data-status="errored"]::after {
+  content: '!';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.ff-node-status[data-status="stale"] {
+  background: #9E9E9E;
+  border-color: #9E9E9E;
+  opacity: 0.65;
+}
+
+@keyframes ff-pulse {
+  0%, 100% { opacity: 1.0; }
+  50%      { opacity: 0.4; }
+}
+
+.ff-node[data-status="running"]   { background: #e3f2fd; }
+.ff-node[data-status="errored"]   { background: #ffebee; }
+.ff-node[data-status="stale"]     { background: #f5f5f5; }
+
+.ff-node-title-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* KNIME-style annotation under the title — italic, muted, wraps on long text. */
+.ff-node-description {
+  padding: 4px 10px 6px 10px;
+  font-size: 11px;
+  font-style: italic;
+  color: #555;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ff-node-body {
+  padding: 6px 0;
+}
+
+.ff-node-io {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ff-node-inputs,
+.ff-node-outputs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ff-socket-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-size: 11px;
+  color: #455a64;
+}
+
+/* Push the socket dot 2px outward by shifting the whole row. The label
+   shifts with it but is fully inside the node, so it still looks aligned. */
+.ff-socket-row-input  { padding-right: 8px; margin-left:  2px; }
+.ff-socket-row-output { padding-left:  8px; margin-right: 2px; justify-content: flex-end; }
+
+.ff-socket {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 0 1px #b0bec5;
+  cursor: crosshair;
+  transition: transform 0.1s;
+  box-sizing: border-box;
+}
+
+.ff-socket:hover { transform: scale(1.25); }
+
+/* Pass-through: dashed ring in the type color (the React `<FlowSocketComponent>`
+   sets `--socket-color` inline). White fill so it reads as "not filled in". */
+.ff-socket-row-passthrough .ff-socket {
+  background: #ffffff !important;
+  border-color: var(--socket-color, #b0bec5);
+  border-style: dashed;
+  border-width: 1.5px;
+  box-shadow: none;
+  opacity: 0.9;
+}
+
+.ff-socket-row-passthrough .ff-socket-label {
+  color: #8892a0;
+  font-style: italic;
+  font-size: 10px;
+}
+
+.ff-socket-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.ff-node-controls {
+  padding: 4px 10px 6px;
+}
+
+.ff-control-input {
+  width: 100%;
+  padding: 3px 6px;
+  border: 1px solid #cfd8dc;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.ff-control-input:focus {
+  border-color: #1976d2;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.12);
+}
+
+/* Connection paths */
+.ff-connection {
+  z-index: -1;
+}
+
+/* Idle connections have a subtle, slow dash march that indicates direction
+   (output → input). The same animation runs faster and more prominently
+   during execution states. The path stroke color comes from inline `style`
+   in the React component (per-connection source-slot color). */
+.ff-connection-path {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 6 5;
+  animation: ff-flow-march 1.6s linear infinite;
+  transition: stroke-width 0.1s;
+}
+
+.ff-connection:hover .ff-connection-path {
+  stroke-width: 3.5;
+  filter: brightness(1.15);
+}
+
+.ff-connection-pseudo .ff-connection-path {
+  stroke: #1976d2;
+  stroke-dasharray: 6 4;
+  opacity: 0.7;
+}
+
+/* Execution-state overrides set on the wrapper by ExecutionVisualizer. */
+.ff-connection[data-status="active"] .ff-connection-path {
+  stroke-dasharray: 10 6;
+  animation: ff-flow-march 0.5s linear infinite;
+  stroke-width: 3.2;
+  filter: brightness(1.2);
+}
+.ff-connection[data-status="completed"] .ff-connection-path {
+  stroke-dasharray: none;
+  animation: none;
+  stroke-width: 2.8;
+}
+.ff-connection[data-status="errored"] .ff-connection-path {
+  stroke: #e53935 !important;
+  stroke-dasharray: none;
+  animation: none;
+  stroke-width: 3;
+}
+.ff-connection[data-status="stale"] .ff-connection-path {
+  opacity: 0.4;
+  stroke-dasharray: 3 3;
+  animation: none;
+}
+
+/* Single keyframe used by all the dash-march states above. Negative offset
+   makes the dashes flow from start (output) toward end (input). */
+@keyframes ff-flow-march {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -22; }
+}
+
+/* Collapsed nodes — title bar only. Connection endpoints are absolutely
+   positioned at the title bar's vertical center on each side. We only render
+   sockets that have at least one connection — disconnected ones can't be used
+   without expanding the node anyway, so showing them is just clutter. */
+.ff-node-collapsed { min-width: 140px; }
+.ff-node-collapsed .ff-node-title { border-radius: 8px; }
+.ff-node-collapsed-sockets {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ff-node-collapsed-sockets .ff-collapsed-inputs,
+.ff-node-collapsed-sockets .ff-collapsed-outputs {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto;
+  gap: 2px;
+}
+.ff-node-collapsed-sockets .ff-collapsed-inputs  { left:  -4px; }
+.ff-node-collapsed-sockets .ff-collapsed-outputs { right: -4px; }
+.ff-node-collapsed-sockets .ff-socket {
+  margin: 0;
+  width: 8px;
+  height: 8px;
+}
+

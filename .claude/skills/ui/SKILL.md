@@ -1,7 +1,7 @@
 ---
 name: ui
-description: UI building guidelines for Datagrok TypeScript components and viewers
-when-to-use: When creating or modifying UI components, viewers, dialogs, file viewers, layouts, or grids
+description: UI building guidelines for Datagrok TypeScript components, viewers, and drag-and-drop
+when-to-use: When creating or modifying UI components, viewers, dialogs, file viewers, layouts, grids, or drag-and-drop
 effort: low
 ---
 
@@ -90,6 +90,15 @@ const acc = ui.accordion();
 acc.addPane('Details', () => buildDetailsPanel());
 acc.addPane('Statistics', () => buildStatsPanel());
 ```
+
+## Drag and Drop
+
+- `ui.makeDroppable(el, IDragAndDropOptions<T>)` — receive entities dragged from the browse tree, grid, or other sources.
+  - `acceptDrop(obj)` — fast predicate for showing the zone.
+  - `doDrop(args)` — handle the drop. `args` is a `DragDropArgs<T>` with `dragObject`, `dragSource`, `dragObjectType`, `copying` (Ctrl/Cmd), `link` (Alt), `handled`.
+  - Rich hooks: `acceptDrag`, `onBeginDrag`, `onEndDrag`, `onMouseEnter/Over/Leave/Out`, `dropSuggestion`, `makeDropZone`, `dropZoneRectTransformation`, `dropIndication`.
+- `ui.makeDraggable(el, {getDragObject, getDragCaption})` — make your own UI a drag source.
+- Sample: `ApiSamples/scripts/ui/interactivity/drag-and-drop.js`.
 
 ## Common Anti-Patterns
 

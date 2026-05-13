@@ -13,6 +13,7 @@ export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
 
   rendererSize: 'small' | 'normal' | 'large';
+  font: string;
   fieldsColumnNames: string[];
   colorCode: boolean;
   showCurrentRow: boolean;
@@ -91,6 +92,7 @@ export class FormsViewer extends DG.JsViewer {
     this.sortByColumnName = this.column('sortBy');
     this.sortAscending = false;
     this.rendererSize = this.string('rendererSize', 'small', {choices: ['small', 'normal', 'large'], description: 'Sets the display size of rendered content'}) as 'small' | 'normal' | 'large';
+    this.font = this.string('font', 'normal normal 13px "Roboto"', {editor: 'font', description: 'Font for labels and values'});
 
     //fields
     this.indexes = [];
@@ -178,6 +180,14 @@ export class FormsViewer extends DG.JsViewer {
       this.render();
     });
 
+    sub(this.dataFrame.onColumnNameChanged, () => {
+      const filtered = this.fieldsColumnNames.filter((n) => !n.startsWith('~'));
+      if (filtered.length !== this.fieldsColumnNames.length) {
+        this.fieldsColumnNames = filtered;
+        this.render();
+      }
+    });
+
     sub(this.dataFrame.onCurrentRowChanged.pipe(filter((_) => this.showCurrentRow)),
       () => this.virtualView.refreshItem(this.currentRowPos!));
 
@@ -188,7 +198,8 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   setFieldsColumnNames(dfColumns: string[]) {
-    this.fieldsColumnNames = dfColumns.length > 20 ? dfColumns.slice(0, 20) : dfColumns;
+    const visible = dfColumns.filter((n) => !n.startsWith('~'));
+    this.fieldsColumnNames = visible.length > 20 ? visible.slice(0, 20) : visible;
   }
 
   updateFieldsColumnNames() {
@@ -226,6 +237,8 @@ export class FormsViewer extends DG.JsViewer {
           this.render();
         }, 'Remove');
         const columnLabelContainer = ui.div([columnLabel, closeIcon], 'd4-multi-form-column-name d4-flex-row');
+        columnLabelContainer.style.font = this.font;
+        columnLabelContainer.style.fontWeight = 'bold';
         const idx = this.getSortByColumns().indexOf(name);
         if (idx > -1)
           columnLabelContainer.append(ui.divText(this.getSortByTypes()[idx] ? '↑' : '↓', 'd4-multi-form-column-sort-indicator'));
@@ -327,6 +340,7 @@ export class FormsViewer extends DG.JsViewer {
               if (this.dataFrame.col(name)!.semType === DG.SEMTYPE.MOLECULE)
                 input.input.classList.add(`d4-multi-form-molecule-input-${this.rendererSize}`);
               input.input.setAttribute('column', name);
+              input.input.style.font = this.font;
               input.value = this.dataFrame.col(name)?.isNone(row) ? null : this.dataFrame.get(name, row);
               input.readOnly = true;
 

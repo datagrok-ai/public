@@ -102,6 +102,13 @@ export namespace funcs {
     return await grok.functions.call('SequenceTranslator:PolyToolEnumerateChemTopMenu', {});
   }
 
+  /**
+  Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)
+  */
+  export async function chemEnumerateReactionsTopMenu(): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:ChemEnumerateReactionsTopMenu', {});
+  }
+
   export async function polyToolColumnChoice(df: DG.DataFrame , macroMolecule: DG.Column ): Promise<void> {
     return await grok.functions.call('SequenceTranslator:PolyToolColumnChoice', { df, macroMolecule });
   }
@@ -114,7 +121,7 @@ export namespace funcs {
     return await grok.functions.call('SequenceTranslator:PtEnumeratorHelmApp', {});
   }
 
-  export async function ptEnumeratorChemApp(): Promise<void> {
+  export async function ptEnumeratorChemApp(): Promise<DG.View> {
     return await grok.functions.call('SequenceTranslator:PtEnumeratorChemApp', {});
   }
 
@@ -124,6 +131,10 @@ export namespace funcs {
 
   export async function getPtChemEnumeratorDialog(cell: any | null): Promise<void> {
     return await grok.functions.call('SequenceTranslator:GetPtChemEnumeratorDialog', { cell });
+  }
+
+  export async function getPtOligoEnumeratorDialog(cell: any | null): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:GetPtOligoEnumeratorDialog', { cell });
   }
 
   /**
@@ -142,6 +153,48 @@ export namespace funcs {
 
   export async function getPolyToolCombineDialog(): Promise<void> {
     return await grok.functions.call('SequenceTranslator:GetPolyToolCombineDialog', {});
+  }
+
+  /**
+  Renders OligoNucleotide (siRNA / ASO) duplex view in grid cells
+  */
+  export async function oligoNucleotideCellRenderer(): Promise<any> {
+    return await grok.functions.call('SequenceTranslator:OligoNucleotideCellRenderer', {});
+  }
+
+  /**
+  OligoNucleotide
+  */
+  export async function editOligoNucleotideCell(cell: any ): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:EditOligoNucleotideCell', { cell });
+  }
+
+  /**
+  Modifications, lengths, conjugates and color legend for an OligoNucleotide cell
+  */
+  export async function oligoNucleotidePanel(value: any ): Promise<any> {
+    return await grok.functions.call('SequenceTranslator:OligoNucleotidePanel', { value });
+  }
+
+  /**
+  Sense and antisense full molecular structures rendered separately
+  */
+  export async function oligoNucleotideStructuresPanel(value: any ): Promise<any> {
+    return await grok.functions.call('SequenceTranslator:OligoNucleotideStructuresPanel', { value });
+  }
+
+  /**
+  Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view
+  */
+  export async function convertHelmToOligoNucleotide(table: DG.DataFrame , helmCol: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('SequenceTranslator:ConvertHelmToOligoNucleotide', { table, helmCol });
+  }
+
+  /**
+  Combine separate sense + antisense HELM columns into one OligoNucleotide column
+  */
+  export async function combineSenseAntisenseToOligoNucleotide(table: DG.DataFrame , senseCol: DG.Column , antiCol: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('SequenceTranslator:CombineSenseAntisenseToOligoNucleotide', { table, senseCol, antiCol });
   }
 
   export async function applyNotationProviderForCyclized(col: DG.Column , separator: string ): Promise<void> {

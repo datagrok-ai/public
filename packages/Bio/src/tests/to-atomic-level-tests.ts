@@ -356,6 +356,637 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
   }
 });
 
+/** Tests for the linear HELM-RNA path: must preserve modified sugars,
+ * phosphates, and bases per nucleotide. The non-linear (HELM via POM)
+ * path is the reference; the linear path is expected to match it on
+ * canonical SMILES for these inputs. */
+category('toAtomicLevelHelmRna', async () => {
+  let monomerLibHelper: IMonomerLibHelper;
+  let userLibSettings: UserLibSettings;
+  let seqHelper: ISeqHelper;
+  let monomerLib: IMonomerLib;
+  let rdKitModule: RDModule;
+
+  before(async () => {
+    rdKitModule = await getRdKitModule();
+    seqHelper = await getSeqHelper();
+    monomerLibHelper = await getMonomerLibHelper();
+    userLibSettings = await getUserLibSettings();
+    await monomerLibHelper.loadMonomerLibForTests();
+    monomerLib = monomerLibHelper.getMonomerLib();
+  });
+
+  after(async () => {
+    await setUserLibSettings(userLibSettings);
+    await monomerLibHelper.loadMonomerLib(true);
+  });
+
+  // ---------- helpers --------------------------------------------------------
+
+  /** Run the linear converter on a single HELM, returning both the molfile
+   * and canonical SMILES. The molfile is the source of truth for structural
+   * checks (atom indices, coordinates); the SMILES is kept for legacy /
+   * presence-style assertions. */
+  async function helmRnaLinear(srcHelm: string): Promise<{molfile: string; smiles: string}> {
+    const srcCsv = `seq\n${srcHelm}`;
+    const df = DG.DataFrame.fromCsv(srcCsv);
+    await grok.data.detectSemanticTypes(df);
+    const seqCol = df.getCol('seq');
+    expect(seqCol.semType, DG.SEMTYPE.MACROMOLECULE);
+
+    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper, rdKitModule);
+    if (!res.molCol)
+      throw new Error(`_toAtomicLevel returned no molCol for HELM '${srcHelm}'. ` +
+        `Warnings: ${(res.warnings ?? []).join(' / ')}`);
+
+    const molfile: string | null = res.molCol.get(0);
+    if (!molfile)
+      throw new Error(`_toAtomicLevel produced an empty molfile for HELM '${srcHelm}'`);
+    let smiles: string;
+    try {
+      smiles = grok.chem.convert(molfile, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+    } catch (err: any) {
+      throw new Error(`SMILES conversion threw for HELM '${srcHelm}': ${err?.message ?? err}\n` +
+        `--- MOLFILE START ---\n${molfile}\n--- MOLFILE END ---`);
+    }
+    if (smiles === 'MALFORMED_INPUT_VALUE' || /^MALFORMED/.test(smiles)) {
+      throw new Error(`RDKit could not parse molfile produced for HELM '${srcHelm}'.\n` +
+        `--- MOLFILE START ---\n${molfile}\n--- MOLFILE END ---`);
+    }
+    return {molfile, smiles};
+  }
+
+  /** Build an RDKit `RDMol` from the molfile, run `fn`, and free the mol.
+   * Always pass the produced molfile (not its SMILES round-trip) — atom
+   * indices and coordinates here are the same ones we want to assert on. */
+  function withMol<T>(molfile: string, fn: (mol: any) => T): T {
+    const mol = rdKitModule.get_mol(molfile);
+    if (!mol || !mol.is_valid())
+      throw new Error(`RDKit refused the produced molfile:\n${molfile}`);
+    try {
+      return fn(mol);
+    } finally {
+      mol.delete();
+    }
+  }
+
+  /** True iff the molecule contains at least one match of the SMARTS query. */
+  function hasSmarts(mol: any, smarts: string): boolean {
+    const qmol = rdKitModule.get_qmol(smarts);
+    try {
+      const raw = mol.get_substruct_match(qmol);
+      // RDKit JS returns the literal '{}' when there is no match.
+      return !!raw && raw !== '{}';
+    } finally {
+      qmol.delete();
+    }
+  }
+
+  /** Number of distinct matches of the SMARTS query in the molecule.
+   * `get_substruct_matches` returns either '{}' (no match), a JSON array
+   * of `{atoms,bonds}` objects, or — depending on the build — a single
+   * match object. Normalise all three. */
+  function countSmarts(mol: any, smarts: string): number {
+    const qmol = rdKitModule.get_qmol(smarts);
+    try {
+      const raw = mol.get_substruct_matches(qmol);
+      if (!raw || raw === '{}') return 0;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.length;
+      // Single-match object
+      if (parsed && typeof parsed === 'object' && Array.isArray(parsed.atoms))
+        return parsed.atoms.length > 0 ? 1 : 0;
+      return 0;
+    } finally {
+      qmol.delete();
+    }
+  }
+
+  /** Atoms-by-element via a single-atom SMARTS — strictly counts the heavy
+   * element (no false positives from `[Pa]`, `Si`, etc. that plain regex
+   * on SMILES would produce). */
+  function countAtoms(mol: any, atomicNumber: number): number {
+    return countSmarts(mol, `[#${atomicNumber}]`);
+  }
+
+  /** SMARTS shortcuts used by several tests below. Bracketed atom specs are
+   * deliberately permissive — the produced SMILES may render an atom
+   * aromatic or kekulised depending on context. */
+  const SMARTS = {
+    // Generic phosphodiester backbone: C-O-P(=O)(X)-O-C with both bridging
+    // oxygens present. X covers OH / O- (canonical p), SH / S- (sp), etc.
+    PHOSPHODIESTER:
+      '[#6][OX2][PX4](=[OX1])([OX2,SX2,OX1H,SX1H,OX1-,SX1-])[OX2][#6]',
+    // Same but the non-bridging substituent is sulfur — phosphorothioate.
+    PHOSPHOROTHIOATE_DIESTER:
+      '[#6][OX2][PX4](=[OX1])([SX2,SX1H,SX1-])[OX2][#6]',
+    // Direct sp3 C-P bond — appears ONLY when a bridging O on the linker
+    // R-side has been (incorrectly) removed.
+    DIRECT_C_P: '[CX4][PX4]',
+    // Five-membered ring with exactly one ring oxygen — furanose.
+    FURANOSE: '[#6;R]1[#6;R][#6;R][#6;R][O;R]1',
+    // Adenine bicyclic core (aromatic Kekule-tolerant).
+    ADENINE_RING: 'n1cnc2c1ncnc2N',
+    // Cytosine 4-amino-pyrimidone.
+    CYTOSINE_RING: 'Nc1ccn[cH0](=O)n1',
+    // m5C: cytosine with a methyl at position 5.
+    METHYL_CYTOSINE: '[CH3]c1cn([!#1])c(=O)nc1N',
+    // 2'-fluoro on a sugar ring carbon (fl2r marker). Just `F` on a ring
+    // sp3 C — no other monomer in our tests has fluorine, so this is
+    // unambiguous; ring-position-specific patterns are too brittle to ring
+    // traversal direction.
+    FLUORO_ON_FURANOSE: '[F][CX4;R]',
+    // Acetamide N-C(=O)-CH3 — GalNAc / N-acetyl marker.
+    N_ACETYL: '[NX3]C(=O)[CH3]',
+    // LNA-only marker: an sp3 carbon shared between two rings (R2). Plain
+    // riboses have no such atom; LNA's bicyclic core puts C2', C3', C4'
+    // each in two rings.
+    LNA_BRIDGEHEAD: '[#6;R2]',
+    // Methyl ether on a ring carbon (2'-OMe, the `m` ribose marker).
+    TWO_PRIME_OME: '[CH3][OX2][#6;R]',
+    // Biotin's cyclic urea (ureido) — 5-mem ring with N-C(=O)-N-C-C
+    // pattern. The two C ring atoms are also bridgeheads to biotin's
+    // thiolane ring (containing S), but we check that with a separate
+    // ring-S query so this SMARTS stays robust to atom-order variations.
+    BIOTIN_UREIDO: '[#7;R]1[#6;R](=[OX1])[#7;R][#6;R][#6;R]1',
+    // Cholesterol gonane: four fused rings (3 cyclohexane + 1 cyclopentane).
+    // Tested via two ring-counting heuristics rather than one rigid pattern,
+    // see `looksLikeSteroid` below.
+  } as const;
+
+  /** Cholesterol detection: gonane has 4 fused rings; the D ring is a
+   * cyclopentane (5-mem all-carbon) and the rest are cyclohexanes. None
+   * of the other monomers we test against — sugars (always have a ring O),
+   * nucleobases (always have N), biotin (5-mem rings have N or S), LNA
+   * (5-mem rings have O) — produce an all-carbon 5-mem ring, so this
+   * SMARTS is unique to steroids. We additionally require ≥ 4 ring
+   * carbons in two rings (R2) to confirm a fused polycyclic system, not
+   * an isolated cyclopentane. */
+  function looksLikeSteroid(mol: any): boolean {
+    const cyclopentane = hasSmarts(mol, '[#6]1[#6][#6][#6][#6]1');
+    const fusedRingAtoms = countSmarts(mol, '[#6;R2]');
+    return cyclopentane && fusedRingAtoms >= 4;
+  }
+
+  /** Parse a V3K molblock atom block into 0-indexed coordinate records.
+   * The element symbol and x/y are sufficient for layout assertions; we
+   * deliberately ignore z, charges, isotopes, etc. */
+  function parseV3KAtoms(molfile: string): { element: string; x: number; y: number }[] {
+    const atoms: { element: string; x: number; y: number }[] = [];
+    const begin = molfile.indexOf('M  V30 BEGIN ATOM');
+    if (begin < 0) return atoms;
+    const end = molfile.indexOf('M  V30 END ATOM', begin);
+    const block = molfile.substring(begin, end >= 0 ? end : molfile.length);
+    const lineRe = /^M\s+V30\s+(\d+)\s+(\S+)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/gm;
+    let m: RegExpExecArray | null;
+    while ((m = lineRe.exec(block))) {
+      const idx = parseInt(m[1]) - 1;
+      // Atoms are emitted in order; sanity check.
+      if (idx !== atoms.length) continue;
+      atoms.push({element: m[2], x: parseFloat(m[3]), y: parseFloat(m[4])});
+    }
+    return atoms;
+  }
+
+  /** Run a SMARTS against the molecule and collect every atom index that
+   * appears in any match. Used to bin atoms by role (sugar / base / etc.). */
+  function collectMatchedAtoms(mol: any, smarts: string): Set<number> {
+    const set = new Set<number>();
+    const qmol = rdKitModule.get_qmol(smarts);
+    try {
+      const raw = mol.get_substruct_matches(qmol);
+      if (!raw || raw === '{}') return set;
+      const parsed = JSON.parse(raw);
+      const list = Array.isArray(parsed) ? parsed : [parsed];
+      for (const m of list)
+        for (const a of (m?.atoms ?? [])) set.add(a as number);
+    } finally {
+      qmol.delete();
+    }
+    return set;
+  }
+
+  /** Layout assertion: every atom in any nucleobase ring sits at a higher
+   * Y than every sugar (furanose) ring atom. With the abnormal-sugar
+   * override, the base is placed above the topmost atom of the sugar
+   * cluster — including LNA's 2',4'-bridge oxygen / CH2. Without the
+   * override the LNA bridge sits ABOVE the base attachment point and
+   * this assertion fails. */
+  function expectBaseAboveSugar(molfile: string): void {
+    const atoms = parseV3KAtoms(molfile);
+    if (atoms.length === 0) throw new Error(`failed to parse molblock atoms`);
+    withMol(molfile, (mol) => {
+      const sugarIdx = collectMatchedAtoms(mol, SMARTS.FURANOSE);
+      // Base atoms = aromatic ring atoms (purines and pyrimidines aromatize
+      // in RDKit's perception). Sugars are sp3, won't match `[a]`.
+      const baseIdx = collectMatchedAtoms(mol, '[a]');
+      if (sugarIdx.size === 0)
+        throw new Error('no furanose ring atoms found — cannot verify layout');
+      if (baseIdx.size === 0)
+        throw new Error('no aromatic base atoms found — cannot verify layout');
+      let maxSugarY = -Infinity;
+      for (const i of sugarIdx) maxSugarY = Math.max(maxSugarY, atoms[i].y);
+      let minBaseY = Infinity;
+      for (const i of baseIdx) minBaseY = Math.min(minBaseY, atoms[i].y);
+      expect(minBaseY > maxSugarY, true,
+        `expected base atoms above sugar (minBaseY=${minBaseY.toFixed(3)}, ` +
+        `maxSugarY=${maxSugarY.toFixed(3)})`);
+    });
+  }
+
+  // Unmodified RNA HELM — regression baseline. The linear path must produce
+  // a real RNA backbone: a furanose ring per nucleotide, two inter-nucleotide
+  // phosphodiester linkers (C-O-P(=O)(O)-O-C) for three nucleotides, and
+  // recognisable purine / pyrimidine bases attached to the sugars.
+  test('rna-canonical', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{r(A)p.r(C)p.r(G)p}$$$$`);
+    withMol(molfile, (mol) => {
+      // 3 ribose furanose rings (one per nucleotide).
+      const furanoses = countSmarts(mol, SMARTS.FURANOSE);
+      expect(furanoses >= 3, true, `expected ≥ 3 furanose rings, got ${furanoses}`);
+      // Inter-nucleotide phosphodiesters: r-r and r-r joints, so ≥ 2.
+      // (The 3'-trailing P is a monoester and won't match the diester SMARTS.)
+      const diesters = countSmarts(mol, SMARTS.PHOSPHODIESTER);
+      expect(diesters >= 2, true,
+        `expected ≥ 2 inter-nucleotide phosphodiester linkers, got ${diesters}`);
+      // No direct sp3 C–P bond (would mean a bridging O was lost).
+      const directCP = countSmarts(mol, SMARTS.DIRECT_C_P);
+      expect(directCP, 0,
+        `expected 0 direct C-P bonds (chain must use C-O-P-O-C), got ${directCP}`);
+      // Purine ring (A and G are purines).
+      const purines = countSmarts(mol, SMARTS.ADENINE_RING);
+      expect(purines >= 1, true, `expected ≥ 1 purine ring, got ${purines}`);
+      // Total phosphorus count: 3 (one per nucleotide as written).
+      expect(countAtoms(mol, 15), 3, 'expected 3 phosphorus atoms');
+    });
+  });
+
+  // Modified base — 5-methylcytosine. The methyl must end up at C5 of a
+  // cytosine ring (not just any methyl on any ring), and only one m5C
+  // appears in this row.
+  test('rna-modified-base', async () => {
+    const {molfile: plain} = await helmRnaLinear(`RNA1{r(C)p.r(A)p}$$$$`);
+    const {molfile: mod} = await helmRnaLinear(`RNA1{r([m5C])p.r(A)p}$$$$`);
+    withMol(plain, (mol) => {
+      // No 5-methyl-cytosine in the plain version.
+      expect(countSmarts(mol, SMARTS.METHYL_CYTOSINE), 0,
+        'plain r(C) must not contain 5-methylcytosine');
+    });
+    withMol(mod, (mol) => {
+      // Exactly one m5C ring; cytosine ring still present.
+      expect(countSmarts(mol, SMARTS.METHYL_CYTOSINE), 1,
+        'r([m5C]) must contain exactly one 5-methylcytosine ring');
+    });
+  });
+
+  // Modified phosphate — phosphorothioate (Rsp). The S MUST be on the
+  // phosphorus of the linker between positions 0 and 1 (not just somewhere
+  // in the molecule), the linker must remain a diester (both bridging O
+  // preserved), and the unmodified `p` at position 1 must stay unchanged.
+  test('rna-modified-phosphate', async () => {
+    const {molfile: plain} = await helmRnaLinear(`RNA1{r(A)p.r(C)p}$$$$`);
+    const {molfile: mod} = await helmRnaLinear(`RNA1{r(A)[Rsp].r(C)p}$$$$`);
+    withMol(plain, (mol) => {
+      expect(countAtoms(mol, 16), 0, 'plain RNA must contain no sulfur');
+      expect(countAtoms(mol, 15), 2, 'expected 2 phosphates in plain');
+      expect(countSmarts(mol, SMARTS.PHOSPHODIESTER) >= 1, true,
+        'plain inter-nucleotide diester must be present');
+    });
+    withMol(mod, (mol) => {
+      // Sulfur is on phosphorus, not somewhere else.
+      expect(hasSmarts(mol, '[PX4]=S') || hasSmarts(mol, '[PX4][SX2,SX1H,SX1-]'),
+        true, 'sulfur must be bonded to a phosphorus atom');
+      // Phosphorothioate diester has both bridging oxygens around the P.
+      expect(countSmarts(mol, SMARTS.PHOSPHOROTHIOATE_DIESTER), 1,
+        'expected exactly one phosphorothioate diester linker');
+      // 2 phosphates total (Rsp + p).
+      expect(countAtoms(mol, 15), 2, 'expected 2 phosphates in modified');
+      // No direct C-P bond (regression check from sp/Rsp fix).
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0,
+        'expected zero direct C-P bonds');
+    });
+  });
+
+  // Modified sugar — 2'-fluoro ribose. F must end up on a ring carbon of
+  // a furanose (i.e., a sugar atom), not on an arbitrary aliphatic carbon.
+  test('rna-modified-sugar', async () => {
+    const {molfile: plain} = await helmRnaLinear(`RNA1{r(A)p.r(C)p}$$$$`);
+    const {molfile: mod} = await helmRnaLinear(`RNA1{[fl2r](A)p.r(C)p}$$$$`);
+    withMol(plain, (mol) => {
+      expect(countAtoms(mol, 9), 0, 'plain RNA must contain no fluorine');
+    });
+    withMol(mod, (mol) => {
+      expect(countAtoms(mol, 9), 1, 'fl2r contributes exactly one fluorine');
+      // F is on a ring carbon of a furanose.
+      expect(countSmarts(mol, SMARTS.FLUORO_ON_FURANOSE) >= 1, true,
+        'fluorine must be on a furanose ring carbon (2\'-F)');
+      // Furanose count unchanged (one ribose replaced by 2'-F ribose).
+      expect(countSmarts(mol, SMARTS.FURANOSE) >= 2, true,
+        'expected ≥ 2 furanose rings');
+    });
+  });
+
+  // HELM omits the trailing phosphate (3'-OH terminus on the sugar). The
+  // splitter must split the partial `r(C)` into [r, C], assembly must skip
+  // the trailing P emit, and counts must agree.
+  test('rna-no-trailing-phosphate', async () => {
+    const {molfile: withTail} = await helmRnaLinear(`RNA1{r(A)p.r(C)p}$$$$`);
+    const {molfile: noTail} = await helmRnaLinear(`RNA1{r(A)p.r(C)}$$$$`);
+    const pCountWith = withMol(withTail, (mol) => countAtoms(mol, 15));
+    const pCountNoTail = withMol(noTail, (mol) => countAtoms(mol, 15));
+    expect(pCountWith, 2, 'with trailing P: 2 phosphates (1 linker + 1 trail)');
+    expect(pCountNoTail, 1, 'no trailing P: 1 phosphate (the linker only)');
+    withMol(noTail, (mol) => {
+      // The remaining phosphate is still a proper diester (both bridging O
+      // present, no direct C-P bond).
+      expect(countSmarts(mol, SMARTS.PHOSPHODIESTER), 1,
+        'inter-nucleotide diester must still be present');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0,
+        'no direct C-P bond');
+      // Both furanose rings still present.
+      expect(countSmarts(mol, SMARTS.FURANOSE), 2, 'both furanose rings present');
+    });
+  });
+
+  // Missing trailing phosphate combined with modifications.
+  test('rna-no-trailing-phosphate-with-modifications', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{[fl2r]([m5C])[Rsp].r(A)}$$$$`);
+    withMol(molfile, (mol) => {
+      // 1 F (2'-F on the fl2r sugar), on a furanose carbon.
+      expect(countAtoms(mol, 9), 1, 'expected exactly 1 fluorine');
+      expect(countSmarts(mol, SMARTS.FLUORO_ON_FURANOSE), 1,
+        '2\'-F must be on a furanose ring carbon');
+      // 1 P, 1 S — single Rsp linker, no trailing P.
+      expect(countAtoms(mol, 15), 1, 'expected exactly 1 phosphorus (Rsp)');
+      expect(countAtoms(mol, 16), 1, 'expected exactly 1 sulfur (Rsp)');
+      // Linker is a phosphorothioate diester (both bridging O present).
+      expect(countSmarts(mol, SMARTS.PHOSPHOROTHIOATE_DIESTER), 1,
+        'Rsp linker must remain a phosphorothioate diester');
+      // m5C base present.
+      expect(countSmarts(mol, SMARTS.METHYL_CYTOSINE), 1,
+        'expected one 5-methylcytosine base');
+    });
+  });
+
+  // All three modifications combined. End-to-end smoke test — every
+  // modification's structural fingerprint must be detectable.
+  test('rna-all-modifications', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{[fl2r]([m5C])[Rsp].r(A)p}$$$$`);
+    withMol(molfile, (mol) => {
+      expect(countSmarts(mol, SMARTS.FLUORO_ON_FURANOSE), 1,
+        'fl2r: 2\'-F on furanose');
+      expect(countSmarts(mol, SMARTS.METHYL_CYTOSINE), 1,
+        'm5C: 5-methylcytosine');
+      expect(countSmarts(mol, SMARTS.PHOSPHOROTHIOATE_DIESTER), 1,
+        'Rsp: phosphorothioate diester');
+      expect(countAtoms(mol, 15), 2, 'two phosphates (Rsp + trailing p)');
+      expect(countAtoms(mol, 16), 1, 'exactly one sulfur (from Rsp)');
+    });
+  });
+
+  // 3'-end terminal modifier (GalNAc, R1 only). HELM puts it in the
+  // "phosphate" slot of the last triple, but it's actually a chain end.
+  // GalNAc carries an N-acetyl group — that's the structural fingerprint
+  // the test should pin to (not "any nitrogen", which thymine satisfies).
+  test('rna-helm-3p-terminal-galnac', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{r(T)[GalNAc]}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      // No phosphate at all (GalNAc replaces the trailing P slot).
+      expect(countAtoms(mol, 15), 0, 'GalNAc terminus: no P expected');
+      // Acetamide group from GalNAc — must be present.
+      expect(countSmarts(mol, SMARTS.N_ACETYL) >= 1, true,
+        'expected N-acetyl group from GalNAc');
+      // GalNAc is a hexopyranose (6-mem ring with one O). Plus thymine ring
+      // and the ribose furanose, the molecule has more than one ring.
+      // Pyranose: C-C-C-C-C-O 6-membered.
+      expect(hasSmarts(mol, '[#6]1[#6][#6][#6][#6][O]1'), true,
+        'expected a pyranose (6-membered) ring from GalNAc');
+    });
+  });
+
+  // 5'-end terminal modifier (Chol, R2 only) at the start of the chain.
+  // Cholesterol's structural fingerprint is the gonane: four fused rings
+  // including a cyclopentane fused to a cyclohexane (D-C ring junction).
+  test('rna-helm-5p-terminal-chol', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{[Chol].r(T)}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      expect(looksLikeSteroid(mol), true,
+        'Chol terminus must produce the steroid (gonane) ring system');
+      // Chol replaces the first sugar — only one furanose left (from r(T)).
+      expect(countSmarts(mol, SMARTS.FURANOSE), 1,
+        'expected exactly 1 furanose ring (from r(T))');
+    });
+  });
+
+  // Chol at 5' with explicit trailing phosphate (the original failing case).
+  // Chain: Chol → r(T) → P-OH. Steroid rings + ribose + 1 phosphate.
+  test('rna-helm-5p-terminal-chol-with-trailing-phosphate', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{[Chol].r(T)p}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      expect(looksLikeSteroid(mol), true,
+        'expected steroid ring system from Chol');
+      expect(countAtoms(mol, 15), 1, 'expected exactly 1 phosphorus');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 1, 'expected 1 furanose');
+    });
+  });
+
+  // Both terminals at once: Chol at 5', GalNAc at 3', single nucleotide
+  // between. Both terminus markers must be present, no phosphate.
+  test('rna-helm-both-terminals', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{[Chol].r(T)[GalNAc]}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      expect(countAtoms(mol, 15), 0, 'expected zero phosphates');
+      expect(looksLikeSteroid(mol), true,
+        'expected steroid (Chol) ring system');
+      expect(countSmarts(mol, SMARTS.N_ACETYL) >= 1, true,
+        'expected N-acetyl group from GalNAc');
+      // r(T) brings exactly one furanose, GalNAc brings the pyranose.
+      expect(hasSmarts(mol, '[#6]1[#6][#6][#6][#6][O]1'), true,
+        'expected pyranose ring from GalNAc');
+    });
+  });
+
+  // LNA (2',4'-BNA) regression. The structural marker is the bicyclic
+  // sugar: every ring carbon of the LNA furanose is shared with a second
+  // ring (the C2'-O-CH2-C4' bridge). Standard riboses produce zero such
+  // R2-shared atoms — so this test is exclusive to LNA.
+  //
+  // Additionally, the depiction-level claim ("base above sugar") is
+  // verified by reading molblock coordinates and confirming the base
+  // atoms sit higher in Y than every sugar atom.
+  test('rna-helm-lna-base-above-sugar', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{[lna](A)p.[lna](T)}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      // Single connected fragment.
+      expect(hasSmarts(mol, '[*]'), true, 'molecule must be non-empty');
+      // LNA-specific bicyclic sugar: ring atoms shared between two rings.
+      // Two LNA sugars × 3 bridgehead-class carbons each = ≥ 4.
+      const r2 = countSmarts(mol, SMARTS.LNA_BRIDGEHEAD);
+      expect(r2 >= 4, true,
+        `expected ≥ 4 ring carbons in 2 rings (LNA bicyclic), got ${r2}`);
+      // Inter-nucleotide phosphodiester present, no direct C-P.
+      expect(countSmarts(mol, SMARTS.PHOSPHODIESTER) >= 1, true,
+        'expected ≥ 1 phosphodiester linker');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0,
+        'expected zero direct C-P bonds');
+      // Adenine + thymine present.
+      expect(countSmarts(mol, SMARTS.ADENINE_RING) >= 1, true,
+        'expected adenine ring (purine)');
+      expect(hasSmarts(mol, '[CH3][#6]1=[#6][#7]([!#1])[#6](=O)[#7][#6]1=O') ||
+             hasSmarts(mol, 'Cc1cn([!#1])c(=O)[nH]c1=O'),
+        true, 'expected thymine ring (5-methyluracil)');
+    });
+    // Depiction: base atoms above sugar atoms in Y.
+    expectBaseAboveSugar(molfile);
+  });
+
+  // GalNAc oxygen-count regression. Previously the R1 placeholder atom
+  // (substituted to 'O' from the "OH" cap) was left in the assembly,
+  // adding a stray OH on the chain-attach carbon. lna(T)GalNAc has a known
+  // expected oxygen count; an extra OH would push it to 11.
+  test('rna-helm-3p-terminal-galnac-no-extra-oh', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{[lna](T)[GalNAc]}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      // Heavy oxygen atom count — RDKit doesn't double-count ring closures
+      // or atoms inside brackets.
+      expect(countAtoms(mol, 8), 10,
+        'expected exactly 10 oxygen atoms in lna(T)GalNAc');
+      // No phosphate (GalNAc replaces the trailing P slot).
+      expect(countAtoms(mol, 15), 0, 'expected no phosphate');
+      // GalNAc N-acetyl preserved.
+      expect(hasSmarts(mol, SMARTS.N_ACETYL), true,
+        'expected GalNAc N-acetyl group');
+      // LNA still bicyclic.
+      expect(countSmarts(mol, SMARTS.LNA_BRIDGEHEAD) >= 2, true,
+        'expected LNA bicyclic bridgeheads');
+    });
+  });
+
+  // sp (and similar phosphates with R-cap = H) used to disconnect the chain
+  // because the H placeholder was removed by removeHydrogen, leaving
+  // terminalNodes[0] pointing at the now-deleted atom. The result was a
+  // molecule with two disconnected fragments. The fix promotes the H cap
+  // to an O so the chain bond attaches at a real atom; the linker becomes
+  // a true phosphorothioate diester.
+  test('rna-helm-h-cap-phosphate-sp-connects', async () => {
+    const {molfile, smiles} = await helmRnaLinear(`RNA1{r(T)[sp].r(A)}$$$$V2.0`);
+    // SMILES dot count is the canonical fragment-count test — keep it.
+    expect(smiles.indexOf('.') === -1, true,
+      `expected single connected fragment, got: ${smiles}`);
+    withMol(molfile, (mol) => {
+      // Sulfur is bonded to the phosphorus, not floating somewhere else.
+      expect(countSmarts(mol, '[PX4][SX2,SX1H,SX1-]'), 1,
+        'sp\'s sulfur must be on its phosphorus');
+      expect(countAtoms(mol, 15), 1, 'one phosphorus from the sp linker');
+      expect(countAtoms(mol, 16), 1, 'one sulfur from the sp linker');
+      expect(countSmarts(mol, SMARTS.PHOSPHOROTHIOATE_DIESTER), 1,
+        'sp linker must be a phosphorothioate diester (C-O-P-O-C)');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0,
+        'no direct C-P bond');
+    });
+  });
+
+  // Regression: H-cap phosphates (sp et al.) used to drop the bridging O
+  // on the 3' side of the linkage. The previous sugar's 3'-O is removed
+  // unconditionally during sugar processing on the assumption that the
+  // following linker brings its own bridging oxygen via the R1 cap; with
+  // an H cap that assumption breaks and the chain ended up as
+  // C3'-P(=O)(SH)-O-C5' instead of the proper C3'-O-P(=O)(SH)-O-C5'.
+  // The fix promotes the H cap to an O so the bridging atom always exists.
+  // Use m(2'-OMe ribose) so we can also verify the methoxy group survives
+  // the sp chain assembly.
+  test('rna-helm-sp-bridging-o-preserved', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{m(A)[sp].r(A)[sp]}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      // Element counts via RDKit (no SMILES regex).
+      expect(countAtoms(mol, 15), 2, 'expected exactly 2 phosphorus atoms');
+      expect(countAtoms(mol, 16), 2, 'expected exactly 2 sulfur atoms');
+      // Each P carries its own sulfur (not floating somewhere else).
+      expect(countSmarts(mol, '[PX4][SX2,SX1H,SX1-]'), 2,
+        'both sulfurs must be bonded to a phosphorus atom');
+      // Inter-nucleotide sp is a phosphorothioate diester (bridging O on
+      // both sides). The trailing sp is a monoester (P-O-cap on the 3'
+      // side), so we expect exactly ONE diester match.
+      expect(countSmarts(mol, SMARTS.PHOSPHOROTHIOATE_DIESTER), 1,
+        'inter-nucleotide sp must remain a phosphorothioate diester');
+      // Bridging-O presence on the 5' side of every phosphorothioate.
+      // The diester P has two C-O-P matches (5' and 3' bridges) and the
+      // terminal monoester P has one — total 3 matches across both linkers.
+      // The bug we guard against (lost 3'-O) would drop this to 1 or 2.
+      expect(countSmarts(mol, '[CX4][OX2][PX4](=[OX1])[SX2,SX1H,SX1-]'), 3,
+        'every C-O-P-P=O-S match must be present (3: 2 from diester, 1 from monoester)');
+      // No direct C-P bond anywhere (the bug we're guarding against).
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0,
+        'expected zero direct C-P bonds — bridging O must be present');
+      // Methoxy group on the m sugar must survive — exactly one (m only at
+      // position 0). 2'-OMe = OCH3 on a ring carbon. The 2nd nucleotide is
+      // r(A), no methoxy.
+      expect(countSmarts(mol, SMARTS.TWO_PRIME_OME), 1,
+        'expected exactly one 2\'-OMe group on the m sugar');
+    });
+  });
+
+  // R-group swap heuristic: a single-R-group terminal monomer can be placed
+  // at either end of a HELM chain, even if its R-group label "should" only
+  // belong at one end. The conversion swaps rNodes so the existing
+  // TERMINAL_5P/3P role logic still works. Each test asserts the terminal
+  // monomer's STRUCTURAL fingerprint as well as topology.
+  //
+  // Bio (R1 only) — naturally a 3'-terminal, but we accept it at 5' too.
+  // Biotin's fingerprint is its bicyclic head: a thiophene (C-C-C-C-S 5-mem
+  // ring) fused to an imidazolidone (N-C(=O)-N 5-mem ring with two NH).
+  test('rna-helm-bio-terminal-at-end', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{r(T)[Bio]}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      expect(countAtoms(mol, 15), 0, 'Bio terminus: no phosphate');
+      // Biotin's cyclic urea (ureido) ring.
+      expect(hasSmarts(mol, SMARTS.BIOTIN_UREIDO), true,
+        'expected biotin ureido (cyclic urea) ring system');
+      // Biotin's thiolane: a sulfur in a ring.
+      expect(hasSmarts(mol, '[#16;R]'), true,
+        'expected ring sulfur (biotin\'s thiolane)');
+      // r(T) sugar still present.
+      expect(countSmarts(mol, SMARTS.FURANOSE), 1, 'expected the r(T) furanose');
+    });
+  });
+
+  test('rna-helm-bio-terminal-at-start', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{[Bio].r(T)}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      expect(countAtoms(mol, 15), 0, 'no phosphates');
+      // Biotin's ureido + ring-S marker (the thiolane).
+      expect(hasSmarts(mol, SMARTS.BIOTIN_UREIDO), true,
+        'expected biotin ureido ring system at the 5\' end');
+      expect(hasSmarts(mol, '[#16;R]'), true,
+        'expected biotin\'s thiolane ring sulfur');
+      // r(T) sugar still present and connected (single fragment via R-swap).
+      expect(countSmarts(mol, SMARTS.FURANOSE), 1, 'expected the r(T) furanose');
+    });
+  });
+
+  // Chol (R2 only) — naturally a 5'-terminal, but we accept it at 3' too.
+  // Chol's structural fingerprint is the steroid 4-ring core plus a
+  // ring-fused junction, see `looksLikeSteroid()`.
+  test('rna-helm-chol-terminal-at-start', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{[Chol].r(T)}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      expect(looksLikeSteroid(mol), true,
+        'expected steroid (gonane) ring system from Chol at 5\'');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 1, 'expected one r(T) furanose');
+    });
+  });
+
+  test('rna-helm-chol-terminal-at-end', async () => {
+    const {molfile} = await helmRnaLinear(`RNA1{r(T)[Chol]}$$$$V2.0`);
+    withMol(molfile, (mol) => {
+      expect(countAtoms(mol, 15), 0, 'no phosphate when Chol replaces trailing P');
+      expect(looksLikeSteroid(mol), true,
+        'expected steroid (gonane) ring system from Chol at 3\'');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 1, 'expected one r(T) furanose');
+    });
+  });
+});
+
 
 function polishMolfile(mol: string): string {
   return mol.replaceAll('\r\n', '\n')

@@ -553,8 +553,8 @@ export function trainPmpo() : void {
 
 //input: view view 
 //output: object result
-export function getPmpoAppItems(view: any) : any {
-  return PackageFunctions.getPmpoAppItems(view);
+export async function getPmpoAppItems(view: any) : Promise<any> {
+  return await PackageFunctions.getPmpoAppItems(view);
 }
 
 //description: Generates syntethetic dataset oriented on the pMPO modeling

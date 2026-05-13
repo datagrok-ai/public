@@ -10,6 +10,55 @@ import {getPlsAnalysis} from './pls/pls-tools';
 // Default PLS components count
 const PLS_COMPONENTS_COUNT = 10;
 
+/** Applicability and interactivity thresholds for linear regression */
+enum LIN_REG_LIMITS {
+  // isApplicable: hard memory bounds for the WASM solver
+  MAX_FEATURES = 1000,
+  MAX_FEATURES_X_SAMPLES = 1e7,
+  // isInteractive: independent memory and time budgets
+  INTERACTIVE_MEMORY_BUDGET = 5e6,    // Float32 elements (≈ 20 MB)
+  INTERACTIVE_TIME_BUDGET = 2.5e8,    // flops (≈ 500 ms on a typical machine)
+}
+
+/** Check whether linear regression can be applied to the given data */
+export function isLinearRegressionApplicable(features: DG.ColumnList, target: DG.Column): boolean {
+  for (const col of features) {
+    if (!col.matches('numerical'))
+      return false;
+  }
+  if (!target.matches('numerical'))
+    return false;
+
+  const featuresCount = features.length;
+  const samplesCount = target.length;
+
+  if (featuresCount > LIN_REG_LIMITS.MAX_FEATURES)
+    return false;
+
+  if (featuresCount * samplesCount > LIN_REG_LIMITS.MAX_FEATURES_X_SAMPLES)
+    return false;
+
+  return true;
+}
+
+/** Check whether linear regression training is fast enough for interactive use */
+export function isLinearRegressionInteractive(features: DG.ColumnList, target: DG.Column): boolean {
+  const M = features.length;
+  const N = target.length;
+
+  // Design matrix N×M plus normal-equation matrix M×M (Float32 elements)
+  const memory = N * M + M * M;
+  if (memory > LIN_REG_LIMITS.INTERACTIVE_MEMORY_BUDGET)
+    return false;
+
+  // N·M² to form X^T·X plus M³ to solve the system
+  const time = N * M * M + M * M * M;
+  if (time > LIN_REG_LIMITS.INTERACTIVE_TIME_BUDGET)
+    return false;
+
+  return true;
+}
+
 /** Compute coefficients of linear regression */
 export async function getLinearRegressionParams(features: DG.ColumnList, targets: DG.Column): Promise<Float32Array> {
   const featuresCount = features.length;

@@ -33,10 +33,10 @@ import {
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
-import {__obs} from './src/events';
+import {__obs, DragDropArgs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
-import {CanvasRenderer, GridCellRenderer, SemanticValue, Size} from './src/grid';
+import {CanvasRenderer, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
 import {Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
@@ -205,9 +205,10 @@ export function accordion(key: any = null): Accordion {
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
  * @param {Object} pages - list of page factories
  * @param {boolean} vertical
+ * @param {string} key - when provided, the currently selected pane is persisted across sessions
  * @returns {TabControl} */
-export function tabControl(pages: { [key: string]: any; } | null = null, vertical: boolean = false): TabControl {
-  let tabs = TabControl.create(vertical);
+export function tabControl(pages: { [key: string]: any; } | null = null, vertical: boolean = false, key: string | null = null): TabControl {
+  let tabs = TabControl.create(vertical, key);
   if (pages != null) {
     for (let key of Object.keys(pages)) {
       let value = pages[key];
@@ -744,14 +745,58 @@ export function makeDraggable<T>(e: Element,
   );
 }
 
-export function makeDroppable<T>(e: Element,
-    options?: {
-      acceptDrop?: (dragObject: T) => boolean,
-      doDrop?: (dragObject: T, copying: boolean) => void
-    }): void {
-  api.grok_UI_MakeDroppable(e,
-      options?.acceptDrop ? (dragObject: T) => options?.acceptDrop!(toJs(dragObject)) : null,
-      options?.doDrop ? (dragObject: T, copying: boolean) => options?.doDrop!(toJs(dragObject), toJs(copying)) : null,
+/** Options for {@link makeDroppable}. All callbacks are optional; pass only what you need. */
+export interface IDragAndDropOptions<T = any> {
+  /** Fast predicate used to decide whether to show a drop zone for `dragObject`. */
+  acceptDrop?: (dragObject: T) => boolean;
+  /** Predicate called with the full {@link DragDropArgs} — veto by returning false or setting `args.handled = true`. */
+  acceptDrag?: (args: DragDropArgs<T>) => boolean;
+  /** Handles the drop. Read `args.dragObject`, `args.copying`, `args.link`, etc. */
+  doDrop?: (args: DragDropArgs<T>) => void;
+  /** Fires when a drag session starts and this zone is eligible. */
+  onBeginDrag?: (args: DragDropArgs<T>) => void;
+  /** Fires when a drag session ends (whether it landed here or not). */
+  onEndDrag?: (args: DragDropArgs<T>) => void;
+  onMouseEnter?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  onMouseOver?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  onMouseLeave?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  onMouseOut?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  /** Returns the element that should receive the `d4-drop` class during the drag. */
+  getDropElement?: () => Element;
+  /** Returns a custom drop-zone element, replacing the default `.d4-drop-zone`. */
+  makeDropZone?: () => Element;
+  /** Transforms the default rectangle used to position the drop zone over the host. */
+  dropZoneRectTransformation?: (r: Rect) => Rect;
+  /** Text shown inside the default drop zone. */
+  dropSuggestion?: string;
+  /** When false, suppresses the default `d4-drop-zone` element. Defaults to true. */
+  dropIndication?: boolean;
+}
+
+export function makeDroppable<T = any>(e: Element, options?: IDragAndDropOptions<T>): void {
+  const wrapObj = <R>(cb?: (o: T) => R) =>
+      cb ? (o: any) => cb(toJs(o)) : null;
+  const wrapArgs = <R>(cb?: (a: DragDropArgs<T>) => R) =>
+      cb ? (a: any) => cb(toJs(a)) : null;
+  const wrapMouse = (cb?: (e: MouseEvent, a: DragDropArgs<T>) => void) =>
+      cb ? (me: MouseEvent, a: any) => cb(me, toJs(a)) : null;
+  const wrapRect = (cb?: (r: Rect) => Rect) =>
+      cb ? (r: any) => toDart(cb(toJs(r))) : null;
+  api.grok_UI_MakeDroppableEx(e,
+      wrapObj(options?.acceptDrop),
+      wrapArgs(options?.acceptDrag),
+      wrapArgs(options?.doDrop),
+      wrapArgs(options?.onBeginDrag),
+      wrapArgs(options?.onEndDrag),
+      wrapMouse(options?.onMouseEnter),
+      wrapMouse(options?.onMouseOver),
+      wrapMouse(options?.onMouseLeave),
+      wrapMouse(options?.onMouseOut),
+      options?.getDropElement ?? null,
+      options?.makeDropZone ?? null,
+      wrapRect(options?.dropZoneRectTransformation),
+      options?.dropSuggestion ?? null,
+      options?.dropIndication ?? null,
   );
 }
 
@@ -1495,11 +1540,26 @@ export class tools {
   }
 }
 
+/** Options for tooltip display. Future-proof — add fields here as tooltip features grow. */
+export interface ITooltipOptions {
+  /** Delay in milliseconds before the tooltip appears. Defaults to 0 (immediate). */
+  delay?: number;
+}
+
 /** Represents a tooltip. */
 export class Tooltip {
+  private _pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Hides the tooltip. */
+  private _cancelPending(): void {
+    if (this._pendingTimer !== null) {
+      clearTimeout(this._pendingTimer);
+      this._pendingTimer = null;
+    }
+  }
+
+  /** Hides the tooltip. Also cancels any pending {@link showDelayed} call. */
   hide(): void {
+    this._cancelPending();
     api.grok_Tooltip_Hide();
   }
 
@@ -1512,9 +1572,35 @@ export class Tooltip {
     return element;
   }
 
-  /** Shows the tooltip at the specified position */
-  show(content: HTMLElement | string, x: number, y: number): void {
-    api.grok_Tooltip_Show(content, x, y);
+  /** Shows the tooltip at the specified position.
+   *
+   * Any pending delayed show is cancelled first. Passing `null`/`undefined` for `content`
+   * hides the tooltip and cancels any pending show — ideal for hover handlers where a single
+   * call replaces the show+hide+debounce quartet:
+   *
+   * ```ts
+   * onMouseMove(e) {
+   *   const t = getTooltipFor(e);   // string | HTMLElement | null
+   *   ui.tooltip.show(t, e.x + 16, e.y + 16, {delay: 200});
+   * }
+   * ```
+   */
+  show(content: HTMLElement | string | null | undefined, x: number, y: number,
+       options?: ITooltipOptions): void {
+    this._cancelPending();
+    if (content == null) {
+      api.grok_Tooltip_Hide();
+      return;
+    }
+    const delay = options?.delay ?? 0;
+    if (delay <= 0) {
+      api.grok_Tooltip_Show(content, x, y);
+      return;
+    }
+    this._pendingTimer = setTimeout(() => {
+      this._pendingTimer = null;
+      api.grok_Tooltip_Show(content, x, y);
+    }, delay);
   }
 
   showRowGroup(dataFrame: DataFrame, indexPredicate: IndexPredicate, x: number, y: number): void {

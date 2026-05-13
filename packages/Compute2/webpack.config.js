@@ -27,6 +27,7 @@ module.exports = (env) => {
     module: {
       rules: [
 	{test: /\.tsx?$/, loader: 'babel-loader', options: {
+          cacheDirectory: true,
           'plugins': [['@vue/babel-plugin-jsx', { isCustomElement: tag => tag.startsWith('dg-') || tag === 'dock-spawn-ts' }]],
 	}},
 	{test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},

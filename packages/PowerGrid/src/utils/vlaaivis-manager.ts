@@ -186,8 +186,8 @@ class VlaaiVisManager {
   private makeGroupDroppable(groupNode: DG.TreeViewGroup): void {
     ui.makeDroppable(groupNode.root, {
       acceptDrop: () => true,
-      doDrop: (draggedItem: any) => {
-        const itemText = draggedItem.text;
+      doDrop: (args) => {
+        const itemText = (args.dragObject as any).text;
         this.removeItemFromOriginalGroup(itemText);
         this.addItemToNewGroup(groupNode, itemText);
         this.gc.grid.invalidate();

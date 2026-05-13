@@ -3,18 +3,23 @@ import * as DG from 'datagrok-api/dg';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import * as ui from 'datagrok-api/ui';
 import { getRevvityUsers, getUserStringIdById } from './users';
-import { queryEntityById, RevvityApiResponse, RevvityData, RevvityUser, search } from './revvity-api';
+import { RevvityApiResponse, RevvityData, search } from './revvity-api';
 
-import {awaitCheck} from '@datagrok-libraries/utils/src/test';
-import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTION_NAME, FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET, FIELDS_TO_EXCLUDE_FROM_WIDGET, FIRST_COL_NAMES, LAST_COL_NAMES, MOL_COL_NAME, MOLECULAR_FORMULA_FIELD_NAME, NAME, PARAMS_KEY, QUERY_KEY, STORAGE_NAME, SUBMITTER_FIELD_NAME, TABS_TO_EXCLUDE_FROM_WIDGET, TAGS_TO_EXCLUDE, USER_FIELDS } from './constants';
+import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET, FIELDS_TO_EXCLUDE_FROM_WIDGET, FIRST_COL_NAMES, LAST_COL_NAMES, MOLECULAR_FORMULA_FIELD_NAME, PARAMS_KEY, QUERY_KEY, STORAGE_NAME, SUBMITTER_FIELD_NAME, TAGS_TO_EXCLUDE, USER_FIELDS } from './constants';
 import { getRevvityLibraries } from './libraries';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { _package } from './package';
-import { currentQueryBuilderConfig, filterProperties, getPropertiesForLibAndEntityType, runSearchQuery } from './search-utils';
+import { currentQueryBuilderConfig, getPropertiesForLibAndEntityType, runSearchQuery } from './search-utils';
 import { funcs } from './package-api';
 import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { openedView, updateView } from './view-utils';
 import dayjs from 'dayjs';
+
+
+export function asArray<T>(data: T | T[] | undefined | null): T[] {
+  if (data == null) return [];
+  return Array.isArray(data) ? data : [data];
+}
 
 
 function extractNameFromJavaObjectString(javaString: string): string {
@@ -152,63 +157,21 @@ export function dataFrameFromObjects(objects: Record<string, any>[]): DG.DataFra
 }
 
 
-export function widgetFromObject(obj: Record<string, any>): DG.Widget {
-  const map: Record<string, string> = {};
-  const accordions: DG.Accordion[] = [];
-
-  for (const key of Object.keys(obj)) {
-    const value = obj[key];
-    if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      map[key] = value === null ? '' : String(value);
-    } else if (Array.isArray(value)) {
-      if (value.every(v => v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')) {
-        map[key] = value.join(',');
-      } else if (value.every(v => typeof v === 'object' && v !== null && !Array.isArray(v))) {
-        // Array of objects: show as widgets in accordion
-        const acc = ui.accordion();
-        if (Array.isArray(value) && value?.length > 0) {
-          acc.addPane(key, () => ui.divV(value.map(obj => widgetFromObject(obj).root)), true);
-        } else {
-          acc.addPane(key, () => ui.label('No data'), true);
-        }
-        accordions.push(acc);
-      } else {
-        // Mixed/other: show as JSON
-        map[key] = JSON.stringify(value);
-      }
-    } else if (typeof value === 'object') {
-      // Nested object: create accordion pane
-      const acc = ui.accordion();
-      acc.addPane(key, () => widgetFromObject(value).root, true);
-      accordions.push(acc);
-    }
+export function processField(key: string, value: any): any | undefined {
+  if (typeof value === 'object' || FIELDS_TO_EXCLUDE_FROM_WIDGET.includes(key))
+    return undefined;
+  if (Array.isArray(value))
+    return value.join(', ');
+  //handle molecular formula fields since they contain <sub> tags
+  if (key.includes(MOLECULAR_FORMULA_FIELD_NAME))
+    value = (value as string).replaceAll('<sub>', '').replaceAll('</sub>', '');
+  else if (key === SUBMITTER_FIELD_NAME) {
+    if (typeof value === 'string' && value.includes('firstName='))
+      value = extractNameFromJavaObjectString(value);
+    else
+      value = 'Unknown User';
   }
-
-  const table = ui.tableFromMap(map);
-  const children = [table, ...accordions.map(acc => acc.root)];
-  return new DG.Widget(ui.divV(children));
-}
-
-
-export function processField(map: Record<string, any>, key: string, value: any): void {
-  if (typeof value === 'object' || FIELDS_TO_EXCLUDE_FROM_WIDGET.includes(key)) {
-    // Skip objects except for fields
-    return;
-  } else if (Array.isArray(value))
-    map[key] = value.join(', ');
-  else {
-    //handle molecular formula fields since they contain <sub> tags
-    if (key.includes(MOLECULAR_FORMULA_FIELD_NAME))
-      value = (value as string).replaceAll('<sub>', '').replaceAll('</sub>', '');
-    else if (key === SUBMITTER_FIELD_NAME) {
-      if (typeof value === 'string' && value.includes('firstName=')) {
-        value = extractNameFromJavaObjectString(value);
-      } else {
-        value = 'Unknown User';
-      }
-    }
-    map[key] = value === null ? '' : value;
-  }
+  return value === null ? '' : value;
 }
 
 export async function processAttribute(attributeName: string, value: any) {
@@ -218,111 +181,11 @@ export async function processAttribute(attributeName: string, value: any) {
   }
   //handle arrays considering duplicates
   if (Array.isArray(value)) {
-    return Array.from(new Set([1, 1, 2])).join(',');
+    return Array.from(new Set(value)).join(',');
   }
   return value;
 }
 
-export function createRevvityWidgetByEntityId(response: RevvityApiResponse, idSemValue: DG.SemanticValue<string>): HTMLDivElement {
-  const data = response.data as RevvityData;
-  if (!data || !data.attributes) {
-    return ui.divText('No data available');
-  }
-
-  const attributes = data.attributes;
-  const relationships = data.relationships || {};
-  const included = response.included || [];
-
-  // Create the main table from attributes
-  const mainMap: Record<string, any> = {};
-
-  // Process regular attributes
-  for (const [key, value] of Object.entries(attributes)) {
-    if (key === FIELDS_SECTION_NAME) continue; // Handle fields separately
-    processField(mainMap, key, value as string);
-  }
-
-  // Process fields
-  if (attributes.fields) {
-    for (const [fieldName, fieldObj] of Object.entries(attributes.fields)) {
-      if ((fieldObj as any)['value']) {
-        processField(mainMap, fieldName, (fieldObj as any)['value'] as string);
-      }
-    }
-  }
-  const widgetMapWithAddIcons: { [key: string]: HTMLElement } = {};
-  Object.keys(mainMap).forEach((key) => {
-    const propDiv = ui.divH([mainMap[key]], { style: { 'position': 'relative' } });
-    if (idSemValue.cell?.dataFrame && idSemValue.cell?.column) {
-      const addColumnIcon = ui.iconFA('plus', async () => {
-       // calculatePropForColumn(key, idSemValue.cell.dataFrame, idSemValue.cell.column);
-      }, `Calculate ${key} for the whole table`);
-      addColumnIcon.classList.add('revvity-add-prop-as-column-icon');
-      propDiv.prepend(addColumnIcon);
-      ui.tools.setHoverVisibility(propDiv, [addColumnIcon]);
-    }
-    widgetMapWithAddIcons[key] = propDiv;
-  });
-
-  const mainTable = ui.tableFromMap(widgetMapWithAddIcons);
-  const accordions: DG.Accordion[] = [];
-
-  // Create accordion tabs for relationships
-  for (const [relationshipName, relationshipData] of Object.entries(relationships)) {
-    if (TABS_TO_EXCLUDE_FROM_WIDGET.includes(relationshipName))
-      continue;
-    const relationship = relationshipData as any;
-    if (!relationship.data) continue;
-
-    const relationshipItems: any[] = [];
-
-    // Handle single relationship or array of relationships
-    const items = Array.isArray(relationship.data) ? relationship.data : [relationship.data];
-
-    for (const item of items) {
-      // Find corresponding entity in included section
-      const includedEntity = included.find((inc: any) => inc.id === item.id);
-      if (includedEntity && includedEntity.attributes) {
-        const entityMap: Record<string, string> = {};
-
-        // Process attributes
-        for (const [key, value] of Object.entries(includedEntity.attributes)) {
-          if (key === FIELDS_SECTION_NAME) continue; // Handle fields separately
-          processField(entityMap, key, value as string);
-        }
-
-        // Process fields if present
-        if (includedEntity.attributes.fields) {
-          for (const [fieldName, fieldObj] of Object.entries(includedEntity.attributes.fields)) {
-            processField(entityMap, fieldName, (fieldObj as any)['value'] as string);
-          }
-        }
-        relationshipItems.push(entityMap);
-      }
-    }
-
-    if (relationshipItems.length > 0) {
-      const acc = ui.accordion();
-      acc.addPane(relationshipName, () => {
-        if (relationshipItems.length === 1)
-          return ui.tableFromMap(relationshipItems[0]);
-        else {
-          const innerAcc = ui.accordion();
-          for (const relationshipItem of relationshipItems) {
-            innerAcc.addPane(USER_FIELDS.includes(relationshipName) ? relationshipItem.userId ?? 'User' : relationshipItem.name ?? relationshipItem.id, () => {
-              return ui.tableFromMap(relationshipItem);
-            });
-          }
-          return innerAcc.root;
-        }
-      });
-      accordions.push(acc);
-    }
-  }
-
-  const children = [mainTable, ...accordions.map(acc => acc.root)];
-  return ui.divV(children);
-}
 
 export function createRevvityWidgetByCorporateId(response: RevvityApiResponse, idSemValue: DG.SemanticValue<string>): HTMLElement {
   let data = response.data;
@@ -372,7 +235,7 @@ export function createRevvityWidgetByCorporateId(response: RevvityApiResponse, i
   if (!Array.isArray(data))
     data = [data];
   if (data.length === 1) {
-    const itemType = data[0].attributes.type ?? data[0].attributes.eid ? data[0].attributes.eid.split(':')[0] : null;
+    const itemType = data[0].attributes.type ?? data[0].attributes.eid?.split(':')[0] ?? null;
     if (!itemType)
         return ui.divText('Entity of unknown type');;
     const div = ui.div();
@@ -384,7 +247,7 @@ export function createRevvityWidgetByCorporateId(response: RevvityApiResponse, i
 
   for (let item of data) {
     if (item.attributes) {
-      const itemType = item.attributes.type ?? item.attributes.eid ? item.attributes.eid.split(':')[0] : null;
+      const itemType = item.attributes.type ?? item.attributes.eid?.split(':')[0] ?? null;
       if (!itemType)
         continue;
       acc.addPane(itemType, () => {
@@ -470,7 +333,7 @@ export async function transformData(data: Record<string, any>[], libId: string, 
   const columns: DG.Column[] = [];
   for (let colName of Object.keys(columnsData)) {
     if (columnsData[colName].type === 'datetime')
-      columnsData[colName].data = columnsData[colName].data.map((it) => dayjs(it));
+      columnsData[colName].data = columnsData[colName].data.map((it) => it == null ? null : dayjs(it));
     const col = DG.Column.fromList(columnsData[colName].type as 'string' | 'int' | 'double' | 'bool' | 'qnum' | 'datetime',
       colName, columnsData[colName].data);
     columns.push(col);
@@ -512,7 +375,7 @@ export async function calculatePropForColumn(propName: string, colType: "string"
   const newCol = df.columns.addNew(newColName, colType);
   const promises = idsCol.toList().map((id, index) =>
     getEntityPropByCorporateEntityId(propName, id, entityType)
-      .then(res => newCol.set(index, res.toString()))
+      .then(res => { if (res != null) newCol.set(index, res.toString()); })
       .catch(() => { })
   );
   await Promise.allSettled(promises);
@@ -567,30 +430,6 @@ export async function getEntityPropByCorporateEntityId(propName: string, name: s
   return prop;
 }
 
-export async function getEntityPropByEntityId(propName: string, id: string): Promise<any> {
-  let prop: any = null;
-  try {
-  const entity = await queryEntityById(id);
-  if (entity.data) {
-    const attributes = (entity.data as RevvityData).attributes;
-    if (attributes) {
-      //look for prop in attributes
-      if(Object.keys(attributes).includes(propName))
-        prop = attributes[propName];
-      //if not in attributes - look in fields
-      if(attributes['fields'] && Object.keys(attributes['fields']))
-        prop = attributes['fields'][propName].value;
-      const tempMap = {[propName]: prop};
-      processField({[propName]: prop}, propName, prop);
-      prop = tempMap[propName];
-    }
-  }
-  } catch(e: any) {
-    grok.shell.error(e.message ?? e);
-  }
-  return prop;
-}
-
 export function getAppHeader(): HTMLElement {
   const appHeader = u2.appHeader({
       iconPath: _package.webRoot + '/img/revvity.png',
@@ -605,7 +444,7 @@ export function getAppHeader(): HTMLElement {
   return appHeader;
 }
 
-let latestLabel: string | undefined = undefined; //workaround since widget is re-created once search is performed and dataframe in the tv is chenged
+let latestLabel: string | undefined = undefined; //workaround since widget is re-created once search is performed and dataframe in the tv is changed
 export async function createWidgetByRevvityLabel(idSemValue: DG.SemanticValue<string>) {
 
   let div = ui.divText(`No data found for ${idSemValue.value}`);

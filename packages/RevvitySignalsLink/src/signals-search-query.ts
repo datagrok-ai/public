@@ -2,7 +2,6 @@
 
 import { ComplexCondition, Operators, SimpleCondition } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { NOT_IN_TAGS } from './properties';
-import { RevvityLibrary } from './libraries';
 
 export enum OPERATORS {
   MATCH = '$match',
@@ -436,22 +435,6 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
       };
       break;
       
-    case OPERATORS.EXISTS:
-      result = {
-        field: field
-      };
-      break;
-
-    case OPERATORS.INTERSECT:
-      if (!Array.isArray(value)) {
-        throw new Error(`Operator ${operator} requires an array value`);
-      }
-      result = {
-        field: field,
-        values: value
-      };
-      break;
-
     case OPERATORS.NOT:
       const notMatchResult = {
         field: field,
@@ -503,10 +486,6 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
       return { $match: result } as QueryMatchOperator;
     case OPERATORS.PREFIX:
       return { $prefix: result } as QueryPrefixOperator;
-    case OPERATORS.EXISTS:
-      return { $exists: result } as QueryExistsOperator;
-    case OPERATORS.INTERSECT:
-      return { $intersect: result } as QueryIntersectOperator;
     default:
       throw new Error(`Unsupported Revvity operator: ${revvityOperator}`);
   }
@@ -570,9 +549,5 @@ export function convertComplexConditionToSignalsSearchQuery(
     query: queryOperator,
     options
   };
-}
-
-export function createMaterialsSearch(library: RevvityLibrary, condition: ComplexCondition) {
-
 }
 

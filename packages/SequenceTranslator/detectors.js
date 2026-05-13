@@ -6,7 +6,7 @@
  * The class name is comprised of <PackageName> and the `PackageDetectors` suffix.
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
-
+/// <reference path="../../globals.d.ts" />
 class SequenceTranslatorPackageDetectors extends DG.Package {
   //name: autostart
   //meta.role: autostart
@@ -36,13 +36,49 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
 
         if ((item instanceof DG.GridCell || item.constructor?.name === 'GridCell') && item.tableColumn && item.cell) {
           const packageName = this.name;
-          switch (item.tableColumn.semType) {
+          const col = item.tableColumn;
+          switch (col.semType) {
           case DG.SEMTYPE.MACROMOLECULE: {
             menu.item('PolyTool-Enumerate', () => { grok.functions.call(`${packageName}:getPtHelmEnumeratorDialog`, {cell: item.cell}).catch(catchError); });
+
+            // Oligo submenu — all oligo-related actions live under one group
+            // so they stay discoverable but don't clutter the top context menu.
+            const oligoMenu = menu.group('Oligo');
+
+            // HELM → OligoNucleotide: only offered for Macromolecule columns whose units are HELM.
+            const units = col.meta?.units || col.tags?.['units'];
+            if (units === 'helm') {
+              oligoMenu.item('Convert HELM to Oligo', () => {
+                grok.functions.call(`${packageName}:convertHelmToOligoNucleotide`, {
+                  table: col.dataFrame,
+                  helmCol: col,
+                }).catch(catchError);
+              });
+            }
+
+            // Combine sense + antisense → opens the function editor so the user
+            // can pick the antisense column (and confirm sense).
+            oligoMenu.item('Combine sense+antisense to Oligo...', () => {
+              try {
+                const fns = DG.Func.find({package: packageName, name: 'combineSenseAntisenseToOligoNucleotide'});
+                if (fns.length > 0)
+                  fns[0].prepare({table: col.dataFrame, senseCol: col}).edit();
+              } catch (er) { catchError(er); }
+            });
+
+            oligoMenu.endGroup();
             break;
           }
           case DG.SEMTYPE.MOLECULE: {
             menu.item('PolyTool-Enumerate', () => { grok.functions.call(`${packageName}:getPtChemEnumeratorDialog`, {cell: item.cell}).catch(catchError); });
+            break;
+          }
+          case 'OligoNucleotide': {
+            // Same enumerator as HELM cells, but the result column is tagged
+            // as OligoNucleotide so the duplex renderer picks it up.
+            menu.item('PolyTool-Enumerate', () => {
+              grok.functions.call(`${packageName}:getPtOligoEnumeratorDialog`, {cell: item.cell}).catch(catchError);
+            });
             break;
           }
           }

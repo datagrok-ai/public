@@ -1,0 +1,6 @@
+---
+# deploy-amazon-ecs.mdx and deploy-amazon-eks.mdx repeat the H5 headings
+# "Requirements" / "How to deploy" inside <Tabs>/<TabItem> branches by design.
+# The tab label disambiguates them at render time. Disable MD024 in this folder.
+extends: ../../../.markdownlint.yaml
+MD024: false

@@ -122,6 +122,14 @@
   flex-grow: 1;
 }
 
+.scaffold-tree-viewer .chem-mol-box.chem-drop-target-top {
+  box-shadow: inset 0 3px 0 0 var(--blue-1);
+}
+
+.scaffold-tree-viewer .chem-mol-box.chem-drop-target-bottom {
+  box-shadow: inset 0 -3px 0 0 var(--blue-1);
+}
+
 .chem-scaffold-tree-generate-hint {
   text-align: center;
   position: absolute;
@@ -1083,6 +1091,14 @@
 .chem-mpo-profile-actions {
   gap: 10px;
   align-items: center;
+}
+
+.chem-mpo-new-profile-box {
+  border: 1px solid var(--blue-1);
+  background: rgba(32, 131, 213, 0.04);
+  border-radius: 4px;
+  padding: 6px 12px 8px 0;
+  margin: 8px 0 12px;
 }
 
 .chem-mpo-scores-viewer {

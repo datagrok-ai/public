@@ -72,7 +72,38 @@ To get started, install the required [packages](../../../plugins.md#chem)
 
 Datagrok provides a single, unified access point for organizations. You can connect to any of the [30+ supported data sources](../../../../access/databases/connectors/connectors.md), retrieve data, and securely share data with others.
 
-Chemical queries against data sources require a chemical cartridge, such as [RDKit Postgres cartridge](https://www.rdkit.org/docs/Cartridge.html) or [JChem cartridge](https://docs.chemaxon.com/display/docs/JChem+Cartridge). These cartridges allow molecule-specific operations (like substructure or similarity searches) to be integrated into SQL queries using SQL syntax.
+To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
+
+### Database chemical intelligence
+
+Chemical queries against data sources require a chemical cartridge — a database extension that adds molecule-aware data types, indexes, and SQL functions. Cartridges let you run substructure, similarity, and exact-match searches as native SQL alongside the rest of your data, so chemistry filters compose with joins, aggregations, and other predicates in the same query.
+Datagrok exposes these capabilities through [parameterized queries](../../../../access/databases/databases.md#parameterized-queries). Annotating an input as `{semType: Substructure}` lets users sketch a molecule in place of typing SMILES, so the same query works from the **Database Manager**, info panes, and applications without extra wiring.
+The following cartridges are widely deployed and work with Datagrok queries:
+
+| Database | Cartridge                                                                                | Vendor / project | License             |
+|----------|------------------------------------------------------------------------------------------|------------------|---------------------|
+| Databricks    | Datagrok Databricks Cartridge                                                            | Datagrok          | Commercial          |
+| Snowflake     | Datagrok Snowflake Cartridge                                                             | Datagrok | Commercial          |
+| Oracle | [DayCart](https://www.daylight.com/products/daycart.html)                                | Daylight Chemical Information Systems | Commercial          |
+| Oracle | [JChem (JOC)](https://docs.chemaxon.com/display/docs/jchem-cartridge.md)                 | Chemaxon | Commercial          |
+| Oracle | [Bingo](https://lifescience.opensource.epam.com/bingo/bingo-oracle.html)                 | EPAM (orig. GGA/SciTouch) | Apache 2.0          |
+| Oracle | [BIOVIA Direct](https://www.3ds.com/products/biovia) (formerly Accelrys/MDL ISIS/Direct) | Dassault Systèmes BIOVIA | Commercial          |
+| Oracle | [Accord for Oracle](https://www.3ds.com/products/biovia)                                 | Dassault Systèmes BIOVIA | Commercial          |
+| Oracle | [ChemOffice Oracle Cartridge](https://revvitysignals.com/products/research/chemdraw)     | Revvity Signals (CambridgeSoft / PerkinElmer) | Commercial          |
+| Oracle | [OrChem](http://orchem.sourceforge.net/)                                                 | Open-source / CDK | Open source         |
+| Oracle | [CACTVS / Xemistry](https://www.xemistry.com/)                                           | Xemistry GmbH | Commercial          |
+| Oracle | [IDBS Chemistry Cartridge](https://www.idbs.com/)                                        | IDBS (ActivityBase) | Commercial          |
+| Oracle | Auspyx                                                                                   | Tripos (now Certara) | Commercial (legacy) |
+| PostgreSQL | [RDKit](https://www.rdkit.org/docs/Cartridge.html)                                       | Open-source RDKit | BSD                 |
+| PostgreSQL | [JChem (JPC)](https://docs.chemaxon.com/display/docs/JChem+PostgreSQL+Cartridge)         | Chemaxon | Commercial          |
+| PostgreSQL | [Bingo](https://lifescience.opensource.epam.com/bingo/bingo-postgres.html)               | EPAM | Apache 2.0          |
+| PostgreSQL | [Sachem](https://github.com/IOCB-MS/sachem)                                              | IOCB Prague | Open source         |
+| PostgreSQL | [pgchem::tigress](https://github.com/ergo70/pgchem_tigress)                              | Open-source (OpenBabel-based) | Open source         |
+| SQL Server | [Bingo](https://lifescience.opensource.epam.com/bingo/bingo-sqlserver.html)              | EPAM | Apache 2.0          |
+| SQL Server | BIOVIA Direct                                                                            | Dassault Systèmes BIOVIA | Commercial          |
+| MySQL | [MyChem](http://mychem.sourceforge.net/)                                                 | Open-source (OpenBabel-based) | GPL                 |
+| MySQL | [MolCart](http://www.molsoft.com/molcart.html)                                           | MolSoft | Commercial          |
+
 
 <details>
 <summary> Example: Substructure search in a database </summary>
@@ -109,8 +140,6 @@ To run a query, sketch the substructure and click **OK**. Datagrok retrieves the
 ![DB Substructure and Similarity Search](../../../../uploads/gifs/db-substructure-similarity-search.gif "DB Substructure and Similarity Search")
 
 </details>
-
-To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
 
 ### Compound registration systems
 
@@ -630,6 +659,13 @@ dataset column and the scaffold tree.
 ![scaffold-tree-coloring](scaffold-tree-coloring.gif)
 
 </TabItem>
+<TabItem value="reorder" label="Reorder">
+
+To rearrange nodes within the same level:
+* **Drag and drop**: Drag a scaffold card above or below a sibling
+* **Keyboard**: Select a node and press **Alt+Shift+Up/Down**
+
+</TabItem>
 </Tabs>
 </details>
 
@@ -1044,6 +1080,9 @@ The Pareto front represents a set of non-dominated solutions in multi-objective 
 Launch an interactive Pareto Front [application](../../../../visualize/viewers/pareto-front-viewer.md#application) that enables real-time exploration of optimization results.
 
 </details>
+
+For details on MPO profiles, desirability curves, scoring, and visualization, see the
+[MPO page](mpo.md).
 
 ## Generative chemistry
 

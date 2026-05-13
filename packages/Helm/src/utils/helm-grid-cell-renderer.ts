@@ -17,6 +17,11 @@ import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {
+  DEFAULT_MACROMOLECULE_HIGHLIGHT_FILL, DEFAULT_MACROMOLECULE_HIGHLIGHT_STROKE,
+  MACROMOLECULE_HIGHLIGHT_EVENT_ID, MACROMOLECULE_HIGHLIGHT_TEMP,
+  MacromoleculeHighlightEntry, MacromoleculeHighlightEventArgs, macromoleculeHighlightColorToCss,
+} from '@datagrok-libraries/bio/src/utils/macromolecule-highlight';
 
 import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './get-hovered';
 
@@ -58,8 +63,39 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       this.invalidateGrid();
     }));
 
+    this.subs.push(grok.events.onCustomEvent(MACROMOLECULE_HIGHLIGHT_EVENT_ID)
+      .subscribe((args: MacromoleculeHighlightEventArgs) => this.handleHighlightEvent(args)));
+
     this.dirty = true;
     this.invalidateGrid();
+  }
+
+  private handleHighlightEvent(args: MacromoleculeHighlightEventArgs): void {
+    if (!args || !this.tableCol || !this.tableCol.dataFrame) return;
+    if (args.columnName !== this.tableCol.name) return;
+    const df = this.tableCol.dataFrame;
+    if (args.tableId && df.id !== args.tableId) return;
+    if (args.tableName && df.name !== args.tableName) return;
+
+    const map = (this.tableCol.temp[MACROMOLECULE_HIGHLIGHT_TEMP] ??=
+      new Map<number, MacromoleculeHighlightEntry>()) as Map<number, MacromoleculeHighlightEntry>;
+    if (args.monomers == null || args.monomers.length === 0)
+      map.delete(args.rowIdx);
+    else {
+      map.set(args.rowIdx, {
+        monomers: args.monomers.slice(),
+        fillColor: args.fillColor,
+        strokeColor: args.strokeColor,
+      });
+    }
+    this.invalidateGrid();
+  }
+
+  private getHighlightForRow(rowIdx: number | null): MacromoleculeHighlightEntry | null {
+    if (rowIdx == null) return null;
+    const map = this.tableCol.temp[MACROMOLECULE_HIGHLIGHT_TEMP] as
+      Map<number, MacromoleculeHighlightEntry> | undefined;
+    return map?.get(rowIdx) ?? null;
   }
 
   protected getMonomerLib(): IMonomerLibBase {
@@ -153,10 +189,82 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       aux.dBox.x, aux.dBox.y, aux.dBox.width, aux.dBox.height,
       cellDBox.x, cellDBox.y, cellDBox.width, cellDBox.height);
 
+    this.drawHighlightOverlay(fitCtx, aux, cellDBox, gridCell.tableRowIndex);
+
     const fitCanvasData = fitCtx.getImageData(0, 0, fitCanvasWidth, fitCanvasHeight);
     this.renderOnGrid(gridCtx, gridCellBounds, gridCell, fitCanvasData);
 
     return aux.cBox.width != cellWidth || aux.cBox.height != cellHeight; // request rendering
+  }
+
+  // Overlays a translucent ring around each highlighted monomer on top of the already-drawn
+  // helm image. Highlight data comes from `tableCol.temp[MACROMOLECULE_HIGHLIGHT_TEMP]` for the given
+  // row. The ring is sized from the median bond length so it sits just outside the monomer glyph.
+  private drawHighlightOverlay(
+    ctx: CanvasRenderingContext2D, aux: HelmAux, cellDBox: DG.Rect, rowIdx: number | null,
+  ): void {
+    const entry = this.getHighlightForRow(rowIdx);
+    if (!entry || !entry.monomers || entry.monomers.length === 0) return;
+    const atoms = aux.mol?.atoms;
+    if (!atoms || atoms.length === 0) return;
+    if (aux.bBox.width <= 0 || aux.bBox.height <= 0) return;
+
+    const sx = cellDBox.width / aux.bBox.width;
+    const sy = cellDBox.height / aux.bBox.height;
+    const sAvg = (sx + sy) / 2;
+
+    // Estimate monomer glyph radius in SVG space from bonds, fall back to atom-density heuristic.
+    const svgMonomerR = this.estimateMonomerRadiusSvg(aux);
+    // Draw ring just outside the glyph: ~1.05× glyph radius.
+    const markerR = Math.max(6, svgMonomerR * sAvg * 0.7);
+    const lineWidth = Math.max(1.5, markerR * 0.35);
+
+    const fillCss = macromoleculeHighlightColorToCss(entry.fillColor ?? DEFAULT_MACROMOLECULE_HIGHLIGHT_FILL, 0.2);
+    const strokeCss = macromoleculeHighlightColorToCss(entry.strokeColor ?? DEFAULT_MACROMOLECULE_HIGHLIGHT_STROKE);
+
+    ctx.save();
+    try {
+      ctx.lineWidth = lineWidth;
+      ctx.strokeStyle = strokeCss;
+      ctx.fillStyle = fillCss;
+      for (const idx of entry.monomers) {
+        const a = atoms[idx];
+        if (!a || !a.p) continue;
+        const fx = cellDBox.x + (a.p.x - aux.bBox.x) * sx;
+        const fy = cellDBox.y + (a.p.y - aux.bBox.y) * sy;
+        // Stroke ring with translucent fill — ring sits outside monomer, interior tint is subtle.
+        ctx.beginPath();
+        ctx.arc(fx, fy, markerR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    } finally {
+      ctx.restore();
+    }
+  }
+
+  // Best-effort monomer glyph radius in SVG (bBox) coordinates. Uses the median bond length when
+  // bonds are available (monomer glyph width ≈ bond length), otherwise falls back to an area-
+  // based density estimate from bBox / atom count.
+  private estimateMonomerRadiusSvg(aux: HelmAux): number {
+    const bonds = (aux.mol as any)?.bonds as Array<{a1?: {p?: {x: number, y: number}}, a2?: {p?: {x: number, y: number}}}> | undefined;
+    const lens: number[] = [];
+    if (bonds && bonds.length > 0) {
+      for (const b of bonds) {
+        const p1 = b?.a1?.p; const p2 = b?.a2?.p;
+        if (!p1 || !p2) continue;
+        const d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        if (d > 0) lens.push(d);
+      }
+    }
+    if (lens.length > 0) {
+      lens.sort((x, y) => x - y);
+      const median = lens[Math.floor(lens.length / 2)];
+      return median * 0.55; // glyph radius ≈ half the bond length
+    }
+    const n = Math.max(1, aux.mol?.atoms?.length ?? 1);
+    const density = Math.sqrt((aux.bBox.width * aux.bBox.height) / n);
+    return density * 0.45;
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {

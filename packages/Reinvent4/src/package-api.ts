@@ -12,6 +12,9 @@ export namespace funcs {
     return await grok.functions.call('Reinvent4:Info', {});
   }
 
+  /**
+   * Lists available optimization targets.
+   */
   export async function getFolders(): Promise<any> {
     return await grok.functions.call('Reinvent4:GetFolders', {});
   }
@@ -20,14 +23,32 @@ export namespace funcs {
     return await grok.functions.call('Reinvent4:ReinventEditor', { call });
   }
 
+  /**
+   * @param {string} ligand
+   *   semType: Molecule
+   */
   export async function runReinvent(ligand: string , optimize: string ): Promise<string> {
     return await grok.functions.call('Reinvent4:RunReinvent', { ligand, optimize });
   }
 
+  /**
+   * Generates molecules from a seed ligand.
+   * @param {string} ligand - Seed molecule (SMILES).
+   *   semType: Molecule
+   * @param {string} optimize - Optimization target.
+   *   choices: Reinvent4:getFolders
+   */
   export async function reinvent(ligand: string , optimize: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Reinvent4:Reinvent', { ligand, optimize });
   }
 
+  /**
+   * Generates molecules from a seed ligand.
+   * @param {string} ligand
+   *   semType: Molecule
+   * @param {string} optimize
+   *   choices: Reinvent4:getFolders
+   */
   export async function reinventTopMenu(ligand: string , optimize: string ): Promise<void> {
     return await grok.functions.call('Reinvent4:ReinventTopMenu', { ligand, optimize });
   }

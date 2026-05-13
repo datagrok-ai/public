@@ -5,16 +5,14 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {createTestScheduler} from '../../../test-utils';
 import {Subject} from 'rxjs';
 import {filter, take} from 'rxjs/operators';
 
 category('ComputeUtils: Driver links retention', async () => {
   let testScheduler: TestScheduler;
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   test('Should retain unchanged links after tree mutations', async () => {

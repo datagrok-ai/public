@@ -1,0 +1,56 @@
+{
+  "name": "@datagrok/eps-viewer",
+  "friendlyName": "EPS Viewer",
+  "version": "1.0.1",
+  "author": {
+    "name": "Datagrok",
+    "email": "info@datagrok.ai"
+  },
+  "description": "File viewer for Encapsulated PostScript (EPS) files",
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.6.5",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.26.0",
+    "dayjs": "^1.11.13",
+    "utif2": "^4.1.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "css-loader": "^6.4.0",
+    "datagrok-tools": "^5.0.0",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
+    "style-loader": "^3.3.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-epsviewer": "webpack && grok publish",
+    "release-epsviewer": "webpack && grok publish --release",
+    "build-epsviewer": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "debug-epsviewer-dev": "webpack && grok publish dev",
+    "release-epsviewer-dev": "webpack && grok publish dev --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix"
+  },
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Data Access",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/EpsViewer"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
+}

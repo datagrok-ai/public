@@ -54,7 +54,7 @@ executed:
   1. API and UI Tests
   1. Package Tests
   1. Performance benchmarks
-* Docker Swarm, AWS ECS, and K8S are our orchestration tools for the deployment
+* Kubernetes (Helm) and AWS ECS / EKS are our orchestration tools for the deployment
 and scaling of containers.
 * We use Prometheus to track the performance and behavior of applications in
 production.

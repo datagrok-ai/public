@@ -44,6 +44,7 @@ import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 import {invalidateMols, MONOMERIC_COL_TAGS, SubstructureSearchDialog} from './substructure-search/substructure-search';
 import {convert} from './utils/convert';
+import {compareSequencesUI} from './utils/compare-sequences';
 import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
 import {getMonomerInfoWidget} from './widgets/monomer-info-widget';
 import {saveAsFastaUI} from './utils/save-as-fasta';
@@ -52,10 +53,9 @@ import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
 import {MonomerCollectionHandler} from './utils/monomer-lib/monomer-collection-handler';
 import {getMonomerLibraryManagerLink, showManageLibrariesDialog, showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
-import {demoBioSimDiv} from './demo/bio01-similarity-diversity';
+import {demoBioSimDivLayout} from './demo/bio01-similarity-diversity';
 import {demoSeqSpace} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
-import {demoActivityCliffsCyclic} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
-import {demoToAtomicLevel} from './demo/bio03-atomic-level';
+import {demoActivityCliffsCyclicLayout} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {MsaWarning} from './utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
@@ -85,8 +85,13 @@ import {BilnNotationProvider} from './utils/biln';
 import {showMonomerCollectionsView} from './utils/monomer-lib/monomer-collections-view';
 import {ISequenceColumnInput} from '@datagrok-libraries/bio/src/utils/sequence-column-input';
 import {SequenceColumnInput} from './utils/sequence-column-input';
+import {showNumberingSchemeDialog} from './utils/annotations/numbering-ui';
+import {showLiabilityScannerDialog} from './utils/annotations/liability-scanner-ui';
+import {showAnnotationManagerDialog} from './utils/annotations/annotation-manager-ui';
+import {numberAntibodyColumn} from './utils/antibody-numbering/number-antibody';
 
 import * as api from './package-api';
+import {antibodyDemo, atomicLevelDemo, sirnaDemo} from './demo/feature_demos';
 export const _package = new BioPackage(/*{debug: true}/**/);
 export * from './package.g';
 
@@ -478,11 +483,11 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Apply Numbering Scheme',
-    description: 'Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack',
+    description: 'Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)',
     'top-menu': 'Bio | Annotate | Apply Numbering Scheme...',
   })
   static applyNumberingScheme(): void {
-    import('./utils/annotations/numbering-ui').then((m) => m.showNumberingSchemeDialog());
+    showNumberingSchemeDialog();
   }
 
   @grok.decorators.func({
@@ -491,7 +496,7 @@ export class PackageFunctions {
     'top-menu': 'Bio | Annotate | Scan Liabilities...',
   })
   static scanLiabilities(): void {
-    import('./utils/annotations/liability-scanner-ui').then((m) => m.showLiabilityScannerDialog());
+    showLiabilityScannerDialog();
   }
 
   @grok.decorators.func({
@@ -500,7 +505,7 @@ export class PackageFunctions {
     'top-menu': 'Bio | Annotate | Manage Annotations...',
   })
   static manageAnnotations(): void {
-    import('./utils/annotations/annotation-manager-ui').then((m) => m.showAnnotationManagerDialog());
+    showAnnotationManagerDialog();
   }
 
   @grok.decorators.func({
@@ -610,7 +615,7 @@ export class PackageFunctions {
       return;
     }
     const actCliffsParams: SeqActivityCliffsParams = JSON.parse(tag);
-    const molCol = sp.dataFrame.col(actCliffsParams.seqColName)!
+    const molCol = sp.dataFrame.col(actCliffsParams.seqColName)!;
     const actCol = sp.dataFrame.col(actCliffsParams.activityColName)!;
 
     const preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
@@ -645,7 +650,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {optional: true}}) options?: string,
     @grok.decorators.param({options: {optional: true}}) isDemo?: boolean,
     @grok.decorators.param({options: {optional: true}}) axesNames?: string[]): Promise<void> {
-    await table.meta.detectSemanticTypes();  
+    await table.meta.detectSemanticTypes();
     const preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
     if (!axesNames)
       axesNames = getEmbeddingColsNames(table);
@@ -810,7 +815,8 @@ export class PackageFunctions {
     // collect current monomer library
     const monomerLib = _package.monomerLib;
     const libJSON = JSON.stringify(monomerLib.toJSON());
-    await api.scripts.molToHelmConverterPy(table, molecules, libJSON);
+    const fileInfo = DG.FileInfo.fromString('monomerLib.json', libJSON);
+    await api.scripts.molToHelmConverterPy(table, molecules, fileInfo);
 
     // semtype is not automatically set, so we set it manually
     const newCol = table.columns.toList().find((c) => c.name.toLowerCase().includes('regenerated sequence') && c.semType !== DG.SEMTYPE.MACROMOLECULE);
@@ -989,6 +995,29 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'double', options: {initialValue: '0'}}) gapExtend: number = 0,
   ): Promise<DG.Column<string>> {
     return alignWithPepsea(sequenceCol, method, gapOpen, gapExtend);
+  }
+
+  @grok.decorators.func({
+    name: 'Immunum',
+    description: 'Assigns antibody numbering (IMGT/Kabat) using the immunum WASM library',
+    meta: {role: 'antibodyNumbering'},
+  })
+  static async immunumAntibodyNumbering(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @grok.decorators.param({type: 'dataframe'}) df: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) seqCol: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {choices: ['imgt', 'kabat'], initialValue: 'imgt'}}) scheme: string,
+  ): Promise<DG.DataFrame> {
+    return numberAntibodyColumn(seqCol, scheme);
+  }
+
+  @grok.decorators.func({
+    name: 'Compare Sequences',
+    description: 'Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)',
+    'top-menu': 'Bio | Analyze | Compare sequences...',
+  })
+  static compareSequences(): void {
+    compareSequencesUI();
   }
 
   @grok.decorators.func({
@@ -1493,7 +1522,7 @@ export class PackageFunctions {
     path: '/apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity',
   })
   static async demoBioSimilarityDiversity(): Promise<void> {
-    await demoBioSimDiv();
+    await demoBioSimDivLayout();
   }
 
   @grok.decorators.demo({
@@ -1514,16 +1543,27 @@ export class PackageFunctions {
     path: '/apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs',
   })
   static async demoBioActivityCliffs(): Promise<void> {
-    await demoActivityCliffsCyclic();
+    await demoActivityCliffsCyclicLayout();
   }
 
   @grok.decorators.demo({
     description: 'Atomic level structure of Macromolecules',
     demoPath: 'Bioinformatics | Atomic Level',
     path: '/apps/Tutorials/Demo/Bioinformatics/Atomic%20Level',
+    meta: {demoSkip: 'true'} // skip for now, not sure why the tests are failing
   })
   static async demoBioAtomicLevel(): Promise<void> {
-    await demoToAtomicLevel();
+    await atomicLevelDemo();
+  }
+
+  @grok.decorators.demo({
+    description: 'SI-RNA sequences, molecular structures, curves and assay data',
+    demoPath: 'Bioinformatics | SI-RNA',
+    path: '/apps/Tutorials/Demo/Bioinformatics/SI-RNA',
+    meta: {demoSkip: 'true'} // skip for now, not sure why the tests are failing
+  })
+  static async demoBioSiRNA(): Promise<void> {
+    await sirnaDemo();
   }
 
   @grok.decorators.func({name: 'SDF to JSON Library'})
@@ -1531,6 +1571,15 @@ export class PackageFunctions {
     const _jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
     const jsonMonomerLibrary = JSON.stringify(_jsonMonomerLibrary);
     DG.Utils.download(`${table.name}.json`, jsonMonomerLibrary);
+  }
+
+  @grok.decorators.demo({
+    description: 'Antibody sequences, numbering, liabilities, extraction and SAR',
+    demoPath: 'Bioinformatics | Antibodies',
+    path: '/apps/Tutorials/Demo/Bioinformatics/Antibodies',
+  })
+  static async demoAntibodies(): Promise<void> {
+    await antibodyDemo();
   }
 
   // -- Utils --

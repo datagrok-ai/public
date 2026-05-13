@@ -12,6 +12,7 @@ const HEIGHT = 100;
 
 const defaultMolLimit = 10;
 const defaultSimilarityThreshold = 0.6;
+const MAX_SMILES_LENGTH = 5000;
 
 export function init() {
 }
@@ -28,81 +29,86 @@ type PatentInfo = {
 }
 
 
-function patentSearch(molecule: string,
-  searchFunction: string,
-  isSimilarity?: boolean): DG.Widget {
-  const currentSearches: {[key: string]: string} = {
-    [SearchType.substructure]: '',
-    [SearchType.similarity]: '',
-  };
+let _rdkitPromise: Promise<any> | null = null;
+function getRdkitModule(): Promise<any> {
+  if (!_rdkitPromise)
+    _rdkitPromise = grok.functions.call('Chem:getRdKitModule');
+  return _rdkitPromise;
+}
 
-  const widget = ui.divV([]);
+
+function patentSearch(molecule: string, searchType: SearchType): DG.Widget {
+  const isSimilarity = searchType === SearchType.similarity;
+  const fnName = isSimilarity ?
+    PackageFunctions.sureChemblSimilaritySearch.name :
+    PackageFunctions.sureChemblSubstructureSearch.name;
+  let currentSearch = '';
+
+  const root = ui.divV([]);
+  const widget = new DG.Widget(root);
 
   const compsHost = ui.div();
   compsHost.style.overflowY = 'scroll';
 
-  const molLimit = ui.input.int('Molecules limit', {value: 10});
-  DG.debounce(molLimit.onChanged, 1000).subscribe(() => {
-    runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit,
-      isSimilarity ? SearchType.similarity : SearchType.substructure, currentSearches, similarityThreshold?.value ?? undefined);
-  });
-
-  widget.append(molLimit.root);
-
   let similarityThreshold: DG.InputBase | null = null;
+
+  const runSearch = (limit: number, threshold: number) => {
+    const token = `${molecule}|${limit}|${threshold}`;
+    if (currentSearch === token)
+      return;
+    currentSearch = token;
+
+    ui.empty(compsHost);
+    compsHost.append(ui.loader());
+
+    const params: {[key: string]: any} = {molecule: molecule, limit: limit};
+    if (isSimilarity)
+      params.similarityThreshold = threshold;
+
+    grok.functions.call(`${_package.name}:${fnName}`, params)
+      .then((table: DG.DataFrame | null) => {
+        if (token === currentSearch)
+          updateSearchPanel(table, compsHost);
+      })
+      .catch((err: any) => {
+        if (token !== currentSearch)
+          return;
+        if (compsHost.children.length > 0)
+          compsHost.removeChild(compsHost.firstChild!);
+        const div = ui.divText('Error');
+        grok.shell.error(err);
+        ui.tooltip.bind(div, `${err}`);
+        compsHost.appendChild(div);
+      });
+  };
+
+  const molLimit = ui.input.int('Molecules limit', {value: defaultMolLimit});
+  widget.subs.push(DG.debounce(molLimit.onChanged, 1000).subscribe(() => {
+    runSearch(molLimit.value ?? defaultMolLimit,
+      similarityThreshold?.value ?? defaultSimilarityThreshold);
+  }));
+
+  root.append(molLimit.root);
+
   if (isSimilarity) {
-    similarityThreshold = ui.input.float('Similarity cutoff', {value: defaultSimilarityThreshold, min: 0, max: 1, step: 0.05, showSlider: true});
-    DG.debounce(similarityThreshold.onChanged, 1000).subscribe(() => {
-      runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit,
-        isSimilarity ? SearchType.similarity: SearchType.substructure, currentSearches, similarityThreshold!.value ?? defaultSimilarityThreshold);
-    });
-    widget.append(similarityThreshold.root);
+    similarityThreshold = ui.input.float('Similarity cutoff',
+      {value: defaultSimilarityThreshold, min: 0, max: 1, step: 0.05, showSlider: true});
+    widget.subs.push(DG.debounce(similarityThreshold.onChanged, 1000).subscribe(() => {
+      runSearch(molLimit.value ?? defaultMolLimit,
+        similarityThreshold!.value ?? defaultSimilarityThreshold);
+    }));
+    root.append(similarityThreshold.root);
   }
 
-  widget.append(compsHost);
+  root.append(compsHost);
 
-  runSearch(molecule, searchFunction, compsHost, molLimit.value ?? defaultMolLimit, isSimilarity ? SearchType.similarity: SearchType.substructure,
-    currentSearches, similarityThreshold && similarityThreshold.value ? similarityThreshold.value : defaultSimilarityThreshold );
-  return new DG.Widget(widget);
-}
-
-
-function runSearch(molecule: string,
-  searchFunction: string,
-  compsHost: HTMLDivElement, limit: number, searchType: SearchType, currentSearches: {[key: string]: string}, threshold?: number) {
-  const currentSearch = `${molecule}|${limit}|${threshold}`;
-  if (currentSearches[searchType] === currentSearch)
-    return;
-  currentSearches[searchType] = currentSearch;
-
-  ui.empty(compsHost);
-  compsHost.append(ui.loader());
-
-  const params: {[key: string]: any} = {molecule: molecule, limit: limit};
-  if (searchType === SearchType.similarity)
-    params.threshold = threshold;
-
-  grok.functions.call(`${_package.name}:${searchFunction}`, params)
-    .then((table: DG.DataFrame | null) => {
-      if (currentSearch === currentSearches[searchType])
-        updateSearchPanel(table, compsHost);
-    })
-    .catch((err: any) => {
-      if (currentSearch !== currentSearches[searchType])
-        return;
-
-      if (compsHost.children.length > 0)
-        compsHost.removeChild(compsHost.firstChild!);
-
-      const div = ui.divText('Error');
-      grok.shell.error(err);
-      ui.tooltip.bind(div, `${err}`);
-      compsHost.appendChild(div);
-    });
+  runSearch(molLimit.value ?? defaultMolLimit,
+    similarityThreshold?.value ?? defaultSimilarityThreshold);
+  return widget;
 }
 
 function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement) {
-  compsHost.removeChild(compsHost.firstChild!);
+  ui.empty(compsHost);
   if (table === null || table.rowCount === 0) {
     compsHost.appendChild(ui.divText('No matches'));
     return;
@@ -119,85 +125,99 @@ function updateSearchPanel(table: DG.DataFrame | null, compsHost: HTMLDivElement
     return addToWorkspaceButton;
   };
 
-  // const downloadPatents = (patentsIds: string[], className: string): HTMLElement => {
-  //   const downloadPatentsButton = ui.iconFA('arrow-to-bottom', () => {
-  //     grok.shell.info('Started downloading patents');
-  //     downloadPatentDocuments(patentsIds).then((res: any) => {
-  //       const infoDiv = ui.div([ui.divText('Patents download finished')]);
-  //       const df = DG.DataFrame.fromObjects(res);
-  //       if (df) {
-  //         df.name = 'Patents download results';
-  //         const openResultsButton = ui.button('Open', () => {
-  //           grok.shell.addTableView(DG.DataFrame.fromObjects(res)!);
-  //         });
-  //         infoDiv.append(openResultsButton);
-  //       }
-  //       grok.shell.info(infoDiv);
-  //     });
-  //   }, 'Download patents');
-  //   downloadPatentsButton.classList.add(className);
-  //   return downloadPatentsButton;
-  // };
+  const smilesCol = table.col('smiles')!;
+  const titleCol = table.col('title')!;
+  const docIdCol = table.col('doc_id')!;
+  const langCol = table.col('language')!;
+  const assignCol = table.col('assign_applic')!;
+  const publishedCol = table.col('published')!;
+  const fieldsCol = table.col('fields')!;
+  const similarityCol = table.col('similarity');
 
-  const numPatentsByMol: {[key: string]: PatentInfo[]} = {};
+  const patentsByMol: {[key: string]: PatentInfo[]} = {};
   const similarities: {[key: string]: number} = {};
-  const isSimilarity = table.col('similarity');
-  const patentsIdsByMol: {[key: string]: string[]} = {};
 
   for (let i = 0; i < table.rowCount; i++) {
-    const smiles: string = table.col('smiles')?.get(i);
-    if (!numPatentsByMol[smiles])
-      numPatentsByMol[smiles] = [];
-    if (!patentsIdsByMol[smiles])
-      patentsIdsByMol[smiles] = [];
-    const patentId = table.col('doc_id')?.get(i);
+    const smiles: string = smilesCol.get(i);
+    if (!patentsByMol[smiles])
+      patentsByMol[smiles] = [];
+    const patentId = docIdCol.get(i);
     const patentInfo: PatentInfo = {
       smiles: smiles,
-      title: table.col('title')?.get(i),
+      title: titleCol.get(i),
       id: `[${patentId}](${`https://www.surechembl.org/patent/${patentId}`})`,
-      language: table.col('language')?.get(i),
-      assign_applic: table.col('assign_applic')?.get(i),
-      published: table.col('published')?.get(i).toString(),
-      fields: table.col('fields')?.get(i),
+      language: langCol.get(i),
+      assign_applic: assignCol.get(i),
+      published: publishedCol.get(i).toString(),
+      fields: fieldsCol.get(i),
     };
-    numPatentsByMol[smiles].push(patentInfo);
-    patentsIdsByMol[smiles].push(patentId);
-    if (isSimilarity) {
-      if (!similarities[smiles])
-        similarities[smiles] = table.col('similarity')?.get(i);
-    }
+    patentsByMol[smiles].push(patentInfo);
+    if (similarityCol && !similarities[smiles])
+      similarities[smiles] = similarityCol.get(i);
   }
 
-  const addAllPatentsToWorkspace = createAddToWorkspaceButton(Object.values(numPatentsByMol).reduce((acc, val) => acc.concat(val), []),
+  const addAllPatentsToWorkspace = createAddToWorkspaceButton(Object.values(patentsByMol).flat(),
     `All patents`, 'Add all found patents to workspace', 'surechembl-add-all-patents-to-workspace-button');
   compsHost.append(ui.divH([addAllPatentsToWorkspace]));
 
-  Object.keys(numPatentsByMol).forEach((key: string) => {
+  Object.keys(patentsByMol).forEach((key: string) => {
     const molHost = ui.div();
     const res = grok.chem.drawMolecule(key, WIDTH, HEIGHT, false);
     res.style.float = 'left';
     molHost.append(res);
     const acc = ui.accordion();
     acc.root.style.paddingLeft = '25px';
-    const accPane = acc.addPane(`Patents found: ${numPatentsByMol[key].length}`, () => {
-      const df = DG.DataFrame.fromObjects(numPatentsByMol[key])!;
+    const accPane = acc.addPane(`Patents found: ${patentsByMol[key].length}`, () => {
+      const df = DG.DataFrame.fromObjects(patentsByMol[key])!;
       df.columns.remove('smiles');
       return df.plot.grid().root;
     });
 
-    const addToWorkspaceButton = createAddToWorkspaceButton(numPatentsByMol[key], `Patents for ${key}`,
+    const addToWorkspaceButton = createAddToWorkspaceButton(patentsByMol[key], `Patents for ${key}`,
       'Add table to workspace', 'surechembl-add-patents-to-workspace-button');
 
     const accPaneHeader = accPane.root.getElementsByClassName('d4-accordion-pane-header');
     if (accPaneHeader.length)
       accPaneHeader[0].append(addToWorkspaceButton);
     const molDiv = ui.divV([molHost], {style: {paddingBottom: '15px'}});
-    if (isSimilarity)
+    if (similarityCol)
       molDiv.prepend(ui.divText(similarities[key].toFixed(4).toString()));
     molDiv.append(acc.root);
     compsHost.append(molDiv);
   });
 }
+
+async function patentDataSearch(molecule: string, limit: number, searchType: SearchType,
+  threshold?: number): Promise<DG.DataFrame | null> {
+  try {
+    if (!grok.chem.isMolBlock(molecule) && molecule?.length > MAX_SMILES_LENGTH)
+      throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
+    const rdkit = await getRdkitModule();
+    const mol = rdkit.get_mol(molecule);
+    let pattern: string;
+    try {
+      pattern = searchType === SearchType.substructure ? mol.get_smarts() : mol.get_smiles();
+    } finally {
+      mol?.delete();
+    }
+    const queryName = searchType === SearchType.substructure ? 'searchPatentBySubstructure' : 'searchPatentBySimilarity';
+    const params: {[key: string]: any} = {pattern: pattern, maxMols: limit};
+    if (searchType === SearchType.similarity)
+      params.threshold = threshold ?? defaultSimilarityThreshold;
+    return await grok.data.query(`${_package.name}:${queryName}`, params);
+  } catch (e: any) {
+    console.error(`In ${searchType} search: ${e.toString()}`);
+    throw e;
+  }
+}
+
+
+function buildSearchWidget(molecule: string, searchType: SearchType): DG.Widget {
+  if (!molecule)
+    return new DG.Widget(ui.divText('SMILES is empty'));
+  return patentSearch(molecule, searchType);
+}
+
 
 export class PackageFunctions {
   @grok.decorators.func({
@@ -209,19 +229,7 @@ export class PackageFunctions {
   static async sureChemblSubstructureSearch(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string,
     @grok.decorators.param({'type': 'int'}) limit: number): Promise<DG.DataFrame | null> {
-    try {
-      if (!grok.chem.isMolBlock(molecule) && molecule?.length > 5000)
-        throw new Error('SMILES string longer than 5000 characters not supported');
-      const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
-      const smarts = mol.get_smarts();
-      mol?.delete();
-      const df: DG.DataFrame | null =
-        await grok.data.query(`${_package.name}:searchPatentBySubstructure`, {'pattern': smarts, 'maxMols': limit});
-      return df;
-    } catch (e: any) {
-      console.error('In SubstructureSearch: ' + e.toString());
-      throw e;
-    }
+    return patentDataSearch(molecule, limit, SearchType.substructure);
   }
 
 
@@ -235,30 +243,18 @@ export class PackageFunctions {
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string,
     @grok.decorators.param({'type': 'int'}) limit: number,
       similarityThreshold?: number): Promise<DG.DataFrame | null> {
-    try {
-      if (!grok.chem.isMolBlock(molecule) && molecule?.length > 5000)
-        throw new Error('SMILES string longer than 5000 characters not supported');
-      const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
-      const smiles = mol.get_smiles();
-      mol?.delete();
-      const df: DG.DataFrame | null =
-        await grok.data.query(`${_package.name}:searchPatentBySimilarity`, {'pattern': smiles, 'maxMols': limit, 'threshold': similarityThreshold ?? defaultSimilarityThreshold});
-      return df;
-    } catch (e: any) {
-      console.error('In SimilaritySearch: ' + e.toString());
-      throw e;
-    }
+    return patentDataSearch(molecule, limit, SearchType.similarity, similarityThreshold);
   }
 
 
-  @grok.decorators.panel({
+  @grok.decorators.func({
     'name': 'Databases | SureChEMBL | Substructure Search',
     'condition': 'true',
-    'meta': {role: 'widgets'},
+    'meta': {role: 'panel,widgets'},
   })
   static sureChemblSubstructureSearchWidget(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {
-    return molecule ? patentSearch(molecule, 'sureChemblSubstructureSearch') : new DG.Widget(ui.divText('SMILES is empty'));
+    return buildSearchWidget(molecule, SearchType.substructure);
   }
 
 
@@ -269,6 +265,6 @@ export class PackageFunctions {
   })
   static sureChemblSimilaritySearchWidget(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {
-    return molecule ? patentSearch(molecule, 'sureChemblSimilaritySearch', true) : new DG.Widget(ui.divText('SMILES is empty'));
+    return buildSearchWidget(molecule, SearchType.similarity);
   }
 }

@@ -84,9 +84,12 @@
 }
 
 
-.statistics-mpo-row .ui-input-choice .ui-input-editor {
+.statistics-mpo-row .ui-input-choice .ui-input-editor,
+.statistics-mpo-row .ui-input-column .ui-input-editor {
   width: 100px !important;
   max-width: none !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ui-form .statistics-mpo-row .ui-input-root {

@@ -340,7 +340,7 @@ export function calculateLBControlColumns(
 }
 
 export function createAllMeasurementsDf(studyId: string): DG.DataFrame | null {
-  //body weight gain measurements should be analyaed separately, since BGENDY should be considered intead of BGDY and
+  //body weight gain measurements should be analyzed separately, since BGENDY should be considered instead of BGDY and
   //each body gain weight record corresponds to different time periods, for instance:
 //USUBJID,       BGSTRESN,   BGDY,   BGENDY
 //PC201708-4115,    24,       1,       29

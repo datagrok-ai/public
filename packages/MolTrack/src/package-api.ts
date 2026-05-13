@@ -46,6 +46,9 @@ export namespace funcs {
     return await grok.functions.call('MolTrack:InitDB', {});
   }
 
+  /**
+   * @param {string} path - View to open: "Compound", "Batch", "Register", "Search", "Saved Searches", "Bulk", "Assay", "Schema".
+   */
   export async function molTrackApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('MolTrack:MolTrackApp', { path });
   }
@@ -55,71 +58,100 @@ export namespace funcs {
   }
 
   /**
-  Retrieves all properties defined for the 'compound' scope
-  */
+   * Retrieves all properties defined for the 'compound' scope
+   */
   export async function fetchCompoundProperties(): Promise<string> {
     return await grok.functions.call('MolTrack:FetchCompoundProperties', {});
   }
 
   /**
-  Retrieves all properties defined for the 'batch' scope
-  */
+   * Retrieves all properties defined for the 'batch' scope
+   */
   export async function fetchBatchProperties(): Promise<string> {
     return await grok.functions.call('MolTrack:FetchBatchProperties', {});
   }
 
   /**
-  Retrieves all dynamic fields
-  */
+   * Retrieves all dynamic fields
+   */
   export async function fetchSchema(): Promise<string> {
     return await grok.functions.call('MolTrack:FetchSchema', {});
   }
 
   /**
-  Retrieves all static fields
-  */
+   * Retrieves all static fields
+   */
   export async function fetchDirectSchema(): Promise<string> {
     return await grok.functions.call('MolTrack:FetchDirectSchema', {});
   }
 
+  /**
+   * @param {string} corporateValue - Corporate compound ID to look up.
+   */
   export async function getCompoundByCorporateId(corporateValue: string ): Promise<any> {
     return await grok.functions.call('MolTrack:GetCompoundByCorporateId', { corporateValue });
   }
 
+  /**
+   * @param {string} corporateValue - Corporate batch ID to look up.
+   */
   export async function getBatchByCorporateId(corporateValue: string ): Promise<any> {
     return await grok.functions.call('MolTrack:GetBatchByCorporateId', { corporateValue });
   }
 
   /**
-  Registers compound properties in the MolTrack service using the provided JSON payload
-  */
+   * Registers compound properties in the MolTrack service using the provided JSON payload
+   * @param {string} jsonPayload - JSON schema defining entity properties to register (name, value_type, entity_type, nullable, etc.).
+   */
   export async function registerMolTrackProperties(jsonPayload: string ): Promise<string> {
     return await grok.functions.call('MolTrack:RegisterMolTrackProperties', { jsonPayload });
   }
 
+  /**
+   * @param {string} assayPayload - JSON describing assays to register (name, properties, result types).
+   */
   export async function registerAssays(assayPayload: string ): Promise<string> {
     return await grok.functions.call('MolTrack:RegisterAssays', { assayPayload });
   }
 
+  /**
+   * @param {DG.FileInfo} csvFile - CSV file with rows to register.
+   * @param {string} scope - Entity scope: "compounds", "batches", "assays", "assay_runs", "assay_results".
+   * @param {string} mapping - JSON mapping CSV columns to MolTrack property names.
+   * @param {string} errorHandling - "reject_all" aborts on any invalid row, "reject_row" skips invalid rows.
+   */
   export async function registerBulk(csvFile: DG.FileInfo , scope: string , mapping: string , errorHandling: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:RegisterBulk', { csvFile, scope, mapping, errorHandling });
   }
 
+  /**
+   * @param {string} query - JSON-encoded MolTrack search query with keys: level, output, filter, output_format.
+   * @param {string} entityEndpoint - Entity to search: "compounds", "batches", "assays", "assay_runs", "assay_results".
+   */
   export async function search(query: string , entityEndpoint: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:Search', { query, entityEndpoint });
   }
 
   /**
-  Performs a structured MolTrack compound search. The caller must provide the "output": a list of fully-qualified field names to return; "filter": a structured filter tree describing search conditions.
-  */
+   * Performs a structured MolTrack compound search. The caller must provide the "output": a list of fully-qualified field names to return; "filter": a structured filter tree describing search conditions.
+   * @param {any} outputFields - List of fields to return. All fields must use MolTrack notation. Valid formats: "<table>.<field>" (direct database column) or "<table>.details.<property>" (dynamic detail property). Valid direct compound fields include (non-exhaustive): "compounds.created_at","compounds.updated_at","compounds.created_by","compounds.updated_by","compounds.canonical_smiles","compounds.original_molfile","compounds.molregno","compounds.inchi","compounds.inchikey","compounds.formula","compounds.hash_mol","compounds.hash_tautomer","compounds.hash_canonical_smiles","compounds.hash_no_stereo_smiles","compounds.hash_no_stereo_tautomer","compounds.is_archived".
+   * @param {any} filter - A structured boolean filter supporting simple and nested conditions. Simple format: {"field":"<field_name>","operator":"<operator>","value":<value>,"threshold":<number|null>
+   */
   export async function advancedSearch(outputFields: any , filter: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:AdvancedSearch', { outputFields, filter });
   }
 
+  /**
+   * @param {string} scope - Entity scope: "compounds", "batches", "assays", "assay_runs", "assay_results".
+   */
   export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
   }
 
+  /**
+   * @param {any} id
+   *   semType: Grok ID
+   */
   export async function getMoltrackPropPanelById(id: any ): Promise<any> {
     return await grok.functions.call('MolTrack:GetMoltrackPropPanelById', { id });
   }
