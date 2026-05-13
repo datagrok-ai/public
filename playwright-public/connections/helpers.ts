@@ -35,6 +35,15 @@ export const SPARQL_ENDPOINT =
 export async function goHome(page: Page): Promise<void> {
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await page.locator('[name="Browse"]').first().waitFor({ state: 'visible', timeout: 60_000 });
+  // Wait for #grok-preloader inside #rootDiv to detach. On a cold CI Datlas the
+  // Browse sidebar becomes visible BEFORE the preloader is dismissed; while
+  // present, the preloader covers the entire rootDiv subtree and intercepts
+  // every click — including those inside dialogs — which manifests as
+  // "subtree intercepts pointer events" timeouts on the first interactive step.
+  await page.waitForFunction(
+    () => document.querySelector('#grok-preloader, .grok-preloader') == null,
+    undefined, { timeout: 90_000 },
+  );
   await page.waitForTimeout(500);
   // Datagrok hover-tooltips intercept Playwright's stability checks on tree nodes.
   // The platform's tooltip JS still runs (handlers fire, content builds) — only

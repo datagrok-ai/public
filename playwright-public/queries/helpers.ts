@@ -20,6 +20,14 @@ export async function goHome(page: Page): Promise<void> {
   // (`.d4-ribbon` may be empty on home view, and `view-handle: Browse` only exists
   //  when Browse is opened as a view rather than the side panel.)
   await page.locator('[name="Browse"]').first().waitFor({ state: 'visible', timeout: 60_000 });
+  // Wait for #grok-preloader to detach. On a cold CI Datlas the Browse sidebar
+  // becomes visible BEFORE the preloader is dismissed; while present, the
+  // preloader covers rootDiv and intercepts every click (including inside
+  // dialogs), surfacing as "subtree intercepts pointer events" timeouts.
+  await page.waitForFunction(
+    () => document.querySelector('#grok-preloader, .grok-preloader') == null,
+    undefined, { timeout: 90_000 },
+  );
   await page.waitForTimeout(500);
   // Suppress Datagrok hover-tooltips for the duration of this page. They overlay tree
   // nodes and other clickable elements during Playwright's wait-for-stable check,
