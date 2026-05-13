@@ -7,6 +7,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {Subscription} from 'rxjs';
+
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {assure} from '@datagrok-libraries/utils/src/test';
@@ -113,7 +115,7 @@ import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
 import {MpoProfileManager} from './mpo/mpo-profile-manager';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
-import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
+import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT} from './mpo/utils';
 import {removeWaterAndSalts} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {scripts} from './package-api';
@@ -174,6 +176,8 @@ let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
 let _renderers: Map<string, DG.GridCellRenderer>;
 let _initChemPromise: Promise<void> | null = null;
+
+let mpoTreeBrowserSub: Subscription | null = null;
 
 async function initChemInt(): Promise<void> {
   chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -2962,16 +2966,13 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'view'}) _browseView: any,
   ) {
     let openedView: DG.ViewBase | null = null;
-    const profileMap = new Map<DG.TreeViewNode, MpoProfileInfo>();
 
     const refresh = async () => {
       treeNode.items.forEach((item) => item.remove());
-      profileMap.clear();
 
       const profiles = await MpoProfileManager.ensureLoaded();
       for (const profile of profiles) {
         const item = treeNode.item(profile.name);
-        profileMap.set(item, profile);
 
         item.onSelected.subscribe(() => {
           openedView?.close();
@@ -2994,8 +2995,8 @@ export class PackageFunctions {
 
     await refresh();
 
-    grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
-      await MpoProfileManager.load();
+    mpoTreeBrowserSub?.unsubscribe();
+    mpoTreeBrowserSub = grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
       await refresh();
     });
   }
