@@ -9,18 +9,18 @@ This is the "agent moment" — a single drag-and-drop produces a full triage das
 
 ## What the user does
 
-1. Drags a markdown file (`cro-hit-triage.md`, content below) onto the Grokky chat panel.
+1. Drags a markdown file (`hit-triage.md`, content below) onto the Grokky chat panel.
 2. Says: **"Run this playbook on the attached CSV."**
 3. Watches.
 
-## The playbook file (`cro-hit-triage.md`)
+## The playbook file (`hit-triage.md`)
 
 This file is dragged in. It IS the prompt. Authoring this file deliberately is part of the demo.
 
 ```markdown
-# CRO hit-list triage playbook
+# Hit-list triage playbook
 
-You are processing a new CRO hit list. Execute the following steps in order. After each step, post a one-line status update to chat.
+You are processing a new assay. Execute the following steps in order. After each step, post a one-line status update to chat.
 
 1. Load the attached CSV (columns: Compound_ID, SMILES, Assay_pIC50).
 2. Standardize structures — canonicalize SMILES and strip salts.
