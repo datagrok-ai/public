@@ -1,3 +1,4 @@
+/* eslint-disable max-params */
 /**
  * Canvas drawing for the OligoNucleotide cell renderer.
  *
@@ -41,7 +42,7 @@ export interface RenderOpts {
   scheme?: string;
 }
 
-const DEFAULT_OPTS: RenderOpts = {showLetters: true, pairAlign: true};
+export const DEFAULT_OPTS: RenderOpts = {showLetters: true, pairAlign: true};
 
 /* Visual tuning. */
 const ASPECT_H_OVER_W = 1.25;
@@ -329,11 +330,11 @@ function fitsInBudget(widths: number[], leadW: number, chipGap: number, budget: 
 export function drawDuplex(
   g: CanvasRenderingContext2D, cellX: number, cellY: number,
   cellW: number, cellH: number, model: ParsedDuplex,
-  opts: Partial<RenderOpts> = {},
+  opts: Partial<RenderOpts> = {}, skipDrawing = false,
 ): DuplexLayout {
   const o: RenderOpts = {...DEFAULT_OPTS, ...opts};
   const layout = computeLayout(cellW, cellH, model, o);
-
+  if (skipDrawing) return layout;
   g.save();
   g.beginPath();
   g.rect(cellX, cellY, cellW, cellH);
