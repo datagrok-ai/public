@@ -1,6 +1,6 @@
 # Diff Studio changelog
 
-## 1.6.0 (2026-05-05)
+## 1.6.0 (2026-05-13)
 
 Added:
 

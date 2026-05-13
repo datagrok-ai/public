@@ -114,10 +114,14 @@ export class PackageFunctions {
     }
 
     const toSetStartingPath = (path === window.location.href);
-    const proxiView = DG.View.create();
+    // Return an empty proxy view synchronously and mount the real solver view
+    // asynchronously via grok.shell.addView. This is required for correct
+    // integration with the platform's app-launching flow — DO NOT change this
+    // to return the actual solver view directly.
+    const proxyView = DG.View.create();
 
     setTimeout(async () => {
-      proxiView.close();
+      proxyView.close();
 
       const solver = new DiffStudio(false);
 
@@ -133,7 +137,7 @@ export class PackageFunctions {
       }
     }, UI_TIME.APP_RUN_SOLVING);
 
-    return proxiView;
+    return proxyView;
   }
 
   @grok.decorators.demo({
@@ -166,17 +170,21 @@ export class PackageFunctions {
     // window.location.href still holds the previous file's params and would be misapplied.
     const path = wasProcessed ? file.fullPath : grok.shell.startUri;
 
-    const proxiView = DG.View.create();
+    // Return an empty proxy view synchronously and mount the real preview
+    // asynchronously via grok.shell.addView. This is required for correct
+    // integration with the platform's file-viewer flow — DO NOT change this
+    // to return the actual preview view directly.
+    const proxyView = DG.View.create();
 
     setTimeout(async () => {
-      proxiView.close();
+      proxyView.close();
       const solver = new DiffStudio(false, true, true);
       grok.shell.windows.showToolbox = false;
       grok.shell.windows.showBrowse = true;
       grok.shell.addView(await solver.getFilePreview(file, path));
     }, UI_TIME.PREVIEW_RUN_SOLVING);
 
-    return proxiView;
+    return proxyView;
   }
 
   @grok.decorators.func()
