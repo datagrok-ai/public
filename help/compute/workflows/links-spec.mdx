@@ -47,6 +47,11 @@ value(optional):first(myworkflow)/first(subworkflow)/first(script)/input1
 Meaning that the first item with the provided id will be matched. So
 by default `first` selector is used.
 
+Three self-ref shorthands are accepted: `NAME:`, `NAME:.`, and `NAME:./`
+are all equivalent to bare `NAME`. The `./` prefix is also accepted at
+the start of a path, so `NAME:./path` is equivalent to `NAME:path`.
+Mid-path `.` and leading `/` remain forbidden.
+
 
 ### Plain selectors
 

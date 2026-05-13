@@ -4,7 +4,9 @@ import {indexFromEnd} from '../utils';
 import {IOType} from './config-processing-utils';
 
 const linkSpecGrammar = `
-Link ::= Name FlagList? (':' Segment)? ('/' Segment)*
+Link ::= Name FlagList? (':' Tail?)?
+Tail ::= '.' '/' Segments? | '.' '/'? | Segments {fragment=true}
+Segments ::= Segment ('/' Segment)* {fragment=true}
 FlagList ::= WS* '(' WS* Flag WS* (',' WS* Flag WS*)* ')' WS* {fragment=true}
 Flag ::= "call" | "optional" | "template"
 Segment ::=  WS* (Selector | TargetIds | TagSpec) WS* {fragment=true}
