@@ -556,9 +556,9 @@ cover, see the example files bundled with the `create-workflow` agent skill:
 
 | File | Demonstrates |
 |------|--------------|
-| `.claude/skills/create-workflow/examples/minimal-static.ts` | A static pipeline with no links — the smallest configuration that works. |
-| `.claude/skills/create-workflow/examples/dynamic-with-links.ts` | A [dynamic workflow](./configuration#dynamic-workflows) with `stepTypes`, `initialSteps`, an `all()` selector, and a link handler that propagates outputs to every downstream instance. |
-| `.claude/skills/create-workflow/examples/validators-and-meta.ts` | Cross-field [validators](./link-types#validators), [meta links](./link-types#metadata-links) that hide/show advanced inputs, and a user-triggered reset [action](./link-types#data-actions). |
+| [`minimal-static.ts`](https://github.com/datagrok-ai/public/blob/master/.claude/skills/create-workflow/examples/minimal-static.ts) | A static pipeline with no links — the smallest configuration that works. |
+| [`dynamic-with-links.ts`](https://github.com/datagrok-ai/public/blob/master/.claude/skills/create-workflow/examples/dynamic-with-links.ts) | A [dynamic workflow](./configuration#dynamic-workflows) with `stepTypes`, `initialSteps`, an `all()` selector, and a link handler that propagates outputs to every downstream instance. |
+| [`validators-and-meta.ts`](https://github.com/datagrok-ai/public/blob/master/.claude/skills/create-workflow/examples/validators-and-meta.ts) | Cross-field [validators](./link-types#validators), [meta links](./link-types#metadata-links) that hide/show advanced inputs, and a user-triggered reset [action](./link-types#data-actions). |
 
 Each file is a self-contained provider function you can adapt to a real
 workflow. They reference the same types described in this documentation
