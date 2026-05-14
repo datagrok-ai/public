@@ -18,7 +18,7 @@ import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {OptimizerParams, runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import {OptimizerParams, runOptimizer} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {ModelCatalogView,
   startModelCatalog,
@@ -243,8 +243,14 @@ export class PackageFunctions {
   static async RunOptimizer(
     @grok.decorators.param({'type': 'object'}) params: OptimizerParams,
   ) {
-    const fin = await runOptimizerFinalized(params);
-    return fin.calls;
+    // CI compatibility shim: `runOptimizerFinalized` is exported from the local
+    // compute-utils source (a3c165a032, May 2026) but the npm-published 1.45.3
+    // — which is what Jenkins resolves at build time — still ships only the
+    // legacy tuple-returning `runOptimizer`. Until a fresh compute-utils
+    // minor is published, use the legacy API so Compute2 (and the Model Hub
+    // Playwright tests that depend on it) build in CI.
+    const [, calls] = await runOptimizer(params);
+    return calls;
   }
 
 
