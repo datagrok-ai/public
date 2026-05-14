@@ -11,11 +11,13 @@ Each link is a one-directional connection propagating data from input to output.
 
 Each LQL query has the following high level structure:
 
-`NAME(FLAGS?):PATH`
+`NAME(FLAG,FLAG,...)?:PATH`
 
 `NAME` is the mandatory LQL query name used by controllers to retrieve results.
 
-`FLAGS` is an optional comma-separated list of flags:
+`FLAGS` are an optional comma-separated list inside parentheses. Omit the
+parentheses entirely if no flags are needed (`NAME:PATH`). The recognized flags
+are:
 - The `optional` flag indicates that creating a link matching this query is not required
 - The `call` flag, used in [funccall](link-types#funccall-actions) actions, specifies that the FuncCall itself should be matched and returned instead of a script I/O
 - The `template` flag is used in [template queries](#template-queries)
@@ -80,15 +82,20 @@ Functions similarly to `all` for matching, but is exclusively used in base paths
 
 ### Reference selectors
 
-These selectors are required for a link to have a
-[base](link-types#base) path. A special `expand` selector is available
-for base queries. Selector `expand` is working like `all` in terms of
-matching, but has a special meaning. For each match a separate link
-instance will be created (provided all other queries are matching as
-well). Each link instance will be triggered separately and pass data
-only from its own matched inputs to own matched outputs. Reference
-selectors are using `@` base query name as the first argument, and id
-list as the second.
+Reference selectors anchor a `from`/`to` query relative to the link's
+[base](link-types#base) path. The **base path** is declared by the link's
+`base` field; it is itself an LQL query (conventionally named `base`) that
+matches one or more workflow nodes. Reference selectors then resolve relative
+to each base match, with `@base` standing in for the base query name (or
+whatever name was given to the base query).
+
+A special `expand` selector is available for base queries. Selector `expand`
+is working like `all` in terms of matching, but has a special meaning. For
+each match a separate link instance will be created (provided all other
+queries are matching as well). Each link instance will be triggered separately
+and pass data only from its own matched inputs to own matched outputs.
+Reference selectors take the base query name as the first argument (prefixed
+with `@`), and an id list as the second.
 
 For example, here is a part of link definition with base and reference
 selectors:
@@ -143,12 +150,24 @@ link instance base path.
 #### `modifiers`
 
 For [before](#before) and [after](#after) special suffixes are
-available. `*` forcing to match all items, and `+` forcing to match an
-adjacent item, both in the direction of a selector.
+available, written immediately after the selector name:
 
-Additionally, [before](#before) and [after](#after) selectors accept a third parameter called "stop IDs".
-When matching encounters any ID from this list (in the respective selector's direction),
-the matching process stops.
+- `*` — match _all_ items in the selector's direction, not just the first one.
+  Example: `after*(@base,scriptX)` matches every `scriptX` that follows the
+  base match.
+- `+` — match the _immediately adjacent_ item in the selector's direction
+  (the next or previous sibling, with no other steps in between).
+  Example: `after+(@base,scriptX)` matches `scriptX` only when it is the very
+  next sibling of the base match.
+
+Additionally, [before](#before) and [after](#after) selectors accept a third
+parameter called "stop IDs" — a `|`-separated list of node ids that terminates
+the scan. As soon as the scan (in the selector's direction) encounters a node
+whose id appears in the stop list, matching stops without descending further,
+even if a matching id appears later. This is useful for confining a relative
+match to a region between two known steps. Example:
+`before(@base,prepData,resetStep)` matches the nearest preceding `prepData`,
+but gives up if a `resetStep` is encountered first.
 
 
 ### Tag selectors
@@ -170,15 +189,26 @@ Will match the first item that has both tag1 and tag2, regardless of
 how deeply it is nested. The order is defined by depth first
 traversal.
 
-It is also possible to combine tag and id selector in the same query:
+Tag and id selectors can be mixed within a single query, in any order: each
+segment is resolved against the result set of the previous one.
 
 ```
-#all(tag1&tag2)/last(script1|scirpt2)/input1
+#all(tag1&tag2)/last(script1|script2)/input1
 ```
 
-Will match all items with both tag1 and tag2 first, regardless of how
-deep they are nested, and then match last child item that has id
-script1 or script2.
+Matches all items with both `tag1` and `tag2` first, regardless of how deep
+they are nested, then descends into each match and picks the _last_ direct
+child whose id is `script1` or `script2`, and finally targets the `input1`
+script IO on that child.
+
+The id selector can also come first:
+
+```
+#first(workflowA)/#all(metric)/result
+```
+
+Picks the first direct child with id `workflowA`, then matches all descendants
+tagged `metric`, then the `result` IO on each.
 
 Note that you can match only nested items. Tags that are higher
 in the tree than a link definition will not be matched.

@@ -135,9 +135,12 @@ undefined.
 getMatchedInputs(): Readonly<Set<string>>;
 ```
 
-Returns a set of all matched input queries names. The set is ordered
-based on depth first traversal, if a query returns multiple matches,
-the first one is used for ordering.
+Returns the set of `from` query names that produced at least one match for the
+current link instance. Iteration order follows a depth-first traversal of the
+workflow tree at the moment the link fires; when a query matches multiple nodes,
+the position of its first match determines its place in the order. Use this to
+detect which optional inputs are present before reading them with
+[`getFirst`](#getfirst) / [`getAll`](#getall).
 
 #### `getMatchedOutputs`
 
@@ -145,9 +148,8 @@ the first one is used for ordering.
 getMatchedOutputs(): Readonly<Set<string>>;
 ```
 
-Returns a set of all matched outputs queries names. The set is ordered
-based on depth first traversal, if a query returns multiple matches,
-the first one is used for ordering.
+Same as [`getMatchedInputs`](#getmatchedinputs), but for the `to` query names.
+Use this to find out which optional outputs exist before writing to them.
 
 #### `getAdditionalParam`
 
@@ -358,10 +360,14 @@ export interface Advice {
 export type ValidationItem = string | Advice;
 ```
 
-Where `description` is a validation message, `actionName` is a visible
-action name, `action` is a result of
-[`getValidationAction`](#getvalidationaction). `additionalParams`
-could be access inside action controller via
+A `ValidationItem` is either a plain `string` (a message with no follow-up)
+or an `Advice` (a message that comes with one or more user-runnable actions).
+Use the string form for simple errors/warnings; use `Advice` when the user can
+click a button to fix the problem or jump to the offending step. `description`
+is the text shown to the user, `actionName` is the label on the action button,
+`action` is the opaque action descriptor returned by
+[`getValidationAction`](#getvalidationaction), and `additionalParams` is a
+free-form bag of values forwarded to the action handler, where it is read with
 [`getAdditionalParam`](#getadditionalparam).
 
 #### `getValidationAction`
@@ -370,7 +376,13 @@ could be access inside action controller via
 getValidationAction(id: string, actionId: string) : string | undefined;
 ```
 
-Gets an action descriptor to be used in `ValidationResult`.
+Looks up an action that the validator wants to expose alongside its messages.
+`id` is the LQL query name used in the validator's [`actions`](#actions)
+field; `actionId` is the `id` of the matched action's configuration on the
+target node. Returns an opaque string descriptor that should be placed into
+the `action` field of an [`Advice`](#setvalidation) item; returns `undefined`
+if no such action is wired up. The descriptor is consumed internally by the
+platform — your code only forwards it.
 
 For validation of the workflow structure itself (rather than a single
 script io) use [pipeline validators](#pipeline-validators) — a reactive,
@@ -427,6 +439,13 @@ is written; `getOutline()` describes the link's own scope. Use this
 when the validator needs to inspect the workflow topology, e.g. the
 number of nested steps or their configIds.
 
+`PipelineOutline` is a structure-only snapshot of the workflow subtree: each
+node carries its `id`, `configId`, and `type`, and pipeline nodes carry a
+recursive `steps` array. Runtime data (FuncCalls, validation state, mutable
+runtime metadata) is intentionally omitted so the outline is cheap to walk
+and stable across re-fires. The full type lives in
+`@datagrok-libraries/compute-api`; LSP will show the recursive shape.
+
 #### `debounce`
 
 Same semantics as for regular `validator` links. Default is 250ms.
@@ -434,8 +453,11 @@ Same semantics as for regular `validator` links. Default is 250ms.
 
 ### Metadata links
 
-Metadata links are used for [viewers hooks](configuration.mdx) and have a type `meta`.
-Meta controller has an additional method:
+Metadata links have type `meta`. They write small chunks of metadata against
+script IO targets; the platform interprets the metadata to customize the UI
+that surrounds the input/output (which is rendered by
+[viewer hooks](./configuration#viewershook-script-node)). Meta controller has an
+additional method:
 
 #### `setViewMeta`
 
@@ -447,26 +469,26 @@ Sets metadata to an output query with the specified name. Multiple
 links can have the same output target, provided they are using
 different keys.
 
-It is possible to hide script inputs setting the following meta:
-```
-{ hidden: true }
-```
+#### UI metadata
 
-Also, an input annotation should
-include `optional: true`
+The platform understands the following well-known keys when set on a script
+input or output:
 
-For choice inputs it is possible to update an
-items list:
+| Key | Effect |
+|------|--------|
+| `hidden: true` | Hide the input from the script UI. The input annotation must include `optional: true`, otherwise the platform requires a value. |
+| `items: string[]` | For choice inputs, replace the dropdown options. Example: `{ items: ['one', 'two', 'three'] }`. |
 
-```
-{ items: ['one', 'two', 'three'] }
-```
+Any other key/value pair is forwarded to the viewer hook unchanged, so
+custom viewer integrations can define their own meta keys.
 
-There are also integrations available with
+#### Feature integrations (sensitivity analysis, optimization)
+
+The same `meta` link type wires script IOs into the
 [sensitivity-analysis](../compute.md#sensitivity-analysis) and
-[optimization](../compute.md#input-parameter-optimization)
-tools. Enabling these tool integrations could be done only for
-javascript functions using the following annotation:
+[optimization](../compute.md#input-parameter-optimization) tools. Enabling
+these tool integrations can be done only for JavaScript functions using the
+following annotation:
 
 ```
 //meta.features: {"sens-analysis": true, "fitting": true}

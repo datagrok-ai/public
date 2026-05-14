@@ -3,23 +3,58 @@ title: "Programmatic usage"
 sidebar_position: 4
 ---
 
-You can start a workflow from code and even obtain workflow
-results if the top level has an `onReturn` hook. A special UI accept button runs the hook and exits. Otherwise,
-undefined is returned on a regular close.
+You can start a workflow from code and, if the top-level configuration defines an
+[`onReturn`](./link-types#return-hook) hook, receive a return value when the user
+exits the workflow with the **Accept** button. On a regular close, the workflow
+resolves to `undefined`.
 
+The result flows like this:
 
+1. The user clicks **Accept**.
+2. The `onReturn` handler runs and calls `controller.returnResult(value)`.
+3. Your awaited `startWorkflow(...)` resolves to that `value`.
 
+### Basic usage
+
+```typescript
+import {startWorkflow} from '@datagrok-libraries/compute-api';
+
+const result = await startWorkflow<MyReturnShape>('SomePackage:SomeWorkflow', '1.0', {});
 ```
-const startFunc = DG.Func.find({package: 'Compute2', name: 'StartWorkflow'})[0];
-const funcCall = startFunc.prepare({nqName: 'SomePackage:SomeWorkflow, version: '1.0'})
 
-await funcCall.call();
-const result = funcCall.getOutputParamValue();
+`nqName` (first argument) is the workflow
+[provider's](./configuration#workflow-providers) `package:function` identifier.
+`version` must match a value listed in the provider's `meta.versions`
+annotation. The third argument is the initial
+[`PipelineInstanceConfig`](#with-initial-configuration); pass `{}` to start
+with the provider's defaults.
+
+### With initial configuration
+
+For dynamic workflows you can pre-populate the initial step list and per-step
+values by passing a `PipelineInstanceConfig` as the third argument. LSP fills
+in the recursive field shape.
+
+```typescript
+import {startWorkflow} from '@datagrok-libraries/compute-api';
+import type {PipelineInstanceConfig} from '@datagrok-libraries/compute-api';
+
+const instanceConfig: PipelineInstanceConfig = {
+  id: 'some_workflow',
+  steps: [{
+    id: 'load',
+    initialValues: {deviceClass: 'Bioreactor Class'},
+    inputRestrictions: {deviceClass: 'disabled'},
+  }],
+};
+
+const result = await startWorkflow<MyReturnShape>(
+  'SomePackage:SomeWorkflow',
+  '1.0',
+  instanceConfig,
+);
 ```
 
-
-For dynamic workflow it is also possible to configure which dynamic
-steps will be initially used in the workflow via `instanceConfig` option.
-```
-const funcCall = startFunc.prepare({nqName: 'SomePackage:SomeWorkflow, version: '1.0', instanceConfig: {id: 'some_wworkflow', steps: [{id: 'load', initialValues: {deviceClass: 'Bioreactor Class'}, inputRestrictions: {deviceClass: 'disabled'}}]}})
-```
+`initialValues` and `inputRestrictions` follow the same semantics as the
+[script node](./configuration#script-nodes) fields of the same name. See
+[Consistency](./link-types#consistency) for the meaning of restriction values.
