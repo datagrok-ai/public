@@ -219,8 +219,8 @@ export class PackageFunctions {
     'description': 'A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded, you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis.'
   })
   static async _scatterPlotDemo() : Promise<void>{
-
-    await viewerDemo(DG.VIEWER.SCATTER_PLOT);
+    await viewerDemo(DG.VIEWER.SCATTER_PLOT, {x: 'WEIGHT', y: 'HEIGHT', color: 'RACE', size: 'AGE', markers: 'DIS_POP', showRegressionLine: true,
+      showSpearmanCorrelation: true, showPearsonCorrelation: true, showMeanAbsoluteError: true, showRootMeanSquareError: true} as DG.IScatterPlotSettings);
   }
 
 
