@@ -1557,7 +1557,7 @@ export class PackageFunctions {
 
   @grok.decorators.demo({
     description: 'Activity Cliffs analysis on Macromolecules data',
-    demoPath: 'Bioinformatics | Activity Cliffs',
+    demoPath: 'Bioinformatics | Sequence Activity Cliffs',
     path: '/apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs',
   })
   static async demoBioActivityCliffs(): Promise<void> {
