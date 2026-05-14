@@ -416,7 +416,7 @@ segmented path targets a descendant.
 
 The pipeline validator controller has the following methods:
 
-#### `setValidation`
+#### `setValidation` (pipeline validator)
 
 ```
 setValidation(validation?: ValidationResult): void;
@@ -446,7 +446,7 @@ runtime metadata) is intentionally omitted so the outline is cheap to walk
 and stable across re-fires. The full type lives in
 `@datagrok-libraries/compute-api`; LSP will show the recursive shape.
 
-#### `debounce`
+#### `debounce` (pipeline validator)
 
 Same semantics as for regular `validator` links. Default is 250ms.
 
