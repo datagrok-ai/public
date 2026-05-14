@@ -76,7 +76,7 @@ types `static` and `dynamic`.
 
 #### `id`
 
-This id is used in [links](./links-spec) for paths.
+This id is used in [links](./link-query-language) for paths.
 
 #### `type`
 
@@ -156,7 +156,7 @@ _Optional_
 
 A list of workflow-scoped state slots, declared as an array of
 `{id: string}` entries. Each `id` becomes addressable from
-[LQL queries](./links-spec) at the same path level as a script IO — but it
+[LQL queries](./link-query-language) at the same path level as a script IO — but it
 lives on the workflow itself, not on any script. Use states for:
 
 - values populated once by the [`onInit`](./link-types#init-hook) hook (for
@@ -179,7 +179,7 @@ _Optional_
 A list of strings. The primary use case is for annotating that a
 step/workflow has a certain structural invariant, like the interface
 concept in programming. Could be matched in
-[links](./links-spec.mdx#tag-selectors).
+[links](./link-query-language-reference#selectors).
 
 #### `forceNavigate`
 
@@ -252,7 +252,7 @@ own card-based UI.
 
 #### `id` (Action step)
 
-Same as the [common `id`](#id) — used in [links](./links-spec) for paths.
+Same as the [common `id`](#id) — used in [links](./link-query-language) for paths.
 Must be unique inside its parent array.
 
 #### `type` (Action step)
@@ -277,7 +277,7 @@ Free-form description shown in the action step's UI card.
 _Optional_
 
 Same as workflow [tags](#tags) — a list of strings that links can match via
-[tag selectors](./links-spec#tag-selectors).
+[tag selectors](./link-query-language-reference#selectors).
 
 ### Additional stepTypes items options
 
@@ -318,7 +318,7 @@ provide additional configuration for scripts.
 
 #### `id` (Script node)
 
-This id is used in [links](./links-spec) for paths.
+This id is used in [links](./link-query-language) for paths.
 
 #### `nqName` (Script node)
 
@@ -508,7 +508,7 @@ deliberately.
 **Per-link review:**
 
 * **LQL paths resolve.** Every `from` / `to` / `base` segment matches a step
-  `id`, a script IO name, or a [tag](./links-spec#tag-selectors) that exists
+  `id`, a script IO name, or a [tag](./link-query-language-reference#selectors) that exists
   in the current configuration. Typos here silently prevent the link from
   ever firing.
 * **Restrictions are intentional.** When using `defaultRestrictions` or
