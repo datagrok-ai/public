@@ -360,8 +360,8 @@ export const RichFunctionView = Vue.defineComponent({
         sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name ?? '');
     };
 
-    Vue.watch(currentCall, () => {
-      visibleTabLabels.value = [...tabLabels.value];
+    Vue.watch(currentCall, (call) => {
+      visibleTabLabels.value = Utils.getFormOnly(call.func) ? [] : [...tabLabels.value];
     }, {immediate: true});
 
     ////
@@ -446,7 +446,7 @@ export const RichFunctionView = Vue.defineComponent({
             onClick={() => formHidden.value = !formHidden.value}
             class={'flex justify-between w-full'}
           >
-            <div> <IconFA name='sign-in' style={menuIconStyle}/> Show inputs </div>
+            <div> <IconFA name='sign-in' style={menuIconStyle}/> Show form </div>
             { !formHidden.value && <IconFA name='check'/>}
           </span>
           <span
@@ -454,7 +454,7 @@ export const RichFunctionView = Vue.defineComponent({
             class={'flex justify-between'}
           >
             <div> <IconFA name='sign-out'
-              style={menuIconStyle}/> Show all outputs </div>
+              style={menuIconStyle}/> Show all viewers </div>
             { visibleTabLabels.value.length === tabLabels.value.length && <IconFA name='check'/>}
           </span>
           { <span
