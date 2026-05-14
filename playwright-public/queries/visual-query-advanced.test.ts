@@ -73,8 +73,9 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
       if (!conn) {
         conn = DG.DataConnection.create(connName, {
           dataSource: 'Postgres',
-          server: 'northwind',
-          port: 5432,
+          // `host:port` concatenated — see ApiTests/dapi/connection.ts.
+          // Splitting leaves the connection "Unavailable".
+          server: 'northwind:5432',
           db: 'northwind',
           login: 'postgres',
           password: 'postgres',
@@ -131,7 +132,10 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
 
     const dialog = page.locator('.d4-dialog');
     await expect(dialog).toBeVisible({ timeout: 15_000 });
-    const country = dialog.locator('input[name$="---Country"]');
+    // `input[name$="---Country"]` was the dev fixture's input-host suffix
+    // pattern; in CI (and on newer builds) it's a plain input wrapped by a
+    // "Country" label. Find it by accessible name instead.
+    const country = dialog.getByLabel('Country');
     await expect(country).toHaveValue('France', { timeout: 10_000 });
     await dialog.locator('[name="button-OK"]').click();
 

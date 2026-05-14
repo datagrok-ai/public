@@ -88,8 +88,12 @@ async function ensureVisualQueryFixture(page: import('@playwright/test').Page): 
     if (!conn) {
       conn = DG.DataConnection.create(connName, {
         dataSource: 'Postgres',
-        server: 'northwind',
-        port: 5432,
+        // Concatenated `host:port` is what DG.DataConnection.create expects —
+        // see ApiTests/dapi/connection.ts:9-11 and the polymorphic-save
+        // sample. Splitting into separate `server` + `port` leaves the
+        // connection in an "Unavailable" state because grok_connect can't
+        // resolve the endpoint.
+        server: 'northwind:5432',
         db: 'northwind',
         login: 'postgres',
         password: 'postgres',
@@ -203,7 +207,11 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
     await clickMenuItemExact(page, 'Run');
     const dialog = page.locator('.d4-dialog');
     await expect(dialog).toBeVisible({ timeout: 15_000 });
-    const countryInDialog = dialog.locator('input[name$="---Country"]');
+    // Find the Country input by its accessible label — see the
+    // visual-query-advanced.test.ts equivalent fix for the rationale
+    // (`input[name$="---Country"]` was a dev-fixture wrapper pattern that
+    // doesn't match on newer builds / CI).
+    const countryInDialog = dialog.getByLabel('Country');
     await expect(countryInDialog).toHaveValue('France', { timeout: 10_000 });
     await dialog.locator('[name="button-OK"]').click();
 
