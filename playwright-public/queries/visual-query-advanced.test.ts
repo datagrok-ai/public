@@ -109,7 +109,10 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
 
     await goHome(page);
     await expandDbProvider(page, PROVIDER);
-    await expandDbConnection(page, PROVIDER, POSTGRES_CONNECTION);
+    // Expand the FIXTURE_QUERY_CONN (where the fixture lives) — on dev that
+    // matches POSTGRES_CONNECTION but in CI we provision the fixture on a
+    // separate `pw_visual_postgres` to survive connections/05-delete.
+    await expandDbConnection(page, PROVIDER, FIXTURE_QUERY_CONN);
 
     // Sanity: the fixture is still published on the server. On the ephemeral
     // CI Datlas the `postgres customers in @country` query isn't provisioned

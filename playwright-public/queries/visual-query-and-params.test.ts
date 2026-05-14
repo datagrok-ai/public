@@ -183,9 +183,12 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
     test.setTimeout(120_000);
     await goHome(page);
 
-    // Navigate to the pre-existing `postgres customers in @country` query (public fixture).
+    // Navigate to the pre-existing `postgres customers in @country` query
+    // (provisioned in beforeAll on PARAM_QUERY_CONN — `pw_visual_postgres` in
+    // CI / POSTGRES_CONNECTION on dev; either way, expand the connection
+    // that actually hosts the fixture).
     await expandDbProvider(page, PROVIDER);
-    await expandDbConnection(page, PROVIDER, POSTGRES_CONNECTION);
+    await expandDbConnection(page, PROVIDER, PARAM_QUERY_CONN);
 
     // Sanity-check the query is still published on public. On the ephemeral
     // CI Datlas there is no Northwind fixture — skip cleanly when the query
