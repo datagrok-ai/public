@@ -1432,7 +1432,8 @@ export class PackageFunctions {
 
     if (resultDf) {
       for (const resultCol of resultDf.columns) {
-        resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${molecules.name})`);
+        if (resultCol.semType !== DG.SEMTYPE.MOLECULE)
+          resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${molecules.name})`);
         table.columns.add(resultCol.clone());
       }
     }

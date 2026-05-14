@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {HIGHLIGHT_BY_SCAFFOLD_TAG} from '../constants';
-import {FAMILY_INFO} from '../widgets/pharmacophore-features';
+import {FAMILY_INFO, FAMILY_PRIORITY} from '../widgets/pharmacophore-features';
 import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
 
 export type PharmFamilyId = 'Donor' | 'Acceptor' | 'Hydrophobic' | 'Aromatic' | 'Positive' | 'Negative' | 'Halogen Bond';
@@ -62,11 +62,18 @@ export function buildPharmacophoreHighlightColumn(
     if (!letter || !smartsVal) continue;
     const familyId = FAMILY_LETTER_TO_ID[letter];
     const info = FAMILY_INFO[letter];
-    if (familyId && info && familySet[familyId])
-      scaffolds.push({color: info.color, molecule: smartsVal});
+    if (familyId && info && familySet[familyId]) {
+      // Renderer sorts by `priority` descending then iterates 0→N, with each
+      // _addColorsToBondsAndAtoms overwriting prior colors on overlapping atoms,
+      // so the LAST scaffold processed wins. Negate FAMILY_PRIORITY so that the
+      // widget's "higher number wins" semantic carries through: e.g. Aromatic
+      // (priority 2) outranks Hydrophobic (1), matching the context panel.
+      scaffolds.push({color: info.color, molecule: smartsVal, priority: -FAMILY_PRIORITY[letter]});
+    }
   }
   const clone = moleculeCol.clone();
-  clone.name = 'Pharmacophore';
+  const baseName = `Pharmacophore (${moleculeCol.name})`;
+  clone.name = moleculeCol.dataFrame?.columns.getUnusedName(baseName) ?? baseName;
   clone.semType = DG.SEMTYPE.MOLECULE;
   clone.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(scaffolds));
   return clone;

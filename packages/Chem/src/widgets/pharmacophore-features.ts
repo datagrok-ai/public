@@ -26,7 +26,7 @@ export const FAMILY_INFO: {[key: string]: {name: string; color: string}} = {
 };
 
 // Priority for overlapping atoms (higher = takes precedence)
-const FAMILY_PRIORITY: {[key: string]: number} = {
+export const FAMILY_PRIORITY: {[key: string]: number} = {
   'P': 7,
   'N': 6,
   'D': 5,
