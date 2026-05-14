@@ -3,6 +3,7 @@
 ## v.next
 
 * GROK-20108: Docker API: Throw a clear error when the `chem-chem` container is not available, instead of `Cannot read properties of undefined (reading 'id')`
+* Chem: Guard `ChemSpaceEditor` and `ActivityCliffsEditor` against null current table / missing Molecule column to avoid `NullError: method not found: 'dart' on null` from `DimensionalityReductionEditor.getColInput`
 
 ## 1.17.8 (2026-05-12)
 
