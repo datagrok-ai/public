@@ -699,6 +699,52 @@ category('ComputeUtils: Driver links matching', async () => {
     await snapshotCompare(matchInfos, 'Links expanding deep base path');
   });
 
+  test('same(@base) without ids matches identically to same(@base, ids)', async () => {
+    const buildConfig = (fromSpec: string, toSpec: string): PipelineConfiguration => ({
+      id: 'pipeline1',
+      type: 'static',
+      steps: [{
+        id: 'pipeline1',
+        type: 'sequential',
+        stepTypes: [
+          {id: 'stepAdd', nqName: 'LibTests:TestAdd2'},
+          {id: 'stepMul', nqName: 'LibTests:TestMul2'},
+        ],
+        initialSteps: [
+          {id: 'stepAdd'},
+          {id: 'stepMul'},
+          {id: 'stepAdd'},
+          {id: 'stepMul'},
+        ],
+      }],
+      links: [{
+        id: 'link1',
+        from: fromSpec,
+        to: toSpec,
+        base: 'base:pipeline1/expand(stepAdd)',
+      }],
+    });
+    const runMatch = async (fromSpec: string, toSpec: string) => {
+      const pconf = await getProcessedConfig(buildConfig(fromSpec, toSpec));
+      const tree = StateTree.fromPipelineConfig({config: pconf});
+      await tree.init().toPromise();
+      const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
+      const info = links.map((link) => matchLink(tree, [], link));
+      cleanMatchInfos(info);
+      // Strip spec — it parses to different ASTs (with vs without ids) and isn't part of the matching outcome.
+      return info.map((linkInfos) => linkInfos?.map(({spec: _spec, ...rest}: any) => rest));
+    };
+    const withIds = await runMatch(
+      'in1:same(@base,pipeline1)/same(@base,stepAdd)/res',
+      'out1:same(@base,pipeline1)/after+(@base,stepMul)/a',
+    );
+    const withoutIds = await runMatch(
+      'in1:same(@base)/same(@base)/res',
+      'out1:same(@base)/after+(@base,stepMul)/a',
+    );
+    expectDeepEqual(withoutIds, withIds);
+  });
+
   test('Links not matching', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',
@@ -1341,5 +1387,40 @@ category('ComputeUtils: Driver link path shorthands', async () => {
         expectDeepEqual(p[0].segments, []);
       }
     }
+  });
+
+  test('same(@base) parses with empty ids', async () => {
+    const [parsed] = parseLinkIO('in1:same(@base)/step1/res', 'input');
+    expectDeepEqual(parsed.segments[0], {type: 'selector', selector: 'same', ids: [], stopIds: [], ref: 'base'});
+  });
+
+  test('#same(@base) parses with empty tags', async () => {
+    const [parsed] = parseLinkIO('in1:#same(@base)/res', 'input');
+    expectDeepEqual(parsed.segments[0], {type: 'tag', selector: 'same', tags: [], ref: 'base'});
+  });
+
+  test('same(@base, x|y) still parses with ids', async () => {
+    const [parsed] = parseLinkIO('in1:same(@base,x|y)/step1/res', 'input');
+    expectDeepEqual(parsed.segments[0], {type: 'selector', selector: 'same', ids: ['x', 'y'], stopIds: [], ref: 'base'});
+  });
+
+  test('Reject before(@base) without ids', async () => {
+    expectThrow('in1:before(@base)/res');
+  });
+
+  test('Reject after(@base) without ids', async () => {
+    expectThrow('in1:after(@base)/res');
+  });
+
+  test('Reject before*(@base) without ids', async () => {
+    expectThrow('in1:before*(@base)/res');
+  });
+
+  test('Reject after+(@base) without ids', async () => {
+    expectThrow('in1:after+(@base)/res');
+  });
+
+  test('Reject #before(@base) without tags', async () => {
+    expectThrow('in1:#before(@base)/res');
   });
 });

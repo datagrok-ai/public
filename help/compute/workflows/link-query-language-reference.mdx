@@ -39,7 +39,7 @@ A bare identifier in a segment is shorthand for `first(identifier)`.
 | `last`      | plain       | any path        | Last direct descendant whose id is in the OR-list.<br/>*e.g.* `last(script1\|script2)` |
 | `all`       | plain       | non-`base`      | Every direct descendant whose id is in the OR-list (one query → many hits).<br/>*e.g.* `all(metric)` |
 | `expand`    | plain       | **`base` only** | Like `all`, but every match produces a separate link instance.<br/>*e.g.* `expand(workflow1\|workflow2)` |
-| `same`      | reference   | non-`base`      | The same node the named base query matched at this segment.<br/>*e.g.* `same(@base,script1)` |
+| `same`      | reference   | non-`base`      | The same node `@ref` matched at this segment. Id-list is optional — pass it only to filter down when `@ref` matched a wider set.<br/>*e.g.* `same(@base)` or `same(@base, script1)` |
 | `before`    | reference   | non-`base`      | First preceding node whose id matches, scanning backward from the base.<br/>*e.g.* `before(@base,prepData)` |
 | `before*`   | reference   | non-`base`      | Every preceding node whose id matches.<br/>*e.g.* `before*(@base,prepData)` |
 | `before+`   | reference   | non-`base`      | Only the **immediately adjacent** preceding sibling, if its id matches.<br/>*e.g.* `before+(@base,prepData)` |
@@ -108,8 +108,8 @@ every matching workflow:
 ```
 {
   base: "base:expand(workflowA|workflowB)/expand(step)",
-  from: "in:same(@base,workflowA|workflowB)/same(@base,step)/result",
-  to:   "out:same(@base,workflowA|workflowB)/after+(@base,nextStep)/value"
+  from: "in:same(@base)/same(@base)/result",
+  to:   "out:same(@base)/after+(@base, nextStep)/value"
 }
 ```
 
@@ -165,8 +165,17 @@ helper(optional):myworkflow/optionalStep/output
 {
   base: "base:expand(section)",
   from: "in:before(@base, dataPrep, resetStep)/output",
-  to:   "out:same(@base, section)/result"
+  to:   "out:same(@base)/result"
 }
+```
+
+**Advanced: `same(@ref, ids)` as a filter.** When the base matches a wider
+set than the link should accept, pass an id-list to `same` to narrow it. For
+`base: expand(workflowA|workflowB|workflowC)` and a link that only applies to
+the first two:
+
+```
+from: "in:same(@base, workflowA|workflowB)/.../result"
 ```
 
 ### Gotchas

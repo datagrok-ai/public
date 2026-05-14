@@ -62,8 +62,8 @@ Here is a link definition that uses `expand` plus reference selectors:
 {
   id: "mylink1",
   base: "base:expand(workflow1|workflow2)/expand(script1)",
-  from: "in:same(@base,workflow1|workflow2)/same(@base,script1)/output1",
-  to:   "out:same(@base,workflow1|workflow2)/after+(@base,script2)/input1"
+  from: "in:same(@base)/same(@base)/output1",
+  to:   "out:same(@base)/after+(@base,script2)/input1"
 }
 ```
 
@@ -74,15 +74,25 @@ Assuming `mylink1` is defined inside `myworkflow`:
 - `expand(workflow1|workflow2)` matches both workflows; `expand(script1)`
   matches the two `script1` nodes inside each. Four base matches in total
   (red borders in the diagram).
-- For every base match, `from` resolves `same(@base, workflow1|workflow2)`
-  and `same(@base, script1)` back to the same nodes the base picked, then
-  takes `output1` on that script.
+- For every base match, `from` resolves `same(@base)` (twice) back to the
+  same nodes the base picked at each segment, then takes `output1` on that
+  script.
 - `to` resolves the same workflow, then `after+(@base, script2)` — the
   immediately adjacent `script2` after the base's `script1` — then `input1`.
 
 Four base matches → four `mylink1` instances. If the trailing `script2` in
 either workflow were removed, that last `script1` would have no `after+` match
 and the count would drop to three.
+
+Every `@base` reference in `from`/`to` is positionally aligned with the
+corresponding segment of `base`:
+
+![Segment alignment of @base](pics/segment_alignment.svg)
+
+`before`, `after`, and their `*` / `+` variants still take their own id-list
+— that's where directional filtering happens. `same(@base)` accepts an
+optional id-list as a narrowing filter (see
+[reference](./link-query-language-reference#patterns)).
 
 The full list of reference selectors and their modifiers (`*` for "match all
 in the direction", `+` for "immediately adjacent only") lives in the
