@@ -1,5 +1,9 @@
 # Chem changelog
 
+## v.next
+
+* GROK-20108: Docker API: Throw a clear error when the `chem-chem` container is not available, instead of `Cannot read properties of undefined (reading 'id')`
+
 ## 1.17.8 (2026-05-12)
 
 * Scaffold tree: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
