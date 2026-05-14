@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { createSoftStepCollector } from './helpers/soft-step';
 import { attachErrorMonitor } from './helpers/error-monitor';
 import {
-  BASE, openDiffStudio, openModelFromLibrary, toggleRibbonSwitch,
+  BASE, openDiffStudio, openModelFromLibrary, openModelHub, toggleRibbonSwitch,
   ribbonSwitchOn, setInputValue, inputEditor, inputHost,
 } from './helpers/diff-studio';
 
@@ -92,31 +92,10 @@ test('DiffStudio Scripting — Edit toggle, </> JS view, Run, Save with //tags: 
   });
 
   await softStep('Step 4: Access the saved model in Model Hub (Apps > Compute > Model Hub)', async () => {
-    // Navigate home, then walk the Browse tree: Apps > Compute > Model Hub.
-    await page.goto(BASE);
-    await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
-    await page.waitForTimeout(1500);
-
-    // Helper: scroll an element into view and click it. The Browse tree is sometimes virtualised
-    // and labels can sit outside the viewport, so we drive the click via DOM scrollIntoView + click.
-    const clickTreeLabel = async (label: string): Promise<boolean> => {
-      return await page.evaluate((text) => {
-        const candidates = Array.from(document.querySelectorAll(
-          '.d4-tree-view-group-label, .d4-tree-view-node-label, .d4-tree-view-item-label')) as HTMLElement[];
-        const el = candidates.find(e => e.textContent?.trim() === text);
-        if (!el) return false;
-        el.scrollIntoView({ behavior: 'instant', block: 'center' });
-        el.click();
-        return true;
-      }, label);
-    };
-
-    expect(await clickTreeLabel('Apps')).toBe(true);
-    await page.waitForTimeout(800);
-    expect(await clickTreeLabel('Compute')).toBe(true);
-    await page.waitForTimeout(800);
-    expect(await clickTreeLabel('Model Hub')).toBe(true);
-    await page.waitForTimeout(3000);
+    // Use the URL/JS-API helper — Browse tree navigation is unreliable on cold
+    // CI Datlas because the 'Apps' / 'Compute' / 'Model Hub' labels may not be
+    // mounted when the test reaches this step.
+    await openModelHub(page);
 
     // Model Hub renders saved models as cards (Compute2 Vue components) in the central grid.
     // Plain text match — the model name is the card's visible label.

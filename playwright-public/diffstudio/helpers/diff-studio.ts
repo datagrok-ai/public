@@ -77,6 +77,47 @@ export async function resetShell(page: Page): Promise<void> {
   await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
 }
 
+/**
+ * Open the Compute2 Model Hub view. The Compute2 package registers
+ * the catalog under `browsePath: 'Compute'`, `name: 'Model Hub'`,
+ * `segment: 'Modelhub'`. The canonical UI path (Apps → Compute → Model Hub
+ * in the Browse tree) requires the tree to be fully expanded, which is
+ * unreliable on cold CI Datlas — `clickTreeLabel('Apps')` returns false
+ * if the node is collapsed or the label hasn't mounted yet.
+ *
+ * Strategy:
+ *  1. Navigate to `/apps/Compute2/Modelhub` — matches `handleInitialUri`
+ *     in compute-utils/model-catalog (it scans pathname segments for the
+ *     registered `segment` case-insensitively).
+ *  2. Fall back to invoking `Compute2:modelCatalog` via the JS API. That
+ *     call routes through `startModelCatalog`, which finds-or-creates the
+ *     Model Hub view.
+ * Both code paths converge on `ModelCatalogView` rendering the cards grid.
+ */
+export async function openModelHub(page: Page): Promise<void> {
+  await page.goto(`${BASE}/apps/Compute2/Modelhub`);
+  await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
+  // Card view container — populated once the model list query resolves.
+  const ready = await page.locator('.model-catalog-view, .grok-gallery-grid, .grok-card').first()
+    .waitFor({ state: 'visible', timeout: 20_000 }).then(() => true).catch(() => false);
+  if (ready) {
+    await page.waitForTimeout(1500);
+    return;
+  }
+  // Fallback: programmatic open via JS API (matches the Apps menu entry).
+  await page.evaluate(async () => {
+    const grok = (window as any).grok;
+    try {
+      await grok.functions.eval('Compute2:modelCatalog');
+    } catch {
+      // last-ditch: ignore — visibility expectation below will report the failure
+    }
+  });
+  await page.locator('.model-catalog-view, .grok-gallery-grid, .grok-card').first()
+    .waitFor({ state: 'visible', timeout: 20_000 });
+  await page.waitForTimeout(1500);
+}
+
 /** Click a ribbon item by its visible text label. */
 export async function clickRibbonText(page: Page, text: string): Promise<void> {
   const item = page.locator('.d4-ribbon-item', { hasText: text }).first();

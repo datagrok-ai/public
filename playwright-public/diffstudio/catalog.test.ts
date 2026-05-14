@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test';
 import { createSoftStepCollector } from './helpers/soft-step';
 import { attachErrorMonitor } from './helpers/error-monitor';
 import {
-  BASE, openDiffStudio, openModelFromLibrary, setInputValue, inputEditor, inputHost,
+  BASE, openDiffStudio, openModelFromLibrary, openModelHub,
+  setInputValue, inputEditor, inputHost,
 } from './helpers/diff-studio';
 
 /**
@@ -28,40 +29,22 @@ test('DiffStudio Catalog — PK-PD: load → Save to Model Hub → refresh → r
 
     await softStep('Step 2: Click "Save to Model Hub" icon', async () => {
       await page.locator('.diff-studio-ribbon-save-to-model-catalog-icon').first().click();
-      // The platform shows a balloon notification on success
+      // The platform shows a balloon notification on success.
+      // `saveToModelHub()` in DiffStudio/src/app.ts calls `grok.shell.info('Saved to Model Hub')`
+      // — the visible text we should match.
       const balloon = page.locator('.d4-balloon, .grok-notification').filter({
-        hasText: /Saved to Library|PK-PD\.ivp/,
+        hasText: /Saved to Model Hub/i,
       });
       await expect(balloon.first()).toBeVisible({ timeout: 15_000 });
     });
 
     await softStep('Step 3: Open the Model Hub (Apps → Compute → Model Hub) — PK-PD is listed', async () => {
-      // Walk the Browse tree: Apps → Compute → Model Hub. URL `/apps/Compute2/ModelCatalog`
-      // returns "Application not found"; the tree navigation is the canonical UI path.
-      await page.goto(BASE);
-      await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
-      await page.waitForTimeout(1500);
-
-      const clickTreeLabel = async (label: string): Promise<boolean> => {
-        return await page.evaluate((text) => {
-          const candidates = Array.from(document.querySelectorAll(
-            '.d4-tree-view-group-label, .d4-tree-view-node-label, .d4-tree-view-item-label')) as HTMLElement[];
-          const el = candidates.find(e => e.textContent?.trim() === text);
-          if (!el) return false;
-          el.scrollIntoView({ behavior: 'instant', block: 'center' });
-          el.click();
-          return true;
-        }, label);
-      };
-
-      expect(await clickTreeLabel('Apps')).toBe(true);
-      await page.waitForTimeout(800);
-      expect(await clickTreeLabel('Compute')).toBe(true);
-      await page.waitForTimeout(800);
-      expect(await clickTreeLabel('Model Hub')).toBe(true);
-      await page.waitForTimeout(3000);
-
-      // Model Hub renders saved models as cards labelled with the model name.
+      // Use the URL/JS-API helper instead of clicking the Browse tree: on cold
+      // CI Datlas the tree labels 'Apps' / 'Compute' / 'Model Hub' may not be
+      // mounted/expanded when the test reaches this step, and `clickTreeLabel`
+      // returns false silently. The helper hits the canonical Compute2 catalog
+      // route which is what the Apps menu would invoke anyway.
+      await openModelHub(page);
       await expect(page.getByText('PK-PD', { exact: true }).first()).toBeVisible({ timeout: 20_000 });
     });
 

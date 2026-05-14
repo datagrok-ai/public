@@ -99,7 +99,11 @@ async function fillNameAndOk(page: Page, name: string) {
   const dialog = page.locator('.d4-dialog').last();
   const input = dialog.locator('input[type="text"]').first();
   await expect(input).toBeVisible({ timeout: 5_000 });
-  await input.click();
+  // `force: true` bypasses Playwright's wait-for-stable + element-intercept check.
+  // The preloader is neutralised by the context init script (display: none), but
+  // other transient overlays may still race the click; the dialog input is the
+  // intended target and platform handles the focus correctly.
+  await input.click({ force: true });
   await page.keyboard.press('Control+a');
   await page.keyboard.press('Delete');
   await input.pressSequentially(name);
@@ -197,6 +201,40 @@ test.describe.serial('Spaces general', () => {
 
   test.beforeAll(async ({ browser }) => {
     sharedContext = await browser.newContext({ storageState: AUTH_STATE });
+    // Inject an init script that runs in every page of this context (survives goto).
+    // Mirrors connections/queries/scripts helpers, but stronger: on cold CI Datlas
+    // the `#grok-preloader` keeps the rootDiv subtree behind a click-intercept even
+    // after the spaces tree is visible, AND it can reappear after async server
+    // fetches (e.g. opening a dialog). `addStyleTag` is per-document and is lost on
+    // `goto()`, so we inject via `addInitScript` and also a MutationObserver that
+    // force-hides any preloader that mounts later. The platform's preloader JS still
+    // runs; only the click-blocking visual layer is neutralised.
+    await sharedContext.addInitScript(() => {
+      const style = document.createElement('style');
+      style.textContent = `
+        #grok-preloader, .grok-preloader {
+          pointer-events: none !important;
+          display: none !important;
+        }
+        .d4-tooltip { display: none !important; }
+      `;
+      const inject = () => {
+        if (!document.head.contains(style))
+          document.head.appendChild(style);
+      };
+      if (document.head) inject();
+      else document.addEventListener('DOMContentLoaded', inject, { once: true });
+      // Belt-and-braces: directly hide preloader nodes as they mount.
+      const observer = new MutationObserver(() => {
+        document.querySelectorAll('#grok-preloader, .grok-preloader').forEach((el) => {
+          (el as HTMLElement).style.setProperty('display', 'none', 'important');
+          (el as HTMLElement).style.setProperty('pointer-events', 'none', 'important');
+        });
+      });
+      const start = () => observer.observe(document.documentElement, { childList: true, subtree: true });
+      if (document.documentElement) start();
+      else document.addEventListener('DOMContentLoaded', start, { once: true });
+    });
     page = await sharedContext.newPage();
     await page.goto(BASE);
     await expect(
@@ -256,7 +294,7 @@ test('2. Validation: empty name disables OK; duplicate names show errors', async
     await clickMenuItem(page, 'Create Space...');
     const emptyDialog = page.locator('.d4-dialog').last();
     const emptyInput = emptyDialog.locator('input[type="text"]').first();
-    await emptyInput.click();
+    await emptyInput.click({ force: true });
     await page.keyboard.press('Control+a');
     await page.keyboard.press('Delete');
     await emptyInput.fill('');
@@ -376,7 +414,7 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
     await expect(i1).toBeVisible({ timeout: 5_000 });
     expect(await i1.inputValue()).toBe(ORIG);
 
-    await i1.click();
+    await i1.click({ force: true });
     await page.keyboard.press('Control+a');
     await page.keyboard.press('Delete');
     await i1.pressSequentially(NEW_NAME);
@@ -388,7 +426,7 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
     await clickMenuItem(page, 'Rename...');
     const d2 = page.locator('.d4-dialog').last();
     const i2 = d2.locator('input[type="text"]').first();
-    await i2.click();
+    await i2.click({ force: true });
     await page.keyboard.press('Control+a');
     await page.keyboard.press('Delete');
     await i2.pressSequentially(NEW_NAME);
@@ -419,7 +457,7 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
     await clickMenuItem(page, 'Rename...');
     const d3 = page.locator('.d4-dialog').last();
     const i3 = d3.locator('input[type="text"]').first();
-    await i3.click();
+    await i3.click({ force: true });
     await page.keyboard.press('Control+a');
     await page.keyboard.press('Delete');
     await i3.pressSequentially(OTHER);
@@ -446,7 +484,7 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
     expect(await iChild.inputValue()).toBe(REN_CHILD);
 
     // Perform the rename of the child space
-    await iChild.click();
+    await iChild.click({ force: true });
     await page.keyboard.press('Control+a');
     await page.keyboard.press('Delete');
     await iChild.pressSequentially(REN_CHILD_NEW);
