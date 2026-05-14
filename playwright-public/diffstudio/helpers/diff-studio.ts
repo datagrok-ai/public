@@ -97,7 +97,10 @@ export async function openModelHub(page: Page): Promise<void> {
   await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
   await page.evaluate(async () => {
     const grok = (window as any).grok;
-    await grok.functions.call('Compute2:modelCatalog');
+    // Platform registers app-decorator functions under PascalCase
+    // (see Compute2/src/package-api.ts: `grok.functions.call('Compute2:ModelCatalog', {})`).
+    // The lowercase `modelCatalog` is just the TypeScript identifier.
+    await grok.functions.call('Compute2:ModelCatalog', {});
   });
   await page.locator('.model-catalog-view, .grok-gallery-grid, .grok-card').first()
     .waitFor({ state: 'visible', timeout: 30_000 });
