@@ -135,11 +135,8 @@ export class DemoView extends DG.ViewBase {
 
   private _tagNewDemoViews(viewsBefore: Set<DG.View>, funcName: string): void {
     for (const v of grok.shell.views) {
-      if (!viewsBefore.has(v)) {
-        try {
-          v.temp['demoApp'] = funcName;
-        } catch (_) {}
-      }
+      if (!viewsBefore.has(v))
+        v.temp['demoApp'] = funcName;
     }
   }
 
@@ -383,6 +380,7 @@ export class DemoView extends DG.ViewBase {
     view.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid grok-gallery-grid-view-demo-app'));
     grok.shell.addView(view);
     this._closePrevDemoViews();
+    view.temp['demoApp'] = `_categoryView:${viewName}`;
     this.currentView = view;
     this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
   }
