@@ -327,7 +327,6 @@ export class DemoView extends DG.ViewBase {
 
   nodeView(viewName: string, path: string): void {
     this._closeDemoScript();
-    const prevView = this.currentView;
     this.currentView = null;
 
     const view = DG.View.create();
@@ -383,7 +382,7 @@ export class DemoView extends DG.ViewBase {
     const searchInput = this._createSearchInput(directionFuncs, tree);
     view.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid grok-gallery-grid-view-demo-app'));
     grok.shell.addView(view);
-    prevView?.close();
+    this._closePrevDemoViews();
     this.currentView = view;
     this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
   }
