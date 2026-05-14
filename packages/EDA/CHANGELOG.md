@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.5.3 (2026-05-14)
+
+Fixed hints in the multivariate analysis demo
+
 ## 1.5.2 (2026-04-24)
 
 Fix the column_list issue in PCA
