@@ -96,13 +96,16 @@ async function ensureVisualQueryFixture(page: import('@playwright/test').Page): 
       });
       conn = await grok.dapi.connections.save(conn);
     }
-    // Ensure the parameterised fixture query exists on it.
+    // Ensure the parameterised fixture query exists on it. The canonical
+    // JS API path for building a DB query is `dc.query(name, sql)`
+    // (see ApiTests/dapi/connection.ts), not a missing
+    // `DG.DataQuery.create`. `q.newId()` mints a fresh server-side id.
     const existingQ = await grok.dapi.queries
       .filter(`friendlyName = "${qName}"`).list();
     if (existingQ.length > 0) return;
-    const q = DG.DataQuery.create(qName);
-    q.connection = conn;
-    q.query = '--input: string country = "France"\nselect * from customers where country = @country';
+    const q = conn.query(qName,
+      '--input: string country = "France"\nselect * from customers where country = @country');
+    q.newId();
     await grok.dapi.queries.save(q);
   }, { qName: PARAM_QUERY_FRIENDLY_NAME, connName: PARAM_QUERY_CONN });
 }

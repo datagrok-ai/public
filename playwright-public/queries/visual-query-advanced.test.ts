@@ -84,9 +84,13 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
       const existingQ = await grok.dapi.queries
         .filter(`friendlyName = "${qName}"`).list();
       if (existingQ.length > 0) return;
-      const q = DG.DataQuery.create(qName);
-      q.connection = conn;
-      q.query = '--input: string country = "France"\nselect * from customers where country = @country';
+      // `dc.query(name, sql)` is the canonical JS API path for building a
+      // DB query (see ApiTests/dapi/connection.ts) — `DG.DataQuery.create`
+      // doesn't exist on the surface. `q.newId()` mints a fresh server-side
+      // id so dapi.queries.save persists it as a new entity.
+      const q = conn.query(qName,
+        '--input: string country = "France"\nselect * from customers where country = @country');
+      q.newId();
       await grok.dapi.queries.save(q);
     }, { qName: FIXTURE_QUERY_FN, connName: FIXTURE_QUERY_CONN });
     await ctx.close();
