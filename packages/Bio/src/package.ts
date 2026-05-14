@@ -236,6 +236,15 @@ export class PackageFunctions {
 
   @grok.decorators.editor({tags: ['editor']})
   static SequenceSpaceEditor(call: DG.FuncCall) {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) {
+      grok.shell.error('Sequence Space requires an open table with a Macromolecule column');
+      return;
+    }
+    if (df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) == null) {
+      grok.shell.error('Current table does not contain a Macromolecule column');
+      return;
+    }
     const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
     const dialog = ui.dialog({title: 'Sequence Space'})
       .add(funcEditor.getEditor())
@@ -258,6 +267,15 @@ export class PackageFunctions {
 
   @grok.decorators.editor({tags: ['editor']})
   static SeqActivityCliffsEditor(call: DG.FuncCall) {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) {
+      grok.shell.error('Sequence Activity Cliffs requires an open table with a Macromolecule column');
+      return;
+    }
+    if (df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) == null) {
+      grok.shell.error('Current table does not contain a Macromolecule column');
+      return;
+    }
     const funcEditor = new ActivityCliffsEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
     const dialog = ui.dialog({title: 'Activity Cliffs'})
       .add(funcEditor.getEditor())
