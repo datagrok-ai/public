@@ -78,14 +78,14 @@ export async function getPharmacophoreFeaturesByFamilies(
   const rdkitService = await chemCommonRdKit.getRdKitService();
   const featuresDf = await grok.data.loadTable(
     chemCommonRdKit.getRdKitWebRoot() + 'files/pharmacophore-features.csv');
-  const progress = DG.TaskBarProgressIndicator.create('Detecting pharmacophore features...');
+  const progress = DG.TaskBarProgressIndicator.create('Detecting pharmacophores...');
   try {
     const resultDf = await runPharmacophoreDetection(molecules, familySet, featuresDf, rdkitService);
     resultDf.columns.insert(buildPharmacophoreHighlightColumn(molecules, familySet, featuresDf), 0);
     return resultDf;
   } catch (e) {
-    grok.shell.error('Pharmacophore feature detection failed');
-    grok.log.error(`Pharmacophore feature detection failed: ${e}`);
+    grok.shell.error('Pharmacophore detection failed');
+    grok.log.error(`Pharmacophore detection failed: ${e}`);
   } finally {
     progress.close();
   }
