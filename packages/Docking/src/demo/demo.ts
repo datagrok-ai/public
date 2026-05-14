@@ -19,7 +19,7 @@ export function showHelpPanel(): void {
 
 export async function _demoDocking(): Promise<void> {
   await demo('docking', ['AutoDock poses']);
-  showHelpPanel();
+  // showHelpPanel();
 }
 
 async function demo(type: 'docking', columnNames: string[]): Promise<void> {
