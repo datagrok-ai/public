@@ -2989,7 +2989,9 @@ export class PackageFunctions {
     const loader = ui.loader();
     resultDiv.appendChild(loader);
 
-    const dataFrame = semValue.cell.dataFrame;
+    const dataFrame = semValue?.cell?.dataFrame;
+    if (!dataFrame)
+      return DG.Widget.fromRoot(ui.divText('MPO requires a molecule selected from a table.'));
     const profiles = await MpoProfileManager.load();
     const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 

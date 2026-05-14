@@ -3,6 +3,7 @@
 ## v.next
 
 * GROK-20108: Docker API: Throw a clear error when the `chem-chem` container is not available, instead of `Cannot read properties of undefined (reading 'id')`
+* MPO widget: Guard against a `SemanticValue` without a backing cell to avoid `Cannot read properties of null (reading 'dataFrame')` when the property panel binds to a free-floating Molecule context
 
 ## 1.17.8 (2026-05-12)
 
