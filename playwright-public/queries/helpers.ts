@@ -94,7 +94,11 @@ export async function expandDbProvider(page: Page, provider: string): Promise<vo
 
 /** Expand an individual DB connection (e.g. Postgres > Northwind) to show its saved queries. */
 export async function expandDbConnection(page: Page, provider: string, connection: string): Promise<void> {
-  await expandTreeNode(page, `tree-Databases---${provider.replace(/ /g, '-')}---${connection.replace(/ /g, '-')}`);
+  // Mirror connections/helpers.ts:connectionNodeName — the platform's
+  // tree-node `name=` attribute normalises BOTH spaces and underscores to
+  // `-`, so e.g. `pw_visual_postgres` is rendered as `pw-visual-postgres`.
+  await expandTreeNode(page,
+    `tree-Databases---${provider.replace(/ /g, '-')}---${connection.replace(/_/g, '-').replace(/ /g, '-')}`);
 }
 
 /** Click the connection label in the Browse tree to open its preview/queries view. */
