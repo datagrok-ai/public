@@ -412,7 +412,8 @@ export function pdbFileInfoPanel(molecule: DG.SemanticValue) : any {
   return PackageFunctions.pdbFileInfoPanel(molecule);
 }
 
-//input: column mol3DCol 
+//name: Link With Molecule Column
+//input: column mol3DCol { semType: Molecule3D }
 //output: widget result
 export function mol3dAtomPickerLinkWidget(mol3DCol: DG.Column) : any {
   return PackageFunctions.mol3dAtomPickerLinkWidget(mol3DCol);
