@@ -264,7 +264,6 @@
               "showSelectedRowsLigands": false,
               "showCurrentRowLigand": true,
               "showMouseOverRowLigand": true,
-              "representation": "cartoon",
               "zoom": true,
               "showBindingSite": false,
               "bindingSiteRadius": 5,
