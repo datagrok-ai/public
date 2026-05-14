@@ -24,29 +24,29 @@
   <!-- script1 #1 (base match) -->
   <rect x="120" y="90" width="240" height="50" rx="4" class="base"/>
   <text x="240" y="121" text-anchor="middle" class="label">script1</text>
-  <text x="368" y="121" class="io">Output1</text>
+  <text x="368" y="108" class="io">Output1</text>
 
   <!-- script2 #1 (to match) -->
   <rect x="120" y="180" width="240" height="50" rx="4" class="to"/>
   <text x="240" y="211" text-anchor="middle" class="label">script2</text>
-  <text x="112" y="211" text-anchor="end" class="io">Input1</text>
+  <text x="112" y="198" text-anchor="end" class="io">Input1</text>
 
   <!-- arrow 1: Output1 → Input1 -->
-  <path d="M 360,115 H 400 V 160 H 80 V 205 H 118" class="arrow"/>
+  <path d="M 360,115 H 400 V 160 H 55 V 205 H 118" class="arrow"/>
   <path d="M 120,205 l -8,-5 v 10 z" class="head"/>
 
   <!-- script1 #2 (base match) -->
   <rect x="120" y="280" width="240" height="50" rx="4" class="base"/>
   <text x="240" y="311" text-anchor="middle" class="label">script1</text>
-  <text x="368" y="311" class="io">Output1</text>
+  <text x="368" y="298" class="io">Output1</text>
 
   <!-- script2 #2 (to match) -->
   <rect x="120" y="370" width="240" height="50" rx="4" class="to"/>
   <text x="240" y="401" text-anchor="middle" class="label">script2</text>
-  <text x="112" y="401" text-anchor="end" class="io">Input1</text>
+  <text x="112" y="388" text-anchor="end" class="io">Input1</text>
 
   <!-- arrow 2 -->
-  <path d="M 360,305 H 400 V 350 H 80 V 395 H 118" class="arrow"/>
+  <path d="M 360,305 H 400 V 350 H 55 V 395 H 118" class="arrow"/>
   <path d="M 120,395 l -8,-5 v 10 z" class="head"/>
 
   <!-- ====== workflow2 ====== -->
@@ -56,28 +56,28 @@
   <!-- script1 #1 (base match) -->
   <rect x="120" y="510" width="240" height="50" rx="4" class="base"/>
   <text x="240" y="541" text-anchor="middle" class="label">script1</text>
-  <text x="368" y="541" class="io">Output1</text>
+  <text x="368" y="528" class="io">Output1</text>
 
   <!-- script2 #1 (to match) -->
   <rect x="120" y="600" width="240" height="50" rx="4" class="to"/>
   <text x="240" y="631" text-anchor="middle" class="label">script2</text>
-  <text x="112" y="631" text-anchor="end" class="io">Input1</text>
+  <text x="112" y="618" text-anchor="end" class="io">Input1</text>
 
   <!-- arrow 3 -->
-  <path d="M 360,535 H 400 V 580 H 80 V 625 H 118" class="arrow"/>
+  <path d="M 360,535 H 400 V 580 H 55 V 625 H 118" class="arrow"/>
   <path d="M 120,625 l -8,-5 v 10 z" class="head"/>
 
   <!-- script1 #2 (base match) -->
   <rect x="120" y="700" width="240" height="50" rx="4" class="base"/>
   <text x="240" y="731" text-anchor="middle" class="label">script1</text>
-  <text x="368" y="731" class="io">Output1</text>
+  <text x="368" y="718" class="io">Output1</text>
 
   <!-- script2 #2 (to match) -->
   <rect x="120" y="790" width="240" height="50" rx="4" class="to"/>
   <text x="240" y="821" text-anchor="middle" class="label">script2</text>
-  <text x="112" y="821" text-anchor="end" class="io">Input1</text>
+  <text x="112" y="808" text-anchor="end" class="io">Input1</text>
 
   <!-- arrow 4 -->
-  <path d="M 360,725 H 400 V 770 H 80 V 815 H 118" class="arrow"/>
+  <path d="M 360,725 H 400 V 770 H 55 V 815 H 118" class="arrow"/>
   <path d="M 120,815 l -8,-5 v 10 z" class="head"/>
 </svg>
