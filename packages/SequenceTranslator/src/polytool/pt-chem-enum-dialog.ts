@@ -51,11 +51,17 @@ interface CardOpts {
   onRemove?: () => void;
 }
 
+// Popular multi symbol single atoms for quick lookup in card builder
+const SINGLE_ATOM_SYMBOLS_LOOKUP = new Set([
+  'Cl', 'Br', 'Al', 'Si', 'Li', 'Na', 'Mg', 'Ca', 'Ti', 'At', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Kr', 'Rb',
+  'Au', 'Ag', 'Pt', 'Pb', 'Sn', 'Sb', 'Te', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho']);
+
 /** Draws a molecule into a fixed-size host, constraining SVG dimensions. */
 function drawMolInto(host: HTMLElement, smi: string, w: number, h: number): void {
   ui.empty(host);
   try {
-    const el = grok.chem.drawMolecule(smi, w, h);
+    const correctedSmi = smi.length === 1 || SINGLE_ATOM_SYMBOLS_LOOKUP.has(smi) ? `[${smi}]` : smi;
+    const el = grok.chem.drawMolecule(correctedSmi, w, h);
     el.style.width = `${w}px`;
     el.style.height = `${h}px`;
     el.style.maxWidth = `${w}px`;
@@ -73,7 +79,8 @@ function buildCard(opts: CardOpts): HTMLElement {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: 'transparent', overflow: 'hidden', flex: '0 0 auto',
   }});
-  if (opts.smiles && !opts.error) drawMolInto(thumbHost, opts.smiles, THUMB_W, THUMB_H);
+  if (opts.smiles && !opts.error)
+    drawMolInto(thumbHost, opts.smiles, THUMB_W, THUMB_H);
   else thumbHost.appendChild(ui.divText('—', {style: {color: 'var(--grey-4)'}}));
 
   const subtitleEl = ui.divText(opts.subtitle, {style: {
