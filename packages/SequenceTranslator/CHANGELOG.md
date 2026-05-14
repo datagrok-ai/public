@@ -1,6 +1,6 @@
 # Sequence Translator changelog
 
-## 1.10.20 (2026-05-14)
+## 1.10.21 (2026-05-14)
 
 * Markush enumeration UI redesign, history and bug fixes
 

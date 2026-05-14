@@ -19,6 +19,7 @@ import {
   extractRNumbers,
   makeCore,
   makeRGroup,
+  normalizeRLabels,
   validateParams,
 } from './pt-chem-enum';
 import {_package} from '../package';
@@ -1249,7 +1250,7 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
 
     const smilesCol = DG.Column.fromStrings('Enumerated', results.map((r) => r.smiles));
     smilesCol.semType = DG.SEMTYPE.MOLECULE;
-    const coreCol = DG.Column.fromStrings('Core', results.map((r) => r.coreSmiles));
+    const coreCol = DG.Column.fromStrings('Core', results.map((r) => normalizeRLabels(r.coreSmiles ?? '')));
     coreCol.semType = DG.SEMTYPE.MOLECULE;
     const rCols = sortedRs.map((n) =>
       DG.Column.fromStrings(`R${n}`, results.map((r) => r.rGroupSmilesByNum.get(n) ?? '')));
