@@ -208,7 +208,10 @@ export async function _demoMMPA(): Promise<void> {
         return false;
       }, '', 20000);
     } catch (e) {};
-    mmpViewer!.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+    const viewer = mmpViewer as MatchedMolecularPairsViewer | null;
+    if (viewer == null)
+      return;
+    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
     setTimeout(()=> {
       grok.shell.windows.showHelp = true;
       grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');

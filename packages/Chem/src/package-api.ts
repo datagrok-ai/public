@@ -201,10 +201,6 @@ export namespace funcs {
     return await grok.functions.call('Chem:RecalculateCoords', { table, molecules, method, join });
   }
 
-  export async function chemTooltip(col: DG.Column ): Promise<any> {
-    return await grok.functions.call('Chem:ChemTooltip', { col });
-  }
-
   export async function scaffoldTreeViewer(): Promise<any> {
     return await grok.functions.call('Chem:ScaffoldTreeViewer', {});
   }

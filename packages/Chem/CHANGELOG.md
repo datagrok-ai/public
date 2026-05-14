@@ -3,6 +3,7 @@
 ## v.next
 
 * GROK-20108: Docker API: Throw a clear error when the `chem-chem` container is not available, instead of `Cannot read properties of undefined (reading 'id')`
+* MMP demo: Guard against null `mmpViewer` after the 20s `awaitCheck` timeout (e.g. when the user closes the demo view before the viewer registers), preventing `TypeError: Cannot set properties of null (setting 'helpUrl')`
 
 ## 1.17.8 (2026-05-12)
 
