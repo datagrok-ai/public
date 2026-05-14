@@ -15,7 +15,7 @@ let featuresDf: DG.DataFrame | null = null;
 const _smartsMap: Map<string, RDMol> = new Map();
 let rdKitModule: RDModule | null = null;
 
-const FAMILY_INFO: {[key: string]: {name: string; color: string}} = {
+export const FAMILY_INFO: {[key: string]: {name: string; color: string}} = {
   'D': {name: 'Donor', color: '#2196F3'},
   'A': {name: 'Acceptor', color: '#E53935'},
   'H': {name: 'Hydrophobic', color: '#FFEB3B'},
