@@ -45,8 +45,11 @@ import {
 
 const PROVIDER = 'Postgres';
 const FIXTURE_QUERY_FN = 'postgres customers in @country';
+// Mirror visual-query-and-params 11b's CI fixture choice: provision on
+// `test_postgres` (in-network northwind:5432, Northwind data available).
+const FIXTURE_QUERY_CONN = 'test_postgres';
 const FIXTURE_QUERY_NODE =
-  'tree-Databases---Postgres---Northwind---postgres-customers-in-@country';
+  `tree-Databases---Postgres---${FIXTURE_QUERY_CONN.replace(/_/g, '-')}---postgres-customers-in-@country`;
 const PROJECT_NAME = 'test_visual_advanced_playwright';
 
 test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
@@ -55,6 +58,24 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
     const page = await ctx.newPage();
     await goHome(page);
     await deleteProjectByFriendlyName(page, PROJECT_NAME);
+    // Provision the fixture parameterized query if absent (mirrors the
+    // 11b beforeAll in visual-query-and-params.test.ts — both tests rely
+    // on the same `postgres customers in @country` query).
+    await page.evaluate(async ({ name, connName }) => {
+      const grok = (window as any).grok;
+      const DG = (window as any).DG;
+      const existing = await grok.dapi.queries
+        .filter(`friendlyName = "${name}"`).list();
+      if (existing.length > 0) return;
+      const conn = (await grok.dapi.connections
+        .filter(`friendlyName = "${connName}" and dataSource = "Postgres"`)
+        .list())[0];
+      if (!conn) return;
+      const q = DG.DataQuery.create(name);
+      q.connection = conn;
+      q.query = '--input: string country = "France"\nselect * from customers where country = @country';
+      await grok.dapi.queries.save(q);
+    }, { name: FIXTURE_QUERY_FN, connName: FIXTURE_QUERY_CONN });
     await ctx.close();
   });
 
