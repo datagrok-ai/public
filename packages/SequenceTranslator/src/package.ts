@@ -274,22 +274,15 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'top-menu': 'Bio | PolyTool | Enumerate Chem...',
-    'name': 'polyToolEnumerateChem',
-    'description': 'Perform enumeration of a molecule using different fragments at specified positions'
-  })
-  static async polyToolEnumerateChemTopMenu(): Promise<void> {
-    polyToolEnumerateChemUI();
-  }
-
-
-  @grok.decorators.func({
-    'top-menu': 'Chem | Transform | Reactions | Enumerate...',
-    'name': 'chemEnumerateReactions',
+    'top-menu': 'Chem | Transform | Markush Enumeration...',
+    'name': 'Markush Enumerator',
     'description': 'Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)'
   })
-  static async chemEnumerateReactionsTopMenu(): Promise<void> {
-    polyToolEnumerateChemUI();
+  static async chemEnumerateMarkushTopMenu(): Promise<void> {
+    let cell: DG.Cell | undefined = undefined;
+    if (grok.shell.tv?.dataFrame && grok.shell.tv.dataFrame.currentCell && grok.shell.tv.dataFrame.currentCell.column.semType === DG.SEMTYPE.MOLECULE)
+      cell = grok.shell.tv.dataFrame.currentCell;
+    polyToolEnumerateChemUI(cell);
   }
 
 
@@ -331,10 +324,10 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       icon: 'img/icons/structure.png',
-      browsePath: 'Chem | PolyTool',
+      browsePath: 'Chem',
       role: 'app'
     },
-    name: 'Chem Enumerator',
+    name: 'Markush Enumerator',
     tags: ['app'],
     outputs: [{type: 'view', name: 'result'}]
   })

@@ -141,18 +141,11 @@ export async function polyToolEnumerateHelmTopMenu() : Promise<void> {
   await PackageFunctions.polyToolEnumerateHelmTopMenu();
 }
 
-//name: polyToolEnumerateChem
-//description: Perform enumeration of a molecule using different fragments at specified positions
-//top-menu: Bio | PolyTool | Enumerate Chem...
-export async function polyToolEnumerateChemTopMenu() : Promise<void> {
-  await PackageFunctions.polyToolEnumerateChemTopMenu();
-}
-
-//name: chemEnumerateReactions
+//name: Markush Enumerator
 //description: Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)
-//top-menu: Chem | Transform | Reactions | Enumerate...
-export async function chemEnumerateReactionsTopMenu() : Promise<void> {
-  await PackageFunctions.chemEnumerateReactionsTopMenu();
+//top-menu: Chem | Transform | Markush Enumeration...
+export async function chemEnumerateMarkushTopMenu() : Promise<void> {
+  await PackageFunctions.chemEnumerateMarkushTopMenu();
 }
 
 //input: dataframe df { description: Input data table }
@@ -175,11 +168,11 @@ export async function ptEnumeratorHelmApp() : Promise<void> {
   await PackageFunctions.ptEnumeratorHelmApp();
 }
 
-//name: Chem Enumerator
+//name: Markush Enumerator
 //tags: app
 //output: view result
 //meta.icon: img/icons/structure.png
-//meta.browsePath: Chem | PolyTool
+//meta.browsePath: Chem
 //meta.role: app
 export async function ptEnumeratorChemApp() {
   return await PackageFunctions.ptEnumeratorChemApp();

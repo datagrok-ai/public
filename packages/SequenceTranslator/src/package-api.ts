@@ -96,17 +96,10 @@ export namespace funcs {
   }
 
   /**
-  Perform enumeration of a molecule using different fragments at specified positions
-  */
-  export async function polyToolEnumerateChemTopMenu(): Promise<void> {
-    return await grok.functions.call('SequenceTranslator:PolyToolEnumerateChemTopMenu', {});
-  }
-
-  /**
   Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)
   */
-  export async function chemEnumerateReactionsTopMenu(): Promise<void> {
-    return await grok.functions.call('SequenceTranslator:ChemEnumerateReactionsTopMenu', {});
+  export async function chemEnumerateMarkushTopMenu(): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:ChemEnumerateMarkushTopMenu', {});
   }
 
   export async function polyToolColumnChoice(df: DG.DataFrame , macroMolecule: DG.Column ): Promise<void> {

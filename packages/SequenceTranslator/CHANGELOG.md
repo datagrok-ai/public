@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.10.20 (2026-05-14)
+
+* Markush enumeration UI redesign, history and bug fixes
+
 ## 1.10.18 (2026-05-11)
 
 * OligoNucleotide cell renderer: Fixed bracketed monomer base parsing (e.g. `[5Br-dC]` inside `(...)`) so renderer/resolver pick up modification colors and structures correctly.
