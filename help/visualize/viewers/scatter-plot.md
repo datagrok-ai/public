@@ -141,6 +141,12 @@ To customize a region, provide a description and configure visual properties suc
 
 ![Annotation Regions](img/annotation-regions.gif)
 
+### Supported viewers
+
+Formula lines and annotation regions are supported on the [scatter plot](scatter-plot.md), [line chart](line-chart.md), [bar chart](bar-chart.md), [histogram](histogram.md), [box plot](box-plot.md), and [density plot](density-plot.md). When applied to the dataframe, they automatically appear on every viewer with matching axes.
+
+![Formula lines and annotation regions across viewers](img/formula-lines-annotation-regions-viewers.png)
+
 ## Tooltip
 
 By default, a scatterplot inherits the tooltip from the grid. However, you can
