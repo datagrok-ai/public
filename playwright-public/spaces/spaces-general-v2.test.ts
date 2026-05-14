@@ -13,7 +13,11 @@ import { test, expect, Page, BrowserContext } from '@playwright/test';
 import * as path from 'path';
 
 const BASE = process.env.DATAGROK_URL!;
-const SHARING_LOGIN = process.env.DATAGROK_SHARING_LOGIN || '';
+// CI default: share with the auto-provisioned `test2` user
+// (js.groovy:RUN_TESTS_UI signs up / logs in `test2` for every Playwright run,
+// and that token is already exported as DATAGROK_AUTH_TOKEN_2). On
+// dev/playwright-tests/ the existing .env override picks a different user.
+const SHARING_LOGIN = process.env.DATAGROK_SHARING_LOGIN || 'test2';
 const SHARING_PASSWORD = process.env.DATAGROK_SHARING_PASSWORD || '';
 const AUTH_STATE = path.resolve(__dirname, '..', '.auth.json');
 
