@@ -73,10 +73,12 @@ test.describe.serial(`Visual query advanced runtime (${PROVIDER} / ${POSTGRES_CO
       if (!conn) {
         conn = DG.DataConnection.create(connName, {
           dataSource: 'Postgres',
-          // `host:port` concatenated — see ApiTests/dapi/connection.ts.
-          // Splitting leaves the connection "Unavailable".
+          // service_connections.dart createDatagrokConnection-style:
+          // concatenated host:port, explicit port, explicit ssl:false.
           server: 'northwind:5432',
+          port: 5432,
           db: 'northwind',
+          ssl: false,
           login: 'postgres',
           password: 'postgres',
         });

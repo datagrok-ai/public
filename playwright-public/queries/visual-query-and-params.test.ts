@@ -88,13 +88,15 @@ async function ensureVisualQueryFixture(page: import('@playwright/test').Page): 
     if (!conn) {
       conn = DG.DataConnection.create(connName, {
         dataSource: 'Postgres',
-        // Concatenated `host:port` is what DG.DataConnection.create expects —
-        // see ApiTests/dapi/connection.ts:9-11 and the polymorphic-save
-        // sample. Splitting into separate `server` + `port` leaves the
-        // connection in an "Unavailable" state because grok_connect can't
-        // resolve the endpoint.
+        // Match service_connections.dart's `createDatagrokConnection`
+        // pattern: concatenated `host:port`, explicit `port`, and explicit
+        // `ssl: false` so the Java grok_connect connector doesn't fall
+        // back to its TLS default (which leaves the connection
+        // "Unavailable" against an in-network plaintext-only Postgres).
         server: 'northwind:5432',
+        port: 5432,
         db: 'northwind',
+        ssl: false,
         login: 'postgres',
         password: 'postgres',
       });
