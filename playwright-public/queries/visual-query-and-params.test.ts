@@ -66,14 +66,46 @@ const VISUAL_QUERY_NAME = 'new_visual_query_test';
 
 // Fixture parameterized query for 11b. On dev/public the test relies on a
 // pre-published `postgres customers in @country` query under the Northwind
-// connection; the CI Datlas has neither the connection nor the query, so we
-// provision an equivalent on `test_postgres` (which after B-E points to the
-// in-network `northwind:5432` demo Postgres, so the `customers` table with
-// the `country` column is available for the SQL to run).
+// connection; the CI Datlas has neither.
+//
+// Bootstrap our own: create a persistent `pw_visual_postgres` connection
+// pointing at the in-network `northwind:5432` demo Postgres (NOT
+// test_postgres — that one gets deleted by connections/05-delete before
+// queries/* run), then save the parameterised query on it.
 const PARAM_QUERY_FRIENDLY_NAME = 'postgres customers in @country';
-const PARAM_QUERY_CONN = 'test_postgres';
+const PARAM_QUERY_CONN = 'pw_visual_postgres';
 const PARAM_QUERY_NODE_NAME =
   `tree-Databases---Postgres---${PARAM_QUERY_CONN.replace(/_/g, '-')}---postgres-customers-in-@country`;
+
+async function ensureVisualQueryFixture(page: import('@playwright/test').Page): Promise<void> {
+  await page.evaluate(async ({ qName, connName }) => {
+    const grok = (window as any).grok;
+    const DG = (window as any).DG;
+    // Ensure the persistent fixture connection exists (in-CI northwind demo).
+    let conn = (await grok.dapi.connections
+      .filter(`friendlyName = "${connName}" and dataSource = "Postgres"`)
+      .list())[0];
+    if (!conn) {
+      conn = DG.DataConnection.create(connName, {
+        dataSource: 'Postgres',
+        server: 'northwind',
+        port: 5432,
+        db: 'northwind',
+        login: 'postgres',
+        password: 'postgres',
+      });
+      conn = await grok.dapi.connections.save(conn);
+    }
+    // Ensure the parameterised fixture query exists on it.
+    const existingQ = await grok.dapi.queries
+      .filter(`friendlyName = "${qName}"`).list();
+    if (existingQ.length > 0) return;
+    const q = DG.DataQuery.create(qName);
+    q.connection = conn;
+    q.query = '--input: string country = "France"\nselect * from customers where country = @country';
+    await grok.dapi.queries.save(q);
+  }, { qName: PARAM_QUERY_FRIENDLY_NAME, connName: PARAM_QUERY_CONN });
+}
 
 test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
   test.beforeAll(async ({ browser }) => {
@@ -81,25 +113,7 @@ test.describe.serial(`Visual query + parameter flow (${PROVIDER} / ${POSTGRES_CO
     const page = await ctx.newPage();
     await goHome(page);
     await deleteQueryByFriendlyName(page, VISUAL_QUERY_NAME);
-    // Provision the 11b fixture query if absent. Use grok.dapi rather than
-    // the UI New Query flow because the test only needs the query to exist
-    // — building it via the editor would duplicate visual-query-and-params'
-    // own creation path. The SQL is the same shape the dev fixture has.
-    await page.evaluate(async ({ name, connName }) => {
-      const grok = (window as any).grok;
-      const DG = (window as any).DG;
-      const existing = await grok.dapi.queries
-        .filter(`friendlyName = "${name}"`).list();
-      if (existing.length > 0) return;
-      const conn = (await grok.dapi.connections
-        .filter(`friendlyName = "${connName}" and dataSource = "Postgres"`)
-        .list())[0];
-      if (!conn) return;
-      const q = DG.DataQuery.create(name);
-      q.connection = conn;
-      q.query = '--input: string country = "France"\nselect * from customers where country = @country';
-      await grok.dapi.queries.save(q);
-    }, { name: PARAM_QUERY_FRIENDLY_NAME, connName: PARAM_QUERY_CONN });
+    await ensureVisualQueryFixture(page);
     await ctx.close();
   });
 
