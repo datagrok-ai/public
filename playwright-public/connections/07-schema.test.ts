@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   PG_PASSWORD,
+  PG_SERVER,
   applyAutomationSetup,
   closeMenuPopup,
   connectionNodeName,
@@ -66,6 +67,13 @@ test.describe.serial('Connections / Schema (Postgres / Datagrok substitution)', 
   // assertion covered by the broader suite.
   test('2. Expand Catalogs → catalog → schema; first table exposes DB-table context menu', async ({ page }) => {
     test.skip(!PG_PASSWORD, 'DG_PG_PASSWORD not set — schema browsing requires live DB credentials');
+    // The CI Datlas's Postgres > Datagrok connection points to a single
+    // per-build platform DB, so it doesn't render a Catalogs section at all
+    // (Catalogs appears only when the connection enumerates multiple
+    // catalog DBs as it does on dev). Same fundamental gap as the whole
+    // 10-catalogs scenario — skip on CI here too.
+    test.skip(PG_SERVER === 'northwind',
+      'CI Datlas connection has no multi-catalog Postgres; covered by dev playwright-tests/');
 
     await goHome(page);
     await applyAutomationSetup(page);

@@ -170,7 +170,26 @@ export async function addNewColumnTransformation(page: Page, expression: string)
     ta.dispatchEvent(new Event('input', { bubbles: true }));
     ta.dispatchEvent(new Event('change', { bubbles: true }));
   }, expression);
-  await page.locator('[name="button-Add-New-Column---OK"]').click();
+  // The OK button used to be tagged `[name="button-Add-New-Column---OK"]` on
+  // dev, but newer Datagrok builds drop the per-dialog prefix and the
+  // footer button is simply `[name="button-OK"]` inside the Modal. Try
+  // both, then fall back to the role/text-based locator so the dialog is
+  // confirmed regardless of attribute naming.
+  const okSelectors = [
+    '[name="button-Add-New-Column---OK"]',
+    '[name="button-OK"]',
+  ];
+  let okClicked = false;
+  for (const sel of okSelectors) {
+    const btn = dialog.locator(sel).first();
+    if (await btn.isVisible({ timeout: 1_500 }).catch(() => false)) {
+      await btn.click();
+      okClicked = true;
+      break;
+    }
+  }
+  if (!okClicked)
+    await dialog.getByRole('button', { name: /^OK$/ }).first().click();
   await expect(page.locator('.d4-dialog')).toHaveCount(0, { timeout: 10_000 });
 }
 

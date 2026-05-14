@@ -459,8 +459,13 @@ test.describe.serial('Scripts: Layout', () => {
           if (!tv) return { ok: false, error: 'No active TableView for project save' };
           const project = DG.Project.create();
           project.name = projectName;
+          project.friendlyName = projectName;
+          // Only add the dataframe — TableView itself isn't an Entity and
+          // `project.addChild(tv)` triggers `NoSuchMethodError: nqName` on
+          // the Dart side. The reopen-verify half of the test only checks
+          // that the dataframe + its saved layout survive the round-trip,
+          // which a dataframe child is sufficient for.
           if (tv.dataFrame) project.addChild(tv.dataFrame);
-          project.addChild(tv);
           await grok.dapi.projects.save(project);
           return { ok: true };
         } catch (e: any) {
