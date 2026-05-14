@@ -137,11 +137,18 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   public get onClearChatRequest(): rxjs.Observable<void> {
     return this._onClearChatRequest.asObservable();
   }
+  private static readonly MAX_AUTO_RETRIES = 2;
+  private _autoRetryCount = 0;
+  private _onAutoRetryRequest = new rxjs.Subject<{reason: string}>();
+  public get onAutoRetryRequest(): rxjs.Observable<{reason: string}> {
+    return this._onAutoRetryRequest.asObservable();
+  }
   private runButtonTooltip: typeof actionButtionValues[keyof typeof actionButtionValues] = actionButtionValues.run;
   public inputControlsDiv: HTMLElement;
   protected attachedEntities: DG.Entity[] = [];
-  protected attachmentsRow: HTMLElement = ui.divH([]);
+  protected attachmentsRow: HTMLElement = ui.divH([], {style: {flexWrap: 'wrap'}});
   private _pendingEntityContext = '';
+  private _pendingAttachmentsForRender: DG.Entity[] = [];
   protected get contextId(): string {
     return this._contextID;// these should be overriden in subclasses
   }
@@ -149,7 +156,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected _streamingContainer: HTMLElement | null = null;
   protected _streamingMarkdownEl: HTMLElement | null = null;
   private _sessionId: string;
-  private _contextSent = false;
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
@@ -362,11 +368,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return;
     this.attachedEntities.push(e);
     const icon = DG.ObjectHandler.forEntity(e)?.renderIcon(e.dart) ?? ui.iconFA('tag');
-    const chip = ui.divH([icon, ui.label(e.friendlyName ?? e.name)]);
-    chip.appendChild(ui.iconFA('times', () => {
+    const label = ui.label(e.friendlyName ?? e.name);
+    const close = ui.iconFA('times', () => {
       this.attachedEntities = this.attachedEntities.filter((y) => y !== e);
       chip.remove();
-    }, 'Remove'));
+    }, 'Remove');
+    const chip = ui.divH([icon, label, close], 'grokky-entity-chip');
     this.attachmentsRow.appendChild(chip);
   }
 
@@ -481,6 +488,16 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         uiMessage.messageOptions?.handledNatively ? [this.createHandledNativelyIcon(), promptText] : [promptText],
         'd4-ai-user-prompt-container');
       this.outputArea.appendChild(userDiv);
+      if (this._pendingAttachmentsForRender.length) {
+        const chips = this._pendingAttachmentsForRender.map((e) => {
+          const icon = DG.ObjectHandler.forEntity(e)?.renderIcon(e.dart) ?? ui.iconFA('tag');
+          const label = ui.label(e.friendlyName ?? e.name);
+          return ui.divH([icon, label], 'grokky-entity-chip');
+        });
+        const chipsRow = ui.divH(chips, {style: {flexWrap: 'wrap', justifyContent: 'flex-end'}});
+        this.outputArea.appendChild(chipsRow);
+        this._pendingAttachmentsForRender = [];
+      }
       this._lastUserPromptContainer = userDiv;
       this._aiMessagesAccordionPane = null; // reset accordion pane so that next AI message creates a new one
     } else {
@@ -604,18 +621,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   resetSession(): void {
     this._sessionId = `claude-${crypto.randomUUID()}`;
-    this._contextSent = false;
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
   }
 
   prependViewContext(prompt: string, view: DG.ViewBase): string {
-    if (this._contextSent)
-      return prompt;
     const ctx = buildViewContext(view);
     if (!ctx)
       return prompt;
-    this._contextSent = true;
     return ctx + '\n---\n\n' + prompt;
   }
 
@@ -654,10 +667,37 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return;
     }
     this.renderFinalContent(content);
-    const results = await executeDatagrokBlocks(content, view);
-    for (const el of results) {
+    const {elements, entries} = await executeDatagrokBlocks(content, view);
+    for (const el of elements) {
       this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
+    }
+    if (entries.length > 0) {
+      try {
+        ClaudeRuntimeClient.getInstance().sendExecResult(this.sessionId, entries);
+      } catch (e) {
+        console.warn('sendExecResult failed:', e);
+      }
+      const failed = entries.filter((e) => !e.ok);
+      if (failed.length > 0) {
+        if (this._autoRetryCount < AIPanel.MAX_AUTO_RETRIES) {
+          this._autoRetryCount++;
+          this.appendMessage('' as any, {
+            title: '', fromUser: false, uiOnly: true,
+            content: `_Retrying after exec failure (${this._autoRetryCount}/${AIPanel.MAX_AUTO_RETRIES})…_`,
+          });
+          const reason = `${failed.length} datagrok-exec block(s) failed. The error context above contains the failure reason. Diagnose the cause and emit a corrected datagrok-exec block to complete the user's request.`;
+          this._onAutoRetryRequest.next({reason});
+        } else {
+          this.appendMessage('' as any, {
+            title: '', fromUser: false, uiOnly: true,
+            content: `_Stopped after ${AIPanel.MAX_AUTO_RETRIES} auto-retries — exec is still failing. Try giving more context or a different approach._`,
+          });
+          this._autoRetryCount = 0;
+        }
+      } else {
+        this._autoRetryCount = 0;
+      }
     }
   }
 
@@ -788,7 +828,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       ? 'Attached Datagrok entities (use MCP tools to fetch full details by id/nqName/path):\n' +
         this.attachedEntities.map((e) => this.describeEntity(e)).join('\n')
       : '';
+    this._pendingAttachmentsForRender = [...this.attachedEntities];
     this.clearAttachments();
+    this._autoRetryCount = 0;
     this._promptHistoryIndex = null;
     this._onRunRequest.next({
       prevMessages: this._messages,

@@ -2,6 +2,23 @@
   font-style: italic;
 }
 
+.grokky-entity-chip {
+  display: inline-flex;
+  align-items: center;
+  margin: 2px 6px 2px 0;
+  padding: 3px 8px;
+  border: 1px solid var(--steel-2);
+  border-radius: 14px;
+  background: var(--grey-1);
+  font-size: 12px;
+  line-height: 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.grokky-entity-chip > * + * {
+  margin-left: 6px;
+}
+
 .ai-panel-answer {}
 
 .ai-execute-plan {

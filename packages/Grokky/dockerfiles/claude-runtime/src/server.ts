@@ -5,7 +5,7 @@ import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage, HookCallback} from '@anthropic-ai/claude-agent-sdk';
-import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
+import type {UserMessage, AbortMessage, InputResponseMessage, ExecResultMessage, ExecResultEntry, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
 import {syncUserFiles, generatePackageIndex} from './sync/orchestrator';
@@ -29,33 +29,79 @@ ALWAYS use paths under \`workspace/\` (e.g. \`workspace/packages/Chem/...\`, \`w
 NEVER use \`/workspace/...\` as an absolute path — that path is outside your scope and access to it
 is blocked.
 
-The "## Available Packages" table below lists the curated knowledge index for packages installed
-on this instance. For those, call get_package_knowledge(name) first — it returns authoritative
-apiRef/docsRef paths and is faster than searching the filesystem. Prefer packages from this table
-when answering requests; do not rely on training memory of packages not listed there, since they
-may not be available on this instance.
+Personal user knowledge files (if any) live in the \`agents/\` directory in your current working
+directory. Use Glob or \`ls agents/\` to discover them when relevant.
 
-## How to find APIs
+## How to find a registered function
 
-NEVER guess API methods, property names, or function signatures.
+NEVER guess function names, parameter names, or signatures.
 
-When a user request maps to a package listed in the "## Available Packages" table below,
-your FIRST action MUST be \`get_package_knowledge(packageName)\`. It returns absolute paths
-to that package's API reference (function signatures) and docs. Then \`Read\` the returned
-apiRef path to find the function you need. Do NOT Glob/Grep package directories or search
-ApiSamples / help/ to discover a package's APIs — the apiRef is authoritative.
+\`PACKAGES.md\` in your current working directory lists the packages installed on this instance.
 
-Only when no package matches the request should you fall back to searching the codebase:
-workspace/js-api/src/ (core API), workspace/packages/ApiSamples/ (usage examples), workspace/help/ (docs).
+**Inlined catalogs (do NOT call \`list_functions\` / \`get_function\` for these):** the system prompt below already inlines complete catalogs for the most common packages. If the user's intent maps to a function in one of these catalogs, emit the \`datagrok-exec\` block directly — skip MCP discovery. Inlined-catalog packages:
+- \`Chem\`, \`Admetica\` — see \`datagrok-chem-toolkit\`
+- \`Chembl\`, \`MolTrack\`, \`HitTriage\`, \`Curves\` — see \`datagrok-chem-data\`
+- Other inlined skills (df-and-columns, filtering, selection, viewers, grid-customization, calc-column, projects) cover their respective surfaces.
+
+For packages NOT covered by an inlined catalog: use \`list_functions(keyword?, package?)\` MCP tool to discover the function. It returns \`{name, friendlyName, namespace, description, params}\`. Use \`get_function(name)\` only when you need full parameter details beyond what \`list_functions\` returned.
+
+For packages with a curated knowledge index, \`get_package_knowledge(packageName)\` returns the
+authoritative apiRef and docs paths.
+
+Only fall back to filesystem search when the request is about platform JS API surface
+(types, classes, methods on DG.DataFrame, DG.Viewer, etc.) — those live in \`workspace/js-api/src/\`.
 
 ## Code Execution
 
 When the user asks you to **do** something (add a viewer, modify data, run a script, etc.):
-1. FIRST resolve the API via \`get_package_knowledge\` (or codebase search if no package matches).
-2. THEN emit the code in a \`\`\`datagrok-exec fenced block — this is the ONLY way code gets executed.
+1. If the function is in an inlined catalog → emit the \`datagrok-exec\` block directly.
+2. Otherwise resolve the function via \`list_functions\` (or \`get_package_knowledge\` if applicable), THEN emit the block.
 
-NEVER emit a \`\`\`datagrok-exec block with guessed or unverified API calls.
+NEVER emit a \`\`\`datagrok-exec block with a function name you didn't see in either the inlined catalog or the MCP discovery results. Inventing function names is the #1 cause of silent failures.
 Regular \`\`\`javascript blocks are for explanations only and will NOT run.
+
+## Projects: MCP tools + ONE datagrok-exec for current view/layout
+
+Project assembly and sharing go through MCP tools — they are governed and audited. The
+"current DataFrame" / "current view layout" only have ids inside the browser, so one
+\`datagrok-exec\` block resolves those ids; everything else is MCP.
+
+Recipe for "create a project named X with the current table view (and optionally share)":
+
+1. Call \`create_project(name)\` ONCE. Save the returned id as \`projectId\`.
+2. If (and only if) the user said "with the current table / view / layout / dataframe",
+   emit ONE \`datagrok-exec\` block that saves the layout and returns the ids:
+
+   \`\`\`datagrok-exec
+   const layout = view.saveLayout();
+   await grok.dapi.layouts.save(layout);
+   return {tableInfoId: t.getTableInfo().id, layoutId: layout.id};
+   \`\`\`
+
+   The block's return value is delivered back to you on the next turn as an
+   \`<exec-result>\` JSON block. Read \`tableInfoId\` and \`layoutId\` from there.
+3. Call \`add_entity_to_project(projectId, tableInfoId)\` AND
+   \`add_entity_to_project(projectId, layoutId)\` — both with the ids you just received.
+4. If the user asked to share, call \`share_entity\` with the project UUID
+   (the \`projectId\` from step 1) and the group name(s). Group names are plain strings;
+   do NOT call \`get_group\` first.
+5. Call \`get_project_link(projectId)\` ONCE and include the returned url in your reply.
+
+Strict rules:
+
+- Call \`create_project\` EXACTLY ONCE per turn — never twice, never in parallel.
+- NEVER parallelize step 1 with step 2, or step 2 with step 3. Each step must complete
+  (and you must have read its result) before the next begins. The exec block in step 2
+  emits to a different channel than tool calls; if you fire it together with
+  \`create_project\` in step 1, you do not yet have \`projectId\`, and you have not yet
+  received the ids you need for step 3.
+- NEVER use \`grok.dapi.projects.save()\`, \`project.addChild()\`, \`project.addLink()\`,
+  or \`grok.dapi.permissions.grant\` inside a datagrok-exec block — those bypass the
+  governed MCP path. The only legitimate uses of datagrok-exec in this workflow are:
+  saving a NEW layout (\`grok.dapi.layouts.save\`) and reading ids
+  (\`t.getTableInfo().id\`).
+- If an MCP tool throws, surface the error verbatim — do NOT fall back to in-browser
+  workarounds.
 
 ## Output formats
 
@@ -69,7 +115,42 @@ You have the AskUserQuestion tool available. When the user's request could reaso
 in multiple ways (which plot type, which column, which kind of cleanup), you MUST use AskUserQuestion
 to clarify before acting. NEVER guess when there are multiple valid options.`;
 
-const MAX_AGENT_FILES_IN_PROMPT = 50;
+// Core skills whose bodies are inlined into the system prompt so Claude does not need to
+// load them via the Skill tool. Each saves a 2-3s tool-call round-trip per session.
+const INLINED_SKILL_NAMES = [
+  'datagrok-exec',
+  'datagrok-df-and-columns',
+  'datagrok-filtering',
+  'datagrok-selection',
+  'datagrok-viewers',
+  'datagrok-grid-customization',
+  'datagrok-calc-column',
+  'datagrok-chem-toolkit',
+  'datagrok-chem-data',
+  'datagrok-projects',
+];
+
+function loadInlinedSkills(): string {
+  const sections: string[] = [];
+  for (const name of INLINED_SKILL_NAMES) {
+    const skillPath = `/app/plugin/skills/${name}/SKILL.md`;
+    try {
+      const raw = fs.readFileSync(skillPath, 'utf8');
+      const body = raw.replace(/^---\n[\s\S]*?\n---\n+/, '').trim();
+      sections.push(`### ${name}\n\n${body}`);
+    } catch {
+    }
+  }
+  return sections.join('\n\n---\n\n');
+}
+
+const INLINED_SKILLS = loadInlinedSkills();
+
+// Build once at module load so the system prompt prefix is byte-stable across every turn and
+// every user — required for Anthropic prompt-cache hits on the ~20-30 KB prefix.
+const DATAGROK_SYSTEM_PROMPT = INLINED_SKILLS
+  ? `${DATAGROK_PROMPT}\n\n## Inlined Skills\n\nThese skills are available in this context — invoke them directly without loading via the Skill tool. Each section gives the canonical signatures, conventions, and examples for one capability.\n\n${INLINED_SKILLS}`
+  : DATAGROK_PROMPT;
 
 const USER_WORKSPACE_PATTERN = /\/users\/[\w.-]+\/workspace/g;
 const WORKSPACE_ACCESS_PATTERN = /\/workspace(?:[/"'\s\\]|$)/;
@@ -89,29 +170,52 @@ const blockWorkspaceAccess: HookCallback = async (input) => {
   return {continue: true};
 };
 
-function buildSystemPrompt(mode?: string, agentFiles?: string[], packageIndex?: string | null): string {
+function buildSystemPrompt(mode?: string): string {
   if (mode === 'bash') return BASH_EXEC_PROMPT;
   if (mode === 'none') return '';
-  let prompt = DATAGROK_PROMPT;
-  // TODO: consolidate package index, agent files, and other dynamic context
-  // into a generated CLAUDE.md or skills file instead of appending to the system prompt
-  if (packageIndex)
-    prompt += `\n\n## Available Packages\n\n` + packageIndex;
-  if (agentFiles && agentFiles.length > 0) {
-    const shown = agentFiles.slice(0, MAX_AGENT_FILES_IN_PROMPT);
-    const overflow = agentFiles.length - shown.length;
-    prompt += `\n\n## User Knowledge Files\n\n` +
-      `The user has personal knowledge files in the \`agents/\` directory. ` +
-      `These contain domain-specific knowledge, instructions, or reference materials. ` +
-      `When relevant to the user's question, read and use these files.\n\n` +
-      `Available files:\n` + shown.map((f) => `- agents/${f}`).join('\n');
-    if (overflow > 0)
-      prompt += `\n- ... and ${overflow} more file(s). Use Glob to discover them.`;
-  }
-  return prompt;
+  return DATAGROK_SYSTEM_PROMPT;
 }
 
 const sessions = new Map<string, string>();
+
+const pendingExecResults = new Map<string, ExecResultEntry[]>();
+
+function storeExecResults(clientId: string, results: ExecResultEntry[]): void {
+  if (!results || results.length === 0)
+    return;
+  const existing = pendingExecResults.get(clientId);
+  if (existing)
+    existing.push(...results);
+  else
+    pendingExecResults.set(clientId, [...results]);
+}
+
+function consumePendingExecResults(clientId: string): ExecResultEntry[] | undefined {
+  const r = pendingExecResults.get(clientId);
+  if (r && r.length > 0) {
+    pendingExecResults.delete(clientId);
+    return r;
+  }
+  return undefined;
+}
+
+function formatExecResults(results: ExecResultEntry[]): string {
+  const parts = results.map((r) => {
+    if (r.ok) {
+      const body = r.value === undefined ? '(no return value)' : JSON.stringify(r.value);
+      return `block #${r.blockIndex}: ${body}`;
+    }
+    return `block #${r.blockIndex} FAILED: ${r.error ?? 'unknown error'}`;
+  });
+  return `<exec-result>\nThe previous datagrok-exec block(s) you emitted ran in the browser. Their return values:\n${parts.join('\n')}\n</exec-result>\n\n`;
+}
+
+function handleExecResult(data: ExecResultMessage): void {
+  const sid = data.sessionId ?? '';
+  if (!sid || !Array.isArray(data.results))
+    return;
+  storeExecResults(sid, data.results);
+}
 
 function storeSession(clientId: string, sdkId: string): void {
   sessions.delete(clientId);
@@ -158,14 +262,14 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
   return idx > 0 ? mcpUrl.substring(0, idx) : undefined;
 }
 
-function buildMcpServers(apiKey?: string, mcpServerUrl?: string, userId?: string): Record<string, any> | undefined {
+function buildMcpServers(apiKey?: string, mcpServerUrl?: string, userId?: string, apiUrlOverride?: string): Record<string, any> | undefined {
   const servers: Record<string, any> = {};
 
   servers['datagrok-knowledge'] = createPackageKnowledgeServer(userId);
 
   const mcpUrl = mcpServerUrl || '';
   if (mcpUrl) {
-    const apiUrl = apiUrlFromMcpUrl(mcpUrl);
+    const apiUrl = apiUrlOverride ?? apiUrlFromMcpUrl(mcpUrl);
     servers['datagrok'] = {
       type: 'http' as const,
       url: mcpUrl,
@@ -189,12 +293,13 @@ function buildMcpServers(apiKey?: string, mcpServerUrl?: string, userId?: string
 
 function buildOptions(
   resume?: string, apiKey?: string, mcpServerUrl?: string,
-  systemPromptMode?: string, userDir?: string, agentFiles?: string[],
-  packageIndex?: string | null, userId?: string,
+  systemPromptMode?: string, userDir?: string,
+  userId?: string,
   model?: ClaudeModel,
+  apiUrlOverride?: string,
 ) {
-  const systemPrompt = buildSystemPrompt(systemPromptMode, agentFiles, packageIndex);
-  const mcpServers = buildMcpServers(apiKey, mcpServerUrl, userId);
+  const systemPrompt = buildSystemPrompt(systemPromptMode);
+  const mcpServers = buildMcpServers(apiKey, mcpServerUrl, userId, apiUrlOverride);
   // Bash and 'none' modes are minimal — don't pull in output-format skills.
   const loadPlugin = !systemPromptMode || (systemPromptMode !== 'bash' && systemPromptMode !== 'none');
   return {
@@ -211,7 +316,9 @@ function buildOptions(
     ...(mcpServers ? {mcpServers} : {}),
     strictMcpConfig: true,
     permissionMode: 'acceptEdits' as const,
-    model: model ?? ClaudeModel.Opus,
+    model: model ?? ClaudeModel.Sonnet,
+    effort: 'low' as const,
+    thinking: {type: 'disabled' as const},
     includePartialMessages: true,
     cwd: userDir || WORKSPACE,
     hooks: {
@@ -344,13 +451,20 @@ function handleInputResponse(ws: WsSender, data: InputResponseMessage): void {
 
 async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const sid = data.sessionId ?? '';
-  const message = data.message ?? '';
+  let message = data.message ?? '';
   if (!message)
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
 
-  await awaitWorkspaceSync();
+  const pendingResults = consumePendingExecResults(sid);
+  if (pendingResults)
+    message = formatExecResults(pendingResults) + message;
+
+  // Don't block this turn on workspace git pull — it runs every 30 min in the background and
+  // a stale read for one turn is fine.
+  void awaitWorkspaceSync();
 
   const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
+  const apiUrlOverride = data.apiUrl ? rewriteForDocker(data.apiUrl) : undefined;
   const abortController = new AbortController();
   const active: ActiveQuery = {abortController, queryHandle: null, pendingInputResolve: null};
   registerActiveQuery(sid, active);
@@ -358,17 +472,11 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const userDir = data.apiKey ? await ensureUserDir(data.apiKey) : undefined;
   const userId = userDir ? path.basename(userDir) : undefined;
 
-  let agentFiles: string[] | undefined;
-  const apiUrl = apiUrlFromMcpUrl(mcpUrl);
+  const apiUrl = apiUrlOverride ?? apiUrlFromMcpUrl(mcpUrl);
   if (apiUrl && data.apiKey) {
-    try {
-      console.log('handleMessage: syncing user files...');
-      const result = await syncUserFiles(apiUrl, data.apiKey);
-      agentFiles = result.files;
-      console.log(`handleMessage: user dir=${userDir}, ${agentFiles?.length ?? 0} agent file(s)`);
-    } catch (e: any) {
-      console.warn('handleMessage: failed to sync user files:', e.message);
-    }
+    // Fire-and-forget: file sync writes to disk in userDir; the model reads from disk on demand.
+    syncUserFiles(apiUrl, data.apiKey).catch((e: any) =>
+      console.warn('handleMessage: failed to sync user files:', e.message));
   }
 
   const DB_CLIENT_TOOLS = new Set([
@@ -378,10 +486,15 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   ]);
 
   let gotResult = false;
+  const systemPromptMode = data.systemPromptMode ?? 'datagrok';
   try {
-    const packageIndex = await generatePackageIndex(userId);
+    if (userDir && systemPromptMode !== 'bash' && systemPromptMode !== 'none') {
+      const packageIndex = await generatePackageIndex(userId);
+      if (packageIndex)
+        await fs.promises.writeFile(path.join(userDir, 'PACKAGES.md'), packageIndex);
+    }
     const existingSession = getSession(sid);
-    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, agentFiles, packageIndex, userId, data.model);
+    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model, apiUrlOverride);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
@@ -455,6 +568,11 @@ app.get('/ws', upgradeWebSocket(() => {
         return;
       }
 
+      if (data.type === 'exec_result') {
+        handleExecResult(data);
+        return;
+      }
+
       if (data.type === 'sync_user_files') {
         const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
         const apiUrl = apiUrlFromMcpUrl(mcpUrl);
@@ -504,4 +622,41 @@ else
 const server = serve({fetch: app.fetch, port: PORT});
 injectWebSocket(server);
 startWorkspaceSync();
+
+async function preWarmSDK(): Promise<void> {
+  const abortController = new AbortController();
+  try {
+    // Warm Anthropic's prompt cache for the *real* (Sonnet + full Datagrok prompt + plugin)
+    // shape so the user's first turn doesn't pay the 3-4s cache-creation cost.
+    const q = query({
+      prompt: (async function*() {
+        yield {
+          type: 'user' as const, session_id: '',
+          message: {role: 'user' as const, content: 'ping'},
+          parent_tool_use_id: null,
+        };
+      })(),
+      options: {
+        systemPrompt: DATAGROK_SYSTEM_PROMPT,
+        allowedTools: ['Read'],
+        plugins: [{type: 'local' as const, path: '/app/plugin'}],
+        model: ClaudeModel.Sonnet,
+        effort: 'low' as const,
+        thinking: {type: 'disabled' as const},
+        permissionMode: 'acceptEdits' as const,
+        abortController,
+      } as any,
+    });
+    for await (const event of q) {
+      if (event.type === 'system') {
+        abortController.abort();
+        try { q.close(); } catch { /* ignore */ }
+        return;
+      }
+    }
+  } catch {
+  }
+}
+preWarmSDK();
+
 console.log(`claude-runtime listening on :${PORT}`);

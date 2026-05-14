@@ -17,9 +17,29 @@ The ONLY way code runs in the Datagrok browser is inside a fenced block tagged
 | `DG`     | module          | Always                                            |
 | `view`   | `DG.ViewBase`   | Always — check `view.type` for specific view type |
 | `t`      | `DG.DataFrame`  | Only when `view.type === 'TableView'`             |
+| `grokky` | helpers module  | Always — typed wrappers; prefer over raw js-api   |
 
 `grok`, `ui`, `DG` are already in scope — do not import them. The block runs in
 an async IIFE, so `await` works directly.
+
+## The `grokky` namespace — prefer it over raw js-api
+
+`grokky.*` exposes validated wrappers for common operations. Each wrapper
+checks inputs and throws a clear error instead of silently producing the wrong
+result. Use them when applicable; fall back to raw js-api only when no wrapper
+exists.
+
+| Wrapper                                          | Skill that documents it          | Replaces (anti-pattern)                      |
+|--------------------------------------------------|----------------------------------|----------------------------------------------|
+| `grokky.addCalculatedColumn(df, name, formula)`  | `datagrok-calc-column`           | `df.columns.addNewFloat(name)` + manual loop |
+| `grokky.filterRows(view, column, criteria)`      | `datagrok-table-ops`             | `t.rows.match(...).filter()` or raw `df.filter.set(...)` — those bypass the filter panel |
+| `grokky.sortRows(df, columns, orders?)`          | `datagrok-table-ops`             | manual `Array.sort` over an index array      |
+| `grokky.selectRows(df, predicate)`               | `datagrok-table-ops`             | hand-rolled BitSet loops                     |
+| `grokky.aggregateBy / pivot / unpivot / joinTables` | `datagrok-table-ops`          | misremembering `groupBy().add().aggregate()` or `grok.data.joinTables` argument order |
+| `grokky.addViewer(type, options?) / configureViewer(viewer, options)` | `datagrok-viewer`        | `grok.shell.addViewer(...)`, `view.scatterPlot(...)`, raw `viewer.setOptions` — those skip type canonicalization and property-name validation |
+
+Open the linked skill for full signature, DSL reference, and examples before
+emitting a call.
 
 ## Multiple blocks in one response
 
@@ -83,9 +103,28 @@ NOT render; convert via the table below:
 | list of items                     | `ui.divV(items.map((x) => ui.divText(x)))`     |
 | `DG.DataFrame`                    | `DG.Viewer.grid(df).root`                      |
 | `DG.Viewer` / `DG.Widget`         | `obj.root`                                     |
+| `DG.ViewBase` (incl. apps)        | open via `grok.shell.addView(v)` — see [Launching apps & views](#launching-apps--views) — do NOT return |
 | molecule (SMILES / molblock)      | `grok.chem.drawMolecule(smiles, 300, 200)`     |
 | macromolecule (HELM)              | see [HELM output](#helm-output) below          |
 | graphics                          | see [Graphics output](#graphics-output) below  |
+
+## Launching apps & views
+
+Datagrok **apps** are functions with `meta.role: app`. Calling one via
+`grok.functions.call('Pkg:appName')` may return a `DG.ViewBase` (or nothing if
+the app opens its own view). A returned view is NOT yet attached to the
+workspace — you must hand it to `grok.shell.addView()` yourself, otherwise
+nothing visible happens. Do NOT `return` the view from the block; open it.
+
+```datagrok-exec
+const result = await grok.functions.call('Pkg:appName');
+if (result instanceof DG.ViewBase)
+  grok.shell.addView(result);
+// If the app already added its own view (returns null/undefined), do nothing.
+```
+
+Never assign to `grok.shell.v` to launch an app — that just swaps the current
+view reference without registering it.
 
 ## HELM output
 

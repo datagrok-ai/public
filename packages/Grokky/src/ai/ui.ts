@@ -10,7 +10,7 @@ import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEven
   fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
-import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
+import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
@@ -107,7 +107,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
+  client.send(sessionId, prompt, {model: ClaudeModel.Sonnet, ...(opts.outputSchema ? {outputSchema: opts.outputSchema} : {})});
   return widget;
 }
 
@@ -137,7 +137,7 @@ export async function smartExecution(prompt: string, sessionId?: string): Promis
       host.appendChild(ui.wait(async () => {
         try {
           const execResults = await executeDatagrokBlocks(code, grok.shell.v);
-          return ui.divV(execResults);
+          return ui.divV(execResults.elements);
         } catch (e: any) {
           return ui.info(`Execution error: ${e?.message ?? e}`);
         } finally {
@@ -253,6 +253,11 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
       sqlContext = await SQLGenerationContext.create(connectionID, args.currentPrompt.catalogName);
     await runPromptWithLifecycle(panel, args.currentPrompt.prompt, v, 'db-query', (toolName, input) => sqlContext!.handleToolCall(toolName, input));
   });
+  panel.onAutoRetryRequest.subscribe(async ({reason}) => {
+    await runClaudeStreaming(panel, reason, v,
+      sqlContext ? (toolName, input) => sqlContext!.handleToolCall(toolName, input) : undefined,
+      undefined, panel.startChatSession());
+  });
   return true;
 }
 
@@ -284,12 +289,12 @@ export async function runPromptWithLifecycle(
     session = panel.startChatSession();
     session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
 
-    if (await grok.ai.processPrompt(prompt)) {
-      // Built-in handler claimed the prompt — no AI response, just a green check next to it.
-      session.session.markHandledNatively();
-      session.endSession();
-      return;
-    }
+    // if (await grok.ai.processPrompt(prompt)) {
+    //   // Built-in handler claimed the prompt — no AI response, just a green check next to it.
+    //   session.session.markHandledNatively();
+    //   session.endSession();
+    //   return;
+    // }
   }
   if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt)) {
     session?.endSession();
@@ -406,7 +411,7 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
     }));
 
     const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
-    client.send(sessionId, prompt, resolvedMode ? {systemPromptMode: resolvedMode} : undefined);
+    client.send(sessionId, prompt, {model: ClaudeModel.Sonnet, ...(resolvedMode ? {systemPromptMode: resolvedMode} : {})});
   } catch (e: any) {
     panel.clearStreaming();
     grok.shell.error(`Claude runtime: ${e.message}`);
@@ -428,6 +433,9 @@ export function setupShellAIPanelUI(): void {
         return;
       }
       await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
+    });
+    _shellAIPanel.onAutoRetryRequest.subscribe(async ({reason}) => {
+      await runClaudeStreaming(_shellAIPanel!, reason, grok.shell.v, undefined, undefined, _shellAIPanel!.startChatSession());
     });
   }
   _shellAIPanel.show();
@@ -454,6 +462,9 @@ export async function setupTableViewAIPanelUI() {
       const prompt = args.currentPrompt.prompt;
       await runPromptWithLifecycle(panel, prompt, tableView, 'tableview');
     });
+    panel.onAutoRetryRequest.subscribe(async ({reason}) => {
+      await runClaudeStreaming(panel, reason, tableView, undefined, undefined, panel.startChatSession());
+    });
   };
   // also handle already opened views
   Array.from(grok.shell.tableViews).filter((v) => v.dataFrame != null).forEach((view) => {
@@ -478,6 +489,9 @@ export async function setupScriptsAIPanelUI() {
     panel.hide();
     panel.onRunRequest.subscribe(async (args) => {
       await runPromptWithLifecycle(panel, args.currentPrompt.prompt, scriptView, 'scripting');
+    });
+    panel.onAutoRetryRequest.subscribe(async ({reason}) => {
+      await runClaudeStreaming(panel, reason, scriptView, undefined, undefined, panel.startChatSession());
     });
   };
 
