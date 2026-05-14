@@ -11,10 +11,10 @@ FlagList ::= WS* '(' WS* Flag WS* (',' WS* Flag WS*)* ')' WS* {fragment=true}
 Flag ::= "call" | "optional" | "template"
 Segment ::=  WS* (Selector | TargetIds | TagSpec) WS* {fragment=true}
 TagSpec ::=  WS* '#' WS* TagSelectorType '(' TagSelectorArgs ')' WS*
-TagSelectorArgs ::= ((RefArg ',' TagIds) | TagIds) {fragment=true}
+TagSelectorArgs ::= (RefArg (',' TagIds)?) | TagIds {fragment=true}
 TagSelectorType ::= "after*" | "after" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
 Selector ::= SelectorType '(' SelectorArgs ')'
-SelectorArgs ::= ((RefArg ',' TargetIds) | TargetIds) (',' StopIds)? {fragment=true}
+SelectorArgs ::= (RefArg (',' TargetIds (',' StopIds)?)?) | (TargetIds (',' StopIds)?) {fragment=true}
 SelectorType ::= "after+" | "after*" | "after" | "before+" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
 TargetIds ::= ArgsOr
 StopIds ::= ArgsOr
@@ -103,8 +103,10 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
       const targetIdsNode = node.children.find((cnode) => cnode.type === 'TargetIds');
       const stopIdsNode = node.children.find((cnode) => cnode.type === 'StopIds');
       checkSelector(io, selector, isBase, ref);
-      const ids = targetIdsNode!.children.map((cnode) => cnode.text);
+      const ids = targetIdsNode ? targetIdsNode.children.map((cnode) => cnode.text) : [];
       const stopIds = stopIdsNode ? stopIdsNode.children.map((cnode) => cnode.text) : [];
+      if (ids.length === 0 && selector !== 'same')
+        throw new Error(`Link io ${io} is using ${selector} without an id list`);
       return {type: 'selector' as const, selector, ids, stopIds, ref};
     } else if (node.type === 'TargetIds') {
       const selector = 'first' as const;
@@ -116,6 +118,8 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
       const tagsNode = node.children.find((cnode) => cnode.type === 'TagIds');
       const tags = tagsNode ? tagsNode.children.map((cnode) => cnode.text) : [];
       checkSelector(io, selector, isBase, ref);
+      if (tags.length === 0 && selector !== 'same')
+        throw new Error(`Link io ${io} is using ${selector} without a tag list`);
       return {type: 'tag' as const, selector, tags, ref};
     } else if (node.type === 'Name' || node.type === 'Flag')
       return;

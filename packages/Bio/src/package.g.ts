@@ -746,7 +746,7 @@ export async function demoBioSequenceSpace() : Promise<void> {
 }
 
 //description: Activity Cliffs analysis on Macromolecules data
-//meta.demoPath: Bioinformatics | Activity Cliffs
+//meta.demoPath: Bioinformatics | Sequence Activity Cliffs
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
 export async function demoBioActivityCliffs() : Promise<void> {
   await PackageFunctions.demoBioActivityCliffs();

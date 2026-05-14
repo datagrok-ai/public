@@ -1,0 +1,200 @@
+---
+title: "LQL reference"
+sidebar_position: 3.5
+sidebar_label: "LQL reference"
+---
+
+Reference catalog for the [Link Query Language](./link-query-language). For
+the concept walkthrough — base paths, `expand`, instance generation — read the
+guide first.
+
+### Syntax
+
+```
+NAME(FLAGS)?:PATH
+```
+
+- `NAME` — query name; an identifier (`[_a-zA-Z][a-zA-Z_0-9]*`).
+- `FLAGS` — optional comma-separated subset of `optional`, `call`, `template`.
+- `PATH` — `/`-separated segments, relative to the link's host pipeline.
+  Leading `/` is forbidden. The last segment of a data-link `from`/`to` must
+  be a script I/O name (bare identifier).
+
+A bare identifier in a segment is shorthand for `first(identifier)`.
+
+### Glossary
+
+- **Path** — `/`-separated segments resolved relative to the link's host pipeline.
+- **Segment** — a single selector or bare id inside a path.
+- **Base** — the link's anchor query (the `base` field); evaluated first, before `from` and `to`.
+- **Link instance** — one execution of a link, produced for each match of an `expand` selector in the base.
+- **Reference selector** — selector that anchors relative to a named base via `@ref` (e.g. `same`, `before`, `after`).
+- **Tag** — string label attached to a script or workflow in [configuration](./configuration#tags); matched with the `#` selector prefix.
+
+### Selectors
+
+| Selector&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Kind | Where&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description |
+|-------------|-------------|-----------------|-------------|
+| `first`     | plain       | any path        | First direct descendant whose id is in the OR-list.<br/>*e.g.* `first(script1)` |
+| `last`      | plain       | any path        | Last direct descendant whose id is in the OR-list.<br/>*e.g.* `last(script1\|script2)` |
+| `all`       | plain       | non-`base`      | Every direct descendant whose id is in the OR-list (one query → many hits).<br/>*e.g.* `all(metric)` |
+| `expand`    | plain       | **`base` only** | Like `all`, but every match produces a separate link instance.<br/>*e.g.* `expand(workflow1\|workflow2)` |
+| `same`      | reference   | non-`base`      | The same node `@ref` matched at this segment. Id-list is optional — pass it only to filter down when `@ref` matched a wider set.<br/>*e.g.* `same(@base)` or `same(@base, script1)` |
+| `before`    | reference   | non-`base`      | First preceding node whose id matches, scanning backward from the base.<br/>*e.g.* `before(@base,prepData)` |
+| `before*`   | reference   | non-`base`      | Every preceding node whose id matches.<br/>*e.g.* `before*(@base,prepData)` |
+| `before+`   | reference   | non-`base`      | Only the **immediately adjacent** preceding sibling, if its id matches.<br/>*e.g.* `before+(@base,prepData)` |
+| `after`     | reference   | non-`base`      | First following node whose id matches, scanning forward from the base.<br/>*e.g.* `after(@base,nextStep)` |
+| `after*`    | reference   | non-`base`      | Every following node whose id matches.<br/>*e.g.* `after*(@base,nextStep)` |
+| `after+`    | reference   | non-`base`      | Only the **immediately adjacent** following sibling, if its id matches.<br/>*e.g.* `after+(@base,nextStep)` |
+| `#SELECTOR` | tag variant | any path        | Same matching rules as `SELECTOR`, but on [tags](./configuration#tags) with AND across tags. Traverses nesting.<br/>*e.g.* `#all(metric&primary)` |
+
+Notes:
+
+- Reference selectors take the base query name as their first argument
+  (prefixed with `@`, e.g. `@base`).
+- Id lists use **OR** (`|`); tag lists use **AND** (`&`).
+- Tag selectors support every base selector **except** `+` modifiers — tag
+  paths cross nesting levels, so "immediately adjacent" is not meaningful.
+  The grammar accepts `#after*`, `#before*`, `#after`, `#before`, `#same`,
+  `#first`, `#last`, `#all`, `#expand`.
+
+### Flags
+
+| Flag       | Meaning                                                                              | Used in                                       |
+|------------|--------------------------------------------------------------------------------------|-----------------------------------------------|
+| `optional` | A missing match is allowed; the link simply does not fire for that instance.         | Any query.                                    |
+| `call`     | Resolve to the matched `FuncCall` itself rather than a script IO.                    | `funccall` [actions](./link-types#funccall-actions). |
+| `template` | Expand the last segment's `\|`-list into one query per id (see [guide](./link-query-language#template-queries)). | `from` / `to` in data links. |
+
+### Modifiers and stop ids
+
+The `*` and `+` suffixes on `before` / `after` are part of the selector name,
+not separate operators. Side-by-side, against a sequence
+`[prep1, prep2, prep3, base, next1, next2, next3]` with id-list covering every
+`prep` / `next`:
+
+| Selector  | Captures                  |
+|-----------|---------------------------|
+| `before`  | `prep3`                   |
+| `before*` | `prep1, prep2, prep3`     |
+| `before+` | `prep3` *(only if the adjacent sibling is in the id-list; otherwise no match)* |
+| `after`   | `next1`                   |
+| `after*`  | `next1, next2, next3`     |
+| `after+`  | `next1` *(same rule as `before+`)* |
+
+The `before` and `after` selectors accept an optional third argument — a
+`|`-separated list of **stop ids**. The scan in the selector's direction halts
+as soon as a node whose id appears in this list is encountered, even if a
+matching id appears further along. This is the standard way to confine a
+relative search to a region between two known steps:
+
+```
+before(@base, prepData, resetStep)
+```
+
+matches the nearest preceding `prepData`, but gives up if a `resetStep`
+appears first.
+
+### Grammar
+
+The authoritative EBNF lives in the parser source:
+[`LinkSpec.ts` lines 6–30](https://github.com/datagrok-ai/public/blob/master/libraries/compute-utils/reactive-tree-driver/src/config/LinkSpec.ts#L6-L30).
+
+### Patterns
+
+**Fan out across siblings.** Multiply a link across every matching step in
+every matching workflow:
+
+```
+{
+  base: "base:expand(workflowA|workflowB)/expand(step)",
+  from: "in:same(@base)/same(@base)/result",
+  to:   "out:same(@base)/after+(@base, nextStep)/value"
+}
+```
+
+**Bound a scan with a stop step.** Restrict `before` / `after` to the region
+between two known boundaries:
+
+```
+src:before(@base, dataPrep, resetStep)/output
+```
+
+**Match across nesting with tags.** Tags ignore nesting depth — useful for
+collecting heterogeneous nodes:
+
+```
+sinks:#all(report)/result
+```
+
+**Mix tags and ids.** Each segment narrows the previous result set:
+
+```
+src:#first(workflowA)/#all(metric)/result
+```
+
+**Match the host pipeline.** A query with no path (just a name) resolves to
+the pipeline that hosts the link — used by `pipelineValidator`:
+
+```
+host
+```
+
+**Tolerate missing nodes.** The `optional` flag makes a link active even when
+the query has no match — useful when an input only exists in some workflow
+shapes:
+
+```
+helper(optional):myworkflow/optionalStep/output
+```
+
+**Bulk IO via `template`.** The `template` flag fans out the last segment's
+`|`-list into one query per id, sharing the path:
+
+```
+{
+  from: "in_(template):myworkflow/script1/output1|output2|output3",
+  to:   "out_(template):myworkflow/script2/input1|input2|input3"
+}
+```
+
+**Stop-bounded fan-out.** Combine `expand` in the base with a stop-id-bounded
+`before` / `after` to confine each instance to a region:
+
+```
+{
+  base: "base:expand(section)",
+  from: "in:before(@base, dataPrep, resetStep)/output",
+  to:   "out:same(@base)/result"
+}
+```
+
+**Advanced: `same(@ref, ids)` as a filter.** When the base matches a wider
+set than the link should accept, pass an id-list to `same` to narrow it. For
+`base: expand(workflowA|workflowB|workflowC)` and a link that only applies to
+the first two:
+
+```
+from: "in:same(@base, workflowA|workflowB)/.../result"
+```
+
+### Gotchas
+
+- `expand` is valid **only** inside `base`. Using it elsewhere is a parse-time
+  error.
+- `all` is **not** allowed inside `base` — use `expand` if you want every match
+  to spawn an instance.
+- Reference selectors (`same`, `before`, `after`, …) are **not** allowed inside
+  `base`. `base` must resolve without depending on another query's result.
+- Tag id-lists combine with **AND** (`&`); regular id-lists combine with
+  **OR** (`|`). Easy to flip.
+- Tag matches descend; they never travel upward past the link's host
+  pipeline.
+- `#+` (adjacent-tag) selectors do not exist — only `#*` is available for
+  tag variants of `before` / `after`.
+- Absolute paths (leading `/`) are forbidden; mid-path `.` is forbidden.
+- Reference selectors **require** a leading `@ref` argument; non-ref
+  selectors (`first`, `last`, `all`, `expand`) must **not** take one. Mixing
+  is a parse-time error.
+- The `call` flag is only meaningful in `funccall` actions; in data links it
+  is silently inert.

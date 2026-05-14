@@ -364,6 +364,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
       [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((v) => v.root),
       DEMO_RESULTS.map((info) => `<b>${info.caption}</b>\n\n${info.text}`),
       ['left', 'left', 'right', 'right', 'left'],
+      view.root,
     );
   }
 

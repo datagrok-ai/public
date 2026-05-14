@@ -611,6 +611,7 @@ Datagrok does the rest, and turns it into an interactive experience:
 :::warning 
 At the moment, parameter referencing is implemented only for SQL queries.
 The implementation for JavaScript and other languages is in progress.
+:::
 
 </div>
 </details>

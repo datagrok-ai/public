@@ -265,23 +265,27 @@ links: [
 ```
 
 The `id` field is a user-specified name of the link.
-The fields `from` and `to` contain description of inputs and outputs of steps,
+The fields `from` and `to` contain descriptions of inputs and outputs of steps
 that the link can use.
 
 For now, we're using a simple notation defining a static link between two steps.
-Lists `from` and `to` contain only one value, defined in the format
-`<direction>:<step><parameter>`
-Note that here `<step>` name refers to the name defined in the pipeline configuration,
-not the name of the script itself.
-This allows you to create several steps with different input using the same script
-defining step logic.
+Each entry in `from` and `to` has the form `<queryName>:<stepId>/<ioName>`:
 
-Inputs and outputs are described using the **Link Query Language**.
-Links system of the low-code workflow is very flexible and allows dynamic matching
-of step inputs and outputs for dynamically added steps,
-and even between different workflows.
-To find more information about link capabilities,
-see the [Link types](./link-types.mdx) section of the documentation.
+- `<queryName>` is the name the link handler uses to address this port
+  (`value_in` and `value_out` here — pick anything that reads well).
+- `<stepId>` matches the `id` of a step declared in `steps`.
+- `<ioName>` matches a script input or output name (`df_wine`, etc.).
+
+The `<stepId>` refers to the id you assigned in the pipeline configuration, not
+the script's `nqName`. This lets the same script appear as multiple steps with
+different input bindings.
+
+Inputs and outputs are described using the **Link Query Language**. The links
+system of the low-code workflow is very flexible and allows dynamic matching of
+step inputs and outputs for dynamically added steps, and even between different
+workflows. For the full grammar see the
+[LQL reference](./link-query-language-reference); for the catalog of link types
+and what each controller method does, see [Link types](./link-types).
 
 
 Publish the package:
@@ -543,3 +547,19 @@ suggesting to rerun the step.
 The Low-code workflow engine combines flexible data analysis capabilities
 with robust workflow state management to ensure reproducible results.
 Its advanced tools help maintain data consistency throughout the analysis process.
+
+## More worked examples
+
+The walkthrough above covers a static pipeline with plain data links. For
+runnable TypeScript examples of the patterns that this tutorial does _not_
+cover, see the example files bundled with the `create-workflow` agent skill:
+
+| File | Demonstrates |
+|------|--------------|
+| [`minimal-static.ts`](https://github.com/datagrok-ai/public/blob/master/.claude/skills/create-workflow/examples/minimal-static.ts) | A static pipeline with no links — the smallest configuration that works. |
+| [`dynamic-with-links.ts`](https://github.com/datagrok-ai/public/blob/master/.claude/skills/create-workflow/examples/dynamic-with-links.ts) | A [dynamic workflow](./configuration#dynamic-workflows) with `stepTypes`, `initialSteps`, an `all()` selector, and a link handler that propagates outputs to every downstream instance. |
+| [`validators-and-meta.ts`](https://github.com/datagrok-ai/public/blob/master/.claude/skills/create-workflow/examples/validators-and-meta.ts) | Cross-field [validators](./link-types#validators), [meta links](./link-types#metadata-links) that hide/show advanced inputs, and a user-triggered reset [action](./link-types#data-actions). |
+
+Each file is a self-contained provider function you can adapt to a real
+workflow. They reference the same types described in this documentation
+(resolvable via `@datagrok-libraries/compute-api`).

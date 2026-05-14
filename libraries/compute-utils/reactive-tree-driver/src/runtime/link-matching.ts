@@ -282,6 +282,8 @@ function matchRefSegment(
     if (originIdx == null)
       return [];
     const target = allNodeEntries[originIdx];
+    if (ids.length > 0 && !idsSet.has(target[1].id))
+      return [];
     return [target];
   }
 

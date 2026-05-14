@@ -63,7 +63,6 @@ export class DemoView extends DG.ViewBase {
     const updateIndicatorRoot = (activeTabContent ??
       dockNode.container.containerElement.getElementsByClassName('tab-content')[0]) as HTMLElement;
 
-    this._closePrevDemoViews();
     this.currentView = null;
 
     const viewsBefore = new Set<DG.View>(Array.from(grok.shell.views));
@@ -89,6 +88,7 @@ export class DemoView extends DG.ViewBase {
           })
         ])]);
         grok.shell.addView(v);
+        this._closePrevDemoViews();
         this.currentView = v;
         v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
       } finally {
@@ -104,10 +104,10 @@ export class DemoView extends DG.ViewBase {
       const viewBeforeApply = grok.shell.v;
       try {
         await func.apply();
+        this._closePrevDemoViews();
         this.currentView = grok.shell.v;
         if (grok.shell.tv instanceof DG.TableView)
           await grok.data.detectSemanticTypes(grok.shell.tv.dataFrame);
-        this._initWindowOptions();
       } finally {
         this._tagNewDemoViews(viewsBefore, func.name);
         grok.shell.windows.autoShowToolbox = prevAutoShowToolbox;
@@ -135,11 +135,8 @@ export class DemoView extends DG.ViewBase {
 
   private _tagNewDemoViews(viewsBefore: Set<DG.View>, funcName: string): void {
     for (const v of grok.shell.views) {
-      if (!viewsBefore.has(v)) {
-        try {
-          v.temp['demoApp'] = funcName;
-        } catch (_) {}
-      }
+      if (!viewsBefore.has(v))
+        v.temp['demoApp'] = funcName;
     }
   }
 
@@ -327,7 +324,6 @@ export class DemoView extends DG.ViewBase {
 
   nodeView(viewName: string, path: string): void {
     this._closeDemoScript();
-    this.currentView?.close();
     this.currentView = null;
 
     const view = DG.View.create();
@@ -383,6 +379,8 @@ export class DemoView extends DG.ViewBase {
     const searchInput = this._createSearchInput(directionFuncs, tree);
     view.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid grok-gallery-grid-view-demo-app'));
     grok.shell.addView(view);
+    this._closePrevDemoViews();
+    view.temp['demoApp'] = `_categoryView:${viewName}`;
     this.currentView = view;
     this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
   }
@@ -474,7 +472,6 @@ export class DemoView extends DG.ViewBase {
         return;
 
       this._closeDemoScript();
-      this.close();
       const panelRoot = this.tree.rootNode.root.parentElement!;
       treeNodeY = panelRoot.scrollTop!;
 
@@ -504,6 +501,7 @@ export class DemoView extends DG.ViewBase {
         });
         this.nodeView(value.text, value.value.path);
       }
+      this.close();
 
       panelRoot.scrollTo(0, treeNodeY);
     });

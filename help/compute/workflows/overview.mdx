@@ -9,25 +9,35 @@ terms and concepts.
 ## Main terms
 
 Before working with workflows, familiarize yourself with these terms:
-* **Node** - any Datagrok script.
+* **Node** — any Datagrok script that appears as a step in a workflow.
+  In docs, "step", "script node", and "node" all refer to the same thing.
   * Node input: data that the step consumes
   * Node output: data that the step produces
-* **Link** - connects steps.
+* **Link** — connects steps.
   Links can pass data directly from the input of one step
   to the output of another step or apply some transformations.
   * Link source: where to take data from
   * Link target: where to put data
   * Link handler: a TypeScript function performing data transformation.
   Using handlers, the user can apply small non-interactive transformations to data between steps.
-* **Configuration**: a tree of JavaScript objects holding workflow definition: nodes and links
-* **Workflow provider**: A JavaScript function that returns a Workflow configuration object
-* **Controller**: An object that is passed to handler.
-  Controller has methods to get inputs and assign outputs.
-* **Action**: Similar to links, but triggers only by clicking a UI button.
-* **FuncCall**: a result of executing a data query, script, or any other function.
-  From the user's point of view, a FuncCall is one invocation of a script, containing the script code,
-  input, and output.
-  The description is available [here](../../datagrok/concepts/functions/function-call.md)
+* **Configuration**: a tree of JavaScript objects holding workflow definition: nodes and links.
+* **Workflow provider**: A JavaScript function that returns a workflow configuration object.
+* **Controller**: an object passed to every link or action handler.
+  The controller is the only sanctioned way for a handler to read inputs and write outputs;
+  it exposes methods like `controller.getFirst('input1')` and `controller.setAll('out1', value)`.
+  Each link type has its own controller flavor — see
+  [Common controller methods](./link-types#common-controller-methods).
+* **Action**: similar to a link, but triggers only on a user gesture (button or menu click).
+* **FuncCall**: a single invocation of a Datagrok function (a script, query, or any
+  other function), carrying its inputs, outputs, and execution metadata. Every step
+  in a workflow is backed by a FuncCall. See
+  [Function call](../../datagrok/concepts/functions/function-call.md) for the full reference.
+* **`nqName`**: the "namespace-qualified name" of a Datagrok function in the form
+  `PackageName:FunctionName`. Used wherever the workflow needs to identify a script
+  or a workflow provider. You can look one up with `grok s functions list --filter "..."`.
+* **`RichFunctionView`**: the auto-generated input/output UI Datagrok renders for a
+  script. Workflows reuse this view for each step. See
+  [RichFunctionView](../scripting/advanced-scripting/rich-function-view) for details.
 
 
 ### Scripts nodes
