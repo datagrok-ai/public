@@ -78,44 +78,51 @@ export async function resetShell(page: Page): Promise<void> {
 }
 
 /**
- * Open the Compute2 Model Hub view. The Compute2 package registers
- * the catalog under `browsePath: 'Compute'`, `name: 'Model Hub'`,
- * `segment: 'Modelhub'`. The canonical UI path (Apps → Compute → Model Hub
- * in the Browse tree) requires the tree to be fully expanded, which is
- * unreliable on cold CI Datlas — `clickTreeLabel('Apps')` returns false
- * if the node is collapsed or the label hasn't mounted yet.
+ * Open the Compute2 Model Hub view. The Compute2 package registers the
+ * catalog as `@grok.decorators.app({ browsePath: 'Compute', name: 'Model Hub' })`
+ * on the `modelCatalog` function. The canonical UI path (Apps → Compute →
+ * Model Hub in the Browse tree) requires the tree to be fully expanded,
+ * which is unreliable on cold CI Datlas — `clickTreeLabel('Apps')` returns
+ * false silently if the node is collapsed or the label hasn't mounted yet.
  *
- * Strategy:
- *  1. Navigate to `/apps/Compute2/Modelhub` — matches `handleInitialUri`
- *     in compute-utils/model-catalog (it scans pathname segments for the
- *     registered `segment` case-insensitively).
- *  2. Fall back to invoking `Compute2:modelCatalog` via the JS API. That
- *     call routes through `startModelCatalog`, which finds-or-creates the
- *     Model Hub view.
- * Both code paths converge on `ModelCatalogView` rendering the cards grid.
+ * Strategy: invoke `Compute2:modelCatalog` via `grok.functions.call`.
+ * That's exactly what the Apps menu and the Browse tree's "Model Hub"
+ * leaf invoke when clicked — the function routes through `startModelCatalog`
+ * which finds-or-creates the `ModelCatalogView`. Then wait for the cards
+ * grid to render. Done before goto so the home page must be loaded; we
+ * navigate to BASE first so `grok` is available on `window`.
  */
 export async function openModelHub(page: Page): Promise<void> {
-  await page.goto(`${BASE}/apps/Compute2/Modelhub`);
+  await page.goto(BASE);
   await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
-  // Card view container — populated once the model list query resolves.
-  const ready = await page.locator('.model-catalog-view, .grok-gallery-grid, .grok-card').first()
-    .waitFor({ state: 'visible', timeout: 20_000 }).then(() => true).catch(() => false);
-  if (ready) {
-    await page.waitForTimeout(1500);
-    return;
-  }
-  // Fallback: programmatic open via JS API (matches the Apps menu entry).
   await page.evaluate(async () => {
     const grok = (window as any).grok;
-    try {
-      await grok.functions.eval('Compute2:modelCatalog');
-    } catch {
-      // last-ditch: ignore — visibility expectation below will report the failure
-    }
+    await grok.functions.call('Compute2:modelCatalog');
   });
   await page.locator('.model-catalog-view, .grok-gallery-grid, .grok-card').first()
-    .waitFor({ state: 'visible', timeout: 20_000 });
+    .waitFor({ state: 'visible', timeout: 30_000 });
   await page.waitForTimeout(1500);
+}
+
+/**
+ * Poll the public API until a script with the given `name` and tag `model`
+ * is server-persisted, or fail after `timeoutMs`. Diff Studio's
+ * `saveToModelHub()` and the platform Script Save button BOTH fire
+ * `grok.dapi.scripts.save(script)` without awaiting the round-trip, so a
+ * subsequent `page.goto()` can abort the still-in-flight POST and leave
+ * the catalog with no PK-PD / Bioreactor card to assert against.
+ */
+export async function waitForModelScript(page: Page, name: string, timeoutMs = 30_000): Promise<void> {
+  await page.evaluate(async ({ n, deadlineMs }) => {
+    const grok = (window as any).grok;
+    const deadline = Date.now() + deadlineMs;
+    while (Date.now() < deadline) {
+      const list = await grok.dapi.scripts.filter(`name = "${n}" and #model`).list({ pageSize: 1 });
+      if (list && list.length > 0) return;
+      await new Promise(r => setTimeout(r, 500));
+    }
+    throw new Error(`Model script "${n}" not visible on server within ${deadlineMs}ms`);
+  }, { n: name, deadlineMs: timeoutMs });
 }
 
 /** Click a ribbon item by its visible text label. */

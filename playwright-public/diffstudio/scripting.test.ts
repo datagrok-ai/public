@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 import { createSoftStepCollector } from './helpers/soft-step';
 import { attachErrorMonitor } from './helpers/error-monitor';
 import {
-  BASE, openDiffStudio, openModelFromLibrary, openModelHub, toggleRibbonSwitch,
-  ribbonSwitchOn, setInputValue, inputEditor, inputHost,
+  BASE, openDiffStudio, openModelFromLibrary, openModelHub, waitForModelScript,
+  toggleRibbonSwitch, ribbonSwitchOn, setInputValue, inputEditor, inputHost,
 } from './helpers/diff-studio';
 
 /**
@@ -67,6 +67,11 @@ test('DiffStudio Scripting — Edit toggle, </> JS view, Run, Save with //tags: 
     // Click Save — the script editor's ribbon Save button is `[name="button-Save"]`.
     await page.locator('[name="button-Save"]').first().click();
     await page.waitForTimeout(3000);
+    // The platform Save button fires `grok.dapi.scripts.save(...)` and may not
+    // be settled by the time Step 4 navigates with `page.goto(BASE)`. Block here
+    // until the server confirms the script exists with tag `model`, so the
+    // subsequent goto does not abort the still-in-flight save POST.
+    await waitForModelScript(page, 'Bioreactor');
   });
 
   await softStep('Step 3: Run the script; move Final-at slider — live update', async () => {

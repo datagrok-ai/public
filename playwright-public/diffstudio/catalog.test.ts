@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { createSoftStepCollector } from './helpers/soft-step';
 import { attachErrorMonitor } from './helpers/error-monitor';
 import {
-  BASE, openDiffStudio, openModelFromLibrary, openModelHub,
+  BASE, openDiffStudio, openModelFromLibrary, openModelHub, waitForModelScript,
   setInputValue, inputEditor, inputHost,
 } from './helpers/diff-studio';
 
@@ -36,6 +36,11 @@ test('DiffStudio Catalog — PK-PD: load → Save to Model Hub → refresh → r
         hasText: /Saved to Model Hub/i,
       });
       await expect(balloon.first()).toBeVisible({ timeout: 15_000 });
+      // `saveToModelHub()` fires `grok.dapi.scripts.save(script)` WITHOUT awaiting
+      // the round-trip — the balloon shows before the POST returns. The next step
+      // does `page.goto(BASE)`, which would abort that in-flight XHR. Block here
+      // until the server confirms the script exists with tag `model`.
+      await waitForModelScript(page, 'PK-PD');
     });
 
     await softStep('Step 3: Open the Model Hub (Apps → Compute → Model Hub) — PK-PD is listed', async () => {
