@@ -63,11 +63,11 @@ Interactive results based on input changes.
 # Performance
 Nonlinear systems of differential equations are solved within milliseconds.
 # No-code
-[Diff Studio](${LINK.DIF_STUDIO})
+[Diff Studio](https://datagrok.ai/help/compute/diff-studio)
 enables the creation of complex models without writing code.
 # Learn more
-* [Sensitivity analysis](${LINK.SENS_AN})
-* [Parameter optimization](${LINK.FITTING})`;
+* [Sensitivity analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
+* [Parameter optimization](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)`;
 
 export const ACID_PRODUCTION_MODEL_INFO: ModelInfo = {
   equations: ACID_PRODUCTION_MODEL,

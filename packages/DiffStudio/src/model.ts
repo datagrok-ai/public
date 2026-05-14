@@ -27,15 +27,17 @@ export class Model {
   }
 
   private showHelpPanel(): void {
-    grok.shell.windows.help.visible = true;
     const helpMD = ui.markdown(this.info);
     helpMD.classList.add('diff-studio-demo-app-div-md');
     const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
-    grok.shell.windows.help.showHelp(divHelp);
-    grok.shell.windows.context.visible = true;
-    grok.shell.windows.showContextPanel = false;
-    grok.shell.windows.showProperties = false;
-    grok.shell.windows.help.visible = true;
+
+    setTimeout(() => {
+      grok.shell.windows.help.showHelp(divHelp);
+      grok.shell.windows.context.visible = true;
+      grok.shell.windows.showContextPanel = false;
+      grok.shell.windows.showProperties = false;
+      grok.shell.windows.help.visible = true;
+    }, 1000);
   }
 
   public run(): Promise<void> {
