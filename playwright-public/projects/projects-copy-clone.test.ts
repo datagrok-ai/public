@@ -210,7 +210,17 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
 
     // -------------------------------------------------------------------
     // Sub-flow 4b — Save Copy with Link + GROK-19750 invariant.
+    // GROK-19750 workaround (extended for CI): 4a's saveCopy mode='original'
+    // overwrites the project entity through the UI dialog. On the CI Datlas
+    // the overwritten entity occasionally fails to re-materialise its
+    // TableView on reopen (90s poll of grok.shell.tv.addViewer never lands).
+    // Rehydrate the original first — same workaround already used before 4c.
     // -------------------------------------------------------------------
+    await softStep('4b prep: rehydrate original (CI Datlas reopen mitigation)', async () => {
+      ids.original = await rehydrateOriginal(page, names.original);
+      expect(ids.original.projectId).toBeTruthy();
+    });
+
     await softStep('4b step 1-4: open original → addViewer Scatter → SAVE Copy/Link → closeAll', async () => {
       await reopenProjectById(page, ids.original!.projectId);
       await addViewerSafely(page, 'Scatter plot');
