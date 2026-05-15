@@ -78,33 +78,59 @@ export async function resetShell(page: Page): Promise<void> {
 }
 
 /**
- * Open the Compute2 Model Hub view. The Compute2 package registers the
- * catalog as `@grok.decorators.app({ browsePath: 'Compute', name: 'Model Hub' })`
- * on the `modelCatalog` function. The canonical UI path (Apps → Compute →
- * Model Hub in the Browse tree) requires the tree to be fully expanded,
- * which is unreliable on cold CI Datlas — `clickTreeLabel('Apps')` returns
- * false silently if the node is collapsed or the label hasn't mounted yet.
+ * Open the Compute2 Model Hub view. Compute2 registers the catalog via
+ * `@grok.decorators.app({ browsePath: 'Compute', name: 'Model Hub' })` on the
+ * `modelCatalog` TS method. The Browse-tree path (Apps → Compute → Model Hub)
+ * needs the tree expanded, which is unreliable on cold CI Datlas, so we drive
+ * it programmatically.
  *
- * Strategy: invoke `Compute2:modelCatalog` via `grok.functions.call`.
- * That's exactly what the Apps menu and the Browse tree's "Model Hub"
- * leaf invoke when clicked — the function routes through `startModelCatalog`
- * which finds-or-creates the `ModelCatalogView`. Then wait for the cards
- * grid to render. Done before goto so the home page must be loaded; we
- * navigate to BASE first so `grok` is available on `window`.
+ * Pattern proven by `UsageAnalysis/files/TestTrack/DiffStudio/scripting-spec.ts`
+ * on dev.datagrok.ai: locate the function by its TS identifier (`modelCatalog`,
+ * lowercase) via `DG.Func.find`, `prepare()` it, `call()`, then read the view
+ * from `getOutputParamValue()` and `grok.shell.addView(view)`. Plain
+ * `grok.functions.call('Compute2:ModelCatalog', {})` does not surface the view
+ * because the app function returns it as an output param that the caller is
+ * expected to add to the shell.
  */
 export async function openModelHub(page: Page): Promise<void> {
   await page.goto(BASE);
   await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
   await page.evaluate(async () => {
+    const DG = (window as any).DG;
     const grok = (window as any).grok;
-    // Platform registers app-decorator functions under PascalCase
-    // (see Compute2/src/package-api.ts: `grok.functions.call('Compute2:ModelCatalog', {})`).
-    // The lowercase `modelCatalog` is just the TypeScript identifier.
-    await grok.functions.call('Compute2:ModelCatalog', {});
+    const f = DG.Func.find({ package: 'Compute2', name: 'modelCatalog' })[0];
+    if (!f) throw new Error('Compute2:modelCatalog function not found');
+    const call = f.prepare();
+    await call.call();
+    const view = call.getOutputParamValue();
+    if (view) grok.shell.addView(view);
   });
-  await page.locator('.model-catalog-view, .grok-gallery-grid, .grok-card').first()
-    .waitFor({ state: 'visible', timeout: 30_000 });
+  // Wait for the Model Hub to become the active view; the catalog is a JsCardView
+  // that renders its entries as `.d4-list-item` (no `.model-catalog-view` /
+  // `.grok-gallery-grid` classes on the live server).
+  await page.waitForFunction(() => (window as any).grok?.shell?.v?.name === 'Model Hub',
+    null, { timeout: 30_000 });
+  await page.locator('.d4-list-item').first().waitFor({ state: 'visible', timeout: 20_000 });
   await page.waitForTimeout(1500);
+}
+
+/** Find a Model Hub card by its visible label and open it (click + dblclick are both required). */
+export async function openModelHubCard(page: Page, modelName: string): Promise<void> {
+  await page.evaluate((name) => {
+    const items = Array.from(document.querySelectorAll('.d4-list-item'))
+      .filter(el => (el.textContent ?? '').trim() === name) as HTMLElement[];
+    if (items.length === 0) throw new Error(`No '${name}' card in Model Hub`);
+    const card = items[items.length - 1];
+    card.click();
+    card.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+  }, modelName);
+}
+
+/** Count Model Hub cards matching a label. */
+export async function modelHubCardCount(page: Page, modelName: string): Promise<number> {
+  return await page.evaluate((name) =>
+    Array.from(document.querySelectorAll('.d4-list-item'))
+      .filter(el => (el.textContent ?? '').trim() === name).length, modelName);
 }
 
 /**

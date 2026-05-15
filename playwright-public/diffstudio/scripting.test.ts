@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test';
 import { createSoftStepCollector } from './helpers/soft-step';
 import { attachErrorMonitor } from './helpers/error-monitor';
 import {
-  BASE, openDiffStudio, openModelFromLibrary, openModelHub, waitForModelScript,
+  openDiffStudio, openModelFromLibrary, openModelHub, openModelHubCard,
+  modelHubCardCount, waitForModelScript,
   toggleRibbonSwitch, ribbonSwitchOn, setInputValue, inputEditor, inputHost,
 } from './helpers/diff-studio';
 
@@ -97,23 +98,20 @@ test('DiffStudio Scripting — Edit toggle, </> JS view, Run, Save with //tags: 
   });
 
   await softStep('Step 4: Access the saved model in Model Hub (Apps > Compute > Model Hub)', async () => {
-    // Use the URL/JS-API helper — Browse tree navigation is unreliable on cold
-    // CI Datlas because the 'Apps' / 'Compute' / 'Model Hub' labels may not be
-    // mounted when the test reaches this step.
+    // Use the JS-API helper — Browse tree navigation is unreliable on cold CI Datlas
+    // because the 'Apps' / 'Compute' / 'Model Hub' labels may not be mounted when the
+    // test reaches this step.
     await openModelHub(page);
-
-    // Model Hub renders saved models as cards (Compute2 Vue components) in the central grid.
-    // Plain text match — the model name is the card's visible label.
-    await expect(page.getByText('Bioreactor', { exact: true }).first())
-      .toBeVisible({ timeout: 20_000 });
+    // Model Hub renders saved models as `.d4-list-item` entries with the model name
+    // as the visible label.
+    expect(await modelHubCardCount(page, 'Bioreactor')).toBeGreaterThan(0);
   });
 
   await softStep('Step 5: Interact with the saved model; adjust Final', async () => {
-    // Pick the last "Bioreactor" entry — the newly saved one
-    const items = page.getByText('Bioreactor', { exact: true });
-    const count = await items.count();
-    expect(count).toBeGreaterThan(0);
-    await items.nth(count - 1).dblclick();
+    // Pick the last "Bioreactor" card (the newly saved one) and open it; cards require
+    // both `click()` and a `dispatchEvent('dblclick')` to navigate.
+    expect(await modelHubCardCount(page, 'Bioreactor')).toBeGreaterThan(0);
+    await openModelHubCard(page, 'Bioreactor');
 
     await page.locator(inputHost('Final')).waitFor({ timeout: 30_000 });
     await setInputValue(page, 'Final', '800');
