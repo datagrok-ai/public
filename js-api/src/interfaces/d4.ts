@@ -3052,6 +3052,9 @@ export interface IScatterPlotSettings {
   /// Requires *showTooltip* to be enabled.
   rowTooltip: string;
 
+  /// Delay in milliseconds before showing row tooltip
+  tooltipDelay: number;
+
   rowGroupTooltip: string;
 
   /// If true, *X Axis Height* and *Y Axis Width* are calculated automatically to fit the required precision.

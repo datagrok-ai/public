@@ -209,6 +209,8 @@ export class Tags {
 
   static DataSync = '.data-sync';
 
+  static UrlParams = '.url-params';
+
   static IsDbEntity = '.db.entity';
 
   static IsDbView = '.db.view';
