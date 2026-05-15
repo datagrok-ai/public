@@ -249,6 +249,7 @@ export const RichFunctionView = Vue.defineComponent({
     const isLocked = Vue.ref(false);
 
     const formHidden = Vue.ref(false);
+    const inputsHidden = Vue.ref(false);
     const historyHidden = Vue.ref(true);
 
     const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
@@ -284,6 +285,7 @@ export const RichFunctionView = Vue.defineComponent({
       customExports.value = Utils.getCustomExports(call.func);
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
       formAsTab.value = Utils.getFormAsTab(call.func);
+      inputsHidden.value = Utils.getInputsHidden(call.func);
     }, {immediate: true});
 
     Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
@@ -542,7 +544,14 @@ export const RichFunctionView = Vue.defineComponent({
                 dock-spawn-panel-icon='sign-in-alt'
                 ref={formRef}
               >
-                {
+                <div class='flex justify-end'>
+                  <IconFA
+                    name={inputsHidden.value ? 'chevron-down' : 'chevron-up'}
+                    tooltip={inputsHidden.value ? 'Show inputs' : 'Hide inputs'}
+                    onClick={() => inputsHidden.value = !inputsHidden.value}
+                  />
+                </div>
+                { !inputsHidden.value &&
                   <InputForm
                     key={currentCall.value?.id}
                     ref={inputFormComponentRef}
@@ -557,8 +566,7 @@ export const RichFunctionView = Vue.defineComponent({
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
                     isReadonly={isReadonly.value}
-                  />
-                }
+                  /> }
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
                   { slots.navigation ?
                     slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
