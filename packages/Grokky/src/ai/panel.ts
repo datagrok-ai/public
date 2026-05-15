@@ -252,8 +252,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     ui.makeDroppable(this.textAreaDiv, {
       acceptDrop: (o) => o instanceof DG.Entity,
       doDrop: (args: any) => {
-        if (args?.dragObject instanceof DG.Entity)
+        if (args?.dragObject instanceof DG.Entity) {
           this.addEntityChip(args.dragObject);
+          this.textArea.focus();
+        }
       },
     });
     this.inputArea.appendChild(this.textAreaDiv);
