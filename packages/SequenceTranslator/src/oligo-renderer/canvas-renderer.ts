@@ -386,6 +386,12 @@ export function drawDuplex(
     for (const link of layout.antiLinks) drawLinkageApex(g, link, layout);
     drawChips(g, layout.antiChips, layout, o);
     drawTruncationMarker(g, layout.antiChips, model.antisense.monomers.length, layout);
+
+    // Watson-Crick base-pair indicators in the strand gap. Only meaningful
+    // when antisense is rendered anti-parallel (i.e. reversed for display) —
+    // that's what makes the vertical column alignment actually represent the
+    // duplex partner pairs.
+    if (layout.antiReversed) drawBasePairings(g, layout);
   }
 
   g.restore();
@@ -535,6 +541,116 @@ function drawLinkageApex(g: CanvasRenderingContext2D, link: LinkagePos, layout: 
   g.strokeStyle = color;
   g.stroke();
   g.restore();
+}
+
+/* ---------------------------------------------------------------- *
+ * Watson-Crick base pairing
+ *
+ * For each display column where a sense chip sits above an antisense chip
+ * (counted past leading conjugates), determine the pair kind and draw the
+ * canonical biology shorthand in the inter-strand gap:
+ *   - G ↔ C   → 3 vertical lines (3 hydrogen bonds — stronger color)
+ *   - A ↔ U / A ↔ T → 2 vertical lines (2 hydrogen bonds — lighter color)
+ *   - anything else → dashed line (mismatch / bulge)
+ *
+ * Non-canonical bases (modified analogs like `5meC`, `psiU`, `cpm6A`) are
+ * resolved via `getNaturalAnalog` against the central Bio monomer library;
+ * pairing is determined on the natural-analog letter, so a `2'-OMe-5meC`
+ * still pairs as `C` with a `G` partner.
+ * ---------------------------------------------------------------- */
+type PairKind = 'GC' | 'AU' | 'mismatch';
+const PAIR_COLOR_AU = '#4a5da8'; // 3 H-bonds — bolder indigo
+const PAIR_COLOR_GC = '#8c9dc8'; // 2 H-bonds — lighter blue-violet
+const PAIR_COLOR_MISMATCH = '#a5a5a5'; // dashed neutral gray
+const PAIR_LINE_W = 1.1;
+const MISMATCH_LINE_W = 1;
+
+function drawBasePairings(g: CanvasRenderingContext2D, layout: DuplexLayout): void {
+  const senseStart = layout.senseChips.findIndex((c) => c.monomer.kind === 'nucleotide');
+  const antiStart = layout.antiChips.findIndex((c) => c.monomer.kind === 'nucleotide');
+  if (senseStart < 0 || antiStart < 0) return;
+  const pairLen = Math.min(
+    layout.senseChips.length - senseStart,
+    layout.antiChips.length - antiStart,
+  );
+
+  const yTop = layout.senseY + layout.chipH;
+  const yBot = layout.antiY;
+  if (yBot <= yTop) return;
+
+  for (let i = 0; i < pairLen; i++) {
+    const sc = layout.senseChips[senseStart + i];
+    const ac = layout.antiChips[antiStart + i];
+    if (sc.monomer.kind !== 'nucleotide' || ac.monomer.kind !== 'nucleotide') continue;
+    const kind = basePairKind(
+      (sc.monomer as ParsedNucleotide).base,
+      (ac.monomer as ParsedNucleotide).base,
+    );
+    // Pair markers are anchored on the SENSE chip's center because both
+    // chips share the same X column when pair-aligned, but multi-char bases
+    // can give them slightly different widths.
+    const x = sc.x + sc.w / 2;
+    drawPairingMark(g, x, yTop, yBot, kind, sc.w);
+  }
+}
+
+function drawPairingMark(
+  g: CanvasRenderingContext2D, x: number, yTop: number, yBot: number,
+  kind: PairKind, chipW: number,
+): void {
+  g.save();
+  g.lineCap = 'round';
+  if (kind === 'mismatch') {
+    g.strokeStyle = PAIR_COLOR_MISMATCH;
+    g.lineWidth = MISMATCH_LINE_W;
+    g.setLineDash([1, 1.6]);
+    g.beginPath();
+    g.moveTo(x, yTop);
+    g.lineTo(x, yBot);
+    g.stroke();
+  } else if (kind === 'GC') {
+    // Three lines — spacing scales with chip width to stay readable on
+    // both narrow and wide chips, capped so they don't bleed past the chip.
+    const off = Math.min(3, chipW * 0.32);
+    g.strokeStyle = PAIR_COLOR_GC;
+    g.lineWidth = PAIR_LINE_W;
+    for (const dx of [-off, 0, off]) {
+      g.beginPath();
+      g.moveTo(x + dx, yTop);
+      g.lineTo(x + dx, yBot);
+      g.stroke();
+    }
+  } else { // AU / AT
+    const off = Math.min(2.4, chipW * 0.26);
+    g.strokeStyle = PAIR_COLOR_AU;
+    g.lineWidth = PAIR_LINE_W;
+    for (const dx of [-off, off]) {
+      g.beginPath();
+      g.moveTo(x + dx, yTop);
+      g.lineTo(x + dx, yBot);
+      g.stroke();
+    }
+  }
+  g.restore();
+}
+
+/** Reduce any base to its canonical A/C/G/U/T letter for pair determination.
+ * Returns null when the base is missing or has no resolvable natural analog. */
+function canonicalizeBaseForPair(b: string | null): string | null {
+  if (!b) return null;
+  if (isCanonicalBase(b)) return b;
+  const analog = getNaturalAnalog(b);
+  return analog && isCanonicalBase(analog) ? analog : null;
+}
+
+function basePairKind(senseBase: string | null, antiBase: string | null): PairKind {
+  const s = canonicalizeBaseForPair(senseBase);
+  const a = canonicalizeBaseForPair(antiBase);
+  if (!s || !a) return 'mismatch';
+  if ((s === 'G' && a === 'C') || (s === 'C' && a === 'G')) return 'GC';
+  if ((s === 'A' && (a === 'U' || a === 'T')) ||
+      ((s === 'U' || s === 'T') && a === 'A')) return 'AU';
+  return 'mismatch';
 }
 
 function drawConjugate(
