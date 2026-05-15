@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 920 580" preserveAspectRatio="xMinYMin meet" font-family="'Courier New', Courier, monospace" font-size="13">
+  <style>
+    .code { fill: #222; }
+    .cm   { fill: #008000; }
+    .leader { fill: none; stroke: #3465a4; stroke-width: 1.2; stroke-dasharray: 3,3; }
+    .callout { font-family: sans-serif; font-size: 13px; }
+    .callout text { fill: #3465a4; }
+    .callout a text { text-decoration: underline; cursor: pointer; }
+    .callout a:hover text { fill: #ff4000; }
+  </style>
+
+  <!-- code body -->
+  <text x="10" y="25"  class="cm"   xml:space="preserve">//tags: model</text>
+  <text x="10" y="40"  class="cm"   xml:space="preserve">//editor: Compute2:TreeWizardEditor</text>
+  <text x="10" y="55"  class="cm"   xml:space="preserve">//input: object params</text>
+  <text x="10" y="70"  class="cm"   xml:space="preserve">//output: object result</text>
+  <text x="10" y="85"  class="code" xml:space="preserve">export function MyWorkflow(params: any): PipelineConfiguration {</text>
+  <text x="10" y="100" class="code" xml:space="preserve">  return {</text>
+  <text x="10" y="115" class="code" xml:space="preserve">    id: 'myworkflow',</text>
+  <text x="10" y="130" class="code" xml:space="preserve">    type: 'static',</text>
+  <text x="10" y="145" class="code" xml:space="preserve">    steps: [</text>
+  <text x="10" y="160" class="code" xml:space="preserve">      {</text>
+  <text x="10" y="175" class="code" xml:space="preserve">        id: 'loadData',</text>
+  <text x="10" y="190" class="code" xml:space="preserve">        nqName: 'mypkg:LoadData',</text>
+  <text x="10" y="205" class="code" xml:space="preserve">      },</text>
+  <text x="10" y="220" class="code" xml:space="preserve">      {</text>
+  <text x="10" y="235" class="code" xml:space="preserve">        id: 'analyse',</text>
+  <text x="10" y="250" class="code" xml:space="preserve">        nqName: 'mypkg:Analyse',</text>
+  <text x="10" y="265" class="code" xml:space="preserve">      },</text>
+  <text x="10" y="280" class="code" xml:space="preserve">      {</text>
+  <text x="10" y="295" class="code" xml:space="preserve">        id: 'subflow',</text>
+  <text x="10" y="310" class="code" xml:space="preserve">        type: 'dynamic',</text>
+  <text x="10" y="325" class="code" xml:space="preserve">        stepTypes: [</text>
+  <text x="10" y="340" class="code" xml:space="preserve">          { id: 'preprocess', nqName: 'mypkg:Preprocess' },</text>
+  <text x="10" y="355" class="code" xml:space="preserve">        ],</text>
+  <text x="10" y="370" class="code" xml:space="preserve">      },</text>
+  <text x="10" y="385" class="code" xml:space="preserve">    ],</text>
+  <text x="10" y="400" class="code" xml:space="preserve">    links: [</text>
+  <text x="10" y="415" class="code" xml:space="preserve">      {</text>
+  <text x="10" y="430" class="code" xml:space="preserve">        id: 'shareLoaded',</text>
+  <text x="10" y="445" class="code" xml:space="preserve">        type: 'data',</text>
+  <text x="10" y="460" class="code" xml:space="preserve">        from: 'out:loadData/Output',</text>
+  <text x="10" y="475" class="code" xml:space="preserve">        to:   'in:analyse/Input',</text>
+  <text x="10" y="490" class="code" xml:space="preserve">      },</text>
+  <text x="10" y="505" class="code" xml:space="preserve">    ],</text>
+  <text x="10" y="520" class="code" xml:space="preserve">  };</text>
+  <text x="10" y="535" class="code" xml:space="preserve">}</text>
+
+  <!-- callouts -->
+  <path d="M 280,33 H 540"   class="leader"/>
+  <g class="callout">
+    <a xlink:href="../configuration#workflow-providers" target="_top">
+      <text x="545" y="36">workflow provider</text>
+    </a>
+  </g>
+
+  <path d="M 175,130 H 540"  class="leader"/>
+  <g class="callout">
+    <a xlink:href="../configuration#type" target="_top">
+      <text x="545" y="133">pipeline type</text>
+    </a>
+  </g>
+
+  <path d="M 260,190 H 540"  class="leader"/>
+  <g class="callout">
+    <a xlink:href="../configuration#script-nodes" target="_top">
+      <text x="545" y="193">script node (nqName)</text>
+    </a>
+  </g>
+
+  <path d="M 195,310 H 540"  class="leader"/>
+  <g class="callout">
+    <a xlink:href="../configuration#dynamic-workflows" target="_top">
+      <text x="545" y="313">nested dynamic pipeline</text>
+    </a>
+  </g>
+
+  <path d="M 105,400 H 540"  class="leader"/>
+  <g class="callout">
+    <a xlink:href="../link-types" target="_top">
+      <text x="545" y="403">link (data, validator, meta, action)</text>
+    </a>
+  </g>
+
+  <path d="M 290,468 H 540"  class="leader"/>
+  <g class="callout">
+    <a xlink:href="../link-query-language" target="_top">
+      <text x="545" y="471">LQL selectors for source / target</text>
+    </a>
+  </g>
+</svg>
