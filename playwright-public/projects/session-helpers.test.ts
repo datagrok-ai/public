@@ -37,6 +37,11 @@ import {logoutAndLoginAs} from '../helpers/session';
 
 test.use({...specTestOptions, navigationTimeout: 180_000});
 
+// Headed-only test: requires manual password entry for a real second user
+// ('Olena Ahadzhanian'). The CI Datlas only provisions test / test2 users
+// and runs Playwright headless, so this test cannot complete — skip it.
+test.skip(!!process.env.CI, 'headed-only manual-password flow; not for CI');
+
 test('helpers.playwright.session — logoutAndLoginAs end-to-end', async ({page}) => {
   // Long timeout — accommodates manual password entry windows (5 min each).
   test.setTimeout(900_000);

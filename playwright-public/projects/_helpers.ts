@@ -1,17 +1,16 @@
 // Shared helpers for Projects regression specs.
-// All specs run against the configured Datagrok host using the storageState
-// from ../e2e/.auth.json — written by ../e2e/global-setup.ts at suite start.
+// Auth comes from playwright.config.ts (`storageState: 'e2e/.auth.json'`,
+// written by ../e2e/global-setup.ts at suite start). Do NOT override
+// storageState here — a `path.resolve(__dirname, ...)` override breaks
+// under the CI runner's esbuild transpile path and the test lands on the
+// login page (build #45 page snapshot: "Login or Email / Token is empty").
 // Helpers transcribed from .claude/skills/grok-browser/references/projects.md
 // and .claude/skills/grok-browser/references/widgets/dialog.md.
 import {Page, expect} from '@playwright/test';
-import * as path from 'path';
 
 export const BASE_URL = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
-export const AUTH_FILE = path.resolve(__dirname, '..', 'e2e', '.auth.json');
 
 export const projectsTestOptions = {
-  storageState: AUTH_FILE,
-  baseURL: BASE_URL,
   viewport: {width: 1920, height: 1080},
   launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
   actionTimeout: 15_000,
@@ -24,7 +23,19 @@ export async function evalJs<T = any>(page: Page, script: string): Promise<T> {
 
 export async function gotoApp(page: Page) {
   await page.goto(BASE_URL);
-  await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
+  await page.locator('[name="Browse"]').first().waitFor({state: 'visible', timeout: 60_000});
+  // Cold CI Datlas: the Browse sidebar attaches before `#grok-preloader`
+  // detaches; while the preloader is up it covers the rootDiv and intercepts
+  // every click. Mirrors what connections/helpers.ts goHome() does.
+  await page.waitForFunction(
+    () => document.querySelector('#grok-preloader, .grok-preloader') == null,
+    null, {timeout: 90_000},
+  ).catch(() => { /* best-effort — some flows tolerate a lingering preloader */ });
+  await page.waitForTimeout(500);
+  await page.addStyleTag({content: `
+    .d4-tooltip { display: none !important; }
+    #grok-preloader, .grok-preloader { pointer-events: none !important; }
+  `}).catch(() => {});
 }
 
 export async function closeAll(page: Page) {
