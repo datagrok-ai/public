@@ -60,9 +60,11 @@ async function reopenProjectById(page: any, projectId: string) {
 // a function. Without this poll, 4c/4d sub-flows raced the dev shell.tv
 // rebind after reopen and threw `addViewer is not a function` (verified
 // 2026-05-08 — failed in original run, fixed by polling here).
+// CI Datlas is materially slower than dev — bump the poll from 30s to 90s
+// (build #46: 4b step 1-4 hit the 30s ceiling on the ephemeral CI server).
 async function addViewerSafely(page: any, viewerName: string): Promise<void> {
   await evalJs(page, `(async () => {
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 180; i++) {
       const tv = grok.shell.tv;
       if (tv && tv.dataFrame && typeof tv.addViewer === 'function') {
         tv.addViewer(${JSON.stringify(viewerName)});
@@ -70,7 +72,7 @@ async function addViewerSafely(page: any, viewerName: string): Promise<void> {
       }
       await new Promise(r => setTimeout(r, 500));
     }
-    throw new Error('grok.shell.tv.addViewer never became a function (30s poll)');
+    throw new Error('grok.shell.tv.addViewer never became a function (90s poll)');
   })()`);
   await page.waitForTimeout(1500);
 }
