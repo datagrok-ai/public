@@ -85,8 +85,6 @@ export class DataSourceType {
 
   static Teradata = 'Teradata';
 
-  static Twitter = 'Twitter';
-
   static Vertica = 'Vertica';
 
   static Web = 'Web';
