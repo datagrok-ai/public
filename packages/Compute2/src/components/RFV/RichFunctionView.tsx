@@ -244,6 +244,7 @@ export const RichFunctionView = Vue.defineComponent({
     const isFittingEnabled = Vue.ref(false);
     const allowRerun = Vue.ref(false);
     const runLabel = Vue.ref('Run');
+    const formAsTab = Vue.ref(false);
 
     const isLocked = Vue.ref(false);
 
@@ -282,6 +283,7 @@ export const RichFunctionView = Vue.defineComponent({
       runLabel.value = Utils.getRunLabel(call.func) ?? 'Run';
       customExports.value = Utils.getCustomExports(call.func);
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
+      formAsTab.value = Utils.getFormAsTab(call.func);
     }, {immediate: true});
 
     Vue.watch([currentCall, () => props.callState, visibleTabLabels], ([call, callState, labels], [prevCall, prevCallState, prevLabels]) => {
@@ -360,8 +362,8 @@ export const RichFunctionView = Vue.defineComponent({
         sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name ?? '');
     };
 
-    Vue.watch(currentCall, (call) => {
-      visibleTabLabels.value = Utils.getFormOnly(call.func) ? [] : [...tabLabels.value];
+    Vue.watch(currentCall, () => {
+      visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 
     ////
@@ -532,8 +534,10 @@ export const RichFunctionView = Vue.defineComponent({
               <div
                 key="__FORM__"
                 class='flex flex-col p-2 overflow-scroll h-full'
-                dock-spawn-dock-type='left'
-                dock-spawn-dock-ratio={0.2}
+                {...(formAsTab.value ? {} : {
+                  'dock-spawn-dock-type': 'left',
+                  'dock-spawn-dock-ratio': 0.2,
+                })}
                 dock-spawn-title='Inputs'
                 dock-spawn-panel-icon='sign-in-alt'
                 ref={formRef}
