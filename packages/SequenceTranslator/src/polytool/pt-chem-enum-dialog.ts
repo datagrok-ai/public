@@ -1269,14 +1269,18 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
     // Stage 2 — canonicalize the whole Enumerated column in parallel via Chem workers.
     pi.update(40, `Canonicalizing ${results.length.toLocaleString()} molecule(s)...`);
     try {
-      await grok.functions.call('Chem:convertNotation', {
+      const res: DG.Column = await grok.functions.call('Chem:convertNotation', {
         data: df,
         molecules: smilesCol,
         targetNotation: DG.chem.Notation.Smiles,
-        overwrite: true,
+        overwrite: false,
         join: false,
         kekulize: false,
       });
+      // in older version of the chem, overwrite is super slow, it has been updated but we can do it like this here
+      const resArr = res.toList();
+      smilesCol.init((i) => resArr[i]);
+      smilesCol.meta.units = DG.chem.Notation.Smiles;
     } catch (err: any) {
       // Canonicalization is a nice-to-have; the uncanonical SMILES are still valid output.
       _package.logger.warning(`Canonicalization skipped: ${err?.message ?? err}`);
