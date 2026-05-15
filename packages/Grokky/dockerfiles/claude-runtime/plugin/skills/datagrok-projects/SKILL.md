@@ -1,66 +1,89 @@
 ---
 name: datagrok-projects
-description: Use whenever the user asks to create, assemble, populate, or share a Datagrok project — especially "create a project with the current table / view / layout". Walks through the exact, serialized recipe so MCP tools and the single datagrok-exec block fire in the right order.
+description: Use whenever the user asks to create, attach to, populate, or share a Datagrok project. Each step below has its OWN trigger phrase — do only the steps the user actually asked for, in order, then stop and wait for the next instruction. Never chain ahead.
 ---
 
 # datagrok-projects
 
-## Recipe (strict order — no parallelization)
+## Golden rule
 
-### Step 1 — create the project
+Each step is gated by a SPECIFIC trigger phrase. Run only the steps the user
+explicitly asked for. **Do not infer next steps from recent conversation
+context** (e.g. earlier mentions of a table, a previous attach run, a layout
+that's open). When in doubt, do less and let the user ask for the next step.
 
-Call `create_project(name)` EXACTLY ONCE. Save the returned `id` as `projectId`.
+## Step 1 — Create
 
-Do NOT call `create_project` twice. Do NOT fire it in parallel with anything else.
-Do NOT emit a datagrok-exec block in the same turn as `create_project` (you do not
-yet have `projectId`, and the exec block's return value is not visible until the
-next turn anyway).
+**Trigger:** the user asks to "create a project" / "make a project" / "new project".
 
-### Step 2 — (only if the user said "with the current table / view / layout / dataframe")
+**Do:** call `create_project(name)` ONCE. Save the returned `id` as `projectId`.
 
-Emit ONE `datagrok-exec` block that saves the layout and returns the ids:
+**Stop here.** Do NOT pre-announce attach or share. Do NOT emit a
+`datagrok-exec` block. Do NOT call `attach_entity_to_project`. Wait for the
+user's next message.
+
+**Exception:** Step 1 may chain DIRECTLY into Step 2 ONLY when the user's same
+message explicitly includes "with the current table", "with the current view",
+"with the current layout", "with this dataframe", or an equivalent attach
+phrase. A bare "create a project Foo" is Step 1 only.
+
+## Step 2 — Persist live entities to the server
+
+**Trigger:** the user asks to "attach the (current) table / layout / view" OR
+the create message included one of the explicit attach phrases above. AND
+`projectId` from Step 1 is known.
+
+**Do:** emit ONE `datagrok-exec` block that PERSISTS the live entities and
+returns their server-side ids. `t.getTableInfo().id` is a client-side stub —
+attaching it will fail with "insufficient privileges to edit". You MUST call
+`uploadDataFrame` first.
 
 ```datagrok-exec
+const tableInfoId = await grok.dapi.tables.uploadDataFrame(t);
 const layout = view.saveLayout();
 await grok.dapi.layouts.save(layout);
-return {tableInfoId: t.getTableInfo().id, layoutId: layout.id};
+return {tableInfoId, layoutId: layout.id};
 ```
 
-The block's return value comes back to you on the NEXT turn as a fenced
-`<exec-result>` JSON object. Read `tableInfoId` and `layoutId` from there.
+The block's return value comes back on the NEXT turn as a fenced
+`<exec-result>` JSON. Do NOT ask the user for the ids.
 
-You do NOT need to ask the user for the ids — they arrive automatically.
+If the user only asked about the table (not the layout), drop the layout lines.
+If only about the layout, drop the table lines.
 
-### Step 3 — attach the entities
+## Step 3 — Attach
 
-Call `add_entity_to_project(projectId, tableInfoId)` AND
-`add_entity_to_project(projectId, layoutId)`. Two calls — one per entity.
+**Trigger:** Step 2 just completed and you have its returned ids.
 
-### Step 4 — share (if the user asked)
+**Do:** for each id you persisted in Step 2, call
+`attach_entity_to_project(projectId, <id>)`. One call per entity.
 
-Call `share_entity(projectId, groupName, access)` where:
-- `projectId` is the UUID from step 1 (preferred over `"Namespace:Name"` form),
-- `groupName` is the plain group name the user mentioned (e.g. `"toxicology-review"`),
-- `access` is `"View"` or `"Edit"`.
+Stop after the attach calls. Do NOT volunteer to share.
 
-Do NOT call `get_group` first — `share_entity` accepts plain names. Only call
-`get_group` if `share_entity` throws a group-not-found error and you need to
-verify the spelling.
+## Step 4 — Share
 
-### Step 5 — return the link
+**Trigger:** the user explicitly asks to "share the project" / "share with
+<group>" / "give <group> access".
 
-Call `get_project_link(projectId)` ONCE. Include the returned `url` in your reply.
+**Do:** call `share_project(projectId, groups, access)` where:
+- `projectId` is the UUID from Step 1,
+- `groups` is the array of plain group names the user named,
+- `access` is `"View"` or `"Edit"` (defaults to `"View"`).
+
+If the user said "share the project" without naming a group, ask them which
+group(s) before calling.
 
 ## Forbidden patterns
 
+- Pre-announcing future steps in the same turn ("I'll create the project, then
+  attach the table, then share..."). Announce only the step you're doing now.
+- Chaining Step 2/3/4 from a bare "create a project Foo" message.
+- Returning `t.getTableInfo().id` from the datagrok-exec block — client stub.
+  Always use `await grok.dapi.tables.uploadDataFrame(t)`.
 - `grok.dapi.projects.save(project)` inside datagrok-exec — bypasses governance.
 - `project.addChild(...)` / `project.addLink(...)` inside datagrok-exec — bypasses MCP.
 - `grok.dapi.permissions.grant(...)` inside datagrok-exec — bypasses share governance.
 - Calling `create_project` more than once in the same workflow.
-- Firing `create_project` in parallel with the datagrok-exec block or with
-  `add_entity_to_project`. Each step must finish, and its result must be visible,
-  before the next begins.
-- Calling `get_group` defensively before `share_entity`.
 - Asking the user for the table or layout id — the datagrok-exec block returns them.
 
 ## Failure handling

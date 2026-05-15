@@ -59,9 +59,18 @@ A package function (`Chem:foo`, `Admetica:bar`, ...) can be used inside an
 metadata. Everything else must be called imperatively via
 `grok.functions.call(...)` in a separate `datagrok-exec` block.
 
-Check the tag before emitting the formula — for example, with the MCP
-`get_function` call, or by reading the package's `package.ts`. Do not infer it
-from the function name.
+## Chem properties → use the chem catalog, not a formula
+
+For molecular properties (MW, LogP, LogS, HBA, HBD, PSA, rotatable bonds,
+stereo centers, molecule charge): use `Chem:addChemPropertiesColumns` (boolean
+flags) or `Chem:getProperties(molecules, selected?)` (string list) — see
+`datagrok-chem-toolkit`. Example:
+
+```datagrok-exec
+await grok.functions.call('Chem:addChemPropertiesColumns', {
+  table: t, molecules: t.col('smiles'), MW: true,
+});
+```
 
 ## What this skill does NOT do
 

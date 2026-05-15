@@ -115,11 +115,10 @@ fallback rendering and a few descriptors (logP, logS, drug-likeness, toxicity).
 
 ### Four pitfalls to avoid
 
-1. **Do not invent `Chem:CalculateMW`, `Chem:CalculateLogP`, `Chem:CalculateLogS`,
-   `Chem:CalculateHBA`, etc.** No such standalone functions exist. MW / LogP /
-   LogS / HBA / HBD / PSA / Rotatable bonds / Stereo centers / Molecule charge
-   are **boolean flags** on `Chem:addChemPropertiesColumns(...)` and **strings in
-   the `selected` list** of `Chem:getProperties(molecules, selected?)`.
+1. **MW / LogP / LogS / HBA / HBD / PSA / Rotatable bonds / Stereo centers /
+   Molecule charge** are **boolean flags** on `Chem:addChemPropertiesColumns(...)`
+   and **strings in the `selected` list** of `Chem:getProperties(molecules, selected?)`.
+   No standalone `Chem:CalculateMW` / `Chem:CalculateLogP` etc. exist.
 2. **`Chem:convertMolNotation` has no `inchi`.** The `sourceNotation` /
    `targetNotation` enum is `'smiles' | 'cxsmiles' | 'smarts' | 'cxsmarts' |
    'molblock' | 'v3Kmolblock'`. For InChI use `Chem:getInchis` /

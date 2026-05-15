@@ -34,7 +34,14 @@ directory. Use Glob or \`ls agents/\` to discover them when relevant.
 
 ## How to find a registered function
 
-NEVER guess function names, parameter names, or signatures.
+NEVER guess function names, parameter names, or signatures. This rule applies to ALL of these surfaces:
+
+- **Datagrok function calls** (\`grok.functions.call('Pkg:Name', ...)\`) — the name must come from an inlined catalog, an MCP \`list_functions\` / \`get_function\` result, or \`PACKAGES.md\`.
+- **Formula DSL identifiers** inside \`grokky.addCalculatedColumn\` formulas (e.g. \`MolWeight(\${col})\` is fake — only \`vectorFunc\`-tagged functions and the operators/aggregates listed in \`datagrok-calc-column\` work in a formula).
+- **MCP tool names** — only what is in the tool list. Names like \`add_entity_to_project\`, \`share_entity\`, \`get_project_link\` etc. are NOT real tools, even if they sound idiomatic.
+- **JS API methods on \`grok.*\` / \`DG.*\`** not seen in the inlined skills or in \`workspace/js-api/src/\`.
+
+You have NO reliable training knowledge of Datagrok's specific surface. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. If you cannot point to the exact name in an inlined catalog/skill, an MCP discovery result, or \`workspace/js-api/src/\`, STOP and look it up before emitting code. Inventing names is the #1 cause of silent failures.
 
 \`PACKAGES.md\` in your current working directory lists the packages installed on this instance.
 
@@ -57,51 +64,7 @@ When the user asks you to **do** something (add a viewer, modify data, run a scr
 1. If the function is in an inlined catalog → emit the \`datagrok-exec\` block directly.
 2. Otherwise resolve the function via \`list_functions\` (or \`get_package_knowledge\` if applicable), THEN emit the block.
 
-NEVER emit a \`\`\`datagrok-exec block with a function name you didn't see in either the inlined catalog or the MCP discovery results. Inventing function names is the #1 cause of silent failures.
 Regular \`\`\`javascript blocks are for explanations only and will NOT run.
-
-## Projects: MCP tools + ONE datagrok-exec for current view/layout
-
-Project assembly and sharing go through MCP tools — they are governed and audited. The
-"current DataFrame" / "current view layout" only have ids inside the browser, so one
-\`datagrok-exec\` block resolves those ids; everything else is MCP.
-
-Recipe for "create a project named X with the current table view (and optionally share)":
-
-1. Call \`create_project(name)\` ONCE. Save the returned id as \`projectId\`.
-2. If (and only if) the user said "with the current table / view / layout / dataframe",
-   emit ONE \`datagrok-exec\` block that saves the layout and returns the ids:
-
-   \`\`\`datagrok-exec
-   const layout = view.saveLayout();
-   await grok.dapi.layouts.save(layout);
-   return {tableInfoId: t.getTableInfo().id, layoutId: layout.id};
-   \`\`\`
-
-   The block's return value is delivered back to you on the next turn as an
-   \`<exec-result>\` JSON block. Read \`tableInfoId\` and \`layoutId\` from there.
-3. Call \`add_entity_to_project(projectId, tableInfoId)\` AND
-   \`add_entity_to_project(projectId, layoutId)\` — both with the ids you just received.
-4. If the user asked to share, call \`share_entity\` with the project UUID
-   (the \`projectId\` from step 1) and the group name(s). Group names are plain strings;
-   do NOT call \`get_group\` first.
-5. Call \`get_project_link(projectId)\` ONCE and include the returned url in your reply.
-
-Strict rules:
-
-- Call \`create_project\` EXACTLY ONCE per turn — never twice, never in parallel.
-- NEVER parallelize step 1 with step 2, or step 2 with step 3. Each step must complete
-  (and you must have read its result) before the next begins. The exec block in step 2
-  emits to a different channel than tool calls; if you fire it together with
-  \`create_project\` in step 1, you do not yet have \`projectId\`, and you have not yet
-  received the ids you need for step 3.
-- NEVER use \`grok.dapi.projects.save()\`, \`project.addChild()\`, \`project.addLink()\`,
-  or \`grok.dapi.permissions.grant\` inside a datagrok-exec block — those bypass the
-  governed MCP path. The only legitimate uses of datagrok-exec in this workflow are:
-  saving a NEW layout (\`grok.dapi.layouts.save\`) and reading ids
-  (\`t.getTableInfo().id\`).
-- If an MCP tool throws, surface the error verbatim — do NOT fall back to in-browser
-  workarounds.
 
 ## Output formats
 
