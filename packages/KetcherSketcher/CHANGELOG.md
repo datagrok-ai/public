@@ -1,8 +1,12 @@
 # Ketcher Sketcher changelog
 
+## 2.4.5 (2026-05-13)
+
+* Workaround to fix multiple setMolecule calls, caused by bug in js-api (multiple subsribtions to copy-paste into sketcher string input field)
+
 ## 2.4.4 (2026-05-13)
 
-* Hid Extended Table generic-atom buttons that can't be translated to RDKit-compatible V2000 query features from the substructure filter sketcher only — full set remains available in other sketcher contexts. 
+* Hid Extended Table generic-atom buttons that can't be translated to RDKit-compatible V2000 query features from the substructure filter sketcher only — full set remains available in other sketcher contexts.
 
 ## 2.4.3 (2026-05-12)
 
