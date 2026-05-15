@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.6.1 (2026-05-15)
+
+Update info for Bioreactor and PK-PD demos
+
 ## 1.6.0 (2026-05-13)
 
 Added:
