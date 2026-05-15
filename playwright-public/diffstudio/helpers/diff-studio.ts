@@ -92,7 +92,7 @@ export async function resetShell(page: Page): Promise<void> {
  * because the app function returns it as an output param that the caller is
  * expected to add to the shell.
  */
-export async function openModelHub(page: Page): Promise<void> {
+export async function openModelHub(page: Page, expectedModel?: string): Promise<void> {
   await page.goto(BASE);
   await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
   await page.evaluate(async () => {
@@ -105,32 +105,54 @@ export async function openModelHub(page: Page): Promise<void> {
     const view = call.getOutputParamValue();
     if (view) grok.shell.addView(view);
   });
-  // Wait for the Model Hub to become the active view; the catalog is a JsCardView
-  // that renders its entries as `.d4-list-item` (no `.model-catalog-view` /
-  // `.grok-gallery-grid` classes on the live server).
+  // Wait for the Model Hub to become the active view.
   await page.waitForFunction(() => (window as any).grok?.shell?.v?.name === 'Model Hub',
     null, { timeout: 30_000 });
-  await page.locator('.d4-list-item').first().waitFor({ state: 'visible', timeout: 20_000 });
+  // The catalog renders cards as `[role=treeitem]` / `cursor:pointer` text entries — no
+  // single CSS class is stable across server versions (.d4-list-item belongs to the side
+  // tree, .d4-gallery-card / .grok-gallery-grid are also seen). The reliable signal is a
+  // visible text match for a known label. When the caller knows which model should appear,
+  // wait for it; otherwise just wait for the cards counter ("N / N") in the header.
+  if (expectedModel) {
+    await page.waitForFunction((name) => {
+      return Array.from(document.querySelectorAll('*'))
+        .some(el => ((el as HTMLElement).innerText ?? '').trim() === name
+          && (el as HTMLElement).offsetParent !== null);
+    }, expectedModel, { timeout: 30_000 });
+  } else {
+    await page.waitForFunction(() => /\b\d+\s*\/\s*\d+\b/.test(document.body.innerText),
+      null, { timeout: 30_000 });
+  }
   await page.waitForTimeout(1500);
 }
 
 /** Find a Model Hub card by its visible label and open it (click + dblclick are both required). */
 export async function openModelHubCard(page: Page, modelName: string): Promise<void> {
   await page.evaluate((name) => {
-    const items = Array.from(document.querySelectorAll('.d4-list-item'))
-      .filter(el => (el.textContent ?? '').trim() === name) as HTMLElement[];
+    // Catalog entries: `cursor: pointer` text elements inside the Model Hub view's tree.
+    // Exact text match avoids accidental matches on partial substrings (e.g. "PK" inside "PK-PD").
+    const all = Array.from(document.querySelectorAll<HTMLElement>('*'));
+    const items = all.filter(el =>
+      (el.innerText ?? '').trim() === name &&
+      el.offsetParent !== null &&
+      getComputedStyle(el).cursor === 'pointer');
     if (items.length === 0) throw new Error(`No '${name}' card in Model Hub`);
+    // Use the last match — that's the freshly-saved user copy when duplicates exist.
     const card = items[items.length - 1];
     card.click();
     card.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
   }, modelName);
 }
 
-/** Count Model Hub cards matching a label. */
+/** Count Model Hub cards matching a label (visible, cursor:pointer). */
 export async function modelHubCardCount(page: Page, modelName: string): Promise<number> {
-  return await page.evaluate((name) =>
-    Array.from(document.querySelectorAll('.d4-list-item'))
-      .filter(el => (el.textContent ?? '').trim() === name).length, modelName);
+  return await page.evaluate((name) => {
+    return Array.from(document.querySelectorAll<HTMLElement>('*'))
+      .filter(el =>
+        (el.innerText ?? '').trim() === name &&
+        el.offsetParent !== null &&
+        getComputedStyle(el).cursor === 'pointer').length;
+  }, modelName);
 }
 
 /**

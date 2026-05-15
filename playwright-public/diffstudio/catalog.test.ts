@@ -49,7 +49,7 @@ test('DiffStudio Catalog — PK-PD: load → Save to Model Hub → refresh → r
       // 'Apps' / 'Compute' / 'Model Hub' labels may not be mounted/expanded when the test
       // reaches this step, and `clickTreeLabel` returns false silently. `openModelHub`
       // invokes `Compute2:modelCatalog` directly and adds the returned view to the shell.
-      await openModelHub(page);
+      await openModelHub(page, 'PK-PD');
       expect(await modelHubCardCount(page, 'PK-PD')).toBeGreaterThan(0);
     });
 

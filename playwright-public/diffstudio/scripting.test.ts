@@ -15,11 +15,13 @@ import {
  * 4. Access the saved model in Model Hub.
  * 5. Interact with the saved model (move Final-at slider).
  *
- * Implementation note on ordering: in the platform ScriptView, clicking Run can shift
- * focus to a Compute2 RichFunctionView (the script declares `//editor: ...RichFunctionViewEditor`),
- * after which the CodeMirror editor is no longer reachable from the active view. To keep all
- * steps UI-only while still covering both observable behaviours (script runs, tag persists),
- * we add `//tags: model` *first* (while the editor is fresh and focused) and then Run.
+ * Implementation note on ordering: the order is Run → Add tag → Save, matching the
+ * proven UsageAnalysis TestTrack/DiffStudio/scripting-run.md sequence. Running the
+ * script first opens a Compute2 RichFunctionView on top of the ScriptView; after
+ * verifying the Final slider, we re-focus the ScriptView via `grok.shell.v` to type
+ * the tag and Save. Inverting this order (Save first, then Run) leaves icon-play in
+ * a transitional toolbar state on cold CI Datlas — the click no longer mounts the
+ * function view, and `input-host-Final` never appears.
  */
 test('DiffStudio Scripting — Edit toggle, </> JS view, Run, Save with //tags: model, Model Hub', async ({ page }) => {
   test.setTimeout(300_000);
@@ -44,41 +46,12 @@ test('DiffStudio Scripting — Edit toggle, </> JS view, Run, Save with //tags: 
     await page.waitForTimeout(1500);
   });
 
-  await softStep('Step 2: Add "//tags: model" to the script body and Save', async () => {
-    // Diff Studio's `</>` opens a platform ScriptView, which uses CodeMirror 5
-    // (`/js/common/codemirror/codemirror.js`). CM5 renders editor as `.CodeMirror`.
-    // The generated script always opens with this two-line header:
-    //   line 1: //name: <model name>
-    //   line 2: //language: javascript
-    // Focus the editor, navigate to the end of line 2, insert a new line, type the tag.
-    const cm = page.locator('.CodeMirror').first();
-    await cm.waitFor({ timeout: 10_000 });
-    await cm.click();
-    await page.keyboard.press('Control+Home'); // top of file (line 1)
-    await page.keyboard.press('ArrowDown');    // line 2 (//language: javascript)
-    await page.keyboard.press('End');
-    await page.keyboard.press('Enter');
-    await page.keyboard.type('//tags: model');
-    await page.waitForTimeout(500);
-
-    // Verify the tag is now visible somewhere in the editor's rendered DOM
-    const tagLine = page.locator('.CodeMirror-line', { hasText: '//tags: model' });
-    await expect(tagLine.first()).toBeVisible({ timeout: 5_000 });
-
-    // Click Save — the script editor's ribbon Save button is `[name="button-Save"]`.
-    await page.locator('[name="button-Save"]').first().click();
-    await page.waitForTimeout(3000);
-    // The platform Save button fires `grok.dapi.scripts.save(...)` and may not
-    // be settled by the time Step 4 navigates with `page.goto(BASE)`. Block here
-    // until the server confirms the script exists with tag `model`, so the
-    // subsequent goto does not abort the still-in-flight save POST.
-    await waitForModelScript(page, 'Bioreactor');
-  });
-
-  await softStep('Step 3: Run the script; move Final-at slider — live update', async () => {
-    // The script editor exposes a play button as the "icon-play" name
+  await softStep('Step 2: Run the script; move Final-at slider — live update', async () => {
+    // Trigger Run from the ScriptView toolbar. `[name="icon-play"]` is the single
+    // unambiguous selector (scripting-run.md). After the click, the platform opens a
+    // Bioreactor function view on top of the script editor.
     await page.locator('[name="icon-play"]').first().click();
-    // Final input host appears once the script has run
+    // Final input host appears once the script has run.
     await page.locator(inputHost('Final')).waitFor({ timeout: 30_000 });
     await page.waitForTimeout(1500);
 
@@ -97,13 +70,54 @@ test('DiffStudio Scripting — Edit toggle, </> JS view, Run, Save with //tags: 
     await expect(page.locator(inputHost('Process-mode'))).toHaveCount(0);
   });
 
+  await softStep('Step 3: Add "//tags: model" to the script body and Save', async () => {
+    // Re-focus the ScriptView — Run switched focus to a Compute2 RichFunctionView,
+    // and the CodeMirror editor is on a different shell view now.
+    await page.evaluate(() => {
+      const grok = (window as any).grok;
+      const scriptView = Array.from(grok.shell.views).find((v: any) => v?.type === 'ScriptView');
+      if (scriptView) grok.shell.v = scriptView;
+    });
+    await page.waitForTimeout(1500);
+
+    // Diff Studio's `</>` opens a platform ScriptView using CodeMirror 5
+    // (`/js/common/codemirror/codemirror.js`). CM5 renders the editor as `.CodeMirror`.
+    // The generated script always opens with this two-line header:
+    //   line 1: //name: <model name>
+    //   line 2: //language: javascript
+    // Inject `//tags: model` via the CM5 API — typing through keyboard is fragile
+    // when the editor regained focus from another shell view.
+    const tagAdded = await page.evaluate(() => {
+      const cm = (document.querySelector('.CodeMirror') as any)?.CodeMirror;
+      if (!cm) return false;
+      const text = cm.getValue();
+      if (text.includes('//tags: model')) return true;
+      cm.setValue(text.replace('//language: javascript', '//language: javascript\n//tags: model'));
+      return cm.getValue().includes('//tags: model');
+    });
+    expect(tagAdded).toBe(true);
+
+    // The tag should now be visible somewhere in the rendered editor.
+    const tagLine = page.locator('.CodeMirror-line', { hasText: '//tags: model' });
+    await expect(tagLine.first()).toBeVisible({ timeout: 5_000 });
+
+    // Click Save — the script editor's ribbon Save button is `[name="button-Save"]`.
+    await page.locator('[name="button-Save"]').first().click();
+    await page.waitForTimeout(3000);
+    // The platform Save button fires `grok.dapi.scripts.save(...)` and may not
+    // be settled by the time Step 4 navigates with `page.goto(BASE)`. Block here
+    // until the server confirms the script exists with tag `model`, so the
+    // subsequent goto does not abort the still-in-flight save POST.
+    await waitForModelScript(page, 'Bioreactor');
+  });
+
   await softStep('Step 4: Access the saved model in Model Hub (Apps > Compute > Model Hub)', async () => {
     // Use the JS-API helper — Browse tree navigation is unreliable on cold CI Datlas
     // because the 'Apps' / 'Compute' / 'Model Hub' labels may not be mounted when the
     // test reaches this step.
-    await openModelHub(page);
-    // Model Hub renders saved models as `.d4-list-item` entries with the model name
-    // as the visible label.
+    await openModelHub(page, 'Bioreactor');
+    // Model Hub renders saved models as visible cursor:pointer text entries (the exact
+    // CSS class varies between catalog renderers; matching by visible text is robust).
     expect(await modelHubCardCount(page, 'Bioreactor')).toBeGreaterThan(0);
   });
 
