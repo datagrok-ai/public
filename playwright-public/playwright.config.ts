@@ -3,6 +3,11 @@ import {defineConfig, devices} from '@playwright/test';
 export default defineConfig({
   testDir: '.',
   testMatch: '**/*.test.ts',
+  // `helpers/` hosts utility modules + the headed-only `session-helpers.test.ts`
+  // that validates `logoutAndLoginAs` against a real second user. It cannot
+  // run headlessly (manual password entry) and is not a project-feature test,
+  // so we exclude the whole folder from test discovery.
+  testIgnore: ['**/helpers/**'],
   // Many specs share UI/server state across tests in a file (connection lifecycle,
   // query lifecycle, scripts CRUD). Keep one worker by default — the suite is
   // designed to be sequential. CI can opt into parallelism per-file via
