@@ -275,6 +275,71 @@ category('OligoRenderer: layout', () => {
     expect(conj.monomer.kind, 'conjugate');
     expect(conj.w >= layout.chipW, true, 'conjugate must be at least chip-wide');
   });
+
+  test('reversed-antisense linkage owner is the lower-indexed pair member', async () => {
+    // The `phosphate` field on a nucleotide always means "linkage immediately
+    // AFTER this monomer in 5'→3' data order" — so it lives on the lower-indexed
+    // end of the bond. When antisense is displayed reversed, the gap to the
+    // right of display index i pairs data positions (N-1-i, N-2-i); the owner
+    // must be the lower one, i.e. `monomers[i+1]` in the reversed array, not `m`.
+    //
+    // Small fixture: antisense `r(A)[sp].r(C)p.r(G)` →
+    //   data 0 → A, phos=sp   (linkage 0↔1, sp)
+    //   data 1 → C, phos=p    (linkage 1↔2, p)
+    //   data 2 → G, phos=''   (terminal)
+    // Reversed display: G, C, A.
+    //   antiLinks[0] = gap right of display 0 → between data 2 and 1 → p, owner 1
+    //   antiLinks[1] = gap right of display 1 → between data 1 and 0 → sp, owner 0
+    const helm = 'RNA1{r(A)p.r(C)p.r(G)}|RNA2{r(A)[sp].r(C)p.r(G)}$$$$';
+    const m = parseHelmDuplex(helm);
+    const layout = computeLayout(600, 70, m);
+    expect(layout.antiReversed, true);
+    expect(layout.antiLinks.length, 2);
+    expect(layout.antiLinks[0].ownerOrigIdx, 1);
+    expect(layout.antiLinks[0].phosphateSymbol, 'p');
+    expect(layout.antiLinks[1].ownerOrigIdx, 0);
+    expect(layout.antiLinks[1].phosphateSymbol, 'sp');
+  });
+
+  test('reversed-antisense draws ALL linkages including the leftmost-data sp', async () => {
+    // Regression: pre-fix, reversed-strand placement read `m.phosphate` for
+    // the gap to the right of display i, but that field belongs to the bond
+    // on the OTHER side of `m`. The net effect was a one-index shift across
+    // the row plus a dropped link at the terminal display position — so the
+    // 4 sp linkages on this antisense ended up as 3, in the wrong gaps.
+    const helm =
+      'RNA1{m(C)[sp].m(A)[sp].m(U)p.m(G)p.m(G)p.m(U)p.m(U)p.m(G)p.m(A)p.m(A)p.' +
+      'm(C)p.m(A)p.m(U)p.m(G)p.m(A)p.m(G)p.m(C)[sp].m(A)[sp].m(A)[L3]}|' +
+      'RNA2{m(U)[sp].m(U)[sp].m(G)p.m(C)p.m(U)p.m(C)p.m(A)p.m(U)p.m(G)p.m(U)p.' +
+      'm(U)p.m(C)p.m(A)p.m(A)p.m(C)p.m(C)p.m(A)[sp].m(U)[sp].m(G)}$$$$';
+    const m = parseHelmDuplex(helm);
+    const layout = computeLayout(1200, 90, m);
+    expect(layout.antiReversed, true);
+    // Antisense has 19 nucleotides → 18 inter-nucleotide gaps, all drawn.
+    expect(layout.antiLinks.length, 18,
+      `expected 18 antisense linkages, got ${layout.antiLinks.length}`);
+    // 4 of them must be `sp`. With reversal, the sp at data 0↔1 maps to the
+    // RIGHTMOST display gap and the sp at data 17↔18 maps to the LEFTMOST —
+    // so sp owners, in display order, are 17, 16, 1, 0.
+    const spOwners = layout.antiLinks
+      .filter((l) => l.phosphateSymbol === 'sp')
+      .map((l) => l.ownerOrigIdx);
+    expect(spOwners.length, 4,
+      `expected 4 sp linkages on antisense, got ${spOwners.length}`);
+    expect(spOwners.join(','), '17,16,1,0',
+      `sp owners (display order) must be 17,16,1,0; got ${spOwners.join(',')}`);
+
+    // And sense — 19 nucleotides + L3 conjugate. 18 nucleotide-to-nucleotide
+    // gaps; the bond into the L3 conjugate is not a phosphate, so it isn't
+    // pushed as a link. 4 of those 18 are sp (data owners 0, 1, 16, 17).
+    expect(layout.senseLinks.length, 18,
+      `expected 18 sense linkages, got ${layout.senseLinks.length}`);
+    const senseSpOwners = layout.senseLinks
+      .filter((l) => l.phosphateSymbol === 'sp')
+      .map((l) => l.ownerOrigIdx)
+      .sort((a, b) => a - b);
+    expect(senseSpOwners.join(','), '0,1,16,17');
+  });
 });
 
 category('OligoRenderer: hit testing', () => {
@@ -288,18 +353,12 @@ category('OligoRenderer: hit testing', () => {
     expect(hit!.strand, 'sense');
     expect(hit!.position, 0);
 
-    // Gap immediately after first chip should miss (unless it's a PS link)
-    const prev = m.sense.monomers[0];
-    const isPS = prev.kind === 'nucleotide' && (prev as any).phosphate === 'sp';
+    // Gap between chips at chip-row-Y should always miss now — PS linkage
+    // markers live in the apex zone above (sense) / below (antisense) the
+    // chip row, not in the inter-chip gap at chip-row-Y.
     const gapX = first.x + first.w + layout.chipGap * 0.1;
     const miss = hitTest(gapX, layout.senseY + layout.chipH / 2, m, layout);
-    if (isPS) {
-      // Should hit the PS linkage marker
-      expect(miss !== null, true);
-      expect(miss!.linkage !== undefined, true);
-    } else {
-      expect(miss, null);
-    }
+    expect(miss, null);
   });
 
   test('antisense hit returns original position despite reversed display', async () => {
@@ -314,15 +373,18 @@ category('OligoRenderer: hit testing', () => {
       'leftmost AS chip in pair-aligned display = last monomer in data');
   });
 
-  test('hovering between two chips with PS linkage returns the linkage', async () => {
-    // Force a PS linkage between position 0 and 1
+  test('hovering the apex above a PS linkage returns the linkage', async () => {
+    // PS linkage between sense pos 0 and 1. The apex sits above the sense
+    // chip row (since sense's decoration side is "top"), peak at senseY-apexH.
     const helm = 'RNA1{m(G)[sp].m(A)p.m(C)p}$$$$';
     const m = parseHelmDuplex(helm);
     const layout = computeLayout(600, 70, m);
     const c0 = layout.senseChips[0];
     const c1 = layout.senseChips[1];
     const midX = (c0.x + c0.w + c1.x) / 2;
-    const hit = hitTest(midX, layout.senseY + layout.chipH / 2, m, layout);
+    // Apex zone is [senseY - apexH, senseY]; aim mid-zone.
+    const apexY = layout.senseY - layout.apexH / 2;
+    const hit = hitTest(midX, apexY, m, layout);
     expect(hit !== null, true);
     expect(hit!.linkage !== undefined, true);
     expect(hit!.linkage!.phosphateSymbol, 'sp');

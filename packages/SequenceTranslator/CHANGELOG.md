@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.10.22 (2026-05-15)
+
+* OligoNucleotide renderer: strand-oriented redesign — sugar stripes on the outside edge of each strand, linkages as rounded apex arches; all colors sourced from the Bio monomer library.
+* OligoNucleotide renderer: fixed reversed-antisense linkage placement (was shifted by one gap and dropping the leftmost-data linkage).
+* Speedup canonicalization of Markush enumeration results.
+
 ## 1.10.21 (2026-05-14)
 
 * Markush enumeration UI redesign, history and bug fixes

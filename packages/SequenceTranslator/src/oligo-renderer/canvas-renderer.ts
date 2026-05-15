@@ -6,32 +6,37 @@
  * unit-test and to drive from the HTML prototype as well.
  *
  * Visual model:
- *   - Chip body uses base-canonical color (A green / C blue / G tan / U pink).
- *   - Sugar modifications are shown as a colored stripe at the bottom of the
- *     chip (so the chip itself stays readable for the base sequence, and the
- *     modification track scans easily horizontally).
- *   - Phosphate linkage modifications (PS) are shown as a saturated bar in
- *     the gap *between* chips — this is the actual chemistry: the linkage
- *     belongs to the bond, not to either nucleotide.
- *   - Wide gaps between chips give the modification markers room to breathe.
+ *   - Chip body — colored from the central Bio monomer library
+ *     (`getMonomerColors(HELM_BASE, base)` → background + text). Falls back to
+ *     local BASE_COLORS / analog colors if the lib has no entry.
+ *   - Sugar modifications — narrow colored stripe glued to the *outside* edge
+ *     of the chip row (top for sense / single-strand, bottom for antisense).
+ *     Color from `getMonomerColors(HELM_SUGAR, sugar).backgroundcolor`.
+ *   - Phosphate linkage modifications (PS / s2p / mp / …) — drawn as 45°
+ *     apex triangles in the inter-chip gap. Apex points *outward* (up for
+ *     sense / single-strand, down for antisense). Color from
+ *     `getMonomerColors(HELM_LINKER, phos).backgroundcolor`.
+ *   - Conjugates — rounded pills at chain ends; their actual width is
+ *     propagated through layout so adjacent chips don't overlap. Color from
+ *     `getMonomerColors(HELM_CHEM, symbol)`.
  *   - Antisense is rendered 3'→5' (reversed) so position N of sense visually
  *     pairs with position N of antisense (anti-parallel base-pair register).
- *   - Conjugates are rendered as wider pills at the chain ends; their actual
- *     width is propagated through layout so adjacent chips don't overlap.
  *
  * Sizing is fully adaptive: chip dimensions scale to fit the cell, preserving
  * aspect ratio, down to a minimum below which the cell falls back to a text
- * summary.
+ * summary. The layout reserves vertical room for the apex zones above sense
+ * (and below antisense, when present).
  */
 
 import {
   BASE_COLORS, FALLBACK_COLOR,
-  canonicalPhosphateSymbol, canonicalSugarSymbol,
+  contrastTextColor,
   displayBase, isCanonicalBase,
   ParsedDuplex, ParsedMonomer, ParsedNucleotide, ParsedStrand,
   resolveConjugate, resolvePhosphate, resolveSugar,
 } from './types';
 import {getNaturalAnalog} from './analog-cache';
+import {getMonomerColors} from './monomer-colors';
 
 export interface RenderOpts {
   /** Show base letter inside chip. False at very small sizes. */
@@ -47,15 +52,19 @@ export const DEFAULT_OPTS: RenderOpts = {showLetters: true, pairAlign: true};
 /* Visual tuning. */
 const ASPECT_H_OVER_W = 1.25;
 const STRAND_GAP_RATIO = 0.5;
-const CHIP_GAP_RATIO = 0.32; // wider — gives PS bar room to breathe
+const CHIP_GAP_RATIO = 0.40; // wide gaps give apex triangles room to breathe
 const MIN_CHIP_W = 5;
 const MAX_CHIP_W = 17;
 const PAD = 4;
 const LABEL_W = 30;
-const CHIP_FILL_ALPHA = 0.85; // chip body, base-canonical pale color
+/** Chip fill opacity — softens the often-saturated library backgrounds so the
+ * sugar stripe and base label stay readable on top. */
+const CHIP_FILL_ALPHA = 0.72;
+const SUGAR_STRIPE_ALPHA = 1;
 const CHIP_BORDER_W = 0.5;
-const SUGAR_STRIPE_RATIO = 0.22; // height of bottom sugar-mod stripe
-const PS_BAR_RATIO = 0.55; // PS bar width as fraction of chip gap
+const SUGAR_STRIPE_RATIO = 0.22; // sugar-mod stripe height as fraction of chipH
+const APEX_RATIO = 0.45; // apex height as fraction of chipH (45° → also half-width)
+const APEX_LINE_W = 2.5;
 
 /** Cached layout for one rendered cell. */
 export interface DuplexLayout {
@@ -69,6 +78,8 @@ export interface DuplexLayout {
   senseY: number;
   antiY: number; // -1 if no antisense
   seqX: number;
+  /** Height of the apex zone above sense (and below antisense, if present). */
+  apexH: number;
   textOnlyFallback: boolean;
   senseChips: ChipPos[];
   antiChips: ChipPos[];
@@ -114,7 +125,11 @@ export function computeLayout(
   const availW = Math.max(0, cellW - LABEL_W - 2 * PAD);
   const wChipW = availW / (maxLen + Math.max(0, maxLen - 1) * CHIP_GAP_RATIO);
 
-  const heightFactor = strandsCount + Math.max(0, strandsCount - 1) * STRAND_GAP_RATIO;
+  // Vertical budget needs to account for apex zones: above sense (always),
+  // and below antisense when present. Each apex zone is APEX_RATIO * chipH.
+  const apexCount = hasAnti ? 2 : 1;
+  const heightFactor =
+    strandsCount + (strandsCount - 1) * STRAND_GAP_RATIO + apexCount * APEX_RATIO;
   const hChipH = (cellH - 2 * PAD) / heightFactor;
   const hChipW = hChipH / ASPECT_H_OVER_W;
 
@@ -123,21 +138,24 @@ export function computeLayout(
   if (chipW < MIN_CHIP_W) chipW = MIN_CHIP_W;
 
   const chipH = chipW * ASPECT_H_OVER_W;
-  const chipGap = Math.max(2, chipW * CHIP_GAP_RATIO);
+  const chipGap = Math.max(3, chipW * CHIP_GAP_RATIO);
   const strandGap = chipH * STRAND_GAP_RATIO;
   const fontSize = Math.max(7, Math.min(13, chipW * 0.62));
+  const apexH = chipH * APEX_RATIO;
 
-  const blockH = strandsCount * chipH + (strandsCount - 1) * strandGap;
+  const blockH = strandsCount * chipH + (strandsCount - 1) * strandGap + apexCount * apexH;
   const blockTop = Math.max(PAD, (cellH - blockH) / 2);
-  const senseY = blockTop;
-  const antiY = hasAnti ? blockTop + chipH + strandGap : -1;
+  // Sense always sits below a top apex zone; antisense (when present) has
+  // its apex zone below it. Single-strand cases get a top apex zone only.
+  const senseY = blockTop + apexH;
+  const antiY = hasAnti ? senseY + chipH + strandGap : -1;
   const seqX = PAD + LABEL_W;
   const seqEndX = cellW - PAD;
 
   const layoutBase: Omit<DuplexLayout, 'senseChips' | 'antiChips' | 'senseLinks' | 'antiLinks' | 'antiReversed'> = {
     chipW, chipH, chipGap, strandGap, fontSize,
     labelW: LABEL_W, padding: PAD,
-    senseY, antiY, seqX, textOnlyFallback,
+    senseY, antiY, seqX, apexH, textOnlyFallback,
   };
 
   if (textOnlyFallback) {
@@ -217,20 +235,26 @@ function placeStrand(
 
     chips.push({x, w, monomer: m, origIdx: m.position, strand: side});
 
-    // Linkage from this monomer's 3'-phosphate goes in the gap to the right.
-    // When the strand is reversed (anti-parallel), the linkage that was
-    // "owned by monomer N's 3' end" connects monomer N to monomer N+1 in the
-    // data; in display these are still adjacent, so the gap-to-right is still
-    // the right place to draw it. We just need to look up the correct owner.
-    if (m.kind === 'nucleotide' && i < monomers.length - 1) {
-      const nt = m as ParsedNucleotide;
-      if (nt.phosphate) {
-        links.push({
-          x: x + w, w: layout.chipGap, y, h: layout.chipH,
-          phosphateSymbol: nt.phosphate,
-          ownerOrigIdx: nt.position,
-          strand: side,
-        });
+    // Linkage in the gap to the right of display index i (between chips i
+    // and i+1). The `phosphate` field on a nucleotide always means "what
+    // comes AFTER this monomer in 5'→3' data order" — i.e. it lives on the
+    // lower-indexed end of the bond. So:
+    //   - not reversed: gap-to-right of display i pairs data (p, p+1), and
+    //     the phosphate lives on `m` (data p);
+    //   - reversed: gap-to-right of display i pairs data (p, p-1), and the
+    //     phosphate lives on the lower-indexed end, which is monomers[i+1].
+    if (i < monomers.length - 1) {
+      const linkOwner = reverse ? monomers[i + 1] : m;
+      if (linkOwner.kind === 'nucleotide') {
+        const nt = linkOwner as ParsedNucleotide;
+        if (nt.phosphate) {
+          links.push({
+            x: x + w, w: layout.chipGap, y, h: layout.chipH,
+            phosphateSymbol: nt.phosphate,
+            ownerOrigIdx: nt.position,
+            strand: side,
+          });
+        }
       }
     }
     x += w + layout.chipGap;
@@ -350,18 +374,19 @@ export function drawDuplex(
   // Strand label "S 5'" left of sense
   drawStrandLabel(g, 'S', '5\'', layout.padding, layout.senseY + layout.chipH / 2, layout);
 
-  // Linkages first (so chips paint over their rounded edges cleanly)
-  for (const link of layout.senseLinks) drawLinkage(g, link);
+  // Chips first; apex triangles paint last so they appear on top of the
+  // chip body's anti-aliased corners.
   drawChips(g, layout.senseChips, layout, o);
   drawTruncationMarker(g, layout.senseChips, model.sense.monomers.length, layout);
+  for (const link of layout.senseLinks) drawLinkageApex(g, link, layout);
 
   if (layout.antiY >= 0 && model.antisense) {
     // When reversed, the leftmost chip in display is the 3' end of antisense.
     const leftLabel = layout.antiReversed ? '3\'' : '5\'';
     drawStrandLabel(g, 'AS', leftLabel, layout.padding, layout.antiY + layout.chipH / 2, layout);
-    for (const link of layout.antiLinks) drawLinkage(g, link);
     drawChips(g, layout.antiChips, layout, o);
     drawTruncationMarker(g, layout.antiChips, model.antisense.monomers.length, layout);
+    for (const link of layout.antiLinks) drawLinkageApex(g, link, layout);
   }
 
   g.restore();
@@ -392,63 +417,77 @@ function drawTruncationMarker(
 }
 
 function drawChips(g: CanvasRenderingContext2D, chips: ChipPos[], layout: DuplexLayout, opts: RenderOpts): void {
-  const y = chips[0]?.strand === 'sense' ? layout.senseY : layout.antiY;
+  const side = chips[0]?.strand ?? 'sense';
+  const y = side === 'sense' ? layout.senseY : layout.antiY;
+  const decoSide = decorationSide(side);
   for (const cp of chips) {
     if (cp.monomer.kind === 'conjugate')
       drawConjugate(g, cp.monomer.symbol, cp.x, y, cp.w, layout.chipH, layout.fontSize);
     else
-      drawChip(g, cp.monomer as ParsedNucleotide, cp.x, y, cp.w, layout.chipH, layout.fontSize, opts);
+      drawChip(g, cp.monomer as ParsedNucleotide, cp.x, y, cp.w, layout.chipH, layout.fontSize, opts, decoSide);
   }
+}
+
+/** Which outside edge of a strand's chip row gets the sugar stripe and apex.
+ * Sense (or single-strand) → 'top'; antisense → 'bottom'. */
+function decorationSide(strand: StrandSide): 'top' | 'bottom' {
+  return strand === 'antisense' ? 'bottom' : 'top';
 }
 
 function drawChip(
   g: CanvasRenderingContext2D, m: ParsedNucleotide, x: number, y: number,
-  w: number, h: number, fontSize: number, opts: RenderOpts,
+  w: number, h: number, fontSize: number, opts: RenderOpts, decoSide: 'top' | 'bottom',
 ): void {
-  const sugarRes = resolveSugar(m.sugar, m.base);
-  const baseColor = resolveBaseColor(m.base);
-  const isModSugar = isModifiedSugar(m.sugar);
+  const baseColors = m.base ? getMonomerColors('base', m.base) : null;
+  const bg = baseColors?.backgroundcolor ?? resolveBaseColor(m.base);
+  const textC = baseColors?.textcolor ?? contrastTextColor(bg);
   const r = Math.min(2.5, w / 4);
+  const stripeH = Math.max(2, h * SUGAR_STRIPE_RATIO);
 
-  // Chip body — base-canonical pale color (or analog's color for custom bases)
+  // Chip body — background from monomer library (HELM_BASE), softened with
+  // a light alpha so the sugar stripe and base label stay readable on top.
   drawRoundRect(g, x, y, w, h, r);
-  g.fillStyle = withAlpha(baseColor, CHIP_FILL_ALPHA);
+  g.fillStyle = withAlpha(bg, CHIP_FILL_ALPHA);
   g.fill();
   g.lineWidth = CHIP_BORDER_W;
   g.strokeStyle = 'rgba(0,0,0,0.22)';
   g.stroke();
 
-  // Sugar modification stripe at chip bottom — clipped to rounded shape
-  if (isModSugar) {
-    const stripeH = Math.max(2, h * SUGAR_STRIPE_RATIO);
-    g.save();
-    drawRoundRect(g, x, y, w, h, r);
-    g.clip();
-    g.fillStyle = sugarRes.color;
+  // Sugar stripe — drawn for every sugar (including canonical `r` / `d`) so
+  // the sugar identity is always visually readable. Flips side per strand
+  // (top for sense, bottom for antisense). Clipped to the rounded shape so
+  // the stripe follows the chip's corners.
+  const sugarColors = getMonomerColors('sugar', m.sugar);
+  const stripeColor =
+    sugarColors.backgroundcolor ?? resolveSugar(m.sugar, m.base).color;
+  g.save();
+  drawRoundRect(g, x, y, w, h, r);
+  g.clip();
+  g.fillStyle = withAlpha(stripeColor, SUGAR_STRIPE_ALPHA);
+  if (decoSide === 'top')
+    g.fillRect(x, y, w, stripeH);
+  else
     g.fillRect(x, y + h - stripeH, w, stripeH);
-    g.restore();
-  }
+  g.restore();
 
-  // Base label — biased upward to leave room for stripe.
-  // Pick full label or shortened (`X…`) based on whether the chip is wide
-  // enough at the current fontSize. This way, when the layout granted us a
-  // wider chip, the user sees the full HELM symbol; otherwise it's clipped
-  // to first-letter + ellipsis for legibility.
+  // Base label — biased AWAY from the stripe edge so it stays centered in
+  // the visible body. Full HELM symbol when the chip is wide enough; first-
+  // letter + ellipsis otherwise.
   if (opts.showLetters && m.base && fontSize >= 8) {
-    const stripeH = isModSugar ? Math.max(2, h * SUGAR_STRIPE_RATIO) : 0;
     const label = pickBaseLabel(m.base, w, fontSize);
-    g.fillStyle = '#1a1a1a';
+    g.fillStyle = textC;
     g.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
     g.textBaseline = 'middle';
     g.textAlign = 'center';
-    g.fillText(label, x + w / 2, y + (h - stripeH) / 2 + 0.5);
+    // Shift the label towards the unstriped half of the chip
+    const yShift = decoSide === 'top' ? stripeH / 2 : -stripeH / 2;
+    g.fillText(label, x + w / 2, y + h / 2 + yShift + 0.5);
   }
 }
 
-/** Resolve a chip background color for any base, including custom (multi-char)
- * symbols whose color follows their natural analog (`A` / `C` / `G` / `U` / `T`).
- * Sync — backed by the central Bio monomer library that's wired up at
- * package init. */
+/** Fallback base-color resolution when the central monomer library has no
+ * `backgroundcolor` for the base. Tries the canonical palette, then the
+ * natural analog's palette, then a neutral fallback. */
 function resolveBaseColor(base: string | null): string {
   if (!base) return FALLBACK_COLOR;
   if (BASE_COLORS[base]) return BASE_COLORS[base];
@@ -468,41 +507,55 @@ function pickBaseLabel(base: string, chipW: number, fontSize: number): string {
   return displayBase(base);
 }
 
-function isModifiedSugar(sugar: string): boolean {
-  const c = canonicalSugarSymbol(sugar);
-  return c !== 'r' && c !== 'd';
-}
+/** Draw the linkage marker for `link` — a soft arch anchored to the strand's
+ * outside edge (top for sense, bottom for antisense). A single quadratic
+ * curve sweeps from base-left to base-right with a rounded summit, matching
+ * the rounded chip style. Color comes from the central Bio monomer library's
+ * `backgroundcolor` (linecolor tends to be flat black across the lib, which
+ * would wash differentiation out). Canonical `p` is drawn too — every
+ * linkage is visually accounted for. */
+function drawLinkageApex(g: CanvasRenderingContext2D, link: LinkagePos, layout: DuplexLayout): void {
+  const linkerColors = getMonomerColors('linker', link.phosphateSymbol);
+  const color = linkerColors.backgroundcolor ?? resolvePhosphate(link.phosphateSymbol).color;
 
-function drawLinkage(g: CanvasRenderingContext2D, link: LinkagePos): void {
-  // Only the canonical phosphate (`p` / aliased `P`) is treated as "no marker".
-  // Every other linkage — known PS / PS₂ / MeP, or unknown custom symbol that
-  // got a hash-derived color — gets a bar in the inter-chip gap so the user
-  // can see and hover it. Color comes from resolvePhosphate which is
-  // deterministic per symbol, so two distinct unknown symbols get distinct bars.
-  const canonical = canonicalPhosphateSymbol(link.phosphateSymbol);
-  if (canonical === 'p') return;
-  const ps = resolvePhosphate(link.phosphateSymbol);
-  const barW = Math.max(2.5, link.w * PS_BAR_RATIO);
-  const barX = link.x + (link.w - barW) / 2;
-  g.fillStyle = ps.color;
-  g.fillRect(barX, link.y + 1, barW, link.h - 2);
+  const apexH = layout.apexH;
+  const halfW = apexH; // 45° → height equals half-base
+  const centerX = link.x + link.w / 2;
+  const decoSide = decorationSide(link.strand);
+  const baseY = decoSide === 'top' ? link.y : link.y + link.h;
+  // Quadratic-curve midpoint Y sits halfway between baseY and the control Y,
+  // so overshooting the control by 2× lands the visual peak at apexH from baseY.
+  const ctrlY = decoSide === 'top' ? baseY - apexH * 2 : baseY + apexH * 2;
+
+  g.save();
+  g.beginPath();
+  g.moveTo(centerX - halfW, baseY);
+  g.quadraticCurveTo(centerX, ctrlY, centerX + halfW, baseY);
+  g.lineWidth = APEX_LINE_W;
+  g.lineCap = 'round';
+  g.strokeStyle = color;
+  g.stroke();
+  g.restore();
 }
 
 function drawConjugate(
   g: CanvasRenderingContext2D, symbol: string, x: number, y: number,
   w: number, chipH: number, fontSize: number,
 ): void {
+  const conjColors = getMonomerColors('chem', symbol);
   const conj = resolveConjugate(symbol);
+  const fill = conjColors.backgroundcolor ?? conj.color;
+  const textC = conjColors.textcolor ?? '#ffffff';
   const r = chipH / 2;
   drawRoundRect(g, x, y, w, chipH, r);
-  g.fillStyle = conj.color;
+  g.fillStyle = fill;
   g.fill();
   g.lineWidth = 0.5;
   g.strokeStyle = 'rgba(0,0,0,0.2)';
   g.stroke();
 
   if (fontSize >= 8) {
-    g.fillStyle = '#ffffff';
+    g.fillStyle = textC;
     g.font = `600 ${Math.max(8, fontSize - 1)}px system-ui, sans-serif`;
     g.textBaseline = 'middle';
     g.textAlign = 'center';
@@ -576,19 +629,31 @@ export function hitTest(
 ): HitResult | null {
   if (layout.textOnlyFallback) return null;
 
-  // Sense chip?
-  if (localY >= layout.senseY && localY <= layout.senseY + layout.chipH) {
-    const cp = findChip(localX, layout.senseChips);
-    if (cp) return {strand: 'sense', position: cp.origIdx, monomer: cp.monomer};
-    const link = findLink(localX, localY, layout.senseLinks);
-    if (link) return resolveLinkHit(link, model.sense, 'sense');
+  const apexH = layout.apexH;
+  const chipH = layout.chipH;
+
+  // Sense band: chip row + top apex zone (apex sits above the chip row).
+  if (localY >= layout.senseY - apexH && localY <= layout.senseY + chipH) {
+    if (localY >= layout.senseY) {
+      const cp = findChip(localX, layout.senseChips);
+      if (cp) return {strand: 'sense', position: cp.origIdx, monomer: cp.monomer};
+    }
+    // Apex zone above sense
+    if (localY < layout.senseY) {
+      const link = findApex(localX, localY, layout.senseLinks, 'top', apexH);
+      if (link) return resolveLinkHit(link, model.sense, 'sense');
+    }
   }
-  // Antisense chip?
-  if (layout.antiY >= 0 && localY >= layout.antiY && localY <= layout.antiY + layout.chipH) {
-    const cp = findChip(localX, layout.antiChips);
-    if (cp) return {strand: 'antisense', position: cp.origIdx, monomer: cp.monomer};
-    const link = findLink(localX, localY, layout.antiLinks);
-    if (link && model.antisense) return resolveLinkHit(link, model.antisense, 'antisense');
+  // Antisense band: chip row + bottom apex zone (apex sits below the chip row).
+  if (layout.antiY >= 0 && localY >= layout.antiY && localY <= layout.antiY + chipH + apexH) {
+    if (localY <= layout.antiY + chipH) {
+      const cp = findChip(localX, layout.antiChips);
+      if (cp) return {strand: 'antisense', position: cp.origIdx, monomer: cp.monomer};
+    }
+    if (localY > layout.antiY + chipH && model.antisense) {
+      const link = findApex(localX, localY, layout.antiLinks, 'bottom', apexH);
+      if (link) return resolveLinkHit(link, model.antisense, 'antisense');
+    }
   }
   return null;
 }
@@ -598,9 +663,22 @@ function findChip(x: number, chips: ChipPos[]): ChipPos | null {
   return null;
 }
 
-function findLink(x: number, y: number, links: LinkagePos[]): LinkagePos | null {
-  for (const l of links)
-    if (x >= l.x && x < l.x + l.w && y >= l.y && y < l.y + l.h) return l;
+/** Find a linkage whose apex triangle covers (x, y). For each link, the apex
+ * is centered on `link.x + link.w/2`, with 45° slopes — total base width is
+ * `2 * apexH`. The bounding box is used (slight over-inclusion at corners is
+ * fine for hover targets and matches what users expect). */
+function findApex(
+  x: number, y: number, links: LinkagePos[], side: 'top' | 'bottom', apexH: number,
+): LinkagePos | null {
+  for (const l of links) {
+    const centerX = l.x + l.w / 2;
+    if (x < centerX - apexH || x > centerX + apexH) continue;
+    if (side === 'top') {
+      if (y >= l.y - apexH && y <= l.y) return l;
+    } else {
+      if (y >= l.y + l.h && y <= l.y + l.h + apexH) return l;
+    }
+  }
   return null;
 }
 
