@@ -240,6 +240,14 @@ export async function editOligoNucleotideCell(cell: any) : Promise<void> {
   await PackageFunctions.editOligoNucleotideCell(cell);
 }
 
+//name: Open HELM Editor
+//description: Edit the oligonucleotide HELM in the HELM Web Editor
+//input: semantic_value value { semType: OligoNucleotide }
+//meta.action: Edit HELM
+export async function openOligoHelmEditor(value: DG.SemanticValue) : Promise<void> {
+  await PackageFunctions.openOligoHelmEditor(value);
+}
+
 //name: Oligo-Nucleotide
 //description: Modifications, lengths, conjugates and color legend for an OligoNucleotide cell
 //tags: panel, widgets

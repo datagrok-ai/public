@@ -10,6 +10,8 @@
  * Lookups are memoized in a small map keyed by `${kind}:${symbol}`.
  */
 
+import * as DG from 'datagrok-api/dg';
+
 import {HelmTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {_package} from '../package';
@@ -31,7 +33,7 @@ export interface MonomerColorTriple {
 }
 
 const EMPTY: MonomerColorTriple = {backgroundcolor: null, textcolor: null, linecolor: null};
-const _cache = new Map<string, MonomerColorTriple>();
+const _cache = new DG.LruCache<string, MonomerColorTriple>(256);
 
 /** Resolve background/text/line colors for a HELM monomer. Returns `null`s
  * when the library has no entry. Pure sync — backed by `_package.bioMonomerLib`. */
@@ -54,7 +56,6 @@ export function getMonomerColors(kind: MonomerKind, symbol: string): MonomerColo
     }
   } catch { /* lib not yet initialized — return all-null */ }
 
-  if (_cache.size > 512) _cache.clear();
   _cache.set(key, result);
   return result;
 }

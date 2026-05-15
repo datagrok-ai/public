@@ -20,8 +20,10 @@ import {OligoNucleotideCellRenderer} from './oligo-renderer/cell-renderer';
 import {buildOligoPanel} from './oligo-renderer/legend-panel';
 import {buildOligoStructuresPanel} from './oligo-renderer/structures-panel';
 import {combineSenseAntisenseToOligo, convertHelmColumnToOligo} from './oligo-renderer/converters';
-import {parseHelmDuplex} from './oligo-renderer/helm-parser';
-import {drawDuplex} from './oligo-renderer/canvas-renderer';
+import {
+  openOligoCanvasDialog, openOligoHelmEditorDialog,
+  copyHelmToClipboard, copyDuplexImageToClipboard,
+} from './oligo-renderer/cell-actions';
 
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
 import {polyToolEnumerateChemApp, polyToolEnumerateChemUI} from './polytool/pt-chem-enum-dialog';
@@ -445,6 +447,10 @@ export class PackageFunctions {
     return new OligoNucleotideCellRenderer();
   }
 
+  /** Double-click cell editor: opens a full-screen modal with a nicely-rendered
+   * canvas view of the duplex. Hover interactions (monomer/linkage tooltip
+   * with cached RDKit structures) mirror what works in the grid cell. Editing
+   * the HELM itself happens through the separate `Open HELM Editor` action. */
   @grok.decorators.func({
     name: 'editOligoNucleotideCell',
     description: 'OligoNucleotide',
@@ -453,24 +459,25 @@ export class PackageFunctions {
       role: 'cellEditor',
     },
   })
-  static async editOligoNucleotideCell(
+  static editOligoNucleotideCell(
     @grok.decorators.param({type: 'grid_cell'}) cell: DG.GridCell,
+  ): void {
+    openOligoCanvasDialog(cell);
+  }
+
+  /** Cell context-menu action: open the HELM Web Editor for the cell's
+   * sequence and write the edited HELM back on OK. Lives in the "Actions"
+   * group on the cell's context menu (same surfacing convention as
+   * `Copy as HELM`). */
+  @grok.decorators.func({
+    name: 'Open HELM Editor',
+    description: 'Edit the oligonucleotide HELM in the HELM Web Editor',
+    meta: {'action': 'Edit HELM'},
+  })
+  static openOligoHelmEditor(
+    @grok.decorators.param({options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
   ): Promise<void> {
-    // Helm:editMoleculeCell can't be reused: it calls seqHelper.getSeqHandler(col),
-    // which throws unless semType === Macromolecule. OligoNucleotide columns have
-    // semType=OligoNucleotide, so we open the HELM Web Editor directly.
-    const helmHelper = await getHelmHelper();
-    const view = ui.div();
-    const app = helmHelper.createWebEditorApp(view, (cell.cell.value as string | null) ?? '');
-    ui.dialog({showHeader: false, showFooter: true})
-      .add(view)
-      .onOK(() => {
-        const helmValue = app.canvas!.getHelm(true)
-          .replace(/<\/span>/g, '')
-          .replace(/<span style='background:#bbf;'>/g, '');
-        cell.setValue(helmValue);
-      })
-      .show({modal: true, fullScreen: true});
+    return openOligoHelmEditorDialog(value);
   }
 
   @grok.decorators.func({
@@ -509,9 +516,7 @@ export class PackageFunctions {
   static copyOligoAsHelm(
     @grok.decorators.param({options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
   ): void {
-    const helm = String(value?.value ?? '');
-    if (!helm) return;
-    navigator.clipboard.writeText(helm).then(() => grok.shell.info('HELM copied to clipboard'));
+    copyHelmToClipboard(value);
   }
 
   /** Cell context-menu action: render the duplex to a high-resolution PNG with
@@ -528,36 +533,7 @@ export class PackageFunctions {
   static copyOligoAsImage(
     @grok.decorators.param({options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
   ): void {
-    if (!value?.value)
-      return;
-    let width = 1000;
-    const height = 150;
-
-    // Chip sizes are clamped to MAX_CHIP_W=17 logical px, so we can't simply
-    // ask the renderer to draw bigger — we draw at the cell's logical size and
-    // scale the canvas pixel resolution. 4× gives crisp output at common DPIs.
-    const SCALE = 8;
-    const model = parseHelmDuplex(String(value.value));
-    // skip drawing to calculate layout and max needed width
-    const layout = drawDuplex(null as unknown as CanvasRenderingContext2D, 0, 0, width, height, model, undefined, true);
-    const lastSenseChip = layout.senseChips?.length ? layout.senseChips[layout.senseChips.length - 1] : null;
-    const lastAntiChip = layout.antiChips?.length ? layout.antiChips[layout.antiChips.length - 1] : null;
-    const maxX = Math.max((lastSenseChip?.x ?? 0) + (lastSenseChip?.w ?? 0), (lastAntiChip?.x ?? 0) + (lastAntiChip?.w ?? 0)) + 20;
-    // crop canvas to maxX
-    width = maxX;
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(width * SCALE));
-    canvas.height = Math.max(1, Math.round(height * SCALE));
-    const g = canvas.getContext('2d');
-    if (!g) return;
-    g.scale(SCALE, SCALE);
-    drawDuplex(g, 0, 0, width, height, model);
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
-        .then(() => grok.shell.info('Image copied to clipboard'))
-        .catch((er) => grok.shell.error(`Failed to copy image: ${er?.message ?? er}`));
-    }, 'image/png');
+    copyDuplexImageToClipboard(value);
   }
 
   // Invoked from the column / cell context menu via detectors.js (no top-menu).

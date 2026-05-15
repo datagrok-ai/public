@@ -28,6 +28,8 @@
  * (and below antisense, when present).
  */
 
+import * as DG from 'datagrok-api/dg';
+
 import {
   BASE_COLORS, FALLBACK_COLOR,
   contrastTextColor,
@@ -54,8 +56,14 @@ const ASPECT_H_OVER_W = 1.25;
 const STRAND_GAP_RATIO = 0.5;
 const CHIP_GAP_RATIO = 0.40; // wide gaps give apex triangles room to breathe
 const MIN_CHIP_W = 5;
-const MAX_CHIP_W = 17;
+// No hard upper cap on chip width — chipW grows until either (a) the duplex
+// no longer fits in the cell's available width with all monomers shown at
+// their natural widened size, or (b) the cell's height budget runs out.
+// Show-everything is prioritised over making chips big.
 const PAD = 4;
+/** Vertical breathing room above the top apex zone and below the bottom one,
+ * so the linkage marks never butt right up against the cell border. */
+const V_PAD = 10;
 const LABEL_W = 30;
 /** Chip fill opacity — softens the often-saturated library backgrounds so the
  * sugar stripe and base label stay readable on top. */
@@ -122,20 +130,37 @@ export function computeLayout(
   const strandsCount = hasAnti ? 2 : 1;
   const maxLen = Math.max(1, senseLen, antiLen);
 
-  const availW = Math.max(0, cellW - LABEL_W - 2 * PAD);
-  const wChipW = availW / (maxLen + Math.max(0, maxLen - 1) * CHIP_GAP_RATIO);
-
-  // Vertical budget needs to account for apex zones: above sense (always),
-  // and below antisense when present. Each apex zone is APEX_RATIO * chipH.
+  // Height budget caps chipW from above (chip aspect ratio is fixed). The
+  // vertical pad reserves breathing room above/below the apex zones so the
+  // linkage marks never touch the cell border.
   const apexCount = hasAnti ? 2 : 1;
   const heightFactor =
     strandsCount + (strandsCount - 1) * STRAND_GAP_RATIO + apexCount * APEX_RATIO;
-  const hChipH = (cellH - 2 * PAD) / heightFactor;
-  const hChipW = hChipH / ASPECT_H_OVER_W;
+  const hChipH = (cellH - 2 * V_PAD) / heightFactor;
+  const heightCap = hChipH / ASPECT_H_OVER_W;
 
-  let chipW = Math.min(MAX_CHIP_W, wChipW, hChipW);
-  const textOnlyFallback = chipW < MIN_CHIP_W;
-  if (chipW < MIN_CHIP_W) chipW = MIN_CHIP_W;
+  // Pick chipW as the LARGEST value in [MIN_CHIP_W, heightCap] for which the
+  // *uniform* layout fits. We size based on uniform (every nucleotide at
+  // chipW, conjugates at their pill widths) so the canonical single-char
+  // chips stay as big as the cell allows. The body below then decides per
+  // cell whether the widened multi-char labels also fit at this chipW —
+  // if not, those few chips are ellipsized rather than shrinking every chip
+  // on the strand. Show-everything priority: shortening one long label is
+  // preferred over making the whole row smaller. If even uniform doesn't
+  // fit at MIN_CHIP_W, we fall back to a text-only summary.
+  let chipW: number;
+  let textOnlyFallback = false;
+  // `maxLen` is read so this remains a no-op binding when callers reference it later.
+  void maxLen;
+  if (heightCap < MIN_CHIP_W) {
+    chipW = MIN_CHIP_W;
+    textOnlyFallback = true;
+  } else if (fitsAtChipW(MIN_CHIP_W, cellW, model, o, 'uniform')) {
+    chipW = findMaxChipW(cellW, model, o, 'uniform', MIN_CHIP_W, heightCap);
+  } else {
+    chipW = MIN_CHIP_W;
+    textOnlyFallback = true;
+  }
 
   const chipH = chipW * ASPECT_H_OVER_W;
   const chipGap = Math.max(3, chipW * CHIP_GAP_RATIO);
@@ -144,7 +169,7 @@ export function computeLayout(
   const apexH = chipH * APEX_RATIO;
 
   const blockH = strandsCount * chipH + (strandsCount - 1) * strandGap + apexCount * apexH;
-  const blockTop = Math.max(PAD, (cellH - blockH) / 2);
+  const blockTop = Math.max(V_PAD, (cellH - blockH) / 2);
   // Sense always sits below a top apex zone; antisense (when present) has
   // its apex zone below it. Single-strand cases get a top apex zone only.
   const senseY = blockTop + apexH;
@@ -193,9 +218,9 @@ export function computeLayout(
   // Falls back to uniform chipW if either strand's chips don't fit.
   const widthBudget = seqEndX - (seqX + alignAt);
   if (!fitsInBudget(widths.sense, senseLeadW, chipGap, widthBudget) ||
-      !fitsInBudget(widths.anti, antiLeadW, chipGap, widthBudget)) {
+      !fitsInBudget(widths.anti, antiLeadW, chipGap, widthBudget))
     widths = uniformWidths(senseDisplay, antiDisplay, chipW, fontSize);
-  }
+
 
   const senseRes = placeStrand(
     model.sense, false, senseY, senseStartX, seqEndX, layoutBase, 'sense', widths.sense);
@@ -337,14 +362,70 @@ function uniformWidths(
   return {sense: senseDisplay.map(map), anti: antiDisplay.map(map)};
 }
 
-/** Whether the per-chip widths array fits in `budget` (after the leading shift). */
+/** Whether the per-chip widths array fits in `budget` (which is measured from
+ * the alignment point, i.e. `seqEndX − (seqX + alignAt)`).
+ *
+ * `widths` already includes any leading conjugates' pill widths at the front.
+ * Those leading conjugates occupy the SHIFT area to the LEFT of the alignment
+ * point (between `seqX` and `seqX + alignAt`) — so their cost against the
+ * post-alignment `budget` is zero. Equivalently: this strand's chips start at
+ * `seqX + (alignAt − leadW)` and span `chipsTotal`, fitting when
+ *   `chipsTotal ≤ seqEndX − (seqX + alignAt − leadW) = budget + leadW`. */
 function fitsInBudget(widths: number[], leadW: number, chipGap: number, budget: number): boolean {
-  let total = leadW;
+  let total = 0;
   for (let i = 0; i < widths.length; i++) {
     total += widths[i];
     if (i < widths.length - 1) total += chipGap;
   }
-  return total <= budget;
+  return total <= budget + leadW;
+}
+
+/** True iff a layout at this `chipW` (using either widened or uniform widths)
+ * places every chip inside the cell's horizontal budget. Same math as the
+ * main `computeLayout` body, just packaged so the binary search can probe. */
+function fitsAtChipW(
+  chipW: number, cellW: number, model: ParsedDuplex, opts: RenderOpts,
+  mode: 'widened' | 'uniform',
+): boolean {
+  const fontSize = Math.max(7, Math.min(13, chipW * 0.62));
+  const chipGap = Math.max(3, chipW * CHIP_GAP_RATIO);
+  const hasAnti = !!model.antisense && model.antisense.monomers.length > 0;
+  const antiReversed = hasAnti && opts.pairAlign;
+
+  const senseLeadW = leadingConjugateWidth(model.sense.monomers, false, chipW, fontSize, chipGap);
+  const antiLeadW = hasAnti ?
+    leadingConjugateWidth(model.antisense!.monomers, antiReversed, chipW, fontSize, chipGap) : 0;
+  const alignAt = Math.max(senseLeadW, antiLeadW);
+
+  const senseDisplay = model.sense.monomers;
+  const antiDisplay = hasAnti ?
+    (antiReversed ? model.antisense!.monomers.slice().reverse() : model.antisense!.monomers) :
+    [];
+  const widths = mode === 'widened' ?
+    computePairSyncedWidths(senseDisplay, antiDisplay, chipW, fontSize) :
+    uniformWidths(senseDisplay, antiDisplay, chipW, fontSize);
+
+  const widthBudget = (cellW - PAD) - ((PAD + LABEL_W) + alignAt);
+  if (widthBudget < 0) return false;
+  return fitsInBudget(widths.sense, senseLeadW, chipGap, widthBudget) &&
+         fitsInBudget(widths.anti, antiLeadW, chipGap, widthBudget);
+}
+
+/** Binary-search the largest chipW ∈ [lo, hi] where `fitsAtChipW(..., mode)`
+ * returns true. Assumes `fitsAtChipW(lo, ..., mode) === true` (caller checks).
+ * Layout fit is monotone-decreasing in chipW, so a 0.25-px termination gives
+ * sub-pixel resolution in a handful of iterations. */
+function findMaxChipW(
+  cellW: number, model: ParsedDuplex, opts: RenderOpts,
+  mode: 'widened' | 'uniform', lo: number, hi: number,
+): number {
+  if (fitsAtChipW(hi, cellW, model, opts, mode)) return hi;
+  while (hi - lo > 0.25) {
+    const mid = (lo + hi) / 2;
+    if (fitsAtChipW(mid, cellW, model, opts, mode)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
 }
 
 /* ---------------------------------------------------------------- *
@@ -446,7 +527,10 @@ function drawChip(
   const baseColors = m.base ? getMonomerColors('base', m.base) : null;
   const bg = baseColors?.backgroundcolor ?? resolveBaseColor(m.base);
   const textC = baseColors?.textcolor ?? contrastTextColor(bg);
-  const r = Math.min(2.5, w / 4);
+  // Corner radius scales with the chip's smaller dimension so chips stay
+  // pleasantly rounded at every size — the previous hardcoded 2.5px cap made
+  // larger chips read as squares.
+  const r = Math.min(w, h) / 4;
   const stripeH = Math.max(2, h * SUGAR_STRIPE_RATIO);
 
   // Chip body — background from monomer library (HELM_BASE), softened with
@@ -522,8 +606,9 @@ function pickBaseLabel(base: string, chipW: number, fontSize: number): string {
 function drawLinkageApex(g: CanvasRenderingContext2D, link: LinkagePos, layout: DuplexLayout): void {
   const linkerColors = getMonomerColors('linker', link.phosphateSymbol);
   const color = linkerColors.backgroundcolor ?? resolvePhosphate(link.phosphateSymbol).color;
-
   const apexH = layout.apexH;
+
+  const apexWidthMult = Math.max(apexH / 10, 1);
   const halfW = apexH; // 45° → height equals half-base
   const centerX = link.x + link.w / 2;
   const decoSide = decorationSide(link.strand);
@@ -536,7 +621,7 @@ function drawLinkageApex(g: CanvasRenderingContext2D, link: LinkagePos, layout: 
   g.beginPath();
   g.moveTo(centerX - halfW, baseY);
   g.quadraticCurveTo(centerX, ctrlY, centerX + halfW, baseY);
-  g.lineWidth = APEX_LINE_W;
+  g.lineWidth = APEX_LINE_W * apexWidthMult;
   g.lineCap = 'round';
   g.strokeStyle = color;
   g.stroke();
@@ -600,9 +685,10 @@ function drawPairingMark(
 ): void {
   g.save();
   g.lineCap = 'round';
+  const lineWidthMult = Math.max(chipW / 20, 1);
   if (kind === 'mismatch') {
     g.strokeStyle = PAIR_COLOR_MISMATCH;
-    g.lineWidth = MISMATCH_LINE_W;
+    g.lineWidth = MISMATCH_LINE_W * lineWidthMult;
     g.setLineDash([1, 1.6]);
     g.beginPath();
     g.moveTo(x, yTop);
@@ -611,23 +697,23 @@ function drawPairingMark(
   } else if (kind === 'GC') {
     // Three lines — spacing scales with chip width to stay readable on
     // both narrow and wide chips, capped so they don't bleed past the chip.
-    const off = Math.min(3, chipW * 0.32);
+    const off = chipW * 0.22;
     g.strokeStyle = PAIR_COLOR_GC;
-    g.lineWidth = PAIR_LINE_W;
+    g.lineWidth = PAIR_LINE_W * lineWidthMult;
     for (const dx of [-off, 0, off]) {
       g.beginPath();
-      g.moveTo(x + dx, yTop);
-      g.lineTo(x + dx, yBot);
+      g.moveTo(x + dx, yTop + 1);
+      g.lineTo(x + dx, yBot - 1);
       g.stroke();
     }
   } else { // AU / AT
-    const off = Math.min(2.4, chipW * 0.26);
+    const off = chipW * 0.14;
     g.strokeStyle = PAIR_COLOR_AU;
-    g.lineWidth = PAIR_LINE_W;
+    g.lineWidth = PAIR_LINE_W * lineWidthMult;
     for (const dx of [-off, off]) {
       g.beginPath();
-      g.moveTo(x + dx, yTop);
-      g.lineTo(x + dx, yBot);
+      g.moveTo(x + dx, yTop + 1);
+      g.lineTo(x + dx, yBot - 1);
       g.stroke();
     }
   }
@@ -708,7 +794,7 @@ function drawFallbackText(
 }
 
 /** Apply alpha to any CSS color string, returning rgba(...). Memoized. */
-const _alphaCache = new Map<string, string>();
+const _alphaCache = new DG.LruCache<string, string>(256);
 function withAlpha(color: string, alpha: number): string {
   const key = `${color}|${alpha}`;
   const cached = _alphaCache.get(key);
@@ -720,7 +806,6 @@ function withAlpha(color: string, alpha: number): string {
   document.body.removeChild(probe);
   const m = rgb.match(/\d+/g);
   const out = m ? `rgba(${m[0]},${m[1]},${m[2]},${alpha})` : color;
-  if (_alphaCache.size > 256) _alphaCache.clear();
   _alphaCache.set(key, out);
   return out;
 }

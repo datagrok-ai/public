@@ -211,10 +211,158 @@ category('OligoRenderer: layout', () => {
     const layout = computeLayout(500, 70, m);
     expect(layout.textOnlyFallback, false);
     expect(layout.chipW > 5, true, 'chip width should be larger than minimum');
-    expect(layout.chipW <= 17, true, 'chip width should respect max (17)');
+    // chipW is bounded above by the cell's height budget. V_PAD=10 is the
+    // top/bottom breathing room; the rest is divided among 2 strands +
+    // 1 strand-gap + 2 apex zones with the fixed chip aspect ratio.
+    const heightBudget = (70 - 2 * 10) / (2 + 0.5 + 0.9) / 1.25;
+    expect(layout.chipW <= heightBudget + 0.01, true,
+      `chipW should be bounded by height (got ${layout.chipW}, cap ${heightBudget})`);
     expect(layout.antiY > layout.senseY, true);
     expect(layout.senseChips.length > 0, true);
     expect(layout.antiChips.length > 0, true);
+    // Top apex must sit at least V_PAD=10 from the cell's top edge.
+    expect(layout.senseY - layout.apexH >= 10 - 0.01, true,
+      `top apex zone violates 10px top margin: senseY=${layout.senseY}, apexH=${layout.apexH}`);
+  });
+
+  test('chipW grows with cell height (no hard max cap)', async () => {
+    // Same duplex, taller cells. Without a hardcoded MAX_CHIP_W cap, chipW
+    // must grow proportionally with cellH (height budget governs the cap).
+    // Smallest cell here is 60px to stay above the V_PAD=10 floor where
+    // the height budget would otherwise dip under MIN_CHIP_W.
+    const m = parseHelmDuplex(SAMPLE_DUPLEX);
+    const layoutSmall = computeLayout(1000, 60, m);
+    const layoutMid   = computeLayout(1000, 100, m);
+    const layoutBig   = computeLayout(1000, 180, m);
+    expect(layoutMid.chipW > layoutSmall.chipW, true,
+      `expected chipW to grow with height: ${layoutSmall.chipW} → ${layoutMid.chipW}`);
+    expect(layoutBig.chipW > layoutMid.chipW, true,
+      `expected chipW to keep growing: ${layoutMid.chipW} → ${layoutBig.chipW}`);
+    // Previously this was capped at MAX_CHIP_W=17. With the cap removed and
+    // a 180px-tall cell, chipW comfortably exceeds 30 even after V_PAD=10
+    // takes 20px out of the vertical budget.
+    expect(layoutBig.chipW > 30, true,
+      `chipW should exceed previous 17px cap on tall cells: got ${layoutBig.chipW}`);
+  });
+
+  test('chipW grows with cell width when not height-limited', async () => {
+    // Wide+tall cell with a small duplex (4 chips per strand). Width budget
+    // is generous, so chipW should be governed by the height cap.
+    const helm = 'RNA1{m(A)p.m(C)p.m(G)p.m(U)}|RNA2{m(U)p.m(G)p.m(C)p.m(A)}$$$$';
+    const m = parseHelmDuplex(helm);
+    const tallWide = computeLayout(2000, 140, m);
+    // Should fit easily; chipW capped by height budget. (cellH - 2*V_PAD)
+    // / heightFactor / aspect.
+    const heightCap = (140 - 2 * 10) / (2 + 0.5 + 0.9) / 1.25;
+    expect(Math.abs(tallWide.chipW - heightCap) < 0.5, true,
+      `tall+wide cell: chipW should ride the height cap (got ${tallWide.chipW}, expected ~${heightCap.toFixed(1)})`);
+  });
+
+  test('top apex and bottom apex sit at least 10px from cell edges', async () => {
+    // V_PAD=10 guarantees vertical breathing room so the apex tips never
+    // touch the cell border.
+    const m = parseHelmDuplex(SAMPLE_DUPLEX);
+    for (const [w, h] of [[600, 70], [1000, 120], [1500, 200]]) {
+      const layout = computeLayout(w, h, m);
+      if (layout.textOnlyFallback) continue;
+      const topApexEdge = layout.senseY - layout.apexH;
+      const bottomApexEdge = layout.antiY >= 0 ? layout.antiY + layout.chipH + layout.apexH : -1;
+      expect(topApexEdge >= 10 - 0.01, true,
+        `top apex too close to top at ${w}×${h}: ${topApexEdge}`);
+      if (bottomApexEdge > 0)
+        expect(h - bottomApexEdge >= 10 - 0.01, true,
+          `bottom apex too close to bottom at ${w}×${h}: cellH-edge=${h - bottomApexEdge}`);
+    }
+  });
+
+  test('multi-char base ellipsizes — chipW does NOT shrink for everyone else', async () => {
+    // Tight cell with one long custom base on sense. Show-everything priority
+    // means: keep chipW as big as uniform-fit allows; ellipsize the long
+    // multi-char chip rather than shrinking every chip on the row.
+    const canonical = parseHelmDuplex(
+      'RNA1{m(A)p.m(C)p.m(G)p.m(U)p.m(A)p.m(C)p.m(G)p.m(U)}|' +
+      'RNA2{m(U)p.m(G)p.m(C)p.m(A)p.m(U)p.m(G)p.m(C)p.m(A)}$$$$');
+    const multichar = parseHelmDuplex(
+      'RNA1{m([cpm6A])p.m(C)p.m(G)p.m(U)p.m(A)p.m(C)p.m(G)p.m(U)}|' +
+      'RNA2{m(U)p.m(G)p.m(C)p.m(A)p.m(U)p.m(G)p.m(C)p.m(A)}$$$$');
+    const cellW = 300; const cellH = 50;
+    const lCanon = computeLayout(cellW, cellH, canonical);
+    const lMulti = computeLayout(cellW, cellH, multichar);
+    // Sizing is governed by uniform-fit, which depends only on chip COUNT
+    // and conjugate widths — not on whether a base is single- or multi-char.
+    // So a multi-char base must not pull chipW down.
+    expect(Math.abs(lMulti.chipW - lCanon.chipW) < 0.5, true,
+      `multi-char chipW=${lMulti.chipW.toFixed(2)} drifted from canonical chipW=${lCanon.chipW.toFixed(2)}; ` +
+      `sizing should be based on uniform fit, not widened`);
+    // Every monomer still draws (just the multi-char one shows an ellipsized label).
+    expect(lMulti.senseChips.length, multichar.sense.monomers.length);
+    expect(lMulti.antiChips.length, multichar.antisense!.monomers.length);
+  });
+
+  test('leading conjugate does NOT cause chipW to stall on roomy cells', async () => {
+    // Regression: `fitsInBudget` used to double-count the leading conjugate
+    // width (added `leadW` to the running total AND `widths[0]` already
+    // contained the pill width), so the binary search bailed early on cells
+    // where the conjugate strand had enough room. Net effect was the layout
+    // chose a chipW much smaller than what the cell could actually hold.
+    // This is the exact HELM the user reported, on a wide+tall cell.
+    const helm =
+      'RNA1{[Chol].m(G)[sp].[fl2r](A)[sp].m(C)p.[fl2r](U)p.m(G)p.[fl2r](A)p.m(A)p.[fl2r](U)p.m(A)p.' +
+      '[fl2r](U)p.m(A)p.[fl2r](A)p.m(A)p.[fl2r](C)p.m(U)p.[fl2r](U)p.m(G)[sp].[fl2r](U)[sp].m(G)[L3]}|' +
+      'RNA2{m(C)[sp].[fl2r]([br8A])[sp].m(C)p.[fl2r](A)p.m(A)p.[fl2r](G)p.m(U)p.[fl2r](U)p.m(U)p.' +
+      '[fl2r](A)p.m(U)p.[fl2r](A)p.m(U)p.[fl2r]([cneT])p.m(C)p.[fl2r](A)p.m(G)[sp].' +
+      '[fl2r]([c7io7A])[sp].m(C)}$$$$';
+    const m = parseHelmDuplex(helm);
+    const layoutNoConj = computeLayout(1000, 120, parseHelmDuplex(
+      'RNA1{m(G)p.m(A)p.m(C)p.m(U)p.m(G)p.m(A)p.m(A)p.m(U)p.m(A)p.m(U)p.m(A)p.m(A)p.m(A)p.m(C)p.m(U)p.m(U)p.m(G)p.m(U)p.m(G)}|' +
+      'RNA2{m(C)p.m(A)p.m(C)p.m(A)p.m(A)p.m(G)p.m(U)p.m(U)p.m(U)p.m(A)p.m(U)p.m(A)p.m(U)p.m(U)p.m(C)p.m(A)p.m(G)p.m(U)p.m(C)}$$$$'));
+    const layoutWithConj = computeLayout(1000, 120, m);
+    // With a 1000×120 cell, the height cap allows chipW ~28. The version
+    // without conjugates rides that cap; the version with [Chol]/[L3] +
+    // multi-char bases should pick a chipW that's a meaningful fraction
+    // (≥ 60%) of that — not collapse back to single digits.
+    expect(layoutWithConj.chipW >= layoutNoConj.chipW * 0.6, true,
+      `with-conjugate chipW=${layoutWithConj.chipW.toFixed(2)} dropped too far ` +
+      `below no-conjugate chipW=${layoutNoConj.chipW.toFixed(2)} on the same roomy cell`);
+    // And every monomer must place.
+    expect(layoutWithConj.senseChips.length, m.sense.monomers.length);
+    expect(layoutWithConj.antiChips.length, m.antisense!.monomers.length);
+  });
+
+  test('leading conjugate reduces chipW but no monomer is dropped', async () => {
+    // With a Cholesterol conjugate at sense 5', the conjugate pill consumes
+    // a chunk of horizontal budget. chipW shrinks compared to the same data
+    // without the conjugate — but all chips still place.
+    const noConj = parseHelmDuplex(
+      'RNA1{m(A)p.m(C)p.m(G)p.m(U)p.m(A)p.m(C)p.m(G)p.m(U)p.m(A)p.m(C)}|' +
+      'RNA2{m(U)p.m(G)p.m(C)p.m(A)p.m(U)p.m(G)p.m(C)p.m(A)p.m(U)p.m(G)}$$$$');
+    const withConj = parseHelmDuplex(
+      'RNA1{[Chol].m(A)p.m(C)p.m(G)p.m(U)p.m(A)p.m(C)p.m(G)p.m(U)p.m(A)p.m(C)}|' +
+      'RNA2{m(U)p.m(G)p.m(C)p.m(A)p.m(U)p.m(G)p.m(C)p.m(A)p.m(U)p.m(G)}$$$$');
+    const cellW = 350; const cellH = 70;
+    const lNo = computeLayout(cellW, cellH, noConj);
+    const lW = computeLayout(cellW, cellH, withConj);
+    expect(lW.chipW <= lNo.chipW + 0.01, true,
+      `with-conjugate chipW=${lW.chipW} must be ≤ no-conjugate chipW=${lNo.chipW}`);
+    // Every monomer (incl. the conjugate pill) is placed.
+    expect(lW.senseChips.length, withConj.sense.monomers.length);
+    expect(lW.antiChips.length, withConj.antisense!.monomers.length);
+  });
+
+  test('tight cell falls back to uniform widths with ellipsis (no text-only)', async () => {
+    // A duplex with a long base name on a moderately tight cell: widened
+    // would overflow even at MIN_CHIP_W, but uniform widths (with the
+    // multi-char chip ellipsized) still fit.
+    const m = parseHelmDuplex(
+      'RNA1{m([cpm6A])p.m([5Br-dC])p.m(G)p.m(U)p.m(A)p.m(C)p.m(G)p.m(U)p.m(A)p.m(C)p.m(G)p.m(U)p.m(A)p.m(C)p.m(G)p.m(U)p.m(A)p.m(C)p.m(G)}|' +
+      'RNA2{m(U)p.m(G)p.m(C)p.m(A)p.m(U)p.m(G)p.m(C)p.m(A)p.m(U)p.m(G)p.m(C)p.m(A)p.m(U)p.m(G)p.m(C)p.m(A)p.m(U)p.m(G)p.m(C)}$$$$');
+    const layout = computeLayout(220, 50, m);
+    // Not text-only — everything still draws as chips, just with truncated labels.
+    expect(layout.textOnlyFallback, false,
+      'tight-but-survivable cell should not collapse to text-only');
+    // All chips placed (no chip dropped).
+    expect(layout.senseChips.length, m.sense.monomers.length);
+    expect(layout.antiChips.length, m.antisense!.monomers.length);
   });
 
   test('compact cell — both strands still fit in 28px row', async () => {

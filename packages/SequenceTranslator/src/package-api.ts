@@ -163,6 +163,13 @@ export namespace funcs {
   }
 
   /**
+  Edit the oligonucleotide HELM in the HELM Web Editor
+  */
+  export async function openOligoHelmEditor(value: any ): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:OpenOligoHelmEditor', { value });
+  }
+
+  /**
   Modifications, lengths, conjugates and color legend for an OligoNucleotide cell
   */
   export async function oligoNucleotidePanel(value: any ): Promise<any> {
