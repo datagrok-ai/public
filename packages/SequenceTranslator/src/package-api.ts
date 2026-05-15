@@ -177,6 +177,20 @@ export namespace funcs {
   }
 
   /**
+  Copy the HELM string of an oligo cell to the clipboard
+  */
+  export async function copyOligoAsHelm(value: any ): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:CopyOligoAsHelm', { value });
+  }
+
+  /**
+  Copy a high-resolution image of the oligo duplex
+  */
+  export async function copyOligoAsImage(value: any ): Promise<void> {
+    return await grok.functions.call('SequenceTranslator:CopyOligoAsImage', { value });
+  }
+
+  /**
   Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view
   */
   export async function convertHelmToOligoNucleotide(table: DG.DataFrame , helmCol: DG.Column ): Promise<DG.Column> {

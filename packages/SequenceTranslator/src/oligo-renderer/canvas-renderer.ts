@@ -373,20 +373,19 @@ export function drawDuplex(
 
   // Strand label "S 5'" left of sense
   drawStrandLabel(g, 'S', '5\'', layout.padding, layout.senseY + layout.chipH / 2, layout);
-
-  // Chips first; apex triangles paint last so they appear on top of the
+  // first draw links so they are behind
+  for (const link of layout.senseLinks) drawLinkageApex(g, link, layout);
   // chip body's anti-aliased corners.
   drawChips(g, layout.senseChips, layout, o);
   drawTruncationMarker(g, layout.senseChips, model.sense.monomers.length, layout);
-  for (const link of layout.senseLinks) drawLinkageApex(g, link, layout);
 
   if (layout.antiY >= 0 && model.antisense) {
     // When reversed, the leftmost chip in display is the 3' end of antisense.
     const leftLabel = layout.antiReversed ? '3\'' : '5\'';
     drawStrandLabel(g, 'AS', leftLabel, layout.padding, layout.antiY + layout.chipH / 2, layout);
+    for (const link of layout.antiLinks) drawLinkageApex(g, link, layout);
     drawChips(g, layout.antiChips, layout, o);
     drawTruncationMarker(g, layout.antiChips, model.antisense.monomers.length, layout);
-    for (const link of layout.antiLinks) drawLinkageApex(g, link, layout);
   }
 
   g.restore();

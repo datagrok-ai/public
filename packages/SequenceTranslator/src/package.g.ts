@@ -258,6 +258,22 @@ export function oligoNucleotideStructuresPanel(value: DG.SemanticValue) : any {
   return PackageFunctions.oligoNucleotideStructuresPanel(value);
 }
 
+//name: Copy as HELM
+//description: Copy the HELM string of an oligo cell to the clipboard
+//input: semantic_value value { semType: OligoNucleotide }
+//meta.action: Copy as HELM
+export function copyOligoAsHelm(value: DG.SemanticValue) : void {
+  PackageFunctions.copyOligoAsHelm(value);
+}
+
+//name: Copy as Image
+//description: Copy a high-resolution image of the oligo duplex
+//input: semantic_value value { semType: OligoNucleotide }
+//meta.action: Copy as Image
+export function copyOligoAsImage(value: DG.SemanticValue) : void {
+  PackageFunctions.copyOligoAsImage(value);
+}
+
 //description: Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view
 //input: dataframe table 
 //input: column helmCol { caption: HELM column; semType: Macromolecule }

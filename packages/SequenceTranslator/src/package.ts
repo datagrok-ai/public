@@ -20,6 +20,8 @@ import {OligoNucleotideCellRenderer} from './oligo-renderer/cell-renderer';
 import {buildOligoPanel} from './oligo-renderer/legend-panel';
 import {buildOligoStructuresPanel} from './oligo-renderer/structures-panel';
 import {combineSenseAntisenseToOligo, convertHelmColumnToOligo} from './oligo-renderer/converters';
+import {parseHelmDuplex} from './oligo-renderer/helm-parser';
+import {drawDuplex} from './oligo-renderer/canvas-renderer';
 
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
 import {polyToolEnumerateChemApp, polyToolEnumerateChemUI} from './polytool/pt-chem-enum-dialog';
@@ -493,6 +495,69 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'semantic_value', options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
   ): DG.Widget {
     return buildOligoStructuresPanel(value);
+  }
+
+  /** Cell context-menu action: copy the raw HELM string. Surfaced automatically
+   * by the platform under the cell's "Copy" submenu because of `meta.action:
+   * 'Copy as HELM'`; we set `exclude-actions-panel` so it doesn't also show up
+   * in the right-side actions panel. */
+  @grok.decorators.func({
+    name: 'Copy as HELM',
+    description: 'Copy the HELM string of an oligo cell to the clipboard',
+    meta: {'action': 'Copy as HELM'},
+  })
+  static copyOligoAsHelm(
+    @grok.decorators.param({options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
+  ): void {
+    const helm = String(value?.value ?? '');
+    if (!helm) return;
+    navigator.clipboard.writeText(helm).then(() => grok.shell.info('HELM copied to clipboard'));
+  }
+
+  /** Cell context-menu action: render the duplex to a high-resolution PNG with
+   * transparent background and copy it to the system clipboard. Canvas pixel
+   * dimensions are scaled up but the logical layout sees the original
+   * gridCell bounds — so chip sizes match what's on-screen, just at higher
+   * pixel density. drawDuplex itself never paints a backdrop, which keeps
+   * the alpha channel clean. */
+  @grok.decorators.func({
+    name: 'Copy as Image',
+    description: 'Copy a high-resolution image of the oligo duplex',
+    meta: {'action': 'Copy as Image'},
+  })
+  static copyOligoAsImage(
+    @grok.decorators.param({options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
+  ): void {
+    if (!value?.value)
+      return;
+    let width = 1000;
+    const height = 150;
+
+    // Chip sizes are clamped to MAX_CHIP_W=17 logical px, so we can't simply
+    // ask the renderer to draw bigger — we draw at the cell's logical size and
+    // scale the canvas pixel resolution. 4× gives crisp output at common DPIs.
+    const SCALE = 8;
+    const model = parseHelmDuplex(String(value.value));
+    // skip drawing to calculate layout and max needed width
+    const layout = drawDuplex(null as unknown as CanvasRenderingContext2D, 0, 0, width, height, model, undefined, true);
+    const lastSenseChip = layout.senseChips?.length ? layout.senseChips[layout.senseChips.length - 1] : null;
+    const lastAntiChip = layout.antiChips?.length ? layout.antiChips[layout.antiChips.length - 1] : null;
+    const maxX = Math.max((lastSenseChip?.x ?? 0) + (lastSenseChip?.w ?? 0), (lastAntiChip?.x ?? 0) + (lastAntiChip?.w ?? 0)) + 20;
+    // crop canvas to maxX
+    width = maxX;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * SCALE));
+    canvas.height = Math.max(1, Math.round(height * SCALE));
+    const g = canvas.getContext('2d');
+    if (!g) return;
+    g.scale(SCALE, SCALE);
+    drawDuplex(g, 0, 0, width, height, model);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+        .then(() => grok.shell.info('Image copied to clipboard'))
+        .catch((er) => grok.shell.error(`Failed to copy image: ${er?.message ?? er}`));
+    }, 'image/png');
   }
 
   // Invoked from the column / cell context menu via detectors.js (no top-menu).
