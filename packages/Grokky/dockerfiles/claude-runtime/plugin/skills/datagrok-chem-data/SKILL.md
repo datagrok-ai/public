@@ -102,12 +102,10 @@ useful entry points.
 
 | Function | Tags | What it does |
 |---|---|---|
-| `chemblIdToSmilesTs(id: string)` | `converter` | CHEMBL ID (e.g. `'CHEMBL1185'`) → canonical SMILES. Registered as a `converter` for the `(CHEMBL[0-9]+)` regex — string fields auto-resolve. **Only goes ID → SMILES**; for InChI key / other-ID → ChEMBL ID, use `Chem:mapIdentifiersTransform` from the toolkit skill. |
+| `chemblIdToSmilesTs(id: string = 'CHEMBL1185')` | `converter` | CHEMBL ID (e.g. `'CHEMBL1185'`) → canonical SMILES. Registered as a `converter` for the `(CHEMBL[0-9]+)` regex — string fields auto-resolve. **Only goes ID → SMILES**; for InChI key / other-ID → ChEMBL ID, use `Chem:mapIdentifiersTransform` from the toolkit skill. |
 | `chemblMolregno(table: dataframe, molecules: column<Molecule>)` | — | Appends a `CHEMBL molregno` column to the table by looking up each SMILES in the ChEMBL DB. |
 | `getChemblCompoundsByOrganism(maxNumberOfMolecules: int = 1000, organism: string = 'Shigella')` | `hitTriageDataSource` | Pulls compounds active against targets of the given organism. Returns DataFrame. |
 | `getChemblCompounds(maxNumberOfMolecules: int = 1000)` | `hitTriageDataSource` | Pulls a generic ChEMBL compound sample. |
-| `chemblSubstructureSearch(molecule: string)` | — | Calls the `Chembl:patternSubstructureSearch` query → DataFrame (up to 100 hits) with `smiles`, `chembl_id`. |
-| `chemblSimilaritySearch(molecule: string)` | — | Calls the `Chembl:patternSimilaritySearch` query → DataFrame with `smiles`, `chembl_id`, `similarity`. |
 | `namesToSmiles(names: list<string>)` (SQL query) | — | The underlying SQL query that powers `Chem:namesToSmiles`. Returns a DataFrame with a `canonical_smiles` column. Invoke via `grok.functions.call('Chembl:namesToSmiles', {names: ['aspirin','ibuprofen',...]})` or via `grok.data.query`. |
 
 ### Panels (context-panel widgets)
@@ -118,7 +116,7 @@ All entries below have the `panel` tag.
 |---|---|
 | `chemblSubstructureSearchPanel(mol)` | "Databases \| ChEMBL \| Substructure Search (Internal)". |
 | `chemblSimilaritySearchPanel(mol)` | "Databases \| ChEMBL \| Similarity Search (Internal)". |
-| `chemblSearchWidgetLocalDb(mol, substructure?)` | The underlying widget — call directly to embed in custom UI. |
+| `chemblSearchWidgetLocalDb(mol: string, substructure: bool = false)` | The underlying widget — call directly to embed in custom UI. |
 
 ### Demos
 
@@ -173,7 +171,7 @@ and a `moltrack` PostgreSQL connection.
 | `search(query: string, entityEndpoint: 'compounds' \| 'batches' \| 'assays' \| 'assay_runs' \| 'assay_results')` | — | Generic search — `query` is a JSON string with `level`, `output`, `filter`, `output_format`. |
 | `advancedSearch(outputFields: list<string>, filter: object)` | — | **Most useful programmatic entry.** Returns a DataFrame of compounds. `outputFields` are fully-qualified (`compounds.canonical_smiles`, `compounds.details.<dynamic_prop>`). `filter` is a structured boolean tree. **Operators:** string `'=' \| '!=' \| 'IN' \| 'STARTS WITH' \| 'ENDS WITH' \| 'LIKE' \| 'CONTAINS'`; numeric `'<' \| '>' \| '<=' \| '>=' \| 'RANGE'`; datetime `'BEFORE' \| 'AFTER' \| 'ON'`; molecular (only for `compounds.structure`) `'IS SIMILAR'` (needs `threshold`), `'IS SUBSTRUCTURE OF'`, `'HAS SUBSTRUCTURE'`. Compose with `{operator: 'AND' \| 'OR', conditions: [...]}`. |
 | `retrieveEntity(scope: 'compounds' \| 'batches' \| 'assays' \| 'assay_runs' \| 'assay_results')` | — | Returns *all* entities of a scope as a flattened DataFrame. |
-| `getMoltrackPropPanelById(id: string)` | `panel` | "Databases \| MolTrack" context panel for a `Grok ID` cell. |
+| `getMoltrackPropPanelById(id: semantic_value<Grok ID>)` | `panel` | "Databases \| MolTrack" context panel for a `Grok ID` cell. |
 
 ### Skipped
 
@@ -215,16 +213,16 @@ All entries below have the `app` tag.
 | `demoFileIngest1()` | `hitTriageDataSource` | 5000-molecule demo dataset. |
 | `demoFileIngest2(numberOfMolecules: int)` | `hitTriageDataSource` | Variable-size demo dataset. |
 | `demoPeptideSequences(peptideCount: int)` | `pepTriageDataSource` | Demo HELM peptide sequences for PeptiHit. |
-| `demoFileSubmit(df: dataframe, molecules: column<Molecule>)` | — | Demo submit handler (logs row count). |
+| `demoFileSubmit(df: dataframe, molecules: string)` | — | Demo submit handler (logs row count). |
 
 ### Misc
 
 | Function | Tags | What it does |
 |---|---|---|
 | `registerMoleculesToViD()` | — | Pushes all campaign molecules into MolTrack-managed ViD. |
-| `hitDesignVidPanel(vid: string)` | `panel` | "Hit Design V-iD" context panel — shows campaigns for a V-iD. |
+| `hitDesignVidPanel(vid: semantic_value<HIT_DESIGN_VID>)` | `panel` | "Hit Design V-iD" context panel — shows campaigns for a V-iD. |
 | `gasteigerCellRenderer()` | `cellRenderer` | PNG cell renderer for Gasteiger charge images. |
-| `htPackageSettingEditor(properties: object)` | — | Hit Triage package settings editor (UI). |
+| `htPackageSettingEditor(propList: object)` | — | Hit Triage package settings editor (UI). |
 
 ### Skipped (UI plumbing)
 
@@ -252,8 +250,8 @@ and GraphPad Prism `.pzfx` formats.
 |---|---|---|
 | `dataToCurves(df: dataframe, concentrationCol: column<numerical>, readoutCol: column<numerical>, batchIDCol: column, assayCol: column, runIDCol: column, compoundIDCol: column, targetEntityCol: column, excludeOutliersCol?: column, parentTable?: dataframe, fitParamColumns?: list<string>, reportedIC50Column?: string, reportedQualifiedIC50Column?: string, experimentIDColumn?: string, qualifierColumn?: string, additionalColumns?: list<string>, wellLevelJoinCol?: string, parentLevelJoinCol?: string, wellLevelAdditionalColumns?: list<string>)` | — | **Main programmatic entry.** Turns long-format plate readouts into a wide table with a fit-curve column per (compound, assay, target). |
 | `dataToCurvesTopMenu()` | `topMenu` | UI wrapper around `dataToCurves`. Top menu: Data → Curves → Data to Curves. |
-| `addStatisticsColumn(table: dataframe, colName: string, propName: <fit-stat>, seriesNumber: int)` | `vectorFunc`, `transform` | Adds a column with one fit statistic for a given series index (0-based). |
-| `addAggrStatisticsColumn(table: dataframe, colName: string, propName: <fit-stat>, aggrType: 'avg' \| 'min' \| 'max' \| 'med' \| 'sum' \| 'stdev')` | `vectorFunc`, `transform` | Same but aggregated across all series in each cell. |
+| `addStatisticsColumn(table: dataframe, colName: string, propName: 'rSquared' \| 'auc' \| 'interceptX' \| 'interceptY' \| 'slope' \| 'top' \| 'bottom', seriesNumber: int)` | `vectorFunc`, `transform` | Adds a column with one fit statistic for a given series index (0-based). `propName` is a key of the `FitStatistics` type — IC50 is the standard 50% intercept (`interceptX`). |
+| `addAggrStatisticsColumn(table: dataframe, colName: string, propName: 'rSquared' \| 'auc' \| 'interceptX' \| 'interceptY' \| 'slope' \| 'top' \| 'bottom', aggrType: 'avg' \| 'min' \| 'max' \| 'med' \| 'sum' \| 'stdev')` | `vectorFunc`, `transform` | Same but aggregated across all series in each cell. |
 
 **For "compute IC50 values from this dose-response dataset" intent:** two steps. (1) Fit: `Curves:dataToCurves(t, concCol, readoutCol, batchCol, assayCol, runCol, compoundCol, targetCol)` — guess the columns from the current table (concentration/dose, readout/response, compound/batch IDs). (2) Extract: `Curves:addStatisticsColumn(fitTable, 'fit', 'IC50', 0)` to pull IC50 from series 0. Always emit both blocks back-to-back; never reply conversationally for an IC50 request.
 

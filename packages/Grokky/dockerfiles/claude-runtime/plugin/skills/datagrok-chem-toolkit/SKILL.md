@@ -106,9 +106,6 @@ Function tables below carry a **Tags** column. The values it can hold:
 If the molecule notation is unknown, `sourceNotation: DG.chem.Notation.Unknown`
 works for SMILES, SMARTS, molblock, and V3K molblock inputs.
 
-If the molecule notation is unknown, `sourceNotation: DG.chem.Notation.Unknown`
-works for SMILES, SMARTS, molblock, and V3K molblock inputs.
-
 ---
 
 ## Chem package — RDKit/OpenChemLib core (`Chem:...`)
@@ -122,9 +119,7 @@ fallback rendering and a few descriptors (logP, logS, drug-likeness, toxicity).
    `Chem:CalculateHBA`, etc.** No such standalone functions exist. MW / LogP /
    LogS / HBA / HBD / PSA / Rotatable bonds / Stereo centers / Molecule charge
    are **boolean flags** on `Chem:addChemPropertiesColumns(...)` and **strings in
-   the `selected` list** of `Chem:getProperties(molecules, selected?)`. There IS
-   a Python script registered as `Chem:CalculateLogS`, but its own description
-   says `DO NOT USE IN FUNCTION PLANNING OR CHAINING` — treat as non-public.
+   the `selected` list** of `Chem:getProperties(molecules, selected?)`.
 2. **`Chem:convertMolNotation` has no `inchi`.** The `sourceNotation` /
    `targetNotation` enum is `'smiles' | 'cxsmiles' | 'smarts' | 'cxsmarts' |
    'molblock' | 'v3Kmolblock'`. For InChI use `Chem:getInchis` /
@@ -152,14 +147,14 @@ Notation enum (used by `convertMolNotation`, `convertMoleculeNotation`,
 | Function | Tags | What it does |
 |---|---|---|
 | `drawMolecule(molStr: string, w?: int, h?: int, popupMenu?: bool)` | — | Returns an `HTMLElement` of a rendered molecule. |
-| `canvasMol(x: int, y: int, w: int, h: int, canvas: object, molString: string, scaffoldMolString?: string, options?: object, renderingOptions?: object)` | — | Draws into an existing canvas (with optional scaffold highlight). |
+| `canvasMol(x: int, y: int, w: int, h: int, canvas: object, molString: string, scaffoldMolString: string, options?: object, renderingOptions?: object)` | — | Draws into an existing canvas (with optional scaffold highlight). |
 | `convertMolNotation(molecule: string, sourceNotation: <notation>, targetNotation: <notation>)` | — | Returns a single string in the target notation. |
 | `convertMoleculeNotation(molecule: column<Molecule>, targetNotation: <notation>, kekulize?: bool = false)` | `vectorFunc` | Notation conversion. Returns a new `DG.Column`. |
-| `convertNotation(data: dataframe, molecules: column<Molecule>, targetNotation: <notation>, overwrite?: bool, join?: bool, kekulize?: bool)` | `topMenu` | Top-menu version: appends or overwrites the column. Top menu: Chem → Transform → Convert Notation. |
+| `convertNotation(data: dataframe, molecules: column<Molecule>, targetNotation: <notation> = 'smiles', overwrite: bool = false, join: bool = true, kekulize?: bool)` | `topMenu` | Top-menu version: appends or overwrites the column. Top menu: Chem → Transform → Convert Notation. |
 | `recalculateCoords(table: dataframe, molecules: column<Molecule>, method: 'OCL' \| 'CoordGen' = 'OCL', join: bool = true)` | `topMenu` | Recompute 2D layout. Top menu: Chem → Transform → Recalculate Coordinates. |
 | `canonicalize(molecule: string)` | — | → canonical SMILES (string). |
 | `getInchis(molecules: column<Molecule>)` / `getInchiKeys(molecules: column<Molecule>)` | `vectorFunc` | Vector InChI / InChI key. |
-| `addInchisTopMenu(table: dataframe, molecules: column<Molecule>)` / `addInchisKeysTopMenu(...)` | `topMenu` | Append as a new column. Top menu: Chem → Calculate → To InchI / To InchI Keys. |
+| `addInchisTopMenu(table: dataframe, molecules: column<Molecule>)` / `addInchisKeysTopMenu(table: dataframe, molecules: column<Molecule>)` | `topMenu` | Append as a new column. Top menu: Chem → Calculate → To InchI / To InchI Keys. |
 | `getMolecularFormula(molecule: string)` | — | Hill formula string (via OCL). |
 | `isSmiles(s: string)` / `isSmarts(s: string)` / `validateMolecule(s: string)` | — | RDKit-based validators. `validateMolecule` returns the RDKit error string or `null` if OK. |
 | `detectSmiles(col: column, min: int)` | — | Heuristic — tags the column as `SMILES` / `Molecule` if enough cells parse. |
@@ -176,7 +171,10 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 'Rotatable bonds' | 'Stereo centers' | 'Molecule charge'`. Pass them in
 `selected` as a list of strings, exactly as shown.
 
-**Fingerprint enum**: `'Morgan' | 'RDKit' | 'Pattern' | 'AtomPair' | 'MACCS' | 'TopologicalTorsion'`.
+**Fingerprint enum** (`<fp>`): `'Morgan' | 'RDKit' | 'Pattern' | 'AtomPair' | 'MACCS' | 'TopologicalTorsion'`.
+
+**Similarity metric enum** (`<metric>`, from `BitArrayMetricsNames` in
+`@datagrok-libraries/ml`): `'Tanimoto' | 'Dice' | 'Asymmetric' | 'Braun-Blanquet' | 'Cosine' | 'Kulczynski' | 'Mc-Connaughey' | 'Rogot-Goldberg' | 'Russel' | 'Sokal' | 'Hamming' | 'Euclidean BitArray'`. Default is `'Tanimoto'`.
 
 **Toxicity risk names** for `getToxicityRisks(molecules, risks)`: `'mutagenicity' | 'tumorigenicity' | 'irritatingEffects' | 'reproductiveEffects'`.
 
@@ -184,7 +182,7 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 
 | Function | Tags | What it does |
 |---|---|---|
-| `addChemPropertiesColumns(table: dataframe, molecules: column<Molecule>, MW?: bool = true, HBA?: bool = true, HBD?: bool = true, logP?: bool = true, logS?: bool = true, PSA?: bool = true, rotatableBonds?: bool = true, stereoCenters?: bool = true, moleculeCharge?: bool = false)` | `topMenu` | OCL-based properties → appended as columns. Top menu: Chem → Calculate → Chemical Properties. |
+| `addChemPropertiesColumns(table: dataframe, molecules: column<Molecule>, MW?: bool = true, HBA?: bool = false, HBD?: bool = false, logP?: bool = false, logS?: bool = false, PSA?: bool = false, rotatableBonds?: bool = false, stereoCenters?: bool = false, moleculeCharge?: bool = false)` | `topMenu` | OCL-based properties → appended as columns. Top menu: Chem → Calculate → Chemical Properties. |
 | `getProperties(molecules: column<Molecule>, selected?: list<string>)` | `vectorFunc`, `join(table)` | Vector form. `selected` is a subset of the property names above; omit/empty for all. Returns a DataFrame. |
 | `getCLogP(smiles: string)` | — | Single-mol Crippen logP (RDKit). |
 | `getChemPropertyFunction(name: string)` | — | Returns a `(smiles) => any` closure for one property — useful for `column.applyFormula`. |
@@ -200,22 +198,21 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 | `getToxicityRisks(molecules: column<Molecule>, risks?: list<string>)` | `vectorFunc`, `join(table)` | Vector form. `risks` is a subset of the risk names above. |
 | `structuralAlertsTopMenu(table: dataframe, molecules: column<Molecule>, pains: bool = true, bms: bool = false, sureChembl: bool = false, mlsmr: bool = false, dundee: bool = false, inpharmatica: bool = false, lint: bool = false, glaxo: bool = false)` | `topMenu` | Apply rule-based structural alerts. Top menu: Chem → Analyze → Structural Alerts. |
 | `getStructuralAlerts(molecules: column<Molecule>, alerts?: list<string>)` | `vectorFunc`, `join(table)` | Vector form. |
-| `pharmacophoreFeaturesTopMenu(table: dataframe, molecules: column<Molecule>, donor: bool, acceptor: bool, hydrophobic: bool, aromatic: bool, positive: bool, negative: bool, halogenBond: bool)` | `topMenu` | RDKit pharmacophore family flags. Top menu: Chem → Analyze → Pharmacophore Features. |
+| `pharmacophoreFeaturesTopMenu(table: dataframe, molecules: column<Molecule>, donor: bool = true, acceptor: bool = true, hydrophobic: bool = true, aromatic: bool = true, positive: bool = false, negative: bool = false, halogenBond: bool = false)` | `topMenu` | RDKit pharmacophore family flags. Top menu: Chem → Analyze → Pharmacophore Features. |
 | `biochemPropsWidget()` | `topMenu` | Opens the auto-discovery dialog for biochem calculators. Top menu: Chem → Calculate → Biochemical Properties. |
 
 ### Similarity, diversity, substructure search
 
-**BitArray similarity metrics** (used by `callChemSimilaritySearch`, `callChemDiversitySearch`, `chemSpaceTopMenu`, `activityCliffs`):
-`'Tanimoto' | 'Dice' | 'Asymmetric' | 'Braun-Blanquet' | 'Cosine' | 'Kulczynski' | 'Mc-Connaughey' | 'Rogot-Goldberg' | 'Russel' | 'Sokal' | 'Hamming' | 'Euclidean BitArray'`. UI choosers usually narrow this to `'Tanimoto' | 'Asymmetric' | 'Cosine' | 'Sokal'`.
+**Shorthand recap** — `<metric>` expands to the 12-value `BitArrayMetricsNames` enum defined above ("Similarity metric enum"); `<fp>` expands to the 6-value fingerprint enum ("Fingerprint enum"). Used in this section by `callChemSimilaritySearch`, `callChemDiversitySearch`, `similarityMatrixTopMenu`. The dim-reduction entries (`chemSpaceTopMenu`, `getChemSpaceEmbeddings`, `activityCliffs`) hard-narrow `<metric>` via `choices:` to the 4-value subset `'Tanimoto' | 'Asymmetric' | 'Cosine' | 'Sokal'` — those rows inline the narrowed list directly in the signature.
 
 | Function | Tags | What it does |
 |---|---|---|
-| `findSimilar(molStringsColumn: column<Molecule>, molString: string, limit?: int = MAX, cutoff?: float = 0.0)` | — | Returns a DataFrame of the most-similar molecules (Morgan/Tanimoto). |
+| `findSimilar(molStringsColumn: column<Molecule>, molString: string, limit: int = MAX, cutoff: float = 0.0)` | — | Returns a DataFrame of the most-similar molecules (Morgan/Tanimoto). |
 | `callChemSimilaritySearch(df: dataframe, col: column<Molecule>, molecule: string, metricName: <metric>, fingerprint: <fp>, limit: int, minScore: float)` | — | Underlying version with explicit metric and FP type. |
 | `getSimilarities(molStringsColumn: column<Molecule>, molString: string)` | — | Returns just the similarity scores as a DataFrame. |
-| `getDiversities(molStringsColumn: column<Molecule>, limit?: int)` | — | DataFrame of the most-diverse molecules. |
+| `getDiversities(molStringsColumn: column<Molecule>, limit: int)` | — | DataFrame of the most-diverse molecules. |
 | `callChemDiversitySearch(col: column<Molecule>, metricName: <metric>, fingerprint: <fp>, limit: int)` | — | Returns indices of diverse picks. |
-| `similarityMatrixTopMenu(table: dataframe, molecules: column<Molecule>, symbols: column, fingerprintType?: <fp>)` | `topMenu` | Full pairwise Tanimoto matrix → opens as a new table. Top menu: Chem → Calculate → Similarity Matrix. |
+| `similarityMatrixTopMenu(table: dataframe, molecules: column<Molecule>, symbols: column, fingerprintType: <fp> = 'Morgan')` | `topMenu` | Full pairwise Tanimoto matrix → opens as a new table. Top menu: Chem → Calculate → Similarity Matrix. |
 | `searchSubstructure(molStringsColumn: column<Molecule>, molString: string, molBlockFailover: string)` | — | RDKit substructure search → returns a Column wrapping a BitSet of matches. |
 | `SubstructureSearchTopMenu(molecules: column<Molecule>)` | `topMenu` | Opens the filter sketcher. Top menu: Chem → Search → Substructure Search. |
 | `similaritySearchViewer()` / `diversitySearchViewer()` | — | Returns a `ChemSimilarityViewer` / `ChemDiversityViewer`. Add via `view.addViewer('Chem Similarity Search')`. |
@@ -224,7 +221,7 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 | `useAsSubstructureFilter(value: object)` | `action` | Right-click action that adds the picked molecule as a substructure filter. |
 | `synthonSearchFunc(spaceName: string, molecule: string, maxHits: int = 100, searchType: 'substructure' \| 'similarity' \| 'exact', similarityCutoff?: float = 0.5, includeSynthons?: bool = false)` | — | Search in a synthon (REAL-style) chemical space. |
 | `getSynthonSpacesFunc()` | — | Lists installed synthon spaces (filenames in `Chem/files/synthon-data/`). |
-| `filterMoleculeDuplicates(molecules: list<string>, molecule: string)` | — | Removes duplicates of `molecule` from a list. |
+| `removeDuplicates(molecules: list<string>, molecule: string)` | — | Removes duplicates of `molecule` from a list. |
 
 ### Chemical space, R-groups, MMP, activity cliffs, scaffold tree
 
@@ -236,22 +233,22 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 |---|---|---|
 | `chemSpaceTopMenu(table: dataframe, molecules: column<Molecule>, methodName: 'UMAP' \| 't-SNE', similarityMetric: 'Tanimoto' \| 'Asymmetric' \| 'Cosine' \| 'Sokal' = 'Tanimoto', plotEmbeddings: bool = true, options?: object, preprocessingFunction?: func, clusterEmbeddings?: bool, clusterMCS?: bool)` | `topMenu` | Projects molecules to 2D (UMAP / t-SNE) + scatter plot. Top menu: Chem → Analyze → Chemical Space. |
 | `chemSpaceTransform(...)` | `transform` | Transform-tagged version (for data-sync). |
-| `getChemSpaceEmbeddings(col: column<Molecule>, methodName: 'UMAP' \| 't-SNE', similarityMetric: <metric>, xAxis: string, yAxis: string, options?: object)` | — | Raw embedding without UI. Returns `ISequenceSpaceResult`. |
-| `getChemSimilaritiesMatrix(dim: int, col: column<Molecule>, df: dataframe, colName: string, simArr: list)` | — | Internal — pairwise similarity matrix as columns. |
+| `getChemSpaceEmbeddings(col: column<Molecule>, methodName: 'UMAP' \| 't-SNE', similarityMetric: 'Tanimoto' \| 'Asymmetric' \| 'Cosine' \| 'Sokal', xAxis: string, yAxis: string, options?: object)` | — | Raw embedding without UI. Returns `ISequenceSpaceResult`. |
+| `getChemSimilaritiesMatrix(dim: int, col: column<Molecule>, df: dataframe, colName: string, simArr: object)` | — | Internal — pairwise similarity matrix as columns. |
 | `rGroupsAnalysisMenu()` | `topMenu` | Opens the R-group analysis dialog. Top menu: Chem → Analyze → R-Groups Analysis. |
 | `rGroupDecomposition(df: dataframe, molColName: string, core: string, rGroupName: string, rGroupMatchingStrategy: 'Greedy' \| 'GreedyChunks' \| 'Exhaustive' \| 'NoSymmetrization' \| 'GA', onlyMatchAtRGroups?: bool)` | — | Programmatic R-group decomposition. Returns `RGroupDecompRes`. |
-| `mmpAnalysis(table: dataframe, molecules: column<Molecule>, activities: list<column<numerical>>, diffTypes: list<'delta'\|'ratio'>, scalings: list<'none'\|'lg'\|'-lg'>, fragmentCutoff?: float = 0.4)` | `topMenu` | Matched Molecular Pairs analysis. Top menu: Chem → Analyze → Matched Molecular Pairs. |
+| `mmpAnalysis(table: dataframe, molecules: column<Molecule>, activities: list<column<numerical>>, diffTypes: list<'delta'\|'ratio'>, scalings: list<'none'\|'lg'\|'-lg'>, fragmentCutoff: float = 0.4)` | `topMenu` | Matched Molecular Pairs analysis. Top menu: Chem → Analyze → Matched Molecular Pairs. |
 | `mmpViewer()` | — | Returns `MatchedMolecularPairsViewer` for manual `view.addViewer`. |
-| `activityCliffs(table: dataframe, molecules: column<Molecule>, activities: column<numerical>, similarity: float, methodName: 'UMAP' \| 't-SNE', similarityMetric: <metric>, preprocessingFunction?: func, options?: object, isDemo?: bool, isTest?: bool)` | `topMenu` | Finds pairs of similar molecules with large activity differences. Top menu: Chem → Analyze → Activity Cliffs. |
+| `activityCliffs(table: dataframe, molecules: column<Molecule>, activities: column<numerical>, similarity: float = 80, methodName: 'UMAP' \| 't-SNE', similarityMetric: 'Tanimoto' \| 'Asymmetric' \| 'Cosine' \| 'Sokal', preprocessingFunction?: func, options?: object, isDemo?: bool, isTest?: bool)` | `topMenu` | Finds pairs of similar molecules with large activity differences. Top menu: Chem → Analyze → Activity Cliffs. |
 | `addScaffoldTree()` | `topMenu` | Adds a `ScaffoldTreeViewer` to the current view. Top menu: Chem → Analyze → Scaffold Tree. |
 | `scaffoldTreeViewer()` | — | Returns `ScaffoldTreeViewer` for manual use. |
 | `scaffoldTreeFilter()` | — | Returns `ScaffoldTreeFilter`. |
-| `getScaffoldTree(data: dataframe, ringCutoff?: int, dischargeAndDeradicalize?: bool)` | — | Returns the scaffold tree as a JSON string. |
+| `getScaffoldTree(data: dataframe, ringCutoff: int = 10, dischargeAndDeradicalize: bool = false)` | — | Returns the scaffold tree as a JSON string. |
 | `substructureFilter()` | — | Returns an RDKit-based `SubstructureFilter`. |
-| `bitbirchClusteringTopMenu(table: dataframe, molecules: column<Molecule>, threshold?: float, fingerprintType?: <fp>)` | `topMenu` | O(N) BitBIRCH clustering → cluster ID column. Top menu: Chem → Calculate → BitBIRCH Clustering. |
+| `bitbirchClusteringTopMenu(table: dataframe, molecules: column<Molecule>, threshold: float = 0.65, fingerprintType: 'Morgan' \| 'RDKit' \| 'Pattern' \| 'AtomPair' \| 'MACCS' \| 'TopologicalTorsion' = 'Morgan')` | `topMenu` | O(N) BitBIRCH clustering → cluster ID column. Top menu: Chem → Calculate → BitBIRCH Clustering. |
 | `clusterMCSTopMenu(table: dataframe, molCol: column<Molecule>, clusterCol: column)` | `topMenu` | Most-common substructure per cluster → appends MCS column. Top menu: Chem → Calculate → Cluster MCS. |
 | `performClusterMCS(molCol: column<Molecule>, clusterCol: column)` | `vectorFunc` | Vector form. |
-| `elementalAnalysis(table: dataframe, molecules: column<Molecule>, radarViewer: bool, radarGrid: bool)` | `topMenu` | Adds atom-count columns; optional radar viewer. Top menu: Chem → Analyze → Elemental Analysis. |
+| `elementalAnalysis(table: dataframe, molecules: column<Molecule>, radarViewer: bool = false, radarGrid: bool = false)` | `topMenu` | Adds atom-count columns; optional radar viewer. Top menu: Chem → Analyze → Elemental Analysis. |
 | `runElementalAnalysis(table: dataframe, molecules: column<Molecule>)` | `transform` | Returns the list of added column names. |
 
 ### MPO, identifiers, reactions
@@ -263,8 +260,8 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 | Function | Tags | What it does |
 |---|---|---|
 | `_mpo()` | `topMenu` | Opens the MPO Score dialog. Top menu: Chem → Calculate → MPO Score. |
-| `mpoCalculate(df: dataframe, columns: list<column>, profileName: string, aggregation: 'Average' \| 'Sum' \| 'Product' \| 'Geomean' \| 'Min' \| 'Max', createDesirabilityColumns?: bool = false)` | — | Computes MPO score + optional per-property desirability columns. |
-| `mpoTransformFunction(df: dataframe, profileName: string, aggregation: <agg>, currentProperties: string, silent?: bool)` | `transform` | Wrapper used by data-sync. |
+| `mpoCalculate(df: dataframe, columns: list<column>, profileName: string, aggregation: 'Average' \| 'Sum' \| 'Product' \| 'Geomean' \| 'Min' \| 'Max', createDesirabilityColumns: bool = false)` | — | Computes MPO score + optional per-property desirability columns. |
+| `mpoTransformFunction(df: dataframe, profileName: string, aggregation: 'Average' \| 'Sum' \| 'Product' \| 'Geomean' \| 'Min' \| 'Max', currentProperties: string, silent: bool = false)` | `transform` | Wrapper used by data-sync. |
 | `mpoProfilesApp(path?: string)` | — | Opens the MPO Profiles app. |
 | `getMapIdentifiers()` | `topMenu` | Opens the ID-mapping dialog. Top menu: Chem → Calculate → Map Identifiers. |
 | `mapIdentifiersTransform(table: dataframe, molecules: column<Molecule>, fromSource: <id-source>, toSource: <id-source>)` | `transform` | Appends a column with mapped IDs. **This is also the right entry for "InChI key → ChEMBL ID" and similar reverse lookups** (chemblIdToSmilesTs goes only ID→SMILES, never the reverse). |
@@ -296,8 +293,8 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 
 | Function | Tags | What it does |
 |---|---|---|
-| `trainChemprop(df: dataframe, predictColumn: column<numerical>, dataset_type: 'regression' \| 'classification' = 'regression', /* +22 more snake_case args */)` | — | Trains a Chemprop MPN model via the `chem-chemprop` Docker container. Returns the model blob. |
-| `applyChemprop(df: dataframe, model: object)` | — | Applies a saved Chemprop model → DataFrame with `outcome` column. |
+| `trainChemprop(df: dataframe, predictColumn: column, dataset_type: 'regression' \| 'classification' = 'regression', /* +22 more snake_case args */)` | — | Trains a Chemprop MPN model via the `chem-chemprop` Docker container. Returns the model blob. |
+| `applyChemprop(df: dataframe, model: dynamic)` | — | Applies a saved Chemprop model → DataFrame with `outcome` column. |
 | `isApplicableNN(df: dataframe, predictColumn: column)` / `isInteractiveNN(df: dataframe, predictColumn: column)` | — | ML framework hooks (not called directly). |
 
 `trainChemprop` has 25 **snake_case** params total (`dataset_type`, `metric`,
@@ -306,9 +303,16 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 `message_hidden_dim`, `depth`, `dropout`, `ffn_hidden_dim`, `ffn_num_layers`,
 `epochs` (default `50`), `batch_size` (default `64`), `warmup_epochs`,
 `init_lr`, `max_lr`, `final_lr`, `no_descriptor_scaling`, ...). Pass at least
-`predictColumn`, `dataset_type`, and `epochs`. For the full schema with every
-enum (`metric`, `split_type`, `activation`), use the MCP
-`get_function('Chem:trainChemprop')` call before invoking — don't guess names.
+`predictColumn`, `dataset_type`, and `epochs`.
+
+**Chemprop enum-constrained params** (from `choices:` decorators in source):
+- `dataset_type`: `'regression' | 'classification'` (default `'regression'`)
+- `metric`: `'mse' | 'mae' | 'rmse' | 'bounded-mse' | 'bounded-mae' | 'bounded-rmse' | 'r2' | 'binary-mcc' | 'multiclass-mcc' | 'roc' | 'prc' | 'accuracy' | 'f1'` (default `'rmse'`)
+- `split_type`: `'random' | 'scaffold_balanced' | 'cv' | 'cv_no_val' | 'kennard_stone' | 'kmeans' | 'random_with_repeated_smiles'` (default `'random'`)
+- `activation`: `'ReLU' | 'LeakyReLU' | 'PReLU' | 'tanh' | 'SELU' | 'ELU'` (default `'ReLU'`)
+
+For the full numeric-default schema, use the MCP `get_function('Chem:trainChemprop')`
+call before invoking — don't guess param names.
 
 ### Panels (context-panel widgets — show in the right-side panel when a molecule cell is selected)
 
@@ -334,8 +338,10 @@ All entries below have the `panel` tag.
 
 ### Demos (each opens a tutorial layout — use only on user request)
 
-`demoSimilarityDiversitySearch`, `demoMMPA`, `demoRgroupAnalysis`,
-`demoMoleculeActivityCliffs`, `demoChemicalSpace`, `demoScaffold`.
+`demoSimilarityDiversitySearch` (Demo Similarity Search), `demoMMPA` (Demo
+Matched Molecular Pairs), `demoRgroupAnalysis` (Demo R Group Analysis),
+`demoMoleculeActivityCliffs` (Demo Activity Cliffs), `demoChemicalSpace` (Demo
+Chemical Space), `demoScaffold` (Demo Scaffold Tree).
 
 ### Skipped on purpose (do not advertise to the user)
 
