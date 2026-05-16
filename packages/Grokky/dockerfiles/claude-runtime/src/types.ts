@@ -66,7 +66,7 @@ export interface SyncMessage {
 export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage;
 
 export type OutgoingMessage =
-  | {type: 'chunk'; sessionId: string; content: string}
+  | {type: 'chunk'; sessionId: string; content: string; kind?: 'exec' | 'entity'}
   | {type: 'tool_activity'; sessionId: string; summary: string}
   | {type: 'tool_result'; sessionId: string; content: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: any}

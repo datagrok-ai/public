@@ -294,7 +294,9 @@ export async function runPromptWithLifecycle(
 async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string, existingSession?: ReturnType<StreamingPanel['startChatSession']>) {
   const chatSession = existingSession ?? panel.startChatSession();
   const sessionId = panel.sessionId;
-  let accumulated = '';
+  let accumulated = ''; // full markdown — passed to executeDatagrokBlocks
+  let displayBuffer = ''; // what's shown during streaming (no exec, no entity content)
+  let finalBuffer = ''; // what's shown at finalize (no exec; entity stays so renderEntityBlocks finds it)
   let toolStatus = '';
   const subs: {unsubscribe: () => void}[] = [];
   const cleanup = () => subs.forEach((s) => s.unsubscribe());
@@ -325,30 +327,35 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
     forSession(client.onChunk, (evt) => {
       accumulated += evt.content;
-      toolStatus = '';
-      panel.updateStreaming(accumulated, chatSession.loader);
+      if (evt.kind !== 'exec' && evt.kind !== 'entity') {
+        displayBuffer += evt.content;
+        toolStatus = '';
+        panel.updateStreaming(displayBuffer, chatSession.loader);
+      }
+      if (evt.kind !== 'exec')
+        finalBuffer += evt.content;
     });
 
     forSession(client.onToolActivity, (evt) => {
       toolStatus = `\n\n---\n**${evt.summary}**`;
-      panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+      panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
       chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
     });
 
     forSession(client.onToolResult, (evt) => {
       toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
-      panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+      panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
       chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
     });
 
     forSession(client.onFinal, (evt) => {
       panel.cancelInputRequest();
-      // evt.content is the SDK's result.result — only the final assistant turn after the last
-      // tool call. Use the full accumulated chunk stream so finalizeStreaming sees every
-      // datagrok-exec block Claude emitted, including ones written before it invoked a tool.
-      const fullContent = accumulated || evt.content;
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
-      panel.finalizeStreaming(fullContent, view);
+      // accumulated holds the full markdown including hidden blocks — needed by executeDatagrokBlocks.
+      // finalBuffer is what gets rendered (datagrok-exec stripped; datagrok-entities kept for card rendering).
+      const exec = accumulated || evt.content;
+      const display = finalBuffer || evt.content;
+      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: exec}]});
+      panel.finalizeStreaming(display, exec, view);
       chatSession.endSession();
       cleanup();
     });
@@ -485,10 +492,22 @@ export function setupAgentScriptsUI(): void {
       const basePath = view.basePath ?? view.path ?? '';
       if (!basePath.includes('/agents/scripts/'))
         return;
-      const runIcon = ui.iconFA('play', () => {}, `Run ${view.name}`);
+      const {name} = view;
+      const runIcon = ui.iconFA('play', () => runAgentScript(name), `Run ${name}`);
       view.setRibbonPanels([...view.getRibbonPanels(), [runIcon]]);
     } catch (e: any) {
       console.warn('Grokky: failed to add run button:', e.message);
     }
   });
+}
+
+async function runAgentScript(name: string): Promise<void> {
+  try {
+    setupShellAIPanelUI();
+    _shellAIPanel!.resetSession();
+    const prompt = `Run the workflow defined in agents/scripts/${name}`;
+    await runPromptWithLifecycle(_shellAIPanel!, prompt, grok.shell.v, 'shell-ai');
+  } catch (e: any) {
+    grok.shell.error(`Failed to run ${name}: ${e.message}`);
+  }
 }

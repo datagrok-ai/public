@@ -97,7 +97,7 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   prependViewContext(prompt: string, view: DG.ViewBase): string;
   prependEntityContext(prompt: string): string;
   updateStreaming(content: string, loader: HTMLElement): void;
-  finalizeStreaming(content: string, view: DG.ViewBase): Promise<void>;
+  finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<void>;
   clearStreaming(): void;
   showInputRequest(input: any): Promise<any>;
   cancelInputRequest(): void;
@@ -653,15 +653,15 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
-  async finalizeStreaming(content: string, view: DG.ViewBase): Promise<void> {
+  async finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<void> {
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
-      this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
+      this._uiMessages.push({fromUser: false, text: displayContent, messageOptions: {finalResult: displayContent}});
       return;
     }
-    this.renderFinalContent(content);
-    const results = await executeDatagrokBlocks(content, view);
+    this.renderFinalContent(displayContent);
+    const results = await executeDatagrokBlocks(execContent, view);
     for (const el of results) {
       this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
@@ -1108,10 +1108,10 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
     };
   }
 
-  async finalizeStreaming(content: string, _view: DG.ViewBase): Promise<void> {
-    this.renderFinalContent(content);
+  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
+    this.renderFinalContent(displayContent);
     // Extract SQL from fenced code blocks and inject into query editor
-    const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(content);
+    const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(execContent);
     if (sqlMatch) {
       const sql = sqlMatch[1].trimEnd().replace(/;+$/, '');
       this.setAndRunFunc(sql);
@@ -1180,10 +1180,10 @@ export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInput
     };
   }
 
-  async finalizeStreaming(content: string, _view: DG.ViewBase): Promise<void> {
-    this.renderFinalContent(content);
+  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
+    this.renderFinalContent(displayContent);
     // Extract code from datagrok-exec blocks and set on the script editor
-    const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(content);
+    const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(execContent);
     if (codeMatch) {
       ui.setUpdateIndicator(this.view.root, true, 'Updating script...');
       const indicator = this.view.root.querySelector('.d4-update-shadow') as HTMLElement;

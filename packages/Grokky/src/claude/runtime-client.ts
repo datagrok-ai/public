@@ -8,7 +8,7 @@ export const ClaudeModel = {
 } as const;
 export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
-export type ChunkEvent = {sessionId: string, content: string};
+export type ChunkEvent = {sessionId: string, content: string, kind?: 'exec' | 'entity'};
 export type ToolActivityEvent = {sessionId: string, summary: string};
 export type ToolResultEvent = {sessionId: string, content: string};
 export type FinalEvent = {sessionId: string, content: string, structured_output?: any};
@@ -85,7 +85,7 @@ export class ClaudeRuntimeClient {
 
       switch (data.type) {
       case 'chunk':
-        this.onChunk.next({sessionId: data.sessionId, content: data.content});
+        this.onChunk.next({sessionId: data.sessionId, content: data.content, kind: data.kind});
         break;
       case 'tool_activity':
         this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary});
