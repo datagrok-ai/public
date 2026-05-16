@@ -322,8 +322,8 @@ export class PlateWidget extends DG.Widget {
                       nonLayoutCols.find((c) => c.semType === 'Concentration' || c.name.toLowerCase().includes('concentration')) ??
                       nonLayoutCols.find((c) => c.type === DG.TYPE.FLOAT);
 
-    this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
-    if (this.grid.columns.length !== this.plate.cols + 1) {
+    if (this.grid.columns.length !== this.plate.cols + 1 || this.grid.dataFrame.rowCount !== this.plate.rows) {
+      this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
       this.grid.columns.clear();
       for (let i = 0; i <= this.plate.cols; i++)
         this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
