@@ -6,7 +6,16 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-copy-clone.md
 migration_date: 2026-05-04
-migration_report: projects-copy-clone-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - all-created-projects-in-step-1
+  - save-copy-ui-control-location
+  - save-with-personal-view-customizations-mode-trigger
+  - recipient-open-verification-depth-step-5
+  - grok-19750-invariant-which-viewers-count-as-intact
+  - grok-19403-cross-cutting-cover-via-step-5
+scope_reductions: []
 ui_companion: projects-copy-clone-ui.md
 pyramid_layer: bug-focused
 ui_coverage_responsibility:

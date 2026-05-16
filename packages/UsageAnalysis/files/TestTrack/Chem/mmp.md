@@ -6,7 +6,17 @@ coverage_type: edge
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/mmp.md
 migration_date: 2026-05-11
-migration_report: mmp-migration-report.md
+source_text_fixes:
+  - three-activities-both-activities-two-activities
+candidate_helpers:
+  - helpers.playwright.chem.openMmpEditor
+  - helpers.playwright.chem.selectMmpActivityColumns
+  - helpers.playwright.chem.switchMmpViewerTab
+unresolved_ambiguities:
+  - two-vs-three-activities-inconsistency-in-source-body
+  - first-7-entries-in-transformation-tab-what-is-an-entry
+  - diff-types-scaling-methods-fragment-cutoff-defaults
+scope_reductions: []
 related_bugs: [GROK-18517]
 ---
 

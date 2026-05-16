@@ -12,7 +12,13 @@ pyramid_layer: integration
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/filtering.md
 migration_date: 2026-05-07
-migration_report: filtering-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - scenario-8-step-5-6-filteredselected-behavior-with-empty-selection
+  - scenario-4-step-2-cross-viewer-behavior-of-in-viewer-filter
+  - scenario-9-step-3-deselect-a-few-ambiguity
+scope_reductions: []
 related_bugs:
   - GROK-17222
 ---

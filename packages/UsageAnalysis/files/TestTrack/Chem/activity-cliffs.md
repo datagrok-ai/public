@@ -6,7 +6,27 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/activity-cliffs.md
 migration_date: 2026-05-11
-migration_report: activity-cliffs-migration-report.md
+source_text_fixes:
+  - step-numbering-gap-closed
+  - smiles-2-columns-csv-todo-resolved
+  - spgi-dataset-reconciled
+candidate_helpers:
+  - helpers.playwright.chem.addActivityCliffsViewer
+  - helpers.playwright.chem.toggleActivityCliffsShowOnlyCliffs
+  - helpers.playwright.chem.clickActivityCliffsCliffCountLink
+  - helpers.playwright.chem.clickActivityCliffsGridRow
+unresolved_ambiguities:
+  - click-on-the-link-with-number-of-cliffs-exact-dom-selector-and-label-format
+  - first-row-of-the-grid-first-by-dom-render-order-or-first-by-cliff-magnitude-pair
+  - hovering-over-line-line-locator-in-the-zoomed-scatter-plot
+  - change-the-parameters-arbitrarily-which-specific-parameter-to-change
+  - double-click-to-unzoom-exact-zoom-reset-target
+  - cliffs-grid-docking-position-on-the-bottom
+scope_reductions:
+  - id: SR-01
+    check: A-STRUCT-02
+    rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage)"
+    verdict_status: SCOPE_REDUCTION
 related_bugs: []
 ---
 

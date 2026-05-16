@@ -18,7 +18,16 @@ ui_coverage_delegated_to: upload-project.md
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/uploading.md
 migration_date: 2026-05-04
-migration_report: uploading-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - selection-to-filter-linking-direction-asymmetry
+  - spgi-v2-infinity-csv-source-ambiguity
+  - project-naming-collision-risk-in-ci
+  - add-to-workspace-semantics
+  - original-step-renumbering-across-sync-on-sync-off-blocks
+  - order-1-collision-with-upload-project-md
+scope_reductions: []
 related_bugs:
   - GROK-19103
   - GROK-18345

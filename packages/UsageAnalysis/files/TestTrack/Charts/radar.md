@@ -16,7 +16,10 @@ ui_coverage_delegated_to: null
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Charts/radar.md
 migration_date: 2026-05-07
-migration_report: radar-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities: []
+scope_reductions: []
 related_bugs:
   - GROK-18085
 ---

@@ -6,7 +6,22 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chemical-space.md
 migration_date: 2026-05-11
-migration_report: chemical-space-migration-report.md
+source_text_fixes:
+  - dataset-list-extended-from-1-entry-to-3-entries
+candidate_helpers:
+  - helpers.playwright.chem.openChemicalSpaceDialog
+  - helpers.playwright.chem.changeChemicalSpaceMethod
+  - helpers.playwright.chem.toggleClusterMCS
+unresolved_ambiguities:
+  - change-the-parameters-arbitrarily-which-specific-parameter-to-change
+  - method-selector-default-value
+  - fresh-scatter-plot-overwrite-vs-append-semantics
+  - cluster-mcs-toggle-visibility-on-the-editor
+scope_reductions:
+  - id: SR-01
+    check: A-STRUCT-02
+    rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage)"
+    verdict_status: SCOPE_REDUCTION
 related_bugs: []
 ---
 

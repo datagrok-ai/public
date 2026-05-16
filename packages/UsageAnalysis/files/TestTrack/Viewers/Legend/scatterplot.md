@@ -17,7 +17,13 @@ pyramid_layer: integration
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/scatterplot.md
 migration_date: 2026-05-07
-migration_report: scatterplot-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - scenario-5-step-9-assertion-depth-on-layout-persisted-color-changes
+  - scenario-4-step-8-no-reappearing-filtered-out-points-semantics
+  - scenario-5-step-5-both-viewers-pc-plot-vs-box-plot
+scope_reductions: []
 related_bugs:
   - GROK-17438
   - GROK-17222

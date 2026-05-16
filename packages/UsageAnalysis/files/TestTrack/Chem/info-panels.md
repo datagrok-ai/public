@@ -6,7 +6,20 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/info-panels.md
 migration_date: 2026-05-11
-migration_report: info-panels-migration-report.md
+source_text_fixes: []
+candidate_helpers:
+  - helpers.playwright.chem.openMoleculeColumnContextPanel
+  - helpers.playwright.chem.openMoleculeCellContextPanel
+  - helpers.playwright.chem.assertChemPanelTabsPresent
+unresolved_ambiguities:
+  - exact-tab-inventory-across-phase-a-step-4-and-phase-a-step-12
+  - a-structure-for-the-highlight-panel-phase-a-step-8
+  - block-1-vs-block-2-dataset-reuse-for-the-smiles-format
+scope_reductions:
+  - id: SR-01
+    check: A-STRUCT-02
+    rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage)"
+    verdict_status: SCOPE_REDUCTION
 related_bugs: []
 ---
 

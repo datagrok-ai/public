@@ -6,7 +6,12 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Charts/tree.md
 migration_date: 2026-05-07
-migration_report: tree-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - setup-step-set-the-hierarchy-to-control-sex-and-race
+  - filtered-count-semantics
+scope_reductions: []
 related_bugs: [github-3221, github-3245]
 ---
 

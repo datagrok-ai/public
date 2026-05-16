@@ -6,7 +6,29 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/filter-panel.md
 migration_date: 2026-05-11
-migration_report: filter-panel-migration-report.md
+source_text_fixes:
+  - step-numbering-chaos-resolved-with-block-labels
+  - typo-sketcherr-sketcher
+  - drag-n-drop-drag-and-drop-canonical-phrasing
+candidate_helpers:
+  - helpers.playwright.chem.toggleFilterPanel
+  - helpers.playwright.chem.drawSubstructureInFilterPanelSketcher
+  - helpers.playwright.chem.cycleSubstructureFilterSettingsTabs
+  - helpers.playwright.chem.useAsFilter
+  - helpers.playwright.chem.openColumnHamburgerFilter
+  - helpers.playwright.chem.dragColumnHeaderToFilterPanel
+unresolved_ambiguities:
+  - sketch-a-substructure-which-specific-substructure
+  - check-all-filter-settings-exact-verification-granularity-per-tab
+  - use-as-filter-molecule-cell-selection
+  - hamburger-menu-filter-exact-menu-label
+  - add-filter-button-label-in-sketcher-dialog
+  - check-the-filtering-of-chemical-columns-with-any-other-filter-which-other-filter
+scope_reductions:
+  - id: SR-01
+    check: A-STRUCT-02
+    rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage)"
+    verdict_status: SCOPE_REDUCTION
 related_bugs: [GROK-14028]
 ---
 

@@ -6,7 +6,20 @@ coverage_type: smoke
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/scaffold-tree-functions.md
 migration_date: 2026-05-11
-migration_report: scaffold-tree-functions-migration-report.md
+source_text_fixes: []
+candidate_helpers:
+  - helpers.playwright.chem.addScaffoldTreeViewer
+  - helpers.playwright.chem.generateScaffoldTreeViaMagicWand
+  - helpers.playwright.chem.clickScaffoldTreeNode
+unresolved_ambiguities:
+  - check-them-step-5-property-panel-verification-depth
+  - magic-wand-icon-dom-locator
+  - scaffold-tree-viewer-empty-state-placeholder-text
+scope_reductions:
+  - id: SR-01
+    check: A-STRUCT-02
+    rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage)"
+    verdict_status: SCOPE_REDUCTION
 related_bugs: []
 ---
 

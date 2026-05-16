@@ -11,7 +11,11 @@ pyramid_layer: integration
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/color-consistency.md
 migration_date: 2026-05-07
-migration_report: color-consistency-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - scenario-2-step-1-any-viewer-e-g-bar-chart
+scope_reductions: []
 related_bugs:
   - GROK-17438
   - github-3132

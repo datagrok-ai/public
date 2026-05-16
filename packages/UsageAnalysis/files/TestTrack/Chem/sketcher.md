@@ -6,7 +6,31 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md
 migration_date: 2026-05-11
-migration_report: sketcher-migration-report.md
+source_text_fixes:
+  - typo-smiles-csv-smiles-csv
+  - keyboard-shortcut-ctrl-v-ctrl-v
+  - step-numbering-glitch-1-2-3-4-5-6-7-8-10-11-9-12-13
+  - 1608-paragraph-dropped
+  - 2448-paragraph-split
+  - step-13-backend-enumeration-scope-hard-coded
+candidate_helpers:
+  - helpers.playwright.chem.openSketcherFromCell
+  - helpers.playwright.chem.sketcherHamburgerMenuClick
+  - helpers.playwright.chem.sketcherTypeSmilesInInput
+  - helpers.playwright.chem.sketcherPasteFromClipboard
+  - helpers.playwright.chem.sketcherBackendSwitcherSelect
+unresolved_ambiguities:
+  - smiles-highlighted-csv-dataset-path
+  - backend-switcher-hamburger-menu-label
+  - sketcher-hamburger-menu-favorites-recent-list-selectors
+  - alternate-make-these-structures-highlighted-entry-point-in-2448
+  - 2448-coverage-type-smoke-vs-edge
+  - pyramid-layer-bug-focused-chain-annotation-inert-after-migration
+  - cross-cutting-bug-citations-not-propagated-as-related-bugs
+scope_reductions:
+  - id: SR-01
+    check: A-STRUCT-02
+    rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage) — applies to sketcher.md only"
 related_bugs: []
 ---
 

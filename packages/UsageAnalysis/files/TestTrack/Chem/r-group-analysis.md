@@ -6,7 +6,12 @@ coverage_type: edge
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/r-group-analysis.md
 migration_date: 2026-05-11
-migration_report: r-group-analysis-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - block-b-step-4-trellis-plot-location
+  - block-b-step-7-column-count
+scope_reductions: []
 related_bugs: [GROK-16329]
 ---
 

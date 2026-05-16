@@ -6,7 +6,23 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/structure-filter.md
 migration_date: 2026-05-11
-migration_report: structure-filter-migration-report.md
+source_text_fixes: []
+candidate_helpers:
+  - helpers.playwright.chem.openFilterPanel
+  - helpers.playwright.chem.drawStructureFilter
+  - helpers.playwright.chem.useAsFilterFromCell
+  - helpers.playwright.chem.hamburgerMenuFilter
+  - helpers.playwright.views.cloneCurrentView
+unresolved_ambiguities:
+  - set-a-filter-blocks-2-3-4-preamble-entry-point-freedom
+  - filter-ui-is-correct-block-2-step-3-verification-depth
+  - some-structure-cell-selection-block-5-step-4-which-row
+  - block-4-4-4-numbering-interpretation
+scope_reductions:
+  - id: SR-01
+    check: A-STRUCT-02
+    rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage)"
+    verdict_status: SCOPE_REDUCTION
 related_bugs: []
 ---
 

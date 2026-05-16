@@ -22,7 +22,14 @@ ui_coverage_delegated_to:
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Charts/sunburst.md
 migration_date: 2026-05-07
-migration_report: sunburst-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - step-8-old-layout-fixture-sourcing-issue-2979
+  - old-layout-file-location-ticket-commentary
+  - inherit-from-grid-toggle-visibility-on-spgi-v2-vs-demog
+  - helper-candidate-selecthierarchycolumns-viewer-columns
+scope_reductions: []
 related_bugs:
   - github-2954
   - github-3412

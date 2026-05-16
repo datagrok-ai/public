@@ -12,7 +12,11 @@ pyramid_layer: integration
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/structure-rendering.md
 migration_date: 2026-05-07
-migration_report: structure-rendering-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - scenario-2-step-5-verification-depth
+scope_reductions: []
 related_bugs:
   - GROK-19083
 ---

@@ -21,7 +21,13 @@ pyramid_layer: ui-smoke
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/visibility-and-positioning.md
 migration_date: 2026-05-07
-migration_report: visibility-and-positioning-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - scenario-4-step-1-sp-legend-toggle-r-one-js-api-exposure
+  - scenario-10-step-5-a-few-viewers-subset-for-mini-legend
+  - scenario-11-step-3-verification-depth
+scope_reductions: []
 related_bugs:
   - GROK-17438
   - GROK-17222

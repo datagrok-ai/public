@@ -16,7 +16,22 @@ ui_coverage_delegated_to: projects-ui-smoke.md
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
 migration_date: 2026-05-04
-migration_report: complex-migration-report.md
+source_text_fixes: []
+candidate_helpers:
+  - helpers.playwright.projects.dragDropOntoDashboard
+  - helpers.playwright.session.logoutAndLoginAs
+  - helpers.playwright.projects.move
+  - helpers.playwright.projects.rename
+unresolved_ambiguities:
+  - another-user-second-user-single-identity-vs-two
+  - order-of-access-level-grants-in-step-12
+  - table-from-a-script-semantics-in-step-1
+  - pivot-table-add-and-aggregate-rows-add-ui-controls
+  - move-to-any-file-share-then-to-any-space-in-step-10
+  - rename-ui-access-points-in-step-9
+  - verify-data-sync-updates-correctly-in-step-11
+  - grok-19728-in-chain-rev-3-emission-rationale
+scope_reductions: []
 ui_companion: complex-ui.md
 realized_as:
   - complex-derived-tables-spec.ts

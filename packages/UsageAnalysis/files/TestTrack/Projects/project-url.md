@@ -15,7 +15,16 @@ ui_coverage_delegated_to: null
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/project-url.md
 migration_date: 2026-05-04
-migration_report: project-url-migration-report.md
+source_text_fixes: []
+candidate_helpers: []
+unresolved_ambiguities:
+  - click-the-project-single-click-vs-double-click
+  - context-panel-links-location
+  - url-format-query-parameters
+  - new-tab-vs-incognito-tab
+  - order-vs-dependency-contradiction
+  - source-text-correction-recurrence
+scope_reductions: []
 related_bugs: []
 ---
 

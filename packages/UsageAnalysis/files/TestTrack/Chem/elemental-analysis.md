@@ -6,7 +6,24 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/elemental-analysis.md
 migration_date: 2026-05-11
-migration_report: elemental-analysis-migration-report.md
+source_text_fixes:
+  - step-numbering-glitch-1-2-2-3
+  - dataset-list-extension
+  - explicit-verification-step-added
+candidate_helpers:
+  - helpers.playwright.chem.openChemTopMenuItem
+  - helpers.playwright.chem.toggleAllCheckboxes
+  - helpers.playwright.chem.assertColumnsAppended
+unresolved_ambiguities:
+  - turn-all-checkboxes-on-exact-checkbox-set-on-the-elemental-analysis-dialog
+  - expected-column-name-pattern-after-elemental-analysis
+  - per-variant-column-count-delta
+  - cell-ordering-inside-the-matrix
+  - original-make-sure-the-result-is-correct-implicit-verification
+scope_reductions:
+  - id: SR-01
+    check: A-STRUCT-02
+    rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage)"
 related_bugs: []
 ---
 
