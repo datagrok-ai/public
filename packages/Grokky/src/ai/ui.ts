@@ -14,6 +14,7 @@ import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '..
 import {executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
+import {showSuggestionsMenu} from './prompt-suggestions';
 
 interface ExecutionPlan {
   plan: string[];
@@ -178,21 +179,13 @@ export function setupSearchUI() {
 
   function initInput(searchInput: HTMLInputElement) {
     const parent: HTMLElement = searchInput.parentElement!;
-    const aiIcon = ui.iconFA('magic', () => { aiCombinedSearch(searchInput.value); }, 'Ask AI');
-    aiIcon.style.cursor = 'pointer';
-    aiIcon.style.color = 'var(--blue-1)';
-    aiIcon.style.marginLeft = '4px';
-    aiIcon.style.marginRight = '4px';
-    parent.appendChild(aiIcon);
+    const wandIcon = ui.iconFA('magic', () => showSuggestionsMenu('powerSearch', (prompt) => {
+      searchInput.value = prompt;
+      aiCombinedSearch(prompt);
+    }), 'Prompt suggestions');
+    wandIcon.classList.add('grokky-search-wand');
+    parent.insertBefore(wandIcon, searchInput);
 
-    const onSearchChanged = () => {
-      if (!searchInput.value?.trim())
-        aiIcon.style.display = 'none';
-      else
-        aiIcon.style.display = 'flex';
-    };
-    searchInput.addEventListener('input', onSearchChanged);
-    // set up the enter key listener and modify suggestion
     const searchHelpDiv = document.getElementsByClassName('power-search-help-text-container')[0] as HTMLDivElement;
     if (searchHelpDiv) {
       searchHelpDiv.innerText = `Press Enter to grok. ${searchHelpDiv.innerText}`;
@@ -207,8 +200,6 @@ export function setupSearchUI() {
       if (searchHelpDiv)
         searchHelpDiv.style.visibility = searchInput.value?.trim().split(' ').length > 1 ? 'visible' : 'hidden';
     });
-
-    onSearchChanged();
   }
 
   const retries = 0;
@@ -224,7 +215,7 @@ export function setupSearchUI() {
   }, 1000);
 }
 
-async function aiCombinedSearch(prompt: string) {
+export async function aiCombinedSearch(prompt: string) {
   // hide the menu
   document.querySelector('.d4-menu-popup')?.remove();
   await CombinedAISearchAssistant.instance.searchUI(prompt);

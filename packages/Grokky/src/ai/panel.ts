@@ -9,6 +9,7 @@ import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMa
 import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
+import {showSuggestionsMenu} from './prompt-suggestions';
 
 export type MessageType = {role: string; content: any};
 
@@ -120,6 +121,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private tryAgainButton: HTMLElement;
   private micButton: HTMLElement;
   private rawRenderButton: HTMLElement;
+  private wandButton: HTMLElement;
   private _rawRender: boolean = false;
   private _noPrompt: boolean = false;
   private recognition: SpeechRecognition | null = null;
@@ -233,9 +235,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.rawRenderButton.style.color = this._rawRender ? 'var(--blue-1)' : '';
       this.root.classList.toggle('d4-ai-raw-mode', this._rawRender);
     }, 'Toggle raw console');
+    this.wandButton = ui.iconFA('magic', () => showSuggestionsMenu('context', (prompt) => {
+      this.textArea.value = prompt;
+      this.handleRun();
+    }), 'Prompt suggestions');
+    this.wandButton.classList.add('grokky-search-wand');
     this.hideContentIcons();
     this.inputControlsDiv = ui.divH([
-      this.micButton, this.rawRenderButton,
+      this.wandButton, this.micButton, this.rawRenderButton,
     ], 'd4-ai-panel-input-controls');
     this.runButton.style.color = 'var(--blue-1)';
     const sessionControls = ui.divH([this.copyConversationButton, this.historyButton, this.newChatButton], 'd4-ai-panel-run-controls');

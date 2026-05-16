@@ -449,3 +449,10 @@
 .grokky-stream .d4-ai-copy-code-button {
   display: flex;
 }
+
+.grokky-search-wand {
+  cursor: pointer;
+  color: var(--blue-1) !important;
+  margin-left: 4px;
+  margin-right: 4px;
+}
