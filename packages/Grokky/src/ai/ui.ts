@@ -486,3 +486,18 @@ export async function setupScriptsAIPanelUI() {
       setTimeout(() => handleView(view as DG.ScriptView), 500);
   });
 }
+
+// Adds a "Run" button to the ribbon of file views opened from MyFiles/agents/scripts/.
+export function setupAgentScriptsUI(): void {
+  grok.events.onViewAdded.subscribe((view) => {
+    try {
+      const basePath = view.basePath ?? view.path ?? '';
+      if (!basePath.includes('/agents/scripts/'))
+        return;
+      const runIcon = ui.iconFA('play', () => {}, `Run ${view.name}`);
+      view.setRibbonPanels([...view.getRibbonPanels(), [runIcon]]);
+    } catch (e: any) {
+      console.warn('Grokky: failed to add run button:', e.message);
+    }
+  });
+}

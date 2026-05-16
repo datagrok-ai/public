@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {interval} from 'rxjs';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './ai/search/query-matching';
-import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI} from './ai/ui';
+import {askWiki, smartExecution, setupAgentScriptsUI, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI} from './ai/ui';
 import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
 import {ClaudeRuntimeClient} from './claude/runtime-client';
@@ -28,6 +28,7 @@ export class PackageFunctions {
     setupSearchUI();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
+    setupAgentScriptsUI();
     PackageFunctions.ensureAgentsFolder();
     PackageFunctions.subscribeToSyncEvents();
   }
