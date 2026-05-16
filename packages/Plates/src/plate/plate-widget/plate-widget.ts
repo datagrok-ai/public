@@ -285,28 +285,37 @@ export class PlateWidget extends DG.Widget {
     this.setupHoverEvents(grid);
   }
 
+  private _forRendering = false;
+
+  public static renderingInstance(): PlateWidget {
+    const w = new PlateWidget();
+    w._forRendering = true;
+    return w;
+  }
+
   refresh() {
-    this._positiveMinCache = null;
-    this._positiveMinCacheCol = undefined;
-    const currentPaneName = this.tabs.currentPane?.name;
-    this.tabs.clear();
-    this.grids.clear();
-    this.tabs.addPane('Summary', () => {
-      // this.grid.invalidate();
-      return this.grid.root;
-    });
-    // this.tabs.addPane(`X Outliers X`, () => this.grid.root);
-    const allColumns = this.plate.data.columns.toList()
-      .filter((c) => c.name !== PLATE_OUTLIER_WELL_NAME);
+    if (!this._forRendering) {
+      this._positiveMinCache = null;
+      this._positiveMinCacheCol = undefined;
+      const currentPaneName = this.tabs.currentPane?.name;
+      this.tabs.clear();
+      this.grids.clear();
+      this.tabs.addPane('Summary', () => {
+        // this.grid.invalidate();
+        return this.grid.root;
+      });
+      // this.tabs.addPane(`X Outliers X`, () => this.grid.root);
+      const allColumns = this.plate.data.columns.toList()
+        .filter((c) => c.name !== PLATE_OUTLIER_WELL_NAME);
 
-    for (const col of allColumns)
-      this.tabs.addPane(col.name, () => this.createLayerGrid(col.name, false));
+      for (const col of allColumns)
+        this.tabs.addPane(col.name, () => this.createLayerGrid(col.name, false));
 
-    if (currentPaneName)
-      this.tabs.currentPane = this.tabs.panes.find((p) => p.name === currentPaneName) ?? this.tabs.getPane('Summary');
-    else if (this.tabs.panes.length > 0)
-      this.tabs.currentPane = this.tabs.getPane('Summary');
-
+      if (currentPaneName)
+        this.tabs.currentPane = this.tabs.panes.find((p) => p.name === currentPaneName) ?? this.tabs.getPane('Summary');
+      else if (this.tabs.panes.length > 0)
+        this.tabs.currentPane = this.tabs.getPane('Summary');
+    }
     const t = this.plate.data;
     const nonLayoutCols = t.columns.toList();
     this._colorColumn = nonLayoutCols.find((c) => c.semType === 'Activity' || c.name.toLowerCase() === 'activity') ??
@@ -314,11 +323,14 @@ export class PlateWidget extends DG.Widget {
                       nonLayoutCols.find((c) => c.type === DG.TYPE.FLOAT);
 
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
-    this.grid.columns.clear();
-    for (let i = 0; i <= this.plate.cols; i++)
-      this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
+    if (this.grid.columns.length !== this.plate.cols + 1) {
+      this.grid.columns.clear();
+      for (let i = 0; i <= this.plate.cols; i++)
+        this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
+    }
 
-    this.grid.invalidate();
+    if (!this._forRendering)
+      this.grid.invalidate();
   }
 
   private createLayerGrid(layer: string, isRole: boolean): HTMLElement {

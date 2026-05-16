@@ -21,7 +21,7 @@ export class PlateCellHandler extends DG.ObjectHandler {
 
 @grok.decorators.cellRenderer({cellType: 'Plate', name: 'PlateGridCellRenderer'})
 export class PlateGridCellRenderer extends DG.GridCellRenderer {
-  plateWidget = new PlateWidget();
+  plateWidget = PlateWidget.renderingInstance();
 
   get name(): string { return 'Plate'; }
   get cellType(): string { return 'Plate'; }
