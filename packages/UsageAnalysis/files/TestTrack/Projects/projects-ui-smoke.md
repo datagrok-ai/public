@@ -35,7 +35,6 @@ ui_coverage_delegated_to: null
 produced_from: atlas-driven
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-ui-smoke.md
 migration_date: 2026-05-04
-migration_report: projects-ui-smoke-migration-report.md
 related_bugs: []
 ---
 

@@ -15,7 +15,6 @@ ui_coverage_delegated_to: projects-ui-smoke.md
 produced_from: decomposed
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/complex.md
 migration_date: 2026-05-04
-migration_report: complex-integration-migration-report.md
 related_bugs: []
 ---
 

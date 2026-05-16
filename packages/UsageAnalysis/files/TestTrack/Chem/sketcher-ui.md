@@ -6,7 +6,6 @@ coverage_type: smoke
 produced_from: decomposed
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md
 migration_date: 2026-05-11
-migration_report: sketcher-migration-report.md
 related_bugs: []
 ---
 

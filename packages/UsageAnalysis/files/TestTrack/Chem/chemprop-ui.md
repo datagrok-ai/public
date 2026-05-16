@@ -6,7 +6,6 @@ coverage_type: regression
 produced_from: manual-only-rename
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chemprop.md
 migration_date: 2026-05-11
-migration_report: chemprop-migration-report.md
 related_bugs: []
 ui_coverage_responsibility:
   - ml-models-train-model-top-menu

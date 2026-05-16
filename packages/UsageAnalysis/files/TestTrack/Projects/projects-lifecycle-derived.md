@@ -15,7 +15,6 @@ ui_coverage_delegated_to: projects-ui-smoke.md
 produced_from: atlas-driven
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-lifecycle-derived.md
 migration_date: 2026-05-04
-migration_report: projects-lifecycle-derived-migration-report.md
 related_bugs:
   - GROK-19103
 ---

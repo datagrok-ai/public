@@ -14,7 +14,6 @@ ui_coverage_delegated_to: null
 produced_from: atlas-driven
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/lifecycle-api.md
 migration_date: 2026-05-04
-migration_report: lifecycle-api-migration-report.md
 related_bugs: []
 ---
 

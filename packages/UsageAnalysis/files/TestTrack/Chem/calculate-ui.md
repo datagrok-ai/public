@@ -6,7 +6,6 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/calculate.md
 migration_date: 2026-05-11
-migration_report: calculate-migration-report.md
 related_bugs: []
 manual_only_reason: |
   Chem | Calculate menu walk (Descriptors / Properties / Toxicity Risks /

@@ -6,7 +6,6 @@ coverage_type: regression
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/custom-creation-scripts.md
 migration_date: 2026-04-30
-migration_report: custom-creation-scripts-migration-report.md
 moved_to_ui_at: 2026-05-01
 moved_to_ui_reason: |
   All 3 in-scope scenario verifications (Step 1 run creation script,
