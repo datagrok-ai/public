@@ -32,7 +32,8 @@ export class PackageFunctions {
     PackageFunctions.subscribeToSyncEvents();
   }
 
-  // Creates agents/ folder in My Files if it doesn't exist yet.
+  // Creates agents/ folder in My Files if it doesn't exist yet, and seeds agents/scripts/
+  // with any demo files from the package's files/scripts/ folder.
   static async ensureAgentsFolder(): Promise<void> {
     try {
       const conn = await grok.dapi.connections.filter('name = "My files"').first();
@@ -45,8 +46,25 @@ export class PackageFunctions {
           'Place your personal knowledge files here. Claude will use them as context.');
         console.log('Grokky: created agents/ folder');
       }
+      await PackageFunctions.seedScriptsFolder(`${agentsPath}/scripts`);
     } catch (e: any) {
       console.warn('Grokky: failed to ensure agents folder:', e.message);
+    }
+  }
+
+  // Copies demo files from the package's files/scripts/ into MyFiles agents/scripts/.
+  // Existing files are left untouched so user edits are preserved.
+  static async seedScriptsFolder(destPath: string): Promise<void> {
+    const sourceFiles: DG.FileInfo[] = await _package.files.list('scripts', false);
+    for (const fi of sourceFiles) {
+      if (fi.isDirectory)
+        continue;
+      const destFilePath = `${destPath}/${fi.name}`;
+      if (await grok.dapi.files.exists(destFilePath))
+        continue;
+      const content = await fi.readAsString();
+      await grok.dapi.files.writeAsText(destFilePath, content);
+      console.log(`Grokky: seeded ${fi.name} into agents/scripts/`);
     }
   }
 
