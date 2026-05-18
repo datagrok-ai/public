@@ -44,15 +44,41 @@ powerSearch:
       prompt: 'Python: write a function that accepts a molecule and renders Gasteiger partial charges as a result'
 
 context:
-  Context functions:
-    - prompt: 'MolCol: Show me the chemical space'
-    - prompt: 'MolCol: Calculate Lipinski descriptors'
-    - prompt: 'Scatter plot: zoom in, regression line, color by age'
-    - prompt: 'Table View: add a histogram, close scatter plot'
-    - prompt: 'Shell: show users view, switch to demog, show recent projects'
+  - scope: column
+    key: molecule
+    match: { semType: Molecule }
+    label: Molecule column
+    icon: atom
+    suggestions:
+      - { label: Show me the chemical space, prompt: Show me the chemical space }
+      - { label: Calculate Lipinski descriptors, prompt: Calculate Lipinski descriptors }
 
-  Visualizations:
-    - label: Scatter plot of height vs weight with regression
-      prompt: Add a scatter plot, show height vs weight, show regression line, zoom in, color by age
-    - label: Distribution of activities per compound class
-      prompt: Show me the distribution of activities per compound class
+  - scope: viewer
+    key: scatter
+    match: { type: Scatter plot }
+    label: Scatter plot you're viewing
+    icon: chart-line
+    suggestions:
+      - { label: Zoom in, add regression line, prompt: zoom in, add a regression line }
+      - { label: Color points by age, prompt: color points by age }
+
+  - scope: view
+    key: view
+    match: { type: TableView }
+    label: This view
+    icon: table
+    suggestions:
+      - { label: Add a histogram, prompt: add a histogram }
+      - { label: Close the scatter plot, prompt: close the scatter plot }
+      - label: Scatter plot of height vs weight with regression
+        prompt: Add a scatter plot, show height vs weight, show regression line, zoom in, color by age
+      - label: Distribution of activities per compound class
+        prompt: Show me the distribution of activities per compound class
+
+  - scope: global
+    key: anywhere
+    label: Anywhere
+    icon: globe
+    suggestions:
+      - { label: Switch to demog, prompt: switch to demog }
+      - { label: Show recent projects, prompt: show recent projects }
