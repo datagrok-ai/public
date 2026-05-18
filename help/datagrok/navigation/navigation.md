@@ -1,4 +1,5 @@
 ---
+format: mdx
 title: "User interface"
 keywords:
  - user interface

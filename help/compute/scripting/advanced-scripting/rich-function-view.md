@@ -1,4 +1,5 @@
 ---
+format: mdx
 title: "Rich Function View"
 sidebar_position: 1
 ---
