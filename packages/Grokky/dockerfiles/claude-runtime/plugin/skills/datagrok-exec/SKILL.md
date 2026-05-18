@@ -17,68 +17,47 @@ The ONLY way code runs in the Datagrok browser is inside a fenced block tagged
 | `DG`     | module          | Always                                            |
 | `view`   | `DG.ViewBase`   | Always — check `view.type` for specific view type |
 | `t`      | `DG.DataFrame`  | Only when `view.type === 'TableView'`             |
-| `grokky` | helpers module  | Always — typed wrappers; prefer over raw js-api   |
 
-`grok`, `ui`, `DG` are already in scope — do not import them. The block runs in
-an async IIFE, so `await` works directly.
+The block runs in an async IIFE, so `await` works directly.
 
-## The `grokky` namespace — prefer it over raw js-api
+## Per-area skills
 
-`grokky.*` exposes validated wrappers for common operations. Each wrapper
-checks inputs and throws a clear error instead of silently producing the wrong
-result. Use them when applicable; fall back to raw js-api only when no wrapper
-exists.
+For task-specific API surface, open the matching skill before emitting code:
 
-| Wrapper                                          | Skill that documents it          | Replaces (anti-pattern)                      |
-|--------------------------------------------------|----------------------------------|----------------------------------------------|
-| `grokky.addCalculatedColumn(df, name, formula)`  | `datagrok-calc-column`           | `df.columns.addNewFloat(name)` + manual loop |
-| `grokky.filterRows(view, column, criteria)`      | `datagrok-table-ops`             | `t.rows.match(...).filter()` or raw `df.filter.set(...)` — those bypass the filter panel |
-| `grokky.sortRows(df, columns, orders?)`          | `datagrok-table-ops`             | manual `Array.sort` over an index array      |
-| `grokky.selectRows(df, predicate)`               | `datagrok-table-ops`             | hand-rolled BitSet loops                     |
-| `grokky.aggregateBy / pivot / unpivot / joinTables` | `datagrok-table-ops`          | misremembering `groupBy().add().aggregate()` or `grok.data.joinTables` argument order |
-| `grokky.addViewer(type, options?) / configureViewer(viewer, options)` | `datagrok-viewer`        | `grok.shell.addViewer(...)`, `view.scatterPlot(...)`, raw `viewer.setOptions` — those skip type canonicalization and property-name validation |
-
-Open the linked skill for full signature, DSL reference, and examples before
-emitting a call.
+| User intent                                    | Skill                          |
+|------------------------------------------------|--------------------------------|
+| Find / describe / add / remove / rename columns; set semType/units/format/friendly name; color coding | `datagrok-df-and-columns`   |
+| Calculated (formula-driven) columns            | `datagrok-calc-column`         |
+| Filter rows (range, categorical, contains, substructure, predicate) | `datagrok-filtering`     |
+| Select rows; current row; selection ↔ filter   | `datagrok-selection`           |
+| Add / configure / find / close viewers         | `datagrok-viewers`             |
+| Grid sort, visibility, widths, pins, color coding, freeze | `datagrok-grid-customization` |
+| Cheminformatics: SMILES/MolBlock/InChI/canonicalize | `datagrok-chem-data` / `datagrok-chem-toolkit` |
 
 ## Multiple blocks in one response
 
-Each `datagrok-exec` block runs in its own JavaScript scope (a fresh
-`new Function(...)` IIFE). When you emit multiple blocks in a single response,
-they execute sequentially — block N+1 awaits block N's promise — but JS
+Each `datagrok-exec` block runs in its own scope (a fresh `new Function(...)`
+IIFE). Blocks execute sequentially — block N+1 awaits block N — but JS
 variables declared in earlier blocks are NOT visible in later ones.
 
-State that **does** persist across blocks:
-- The `view` object reference (same `DG.ViewBase` each time)
-- The `t` DataFrame reference — column additions, filter changes, and any
-  other mutations are visible to later blocks
-- Anything you push into the platform itself: viewers added to the view,
-  dialogs opened, columns appended, server-side state
+Persists across blocks:
+- The `view` reference and the `t` DataFrame reference (column additions,
+  filter changes, and other mutations are visible to later blocks)
+- Anything pushed into the platform: viewers added, dialogs opened, columns
+  appended, server-side state
 
-State that does **not** persist:
-- `const` / `let` / `var` bindings
-- Local helper functions
-- Cached values (e.g. `const ic50Col = t.col('IC50')`)
+Does NOT persist: `const` / `let` / `var` bindings, helper functions, cached
+values like `const ic50Col = t.col('IC50')`. Block 2 must re-derive from `t`.
 
-So if block 1 adds an `IC50` column and block 2 needs to read it, block 2
-must re-derive `t.col('IC50')` from `t`. Never reference a variable from an
-earlier block — that's a `ReferenceError`, not a "column doesn't exist yet"
-problem.
+Use multiple blocks when each step is independently meaningful to the user.
+Use a single block when steps share complex local state (intermediate arrays,
+helper functions, derived columns referenced multiple times).
 
-When to split into multiple blocks vs. one big block:
-
-- **Multi-block** is best when each step is independently meaningful to the
-  user — they want to see step 1's result land before step 2 starts.
-- **Single block** is best when steps share complex local state (intermediate
-  arrays, helper functions, derived columns referenced multiple times) that
-  would be tedious to re-derive every block.
-
-Before consuming a query/function result inside `datagrok-exec`, look at the
-wrapper's return type in the apiRef. Example — if the wrapper signature is
-`Promise<string>`:
+Before consuming a query/function result, check the wrapper's return type in
+the apiRef:
 
 ```js
-// CORRECT — treat the awaited value as a string
+// CORRECT — wrapper returns Promise<string>
 const helm = await grok.data.query('Biologics:GetBiologicsPeptideHelmByIdentifier',
   { peptideIdentifier: 'GROKPEP-000002' });
 
@@ -113,8 +92,8 @@ NOT render; convert via the table below:
 Datagrok **apps** are functions with `meta.role: app`. Calling one via
 `grok.functions.call('Pkg:appName')` may return a `DG.ViewBase` (or nothing if
 the app opens its own view). A returned view is NOT yet attached to the
-workspace — you must hand it to `grok.shell.addView()` yourself, otherwise
-nothing visible happens. Do NOT `return` the view from the block; open it.
+workspace — hand it to `grok.shell.addView()`. Do NOT `return` the view from
+the block; open it.
 
 ```datagrok-exec
 const result = await grok.functions.call('Pkg:appName');
@@ -138,7 +117,8 @@ return helmInput.root;
 
 ## Graphics output
 
-Some Datagrok scripts return graphical elements. When you return such an element directly, it may render as blank because it lacks intrinsic dimensions. To display it correctly, extract the Base64-encoded image data and wrap it in an image component with explicit width and height:
+Returned graphics elements may render blank without intrinsic dimensions.
+Extract Base64-encoded image data and wrap with explicit width and height:
 
 ```datagrok-exec
 const b64 = await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', {mol: 'CCC', contours: 10});

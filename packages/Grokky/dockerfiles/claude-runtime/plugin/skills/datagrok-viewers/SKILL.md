@@ -1,490 +1,290 @@
 ---
 name: datagrok-viewers
-description: Add, configure, find, and close viewers (scatter plot, histogram, line/bar chart, box plot, pie chart, trellis, heat map, correlation plot, 3D scatter, statistics, density, etc.) on a Datagrok TableView inside a datagrok-exec block. Use whenever the user asks to plot, chart, visualize, show a graph, draw a distribution, color by a column, swap a viewer's axis, toggle a legend / regression line / log scale, replace one viewer with another, close every chart, reset the view to just the grid, or find an existing viewer by type. Plugin viewers like "Chem space", "sequence space", "activity cliffs" are NOT viewer types — they're registered functions — and this skill routes those to `grok.functions.call`. Does NOT cover filtering (separate skill `datagrok-filtering`), selection (`datagrok-selection`), grid cell rendering, layout save/restore, or custom-viewer authoring.
+description: Add a viewer, configure a viewer, change viewer options, find viewer, close viewer, view a scatter plot, bar chart, histogram, line chart, box plot, pie chart, heat map, correlation plot, 3D scatter, trellis, density plot, statistics, on a Datagrok TableView inside a datagrok-exec block. Use whenever the user asks to plot, chart, visualize, show a graph, draw a distribution, color by a column, swap a viewer's axis, toggle a legend / regression line / log scale, replace one viewer with another, close every chart, reset the view to just the grid, or find an existing viewer by type. Plugin viewers like "Chem space", "sequence space", "activity cliffs" are NOT viewer types — they're registered functions — route those to `grok.functions.call`. Does NOT cover filtering (separate skill `datagrok-filtering`), selection (`datagrok-selection`), grid cell rendering (`datagrok-grid-customization`), layout save/restore, or custom-viewer authoring.
 ---
 
 # datagrok-viewers
 
-Use the `grokky.*` viewer helpers inside a `datagrok-exec` block. They wrap
-`TableView.addViewer`, the per-viewer `Property[]` schema (`getProperties()`),
-and the `view.viewers` iterator so Claude doesn't have to remember that
-`new DG.Viewer(...)` is internal-only, that the typed `view.scatterPlot(opts)`
-shorthands are deprecated, that `view.viewers[0]` is always the grid (and
-closing it breaks the view), that `viewer.close()` throws on a never-attached
-viewer, or that "Chem space" is a function call — not a viewer type.
-
-## What this skill covers
-
-Creating and configuring built-in viewers on a `DG.TableView`: pick the type
-(fuzzy-matched against `DG.VIEWER`), set column-binding properties
-(`xColumnName`, `yColumnName`, `colorColumnName`, ...), tweak look (axis
-log scale, regression line, legend visibility), find existing viewers
-(predicate-based, type-based), close one viewer / all viewers of a type /
-every viewer (keep grid), and the canonical "close X then add Y" replace
-pattern.
-
-**Out of scope.** Row filtering (`df.filter`) lives in `datagrok-filtering`.
-Row selection (`df.selection`) lives in `datagrok-selection`. Custom grid
-cell rendering, pinned columns, and grid-specific UI are in the (future)
-`datagrok-grid` skill. Saving / restoring viewer state across sessions
-(`view.saveLayout()`, `viewer.getOptions(true)`) belongs to the layout skill.
-Authoring a custom `JsViewer` subclass is the package-development path, not
-exec-block territory. The Filters viewer is handled by `datagrok-filtering`
-(`view.getFiltersGroup`) — only add `DG.VIEWER.FILTERS` from here if the
-user explicitly wants a filter panel as a viewer.
+Add, configure, find, and close viewers on a `DG.TableView` from inside a
+`datagrok-exec` block. Globals injected by the runtime: `grok`, `ui`, `DG`,
+`view`, `t` (the current `DG.DataFrame`, when the view is a `TableView`).
 
 ## Quick reference
 
-| Helper                                          | One-liner                                                                          |
-|-------------------------------------------------|------------------------------------------------------------------------------------|
-| `grokky.addViewer(view, type, opts?)`           | Attach a built-in viewer. Fuzzy type, schema-validated options, did-you-mean hints.|
-| `grokky.configureViewer(viewer, opts)`          | Set/update properties on an existing viewer. Same schema validation.               |
-| `grokky.findViewer(view, pred)`                 | First non-grid viewer matching predicate, or `null`. String pred = type filter.    |
-| `grokky.findViewers(view, pred?)`               | All non-grid viewers matching predicate. No pred = every non-grid viewer.          |
-| `grokky.closeViewer(target, view?)`             | Close one viewer, all viewers of a type, or all matching a predicate. Tolerant.    |
-| `grokky.closeAllViewers(view, opts?)`           | Scorched earth. `{keepGrid: true}` by default — view.viewers[0] (grid) is spared.  |
+| Need                                 | Call                                                                  |
+|--------------------------------------|-----------------------------------------------------------------------|
+| Add a viewer                         | `view.addViewer(DG.VIEWER.SCATTER_PLOT, {xColumnName: 'a', ...})`     |
+| Configure an existing viewer         | `viewer.setOptions({colorColumnName: 'logP'})`                         |
+| All non-grid viewers                 | `Array.from(view.viewers).slice(1)`                                    |
+| First viewer of a type               | `Array.from(view.viewers).slice(1).find((v) => v.type === DG.VIEWER.SCATTER_PLOT)` |
+| Close one viewer                     | `viewer.close()` (wrap in try/catch — throws if never attached)        |
+| Close every non-grid viewer          | `Array.from(view.viewers).slice(1).forEach((v) => { try { v.close(); } catch {} })` |
+| Inspect a viewer's option schema     | `viewer.getProperties()` → `DG.Property[]` (each has `.name`)          |
+| Standalone (detached) viewer         | `DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, t, {...})`                 |
 
-Globals available inside every `datagrok-exec` block: `grok`, `ui`, `DG`,
-`view`, `t` (the current `DG.DataFrame`, when the view is a TableView),
-`grokky`.
+## THE viewer footgun: column-binding properties always end in `ColumnName(s)`
 
-## The mental model
+Users say "x is mw, y is logp". You must emit `xColumnName` / `yColumnName` —
+never bare `x` / `y` / `color`. Bare aliases are inconsistent across viewer
+types and may silently do nothing for the canonical `addViewer`/`setOptions`
+path. Always use the full `*ColumnName(s)` form.
 
-`view.viewers` is a synchronous array snapshot:
+| User says           | Emit (single column)                | Emit (multiple columns)         |
+|---------------------|-------------------------------------|---------------------------------|
+| `x is mw`           | `xColumnName: 'mw'`                 | `xColumnNames: ['mw', ...]`     |
+| `y is logp`         | `yColumnName: 'logp'`               | `yColumnNames: ['logp', ...]`   |
+| `color by activity` | `colorColumnName: 'activity'`       | —                               |
+| `size by mw`        | `sizeColumnName: 'mw'`              | —                               |
+| `label by smiles`   | `labelColumnName: 'smiles'`         | —                               |
+| `split by class`    | `splitColumnName: 'class'`          | `splitColumnNames: ['class']`   |
+| `value is ic50`     | `valueColumnName: 'ic50'`           | `valueColumnNames: ['ic50']`    |
+| `category is class` | `categoryColumnName: 'class'`       | `categoryColumnNames: ['class']`|
+| `columns are a, b`  | —                                   | `columnNames: ['a', 'b']`       |
 
-- `view.viewers[0]` is **always the grid**. Always. Closing it breaks the
-  view's main table widget. Every iteration must `.slice(1)` (or use the
-  helpers, which do that for you).
-- Every other entry is a viewer the user (or previous code) added — scatter
-  plot, histogram, filter panel, etc. Each has `.type` (one of the
-  `DG.VIEWER.*` strings) and `.dataFrame` (typically `view.dataFrame`).
+- **Single column** properties: singular `<role>ColumnName` (string).
+- **Multi-column** properties: plural `<role>ColumnNames` (array of strings).
+- Some viewers take both forms for different roles (Line chart has
+  `xColumnName` for the x axis and `yColumnNames` for the series).
+- When in doubt, inspect the live schema: `viewer.getProperties()` returns
+  `DG.Property[]`. Each has `.name` (canonical), `.propertyType`, `.choices`.
 
-Three viewer creation paths exist in the JS API. **Only one is right for
-exec blocks**:
+Other naming conventions across viewers:
 
-| Path                                     | Verdict for this skill                                                |
-|------------------------------------------|-----------------------------------------------------------------------|
-| `view.addViewer('Scatter plot', opts)`   | **Canonical**. Creates + docks in one call. Use via `grokky.addViewer`.|
-| `DG.Viewer.fromType(type, df, opts?)`    | Detached viewer; caller must dock. Off-view rendering only.            |
-| `view.scatterPlot(opts)` / `histogram()` | **Deprecated**. Source comments say so. Never use.                     |
-| `new DG.Viewer(...)`                     | Internal constructor over a Dart handle. Never use.                    |
-
-Viewers cross-talk automatically when they share a `DataFrame`. Selection,
-filter, current row, mouse-over — all live on the DF, and every viewer bound
-to that DF reacts. There is no `linkViewers()` to call.
-
-## Viewer types catalog
-
-These are the top demo viewers and their primary properties. Full list lives
-in `DG.VIEWER.*` (~30 entries). The wrapper fuzzy-matches type names with
-Levenshtein distance ≤ 3, case-insensitive — `'scatter'`, `'Scatter Plot'`,
-`'scatterplot'` all resolve to `'Scatter plot'`.
-
-| Type string          | Use for                          | Primary axes / properties                                                              |
-|----------------------|----------------------------------|----------------------------------------------------------------------------------------|
-| `'Scatter plot'`     | XY relationship                  | `xColumnName`, `yColumnName`, `colorColumnName`, `sizeColumnName`, `showRegressionLine`|
-| `'Histogram'`        | Distribution of a single column  | `valueColumnName`, `splitColumnName`, `bins`                                           |
-| `'Line chart'`       | Trend / time-series              | `xColumnName`, `yColumnNames` (array)                                                  |
-| `'Bar chart'`        | Categorical counts / aggregates  | `splitColumnName`, `valueColumnName`, `valueAggrType`                                  |
-| `'Pie chart'`        | Categorical proportions          | `categoryColumnName`                                                                   |
-| `'Box plot'`         | Numeric by category              | `valueColumnName`, `categoryColumnName`                                                |
-| `'Heat map'`         | Cell-color matrix                | (returns a Grid subclass — unusual)                                                    |
-| `'Statistics'`       | Per-column summary               | `columnNames`                                                                          |
-| `'Correlation plot'` | Pairwise correlations            | `columnNames` (or `xs` / `ys`)                                                         |
-| `'Density plot'`     | Smoothed 2D density              | `xColumnName`, `yColumnName`                                                           |
-| `'3d scatter plot'`  | Three-axis numerical             | `xColumnName`, `yColumnName`, `zColumnName`, `colorColumnName`                         |
-| `'Trellis plot'`     | Small multiples                  | `xColumnNames`, `yColumnNames`, `viewerType`                                           |
-| `'PC Plot'`          | Parallel coordinates             | `columnNames`                                                                          |
-| `'Tree map'`         | Hierarchical area                | `splitColumnNames`, `sizeColumnName`                                                   |
-| `'Matrix plot'`      | Scatter matrix                   | `xColumnNames`, `yColumnNames`                                                         |
-| `'Filters'`          | Filter panel as a viewer         | `columnNames` (see `datagrok-filtering` instead)                                       |
-| `'Form'`             | Per-row record view              | `columnNames`                                                                          |
-| `'Markup'`           | Static HTML/markdown             | `content` (string)                                                                     |
-
-For the full canonical list at runtime: `Object.values(DG.VIEWER)` (every
-key surfaced by `DG.VIEWER.*`). Common variants `'scatter plot'`,
-`'scatter'`, `'Scatterplot'`, `'Scatter Plot'` all resolve through the
-helper. The property table above is a starter set — `getProperties()` is
-the authoritative schema and the wrapper validates every key against it,
-emitting a did-you-mean warning on unknown keys (`'xColumn'` →
-`'xColumnName'`).
-
-### Boolean and axis property conventions
-
-These conventions hold across nearly all viewers — use them as a writing
-prior, then trust the schema-validation warnings to correct edge cases:
-
-- **Column references** end in `ColumnName` or `ColumnNames`:
-  `xColumnName`, `colorColumnName`, `categoryColumnNames`. The wrapper
-  accepts the short forms (`x`, `color`, `categoryColumns`) and rewrites
-  them. Never `xColumn` or `colorCol`.
 - **Boolean toggles start with `show`**: `showRegressionLine`, `showXAxis`,
-  `showLegend`, `showStatistics`, `showXSelector`, `showColorSelector`.
-  Never `regressionLine` / `legend` / `statistics`.
+  `showLegend`, `showStatistics`, `showColorSelector`. Not `regressionLine`
+  / `legend` / `statistics`.
 - **Axis scale**: `xAxisType: 'linear' | 'logarithmic'` (and `y`, `z`,
   `colorAxisType`). Not `logX`, not `logScale`.
 - **Axis bounds**: `xMin`, `xMax`, `yMin`, `yMax`. Not `xRange: [a, b]`.
 
+## The viewers array
+
+`view.viewers` is a synchronous array snapshot:
+
+- `view.viewers[0]` is **always the grid**. Closing it breaks the table widget.
+  Every iteration must `.slice(1)` (or filter out `v.type === DG.VIEWER.GRID`).
+- Every other entry is a non-grid viewer. Each has `.type` (a string equal to
+  one of the `DG.VIEWER.*` constants) and `.dataFrame`.
+
+## Viewer types catalog
+
+Always use the `DG.VIEWER.*` constants, never literal strings:
+
+| Constant                       | String value         | Primary properties                                                                |
+|--------------------------------|----------------------|-----------------------------------------------------------------------------------|
+| `DG.VIEWER.SCATTER_PLOT`       | `'Scatter plot'`     | `xColumnName`, `yColumnName`, `colorColumnName`, `sizeColumnName`, `showRegressionLine` |
+| `DG.VIEWER.HISTOGRAM`          | `'Histogram'`        | `valueColumnName`, `splitColumnName`, `bins`                                      |
+| `DG.VIEWER.LINE_CHART`         | `'Line chart'`       | `xColumnName`, `yColumnNames` (array)                                             |
+| `DG.VIEWER.BAR_CHART`          | `'Bar chart'`        | `splitColumnName`, `valueColumnName`, `valueAggrType`                             |
+| `DG.VIEWER.PIE_CHART`          | `'Pie chart'`        | `categoryColumnName`                                                              |
+| `DG.VIEWER.BOX_PLOT`           | `'Box plot'`         | `valueColumnName`, `categoryColumnName`                                           |
+| `DG.VIEWER.HEAT_MAP`           | `'Heat map'`         | (returns a Grid subclass — column tag-driven color coding)                        |
+| `DG.VIEWER.STATISTICS`         | `'Statistics'`       | `columnNames`                                                                     |
+| `DG.VIEWER.CORR_PLOT`          | `'Correlation plot'` | `columnNames` (or `xs` / `ys`)                                                    |
+| `DG.VIEWER.DENSITY_PLOT`       | `'Density plot'`     | `xColumnName`, `yColumnName`                                                      |
+| `DG.VIEWER.SCATTER_PLOT_3D`    | `'3d scatter plot'`  | `xColumnName`, `yColumnName`, `zColumnName`, `colorColumnName`                    |
+| `DG.VIEWER.TRELLIS_PLOT`       | `'Trellis plot'`     | `xColumnNames`, `yColumnNames`, `viewerType`                                      |
+| `DG.VIEWER.PC_PLOT`            | `'PC Plot'`          | `columnNames`                                                                     |
+| `DG.VIEWER.TREE_MAP`           | `'Tree map'`         | `splitColumnNames`, `sizeColumnName`                                              |
+| `DG.VIEWER.MATRIX_PLOT`        | `'Matrix plot'`      | `xColumnNames`, `yColumnNames`                                                    |
+| `DG.VIEWER.FILTERS`            | `'Filters'`          | `columnNames` (see `datagrok-filtering` for the real filtering API)               |
+| `DG.VIEWER.FORM`               | `'Form'`             | `columnNames`                                                                     |
+| `DG.VIEWER.MARKUP`             | `'Markup'`           | `content` (string)                                                                |
+| `DG.VIEWER.NETWORK_DIAGRAM`    | `'Network diagram'`  | `node1ColumnName`, `node2ColumnName`                                              |
+| `DG.VIEWER.WORD_CLOUD`         | `'Word cloud'`       | column                                                                            |
+| `DG.VIEWER.TILE_VIEWER`        | `'Tile Viewer'`      | per-row cards                                                                     |
+| `DG.VIEWER.PIVOT_TABLE`        | `'Pivot table'`      | grouped aggregates                                                                |
+| `DG.VIEWER.SHAPE_MAP`          | `'Shape Map'`        | choropleth                                                                        |
+| `DG.VIEWER.CALENDAR`           | `'Calendar'`         | `dateColumnName`                                                                  |
+| `DG.VIEWER.GLOBE`              | `'Globe'`            | `latitudeColumnName`, `longitudeColumnName`                                       |
+| `DG.VIEWER.GOOGLE_MAP`         | `'Google map'`       | `latitudeColumnName`, `longitudeColumnName`                                       |
+| `DG.VIEWER.TIMELINES`          | `'Timelines'`        | `startColumnName`, `endColumnName`                                                |
+| `DG.VIEWER.RADAR_VIEWER`       | `'Radar'`            | `columnNames`                                                                     |
+| `DG.VIEWER.GRID`               | `'Grid'`             | (the main grid — `view.grid` is the typed accessor)                               |
+
+Full canonical list at runtime: `Object.values(DG.VIEWER)`.
+
+## Adding viewers
+
+Use the in-scope `view` global, not `grok.shell.tv` (the *globally* active
+view, which may be a different tab when the user has several open).
+
+```datagrok-exec
+// Scatter plot of MW vs LogP, colored by activity, with regression line.
+view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+  xColumnName: 'MW',
+  yColumnName: 'LogP',
+  colorColumnName: 'activity',
+  showRegressionLine: true,
+});
+```
+
+```datagrok-exec
+// Line chart with multiple y series — yColumnNames is the plural form (array).
+view.addViewer(DG.VIEWER.LINE_CHART, {
+  xColumnName: 'date',
+  yColumnNames: ['revenue', 'expenses', 'profit'],
+});
+```
+
+```datagrok-exec
+// Bar chart of count by category.
+view.addViewer(DG.VIEWER.BAR_CHART, {
+  splitColumnName: 'category',
+  valueColumnName: 'count',
+  valueAggrType: 'sum',
+});
+```
+
+## Configuring an existing viewer
+
+`viewer.setOptions({...})` applies a batch of property changes and re-renders
+once. Same property-name rules as `addViewer`.
+
+```datagrok-exec
+// Recolor the existing scatter plot by a different column.
+const sp = Array.from(view.viewers).slice(1)
+  .find((v) => v.type === DG.VIEWER.SCATTER_PLOT);
+if (sp)
+  sp.setOptions({colorColumnName: 'logP'});
+```
+
+`view.addViewer(...)` returns the freshly attached viewer, so you can chain
+create + configure:
+
+```datagrok-exec
+const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+  xColumnName: 'height',
+  yColumnName: 'weight',
+  showRegressionLine: true,
+});
+sp.setOptions({xMin: 150, xMax: 200, colorColumnName: 'age'});
+```
+
+To discover property names, ask the viewer:
+
+```datagrok-exec
+const v = view.addViewer(DG.VIEWER.SCATTER_PLOT);
+const names = v.getProperties().map((p) => p.name);
+return ui.divText(names.join(', '));
+```
+
+## Finding viewers
+
+`view.viewers` is an array; **index 0 is always the grid**, so iteration always
+starts with `.slice(1)`.
+
+```datagrok-exec
+// First scatter plot on the view (or undefined).
+const sp = Array.from(view.viewers).slice(1)
+  .find((v) => v.type === DG.VIEWER.SCATTER_PLOT);
+```
+
+```datagrok-exec
+// All histograms.
+const hs = Array.from(view.viewers).slice(1)
+  .filter((v) => v.type === DG.VIEWER.HISTOGRAM);
+```
+
+## Closing viewers
+
+`viewer.close()` closes and detaches the viewer. It **throws** if the viewer
+was never attached to a view, so wrap in try/catch.
+
+```datagrok-exec
+// Close every scatter plot on the view.
+Array.from(view.viewers).slice(1)
+  .filter((v) => v.type === DG.VIEWER.SCATTER_PLOT)
+  .forEach((v) => { try { v.close(); } catch {} });
+```
+
+```datagrok-exec
+// Close every non-grid viewer (reset the view to just the grid).
+Array.from(view.viewers).slice(1)
+  .forEach((v) => { try { v.close(); } catch {} });
+```
+
+Close-and-replace pattern for "show me X instead of Y":
+
+```datagrok-exec
+// Close all scatter plots, then add a histogram.
+Array.from(view.viewers).slice(1)
+  .filter((v) => v.type === DG.VIEWER.SCATTER_PLOT)
+  .forEach((v) => { try { v.close(); } catch {} });
+view.addViewer(DG.VIEWER.HISTOGRAM, {valueColumnName: 'activity'});
+```
+
 ## Plugin viewers — they are functions, not types
 
-A handful of "viewers" users will name are actually package-registered
-functions that *create* a viewer as a side effect. Don't try to fuzzy-match
-them against `DG.VIEWER` — `grokky.addViewer` will fail to find them in the
-canonical list. Route via `grok.functions.call(...)` instead:
+Some "viewers" users name are actually package-registered functions that
+*create* a viewer as a side effect. They aren't in `DG.VIEWER`. Route via
+`grok.functions.call`:
 
-| User phrase                              | Function call                                                                                                                       |
-|------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| "chemical space" / "chem space"          | `grok.functions.call('Chem:chemSpaceTopMenu', {table: t, molecules: t.col('smiles'), methodName: 'UMAP', similarityMetric: 'Tanimoto', plotEmbeddings: true})` |
-| "sequence space"                         | `grok.functions.call('Bio:sequenceSpaceTopMenu', {table: t, molecules: t.col('sequence'), methodName: 'UMAP', similarityMetric: 'Levenshtein', plotEmbeddings: true})` |
-| "activity cliffs"                        | `grok.functions.call('Chem:activityCliffs', {table: t, molecules: t.col('smiles'), activities: t.col('activity'), similarity: 80, methodName: 'UMAP', ...})` |
-| "elemental analysis"                     | `grok.functions.call('Chem:elementalAnalysis', {table: t, molecules: t.col('smiles')})`                                            |
+| User phrase                  | Function call                                                                                                                  |
+|------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| "chem space" / "chemical space" | `grok.functions.call('Chem:chemSpaceTopMenu', {table: t, molecules: t.col('smiles'), methodName: 'UMAP', similarityMetric: 'Tanimoto', plotEmbeddings: true})` |
+| "sequence space"             | `grok.functions.call('Bio:sequenceSpaceTopMenu', {table: t, molecules: t.col('sequence'), methodName: 'UMAP', similarityMetric: 'Levenshtein', plotEmbeddings: true})` |
+| "activity cliffs"            | `grok.functions.call('Chem:activityCliffs', {table: t, molecules: t.col('smiles'), activities: t.col('activity'), similarity: 80, methodName: 'UMAP'})` |
+| "elemental analysis"         | `grok.functions.call('Chem:elementalAnalysis', {table: t, molecules: t.col('smiles')})`                                       |
 
-Each of these mutates the DataFrame (adds embedding columns, transformations)
-and returns the freshly-attached viewer. Common pattern:
+Each mutates the DataFrame and attaches a viewer to the current TableView.
+Only the *Space functions return the freshly-attached viewer (`Chem:chemSpaceTopMenu`,
+`Bio:sequenceSpaceTopMenu`). `Chem:activityCliffs` and `Chem:elementalAnalysis`
+return `void`, so to keep configuring you must find the new viewer via
+`view.viewers`:
 
 ```datagrok-exec
 const sp = await grok.functions.call('Chem:chemSpaceTopMenu', {
   table: t, molecules: t.col('smiles'),
   methodName: 'UMAP', similarityMetric: 'Tanimoto', plotEmbeddings: true,
 });
-```
-
-You **can** further `grokky.configureViewer(sp, {...})` afterwards — the
-returned viewer obeys the regular property schema. But don't try
-`grokky.addViewer(view, 'Chem space', ...)` — there's no such viewer type.
-
-## Adding viewers
-
-```ts
-grokky.addViewer(
-  view: DG.TableView | DG.ViewBase | null,
-  type: string,
-  options?: Record<string, any>,
-): DG.Viewer;
-```
-
-Pass `view` first. If `view` is a `TableView`, the viewer is attached there.
-If `view` is `null` or a non-TableView (script view, function view, ...), the
-helper falls back to `grok.shell.tv` with a `console.warn`. Throws only if
-no active TableView exists anywhere.
-
-The wrapper:
-
-- Fuzzy-matches `type` against `DG.VIEWER` strings (Levenshtein ≤ 3,
-  case-insensitive). `'scatter'` → `'Scatter plot'`.
-- Reads the viewer's live property schema via `viewer.getProperties()`.
-- Applies your `options` keys with three rewrites: direct hit (`xColumnName`),
-  column-name suffix (`x` → `xColumnName`), plural list (`categoryColumns`
-  → `categoryColumnNames`), then a case-insensitive fallback.
-- Unknown keys → `console.warn` with a did-you-mean (`'regressionLine'` →
-  `'showRegressionLine'?`). Never throws on typos. The valid subset is
-  still applied; the unknown keys are dropped.
-
-```datagrok-exec
-// Scatter plot of height vs weight, colored by age, with regression line.
-grokky.addViewer(view, 'Scatter plot', {
-  xColumnName: 'height',
-  yColumnName: 'weight',
-  colorColumnName: 'age',
-  showRegressionLine: true,
-});
-```
-
-```datagrok-exec
-// Histogram of activities per compound class — `split` is the column we
-// overlay one bar stack per category on.
-grokky.addViewer(view, 'Histogram', {
-  valueColumnName: 'activity',
-  splitColumnName: 'compound_class',
-});
-```
-
-```datagrok-exec
-// Line chart with multiple y series. `yColumnNames` is plural — an array.
-grokky.addViewer(view, 'Line chart', {
-  xColumnName: 'date',
-  yColumnNames: ['revenue', 'expenses', 'profit'],
-});
-```
-
-Short-form column properties also work — the wrapper rewrites to canonical:
-
-```datagrok-exec
-// Equivalent to the first example. `x` → `xColumnName`, `y` → `yColumnName`.
-grokky.addViewer(view, 'Scatter plot', {x: 'height', y: 'weight', color: 'age', showRegressionLine: true});
-```
-
-### View scope
-
-Old behavior used `grok.shell.tv` (the global active TableView), which broke
-if the user was on a different view at the moment of execution. The fixed
-helper prefers in-scope `view` and only falls back if it has to. Always
-pass `view` when you have it.
-
-```datagrok-exec
-// Wrong: ignores `view`, hits the global. If user just switched tabs,
-// the viewer lands on the wrong table.
-const tv = grok.shell.tv;
-const sp = tv.addViewer('Scatter plot');
-
-// Right: uses the view you were given.
-grokky.addViewer(view, 'Scatter plot', {x: 'height', y: 'weight'});
-```
-
-## Configuring an existing viewer
-
-```ts
-grokky.configureViewer(viewer: DG.Viewer, options: Record<string, any>): void;
-```
-
-Same schema validation and did-you-mean logic as `addViewer`. Use to tweak
-already-attached viewers:
-
-```datagrok-exec
-// Find the scatter plot and recolor it by a different column.
-const sp = grokky.findViewer(view, (v) => v.type === DG.VIEWER.SCATTER_PLOT);
 if (sp)
-  grokky.configureViewer(sp, {colorColumnName: 'logP'});
+  sp.setOptions({colorColumnName: 'activity'});
 ```
+
+## Standalone (detached) viewers
+
+Use `DG.Viewer.fromType` **only** when embedding a viewer in a custom UI
+element you return from the block. The caller is responsible for placing the
+result. For everything else, prefer `view.addViewer`.
 
 ```datagrok-exec
-// Flip a histogram's y-axis to logarithmic.
-const h = grokky.findViewer(view, (v) => v.type === DG.VIEWER.HISTOGRAM);
-if (h)
-  grokky.configureViewer(h, {yAxisType: 'logarithmic'});
-```
-
-`configureViewer` calls `viewer.setOptions(...)` under the hood, which
-notifies the viewer to re-render in one batch. Equivalent to setting each
-property via `viewer.props.xxx = yyy` — preferred because it's a single
-notification.
-
-## Finding viewers
-
-| Need                          | Helper                                                                |
-|-------------------------------|-----------------------------------------------------------------------|
-| The first scatter plot        | `findViewer(view, v => v.type === DG.VIEWER.SCATTER_PLOT)`            |
-| All histograms                | `findViewers(view, v => v.type === DG.VIEWER.HISTOGRAM)`              |
-| All non-grid viewers          | `findViewers(view)`                                                   |
-| First match by type string    | `findViewer(view, 'Scatter plot')`  *(string pred → type filter)*    |
-| Count of viewers in the view  | `findViewers(view).length`                                            |
-
-Both helpers **skip `view.viewers[0]` (the grid)** — closing the grid is
-almost certainly a bug, and "the viewers" in user speech almost always means
-the non-grid ones. Need the grid? `view.grid` is the typed accessor.
-
-```datagrok-exec
-// Count non-grid viewers currently attached.
-return {count: grokky.findViewers(view).length};
-```
-
-```datagrok-exec
-// First scatter plot (or null) — same predicate, two phrasings.
-const sp1 = grokky.findViewer(view, (v) => v.type === DG.VIEWER.SCATTER_PLOT);
-const sp2 = grokky.findViewer(view, 'Scatter plot');
-return {handle: sp1 === sp2};
-```
-
-## Closing viewers
-
-```ts
-grokky.closeViewer(
-  target: DG.Viewer | string | ((v: DG.Viewer) => boolean),
-  view?: DG.TableView,
-): number;
-```
-
-Returns the count closed. Tolerates the "never-attached viewer throws on
-`close()`" edge case (try/catch internally — failures are logged, not
-propagated). Polymorphic by target type:
-
-```datagrok-exec
-// Close a specific viewer handle.
-const sp = grokky.findViewer(view, 'Scatter plot');
-if (sp)
-  grokky.closeViewer(sp);  // returns 1
-```
-
-```datagrok-exec
-// Close every scatter plot on the view. View is required for string/pred
-// inputs because the helper has no other way to find candidates.
-grokky.closeViewer('Scatter plot', view);
-```
-
-```datagrok-exec
-// Close every histogram whose value column has been dropped from the DF.
-grokky.closeViewer((v) => {
-  if (v.type !== DG.VIEWER.HISTOGRAM) return false;
-  const colName = v.props.valueColumnName;
-  return colName && !t.col(colName);
-}, view);
-```
-
-### Close-all (keep the grid)
-
-```ts
-grokky.closeAllViewers(view: DG.TableView | null, opts?: {keepGrid?: boolean}): number;
-```
-
-`keepGrid` defaults to `true` — `view.viewers[0]` is preserved. The helper
-iterates `view.viewers.slice(1)` and closes each, returning the count.
-
-```datagrok-exec
-// Reset the view to just the grid.
-const n = grokky.closeAllViewers(view);
-return {closed: n};
-```
-
-## Close-and-replace pattern
-
-Two-step idiom for "show me X instead of Y". Close the old viewer, add the
-new one.
-
-```datagrok-exec
-// Close the scatter plot, then add a histogram of activities.
-grokky.closeViewer('Scatter plot', view);
-grokky.addViewer(view, 'Histogram', {valueColumnName: 'activity'});
-```
-
-Equivalent without the helpers (so Claude knows the long form when no
-wrapper exists):
-
-```datagrok-exec
-// Long form: iterate view.viewers, filter to type, close each (skipping the grid).
-Array.from(view.viewers)
-  .slice(1)
-  .filter((v) => v.type === DG.VIEWER.SCATTER_PLOT)
-  .forEach((v) => v.close());
-view.addViewer(DG.VIEWER.HISTOGRAM, {valueColumnName: 'activity'});
-```
-
-## Viewer cross-talk
-
-Viewers sharing a DataFrame auto-sync. Click a bar in a bar chart → the
-selection BitSet updates on `df.selection` → every other viewer bound to
-`df` reacts. Same for filter (`df.filter`), current row, mouse-over. No
-explicit linking call.
-
-If two viewers must coordinate across **different** dataframes, see
-`grok.data.linkTables(t1, t2, keys1, keys2, [SYNC_TYPE.SELECTION_TO_SELECTION, ...])`
-— rare and not handled here.
-
-## Worked demo recipes
-
-### Recipe 1 — Iterative scatter plot tweaking
-
-> "Add a scatter plot, show height vs weight, show the regression line,
-> zoom in, color by age."
-
-```datagrok-exec
-const sp = grokky.addViewer(view, 'Scatter plot', {
-  xColumnName: 'height',
-  yColumnName: 'weight',
-  showRegressionLine: true,
+// Build a scatter plot of t and embed its DOM root in the chat.
+const sp = DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, t, {
+  xColumnName: 'mw', yColumnName: 'logp',
 });
-// Zoom and recolor on the existing viewer instead of recreating it.
-grokky.configureViewer(sp, {
-  xMin: 150, xMax: 200,
-  yMin: 50,  yMax: 110,
-  colorColumnName: 'age',
-});
-```
-
-### Recipe 2 — Distribution by category
-
-> "Show me the distribution of activities per compound class."
-
-```datagrok-exec
-// One histogram, overlaid by category.
-grokky.addViewer(view, 'Histogram', {
-  valueColumnName: 'activity',
-  splitColumnName: 'compound_class',
-});
-```
-
-If the user later wants the categories side-by-side instead of overlaid:
-
-```datagrok-exec
-const h = grokky.findViewer(view, 'Histogram');
-if (h)
-  grokky.configureViewer(h, {splitStack: true});
-```
-
-### Recipe 3 — Chemical space (plugin viewer)
-
-> "Show me the chemical space of the current molecule column."
-
-```datagrok-exec
-const sp = await grok.functions.call('Chem:chemSpaceTopMenu', {
-  table: t,
-  molecules: t.col('smiles'),
-  methodName: 'UMAP',
-  similarityMetric: 'Tanimoto',
-  plotEmbeddings: true,
-});
-// The returned `sp` is a scatter plot whose axes are UMAP coords; you can
-// still configure it normally.
-if (sp)
-  grokky.configureViewer(sp, {colorColumnName: 'activity'});
+return sp.root;
 ```
 
 ## Anti-patterns
 
-1. **`new DG.Viewer(...)`** — internal constructor over a Dart handle. Use
-   `view.addViewer(type, opts)` (via `grokky.addViewer`) or
-   `DG.Viewer.fromType(type, df, opts?)` for detached viewers.
-2. **`view.scatterPlot(opts)` / `view.histogram(opts)` / `view.barChart(opts)`** —
-   the per-type shorthands are explicitly **deprecated** in the source
-   (`view.ts`). Use `view.addViewer('Scatter plot', opts)` (or
-   `grokky.addViewer(view, 'Scatter plot', opts)`).
-3. **`grok.shell.tv` when `view` is in scope** — the fixed helper takes
-   `view` as the first argument precisely because `grok.shell.tv` is the
-   *globally active* view, which may not be where the user clicked.
-4. **Hardcoded property typos** — `xColumn`, `colorCol`, `regressionLine`.
-   The wrapper fuzzy-matches but emits a console warning. Cite canonical
-   names from `viewer.getProperties()` to avoid the noise.
-5. **`grok.shell.addViewer(...)`** — no such method on the shell. Use
-   `view.addViewer(...)` or `tv.addViewer(...)`.
-6. **Treating "chem space" / "sequence space" / "activity cliffs" as viewer
-   types** — they're functions. `grokky.addViewer(view, 'Chem space', ...)`
-   silently fails with a did-you-mean miss. Use
-   `grok.functions.call('Chem:chemSpaceTopMenu', {...})`.
-7. **Iterating `view.viewers` without `.slice(1)`** — index 0 is the grid.
-   `view.viewers.forEach(v => v.close())` closes the grid. Always skip it,
-   or use `grokky.findViewers(view)` / `closeAllViewers(view)` which do.
-8. **Mixing creation contexts** — `Viewer.scatterPlot(otherDf)` then
-   `view.addViewer(sp)` where `otherDf !== view.dataFrame`. The viewer
-   ignores `view.dataFrame`. Use `view.addViewer('Scatter plot', opts)`
-   when on a TableView.
-9. **`viewer.close()` on a never-attached viewer** — throws. Always either
-   guard with try/catch or only close viewers you got from `view.viewers` /
-   `grokky.findViewer*`. The helpers do this for you.
-10. **`view.detachViewers()` / `view.resetLayout()` to "close everything"** —
-    they work, but report no count. Use `grokky.closeAllViewers(view)` if
-    you want to know how many were closed.
-11. **Wrapping every `addViewer` call in `await`** — `view.addViewer(type)`
-    is synchronous for built-in types. Plugin viewers via
-    `grok.functions.call(...)` are async — that's the only `await` needed.
+1. **Bare `x` / `y` / `color` in options** — `{x: 'mw', y: 'logp'}` silently
+   does nothing. The property is `xColumnName`.
+2. **Literal strings instead of `DG.VIEWER.*`** — use `DG.VIEWER.SCATTER_PLOT`,
+   not `'scatter plot'`.
+3. **`view.scatterPlot(opts)` / `view.histogram(opts)` / `view.barChart(opts)`** —
+   per-type shorthands are deprecated. Use `view.addViewer(DG.VIEWER.*, opts)`.
+4. **`new DG.Viewer(...)`** — internal constructor over a Dart handle. Use
+   `view.addViewer(type, opts)` or `DG.Viewer.fromType(type, df, opts?)`.
+5. **`grok.shell.addViewer(...)`** — no such method. Use `view.addViewer(...)`.
+6. **`grok.shell.tv` when `view` is in scope** — `view` is the in-scope
+   TableView. `grok.shell.tv` is the globally active view and may be a
+   different tab.
+7. **Treating "chem space" / "sequence space" / "activity cliffs" as viewer
+   types** — they're functions called via `grok.functions.call`.
+8. **Iterating `view.viewers` without `.slice(1)`** — index 0 is the grid.
+   `view.viewers.forEach(v => v.close())` closes the grid.
+9. **`viewer.close()` on a never-attached viewer** — throws. Guard with
+   try/catch.
+10. **`await view.addViewer(...)`** — synchronous for built-in types. Only
+    plugin viewers via `grok.functions.call(...)` are async.
 
 ## Out of scope
 
-- **Dock layout deep dive.** `view.dockManager.dock(viewer, 'right', null,
-  'Title', 0.4)` repositions an attached viewer. Brief usage here is fine;
-  full coverage (split sketcher / panel layouts, "sketcher on left, ADME on
-  right" demos) belongs to the future `datagrok-layout` skill.
-- **Viewer state save/restore.** `viewer.getOptions(true)` snapshots
-  current props as `{id, type, look}`. `view.saveLayout()` and
-  `view.loadLayout(layout)` round-trip the whole view. Lives in the layout
-  skill.
-- **Custom viewer authoring.** Subclassing `DG.JsViewer`, implementing
-  `onTableAttached`, `onPropertyChanged`, `detach` — that's package
-  development, not exec blocks.
-- **Grid-specific cell rendering and pinned columns.** Future
-  `datagrok-grid` skill.
+- **Row filtering** (`df.filter`) — `datagrok-filtering`.
+- **Grid customization** (visibility, widths, color coding, pinning) —
+  `datagrok-grid-customization`.
 - **The Filters viewer (`DG.VIEWER.FILTERS`)** — `view.getFiltersGroup()`
   is the right API and is covered by `datagrok-filtering`. Only add a
   Filters viewer here if the user explicitly says "add a filter panel as a
   viewer".
-- **Cross-table linking** — `grok.data.linkTables` and `SYNC_TYPE` lives in
-  a future cross-table skill. Single-table viewer cross-talk is automatic
-  via shared DataFrame.

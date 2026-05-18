@@ -47,7 +47,7 @@ few data-side specific ones. Common values that appear in the **Tags** column:
 
 | Tag                  | Meaning                                                                                                                                  |
 |----------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| `vectorFunc`         | Returns a `DG.DataFrame`. Usable inside a `grokky.addCalculatedColumn` formula and the Add-New-Column dialog. Without it, call via `grok.functions.call`. |
+| `vectorFunc`         | Returns a `DG.DataFrame`. Usable inside a `t.columns.addNewCalculated(name, formula)` call and the Add-New-Column dialog. Without it, call via `grok.functions.call`. |
 | `transform`          | Tagged as a data-sync transform — same behavior as the un-tagged sibling but tracked in project history.                                 |
 | `topMenu`            | Has a Top-menu path.                                                                                                                     |
 | `app` / `appTreeBrowser` | App entry point / its tree-browser sidebar hook.                                                                                     |

@@ -96,7 +96,7 @@ Function tables below carry a **Tags** column. The values it can hold:
 
 | Tag             | Meaning                                                                                                                                                                |
 |-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `vectorFunc`    | Returns a `DG.DataFrame`. Usable from the Add-New-Column dialog and inside a `grokky.addCalculatedColumn` formula string. Functions WITHOUT this tag cannot be embedded in a formula — call them via `grok.functions.call`. |
+| `vectorFunc`    | Returns a `DG.DataFrame`. Usable from the Add-New-Column dialog and inside a `t.columns.addNewCalculated(name, formula)` call. Functions WITHOUT this tag cannot be embedded in a formula — call them via `grok.functions.call`. |
 | `join(table)`   | Output declares `action: 'join(table)'` — result columns are auto-appended to the input table. Do not also append yourself.                                            |
 | `transform`     | Tagged as a data-sync transform — same behavior as the un-tagged sibling, but tracked in the project history.                                                          |
 | `topMenu`       | Has a Top-menu path; otherwise programmatic only.                                                                                                                      |

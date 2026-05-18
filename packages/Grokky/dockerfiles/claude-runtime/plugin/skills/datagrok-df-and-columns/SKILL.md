@@ -1,121 +1,83 @@
 ---
 name: datagrok-df-and-columns
-description: Find, describe, add, remove, rename, clone, or set metadata on columns of a Datagrok DataFrame inside a datagrok-exec block. Use whenever the user asks to locate "the X column", summarize a column, add a typed/empty/values-filled/virtual column, set semantic type / units / format / friendly name, apply linear or categorical or conditional color coding, drop or rename columns, or copy a DataFrame. Covers everything in DataFrame.columns and Column.meta — but not row filtering/selection (datagrok-table-ops) and not formula-only columns (datagrok-calc-column).
+description: Find, describe, add, remove, rename, clone, or set metadata on columns of a Datagrok DataFrame inside a datagrok-exec block. Use whenever the user asks to locate "the X column", summarize a column, add a typed/empty/values-filled/virtual column, set semantic type / units / format / friendly name, apply linear or categorical or conditional color coding, drop or rename columns, or copy a DataFrame. Covers everything in DataFrame.columns and Column.meta — but not row filtering/selection (datagrok-filtering, datagrok-selection) and not formula-only columns (datagrok-calc-column).
 ---
 
 # datagrok-df-and-columns
 
-Use the `grokky.*` column helpers inside a `datagrok-exec` block. They wrap the
-js-api so Claude doesn't have to remember whether a column is added via
-`addNewFloat` vs `addNewCalculated` vs `Column.fromList`, that the float type
-constant is the string `'double'`, or that the semType tag key is `quality`
-under the hood.
+Use the `DG.DataFrame` / `DG.Column` js-api inside a `datagrok-exec` block.
+Globals available in the block: `grok`, `ui`, `DG`, `view`, `t` (the current
+`DG.DataFrame`, when `view.type === 'TableView'`).
 
-If the user wants a **formula-driven** column (recomputes on source change),
-use the `datagrok-calc-column` skill — `grokky.addCalculatedColumn` is the
-right entry point there. This skill handles every *other* column operation.
-
-## What this skill covers
-
-DataFrame-level: locating columns by intent, cloning a DataFrame, removing
-columns in bulk. Column-level: describing a column (type, stats, top
-categories), adding columns (typed-empty, values, init function, virtual),
-setting metadata (semType, format, units, friendly name, color coding) and
-renaming. Cell-value mutation is touched briefly — `col.init(fn)` for bulk,
-plus a perf note. Current row / selection / filter live in a separate state
-skill.
+For **formula-driven** columns (recompute on source change), use
+`datagrok-calc-column`. Row filtering / selection lives in `datagrok-filtering`
+and `datagrok-selection`.
 
 ## Quick reference
 
-| Helper                                  | One-liner                                                |
-|-----------------------------------------|----------------------------------------------------------|
-| `grokky.findColumns(df, query)`         | Ranked column candidates by name/semType/type/tag/fuzzy. |
-| `grokky.describeColumn(col)`            | JSON snapshot: type, stats, top categories.              |
-| `grokky.cloneDf(df, {rows, cols, ...})` | Named-args wrapper over `df.clone(...)`.                 |
-| `grokky.addColumn(df, spec)`            | Dispatches to typed / values / init / formula / virtual. |
-| `grokky.removeColumns(df, names, ...)`  | Bulk remove with missing-name policy.                    |
-| `grokky.renameColumn(df, from, to)`     | Rename + optional unique-name guard. Warns about viewers.|
-| `grokky.setColumnMeta(col, meta)`       | Bulk metadata set, including color coding.               |
-| `grokky.topCategories(col, n)`          | Top-N categories with counts.                            |
-
-Globals available inside every `datagrok-exec` block: `grok`, `ui`, `DG`,
-`view`, `t` (the current `DG.DataFrame`, when the view is a TableView),
-`grokky`.
+| Need                                         | Call                                                            |
+|----------------------------------------------|-----------------------------------------------------------------|
+| Get column by name (must exist)              | `t.getCol(name)` — throws on missing                            |
+| Get column by name (may be absent)           | `t.col(name)` — returns `null`                                  |
+| First column with a given semType            | `t.columns.bySemType(DG.SEMTYPE.MOLECULE)`                      |
+| Every column with a given semType            | `t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)`                   |
+| All numeric / categorical / dateTime columns | `t.columns.numerical` / `.categorical` / `.dateTime`            |
+| All names                                    | `t.columns.names()`                                             |
+| Add typed empty column                       | `t.columns.addNewFloat(name)` (and `addNewInt/String/Bool/...`) |
+| Add column from values                       | `t.columns.add(DG.Column.fromList(type, name, values))`         |
+| Virtual column (compute-on-demand)           | `t.columns.addNewVirtual(name, i => ..., type)`                 |
+| Collision-free name                          | `t.columns.getUnusedName(name)`                                 |
+| Remove a column                              | `t.columns.remove(name)` (string, index, or `Column`)           |
+| Rename                                       | `col.name = 'new'`                                              |
+| Clone DataFrame (full)                       | `t.clone()`                                                     |
+| Clone filtered rows                          | `t.clone(t.filter)`                                             |
+| Clone column subset                          | `t.clone(null, ['a', 'b'])`                                     |
+| Stats (cached on column)                     | `col.stats.{min,max,avg,stdev,med,q1,q2,q3,sum,valueCount,missingValueCount,uniqueCount}` |
+| Set semType                                  | `col.semType = DG.SEMTYPE.MOLECULE`                             |
+| Set friendly name / units / format / desc    | `col.meta.friendlyName / .units / .format / .description = ...` |
+| Linear color coding (numeric)                | `col.meta.colors.setLinear(range, opts?)`                       |
+| Categorical color coding                     | `col.meta.colors.setCategorical(map, opts?)`                    |
+| Conditional color coding                     | `col.meta.colors.setConditional(rules)`                         |
+| Disable color coding                         | `col.meta.colors.setDisabled()`                                 |
 
 ## Finding the right column
 
-When the user says "the molecule column" or "the activity values", pick the
-narrowest tool that works:
+| User said...                                | Right call                                              |
+|---------------------------------------------|---------------------------------------------------------|
+| "column named X" (must exist)               | `t.getCol('X')` — throws if missing                     |
+| "column named X" (may be absent)            | `t.col('X')` — returns `null` if missing                |
+| "the molecule column"                       | `t.columns.bySemType(DG.SEMTYPE.MOLECULE)`              |
+| "every molecule column"                     | `t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)`           |
+| "all numeric columns"                       | iterate `t.columns.numerical`                           |
+| "an IC50 column"                            | `t.columns.bySemType(DG.SEMTYPE.IC50)`                  |
+| "columns tagged `quality=Molecule`"         | `t.columns.byTags({quality: 'Molecule'})`               |
+| "any of these columns: X, Y, Z (first hit)" | `t.columns.firstWhere(c => names.includes(c.name))`     |
+| "does the DF have a column named X?"        | `t.columns.contains('X')` (case-insensitive)            |
 
-| User said...                              | Right call                                              |
-|-------------------------------------------|---------------------------------------------------------|
-| "column named X" (must exist)             | `t.getCol('X')` — throws if missing                     |
-| "column named X" (may be absent)          | `t.col('X')` — returns `null` if missing                |
-| "the molecule column"                     | `t.columns.bySemType(DG.SEMTYPE.MOLECULE)`              |
-| "every molecule column"                   | `t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)`           |
-| "all numeric columns"                     | iterate `t.columns.numerical`                           |
-| "the mass column" (vague name, no semType)| `grokky.findColumns(t, {name: 'mass', fuzzy: true})`    |
-| "the activity column" (multiple hits)     | `grokky.findColumns(t, {...})` — ranked + reason field  |
-| "an IC50 column"                          | `grokky.findColumns(t, {semType: DG.SEMTYPE.IC50})`     |
-| "columns tagged `quality=Molecule`"       | `t.columns.byTags({quality: 'Molecule'})`               |
-
-`t.col` and `t.columns.byName` are **case-insensitive**. Iteration order
-follows column order in the DataFrame.
-
-`findColumns` is column-discovery only — it does not look at row filters or
-selection. It returns at most `limit` (default 5) candidates, each with a
-`score` (0–1) and a short `reason` string ("exact name", "semType match",
-"fuzzy name distance 2", "tag match `units=kg`") so Claude can disambiguate
-in the response.
-
-If the query is empty (all fields `undefined`), `findColumns` returns `[]` —
-it deliberately does not dump the whole column list.
+`t.col` and `t.columns.byName` are case-insensitive. Always pass the semType
+*constant* (`DG.SEMTYPE.MOLECULE`), never the string literal `'Molecule'`.
 
 ```datagrok-exec
-// Find the molecule column. If there are several, prefer the one the user
-// most likely meant — molecules with structure are SMILES/MOLBLOCK semType.
-const hits = grokky.findColumns(t, {semType: DG.SEMTYPE.MOLECULE});
-return hits;
+// Find the molecule column. bySemType returns the first match or null.
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+return ui.divText(molCol ? `Molecule column: ${molCol.name}` : 'No molecule column');
 ```
 
 ```datagrok-exec
-// User said "the mw column" but the DF has "Molecular Weight". Fall back to
-// fuzzy match. Score and reason let Claude phrase the response well.
-const hits = grokky.findColumns(t, {name: 'mw', fuzzy: true, limit: 3});
-return hits;
+// User said "mw" but the DF has "Molecular Weight" — try exact first, then
+// fall back to a name substring match.
+const wanted = 'mw';
+let col = t.col(wanted);
+if (!col) {
+  const lc = wanted.toLowerCase();
+  col = t.columns.firstWhere((c) => c.name.toLowerCase().includes(lc));
+}
+return ui.divText(col ? col.name : 'no match');
 ```
 
 ## Describing a column
 
-`grokky.describeColumn(col)` returns a JSON-friendly snapshot — type, semType,
-units, format, length, missing count, unique count, plus `numerical` stats
-(min/max/avg/stdev) for numeric columns and `topCategories` for string
-columns. Cheap: it relies on `col.stats` which DG caches per column.
-
-```datagrok-exec
-const col = grokky.findColumns(t, {name: 'activity', fuzzy: true})[0]?.column ?? t.columns.numerical[0];
-return grokky.describeColumn(col);
-```
-
-To describe many columns at once, map `grokky.describeColumn` over a column
-selector. Always use the helper rather than inlining `col.stats` access — the
-helper handles missing values, distinguishes numeric vs categorical output,
-and keeps response shapes consistent.
-
-```datagrok-exec
-// Summarize every numeric column
-return t.columns.numerical.map(grokky.describeColumn);
-```
-
-```datagrok-exec
-// Summarize every molecule column
-return t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map(grokky.describeColumn);
-```
-
-For raw stats access, `col.stats` exposes `totalCount`, `valueCount`,
-`missingValueCount`, `uniqueCount`, `min`, `max`, `sum`, `avg`, `stdev`,
-`variance`, `med`, `q1`, `q2`, `q3`, `skew`, `kurt`, `corr(other)`,
-`spearmanCorr(other)`. `col.min` / `col.max` are shorthands.
+`col.stats` is cached per column — repeated access is cheap.
 
 | Need                              | Use                                      |
 |-----------------------------------|------------------------------------------|
@@ -123,244 +85,270 @@ For raw stats access, `col.stats` exposes `totalCount`, `valueCount`,
 | non-null value count              | `col.stats.valueCount`                   |
 | missing-value count               | `col.stats.missingValueCount`            |
 | distinct value count              | `col.stats.uniqueCount`                  |
-| string-column sorted distinct     | `col.categories`                         |
+| min / max / avg / stdev           | `col.stats.{min,max,avg,stdev}`          |
+| median / quartiles                | `col.stats.{med,q1,q2,q3}`               |
+| sum                               | `col.stats.sum`                          |
+| pairwise correlation              | `col.stats.corr(other)`                  |
+| sorted distinct strings           | `col.categories`                         |
 | typed-array raw view              | `col.getRawData()`                       |
-| value iterator                    | `col.values()` (generator)               |
-| top-N category counts             | `grokky.topCategories(col, n)`           |
+| value iterator (generator)        | `col.values()`                           |
 
 Do **not** compute these by hand:
 
-- `col.length` for total rows (not `col.toList().length`).
-- `col.stats.valueCount` for non-null count.
-- `col.stats.uniqueCount` for distinct values (not `new Set(col.toList()).size`).
-- For string columns, `col.categories` is the sorted unique-string array.
+- Total rows: `col.length`, not `col.toList().length` (allocates).
+- Non-null count: `col.stats.valueCount`.
+- Distinct count: `col.stats.uniqueCount`, not `new Set(col.toList()).size`.
+- For string columns, `col.categories.length === col.stats.uniqueCount`.
+
+```datagrok-exec
+// Build a key-value summary of one numeric column.
+const col = t.getCol('age');
+const s = col.stats;
+return ui.tableFromMap({
+  name: col.name,
+  type: col.type,
+  semType: col.semType ?? '(none)',
+  length: col.length,
+  missing: s.missingValueCount,
+  unique: s.uniqueCount,
+  min: s.min, max: s.max, avg: s.avg, stdev: s.stdev,
+});
+```
+
+```datagrok-exec
+// Summarize every numeric column. t.columns.numerical is Iterable<Column>
+// (not an Array) — convert via Array.from to get .map etc.
+const rows = Array.from(t.columns.numerical, (c) => ({
+  name: c.name, min: c.stats.min, max: c.stats.max, avg: c.stats.avg,
+}));
+return DG.Viewer.grid(DG.DataFrame.fromObjects(rows)).root;
+```
+
+### Top-N categories
+
+No built-in top-N for a string column. Tally into a `Map<string, number>`:
+
+```datagrok-exec
+const col = t.getCol('class');
+const counts = new Map();
+for (let i = 0; i < col.length; i++) {
+  const v = col.get(i);
+  if (v === null || v === undefined) continue;
+  counts.set(v, (counts.get(v) ?? 0) + 1);
+}
+const top = Array.from(counts.entries())
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 5);
+return ui.tableFromMap(Object.fromEntries(top));
+```
+
+If you only need distinct values (no counts), `col.categories` is already
+sorted alphabetically.
 
 ## Cloning DataFrames
 
-`df.copy()` does **not** exist. Use `df.clone(...)` or `grokky.cloneDf(...)`.
+`t.copy()` does **not** exist. Use
+`t.clone(rowMask?, columnIds?, saveSelection?, saveTags?)`:
 
-`df.clone(rowMask?, columnIds?, saveSelection=false, saveTags=true)` is the
-raw API — positional args, easy to get wrong. `grokky.cloneDf` accepts named
-args and supports two ergonomic strings for `rows`: `'filtered'` (uses
-`df.filter`) and `'selected'` (uses `df.selection`).
-
-```datagrok-exec
-// Full copy
-const copy = grokky.cloneDf(t);
-return copy;
-```
-
-```datagrok-exec
-// Just two columns, filtered rows only
-const small = grokky.cloneDf(t, {cols: ['smiles', 'activity'], rows: 'filtered'});
-return small;
-```
+| Need                                | Call                                          |
+|-------------------------------------|-----------------------------------------------|
+| Full copy                           | `t.clone()`                                   |
+| Filtered rows only                  | `t.clone(t.filter)`                           |
+| Selected rows only                  | `t.clone(t.selection)`                        |
+| Column subset (all rows)            | `t.clone(null, ['a', 'b'])`                   |
+| Filtered rows + column subset       | `t.clone(t.filter, ['a', 'b'])`               |
+| Preserve selection bits             | `t.clone(t.filter, null, true)`               |
 
 ```datagrok-exec
-// Raw df.clone is fine for one specific case — no named args needed
-const justSelected = t.clone(t.selection);
-return justSelected;
+// Just SMILES and activity, filtered rows only.
+const small = t.clone(t.filter, ['smiles', 'activity']);
+return DG.Viewer.grid(small).root;
 ```
 
-`col.clone(mask?)` exists too — note that **the cloned column is not attached
-to a DataFrame**. You need `df.columns.add(clonedCol)` if you want it back in.
+`col.clone(mask?)` clones a single column, but the cloned column is **not
+attached to any DataFrame**. Call `df.columns.add(clonedCol)` to attach it.
 
 ## Adding columns
 
-Pick the right shape first; the helper just dispatches.
+| You have...                              | Right call                                                      |
+|------------------------------------------|-----------------------------------------------------------------|
+| Nothing — want empty typed column        | `t.columns.addNewFloat(name)` (and `addNewInt/String/Bool/...`) |
+| Generic typed empty column               | `t.columns.addNew(name, DG.COLUMN_TYPE.FLOAT)`                  |
+| An array of values                       | `t.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values))` |
+| A function of row index                  | `t.columns.addNewFloat(name).init(i => ...)`                    |
+| A formula using other columns            | See `datagrok-calc-column` skill                                |
+| Compute-on-demand (no storage)           | `t.columns.addNewVirtual(name, i => ..., DG.TYPE.STRING)`        |
+| Want a collision-free name first         | `const n = t.columns.getUnusedName(name);` then `addNew*`       |
+| Insert at a specific position            | `t.columns.insert(col, index)`                                  |
 
-| You have...                            | Right path                                              |
-|----------------------------------------|---------------------------------------------------------|
-| nothing — want empty typed column      | `grokky.addColumn(df, {name, type})`                    |
-| an array of values                     | `grokky.addColumn(df, {name, values: [...]})`           |
-| a function of row index                | `grokky.addColumn(df, {name, type, init: i => ...})`    |
-| a formula using other columns          | use `datagrok-calc-column` skill (`addCalculatedColumn`)|
-| compute-on-demand (no storage)         | `grokky.addColumn(df, {name, virtual: i => ..., type})` |
-
-`grokky.addColumn` is **always async** for return-type uniformity, even when
-the underlying path is synchronous. Always `await` it.
-
-Rules enforced by the helper:
-
-- Exactly zero or one of `formula` / `values` / `init` / `virtual` may be set.
-- `name` is run through `df.columns.getUnusedName(name)` when
-  `ensureUniqueName !== false` (default true).
-- If `meta` is supplied, it's applied via `setColumnMeta` before returning.
+> **`DG.COLUMN_TYPE.FLOAT === 'double'`.** Never write the literal `'float'`
+> (no such type) or `'double'` (works but brittle). Use the constant, or the
+> typed shorthand `addNewFloat`.
 
 ```datagrok-exec
-// Typed empty column, then apply metadata in the same call
-const col = await grokky.addColumn(t, {
-  name: 'Ki',
-  type: DG.COLUMN_TYPE.FLOAT,
-  meta: {semType: DG.SEMTYPE.Ki, units: 'nM', format: '0.00'},
-});
-return col;
+// Typed empty column with metadata applied in the same block.
+const col = t.columns.addNewFloat('Ki');
+col.semType = DG.SEMTYPE.Ki;
+col.meta.units = 'nM';
+col.meta.format = '0.00';
+return ui.divText(`Added ${col.name} (${col.type})`);
 ```
 
 ```datagrok-exec
-// Formula-driven column with recompute. Prefer datagrok-calc-column, but
-// addColumn delegates correctly when {formula} is set.
-const lipE = await grokky.addColumn(t, {
-  name: 'LipE',
-  formula: '${pIC50} - ${cLogP}',
-  type: DG.COLUMN_TYPE.FLOAT,
-});
-return lipE;
+// Add a column from an array of values. fromList infers length from the array.
+const values = [1.2, 3.4, null, 5.6];
+const col = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'score', values);
+t.columns.add(col);
+return ui.divText(`Added ${col.name}`);
 ```
 
 ```datagrok-exec
-// Virtual column — computed on each access, not stored. Useful for huge tables.
-const labels = await grokky.addColumn(t, {
-  name: 'Label',
-  virtual: (i) => `${t.get('compound', i)}@${t.get('target', i)}`,
-  type: DG.COLUMN_TYPE.STRING,
-});
-return labels;
+// Virtual column — recomputed on every access, not stored. Type argument is
+// DG.TYPE.* (not DG.COLUMN_TYPE.*) — addNewVirtual takes the broader enum.
+const labels = t.columns.addNewVirtual('Label',
+  (i) => `${t.get('compound', i)}@${t.get('target', i)}`,
+  DG.TYPE.STRING);
+return ui.divText(`Added virtual column ${labels.name}`);
 ```
 
-Underneath, the dispatch is:
-
-- `formula` → `df.columns.addNewCalculated(name, formula, type ?? 'auto')` (async).
-- `values` → `DG.Column.fromList(type ?? 'string', name, values)` then `df.columns.add(...)`.
-- `init` → typed `addNew*` then `col.init(fn)`.
-- `virtual` → `df.columns.addNewVirtual(name, fn, type)`.
-- none of the above → typed `addNew*` (empty).
+```datagrok-exec
+// Avoid name collisions explicitly.
+const name = t.columns.getUnusedName('Ki');  // returns 'Ki' or 'Ki (1)' etc.
+const col = t.columns.addNewFloat(name);
+return ui.divText(`Final name: ${col.name}`);
+```
 
 ## Removing & renaming
 
-`grokky.removeColumns(df, names, onMissing='skip'|'throw'|'warn')` accepts a
-list of names and returns the list of names that were actually removed.
-Default is `'skip'`: missing names are silently ignored, which matches the
-"remove the temp columns we added" intent.
-
 ```datagrok-exec
-// Drop bulk by name, skipping any that don't exist
-const removed = grokky.removeColumns(t, ['_tmp1', '_tmp2', 'doesNotExist']);
-return removed;  // ['_tmp1', '_tmp2']
+// Remove one column. Accepts string, index, or Column instance.
+t.columns.remove('temp');
 ```
 
 ```datagrok-exec
-// Strict mode — throw if any are missing
-grokky.removeColumns(t, ['mustExist'], 'throw');
+// Remove several. Loop — no bulk remove call exists.
+for (const name of ['_tmp1', '_tmp2', 'temp3'])
+  if (t.columns.contains(name))
+    t.columns.remove(name);
 ```
 
-To target **calculated columns** specifically (e.g. "remove all the calculated
-columns we added"), use `col.isCalculated` — a first-class accessor on
-`DG.Column` that's true when the column has a formula. Combine with
-`removeColumns`:
+To target **calculated columns**, check `col.meta.formula`:
 
 ```datagrok-exec
-// Drop every calculated column
-const names = [...t.columns].filter(c => c.isCalculated).map(c => c.name);
-return grokky.removeColumns(t, names);
+// Drop every calculated column.
+const names = t.columns.toList().filter((c) => c.meta.formula != null).map((c) => c.name);
+for (const n of names) t.columns.remove(n);
+return ui.divText(`Removed: ${names.join(', ') || '(none)'}`);
 ```
 
-The skill does **not** ship a session log — there's no built-in way to know
-which columns were added "this session." `col.isCalculated` (or, equivalently,
-checking `col.meta.formula`) is the right heuristic. The accessor is faster
-and reads cleaner.
-
-Rename: just assign `col.name = 'newName'`, or use `grokky.renameColumn(df,
-from, to, {ensureUnique: true})` for a collision-safe version. The helper
-returns the final name actually used (may differ if `ensureUnique` had to
-disambiguate).
+Rename: assign `col.name` directly.
 
 ```datagrok-exec
-const finalName = grokky.renameColumn(t, 'pIC50', 'pIC50_old', {ensureUnique: true});
-return finalName;
+t.getCol('pIC50').name = 'pIC50_old';
 ```
-
-Rename caveat: **viewer property bindings referencing a column by name break
-silently**. Layouts use `col.layoutColumnId` for stable identity instead.
-`grokky.renameColumn` issues a `console.warn` if the column appears bound to
-any viewer in the current view — it does **not** attempt to rewrite viewer
-bindings (too fragile).
 
 ## Setting column metadata
 
-Three things live under "column metadata" and they all have different
-accessors. Cheat sheet:
+Use the right accessor — never `setTag` for these.
 
-| Where metadata lives                     | Read                                       | Write                                                |
-|------------------------------------------|--------------------------------------------|------------------------------------------------------|
-| Semantic type                            | `col.semType`                              | `col.semType = DG.SEMTYPE.MOLECULE`                  |
-| Friendly name / description / format / units / formula / choices / cellRenderer | `col.meta.friendlyName` etc.        | `col.meta.units = 'nM'`; assign `null` to clear      |
-| Color coding                             | `col.meta.colors.getType()`                | `col.meta.colors.setLinear/setCategorical/setConditional/setDisabled` |
-| Arbitrary tags                           | `col.getTag(k)`, `col.tags.has(k)`         | `col.setTag(k, v)`, `col.tags.delete(k)`             |
-| Layout-stable identity                   | `col.layoutColumnId`                       | `col.layoutColumnId = '...'`                         |
+| Where metadata lives | Read                          | Write                                                       |
+|----------------------|-------------------------------|-------------------------------------------------------------|
+| Semantic type        | `col.semType`                 | `col.semType = DG.SEMTYPE.MOLECULE`                         |
+| Friendly name        | `col.meta.friendlyName`       | `col.meta.friendlyName = 'Potency'` (or `null` to clear)    |
+| Description          | `col.meta.description`        | `col.meta.description = '...'`                              |
+| Format               | `col.meta.format`             | `col.meta.format = '0.00'`                                  |
+| Units                | `col.meta.units`              | `col.meta.units = 'nM'`                                     |
+| Choices (combo)      | `col.meta.choices`            | `col.meta.choices = ['A', 'B']`                             |
+| Color coding         | `col.meta.colors.getType()`   | `col.meta.colors.setLinear/setCategorical/setConditional/setDisabled` |
+| Arbitrary tags       | `col.getTag(k)`               | `col.setTag(k, v)`, `col.tags.delete(k)`                    |
+| Layout-stable id     | `col.layoutColumnId`          | `col.layoutColumnId = '...'`                                |
 
-`grokky.setColumnMeta(col, meta)` collapses all of the above into one call.
-Fields:
+Assign `null` to a `col.meta.*` accessor to **clear** the underlying tag.
 
-- `semType` — `col.semType = ...` (uses the right accessor, never `setTag('semType', ...)`).
-- `format`, `units`, `friendlyName`, `description`, `choices` — go via `col.meta.*`.
-- `colorCoding` — discriminated union; see below.
-- `tags` — raw escape hatch, sets `col.setTag(k, v)` or `col.tags.delete(k)` if `v === null`.
-
-`null` clears a metadata field (removes the underlying tag). `undefined`
-**leaves it alone** — this is the key distinction. Pass `colorCoding:
-undefined` to leave existing coding untouched; pass `colorCoding: {kind:
-'off'}` to actively clear it.
-
-Color coding shapes:
-
-| `colorCoding` value                                                            | Effect                                  |
-|--------------------------------------------------------------------------------|-----------------------------------------|
-| `{kind: 'linear', range, min, max, belowMinColor, aboveMaxColor}`              | Numerical only — throws on string col.  |
-| `{kind: 'categorical', map, fallbackColor}`                                    | Per-category colors.                    |
-| `{kind: 'conditional', rules: {'20-170': '#00FF00'}}`                          | Range-rule based.                       |
-| `{kind: 'off'}`                                                                | Disable color coding.                   |
+> **Trap.** The semType tag key is `'quality'` in storage. Don't use
+> `col.setTag('semType', ...)` or `col.setTag('quality', ...)`. Use the
+> `col.semType` accessor — it sets the right tag and fires the right event.
+> Friendly name / format / units / description go through `col.meta.*`, not
+> through `setTag`.
 
 ```datagrok-exec
-// Linear color coding on a numeric column
-grokky.setColumnMeta(t.getCol('age'), {
-  colorCoding: {kind: 'linear', range: ['#ff0000', '#ffff00', '#00ff00'], min: 19, max: 70},
+// Set several metadata fields at once.
+const col = t.getCol('Ki');
+col.semType = DG.SEMTYPE.Ki;
+col.meta.units = 'nM';
+col.meta.format = '0.00';
+col.meta.description = null;  // null clears
+```
+
+```datagrok-exec
+// Clear all custom (user-facing) metadata. Do NOT call col.tags.clear() —
+// that also nukes system tags like .color-coding-type.
+const col = t.getCol('activity');
+col.meta.friendlyName = null;
+col.meta.units = null;
+col.meta.format = null;
+col.meta.description = null;
+```
+
+## Color coding
+
+Lives under `col.meta.colors`. Four shapes:
+
+### Linear (numeric only — throws on string)
+
+```datagrok-exec
+// Red → yellow → green across the value range, with min/max pinned.
+t.getCol('age').meta.colors.setLinear(
+  ['#ff0000', '#ffff00', '#00ff00'],
+  {min: 19, max: 70},
+);
+```
+
+Hex strings and ARGB integers both work in `range`. Optional `belowMinColor`
+/ `aboveMaxColor` paint out-of-range values.
+
+### Categorical
+
+```datagrok-exec
+t.getCol('race').meta.colors.setCategorical(
+  {'Asian': '#0000FF', 'Black': '#FF0000'},
+  {fallbackColor: '#CCCCCC'},
+);
+```
+
+### Conditional (range-based rules)
+
+```datagrok-exec
+// '20-170' means "value in the range 20..170". '<100' / '>50' also work.
+t.getCol('height').meta.colors.setConditional({
+  '20-170': '#00FF00',
+  '170-190': '#220505',
 });
 ```
 
-```datagrok-exec
-// Categorical color coding
-grokky.setColumnMeta(t.getCol('race'), {
-  colorCoding: {kind: 'categorical', map: {'Asian': '#0000FF', 'Black': '#FF0000'}},
-});
-```
+### Off
 
 ```datagrok-exec
-// Conditional color coding by range
-grokky.setColumnMeta(t.getCol('height'), {
-  colorCoding: {kind: 'conditional', rules: {'20-170': '#00FF00', '170-190': '#220505'}},
-});
+t.getCol('activity').meta.colors.setDisabled();
 ```
 
-```datagrok-exec
-// Set semType + units + format in one shot, also clear any old description
-grokky.setColumnMeta(t.getCol('Ki'), {
-  semType: DG.SEMTYPE.Ki,
-  units: 'nM',
-  format: '0.00',
-  description: null,
-});
-```
-
-```datagrok-exec
-// Turn off color coding
-grokky.setColumnMeta(t.getCol('activity'), {colorCoding: {kind: 'off'}});
-```
+> **Trap.** Don't use `col.setTag('.color-coding-type', ...)` to enable /
+> disable coloring. It bypasses rule validation and the companion tag writes
+> that `setLinear` / `setCategorical` / `setConditional` perform, producing
+> broken color coding.
 
 ## Working with cell values
 
-For bulk init, `col.init(scalar | (i) => value)` is the right shape:
+Bulk init: `col.init(scalar | (i) => value)` is the right shape for an
+already-allocated column.
 
 ```datagrok-exec
-// Bulk init via function — fastest correct path
-const col = await grokky.addColumn(t, {name: 'rowSquared', type: DG.COLUMN_TYPE.INT});
+const col = t.columns.addNewInt('rowSquared');
 col.init((i) => i * i);
-return col;
 ```
 
-Avoid looping `col.set(i, v, true)` for every row — each call notifies. For
-high-volume mutation, either use `col.init(fn)`, or write values with
-`notify=false` and call `col.fireValuesChanged()` once at the end:
+For hot paths, mutate values with `notify=false` and call
+`col.fireValuesChanged()` once at the end:
 
 ```datagrok-exec
 const src = t.getCol('input');
@@ -370,12 +358,7 @@ for (let i = 0; i < t.rowCount; i++)
 dst.fireValuesChanged();
 ```
 
-For truly hot loops, `col.getRawData()` returns the underlying typed array
-(`Int32Array`/`Float64Array`/`Uint32Array`). Mutate it directly, then call
-`col.fireValuesChanged()`. Note: `Column.fromInt32Array` and siblings **share
-memory** with the source array — mutating the array mutates the column.
-
-## Constants Claude must always cite, never invent
+## Constants — cite, never invent
 
 | Constant family             | Members                                                              |
 |-----------------------------|----------------------------------------------------------------------|
@@ -383,55 +366,30 @@ memory** with the source array — mutating the array mutates the column.
 | `DG.SEMTYPE`                | `MOLECULE`, `MACROMOLECULE`, `MOLECULE3D`, `IC50`, `EC50`, `Ki`, `CONCENTRATION`, `VOLUME`, `EMAIL`, `URL`, `LATITUDE`, `LONGITUDE`, `IMAGE`, `FILE`, `CHEMICAL_REACTION`, ... |
 | `DG.UNITS.Molecule`         | `SMILES`, `MOLBLOCK`, `V3K_MOLBLOCK`, `INCHI`                        |
 | `DG.COLOR_CODING_TYPE`      | `CATEGORICAL`, `CONDITIONAL`, `LINEAR`, `OFF`                        |
-| `DG.TAGS`                   | tag keys — leading-dot for system tags (`.color-coding-type`, `.choices`). The semType tag is actually `quality` — never `setTag('semType', ...)` |
-
-**The single biggest footgun is `DG.COLUMN_TYPE.FLOAT === 'double'`.** Never
-write the literal `'float'` or `'double'` in code — always use the constant.
-
-```datagrok-exec
-// CORRECT
-await grokky.addColumn(t, {name: 'x', type: DG.COLUMN_TYPE.FLOAT});
-
-// WRONG — there is no 'float' type
-// t.columns.addNew('x', 'float');
-```
 
 ## Anti-patterns — and the fix
 
-1. **Looping `df.rows` to read/write column data.** Wrong shape. Use
-   `df.getCol(name)` and an index loop with `notify=false` + a final
-   `col.fireValuesChanged()`. The source code explicitly calls this out
-   (`row.ts:191-192`).
-2. **`col.setTag('color-coding-type', ...)`.** Use
-   `col.meta.colors.setLinear/setCategorical/setConditional/setDisabled` — or
-   `grokky.setColumnMeta({colorCoding: ...})`.
-3. **`col.setTag('semType', 'Molecule')`.** The tag key is `quality`, not
-   `semType`. Use `col.semType = DG.SEMTYPE.MOLECULE` or
-   `grokky.setColumnMeta({semType: DG.SEMTYPE.MOLECULE})`.
-4. **`'float'` or `'double'` string literals.** Always `DG.COLUMN_TYPE.FLOAT`.
-5. **`df.copy()`.** Doesn't exist. Use `df.clone()` or `grokky.cloneDf(...)`.
-6. **`col.toList().length` for row count.** Use `col.length`, or
+1. **Looping `t.rows` to read / write column data.** Slow and
+   notification-heavy. Use `t.getCol(name)` and an index loop with
+   `set(..., false)` plus a final `col.fireValuesChanged()`.
+2. **`col.setTag('color-coding-type', ...)` / `col.setTag('.color-coding-type', ...)`.**
+   Use `col.meta.colors.setLinear/setCategorical/setConditional/setDisabled`.
+3. **`col.setTag('semType', 'Molecule')`.** Use
+   `col.semType = DG.SEMTYPE.MOLECULE`.
+4. **`col.setTag('friendlyName', '...')`, `col.setTag('format', '...')`.**
+   Go through `col.meta.friendlyName` / `col.meta.format`.
+5. **`'float'` or `'double'` string literals for column type.** Always
+   `DG.COLUMN_TYPE.FLOAT` (or just `addNewFloat`).
+6. **`t.copy()`.** Doesn't exist. Use `t.clone()`.
+7. **`col.toList().length` for row count.** Use `col.length`, or
    `col.stats.valueCount` for non-null count.
-7. **`new Set(col.toList()).size` for unique count.** Use
+8. **`new Set(col.toList()).size` for unique count.** Use
    `col.stats.uniqueCount`. For string cols, `col.categories.length` also works.
-8. **Mutating `col.getRawData()` and forgetting to fire.** Always end with
-   `col.fireValuesChanged()` — otherwise viewers/grid don't refresh.
-9. **Forgetting `await` on `addNewCalculated` / `grokky.addColumn`.** Both
-   return Promises. Missing the `await` gives you a `Promise` object as the
-   "column".
-10. **`df.columns.byName(name)` plus `if (col == null)` when you want an
-    error.** Use `df.getCol(name)` — it throws on missing.
-11. **Renaming a column that a saved layout references by name.** Layouts
-    track `col.layoutColumnId` for stable identity; renames break only the
-    in-view bindings, which our helper warns about.
-12. **`Column.fromInt32Array(arr)` assuming `arr` is copied.** It is not. The
-    column shares memory with the array. Either `slice()` the input or
-    treat it as the column's storage.
-
-## State
-
-This skill is column-shape, not row-shape. Current row (`df.currentRowIdx`),
-selection (`df.selection`), and filter (`df.filter`) belong to the separate
-state skill. `findColumns` deliberately ignores them. For row work, see
-`datagrok-table-ops` (filter / sort / select) and `datagrok-calc-column`
-(formula columns).
+9. **Mutating `col.getRawData()` and forgetting to fire.** End with
+   `col.fireValuesChanged()` — otherwise viewers / grid don't refresh.
+10. **Forgetting `await` on `t.columns.addNewCalculated`.** It's the only
+    `addNew*` that returns a `Promise<Column>`. See `datagrok-calc-column`.
+11. **`t.columns.byName(name)` + `if (col == null)` when you want an error.**
+    Use `t.getCol(name)` — it throws on missing.
+12. **`col.tags.clear()` to "reset metadata".** Nukes system tags too (color
+    coding, choices, etc). Clear specific `col.meta.*` fields with `null`.

@@ -5,9 +5,9 @@ description: Add a calculated, formula-based column to a dataframe inside a data
 
 # datagrok-calc-column
 
-Use `grokky.addCalculatedColumn(...)` inside a `datagrok-exec` block to add a
-formula-driven column. The formula stays attached to the column, so edits to
-source columns trigger automatic recompute.
+Use `t.columns.addNewCalculated(name, formula, type?)` inside a `datagrok-exec`
+block to add a formula-driven column. The formula stays attached to the column,
+so edits to source columns trigger automatic recompute.
 
 Do **not** use `t.columns.addNewFloat('LipE')` plus a manual `for` loop — that
 produces a static column with no formula and no recompute.
@@ -15,13 +15,16 @@ produces a static column with no formula and no recompute.
 ## Signature
 
 ```ts
-await grokky.addCalculatedColumn(
-  df,                // DG.DataFrame  (use `t` in a TableView)
+await t.columns.addNewCalculated(
   name,              // string
   formula,           // string — DSL, see below
-  type?              // 'auto' (default) | 'double' | 'int' | 'string' | 'bool' | 'datetime'
+  type?,             // 'auto' (default) | 'double' | 'int' | 'string' | 'bool' | 'datetime'
+  treatAsString?,    // boolean — wraps formula in quotes
 ): Promise<DG.Column>
 ```
+
+`t` is the current `DG.DataFrame` (injected by `datagrok-exec`). If you have a
+DataFrame from elsewhere, replace `t` with that variable.
 
 ## Formula DSL — quick reference
 
@@ -44,18 +47,18 @@ Full function catalog: `help/transform/add-new-column.md`.
 
 ```datagrok-exec
 // Heavy atom count (requires Chem package)
-await grokky.addCalculatedColumn(t, 'HAC', 'HeavyAtomCount(${molecule})', 'int');
+await t.columns.addNewCalculated('HAC', 'HeavyAtomCount(${molecule})', 'int');
 ```
 
 ```datagrok-exec
 // Log of activity
-await grokky.addCalculatedColumn(t, 'logIC50', 'Log10(${IC50})');
+await t.columns.addNewCalculated('logIC50', 'Log10(${IC50})');
 ```
 
 ## Which functions work in a formula
 
 A package function (`Chem:foo`, `Admetica:bar`, ...) can be used inside an
-`addCalculatedColumn` formula only if it is tagged `vectorFunc: 'true'` in its
+`addNewCalculated` formula only if it is tagged `vectorFunc: 'true'` in its
 metadata. Everything else must be called imperatively via
 `grok.functions.call(...)` in a separate `datagrok-exec` block.
 

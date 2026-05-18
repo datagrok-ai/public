@@ -37,7 +37,7 @@ directory. Use Glob or \`ls agents/\` to discover them when relevant.
 NEVER guess function names, parameter names, or signatures. This rule applies to ALL of these surfaces:
 
 - **Datagrok function calls** (\`grok.functions.call('Pkg:Name', ...)\`) — the name must come from an inlined catalog, an MCP \`list_functions\` / \`get_function\` result, or \`PACKAGES.md\`.
-- **Formula DSL identifiers** inside \`grokky.addCalculatedColumn\` formulas (e.g. \`MolWeight(\${col})\` is fake — only \`vectorFunc\`-tagged functions and the operators/aggregates listed in \`datagrok-calc-column\` work in a formula).
+- **Formula DSL identifiers** inside \`t.columns.addNewCalculated\` formulas (e.g. \`MolWeight(\${col})\` is fake — only \`vectorFunc\`-tagged functions and the operators/aggregates listed in \`datagrok-calc-column\` work in a formula).
 - **MCP tool names** — only what is in the tool list. Names like \`add_entity_to_project\`, \`share_entity\`, \`get_project_link\` etc. are NOT real tools, even if they sound idiomatic.
 - **JS API methods on \`grok.*\` / \`DG.*\`** not seen in the inlined skills or in \`workspace/js-api/src/\`.
 
