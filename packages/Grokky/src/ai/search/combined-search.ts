@@ -193,9 +193,9 @@ export class CombinedAISearchAssistant {
   }
 
   private async getRelevantFunctionOrder(prompt: string) {
+    const functionNames = Object.keys(this.functions);
     const fullPrompt = `You are an intelligent assistant that helps to choose the best AI tool for a user's search query.
-Given the following available functions and their descriptions along with descriptions of when to use them, reply with JSON array of only relevant functions in correct order and nothing else.
-Make sure to reply WITH ONLY THE JSON PARSABLE ARRAY OF FUNCTION NAMES IN CORRECT ORDER (First being the best choice) and nothing else. no markdown, no backticks, no explanations nothing else.
+Given the following available functions and their descriptions along with descriptions of when to use them, rank only relevant functions in correct order (first being the best choice).
 Leave out the functions only if they are super irrelevant, otherwise include them but make sure the best function is first in the list.
 Available functions:
 ${Object.values(this.functions).map((f) => `Function name: ${f.func.name}
@@ -204,12 +204,29 @@ Use when: ${f.func.options.useWhen}`).join('\n\n')}
 
 User query: ${prompt}`;
 
-    let order = Object.keys(this.functions);
+    const orderSchema = {
+      type: 'object',
+      properties: {
+        order: {
+          type: 'array',
+          items: {type: 'string', enum: functionNames},
+          description: 'Function names ranked by relevance, best first. Omit only clearly irrelevant functions.',
+        },
+      },
+      required: ['order'],
+      additionalProperties: false,
+    } as const;
+
+    let order = functionNames;
     try {
-      const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {model: ClaudeModel.Haiku, systemPromptMode: 'none'});
-      const parsed = JSON.parse(res) as string[];
+      const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {
+        model: ClaudeModel.Haiku,
+        systemPromptMode: 'none',
+        outputSchema: orderSchema,
+      });
+      const parsed = (res as {order?: unknown})?.order;
       if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string' && this.functions[s]) && parsed.length > 0)
-        order = parsed;
+        order = parsed as string[];
       else
         console.error('Invalid function order response:', res);
     } catch (error) {
