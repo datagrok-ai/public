@@ -4,19 +4,7 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Cheminformatics',
 			children: [
 				{
-					name: 'Overview',
-				},
-				{
-					name: 'Admetica',
-				},
-				{
 					name: 'Chemical Space'
-				},
-				{
-					name: 'Database Queries',
-				},
-				{
-					name: 'Matched Molecular Pairs',
 				},
 				{
 					name: 'Molecule Activity Cliffs',
@@ -24,33 +12,48 @@ export const DEMO_APP_HIERARCHY = {
 				{
 					name: 'R-Group Analysis',
 				},
+
+				{
+					name: 'Matched Molecular Pairs',
+				},
+
 				{
 					name: 'Similarity & Diversity Search',
 				},
 				{
 					name: 'Scaffold Tree',
-				}
+				},
+				{
+					name: 'Database Queries',
+				},
+				{
+					name: 'Admetica',
+				},
+				{
+					name: 'Retrosynthesis',
+				},
 			],
 		},
 		{
 			name: 'Bioinformatics',
 			children: [
 				{
-					name: 'Oligo Toolkit',
-					children: [
-						{
-							name: 'Translator',
-						},
-						{
-							name: 'Structure',
-						},
-						{
-							name: 'Pattern',
-						},
-					]
+					name: 'Peptide SAR',
 				},
 				{
-					name: 'Activity Cliffs',
+					name: 'Sequence Activity Cliffs',
+				},
+				{
+					name: 'siRNA',
+				},
+				{
+					name: 'Antibodies',
+				},
+				{
+					name: 'Sequence Space',
+				},
+				{
+					name: 'Similarity, Diversity',
 				},
 				{
 					name: 'Atomic Level',
@@ -62,16 +65,7 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'Docking Conformations',
 				},
 				{
-					name: 'Peptide SAR',
-				},
-				{
 					name: 'Proteins',
-				},
-				{
-					name: 'Sequence Space',
-				},
-				{
-					name: 'Similarity, Diversity',
 				},
 			],
 		},
@@ -79,19 +73,13 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Data Access',
 			children: [
 				{
+					name: 'Table Linking',
+				},
+				{
 					name: 'Files',
 				},
 				{
 					name: 'Databases',
-				},
-				{
-					name: 'OpenAPI',
-				},
-				{
-					name: 'Python',
-				},
-				{
-					name: 'Table Linking',
 				},
 			]
 		},
@@ -116,10 +104,10 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'Data Separation',
 					children: [
 						{
-							name: 'Matrix Plot',
+							name: 'Trellis Plot',
 						},
 						{
-							name: 'Trellis Plot',
+							name: 'Matrix Plot',
 						},
 					]
 				},
@@ -130,13 +118,22 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'Scatter Plot',
 						},
 						{
-							name: '3D Scatter Plot',
-						},
-						{
 							name: 'Bar Chart',
 						},
 						{
-							name: 'Chord'
+							name: 'Line Chart',
+						},
+						{
+							name: 'Histogram',
+						},
+						{
+							name: 'Pie Chart',
+						},
+						{
+							name: '3D Scatter Plot',
+						},
+						{
+							name: 'Tile Viewer',
 						},
 						{
 							name: 'Density Plot',
@@ -148,31 +145,22 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'Heatmap',
 						},
 						{
-							name: 'Histogram',
-						},
-						{
-							name: 'Line Chart',
-						},
-						{
 							name: 'Markup',
-						},
-						{
-							name: 'Pie Chart',
 						},
 						{
 							name: 'Radar',
 						},
 						{
-							name: 'Sankey',
-						},
-						{
 							name: 'Sunburst',
 						},
 						{
-							name: 'Surface Plot',
+							name: 'Chord'
 						},
 						{
-							name: 'Tile Viewer',
+							name: 'Sankey',
+						},
+						{
+							name: 'Surface Plot',
 						},
 						{
 							name: 'Timelines',
@@ -186,9 +174,6 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'Geographical',
 					children: [
 						{
-							name: 'Globe',
-						},
-						{
 							name: 'Map',
 						}
 					]
@@ -197,10 +182,10 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'Input and Edit',
 					children: [
 						{
-							name: 'Form',
+							name: 'Grid',
 						},
 						{
-							name: 'Grid',
+							name: 'Form',
 						},
 					]
 				},
@@ -217,10 +202,10 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'PC Plot',
 						},
 						{
-							name: 'Statistics',
+							name: 'Pivot Table',
 						},
 						{
-							name: 'Pivot Table',
+							name: 'Statistics',
 						},
 					]
 				},
@@ -255,10 +240,7 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Curves',
 			children: [
 				{
-					name: 'Assay Plates',
-				},
-				{
-					name: 'Curve Fitting',
+					name: 'Assay Curves',
 				},
 			]
 		},

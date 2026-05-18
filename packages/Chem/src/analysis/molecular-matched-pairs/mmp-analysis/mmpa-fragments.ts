@@ -7,7 +7,7 @@ import {IMmpFragmentsResult} from '../../../rdkit-service/rdkit-service-worker-s
 import {MMP_CONSTRICTIONS, MMP_ERRORS, MmpFragments, MmpRules, MolecularPair} from './mmpa-misc';
 
 /**
-* Runs paralled fragmentation for molecules
+* Runs parallel fragmentation for molecules
 * @param {DG.Column} molecules column with molecules
 */
 export async function getMmpFrags(molecules: string[]): Promise<[MmpFragments, string[]]> {

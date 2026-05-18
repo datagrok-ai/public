@@ -1,5 +1,21 @@
 # Sequence Translator changelog
 
+## 1.10.23 (2026-05-15)
+
+* OligoNucleotide renderer: adaptive chip sizing (no hard max cap), 10px vertical breathing room, base-pair indicators (G-C 3 lines, A-U/A-T 2 lines, mismatches dashed), size-proportional chip corners.
+* OligoNucleotide cell: double-click opens a full-screen canvas viewer with hover tooltips; HELM editing moved to a separate "Edit HELM" action alongside "Copy as HELM" and "Copy as Image".
+* WK lines between matching bases.
+
+## 1.10.22 (2026-05-15)
+
+* OligoNucleotide renderer: strand-oriented redesign — sugar stripes on the outside edge of each strand, linkages as rounded apex arches; all colors sourced from the Bio monomer library.
+* OligoNucleotide renderer: fixed reversed-antisense linkage placement (was shifted by one gap and dropping the leftmost-data linkage).
+* Speedup canonicalization of Markush enumeration results.
+
+## 1.10.21 (2026-05-14)
+
+* Markush enumeration UI redesign, history and bug fixes
+
 ## 1.10.18 (2026-05-11)
 
 * OligoNucleotide cell renderer: Fixed bracketed monomer base parsing (e.g. `[5Br-dC]` inside `(...)`) so renderer/resolver pick up modification colors and structures correctly.

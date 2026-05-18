@@ -80,8 +80,6 @@ The [Pollution](https://public.datagrok.ai/file/System.AppData/DiffStudio/librar
 
 [Predator-prey](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/lotka-volterra.ivp) models the [Lotka-Volterra](https://en.wikipedia.org/wiki/Lotka%E2%80%93Volterra_equations) dynamics of two interacting populations - a prey species and its predator. This example shows the usage of the [output](diff-studio.md#syntax-reference) feature for plotting coupled oscillations.
 
-![add-to-workspace](pics/diff-studio-lotka-volterra.png)
-
 
 See also
 

@@ -201,10 +201,6 @@ export namespace funcs {
     return await grok.functions.call('Chem:RecalculateCoords', { table, molecules, method, join });
   }
 
-  export async function chemTooltip(col: DG.Column ): Promise<any> {
-    return await grok.functions.call('Chem:ChemTooltip', { col });
-  }
-
   export async function scaffoldTreeViewer(): Promise<any> {
     return await grok.functions.call('Chem:ScaffoldTreeViewer', {});
   }
@@ -453,7 +449,7 @@ export namespace funcs {
   }
 
   /**
-  Detects pharmacophore features (donors, acceptors, hydrophobic, etc.)
+  Detects pharmacophores (donors, acceptors, hydrophobic, etc.)
   */
   export async function pharmacophoreFeaturesTopMenu(table: DG.DataFrame , molecules: DG.Column , donor: boolean , acceptor: boolean , hydrophobic: boolean , aromatic: boolean , positive: boolean , negative: boolean , halogenBond: boolean ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:PharmacophoreFeaturesTopMenu', { table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative, halogenBond });
@@ -504,7 +500,7 @@ export namespace funcs {
   }
 
   /**
-  Detects and highlights pharmacophore features (donors, acceptors, hydrophobic, aromatic, positive, negative)
+  Detects and highlights pharmacophores (donors, acceptors, hydrophobic, aromatic, positive, negative)
   */
   export async function pharmacophoreFeatures(smiles: string ): Promise<any> {
     return await grok.functions.call('Chem:PharmacophoreFeatures', { smiles });

@@ -225,6 +225,17 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
   const base = processLink(link.base ?? [], 'base');
   const not = processLink(link.not ?? [], 'not');
   const actions = processLink(link.actions ?? [], 'actions');
+  const linkType = (link as any).type;
+  if (linkType !== 'funccall') {
+    for (const io of from) {
+      if (io.flags?.includes('call') && !io.flags?.includes('optional'))
+        throw new Error(`Link ${link.id}: input ${io.name} uses (call) without (optional); only funccall actions allow that.`);
+    }
+    for (const io of to) {
+      if (io.flags?.includes('call'))
+        throw new Error(`Link ${link.id}: output ${io.name} uses (call); only funccall actions allow (call) on outputs.`);
+    }
+  }
   return {...link, from, to, base, not, actions};
 }
 

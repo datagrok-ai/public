@@ -1,0 +1,5 @@
+R1,R2,R3
+CC1CCN([*:1])C1C,O=C(C[*:2])NCC(F)(F)F,Cc1cccc([*:3])n1
+NCCC(=O)[*:1],O=C1NC(C(=O)[*:2])CO1,
+CC(=O)[*:1],O=C(CCCF)[*:2],
+O=C(c1cc[nH]n1)[*:1],c1ccc(C[*:2])nc1,

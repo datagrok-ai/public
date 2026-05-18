@@ -1,9 +1,7 @@
-// This file may not be used in
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-// The file is imported from a WebWorker. Don't use Datagrok imports
 import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
@@ -76,7 +74,7 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
   const calcForWholeButton = ui.button('Calculate for whole dataset', async () => {
     const alertsFunc = DG.Func.find({package: 'Chem', name: 'structuralAlertsTopMenu'})[0];
     const alertsFuncCall = alertsFunc.prepare();
-    ui.dialog('Structural alers')
+    ui.dialog('Structural alerts')
       .add(await alertsFuncCall.getEditor())
       .onOK(() => {
         const args: any = {};

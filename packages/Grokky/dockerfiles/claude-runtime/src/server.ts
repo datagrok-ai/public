@@ -15,6 +15,11 @@ import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} fr
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
+type FenceMode = 'prose' | 'exec' | 'entity' | 'other';
+interface FenceState { mode: FenceMode; carry: string; lineInProgress: boolean; }
+const fenceStates = new Map<string, FenceState>();
+const FENCE_RE = /^```([\w-]*)\s*$/;
+
 const BASH_EXEC_PROMPT = `\
 Execute the given shell command using the Bash tool. \
 Output ONLY the exact stdout of the command — no preamble, no explanation, nothing else.`;
@@ -262,6 +267,75 @@ function emit(ws: WsSender, msg: OutgoingMessage): void {
   ws.send(JSON.stringify(msg));
 }
 
+function kindOf(mode: FenceMode): 'exec' | 'entity' | undefined {
+  return mode === 'exec' || mode === 'entity' ? mode : undefined;
+}
+
+function emitChunk(ws: WsSender, sid: string, content: string, mode: FenceMode): void {
+  const kind = kindOf(mode);
+  emit(ws, {type: 'chunk', sessionId: sid, content, ...(kind ? {kind} : {})});
+}
+
+// Streams text from a Claude text_delta. Holds only the partial trailing line when it could
+// still become a fence marker (starts with `` ` `` at line start); everything else is emitted
+// immediately under the current mode. Complete lines are batched per same-mode group so a
+// 50-line delta yields ~3 emits, not 50.
+function emitFiltered(ws: WsSender, sid: string, text: string): void {
+  const st = fenceStates.get(sid) ?? {mode: 'prose' as FenceMode, carry: '', lineInProgress: false};
+  fenceStates.set(sid, st);
+
+  const buf = st.carry + text;
+  st.carry = '';
+  const lastNl = buf.lastIndexOf('\n');
+
+  if (lastNl >= 0) {
+    const lines = buf.slice(0, lastNl).split('\n');
+    let groupStart = 0;
+    let groupMode = st.mode;
+    for (let i = 0; i < lines.length; i++) {
+      const couldBeFence = i > 0 || !st.lineInProgress;
+      const fence = couldBeFence ? FENCE_RE.exec(lines[i]) : null;
+      if (!fence) continue;
+
+      if (i > groupStart)
+        emitChunk(ws, sid, lines.slice(groupStart, i).join('\n') + '\n', groupMode);
+
+      if (st.mode === 'prose') {
+        const lang = fence[1];
+        st.mode = lang === 'datagrok-exec' ? 'exec' :
+          lang === 'datagrok-entities' ? 'entity' :
+          'other';
+        emitChunk(ws, sid, lines[i] + '\n', st.mode);
+      } else {
+        emitChunk(ws, sid, lines[i] + '\n', st.mode);
+        st.mode = 'prose';
+      }
+      groupStart = i + 1;
+      groupMode = st.mode;
+    }
+    if (groupStart < lines.length)
+      emitChunk(ws, sid, lines.slice(groupStart).join('\n') + '\n', groupMode);
+    st.lineInProgress = false;
+  }
+
+  const partial = lastNl < 0 ? buf : buf.slice(lastNl + 1);
+  if (partial.length === 0) return;
+
+  if (!st.lineInProgress && partial.startsWith('`'))
+    st.carry = partial;
+  else {
+    emitChunk(ws, sid, partial, st.mode);
+    st.lineInProgress = true;
+  }
+}
+
+function flushFenceState(ws: WsSender, sid: string): void {
+  const st = fenceStates.get(sid);
+  if (st?.carry)
+    emitChunk(ws, sid, st.carry, st.mode);
+  fenceStates.delete(sid);
+}
+
 function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
   const e = event as any;
   switch (event.type) {
@@ -283,7 +357,7 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
   }
   case 'stream_event':
     if (e.event?.delta?.type === 'text_delta' && e.event.delta.text)
-      emit(ws, {type: 'chunk', sessionId: sid, content: e.event.delta.text});
+      emitFiltered(ws, sid, e.event.delta.text);
     break;
   case 'tool_progress':
     emit(ws, {type: 'tool_activity', sessionId: sid, summary: `Running ${e.tool_name ?? ''}…`});
@@ -292,6 +366,7 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
     emit(ws, {type: 'tool_activity', sessionId: sid, summary: e.summary ?? ''});
     break;
   case 'result':
+    flushFenceState(ws, sid);
     if (e.subtype === 'success')
       emit(ws, {type: 'final', sessionId: sid, content: e.result || '', ...(e.structured_output ? {structured_output: e.structured_output} : {})});
     else
@@ -391,6 +466,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
     if (!abortController.signal.aborted && (!gotResult || !/exited with code/i.test(String(e.message))))
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
+    fenceStates.delete(sid);
     unregisterActiveQuery(sid);
   }
 }
@@ -404,6 +480,7 @@ function handleAbort(ws: WsSender, data: AbortMessage): void {
     if (active.queryHandle)
       active.queryHandle.close();
   } catch { /* query may have already finished */ }
+  flushFenceState(ws, data.sessionId);
   emit(ws, {type: 'aborted', sessionId: data.sessionId});
 }
 

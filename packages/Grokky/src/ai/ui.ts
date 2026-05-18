@@ -14,6 +14,7 @@ import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEv
 import {executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
+import {loadPowerSearchScopes, showSuggestionsMenu} from './prompt-suggestions';
 
 interface ExecutionPlan {
   plan: string[];
@@ -178,25 +179,23 @@ export function setupSearchUI() {
 
   function initInput(searchInput: HTMLInputElement) {
     const parent: HTMLElement = searchInput.parentElement!;
-    const aiIcon = ui.iconFA('magic', () => { aiCombinedSearch(searchInput.value); }, 'Ask AI');
-    aiIcon.style.cursor = 'pointer';
-    aiIcon.style.color = 'var(--blue-1)';
-    aiIcon.style.marginLeft = '4px';
-    aiIcon.style.marginRight = '4px';
-    parent.appendChild(aiIcon);
+    const wandIcon = ui.iconFA('magic', async (e) => {
+      const scopes = await loadPowerSearchScopes();
+      showSuggestionsMenu(scopes, (prompt) => {
+        searchInput.value = prompt;
+        searchInput.dispatchEvent(new Event('input', {bubbles: true}));
+        // PowerPack's input handler debounces 500ms and then calls ui.empty(host) on power-pack-search-host;
+        // wait past that so the AI loader/result isn't wiped immediately after we prepend it.
+        setTimeout(() => aiCombinedSearch(prompt), 600);
+      }, e);
+    }, 'Prompt suggestions');
+    wandIcon.classList.add('grokky-search-wand');
+    parent.insertBefore(wandIcon, searchInput);
 
-    const onSearchChanged = () => {
-      if (!searchInput.value?.trim())
-        aiIcon.style.display = 'none';
-      else
-        aiIcon.style.display = 'flex';
-    };
-    searchInput.addEventListener('input', onSearchChanged);
-    // set up the enter key listener and modify suggestion
     const searchHelpDiv = document.getElementsByClassName('power-search-help-text-container')[0] as HTMLDivElement;
     if (searchHelpDiv) {
       searchHelpDiv.innerText = `Press Enter to grok. ${searchHelpDiv.innerText}`;
-      searchHelpDiv.style.visibility = 'hidden';
+      searchHelpDiv.style.display = 'none';
     }
 
     searchInput.addEventListener('keyup', (event: KeyboardEvent) => {
@@ -205,10 +204,8 @@ export function setupSearchUI() {
         setTimeout(() => aiCombinedSearch(searchInput.value), 400); // timeout needed to allow other enter handlers to run first
       }
       if (searchHelpDiv)
-        searchHelpDiv.style.visibility = searchInput.value?.trim().split(' ').length > 1 ? 'visible' : 'hidden';
+        searchHelpDiv.style.display = searchInput.value?.trim().split(' ').length > 1 ? '' : 'none';
     });
-
-    onSearchChanged();
   }
 
   const retries = 0;
@@ -224,7 +221,7 @@ export function setupSearchUI() {
   }, 1000);
 }
 
-async function aiCombinedSearch(prompt: string) {
+export async function aiCombinedSearch(prompt: string) {
   // hide the menu
   document.querySelector('.d4-menu-popup')?.remove();
   await CombinedAISearchAssistant.instance.searchUI(prompt);
@@ -342,7 +339,9 @@ async function streamOnce(
   return new Promise<Array<{blockIndex: number; error: string}>>(async (resolve) => {
     const chatSession = existingSession ?? panel.startChatSession();
     const sessionId = panel.sessionId;
-    let accumulated = '';
+    let accumulated = ''; // full markdown — passed to executeDatagrokBlocks
+    let displayBuffer = ''; // what's shown during streaming (no exec, no entity content)
+    let finalBuffer = ''; // what's shown at finalize (no exec; entity stays so renderEntityBlocks finds it)
     let toolStatus = '';
     const subs: {unsubscribe: () => void}[] = [];
     const cleanup = () => subs.forEach((s) => s.unsubscribe());
@@ -374,30 +373,35 @@ async function streamOnce(
 
       forSession(client.onChunk, (evt) => {
         accumulated += evt.content;
-        toolStatus = '';
-        panel.updateStreaming(accumulated, chatSession.loader);
+        if (evt.kind !== 'exec' && evt.kind !== 'entity') {
+          displayBuffer += evt.content;
+          toolStatus = '';
+          panel.updateStreaming(displayBuffer, chatSession.loader);
+        }
+        if (evt.kind !== 'exec')
+          finalBuffer += evt.content;
       });
 
       forSession(client.onToolActivity, (evt) => {
         toolStatus = `\n\n---\n**${evt.summary}**`;
-        panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+        panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
       });
 
       forSession(client.onToolResult, (evt) => {
         toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
-        panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+        panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
       });
 
       forSession(client.onFinal, async (evt) => {
         panel.cancelInputRequest();
-        // evt.content is the SDK's result.result — only the final assistant turn after the last
-        // tool call. Use the full accumulated chunk stream so finalizeStreaming sees every
-        // datagrok-exec block Claude emitted, including ones written before it invoked a tool.
-        const fullContent = accumulated || evt.content;
-        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
-        const errors = await panel.finalizeStreaming(fullContent, view);
+        // accumulated holds the full markdown including hidden blocks — needed by executeDatagrokBlocks.
+        // finalBuffer is what gets rendered (datagrok-exec stripped; datagrok-entities kept for card rendering).
+        const exec = accumulated || evt.content;
+        const display = finalBuffer || evt.content;
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: exec}]});
+        const errors = await panel.finalizeStreaming(display, exec, view);
         chatSession.endSession();
         cleanup();
         resolve(errors);
@@ -431,6 +435,8 @@ async function streamOnce(
         }
         // Default: AskUserQuestion
         accumulated = '';
+        displayBuffer = '';
+        finalBuffer = '';
         toolStatus = '';
         panel.clearStreaming();
         const response = await panel.showInputRequest(evt.input);
@@ -448,7 +454,7 @@ async function streamOnce(
       }));
 
       const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
-      client.send(sessionId, prompt, {model: ClaudeModel.Sonnet, ...(resolvedMode ? {systemPromptMode: resolvedMode} : {})});
+      client.send(sessionId, prompt, resolvedMode ? {systemPromptMode: resolvedMode} : undefined);
     } catch (e: any) {
       panel.clearStreaming();
       grok.shell.error(`Claude runtime: ${e.message}`);
@@ -529,4 +535,32 @@ export async function setupScriptsAIPanelUI() {
     if (view.type === 'ScriptView')
       setTimeout(() => handleView(view as DG.ScriptView), 500);
   });
+}
+
+// Adds a "Run" button to the ribbon of file views opened from MyFiles/agents/scripts/.
+export function setupAgentScriptsUI(): void {
+  grok.events.onViewAdded.subscribe((view) => {
+    try {
+      const basePath = view.basePath ?? view.path ?? '';
+      if (!basePath.includes('/agents/scripts/'))
+        return;
+      const {name} = view;
+      const runIcon = ui.iconFA('play', () => runAgentScript(name), `Run ${name}`);
+      runIcon.classList.add('fas');
+      view.setRibbonPanels([...view.getRibbonPanels(), [runIcon]]);
+    } catch (e: any) {
+      console.warn('Grokky: failed to add run button:', e.message);
+    }
+  });
+}
+
+async function runAgentScript(name: string): Promise<void> {
+  try {
+    setupShellAIPanelUI();
+    _shellAIPanel!.resetSession();
+    const prompt = `Run the workflow defined in agents/scripts/${name}`;
+    await runPromptWithLifecycle(_shellAIPanel!, prompt, grok.shell.v, 'shell-ai');
+  } catch (e: any) {
+    grok.shell.error(`Failed to run ${name}: ${e.message}`);
+  }
 }

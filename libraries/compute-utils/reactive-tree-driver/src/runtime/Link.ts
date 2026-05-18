@@ -11,7 +11,7 @@ import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, fi
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
 import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, PipelineValidatorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
-import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
+import {FuncCallAdapter, FuncCallMockAdapter, MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
 import {GranularMutationOp} from '../data/common-types';
@@ -86,6 +86,9 @@ export class Link {
     const outputNames = Object.keys(this.matchInfo.outputs);
     const inputSet = new Set(this.getOrderedIO(this.matchInfo.inputs));
     const outputSet = new Set(this.getOrderedIO(this.matchInfo.outputs));
+    const callInputs = new Set(
+      (this.matchInfo.spec.from ?? []).filter((io) => io.flags?.includes('call')).map((io) => io.name),
+    );
 
     const inputsChanges$ = this.makeInputsChanges(state, linksState);
     const baseNode = this.matchInfo.basePath ?
@@ -116,7 +119,7 @@ export class Link {
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs]) =>
-          this.runHandler(inputs, inputSet, outputSet, inputNames, outputNames, actions, baseNode, scope, state).pipe(
+          this.runHandler(inputs, inputSet, outputSet, callInputs, inputNames, outputNames, actions, baseNode, scope, state).pipe(
             map((controller) => this.setHandlerResults(controller, state)),
             catchError((error) => {
               reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger);
@@ -164,7 +167,10 @@ export class Link {
           !!dataFrameMutations;
         const store = item.getStateStore();
         const state$ = ioName ? store.getStateChanges(ioName, includeDFMutations) :
-          (store instanceof FuncCallInstancesBridge ? store.instance$.pipe(map((x) => x?.adapter.getFuncCall())) : of(undefined));
+          (store instanceof FuncCallInstancesBridge ? store.instance$.pipe(map((x) => {
+            const adapter = x?.adapter;
+            return (adapter && !(adapter instanceof FuncCallMockAdapter)) ? adapter.getFuncCall() : undefined;
+          })) : of(undefined));
         return state$;
       });
       return [inputAlias, combineLatest(inputStates)] as const;
@@ -206,6 +212,7 @@ export class Link {
     inputs: Record<string, any>,
     inputSet: Set<string>,
     outputSet: Set<string>,
+    callInputs: Set<string>,
     inputNames: string[],
     outputNames: string[],
     actions: Record<string, Map<string, string>>,
@@ -213,7 +220,7 @@ export class Link {
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
-    const controller = this.getControllerInstance(inputs, inputSet, outputSet, actions, baseNode, scope, state);
+    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, actions, baseNode, scope, state);
     if (this.logger) {
       this.logger.logLink('linkRunStarted', {
         prefix: this.prefix,
@@ -257,37 +264,40 @@ export class Link {
     inputs: Record<string, any>,
     inputSet: Set<string>,
     outputSet: Set<string>,
+    callInputs: Set<string>,
     actions: Record<string, Map<string, string>>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
+    const baseArgs = {inputs, inputsSet: inputSet, outputsSet: outputSet, callInputs, id: this.matchInfo.spec.id, scopeInfo: scope};
+
     if (this.isValidator)
-      return new ValidatorController(inputs, inputSet, outputSet, this.matchInfo.spec.id, actions, baseNode, scope);
+      return new ValidatorController({...baseArgs, actions, baseNode});
 
     if (this.isPipelineValidator) {
       const outline = this.resolveOutline(state);
-      return new PipelineValidatorController(inputs, inputSet, outputSet, this.matchInfo.spec.id, outline, scope);
+      return new PipelineValidatorController({...baseArgs, outline});
     }
 
     if (this.isMeta)
-      return new MetaController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+      return new MetaController(baseArgs);
 
     if (this.isMutation) {
       const outputNodes = state ? this.resolveOutputNodes(state) : {};
-      return new MutationController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope, outputNodes);
+      return new MutationController({...baseArgs, outputNodes});
     }
 
     if (this.isNodeMeta)
-      return new NodeMetaController(inputs, inputSet, new Set(descriptionOutputs), this.matchInfo.spec.id, scope);
+      return new NodeMetaController({...baseArgs, outputsSet: new Set(descriptionOutputs)});
 
     if (this.isFuncallAction)
-      return new FuncallActionController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+      return new FuncallActionController(baseArgs);
 
     if (this.isReturn)
-      return new RuntimeReturnController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+      return new RuntimeReturnController(baseArgs);
 
-    return new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+    return new LinkController(baseArgs);
   }
 
   private resolveOutline(state?: BaseTree<StateTreeNode>): PipelineOutline {

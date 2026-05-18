@@ -1365,12 +1365,12 @@ export class PackageFunctions {
 
   //#endregion
 
-  //#region Pharmacophore Features
+  //#region Pharmacophores
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Analyze | Pharmacophore Features...',
-    'name': 'Pharmacophore Features',
-    'description': 'Detects pharmacophore features (donors, acceptors, hydrophobic, etc.)',
+    'top-menu': 'Chem | Analyze | Pharmacophores...',
+    'name': 'Pharmacophores',
+    'description': 'Detects pharmacophores (donors, acceptors, hydrophobic, etc.)',
     'meta': {'role': 'hitTriageFunction'},
   })
   static async pharmacophoreFeaturesTopMenu(
@@ -1421,7 +1421,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Halogen Bond', initialValue: 'false', description: '"Halogen bond donor"'}}) halogenBond: boolean,
   ): Promise<void> {
     if (table.rowCount > 5000)
-      grok.shell.info('Pharmacophore feature detection will take a while to run');
+      grok.shell.info('Pharmacophore detection will take a while to run');
 
     const familySet: PharmFamilySet = {
       'Donor': donor, 'Acceptor': acceptor, 'Hydrophobic': hydrophobic,
@@ -1432,7 +1432,8 @@ export class PackageFunctions {
 
     if (resultDf) {
       for (const resultCol of resultDf.columns) {
-        resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${molecules.name})`);
+        if (resultCol.semType !== DG.SEMTYPE.MOLECULE)
+          resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${molecules.name})`);
         table.columns.add(resultCol.clone());
       }
     }
@@ -1524,8 +1525,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.panel({
-    'name': 'Biology | Pharmacophore Features',
-    'description': 'Detects and highlights pharmacophore features (donors, acceptors, hydrophobic, aromatic, positive, negative)',
+    'name': 'Biology | Pharmacophores',
+    'description': 'Detects and highlights pharmacophores (donors, acceptors, hydrophobic, aromatic, positive, negative)',
     'meta': {'role': 'widgets', 'domain': 'chem'},
   })
   static async pharmacophoreFeatures(
@@ -1706,8 +1707,7 @@ export class PackageFunctions {
     const units = targetNotation === DG.chem.Notation.MolBlock ? DG.UNITS.Molecule.MOLBLOCK :
       targetNotation === DG.chem.Notation.V3KMolBlock ? DG.UNITS.Molecule.V3K_MOLBLOCK : DG.UNITS.Molecule.SMILES;
     if (overwrite) {
-      for (let i = 0; i < molecules.length; i++)
-        molecules.set(i, res[i], false);
+      molecules.init((i) => res[i]);
       molecules.meta.units = units;
     } else {
       const colName = data.columns.getUnusedName(`${molecules.name}_${targetNotation}`);

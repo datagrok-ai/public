@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
 import * as grok from 'datagrok-api/grok';
@@ -25,7 +26,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   private _editorComponent: React.ReactElement | null = null;
   private _editorMounted = false;
   private _resizeObserver: ResizeObserver | null = null;
-  private importing = false;
+  private importedMoleculesCounter = 0;
 
   constructor() {
     super();
@@ -60,8 +61,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
           // we do not reset explicit mol in case this is the first change event called after ketcher was created
           // since change event is fired not only when user changes the molecule but also when the molecule is
           // initially set into ketcher
-          if (this.importing)
-            this.importing = false;
+          if (this.importedMoleculesCounter > 0)
+            this.importedMoleculesCounter --;
           else
             this.explicitMol = null;
           try {
@@ -147,7 +148,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV2000 = null;
     this._molV3000 = null;
     this._smarts = null;
-    this.importing = true;
+    this.importedMoleculesCounter++;
     this._setNotation('smiles', smiles);
   }
 
@@ -170,7 +171,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._smiles = null;
     this._molV3000 = null;
     this._smarts = null;
-    this.importing = true;
+    this.importedMoleculesCounter++;
     this._setNotation('molblock', molfile);
   }
 
@@ -193,7 +194,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV2000 = null;
     this._smiles = null;
     this._smarts = null;
-    this.importing = true;
+    this.importedMoleculesCounter++;
     this._setNotation('molblockV3000', molfile);
   }
 
@@ -206,7 +207,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV3000 = null;
     this._molV2000 = null;
     this._smiles = null;
-    this.importing = true;
+    this.importedMoleculesCounter++;
     this._setNotation('smarts', smarts);
   }
 

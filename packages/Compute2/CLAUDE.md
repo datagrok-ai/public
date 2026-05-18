@@ -171,14 +171,16 @@ After `npm install` (which restores npm copies), always re-run `grok link` to re
 
 ### Building After RTD Changes
 
-When modifying reactive-tree-driver source, you must rebuild compute-utils before Compute2:
+When `compute-utils` is `grok link`ed, Compute2's webpack (`allowTsInNodeModules: true`) reads the library's `.ts` source through the symlink — the library's `dist/` output is **not** consumed. So after modifying reactive-tree-driver source you can go straight to `npm run build` in Compute2.
+
+Building compute-utils first is optional and only useful to surface TypeScript errors quickly (a few seconds with `tsc`) instead of waiting on the full Compute2 webpack run.
 
 ```bash
-# 1. Rebuild compute-utils (compiles RTD TypeScript to JS + .d.ts)
+# Optional: fast typecheck of compute-utils before the longer webpack build
 cd libraries/compute-utils
 npm run build              # grok check --soft && tsc
 
-# 2. Rebuild Compute2
+# Build Compute2 (mandatory)
 cd ../../packages/Compute2
 npm run build
 

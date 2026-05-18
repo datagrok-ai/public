@@ -165,7 +165,7 @@ async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, inp
       }, 'error div has not been created', 10000, 500);
     } else {
       await awaitCheck(() => {
-        const resMolblock = s.getMolFile(); ;
+        const resMolblock = s.getMolFile();
         return compareTwoMols(rdkitModule, mol, resMolblock);
       }, 'mols are not equal', 3000);
     }

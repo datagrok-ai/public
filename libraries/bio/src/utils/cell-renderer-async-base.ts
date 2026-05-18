@@ -330,6 +330,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
   ): void {
     if (gridCell.tableRowIndex == null)
       return;
+    this.cleanColVersion = this.tableCol ? this.tableCol.version : -1;
     const service = this.getRenderService();
     if (!service)
       return;

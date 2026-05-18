@@ -2,6 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {HitDesignApp} from '../hit-design-app';
+import {HitAppBase} from '../hit-app-base';
 import {HitDesignMergeConfig, HitDesignMergeMode, HitDesignTemplate} from '../types';
 import {HitDesignMolColName, TileCategoriesColName, ViDColName, ViDSemType} from '../consts';
 import {calculateCellValues} from './calculate-single-cell';
@@ -10,6 +11,35 @@ import {_package} from '../../package';
 
 const MOL_NAME_HINTS = ['molecule', 'smiles', 'mol', 'structure', 'canonical_smiles', 'canonicalsmiles'];
 const VID_NAME_HINTS = ['v-id', 'vid', 'v_id'];
+
+// Mirrors the drag-n-drop path in HitDesignApp.handleUploadingDataframe: csv goes through
+// DG.DataFrame.fromCsv, anything else is delegated to a registered file-handler function.
+// HitAppBase.molFileExtReaders is statically filtered to only those extensions for which
+// the platform actually exposes a reader, so this list reflects what we can really parse.
+export const MERGE_ALLOWED_EXTENSIONS: string[] = ['csv', ...HitAppBase.molFileExtReaders.map((r) => r.ext)];
+
+export function getFileInfoExtension(fi: DG.FileInfo): string {
+  const ext = fi.extension?.toLowerCase();
+  if (ext) return ext;
+  const name = fi.name?.toLowerCase() ?? '';
+  const dot = name.lastIndexOf('.');
+  return dot >= 0 ? name.slice(dot + 1) : '';
+}
+
+export async function readFileInfoToDataFrame(fi: DG.FileInfo): Promise<DG.DataFrame | null> {
+  const ext = getFileInfoExtension(fi);
+  if (ext === 'csv') {
+    const text = await fi.readAsString();
+    return DG.DataFrame.fromCsv(text);
+  }
+  const reader = HitAppBase.molFileExtReaders.find((r) => r.ext === ext);
+  if (!reader) return null;
+  const bytes = await fi.readAsBytes();
+  if (!bytes) return null;
+  const bytesArg = reader.handlerFunc.inputs[0].name;
+  const result: any = await reader.handlerFunc.apply({[bytesArg]: bytes});
+  return Array.isArray(result) ? result[0] : result;
+}
 
 export function guessMoleculeColumn(df: DG.DataFrame): DG.Column | null {
   const cols = df.columns.toList();
@@ -294,4 +324,41 @@ export async function mergeIntoCampaign<T extends HitDesignTemplate>(
   }
 
   campDf.fireValuesChanged();
+}
+
+/**
+ * Runs the implicit "auto-merge on campaign open" pass: if the campaign has a saved
+ * mergeConfig with `autoMergeOnOpen` set and a `filePath` from the file share, re-read the
+ * file and merge it into the campaign in-place. Compute is force-disabled for this pass
+ * and the campaign is NOT saved — the merged state lives in memory until the user saves
+ * it themselves. Failures are logged and surfaced as a warning balloon; they never bubble
+ * up to the open flow so the campaign still opens.
+ */
+export async function autoMergeOnCampaignOpen<T extends HitDesignTemplate>(
+  app: HitDesignApp<T>,
+): Promise<void> {
+  const cfg = app.campaign?.mergeConfig;
+  if (!cfg?.autoMergeOnOpen || !cfg.filePath) return;
+  if (!app.dataFrame) return;
+  try {
+    const exists = await grok.dapi.files.exists(cfg.filePath);
+    if (!exists) {
+      grok.shell.warning(`Auto-merge: source file not found or not accessible: ${cfg.filePath}`);
+      return;
+    }
+    const fi = DG.FileInfo.fromString(cfg.filePath, '');
+    const df = await readFileInfoToDataFrame(fi);
+    if (!df) {
+      grok.shell.warning('Auto-merge: could not read the saved source file; merge skipped.');
+      return;
+    }
+    await df.meta.detectSemanticTypes();
+    await grok.data.detectSemanticTypes(df);
+    // Compute pipeline never runs on the implicit pass — only structural data flows in.
+    const passCfg: HitDesignMergeConfig = {...cfg, runComputeOnNewRows: false};
+    await mergeIntoCampaign(app, df, passCfg);
+  } catch (e) {
+    _package.logger.error(e);
+    grok.shell.warning('Auto-merge failed; opening the campaign without merging.');
+  }
 }

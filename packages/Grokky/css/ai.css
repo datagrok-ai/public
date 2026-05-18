@@ -466,3 +466,20 @@
 .grokky-stream .d4-ai-copy-code-button {
   display: flex;
 }
+
+.grokky-search-wand {
+  cursor: pointer;
+  color: var(--blue-1) !important;
+  margin-left: 4px;
+  margin-right: 4px;
+}
+
+.grokky-empty-state .grokky-scope-icon {
+  margin-right: 6px;
+}
+
+.grokky-empty-state .grokky-scope-icon.grokky-scope-molecule { color: var(--blue-1); }
+.grokky-empty-state .grokky-scope-icon.grokky-scope-scatter  { color: var(--steel-3); }
+.grokky-empty-state .grokky-scope-icon.grokky-scope-view     { color: var(--green-2); }
+.grokky-empty-state .grokky-scope-icon.grokky-scope-anywhere { color: var(--grey-4); }
+

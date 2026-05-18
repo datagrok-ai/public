@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.10.2 (2026-05-15)
+
+* Auto merging of data file if configured in campaign settings.
+
 ## 1.10.0 (2026-04-09)
 
 ### Features

@@ -11,6 +11,8 @@ export function defaultLinkHandler(
   defaultRestrictions?: Record<string, RestrictionType> | RestrictionType,
 ) {
   for (let i = 0; i < Math.min(inputs.length, outputs.length); i++) {
+    if (ctrlInstance.callInputs.has(inputs[i]))
+      continue;
     const input = ctrlInstance.getFirst(inputs[i]);
     const restriction = typeof defaultRestrictions === 'string' ?
       defaultRestrictions :

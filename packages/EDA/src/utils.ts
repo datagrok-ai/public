@@ -272,7 +272,8 @@ export function extractNonConstantColsDf(features: DG.ColumnList): DG.DataFrame 
 }
 
 /** Describe viewers and return the Done button */
-export function describeElements(roots: HTMLElement[], description: string[], position: string[]): HTMLButtonElement {
+export function describeElements(roots: HTMLElement[], description: string[], position: string[],
+  parent?: HTMLElement): HTMLButtonElement {
   if (roots.length !== description.length)
     throw new Error('Non-equal size of viewer roots and descriptions');
 
@@ -288,7 +289,7 @@ export function describeElements(roots: HTMLElement[], description: string[], po
   }, 'Go to the next viewer');
 
   const prevBtn = ui.button('prev', () => {
-    idx -= 1;    
+    idx -= 1;
     popup.remove();
     step();
   }, 'Go to the previous viewer');
@@ -296,17 +297,18 @@ export function describeElements(roots: HTMLElement[], description: string[], po
   const doneBtn = ui.button('done', () => popup.remove(), 'Go to the next step');
 
   const btnsDiv = ui.divH([prevBtn, nextBtn, doneBtn]);
- btnsDiv.style.marginLeft = 'auto';
- btnsDiv.style.marginRight = '0px';
+  btnsDiv.style.marginLeft = 'auto';
+  btnsDiv.style.marginRight = '0px';
 
   const step = () => {
     if (idx < roots.length) {
       msg = ui.divV([ui.markdown(description[idx]), btnsDiv]);
       popup = ui.hints.addHint(roots[idx], msg, position[idx] as ui.hints.POSITION);
+      parent?.appendChild(popup);
       doneBtn.hidden = (idx < roots.length - 1);
       nextBtn.hidden = (idx === roots.length - 1);
       prevBtn.hidden = (idx < 1);
-      
+
       closeIcn = popup.querySelector('i') as HTMLElement;
       closeIcn.onclick = () => doneBtn.click();
     }
