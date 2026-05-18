@@ -31,7 +31,7 @@ export class PackageFunctions {
     PackageFunctions.ensureAgentsFolder();
     // Warm the WebSocket to claude-runtime so the first user turn doesn't pay container-lookup + WS handshake cost.
     ClaudeRuntimeClient.getInstance().ensureConnected().catch(() => {});
-    // PackageFunctions.subscribeToSyncEvents();
+    PackageFunctions.subscribeToSyncEvents();
   }
 
   // Creates agents/ folder in My Files if it doesn't exist yet.

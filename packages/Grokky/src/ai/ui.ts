@@ -284,12 +284,12 @@ export async function runPromptWithLifecycle(
     session = panel.startChatSession();
     session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
 
-    // if (await grok.ai.processPrompt(prompt)) {
-    //   // Built-in handler claimed the prompt — no AI response, just a green check next to it.
-    //   session.session.markHandledNatively();
-    //   session.endSession();
-    //   return;
-    // }
+    if (await grok.ai.processPrompt(prompt)) {
+      // Built-in handler claimed the prompt — no AI response, just a green check next to it.
+      session.session.markHandledNatively();
+      session.endSession();
+      return;
+    }
   }
   if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt)) {
     session?.endSession();
