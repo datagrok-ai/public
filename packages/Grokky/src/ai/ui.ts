@@ -179,7 +179,7 @@ export function setupSearchUI() {
 
   function initInput(searchInput: HTMLInputElement) {
     const parent: HTMLElement = searchInput.parentElement!;
-    const wandIcon = ui.iconFA('magic', async () => {
+    const wandIcon = ui.iconFA('magic', async (e) => {
       const scopes = await loadPowerSearchScopes();
       showSuggestionsMenu(scopes, (prompt) => {
         searchInput.value = prompt;
@@ -187,7 +187,7 @@ export function setupSearchUI() {
         // PowerPack's input handler debounces 500ms and then calls ui.empty(host) on power-pack-search-host;
         // wait past that so the AI loader/result isn't wiped immediately after we prepend it.
         setTimeout(() => aiCombinedSearch(prompt), 600);
-      });
+      }, e);
     }, 'Prompt suggestions');
     wandIcon.classList.add('grokky-search-wand');
     parent.insertBefore(wandIcon, searchInput);

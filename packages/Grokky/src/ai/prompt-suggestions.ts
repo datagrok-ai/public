@@ -63,12 +63,16 @@ export async function loadPowerSearchScopes(): Promise<ResolvedScope[]> {
   return Object.entries(data).map(([label, suggestions]) => ({label, suggestions}));
 }
 
-export function showSuggestionsMenu(scopes: ResolvedScope[], onSelect: (prompt: string) => void): void {
+export function showSuggestionsMenu(
+  scopes: ResolvedScope[],
+  onSelect: (prompt: string) => void,
+  causedBy?: MouseEvent,
+): void {
   const menu = DG.Menu.popup();
   for (const s of scopes) {
     const group = menu.group(s.label);
     for (const sg of s.suggestions)
       group.item(sg.label ?? sg.prompt, () => onSelect(sg.prompt));
   }
-  menu.show();
+  menu.show(causedBy ? {causedBy} : undefined);
 }

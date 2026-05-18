@@ -235,9 +235,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.rawRenderButton.style.color = this._rawRender ? 'var(--blue-1)' : '';
       this.root.classList.toggle('d4-ai-raw-mode', this._rawRender);
     }, 'Toggle raw console');
-    this.wandButton = ui.iconFA('magic', async () => {
+    this.wandButton = ui.iconFA('magic', async (e) => {
       const scopes = await resolveContextScopes(this.view);
-      showSuggestionsMenu(scopes, (prompt) => this.runSuggestion(prompt));
+      showSuggestionsMenu(scopes, (prompt) => this.runSuggestion(prompt), e);
     }, 'Prompt suggestions');
     this.wandButton.classList.add('grokky-search-wand');
     this.setWandVisible(true);
