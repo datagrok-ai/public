@@ -97,7 +97,8 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   prependViewContext(prompt: string, view: DG.ViewBase): string;
   prependEntityContext(prompt: string): string;
   updateStreaming(content: string, loader: HTMLElement): void;
-  finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<void>;
+  finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>>;
+  appendUiMessage(content: string): void;
   clearStreaming(): void;
   showInputRequest(input: any): Promise<any>;
   cancelInputRequest(): void;
@@ -142,8 +143,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private runButtonTooltip: typeof actionButtionValues[keyof typeof actionButtionValues] = actionButtionValues.run;
   public inputControlsDiv: HTMLElement;
   protected attachedEntities: DG.Entity[] = [];
-  protected attachmentsRow: HTMLElement = ui.divH([]);
+  protected attachmentsRow: HTMLElement = ui.divH([], {style: {flexWrap: 'wrap'}});
   private _pendingEntityContext = '';
+  private _pendingAttachmentsForRender: DG.Entity[] = [];
   protected get contextId(): string {
     return this._contextID;// these should be overriden in subclasses
   }
@@ -151,7 +153,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected _streamingContainer: HTMLElement | null = null;
   protected _streamingMarkdownEl: HTMLElement | null = null;
   private _sessionId: string;
-  private _contextSent = false;
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
@@ -254,8 +255,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     ui.makeDroppable(this.textAreaDiv, {
       acceptDrop: (o) => o instanceof DG.Entity,
       doDrop: (args: any) => {
-        if (args?.dragObject instanceof DG.Entity)
+        if (args?.dragObject instanceof DG.Entity) {
           this.addEntityChip(args.dragObject);
+          this.textArea.focus();
+        }
       },
     });
     this.inputArea.appendChild(this.textAreaDiv);
@@ -371,11 +374,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return;
     this.attachedEntities.push(e);
     const icon = DG.ObjectHandler.forEntity(e)?.renderIcon(e.dart) ?? ui.iconFA('tag');
-    const chip = ui.divH([icon, ui.label(e.friendlyName ?? e.name)]);
-    chip.appendChild(ui.iconFA('times', () => {
+    const label = ui.label(e.friendlyName ?? e.name);
+    const close = ui.iconFA('times', () => {
       this.attachedEntities = this.attachedEntities.filter((y) => y !== e);
       chip.remove();
-    }, 'Remove'));
+    }, 'Remove');
+    const chip = ui.divH([icon, label, close], 'grokky-entity-chip');
     this.attachmentsRow.appendChild(chip);
   }
 
@@ -495,6 +499,16 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         uiMessage.messageOptions?.handledNatively ? [this.createHandledNativelyIcon(), promptText] : [promptText],
         'd4-ai-user-prompt-container');
       this.outputArea.appendChild(userDiv);
+      if (this._pendingAttachmentsForRender.length) {
+        const chips = this._pendingAttachmentsForRender.map((e) => {
+          const icon = DG.ObjectHandler.forEntity(e)?.renderIcon(e.dart) ?? ui.iconFA('tag');
+          const label = ui.label(e.friendlyName ?? e.name);
+          return ui.divH([icon, label], 'grokky-entity-chip');
+        });
+        const chipsRow = ui.divH(chips, {style: {flexWrap: 'wrap', justifyContent: 'flex-end'}});
+        this.outputArea.appendChild(chipsRow);
+        this._pendingAttachmentsForRender = [];
+      }
       this._lastUserPromptContainer = userDiv;
       this._aiMessagesAccordionPane = null; // reset accordion pane so that next AI message creates a new one
     } else {
@@ -618,18 +632,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   resetSession(): void {
     this._sessionId = `claude-${crypto.randomUUID()}`;
-    this._contextSent = false;
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
   }
 
   prependViewContext(prompt: string, view: DG.ViewBase): string {
-    if (this._contextSent)
-      return prompt;
     const ctx = buildViewContext(view);
     if (!ctx)
       return prompt;
-    this._contextSent = true;
     return ctx + '\n---\n\n' + prompt;
   }
 
@@ -660,19 +670,24 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
-  async finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<void> {
+  async finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>> {
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
       this._uiMessages.push({fromUser: false, text: displayContent, messageOptions: {finalResult: displayContent}});
-      return;
+      return [];
     }
     this.renderFinalContent(displayContent);
-    const results = await executeDatagrokBlocks(execContent, view);
-    for (const el of results) {
+    const {elements, errors} = await executeDatagrokBlocks(execContent, view);
+    for (const el of elements) {
       this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
     }
+    return errors;
+  }
+
+  public appendUiMessage(content: string): void {
+    this.appendMessage('' as any, {title: '', fromUser: false, uiOnly: true, content});
   }
 
   protected renderFinalContent(content: string): void {
@@ -802,6 +817,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       'Attached Datagrok entities (use MCP tools to fetch full details by id/nqName/path):\n' +
         this.attachedEntities.map((e) => this.describeEntity(e)).join('\n') :
       '';
+    this._pendingAttachmentsForRender = [...this.attachedEntities];
     this.clearAttachments();
     this._promptHistoryIndex = null;
     this._onRunRequest.next({
@@ -1157,7 +1173,7 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
     };
   }
 
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
+  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>> {
     this.renderFinalContent(displayContent);
     // Extract SQL from fenced code blocks and inject into query editor
     const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(execContent);
@@ -1165,6 +1181,7 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
       const sql = sqlMatch[1].trimEnd().replace(/;+$/, '');
       this.setAndRunFunc(sql);
     }
+    return [];
   }
 }
 
@@ -1229,7 +1246,7 @@ export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInput
     };
   }
 
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
+  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>> {
     this.renderFinalContent(displayContent);
     // Extract code from datagrok-exec blocks and set on the script editor
     const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(execContent);
@@ -1241,5 +1258,6 @@ export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInput
       (this.view as DG.ScriptView).code = codeMatch[1].trimEnd();
       ui.setUpdateIndicator(this.view.root, false);
     }
+    return [];
   }
 }

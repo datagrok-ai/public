@@ -10,7 +10,7 @@ import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEven
   fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
-import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
+import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
 import {SQLGenerationContext} from '../db/sql-tools';
@@ -108,7 +108,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, opts.outputSchema ? {outputSchema: opts.outputSchema} : undefined);
+  client.send(sessionId, prompt, {model: ClaudeModel.Sonnet, ...(opts.outputSchema ? {outputSchema: opts.outputSchema} : {})});
   return widget;
 }
 
@@ -138,7 +138,7 @@ export async function smartExecution(prompt: string, sessionId?: string): Promis
       host.appendChild(ui.wait(async () => {
         try {
           const execResults = await executeDatagrokBlocks(code, grok.shell.v);
-          return ui.divV(execResults);
+          return ui.divV(execResults.elements);
         } catch (e: any) {
           return ui.info(`Execution error: ${e?.message ?? e}`);
         } finally {
@@ -297,127 +297,173 @@ export async function runPromptWithLifecycle(
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string, existingSession?: ReturnType<StreamingPanel['startChatSession']>) {
-  const chatSession = existingSession ?? panel.startChatSession();
-  const sessionId = panel.sessionId;
-  let accumulated = ''; // full markdown — passed to executeDatagrokBlocks
-  let displayBuffer = ''; // what's shown during streaming (no exec, no entity content)
-  let finalBuffer = ''; // what's shown at finalize (no exec; entity stays so renderEntityBlocks finds it)
-  let toolStatus = '';
-  const subs: {unsubscribe: () => void}[] = [];
-  const cleanup = () => subs.forEach((s) => s.unsubscribe());
+const MAX_AUTO_RETRIES = 2;
 
-  const forSession = <T extends {sessionId: string}>(
-    source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
-    handler: (evt: T) => void,
-  ) => subs.push(source.subscribe((evt) => {
-      if (evt.sessionId === sessionId)
-        handler(evt);
-    }));
+function buildRetryPrompt(errors: Array<{blockIndex: number; error: string}>): string {
+  const list = errors.map((e) => `- block #${e.blockIndex}: ${e.error}`).join('\n');
+  return `Your previous datagrok-exec block(s) failed:\n${list}\n\n` +
+    `Diagnose the cause (look at the code you just emitted) and emit a corrected ` +
+    `datagrok-exec block to complete the user's request. Do not repeat the same code unchanged.`;
+}
 
-  const endWithError = (msg: string) => {
-    panel.clearStreaming();
-    grok.shell.error(msg);
-    chatSession.endSession();
-    cleanup();
-  };
-
-  try {
-    const client = ClaudeRuntimeClient.getInstance();
-    const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(panel.prependEntityContext(userPrompt), view);
-
-    await client.ensureConnected();
-
-    if (!existingSession)
-      chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
-
-    forSession(client.onChunk, (evt) => {
-      accumulated += evt.content;
-      if (evt.kind !== 'exec' && evt.kind !== 'entity') {
-        displayBuffer += evt.content;
-        toolStatus = '';
-        panel.updateStreaming(displayBuffer, chatSession.loader);
-      }
-      if (evt.kind !== 'exec')
-        finalBuffer += evt.content;
-    });
-
-    forSession(client.onToolActivity, (evt) => {
-      toolStatus = `\n\n---\n**${evt.summary}**`;
-      panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
-    });
-
-    forSession(client.onToolResult, (evt) => {
-      toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
-      panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
-    });
-
-    forSession(client.onFinal, (evt) => {
-      panel.cancelInputRequest();
-      // accumulated holds the full markdown including hidden blocks — needed by executeDatagrokBlocks.
-      // finalBuffer is what gets rendered (datagrok-exec stripped; datagrok-entities kept for card rendering).
-      const exec = accumulated || evt.content;
-      const display = finalBuffer || evt.content;
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: exec}]});
-      panel.finalizeStreaming(display, exec, view);
-      chatSession.endSession();
-      cleanup();
-    });
-
-    forSession(client.onError, (evt) => {
-      panel.cancelInputRequest();
-      endWithError(`Claude: ${evt.message}`);
-    });
-
-    forSession(client.onAborted, () => {
-      panel.cancelInputRequest();
-      panel.clearStreaming();
-      chatSession.session.addUiMessage('**Processing aborted by user**', false);
-      chatSession.endSession();
-      cleanup();
-    });
-
-    forSession(client.onInputRequest, async (evt) => {
-      // Dispatch client-side DB tool calls (arrive as mcp__datagrok__<name>)
-      const mcpToolName = evt.toolName.replace(/^mcp__datagrok__/, '');
-      if (clientToolHandler && mcpToolName !== evt.toolName) {
-        try {
-          const result = await clientToolHandler(mcpToolName, evt.input);
-          client.respondToInput(sessionId, result);
-        } catch (e: any) {
-          client.respondToInput(sessionId, `Error: ${e.message}`);
-        }
-        return;
-      }
-      // Default: AskUserQuestion
-      accumulated = '';
-      toolStatus = '';
-      panel.clearStreaming();
-      const response = await panel.showInputRequest(evt.input);
-      if (response) {
-        client.respondToInput(sessionId, response);
-        const answerText = Object.values(response.answers).join(', ');
-        chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
-      }
-    });
-
-    subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
-
-    subs.push(getAIAbortSubscription().subscribe(() => {
-      client.abort(sessionId);
-    }));
-
-    const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
-    client.send(sessionId, prompt, resolvedMode ? {systemPromptMode: resolvedMode} : undefined);
-  } catch (e: any) {
-    panel.clearStreaming();
-    grok.shell.error(`Claude runtime: ${e.message}`);
-    console.error('Claude runtime error:', e);
-    chatSession.endSession();
-    cleanup();
+async function runClaudeStreaming(
+  panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
+  clientToolHandler?: (toolName: string, input: any) => Promise<string>,
+  systemPromptMode?: string,
+  existingSession?: ReturnType<StreamingPanel['startChatSession']>,
+): Promise<void> {
+  let currentPrompt = userPrompt;
+  let currentSession = existingSession;
+  let retries = 0;
+  while (true) {
+    const errors = await streamOnce(panel, currentPrompt, view, clientToolHandler, systemPromptMode, currentSession);
+    if (errors.length === 0)
+      return;
+    if (retries >= MAX_AUTO_RETRIES) {
+      panel.appendUiMessage(`_Stopped after ${MAX_AUTO_RETRIES} auto-retries — exec is still failing. Try giving more context or a different approach._`);
+      return;
+    }
+    retries++;
+    panel.appendUiMessage(`_Retrying after exec failure (${retries}/${MAX_AUTO_RETRIES})…_`);
+    currentPrompt = buildRetryPrompt(errors);
+    currentSession = undefined;
   }
+}
+
+async function streamOnce(
+  panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
+  clientToolHandler?: (toolName: string, input: any) => Promise<string>,
+  systemPromptMode?: string,
+  existingSession?: ReturnType<StreamingPanel['startChatSession']>,
+): Promise<Array<{blockIndex: number; error: string}>> {
+  return new Promise<Array<{blockIndex: number; error: string}>>(async (resolve) => {
+    const chatSession = existingSession ?? panel.startChatSession();
+    const sessionId = panel.sessionId;
+    let accumulated = ''; // full markdown — passed to executeDatagrokBlocks
+    let displayBuffer = ''; // what's shown during streaming (no exec, no entity content)
+    let finalBuffer = ''; // what's shown at finalize (no exec; entity stays so renderEntityBlocks finds it)
+    let toolStatus = '';
+    const subs: {unsubscribe: () => void}[] = [];
+    const cleanup = () => subs.forEach((s) => s.unsubscribe());
+
+    const forSession = <T extends {sessionId: string}>(
+      source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
+      handler: (evt: T) => void,
+    ) => subs.push(source.subscribe((evt) => {
+        if (evt.sessionId === sessionId)
+          handler(evt);
+      }));
+
+    const endWithError = (msg: string) => {
+      panel.clearStreaming();
+      grok.shell.error(msg);
+      chatSession.endSession();
+      cleanup();
+      resolve([]);
+    };
+
+    try {
+      const client = ClaudeRuntimeClient.getInstance();
+      const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(panel.prependEntityContext(userPrompt), view);
+
+      await client.ensureConnected();
+
+      if (!existingSession)
+        chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
+
+      forSession(client.onChunk, (evt) => {
+        accumulated += evt.content;
+        if (evt.kind !== 'exec' && evt.kind !== 'entity') {
+          displayBuffer += evt.content;
+          toolStatus = '';
+          panel.updateStreaming(displayBuffer, chatSession.loader);
+        }
+        if (evt.kind !== 'exec')
+          finalBuffer += evt.content;
+      });
+
+      forSession(client.onToolActivity, (evt) => {
+        toolStatus = `\n\n---\n**${evt.summary}**`;
+        panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
+      });
+
+      forSession(client.onToolResult, (evt) => {
+        toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
+        panel.updateStreaming(displayBuffer + toolStatus, chatSession.loader);
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
+      });
+
+      forSession(client.onFinal, async (evt) => {
+        panel.cancelInputRequest();
+        // accumulated holds the full markdown including hidden blocks — needed by executeDatagrokBlocks.
+        // finalBuffer is what gets rendered (datagrok-exec stripped; datagrok-entities kept for card rendering).
+        const exec = accumulated || evt.content;
+        const display = finalBuffer || evt.content;
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: exec}]});
+        const errors = await panel.finalizeStreaming(display, exec, view);
+        chatSession.endSession();
+        cleanup();
+        resolve(errors);
+      });
+
+      forSession(client.onError, (evt) => {
+        panel.cancelInputRequest();
+        endWithError(`Claude: ${evt.message}`);
+      });
+
+      forSession(client.onAborted, () => {
+        panel.cancelInputRequest();
+        panel.clearStreaming();
+        chatSession.session.addUiMessage('**Processing aborted by user**', false);
+        chatSession.endSession();
+        cleanup();
+        resolve([]);
+      });
+
+      forSession(client.onInputRequest, async (evt) => {
+        // Dispatch client-side DB tool calls (arrive as mcp__datagrok__<name>)
+        const mcpToolName = evt.toolName.replace(/^mcp__datagrok__/, '');
+        if (clientToolHandler && mcpToolName !== evt.toolName) {
+          try {
+            const result = await clientToolHandler(mcpToolName, evt.input);
+            client.respondToInput(sessionId, result);
+          } catch (e: any) {
+            client.respondToInput(sessionId, `Error: ${e.message}`);
+          }
+          return;
+        }
+        // Default: AskUserQuestion
+        accumulated = '';
+        displayBuffer = '';
+        finalBuffer = '';
+        toolStatus = '';
+        panel.clearStreaming();
+        const response = await panel.showInputRequest(evt.input);
+        if (response) {
+          client.respondToInput(sessionId, response);
+          const answerText = Object.values(response.answers).join(', ');
+          chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
+        }
+      });
+
+      subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
+
+      subs.push(getAIAbortSubscription().subscribe(() => {
+        client.abort(sessionId);
+      }));
+
+      const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
+      client.send(sessionId, prompt, resolvedMode ? {systemPromptMode: resolvedMode} : undefined);
+    } catch (e: any) {
+      panel.clearStreaming();
+      grok.shell.error(`Claude runtime: ${e.message}`);
+      console.error('Claude runtime error:', e);
+      chatSession.endSession();
+      cleanup();
+      resolve([]);
+    }
+  });
 }
 
 let _shellAIPanel: ShellAIPanel | null = null;

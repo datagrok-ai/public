@@ -18,47 +18,46 @@ The ONLY way code runs in the Datagrok browser is inside a fenced block tagged
 | `view`   | `DG.ViewBase`   | Always — check `view.type` for specific view type |
 | `t`      | `DG.DataFrame`  | Only when `view.type === 'TableView'`             |
 
-`grok`, `ui`, `DG` are already in scope — do not import them. The block runs in
-an async IIFE, so `await` works directly.
+The block runs in an async IIFE, so `await` works directly.
+
+## Per-area skills
+
+For task-specific API surface, open the matching skill before emitting code:
+
+| User intent                                    | Skill                          |
+|------------------------------------------------|--------------------------------|
+| Find / describe / add / remove / rename columns; set semType/units/format/friendly name; color coding | `datagrok-df-and-columns`   |
+| Calculated (formula-driven) columns            | `datagrok-calc-column`         |
+| Filter rows (range, categorical, contains, substructure, predicate) | `datagrok-filtering`     |
+| Select rows; current row; selection ↔ filter   | `datagrok-selection`           |
+| Add / configure / find / close viewers         | `datagrok-viewers`             |
+| Grid sort, visibility, widths, pins, color coding, freeze | `datagrok-grid-customization` |
+| Cheminformatics: SMILES/MolBlock/InChI/canonicalize | `datagrok-chem-data` / `datagrok-chem-toolkit` |
 
 ## Multiple blocks in one response
 
-Each `datagrok-exec` block runs in its own JavaScript scope (a fresh
-`new Function(...)` IIFE). When you emit multiple blocks in a single response,
-they execute sequentially — block N+1 awaits block N's promise — but JS
+Each `datagrok-exec` block runs in its own scope (a fresh `new Function(...)`
+IIFE). Blocks execute sequentially — block N+1 awaits block N — but JS
 variables declared in earlier blocks are NOT visible in later ones.
 
-State that **does** persist across blocks:
-- The `view` object reference (same `DG.ViewBase` each time)
-- The `t` DataFrame reference — column additions, filter changes, and any
-  other mutations are visible to later blocks
-- Anything you push into the platform itself: viewers added to the view,
-  dialogs opened, columns appended, server-side state
+Persists across blocks:
+- The `view` reference and the `t` DataFrame reference (column additions,
+  filter changes, and other mutations are visible to later blocks)
+- Anything pushed into the platform: viewers added, dialogs opened, columns
+  appended, server-side state
 
-State that does **not** persist:
-- `const` / `let` / `var` bindings
-- Local helper functions
-- Cached values (e.g. `const ic50Col = t.col('IC50')`)
+Does NOT persist: `const` / `let` / `var` bindings, helper functions, cached
+values like `const ic50Col = t.col('IC50')`. Block 2 must re-derive from `t`.
 
-So if block 1 adds an `IC50` column and block 2 needs to read it, block 2
-must re-derive `t.col('IC50')` from `t`. Never reference a variable from an
-earlier block — that's a `ReferenceError`, not a "column doesn't exist yet"
-problem.
+Use multiple blocks when each step is independently meaningful to the user.
+Use a single block when steps share complex local state (intermediate arrays,
+helper functions, derived columns referenced multiple times).
 
-When to split into multiple blocks vs. one big block:
-
-- **Multi-block** is best when each step is independently meaningful to the
-  user — they want to see step 1's result land before step 2 starts.
-- **Single block** is best when steps share complex local state (intermediate
-  arrays, helper functions, derived columns referenced multiple times) that
-  would be tedious to re-derive every block.
-
-Before consuming a query/function result inside `datagrok-exec`, look at the
-wrapper's return type in the apiRef. Example — if the wrapper signature is
-`Promise<string>`:
+Before consuming a query/function result, check the wrapper's return type in
+the apiRef:
 
 ```js
-// CORRECT — treat the awaited value as a string
+// CORRECT — wrapper returns Promise<string>
 const helm = await grok.data.query('Biologics:GetBiologicsPeptideHelmByIdentifier',
   { peptideIdentifier: 'GROKPEP-000002' });
 
@@ -83,9 +82,28 @@ NOT render; convert via the table below:
 | list of items                     | `ui.divV(items.map((x) => ui.divText(x)))`     |
 | `DG.DataFrame`                    | `DG.Viewer.grid(df).root`                      |
 | `DG.Viewer` / `DG.Widget`         | `obj.root`                                     |
+| `DG.ViewBase` (incl. apps)        | open via `grok.shell.addView(v)` — see [Launching apps & views](#launching-apps--views) — do NOT return |
 | molecule (SMILES / molblock)      | `grok.chem.drawMolecule(smiles, 300, 200)`     |
 | macromolecule (HELM)              | see [HELM output](#helm-output) below          |
 | graphics                          | see [Graphics output](#graphics-output) below  |
+
+## Launching apps & views
+
+Datagrok **apps** are functions with `meta.role: app`. Calling one via
+`grok.functions.call('Pkg:appName')` may return a `DG.ViewBase` (or nothing if
+the app opens its own view). A returned view is NOT yet attached to the
+workspace — hand it to `grok.shell.addView()`. Do NOT `return` the view from
+the block; open it.
+
+```datagrok-exec
+const result = await grok.functions.call('Pkg:appName');
+if (result instanceof DG.ViewBase)
+  grok.shell.addView(result);
+// If the app already added its own view (returns null/undefined), do nothing.
+```
+
+Never assign to `grok.shell.v` to launch an app — that just swaps the current
+view reference without registering it.
 
 ## HELM output
 
@@ -99,7 +117,8 @@ return helmInput.root;
 
 ## Graphics output
 
-Some Datagrok scripts return graphical elements. When you return such an element directly, it may render as blank because it lacks intrinsic dimensions. To display it correctly, extract the Base64-encoded image data and wrap it in an image component with explicit width and height:
+Returned graphics elements may render blank without intrinsic dimensions.
+Extract Base64-encoded image data and wrap with explicit width and height:
 
 ```datagrok-exec
 const b64 = await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', {mol: 'CCC', contours: 10});

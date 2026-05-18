@@ -206,7 +206,7 @@ User query: ${prompt}`;
 
     let order = Object.keys(this.functions);
     try {
-      const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {model: ClaudeModel.Haiku});
+      const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt, {model: ClaudeModel.Haiku, systemPromptMode: 'none'});
       const parsed = JSON.parse(res) as string[];
       if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string' && this.functions[s]) && parsed.length > 0)
         order = parsed;

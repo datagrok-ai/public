@@ -170,7 +170,7 @@ export class ClaudeRuntimeClient {
     this.ws.send(JSON.stringify({type: 'input_response', sessionId, value}));
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel}): Promise<any> {
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel, systemPromptMode?: string}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}`;
     return new Promise((resolve, reject) => {
@@ -189,6 +189,7 @@ export class ClaudeRuntimeClient {
       this.send(sid, message, {
         ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
         ...(options?.model ? {model: options.model} : {}),
+        ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
       });
     });
   }

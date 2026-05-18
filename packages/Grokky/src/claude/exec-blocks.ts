@@ -2,24 +2,38 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export async function executeDatagrokBlocks(content: string, view: DG.ViewBase): Promise<HTMLElement[]> {
+export interface ExecError {
+  blockIndex: number;
+  error: string;
+}
+
+export interface ExecResult {
+  elements: HTMLElement[];
+  errors: ExecError[];
+}
+
+export async function executeDatagrokBlocks(content: string, view: DG.ViewBase): Promise<ExecResult> {
   const re = /```datagrok-exec\n([\s\S]*?)```/g;
-  const results: HTMLElement[] = [];
+  const elements: HTMLElement[] = [];
+  const errors: ExecError[] = [];
   let match: RegExpExecArray | null;
+  let blockIndex = 0;
   while ((match = re.exec(content)) !== null) {
     const code = match[1];
+    const idx = blockIndex++;
     try {
       const t = view.type === DG.VIEW_TYPE.TABLE_VIEW ? (view as DG.TableView).dataFrame : undefined;
       const result = await new Function('grok', 'ui', 'DG', 'view', 't',
         'return (async () => {' + code + '})()',
       )(grok, ui, DG, view, t);
       if (result instanceof HTMLElement)
-        results.push(result);
+        elements.push(result);
     } catch (e: any) {
       grok.shell.error(`datagrok-exec error: ${e.message}`);
+      errors.push({blockIndex: idx, error: e?.message ?? String(e)});
     }
   }
-  return results;
+  return {elements, errors};
 }
 
 export function buildViewContext(view: DG.ViewBase): string {
