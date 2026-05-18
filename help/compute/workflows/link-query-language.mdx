@@ -122,7 +122,7 @@ prefixing it with `#`. Tag arguments combine with **AND** (`&`), unlike id
 arguments which combine with **OR** (`|`), because the same node can carry
 multiple tags. Tag matching also crosses nesting boundaries — a `#all(metric)`
 query finds every descendant tagged `metric`, no matter how deep — but never
-travels upward past the link's host pipeline.
+travels upward past the link's host workflow.
 
 ![tag selectors on a nested tree](pics/tag_selectors.svg)
 
