@@ -54,6 +54,18 @@ export class PackageFunctions {
     view.name = 'Retrosynthesis Demo';
 
     const sketcher: DG.chem.Sketcher = new DG.chem.Sketcher();
+    let initialMoleculeSet = true;
+
+    sketcher.onChanged.subscribe(() => {
+      if (initialMoleculeSet)
+        initialMoleculeSet = false;
+      else {
+        const smiles = sketcher.getSmiles();
+        if (smiles)
+          showWidget(smiles);
+      }
+    });
+
     sketcher.setSmiles('COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5');
     const retrosynthesisDiv = ui.div('', 'retrosynthesis-demo');
 
@@ -78,12 +90,6 @@ export class PackageFunctions {
     };
 
     showWidget(DEMO_MOLECULE);
-
-    sketcher.onChanged.subscribe(() => {
-      const smiles = sketcher.getSmiles();
-      if (smiles)
-        showWidget(smiles);
-    });
     grok.shell.addPreview(view);
   }
 }

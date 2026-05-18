@@ -1,6 +1,10 @@
 # Retrosynthesis changelog
 
-## 1.0.6 (2025-03-16)
+## 1.0.7 (2026-05-18)
+
+* Demo fix
+
+## 1.0.6 (2026-03-16)
 
 * Re-calculate on config change
 * Use celery for aizynthfinder
