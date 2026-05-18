@@ -181,7 +181,10 @@ export function setupSearchUI() {
     const parent: HTMLElement = searchInput.parentElement!;
     const wandIcon = ui.iconFA('magic', () => showSuggestionsMenu('powerSearch', (prompt) => {
       searchInput.value = prompt;
-      aiCombinedSearch(prompt);
+      searchInput.dispatchEvent(new Event('input', {bubbles: true}));
+      // PowerPack's input handler debounces 500ms and then calls ui.empty(host) on power-pack-search-host;
+      // wait past that so the AI loader/result isn't wiped immediately after we prepend it.
+      setTimeout(() => aiCombinedSearch(prompt), 600);
     }), 'Prompt suggestions');
     wandIcon.classList.add('grokky-search-wand');
     parent.insertBefore(wandIcon, searchInput);
@@ -189,7 +192,7 @@ export function setupSearchUI() {
     const searchHelpDiv = document.getElementsByClassName('power-search-help-text-container')[0] as HTMLDivElement;
     if (searchHelpDiv) {
       searchHelpDiv.innerText = `Press Enter to grok. ${searchHelpDiv.innerText}`;
-      searchHelpDiv.style.visibility = 'hidden';
+      searchHelpDiv.style.display = 'none';
     }
 
     searchInput.addEventListener('keyup', (event: KeyboardEvent) => {
@@ -198,7 +201,7 @@ export function setupSearchUI() {
         setTimeout(() => aiCombinedSearch(searchInput.value), 400); // timeout needed to allow other enter handlers to run first
       }
       if (searchHelpDiv)
-        searchHelpDiv.style.visibility = searchInput.value?.trim().split(' ').length > 1 ? 'visible' : 'hidden';
+        searchHelpDiv.style.display = searchInput.value?.trim().split(' ').length > 1 ? '' : 'none';
     });
   }
 
@@ -494,6 +497,7 @@ export function setupAgentScriptsUI(): void {
         return;
       const {name} = view;
       const runIcon = ui.iconFA('play', () => runAgentScript(name), `Run ${name}`);
+      runIcon.classList.add('fas');
       view.setRibbonPanels([...view.getRibbonPanels(), [runIcon]]);
     } catch (e: any) {
       console.warn('Grokky: failed to add run button:', e.message);
