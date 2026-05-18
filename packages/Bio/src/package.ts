@@ -1575,9 +1575,9 @@ export class PackageFunctions {
   }
 
   @grok.decorators.demo({
-    description: 'SI-RNA sequences, molecular structures, curves and assay data',
-    demoPath: 'Bioinformatics | SI-RNA',
-    path: '/apps/Tutorials/Demo/Bioinformatics/SI-RNA',
+    description: 'siRNA sequences, molecular structures, curves and assay data',
+    demoPath: 'Bioinformatics | siRNA',
+    path: '/apps/Tutorials/Demo/Bioinformatics/siRNA',
     meta: {demoSkip: 'true'} // skip for now, not sure why the tests are failing
   })
   static async demoBioSiRNA(): Promise<void> {
