@@ -41,19 +41,11 @@ For a Datagrok function in a package not covered by an inlined skill, call \`lis
 
 You have the AskUserQuestion tool available. When the user's request could reasonably be interpreted in multiple ways (which plot type, which column, which kind of cleanup), you MUST use AskUserQuestion to clarify before acting. NEVER guess when there are multiple valid options.`;
 
-// Core skills whose bodies are inlined into the system prompt so Claude does not need to
-// load them via the Skill tool. Each saves a 2-3s tool-call round-trip per session.
+// Inlined into the system prompt. Only datagrok-exec is universal (the fenced-block
+// contract is needed for every response that emits code). Everything else is loaded
+// on demand via the Skill tool — skills' description triggers handle routing.
 const INLINED_SKILL_NAMES = [
   'datagrok-exec',
-  'datagrok-df-and-columns',
-  'datagrok-filtering',
-  'datagrok-selection',
-  'datagrok-viewers',
-  'datagrok-grid-customization',
-  'datagrok-calc-column',
-  'datagrok-chem-toolkit',
-  'datagrok-chem-data',
-  'datagrok-projects',
 ];
 
 function loadInlinedSkills(): string {

@@ -170,14 +170,6 @@ export class ClaudeRuntimeClient {
     this.ws.send(JSON.stringify({type: 'input_response', sessionId, value}));
   }
 
-  sendExecResult(sessionId: string, results: Array<{blockIndex: number; ok: boolean; value?: unknown; error?: string}>): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
-      return;
-    if (!results || results.length === 0)
-      return;
-    this.ws.send(JSON.stringify({type: 'exec_result', sessionId, results}));
-  }
-
   async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel, systemPromptMode?: string}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}`;

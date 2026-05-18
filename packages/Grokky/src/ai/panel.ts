@@ -96,7 +96,8 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   prependViewContext(prompt: string, view: DG.ViewBase): string;
   prependEntityContext(prompt: string): string;
   updateStreaming(content: string, loader: HTMLElement): void;
-  finalizeStreaming(content: string, view: DG.ViewBase): Promise<void>;
+  finalizeStreaming(content: string, view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>>;
+  appendUiMessage(content: string): void;
   clearStreaming(): void;
   showInputRequest(input: any): Promise<any>;
   cancelInputRequest(): void;
@@ -136,12 +137,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _onClearChatRequest: rxjs.Subject<void> = new rxjs.Subject<void>();
   public get onClearChatRequest(): rxjs.Observable<void> {
     return this._onClearChatRequest.asObservable();
-  }
-  private static readonly MAX_AUTO_RETRIES = 2;
-  private _autoRetryCount = 0;
-  private _onAutoRetryRequest = new rxjs.Subject<{reason: string}>();
-  public get onAutoRetryRequest(): rxjs.Observable<{reason: string}> {
-    return this._onAutoRetryRequest.asObservable();
   }
   private runButtonTooltip: typeof actionButtionValues[keyof typeof actionButtionValues] = actionButtionValues.run;
   public inputControlsDiv: HTMLElement;
@@ -661,46 +656,24 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
-  async finalizeStreaming(content: string, view: DG.ViewBase): Promise<void> {
+  async finalizeStreaming(content: string, view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>> {
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
       this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
-      return;
+      return [];
     }
     this.renderFinalContent(content);
-    const {elements, entries} = await executeDatagrokBlocks(content, view);
+    const {elements, errors} = await executeDatagrokBlocks(content, view);
     for (const el of elements) {
       this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
     }
-    if (entries.length > 0) {
-      try {
-        ClaudeRuntimeClient.getInstance().sendExecResult(this.sessionId, entries);
-      } catch (e) {
-        console.warn('sendExecResult failed:', e);
-      }
-      const failed = entries.filter((e) => !e.ok);
-      if (failed.length > 0) {
-        if (this._autoRetryCount < AIPanel.MAX_AUTO_RETRIES) {
-          this._autoRetryCount++;
-          this.appendMessage('' as any, {
-            title: '', fromUser: false, uiOnly: true,
-            content: `_Retrying after exec failure (${this._autoRetryCount}/${AIPanel.MAX_AUTO_RETRIES})…_`,
-          });
-          const reason = `${failed.length} datagrok-exec block(s) failed. The error context above contains the failure reason. Diagnose the cause and emit a corrected datagrok-exec block to complete the user's request.`;
-          this._onAutoRetryRequest.next({reason});
-        } else {
-          this.appendMessage('' as any, {
-            title: '', fromUser: false, uiOnly: true,
-            content: `_Stopped after ${AIPanel.MAX_AUTO_RETRIES} auto-retries — exec is still failing. Try giving more context or a different approach._`,
-          });
-          this._autoRetryCount = 0;
-        }
-      } else {
-        this._autoRetryCount = 0;
-      }
-    }
+    return errors;
+  }
+
+  public appendUiMessage(content: string): void {
+    this.appendMessage('' as any, {title: '', fromUser: false, uiOnly: true, content});
   }
 
   protected renderFinalContent(content: string): void {
@@ -832,7 +805,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       : '';
     this._pendingAttachmentsForRender = [...this.attachedEntities];
     this.clearAttachments();
-    this._autoRetryCount = 0;
     this._promptHistoryIndex = null;
     this._onRunRequest.next({
       prevMessages: this._messages,
@@ -1145,7 +1117,7 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
     };
   }
 
-  async finalizeStreaming(content: string, _view: DG.ViewBase): Promise<void> {
+  async finalizeStreaming(content: string, _view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>> {
     this.renderFinalContent(content);
     // Extract SQL from fenced code blocks and inject into query editor
     const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(content);
@@ -1153,6 +1125,7 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
       const sql = sqlMatch[1].trimEnd().replace(/;+$/, '');
       this.setAndRunFunc(sql);
     }
+    return [];
   }
 }
 
@@ -1217,7 +1190,7 @@ export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInput
     };
   }
 
-  async finalizeStreaming(content: string, _view: DG.ViewBase): Promise<void> {
+  async finalizeStreaming(content: string, _view: DG.ViewBase): Promise<Array<{blockIndex: number; error: string}>> {
     this.renderFinalContent(content);
     // Extract code from datagrok-exec blocks and set on the script editor
     const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(content);
@@ -1229,5 +1202,6 @@ export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInput
       (this.view as DG.ScriptView).code = codeMatch[1].trimEnd();
       ui.setUpdateIndicator(this.view.root, false);
     }
+    return [];
   }
 }
