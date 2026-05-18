@@ -9,7 +9,7 @@ import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMa
 import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
-import {showSuggestionsMenu} from './prompt-suggestions';
+import {resolveContextScopes, showSuggestionsMenu} from './prompt-suggestions';
 
 export type MessageType = {role: string; content: any};
 
@@ -235,11 +235,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.rawRenderButton.style.color = this._rawRender ? 'var(--blue-1)' : '';
       this.root.classList.toggle('d4-ai-raw-mode', this._rawRender);
     }, 'Toggle raw console');
-    this.wandButton = ui.iconFA('magic', () => showSuggestionsMenu('context', (prompt) => {
-      this.textArea.value = prompt;
-      this.handleRun();
-    }), 'Prompt suggestions');
+    this.wandButton = ui.iconFA('magic', async (e) => {
+      const scopes = await resolveContextScopes(this.view);
+      showSuggestionsMenu(scopes, (prompt) => this.runSuggestion(prompt), e);
+    }, 'Prompt suggestions');
     this.wandButton.classList.add('grokky-search-wand');
+    this.setWandVisible(true);
     this.hideContentIcons();
     this.inputControlsDiv = ui.divH([
       this.wandButton, this.micButton, this.rawRenderButton,
@@ -319,6 +320,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     if (!aiContainer.contains(this.root))
       aiContainer.appendChild(this.root);
     grok.shell.windows.showAI = true;
+    this.renderEmptyState();
     if (focus)
       this.textArea.focus();
     else
@@ -476,6 +478,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }, loader?: HTMLElement
   ): PanelMessageRet | undefined {
     let ret: PanelMessageRet | undefined = undefined;
+    const emptyState = this.outputArea.querySelector('.grokky-empty-state');
+    if (emptyState) {
+      emptyState.remove();
+      this.setWandVisible(true);
+    }
     if (!uiMessage.uiOnly)
       this._messages.push(aiMessage);
     if (uiMessage.onlyAddToMessages)
@@ -791,10 +798,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return;
     const inputs = this.getCurrentInputs();
     this.textArea.value = '';
-    this._pendingEntityContext = this.attachedEntities.length
-      ? 'Attached Datagrok entities (use MCP tools to fetch full details by id/nqName/path):\n' +
-        this.attachedEntities.map((e) => this.describeEntity(e)).join('\n')
-      : '';
+    this._pendingEntityContext = this.attachedEntities.length ?
+      'Attached Datagrok entities (use MCP tools to fetch full details by id/nqName/path):\n' +
+        this.attachedEntities.map((e) => this.describeEntity(e)).join('\n') :
+      '';
     this.clearAttachments();
     this._promptHistoryIndex = null;
     this._onRunRequest.next({
@@ -857,6 +864,48 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.outputArea.innerHTML = '';
     this._onClearChatRequest.next();
     this.hideContentIcons();
+    this.renderEmptyState();
+  }
+
+  protected runSuggestion(prompt: string): void {
+    this.textArea.value = prompt;
+    this.handleRun();
+  }
+
+  protected shouldShowEmptyState(): boolean {
+    return this.view instanceof DG.TableView &&
+      this._uiMessages.length === 0 &&
+      !this.outputArea.querySelector('.grokky-empty-state');
+  }
+
+  private setWandVisible(visible: boolean): void {
+    this.wandButton.style.display = visible && this.view instanceof DG.TableView ? '' : 'none';
+  }
+
+  protected async renderEmptyState(): Promise<void> {
+    if (!this.shouldShowEmptyState())
+      return;
+    const scopes = await resolveContextScopes(this.view);
+    if (!this.shouldShowEmptyState())
+      return;
+
+    const blocks = scopes.map((s) => {
+      const icon = ui.iconFA(s.icon ?? 'circle');
+      icon.classList.add('grokky-scope-icon');
+      if (s.key)
+        icon.classList.add(`grokky-scope-${s.key}`);
+      const header = ui.h3(ui.span([icon, s.label]));
+      const cards = s.suggestions.slice(0, 2).map((sg) => {
+        const card = ui.card(ui.divText(sg.label ?? sg.prompt));
+        card.onclick = () => this.runSuggestion(sg.prompt);
+        return card;
+      });
+      return ui.divV([header, ui.divH(cards)]);
+    });
+
+    const root = ui.panel([ui.h2('What can I help you with?'), ...blocks], 'grokky-empty-state');
+    this.outputArea.appendChild(root);
+    this.setWandVisible(false);
   }
 
   private async showHistory() {

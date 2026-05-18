@@ -1,6 +1,6 @@
 # Retrosynthesis changelog
 
-## 1.0.7 (2026-05-18)
+## 1.1.0 (2026-05-18)
 
 * Demo fix
 

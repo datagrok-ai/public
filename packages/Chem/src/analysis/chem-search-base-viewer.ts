@@ -196,7 +196,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       if (propsDict[key].color) {
         const color = DG.Color.toHtml(propsDict[key].color);
         if (!propsDict[key].isTextColorCoded) {
-          value.style.backgroundColor = color,
+          value.style.backgroundColor = color;
           value.style.color = DG.Color.toHtml(DG.Color.getContrastColor(propsDict[key].color));
         } else
           value.style.color = color;

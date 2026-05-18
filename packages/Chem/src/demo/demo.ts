@@ -220,34 +220,6 @@ export async function _demoMMPA(): Promise<void> {
 }
 
 
-export async function _demoMoleculesVisualizations(): Promise<void> {
-  const demoScript = new DemoScript('Demo', 'Creating various viewers on molecule columns');
-  let tv: DG.TableView;
-  await demoScript
-    .step('Loading table', async () => {
-      tv = await openMoleculeDataset('r-groups.csv');
-      grok.shell.windows.showContextPanel = false;
-      grok.shell.windows.showHelp = false;
-    }, {description: 'Load dataset with molecule columns', delay: 2000})
-    .step('Adding scatter plot', async () => {
-      await DG.delay(1000);
-      tv.scatterPlot({x: 'R2', y: 'R1', jitterSize: 4, size: 'MolWt'});
-    }, {description: 'Adding a scatter plot with molecule columns for x and y axes', delay: 2000})
-    .step('Filtering data', async () => {
-      tv.getFiltersGroup();
-      await DG.delay(1000);
-      const startMolwt = 240;
-      const stopMolWt = 350;
-      for (let i = startMolwt; i < stopMolWt; i + 20) {
-        tv.dataFrame.rows.match(`ExactMolWt > ${i}`).filter();
-        await DG.delay(500);
-      }
-    }, {description: 'Results of filtering are interactively shown on scatter plot', delay: 3000})
-    .step('Final', async () => console.log('Finished'))
-    .start();
-}
-
-
 export async function _demoRgroupAnalysis(): Promise<void> {
   const demoScript = new DemoScript('R-Group Analysis', 'Performing R Group Analysis',
     undefined, {autoStartFirstStep: true});

@@ -1,3 +1,4 @@
+import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {getMolSafe} from './mol-creation_rdkit';
 import {MolList, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -128,7 +129,7 @@ export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null,
       if (mol) {
         let rdKol: number[] | null = null;
         if (col)
-          rdKol = hexToPercentRgb(col);
+          rdKol = DG.Color.hexToPercentRgb(col);
         const uncommonAtoms = [...Array(mol.get_num_atoms()).keys()];
         const uncommonBonds = [...Array(mol.get_num_bonds()).keys()];
         if (mcsMol) {
@@ -186,7 +187,7 @@ export function waitFor(condition: () => boolean, timeout: number = 5000, interv
     let timeoutRef: any = null;
     const intervalRef = setInterval(() => {
       if (condition()) {
-        clearInterval(interval);
+        clearInterval(intervalRef);
         clearTimeout(timeoutRef);
         resolve(true);
       }

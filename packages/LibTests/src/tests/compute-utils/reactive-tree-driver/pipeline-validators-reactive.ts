@@ -460,7 +460,10 @@ category('ComputeUtils: Driver pipeline validators: cancelled controller', async
   test('getOutline and setValidation throw ControllerCancelled after close()', async () => {
     testScheduler.run(() => {
       const stubOutline = {configId: 'stub'} as any;
-      const controller = new PipelineValidatorController({}, new Set(), new Set(), 'spec-id', stubOutline);
+      const controller = new PipelineValidatorController({
+        inputs: {}, inputsSet: new Set(), outputsSet: new Set(), callInputs: new Set(),
+        id: 'spec-id', outline: stubOutline,
+      });
       controller.close();
       let outlineThrew = false;
       let setValThrew = false;

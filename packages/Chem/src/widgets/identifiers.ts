@@ -99,7 +99,7 @@ class UniChemSource {
       const id = table.get('src_id', i);
       this._sources[id] = new UniChemSource(
         id, table.get('name', i), table.get('name_long', i), table.get('name_label', i),
-        table.get('base_id_url', i), table.get('base_id_url', i), table.get('description', i),
+        table.get('base_id_url', i), table.get('src_url', i), table.get('description', i),
       );
     }
   }

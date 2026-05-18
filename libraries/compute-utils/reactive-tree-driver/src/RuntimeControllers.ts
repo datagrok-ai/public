@@ -8,6 +8,7 @@ export interface IControllerBase {
   getMatchedInputs(): Readonly<Set<string>>;
   getMatchedOutputs(): Readonly<Set<string>>;
   getAdditionalParam(name: string): any | undefined;
+  hasCall(name: string): boolean;
 }
 
 export interface IRuntimeLinkController extends IControllerBase {

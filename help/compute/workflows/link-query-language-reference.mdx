@@ -63,7 +63,7 @@ Notes:
 | Flag       | Meaning                                                                              | Used in                                       |
 |------------|--------------------------------------------------------------------------------------|-----------------------------------------------|
 | `optional` | A missing match is allowed; the link simply does not fire for that instance.         | Any query.                                    |
-| `call`     | Resolve to the matched `FuncCall` itself rather than a script IO.                    | `funccall` [actions](./link-types#funccall-actions). |
+| `call`     | Match the node (FuncCall) itself rather than a script IO. In `funccall` actions: required for inputs read as `DG.FuncCall` and for the `setFuncCall` output target. In all other link types: must be combined with `(optional)`; the controller exposes a `hasCall(name)` presence check. Not allowed on `to` outside `funccall` actions, not allowed inside `base`, not allowed with `(template)`. | All link types (with the constraints above). |
 | `template` | Expand the last segment's `\|`-list into one query per id (see [guide](./link-query-language#template-queries)). | `from` / `to` in data links. |
 
 ### Modifiers and stop ids
@@ -196,5 +196,8 @@ from: "in:same(@base, workflowA|workflowB)/.../result"
 - Reference selectors **require** a leading `@ref` argument; non-ref
   selectors (`first`, `last`, `all`, `expand`) must **not** take one. Mixing
   is a parse-time error.
-- The `call` flag is only meaningful in `funccall` actions; in data links it
-  is silently inert.
+- Outside `funccall` actions, `(call)` requires `(optional)` — the matched
+  FuncCall isn't exposed to handlers; the controller only offers a
+  `hasCall(name)` presence check. `(call)` on a `to` IO is rejected outside
+  `funccall` actions. `(call)` inside `base` and `(call,template)`
+  combinations are rejected at parse time.

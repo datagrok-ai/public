@@ -142,13 +142,13 @@ export function rGroupAnalysis(col: DG.Column): void {
 
   //settings button to adjust mcs and r-groups settings
   const rGroupsSettingsIcon = ui.icons.settings(() => {
-    rGroupSettinsOpened = !rGroupSettinsOpened;
-    const display = !rGroupSettinsOpened ? 'none' : 'flex';
+    rGroupSettingsOpened = !rGroupSettingsOpened;
+    const display = !rGroupSettingsOpened ? 'none' : 'flex';
     rGroupMatchingStrategy.root.style.display = display;
     onlyMatchAtRGroupsInput.root.style.display = display;
   }, 'R group analysis settings');
   rGroupsSettingsIcon.classList.add('chem-rgroup-settings-icon');
-  let rGroupSettinsOpened = false;
+  let rGroupSettingsOpened = false;
 
   const dlg = ui.dialog({
     title: 'R-Groups Analysis',
