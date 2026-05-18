@@ -15,6 +15,7 @@ import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
+import {Subscription} from 'rxjs';
 
 const R_GROUP_PARAMS_STORAGE_NAME = 'r-group-params';
 const R_GROUP_PARAMS_KEY = 'selected';
@@ -242,36 +243,49 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     return;
   }
 
-  let progressBar;
+  let progressBar: DG.TaskBarProgressIndicator | undefined;
+  let cancelSub: Subscription | undefined;
   try {
     const coreSmarts = core;
     core = PackageFunctions.convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
     const labelledRGroups = !!MolfileHandler.getInstance(core)
       .atomTypes.filter((it) => it.startsWith('R')).length;
     if (!labelledRGroups && params.onlyMatchAtRGroups) {
-      throw (new Error(`Core has no labelled R groups. Add labelled R groups to core or set 
+      throw (new Error(`Core has no labelled R groups. Add labelled R groups to core or set
     'Only match at R groups' parameter to false`));
     }
     const coreIsQMol = core.includes('M  ALS') || core.includes('M  RAD');
     if (coreIsQMol)
       core = coreSmarts;
-    progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
-    //const res = await rGroupsPython(col, core, columnPrefixInput.value, true, onlyMatchAtRGroups);
+    progressBar = DG.TaskBarProgressIndicator.create('R-Group analysis running...', {cancelable: true});
+    cancelSub = progressBar.onCanceled.subscribe(async () => {
+      const svc = await getRdKitService();
+      await svc.setTerminateFlag(true);
+    });
 
     const rGroupOptions = {
       matchingStrategy: params.rGroupMatchingStrategy,
       includeTargetMolInResults: true,
       onlyMatchAtRGroups: params.onlyMatchAtRGroups,
     };
+
+    if (progressBar.canceled) return;
+
     const {rGroups, highlightCol} = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
+
+    if (progressBar.canceled) return;
+    (await getRdKitService()).setTerminateFlag(false);
+
     const rdkit = PackageFunctions.getRdKitModule();
     if (rGroups.length) {
       //unmatched are those items for which all R group cols are empty
       const unmatchedItems = new Uint8Array(rGroups[0].length).fill(0);
       latestAnalysisCols[col.dataFrame.name] = [];
       for (const resCol of rGroups) {
+        if (progressBar.canceled) return;
         const molsArray = new Array<string>(resCol.length);
         for (let i = 0; i < resCol.length; i++) {
+          if (i % 256 === 0 && progressBar.canceled) return;
           const molStr = resCol.get(i);
           if (resCol.name !== 'Core') { //R Group columns
             if (!molStr)
@@ -297,6 +311,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
             }
           }
         }
+        if (progressBar.canceled) return;
         let rColName = '';
         if (resCol.name === 'Core') {
           rColName = corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name;
@@ -312,6 +327,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         col.dataFrame.columns.add(rCol);
         latestAnalysisCols[col.dataFrame.name].push(rColName);
       }
+      if (progressBar.canceled) return;
       //create column for r groups highlight
       if (highlightCol) {
         col.dataFrame.columns.add(highlightCol);
@@ -330,7 +346,6 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       const filterUnmatched = DG.BitSet.create(rGroups[0].length).init((i) => matchCol.get(i));
       col.dataFrame.filter.copyFrom(filterUnmatched);
     }
-    progressBar.close();
 
     return {
       xAxisColName: rGroups.length > 1 ? rGroups[1].name : '', //rGroups[0] column is Core column
@@ -338,8 +353,12 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       highlightColName: rGroups.length ? highlightCol?.name : undefined,
     };
   } catch (e: any) {
-    grok.shell.error(e);
+    if (!progressBar?.canceled)
+      grok.shell.error(e);
+  } finally {
+    cancelSub?.unsubscribe();
     progressBar?.close();
+    getRdKitService().then((svc) => svc.setTerminateFlag(false)).catch(() => {});
   }
 }
 
