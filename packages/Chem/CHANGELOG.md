@@ -3,6 +3,15 @@
 ## v.next
 
 * GROK-20108: Docker API: Throw a clear error when the `chem-chem` container is not available, instead of `Cannot read properties of undefined (reading 'id')`
+* Chem: Fixed `waitFor` clearing the wrong timer handle, leaving the polling interval running after the condition was met
+* OCL worker: Added missing `break` statements so a drug-likeness or molfile-to-V3K request no longer also runs and posts later cases' results
+* OCL worker: Fixed an off-by-one atom loop that could miscalculate molecule charge
+* RDKit worker: Fixed the R-group analysis handler posting a stray `undefined` result due to a shadowed variable
+* Identifiers: Fixed the UniChem home-page link mapped to the base-ID URL instead of `src_url`
+* Chem search: Replaced a floating promise with proper `if`/`.catch()` so substructure-search sub-task rejections are handled
+* RDKit service: Worker `terminate()` now rejects in-flight calls instead of leaving callers hung forever; guarded the cluster-MCS timeout path accordingly
+* BitBIRCH clustering: Guaranteed the clustering worker is terminated even if the request fails synchronously
+* Highlight widget: Unsubscribe `ItemsGrid` event subscriptions when the grid is rebuilt or the widget is detached
 
 ## 1.17.8 (2026-05-12)
 

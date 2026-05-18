@@ -628,9 +628,15 @@ export class RdKitService {
           this.restartWorker(workerIndex);
           resolver(); // no point in waiting... its probably stuck
         }, 45000); // if it is running for more than 30s, restart the worker
-        const r = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
-        clearTimeout(t);
-        res[index] = r;
+        try {
+          res[index] = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
+        } catch (e) {
+          // worker errored or was restarted on timeout — skip this cluster; other workers drain the queue
+          console.warn(`RDKit worker ${workerIndex} MCS calculation failed: ${e instanceof Error ? e.message : e}`);
+          return;
+        } finally {
+          clearTimeout(t);
+        }
       }
       await process(workerIndex, resolver);
     };

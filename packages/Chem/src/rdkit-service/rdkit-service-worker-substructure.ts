@@ -138,7 +138,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         try {
           const cachedMol = this._molsCache?.get(molecules[i]);
           mol = cachedMol ?? this.getMolWithSmilesCheck(molecules[i], details)!;
-          if (cachedMol || this.addToCache(mol))
+          // addToCache is called for hits too, so the per-dataset budget counts every processed molecule
+          if (mol && this.addToCache(mol))
             isCached = true;
           if (mol) {
             if (stereoAgnostic)
@@ -497,10 +498,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   invalidateCache() {
     this._cacheCounter = 0;
-    if (this._molsCache) {
-      this._molsCache.forEach((it) => it?.delete());
-      this._molsCache.clear();
-    }
   }
 
   mmpGetFragments(molecules: string[]): IMmpFragmentsResult {
