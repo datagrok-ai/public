@@ -65,8 +65,8 @@ export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
   return grok.shell.addTableView(table);
 }
 
-export function addCustomHelp(linkAddress: string, sectioName: string) {
-  const str = `to find out more about ${sectioName} in Datagrok.`;
+export function addCustomHelp(linkAddress: string, sectionName: string) {
+  const str = `to find out more about ${sectionName} in Datagrok.`;
   const el = ui.div([
     ui.divText('Click'),
     ui.link(`here`, linkAddress),

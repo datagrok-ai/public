@@ -72,7 +72,7 @@ function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray |
   const sortedMolStrings = DG.Column.fromType(DG.TYPE.STRING, 'molecule', length).init((i) => sortedMolStringsArr[i]);
   const sortedMolInd = DG.Column.fromType(DG.TYPE.INT, 'index', length).init((i) => sortedMolIndArr[i]);
   sortedMolStrings.semType = DG.SEMTYPE.MOLECULE;
-  const sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', length).init((i) => sortedScoresArr[i]); ;
+  const sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', length).init((i) => sortedScoresArr[i]);
   return DG.DataFrame.fromColumns([sortedMolStrings, sortedScores, sortedMolInd]);
 }
 
@@ -185,7 +185,7 @@ async function getUint8ArrayFingerprints(
   await chemBeginCriticalSection();
   try {
     const colsArray = checkForSavedColumns(molCol, [fingerprintsType, canonicalSmilesColName]);
-    const fgsCheck = colsArray[fingerprintsType]; ;
+    const fgsCheck = colsArray[fingerprintsType];
     if (returnSmiles) {
       const smilesCheck = colsArray[canonicalSmilesColName];
       if (fgsCheck && smilesCheck)
@@ -246,7 +246,7 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 }
 
 /**
-* Performes substructure search in the given moelcular column by a given substructure
+* Performs substructure search in the given molecular column by a given substructure
 * @async
 * @param {DG.Column} molStringsColumn - column search in
 * @param {string} molString - smiles/molblock to filter by
@@ -255,7 +255,7 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 * @param {boolean} columnIsCanonicalSmiles - if column is canonical smiles itself, than invisible
 canonical smiles column
 will not be created along with pattern fp column
-* @param {boolean} awaitAll - in case of true fucntion will wait for results on a whole table to be received
+* @param {boolean} awaitAll - in case of true function will wait for results on a whole table to be received
 before returning (required for compatibility)
 * */
 export async function chemSubstructureSearchLibrary(
