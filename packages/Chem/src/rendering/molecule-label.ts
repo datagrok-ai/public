@@ -24,7 +24,7 @@ export async function drawMoleculeLabels(
       //@ts-ignore
       const point = sp.pointToScreen(i);
       if (point.x > minX && point.x < maxX && point.y > minY && point.y < maxY && table.filter.get(i)) {
-        if (counter == 20) {
+        if (counter === 20) {
           sp.setOptions({
             markerDefaultSize: smallMarkerSize,
             sizeColumnName: sizeCol,

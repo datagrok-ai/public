@@ -188,7 +188,7 @@ export class RdKitService {
         }
       });
       progressFunc(1);
-    });
+    }).catch((err) => console.error('rdkit-service _doParallelBatches tail update failed:', err));
     const getProgress = () => processedMolecules / dataLength;
     return {getProgress, setTerminateFlag, getTerminateFlag, promises};
   }

@@ -227,7 +227,7 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 export async function chemGetDiversities(molStringsColumn: DG.Column, limit: number)
       : Promise<DG.Column | null> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
-  assure.notNull(limit, 'queryMolString');
+  assure.notNull(limit, 'limit');
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, false)!;
 
@@ -367,14 +367,16 @@ export async function chemSubstructureSearchLibrary(
         }
       });
 
-      subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
-        _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled, ${currentSearch}`);
-        if (!subFuncs!.getTerminateFlag()) {
-          sub.unsubscribe();
-          _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled firing finish events, ${currentSearch}`);
-          fireFinishEvents();
-        }
-      }));
+      if (subFuncs?.promises) {
+        Promise.allSettled(subFuncs.promises).then(() => {
+          _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled, ${currentSearch}`);
+          if (!subFuncs!.getTerminateFlag()) {
+            sub.unsubscribe();
+            _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs all settled firing finish events, ${currentSearch}`);
+            fireFinishEvents();
+          }
+        }).catch((err) => _package.logger.debug(`in chemSubstructureSearchLibrary, subFuncs settle failed: ${err}`));
+      }
     }
     return result.bitArray;
   } catch (e: any) {

@@ -76,7 +76,7 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
   const calcForWholeButton = ui.button('Calculate for whole dataset', async () => {
     const alertsFunc = DG.Func.find({package: 'Chem', name: 'structuralAlertsTopMenu'})[0];
     const alertsFuncCall = alertsFunc.prepare();
-    ui.dialog('Structural alers')
+    ui.dialog('Structural alerts')
       .add(await alertsFuncCall.getEditor())
       .onOK(() => {
         const args: any = {};
