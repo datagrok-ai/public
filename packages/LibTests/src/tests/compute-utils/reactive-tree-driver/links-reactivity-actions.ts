@@ -7,7 +7,7 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of, Subject} from 'rxjs';
-import {delay, filter, mapTo, take} from 'rxjs/operators';
+import {delay, filter, map, mapTo, take} from 'rxjs/operators';
 import {snapshotCompare, createTestScheduler} from '../../../test-utils';
 
 
@@ -645,6 +645,110 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       expectObservable(node.getItem().getStateStore().getStateChanges('c')).toBe('a 200ms b', {a: undefined, b: 1});
       expectObservable(node.getItem().getStateStore().getStateChanges('d')).toBe('a 300ms b', {a: undefined, b: 1});
       expectObservable(node.getItem().getStateStore().getStateChanges('e')).toBe('a 400ms b', {a: undefined, b: 1});
+    });
+  });
+
+  test('hasCall (call,optional) branches handler output: guard present', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+        {id: 'step3', nqName: 'LibTests:TestDiv2'},
+      ],
+      links: [{
+        id: 'link1',
+        from: ['in1:step1/b', 'guard(call,optional):step3'],
+        to: 'out1:step2/a',
+        handler({controller}) {
+          const in1 = controller.getFirst<number>('in1')!;
+          const v = controller.hasCall('guard') ? in1 * 100 : in1;
+          controller.setAll('out1', v);
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 3);
+      });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 300});
+    });
+  });
+
+  test('hasCall (call,optional) branches handler output: guard absent', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [{
+        id: 'link1',
+        from: ['in1:step1/b', 'guard(call,optional):missingStep'],
+        to: 'out1:step2/a',
+        handler({controller}) {
+          const in1 = controller.getFirst<number>('in1')!;
+          const v = controller.hasCall('guard') ? in1 * 100 : in1;
+          controller.setAll('out1', v);
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 3);
+      });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 3});
+    });
+  });
+
+  test('hasCall throws on unknown call input name (typo guard)', async () => {
+    const errors$ = new Subject<unknown>();
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+        {id: 'step3', nqName: 'LibTests:TestDiv2'},
+      ],
+      links: [{
+        id: 'link1',
+        from: ['in1:step1/b', 'guard(call,optional):step3'],
+        to: 'out1:step2/a',
+        handler({controller}) {
+          try {
+            controller.hasCall('typo');
+          } catch (e) {
+            errors$.next(e);
+          }
+          controller.setAll('out1', controller.getFirst('in1'));
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 1);
+      });
+      expectObservable(errors$.pipe(map((e: any) => e instanceof Error && /unknown call input typo/.test(e.message))), '^ 500ms !').toBe('-a', {a: true});
     });
   });
 

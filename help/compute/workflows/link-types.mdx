@@ -68,8 +68,10 @@ _Optional_
 
 Can be either a LQL string or an array of zero or more LQL strings.
 
-If all LQL queries match, the link will not be created.
-Queries are targeting script nodes or workflows.
+If any LQL query matches, the link will not be created.
+Queries are targeting script nodes or workflows. The `(call)` flag is
+accepted here as a clarity marker but has no effect — `not` queries are
+already node-level.
 
 #### `base`
 
@@ -566,6 +568,20 @@ setFuncCall(name: string, state: DG.FuncCall): void;
 ```
 
 Sets FuncCall to an output query with the specified name.
+
+
+### `hasCall` — presence check on all controllers
+
+```
+hasCall(name: string): boolean;
+```
+
+Available on every link controller. Returns `true` iff `name` was declared
+in `from` with the `(call)` flag and matched at runtime. Outside
+[FuncCall actions](#funccall-actions), `(call)` inputs must also be marked
+`(optional)` — the actual `DG.FuncCall` is not exposed; `hasCall` is the
+only way handlers see the result. Throws if `name` is not a declared
+`(call)` input.
 
 
 ### Pipeline actions

@@ -96,6 +96,12 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
   const flags = ast.children.filter((cnode) => cnode.type === 'Flag').map((cnode) => cnode.text as LinkFlags);
   const isBase = ioType === 'base';
   const isAction = ioType === 'actions';
+  if (flags.includes('call')) {
+    if (flags.includes('template'))
+      throw new Error(`Link io ${io}: (call) and (template) flags cannot be combined`);
+    if (isBase)
+      throw new Error(`Link io ${io}: (call) flag is not allowed in base queries`);
+  }
   const segments = ast.children.map((node) => {
     if (node.type === 'Selector') {
       const selector = node.children[0].text as LinkSelectors;

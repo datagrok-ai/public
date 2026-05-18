@@ -1254,6 +1254,79 @@ category('ComputeUtils: Driver links matching', async () => {
     cleanMatchInfos(matchInfos);
     await snapshotCompare(matchInfos, 'Links selector and tags matching');
   });
+
+  test('not(call):step3 snapshot equals not:step3', async () => {
+    const make = (notSpec: string): PipelineConfiguration => ({
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+        {id: 'step3', nqName: 'LibTests:TestDiv2'},
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
+        not: notSpec,
+      }],
+    });
+    const treeA = StateTree.fromPipelineConfig({config: await getProcessedConfig(make('guard:step3'))});
+    await treeA.init().toPromise();
+    const treeB = StateTree.fromPipelineConfig({config: await getProcessedConfig(make('guard(call):step3'))});
+    await treeB.init().toPromise();
+    const linksA = (treeA.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
+    const linksB = (treeB.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
+    const a = linksA.map((link) => matchLink(treeA, [], link));
+    const b = linksB.map((link) => matchLink(treeB, [], link));
+    cleanMatchInfos(a);
+    cleanMatchInfos(b);
+    expectDeepEqual(a, b);
+  });
+
+  test('Reject (call) without (optional) in data link', async () => {
+    let threw = false;
+    try {
+      await getProcessedConfig({
+        id: 'pipeline1',
+        type: 'static',
+        steps: [
+          {id: 'step1', nqName: 'LibTests:TestAdd2'},
+          {id: 'step2', nqName: 'LibTests:TestMul2'},
+        ],
+        links: [{
+          id: 'link1',
+          from: 'fc(call):step1',
+          to: 'out1:step2/a',
+        }],
+      });
+    } catch {
+      threw = true;
+    }
+    expectDeepEqual(threw, true);
+  });
+
+  test('Reject (call) on `to` in data link', async () => {
+    let threw = false;
+    try {
+      await getProcessedConfig({
+        id: 'pipeline1',
+        type: 'static',
+        steps: [
+          {id: 'step1', nqName: 'LibTests:TestAdd2'},
+          {id: 'step2', nqName: 'LibTests:TestMul2'},
+        ],
+        links: [{
+          id: 'link1',
+          from: 'in1:step1/res',
+          to: 'out1(call):step2',
+        }],
+      });
+    } catch {
+      threw = true;
+    }
+    expectDeepEqual(threw, true);
+  });
 });
 
 category('ComputeUtils: Driver link path shorthands', async () => {
@@ -1422,5 +1495,18 @@ category('ComputeUtils: Driver link path shorthands', async () => {
 
   test('Reject #before(@base) without tags', async () => {
     expectThrow('in1:#before(@base)/res');
+  });
+
+  test('Reject (call,template) combination', async () => {
+    expectThrow('fc(call,template):step1|step2');
+  });
+
+  test('Reject (call) in base query', async () => {
+    try {
+      parseLinkIO('base(call):expand(step1)', 'base');
+    } catch {
+      return;
+    }
+    throw new Error('Expected parseLinkIO to throw on (call) in base');
   });
 });

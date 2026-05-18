@@ -9,18 +9,48 @@ import {NodePath} from '../data/BaseTree';
 
 export class ControllerCancelled extends Error { };
 
+export interface ControllerBaseArgs {
+  inputs: Record<string, any[]>;
+  inputsSet: Set<string>;
+  outputsSet: Set<string>;
+  callInputs: Set<string>;
+  id: string;
+  scopeInfo?: ScopeInfo;
+}
+
+export interface ValidatorControllerArgs extends ControllerBaseArgs {
+  actions: Record<string, Map<string, string>>;
+  baseNode?: TreeNode<StateTreeNode>;
+}
+
+export interface PipelineValidatorControllerArgs extends ControllerBaseArgs {
+  outline: PipelineOutline;
+}
+
+export interface MutationControllerArgs extends ControllerBaseArgs {
+  outputNodes: Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]>;
+}
+
 export class ControllerBase<T> {
   private isActive = true;
 
   public outputs: Record<string, T> = {};
 
-  constructor(
-    public inputs: Record<string, any[]>,
-    public inputsSet: Set<string>,
-    public outputsSet: Set<string>,
-    public id: string,
-    public scopeInfo?: ScopeInfo,
-  ) {}
+  public inputs: Record<string, any[]>;
+  public inputsSet: Set<string>;
+  public outputsSet: Set<string>;
+  public callInputs: Set<string>;
+  public id: string;
+  public scopeInfo?: ScopeInfo;
+
+  constructor(args: ControllerBaseArgs) {
+    this.inputs = args.inputs;
+    this.inputsSet = args.inputsSet;
+    this.outputsSet = args.outputsSet;
+    this.callInputs = args.callInputs;
+    this.id = args.id;
+    this.scopeInfo = args.scopeInfo;
+  }
 
   getAll<T = any>(name: string): T[] {
     this.checkIsClosed();
@@ -30,6 +60,13 @@ export class ControllerBase<T> {
 
   getFirst<T = any>(name: string): T {
     return this.getAll<T>(name)?.[0];
+  }
+
+  hasCall(name: string): boolean {
+    this.checkIsClosed();
+    if (!this.callInputs.has(name))
+      throw new Error(`Handler for Link ${this.id} is trying to check an unknown call input ${name}`);
+    return this.inputsSet.has(name);
   }
 
   protected checkInput(name: string) {
@@ -65,16 +102,6 @@ export class ControllerBase<T> {
 }
 
 export class LinkController extends ControllerBase<[any, RestrictionType]> implements IRuntimeLinkController {
-  constructor(
-    public inputs: Record<string, any[]>,
-    public inputsSet: Set<string>,
-    public outputsSet: Set<string>,
-    public id: string,
-    public scopeInfo?: ScopeInfo,
-  ) {
-    super(inputs, inputsSet, outputsSet, id, scopeInfo);
-  }
-
   setAll<T = any>(name: string, state: T, restriction: RestrictionType = 'restricted') {
     this.checkIsClosed();
     this.checkOutput(name);
@@ -83,16 +110,13 @@ export class LinkController extends ControllerBase<[any, RestrictionType]> imple
 }
 
 export class ValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimeValidatorController {
-  constructor(
-    public inputs: Record<string, any[]>,
-    public inputsSet: Set<string>,
-    public outputsSet: Set<string>,
-    public id: string,
-    public actions: Record<string, Map<string, string>>,
-    public baseNode?: TreeNode<StateTreeNode>,
-    public scopeInfo?: ScopeInfo,
-  ) {
-    super(inputs, inputsSet, outputsSet, id, scopeInfo);
+  public actions: Record<string, Map<string, string>>;
+  public baseNode?: TreeNode<StateTreeNode>;
+
+  constructor(args: ValidatorControllerArgs) {
+    super(args);
+    this.actions = args.actions;
+    this.baseNode = args.baseNode;
   }
 
   getValidationAction(name: string, actionId: string): string | undefined {
@@ -111,16 +135,11 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
 
 export class PipelineValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimePipelineValidatorController {
   public output: ValidationResult | undefined;
+  public outline: PipelineOutline;
 
-  constructor(
-    public inputs: Record<string, any[]>,
-    public inputsSet: Set<string>,
-    public outputsSet: Set<string>,
-    public id: string,
-    public outline: PipelineOutline,
-    public scopeInfo?: ScopeInfo,
-  ) {
-    super(inputs, inputsSet, outputsSet, id, scopeInfo);
+  constructor(args: PipelineValidatorControllerArgs) {
+    super(args);
+    this.outline = args.outline;
   }
 
   setValidation(validation?: ValidationResult) {
@@ -135,16 +154,6 @@ export class PipelineValidatorController extends ControllerBase<ValidationResult
 }
 
 export class MetaController extends ControllerBase<any | undefined> implements IRuntimeMetaController {
-  constructor(
-    public inputs: Record<string, any[]>,
-    public inputsSet: Set<string>,
-    public outputsSet: Set<string>,
-    public id: string,
-    public scopeInfo?: ScopeInfo,
-  ) {
-    super(inputs, inputsSet, outputsSet, id, scopeInfo);
-  }
-
   setViewMeta(name: string, meta?: any | undefined) {
     this.checkIsClosed();
     this.checkOutput(name);
@@ -156,16 +165,11 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
   public granularOps: Record<string, GranularMutationOp[]> = {};
   private removedUuids = new Set<string>();
   private usedMode: Record<string, 'replace' | 'granular'> = {};
+  public outputNodes: Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]>;
 
-  constructor(
-    public inputs: Record<string, any[]>,
-    public inputsSet: Set<string>,
-    public outputsSet: Set<string>,
-    public id: string,
-    public scopeInfo: ScopeInfo | undefined,
-    public outputNodes: Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]>,
-  ) {
-    super(inputs, inputsSet, outputsSet, id, scopeInfo);
+  constructor(args: MutationControllerArgs) {
+    super(args);
+    this.outputNodes = args.outputNodes;
   }
 
   private checkExclusivity(name: string, mode: 'replace' | 'granular') {
@@ -234,16 +238,6 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
 }
 
 export class NodeMetaController extends ControllerBase<any | undefined> implements INameSelectorController {
-  constructor(
-    public inputs: Record<string, any[]>,
-    public inputsSet: Set<string>,
-    public outputsSet: Set<string>,
-    public id: string,
-    public scopeInfo?: ScopeInfo,
-  ) {
-    super(inputs, inputsSet, outputsSet, id, scopeInfo);
-  }
-
   setDescriptionItem(name: string, val: string) {
     this.checkIsClosed();
     this.outputs[name] = val;
@@ -253,16 +247,6 @@ export class NodeMetaController extends ControllerBase<any | undefined> implemen
 export class RuntimeReturnController extends ControllerBase<any | undefined> implements IRuntimeReturnController {
   public result: any;
 
-  constructor(
-    public inputs: Record<string, any[]>,
-    public inputsSet: Set<string>,
-    public outputsSet: Set<string>,
-    public id: string,
-    public scopeInfo?: ScopeInfo,
-  ) {
-    super(inputs, inputsSet, outputsSet, id, scopeInfo);
-  }
-
   returnResult(result: any) {
     this.checkIsClosed();
     this.result = result;
@@ -270,16 +254,6 @@ export class RuntimeReturnController extends ControllerBase<any | undefined> imp
 }
 
 export class FuncallActionController extends ControllerBase<any | undefined> implements IFuncallActionController {
-  constructor(
-    public inputs: Record<string, any[]>,
-    public inputsSet: Set<string>,
-    public outputsSet: Set<string>,
-    public id: string,
-    public scopeInfo?: ScopeInfo,
-  ) {
-    super(inputs, inputsSet, outputsSet, id, scopeInfo);
-  }
-
   setFuncCall(name: string, state: DG.FuncCall) {
     this.checkIsClosed();
     this.checkOutput(name);
