@@ -1501,6 +1501,7 @@ export interface IDartApi {
   grok_PictureMixin_Get_PictureUrl(p: any): any;
   grok_Project_Get_Path(p: any): any;
   grok_Project_Get_Options(p: any): any;
+  grok_Project_Get_Meta(p: any): any;
   grok_Project_From_Id(id: String): any;
   grok_Project_Get_IsOnServer(p: any): any;
   grok_Project_GetRelations(p: any, link: Bool): any;
