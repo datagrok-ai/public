@@ -39,7 +39,6 @@ export interface UserMessage {
   message: string;
   apiKey?: string;
   mcpServerUrl?: string;
-  apiUrl?: string;
   outputSchema?: object;
   systemPromptMode?: 'datagrok' | 'bash' | 'none';
   model?: ClaudeModel;
@@ -64,20 +63,7 @@ export interface SyncMessage {
   packageName?: string;
 }
 
-export interface ExecResultMessage {
-  type: 'exec_result';
-  sessionId: string;
-  results: ExecResultEntry[];
-}
-
-export interface ExecResultEntry {
-  blockIndex: number;
-  ok: boolean;
-  value?: unknown;
-  error?: string;
-}
-
-export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage | ExecResultMessage;
+export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage;
 
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
