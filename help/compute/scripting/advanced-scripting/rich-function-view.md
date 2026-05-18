@@ -559,6 +559,15 @@ Click on the column header with table data (e.g. `Temp. vs time`) to see conveni
 
 With **RichFunctionView** you can use the powerful built-in optimization functions.
 
+:::warning High-intensity computation
+
+Both **Sensitivity** analysis and **Parameter optimization** trigger
+many simultaneous runs of the model.  We recommend using these
+features on fast `Javascript` and `WebAssembly` scripts to avoid
+repeatable running of heavy server-side code.
+
+:::
+
 ### Sensitivity analysis
 
 [Sensitivity analysis](../../function-analysis.md#sensitivity-analysis)  automatically runs the computation multiple times with varying inputs,
@@ -638,15 +647,6 @@ The [parameters optimization](../../function-analysis.md#parameter-optimization)
 inverse problem to the [sensitivity analysis](../../function-analysis.md#sensitivity-analysis): finding
 the input conditions that lead to a specified output of the model. It
 computes inputs minimizing deviation measured by loss function.
-
-:::warning High-intensity computation
-
-Both **Sensitivity** analysis and **Parameter optimization** trigger
-many simultaneous runs of the model.  We recommend using these
-features on fast `Javascript` and `WebAssembly` scripts to avoid
-repeatable running of heavy server-side code.
-
-:::
 
 To enable parameters optimization, set the `fitting` feature flag:
 
