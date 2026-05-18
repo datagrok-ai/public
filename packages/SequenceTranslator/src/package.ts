@@ -188,45 +188,6 @@ export class PackageFunctions {
     return linkStrandsV3000(strands, true);
   }
 
-
-  @grok.decorators.func({
-    meta: {
-      demoPath: 'Bioinformatics | Oligo Toolkit | Translator',
-      path: '/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate',
-      demoSkip: 'GROK-14320'
-    },
-    name: 'demoOligoTranslator',
-    description: 'Translate oligonucleotide sequences across various formats accepted by different synthesizers'
-  })
-  static async demoTranslateSequence(): Promise<void> {
-    await demoOligoTranslatorUI();
-  }
-
-
-  @grok.decorators.func({
-    meta: {
-      demoPath: 'Bioinformatics | Oligo Toolkit | Pattern',
-      path: '%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex'
-    },
-    description: 'Design a modification pattern for an oligonucleotide sequence'
-  })
-  static async demoOligoPattern(): Promise<void> {
-    await demoOligoPatternUI();
-  }
-
-
-  @grok.decorators.func({
-    meta: {
-      demoPath: 'Bioinformatics | Oligo Toolkit | Structure',
-      path: '%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex'
-    },
-    description: 'Visualize duplex and save SDF'
-  })
-  static async demoOligoStructure(): Promise<void> {
-    await demoOligoStructureUI();
-  }
-
-
   @grok.decorators.func()
   static async translateOligonucleotideSequence(
     sequence: string, sourceFormat: string, targetFormat: string

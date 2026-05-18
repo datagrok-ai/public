@@ -36,20 +36,6 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Bioinformatics',
 			children: [
 				{
-					name: 'Oligo Toolkit',
-					children: [
-						{
-							name: 'Translator',
-						},
-						{
-							name: 'Structure',
-						},
-						{
-							name: 'Pattern',
-						},
-					]
-				},
-				{
 					name: 'Activity Cliffs',
 				},
 				{

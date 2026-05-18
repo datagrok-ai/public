@@ -48,27 +48,6 @@ export namespace funcs {
     return await grok.functions.call('SequenceTranslator:LinkStrands', { strands });
   }
 
-  /**
-  Translate oligonucleotide sequences across various formats accepted by different synthesizers
-  */
-  export async function demoTranslateSequence(): Promise<void> {
-    return await grok.functions.call('SequenceTranslator:DemoTranslateSequence', {});
-  }
-
-  /**
-  Design a modification pattern for an oligonucleotide sequence
-  */
-  export async function demoOligoPattern(): Promise<void> {
-    return await grok.functions.call('SequenceTranslator:DemoOligoPattern', {});
-  }
-
-  /**
-  Visualize duplex and save SDF
-  */
-  export async function demoOligoStructure(): Promise<void> {
-    return await grok.functions.call('SequenceTranslator:DemoOligoStructure', {});
-  }
-
   export async function translateOligonucleotideSequence(sequence: string , sourceFormat: string , targetFormat: string ): Promise<string> {
     return await grok.functions.call('SequenceTranslator:TranslateOligonucleotideSequence', { sequence, sourceFormat, targetFormat });
   }

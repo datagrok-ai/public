@@ -77,29 +77,6 @@ export function linkStrands(strands: any) : string {
   return PackageFunctions.linkStrands(strands);
 }
 
-//name: demoOligoTranslator
-//description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
-//meta.demoPath: Bioinformatics | Oligo Toolkit | Translator
-//meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
-//meta.demoSkip: GROK-14320
-export async function demoTranslateSequence() : Promise<void> {
-  await PackageFunctions.demoTranslateSequence();
-}
-
-//description: Design a modification pattern for an oligonucleotide sequence
-//meta.demoPath: Bioinformatics | Oligo Toolkit | Pattern
-//meta.path: %20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
-export async function demoOligoPattern() : Promise<void> {
-  await PackageFunctions.demoOligoPattern();
-}
-
-//description: Visualize duplex and save SDF
-//meta.demoPath: Bioinformatics | Oligo Toolkit | Structure
-//meta.path: %20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
-export async function demoOligoStructure() : Promise<void> {
-  await PackageFunctions.demoOligoStructure();
-}
-
 //input: string sequence 
 //input: string sourceFormat 
 //input: string targetFormat 
@@ -236,16 +213,16 @@ export function oligoNucleotideCellRenderer() : any {
 //tags: cellEditor
 //input: grid_cell cell 
 //meta.role: cellEditor
-export async function editOligoNucleotideCell(cell: any) : Promise<void> {
-  await PackageFunctions.editOligoNucleotideCell(cell);
+export function editOligoNucleotideCell(cell: any) : void {
+  PackageFunctions.editOligoNucleotideCell(cell);
 }
 
 //name: Open HELM Editor
 //description: Edit the oligonucleotide HELM in the HELM Web Editor
 //input: semantic_value value { semType: OligoNucleotide }
 //meta.action: Edit HELM
-export async function openOligoHelmEditor(value: DG.SemanticValue) : Promise<void> {
-  await PackageFunctions.openOligoHelmEditor(value);
+export function openOligoHelmEditor(value: DG.SemanticValue) : void {
+  PackageFunctions.openOligoHelmEditor(value);
 }
 
 //name: Oligo-Nucleotide
