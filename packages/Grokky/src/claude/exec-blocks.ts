@@ -7,33 +7,19 @@ export interface ExecError {
   error: string;
 }
 
-export interface ExecResult {
-  elements: HTMLElement[];
-  errors: ExecError[];
-}
-
-export async function executeDatagrokBlocks(content: string, view: DG.ViewBase): Promise<ExecResult> {
-  const re = /```datagrok-exec\n([\s\S]*?)```/g;
-  const elements: HTMLElement[] = [];
-  const errors: ExecError[] = [];
-  let match: RegExpExecArray | null;
-  let blockIndex = 0;
-  while ((match = re.exec(content)) !== null) {
-    const code = match[1];
-    const idx = blockIndex++;
-    try {
-      const t = view.type === DG.VIEW_TYPE.TABLE_VIEW ? (view as DG.TableView).dataFrame : undefined;
-      const result = await new Function('grok', 'ui', 'DG', 'view', 't',
-        'return (async () => {' + code + '})()',
-      )(grok, ui, DG, view, t);
-      if (result instanceof HTMLElement)
-        elements.push(result);
-    } catch (e: any) {
-      grok.shell.error(`datagrok-exec error: ${e.message}`);
-      errors.push({blockIndex: idx, error: e?.message ?? String(e)});
-    }
+export async function executeSingleBlock(
+  code: string, view: DG.ViewBase, blockIndex: number,
+): Promise<{element: HTMLElement | null; error: ExecError | null}> {
+  try {
+    const t = view.type === DG.VIEW_TYPE.TABLE_VIEW ? (view as DG.TableView).dataFrame : undefined;
+    const result = await new Function('grok', 'ui', 'DG', 'view', 't',
+      'return (async () => {' + code + '})()',
+    )(grok, ui, DG, view, t);
+    return {element: result instanceof HTMLElement ? result : null, error: null};
+  } catch (e: any) {
+    grok.shell.error(`datagrok-exec error: ${e.message}`);
+    return {element: null, error: {blockIndex, error: e?.message ?? String(e)}};
   }
-  return {elements, errors};
 }
 
 export function buildViewContext(view: DG.ViewBase): string {

@@ -483,3 +483,11 @@
 .grokky-empty-state .grokky-scope-icon.grokky-scope-view     { color: var(--green-2); }
 .grokky-empty-state .grokky-scope-icon.grokky-scope-anywhere { color: var(--grey-4); }
 
+.grokky-system-message {
+  text-align: right;
+  font-size: 12px;
+  color: var(--grey-4);
+  font-style: italic;
+  margin: 8px 0;
+}
+
