@@ -476,7 +476,7 @@ input or output:
 
 | Key | Effect |
 |------|--------|
-| `hidden: true` | Hide the input from the script UI. The input annotation must include `optional: true`, otherwise the platform requires a value. |
+| `hidden: true` | Hide the input from the script UI. If the input is a dataframe with one or more `viewer:` panels, those panels are hidden too. The input annotation must include `optional: true`, otherwise the platform requires a value. |
 | `items: string[]` | For choice inputs, replace the dropdown options. Example: `{ items: ['one', 'two', 'three'] }`. |
 
 Any other key/value pair is forwarded to the viewer hook unchanged, so
