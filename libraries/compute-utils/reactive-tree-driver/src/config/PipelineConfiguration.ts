@@ -245,7 +245,7 @@ export type AbstractPipelineStaticConfiguration<P, S, R> = {
 export type PipelineDynamicItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | AbstractPipelineActionConfiguration | R) & NestedItemContext);
 
 export type AbstractPipelineDynamicConfiguration<P, S, R> = {
-  initialSteps?: StepDynamicInitialConfig[];
+  initialSteps?: Array<ItemId | StepDynamicInitialConfig>;
   stepTypes: PipelineDynamicItem<P, S, R>[];
   type: 'dynamic' | 'parallel' | 'sequential';
 } & PipelineConfigurationBase<P>;

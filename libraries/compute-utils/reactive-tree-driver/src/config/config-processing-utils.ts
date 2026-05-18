@@ -5,6 +5,7 @@ import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguratio
 import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
+import {normalizeStepRef} from './PipelineInstance';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
 import {DriverLogger, reportError} from '../data/Logger';
@@ -150,7 +151,8 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
-  return {...conf, actions, links, onInit, onReturn};
+  const initialSteps = conf.initialSteps?.map((s) => normalizeStepRef(s));
+  return {...conf, actions, links, onInit, onReturn, initialSteps};
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>, logger?: DriverLogger) {

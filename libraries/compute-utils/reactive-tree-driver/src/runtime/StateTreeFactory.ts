@@ -63,7 +63,8 @@ export function fromPipelineConfig({
   // TODO: initial infinite cycles detection
   const traverse = buildTraverseD(startPath, (data: ConfigTraverseItem, path) => {
     if (isPipelineDynamicConfig(data)) {
-      const items = (data?.initialSteps ?? []).map((step, idx) => {
+      const items = (data?.initialSteps ?? []).map((rawStep, idx) => {
+        const step = typeof rawStep === 'string' ? {id: rawStep} : rawStep;
         const item = data.stepTypes.find((t) => {
           if (isPipelineSelfRef(t)) {
             const derefedStep = getPipelineRef(refMap, t.nqName, t.version);

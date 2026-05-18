@@ -236,7 +236,11 @@ workflow.
 _Optional_
 
 Is an array of initial steps. Each item is a reference to a
-[stepTypes](#steptypes) item.
+[stepTypes](#steptypes) item, written either as a bare string id
+(`'stepAdd'`) or as an object with optional `initialValues` and
+`inputRestrictions`. Both forms may be mixed in the same array. The
+same shorthand applies to the `steps` array passed at runtime via
+`setPipelineState`.
 
 ### Action steps
 

@@ -1306,6 +1306,45 @@ category('ComputeUtils: Driver links matching', async () => {
     expectDeepEqual(threw, true);
   });
 
+  test('initialSteps string shorthand equals object form', async () => {
+    const make = (initialSteps: any): PipelineConfiguration => ({
+      id: 'pipeline1',
+      type: 'parallel',
+      stepTypes: [
+        {id: 'stepAdd', nqName: 'LibTests:TestAdd2'},
+        {id: 'stepMul', nqName: 'LibTests:TestMul2'},
+      ],
+      initialSteps,
+    });
+    const childIds = async (initialSteps: any) => {
+      const tree = StateTree.fromPipelineConfig({config: await getProcessedConfig(make(initialSteps)), mockMode: true});
+      await tree.init().toPromise();
+      return tree.nodeTree.root.getChildren().map((c) => c.id);
+    };
+    expectDeepEqual(
+      await childIds(['stepAdd', 'stepMul']),
+      await childIds([{id: 'stepAdd'}, {id: 'stepMul'}]),
+    );
+  });
+
+  test('initialSteps mixed string + object shorthand', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'parallel',
+      stepTypes: [
+        {id: 'stepAdd', nqName: 'LibTests:TestAdd2'},
+        {id: 'stepMul', nqName: 'LibTests:TestMul2'},
+      ],
+      initialSteps: ['stepAdd', {id: 'stepMul', initialValues: {a: 7}}],
+    };
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+    await tree.init().toPromise();
+    const stepMul = tree.nodeTree.getNode([{idx: 1}]);
+    expectDeepEqual(stepMul.getItem().config.id, 'stepMul');
+    expectDeepEqual(stepMul.getItem().getStateStore().getState('a'), 7);
+  });
+
   test('Reject (call) on `to` in data link', async () => {
     let threw = false;
     try {

@@ -4,7 +4,7 @@ import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutation
 import {GranularMutationOp, RestrictionType, StepHandle, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {ScopeInfo} from './Link';
-import {PipelineInstanceConfig, PipelineOutline} from '../config/PipelineInstance';
+import {PipelineInstanceConfig, PipelineInstanceConfigInput, PipelineOutline, normalizePipelineInstanceConfig} from '../config/PipelineInstance';
 import {NodePath} from '../data/BaseTree';
 
 export class ControllerCancelled extends Error { };
@@ -182,11 +182,11 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
     this.usedMode[name] = mode;
   }
 
-  setPipelineState(name: string, state?: PipelineInstanceConfig) {
+  setPipelineState(name: string, state?: PipelineInstanceConfigInput) {
     this.checkIsClosed();
     this.checkOutput(name);
     this.checkExclusivity(name, 'replace');
-    this.outputs[name] = state;
+    this.outputs[name] = state ? normalizePipelineInstanceConfig(state) : state;
   }
 
   getSteps(name: string): StepHandle[] {

@@ -283,6 +283,62 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
     });
   });
 
+  test('setPipelineState accepts string-shorthand steps', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'nestedPipeline',
+          type: 'parallel',
+          stepTypes: [
+            {id: 'stepAdd', nqName: 'LibTests:TestAdd2'},
+            {id: 'stepMul', nqName: 'LibTests:TestMul2'},
+          ],
+          initialSteps: ['stepAdd'],
+        },
+        {id: 'stepr', nqName: 'LibTests:TestSub2'},
+      ],
+      actions: [{
+        id: 'action1',
+        from: [],
+        position: 'none',
+        to: 'out1:nestedPipeline',
+        type: 'pipeline',
+        handler({controller}) {
+          controller.setPipelineState('out1', {
+            id: 'nestedPipeline',
+            steps: ['stepMul', {id: 'stepAdd', initialValues: {a: 4, b: 6}}],
+          });
+        },
+      }],
+      links: [{
+        id: 'link1',
+        from: 'in1:nestedPipeline/all(stepAdd|stepMul)/a',
+        to: 'out1:stepr/a',
+        handler({controller}) {
+          const v = controller.getAll<number>('in1')!;
+          const r = v.reduce((acc, val) => acc + (val ?? 0), 0);
+          controller.setAll('out1', r);
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const out = tree.nodeTree.getNode([{idx: 1}]);
+      const action = [...tree.linksState.actions.values()][0];
+      cold('-a').subscribe(() => {
+        tree.runAction(action.uuid).subscribe();
+      });
+      // After mutation: nestedPipeline has [stepMul (no a), stepAdd (a=4)] — sum of 'a' = 4
+      expectObservable(out.getItem().getStateStore().getStateChanges('a')).toBe('ab', {a: undefined, b: 4});
+    });
+  });
+
   test('Run pipeline mutation actions on root pipeline', async () => {
     const config5: PipelineConfiguration = {
       id: 'pipeline1',
