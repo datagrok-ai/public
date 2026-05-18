@@ -761,6 +761,15 @@ export class PackageFunctions {
   @grok.decorators.editor()
   static ChemSpaceEditor(
     @grok.decorators.param({type: 'funccall'}) call: DG.FuncCall): void {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) {
+      grok.shell.error('Chemical Space requires an open table with a Molecule column');
+      return;
+    }
+    if (df.columns.bySemType(DG.SEMTYPE.MOLECULE) == null) {
+      grok.shell.error('Current table does not contain a Molecule column');
+      return;
+    }
     const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MOLECULE});
     const clusterMCS = ui.input.bool('Cluster MCS', {value: false, tooltipText: 'Perform MCS on clustered data'});
     const editor = funcEditor.getEditor();
@@ -1067,6 +1076,15 @@ export class PackageFunctions {
   @grok.decorators.editor()
   static ActivityCliffsEditor(
     call: DG.FuncCall): void {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) {
+      grok.shell.error('Activity Cliffs requires an open table with a Molecule column');
+      return;
+    }
+    if (df.columns.bySemType(DG.SEMTYPE.MOLECULE) == null) {
+      grok.shell.error('Current table does not contain a Molecule column');
+      return;
+    }
     const funcEditor = new ActivityCliffsFunctionEditor({semtype: DG.SEMTYPE.MOLECULE});
     const dialog = ui.dialog({title: 'Activity Cliffs'})
       .add(funcEditor.getEditor())
