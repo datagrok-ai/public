@@ -535,6 +535,10 @@
                     <groupId>com.zaxxer</groupId>
                     <artifactId>HikariCP</artifactId>
                 </exclusion>
+                <exclusion> <!-- Hadoop YARN drags in HikariCP-java7 2.4.12 (2017); shadows the real 4.0.3 -->
+                    <groupId>com.zaxxer</groupId>
+                    <artifactId>HikariCP-java7</artifactId>
+                </exclusion>
                 <exclusion> <!-- remediating vulnerability CVE-2023-44981 -->
                     <groupId>org.apache.zookeeper</groupId>
                     <artifactId>zookeeper</artifactId>
