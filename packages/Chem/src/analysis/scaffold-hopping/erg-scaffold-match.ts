@@ -249,12 +249,19 @@ export function buildReducedGraph(
  *  chain atom). Higher = better. */
 export function nodeCompatibility(a: ErgNode, b: ErgNode): number {
   if (a.isRing !== b.isRing) return 0;
-  // Jaccard on pharma labels. Empty ∩ empty → treat as weak match
-  // (so that "neutral" chain atoms can still pair) but with low score.
+  // Jaccard on pharma labels. Empty ∩ empty → return 0 (no match): two
+  // chain atoms with no pharmacophore tags (typical CH2/CH3 linker
+  // atoms) carry no positive evidence that they should be considered
+  // equivalent. Earlier this branch returned 0.05 to allow "neutral
+  // linker atoms" to pair with each other, but that 0.05 happens to
+  // equal the match threshold in `matchReducedGraphs`, so EVERY pair
+  // of unlabeled chain atoms got matched — inflating the Replacement-
+  // column highlights with chemically meaningless chain-atom matches
+  // on any drug-like molecule with a propyl/butyl linker.
   let inter = 0;
   for (const p of a.pharma) if (b.pharma.has(p)) inter++;
   const union = a.pharma.size + b.pharma.size - inter;
-  let score = union === 0 ? 0.05 : inter / union;
+  let score = union === 0 ? 0 : inter / union;
   // Ring-size proximity bonus (small, just a tiebreaker).
   if (a.isRing && b.isRing && a.size > 0 && b.size > 0)
     score += 0.05 * (1 - Math.abs(a.size - b.size) / Math.max(a.size, b.size));

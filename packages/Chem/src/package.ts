@@ -62,7 +62,7 @@ import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 import {ScaffoldHoppingFunctionEditor} from './analysis/scaffold-hopping/scaffold-hopping-editor';
-import {runScaffoldHopping} from './analysis/scaffold-hopping/scaffold-hopping';
+import {runScaffoldHopping, cleanUpScaffoldHopColumns} from './analysis/scaffold-hopping/scaffold-hopping';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -2325,6 +2325,23 @@ export class PackageFunctions {
     const funcEditor = new ScaffoldHoppingFunctionEditor();
     const dialog = ui.dialog({title: 'Scaffold Hopping'})
       .add(funcEditor.getEditor())
+      // Footer-button: drops every Scaffold Hop result column from the
+      // currently-selected table without closing the dialog. Lets the user
+      // undo a previous run before re-running with different settings —
+      // the only way to "undo" otherwise was to manually remove columns
+      // one at a time. Keeps the dialog open so the user can immediately
+      // re-run with new thresholds.
+      .addButton('Clean up existing columns', () => {
+        const table = funcEditor.tableInput.value;
+        if (!table) {
+          grok.shell.warning('No table selected.');
+          return;
+        }
+        const removed = cleanUpScaffoldHopColumns(table);
+        grok.shell.info(removed > 0 ?
+          `Removed ${removed} Scaffold Hop column${removed === 1 ? '' : 's'} from "${table.name}".` :
+          `No Scaffold Hop columns to remove on "${table.name}".`);
+      })
       .onOK(async () => {
         try {
           const params = funcEditor.getParams();
@@ -2339,6 +2356,13 @@ export class PackageFunctions {
             replaceableAtoms: JSON.stringify(params.replaceableAtoms),
             useTcInFlag: params.useTcInFlag,
             useCatsInFlag: params.useCatsInFlag,
+            activityColumnName: params.activityColumnName,
+            activityWeight: params.activityWeight,
+            showReason: params.showReason,
+            useRGroupReplacement: params.useRGroupReplacement,
+            imputeActivity: params.imputeActivity,
+            mmpSupportFloor: params.mmpSupportFloor,
+            predictKnown: params.predictKnown,
           }).call(true);
         } catch (e: any) {
           grok.shell.error(e?.message ?? String(e));
@@ -2349,7 +2373,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'name': 'Scaffold Hopping',
-    'description': 'Score every other molecule against a reference row using 2D scaffold-hopping criteria (ECFP4 Tanimoto, CATS2D pharmacophore similarity, Maeda 2024 MCS atom ratio).',
+    'description': 'Score every other molecule against a reference row using 2D scaffold-hopping criteria (ECFP4 Tanimoto, CATS2D pharmacophore similarity, MCS atom-ratio).',
     'editor': 'Chem:ScaffoldHoppingEditor',
     'top-menu': 'Chem | Analyze | Scaffold Hopping...',
   })
@@ -2359,15 +2383,23 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'int', options: {description: 'Reference row index (0-based)', initialValue: '0'}}) referenceRowIdx: number,
     @grok.decorators.param({type: 'double', options: {description: 'ECFP4 Tanimoto lower bound', initialValue: '0.2'}}) tanimotoMin: number,
     @grok.decorators.param({type: 'double', options: {description: 'ECFP4 Tanimoto upper bound', initialValue: '0.6'}}) tanimotoMax: number,
-    @grok.decorators.param({type: 'double', options: {description: 'MCS atom ratio cutoff (Maeda 2024 scaffold-hop criterion)', initialValue: '0.4'}}) mcsRatioMax: number,
+    @grok.decorators.param({type: 'double', options: {description: 'MCS atom-ratio cutoff (ratio_atom = atoms(MCS) / atoms(reference) must be ≤ this to flag the row)', initialValue: '0.4'}}) mcsRatioMax: number,
     @grok.decorators.param({type: 'double', options: {description: 'Minimum CATS2D (Schneider 1999) pharmacophore-pair cosine similarity vs. reference', initialValue: '0.8'}}) minCatsSim: number,
     @grok.decorators.param({type: 'string', options: {description: 'JSON-encoded array of replaceable atom indices (empty = no region constraint, returns any global hop)', initialValue: '[]'}}) replaceableAtoms: string,
-    @grok.decorators.param({type: 'bool', options: {description: 'Apply ECFP4 Tc window as a flag condition (in addition to the always-on Maeda atom-ratio)', initialValue: 'true'}}) useTcInFlag: boolean,
-    @grok.decorators.param({type: 'bool', options: {description: 'Apply CATS Sim minimum as a flag condition (in addition to the always-on Maeda atom-ratio)', initialValue: 'true'}}) useCatsInFlag: boolean,
+    @grok.decorators.param({type: 'bool', options: {description: 'Apply ECFP4 Tc window as a flag condition in addition to the always-on atom-ratio', initialValue: 'true'}}) useTcInFlag: boolean,
+    @grok.decorators.param({type: 'bool', options: {description: 'Apply CATS Sim minimum as a flag condition in addition to the always-on atom-ratio', initialValue: 'true'}}) useCatsInFlag: boolean,
+    @grok.decorators.param({type: 'string', options: {description: 'Activity column name for proximity-weighted ranking (empty disables)', initialValue: ''}}) activityColumnName: string,
+    @grok.decorators.param({type: 'double', options: {description: 'Activity proximity weight in 0 to 1 range, 0 leaves score unchanged', initialValue: '0.3'}}) activityWeight: number,
+    @grok.decorators.param({type: 'bool', options: {description: 'When true, also emit the Scaffold Hop Reason column with per-row pass/fail breakdown', initialValue: 'false'}}) showReason: boolean,
+    @grok.decorators.param({type: 'bool', options: {description: 'When true, use R-group decomposition for the Replacement / Replaced Region columns (Local-mode behavior). When false, use ErG pharmacophore matching (Easy / Middle / Hard mode behavior).', initialValue: 'false'}}) useRGroupReplacement: boolean,
+    @grok.decorators.param({type: 'bool', options: {description: 'When true, run MMP-rule-based activity prediction on the activity column and add prediction columns. Uses the same machinery as the MMP viewer Generations tab.', initialValue: 'false'}}) imputeActivity: boolean,
+    @grok.decorators.param({type: 'int', options: {description: 'Min supporting pairs per MMP rule. Default 10 matches mmpdb (Dalke 2018). Lower = more coverage, noisier predictions.', initialValue: '10'}}) mmpSupportFloor: number,
+    @grok.decorators.param({type: 'bool', options: {description: 'Also predict for rows that already have a measured activity (validation mode). Off in production to avoid self-inclusion bias.', initialValue: 'false'}}) predictKnown: boolean,
   ): Promise<void> {
     await runScaffoldHopping(table, molecules, referenceRowIdx,
       tanimotoMin, tanimotoMax, mcsRatioMax, minCatsSim, replaceableAtoms,
-      useTcInFlag, useCatsInFlag);
+      useTcInFlag, useCatsInFlag, activityColumnName, activityWeight, showReason,
+      useRGroupReplacement, imputeActivity, mmpSupportFloor, predictKnown);
   }
 
   @grok.decorators.func({
