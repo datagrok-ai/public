@@ -9,7 +9,7 @@ import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMa
 import {buildViewContext, renderEntityBlocks} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
-import {resolveContextScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
 
 export type MessageType = {role: string; content: any};
 
@@ -240,7 +240,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.root.classList.toggle('d4-ai-raw-mode', this._rawRender);
     }, 'Toggle raw console');
     this.wandButton = ui.iconFA('magic', async (e) => {
-      const scopes = await resolveContextScopes(this.view);
+      const scopes = await resolveScopes('panel', this.view);
       showSuggestionsMenu(scopes, (prompt) => this.runSuggestion(prompt), e);
     }, 'Prompt suggestions');
     this.wandButton.classList.add('grokky-search-wand');
@@ -906,7 +906,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected async renderEmptyState(): Promise<void> {
     if (!this.shouldShowEmptyState())
       return;
-    const scopes = await resolveContextScopes(this.view);
+    const scopes = await resolveScopes('panel', this.view);
     if (!this.shouldShowEmptyState())
       return;
 
