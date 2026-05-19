@@ -262,6 +262,23 @@ export async function TestMultiarg5(a: number, b: number, c: number, d: number, 
   return a + b + c + d + e;
 }
 
+/* Test fixture for template name-pairing: TestIONamesA's outputs and
+   TestIONamesB's inputs share names, so deferred outputs()/inputs() links
+   can be exercised end-to-end. */
+//input: double seed
+//output: double x
+//output: double y
+export async function TestIONamesA(seed: number) {
+  return {x: seed, y: seed + 1};
+}
+
+//input: double x
+//input: double y
+//output: double res
+export async function TestIONamesB(x: number, y: number) {
+  return x + y;
+}
+
 //input: object params
 //output: object result
 export async function MockWrapper1(params: any) {

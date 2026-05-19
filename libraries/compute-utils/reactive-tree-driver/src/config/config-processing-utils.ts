@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
-import {callHandler} from '../utils';
-import {LinkIOParsed, parseLinkIO} from './LinkSpec';
+import {callHandler, indexFromEnd} from '../utils';
+import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
@@ -149,7 +149,7 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
   const actions = processStepActions(conf.actions ?? [], logger);
-  const io = await getFuncCallIO(conf.nqName);
+  const io = getFuncCallIO(conf.nqName);
   const func = DG.Func.byName(conf.nqName);
   const viewersHookMakerName = getViewersHook(func);
   let viewersHook = conf.viewersHook;
@@ -175,17 +175,18 @@ function processActionConfig(conf: AbstractPipelineActionConfiguration): Pipelin
   } as PipelineConfigurationStaticProcessed;
 }
 
-async function getFuncCallIO(nqName: NqName): Promise<FuncCallIODescription[]> {
+function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
   const func = DG.Func.byName(nqName);
+  if (!func)
+    throw new Error(`Function '${nqName}' not found`);
   const fc = func.prepare();
-  const inputs = wu(fc.inputParams.values()).map((input) => (
-    {id: input.property.name, type: input.property.propertyType as any, direction: 'input' as const, nullable: isOptional(input.property)}
+  const inputs = wu(fc.inputParams.values()).map((p) => (
+    {id: p.property.name, type: p.property.propertyType as any, direction: 'input' as const, nullable: isOptional(p.property)}
   ));
-  const outputs = wu(fc.outputParams.values()).map((output) => (
-    {id: output.property.name, type: output.property.propertyType as any, direction: 'output' as const, nullable: false}
+  const outputs = wu(fc.outputParams.values()).map((p) => (
+    {id: p.property.name, type: p.property.propertyType as any, direction: 'output' as const, nullable: false}
   ));
-  const io = [...inputs, ...outputs];
-  return io;
+  return [...inputs, ...outputs];
 }
 
 function isOptional(prop: DG.Property) {
@@ -215,8 +216,8 @@ function processInitHook(hooksInput?: PipelineInitConfiguration<LinkSpecString>)
 }
 
 function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>>(link: L) {
-  const from = processLink(link.from ?? [], 'input');
-  const to = processLink(link.to ?? [], 'output');
+  const from = expandDeferredIOs(processLink(link.from ?? [], 'input'), link.id);
+  const to = expandDeferredIOs(processLink(link.to ?? [], 'output'), link.id);
   const base = processLink(link.base ?? [], 'base');
   const not = processLink(link.not ?? [], 'not');
   const actions = processLink(link.actions ?? [], 'actions');
@@ -250,4 +251,30 @@ function checkUniqId(items: {id: string}[], logger?: DriverLogger) {
       reportError('warning', 'configProcessing', `Id ${item.id} is not unique`, logger);
     ids.add(item.id);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Deferred IO selector expansion
+// ---------------------------------------------------------------------------
+
+function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed[] {
+  return ioList.flatMap((io) => {
+    const lastSeg = indexFromEnd(io.segments);
+    if (!lastSeg || lastSeg.type !== 'selector' || !lastSeg.ioExpand) return [io];
+    const direction: 'input' | 'output' = lastSeg.ioExpand === 'inputs' ? 'input' : 'output';
+    const excludeSet = new Set(lastSeg.excludeIds ?? []);
+    let targetIO: FuncCallIODescription[];
+    try {
+      targetIO = getFuncCallIO(lastSeg.nqName!);
+    } catch (e) {
+      throw new Error(`Link ${linkId}: ${(e as Error).message}`);
+    }
+    return targetIO
+      .filter((d) => d.direction === direction && !excludeSet.has(d.id))
+      .map((d) => {
+        const nname = io.name === '_' ? d.id : io.name + d.id;
+        const nlastSegment: LinkSelectorSegment = {type: 'selector', selector: 'first', ids: [d.id], stopIds: []};
+        return {name: nname, segments: [...io.segments.slice(0, -1), nlastSegment], flags: io.flags};
+      });
+  });
 }
