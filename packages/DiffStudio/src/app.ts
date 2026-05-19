@@ -626,9 +626,10 @@ export class DiffStudio {
     this.updateRibbonWgts();
     this.toChangePath = false;
 
-    setTimeout(async () => {
-      await this.runSolving();
-    }, UI_TIME.APP_RUN_SOLVING);
+    await new Promise<void>((r) => setTimeout(r, UI_TIME.APP_RUN_SOLVING));
+    await this.runSolving();
+    if (this.facetReadyPromise)
+      await this.facetReadyPromise;
   } // runModel
 
   /** Set starting pass */
@@ -830,6 +831,9 @@ export class DiffStudio {
    *  the new model has already taken over. */
   private previewDockTimer: number | null = null;
   private facetDockTimer: number | null = null;
+
+  /** Resolves when the deferred facet-grid dock has run; awaited by `runModel`. */
+  private facetReadyPromise: Promise<void> | null = null;
 
   private uiOpts: UiOptions;
 
@@ -1693,23 +1697,26 @@ export class DiffStudio {
 
           if (this.facetDockTimer !== null)
             clearTimeout(this.facetDockTimer);
-          this.facetDockTimer = window.setTimeout( () => {
-            this.facetDockTimer = null;
-            try {
-              if (!this.isSolutionViewerPositionValid()) {
-                this.solutionViewer.close();
-                this.viewerDockNode.container.destroy();
-                this.setSolutionViewer();
-              }
+          this.facetReadyPromise = new Promise<void>((resolve) => {
+            this.facetDockTimer = window.setTimeout( () => {
+              this.facetDockTimer = null;
+              try {
+                if (!this.isSolutionViewerPositionValid()) {
+                  this.solutionViewer.close();
+                  this.viewerDockNode.container.destroy();
+                  this.setSolutionViewer();
+                }
 
-              this.facetGridNode = this.solverView.dockManager.dock(
-                this.facetGridDiv,
-                DG.DOCK_TYPE.FILL,
-                this.viewerDockNode,
-                TITLE.FACET,
-              );
-            } catch (err) {}
-          }, UI_TIME.FACET_DOCKING);
+                this.facetGridNode = this.solverView.dockManager.dock(
+                  this.facetGridDiv,
+                  DG.DOCK_TYPE.FILL,
+                  this.viewerDockNode,
+                  TITLE.FACET,
+                );
+              } catch (err) {}
+              resolve();
+            }, UI_TIME.FACET_DOCKING);
+          });
         } else
           this.facetPlots.forEach((plot) => plot.dataFrame = this.solutionTable);
       } else

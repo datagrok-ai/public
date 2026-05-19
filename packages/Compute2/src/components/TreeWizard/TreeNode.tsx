@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {AugmentedStat, Status} from './types';
-import {ComboPopup, IconFA, MarkDown, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
+import {ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
 import {useElementHover} from '@vueuse/core';
 import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -205,11 +205,6 @@ export const TreeNode = Vue.defineComponent({
         return Vue.markRaw({validation: props.stat.data.structureCheckResults});
     });
 
-    const bodyText = Vue.computed(() => {
-      const v = props.descriptions?.body;
-      return typeof v === 'string' && v ? v : null;
-    });
-
     return () => (
       <div
         style={{
@@ -311,13 +306,6 @@ export const TreeNode = Vue.defineComponent({
             }
           </div> }
       </div>
-      { bodyText.value && (
-        <MarkDown
-          markdown={bodyText.value}
-          class="mtl-ml"
-          style={{paddingLeft: '20px', paddingBottom: '4px'}}
-        />
-      ) }
       </div>
     );
   },

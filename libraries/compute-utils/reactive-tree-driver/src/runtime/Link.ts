@@ -409,6 +409,22 @@ export class Link {
         }
       }
     }
+    if (controller instanceof MutationController)
+      checkMutationOverlap(this.matchInfo.spec.id, this.lastPipelineMutations, this.lastGranularMutations);
+  }
+}
+
+function checkMutationOverlap(
+  actionId: string,
+  pipelineMutations?: Array<{path: NodePath}>,
+  granularMutations?: Array<{path: NodePath}>,
+) {
+  const all: NodePath[] = [...(pipelineMutations ?? []).map((m) => m.path), ...(granularMutations ?? []).map((m) => m.path)];
+  for (let i = 0; i < all.length; i++) {
+    for (let j = i + 1; j < all.length; j++) {
+      if (BaseTree.isNodeChildOrEq(all[i], all[j]) || BaseTree.isNodeChildOrEq(all[j], all[i]))
+        throw new Error(`Handler for action ${actionId}: mutations on overlapping subtrees (${JSON.stringify(all[i])} and ${JSON.stringify(all[j])}). Combine into a single setPipelineState at the common ancestor, or operate only at the inner level.`);
+    }
   }
 }
 
