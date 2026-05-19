@@ -451,15 +451,6 @@ export class DynamicPipelineNode extends PipelineNodeBase {
   }
 }
 
-/** @deprecated Use DynamicPipelineNode */
-export type ParallelPipelineNode = DynamicPipelineNode;
-/** @deprecated Use DynamicPipelineNode */
-export type SequentialPipelineNode = DynamicPipelineNode;
-/** @deprecated Use DynamicPipelineNode */
-export const ParallelPipelineNode = DynamicPipelineNode;
-/** @deprecated Use DynamicPipelineNode */
-export const SequentialPipelineNode = DynamicPipelineNode;
-
 export type StateTreeNode = FuncCallNode | StaticPipelineNode | DynamicPipelineNode;
 
 export function isFuncCallNode(node: StateTreeNode): node is FuncCallNode {
@@ -473,11 +464,6 @@ export function isStaticPipelineNode(node: StateTreeNode): node is StaticPipelin
 export function isDynamicPipelineNode(node: StateTreeNode): node is DynamicPipelineNode {
   return node.nodeType === 'dynamic';
 }
-
-/** @deprecated Use isDynamicPipelineNode */
-export const isParallelPipelineNode = isDynamicPipelineNode;
-/** @deprecated Use isDynamicPipelineNode */
-export const isSequentialPipelineNode = isDynamicPipelineNode;
 
 function getStepTypes(conf: PipelineConfigurationDynamicProcessed) {
   return conf.stepTypes.map((s) => {

@@ -1,11 +1,10 @@
 import {ItemPathArray} from '../data/common-types';
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {addPipelineRef, containsPipelineRef, FuncCallIODescription, getPipelineRef, PipelineConfigurationDynamicProcessed, PipelineConfigurationProcessed, PipelineConfigurationStaticProcessed, PipelineRefStore} from './config-processing-utils';
-import {LinkIOParsed} from './LinkSpec';
 import {AbstractPipelineActionConfiguration, PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
 
 
-export type PipelineStepConfigurationProcessed = PipelineStepConfiguration<LinkIOParsed[], FuncCallIODescription[]>;
+export type PipelineStepConfigurationProcessed = PipelineStepConfiguration<FuncCallIODescription[]>;
 export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed | AbstractPipelineActionConfiguration | PipelineSelfRef;
 
 export type ConfigItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed;
@@ -18,11 +17,6 @@ export function isPipelineDynamicConfig(c: ConfigTraverseItem): c is PipelineCon
   const type = (c as PipelineConfigurationDynamicProcessed).type;
   return type === 'dynamic' || type === 'parallel' || type === 'sequential';
 }
-
-/** @deprecated Use isPipelineDynamicConfig */
-export const isPipelineParallelConfig = isPipelineDynamicConfig;
-/** @deprecated Use isPipelineDynamicConfig */
-export const isPipelineSequentialConfig = isPipelineDynamicConfig;
 
 export function isPipelineActionConfig(c: ConfigTraverseItem): c is AbstractPipelineActionConfiguration {
   return (c as AbstractPipelineActionConfiguration).type === 'action';

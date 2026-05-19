@@ -12,11 +12,6 @@ export type StepDynamicInitialConfig = {
   inputRestrictions?: Record<string, RestrictionType>;
 }
 
-/** @deprecated Use StepDynamicInitialConfig */
-export type StepParallelInitialConfig = StepDynamicInitialConfig;
-/** @deprecated Use StepDynamicInitialConfig */
-export type StepSequentialInitialConfig = StepDynamicInitialConfig;
-
 export type StepFunCallInitialConfig = {
   id: ItemId;
   initialValues?: Record<string, any>;
@@ -78,11 +73,6 @@ export function isDynamicPipelineState(state: PipelineState): state is PipelineS
   return state.type === 'dynamic' || state.type === 'parallel' || state.type === 'sequential';
 }
 
-/** @deprecated Use isDynamicPipelineState */
-export const isParallelPipelineState = isDynamicPipelineState;
-/** @deprecated Use isDynamicPipelineState */
-export const isSequentialPipelineState = isDynamicPipelineState;
-
 export function isStaticSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateStatic<StepFunCallSerializedState, {}> {
   return state.type === 'static';
 }
@@ -90,11 +80,6 @@ export function isStaticSerializedPipelineState(state: PipelineSerializedState):
 export function isDynamicSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateDynamic<StepFunCallSerializedState, {}> {
   return state.type === 'dynamic' || state.type === 'parallel' || state.type === 'sequential';
 }
-
-/** @deprecated Use isDynamicSerializedPipelineState */
-export const isParallelSerializedPipelineState = isDynamicSerializedPipelineState;
-/** @deprecated Use isDynamicSerializedPipelineState */
-export const isSequentialSerializedPipelineState = isDynamicSerializedPipelineState;
 
 export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateDynamic<S, T> | S;
 
@@ -168,16 +153,3 @@ export type PipelineStateDynamic<S, T> = PipelineInstanceBase<{
   steps: StepDynamicState<S, T>[];
   stepTypes: StepDynamicDescription[];
 }, T>;
-
-/** @deprecated Use StepDynamicDescription */
-export type StepSequentialDescription = StepDynamicDescription;
-/** @deprecated Use StepDynamicDescription */
-export type StepParallelDescription = StepDynamicDescription;
-/** @deprecated Use StepDynamicState */
-export type StepSequentialState<S, T> = StepDynamicState<S, T>;
-/** @deprecated Use StepDynamicState */
-export type StepParallelState<S, T> = StepDynamicState<S, T>;
-/** @deprecated Use PipelineStateDynamic */
-export type PipelineStateSequential<S, T> = PipelineStateDynamic<S, T>;
-/** @deprecated Use PipelineStateDynamic */
-export type PipelineStateParallel<S, T> = PipelineStateDynamic<S, T>;
