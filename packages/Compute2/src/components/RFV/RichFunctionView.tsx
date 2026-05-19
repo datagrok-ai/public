@@ -253,6 +253,8 @@ export const RichFunctionView = Vue.defineComponent({
 
     const formHidden = Vue.ref(false);
     const inputsHidden = Vue.ref(false);
+    const hasInputsHiddenOption = Vue.computed(() =>
+      !!currentCall.value?.func && Utils.getInputsHidden(currentCall.value.func));
     const historyHidden = Vue.ref(true);
 
     const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
@@ -563,13 +565,16 @@ export const RichFunctionView = Vue.defineComponent({
                 dock-spawn-panel-icon='sign-in-alt'
                 ref={formRef}
               >
-                <div class='flex justify-end'>
-                  <IconFA
-                    name={inputsHidden.value ? 'chevron-down' : 'chevron-up'}
-                    tooltip={inputsHidden.value ? 'Show inputs' : 'Hide inputs'}
+                { hasInputsHiddenOption.value &&
+                  <div
+                    class='flex items-center justify-start'
+                    style={{cursor: 'pointer', color: 'var(--grey-4)', fontSize: '12px', gap: '6px', padding: '4px 0'}}
                     onClick={() => inputsHidden.value = !inputsHidden.value}
-                  />
-                </div>
+                  >
+                    <IconFA name={inputsHidden.value ? 'chevron-down' : 'chevron-up'} />
+                    <span>{inputsHidden.value ? 'Show inputs' : 'Hide inputs'}</span>
+                  </div>
+                }
                 { !inputsHidden.value &&
                   <InputForm
                     key={currentCall.value?.id}
