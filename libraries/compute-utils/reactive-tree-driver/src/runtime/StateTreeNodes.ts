@@ -10,7 +10,7 @@ import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
-import {RestrictionType, ValidationResult} from '../data/common-types';
+import {isDynamicType, RestrictionType, ValidationResult} from '../data/common-types';
 import {DriverLogger} from '../data/Logger';
 import {customDeepEqual, mergeValidationResults, pruneByKeys} from '../utils';
 
@@ -462,7 +462,7 @@ export function isStaticPipelineNode(node: StateTreeNode): node is StaticPipelin
 }
 
 export function isDynamicPipelineNode(node: StateTreeNode): node is DynamicPipelineNode {
-  return node.nodeType === 'dynamic';
+  return isDynamicType(node.nodeType);
 }
 
 function getStepTypes(conf: PipelineConfigurationDynamicProcessed) {

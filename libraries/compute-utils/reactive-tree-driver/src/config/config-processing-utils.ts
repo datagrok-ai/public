@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
-import {ItemId, LinkSpecString, NqName} from '../data/common-types';
+import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
@@ -35,8 +35,7 @@ function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineCon
 }
 
 function isPipelineDynamicInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationDynamicInitial {
-  const type = (c as PipelineConfigurationDynamicInitial).type;
-  return type === 'dynamic' || type === 'parallel' || type === 'sequential';
+  return isDynamicType((c as PipelineConfigurationDynamicInitial).type);
 }
 
 function isPipelineRefInitial(c: ConfigInitialTraverseItem): c is PipelineRefInitial {

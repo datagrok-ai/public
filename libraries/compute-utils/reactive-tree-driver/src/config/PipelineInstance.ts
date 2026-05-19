@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {ItemId, NqName, RestrictionType, ValidationResult} from '../data/common-types';
+import {DynamicPipelineType, isDynamicType, ItemId, NqName, RestrictionType, ValidationResult} from '../data/common-types';
 import {ActionInfo, CustomExport, NestedItemContext, ViewersHook} from './PipelineConfiguration';
 
 //
@@ -70,7 +70,7 @@ export function isStaticPipelineState(state: PipelineState): state is PipelineSt
 }
 
 export function isDynamicPipelineState(state: PipelineState): state is PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
-  return state.type === 'dynamic' || state.type === 'parallel' || state.type === 'sequential';
+  return isDynamicType(state.type);
 }
 
 export function isStaticSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateStatic<StepFunCallSerializedState, {}> {
@@ -78,7 +78,7 @@ export function isStaticSerializedPipelineState(state: PipelineSerializedState):
 }
 
 export function isDynamicSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateDynamic<StepFunCallSerializedState, {}> {
-  return state.type === 'dynamic' || state.type === 'parallel' || state.type === 'sequential';
+  return isDynamicType(state.type);
 }
 
 export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateDynamic<S, T> | S;
@@ -149,7 +149,7 @@ export type StepDynamicDescription = {
 export type StepDynamicState<S, T> = PipelineStateRec<S, T> & StepDynamicDescription;
 
 export type PipelineStateDynamic<S, T> = PipelineInstanceBase<{
-  type: 'dynamic' | 'parallel' | 'sequential';
+  type: DynamicPipelineType;
   steps: StepDynamicState<S, T>[];
   stepTypes: StepDynamicDescription[];
 }, T>;

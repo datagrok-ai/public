@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';
-import {ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
+import {DynamicPipelineType, ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
 import {PipelineState, StepDynamicInitialConfig} from './PipelineInstance';
 import {LinkIOParsed} from './LinkSpec';
 import type ExcelJS from 'exceljs';
@@ -252,7 +252,7 @@ export type PipelineDynamicItem<S> = ((PipelineStepConfiguration<S> | AbstractPi
 export type AbstractPipelineDynamicConfiguration<S> = {
   initialSteps?: Array<ItemId | StepDynamicInitialConfig>;
   stepTypes: PipelineDynamicItem<S>[];
-  type: 'dynamic' | 'parallel' | 'sequential';
+  type: DynamicPipelineType;
 } & PipelineConfigurationBase<S>;
 
 // pipeline config

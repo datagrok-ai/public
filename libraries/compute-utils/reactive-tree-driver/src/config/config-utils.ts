@@ -1,4 +1,4 @@
-import {ItemPathArray} from '../data/common-types';
+import {isDynamicType, ItemPathArray} from '../data/common-types';
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {addPipelineRef, containsPipelineRef, FuncCallIODescription, getPipelineRef, PipelineConfigurationDynamicProcessed, PipelineConfigurationProcessed, PipelineConfigurationStaticProcessed, PipelineRefStore} from './config-processing-utils';
 import {AbstractPipelineActionConfiguration, PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
@@ -14,8 +14,7 @@ export function isPipelineStaticConfig(c: ConfigTraverseItem): c is PipelineConf
 }
 
 export function isPipelineDynamicConfig(c: ConfigTraverseItem): c is PipelineConfigurationDynamicProcessed {
-  const type = (c as PipelineConfigurationDynamicProcessed).type;
-  return type === 'dynamic' || type === 'parallel' || type === 'sequential';
+  return isDynamicType((c as PipelineConfigurationDynamicProcessed).type);
 }
 
 export function isPipelineActionConfig(c: ConfigTraverseItem): c is AbstractPipelineActionConfiguration {
