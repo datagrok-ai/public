@@ -116,6 +116,12 @@ export class DemoView extends DG.ViewBase {
     if (group.items.some((n) => n.text === entry.name))
       return;
     const node = group.item(entry.name, {path: entry.path});
+    node.root.onmouseover = (event) => {
+      ui.tooltip.show(entry.func.description ?
+        ui.divV([entry.func.description, ui.element('br'), 'Datagrok project']) :
+        ui.div('Datagrok project'), event.clientX, event.clientY);
+    };
+    node.root.onmouseout = (_) => ui.tooltip.hide();
     const targetIndex = this._hierarchyInsertIndex(group, parentName, entry.name);
     if (targetIndex !== null && targetIndex !== group.children.length - 1) {
       node.remove();
@@ -429,8 +435,9 @@ export class DemoView extends DG.ViewBase {
         node?.click();
       };
 
-      const packageMessage = `Part of the ${directionFuncs[i].func.package.name === 'Tutorials' ?
-        'platform core' : `${directionFuncs[i].func.package.name} package`}`;
+      const packageMessage = directionFuncs[i].func.package.name === 'Project' ? 'Datagrok project' :
+        `Part of the ${directionFuncs[i].func.package.name === 'Tutorials' ?
+          'platform core' : `${directionFuncs[i].func.package.name} package`}`;
       ui.tooltip.bind(item, () => directionFuncs[i].func.description ?
         ui.divV([directionFuncs[i].func.description, ui.element('br'), packageMessage]) : ui.div(packageMessage));
 
