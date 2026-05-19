@@ -556,12 +556,12 @@ Font awesome icon to be shown as a part of the UI action button.
 
 _Optional_
 
-Shows the action on a specific child step instead of the node where it is
-defined. The value is the `id` of the target step. The action's `from`/`to`
-still resolve at the definition scope, so the action can read from and write
-to any node the parent workflow can reach. This is useful when an action
-logically belongs to a child step's UI but needs access to sibling steps'
-data. Works with all action types (data, funccall, pipeline).
+Shows the action on a descendant step or pipeline instead of the declaring
+node. The value is the bare `config.id` of the target; the first DFS match
+wins. Not a link-spec path. If no descendant matches, the action is
+hidden. The action's `from`/`to` still resolve at the definition scope, so
+it can read from and write to anything the parent workflow can reach.
+Works with all action types (data, funccall, pipeline).
 
 Because `from`/`to` resolve independently, a pipeline mutation action can
 read from a step _inside_ its own target workflow. For example, an action

@@ -1130,6 +1130,43 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
     expectDeepEqual(child2Val, 10);
   });
 
+  test('Pipeline action with visibleOn pointing to unknown id is hidden', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+      ],
+      actions: [{
+        id: 'action1',
+        from: 'in1:step1/a',
+        to: 'out1:step1/a',
+        position: 'buttons',
+        visibleOn: 'doesNotExist',
+        handler({controller}) {
+          controller.setAll('out1', 99);
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run(() => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+
+      const rootActions = tree.linksState.getNodeActionsData(tree.nodeTree.root.getItem().uuid);
+      expectDeepEqual(rootActions, undefined);
+
+      const step1Node = tree.nodeTree.getNode([{idx: 0}]);
+      const step1Actions = tree.linksState.getNodeActionsData(step1Node.getItem().uuid);
+      expectDeepEqual(step1Actions, undefined);
+    });
+  });
+
   test('Pipeline action without visibleOn stays on pipeline node', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',

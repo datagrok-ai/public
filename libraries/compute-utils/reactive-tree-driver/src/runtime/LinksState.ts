@@ -132,9 +132,10 @@ export class LinksState {
       const visibleOn = action.spec.visibleOn;
       let targetUuid: string;
       if (visibleOn) {
-        // Route action to the descendant node matching visibleOn configId
         const found = state.getNode(action.prefix).find((item) => item.config.id === visibleOn);
-        targetUuid = found ? found[0].getItem().uuid : state.getNode(action.prefix).getItem().uuid;
+        if (!found)
+          continue;
+        targetUuid = found[0].getItem().uuid;
       } else {
         targetUuid = state.getNode(action.prefix).getItem().uuid;
       }
